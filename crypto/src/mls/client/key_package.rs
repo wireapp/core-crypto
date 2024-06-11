@@ -110,7 +110,7 @@ impl Client {
             .mls_fetch_keypackages::<KeyPackage>(count as u32)
             .await?
             .into_iter()
-            // TODO: do this filtering in SQL when the schema is updated. Tacking issue: WPB-9599
+            // TODO: do this filtering in SQL when the schema is updated. Tracking issue: WPB-9599
             .filter(|kp| kp.ciphersuite() == ciphersuite.0)
             .collect::<Vec<_>>();
 
