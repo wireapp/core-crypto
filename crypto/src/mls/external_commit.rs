@@ -300,7 +300,7 @@ impl MlsConversation {
             )
             .await;
             if state != E2eiConversationState::Verified {
-                // FIXME: Uncomment when PKI env can be seeded - the computation is still done to assess performance and impact of the validations
+                // FIXME: Uncomment when PKI env can be seeded - the computation is still done to assess performance and impact of the validations. Tracking issue: WPB-9665
                 // return Err(CryptoError::InvalidCertificateChain);
             }
         }

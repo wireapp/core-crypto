@@ -112,7 +112,7 @@ impl MlsConversation {
     /// see [MlsCentral::decrypt_message]
     #[allow(clippy::too_many_arguments)]
     #[cfg_attr(test, crate::durable)]
-    // FIXME: this might be causing stack overflow. Retry when this is solved: https://github.com/tokio-rs/tracing/issues/1147
+    // FIXME: this might be causing stack overflow. Retry when this is solved: https://github.com/tokio-rs/tracing/issues/1147. Tracking issue: WPB-9654
     // #[cfg_attr(not(test), tracing::instrument(err, skip_all))]
     pub async fn decrypt_message(
         &mut self,
@@ -353,7 +353,7 @@ impl MlsConversation {
             )
             .await;
             if state != E2eiConversationState::Verified {
-                // FIXME: Uncomment when PKI env can be seeded - the computation is still done to assess performance and impact of the validations
+                // FIXME: Uncomment when PKI env can be seeded - the computation is still done to assess performance and impact of the validations. Tracking issue: WPB-9665
                 // return Err(CryptoError::InvalidCertificateChain);
             }
         }

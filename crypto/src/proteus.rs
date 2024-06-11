@@ -1333,24 +1333,8 @@ mod tests {
         if #[cfg(all(feature = "cryptobox-migrate", target_family = "wasm"))] {
             // use wasm_bindgen::prelude::*;
             const CRYPTOBOX_JS_DBNAME: &str = "cryptobox-migrate-test";
-            // FIXME: This is not working because wasm-bindgen-test-runner is behaving weird with inline_js stuff (aka not working basically)
-    //         #[allow(dead_code)]
-    //         const CRYPTOBOX_JS_SETUP: &str = r#"export async function run_cryptobox() {
-    //     const { Cryptobox } = await import("https://unpkg.com/@wireapp/cryptobox@latest/src/index.js");
-    //     const { IndexedDBEngine } = await import("https://unpkg.com/@wireapp/store-engine-dexie@latest/src/index.js");
-    //     const store = new IndexedDBEngine();
-    //     await store.init("cryptobox-migrate-test", true);
-    //     const cryptobox = new Cryptobox(store);
-    //     await cryptobox.create();
-    //     window.cryptobox = cryptobox;
-    //     return cryptobox.getIdentity().fingerprint();
-    // }"#;
-    //         #[wasm_bindgen(inline_js = CRYPTOBOX_JS_SETUP)]
-    //         extern "C" {
-    //             fn run_cryptobox() -> js_sys::Promise;
-    //         }
-
-            // ! So instead we emulate how cryptobox-js works
+            // wasm-bindgen-test-runner is behaving weird with inline_js stuff (aka not working basically), which we had previously
+            // So instead we emulate how cryptobox-js works
             // Returns Promise<JsString>
             fn run_cryptobox(alice: CryptoboxLike) -> js_sys::Promise {
                 wasm_bindgen_futures::future_to_promise(async move {

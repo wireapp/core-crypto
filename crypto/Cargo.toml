@@ -34,7 +34,6 @@ openmls = { version = "1", features = ["crypto-subtle"] }
 openmls_basic_credential = "0.2"
 openmls_x509_credential = "0.2"
 openmls_traits = "0.2"
-# FIXME: This is being pulled only because of flaky error types from openmls
 tls_codec = { workspace = true }
 serde = "1.0"
 serde_json = "1.0"

@@ -41,7 +41,7 @@ pub enum RemoteValue {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Ord, PartialOrd, serde::Serialize, serde::Deserialize)]
-// FIXME: Wrong annotation. There's no content to parse so it cannot work
+// FIXME: Wrong annotation. There's no content to parse so it cannot work. Tracking issue: WPB-9656
 #[serde(tag = "type", content = "value", rename_all = "lowercase")]
 pub enum RemoteValueType {
     Symbol,
@@ -62,7 +62,7 @@ pub enum RemoteValueType {
     Node,
     Window,
 }
-//FIXME: Those two are wrong. RemoteValueType should contain instances of RemoteValue
+//FIXME: Those two are wrong. RemoteValueType should contain instances of RemoteValue. Tracking issue: WPB-9656
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Ord, PartialOrd, serde::Serialize, serde::Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct RemoteValueInternal {
