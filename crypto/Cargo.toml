@@ -103,6 +103,7 @@ async-trait = "0.1"
 wire-e2e-identity = { version = "0.9", features = ["identity-builder"] }
 fluvio-wasm-timer = "0.2"
 time = { version = "0.3", features = ["wasm-bindgen"] }
+stacker = "0.1.15"
 
 [dev-dependencies.core-crypto-keystore]
 version = "^1.0.0-rc.60"
