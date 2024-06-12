@@ -333,7 +333,7 @@ pub mod tests {
     async fn should_not_fail_but_degrade_when_basic_joins(case: TestCase) {
         if case.is_x509() {
             // TODO: investigate why the stack grows so much here. Tracking issue: WPB-9543
-            stacker::maybe_grow(32 * 1024, 1024 * 1024, || async {  
+            stacker::maybe_grow(32 * 1024, 1024 * 1024, || async {
                 let mut x509_test_chain = X509TestChain::init_empty(case.signature_scheme());
 
                 let (alice_identifier, _) = x509_test_chain.issue_simple_certificate_bundle("alice", None);
