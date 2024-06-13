@@ -109,7 +109,7 @@ impl Client {
 }
 
 #[cfg(test)]
-pub mod tests {
+mod tests {
     use crate::test_utils::*;
     use openmls::prelude::SignaturePublicKey;
     use rand::Rng;
@@ -117,12 +117,12 @@ pub mod tests {
 
     wasm_bindgen_test_configure!(run_in_browser);
 
-    pub mod find {
+    mod find {
         use super::*;
 
         #[apply(all_cred_cipher)]
         #[wasm_bindgen_test]
-        pub async fn should_find_most_recent(case: TestCase) {
+        async fn should_find_most_recent(case: TestCase) {
             run_test_with_client_ids(case.clone(), ["alice"], move |[mut central]| {
                 Box::pin(async move {
                     let old = central
@@ -169,7 +169,7 @@ pub mod tests {
 
         #[apply(all_cred_cipher)]
         #[wasm_bindgen_test]
-        pub async fn should_find_by_public_key(case: TestCase) {
+        async fn should_find_by_public_key(case: TestCase) {
             run_test_with_client_ids(case.clone(), ["alice"], move |[mut central]| {
                 Box::pin(async move {
                     const N: usize = 50;
@@ -206,12 +206,12 @@ pub mod tests {
         }
     }
 
-    pub mod push {
+    mod push {
         use super::*;
 
         #[apply(all_cred_cipher)]
         #[wasm_bindgen_test]
-        pub async fn should_add_credential(case: TestCase) {
+        async fn should_add_credential(case: TestCase) {
             run_test_with_client_ids(case.clone(), ["alice"], move |[mut central]| {
                 Box::pin(async move {
                     let prev_count = central
@@ -252,7 +252,7 @@ pub mod tests {
 
         #[apply(all_cred_cipher)]
         #[wasm_bindgen_test]
-        pub async fn pushing_duplicates_should_fail(case: TestCase) {
+        async fn pushing_duplicates_should_fail(case: TestCase) {
             run_test_with_client_ids(case.clone(), ["alice"], move |[mut central]| {
                 Box::pin(async move {
                     let cb = central

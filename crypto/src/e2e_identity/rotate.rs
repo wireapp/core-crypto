@@ -298,7 +298,8 @@ impl MlsRotateBundle {
 }
 
 #[cfg(test)]
-pub mod tests {
+// This is pub(crate) because failsafe_ctx() is used in other modules
+pub(crate) mod tests {
     use std::collections::HashSet;
 
     use openmls::prelude::SignaturePublicKey;
@@ -318,14 +319,14 @@ pub mod tests {
 
     wasm_bindgen_test_configure!(run_in_browser);
 
-    pub mod all {
+    pub(crate) mod all {
         use openmls_traits::types::SignatureScheme;
 
         use crate::test_utils::central::TEAM;
 
         use super::*;
 
-        pub async fn failsafe_ctx(
+        pub(crate) async fn failsafe_ctx(
             ctxs: &mut [&mut ClientContext],
             sc: SignatureScheme,
         ) -> std::sync::Arc<Option<X509TestChain>> {
@@ -357,7 +358,7 @@ pub mod tests {
 
         #[apply(all_cred_cipher)]
         #[wasm_bindgen_test]
-        pub async fn enrollment_should_rotate_all(case: TestCase) {
+        async fn enrollment_should_rotate_all(case: TestCase) {
             run_test_with_client_ids(
                 case.clone(),
                 ["alice", "bob", "charlie"],
@@ -590,7 +591,7 @@ pub mod tests {
 
         #[apply(all_cred_cipher)]
         #[wasm_bindgen_test]
-        pub async fn should_restore_credentials_in_order(case: TestCase) {
+        async fn should_restore_credentials_in_order(case: TestCase) {
             run_test_with_client_ids(case.clone(), ["alice"], move |[mut alice_central]| {
                 Box::pin(async move {
                     let x509_test_chain_arc = failsafe_ctx(&mut [&mut alice_central], case.signature_scheme()).await;
@@ -756,7 +757,7 @@ pub mod tests {
 
         #[apply(all_cred_cipher)]
         #[wasm_bindgen_test]
-        pub async fn rotate_should_roundtrip(case: TestCase) {
+        async fn rotate_should_roundtrip(case: TestCase) {
             run_test_with_client_ids(
                 case.clone(),
                 ["alice", "bob"],
@@ -915,7 +916,7 @@ pub mod tests {
         }
     }
 
-    pub mod one {
+    mod one {
         use super::*;
 
         #[apply(all_cred_cipher)]

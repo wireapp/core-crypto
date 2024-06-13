@@ -3,7 +3,7 @@
 //! Feel free to remove this when this is no longer a problem !!!
 
 #[cfg(test)]
-pub mod tests {
+mod tests {
     use crate::CryptoError;
     use openmls::prelude::KeyPackage;
     use openmls_traits::OpenMlsCryptoProvider;

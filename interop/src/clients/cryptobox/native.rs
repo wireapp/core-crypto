@@ -17,7 +17,7 @@
 use crate::clients::{EmulatedClient, EmulatedClientProtocol, EmulatedClientType, EmulatedProteusClient};
 use color_eyre::eyre::{eyre, Result};
 
-pub struct CryptoboxNativeClient {
+pub(crate) struct CryptoboxNativeClient {
     client_id: Vec<u8>,
     last_prekey_id: u16,
     cbox: Option<cryptobox::CBox<cryptobox::store::file::FileStore>>,
@@ -25,7 +25,7 @@ pub struct CryptoboxNativeClient {
 }
 
 impl CryptoboxNativeClient {
-    pub fn new() -> Self {
+    pub(crate) fn new() -> Self {
         let client_id = uuid::Uuid::new_v4().into_bytes().to_vec();
         Self {
             client_id,

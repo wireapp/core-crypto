@@ -148,7 +148,7 @@ impl MlsCentral {
 }
 
 #[cfg(test)]
-pub mod tests {
+mod tests {
     use wasm_bindgen_test::*;
 
     use crate::{prelude::MlsCommitBundle, test_utils::*};

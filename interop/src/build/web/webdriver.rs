@@ -18,7 +18,7 @@ use crate::util::RunningProcess;
 use crate::TEST_SERVER_URI;
 use color_eyre::eyre::Result;
 
-pub async fn setup_webdriver(force: bool) -> Result<()> {
+pub(crate) async fn setup_webdriver(force: bool) -> Result<()> {
     let mut spinner = RunningProcess::new("Setting up WebDriver & co...", false);
 
     let wd_dir = dirs::home_dir().unwrap().join(".webdrivers");
@@ -41,7 +41,7 @@ pub async fn setup_webdriver(force: bool) -> Result<()> {
     Ok(())
 }
 
-pub async fn start_webdriver_chrome(addr: &std::net::SocketAddr) -> Result<tokio::process::Child> {
+pub(crate) async fn start_webdriver_chrome(addr: &std::net::SocketAddr) -> Result<tokio::process::Child> {
     let wd_dir = dirs::home_dir().unwrap().join(".webdrivers");
 
     Ok(tokio::process::Command::new(wd_dir.join("chromedriver"))
@@ -51,7 +51,7 @@ pub async fn start_webdriver_chrome(addr: &std::net::SocketAddr) -> Result<tokio
         .spawn()?)
 }
 
-pub async fn setup_browser(addr: &std::net::SocketAddr, folder: &str) -> Result<fantoccini::Client> {
+pub(crate) async fn setup_browser(addr: &std::net::SocketAddr, folder: &str) -> Result<fantoccini::Client> {
     // let spinner = RunningProcess::new("Starting Fantoccini remote browser...", false);
     let mut caps_json = serde_json::json!({
         "goog:chromeOptions": {

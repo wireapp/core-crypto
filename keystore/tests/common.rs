@@ -16,12 +16,12 @@
 
 #![allow(dead_code, unused_macros, unused_imports)]
 
-pub use core_crypto_keystore::Connection as CryptoKeystore;
+pub(crate) use core_crypto_keystore::Connection as CryptoKeystore;
 
-pub use rstest::*;
-pub use rstest_reuse::{self, *};
+pub(crate) use rstest::*;
+pub(crate) use rstest_reuse::{self, *};
 
-pub const TEST_ENCRYPTION_KEY: &str = "test1234";
+pub(crate) const TEST_ENCRYPTION_KEY: &str = "test1234";
 
 #[fixture]
 pub fn store_name() -> String {
@@ -61,6 +61,6 @@ pub async fn all_storage_types(
 }
 
 #[inline(always)]
-pub async fn teardown(store: core_crypto_keystore::Connection) {
+pub(crate) async fn teardown(store: core_crypto_keystore::Connection) {
     store.wipe().await.unwrap();
 }

@@ -19,7 +19,7 @@ pub use rstest_reuse::{self, *};
 
 mod common;
 
-pub mod tests {
+mod tests {
     use crate::common::*;
     use openmls::prelude::TlsDeserializeTrait;
     use openmls::{credentials::Credential, prelude::Ciphersuite};

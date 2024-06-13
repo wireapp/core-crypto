@@ -45,23 +45,23 @@ use crate::{
 };
 
 mod buffer_messages;
-pub mod commit;
+pub(crate) mod commit;
 mod commit_delay;
-pub mod config;
+pub(crate) mod config;
 #[cfg(test)]
 mod db_count;
 pub mod decrypt;
 mod duplicate;
 #[cfg(test)]
 mod durability;
-pub mod encrypt;
-pub mod export;
+pub(crate) mod encrypt;
+pub(crate) mod export;
 pub(crate) mod external_sender;
 pub(crate) mod group_info;
 mod leaf_node_validation;
-pub mod merge;
+pub(crate) mod merge;
 mod orphan_welcome;
-pub mod proposal;
+pub(crate) mod proposal;
 mod renew;
 mod self_commit;
 pub(crate) mod welcome;
@@ -312,7 +312,7 @@ impl MlsCentral {
 }
 
 #[cfg(test)]
-pub mod tests {
+mod tests {
     use crate::e2e_identity::rotate::tests::all::failsafe_ctx;
     use wasm_bindgen_test::*;
 

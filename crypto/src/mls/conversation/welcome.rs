@@ -139,7 +139,7 @@ impl MlsConversation {
 }
 
 #[cfg(test)]
-pub mod tests {
+mod tests {
     use wasm_bindgen_test::*;
 
     use crate::{prelude::MlsConversationCreationMessage, test_utils::*};
@@ -150,7 +150,7 @@ pub mod tests {
 
     #[apply(all_cred_cipher)]
     #[wasm_bindgen_test]
-    pub async fn joining_from_welcome_should_prune_local_key_material(case: TestCase) {
+    async fn joining_from_welcome_should_prune_local_key_material(case: TestCase) {
         run_test_with_client_ids(
             case.clone(),
             ["alice", "bob"],
@@ -195,7 +195,7 @@ pub mod tests {
 
     #[apply(all_cred_cipher)]
     #[wasm_bindgen_test]
-    pub async fn process_welcome_should_fail_when_already_exists(case: TestCase) {
+    async fn process_welcome_should_fail_when_already_exists(case: TestCase) {
         run_test_with_client_ids(
             case.clone(),
             ["alice", "bob"],

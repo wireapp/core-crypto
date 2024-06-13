@@ -24,7 +24,7 @@ const ITER_ROUNDS: usize = 10000;
 const RAND_ARR_LEN: usize = 128;
 
 #[cfg(test)]
-pub mod tests {
+mod tests {
     use crate::{fixtures::*, ITER_ROUNDS, RAND_ARR_LEN};
     use getrandom::getrandom;
     use mls_crypto_provider::{EntropySeed, MlsCryptoProvider};

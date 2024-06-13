@@ -591,7 +591,8 @@ impl E2eiEnrollment {
 }
 
 #[cfg(test)]
-pub mod tests {
+// This is pub(crate), to make constants below usable
+pub(crate) mod tests {
     use itertools::Itertools;
     use mls_crypto_provider::PkiKeypair;
 
@@ -611,15 +612,15 @@ pub mod tests {
 
     wasm_bindgen_test_configure!(run_in_browser);
 
-    pub const E2EI_DISPLAY_NAME: &str = "Alice Smith";
-    pub const E2EI_HANDLE: &str = "alice_wire";
-    pub const E2EI_CLIENT_ID: &str = "bd4c7053-1c5a-4020-9559-cd7bf7961954:4959bc6ab12f2846@world.com";
-    pub const E2EI_CLIENT_ID_URI: &str = "vUxwUxxaQCCVWc1795YZVA!4959bc6ab12f2846@world.com";
-    pub const E2EI_EXPIRY: u32 = 90 * 24 * 3600;
+    pub(crate) const E2EI_DISPLAY_NAME: &str = "Alice Smith";
+    pub(crate) const E2EI_HANDLE: &str = "alice_wire";
+    pub(crate) const E2EI_CLIENT_ID: &str = "bd4c7053-1c5a-4020-9559-cd7bf7961954:4959bc6ab12f2846@world.com";
+    pub(crate) const E2EI_CLIENT_ID_URI: &str = "vUxwUxxaQCCVWc1795YZVA!4959bc6ab12f2846@world.com";
+    pub(crate) const E2EI_EXPIRY: u32 = 90 * 24 * 3600;
 
     #[apply(all_cred_cipher)]
     #[wasm_bindgen_test]
-    pub async fn e2e_identity_should_work(case: TestCase) {
+    async fn e2e_identity_should_work(case: TestCase) {
         run_test_wo_clients(case.clone(), move |mut cc| {
             Box::pin(async move {
                 fn init(wrapper: E2eiInitWrapper) -> InitFnReturn<'_> {
@@ -677,21 +678,21 @@ pub mod tests {
         .await
     }
 
-    pub type RestoreFnReturn<'a> = std::pin::Pin<Box<dyn std::future::Future<Output = E2eiEnrollment> + 'a>>;
+    pub(crate) type RestoreFnReturn<'a> = std::pin::Pin<Box<dyn std::future::Future<Output = E2eiEnrollment> + 'a>>;
 
-    pub fn noop_restore(e: E2eiEnrollment, _cc: &MlsCentral) -> RestoreFnReturn<'_> {
+    pub(crate) fn noop_restore(e: E2eiEnrollment, _cc: &MlsCentral) -> RestoreFnReturn<'_> {
         Box::pin(async move { e })
     }
 
-    pub type InitFnReturn<'a> = std::pin::Pin<Box<dyn std::future::Future<Output = CryptoResult<E2eiEnrollment>> + 'a>>;
+    pub(crate) type InitFnReturn<'a> = std::pin::Pin<Box<dyn std::future::Future<Output = CryptoResult<E2eiEnrollment>> + 'a>>;
 
     /// Helps the compiler with its lifetime inference rules while passing async closures
-    pub struct E2eiInitWrapper<'a> {
-        pub cc: &'a MlsCentral,
-        pub case: &'a TestCase,
+    pub(crate) struct E2eiInitWrapper<'a> {
+        pub(crate) cc: &'a MlsCentral,
+        pub(crate) case: &'a TestCase,
     }
 
-    pub async fn e2ei_enrollment<'a>(
+    pub(crate) async fn e2ei_enrollment<'a>(
         ctx: &'a mut ClientContext,
         case: &TestCase,
         x509_test_chain: &X509TestChain,

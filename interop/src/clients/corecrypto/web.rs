@@ -24,7 +24,7 @@ use std::net::SocketAddr;
 use tls_codec::Deserialize;
 
 #[derive(Debug)]
-pub struct CoreCryptoWebClient {
+pub(crate) struct CoreCryptoWebClient {
     browser: fantoccini::Client,
     client_id: Vec<u8>,
     #[cfg(feature = "proteus")]
@@ -32,7 +32,7 @@ pub struct CoreCryptoWebClient {
 }
 
 impl CoreCryptoWebClient {
-    pub async fn new(driver_addr: &SocketAddr) -> Result<Self> {
+    pub(crate) async fn new(driver_addr: &SocketAddr) -> Result<Self> {
         let client_id = uuid::Uuid::new_v4();
         let client_id_str = client_id.as_hyphenated().to_string();
         let ciphersuite = CIPHERSUITE_IN_USE as u16;
@@ -67,7 +67,7 @@ callback();"#,
     }
 
     #[allow(dead_code)]
-    pub async fn new_deferred(driver_addr: &SocketAddr) -> Result<Self> {
+    pub(crate) async fn new_deferred(driver_addr: &SocketAddr) -> Result<Self> {
         let client_id = uuid::Uuid::new_v4();
         let client_id_str = client_id.as_hyphenated().to_string();
         let client_config = serde_json::json!({

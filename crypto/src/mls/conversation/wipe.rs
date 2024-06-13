@@ -44,7 +44,7 @@ impl MlsConversation {
 }
 
 #[cfg(test)]
-pub mod tests {
+mod tests {
     use wasm_bindgen_test::*;
 
     use crate::{prelude::CryptoError, test_utils::*};
@@ -53,7 +53,7 @@ pub mod tests {
 
     #[apply(all_cred_cipher)]
     #[wasm_bindgen_test]
-    pub async fn can_wipe_group(case: TestCase) {
+    async fn can_wipe_group(case: TestCase) {
         run_test_with_central(case.clone(), move |[mut central]| {
             Box::pin(async move {
                 let id = conversation_id();
@@ -78,7 +78,7 @@ pub mod tests {
 
     #[apply(all_cred_cipher)]
     #[wasm_bindgen_test]
-    pub async fn cannot_wipe_group_non_existent(case: TestCase) {
+    async fn cannot_wipe_group_non_existent(case: TestCase) {
         run_test_with_central(case.clone(), move |[mut central]| {
             Box::pin(async move {
                 let id = conversation_id();
@@ -92,7 +92,7 @@ pub mod tests {
     // should delete anything related to this conversation
     #[apply(all_cred_cipher)]
     #[wasm_bindgen_test]
-    pub async fn should_cascade_deletion(case: TestCase) {
+    async fn should_cascade_deletion(case: TestCase) {
         run_test_with_client_ids(case.clone(), ["alice"], move |[mut cc]| {
             Box::pin(async move {
                 let id = conversation_id();

@@ -85,7 +85,7 @@ impl MlsCentral {
 }
 
 #[cfg(test)]
-pub mod tests {
+mod tests {
 
     use crate::{
         prelude::{CryptoError, MlsError},

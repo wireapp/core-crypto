@@ -322,7 +322,7 @@ impl MlsCentral {
 }
 
 #[cfg(test)]
-pub mod tests {
+mod tests {
     use crate::prelude::E2eIdentityError;
     use wasm_bindgen_test::*;
     use x509_cert::der::pem::LineEnding;
@@ -336,7 +336,7 @@ pub mod tests {
 
     #[apply(all_cred_cipher)]
     #[wasm_bindgen_test]
-    pub async fn register_acme_ca_should_fail_when_already_set(case: TestCase) {
+    async fn register_acme_ca_should_fail_when_already_set(case: TestCase) {
         if case.is_x509() {
             run_test_with_client_ids(case.clone(), ["alice"], move |[alice_central]| {
                 Box::pin(async move {
@@ -363,7 +363,7 @@ pub mod tests {
 
     #[apply(all_cred_cipher)]
     #[wasm_bindgen_test]
-    pub async fn x509_restore_should_not_happen_if_basic(case: TestCase) {
+    async fn x509_restore_should_not_happen_if_basic(case: TestCase) {
         if !case.is_x509() {
             run_test_with_client_ids(case.clone(), ["alice"], move |[alice_ctx]| {
                 Box::pin(async move {

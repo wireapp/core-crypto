@@ -310,7 +310,7 @@ impl MlsConversation {
 }
 
 #[cfg(test)]
-pub mod tests {
+mod tests {
     use openmls::prelude::*;
     use wasm_bindgen_test::*;
 
@@ -323,7 +323,7 @@ pub mod tests {
 
     #[apply(all_cred_cipher)]
     #[wasm_bindgen_test]
-    pub async fn join_by_external_commit_should_succeed(case: TestCase) {
+    async fn join_by_external_commit_should_succeed(case: TestCase) {
         run_test_with_client_ids(
             case.clone(),
             ["alice", "bob"],
@@ -430,7 +430,7 @@ pub mod tests {
 
     #[apply(all_cred_cipher)]
     #[wasm_bindgen_test]
-    pub async fn join_by_external_commit_should_be_retriable(case: TestCase) {
+    async fn join_by_external_commit_should_be_retriable(case: TestCase) {
         run_test_with_client_ids(
             case.clone(),
             ["alice", "bob"],
@@ -521,7 +521,7 @@ pub mod tests {
 
     #[apply(all_cred_cipher)]
     #[wasm_bindgen_test]
-    pub async fn should_fail_when_bad_epoch(case: TestCase) {
+    async fn should_fail_when_bad_epoch(case: TestCase) {
         run_test_with_client_ids(
             case.clone(),
             ["alice", "bob"],
@@ -564,7 +564,7 @@ pub mod tests {
 
     #[apply(all_cred_cipher)]
     #[wasm_bindgen_test]
-    pub async fn existing_clients_can_join(case: TestCase) {
+    async fn existing_clients_can_join(case: TestCase) {
         run_test_with_client_ids(
             case.clone(),
             ["alice", "bob"],
@@ -601,7 +601,7 @@ pub mod tests {
 
     #[apply(all_cred_cipher)]
     #[wasm_bindgen_test]
-    pub async fn should_fail_when_no_pending_external_commit(case: TestCase) {
+    async fn should_fail_when_no_pending_external_commit(case: TestCase) {
         run_test_with_central(case.clone(), move |[mut central]| {
             Box::pin(async move {
                 let id = conversation_id();
@@ -621,7 +621,7 @@ pub mod tests {
 
     #[apply(all_cred_cipher)]
     #[wasm_bindgen_test]
-    pub async fn should_return_valid_group_info(case: TestCase) {
+    async fn should_return_valid_group_info(case: TestCase) {
         run_test_with_client_ids(
             case.clone(),
             ["alice", "bob", "charlie"],
@@ -761,7 +761,7 @@ pub mod tests {
 
     #[apply(all_cred_cipher)]
     #[wasm_bindgen_test]
-    pub async fn should_fail_when_sender_user_not_in_group(case: TestCase) {
+    async fn should_fail_when_sender_user_not_in_group(case: TestCase) {
         run_test_with_client_ids(
             case.clone(),
             ["alice", "bob"],
@@ -807,7 +807,7 @@ pub mod tests {
 
     #[apply(all_cred_cipher)]
     #[wasm_bindgen_test]
-    pub async fn should_fail_when_sender_lacks_role(case: TestCase) {
+    async fn should_fail_when_sender_lacks_role(case: TestCase) {
         run_test_with_client_ids(
             case.clone(),
             ["alice", "bob"],
@@ -853,7 +853,7 @@ pub mod tests {
 
     #[apply(all_cred_cipher)]
     #[wasm_bindgen_test]
-    pub async fn clear_pending_group_should_succeed(case: TestCase) {
+    async fn clear_pending_group_should_succeed(case: TestCase) {
         run_test_with_client_ids(
             case.clone(),
             ["alice", "bob"],
@@ -907,7 +907,7 @@ pub mod tests {
 
     #[apply(all_cred_cipher)]
     #[wasm_bindgen_test]
-    pub async fn new_with_inflight_join_should_fail_when_already_exists(case: TestCase) {
+    async fn new_with_inflight_join_should_fail_when_already_exists(case: TestCase) {
         run_test_with_client_ids(
             case.clone(),
             ["alice", "bob"],
@@ -942,7 +942,7 @@ pub mod tests {
 
     #[apply(all_cred_cipher)]
     #[wasm_bindgen_test]
-    pub async fn new_with_inflight_welcome_should_fail_when_already_exists(case: TestCase) {
+    async fn new_with_inflight_welcome_should_fail_when_already_exists(case: TestCase) {
         run_test_with_client_ids(
             case.clone(),
             ["alice", "bob"],
@@ -989,7 +989,7 @@ pub mod tests {
 
     #[apply(all_cred_cipher)]
     #[wasm_bindgen_test]
-    pub async fn should_fail_when_invalid_group_info(case: TestCase) {
+    async fn should_fail_when_invalid_group_info(case: TestCase) {
         run_test_with_client_ids(
             case.clone(),
             ["alice", "bob", "guest"],
@@ -1047,7 +1047,7 @@ pub mod tests {
 
     #[apply(all_cred_cipher)]
     #[wasm_bindgen_test]
-    pub async fn group_should_have_right_config(case: TestCase) {
+    async fn group_should_have_right_config(case: TestCase) {
         run_test_with_client_ids(
             case.clone(),
             ["alice", "bob"],

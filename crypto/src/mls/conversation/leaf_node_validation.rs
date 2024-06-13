@@ -1,7 +1,7 @@
 //! cf <https://www.rfc-editor.org/rfc/rfc9420.html#name-leaf-node-validation>
 
 #[cfg(test)]
-pub mod tests {
+mod tests {
     use openmls::prelude::Lifetime;
     use wasm_bindgen_test::*;
 
@@ -18,7 +18,7 @@ pub mod tests {
         /// When a LeafNode is downloaded in a KeyPackage, before it is used to add the client to the group
         #[apply(all_cred_cipher)]
         #[wasm_bindgen_test]
-        pub async fn should_validate_leaf_node_when_adding(case: TestCase) {
+        async fn should_validate_leaf_node_when_adding(case: TestCase) {
             run_test_with_client_ids(
                 case.clone(),
                 ["alice", "bob"],
@@ -96,7 +96,7 @@ pub mod tests {
         /// When a LeafNode is received by a group member in an Add, Update, or Commit message
         #[apply(all_cred_cipher)]
         #[wasm_bindgen_test]
-        pub async fn should_validate_leaf_node_when_receiving_expired_add_proposal(case: TestCase) {
+        async fn should_validate_leaf_node_when_receiving_expired_add_proposal(case: TestCase) {
             run_test_with_client_ids(
                 case.clone(),
                 ["alice", "bob", "charlie"],
@@ -158,7 +158,7 @@ pub mod tests {
         /// When a LeafNode is received by a group member in an Add, Update, or Commit message
         #[apply(all_cred_cipher)]
         #[wasm_bindgen_test]
-        pub async fn should_validate_leaf_node_when_receiving_add_commit(case: TestCase) {
+        async fn should_validate_leaf_node_when_receiving_add_commit(case: TestCase) {
             run_test_with_client_ids(
                 case.clone(),
                 ["alice", "bob", "charlie"],
@@ -219,7 +219,7 @@ pub mod tests {
         /// When a client validates a ratchet tree, e.g., when joining a group or after processing a Commit
         #[apply(all_cred_cipher)]
         #[wasm_bindgen_test]
-        pub async fn should_validate_leaf_node_when_receiving_welcome(case: TestCase) {
+        async fn should_validate_leaf_node_when_receiving_welcome(case: TestCase) {
             run_test_with_client_ids(
                 case.clone(),
                 ["alice", "bob"],

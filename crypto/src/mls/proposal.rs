@@ -141,14 +141,14 @@ impl MlsCentral {
 }
 
 #[cfg(test)]
-pub mod tests {
+mod tests {
     use wasm_bindgen_test::*;
 
     use crate::{prelude::MlsCommitBundle, prelude::*, test_utils::*};
 
     wasm_bindgen_test_configure!(run_in_browser);
 
-    pub mod add {
+    mod add {
         use super::*;
 
         #[apply(all_cred_cipher)]
@@ -202,7 +202,7 @@ pub mod tests {
         }
     }
 
-    pub mod update {
+    mod update {
         use super::*;
         use itertools::Itertools;
 
@@ -241,7 +241,7 @@ pub mod tests {
         }
     }
 
-    pub mod remove {
+    mod remove {
         use super::*;
 
         #[apply(all_cred_cipher)]

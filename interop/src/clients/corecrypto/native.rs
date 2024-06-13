@@ -25,7 +25,7 @@ use crate::{
 };
 
 #[derive(Debug)]
-pub struct CoreCryptoNativeClient {
+pub(crate) struct CoreCryptoNativeClient {
     cc: CoreCrypto,
     client_id: Vec<u8>,
     #[cfg(feature = "proteus")]
@@ -34,7 +34,7 @@ pub struct CoreCryptoNativeClient {
 
 #[allow(dead_code)]
 impl CoreCryptoNativeClient {
-    pub async fn new() -> Result<Self> {
+    pub(crate) async fn new() -> Result<Self> {
         Self::internal_new(false).await
     }
 

@@ -17,7 +17,7 @@
 #![cfg(test)]
 
 use mls_crypto_provider::PkiKeypair;
-use openmls_traits::types::SignatureScheme;
+pub use openmls_traits::types::SignatureScheme;
 pub use rstest::*;
 pub use rstest_reuse::{self, *};
 use std::collections::HashMap;
@@ -37,7 +37,7 @@ pub mod x509;
 pub mod proteus_utils;
 
 use crate::e2e_identity::id::{QualifiedE2eiClientId, WireQualifiedClientId};
-use crate::prelude::{ClientIdentifier, MlsCredentialType, INITIAL_KEYING_MATERIAL_COUNT};
+pub use crate::prelude::{ClientIdentifier, MlsCredentialType, INITIAL_KEYING_MATERIAL_COUNT};
 pub use fixtures::{TestCase, *};
 pub use message::*;
 

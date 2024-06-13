@@ -136,7 +136,7 @@ impl MlsConversation {
 }
 
 #[cfg(test)]
-pub mod tests {
+mod tests {
     use crate::{test_utils::*, CryptoError};
     use wasm_bindgen_test::*;
 
@@ -144,7 +144,7 @@ pub mod tests {
 
     #[apply(all_cred_cipher)]
     #[wasm_bindgen_test]
-    pub async fn should_buffer_and_reapply_messages_after_commit_merged_for_sender(case: TestCase) {
+    async fn should_buffer_and_reapply_messages_after_commit_merged_for_sender(case: TestCase) {
         run_test_with_client_ids(
             case.clone(),
             ["alice", "bob", "charlie", "debbie"],
@@ -284,7 +284,7 @@ pub mod tests {
 
     #[apply(all_cred_cipher)]
     #[wasm_bindgen_test]
-    pub async fn should_buffer_and_reapply_messages_after_commit_merged_for_receivers(case: TestCase) {
+    async fn should_buffer_and_reapply_messages_after_commit_merged_for_receivers(case: TestCase) {
         if !case.is_pure_ciphertext() {
             run_test_with_client_ids(
                 case.clone(),

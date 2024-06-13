@@ -90,7 +90,7 @@ impl MlsConversation {
 }
 
 #[cfg(test)]
-pub mod tests {
+mod tests {
     use super::*;
     use crate::{prelude::MlsConversationCreationMessage, test_utils::*};
     use tls_codec::Serialize as _;
@@ -100,7 +100,7 @@ pub mod tests {
 
     #[test]
     #[wasm_bindgen_test]
-    pub fn calculate_delay_single() {
+    fn calculate_delay_single() {
         let (self_index, epoch, nb_members) = (0, 0, 1);
         let delay = MlsConversation::calculate_delay(self_index, epoch, nb_members);
         assert_eq!(delay, 0);
@@ -108,7 +108,7 @@ pub mod tests {
 
     #[test]
     #[wasm_bindgen_test]
-    pub fn calculate_delay_max() {
+    fn calculate_delay_max() {
         let (self_index, epoch, nb_members) = (u64::MAX, u64::MAX, u64::MAX);
         let delay = MlsConversation::calculate_delay(self_index, epoch, nb_members);
         assert_eq!(delay, 0);
@@ -116,7 +116,7 @@ pub mod tests {
 
     #[test]
     #[wasm_bindgen_test]
-    pub fn calculate_delay_min() {
+    fn calculate_delay_min() {
         let (self_index, epoch, nb_members) = (u64::MIN, u64::MIN, u64::MAX);
         let delay = MlsConversation::calculate_delay(self_index, epoch, nb_members);
         assert_eq!(delay, 0);
@@ -124,7 +124,7 @@ pub mod tests {
 
     #[test]
     #[wasm_bindgen_test]
-    pub fn calculate_delay_zero_members() {
+    fn calculate_delay_zero_members() {
         let (self_index, epoch, nb_members) = (0, 0, u64::MIN);
         let delay = MlsConversation::calculate_delay(self_index, epoch, nb_members);
         assert_eq!(delay, 0);
@@ -132,7 +132,7 @@ pub mod tests {
 
     #[test]
     #[wasm_bindgen_test]
-    pub fn calculate_delay_min_max() {
+    fn calculate_delay_min_max() {
         let (self_index, epoch, nb_members) = (u64::MIN, u64::MAX, u64::MAX);
         let delay = MlsConversation::calculate_delay(self_index, epoch, nb_members);
         assert_eq!(delay, 0);
@@ -140,7 +140,7 @@ pub mod tests {
 
     #[test]
     #[wasm_bindgen_test]
-    pub fn calculate_delay_n() {
+    fn calculate_delay_n() {
         let epoch = 1;
         let nb_members = 10;
 
@@ -167,7 +167,7 @@ pub mod tests {
 
     #[apply(all_cred_cipher)]
     #[wasm_bindgen_test]
-    pub async fn calculate_delay_creator_removed(case: TestCase) {
+    async fn calculate_delay_creator_removed(case: TestCase) {
         run_test_with_client_ids(
             case.clone(),
             ["alice", "bob", "charlie"],

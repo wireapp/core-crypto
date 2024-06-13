@@ -19,7 +19,7 @@ use crate::TEST_SERVER_PORT;
 use color_eyre::eyre::Result;
 use std::net::SocketAddr;
 
-pub async fn find_wasm_file(deploy_path: &std::path::Path) -> Result<std::path::PathBuf> {
+async fn find_wasm_file(deploy_path: &std::path::Path) -> Result<std::path::PathBuf> {
     let wasm_base_path = deploy_path.to_path_buf();
     let wasm_path = if wasm_base_path.exists() {
         let mut wasm_dir = tokio::fs::read_dir(wasm_base_path.clone()).await?;
@@ -43,7 +43,7 @@ pub async fn find_wasm_file(deploy_path: &std::path::Path) -> Result<std::path::
     Ok(wasm_path)
 }
 
-pub async fn build_wasm() -> Result<()> {
+pub(crate) async fn build_wasm() -> Result<()> {
     use sha2::{Digest, Sha256};
     use tokio::process::Command;
 
@@ -159,7 +159,7 @@ pub async fn build_wasm() -> Result<()> {
     Ok(())
 }
 
-pub async fn spawn_http_server() -> Result<()> {
+pub(crate) async fn spawn_http_server() -> Result<()> {
     use warp::Filter as _;
     let addr = SocketAddr::from(([0, 0, 0, 0], TEST_SERVER_PORT.parse()?));
     let warp_filter_cc = warp::path("core-crypto").and(warp::fs::dir("platforms/web".to_string()));
