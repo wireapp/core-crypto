@@ -331,7 +331,10 @@ pub mod tests {
     #[apply(all_cred_cipher)]
     #[wasm_bindgen_test]
     async fn should_not_fail_but_degrade_when_basic_joins(case: TestCase) {
-        if case.is_x509() {
+        if !case.is_x509() {
+            return;
+        }
+        Box::pin(async {
             let mut x509_test_chain = X509TestChain::init_empty(case.signature_scheme());
 
             let (alice_identifier, _) = x509_test_chain.issue_simple_certificate_bundle("alice", None);
@@ -412,7 +415,8 @@ pub mod tests {
                 alice_central.e2ei_conversation_state(&id).await.unwrap(),
                 E2eiConversationState::NotVerified
             );
-        }
+        })
+        .await;
     }
 
     #[apply(all_cred_cipher)]
