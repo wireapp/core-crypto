@@ -44,7 +44,7 @@ impl MlsConversation {
 }
 
 #[cfg(test)]
-pub mod tests {
+mod tests {
     use crate::{test_utils::*, CryptoError};
     use wasm_bindgen_test::*;
 
@@ -52,7 +52,7 @@ pub mod tests {
 
     #[apply(all_cred_cipher)]
     #[wasm_bindgen_test]
-    pub async fn decrypting_duplicate_member_commit_should_fail(case: TestCase) {
+    async fn decrypting_duplicate_member_commit_should_fail(case: TestCase) {
         // cannot work in pure ciphertext since we'd have to decrypt the message first
         if !case.is_pure_ciphertext() {
             run_test_with_client_ids(
@@ -118,7 +118,7 @@ pub mod tests {
 
     #[apply(all_cred_cipher)]
     #[wasm_bindgen_test]
-    pub async fn decrypting_duplicate_external_commit_should_fail(case: TestCase) {
+    async fn decrypting_duplicate_external_commit_should_fail(case: TestCase) {
         run_test_with_client_ids(
             case.clone(),
             ["alice", "bob"],
@@ -186,7 +186,7 @@ pub mod tests {
 
     #[apply(all_cred_cipher)]
     #[wasm_bindgen_test]
-    pub async fn decrypting_duplicate_proposal_should_fail(case: TestCase) {
+    async fn decrypting_duplicate_proposal_should_fail(case: TestCase) {
         run_test_with_client_ids(
             case.clone(),
             ["alice", "bob"],
@@ -243,7 +243,7 @@ pub mod tests {
 
     #[apply(all_cred_cipher)]
     #[wasm_bindgen_test]
-    pub async fn decrypting_duplicate_external_proposal_should_fail(case: TestCase) {
+    async fn decrypting_duplicate_external_proposal_should_fail(case: TestCase) {
         run_test_with_client_ids(
             case.clone(),
             ["alice", "bob"],
@@ -297,7 +297,7 @@ pub mod tests {
     // Ensures decrypting an application message is durable (we increment the messages generation & persist the group)
     #[apply(all_cred_cipher)]
     #[wasm_bindgen_test]
-    pub async fn decrypting_duplicate_application_message_should_fail(case: TestCase) {
+    async fn decrypting_duplicate_application_message_should_fail(case: TestCase) {
         run_test_with_client_ids(
             case.clone(),
             ["alice", "bob"],

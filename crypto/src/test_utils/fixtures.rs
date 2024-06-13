@@ -14,10 +14,10 @@
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see http://www.gnu.org/licenses/.
 
-use crate::prelude::{
+pub use crate::prelude::{
     MlsCiphersuite, MlsConversationConfiguration, MlsCredentialType, MlsCustomConfiguration, MlsWirePolicy,
 };
-use openmls_traits::types::SignatureScheme;
+pub use openmls_traits::types::SignatureScheme;
 pub use rstest::*;
 pub use rstest_reuse::{self, *};
 

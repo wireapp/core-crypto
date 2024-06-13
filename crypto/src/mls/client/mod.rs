@@ -505,7 +505,7 @@ impl Client {
 }
 
 #[cfg(test)]
-pub mod tests {
+mod tests {
     use core_crypto_keystore::entities::{EntityFindParams, MlsSignatureKeyPair};
     use wasm_bindgen_test::*;
 
@@ -519,7 +519,7 @@ pub mod tests {
 
     #[apply(all_cred_cipher)]
     #[wasm_bindgen_test]
-    pub async fn can_generate_client(case: TestCase) {
+    async fn can_generate_client(case: TestCase) {
         let backend = MlsCryptoProvider::try_new_in_memory("test").await.unwrap();
         let x509_test_chain = if case.is_x509() {
             let x509_test_chain = crate::test_utils::x509::X509TestChain::init_empty(case.signature_scheme());
@@ -540,7 +540,7 @@ pub mod tests {
 
     #[apply(all_cred_cipher)]
     #[wasm_bindgen_test]
-    pub async fn can_externally_generate_client(case: TestCase) {
+    async fn can_externally_generate_client(case: TestCase) {
         if case.is_basic() {
             run_tests(move |[tmp_dir_argument]| {
                 Box::pin(async move {

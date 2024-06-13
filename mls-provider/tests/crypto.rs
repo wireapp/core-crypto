@@ -23,7 +23,7 @@ const LEN_RANGE: std::ops::RangeInclusive<usize> = 128..=1024;
 mod fixtures;
 
 #[cfg(test)]
-pub mod tests {
+mod tests {
     use crate::fixtures::*;
     use crate::LEN_RANGE;
     use hex_literal::hex;

@@ -174,7 +174,7 @@ impl MlsConversation {
 }
 
 #[cfg(test)]
-pub mod tests {
+mod tests {
     use wasm_bindgen_test::*;
 
     use crate::prelude::MlsCredentialType;
@@ -188,7 +188,7 @@ pub mod tests {
 
     #[async_std::test]
     #[wasm_bindgen_test]
-    pub async fn should_read_device_identities() {
+    async fn should_read_device_identities() {
         let case = TestCase::default_x509();
         run_test_with_client_ids(
             case.clone(),
@@ -261,7 +261,7 @@ pub mod tests {
 
     #[async_std::test]
     #[wasm_bindgen_test]
-    pub async fn should_read_revoked_device() {
+    async fn should_read_revoked_device() {
         let case = TestCase::default_x509();
         run_test_with_client_ids_and_revocation(
             case.clone(),
@@ -367,7 +367,7 @@ pub mod tests {
 
     #[async_std::test]
     #[wasm_bindgen_test]
-    pub async fn should_not_fail_when_basic() {
+    async fn should_not_fail_when_basic() {
         let case = TestCase::default();
         run_test_with_client_ids(
             case.clone(),
@@ -423,7 +423,7 @@ pub mod tests {
 
     #[async_std::test]
     #[wasm_bindgen_test]
-    pub async fn should_read_users() {
+    async fn should_read_users() {
         let case = TestCase::default_x509();
 
         let (alice_android, alice_ios) = (

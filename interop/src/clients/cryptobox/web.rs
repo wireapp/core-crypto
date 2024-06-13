@@ -19,14 +19,14 @@ use color_eyre::eyre::Result;
 use std::net::SocketAddr;
 
 #[derive(Debug)]
-pub struct CryptoboxWebClient {
+pub(crate) struct CryptoboxWebClient {
     browser: fantoccini::Client,
     client_id: uuid::Uuid,
     prekey_last_id: u16,
 }
 
 impl CryptoboxWebClient {
-    pub async fn new(driver_addr: &SocketAddr) -> Result<Self> {
+    pub(crate) async fn new(driver_addr: &SocketAddr) -> Result<Self> {
         let client_id = uuid::Uuid::new_v4();
         let browser = crate::build::web::webdriver::setup_browser(driver_addr, "cryptobox").await?;
 

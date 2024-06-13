@@ -76,7 +76,7 @@ impl MlsCentral {
 }
 
 #[cfg(test)]
-pub mod tests {
+mod tests {
     use wasm_bindgen_test::*;
 
     use crate::test_utils::*;
@@ -85,7 +85,7 @@ pub mod tests {
 
     #[apply(all_cred_cipher)]
     #[wasm_bindgen_test]
-    pub async fn can_encrypt_app_message(case: TestCase) {
+    async fn can_encrypt_app_message(case: TestCase) {
         run_test_with_client_ids(
             case.clone(),
             ["alice", "bob"],
@@ -123,7 +123,7 @@ pub mod tests {
     // Ensures encrypting an application message is durable
     #[apply(all_cred_cipher)]
     #[wasm_bindgen_test]
-    pub async fn can_encrypt_consecutive_messages(case: TestCase) {
+    async fn can_encrypt_consecutive_messages(case: TestCase) {
         run_test_with_client_ids(
             case.clone(),
             ["alice", "bob"],

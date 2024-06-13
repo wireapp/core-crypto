@@ -16,7 +16,7 @@
 
 use spinoff::Spinner;
 
-pub struct RunningProcess {
+pub(crate) struct RunningProcess {
     spinner: Option<Spinner>,
     is_task: bool,
 }
@@ -30,7 +30,7 @@ impl std::fmt::Debug for RunningProcess {
 }
 
 impl RunningProcess {
-    pub fn new(msg: impl AsRef<str> + std::fmt::Display, is_task: bool) -> Self {
+    pub(crate) fn new(msg: impl AsRef<str> + std::fmt::Display, is_task: bool) -> Self {
         let spinner = if std::env::var("CI").is_err() {
             Some(Spinner::new(
                 spinoff::spinners::Aesthetic,
@@ -54,7 +54,7 @@ impl RunningProcess {
         Self { spinner, is_task }
     }
 
-    pub fn update(&mut self, msg: impl AsRef<str> + std::fmt::Display) {
+    pub(crate) fn update(&mut self, msg: impl AsRef<str> + std::fmt::Display) {
         if let Some(spinner) = &mut self.spinner {
             spinner.update_text(msg.as_ref().to_owned());
         } else if self.is_task {
@@ -64,7 +64,7 @@ impl RunningProcess {
         }
     }
 
-    pub fn success(self, msg: impl AsRef<str> + std::fmt::Display) {
+    pub(crate) fn success(self, msg: impl AsRef<str> + std::fmt::Display) {
         if let Some(mut spinner) = self.spinner {
             spinner.success(msg.as_ref());
         } else {

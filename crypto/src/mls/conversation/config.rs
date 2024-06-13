@@ -222,7 +222,7 @@ impl From<MlsWirePolicy> for WireFormatPolicy {
 }
 
 #[cfg(test)]
-pub mod tests {
+mod tests {
     use openmls::prelude::ProtocolVersion;
     use openmls_traits::{
         crypto::OpenMlsCrypto,

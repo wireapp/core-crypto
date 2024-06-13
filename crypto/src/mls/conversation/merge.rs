@@ -164,7 +164,7 @@ impl MlsCentral {
 }
 
 #[cfg(test)]
-pub mod tests {
+mod tests {
     use openmls::prelude::Proposal;
     use wasm_bindgen_test::*;
 
@@ -174,12 +174,12 @@ pub mod tests {
 
     wasm_bindgen_test_configure!(run_in_browser);
 
-    pub mod commit_accepted {
+    mod commit_accepted {
         use super::*;
 
         #[apply(all_cred_cipher)]
         #[wasm_bindgen_test]
-        pub async fn should_apply_pending_commit(case: TestCase) {
+        async fn should_apply_pending_commit(case: TestCase) {
             run_test_with_client_ids(
                 case.clone(),
                 ["alice", "bob"],
@@ -237,7 +237,7 @@ pub mod tests {
 
         #[apply(all_cred_cipher)]
         #[wasm_bindgen_test]
-        pub async fn should_clear_pending_commit_and_proposals(case: TestCase) {
+        async fn should_clear_pending_commit_and_proposals(case: TestCase) {
             run_test_with_client_ids(
                 case.clone(),
                 ["alice", "bob"],
@@ -269,7 +269,7 @@ pub mod tests {
 
         #[apply(all_cred_cipher)]
         #[wasm_bindgen_test]
-        pub async fn should_clean_associated_key_material(case: TestCase) {
+        async fn should_clean_associated_key_material(case: TestCase) {
             run_test_with_client_ids(case.clone(), ["alice"], move |[mut alice_central]| {
                 Box::pin(async move {
                     let id = conversation_id();
@@ -299,7 +299,7 @@ pub mod tests {
         }
     }
 
-    pub mod clear_pending_proposal {
+    mod clear_pending_proposal {
         use super::*;
 
         #[apply(all_cred_cipher)]
@@ -454,7 +454,7 @@ pub mod tests {
         }
     }
 
-    pub mod clear_pending_commit {
+    mod clear_pending_commit {
         use super::*;
 
         #[apply(all_cred_cipher)]

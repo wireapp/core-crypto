@@ -365,7 +365,7 @@ impl MlsCentral {
 }
 
 #[cfg(test)]
-pub mod tests {
+mod tests {
     use openmls::prelude::{KeyPackage, KeyPackageIn, KeyPackageRef, ProtocolVersion};
     use openmls_traits::types::VerifiableCiphersuite;
     use openmls_traits::OpenMlsCryptoProvider;
@@ -383,7 +383,7 @@ pub mod tests {
 
     #[apply(all_cred_cipher)]
     #[wasm_bindgen_test]
-    pub async fn can_assess_keypackage_expiration(case: TestCase) {
+    async fn can_assess_keypackage_expiration(case: TestCase) {
         let (cs, ct) = (case.ciphersuite(), case.credential_type);
         let backend = MlsCryptoProvider::try_new_in_memory("test").await.unwrap();
         let x509_test_chain = if case.is_x509() {
@@ -417,7 +417,7 @@ pub mod tests {
 
     #[apply(all_cred_cipher)]
     #[wasm_bindgen_test]
-    pub async fn generates_correct_number_of_kpbs(case: TestCase) {
+    async fn generates_correct_number_of_kpbs(case: TestCase) {
         run_test_with_client_ids(case.clone(), ["alice"], move |[mut cc]| {
             Box::pin(async move {
                 const N: usize = 2;
@@ -500,7 +500,7 @@ pub mod tests {
 
     #[apply(all_cred_cipher)]
     #[wasm_bindgen_test]
-    pub async fn automatically_prunes_lifetime_expired_keypackages(case: TestCase) {
+    async fn automatically_prunes_lifetime_expired_keypackages(case: TestCase) {
         const UNEXPIRED_COUNT: usize = 125;
         const EXPIRED_COUNT: usize = 200;
         let backend = MlsCryptoProvider::try_new_in_memory("test").await.unwrap();
@@ -579,7 +579,7 @@ pub mod tests {
 
     #[apply(all_cred_cipher)]
     #[wasm_bindgen_test]
-    pub async fn new_keypackage_has_correct_extensions(case: TestCase) {
+    async fn new_keypackage_has_correct_extensions(case: TestCase) {
         run_test_with_client_ids(case.clone(), ["alice"], move |[cc]| {
             Box::pin(async move {
                 let kps = cc

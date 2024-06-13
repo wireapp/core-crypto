@@ -363,7 +363,7 @@ impl MlsCommitBundle {
 }
 
 #[cfg(test)]
-pub mod tests {
+mod tests {
     use itertools::Itertools;
     use openmls::prelude::SignaturePublicKey;
     use wasm_bindgen_test::*;
@@ -374,12 +374,12 @@ pub mod tests {
 
     wasm_bindgen_test_configure!(run_in_browser);
 
-    pub mod add_members {
+    mod add_members {
         use super::*;
 
         #[apply(all_cred_cipher)]
         #[wasm_bindgen_test]
-        pub async fn can_add_members_to_conversation(case: TestCase) {
+        async fn can_add_members_to_conversation(case: TestCase) {
             run_test_with_client_ids(
                 case.clone(),
                 ["alice", "bob"],
@@ -463,7 +463,7 @@ pub mod tests {
 
         #[apply(all_cred_cipher)]
         #[wasm_bindgen_test]
-        pub async fn should_return_valid_welcome(case: TestCase) {
+        async fn should_return_valid_welcome(case: TestCase) {
             run_test_with_client_ids(
                 case.clone(),
                 ["alice", "bob"],
@@ -503,7 +503,7 @@ pub mod tests {
 
         #[apply(all_cred_cipher)]
         #[wasm_bindgen_test]
-        pub async fn should_return_valid_group_info(case: TestCase) {
+        async fn should_return_valid_group_info(case: TestCase) {
             run_test_with_client_ids(
                 case.clone(),
                 ["alice", "bob", "guest"],
@@ -537,12 +537,12 @@ pub mod tests {
         }
     }
 
-    pub mod remove_members {
+    mod remove_members {
         use super::*;
 
         #[apply(all_cred_cipher)]
         #[wasm_bindgen_test]
-        pub async fn alice_can_remove_bob_from_conversation(case: TestCase) {
+        async fn alice_can_remove_bob_from_conversation(case: TestCase) {
             run_test_with_client_ids(
                 case.clone(),
                 ["alice", "bob"],
@@ -613,7 +613,7 @@ pub mod tests {
 
         #[apply(all_cred_cipher)]
         #[wasm_bindgen_test]
-        pub async fn should_return_valid_welcome(case: TestCase) {
+        async fn should_return_valid_welcome(case: TestCase) {
             run_test_with_client_ids(
                 case.clone(),
                 ["alice", "bob", "guest"],
@@ -675,7 +675,7 @@ pub mod tests {
 
         #[apply(all_cred_cipher)]
         #[wasm_bindgen_test]
-        pub async fn should_return_valid_group_info(case: TestCase) {
+        async fn should_return_valid_group_info(case: TestCase) {
             run_test_with_client_ids(
                 case.clone(),
                 ["alice", "bob", "guest"],
@@ -721,12 +721,12 @@ pub mod tests {
         }
     }
 
-    pub mod update_keying_material {
+    mod update_keying_material {
         use super::*;
 
         #[apply(all_cred_cipher)]
         #[wasm_bindgen_test]
-        pub async fn should_succeed(case: TestCase) {
+        async fn should_succeed(case: TestCase) {
             run_test_with_client_ids(
                 case.clone(),
                 ["alice", "bob"],
@@ -829,7 +829,7 @@ pub mod tests {
 
         #[apply(all_cred_cipher)]
         #[wasm_bindgen_test]
-        pub async fn should_create_welcome_for_pending_add_proposals(case: TestCase) {
+        async fn should_create_welcome_for_pending_add_proposals(case: TestCase) {
             run_test_with_client_ids(
                 case.clone(),
                 ["alice", "bob", "charlie"],
@@ -993,7 +993,7 @@ pub mod tests {
 
         #[apply(all_cred_cipher)]
         #[wasm_bindgen_test]
-        pub async fn should_return_valid_welcome(case: TestCase) {
+        async fn should_return_valid_welcome(case: TestCase) {
             run_test_with_client_ids(
                 case.clone(),
                 ["alice", "bob", "guest"],
@@ -1051,7 +1051,7 @@ pub mod tests {
 
         #[apply(all_cred_cipher)]
         #[wasm_bindgen_test]
-        pub async fn should_return_valid_group_info(case: TestCase) {
+        async fn should_return_valid_group_info(case: TestCase) {
             run_test_with_client_ids(
                 case.clone(),
                 ["alice", "bob", "guest"],
@@ -1085,12 +1085,12 @@ pub mod tests {
         }
     }
 
-    pub mod commit_pending_proposals {
+    mod commit_pending_proposals {
         use super::*;
 
         #[apply(all_cred_cipher)]
         #[wasm_bindgen_test]
-        pub async fn should_create_a_commit_out_of_self_pending_proposals(case: TestCase) {
+        async fn should_create_a_commit_out_of_self_pending_proposals(case: TestCase) {
             run_test_with_client_ids(
                 case.clone(),
                 ["alice", "bob"],
@@ -1152,7 +1152,7 @@ pub mod tests {
 
         #[apply(all_cred_cipher)]
         #[wasm_bindgen_test]
-        pub async fn should_return_none_when_there_are_no_pending_proposals(case: TestCase) {
+        async fn should_return_none_when_there_are_no_pending_proposals(case: TestCase) {
             run_test_with_client_ids(case.clone(), ["alice"], move |[mut alice_central]| {
                 Box::pin(async move {
                     let id = conversation_id();
@@ -1175,7 +1175,7 @@ pub mod tests {
 
         #[apply(all_cred_cipher)]
         #[wasm_bindgen_test]
-        pub async fn should_create_a_commit_out_of_pending_proposals_by_ref(case: TestCase) {
+        async fn should_create_a_commit_out_of_pending_proposals_by_ref(case: TestCase) {
             run_test_with_client_ids(
                 case.clone(),
                 ["alice", "bob", "charlie"],
@@ -1257,7 +1257,7 @@ pub mod tests {
 
         #[apply(all_cred_cipher)]
         #[wasm_bindgen_test]
-        pub async fn should_return_valid_welcome(case: TestCase) {
+        async fn should_return_valid_welcome(case: TestCase) {
             run_test_with_client_ids(
                 case.clone(),
                 ["alice", "bob"],
@@ -1300,7 +1300,7 @@ pub mod tests {
 
         #[apply(all_cred_cipher)]
         #[wasm_bindgen_test]
-        pub async fn should_return_valid_group_info(case: TestCase) {
+        async fn should_return_valid_group_info(case: TestCase) {
             run_test_with_client_ids(
                 case.clone(),
                 ["alice", "bob", "guest"],
@@ -1338,14 +1338,14 @@ pub mod tests {
         }
     }
 
-    pub mod delivery_semantics {
+    mod delivery_semantics {
         use crate::prelude::MlsWirePolicy;
 
         use super::*;
 
         #[apply(all_cred_cipher)]
         #[wasm_bindgen_test]
-        pub async fn should_prevent_out_of_order_commits(case: TestCase) {
+        async fn should_prevent_out_of_order_commits(case: TestCase) {
             run_test_with_client_ids(
                 case.clone(),
                 ["alice", "bob"],
@@ -1399,7 +1399,7 @@ pub mod tests {
 
         #[apply(all_cred_cipher)]
         #[wasm_bindgen_test]
-        pub async fn should_allow_dropped_commits(case: TestCase) {
+        async fn should_allow_dropped_commits(case: TestCase) {
             run_test_with_client_ids(
                 case.clone(),
                 ["alice", "bob"],
@@ -1444,7 +1444,7 @@ pub mod tests {
 
         #[apply(all_cred_cipher)]
         #[wasm_bindgen_test]
-        pub async fn should_prevent_replayed_encrypted_handshake_messages(case: TestCase) {
+        async fn should_prevent_replayed_encrypted_handshake_messages(case: TestCase) {
             if case.custom_cfg().wire_policy == MlsWirePolicy::Ciphertext {
                 run_test_with_client_ids(
                     case.clone(),

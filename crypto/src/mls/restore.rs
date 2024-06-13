@@ -50,7 +50,7 @@ impl MlsCentral {
 }
 
 #[cfg(test)]
-pub mod tests {
+mod tests {
     use wasm_bindgen_test::*;
 
     use crate::{
@@ -66,7 +66,7 @@ pub mod tests {
 
     #[apply(all_cred_cipher)]
     #[wasm_bindgen_test]
-    pub async fn can_persist_group_state(case: TestCase) {
+    async fn can_persist_group_state(case: TestCase) {
         run_tests(move |[store_path]| {
             Box::pin(async move {
                 let x509_test_chain = X509TestChain::init_empty(case.signature_scheme());
@@ -121,7 +121,7 @@ pub mod tests {
 
     #[apply(all_cred_cipher)]
     #[wasm_bindgen_test]
-    pub async fn can_restore_group_from_db(case: TestCase) {
+    async fn can_restore_group_from_db(case: TestCase) {
         run_tests(move |[alice_path, bob_path]| {
             Box::pin(async move {
                 let id = conversation_id();

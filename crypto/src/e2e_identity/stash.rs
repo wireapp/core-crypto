@@ -61,7 +61,7 @@ impl MlsCentral {
 }
 
 #[cfg(test)]
-pub mod tests {
+mod tests {
     use wasm_bindgen_test::*;
 
     use super::*;
@@ -77,7 +77,7 @@ pub mod tests {
 
     #[apply(all_cred_cipher)]
     #[wasm_bindgen_test]
-    pub async fn stash_and_pop_should_not_abort_enrollment(case: TestCase) {
+    async fn stash_and_pop_should_not_abort_enrollment(case: TestCase) {
         run_test_wo_clients(case.clone(), move |mut cc| {
             Box::pin(async move {
                 fn init(wrapper: E2eiInitWrapper) -> InitFnReturn<'_> {
@@ -128,7 +128,7 @@ pub mod tests {
     // this ensures the nominal test does its job
     #[apply(all_cred_cipher)]
     #[wasm_bindgen_test]
-    pub async fn should_fail_when_restoring_invalid(case: TestCase) {
+    async fn should_fail_when_restoring_invalid(case: TestCase) {
         run_test_wo_clients(case.clone(), move |mut cc| {
             Box::pin(async move {
                 fn init(wrapper: E2eiInitWrapper) -> InitFnReturn<'_> {

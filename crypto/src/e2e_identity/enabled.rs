@@ -22,7 +22,7 @@ impl MlsCentral {
 }
 
 #[cfg(test)]
-pub mod tests {
+mod tests {
     use crate::{prelude::MlsCredentialType, test_utils::*, CryptoError};
     use openmls_traits::types::SignatureScheme;
     use wasm_bindgen_test::*;
@@ -31,7 +31,7 @@ pub mod tests {
 
     #[apply(all_cred_cipher)]
     #[wasm_bindgen_test]
-    pub async fn should_be_false_when_basic_and_true_when_x509(case: TestCase) {
+    async fn should_be_false_when_basic_and_true_when_x509(case: TestCase) {
         run_test_with_client_ids(case.clone(), ["alice"], move |[cc]| {
             Box::pin(async move {
                 let e2ei_is_enabled = cc.mls_central.e2ei_is_enabled(case.signature_scheme()).unwrap();
@@ -46,7 +46,7 @@ pub mod tests {
 
     #[apply(all_cred_cipher)]
     #[wasm_bindgen_test]
-    pub async fn should_fail_when_no_client(case: TestCase) {
+    async fn should_fail_when_no_client(case: TestCase) {
         run_test_wo_clients(case.clone(), move |cc| {
             Box::pin(async move {
                 assert!(matches!(
@@ -60,7 +60,7 @@ pub mod tests {
 
     #[apply(all_cred_cipher)]
     #[wasm_bindgen_test]
-    pub async fn should_fail_when_no_credential_for_given_signature_scheme(case: TestCase) {
+    async fn should_fail_when_no_credential_for_given_signature_scheme(case: TestCase) {
         run_test_with_client_ids(case.clone(), ["alice"], move |[cc]| {
             Box::pin(async move {
                 // just return something different from the signature scheme the MlsCentral was initialized with

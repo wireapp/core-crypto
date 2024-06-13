@@ -20,7 +20,7 @@ pub use rstest_reuse::{self, *};
 mod common;
 
 #[cfg(test)]
-pub mod tests {
+mod tests {
 
     use crate::common::*;
     use wasm_bindgen_test::*;

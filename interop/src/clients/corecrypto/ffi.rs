@@ -25,7 +25,7 @@ use crate::clients::{
 };
 
 #[derive(Debug)]
-pub struct CoreCryptoFfiClient<'a> {
+pub(crate) struct CoreCryptoFfiClient<'a> {
     cc: CoreCrypto<'a>,
     client_id: Vec<u8>,
     #[cfg(feature = "proteus")]
@@ -33,7 +33,7 @@ pub struct CoreCryptoFfiClient<'a> {
 }
 
 impl<'a> CoreCryptoFfiClient<'a> {
-    pub async fn new() -> Result<CoreCryptoFfiClient<'a>> {
+    pub(crate) async fn new() -> Result<CoreCryptoFfiClient<'a>> {
         let client_id = uuid::Uuid::new_v4();
         let ciphersuite = CIPHERSUITE_IN_USE.into();
         let cc = CoreCrypto::new(
@@ -51,7 +51,7 @@ impl<'a> CoreCryptoFfiClient<'a> {
         })
     }
 
-    pub async fn new_deferred() -> Result<CoreCryptoFfiClient<'a>> {
+    pub(crate) async fn new_deferred() -> Result<CoreCryptoFfiClient<'a>> {
         let client_id = uuid::Uuid::new_v4();
         let ciphersuite = CIPHERSUITE_IN_USE.into();
         let cc = CoreCrypto::deferred_init("path", "key")?;

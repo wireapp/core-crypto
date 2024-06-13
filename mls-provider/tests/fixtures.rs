@@ -17,14 +17,14 @@
 
 use getrandom::getrandom;
 
-pub use rstest::*;
-pub use rstest_reuse::{self, *};
+pub(crate) use rstest::*;
+pub(crate) use rstest_reuse::{self, *};
 
 use mls_crypto_provider::{EntropySeed, MlsCryptoProvider};
 
 const TEST_ENCRYPTION_KEY: &str = "test1234";
 
-pub fn store_name() -> String {
+pub(crate) fn store_name() -> String {
     use rand::Rng as _;
     let mut rng = rand::thread_rng();
     let name: String = (0..12)
@@ -40,7 +40,7 @@ pub fn store_name() -> String {
 }
 
 #[fixture]
-pub async fn setup(#[default(false)] in_memory: bool) -> MlsCryptoProvider {
+pub(crate) async fn setup(#[default(false)] in_memory: bool) -> MlsCryptoProvider {
     let store_name = store_name();
     let store = if !in_memory {
         core_crypto_keystore::Connection::open_with_key(store_name, TEST_ENCRYPTION_KEY).await
@@ -201,7 +201,7 @@ pub fn all_storage_types_and_ciphersuites(
 }
 
 #[inline(always)]
-pub async fn teardown(backend: MlsCryptoProvider) {
+pub(crate) async fn teardown(backend: MlsCryptoProvider) {
     let store = backend.unwrap_keystore();
     store.wipe().await.unwrap();
 }

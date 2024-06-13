@@ -141,7 +141,7 @@ impl Client {
 // TODO: ensure certificate signature must match the group's ciphersuite ; fails otherwise. Tracking issue: WPB-9632
 // Requires more than 1 ciphersuite supported at the moment.
 #[cfg(test)]
-pub mod tests {
+mod tests {
     use mls_crypto_provider::PkiKeypair;
     use std::collections::HashMap;
     use wasm_bindgen_test::*;
@@ -464,7 +464,7 @@ pub mod tests {
     //     wire_e2e_identity::prelude::OffsetDateTime::from_unix_timestamp(now_since_epoch).unwrap()
     // }
 
-    pub fn now_std() -> std::time::Duration {
+    pub(crate) fn now_std() -> std::time::Duration {
         let now = fluvio_wasm_timer::SystemTime::now();
         now.duration_since(fluvio_wasm_timer::UNIX_EPOCH).unwrap()
     }

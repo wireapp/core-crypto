@@ -158,7 +158,7 @@ impl MlsProposalBundle {
 }
 
 #[cfg(test)]
-pub mod tests {
+mod tests {
     use itertools::Itertools;
     use openmls::prelude::SignaturePublicKey;
     use wasm_bindgen_test::*;
@@ -169,12 +169,12 @@ pub mod tests {
 
     wasm_bindgen_test_configure!(run_in_browser);
 
-    pub mod propose_add_members {
+    mod propose_add_members {
         use super::*;
 
         #[apply(all_cred_cipher)]
         #[wasm_bindgen_test]
-        pub async fn can_propose_adding_members_to_conversation(case: TestCase) {
+        async fn can_propose_adding_members_to_conversation(case: TestCase) {
             run_test_with_client_ids(
                 case.clone(),
                 ["alice", "bob", "charlie"],
@@ -266,12 +266,12 @@ pub mod tests {
         }
     }
 
-    pub mod propose_remove_members {
+    mod propose_remove_members {
         use super::*;
 
         #[apply(all_cred_cipher)]
         #[wasm_bindgen_test]
-        pub async fn can_propose_removing_members_from_conversation(case: TestCase) {
+        async fn can_propose_removing_members_from_conversation(case: TestCase) {
             run_test_with_client_ids(
                 case.clone(),
                 ["alice", "bob", "charlie"],
@@ -347,12 +347,12 @@ pub mod tests {
         }
     }
 
-    pub mod propose_self_update {
+    mod propose_self_update {
         use super::*;
 
         #[apply(all_cred_cipher)]
         #[wasm_bindgen_test]
-        pub async fn can_propose_updating(case: TestCase) {
+        async fn can_propose_updating(case: TestCase) {
             run_test_with_client_ids(
                 case.clone(),
                 ["alice", "bob"],
@@ -455,12 +455,12 @@ pub mod tests {
         }
     }
 
-    pub mod delivery_semantics {
+    mod delivery_semantics {
         use super::*;
 
         #[apply(all_cred_cipher)]
         #[wasm_bindgen_test]
-        pub async fn should_prevent_out_of_order_proposals(case: TestCase) {
+        async fn should_prevent_out_of_order_proposals(case: TestCase) {
             run_test_with_client_ids(
                 case.clone(),
                 ["alice", "bob"],
