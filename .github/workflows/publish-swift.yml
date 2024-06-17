@@ -33,7 +33,7 @@ jobs:
           rustflags: ''
           target: "aarch64-apple-ios,x86_64-apple-ios,aarch64-apple-ios-sim"
       - name: Run sccache-cache
-        uses: mozilla-actions/sccache-action@v0.0.3
+        uses: mozilla-actions/sccache-action@v0.0.4
       - name: Setup cargo-make
         uses: davidB/rust-cargo-make@v1
       - name: Build xcframework

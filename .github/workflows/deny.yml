@@ -26,7 +26,7 @@ jobs:
         with:
           rustflags: ''
       - name: Run sccache-cache
-        uses: mozilla-actions/sccache-action@v0.0.3
+        uses: mozilla-actions/sccache-action@v0.0.4
       - uses: taiki-e/install-action@cargo-deny
       - name: "Check Licenses / Supply Chain"
         run: |
