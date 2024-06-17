@@ -38,7 +38,7 @@ jobs:
           rustflags: ''
           target: "armv7-linux-androideabi,aarch64-linux-android,x86_64-linux-android,i686-linux-android"
       - name: Run sccache-cache
-        uses: mozilla-actions/sccache-action@v0.0.3
+        uses: mozilla-actions/sccache-action@v0.0.5
       - name: Setup cargo-make
         uses: davidB/rust-cargo-make@v1
       - name: Setup Android SDK
@@ -65,7 +65,7 @@ jobs:
           rustflags: ''
           target: "aarch64-apple-ios,x86_64-apple-ios,aarch64-apple-ios-sim"
       - name: Run sccache-cache
-        uses: mozilla-actions/sccache-action@v0.0.3
+        uses: mozilla-actions/sccache-action@v0.0.5
       - name: Setup cargo-make
         uses: davidB/rust-cargo-make@v1
       - run: |
@@ -88,7 +88,7 @@ jobs:
           rustflags: ''
           target: wasm32-unknown-unknown
       - name: Run sccache-cache
-        uses: mozilla-actions/sccache-action@v0.0.3
+        uses: mozilla-actions/sccache-action@v0.0.5
       - uses: oven-sh/setup-bun@v1
         with:
           bun-version: latest

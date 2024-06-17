@@ -39,7 +39,7 @@ jobs:
           target: wasm32-unknown-unknown
 
       - name: Run sccache-cache
-        uses: mozilla-actions/sccache-action@v0.0.3
+        uses: mozilla-actions/sccache-action@v0.0.5
 
       - name: Setup cargo-make
         uses: davidB/rust-cargo-make@v1
