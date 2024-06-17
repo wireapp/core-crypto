@@ -56,22 +56,6 @@ jobs:
           cd crypto-ffi/bindings
           ./gradlew android:build -x lint -x lintRelease
 
-  check-swift:
-    runs-on: macos-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions-rust-lang/setup-rust-toolchain@v1
-        with:
-          rustflags: ''
-          target: "aarch64-apple-ios,x86_64-apple-ios,aarch64-apple-ios-sim"
-      - name: Run sccache-cache
-        uses: mozilla-actions/sccache-action@v0.0.3
-      - name: Setup cargo-make
-        uses: davidB/rust-cargo-make@v1
-      - run: |
-          cd crypto-ffi
-          cargo make ios-create-xcframework
-
   check-wasm:
     runs-on: ubuntu-latest
     env:

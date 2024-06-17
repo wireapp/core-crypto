@@ -1,0 +1,159 @@
+name: Check swift
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+on:
+  push:
+    branches:
+      - develop
+  pull_request:
+
+env:
+  CARGO_TERM_COLOR: always
+  CARGO_NET_GIT_FETCH_WITH_CLI: true
+  CARGO_REGISTRIES_CRATES_IO_PROTOCOL: sparse
+  SCCACHE_GHA_ENABLED: "true"
+  RUSTC_WRAPPER: "sccache"
+
+jobs:
+  release-build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions-rust-lang/setup-rust-toolchain@v1
+        with:
+          rustflags: ''
+          target: aarch64-apple-darwin
+      - name: Run sccache-cache
+        uses: mozilla-actions/sccache-action@v0.0.3
+      - name: Setup cargo-make
+        uses: davidB/rust-cargo-make@v1
+      - name: Run release-build
+        run: |
+          cd crypto-ffi
+          cargo make release-build-aarch64-apple-darwin
+
+  compile-ffi-swift:
+    runs-on: ubuntu-latest
+    needs: release-build
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions-rust-lang/setup-rust-toolchain@v1
+      - name: Run sccache-cache
+        uses: mozilla-actions/sccache-action@v0.0.3
+      - name: Setup cargo-make
+        uses: davidB/rust-cargo-make@v1
+      - name: Run compile-ffi-swift
+        run: |
+          cd crypto-ffi
+          cargo make compile-ffi-swift
+
+  ffi-swift:
+    runs-on: ubuntu-latest
+    needs: compile-ffi-swift
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions-rust-lang/setup-rust-toolchain@v1
+      - name: Run sccache-cache
+        uses: mozilla-actions/sccache-action@v0.0.3
+      - name: Setup cargo-make
+        uses: davidB/rust-cargo-make@v1
+      - name: Run ffi-swift
+        run: |
+          cd crypto-ffi
+          cargo make ffi-swift
+
+  ios-device:
+    runs-on: macos-latest
+    needs: ffi-swift
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions-rust-lang/setup-rust-toolchain@v1
+        with:
+          rustflags: ''
+          target: "aarch64-apple-ios"
+      - name: Run sccache-cache
+        uses: mozilla-actions/sccache-action@v0.0.3
+      - name: Setup cargo-make
+        uses: davidB/rust-cargo-make@v1
+      - name: Run ios-device
+        run: |
+          cd crypto-ffi
+          cargo make ios-device
+
+  ios-simulator-x86:
+    runs-on: macos-latest
+    needs: ffi-swift
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions-rust-lang/setup-rust-toolchain@v1
+        with:
+          rustflags: ''
+          target: "x86_64-apple-ios"
+      - name: Run sccache-cache
+        uses: mozilla-actions/sccache-action@v0.0.3
+      - name: Setup cargo-make
+        uses: davidB/rust-cargo-make@v1
+      - name: Run ios-simulator-x86
+        run: |
+          cd crypto-ffi
+          cargo make ios-simulator-x86
+
+  ios-simulator-arm:
+    runs-on: macos-latest
+    needs: ffi-swift
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions-rust-lang/setup-rust-toolchain@v1
+        with:
+          rustflags: ''
+          target: "aarch64-apple-ios-sim"
+      - name: Run sccache-cache
+        uses: mozilla-actions/sccache-action@v0.0.3
+      - name: Setup cargo-make
+        uses: davidB/rust-cargo-make@v1
+      - name: Run ios-simulator-arm
+        env:
+          CRATE_CC_NO_DEFAULTS: 1
+          TARGET_CFLAGS: $(echo "--target=arm64-apple-ios14.0.0-simulator -mios-simulator-version-min=14.0 -isysroot `xcrun --show-sdk-path --sdk iphonesimulator`")
+        run: |
+          cd crypto-ffi
+          cargo make ios-simulator-arm
+
+  ios:
+    runs-on: macos-latest
+    needs: [ios-device, ios-simulator-x86, ios-simulator-arm]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions-rust-lang/setup-rust-toolchain@v1
+        with:
+          rustflags: ''
+          target: "aarch64-apple-ios,x86_64-apple-ios,aarch64-apple-ios-sim"
+      - name: Run sccache-cache
+        uses: mozilla-actions/sccache-action@v0.0.3
+      - name: Setup cargo-make
+        uses: davidB/rust-cargo-make@v1
+      - name: Run ios
+        run: |
+          cd crypto-ffi
+          cargo make ios
+
+  ios-create-xcframework:
+    runs-on: macos-latest
+    needs: ios
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions-rust-lang/setup-rust-toolchain@v1
+        with:
+          rustflags: ''
+          target: "aarch64-apple-ios,x86_64-apple-ios,aarch64-apple-ios-sim"
+      - name: Run sccache-cache
+        uses: mozilla-actions/sccache-action@v0.0.3
+      - name: Setup cargo-make
+        uses: davidB/rust-cargo-make@v1
+      - name: Run ios-create-xcframework
+        run: |
+          cd crypto-ffi
+          cargo make ios-create-xcframework
