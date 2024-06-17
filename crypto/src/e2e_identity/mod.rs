@@ -684,7 +684,8 @@ pub(crate) mod tests {
         Box::pin(async move { e })
     }
 
-    pub(crate) type InitFnReturn<'a> = std::pin::Pin<Box<dyn std::future::Future<Output = CryptoResult<E2eiEnrollment>> + 'a>>;
+    pub(crate) type InitFnReturn<'a> =
+        std::pin::Pin<Box<dyn std::future::Future<Output = CryptoResult<E2eiEnrollment>> + 'a>>;
 
     /// Helps the compiler with its lifetime inference rules while passing async closures
     pub(crate) struct E2eiInitWrapper<'a> {

@@ -250,7 +250,12 @@ pub(crate) async fn rand_key_package(ciphersuite: MlsCiphersuite) -> (KeyPackage
     (kp, client_id.into())
 }
 
-pub(crate) async fn invite(from: &mut MlsCentral, other: &mut MlsCentral, id: &ConversationId, ciphersuite: MlsCiphersuite) {
+pub(crate) async fn invite(
+    from: &mut MlsCentral,
+    other: &mut MlsCentral,
+    id: &ConversationId,
+    ciphersuite: MlsCiphersuite,
+) {
     let other_kps = other
         .get_or_create_client_keypackages(ciphersuite, MlsCredentialType::Basic, 1)
         .await
