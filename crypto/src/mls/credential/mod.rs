@@ -294,7 +294,10 @@ mod tests {
     #[apply(all_cred_cipher)]
     #[wasm_bindgen_test]
     async fn should_not_fail_but_degrade_when_certificate_expired(case: TestCase) {
-        if case.is_x509() {
+        if !case.is_x509() {
+            return;
+        }
+        Box::pin(async move {
             let mut x509_test_chain = X509TestChain::init_empty(case.signature_scheme());
 
             let expiration_time = core::time::Duration::from_secs(14);
@@ -325,7 +328,8 @@ mod tests {
                 alice_central.e2ei_conversation_state(&id).await.unwrap(),
                 E2eiConversationState::NotVerified
             );
-        }
+        })
+        .await;
     }
 
     #[apply(all_cred_cipher)]
