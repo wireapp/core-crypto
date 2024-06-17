@@ -19,7 +19,7 @@ env:
 
 jobs:
   release-build:
-    runs-on: ubuntu-latest
+    runs-on: macos-latest  # cross compiling fails with AARCH64_APPLE_DARWIN_OPENSSL_NO_VENDOR unset
     steps:
       - uses: actions/checkout@v4
       - uses: actions-rust-lang/setup-rust-toolchain@v1
@@ -36,7 +36,7 @@ jobs:
           cargo make release-build-aarch64-apple-darwin
 
   compile-ffi-swift:
-    runs-on: ubuntu-latest
+    runs-on: macos-latest
     needs: release-build
     steps:
       - uses: actions/checkout@v4
@@ -51,7 +51,7 @@ jobs:
           cargo make compile-ffi-swift
 
   ffi-swift:
-    runs-on: ubuntu-latest
+    runs-on: macos-latest
     needs: compile-ffi-swift
     steps:
       - uses: actions/checkout@v4

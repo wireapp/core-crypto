@@ -20,9 +20,9 @@ command = "cargo"
 args = ["build", "--release"]
 
 # Needed to cross compile for apple on linux in CI
-[tasks.release-build-aarch64-apple-darwin]
-command = "cargo"
-args = ["build", "--release", "--target", "aarch64-apple-darwin"]
+#[tasks.release-build-aarch64-apple-darwin]
+#command = "cargo"
+#args = ["build", "--release", "--target", "aarch64-apple-darwin"]
 
 ##################################### DOCS ####################################
 
@@ -124,7 +124,7 @@ args = ["run", "build_ts.ts"]
 
 [tasks.compile-ffi-swift]
 dependencies = ["release-build"]
-linux = { dependencies = ["release-build-aarch64-apple-darwin"] }
+#linux = { dependencies = ["release-build-aarch64-apple-darwin"] }
 command = "cargo"
 args = [
     "run",
