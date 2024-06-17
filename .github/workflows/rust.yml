@@ -55,8 +55,9 @@ jobs:
           rustflags: ''
       - name: Run sccache-cache
         uses: mozilla-actions/sccache-action@v0.0.3
-      - run: cargo check --tests
-      - run: cargo check --benches
+      - run: cargo check --all --all-features
+      - run: cargo check --tests --profile test
+      - run: cargo check --benches --profile bench
 
   build:
     runs-on: ubuntu-latest
