@@ -39,7 +39,7 @@ jobs:
           rustflags: ''
           target: "armv7-linux-androideabi,aarch64-linux-android,x86_64-linux-android,i686-linux-android"
       - name: Run sccache-cache
-        uses: mozilla-actions/sccache-action@v0.0.3
+        uses: mozilla-actions/sccache-action@v0.0.5
       - name: Setup cargo-make
         uses: davidB/rust-cargo-make@v1
       - name: Setup Android SDK

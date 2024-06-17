@@ -31,7 +31,7 @@ jobs:
           rustflags: ''
           targets: "x86_64-unknown-linux-gnu"
       - name: Run sccache-cache
-        uses: mozilla-actions/sccache-action@v0.0.3
+        uses: mozilla-actions/sccache-action@v0.0.5
       - name: Setup cargo-make
         uses: davidB/rust-cargo-make@v1
       - name: Build Artifacts
@@ -56,7 +56,7 @@ jobs:
           rustflags: ''
           target: "x86_64-apple-darwin,aarch64-apple-darwin"
       - name: Run sccache-cache
-        uses: mozilla-actions/sccache-action@v0.0.3
+        uses: mozilla-actions/sccache-action@v0.0.5
       - name: Setup cargo-make
         uses: davidB/rust-cargo-make@v1
       - name: Build Artifacts
@@ -90,7 +90,7 @@ jobs:
         with:
           rustflags: ''
       - name: Run sccache-cache
-        uses: mozilla-actions/sccache-action@v0.0.3
+        uses: mozilla-actions/sccache-action@v0.0.5
       - name: Setup cargo-make
         uses: davidB/rust-cargo-make@v1
       - name: Build Artifacts
