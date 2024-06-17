@@ -78,7 +78,9 @@ mod tests_impl {
         entity
     }
 
-    pub(crate) async fn can_find_entity<R: EntityTestExt + Entity<ConnectionType = KeystoreDatabaseConnection> + 'static>(
+    pub(crate) async fn can_find_entity<
+        R: EntityTestExt + Entity<ConnectionType = KeystoreDatabaseConnection> + 'static,
+    >(
         store: &CryptoKeystore,
         entity: &R,
     ) {
