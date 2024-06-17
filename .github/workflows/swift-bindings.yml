@@ -25,7 +25,7 @@ jobs:
       - uses: actions-rust-lang/setup-rust-toolchain@v1
         with:
           rustflags: ''
-          target: aarch64-apple-darwin
+          target: "aarch64-apple-ios,x86_64-apple-ios,aarch64-apple-ios-sim"
       - name: Run sccache-cache
         uses: mozilla-actions/sccache-action@v0.0.3
       - name: Setup cargo-make
@@ -33,7 +33,7 @@ jobs:
       - name: Run release-build
         run: |
           cd crypto-ffi
-          cargo make release-build-aarch64-apple-darwin
+          cargo make release-build
 
   compile-ffi-swift:
     runs-on: macos-latest
