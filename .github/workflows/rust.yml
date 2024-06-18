@@ -63,15 +63,23 @@ jobs:
         run: cargo nextest run --verbose
       - name: "Test CoreCrypto documentation"
         run: cargo test --doc
-      - name: "Test Keystore regressions"
-        run: |
-          cd extras/keystore-regression-versions
-          cargo run
       - name: "Upload test results"
         if: startsWith(github.ref, 'refs/tags/')
         uses: softprops/action-gh-release@v1
         with:
             files: target/nextest/default/junit.xml
+
+  test-keystore-regressions:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions-rust-lang/setup-rust-toolchain@v1  # this implicitly caches Rust tools and build artifacts
+        with:
+          rustflags: ''
+      - name: "Test Keystore regressions"
+        run: |
+          cd extras/keystore-regression-versions
+          cargo run
 
   proteus-test:
     runs-on: ubuntu-latest
