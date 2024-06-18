@@ -1,7 +1,7 @@
 name: Publish Android packages
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
+  group: "${{ github.workflow }}-${{ github.ref }}"
 
 on:
   push:
