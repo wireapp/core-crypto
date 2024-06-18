@@ -15,8 +15,6 @@ env:
   CARGO_TERM_COLOR: always
   CARGO_NET_GIT_FETCH_WITH_CLI: true
   CARGO_REGISTRIES_CRATES_IO_PROTOCOL: sparse
-  SCCACHE_GHA_ENABLED: "true"
-  RUSTC_WRAPPER: "sccache"
 
 jobs:
   docgen:
@@ -27,13 +25,10 @@ jobs:
     - name: Checkout repository
       uses: actions/checkout@v4
 
-    - uses: actions-rust-lang/setup-rust-toolchain@v1
+    - uses: actions-rust-lang/setup-rust-toolchain@v1  # this implicitly caches Rust tools and build artifacts
       with:
         rustflags: ''
         target: wasm32-unknown-unknown
-
-    - name: Run sccache-cache
-      uses: mozilla-actions/sccache-action@v0.0.5
 
     - name: Setup cargo-make
       uses: davidB/rust-cargo-make@v1

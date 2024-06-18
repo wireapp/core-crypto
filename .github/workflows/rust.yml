@@ -15,31 +15,25 @@ env:
   CARGO_TERM_COLOR: always
   CARGO_NET_GIT_FETCH_WITH_CLI: true
   CARGO_REGISTRIES_CRATES_IO_PROTOCOL: sparse
-  SCCACHE_GHA_ENABLED: "true"
-  RUSTC_WRAPPER: "sccache"
 
 jobs:
   fmt:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: actions-rust-lang/setup-rust-toolchain@v1
+      - uses: actions-rust-lang/setup-rust-toolchain@v1  # this implicitly caches Rust tools and build artifacts
         with:
           components: rustfmt
           rustflags: ''
-      - name: Run sccache-cache
-        uses: mozilla-actions/sccache-action@v0.0.5
       - run: cargo fmt --all -- --check
 
   check-strict:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: actions-rust-lang/setup-rust-toolchain@v1
+      - uses: actions-rust-lang/setup-rust-toolchain@v1  # this implicitly caches Rust tools and build artifacts
         with:
           rustflags: ''
-      - name: Run sccache-cache
-        uses: mozilla-actions/sccache-action@v0.0.5
       - run: cargo check --tests
       - run: cargo check --benches
       - run: cargo doc --all --no-deps
@@ -50,11 +44,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: actions-rust-lang/setup-rust-toolchain@v1
+      - uses: actions-rust-lang/setup-rust-toolchain@v1  # this implicitly caches Rust tools and build artifacts
         with:
           rustflags: ''
-      - name: Run sccache-cache
-        uses: mozilla-actions/sccache-action@v0.0.5
       - run: cargo check --tests
       - run: cargo check --benches
 
@@ -62,13 +54,11 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: actions-rust-lang/setup-rust-toolchain@v1
+      - uses: actions-rust-lang/setup-rust-toolchain@v1  # this implicitly caches Rust tools and build artifacts
         with:
           rustflags: ''
           components: clippy
           target: wasm32-unknown-unknown
-      - name: Run sccache-cache
-        uses: mozilla-actions/sccache-action@v0.0.5
       - run: cargo build --verbose
       - run: cargo clippy -- -D warnings
       - run: cargo clippy --target wasm32-unknown-unknown -- -D warnings
@@ -77,11 +67,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: actions-rust-lang/setup-rust-toolchain@v1
+      - uses: actions-rust-lang/setup-rust-toolchain@v1  # this implicitly caches Rust tools and build artifacts
         with:
           rustflags: ''
-      - name: Run sccache-cache
-        uses: mozilla-actions/sccache-action@v0.0.5
       - uses: taiki-e/install-action@nextest
       - name: "Test CoreCrypto"
         run: cargo nextest run --verbose
@@ -101,11 +89,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: actions-rust-lang/setup-rust-toolchain@v1
+      - uses: actions-rust-lang/setup-rust-toolchain@v1  # this implicitly caches Rust tools and build artifacts
         with:
           rustflags: ''
-      - name: Run sccache-cache
-        uses: mozilla-actions/sccache-action@v0.0.5
       - uses: taiki-e/install-action@nextest
       - name: "Test CoreCrypto's proteus implementation"
         run: cargo nextest run --verbose --features proteus,cryptobox-migrate,proteus-keystore proteus
@@ -115,11 +101,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: actions-rust-lang/setup-rust-toolchain@v1
+      - uses: actions-rust-lang/setup-rust-toolchain@v1  # this implicitly caches Rust tools and build artifacts
         with:
           rustflags: ''
-      - name: Run sccache-cache
-        uses: mozilla-actions/sccache-action@v0.0.5
       - uses: taiki-e/install-action@nextest
       - name: "Test CoreCrypto xtask tooling"
         run: cargo nextest run --verbose --manifest-path xtask/Cargo.toml
@@ -133,12 +117,10 @@ jobs:
         workspace: [ "crypto", "keystore", "mls-provider" ]
     steps:
       - uses: actions/checkout@v4
-      - uses: actions-rust-lang/setup-rust-toolchain@v1
+      - uses: actions-rust-lang/setup-rust-toolchain@v1  # this implicitly caches Rust tools and build artifacts
         with:
           target: wasm32-unknown-unknown
           rustflags: ''
-      - name: Run sccache-cache
-        uses: mozilla-actions/sccache-action@v0.0.5
       - name: Install wasm-pack
         run: curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
       - name: WASM check
@@ -154,12 +136,10 @@ jobs:
         workspace: ["core-crypto-keystore", "mls-crypto-provider"]
     steps:
       - uses: actions/checkout@v4
-      - uses: actions-rust-lang/setup-rust-toolchain@v1
+      - uses: actions-rust-lang/setup-rust-toolchain@v1  # this implicitly caches Rust tools and build artifacts
         with:
           target: wasm32-unknown-unknown
           rustflags: ''
-      - name: Run sccache-cache
-        uses: mozilla-actions/sccache-action@v0.0.5
       - uses: browser-actions/setup-chrome@latest
         id: setup-chrome
         with:
@@ -174,12 +154,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: actions-rust-lang/setup-rust-toolchain@v1
+      - uses: actions-rust-lang/setup-rust-toolchain@v1  # this implicitly caches Rust tools and build artifacts
         with:
           target: wasm32-unknown-unknown
           rustflags: ''
-      - name: Run sccache-cache
-        uses: mozilla-actions/sccache-action@v0.0.5
       - uses: browser-actions/setup-chrome@latest
         id: setup-chrome
         with:
@@ -193,12 +171,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: actions-rust-lang/setup-rust-toolchain@v1
+      - uses: actions-rust-lang/setup-rust-toolchain@v1  # this implicitly caches Rust tools and build artifacts
         with:
           target: wasm32-unknown-unknown
           rustflags: ''
-      - name: Run sccache-cache
-        uses: mozilla-actions/sccache-action@v0.0.5
       - uses: browser-actions/setup-chrome@latest
         id: setup-chrome
         with:
@@ -214,12 +190,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: actions-rust-lang/setup-rust-toolchain@v1
+      - uses: actions-rust-lang/setup-rust-toolchain@v1  # this implicitly caches Rust tools and build artifacts
         with:
           target: wasm32-unknown-unknown
           rustflags: ''
-      - name: Run sccache-cache
-        uses: mozilla-actions/sccache-action@v0.0.5
       - name: Setup cargo-make
         uses: davidB/rust-cargo-make@v1
       - name: Install wasm-pack
@@ -243,11 +217,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: actions-rust-lang/setup-rust-toolchain@v1
+      - uses: actions-rust-lang/setup-rust-toolchain@v1  # this implicitly caches Rust tools and build artifacts
         with:
           rustflags: ''
-      - name: Run sccache-cache
-        uses: mozilla-actions/sccache-action@v0.0.5
       - uses: taiki-e/install-action@cargo-hack
       - name: cargo/hack (verify features compile in isolation)
         run: cargo hack check --each-feature --exclude-features uniffi --no-dev-deps
