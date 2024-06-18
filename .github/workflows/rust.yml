@@ -39,6 +39,7 @@ jobs:
       - run: cargo clippy -- -D warnings
       - run: cargo clippy --target wasm32-unknown-unknown -- -D warnings
       - run: cargo check --tests
+      - run: cargo check --tests --target wasm32-unknown-unknown
       - run: cargo check --benches
 
   build:
@@ -110,8 +111,6 @@ jobs:
           rustflags: ''
       - name: Install wasm-pack
         run: curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
-      - name: WASM check
-        run: cargo check --tests --target wasm32-unknown-unknown
       - name: WASM build
         run: wasm-pack build --dev --target web ${{ matrix.workspace }}
 
