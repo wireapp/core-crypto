@@ -209,7 +209,8 @@ args = [
 
 [tasks.ios]
 condition = { platforms = ["mac"] }
-dependencies = ["ios-device", "ios-simulator-x86", "ios-simulator-arm"]
+dependencies = ["ffi-swift"]
+run_task = { name = ["ios-device", "ios-simulator-x86", "ios-simulator-arm"], parallel = true }
 
 [tasks.ios-create-xcframework]
 condition = { platforms = ["mac"] }
