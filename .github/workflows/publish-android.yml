@@ -15,8 +15,6 @@ env:
   CARGO_TERM_COLOR: always
   CARGO_NET_GIT_FETCH_WITH_CLI: true
   CARGO_REGISTRIES_CRATES_IO_PROTOCOL: sparse
-  SCCACHE_GHA_ENABLED: "true"
-  RUSTC_WRAPPER: "sccache"
 
 jobs:
   publish-android:
@@ -34,12 +32,10 @@ jobs:
       - name: Validate Gradle wrapper
         uses: gradle/actions/wrapper-validation@v3
       - name: "Setup rust"
-        uses: actions-rust-lang/setup-rust-toolchain@v1
+        uses: actions-rust-lang/setup-rust-toolchain@v1  # this implicitly caches Rust tools and build artifacts
         with:
           rustflags: ''
           target: "armv7-linux-androideabi,aarch64-linux-android,x86_64-linux-android,i686-linux-android"
-      - name: Run sccache-cache
-        uses: mozilla-actions/sccache-action@v0.0.5
       - name: Setup cargo-make
         uses: davidB/rust-cargo-make@v1
       - name: Setup Android SDK
