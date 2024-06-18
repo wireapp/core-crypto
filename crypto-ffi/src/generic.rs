@@ -702,8 +702,8 @@ impl core_crypto::prelude::CoreCryptoCallbacks for CoreCryptoCallbacksWrapper {
     }
 }
 
-/// This only exists to create a sync interface to our internal async callback interface
-// TODO: Remove this, since UniFFI now supports async callbacks. Tracking issue: WPB-9588
+/// This is needed instead of the original trait ([core_crypto::CoreCryptoCallbacks]) to use the
+/// custom type [ClientId], that UniFFi can handle.
 #[uniffi::export(with_foreign)]
 #[cfg_attr(target_family = "wasm", async_trait::async_trait(?Send))]
 #[cfg_attr(not(target_family = "wasm"), async_trait::async_trait)]
