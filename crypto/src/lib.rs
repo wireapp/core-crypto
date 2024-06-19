@@ -101,6 +101,7 @@ pub mod prelude {
 /// This trait is used to provide callback mechanisms for the MlsCentral struct, for example for
 /// operations like adding or removing memebers that can be authorized through a caller provided
 /// authorization method.
+#[cfg_attr(feature = "uniffi", uniffi::export(with_foreign))]
 #[cfg_attr(target_family = "wasm", async_trait::async_trait(?Send))]
 #[cfg_attr(not(target_family = "wasm"), async_trait::async_trait)]
 pub trait CoreCryptoCallbacks: std::fmt::Debug + Send + Sync {

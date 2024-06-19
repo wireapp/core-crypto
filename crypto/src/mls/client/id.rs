@@ -15,12 +15,29 @@
 // along with this program. If not, see http://www.gnu.org/licenses/.
 
 use crate::CryptoError;
+#[cfg(feature = "uniffi")]
+use crate::UniffiCustomTypeConverter;
 
 /// A unique identifier for clients. A client is an identifier for each App a user is using, such as desktop,
 /// mobile, etc. Users can have multiple clients.
 /// More information [here](https://messaginglayersecurity.rocks/mls-architecture/draft-ietf-mls-architecture.html#name-group-members-and-clients)
 #[derive(Debug, Clone, PartialEq, Eq, Hash, derive_more::Deref)]
 pub struct ClientId(pub(crate) Vec<u8>);
+#[cfg(feature = "uniffi")]
+uniffi::custom_type!(ClientId, Vec<u8>);
+
+#[cfg(feature = "uniffi")]
+impl UniffiCustomTypeConverter for ClientId {
+    type Builtin = Vec<u8>;
+
+    fn into_custom(val: Self::Builtin) -> uniffi::Result<Self> {
+        Ok(Self(val))
+    }
+
+    fn from_custom(obj: Self) -> Self::Builtin {
+        obj.0.to_vec()
+    }
+}
 
 impl From<&[u8]> for ClientId {
     fn from(value: &[u8]) -> Self {
