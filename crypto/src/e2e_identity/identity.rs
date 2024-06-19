@@ -161,7 +161,7 @@ impl MlsConversation {
             .filter_map(|(id, c)| UserId::try_from(id.as_slice()).ok().zip(Some(c)))
             .filter(|(uid, _)| user_ids.contains(uid))
             .map(|(uid, c)| (uid, c.extract_identity(self.ciphersuite(), env)))
-            .group_by(|(uid, _)| *uid)
+            .chunk_by(|(uid, _)| *uid)
             .into_iter()
             .map(|(uid, group)| {
                 let uid = String::try_from(uid);
