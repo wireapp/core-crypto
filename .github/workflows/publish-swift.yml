@@ -37,6 +37,6 @@ jobs:
           cd crypto-ffi
           cargo make ios-create-xcframework
       - name: Upload xcframework
-        uses: softprops/action-gh-release@v1
+        uses: softprops/action-gh-release@v2
         with:
             files: crypto-ffi/bindings/swift/WireCoreCrypto.xcframework.zip
