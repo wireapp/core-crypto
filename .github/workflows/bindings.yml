@@ -1,4 +1,4 @@
-name: Check bindings
+name: Build bindings
 
 concurrency:
   group: "${{ github.workflow }}-${{ github.ref }}"
@@ -16,7 +16,7 @@ env:
   CARGO_REGISTRIES_CRATES_IO_PROTOCOL: sparse
 
 jobs:
-  check-android:
+  build-android:
     if: github.repository == 'wireapp/core-crypto'
     runs-on: ubuntu-latest
     steps:
@@ -52,7 +52,7 @@ jobs:
           cd crypto-ffi/bindings
           ./gradlew android:build -x lint -x lintRelease
 
-  check-swift:
+  build-swift:
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@v4
@@ -62,11 +62,12 @@ jobs:
           target: "aarch64-apple-ios,x86_64-apple-ios,aarch64-apple-ios-sim"
       - name: Setup cargo-make
         uses: davidB/rust-cargo-make@v1
-      - run: |
+      - name: Build Swift package
+        run: |
           cd crypto-ffi
           cargo make ios-create-xcframework
 
-  check-wasm:
+  build-and-test-wasm:
     runs-on: ubuntu-latest
     env:
       # ensures we have same flags as when publishing
@@ -93,7 +94,6 @@ jobs:
         uses: jetli/wasm-pack-action@v0.4.0
         with:
           version: "latest"
-
       - name: Build & test WASM / JS package
         run: |
           cd crypto-ffi
@@ -101,4 +101,3 @@ jobs:
           bun install
           cargo make wasm
           bun test --bail
-
