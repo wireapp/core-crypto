@@ -20,7 +20,7 @@ resolver = "2"
 tls_codec = "0.4.0"
 
 [workspace.dependencies.uniffi]
-version = "0.27"
+version = "0.28"
 # git = "https://github.com/wireapp/uniffi-rs.git"
 # branch = "wire/uniffi-stable"
 
