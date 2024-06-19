@@ -26,12 +26,14 @@ use core_crypto::{
         MlsBufferedConversationDecryptMessage, MlsCentral, MlsCentralConfiguration, MlsCiphersuite, MlsCommitBundle,
         MlsConversationConfiguration, MlsConversationCreationMessage, MlsConversationDecryptMessage,
         MlsConversationInitBundle, MlsCustomConfiguration, MlsGroupInfoBundle, MlsProposalBundle, MlsRotateBundle,
-        VerifiableGroupInfo,
+        VerifiableGroupInfo, ClientId,
     },
     MlsError,
 };
 use tracing::level_filters::LevelFilter;
 use tracing_subscriber::fmt::{self, MakeWriter};
+use core_crypto::CoreCryptoCallbacks;
+
 
 use crate::UniffiCustomTypeConverter;
 
@@ -58,23 +60,6 @@ pub enum CoreCryptoError {
 }
 
 type CoreCryptoResult<T> = Result<T, CoreCryptoError>;
-
-#[derive(Debug, Clone, Eq, Hash, PartialEq)]
-pub struct ClientId(core_crypto::prelude::ClientId);
-
-uniffi::custom_type!(ClientId, Vec<u8>);
-
-impl UniffiCustomTypeConverter for ClientId {
-    type Builtin = Vec<u8>;
-
-    fn into_custom(val: Self::Builtin) -> uniffi::Result<Self> {
-        Ok(Self(core_crypto::prelude::ClientId::from(val)))
-    }
-
-    fn from_custom(obj: Self) -> Self::Builtin {
-        obj.0.to_vec()
-    }
-}
 
 #[allow(non_camel_case_types)]
 #[derive(Debug, Clone, Copy, PartialEq, Eq, uniffi::Enum)]
@@ -461,7 +446,7 @@ impl TryFrom<MlsConversationDecryptMessage> for DecryptedMessage {
             proposals,
             is_active: from.is_active,
             commit_delay: from.delay,
-            sender_client_id: from.sender_client_id.map(ClientId),
+            sender_client_id: from.sender_client_id,
             has_epoch_changed: from.has_epoch_changed,
             identity: from.identity.into(),
             buffered_messages,
@@ -485,7 +470,7 @@ impl TryFrom<MlsBufferedConversationDecryptMessage> for BufferedDecryptedMessage
             proposals,
             is_active: from.is_active,
             commit_delay: from.delay,
-            sender_client_id: from.sender_client_id.map(ClientId),
+            sender_client_id: from.sender_client_id,
             has_epoch_changed: from.has_epoch_changed,
             identity: from.identity.into(),
             crl_new_distribution_points: from.crl_new_distribution_points.into(),
@@ -661,69 +646,6 @@ impl From<MlsCredentialType> for core_crypto::prelude::MlsCredentialType {
     }
 }
 
-#[derive(Debug)]
-struct CoreCryptoCallbacksWrapper(std::sync::Arc<dyn CoreCryptoCallbacks>);
-
-#[cfg_attr(target_family = "wasm", async_trait::async_trait(?Send))]
-#[cfg_attr(not(target_family = "wasm"), async_trait::async_trait)]
-impl core_crypto::prelude::CoreCryptoCallbacks for CoreCryptoCallbacksWrapper {
-    async fn authorize(&self, conversation_id: Vec<u8>, client_id: core_crypto::prelude::ClientId) -> bool {
-        self.0.authorize(conversation_id, ClientId(client_id)).await
-    }
-    async fn user_authorize(
-        &self,
-        conversation_id: Vec<u8>,
-        external_client_id: core_crypto::prelude::ClientId,
-        existing_clients: Vec<core_crypto::prelude::ClientId>,
-    ) -> bool {
-        self.0
-            .user_authorize(
-                conversation_id,
-                ClientId(external_client_id),
-                existing_clients.into_iter().map(ClientId).collect(),
-            )
-            .await
-    }
-    async fn client_is_existing_group_user(
-        &self,
-        conversation_id: Vec<u8>,
-        client_id: core_crypto::prelude::ClientId,
-        existing_clients: Vec<core_crypto::prelude::ClientId>,
-        parent_conversation_clients: Option<Vec<core_crypto::prelude::ClientId>>,
-    ) -> bool {
-        self.0
-            .client_is_existing_group_user(
-                conversation_id,
-                ClientId(client_id),
-                existing_clients.into_iter().map(ClientId).collect(),
-                parent_conversation_clients.map(|pccs| pccs.into_iter().map(ClientId).collect()),
-            )
-            .await
-    }
-}
-
-/// This is needed instead of the original trait ([core_crypto::CoreCryptoCallbacks]) to use the
-/// custom type [ClientId], that UniFFi can handle.
-#[uniffi::export(with_foreign)]
-#[cfg_attr(target_family = "wasm", async_trait::async_trait(?Send))]
-#[cfg_attr(not(target_family = "wasm"), async_trait::async_trait)]
-pub trait CoreCryptoCallbacks: std::fmt::Debug + Send + Sync {
-    async fn authorize(&self, conversation_id: Vec<u8>, client_id: ClientId) -> bool;
-    async fn user_authorize(
-        &self,
-        conversation_id: Vec<u8>,
-        external_client_id: ClientId,
-        existing_clients: Vec<ClientId>,
-    ) -> bool;
-    async fn client_is_existing_group_user(
-        &self,
-        conversation_id: Vec<u8>,
-        client_id: ClientId,
-        existing_clients: Vec<ClientId>,
-        parent_conversation_clients: Option<Vec<ClientId>>,
-    ) -> bool;
-}
-
 /// This trait is used to provide a callback mechanism to hook up the rerspective platform logging system
 #[uniffi::export(with_foreign)]
 pub trait CoreCryptoLogger: std::fmt::Debug + Send + Sync {
@@ -822,7 +744,7 @@ impl CoreCrypto {
         let configuration = MlsCentralConfiguration::try_new(
             path,
             key,
-            client_id.map(|cid| cid.0.clone()),
+            client_id,
             (&ciphersuites.unwrap_or_default()).into(),
             None,
             nb_key_package,
@@ -853,7 +775,7 @@ impl CoreCrypto {
             .lock()
             .await
             .mls_init(
-                ClientIdentifier::Basic(client_id.0),
+                ClientIdentifier::Basic(client_id),
                 (&ciphersuites).into(),
                 nb_key_package,
             )
@@ -868,7 +790,7 @@ impl CoreCrypto {
             .await
             .mls_generate_keypairs((&ciphersuites).into())
             .await
-            .map(|cids| cids.into_iter().map(ClientId).collect())?)
+            .map(|cids| cids.into_iter().collect())?)
     }
 
     /// See [core_crypto::mls::MlsCentral::mls_init_with_client_id]
@@ -883,8 +805,8 @@ impl CoreCrypto {
             .lock()
             .await
             .mls_init_with_client_id(
-                client_id.0,
-                tmp_client_ids.into_iter().map(|cid| cid.0).collect(),
+                client_id,
+                tmp_client_ids.into_iter().collect(),
                 (&ciphersuites).into(),
             )
             .await?)
