@@ -1,5 +1,6 @@
 use openmls_traits::OpenMlsCryptoProvider;
 use std::collections::HashMap;
+use tracing::debug;
 
 use wire_e2e_identity::prelude::{E2eiAcmeAuthorization, RustyE2eIdentity};
 use zeroize::Zeroize;
@@ -78,7 +79,7 @@ impl MlsCentral {
 
     /// Parses the ACME server response from the endpoint fetching x509 certificates and uses it
     /// to initialize the MLS client with a certificate
-    #[cfg_attr(not(test), tracing::instrument(err, skip_all))]
+    #[cfg_attr(not(test), tracing::instrument(err))]
     pub async fn e2ei_mls_init_only(
         &mut self,
         enrollment: &mut E2eiEnrollment,
@@ -567,7 +568,7 @@ impl E2eiEnrollment {
         Ok(certificate)
     }
 
-    #[cfg_attr(not(test), tracing::instrument(err, skip_all))]
+    #[cfg_attr(not(test), tracing::instrument(err))]
     async fn certificate_response(
         &mut self,
         certificate_chain: String,
@@ -582,6 +583,7 @@ impl E2eiEnrollment {
         self.sign_sk.zeroize();
         self.delegate.sign_kp.zeroize();
         self.delegate.acme_kp.zeroize();
+        debug!(keys = ?self, "Keys should have been zeroed");
 
         #[cfg(not(target_family = "wasm"))]
         self.refresh_token.zeroize();

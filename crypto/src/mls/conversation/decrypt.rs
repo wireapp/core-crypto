@@ -113,7 +113,7 @@ impl MlsConversation {
     #[allow(clippy::too_many_arguments)]
     #[cfg_attr(test, crate::durable)]
     // FIXME: this might be causing stack overflow. Retry when this is solved: https://github.com/tokio-rs/tracing/issues/1147. Tracking issue: WPB-9654
-    // #[cfg_attr(not(test), tracing::instrument(err, skip_all))]
+    #[cfg_attr(not(test), tracing::instrument(err))]
     pub async fn decrypt_message(
         &mut self,
         message: MlsMessageIn,
@@ -377,7 +377,7 @@ impl MlsCentral {
     /// # Errors
     /// If the conversation can't be found, an error will be returned. Other errors are originating
     /// from OpenMls and the KeyStore
-    #[cfg_attr(not(test), tracing::instrument(err, skip(self, message), fields(id = base64::Engine::encode(&base64::prelude::BASE64_STANDARD, id))))]
+    #[cfg_attr(not(test), tracing::instrument(err, skip(message), fields(id = base64::Engine::encode(&base64::prelude::BASE64_STANDARD, id))))]
     pub async fn decrypt_message(
         &mut self,
         id: &ConversationId,

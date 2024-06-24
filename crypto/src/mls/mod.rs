@@ -248,7 +248,7 @@ impl MlsCentral {
     /// Initializes the MLS client if [super::CoreCrypto] has previously been initialized with
     /// `CoreCrypto::deferred_init` instead of `CoreCrypto::new`.
     /// This should stay as long as proteus is supported. Then it should be removed.
-    #[cfg_attr(not(test), tracing::instrument(err, skip(self, identifier), fields(ciphersuites = ?ciphersuites)))]
+    #[cfg_attr(not(test), tracing::instrument(err, skip(identifier), fields(ciphersuites = ?ciphersuites)))]
     pub async fn mls_init(
         &mut self,
         identifier: ClientIdentifier,
