@@ -944,6 +944,7 @@ impl CoreCrypto {
     /// Initializes the logger
     pub fn set_logger(&self, logger: std::sync::Arc<dyn CoreCryptoLogger>, level: CoreCryptoLogLevel) {
         fmt::fmt()
+            .json()
             .with_max_level(LevelFilter::from(level))
             .with_writer(CoreCryptoLoggerWrapper(logger))
             .init()

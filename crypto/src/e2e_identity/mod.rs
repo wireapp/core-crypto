@@ -579,14 +579,15 @@ impl E2eiEnrollment {
         ))?;
         let certificates = self.acme_x509_certificate_response(certificate_chain, order, Some(env))?;
 
+        debug!(keys = ?self, "Keys before being zeroed");
         // zeroize the private material
         self.sign_sk.zeroize();
         self.delegate.sign_kp.zeroize();
         self.delegate.acme_kp.zeroize();
-        debug!(keys = ?self, "Keys should have been zeroed");
 
         #[cfg(not(target_family = "wasm"))]
         self.refresh_token.zeroize();
+        debug!(keys = ?self, "Keys should have been zeroed");
 
         Ok(certificates)
     }
