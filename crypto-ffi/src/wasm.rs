@@ -1505,6 +1505,7 @@ impl CoreCrypto {
 
     pub fn set_logger(&self, logger: CoreCryptoWasmLogger, level: CoreCryptoLogLevel) {
         fmt::fmt()
+            .json()
             .with_max_level(LevelFilter::from(level))
             .with_writer(logger)
             .init()
