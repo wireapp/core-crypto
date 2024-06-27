@@ -34,56 +34,79 @@ See [ARCHITECTURE.md](docs/ARCHITECTURE.md)
 
 Install Android SDK and Build-Tools for API level 30+
 
-NOTE: If you are building on macOS you'll need to setup $ANDROID_SDK_ROOT path variable manually:
-```ignore
-export ANDROID_SDK_ROOT=~/Android/Sdk
-```
-Install android rust targets
+> [!important]
+> If you are building on macOS you'll need to setup `$ANDROID_SDK_ROOT` path variable manually:
+> ```ignore
+> export ANDROID_SDK_ROOT=~/Android/Sdk
+> ```
+
+Install android rust targets:
 ```ignore
 rustup target add x86_64-linux-android aarch64-linux-android armv7-linux-androideabi i686-linux-android
+```
+Build:
+```ignore
+cd crypto-ffi
+cargo make android
+cd bindings
+./gradlew android:build
 ```
 
 ### iOS
 
-Install Xcode & it's commandline tools: [https://developer.apple.com/xcode/](https://developer.apple.com/xcode/)
+Install Xcode & its command-line tools: [https://developer.apple.com/xcode/](https://developer.apple.com/xcode/).
 
-Install iOS rust targets
-
+Install iOS rust targets:
 ```ignore
 rustup target add aarch64-apple-ios x86_64-apple-ios aarch64-apple-ios-sim
 ```
 
+Build:
+```ignore
+cd crypto-ffi
+cargo make ios
+# Additionally, if you want to export a .XCFramework:
+cargo make ios-create-xcframework
+```
+
 ### MacOS
 
-Install macOS rust targets
+Install macOS rust targets:
 ```ignore
-rustup target add x86_64-apple-darwin
-rustup target add aarch64-apple-darwin
+rustup target add x86_64-apple-darwin aarch64-apple-darwin
 ```
 
 ### Linux
 
-If cross-compiling from macOS you'll need install: [https://github.com/messense/homebrew-macos-cross-toolchains](https://github.com/messense/homebrew-macos-cross-toolchains)
+> [!note]
+> If cross-compiling from macOS, you'll need to install
+> [https://github.com/messense/homebrew-macos-cross-toolchains](https://github.com/messense/homebrew-macos-cross-toolchains).
 
-Install linux targets
-
+Install Linux targets:
 ```ignore
 rustup target add x86_64-unknown-linux-gnu
 ```
 
 ### WASM
 
+Make sure you have all prerequisites:
 * Install [wasm-pack](https://rustwasm.github.io/wasm-pack/)
-* Install the wasm32-unknown-unknown toolchain `rustup target add wasm32-unknown-unknown`
+* Install the `wasm32-unknown-unknown` toolchain: `rustup target add wasm32-unknown-unknown`
 * Install node.js (recommended way is via [Volta](https://volta.sh/))
 * Install Bun (follow the instructions on [Bun's website](https://bun.sh/))
+
+Build:
+```ignore
+cd crypto-ffi
+cargo make wasm
+```
 
 ### Bindings
 
 Build bindings for Android, JVM, iOS and WASM
 
 ```ignore
-cd crypto-ffi 
+cd crypto-ffi
 
 # builds bindings and targets for the JVM (macOS / Linux)
 cargo make jvm
@@ -98,32 +121,108 @@ cargo make ios-create-xcframework
 cargo make wasm
 ```
 
+## Testing
+
+### General testing
+
+```ignore
+# Install cargo-nextest if you haven't done so, it yields some substantial speedup
+cargo install cargo-nextest
+cargo nextest run
+```
+
+#### Addendum: testing all ciphersuites
+
+> [!warning]
+> This takes quite a while.
+
+```ignore
+cargo nextest run --features test-all-cipher
+```
+
+### Platform-specific testing
+
+### Kotlin/Android
+
+* Take the steps to compile for Kotlin/Android
+* Then:
+```ignore
+cd crypto-ffi/bindings
+./gradlew test
+```
+
+### Swift/iOS
+
+*No E2E testing is available as of now on Swift.*
+
+### WASM/Web
+
+* Take the steps to compile for WASM/Web
+* Then:
+```ignore
+cd crypto-ffi
+bun test
+```
+
+## Git workflow
+
+* The `main` branch is only updated when making a release and should always point to the latest release.
+* The `develop` branch is used as the everyday development branch.
+* No merge commits. Always rebase on top of `develop`.
+* Use [conventional commits](https://www.conventionalcommits.org/en/v1.0.0/) -- those are picked up by the changelog generator.
+* If there is a JIRA ticket related to the change, you should mention it in either the PR title or the commit(s),
+  with the following format: `[TICKET_ID]`.
+* Sign your [commits](https://docs.github.com/en/authentication/managing-commit-signature-verification/signing-commits)
+  and [tags](https://docs.github.com/en/authentication/managing-commit-signature-verification/signing-tags).
+* Remove branches from the remote once you don't need them anymore.
+
+
 ## Publishing
 
 ### Versioning
 
-* Run `cargo xtask release bump [major|minor|patch|rc|pre]`
-* Update the internal dependencies of the updated crates to use the new version
-* Update the version in the `package.json`
-* Update the version in the `build.gradle.kts` inside `./kotlin/android` and `./kotlin/jvm`
+The versioning scheme used is [SemVer AKA Semantic Versioning](https://semver.org).
 
-### Changelog
+### Making a new release
 
-* Update <CHANGELOG.tpl> accordingly
-* Fetch the latest tags from the remote
-* run `cargo xtask documentation changelog` to update <CHANGELOG.md> with the git-conventional history
+1. Make a release branch started from `develop` (`git checkout -b release/X.Y.Z`)
+1. Run `cargo xtask release bump [major|minor|patch|rc|pre] --dry-run`, check if it's the expected result
+1. If all seems fine, re-run the previous command without the `--dry-run` argument.
+   This will bump the versions of:
+    - all workspace member crates
+    - `package.json`
+    - `crypto-ffi/bindings/gradle.properties`
+1. Edit `CHANGELOG.tpl` with the contents of the release.
+    - Copy the git-conventional block from the previous release to your new release, modify the version tag
+    - Remove the `unreleased=true` from the previous release
+    - Try to write some human concise documentation so that client teams understand the changes at a glance
+1. Run `cargo xtask documentation changelog` to generate the corresponding `CHANGELOG.md`
+1. Make sure the changes look reasonable and complete; you can use
+   [this commit](https://github.com/wireapp/core-crypto/commit/e680590ba6969ca2dc47aa38c7f220ea8974b369)
+   as a reference.
+1. Push your `release/X.Y.Z` branch and create a PR for it
+1. Get it reviewed, then merge it into `develop` and remove the release branch from the remote.
+1. Now, pull your local develop `git checkout develop && git pull`
+1. Update the `main` branch: `git checkout main && git pull && git merge --ff-only develop`
+1. Create the release tag: `git tag -s vX.Y.Z`
+1. Push the branch and the new tag: `git push origin main && git push --tags`
+1. Voilà!
 
-### Android / JVM
 
-You can publish the JVM and Android bindings to maven using gradle after you've built the corresponding target.
+### Publishing Android / JVM bindings
 
+Publishing Android / JVM bindings happens automatically by a github workflow when a release tag is pushed.
+
+If you would like to publish the bindings to a local maven cache, run:
 ```ignore
-cd kotlin
+cd crypto-ffi/bindings/android
 ./gradlew :jvm:publishToMavenLocal
 ./gradlew :android:publishToMavenLocal
 ```
 
-### JS / WASM
+### Publishing JS / WASM bindings
 
-Given that you are logged in NPM and can publish to `@wireapp/core-crypto`, you can just `npm publish` to push a new version
-But this is not needed as releases are auto-published to the `@wireapp` organization
+Publishing JS / WASM bindings happens automatically by a github workflow when a release tag is pushed.
+
+If you would like to publish to `@wireapp/core-crypto` manually, log into NPM and
+just run `npm publish`.
