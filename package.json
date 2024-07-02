@@ -21,7 +21,7 @@
     "mls",
     "proteus"
   ],
-  "author": "Mathieu Amiot <amiot.mathieu@gmail.com>",
+  "author": "Wire CoreCrypto team <team.corecrypto@wire.com>",
   "license": "GPL-3.0",
   "homepage": "https://github.com/wireapp/core-crypto",
   "repository": {
