@@ -872,9 +872,10 @@ export interface CoreCryptoCallbacks {
 export interface CoreCryptoLogger {
     /**
      * This method will be called by Core Crypto to log messages. It is up to the implementer to decide how to handle the message and where to actually log it.
-     * @param msg - message to log
+     * @param level - the level of the logged message. it will also be present in the json message
+     * @param json_msg - message to log in json format
      **/
-    log: (msg: string) => void;
+    log: (level: CoreCryptoLogLevel, json_msg: string) => void;
 }
 
 /**
@@ -1188,7 +1189,9 @@ export class CoreCrypto {
      *
      * @returns the ciphersuite of the conversation
      */
-    async conversationCiphersuite(conversationId: ConversationId): Promise<Ciphersuite> {
+    async conversationCiphersuite(
+        conversationId: ConversationId
+    ): Promise<Ciphersuite> {
         return await CoreCryptoError.asyncMapErr(
             this.#cc.conversation_ciphersuite(conversationId)
         );
