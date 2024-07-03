@@ -47,6 +47,7 @@ core-foundation = { version = "0.9", optional = true }
 openmls_traits = { version = "0.2", optional = true }
 openmls_basic_credential = { version = "0.2", optional = true }
 openmls_x509_credential = { version = "0.2", optional = true }
+openmls_memory_keystore = "0.2"
 serde = { version = "1.0", features = ["derive"], optional = true }
 log = { version = "0.4", optional = true }
 
