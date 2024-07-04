@@ -24,6 +24,18 @@ private class Callbacks : CoreCryptoCallbacks {
     ): Boolean = true
 }
 
+/**
+ * Initializes the logging inside Core Crypto. Not required to be called and by default there will be no logging.
+ * Can only be called once, otherwise errors will be thrown.
+ *
+ * @param logger a callback to implement the platform specific logging. It will receive the string with the log text from Core Crypto
+ * @param  level the max level that should be logged. By default it will be OFF
+ **/
+fun initLogger(logger: CoreCryptoLogger, level: CoreCryptoLogLevel = CoreCryptoLogLevel.OFF) {
+    setLogger(logger, level)
+}
+
+
 @Suppress("TooManyFunctions")
 @OptIn(ExperimentalUnsignedTypes::class)
 class CoreCryptoCentral private constructor(private val cc: CoreCrypto, private val rootDir: String) {
@@ -54,16 +66,6 @@ class CoreCryptoCentral private constructor(private val cc: CoreCrypto, private 
         val client = MLSClient(cc)
         val handle = client.mlsGenerateKeypairs(ciphersuites)
         return client to handle
-    }
-
-    /**
-     * Initializes the logging inside Core Crypto. Not required to be called and by default there will be no logging
-     *
-     * @param logger a callback to implement the platform specific logging. It will receive the string with the log text from Core Crypto
-     * @param  level the max level that should be logged. By default it will be OFF
-     **/
-    fun initLogger(logger: CoreCryptoLogger, level: CoreCryptoLogLevel = CoreCryptoLogLevel.OFF) {
-        this.cc.setLogger(logger, level)
     }
 
     /**

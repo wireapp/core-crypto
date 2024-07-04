@@ -1067,6 +1067,15 @@ impl From<WirePolicy> for MlsWirePolicy {
 }
 
 #[wasm_bindgen]
+pub fn set_logger(logger: CoreCryptoWasmLogger, level: CoreCryptoLogLevel) {
+    fmt::fmt()
+        .json()
+        .with_writer(logger)
+        .with_max_level(LevelFilter::from(level))
+        .init()
+}
+
+#[wasm_bindgen]
 #[derive(Debug, Clone)]
 pub struct CoreCryptoWasmLogger {
     logger: js_sys::Function,
@@ -1532,14 +1541,6 @@ impl CoreCrypto {
             }
             .err_into(),
         )
-    }
-
-    pub fn set_logger(&self, logger: CoreCryptoWasmLogger, level: CoreCryptoLogLevel) {
-        fmt::fmt()
-            .json()
-            .with_max_level(LevelFilter::from(level))
-            .with_writer(logger)
-            .init()
     }
 
     /// Returns:: [`WasmCryptoResult<js_sys::Uint8Array>`]

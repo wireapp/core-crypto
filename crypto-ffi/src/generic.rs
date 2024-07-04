@@ -724,6 +724,17 @@ pub trait CoreCryptoCallbacks: std::fmt::Debug + Send + Sync {
     ) -> bool;
 }
 
+/// Initializes the logger
+/// WARNING: This is a global setting. Calling it twice will cause errors.
+#[uniffi::export]
+pub fn set_logger(logger: std::sync::Arc<dyn CoreCryptoLogger>, level: CoreCryptoLogLevel) {
+    fmt::fmt()
+        .json()
+        .with_writer(CoreCryptoLoggerWrapper { logger, level })
+        .with_max_level(LevelFilter::from(level))
+        .init()
+}
+
 /// This trait is used to provide a callback mechanism to hook up the rerspective platform logging system
 #[uniffi::export(with_foreign)]
 pub trait CoreCryptoLogger: std::fmt::Debug + Send + Sync {
@@ -967,15 +978,6 @@ impl CoreCrypto {
             .await
             .callbacks(std::sync::Arc::new(CoreCryptoCallbacksWrapper(callbacks)));
         Ok(())
-    }
-
-    /// Initializes the logger
-    pub fn set_logger(&self, logger: std::sync::Arc<dyn CoreCryptoLogger>, level: CoreCryptoLogLevel) {
-        fmt::fmt()
-            .json()
-            .with_writer(CoreCryptoLoggerWrapper { logger, level })
-            .with_max_level(LevelFilter::from(level))
-            .init()
     }
 
     /// See [core_crypto::mls::MlsCentral::client_public_key]

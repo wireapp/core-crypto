@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see http://www.gnu.org/licenses/.
 
-import type * as CoreCryptoFfiTypes from "./wasm/core-crypto-ffi.d.ts";
+import * as CoreCryptoFfiTypes from "./wasm/core-crypto-ffi.d.js";
 import initWasm, {
     CoreCrypto as CoreCryptoFfi,
     ConversationConfiguration as ConversationConfigurationFfi,
@@ -889,6 +889,22 @@ export enum CoreCryptoLogLevel {
     Warn = 5,
     Error = 6,
 }
+/**
+ * Initializes the global logger for Core Crypto and registers the callback. Can be called only once
+ * @param logger - the interface to be called when something is going to be logged
+ * @param level - the max level that should be logged
+ **/
+export function registerLogger(
+    logger: CoreCryptoLogger,
+    level: CoreCryptoLogLevel,
+    ctx: any = null
+): void {
+    const wasmLogger = new CoreCryptoWasmLogger(logger.log, ctx);
+    CoreCryptoFfiTypes.set_logger(
+        wasmLogger,
+        normalizeEnum(CoreCryptoLogLevel, level)
+    );
+}
 
 /**
  * Wrapper for the WASM-compiled version of CoreCrypto
@@ -1114,18 +1130,6 @@ export class CoreCrypto {
         } catch (e) {
             throw CoreCryptoError.fromStdError(e as Error);
         }
-    }
-
-    registerLogger(
-        logger: CoreCryptoLogger,
-        level: CoreCryptoLogLevel,
-        ctx: any = null
-    ): void {
-        const wasmLogger = new CoreCryptoWasmLogger(logger.log, ctx);
-        this.#cc.set_logger(
-            wasmLogger,
-            normalizeEnum(CoreCryptoLogLevel, level)
-        );
     }
 
     /**
