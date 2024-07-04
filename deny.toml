@@ -59,8 +59,6 @@ license-files = [
 
 [sources]
 allow-git = [
-    # ? Needed fork for PQ crypto
-    "https://github.com/bwesterb/argyle-kyber",
     # ? Needed for our interop runner.
     "https://github.com/otak/fantoccini",
     # ? Fix for wasm

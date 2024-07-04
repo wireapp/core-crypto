@@ -150,8 +150,6 @@ pub enum Ciphersuite {
     MLS_256_DHKEMX448_CHACHA20POLY1305_SHA512_Ed448 = 0x0006,
     /// DH KEM P384 | AES-GCM 256 | SHA2-384 | EcDSA P384
     MLS_256_DHKEMP384_AES256GCM_SHA384_P384 = 0x0007,
-    /// x25519Kyber768Draft00 Hybrid KEM | AES-GCM 128 | SHA2-256 | Ed25519
-    MLS_128_X25519KYBER768DRAFT00_AES128GCM_SHA256_Ed25519 = 0xF031,
 }
 
 impl From<MlsCiphersuite> for Ciphersuite {
@@ -183,9 +181,6 @@ impl From<CiphersuiteName> for Ciphersuite {
                 Self::MLS_256_DHKEMX448_CHACHA20POLY1305_SHA512_Ed448
             }
             CiphersuiteName::MLS_256_DHKEMP384_AES256GCM_SHA384_P384 => Self::MLS_256_DHKEMP384_AES256GCM_SHA384_P384,
-            CiphersuiteName::MLS_128_X25519KYBER768DRAFT00_AES128GCM_SHA256_Ed25519 => {
-                Self::MLS_128_X25519KYBER768DRAFT00_AES128GCM_SHA256_Ed25519
-            }
         }
     }
 }
@@ -207,9 +202,6 @@ impl Into<CiphersuiteName> for Ciphersuite {
                 CiphersuiteName::MLS_256_DHKEMX448_CHACHA20POLY1305_SHA512_Ed448
             }
             Self::MLS_256_DHKEMP384_AES256GCM_SHA384_P384 => CiphersuiteName::MLS_256_DHKEMP384_AES256GCM_SHA384_P384,
-            Self::MLS_128_X25519KYBER768DRAFT00_AES128GCM_SHA256_Ed25519 => {
-                CiphersuiteName::MLS_128_X25519KYBER768DRAFT00_AES128GCM_SHA256_Ed25519
-            }
         }
     }
 }
