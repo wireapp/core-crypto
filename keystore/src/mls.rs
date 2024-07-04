@@ -146,7 +146,7 @@ impl CryptoKeystoreMls for crate::connection::Connection {
             WasmStorageWrapper::Persistent(rexie) => {
                 let transaction = rexie.transaction(&["mls_keypackages"], rexie::TransactionMode::ReadOnly)?;
                 let store = transaction.store("mls_keypackages")?;
-                let items_fut = store.get_all(None, Some(count), None, Some(rexie::Direction::Next));
+                let items_fut = store.scan(None, Some(count), None, Some(rexie::Direction::Next));
 
                 let items = items_fut.await?;
 

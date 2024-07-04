@@ -106,7 +106,7 @@ impl MlsCredentialExt for MlsCredential {
                 let store = transaction.store(collection)?;
                 let store_index = store.index(index)?;
                 let credential_js: wasm_bindgen::JsValue = js_sys::Uint8Array::from(&credential[..]).into();
-                let Some(entity_raw) = store_index.get(&credential_js).await? else {
+                let Some(entity_raw) = store_index.get(credential_js).await? else {
                     let reason = "'credential' in 'mls_credentials' collection";
                     let value = hex::encode(&credential);
                     return Err(CryptoKeystoreError::NotFound(reason, value));
@@ -116,7 +116,7 @@ impl MlsCredentialExt for MlsCredential {
                 credential.decrypt(&storage.cipher)?;
 
                 let id = js_sys::Uint8Array::from(credential.id.as_slice());
-                store.delete(&id.into()).await?;
+                store.delete(id.into()).await?;
             }
             WasmStorageWrapper::InMemory(_) => {
                 // current table model does not fit in a hashmap (no more primary key)
