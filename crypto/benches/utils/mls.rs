@@ -29,8 +29,6 @@ pub(crate) enum MlsTestCase {
     Basic_Ciphersuite3,
     #[cfg(feature = "test-all-cipher")]
     Basic_Ciphersuite7,
-    #[cfg(any(feature = "test-all-cipher", feature = "test-pq-cipher"))]
-    Basic_PostQuantum,
 }
 
 impl MlsTestCase {
@@ -55,12 +53,6 @@ impl MlsTestCase {
             MlsTestCase::Basic_Ciphersuite7 => {
                 (*self, Ciphersuite::MLS_256_DHKEMP384_AES256GCM_SHA384_P384.into(), None)
             }
-            #[cfg(any(feature = "test-all-cipher", feature = "test-pq-cipher"))]
-            MlsTestCase::Basic_PostQuantum => (
-                *self,
-                Ciphersuite::MLS_128_X25519KYBER768DRAFT00_AES128GCM_SHA256_Ed25519.into(),
-                None,
-            ),
         }
     }
 
@@ -73,8 +65,6 @@ impl MlsTestCase {
             MlsTestCase::Basic_Ciphersuite3,
             #[cfg(feature = "test-all-cipher")]
             MlsTestCase::Basic_Ciphersuite7,
-            #[cfg(any(feature = "test-all-cipher", feature = "test-pq-cipher"))]
-            MlsTestCase::Basic_PostQuantum,
         ]
         .into_iter()
         .map(|v| v.get())
@@ -109,10 +99,6 @@ impl MlsTestCase {
             (MlsTestCase::Basic_Ciphersuite3, false) => "cs3/db",
             #[cfg(feature = "test-all-cipher")]
             (MlsTestCase::Basic_Ciphersuite7, false) => "cs7/db",
-            #[cfg(any(feature = "test-all-cipher", feature = "test-pq-cipher"))]
-            (MlsTestCase::Basic_PostQuantum, true) => "pq/mem",
-            #[cfg(any(feature = "test-all-cipher", feature = "test-pq-cipher"))]
-            (MlsTestCase::Basic_PostQuantum, false) => "pq/db",
         }
     }
 }
@@ -127,8 +113,6 @@ impl Display for MlsTestCase {
             MlsTestCase::Basic_Ciphersuite3 => write!(f, "cs3"),
             #[cfg(feature = "test-all-cipher")]
             MlsTestCase::Basic_Ciphersuite7 => write!(f, "cs7"),
-            #[cfg(any(feature = "test-all-cipher", feature = "test-pq-cipher"))]
-            MlsTestCase::Basic_PostQuantum => write!(f, "pq"),
         }
     }
 }

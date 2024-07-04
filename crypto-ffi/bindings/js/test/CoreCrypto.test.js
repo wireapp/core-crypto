@@ -229,7 +229,6 @@ test("can import ciphersuite enum", async () => {
     expect(Ciphersuite.MLS_256_DHKEMP521_AES256GCM_SHA512_P521).toBe(0x0005);
     expect(Ciphersuite.MLS_256_DHKEMX448_CHACHA20POLY1305_SHA512_Ed448).toBe(0x0006);
     expect(Ciphersuite.MLS_256_DHKEMP384_AES256GCM_SHA384_P384).toBe(0x0007);
-    expect(Ciphersuite.MLS_128_X25519KYBER768DRAFT00_AES128GCM_SHA256_Ed25519).toBe(0xf031);
 
     expect(await page.evaluate(() => window.ciphersuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519)).toBe(0x0001);
     expect(await page.evaluate(() => window.ciphersuite.MLS_128_DHKEMP256_AES128GCM_SHA256_P256)).toBe(0x0002);
@@ -238,7 +237,6 @@ test("can import ciphersuite enum", async () => {
     expect(await page.evaluate(() => window.ciphersuite.MLS_256_DHKEMP521_AES256GCM_SHA512_P521)).toBe(0x0005);
     expect(await page.evaluate(() => window.ciphersuite.MLS_256_DHKEMX448_CHACHA20POLY1305_SHA512_Ed448)).toBe(0x0006);
     expect(await page.evaluate(() => window.ciphersuite.MLS_256_DHKEMP384_AES256GCM_SHA384_P384)).toBe(0x0007);
-    expect(await page.evaluate(() => window.ciphersuite.MLS_128_X25519KYBER768DRAFT00_AES128GCM_SHA256_Ed25519)).toBe(0xf031);
 
     await page.close();
     await ctx.close();

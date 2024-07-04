@@ -45,8 +45,8 @@ hex = "0.4"
 async-lock = "3.3"
 
 [dependencies.hpke]
-version = "0.11"
-features = ["x25519", "p256", "p384", "p521", "xyber768d00"]
+version = "0.12"
+features = ["x25519", "p256", "p384", "p521"]
 
 [target.'cfg(not(target_os = "ios"))'.dependencies]
 core-crypto-keystore = { version = "^1.0.0-rc.60", path = "../keystore" }

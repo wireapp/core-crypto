@@ -15,7 +15,6 @@
 | ChaCha20Poly1305 | [RustCrypto/chacha20poly1305][chacha20poly1305]                     | [Audit by NCC Group][ncc-group-audit]                                      |
 | HKDF             | [RustCrypto/hkdf][hkdf]                                             | N/A                                                                        |
 | HPKE             | [rozbb/rust-hpke][hpke]                                             | [No formal audits, but Cloudflare reviewed it][hpke-sec]                   |
-| KyberDraft00     | [bwesterb/agyle-kyber][kyber]                                       | N/A, but the fork exists because of a [review][kyber-review] by Cloudflare |
 
 ## CSPRNG
 
@@ -35,10 +34,8 @@
 [ed25519-dalek]: https://github.com/dalek-cryptography/ed25519-dalek
 [x25519-dalek]: https://github.com/dalek-cryptography/x25519-dalek
 [ncc-group-audit]: https://research.nccgroup.com/2020/02/26/public-report-rustcrypto-aes-gcm-and-chacha20poly1305-implementation-review/
-[hpke]: https://github.com/rozbb/rust-hpke/tree/unstable-pq-xyber
-[hpke-sec]: https://github.com/rozbb/rust-hpke/tree/unstable-pq-xyber#warning
-[kyber]: https://github.com/bwesterb/argyle-kyber
-[kyber-review]: https://github.com/Argyle-Software/kyber/issues/73
+[hpke]: https://github.com/rozbb/rust-hpke/tree/main
+[hpke-sec]: https://github.com/rozbb/rust-hpke/tree/main#warning
 [rand]: https://github.com/rust-random/rand
 [rand-chacha]: https://github.com/rust-random/rand/tree/master/rand_chacha
 [getrandom]: https://github.com/rust-random/getrandom

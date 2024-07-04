@@ -94,8 +94,7 @@ impl OpenMlsCrypto for RustCrypto {
             | Ciphersuite::MLS_128_DHKEMX25519_CHACHA20POLY1305_SHA256_Ed25519
             | Ciphersuite::MLS_128_DHKEMP256_AES128GCM_SHA256_P256
             | Ciphersuite::MLS_256_DHKEMP384_AES256GCM_SHA384_P384
-            | Ciphersuite::MLS_256_DHKEMP521_AES256GCM_SHA512_P521
-            | Ciphersuite::MLS_128_X25519KYBER768DRAFT00_AES128GCM_SHA256_Ed25519 => Ok(()),
+            | Ciphersuite::MLS_256_DHKEMP521_AES256GCM_SHA512_P521 => Ok(()),
             _ => Err(CryptoError::UnsupportedCiphersuite),
         }
     }
@@ -107,7 +106,6 @@ impl OpenMlsCrypto for RustCrypto {
             Ciphersuite::MLS_128_DHKEMP256_AES128GCM_SHA256_P256,
             Ciphersuite::MLS_256_DHKEMP384_AES256GCM_SHA384_P384,
             Ciphersuite::MLS_256_DHKEMP521_AES256GCM_SHA512_P521,
-            Ciphersuite::MLS_128_X25519KYBER768DRAFT00_AES128GCM_SHA256_Ed25519,
         ]
     }
 
@@ -394,11 +392,6 @@ impl OpenMlsCrypto for RustCrypto {
                     pk_r, info, aad, ptxt, &mut *rng,
                 )
             }
-            HpkeConfig(HpkeKemType::X25519Kyber768Draft00, HpkeKdfType::HkdfSha256, HpkeAeadType::AesGcm128) => {
-                hpke_core::hpke_seal::<hpke::aead::AesGcm128, hpke::kdf::HkdfSha256, hpke::kem::X25519Kyber768Draft00>(
-                    pk_r, info, aad, ptxt, &mut *rng,
-                )
-            }
             _ => Err(CryptoError::UnsupportedKem),
         }
     }
@@ -450,15 +443,6 @@ impl OpenMlsCrypto for RustCrypto {
             }
             HpkeConfig(HpkeKemType::DhKemP521, HpkeKdfType::HkdfSha512, HpkeAeadType::AesGcm256) => {
                 hpke_core::hpke_open::<hpke::aead::AesGcm256, hpke::kdf::HkdfSha512, hpke::kem::DhP521HkdfSha512>(
-                    sk_r,
-                    input.kem_output.as_slice(),
-                    info,
-                    aad,
-                    input.ciphertext.as_slice(),
-                )?
-            }
-            HpkeConfig(HpkeKemType::X25519Kyber768Draft00, HpkeKdfType::HkdfSha256, HpkeAeadType::AesGcm128) => {
-                hpke_core::hpke_open::<hpke::aead::AesGcm128, hpke::kdf::HkdfSha256, hpke::kem::X25519Kyber768Draft00>(
                     sk_r,
                     input.kem_output.as_slice(),
                     info,
@@ -519,13 +503,6 @@ impl OpenMlsCrypto for RustCrypto {
                         hpke::kem::DhP521HkdfSha512,
                     >(pk_r, info, exporter_context, exporter_length, &mut *rng)?
                 }
-                HpkeConfig(HpkeKemType::X25519Kyber768Draft00, HpkeKdfType::HkdfSha256, HpkeAeadType::AesGcm128) => {
-                    hpke_core::hpke_export_tx::<
-                        hpke::aead::AesGcm128,
-                        hpke::kdf::HkdfSha256,
-                        hpke::kem::X25519Kyber768Draft00,
-                    >(pk_r, info, exporter_context, exporter_length, &mut *rng)?
-                }
                 _ => return Err(CryptoError::UnsupportedKem),
             };
 
@@ -580,13 +557,6 @@ impl OpenMlsCrypto for RustCrypto {
                         hpke::kem::DhP521HkdfSha512,
                     >(enc, sk_r, info, exporter_context, exporter_length)?
                 }
-                HpkeConfig(HpkeKemType::X25519Kyber768Draft00, HpkeKdfType::HkdfSha256, HpkeAeadType::AesGcm128) => {
-                    hpke_core::hpke_export_rx::<
-                        hpke::aead::AesGcm128,
-                        hpke::kdf::HkdfSha256,
-                        hpke::kem::X25519Kyber768Draft00,
-                    >(enc, sk_r, info, exporter_context, exporter_length)?
-                }
                 _ => return Err(CryptoError::UnsupportedKem),
             };
 
@@ -601,9 +571,6 @@ impl OpenMlsCrypto for RustCrypto {
             HpkeKemType::DhKemP384 => hpke_core::hpke_derive_keypair::<hpke::kem::DhP384HkdfSha384>(ikm),
             HpkeKemType::DhKemP521 => hpke_core::hpke_derive_keypair::<hpke::kem::DhP521HkdfSha512>(ikm),
             HpkeKemType::DhKem25519 => hpke_core::hpke_derive_keypair::<hpke::kem::X25519HkdfSha256>(ikm),
-            HpkeKemType::X25519Kyber768Draft00 => {
-                hpke_core::hpke_derive_keypair::<hpke::kem::X25519Kyber768Draft00>(ikm)
-            }
             _ => Err(CryptoError::UnsupportedKem),
         }
     }

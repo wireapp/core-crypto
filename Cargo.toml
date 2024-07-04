@@ -73,10 +73,6 @@ git = "https://github.com/wireapp/openmls"
 #tag = "v1.0.0-pre.core-crypto-1.0.0"
 branch = "wire/stable"
 
-[patch.crates-io.hpke]
-git = "https://github.com/wireapp/rust-hpke.git"
-branch = "wire/unstable-pq-xyber-p521"
-
 [patch.crates-io.x509-cert]
 git = "https://github.com/otak/formats"
 branch = "otak/x509-cert-wasm"

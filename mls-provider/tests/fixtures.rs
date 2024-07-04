@@ -171,26 +171,6 @@ pub fn entropy() -> EntropySeed {
     openmls::prelude::Ciphersuite::MLS_256_DHKEMP384_AES256GCM_SHA384_P384,
     Some(entropy())
 )]
-#[case::xyber768d00_aes128__sys_entropy__persistent(
-    setup(false),
-    openmls::prelude::Ciphersuite::MLS_128_X25519KYBER768DRAFT00_AES128GCM_SHA256_Ed25519,
-    None
-)]
-#[case::xyber768d00_aes128__ext_entropy__persistent(
-    setup(false),
-    openmls::prelude::Ciphersuite::MLS_128_X25519KYBER768DRAFT00_AES128GCM_SHA256_Ed25519,
-    Some(entropy())
-)]
-#[case::xyber768d00_aes128__sys_entropy__in_memory(
-    setup(true),
-    openmls::prelude::Ciphersuite::MLS_128_X25519KYBER768DRAFT00_AES128GCM_SHA256_Ed25519,
-    None
-)]
-#[case::xyber768d00_aes128__ext_entropy__in_memory(
-    setup(true),
-    openmls::prelude::Ciphersuite::MLS_128_X25519KYBER768DRAFT00_AES128GCM_SHA256_Ed25519,
-    Some(entropy())
-)]
 pub fn all_storage_types_and_ciphersuites(
     #[case]
     #[future]
