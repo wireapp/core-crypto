@@ -894,7 +894,7 @@ export enum CoreCryptoLogLevel {
  * @param logger - the interface to be called when something is going to be logged
  * @param level - the max level that should be logged
  **/
-export function registerLogger(
+export function initLogger(
     logger: CoreCryptoLogger,
     level: CoreCryptoLogLevel,
     ctx: any = null
