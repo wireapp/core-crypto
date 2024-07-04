@@ -107,7 +107,7 @@ impl WasmEncryptedStorage {
                 let id = id.as_ref().to_vec();
                 let js_key = js_sys::Uint8Array::from(id.as_slice());
 
-                if let Some(entity_raw) = store.get(&js_key).await? {
+                if let Some(entity_raw) = store.get(js_key.into()).await? {
                     let mut entity: R = serde_wasm_bindgen::from_value(entity_raw)?;
                     entity.decrypt(&self.cipher)?;
 
@@ -143,7 +143,7 @@ impl WasmEncryptedStorage {
 
                 let params = params.unwrap_or_default();
                 let raw_data = store
-                    .get_all(
+                    .scan(
                         None,
                         params.limit,
                         params.offset,
@@ -247,7 +247,7 @@ impl WasmEncryptedStorage {
                 let store = transaction.store(collection)?;
                 for k in ids {
                     let k = Uint8Array::from(k.as_ref());
-                    store.delete(&k.into()).await?;
+                    store.delete(k.into()).await?;
                 }
             }
             WasmStorageWrapper::InMemory(map) => {

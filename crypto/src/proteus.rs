@@ -837,7 +837,7 @@ impl ProteusCentral {
                 .map_err(CryptoboxMigrationError::from)?;
 
             if let Some(cryptobox_js_value) = identity_store
-                .get(&local_identity_key.into())
+                .get(local_identity_key.into())
                 .await
                 .map_err(CryptoboxMigrationError::from)?
             {
@@ -876,7 +876,7 @@ impl ProteusCentral {
                 .map_err(CryptoboxMigrationError::from)?;
 
             let sessions = sessions_store
-                .get_all(None, None, None, None)
+                .scan(None, None, None, None)
                 .await
                 .map_err(CryptoboxMigrationError::from)?;
 
@@ -915,7 +915,7 @@ impl ProteusCentral {
                 .map_err(CryptoboxMigrationError::from)?;
 
             let prekeys = prekeys_store
-                .get_all(None, None, None, None)
+                .scan(None, None, None, None)
                 .await
                 .map_err(CryptoboxMigrationError::from)?;
 
@@ -1344,7 +1344,7 @@ mod tests {
                     // Delete the maybe past database to make sure we start fresh
                     Rexie::builder(CRYPTOBOX_JS_DBNAME)
                         .delete()
-                        .await?;
+                        .await.map_err(|err| err.to_string())?;
 
                     let rexie = Rexie::builder(CRYPTOBOX_JS_DBNAME)
                         .version(1)
@@ -1352,11 +1352,11 @@ mod tests {
                         .add_object_store(ObjectStore::new("prekeys").auto_increment(false))
                         .add_object_store(ObjectStore::new("sessions").auto_increment(false))
                         .build()
-                        .await?;
+                        .await.map_err(|err| err.to_string())?;
 
                     // Add identity key
-                    let transaction = rexie.transaction(&["keys"], TransactionMode::ReadWrite)?;
-                    let store = transaction.store("keys")?;
+                    let transaction = rexie.transaction(&["keys"], TransactionMode::ReadWrite).map_err(|err| err.to_string())?;
+                    let store = transaction.store("keys").map_err(|err| err.to_string())?;
 
                     use base64::Engine as _;
                     let json = serde_json::json!({
@@ -1367,11 +1367,11 @@ mod tests {
                     });
                     let js_value = serde_wasm_bindgen::to_value(&json)?;
 
-                    store.add(&js_value, Some(&JsValue::from_str("local_identity"))).await?;
+                    store.add(&js_value, Some(&JsValue::from_str("local_identity"))).await.map_err(|err| err.to_string())?;
 
                     // Add prekeys
-                    let transaction = rexie.transaction(&["prekeys"], TransactionMode::ReadWrite)?;
-                    let store = transaction.store("prekeys")?;
+                    let transaction = rexie.transaction(&["prekeys"], TransactionMode::ReadWrite).map_err(|err| err.to_string())?;
+                    let store = transaction.store("prekeys").map_err(|err| err.to_string())?;
                     for prekey in alice.prekeys.0.into_iter() {
                         let id = prekey.key_id.value().to_string();
                         let json = serde_json::json!({
@@ -1381,12 +1381,12 @@ mod tests {
                             "version": "1.0"
                         });
                         let js_value = serde_wasm_bindgen::to_value(&json)?;
-                        store.add(&js_value, Some(&JsValue::from_str(&id))).await?;
+                        store.add(&js_value, Some(&JsValue::from_str(&id))).await.map_err(|err| err.to_string())?;
                     }
 
                     // Add sessions
-                    let transaction = rexie.transaction(&["sessions"], TransactionMode::ReadWrite)?;
-                    let store = transaction.store("sessions")?;
+                    let transaction = rexie.transaction(&["sessions"], TransactionMode::ReadWrite).map_err(|err| err.to_string())?;
+                    let store = transaction.store("sessions").map_err(|err| err.to_string())?;
                     for (session_id, session) in alice.sessions.into_iter() {
                         let json = serde_json::json!({
                             "created": 0,
@@ -1396,7 +1396,7 @@ mod tests {
                         });
 
                         let js_value = serde_wasm_bindgen::to_value(&json)?;
-                        store.add(&js_value, Some(&JsValue::from_str(&session_id))).await?;
+                        store.add(&js_value, Some(&JsValue::from_str(&session_id))).await.map_err(|err| err.to_string())?;
                     }
 
                     Ok(JsValue::UNDEFINED)
