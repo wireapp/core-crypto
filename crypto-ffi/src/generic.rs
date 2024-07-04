@@ -30,7 +30,7 @@ use core_crypto::{
     },
     MlsError,
 };
-use tracing::level_filters::LevelFilter;
+use tracing::{level_filters::LevelFilter, Level};
 use tracing_subscriber::fmt::{self, MakeWriter};
 
 use crate::UniffiCustomTypeConverter;
@@ -722,21 +722,44 @@ pub trait CoreCryptoCallbacks: std::fmt::Debug + Send + Sync {
     ) -> bool;
 }
 
+/// Initializes the logger
+/// WARNING: This is a global setting. Calling it twice will cause errors.
+#[uniffi::export]
+pub fn set_logger(logger: std::sync::Arc<dyn CoreCryptoLogger>, level: CoreCryptoLogLevel) {
+    fmt::fmt()
+        .json()
+        .with_writer(CoreCryptoLoggerWrapper { logger, level })
+        .with_max_level(LevelFilter::from(level))
+        .init()
+}
+
 /// This trait is used to provide a callback mechanism to hook up the rerspective platform logging system
 #[uniffi::export(with_foreign)]
 pub trait CoreCryptoLogger: std::fmt::Debug + Send + Sync {
     /// Function to setup a hook for the logging messages. Core Crypto will call this method
     /// whenever it needs to log a message.
-    fn log(&self, msg: String);
+    fn log(&self, level: CoreCryptoLogLevel, json_msg: String);
 }
 
-#[derive(Debug, Clone)]
-struct CoreCryptoLoggerWrapper(std::sync::Arc<dyn CoreCryptoLogger>);
+#[derive(Clone)]
+struct CoreCryptoLoggerWrapper {
+    logger: std::sync::Arc<dyn CoreCryptoLogger>,
+    level: CoreCryptoLogLevel,
+}
+
+impl CoreCryptoLoggerWrapper {
+    fn clone_with_level(&self, level: &Level) -> Self {
+        Self {
+            logger: self.logger.clone(),
+            level: level.into(),
+        }
+    }
+}
 
 impl std::io::Write for CoreCryptoLoggerWrapper {
     fn write(&mut self, buf: &[u8]) -> std::io::Result<usize> {
         let message = String::from_utf8_lossy(buf);
-        self.0.log(message.into_owned());
+        self.logger.log(self.level, message.into_owned());
         Ok(buf.len())
     }
 
@@ -750,6 +773,10 @@ impl MakeWriter<'_> for CoreCryptoLoggerWrapper {
 
     fn make_writer(&self) -> Self::Writer {
         self.clone()
+    }
+
+    fn make_writer_for(&'_ self, meta: &tracing::Metadata<'_>) -> Self::Writer {
+        self.clone_with_level(meta.level())
     }
 }
 
@@ -773,6 +800,18 @@ impl From<CoreCryptoLogLevel> for LevelFilter {
             CoreCryptoLogLevel::Info => LevelFilter::INFO,
             CoreCryptoLogLevel::Warn => LevelFilter::WARN,
             CoreCryptoLogLevel::Error => LevelFilter::ERROR,
+        }
+    }
+}
+
+impl From<&Level> for CoreCryptoLogLevel {
+    fn from(value: &Level) -> Self {
+        match *value {
+            Level::WARN => CoreCryptoLogLevel::Warn,
+            Level::ERROR => CoreCryptoLogLevel::Error,
+            Level::INFO => CoreCryptoLogLevel::Info,
+            Level::DEBUG => CoreCryptoLogLevel::Debug,
+            Level::TRACE => CoreCryptoLogLevel::Trace,
         }
     }
 }
@@ -937,15 +976,6 @@ impl CoreCrypto {
             .await
             .callbacks(std::sync::Arc::new(CoreCryptoCallbacksWrapper(callbacks)));
         Ok(())
-    }
-
-    /// Initializes the logger
-    pub fn set_logger(&self, logger: std::sync::Arc<dyn CoreCryptoLogger>, level: CoreCryptoLogLevel) {
-        fmt::fmt()
-            .json()
-            .with_max_level(LevelFilter::from(level))
-            .with_writer(CoreCryptoLoggerWrapper(logger))
-            .init()
     }
 
     /// See [core_crypto::mls::MlsCentral::client_public_key]

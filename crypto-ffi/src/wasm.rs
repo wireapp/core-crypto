@@ -26,7 +26,7 @@ use futures_util::future::TryFutureExt;
 use js_sys::{Promise, Uint8Array};
 use std::ops::DerefMut;
 use tls_codec::{Deserialize, Serialize};
-use tracing::level_filters::LevelFilter;
+use tracing::{level_filters::LevelFilter, Level};
 use tracing_subscriber::fmt::{self, MakeWriter};
 use wasm_bindgen::prelude::*;
 use wasm_bindgen::JsCast;
@@ -1059,9 +1059,19 @@ impl From<WirePolicy> for MlsWirePolicy {
 }
 
 #[wasm_bindgen]
+pub fn set_logger(logger: CoreCryptoWasmLogger, level: CoreCryptoLogLevel) {
+    fmt::fmt()
+        .json()
+        .with_writer(logger)
+        .with_max_level(LevelFilter::from(level))
+        .init()
+}
+
+#[wasm_bindgen]
 #[derive(Debug, Clone)]
 pub struct CoreCryptoWasmLogger {
     logger: js_sys::Function,
+    level: CoreCryptoLogLevel,
     ctx: JsValue,
 }
 
@@ -1090,18 +1100,44 @@ impl From<CoreCryptoLogLevel> for LevelFilter {
     }
 }
 
+impl From<&Level> for CoreCryptoLogLevel {
+    fn from(value: &Level) -> CoreCryptoLogLevel {
+        match *value {
+            Level::WARN => CoreCryptoLogLevel::Warn,
+            Level::ERROR => CoreCryptoLogLevel::Error,
+            Level::INFO => CoreCryptoLogLevel::Info,
+            Level::DEBUG => CoreCryptoLogLevel::Debug,
+            Level::TRACE => CoreCryptoLogLevel::Trace,
+        }
+    }
+}
+
 #[wasm_bindgen]
 impl CoreCryptoWasmLogger {
     #[wasm_bindgen(constructor)]
     pub fn new(logger: js_sys::Function, ctx: JsValue) -> Self {
-        Self { logger, ctx }
+        Self {
+            logger,
+            level: CoreCryptoLogLevel::Info,
+            ctx,
+        }
+    }
+
+    fn clone_with_level(&self, level: &Level) -> Self {
+        Self {
+            logger: self.logger.clone(),
+            level: level.into(),
+            ctx: self.ctx.clone(),
+        }
     }
 }
 
 impl std::io::Write for CoreCryptoWasmLogger {
     fn write(&mut self, buf: &[u8]) -> std::io::Result<usize> {
         let message = String::from_utf8_lossy(buf);
-        let _ = self.logger.call1(&self.ctx, &JsValue::from(message.as_ref()));
+        let _ = self
+            .logger
+            .call2(&self.ctx, &JsValue::from(self.level), &JsValue::from(message.as_ref()));
         Ok(buf.len())
     }
 
@@ -1115,6 +1151,10 @@ impl MakeWriter<'_> for CoreCryptoWasmLogger {
 
     fn make_writer(&self) -> Self::Writer {
         self.clone()
+    }
+
+    fn make_writer_for(&'_ self, meta: &tracing::Metadata<'_>) -> Self::Writer {
+        self.clone_with_level(meta.level())
     }
 }
 
@@ -1493,14 +1533,6 @@ impl CoreCrypto {
             }
             .err_into(),
         )
-    }
-
-    pub fn set_logger(&self, logger: CoreCryptoWasmLogger, level: CoreCryptoLogLevel) {
-        fmt::fmt()
-            .json()
-            .with_max_level(LevelFilter::from(level))
-            .with_writer(logger)
-            .init()
     }
 
     /// Returns:: [`WasmCryptoResult<js_sys::Uint8Array>`]
