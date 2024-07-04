@@ -144,5 +144,9 @@ name = "create_group"
 harness = false
 
 [[bench]]
+name = "join_large_group"
+harness = false
+
+[[bench]]
 name = "mls_proteus"
 harness = false

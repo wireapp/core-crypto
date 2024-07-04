@@ -21,7 +21,7 @@ use mls_crypto_provider::MlsCryptoProvider;
 
 #[derive(Copy, Clone, Eq, PartialEq)]
 #[allow(non_camel_case_types)]
-pub(crate) enum MlsTestCase {
+pub enum MlsTestCase {
     Basic_Ciphersuite1,
     #[cfg(feature = "test-all-cipher")]
     Basic_Ciphersuite2,
@@ -56,7 +56,7 @@ impl MlsTestCase {
         }
     }
 
-    pub(crate) fn values() -> impl Iterator<Item = (Self, MlsCiphersuite, Option<CertificateBundle>, bool)> {
+    pub fn values() -> impl Iterator<Item = (Self, MlsCiphersuite, Option<CertificateBundle>, bool)> {
         [
             MlsTestCase::Basic_Ciphersuite1,
             #[cfg(feature = "test-all-cipher")]
@@ -79,11 +79,11 @@ impl MlsTestCase {
         })
     }
 
-    pub(crate) fn benchmark_id(&self, i: usize, in_memory: bool) -> BenchmarkId {
+    pub fn benchmark_id(&self, i: usize, in_memory: bool) -> BenchmarkId {
         BenchmarkId::new(self.ciphersuite_name(in_memory), i)
     }
 
-    pub(crate) const fn ciphersuite_name(&self, in_memory: bool) -> &'static str {
+    pub const fn ciphersuite_name(&self, in_memory: bool) -> &'static str {
         match (self, in_memory) {
             (MlsTestCase::Basic_Ciphersuite1, true) => "cs1/mem",
             #[cfg(feature = "test-all-cipher")]
@@ -117,7 +117,7 @@ impl Display for MlsTestCase {
     }
 }
 
-pub(crate) async fn setup_mls(
+pub async fn setup_mls(
     ciphersuite: MlsCiphersuite,
     credential: Option<&CertificateBundle>,
     in_memory: bool,
@@ -139,7 +139,7 @@ pub(crate) async fn setup_mls(
     (central, id)
 }
 
-pub(crate) async fn new_central(
+pub async fn new_central(
     ciphersuite: MlsCiphersuite,
     // TODO: always None for the moment. Need to update the benches with some realistic certificates. Tracking issue: WPB-9589
     _credential: Option<&CertificateBundle>,
@@ -174,12 +174,12 @@ pub(crate) fn tmp_db_file() -> (String, tempfile::TempDir) {
     (path, tmp_dir)
 }
 
-pub(crate) fn conversation_id() -> ConversationId {
+pub fn conversation_id() -> ConversationId {
     let uuid = uuid::Uuid::new_v4();
     ConversationId::from(format!("{}@conversations.wire.com", uuid.hyphenated()))
 }
 
-pub(crate) async fn add_clients(
+pub async fn add_clients(
     central: &mut MlsCentral,
     id: &ConversationId,
     ciphersuite: MlsCiphersuite,
