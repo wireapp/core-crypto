@@ -37,7 +37,6 @@ runner = [
     "--webdriver=chrome",
     "--timeout=600"
 ]
-# rustflags = "-C target-feature=+atomics,+bulk-memory,+mutable-globals"
 
 # Android linkage
 [target.armv7-linux-androideabi]
