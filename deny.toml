@@ -61,8 +61,6 @@ license-files = [
 allow-git = [
     # ? Needed for our interop runner.
     "https://github.com/otak/fantoccini",
-    # ? Fix for wasm
-    "https://github.com/otak/formats?branch=otak/x509-cert-wasm",
     # ? Needed for rusqlite
     "https://github.com/alexcrichton/openssl-src-rs",
 ]
