@@ -43,7 +43,7 @@ schnellru = "0.2"
 zeroize = "1.5"
 wire-e2e-identity = { workspace = true }
 indexmap = "2"
-x509-cert = "0.2"
+x509-cert = { workspace = true }
 pem = "3.0"
 async-recursion = "1"
 uniffi = { workspace = true, optional = true }
