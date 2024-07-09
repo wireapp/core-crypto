@@ -36,14 +36,14 @@ mod tests {
     use wasm_bindgen_test::*;
     wasm_bindgen_test_configure!(run_in_browser);
 
-    fn test_randomness(backend: &mut MlsCryptoProvider, entropy: Option<EntropySeed>) {
+    async fn test_randomness(backend: &mut MlsCryptoProvider, entropy: Option<EntropySeed>) {
         backend.reseed(entropy);
 
         let random = backend.rand();
         let mut hashes = Vec::with_capacity(ITER_ROUNDS);
 
         for _ in 0..ITER_ROUNDS / 2 {
-            let arr: [u8; RAND_ARR_LEN] = random.random_array().unwrap();
+            let arr: [u8; RAND_ARR_LEN] = random.random_array().await.unwrap();
             let mut hasher = Sha256::new();
             hasher.update(arr);
             let hash = hasher.finalize();
@@ -54,7 +54,7 @@ mod tests {
         }
 
         for _ in 0..ITER_ROUNDS / 2 {
-            let arr = random.random_vec(RAND_ARR_LEN).unwrap();
+            let arr = random.random_vec(RAND_ARR_LEN).await.unwrap();
             let mut hasher = Sha256::new();
             hasher.update(arr);
             let hash = hasher.finalize();
@@ -69,7 +69,7 @@ mod tests {
     #[wasm_bindgen_test]
     async fn can_generate_sufficient_randomness_ext_entropy(backend: MlsCryptoProvider) {
         let mut backend = backend.await;
-        test_randomness(&mut backend, Some(entropy()));
+        test_randomness(&mut backend, Some(entropy())).await;
         teardown(backend).await;
     }
 
@@ -77,7 +77,7 @@ mod tests {
     #[wasm_bindgen_test]
     async fn can_generate_sufficient_randomness_sys_entropy(backend: MlsCryptoProvider) {
         let mut backend = backend.await;
-        test_randomness(&mut backend, None);
+        test_randomness(&mut backend, None).await;
         teardown(backend).await;
     }
 
@@ -91,7 +91,7 @@ mod tests {
         // https://tools.ietf.org/html/draft-nir-cfrg-chacha20-poly1305-04
         let seed = [0u8; 32];
         backend.reseed(Some(EntropySeed::from_raw(seed)));
-        let mut rng = backend.rand().borrow_rand().unwrap();
+        let mut rng = backend.rand().borrow_rand().await;
 
         let mut results = [0u32; 16];
         for i in results.iter_mut() {
@@ -127,7 +127,7 @@ mod tests {
             0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1,
         ];
         backend.reseed(Some(EntropySeed::from_raw(seed)));
-        let mut rng = backend.rand().borrow_rand().unwrap();
+        let mut rng = backend.rand().borrow_rand().await;
 
         // Skip block 0
         for _ in 0..16 {
@@ -167,7 +167,7 @@ mod tests {
 
         // Test block 2 by skipping block 0 and 1
         backend.reseed(Some(EntropySeed::from_raw(seed)));
-        let mut rng1 = backend.rand().borrow_rand().unwrap();
+        let mut rng1 = backend.rand().borrow_rand().await;
         for _ in 0..32 {
             rng1.next_u32();
         }
@@ -181,7 +181,7 @@ mod tests {
 
         // Test block 2 by using `set_word_pos`
         backend.reseed(Some(EntropySeed::from_raw(seed)));
-        let mut rng2 = backend.rand().borrow_rand().unwrap();
+        let mut rng2 = backend.rand().borrow_rand().await;
         rng2.set_word_pos(2 * 16);
         for i in results.iter_mut() {
             *i = rng2.next_u32();
@@ -214,7 +214,7 @@ mod tests {
         // https://tools.ietf.org/html/draft-nir-cfrg-chacha20-poly1305-04
         let seed = [0u8; 32];
         backend.reseed(Some(EntropySeed::from_raw(seed)));
-        let mut rng = backend.rand().borrow_rand().unwrap();
+        let mut rng = backend.rand().borrow_rand().await;
         // 96-bit nonce in LE order is: 0,0,0,0, 0,0,0,0, 0,0,0,2
         rng.set_stream(2u64 << (24 + 32));
 

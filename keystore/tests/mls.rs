@@ -103,7 +103,7 @@ mod tests {
 
         let keypair = SignatureKeyPair::new(
             ciphersuite.signature_algorithm(),
-            &mut *backend.rand().borrow_rand().unwrap(),
+            &mut *backend.rand().borrow_rand().await,
         )
         .unwrap();
 

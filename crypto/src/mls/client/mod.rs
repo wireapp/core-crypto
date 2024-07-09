@@ -138,9 +138,9 @@ impl Client {
         // Here we generate a provisional, random, uuid-like random Client ID for no purpose other than database/store constraints
         let mut tmp_client_ids = Vec::with_capacity(ciphersuites.len());
         for cs in ciphersuites {
-            let tmp_client_id: ClientId = backend.rand().random_vec(TEMP_KEY_SIZE)?.into();
+            let tmp_client_id: ClientId = backend.rand().random_vec(TEMP_KEY_SIZE).await?.into();
 
-            let cb = Self::new_basic_credential_bundle(&tmp_client_id, cs.signature_algorithm(), backend)?;
+            let cb = Self::new_basic_credential_bundle(&tmp_client_id, cs.signature_algorithm(), backend).await?;
 
             let sign_kp = MlsSignatureKeyPair::new(
                 cs.signature_algorithm(),
@@ -256,7 +256,7 @@ impl Client {
             keypackage_lifetime: KEYPACKAGE_DEFAULT_LIFETIME,
         };
 
-        let identities = identifier.generate_credential_bundles(backend, signature_schemes)?;
+        let identities = identifier.generate_credential_bundles(backend, signature_schemes).await?;
 
         for (sc, id, cb) in identities {
             client.save_identity(backend, Some(&id), sc, cb).await?;
@@ -301,7 +301,7 @@ impl Client {
             let signature_key = if let Some(kp) = kp {
                 SignatureKeyPair::tls_deserialize(&mut kp.keypair.as_slice()).map_err(MlsError::from)?
             } else {
-                let (sk, pk) = backend.crypto().signature_key_gen(sc).map_err(MlsError::from)?;
+                let (sk, pk) = backend.crypto().signature_key_gen(sc).await.map_err(MlsError::from)?;
                 let keypair = SignatureKeyPair::from_raw(sc, sk, pk.clone());
                 let raw_keypair = keypair.tls_serialize_detached().map_err(MlsError::from)?;
                 let store_keypair = MlsSignatureKeyPair::new(sc, pk, raw_keypair, id.as_slice().into());
@@ -439,7 +439,7 @@ impl Client {
         let existing_cb = self.find_most_recent_credential_bundle(sc, MlsCredentialType::Basic);
         if existing_cb.is_none() {
             debug!(id = %self.id(), "Initializing basic credential bundle");
-            let cb = Self::new_basic_credential_bundle(self.id(), sc, backend)?;
+            let cb = Self::new_basic_credential_bundle(self.id(), sc, backend).await?;
             self.save_identity(backend, None, sc, cb).await?;
         }
         Ok(())
@@ -480,7 +480,7 @@ impl Client {
             MlsCredentialType::Basic => ClientIdentifier::Basic(client_id.as_str().into()),
             MlsCredentialType::X509 => {
                 let signer = signer.expect("Missing intermediate CA");
-                CertificateBundle::rand_identifier(&client_id, &[signer])
+                CertificateBundle::rand_identifier(&client_id, &[signer]).await
             }
         };
         let nb_key_package = if provision {
@@ -522,7 +522,7 @@ mod tests {
     async fn can_generate_client(case: TestCase) {
         let backend = MlsCryptoProvider::try_new_in_memory("test").await.unwrap();
         let x509_test_chain = if case.is_x509() {
-            let x509_test_chain = crate::test_utils::x509::X509TestChain::init_empty(case.signature_scheme());
+            let x509_test_chain = crate::test_utils::x509::X509TestChain::init_empty(case.signature_scheme()).await;
             x509_test_chain.register_with_provider(&backend).await;
             Some(x509_test_chain)
         } else {

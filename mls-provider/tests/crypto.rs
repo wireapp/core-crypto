@@ -92,7 +92,7 @@ mod tests {
         let mut backend = backend.await;
         backend.reseed(entropy_seed);
         let len = rand::thread_rng().gen_range(LEN_RANGE);
-        let data = backend.rand().random_vec(len).unwrap();
+        let data = backend.rand().random_vec(len).await.unwrap();
         let crypto = backend.crypto();
         let output = crypto.hash(ciphersuite.hash_algorithm(), &data).unwrap();
         let supposed_output_len = ciphersuite.hash_length();
@@ -111,13 +111,13 @@ mod tests {
         let mut backend = backend.await;
         backend.reseed(entropy_seed);
         let len = rand::thread_rng().gen_range(LEN_RANGE);
-        let data = backend.rand().random_vec(len).unwrap();
+        let data = backend.rand().random_vec(len).await.unwrap();
         let aad = backend
             .rand()
-            .random_vec(rand::thread_rng().gen_range(LEN_RANGE))
+            .random_vec(rand::thread_rng().gen_range(LEN_RANGE)).await
             .unwrap();
-        let nonce = backend.rand().random_vec(ciphersuite.aead_nonce_length()).unwrap();
-        let key = backend.rand().random_vec(ciphersuite.aead_key_length()).unwrap();
+        let nonce = backend.rand().random_vec(ciphersuite.aead_nonce_length()).await.unwrap();
+        let key = backend.rand().random_vec(ciphersuite.aead_key_length()).await.unwrap();
 
         let crypto = backend.crypto();
         let encrypted = crypto
@@ -146,10 +146,10 @@ mod tests {
         backend.reseed(entropy_seed);
 
         let len = rand::thread_rng().gen_range(LEN_RANGE);
-        let data = backend.rand().random_vec(len).unwrap();
+        let data = backend.rand().random_vec(len).await.unwrap();
 
         let crypto = backend.crypto();
-        let (sk, pk) = crypto.signature_key_gen(ciphersuite.signature_algorithm()).unwrap();
+        let (sk, pk) = crypto.signature_key_gen(ciphersuite.signature_algorithm()).await.unwrap();
 
         let signature = crypto.sign(ciphersuite.signature_algorithm(), &data, &sk).unwrap();
         crypto
@@ -173,17 +173,17 @@ mod tests {
 
         let message = backend
             .rand()
-            .random_vec(rand::thread_rng().gen_range(LEN_RANGE))
+            .random_vec(rand::thread_rng().gen_range(LEN_RANGE)).await
             .unwrap();
 
         let aad = backend
             .rand()
-            .random_vec(rand::thread_rng().gen_range(LEN_RANGE))
+            .random_vec(rand::thread_rng().gen_range(LEN_RANGE)).await
             .unwrap();
 
         let info = backend
             .rand()
-            .random_vec(rand::thread_rng().gen_range(LEN_RANGE))
+            .random_vec(rand::thread_rng().gen_range(LEN_RANGE)).await
             .unwrap();
 
         let alice = crypto
@@ -191,13 +191,13 @@ mod tests {
                 ciphersuite.hpke_config(),
                 &backend
                     .rand()
-                    .random_vec(rand::thread_rng().gen_range(LEN_RANGE))
+                    .random_vec(rand::thread_rng().gen_range(LEN_RANGE)).await
                     .unwrap(),
             )
             .unwrap();
 
         let secret_message = crypto
-            .hpke_seal(ciphersuite.hpke_config(), &alice.public, &info, &aad, &message)
+            .hpke_seal(ciphersuite.hpke_config(), &alice.public, &info, &aad, &message).await
             .unwrap();
         let unsealed_secret_message = crypto
             .hpke_open(ciphersuite.hpke_config(), &secret_message, &alice.private, &info, &aad)
@@ -214,7 +214,7 @@ mod tests {
                 &info,
                 hpke_info,
                 ciphersuite.hash_length(),
-            )
+            ).await
             .unwrap();
 
         let secret_rx = crypto

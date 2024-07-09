@@ -731,18 +731,18 @@ impl PkiKeypair {
         Ok(cert)
     }
 
-    pub fn rand_unchecked(alg: SignatureScheme) -> Self {
+    pub async fn rand_unchecked(alg: SignatureScheme) -> Self {
         let provider = crate::RustCrypto::default();
         use openmls_traits::crypto::OpenMlsCrypto;
-        Self::new(alg, provider.signature_key_gen(alg).unwrap().0).unwrap()
+        Self::new(alg, provider.signature_key_gen(alg).await.unwrap().0).unwrap()
     }
 
-    pub fn rand(alg: SignatureScheme, crypto: &crate::RustCrypto) -> crate::MlsProviderResult<Self> {
+    pub async fn rand(alg: SignatureScheme, crypto: &crate::RustCrypto) -> crate::MlsProviderResult<Self> {
         use openmls_traits::crypto::OpenMlsCrypto as _;
         Self::new(
             alg,
             crypto
-                .signature_key_gen(alg)
+                .signature_key_gen(alg).await
                 .map_err(|_| crate::MlsProviderError::UnsufficientEntropy)?
                 .0,
         )

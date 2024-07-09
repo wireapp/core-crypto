@@ -1324,7 +1324,7 @@ impl CoreCrypto {
             .central
             .lock()
             .await
-            .random_bytes(len.try_into().map_err(CryptoError::from)?)?)
+            .random_bytes(len.try_into().map_err(CryptoError::from)?).await?)
     }
 
     /// see [core_crypto::prelude::MlsCryptoProvider::reseed]
@@ -1659,7 +1659,7 @@ impl CoreCrypto {
                 team,
                 expiry_sec,
                 ciphersuite.into(),
-            )
+            ).await
             .map(async_lock::RwLock::new)
             .map(std::sync::Arc::new)
             .map(E2eiEnrollment)?)
@@ -1678,7 +1678,7 @@ impl CoreCrypto {
             .central
             .lock()
             .await
-            .e2ei_new_activation_enrollment(display_name, handle, team, expiry_sec, ciphersuite.into())
+            .e2ei_new_activation_enrollment(display_name, handle, team, expiry_sec, ciphersuite.into()).await
             .map(async_lock::RwLock::new)
             .map(std::sync::Arc::new)
             .map(E2eiEnrollment)?)

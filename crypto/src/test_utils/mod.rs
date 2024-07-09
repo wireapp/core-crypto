@@ -21,6 +21,7 @@ pub use openmls_traits::types::SignatureScheme;
 pub use rstest::*;
 pub use rstest_reuse::{self, *};
 use std::collections::HashMap;
+use async_std::task::block_on;
 
 use crate::{
     prelude::{ClientId, ConversationId, E2eiEnrollment, MlsCentral, MlsCentralConfiguration},
@@ -86,7 +87,7 @@ impl ClientContext {
     }
 }
 
-fn init_x509_test_chain(case: &TestCase, client_ids: &[[&str; 3]], revoked_display_names: &[&str]) -> X509TestChain {
+async fn init_x509_test_chain(case: &TestCase, client_ids: &[[&str; 3]], revoked_display_names: &[&str]) -> X509TestChain {
     let default_params = CertificateParams::default();
     let root_params = {
         let mut params = default_params.clone();
@@ -130,7 +131,7 @@ fn init_x509_test_chain(case: &TestCase, client_ids: &[[&str; 3]], revoked_displ
         federated_test_chains: &[],
         local_actors,
         dump_pem_certs: false,
-    })
+    }).await
 }
 
 pub async fn run_test_with_central(
@@ -181,7 +182,7 @@ pub async fn run_test_with_deterministic_client_ids_and_revocation<const N: usiz
         Box::pin(async move {
             let x509_test_chain = std::sync::Arc::new(
                 case.is_x509()
-                    .then(|| init_x509_test_chain(&case, &client_ids, revoked_display_names)),
+                    .then(|| block_on(async {  init_x509_test_chain(&case, &client_ids, revoked_display_names).await})),
             );
 
             let path_x509_chains: Vec<std::sync::Arc<Option<X509TestChain>>> =
@@ -260,7 +261,7 @@ pub async fn run_test_wo_clients(
     run_tests(move |paths: [String; 1]| {
         Box::pin(async move {
             let p = paths.first().unwrap();
-            // let x509_test_chain = X509TestChain::init_empty(case.signature_scheme());
+            // let x509_test_chain = X509TestChain::init_empty(case.signature_scheme()).await;
 
             let ciphersuites = vec![case.cfg.ciphersuite];
             let configuration = MlsCentralConfiguration::try_new(

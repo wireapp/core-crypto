@@ -214,7 +214,7 @@ pub(crate) async fn rand_key_package(ciphersuite: MlsCiphersuite) -> (KeyPackage
     let backend = MlsCryptoProvider::try_new_in_memory("secret").await.unwrap();
     let cs: Ciphersuite = ciphersuite.into();
 
-    let mut rng = backend.rand().borrow_rand().unwrap();
+    let mut rng = backend.rand().borrow_rand().await;
     let signer = SignatureKeyPair::new(ciphersuite.signature_algorithm(), &mut *rng).unwrap();
     drop(rng);
 

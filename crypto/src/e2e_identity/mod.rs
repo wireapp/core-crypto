@@ -52,7 +52,7 @@ impl MlsCentral {
     /// * `handle` - user handle e.g. `alice.smith.qa@example.com`
     /// * `expiry_sec` - generated x509 certificate expiry in seconds
     #[cfg_attr(not(test), tracing::instrument(err, skip_all))]
-    pub fn e2ei_new_enrollment(
+    pub async fn e2ei_new_enrollment(
         &self,
         client_id: ClientId,
         display_name: String,
@@ -73,7 +73,7 @@ impl MlsCentral {
             signature_keypair,
             #[cfg(not(target_family = "wasm"))]
             None, // fresh install so no refresh token registered yet
-        )
+        ).await
     }
 
     /// Parses the ACME server response from the endpoint fetching x509 certificates and uses it
@@ -156,7 +156,7 @@ impl E2eiEnrollment {
     /// * `expiry_sec` - generated x509 certificate expiry in seconds
     #[allow(clippy::too_many_arguments)]
     #[cfg_attr(not(test), tracing::instrument(err, skip_all))]
-    pub fn try_new(
+    pub async fn try_new(
         client_id: ClientId,
         display_name: String,
         handle: String,
@@ -170,7 +170,7 @@ impl E2eiEnrollment {
         let alg = ciphersuite.try_into()?;
         let sign_sk = match sign_keypair {
             Some(kp) => kp,
-            None => Self::new_sign_key(ciphersuite, backend)?,
+            None => Self::new_sign_key(ciphersuite, backend).await?,
         };
 
         let client_id = QualifiedE2eiClientId::try_from(client_id.as_slice())?;
@@ -634,10 +634,10 @@ pub(crate) mod tests {
                             Some(TEAM.to_string()),
                             E2EI_EXPIRY,
                             cs,
-                        )
+                        ).await
                     })
                 }
-                let x509_test_chain = X509TestChain::init_empty(case.signature_scheme());
+                let x509_test_chain = X509TestChain::init_empty(case.signature_scheme()).await;
 
                 let is_renewal = false;
 
@@ -976,7 +976,7 @@ pub(crate) mod tests {
             Some(&client_id),
             Some(existing_keypair),
             x509_test_chain.find_local_intermediate_ca(),
-        );
+        ).await;
 
         let cert_chain = cert
             .certificate_chain

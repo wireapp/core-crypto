@@ -102,12 +102,12 @@ impl PartialOrd for CredentialBundle {
 
 impl Client {
     #[cfg_attr(not(test), cfg_attr(not(test), tracing::instrument(err, skip(backend), fields(id = %id))))]
-    pub(crate) fn new_basic_credential_bundle(
+    pub(crate) async fn new_basic_credential_bundle(
         id: &ClientId,
         sc: SignatureScheme,
         backend: &MlsCryptoProvider,
     ) -> CryptoResult<CredentialBundle> {
-        let (sk, pk) = backend.crypto().signature_key_gen(sc).map_err(MlsError::from)?;
+        let (sk, pk) = backend.crypto().signature_key_gen(sc).await.map_err(MlsError::from)?;
 
         let signature_key = SignatureKeyPair::from_raw(sc, sk, pk);
         let credential = Credential::new_basic(id.to_vec());
@@ -176,10 +176,10 @@ mod tests {
     #[wasm_bindgen_test]
     async fn certificate_clients_can_send_messages(case: TestCase) {
         if case.is_x509() {
-            let mut x509_test_chain = X509TestChain::init_empty(case.signature_scheme());
+            let mut x509_test_chain = X509TestChain::init_empty(case.signature_scheme()).await;
 
-            let (alice_identifier, _) = x509_test_chain.issue_simple_certificate_bundle("alice", None);
-            let (bob_identifier, _) = x509_test_chain.issue_simple_certificate_bundle("bob", None);
+            let (alice_identifier, _) = x509_test_chain.issue_simple_certificate_bundle("alice", None).await;
+            let (bob_identifier, _) = x509_test_chain.issue_simple_certificate_bundle("bob", None).await;
             assert!(
                 try_talk(&case, Some(&x509_test_chain), alice_identifier, bob_identifier)
                     .await
@@ -191,12 +191,12 @@ mod tests {
     #[apply(all_cred_cipher)]
     #[wasm_bindgen_test]
     async fn heterogeneous_clients_can_send_messages(case: TestCase) {
-        let mut x509_test_chain = X509TestChain::init_empty(case.signature_scheme());
+        let mut x509_test_chain = X509TestChain::init_empty(case.signature_scheme()).await;
 
         // check that both credentials can initiate/join a group
         {
             let alice_identifier = ClientIdentifier::Basic("alice".into());
-            let (bob_identifier, _) = x509_test_chain.issue_simple_certificate_bundle("bob", None);
+            let (bob_identifier, _) = x509_test_chain.issue_simple_certificate_bundle("bob", None).await;
             assert!(
                 try_talk(&case, Some(&x509_test_chain), alice_identifier, bob_identifier)
                     .await
@@ -205,7 +205,7 @@ mod tests {
             // drop alice & bob key stores
         }
         {
-            let (alice_identifier, _) = x509_test_chain.issue_simple_certificate_bundle("alice", None);
+            let (alice_identifier, _) = x509_test_chain.issue_simple_certificate_bundle("alice", None).await;
             let bob_identifier = ClientIdentifier::Basic("bob".into());
             assert!(
                 try_talk(&case, Some(&x509_test_chain), alice_identifier, bob_identifier)
@@ -218,15 +218,15 @@ mod tests {
     #[apply(all_cred_cipher)]
     #[wasm_bindgen_test]
     async fn should_fail_when_certificate_chain_is_empty(case: TestCase) {
-        let mut x509_test_chain = X509TestChain::init_empty(case.signature_scheme());
+        let mut x509_test_chain = X509TestChain::init_empty(case.signature_scheme()).await;
 
         let x509_intermediate = x509_test_chain.find_local_intermediate_ca();
 
-        let mut certs = CertificateBundle::rand(&"alice".into(), x509_intermediate);
+        let mut certs = CertificateBundle::rand(&"alice".into(), x509_intermediate).await;
         certs.certificate_chain = vec![];
         let alice_identifier = ClientIdentifier::X509(HashMap::from([(case.signature_scheme(), certs)]));
 
-        let (bob_identifier, _) = x509_test_chain.issue_simple_certificate_bundle("bob", None);
+        let (bob_identifier, _) = x509_test_chain.issue_simple_certificate_bundle("bob", None).await;
         assert!(matches!(
             try_talk(&case, Some(&x509_test_chain), alice_identifier, bob_identifier)
                 .await
@@ -239,9 +239,9 @@ mod tests {
     #[wasm_bindgen_test]
     async fn should_fail_when_certificate_chain_has_a_single_self_signed(case: TestCase) {
         if case.is_x509() {
-            let mut x509_test_chain = X509TestChain::init_empty(case.signature_scheme());
+            let mut x509_test_chain = X509TestChain::init_empty(case.signature_scheme()).await;
 
-            let (_alice_identifier, alice_cert) = x509_test_chain.issue_simple_certificate_bundle("alice", None);
+            let (_alice_identifier, alice_cert) = x509_test_chain.issue_simple_certificate_bundle("alice", None).await;
 
             let new_cert = alice_cert
                 .pki_keypair
@@ -251,7 +251,7 @@ mod tests {
             alice_cert.certificate = new_cert;
             let alice_identifier = ClientIdentifier::X509([(case.signature_scheme(), alice_cert.into())].into());
 
-            let (bob_identifier, _) = x509_test_chain.issue_simple_certificate_bundle("bob", None);
+            let (bob_identifier, _) = x509_test_chain.issue_simple_certificate_bundle("bob", None).await;
             assert!(matches!(
                 try_talk(&case, Some(&x509_test_chain), bob_identifier, alice_identifier)
                     .await
@@ -265,11 +265,11 @@ mod tests {
     #[wasm_bindgen_test]
     async fn should_fail_when_signature_key_doesnt_match_certificate_public_key(case: TestCase) {
         if case.is_x509() {
-            let mut x509_test_chain = X509TestChain::init_empty(case.signature_scheme());
+            let mut x509_test_chain = X509TestChain::init_empty(case.signature_scheme()).await;
             let x509_intermediate = x509_test_chain.find_local_intermediate_ca();
 
-            let certs = CertificateBundle::rand(&"alice".into(), x509_intermediate);
-            let new_pki_kp = PkiKeypair::rand_unchecked(case.signature_scheme());
+            let certs = CertificateBundle::rand(&"alice".into(), x509_intermediate).await;
+            let new_pki_kp = PkiKeypair::rand_unchecked(case.signature_scheme()).await;
 
             let eve_key = CertificatePrivateKey {
                 value: new_pki_kp.signing_key_bytes(),
@@ -281,7 +281,7 @@ mod tests {
             };
             let alice_identifier = ClientIdentifier::X509(HashMap::from([(case.signature_scheme(), cb)]));
 
-            let (bob_identifier, _) = x509_test_chain.issue_simple_certificate_bundle("bob", None);
+            let (bob_identifier, _) = x509_test_chain.issue_simple_certificate_bundle("bob", None).await;
             assert!(matches!(
                 try_talk(&case, Some(&x509_test_chain), alice_identifier, bob_identifier)
                     .await
@@ -298,13 +298,13 @@ mod tests {
             return;
         }
         Box::pin(async move {
-            let mut x509_test_chain = X509TestChain::init_empty(case.signature_scheme());
+            let mut x509_test_chain = X509TestChain::init_empty(case.signature_scheme()).await;
 
             let expiration_time = core::time::Duration::from_secs(14);
             let start = fluvio_wasm_timer::Instant::now();
 
-            let (alice_identifier, _) = x509_test_chain.issue_simple_certificate_bundle("alice", None);
-            let (bob_identifier, _) = x509_test_chain.issue_simple_certificate_bundle("bob", Some(expiration_time));
+            let (alice_identifier, _) = x509_test_chain.issue_simple_certificate_bundle("alice", None).await;
+            let (bob_identifier, _) = x509_test_chain.issue_simple_certificate_bundle("bob", Some(expiration_time)).await;
 
             // this should work since the certificate is not yet expired
             let (mut alice_central, mut bob_central, id) =
@@ -339,10 +339,10 @@ mod tests {
             return;
         }
         Box::pin(async {
-            let mut x509_test_chain = X509TestChain::init_empty(case.signature_scheme());
+            let mut x509_test_chain = X509TestChain::init_empty(case.signature_scheme()).await;
 
-            let (alice_identifier, _) = x509_test_chain.issue_simple_certificate_bundle("alice", None);
-            let (bob_identifier, _) = x509_test_chain.issue_simple_certificate_bundle("bob", None);
+            let (alice_identifier, _) = x509_test_chain.issue_simple_certificate_bundle("alice", None).await;
+            let (bob_identifier, _) = x509_test_chain.issue_simple_certificate_bundle("bob", None).await;
 
             // this should work since the certificate is not yet expired
             let (mut alice_central, mut bob_central, id) =
@@ -427,7 +427,7 @@ mod tests {
     #[wasm_bindgen_test]
     async fn should_fail_when_certificate_not_valid_yet(case: TestCase) {
         if case.is_x509() {
-            let mut x509_test_chain = X509TestChain::init_empty(case.signature_scheme());
+            let mut x509_test_chain = X509TestChain::init_empty(case.signature_scheme()).await;
 
             let tomorrow = now_std() + core::time::Duration::from_secs(3600 * 24);
             let local_ca = x509_test_chain.find_local_intermediate_ca();
@@ -445,12 +445,12 @@ mod tests {
                     client_id: Some(client_id.clone()),
                     validity_start: Some(tomorrow),
                     ..Default::default()
-                })
+                }).await
             };
             let cb = alice_cert.into();
             let alice_identifier = ClientIdentifier::X509(HashMap::from([(case.signature_scheme(), cb)]));
 
-            let (bob_identifier, _) = x509_test_chain.issue_simple_certificate_bundle("bob", None);
+            let (bob_identifier, _) = x509_test_chain.issue_simple_certificate_bundle("bob", None).await;
 
             match try_talk(&case, Some(&x509_test_chain), alice_identifier, bob_identifier)
                 .await

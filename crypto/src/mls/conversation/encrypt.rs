@@ -34,6 +34,7 @@ impl MlsConversation {
         let encrypted = self
             .group
             .create_message(backend, signer, message.as_ref())
+            .await
             .map_err(MlsError::from)?;
 
         // make sure all application messages are encrypted

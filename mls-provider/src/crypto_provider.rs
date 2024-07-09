@@ -2,7 +2,7 @@ use crate::EntropySeed;
 use crate::MlsProviderError;
 use rand_core::{RngCore, SeedableRng};
 use signature::digest::typenum::Unsigned;
-use std::sync::RwLock;
+use async_lock::RwLock;
 
 use aes_gcm::{
     aead::{Aead, Payload},
@@ -71,6 +71,8 @@ impl RustCrypto {
     }
 }
 
+#[cfg_attr(target_family = "wasm", async_trait::async_trait(?Send))]
+#[cfg_attr(not(target_family = "wasm"), async_trait::async_trait)]
 impl OpenMlsCrypto for RustCrypto {
     fn signature_public_key_len(&self, signature_scheme: SignatureScheme) -> usize {
         match signature_scheme {
@@ -228,8 +230,8 @@ impl OpenMlsCrypto for RustCrypto {
         }
     }
 
-    fn signature_key_gen(&self, alg: SignatureScheme) -> Result<(Vec<u8>, Vec<u8>), CryptoError> {
-        let mut rng = self.rng.write().map_err(|_| CryptoError::InsufficientRandomness)?;
+    async fn signature_key_gen(&self, alg: SignatureScheme) -> Result<(Vec<u8>, Vec<u8>), CryptoError> {
+        let mut rng = self.rng.write().await;
 
         match alg {
             SignatureScheme::ECDSA_SECP256R1_SHA256 => {
@@ -356,7 +358,7 @@ impl OpenMlsCrypto for RustCrypto {
         }
     }
 
-    fn hpke_seal(
+    async fn hpke_seal(
         &self,
         config: HpkeConfig,
         pk_r: &[u8],
@@ -364,7 +366,7 @@ impl OpenMlsCrypto for RustCrypto {
         aad: &[u8],
         ptxt: &[u8],
     ) -> Result<types::HpkeCiphertext, CryptoError> {
-        let mut rng = self.rng.write().map_err(|_| CryptoError::InsufficientRandomness)?;
+        let mut rng = self.rng.write().await;
 
         match config {
             HpkeConfig(HpkeKemType::DhKem25519, HpkeKdfType::HkdfSha256, HpkeAeadType::AesGcm128) => {
@@ -456,7 +458,7 @@ impl OpenMlsCrypto for RustCrypto {
         Ok(plaintext)
     }
 
-    fn hpke_setup_sender_and_export(
+    async fn hpke_setup_sender_and_export(
         &self,
         config: HpkeConfig,
         pk_r: &[u8],
@@ -464,7 +466,7 @@ impl OpenMlsCrypto for RustCrypto {
         exporter_context: &[u8],
         exporter_length: usize,
     ) -> Result<(Vec<u8>, ExporterSecret), CryptoError> {
-        let mut rng = self.rng.write().map_err(|_| CryptoError::InsufficientRandomness)?;
+        let mut rng = self.rng.write().await;
 
         let (kem_output, export) =
             match config {
@@ -685,26 +687,28 @@ mod hpke_core {
     }
 }
 
+#[cfg_attr(target_family = "wasm", async_trait::async_trait(?Send))]
+#[cfg_attr(not(target_family = "wasm"), async_trait::async_trait)]
 impl OpenMlsRand for RustCrypto {
     type Error = MlsProviderError;
 
     type RandImpl = rand_chacha::ChaCha20Rng;
-    type BorrowTarget<'a> = std::sync::RwLockWriteGuard<'a, Self::RandImpl>;
+    type BorrowTarget<'a> = async_lock::RwLockWriteGuard<'a, Self::RandImpl>;
 
-    fn borrow_rand(&self) -> Result<Self::BorrowTarget<'_>, Self::Error> {
-        self.rng.write().map_err(|_| MlsProviderError::RngLockPoison)
+    async fn borrow_rand(&self) -> Self::BorrowTarget<'_> {
+        self.rng.write().await
     }
 
-    fn random_array<const N: usize>(&self) -> Result<[u8; N], Self::Error> {
-        let mut rng = self.borrow_rand()?;
+    async fn random_array<const N: usize>(&self) -> Result<[u8; N], Self::Error> {
+        let mut rng = self.borrow_rand().await;
         let mut out = [0u8; N];
         rng.try_fill_bytes(&mut out)
             .map_err(|_| MlsProviderError::UnsufficientEntropy)?;
         Ok(out)
     }
 
-    fn random_vec(&self, len: usize) -> Result<Vec<u8>, Self::Error> {
-        let mut rng = self.borrow_rand()?;
+    async fn random_vec(&self, len: usize) -> Result<Vec<u8>, Self::Error> {
+        let mut rng = self.borrow_rand().await;
         let mut out = vec![0u8; len];
         rng.try_fill_bytes(&mut out)
             .map_err(|_| MlsProviderError::UnsufficientEntropy)?;

@@ -112,7 +112,7 @@ fn benchmark_reads_mls(c: &mut Criterion) {
 
     let ciphersuite = Ciphersuite::MLS_128_DHKEMX25519_CHACHA20POLY1305_SHA256_Ed25519;
     let key = uuid::Uuid::new_v4();
-    let mut rng = &mut *backend.rand().borrow_rand().unwrap();
+    let mut rng = &mut *backend.rand().borrow_rand().await;
     let kp = SignatureKeyPair::new(ciphersuite.signature_algorithm(), &mut rng).unwrap();
 
     block_on(async {

@@ -46,7 +46,7 @@ mod tests {
 
                 // by default in test no external sender is set. Let's add one
                 let mut cfg = case.cfg.clone();
-                let external_sender = alice_central.mls_central.rand_external_sender(&case);
+                let external_sender = alice_central.mls_central.rand_external_sender(&case).await;
                 cfg.external_senders = vec![external_sender.clone()];
 
                 alice_central

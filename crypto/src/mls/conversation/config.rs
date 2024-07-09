@@ -317,7 +317,7 @@ mod tests {
                     .mls_central
                     .mls_backend
                     .crypto()
-                    .signature_key_gen(case.signature_scheme())
+                    .signature_key_gen(case.signature_scheme()).await
                     .unwrap();
 
                 assert!(cc

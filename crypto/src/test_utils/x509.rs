@@ -5,6 +5,7 @@ use crate::{
     CryptoError,
 };
 use std::time::Duration;
+use async_std::task::block_on;
 
 use mls_crypto_provider::{CertProfile, CertificateGenerationArgs, MlsCryptoProvider, PkiKeypair, RustCrypto};
 use openmls_traits::{crypto::OpenMlsCrypto, random::OpenMlsRand, types::SignatureScheme};
@@ -89,7 +90,7 @@ pub struct X509TestChainArgs<'a> {
 }
 
 impl X509TestChain {
-    pub fn init_empty(signature_scheme: SignatureScheme) -> Self {
+    pub async fn init_empty(signature_scheme: SignatureScheme) -> Self {
         let default_params = CertificateParams::default();
         let root_params = {
             let mut params = default_params.clone();
@@ -113,10 +114,10 @@ impl X509TestChain {
             federated_test_chains: &[],
             local_actors: vec![],
             dump_pem_certs: false,
-        })
+        }).await
     }
 
-    pub fn init_for_random_clients(signature_scheme: SignatureScheme, count: usize) -> Self {
+    pub async fn init_for_random_clients(signature_scheme: SignatureScheme, count: usize) -> Self {
         let default_params = CertificateParams::default();
         let root_params = {
             let mut params = default_params.clone();
@@ -164,12 +165,12 @@ impl X509TestChain {
             federated_test_chains: &[],
             local_actors,
             dump_pem_certs: false,
-        })
+        }).await
     }
 
-    pub fn init(args: X509TestChainArgs) -> Self {
-        let trust_anchor = X509Certificate::create_root_cert_ta(args.root_params.clone(), args.signature_scheme);
-        let local_intermediate = trust_anchor.create_and_sign_intermediate(args.local_ca_params.clone());
+    pub async fn init(args: X509TestChainArgs<'_>) -> Self {
+        let trust_anchor = X509Certificate::create_root_cert_ta(args.root_params.clone(), args.signature_scheme).await;
+        let local_intermediate = trust_anchor.create_and_sign_intermediate(args.local_ca_params.clone()).await;
 
         if args.dump_pem_certs {
             use x509_cert::der::EncodePem as _;
@@ -193,7 +194,7 @@ impl X509TestChain {
             .local_actors
             .into_iter()
             .map(|actor| {
-                let certificate = local_intermediate.create_and_sign_end_identity(CertificateParams {
+                let certificate = block_on(async{local_intermediate.create_and_sign_end_identity(CertificateParams {
                     org: args.local_ca_params.org.clone(),
                     common_name: Some(actor.name.clone()),
                     handle: Some(actor.handle.clone()),
@@ -202,7 +203,7 @@ impl X509TestChain {
                     cert_keypair: None,
                     validity_start: None,
                     expiration: args.local_ca_params.expiration,
-                });
+                }).await});
 
                 if args.dump_pem_certs {
                     use x509_cert::der::EncodePem as _;
@@ -360,7 +361,7 @@ impl X509TestChain {
             .find_map(|actor| (actor.name == actor_name).then_some(&actor.certificate))
     }
 
-    pub fn issue_simple_certificate_bundle(
+    pub async fn issue_simple_certificate_bundle(
         &mut self,
         name: &str,
         expiration: Option<std::time::Duration>,
@@ -383,7 +384,7 @@ impl X509TestChain {
             cert_params.expiration = expiration;
         }
 
-        let certificate = intermediate.create_and_sign_end_identity(cert_params);
+        let certificate = intermediate.create_and_sign_end_identity(cert_params).await;
 
         let sc = intermediate.signature_scheme;
 
@@ -420,13 +421,13 @@ pub struct X509Certificate {
 }
 
 impl X509Certificate {
-    pub fn create_root_cert_ta(params: CertificateParams, signature_scheme: SignatureScheme) -> Self {
+    pub async fn create_root_cert_ta(params: CertificateParams, signature_scheme: SignatureScheme) -> Self {
         let crypto = RustCrypto::default();
-        let serial = u16::from_le_bytes(crypto.random_array().unwrap());
+        let serial = u16::from_le_bytes(crypto.random_array().await.unwrap());
 
         let crl_dps = vec![params.get_crl_dp()];
         let pki_keypair = params.cert_keypair.unwrap_or_else(|| {
-            let (sk, _) = crypto.signature_key_gen(signature_scheme).unwrap();
+            let (sk, _) = block_on(async {crypto.signature_key_gen(signature_scheme).await.unwrap()});
             PkiKeypair::new(signature_scheme, sk).unwrap()
         });
 
@@ -458,15 +459,15 @@ impl X509Certificate {
         }
     }
 
-    pub fn create_and_sign_intermediate(&self, params: CertificateParams) -> X509Certificate {
+    pub async fn create_and_sign_intermediate(&self, params: CertificateParams) -> X509Certificate {
         let crypto = RustCrypto::default();
         let signature_scheme = self.signature_scheme;
 
-        let serial = u16::from_le_bytes(crypto.random_array().unwrap());
+        let serial = u16::from_le_bytes(crypto.random_array().await.unwrap());
 
         let crl_dps = vec![params.get_crl_dp()];
         let pki_keypair = params.cert_keypair.unwrap_or_else(|| {
-            let (sk, _) = crypto.signature_key_gen(signature_scheme).unwrap();
+            let (sk, _) = block_on(async {crypto.signature_key_gen(signature_scheme).await.unwrap()});
             PkiKeypair::new(signature_scheme, sk).unwrap()
         });
 
@@ -525,14 +526,14 @@ impl X509Certificate {
         target.certificate = new_cert;
     }
 
-    pub fn create_and_sign_end_identity(&self, params: CertificateParams) -> X509Certificate {
+    pub async fn create_and_sign_end_identity(&self, params: CertificateParams) -> X509Certificate {
         let crypto = RustCrypto::default();
         let signature_scheme = self.signature_scheme;
-        let serial = u64::from_le_bytes(crypto.random_array().unwrap());
+        let serial = u64::from_le_bytes(crypto.random_array().await.unwrap());
 
         let crl_dps = vec![params.get_crl_dp()];
         let pki_keypair = params.cert_keypair.unwrap_or_else(|| {
-            let (sk, _) = crypto.signature_key_gen(signature_scheme).unwrap();
+            let (sk, _) = block_on(async {crypto.signature_key_gen(signature_scheme).await}).unwrap();
             PkiKeypair::new(signature_scheme, sk).unwrap()
         });
 

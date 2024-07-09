@@ -387,7 +387,7 @@ mod tests {
         let (cs, ct) = (case.ciphersuite(), case.credential_type);
         let backend = MlsCryptoProvider::try_new_in_memory("test").await.unwrap();
         let x509_test_chain = if case.is_x509() {
-            let x509_test_chain = crate::test_utils::x509::X509TestChain::init_empty(case.signature_scheme());
+            let x509_test_chain = crate::test_utils::x509::X509TestChain::init_empty(case.signature_scheme()).await;
             x509_test_chain.register_with_provider(&backend).await;
             Some(x509_test_chain)
         } else {
@@ -505,7 +505,7 @@ mod tests {
         const EXPIRED_COUNT: usize = 200;
         let backend = MlsCryptoProvider::try_new_in_memory("test").await.unwrap();
         let x509_test_chain = if case.is_x509() {
-            let x509_test_chain = crate::test_utils::x509::X509TestChain::init_empty(case.signature_scheme());
+            let x509_test_chain = crate::test_utils::x509::X509TestChain::init_empty(case.signature_scheme()).await;
             x509_test_chain.register_with_provider(&backend).await;
             Some(x509_test_chain)
         } else {

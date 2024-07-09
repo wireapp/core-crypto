@@ -51,6 +51,7 @@ itertools = "0.13"
 uuid = { version = "1.6", features = ["v4"] }
 base64 = "0.22"
 tracing = "0.1"
+futures = "0.3.30"
 
 [dependencies.proteus-wasm]
 version = "2.1"

@@ -486,7 +486,7 @@ mod tests {
                             let cert = crate::prelude::CertificateBundle::rand(
                                 &client_id,
                                 x509_test_chain.find_local_intermediate_ca(),
-                            );
+                            ).await;
                             ClientIdentifier::X509(HashMap::from([(case.cfg.ciphersuite.signature_algorithm(), cert)]))
                         }
                     };

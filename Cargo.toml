@@ -49,25 +49,25 @@ branch = "2.x"
 package = "openmls"
 git = "https://github.com/wireapp/openmls"
 #tag = "v1.0.0-pre.core-crypto-1.0.0"
-branch = "wire/stable"
+branch = "simon/fix/WPB-10044-Make-RwLock-in-RustCrypto-async"
 
 [patch.crates-io.openmls_traits]
 package = "openmls_traits"
 git = "https://github.com/wireapp/openmls"
 #tag = "v1.0.0-pre.core-crypto-1.0.0"
-branch = "wire/stable"
+branch = "simon/fix/WPB-10044-Make-RwLock-in-RustCrypto-async"
 
 [patch.crates-io.openmls_basic_credential]
 package = "openmls_basic_credential"
 git = "https://github.com/wireapp/openmls"
 #tag = "v1.0.0-pre.core-crypto-1.0.0"
-branch = "wire/stable"
+branch = "simon/fix/WPB-10044-Make-RwLock-in-RustCrypto-async"
 
 [patch.crates-io.openmls_x509_credential]
 package = "openmls_x509_credential"
 git = "https://github.com/wireapp/openmls"
 #tag = "v1.0.0-pre.core-crypto-1.0.0"
-branch = "wire/stable"
+branch = "simon/fix/WPB-10044-Make-RwLock-in-RustCrypto-async"
 
 [patch.crates-io.x509-cert]
 git = "https://github.com/otak/formats"

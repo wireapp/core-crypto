@@ -70,6 +70,7 @@ impl MlsConversation {
         let proposal = self
             .group
             .propose_remove_member(backend, signer, member)
+            .await
             .map_err(MlsError::from)
             .map_err(CryptoError::from)
             .map(MlsProposalBundle::from)?;

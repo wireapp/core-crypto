@@ -6,6 +6,7 @@ use crate::{
 use mls_crypto_provider::MlsCryptoProvider;
 use openmls_traits::types::SignatureScheme;
 use std::collections::{HashMap, HashSet};
+use futures::stream::{self, StreamExt, TryStreamExt};
 
 /// Used by consumers to initializes a MLS client. Encompasses all the client types available.
 /// Could be enriched later with Verifiable Presentations.
@@ -37,20 +38,25 @@ impl ClientIdentifier {
     /// Generate a new CredentialBundle (Credential + KeyPair) for each ciphersuite.
     /// This method does not persist them in the keystore !
     #[cfg_attr(not(test), tracing::instrument(err, skip(self, backend)))]
-    pub fn generate_credential_bundles(
+    pub async fn generate_credential_bundles(
         self,
         backend: &MlsCryptoProvider,
         signature_schemes: HashSet<SignatureScheme>,
     ) -> CryptoResult<Vec<(SignatureScheme, ClientId, CredentialBundle)>> {
         match self {
-            ClientIdentifier::Basic(id) => signature_schemes.iter().try_fold(
-                Vec::with_capacity(signature_schemes.len()),
-                |mut acc, &sc| -> CryptoResult<_> {
-                    let cb = Client::new_basic_credential_bundle(&id, sc, backend)?;
-                    acc.push((sc, id.clone(), cb));
-                    Ok(acc)
-                },
-            ),
+            ClientIdentifier::Basic(id) => {
+                stream::iter(signature_schemes.iter())
+                    .map(|&sc| {
+                        let id_clone = id.clone();
+                        async move {
+                            let cb = Client::new_basic_credential_bundle(&id_clone, sc, backend).await?;
+                            Ok((sc, id_clone, cb)) as CryptoResult<_>
+                        }
+                    })
+                    .buffer_unordered(signature_schemes.len())
+                    .try_collect()
+                    .await
+            },
             ClientIdentifier::X509(certs) => {
                 let cap = certs.len();
                 certs

@@ -16,7 +16,7 @@ impl E2eiEnrollment {
         const HANDLE_SIZE: usize = 32;
 
         let content = serde_json::to_vec(&self)?;
-        let handle = backend.crypto().random_vec(HANDLE_SIZE).map_err(CryptoError::from)?;
+        let handle = backend.crypto().random_vec(HANDLE_SIZE).await.map_err(CryptoError::from)?;
         backend
             .key_store()
             .save_e2ei_enrollment(&handle, &content)
@@ -91,11 +91,11 @@ mod tests {
                             Some(TEAM.to_string()),
                             E2EI_EXPIRY,
                             cs,
-                        )
+                        ).await
                     })
                 }
 
-                let x509_test_chain = X509TestChain::init_empty(case.signature_scheme());
+                let x509_test_chain = X509TestChain::init_empty(case.signature_scheme()).await;
 
                 let is_renewal = false;
                 let (mut enrollment, cert) = e2ei_enrollment(
@@ -142,11 +142,11 @@ mod tests {
                             Some(TEAM.to_string()),
                             E2EI_EXPIRY,
                             cs,
-                        )
+                        ).await
                     })
                 }
 
-                let x509_test_chain = X509TestChain::init_empty(case.signature_scheme());
+                let x509_test_chain = X509TestChain::init_empty(case.signature_scheme()).await;
 
                 let is_renewal = false;
                 let result = e2ei_enrollment(
@@ -172,7 +172,7 @@ mod tests {
                                 None,
                                 #[cfg(not(target_family = "wasm"))]
                                 None,
-                            )
+                            ).await
                             .unwrap()
                         })
                     },

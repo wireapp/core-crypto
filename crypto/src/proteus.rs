@@ -1008,7 +1008,7 @@ mod tests {
         )
         .unwrap();
         let mut cc: CoreCrypto = MlsCentral::try_new(cfg).await.unwrap().into();
-        let x509_test_chain = X509TestChain::init_empty(case.signature_scheme());
+        let x509_test_chain = X509TestChain::init_empty(case.signature_scheme()).await;
         x509_test_chain.register_with_central(&cc.mls).await;
         assert!(cc.proteus_init().await.is_ok());
         // proteus is initialized, prekeys can be generated
@@ -1018,7 +1018,7 @@ mod tests {
         let identifier = match case.credential_type {
             MlsCredentialType::Basic => ClientIdentifier::Basic(client_id.into()),
             MlsCredentialType::X509 => {
-                CertificateBundle::rand_identifier(client_id, &[x509_test_chain.find_local_intermediate_ca()])
+                CertificateBundle::rand_identifier(client_id, &[x509_test_chain.find_local_intermediate_ca()]).await
             }
         };
         cc.mls_init(

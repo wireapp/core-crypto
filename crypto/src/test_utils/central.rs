@@ -339,7 +339,7 @@ impl MlsCentral {
 
         match case.credential_type {
             MlsCredentialType::Basic => {
-                let cb = Client::new_basic_credential_bundle(client.id(), case.signature_scheme(), &self.mls_backend)
+                let cb = Client::new_basic_credential_bundle(client.id(), case.signature_scheme(), &self.mls_backend).await
                     .unwrap();
                 client
                     .save_identity(&self.mls_backend, None, case.signature_scheme(), cb)
@@ -347,7 +347,7 @@ impl MlsCentral {
                     .unwrap()
             }
             MlsCredentialType::X509 => {
-                let cert_bundle = CertificateBundle::rand(client.id(), signer.unwrap());
+                let cert_bundle = CertificateBundle::rand(client.id(), signer.unwrap()).await;
                 client
                     .save_new_x509_credential_bundle(&self.mls_backend, case.signature_scheme(), cert_bundle)
                     .await
@@ -453,7 +453,7 @@ impl MlsCentral {
             Some(&cid),
             Some(existing_cert.pki_keypair.clone()),
             signer,
-        );
+        ).await;
         client
             .save_new_x509_credential_bundle(&self.mls_backend, case.signature_scheme(), new_cert)
             .await
@@ -591,11 +591,11 @@ impl MlsCentral {
         self.get_conversation_unchecked(id).await.members().len() as u32
     }
 
-    pub fn rand_external_sender(&self, case: &TestCase) -> ExternalSender {
+    pub async fn rand_external_sender(&self, case: &TestCase) -> ExternalSender {
         let sc = case.signature_scheme();
 
         let crypto = self.mls_backend.crypto();
-        let (_, pk) = crypto.signature_key_gen(sc).unwrap();
+        let (_, pk) = crypto.signature_key_gen(sc).await.unwrap();
 
         let signature_key = SignaturePublicKey::from(pk);
 

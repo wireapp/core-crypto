@@ -426,9 +426,9 @@ impl MlsCentral {
     }
 
     /// Generates a random byte array of the specified size
-    pub fn random_bytes(&self, len: usize) -> CryptoResult<Vec<u8>> {
+    pub async fn random_bytes(&self, len: usize) -> CryptoResult<Vec<u8>> {
         use openmls_traits::random::OpenMlsRand as _;
-        Ok(self.mls_backend.rand().random_vec(len)?)
+        Ok(self.mls_backend.rand().random_vec(len).await?)
     }
 
     /// Returns a reference for the internal Crypto Provider
@@ -659,7 +659,7 @@ mod tests {
     async fn can_2_phase_init_central(case: TestCase) {
         run_tests(move |[tmp_dir_argument]| {
             Box::pin(async move {
-                let x509_test_chain = X509TestChain::init_empty(case.signature_scheme());
+                let x509_test_chain = X509TestChain::init_empty(case.signature_scheme()).await;
                 let configuration = MlsCentralConfiguration::try_new(
                     tmp_dir_argument,
                     "test".to_string(),
@@ -679,7 +679,7 @@ mod tests {
                 let identifier = match case.credential_type {
                     MlsCredentialType::Basic => ClientIdentifier::Basic(client_id.into()),
                     MlsCredentialType::X509 => {
-                        CertificateBundle::rand_identifier(client_id, &[x509_test_chain.find_local_intermediate_ca()])
+                        CertificateBundle::rand_identifier(client_id, &[x509_test_chain.find_local_intermediate_ca()]).await
                     }
                 };
                 central

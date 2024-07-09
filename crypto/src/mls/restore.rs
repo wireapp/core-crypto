@@ -69,12 +69,12 @@ mod tests {
     async fn can_persist_group_state(case: TestCase) {
         run_tests(move |[store_path]| {
             Box::pin(async move {
-                let x509_test_chain = X509TestChain::init_empty(case.signature_scheme());
+                let x509_test_chain = X509TestChain::init_empty(case.signature_scheme()).await;
                 let cid = match case.credential_type {
                     MlsCredentialType::Basic => ClientIdentifier::Basic("potato".into()),
                     MlsCredentialType::X509 => {
                         let cert =
-                            CertificateBundle::rand(&"potato".into(), x509_test_chain.find_local_intermediate_ca());
+                            CertificateBundle::rand(&"potato".into(), x509_test_chain.find_local_intermediate_ca()).await;
                         ClientIdentifier::X509(HashMap::from([(case.cfg.ciphersuite.signature_algorithm(), cert)]))
                     }
                 };
@@ -125,7 +125,7 @@ mod tests {
         run_tests(move |[alice_path, bob_path]| {
             Box::pin(async move {
                 let id = conversation_id();
-                let x509_test_chain = X509TestChain::init_empty(case.signature_scheme());
+                let x509_test_chain = X509TestChain::init_empty(case.signature_scheme()).await;
 
                 let (alice_cid, bob_cid) = match case.credential_type {
                     MlsCredentialType::Basic => (
@@ -134,10 +134,10 @@ mod tests {
                     ),
                     MlsCredentialType::X509 => {
                         let cert =
-                            CertificateBundle::rand(&"alice".into(), x509_test_chain.find_local_intermediate_ca());
+                            CertificateBundle::rand(&"alice".into(), x509_test_chain.find_local_intermediate_ca()).await;
                         let alice =
                             ClientIdentifier::X509(HashMap::from([(case.cfg.ciphersuite.signature_algorithm(), cert)]));
-                        let cert = CertificateBundle::rand(&"bob".into(), x509_test_chain.find_local_intermediate_ca());
+                        let cert = CertificateBundle::rand(&"bob".into(), x509_test_chain.find_local_intermediate_ca()).await;
                         let bob =
                             ClientIdentifier::X509(HashMap::from([(case.cfg.ciphersuite.signature_algorithm(), cert)]));
                         (alice, bob)

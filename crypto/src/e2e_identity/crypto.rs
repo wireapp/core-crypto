@@ -12,13 +12,13 @@ use zeroize::Zeroize;
 
 impl super::E2eiEnrollment {
     #[cfg_attr(not(test), tracing::instrument(err, skip_all))]
-    pub(super) fn new_sign_key(
+    pub(super) async fn new_sign_key(
         ciphersuite: MlsCiphersuite,
         backend: &MlsCryptoProvider,
     ) -> CryptoResult<E2eiSignatureKeypair> {
         let (sk, _) = backend
             .crypto()
-            .signature_key_gen(ciphersuite.signature_algorithm())
+            .signature_key_gen(ciphersuite.signature_algorithm()).await
             .map_err(MlsError::from)?;
         E2eiSignatureKeypair::try_new(ciphersuite.signature_algorithm(), sk)
     }

@@ -268,7 +268,7 @@ mod tests {
                     let creator_ct = match case.credential_type {
                         MlsCredentialType::Basic => {
                             let intermediate_ca = x509_test_chain.find_local_intermediate_ca();
-                            let cert_bundle = CertificateBundle::rand(creator_client.id(), intermediate_ca);
+                            let cert_bundle = CertificateBundle::rand(creator_client.id(), intermediate_ca).await;
                             creator_client
                                 .init_x509_credential_bundle_if_missing(
                                     &alice_central.mls_central.mls_backend,
@@ -354,7 +354,7 @@ mod tests {
                                 .expect("No x509 test chain")
                                 .find_local_intermediate_ca(),
                             Some(expiration_time),
-                        );
+                        ).await;
                         let cb = Client::new_x509_credential_bundle(cert.clone()).unwrap();
                         let commit = alice_central.mls_central.e2ei_rotate(&id, &cb).await.unwrap().commit;
                         alice_central.mls_central.commit_accepted(&id).await.unwrap();

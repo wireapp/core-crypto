@@ -23,7 +23,7 @@ impl MlsCentral {
     /// Once the enrollment is finished, use the instance in [MlsCentral::e2ei_rotate_all] to do
     /// the rotation.
     #[cfg_attr(not(test), tracing::instrument(err, skip_all))]
-    pub fn e2ei_new_activation_enrollment(
+    pub async fn e2ei_new_activation_enrollment(
         &self,
         display_name: String,
         handle: String,
@@ -52,7 +52,7 @@ impl MlsCentral {
             sign_keypair,
             #[cfg(not(target_family = "wasm"))]
             None, // no x509 credential yet at this point so no OIDC authn yet so no refresh token to restore
-        )
+        ).await
     }
 
     /// Generates an E2EI enrollment instance for a E2EI client (with a X509 certificate credential)
@@ -97,7 +97,7 @@ impl MlsCentral {
             sign_keypair,
             #[cfg(not(target_family = "wasm"))]
             Some(self.find_refresh_token().await?), // Since we are renewing an e2ei certificate we MUST have already generated one hence we MUST already have done an OIDC authn and gotten a refresh token from it we also MUST have stored in CoreCrypto
-        )
+        ).await
     }
 
     /// Creates a commit in all local conversations for changing the credential. Requires first
@@ -320,6 +320,7 @@ pub(crate) mod tests {
     wasm_bindgen_test_configure!(run_in_browser);
 
     pub(crate) mod all {
+        use async_std::task::block_on;
         use openmls_traits::types::SignatureScheme;
 
         use crate::test_utils::central::TEAM;
@@ -338,7 +339,7 @@ pub(crate) mod tests {
                 }
             }
 
-            let found_test_chain = found_test_chain.unwrap_or_else(|| Some(X509TestChain::init_empty(sc)).into());
+            let found_test_chain = found_test_chain.unwrap_or_else(|| Some(block_on(async{X509TestChain::init_empty(sc).await})).into());
 
             // Propagate the chain
             for ctx in ctxs.iter_mut() {
@@ -423,7 +424,7 @@ pub(crate) mod tests {
                                         Some(TEAM.to_string()),
                                         E2EI_EXPIRY,
                                         cs,
-                                    ),
+                                    ).await,
                                     MlsCredentialType::X509 => {
                                         cc.e2ei_new_rotate_enrollment(
                                             Some(NEW_DISPLAY_NAME.to_string()),
@@ -630,7 +631,7 @@ pub(crate) mod tests {
                                     Some(TEAM.to_string()),
                                     E2EI_EXPIRY,
                                     cs,
-                                ),
+                                ).await,
                                 MlsCredentialType::X509 => {
                                     cc.e2ei_new_rotate_enrollment(
                                         Some(NEW_DISPLAY_NAME.to_string()),
@@ -796,7 +797,7 @@ pub(crate) mod tests {
                                         Some(TEAM.to_string()),
                                         E2EI_EXPIRY,
                                         cs,
-                                    ),
+                                    ).await,
                                     MlsCredentialType::X509 => {
                                         cc.e2ei_new_rotate_enrollment(
                                             Some(ALICE_NEW_DISPLAY_NAME.to_string()),
@@ -861,7 +862,7 @@ pub(crate) mod tests {
                                         Some(TEAM.to_string()),
                                         E2EI_EXPIRY,
                                         cs,
-                                    ),
+                                    ).await,
                                     MlsCredentialType::X509 => {
                                         cc.e2ei_new_rotate_enrollment(
                                             Some(BOB_NEW_DISPLAY_NAME.to_string()),
@@ -869,8 +870,7 @@ pub(crate) mod tests {
                                             Some(TEAM.to_string()),
                                             E2EI_EXPIRY,
                                             cs,
-                                        )
-                                        .await
+                                        ).await
                                     }
                                 }
                             })

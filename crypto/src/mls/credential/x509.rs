@@ -3,7 +3,8 @@ use mls_crypto_provider::PkiKeypair;
 use openmls_traits::types::SignatureScheme;
 use wire_e2e_identity::prelude::{HashAlgorithm, WireIdentityReader};
 use zeroize::Zeroize;
-
+#[allow(unused_imports)]
+use futures::stream::{self, StreamExt};
 use crate::{
     e2e_identity::id::WireQualifiedClientId,
     prelude::{ClientId, CryptoError, CryptoResult},
@@ -107,27 +108,27 @@ fn new_rand_client(domain: Option<String>) -> (String, String) {
 #[cfg(test)]
 impl CertificateBundle {
     /// Generates a certificate that is later turned into a [openmls::prelude::CredentialBundle]
-    pub fn rand(name: &ClientId, signer: &crate::test_utils::x509::X509Certificate) -> Self {
+    pub async fn rand(name: &ClientId, signer: &crate::test_utils::x509::X509Certificate) -> Self {
         // here in our tests client_id is generally just "alice" or "bob"
         // so we will use it to augment handle & display_name
         // and not a real client_id, instead we'll generate a random one
         let handle = format!("{name}_wire");
         let display_name = format!("{name} Smith");
-        Self::new(&handle, &display_name, None, None, signer)
+        Self::new(&handle, &display_name, None, None, signer).await
     }
 
     /// Generates a certificate that is later turned into a [openmls::prelude::CredentialBundle]
-    pub fn new(
+    pub async fn new(
         handle: &str,
         display_name: &str,
         client_id: Option<&crate::e2e_identity::id::QualifiedE2eiClientId>,
         cert_keypair: Option<PkiKeypair>,
         signer: &crate::test_utils::x509::X509Certificate,
     ) -> Self {
-        Self::new_with_expiration(handle, display_name, client_id, cert_keypair, signer, None)
+        Self::new_with_expiration(handle, display_name, client_id, cert_keypair, signer, None).await
     }
 
-    pub fn new_with_expiration(
+    pub async fn new_with_expiration(
         handle: &str,
         display_name: &str,
         client_id: Option<&crate::e2e_identity::id::QualifiedE2eiClientId>,
@@ -159,25 +160,24 @@ impl CertificateBundle {
             cert_params.expiration = expiration;
         }
 
-        signer.create_and_sign_end_identity(cert_params).into()
+        signer.create_and_sign_end_identity(cert_params).await.into()
     }
 
-    pub fn new_with_default_values(
+    pub async fn new_with_default_values(
         signer: &crate::test_utils::x509::X509Certificate,
         expiration: Option<std::time::Duration>,
     ) -> Self {
-        Self::new_with_expiration("alice_wire@world.com", "Alice Smith", None, None, signer, expiration)
+        Self::new_with_expiration("alice_wire@world.com", "Alice Smith", None, None, signer, expiration).await
     }
 
-    pub fn rand_identifier(
+    pub async fn rand_identifier(
         name: &str,
         signers: &[&crate::test_utils::x509::X509Certificate],
     ) -> crate::prelude::ClientIdentifier {
         crate::prelude::ClientIdentifier::X509(
-            signers
-                .iter()
-                .map(|signer| (signer.signature_scheme, Self::rand(&name.into(), signer)))
-                .collect::<std::collections::HashMap<_, _>>(),
+            stream::iter(signers)
+                .then(|signer| async {(signer.signature_scheme, Self::rand(&name.into(), signer).await)})
+                .collect::<std::collections::HashMap<_, _>>().await,
         )
     }
 }
