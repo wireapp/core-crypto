@@ -25,7 +25,7 @@ sha2 = { version = "0.10", features = ["oid"] }
 chacha20poly1305 = "0.10"
 hmac = "0.12"
 ed25519-dalek = { version = "2.1", features = ["pkcs8"] }
-signature = "2.1"
+signature = "2.2"
 ecdsa = { version = "0.16", features = ["der", "pkcs8"] }
 p256 = { version = "0.13", features = ["pkcs8"] }
 p384 = { version = "0.13", features = ["pkcs8"] }
@@ -39,10 +39,10 @@ rand = { version = "0.8", features = ["getrandom"] }
 getrandom = { version = "0.2", features = ["js"] }
 rand_core = "0.6"
 rand_chacha = "0.3"
-zeroize = "1.5"
+zeroize = "1.8"
 thiserror = "1.0"
 hex = "0.4"
-async-lock = "3.3"
+async-lock = "3.4"
 
 [dependencies.hpke]
 version = "0.12"
@@ -56,7 +56,7 @@ core-crypto-keystore = { version = "^1.0.0-rc.60", path = "../keystore", feature
 
 [dev-dependencies]
 wasm-bindgen-test = "0.3"
-uuid = { version = "1.0", features = ["v4", "js"] }
+uuid = { version = "1.10", features = ["v4", "js"] }
 openmls = { version = "1", default-features = false }
 rstest = "0.21"
 rstest_reuse = "0.7"
