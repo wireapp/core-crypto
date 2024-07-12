@@ -1,0 +1,12 @@
+[package]
+name = "test_crate"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+uniffi = "0.28.0"
+core-crypto = { path = "../crypto" }
+openmls = { branch = "wire/stable", git = "https://github.com/wireapp/openmls.git" }
+rand_chacha = "0.3.1"
+async-lock = "3.4.0"
+thiserror = "1.0.62"

@@ -6,7 +6,8 @@ members = [
     "keystore",
     "keystore-dump",
     "mls-provider",
-    "interop"
+    "interop",
+    "test_crate"
 ]
 exclude = [
     "xtask",
