@@ -33,15 +33,15 @@ dummy-entity = ["serde"]
 thiserror = "1.0"
 cfg-if = "1.0"
 hex = "0.4"
-zeroize = { version = "1.5", features = ["zeroize_derive"] }
+zeroize = { version = "1.8", features = ["zeroize_derive"] }
 async-trait = "0.1"
-async-lock = "3.0"
+async-lock = "3.4"
 postcard = { version = "1.0", default-features = false, features = ["use-std"] }
 sha2 = "0.10"
 
 # iOS specific things
-security-framework = { version = "2.8", optional = true }
-security-framework-sys = { version = "2.8", optional = true }
+security-framework = { version = "2.11", optional = true }
+security-framework-sys = { version = "2.11", optional = true }
 core-foundation = { version = "0.9", optional = true }
 
 openmls_traits = { version = "0.2", optional = true }
@@ -57,10 +57,8 @@ git = "https://github.com/wireapp/proteus"
 branch = "2.x"
 
 [target.'cfg(not(target_family = "wasm"))'.dependencies]
-async-fs = "2.0"
-blocking = "1.2"
-# Fixes the dynamic linking issue on Android with the atomic lib
-openssl-sys = "=0.9.92"
+async-fs = "2.1"
+blocking = "1.6"
 
 [target.'cfg(not(target_family = "wasm"))'.dependencies.rusqlite]
 version = "0.31"
@@ -97,7 +95,7 @@ fluvio-wasm-timer = "0.2"
 [dev-dependencies]
 serde = { version = "1.0", features = ["derive"] }
 wasm-bindgen-test = "0.3"
-uuid = { version = "1.0", features = ["v4", "js"] }
+uuid = { version = "1.10", features = ["v4", "js"] }
 rand = { version = "0.8", features = ["getrandom"] }
 getrandom = { version = "0.2", features = ["js"] }
 openmls = { version = "1", default-features = false, features = ["crypto-subtle"] }
@@ -105,7 +103,7 @@ mls-crypto-provider = { path = "../mls-provider" }
 rstest = "0.21"
 rstest_reuse = "0.7"
 async-std = { version = "1.12", features = ["attributes"] }
-futures-lite = "2.0"
+futures-lite = "2.3"
 core-crypto-keystore = { path = ".", features = ["idb-regression-test", "log-queries"] }
 pretty_env_logger = "0.5"
 

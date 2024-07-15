@@ -18,7 +18,7 @@ resolver = "2"
 
 [workspace.dependencies]
 rexie = "0.6.1"
-tls_codec = "0.4.0"
+tls_codec = "0.4.1"
 x509-cert = "0.2"
 
 [workspace.dependencies.uniffi]
