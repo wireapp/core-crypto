@@ -71,7 +71,7 @@ impl Client {
     #[cfg_attr(not(test), tracing::instrument(err, skip(identifier, backend), fields(ciphersuites = ?ciphersuites)))]
     pub async fn init(
         identifier: ClientIdentifier,
-        ciphersuites: &[MlsCiphersuite],
+        ciphersuites: Vec<MlsCiphersuite>,
         backend: &MlsCryptoProvider,
         nb_key_package: usize,
     ) -> CryptoResult<Self> {
@@ -101,13 +101,13 @@ impl Client {
                 Ok(client) => client,
                 Err(CryptoError::ClientSignatureNotFound) => {
                     debug!(nb_key_package, ciphersuites = ?ciphersuites, "Client signature not found. Generating client");
-                    Self::generate(identifier, backend, ciphersuites, nb_key_package).await?
+                    Self::generate(identifier, backend, &ciphersuites, nb_key_package).await?
                 }
                 Err(e) => return Err(e),
             }
         } else {
             debug!(nb_key_package, ciphersuites = ?ciphersuites, "Generating client");
-            Self::generate(identifier, backend, ciphersuites, nb_key_package).await?
+            Self::generate(identifier, backend, &ciphersuites, nb_key_package).await?
         };
 
         Ok(client)

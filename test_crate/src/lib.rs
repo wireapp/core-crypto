@@ -92,11 +92,12 @@ impl CoreCrypto {
             .map(usize::try_from)
             .transpose()
             .map_err(|e| CoreCryptoError::CryptoError)?;
+        let ciphersuites = ciphersuites.unwrap_or_default().into();
         let configuration = MlsCentralConfiguration::try_new(
             path,
             key,
             client_id.map(|cid| cid.0.clone()),
-            (&ciphersuites.unwrap_or_default()).into(),
+            ciphersuites,
             None,
             nb_key_package,
         ).map_err(|e| CoreCryptoError::CryptoError)?;

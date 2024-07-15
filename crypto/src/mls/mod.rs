@@ -165,8 +165,8 @@ impl MlsCentral {
     pub async fn try_new(configuration: MlsCentralConfiguration) -> CryptoResult<Self> {
         // Init backend (crypto + rand + keystore)
         let mls_backend = MlsCryptoProvider::try_new_with_configuration(MlsCryptoProviderConfiguration {
-            db_path: &configuration.store_path,
-            identity_key: &configuration.identity_key,
+            db_path: configuration.store_path,
+            identity_key: configuration.identity_key,
             in_memory: false,
             entropy_seed: configuration.external_entropy,
         })
@@ -177,7 +177,7 @@ impl MlsCentral {
             Some(
                 Client::init(
                     ClientIdentifier::Basic(id),
-                    configuration.ciphersuites.as_slice(),
+                    configuration.ciphersuites,
                     &mls_backend,
                     configuration
                         .nb_init_key_packages
@@ -209,8 +209,8 @@ impl MlsCentral {
     #[cfg_attr(not(test), tracing::instrument(skip_all, err))]
     pub async fn try_new_in_memory(configuration: MlsCentralConfiguration) -> CryptoResult<Self> {
         let mls_backend = MlsCryptoProvider::try_new_with_configuration(MlsCryptoProviderConfiguration {
-            db_path: &configuration.store_path,
-            identity_key: &configuration.identity_key,
+            db_path: configuration.store_path,
+            identity_key: configuration.identity_key,
             in_memory: true,
             entropy_seed: configuration.external_entropy,
         })
@@ -220,7 +220,7 @@ impl MlsCentral {
             Some(
                 Client::init(
                     ClientIdentifier::Basic(id),
-                    configuration.ciphersuites.as_slice(),
+                    configuration.ciphersuites,
                     &mls_backend,
                     configuration
                         .nb_init_key_packages
@@ -260,7 +260,7 @@ impl MlsCentral {
             return Err(CryptoError::ConsumerError);
         }
         let nb_key_package = nb_init_key_packages.unwrap_or(INITIAL_KEYING_MATERIAL_COUNT);
-        let mls_client = Client::init(identifier, &ciphersuites, &self.mls_backend, nb_key_package).await?;
+        let mls_client = Client::init(identifier, ciphersuites, &self.mls_backend, nb_key_package).await?;
 
         if mls_client.is_e2ei_capable() {
             trace!(client_id = %mls_client.id(),"Initializing PKI environment");
