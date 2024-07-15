@@ -19,6 +19,7 @@ resolver = "2"
 [workspace.dependencies]
 rexie = "0.6.1"
 tls_codec = "0.4.1"
+x509-cert = "0.2"
 
 [workspace.dependencies.uniffi]
 version = "0.28"
@@ -68,10 +69,6 @@ package = "openmls_x509_credential"
 git = "https://github.com/wireapp/openmls"
 #tag = "v1.0.0-pre.core-crypto-1.0.0"
 branch = "wire/stable"
-
-[patch.crates-io.x509-cert]
-git = "https://github.com/otak/formats"
-branch = "otak/x509-cert-wasm"
 
 # aarch64-apple-ios-sim target support has not yet been released
 [patch.crates-io.openssl-src]

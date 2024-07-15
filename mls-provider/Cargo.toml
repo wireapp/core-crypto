@@ -32,7 +32,7 @@ p384 = { version = "0.13", features = ["pkcs8"] }
 p521 = { version = "0.13", features = ["pkcs8"] }
 hkdf = "0.12"
 spki = { version = "0.7", features = ["pem", "fingerprint"] }
-x509-cert = { version = "0.2", features = ["builder", "hazmat"] }
+x509-cert = { workspace = true, features = ["builder", "hazmat"] }
 wire-e2e-identity = { workspace = true }
 fluvio-wasm-timer = "0.2"
 rand = { version = "0.8", features = ["getrandom"] }
