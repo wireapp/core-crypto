@@ -22,35 +22,37 @@ bench-in-db = []
 uniffi = ["dep:uniffi"]
 
 [dependencies]
-thiserror = "1.0"
-derive_more = { version = "0.99", features = ["from", "into", "deref", "deref_mut"] }
-strum = { version = "0.26", features = ["derive"] }
-cfg-if = "1.0"
-hex = "0.4"
-futures-util = "0.3"
+derive_more.workspace = true
+thiserror.workspace = true
+strum.workspace = true
+cfg-if.workspace = true
+hex.workspace = true
+futures-util.workspace = true
 
-openmls = { version = "1", features = ["crypto-subtle"] }
-openmls_basic_credential = "0.2"
-openmls_x509_credential = "0.2"
-openmls_traits = "0.2"
-tls_codec = { workspace = true }
-serde = "1.0"
-serde_json = "1.0"
-url = "2.5"
-async-trait = "0.1"
-async-lock = "3.4"
-schnellru = { workspace = true }
-zeroize = "1.8"
-wire-e2e-identity = { workspace = true }
-indexmap = "2"
-x509-cert = { workspace = true }
-pem = "3.0"
-async-recursion = "1"
+openmls = { workspace = true, features = ["crypto-subtle"] }
+openmls_basic_credential.workspace = true
+openmls_x509_credential.workspace = true
+openmls_traits.workspace = true
+mls-crypto-provider.workspace = true
+
+tls_codec.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+url.workspace = true
+async-trait.workspace = true
+async-lock.workspace = true
+schnellru.workspace = true
+zeroize.workspace = true
+wire-e2e-identity.workspace = true
+indexmap.workspace = true
+x509-cert.workspace = true
+pem.workspace = true
+async-recursion.workspace = true
 uniffi = { workspace = true, optional = true }
-itertools = "0.13"
-uuid = { version = "1.10", features = ["v4"] }
-base64 = "0.22"
-tracing = "0.1"
+itertools.workspace = true
+uuid.workspace = true
+base64.workspace = true
+tracing.workspace = true
 
 [dependencies.proteus-wasm]
 version = "2.1"
@@ -71,7 +73,7 @@ futures-lite = { version = "2.3", optional = true }
 [target.'cfg(target_family = "wasm")'.dependencies]
 serde-wasm-bindgen = "0.6"
 rexie = { workspace = true, optional = true }
-base64 = { version = "0.22", optional = true }
+base64 = { workspace = true, optional = true }
 
 [target.'cfg(not(target_os = "ios"))'.dependencies]
 core-crypto-keystore = { version = "^1.0.0-rc.60", path = "../keystore" }
@@ -79,14 +81,10 @@ core-crypto-keystore = { version = "^1.0.0-rc.60", path = "../keystore" }
 [target.'cfg(target_os = "ios")'.dependencies]
 core-crypto-keystore = { version = "^1.0.0-rc.60", path = "../keystore", features = ["ios-wal-compat"] }
 
-[dependencies.mls-crypto-provider]
-version = "^1.0.0-rc.60"
-path = "../mls-provider"
-
 [dev-dependencies]
-itertools = "0.13"
-uuid = { version = "1.10", features = ["v4", "v5"] }
-rand = "0.8"
+itertools.workspace = true
+uuid = { workspace = true, features = ["v4", "v5"] }
+rand.workspace = true
 tempfile = "3.10"
 wasm-bindgen = "0.2"
 wasm-bindgen-futures = "0.4"
@@ -95,10 +93,10 @@ js-sys = "0.3"
 rstest = "0.21"
 rstest_reuse = "0.7"
 pretty_env_logger = "0.5"
-async-std = { version = "1.12", features = ["attributes"] }
-futures-util = { version = "0.3", features = ["std", "alloc"] }
+async-std = { workspace = true, features = ["attributes"] }
+futures-util = { workspace = true, features = ["std", "alloc"] }
 proteus-traits = "2.0"
-async-trait = "0.1"
+async-trait.workspace = true
 wire-e2e-identity = { workspace = true, features = ["identity-builder"] }
 fluvio-wasm-timer = "0.2"
 time = { version = "0.3", features = ["wasm-bindgen"] }
