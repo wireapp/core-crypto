@@ -1,3 +1,5 @@
+/// Benchmarks related to commit creation.
+/// We're measuring the impact of different parameters on the runtime.
 use criterion::{
     async_executor::AsyncStdExecutor as FuturesExecutor, black_box, criterion_group, criterion_main, BatchSize,
     Criterion,
@@ -8,6 +10,7 @@ use crate::utils::*;
 #[path = "utils/mod.rs"]
 mod utils;
 
+/// Benchmark to measure the impact of group size on the runtime of creating and merging an add commit.
 fn commit_add_bench(c: &mut Criterion) {
     let mut group = c.benchmark_group("Commit add f(group size)");
     for (case, ciphersuite, credential, in_memory) in MlsTestCase::values() {
@@ -35,6 +38,7 @@ fn commit_add_bench(c: &mut Criterion) {
     group.finish();
 }
 
+/// Benchmark to measure impact of client count in an add commit on the runtime of commit creation and merging.
 fn commit_add_n_clients_bench(c: &mut Criterion) {
     let mut group = c.benchmark_group("Commit add f(number clients)");
     for (case, ciphersuite, credential, in_memory) in MlsTestCase::values() {
@@ -65,6 +69,8 @@ fn commit_add_n_clients_bench(c: &mut Criterion) {
     group.finish();
 }
 
+/// Benchmark to measure the impact of group size on the runtime of creating and merging a remove commit.
+/// Number of removed clients is equal to group size (→ all clients except the initial client from [setup_mls] are removed).
 fn commit_remove_bench(c: &mut Criterion) {
     let mut group = c.benchmark_group("Commit remove f(group size)");
     for (case, ciphersuite, credential, in_memory) in MlsTestCase::values() {
@@ -96,6 +102,8 @@ fn commit_remove_bench(c: &mut Criterion) {
     group.finish();
 }
 
+/// Benchmark to measure impact of client count in a remove commit on the runtime of commit creation and merging.
+/// The group has size [GROUP_MAX].
 fn commit_remove_n_clients_bench(c: &mut Criterion) {
     let mut group = c.benchmark_group("Commit remove f(number clients)");
     for (case, ciphersuite, credential, in_memory) in MlsTestCase::values() {
@@ -128,6 +136,7 @@ fn commit_remove_n_clients_bench(c: &mut Criterion) {
     group.finish();
 }
 
+/// Benchmark to measure the impact of group size on the runtime of creating and merging an update commit.
 fn commit_update_bench(c: &mut Criterion) {
     let mut group = c.benchmark_group("Commit update f(group size)");
     for (case, ciphersuite, credential, in_memory) in MlsTestCase::values() {
@@ -154,6 +163,8 @@ fn commit_update_bench(c: &mut Criterion) {
     group.finish();
 }
 
+/// Benchmark to measure impact of pending add proposal count on the runtime of merging all pending proposals.
+/// The group has size [GROUP_MAX].
 fn commit_pending_proposals_bench_var_n_proposals(c: &mut Criterion) {
     let mut group = c.benchmark_group("Commit pending proposals f(pending size)");
     for (case, ciphersuite, credential, in_memory) in MlsTestCase::values() {
@@ -186,6 +197,8 @@ fn commit_pending_proposals_bench_var_n_proposals(c: &mut Criterion) {
     group.finish();
 }
 
+/// Benchmark to measure impact of group size on the runtime of merging all pending proposals.
+/// The proposals are [PENDING_MAX] add proposals.
 fn commit_pending_proposals_bench_var_group_size(c: &mut Criterion) {
     let mut group = c.benchmark_group("Commit pending proposals f(group size)");
     for (case, ciphersuite, credential, in_memory) in MlsTestCase::values() {
@@ -221,7 +234,7 @@ criterion_group!(
     config = criterion();
     targets =
     commit_add_bench,
-    commit_add_n_clients_bench,
+    commit_add_n_clients_bench, // crashes with high client counts. May be enabled when experimenting with lower numbers.
     commit_remove_bench,
     commit_remove_n_clients_bench,
     commit_update_bench,

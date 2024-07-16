@@ -12,6 +12,7 @@ use crate::utils::*;
 #[path = "utils/mod.rs"]
 mod utils;
 
+/// Benchmark to measure the runtime of creating a group.
 fn create_group_bench(c: &mut Criterion) {
     let mut group = c.benchmark_group("Create group");
     for (case, ciphersuite, credential, in_memory) in MlsTestCase::values() {
@@ -46,6 +47,7 @@ fn create_group_bench(c: &mut Criterion) {
     group.finish();
 }
 
+/// Benchmark to measure the impact of group size on the runtime of joining a group from a welcome message.
 fn join_from_welcome_bench(c: &mut Criterion) {
     let mut group = c.benchmark_group("Join from welcome f(group size)");
     for (case, ciphersuite, credential, in_memory) in MlsTestCase::values() {
@@ -87,6 +89,7 @@ fn join_from_welcome_bench(c: &mut Criterion) {
     group.finish();
 }
 
+/// Benchmark to measure the impact of group size on the runtime of joining a group via an external commit.
 fn join_from_group_info_bench(c: &mut Criterion) {
     let mut group = c.benchmark_group("Join from external commit f(group size)");
     for (case, ciphersuite, credential, in_memory) in MlsTestCase::values() {
