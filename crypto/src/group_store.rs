@@ -261,11 +261,11 @@ impl<V: GroupStoreEntity> GroupStore<V> {
     pub(crate) fn try_insert(&mut self, k: Vec<u8>, entity: V) -> Result<(), V> {
         let value_to_insert = std::sync::Arc::new(async_lock::RwLock::new(entity));
 
-        if self.0.try_insert(k, value_to_insert.clone()) {
+        if self.0.insert(k, value_to_insert.clone()) {
             Ok(())
         } else {
             // This is safe because we just built the value
-            Err(std::sync::Arc::try_unwrap(value_to_insert).unwrap().into_inner())
+            Err(std::sync::Arc::into_inner(value_to_insert).unwrap().into_inner())
         }
     }
 
@@ -435,8 +435,11 @@ mod tests {
         assert_eq!(store.len(), 1);
         assert!(store.try_insert(b"2".to_vec(), "2".into()).is_ok());
         assert_eq!(store.len(), 2);
-        assert!(store.try_insert(b"3".to_vec(), "3".into()).is_err());
+        assert!(store.try_insert(b"3".to_vec(), "3".into()).is_ok());
         assert_eq!(store.len(), 2);
+        assert!(!store.contains_key(b"1"));
+        assert!(store.contains_key(b"2"));
+        assert!(store.contains_key(b"3"));
         store.insert(b"4".to_vec(), "4".into());
         assert_eq!(store.len(), 2);
     }

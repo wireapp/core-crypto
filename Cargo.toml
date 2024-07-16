@@ -18,6 +18,7 @@ resolver = "2"
 
 [workspace.dependencies]
 rexie = "0.6.1"
+schnellru = "0.2"
 tls_codec = "0.4.1"
 x509-cert = "0.2"
 
@@ -29,10 +30,6 @@ version = "0.28"
 [workspace.dependencies.wire-e2e-identity]
 git = "https://github.com/wireapp/rusty-jwt-tools"
 version = "0.9"
-
-[patch.crates-io.schnellru]
-git = "https://github.com/wireapp/schnellru"
-branch = "feat/try-insert"
 
 [patch.'https://github.com/wireapp/proteus'.proteus]
 package = "proteus"
