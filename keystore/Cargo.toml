@@ -30,25 +30,25 @@ serde = ["dep:serde"]
 dummy-entity = ["serde"]
 
 [dependencies]
-thiserror = "1.0"
-cfg-if = "1.0"
-hex = "0.4"
-zeroize = { version = "1.8", features = ["zeroize_derive"] }
-async-trait = "0.1"
-async-lock = "3.4"
+thiserror.workspace = true
+cfg-if.workspace = true
+hex.workspace = true
+zeroize = { workspace = true, features = ["zeroize_derive"] }
+async-trait.workspace = true
+async-lock.workspace = true
 postcard = { version = "1.0", default-features = false, features = ["use-std"] }
-sha2 = "0.10"
+sha2.workspace = true
 
 # iOS specific things
 security-framework = { version = "2.11", optional = true }
 security-framework-sys = { version = "2.11", optional = true }
 core-foundation = { version = "0.9", optional = true }
 
-openmls_traits = { version = "0.2", optional = true }
-openmls_basic_credential = { version = "0.2", optional = true }
-openmls_x509_credential = { version = "0.2", optional = true }
-serde = { version = "1.0", features = ["derive"], optional = true }
-log = { version = "0.4", optional = true }
+openmls_traits = { workspace = true, optional = true }
+openmls_basic_credential = { workspace = true, optional = true }
+openmls_x509_credential = { workspace = true, optional = true }
+serde = { workspace = true, features = ["derive"], optional = true }
+log = { workspace = true, optional = true }
 
 [dependencies.proteus-traits]
 optional = true
@@ -77,32 +77,32 @@ default-features = false
 features = ["rusqlite"]
 
 [target.'cfg(target_family = "wasm")'.dependencies]
-rexie = { workspace = true }
+rexie.workspace = true
 js-sys = "0.3"
 web-sys = { version = "0.3", features = ["console"] }
 wasm-bindgen = "0.2"
-serde = { version = "1.0", features = ["derive"] }
+serde = { workspace = true, features = ["derive"] }
 serde-big-array = "0.5"
 serde-wasm-bindgen = "0.6"
 # Async WASM stuff
 wasm-bindgen-futures = "0.4"
 # Crypto stuff
 aes-gcm = "0.10"
-rand = { version = "0.8", features = ["getrandom"] }
+rand.workspace = true
 getrandom = { version = "0.2", features = ["js"] }
 fluvio-wasm-timer = "0.2"
 
 [dev-dependencies]
 serde = { version = "1.0", features = ["derive"] }
 wasm-bindgen-test = "0.3"
-uuid = { version = "1.10", features = ["v4", "js"] }
-rand = { version = "0.8", features = ["getrandom"] }
+uuid = { workspace = true, features = ["v4", "js"] }
+rand = { workspace = true, features = ["getrandom"] }
 getrandom = { version = "0.2", features = ["js"] }
-openmls = { version = "1", default-features = false, features = ["crypto-subtle"] }
-mls-crypto-provider = { path = "../mls-provider" }
+openmls = { workspace = true, features = ["crypto-subtle"] }
+mls-crypto-provider.workspace = true
 rstest = "0.21"
 rstest_reuse = "0.7"
-async-std = { version = "1.12", features = ["attributes"] }
+async-std = { workspace = true, features = ["attributes"] }
 futures-lite = "2.3"
 core-crypto-keystore = { path = ".", features = ["idb-regression-test", "log-queries"] }
 pretty_env_logger = "0.5"
