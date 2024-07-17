@@ -2,7 +2,7 @@
 name = "core-crypto-ffi"
 description = "Platform-specific bindings (Android, iOS, WASM) for CoreCrypto"
 repository = "https://github.com/wireapp/core-crypto"
-version = "1.0.0-rc.60"
+version = "1.0.0"
 edition = "2021"
 license = "GPL-3.0-only"
 publish = false
@@ -37,7 +37,7 @@ sha2 = { version = "0.10", features = ["force-soft"] }
 [target.'cfg(not(target_family = "wasm"))'.dependencies]
 # UniFFI - Android + iOS bindings - Runtime support
 uniffi.workspace = true
-core-crypto = { version = "^1.0.0-rc.60", path = "../crypto", features = ["uniffi"] }
+core-crypto = { version = "^1.0.0", path = "../crypto", features = ["uniffi"] }
 
 [target.wasm32-unknown-unknown.dependencies]
 wasm-bindgen = "0.2"
@@ -48,7 +48,7 @@ serde = { workspace = true, features = ["derive"] }
 js-sys = "0.3"
 web-sys = "0.3"
 strum.workspace = true
-core-crypto = { version = "^1.0.0-rc.60", path = "../crypto" }
+core-crypto = { version = "^1.0.0", path = "../crypto" }
 
 # UniFFI - Android + iOS bindings - Build support
 [target.'cfg(not(target_family = "wasm"))'.build-dependencies.uniffi]

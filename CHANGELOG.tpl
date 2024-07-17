@@ -7,11 +7,24 @@ Platform support legends:
     * Note: the papercuts will majorly be with the build process. Things might be very rough to integrate as no polish at all has been given yet.
 * ❌ = tier 3 support. It doesn't work just yet, but we plan to make it work.
 
+## [1.0.0] - 2024-07-18
+
+<details>
+    <summary>git-conventional changelog</summary>
+{{git-cliff tag="v1.0.0" unreleased=true}}
+</details>
+
+* Improved internal crate documentation.
+* Added logging facilites for client usage.
+* Removed experimental support for Kyber-based KEM.
+* Updated uniffi to 0.28, fixing the enum breakage in previous release candidates.
+* Various dependency updates and cleanups.
+
 ## [1.0.0-rc.60] - 2024-05-06
 
 <details>
     <summary>git-conventional changelog</summary>
-{{git-cliff tag="v1.0.0-rc.60" unreleased=true}}
+{{git-cliff tag="v1.0.0-rc.60"}}
 </details>
 
 * Fixed an issue on WASM using `createConversation()` with external senders, as the ciphersuite was ignored in parsing External Senders
