@@ -58,9 +58,7 @@ openmls_traits = { git = "https://github.com/wireapp/openmls", rev = "6d2f5a2046
 openmls_basic_credential = { git = "https://github.com/wireapp/openmls", rev = "6d2f5a2046fc12aca602af207e650b94848f09ff", version = "0.2" }
 openmls_x509_credential = { git = "https://github.com/wireapp/openmls", rev = "6d2f5a2046fc12aca602af207e650b94848f09ff", version = "0.2" }
 
-[workspace.dependencies.wire-e2e-identity]
-git = "https://github.com/wireapp/rusty-jwt-tools"
-version = "0.9"
+wire-e2e-identity = { git = "https://github.com/wireapp/rusty-jwt-tools", rev = "98577c28d7b7bb1879fb77980566d5c2cfb0f06c", version = "0.9" }
 
 [patch.'https://github.com/wireapp/proteus'.proteus]
 package = "proteus"
@@ -74,16 +72,17 @@ package = "proteus-traits"
 git = "https://github.com/wireapp/proteus"
 branch = "2.x"
 
-
 # aarch64-apple-ios-sim target support has not yet been released
 [patch.crates-io.openssl-src]
-git = "https://github.com/alexcrichton/openssl-src-rs.git"
-branch = "release/111"
 package = "openssl-src"
+git = "https://github.com/alexcrichton/openssl-src-rs.git"
+# branch = "release/111"
+rev = "8c19f63843c8cb84c8fd27fd6db8c1ff687d2da2"
 
 [patch.crates-io.jwt-simple]
 git = "https://github.com/wireapp/rust-jwt-simple"
-tag = "v0.13.0-pre.core-crypto-1.0.0"
+rev = "35201bea2ccb55cbb876be03cde2d3906f15547e"
+# tag = "v0.13.0-pre.core-crypto-1.0.0"
 
 [profile.release]
 lto = true
