@@ -31,10 +31,6 @@ futures-util = "0.3"
 hex = "0.4"
 indexmap = "2"
 itertools = "0.13"
-openmls = "1"
-openmls_basic_credential = "0.2"
-openmls_x509_credential = "0.2"
-openmls_traits = "0.2"
 log = "0.4"
 mls-crypto-provider = { version = "^1.0.0-rc.60", path = "mls-provider" }
 pem = "3.0"
@@ -56,6 +52,12 @@ uuid = "1.10"
 x509-cert = "0.2"
 zeroize = "1.8"
 
+# our OpenMLS fork
+openmls = { git = "https://github.com/wireapp/openmls", rev = "6d2f5a2046fc12aca602af207e650b94848f09ff", version = "1" }
+openmls_traits = { git = "https://github.com/wireapp/openmls", rev = "6d2f5a2046fc12aca602af207e650b94848f09ff", version = "0.2" }
+openmls_basic_credential = { git = "https://github.com/wireapp/openmls", rev = "6d2f5a2046fc12aca602af207e650b94848f09ff", version = "0.2" }
+openmls_x509_credential = { git = "https://github.com/wireapp/openmls", rev = "6d2f5a2046fc12aca602af207e650b94848f09ff", version = "0.2" }
+
 [workspace.dependencies.wire-e2e-identity]
 git = "https://github.com/wireapp/rusty-jwt-tools"
 version = "0.9"
@@ -72,29 +74,6 @@ package = "proteus-traits"
 git = "https://github.com/wireapp/proteus"
 branch = "2.x"
 
-[patch.crates-io.openmls]
-package = "openmls"
-git = "https://github.com/wireapp/openmls"
-#tag = "v1.0.0-pre.core-crypto-1.0.0"
-branch = "wire/stable"
-
-[patch.crates-io.openmls_traits]
-package = "openmls_traits"
-git = "https://github.com/wireapp/openmls"
-#tag = "v1.0.0-pre.core-crypto-1.0.0"
-branch = "wire/stable"
-
-[patch.crates-io.openmls_basic_credential]
-package = "openmls_basic_credential"
-git = "https://github.com/wireapp/openmls"
-#tag = "v1.0.0-pre.core-crypto-1.0.0"
-branch = "wire/stable"
-
-[patch.crates-io.openmls_x509_credential]
-package = "openmls_x509_credential"
-git = "https://github.com/wireapp/openmls"
-#tag = "v1.0.0-pre.core-crypto-1.0.0"
-branch = "wire/stable"
 
 # aarch64-apple-ios-sim target support has not yet been released
 [patch.crates-io.openssl-src]
