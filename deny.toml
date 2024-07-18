@@ -61,8 +61,6 @@ license-files = [
 allow-git = [
     # ? Needed for our interop runner.
     "https://github.com/otak/fantoccini",
-    # ? Needed for rusqlite
-    "https://github.com/alexcrichton/openssl-src-rs",
 ]
 
 [sources.allow-org]
