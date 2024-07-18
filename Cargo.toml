@@ -73,13 +73,6 @@ package = "proteus-traits"
 git = "https://github.com/wireapp/proteus"
 branch = "2.x"
 
-# aarch64-apple-ios-sim target support has not yet been released
-[patch.crates-io.openssl-src]
-package = "openssl-src"
-git = "https://github.com/alexcrichton/openssl-src-rs.git"
-# branch = "release/111"
-rev = "8c19f63843c8cb84c8fd27fd6db8c1ff687d2da2"
-
 [patch.crates-io.jwt-simple]
 git = "https://github.com/wireapp/rust-jwt-simple"
 rev = "35201bea2ccb55cbb876be03cde2d3906f15547e"
