@@ -73,11 +73,6 @@ package = "proteus-traits"
 git = "https://github.com/wireapp/proteus"
 branch = "2.x"
 
-[patch.crates-io.jwt-simple]
-git = "https://github.com/wireapp/rust-jwt-simple"
-rev = "35201bea2ccb55cbb876be03cde2d3906f15547e"
-# tag = "v0.13.0-pre.core-crypto-1.0.0"
-
 [profile.release]
 lto = true
 codegen-units = 1
