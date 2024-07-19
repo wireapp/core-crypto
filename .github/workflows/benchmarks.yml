@@ -1,0 +1,44 @@
+name: Continuous Benchmarks with Bencher
+on:
+  push:
+    branches:
+      - develop
+  pull_request:
+
+jobs:
+  benchmark_with_bencher:
+    name: Benchmark with Bencher
+    permissions:
+      pull-requests: write
+    runs-on: ubuntu-latest
+    env:
+      BENCHER_PROJECT: core-crypto-mmbtki3h
+      BENCHER_API_TOKEN: ${{ secrets.BENCHER_API_TOKEN }}
+      BENCH_PARAMS: "--bench commit --bench encryption --bench key_package --bench create_group --bench mls_proteus -- --quick"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions-rust-lang/setup-rust-toolchain@v1  # this implicitly caches Rust tools and build artifacts
+      - name: Install bencher
+        uses: bencherdev/bencher@main
+      - name: Run benchmarks on PR
+        if: github.event.pull_request.head.repo.full_name == github.repository && github.event_name == 'pull_request'
+        #  Not using this right now as a parameter, as we don't have any runs on the base branch yet. Add it once we do.
+        # --branch-start-point-hash '${{ github.event.pull_request.base.sha }}' \
+        run: |
+          bencher run \
+          --branch '${{ github.head_ref }}' \
+          --branch-start-point '${{ github.base_ref }}' \
+          --testbed ubuntu-latest \
+          --err \
+          --github-actions '${{ secrets.GITHUB_TOKEN }}' \
+          --adapter rust_criterion \
+          "cargo bench ${{ env.BENCH_PARAMS }}"
+      - name: Run benchmarks on base branch
+        if: github.event_name == 'push' && github.ref_name == 'develop'
+        run: |
+          bencher run \
+          --branch develop \
+          --testbed ubuntu-latest \
+          --err \
+          --adapter rust_criterion \
+          "cargo bench ${{ env.BENCH_PARAMS }}"

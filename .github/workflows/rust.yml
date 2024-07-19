@@ -40,7 +40,6 @@ jobs:
       - run: cargo clippy --target wasm32-unknown-unknown -- -D warnings
       - run: cargo check --tests
       - run: cargo check --tests --target wasm32-unknown-unknown
-      - run: cargo check --benches
 
   build:
     runs-on: ubuntu-latest
@@ -100,11 +99,10 @@ jobs:
       - uses: actions-rust-lang/setup-rust-toolchain@v1  # this implicitly caches Rust tools and build artifacts
         with:
           rustflags: ''
-      - uses: taiki-e/install-action@nextest
+      - name: Install cargo-nextest
+        uses: taiki-e/install-action@nextest
       - name: "Test CoreCrypto xtask tooling"
         run: cargo nextest run --verbose --manifest-path xtask/Cargo.toml
-      - name: "Test CoreCrypto benchmarks"
-        run: sh crypto/benches/scripts/test.sh
 
   wasm-build:
     runs-on: ubuntu-latest
