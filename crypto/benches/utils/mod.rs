@@ -34,5 +34,5 @@ pub(crate) const PENDING_MIN: usize = 1;
 pub(crate) const PENDING_STEP: usize = 20;
 
 pub(crate) fn criterion() -> Criterion {
-    Criterion::default().sample_size(SAMPLE_SIZE)
+    Criterion::default().sample_size(SAMPLE_SIZE).without_plots()
 }
