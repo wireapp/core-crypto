@@ -11,9 +11,15 @@ pub(crate) const SAMPLE_SIZE: usize = 10;
 
 // number of clients in a group
 pub(crate) const GROUP_RANGE: std::ops::Range<usize> = GROUP_MIN..GROUP_MAX;
-pub(crate) const GROUP_MAX: usize = 100 + GROUP_MIN + 1;
+pub(crate) const GROUP_RANGE_PROTEUS: std::ops::Range<usize> = GROUP_MIN..GROUP_MAX_PROTEUS;
+
+pub(crate) const GROUP_MAX: usize = 1000 + GROUP_MIN + 1;
+pub(crate) const GROUP_MAX_PROTEUS: usize = 100 + GROUP_MIN + 1;
+
 pub(crate) const GROUP_MIN: usize = 1;
-pub(crate) const GROUP_STEP: usize = 20;
+
+pub(crate) const GROUP_STEP: usize = 200;
+pub(crate) const GROUP_STEP_PROTEUS: usize = 20;
 
 // size (in bytes) of application messages
 pub(crate) const MSG_RANGE: std::ops::Range<usize> = MSG_MIN..MSG_MAX;
