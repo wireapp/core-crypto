@@ -39,7 +39,7 @@ fn proteus_cases() -> Vec<(bool, &'static str)> {
 
 fn encrypt_message_bench(c: &mut Criterion) {
     let mut group = c.benchmark_group("Mls vs Proteus: encrypt");
-    for i in (GROUP_RANGE).step_by(GROUP_STEP) {
+    for i in (GROUP_RANGE_PROTEUS).step_by(GROUP_STEP_PROTEUS) {
         // MLS
         for (ciphersuite, credential, in_memory, bench_name) in mls_cases() {
             group.bench_with_input(BenchmarkId::new(bench_name, i), &i, |b, i| {
@@ -96,7 +96,7 @@ fn encrypt_message_bench(c: &mut Criterion) {
 
 fn add_client_bench(c: &mut Criterion) {
     let mut group = c.benchmark_group("Mls vs Proteus: add");
-    for i in (GROUP_RANGE).step_by(GROUP_STEP) {
+    for i in (GROUP_RANGE_PROTEUS).step_by(GROUP_STEP_PROTEUS) {
         // MLS
         for (ciphersuite, credential, in_memory, bench_name) in mls_cases() {
             group.bench_with_input(BenchmarkId::new(bench_name, i), &i, |b, i| {
@@ -148,7 +148,7 @@ fn add_client_bench(c: &mut Criterion) {
 
 fn remove_client_bench(c: &mut Criterion) {
     let mut group = c.benchmark_group("Mls vs Proteus: remove");
-    for i in (GROUP_RANGE).step_by(GROUP_STEP) {
+    for i in (GROUP_RANGE_PROTEUS).step_by(GROUP_STEP_PROTEUS) {
         // MLS
         for (ciphersuite, credential, in_memory, bench_name) in mls_cases() {
             group.bench_with_input(BenchmarkId::new(bench_name, i), &i, |b, i| {
@@ -156,7 +156,7 @@ fn remove_client_bench(c: &mut Criterion) {
                     || {
                         async_std::task::block_on(async {
                             let (mut central, id) = setup_mls(ciphersuite, credential.as_ref(), in_memory).await;
-                            let (client_ids, ..) = add_clients(&mut central, &id, ciphersuite, GROUP_MAX).await;
+                            let (client_ids, ..) = add_clients(&mut central, &id, ciphersuite, GROUP_MAX_PROTEUS).await;
                             let to_remove = client_ids[..*i].to_vec();
                             (central, id, to_remove)
                         })
@@ -209,7 +209,7 @@ fn remove_client_bench(c: &mut Criterion) {
 
 fn update_client_bench(c: &mut Criterion) {
     let mut group = c.benchmark_group("Mls vs Proteus: update");
-    for i in (GROUP_RANGE).step_by(GROUP_STEP) {
+    for i in (GROUP_RANGE_PROTEUS).step_by(GROUP_STEP_PROTEUS) {
         // MLS
         for (ciphersuite, credential, in_memory, bench_name) in mls_cases() {
             group.bench_with_input(BenchmarkId::new(bench_name, i), &i, |b, i| {
