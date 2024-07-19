@@ -22,12 +22,11 @@ jobs:
         uses: bencherdev/bencher@main
       - name: Run benchmarks on PR
         if: github.event.pull_request.head.repo.full_name == github.repository && github.event_name == 'pull_request'
-        #  Not using this right now as a parameter, as we don't have any runs on the base branch yet. Add it once we do.
-        # --branch-start-point-hash '${{ github.event.pull_request.base.sha }}' \
         run: |
           bencher run \
           --branch '${{ github.head_ref }}' \
           --branch-start-point '${{ github.base_ref }}' \
+          --branch-start-point-hash '${{ github.event.pull_request.base.sha }}' \
           --testbed ubuntu-latest \
           --err \
           --github-actions '${{ secrets.GITHUB_TOKEN }}' \
