@@ -8,6 +8,7 @@
 //! | 0 pend. Proposal  | ✅              | ✅              |
 //! | 1+ pend. Proposal | ✅              | ✅              |
 
+use openmls::prelude::StageCommitError;
 use openmls::{
     framing::errors::{MessageDecryptionError, SecretTreeError},
     group::StagedCommit,
@@ -123,13 +124,17 @@ impl MlsConversation {
         callbacks: Option<&dyn CoreCryptoCallbacks>,
         restore_pending: bool,
     ) -> CryptoResult<MlsConversationDecryptMessage> {
-        // handles the crooked case where we receive our own commits.
-        // Since this would result in an error in openmls, we handle it here
-        if let Some(ct) = self.maybe_self_member_commit(&message)? {
-            return self.handle_self_member_commit(backend, ct).await;
-        }
-
-        let message = self.parse_message(backend, message).await?;
+        let message = match self.parse_message(backend, message.clone()).await {
+            // Handles the case where we receive our own commits.
+            Err(CryptoError::MlsError(MlsError::MlsMessageError(ProcessMessageError::InvalidCommit(
+                StageCommitError::OwnCommit,
+            )))) => {
+                let ct = self.extract_confirmation_tag_from_own_commit(&message)?;
+                return self.handle_own_commit(backend, ct).await;
+            }
+            Ok(processed_message) => Ok(processed_message),
+            Err(e) => Err(e),
+        }?;
 
         let credential = message.credential();
 
