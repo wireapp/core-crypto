@@ -11,35 +11,46 @@ use openmls::prelude::{
 };
 
 impl MlsConversation {
-    pub(crate) fn maybe_self_member_commit<'a>(
+    /// Returns the confirmation tag from a public message that is an own commit.
+    /// Returns an error if the confirmation tag in the own commit is missing.
+    pub(crate) fn extract_confirmation_tag_from_own_commit<'a>(
         &self,
-        msg: &'a MlsMessageIn,
-    ) -> CryptoResult<Option<&'a ConfirmationTag>> {
-        match msg.body_as_ref() {
+        own_commit: &'a MlsMessageIn,
+    ) -> CryptoResult<&'a ConfirmationTag> {
+        match own_commit.body_as_ref() {
             MlsMessageInBody::PublicMessage(msg) => {
                 let is_commit = matches!(msg.content_type(), ContentType::Commit);
                 let own_index = self.group.own_leaf_index();
                 let is_self_sent = matches!(msg.sender(), Sender::Member(i) if i == &own_index);
-                let is_self_commit = is_commit && is_self_sent;
+                let is_own_commit = is_commit && is_self_sent;
 
-                match is_self_commit.then_some(msg.body()) {
+                match is_own_commit.then_some(msg.body()) {
                     Some(FramedContentBodyIn::Commit(_)) => {
-                        let ct = msg
+                        let confirmation_tag = msg
                             .auth
                             .confirmation_tag
                             .as_ref()
                             .ok_or(CryptoError::InternalMlsError)?;
-                        Ok(Some(ct))
+                        Ok(confirmation_tag)
                     }
-                    _ => Ok(None),
+                    // Not an own commit. Should never be reached if this function
+                    // is called correctly.
+                    _ => unreachable!(
+                        "extract_confirmation_tag_from_own_commit() must always be called \
+                        with a an own commit."
+                    ),
                 }
             }
-            _ => Ok(None),
+            // Not a public message. Should never be reached if this function is called correctly.
+            _ => unreachable!(
+                "extract_confirmation_tag_from_own_commit() must always be called \
+                 with an MlsMessageIn containing an MlsMessageInBody::PublicMessage"
+            ),
         }
     }
 
     #[cfg_attr(not(test), tracing::instrument(skip_all, err))]
-    pub(crate) async fn handle_self_member_commit<'a>(
+    pub(crate) async fn handle_own_commit<'a>(
         &mut self,
         backend: &MlsCryptoProvider,
         ct: &ConfirmationTag,

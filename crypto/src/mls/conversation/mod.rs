@@ -61,9 +61,9 @@ pub(crate) mod group_info;
 mod leaf_node_validation;
 pub(crate) mod merge;
 mod orphan_welcome;
+mod own_commit;
 pub(crate) mod proposal;
 mod renew;
-mod self_commit;
 pub(crate) mod welcome;
 mod wipe;
 /// A unique identifier for a group/conversation. The identifier must be unique within a client.
