@@ -119,7 +119,10 @@ impl MlsConversation {
 #[cfg(test)]
 mod tests {
     use crate::test_utils::*;
-    use crate::CryptoError;
+    use openmls::prelude::{ProcessMessageError, ValidationError};
+
+    use crate::prelude::{CryptoError, MlsError};
+
     use wasm_bindgen_test::*;
 
     wasm_bindgen_test_configure!(run_in_browser);
@@ -285,5 +288,90 @@ mod tests {
             })
             .await
         }
+    }
+
+    #[apply(all_cred_cipher)]
+    #[wasm_bindgen_test]
+    pub async fn should_fail_when_tampering_with_incoming_own_commit_same_as_pending(case: TestCase) {
+        if case.is_pure_ciphertext() {
+            return;
+        };
+        run_test_with_client_ids(
+            case.clone(),
+            ["alice", "bob"],
+            move |[mut alice_central, bob_central]| {
+                Box::pin(async move {
+                    let conversation_id = conversation_id();
+                    alice_central
+                        .mls_central
+                        .new_conversation(&conversation_id, case.credential_type, case.cfg.clone())
+                        .await
+                        .unwrap();
+
+                    // No pending commit yet.
+                    assert!(alice_central
+                        .mls_central
+                        .pending_commit(&conversation_id)
+                        .await
+                        .is_none());
+
+                    let bob_key_package = bob_central.mls_central.rand_key_package(&case).await;
+
+                    // Create the commit that we're going to tamper with.
+                    let add_bob_message = alice_central
+                        .mls_central
+                        .add_members_to_conversation(&conversation_id, vec![bob_key_package])
+                        .await
+                        .unwrap();
+
+                    // Now there is a pending commit.
+                    assert!(alice_central
+                        .mls_central
+                        .pending_commit(&conversation_id)
+                        .await
+                        .is_some());
+
+                    let commit_serialized = &mut add_bob_message.commit.to_bytes().unwrap();
+
+                    // Tamper with the commit; this is the signature region, however,
+                    // the membership tag covers the signature, so this will result in an
+                    // invalid membership tag error emitted by openmls.
+                    commit_serialized[355] = commit_serialized[355].wrapping_add(1);
+
+                    let decryption_result = alice_central
+                        .mls_central
+                        .decrypt_message(&conversation_id, commit_serialized)
+                        .await;
+                    assert!(matches!(
+                        decryption_result.unwrap_err(),
+                        CryptoError::MlsError(MlsError::MlsMessageError(ProcessMessageError::ValidationError(
+                            ValidationError::InvalidMembershipTag
+                        )))
+                    ));
+
+                    // There is still a pending commit.
+                    assert!(alice_central
+                        .mls_central
+                        .pending_commit(&conversation_id)
+                        .await
+                        .is_some());
+
+                    // Positive case: Alice decrypts the commit...
+                    assert!(alice_central
+                        .mls_central
+                        .decrypt_message(&conversation_id, &add_bob_message.commit.to_bytes().unwrap())
+                        .await
+                        .is_ok());
+
+                    // ...and has cleared the pending commit.
+                    assert!(alice_central
+                        .mls_central
+                        .pending_commit(&conversation_id)
+                        .await
+                        .is_none());
+                })
+            },
+        )
+        .await
     }
 }
