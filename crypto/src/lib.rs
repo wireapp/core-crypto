@@ -24,9 +24,6 @@
 #![allow(clippy::single_component_path_imports)]
 
 #[cfg(test)]
-use rstest_reuse;
-
-#[cfg(test)]
 pub use core_crypto_attributes::{dispotent, durable, idempotent};
 
 pub use self::error::*;
