@@ -37,7 +37,7 @@ impl MlsConversation {
                     // is called correctly.
                     _ => unreachable!(
                         "extract_confirmation_tag_from_own_commit() must always be called \
-                        with a an own commit."
+                        with an own commit."
                     ),
                 }
             }
