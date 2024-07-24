@@ -195,11 +195,6 @@ cfg_if::cfg_if! {
                 Self::encrypt_with_nonce_and_aad(cipher, data, &nonce_bytes, aad)
             }
 
-            fn reencrypt_data(cipher: &aes_gcm::Aes256Gcm, encrypted: &[u8], clear: &[u8], aad: &[u8]) -> CryptoKeystoreResult<Vec<u8>> {
-                let nonce_bytes = &encrypted[..AES_GCM_256_NONCE_SIZE];
-                Self::encrypt_with_nonce_and_aad(cipher, clear, nonce_bytes, aad)
-            }
-
             fn decrypt(&mut self, cipher: &aes_gcm::Aes256Gcm) -> CryptoKeystoreResult<()>;
             fn decrypt_data(cipher: &aes_gcm::Aes256Gcm, data: &[u8], aad: &[u8]) -> CryptoKeystoreResult<Vec<u8>> {
                 use aes_gcm::aead::Aead as _;
