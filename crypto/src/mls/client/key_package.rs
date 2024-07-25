@@ -417,6 +417,36 @@ mod tests {
 
     #[apply(all_cred_cipher)]
     #[wasm_bindgen_test]
+    async fn generate_foo(case: TestCase) {
+        if !case.is_basic() {
+            return;
+        }
+        run_test_with_client_ids(case.clone(), ["alice"], move |[mut cc]| {
+            Box::pin(async move {
+                let alice = cc.mls_central;
+                let mut kps = alice
+                    .get_or_create_client_keypackages(case.ciphersuite(), MlsCredentialType::X509, 12)
+                    .await
+                    .unwrap();
+                let mut conn = alice.mls_backend.key_store().borrow_conn().await.unwrap();
+                dbg!(case.ciphersuite());
+                dbg!(case.credential_type);
+
+                let all_kps = alice.mls_client.unwrap().find_all_keypackages(&mut conn).await.unwrap();
+                for (idx, x) in all_kps.iter().enumerate() {
+                    println!("{idx}: {:?}", x.1);
+                }
+                println!("-----");
+                for (idx, x) in kps.iter().enumerate() {
+                    println!("{idx}: {:?}", x);
+                }
+            })
+        })
+        .await
+    }
+
+    #[apply(all_cred_cipher)]
+    #[wasm_bindgen_test]
     async fn generates_correct_number_of_kpbs(case: TestCase) {
         run_test_with_client_ids(case.clone(), ["alice"], move |[mut cc]| {
             Box::pin(async move {
