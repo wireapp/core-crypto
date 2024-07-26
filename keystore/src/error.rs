@@ -160,13 +160,32 @@ pub enum CryptoKeystoreError {
     IdbError(#[from] idb::Error),
     #[cfg(target_family = "wasm")]
     #[error(transparent)]
-    CryptoKeystoreErrorV1_0_0(#[from] keystore_v_1_0_0::CryptoKeystoreError),
+    CryptoKeystoreErrorV1_0_0(keystore_v_1_0_0::CryptoKeystoreError),
+    #[cfg(target_family = "wasm")]
+    #[error(transparent)]
+    IdbErrorCryptoKeystoreV1_0_0(idb::Error),
+    #[cfg(target_family = "wasm")]
+    #[error(transparent)]
+    RexieErrorCryptoKeystoreV1_0_0(rexie::Error),
     #[cfg(target_family = "wasm")]
     #[error("Migration from version {0} is not supported")]
     MigrationNotSupported(u32),
     #[cfg(target_family = "wasm")]
     #[error("The migration failed.")]
     MigrationFailed,
+}
+
+#[cfg(target_family = "wasm")]
+impl From<keystore_v_1_0_0::CryptoKeystoreError> for CryptoKeystoreError {
+    fn from(e: keystore_v_1_0_0::CryptoKeystoreError) -> Self {
+        match e {
+            keystore_v_1_0_0::CryptoKeystoreError::RexieError(rexie_error) => match rexie_error {
+                rexie::Error::IdbError(idb_error) => Self::IdbErrorCryptoKeystoreV1_0_0(idb_error),
+                _ => Self::RexieErrorCryptoKeystoreV1_0_0(rexie_error),
+            },
+            _ => Self::CryptoKeystoreErrorV1_0_0(e),
+        }
+    }
 }
 
 #[cfg(target_family = "wasm")]
