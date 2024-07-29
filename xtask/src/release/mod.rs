@@ -1,4 +1,3 @@
-
 mod bump;
 pub use bump::*;
 
@@ -9,6 +8,5 @@ pub enum ReleaseCommands {
         version: bump::BumpLevel,
         #[clap(long, action)]
         dry_run: bool,
-    }
+    },
 }
-
