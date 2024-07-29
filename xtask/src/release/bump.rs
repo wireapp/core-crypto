@@ -135,7 +135,7 @@ fn bump_gradle_versions(bump_version: BumpLevel, dry_run: bool) -> Result<()> {
 
 fn bump_deps(
     package: &cargo::core::Package,
-    manifest: &mut toml_edit::Document,
+    manifest: &mut toml_edit::DocumentMut,
     ws_rust_dep_names_to_bump: &[&str],
     bump_version: BumpLevel,
     dry_run: bool,
@@ -162,7 +162,7 @@ fn bump_deps(
                 continue;
             }
             // Otherwise extract the requirement
-            OptVersionReq::Req(req) | OptVersionReq::Locked(_, req) | OptVersionReq::UpdatePrecise(_, req) => req,
+            OptVersionReq::Req(req) | OptVersionReq::Locked(_, req) | OptVersionReq::Precise(_, req) => req,
         };
 
         if required_version.comparators.is_empty() {
@@ -237,8 +237,8 @@ pub fn bump(bump_version: BumpLevel, dry_run: bool) -> Result<()> {
         log::warn!("Dry run enabled, no actions will be performed on files");
     }
 
-    let cargo_config = cargo::util::Config::default().map_err(|e| eyre!(e.to_string()))?;
-    let ws = cargo::core::Workspace::new(&Path::new("./Cargo.toml").canonicalize()?, &cargo_config)
+    let cargo_context = cargo::util::context::GlobalContext::default().map_err(|e| eyre!(e.to_string()))?;
+    let ws = cargo::core::Workspace::new(&Path::new("./Cargo.toml").canonicalize()?, &cargo_context)
         .map_err(|e| eyre!(e.to_string()))?;
 
     let ws_rust_dep_names_to_bump: Vec<&str> = ws.members().map(|p| p.name().as_str()).collect();
@@ -250,7 +250,7 @@ pub fn bump(bump_version: BumpLevel, dry_run: bool) -> Result<()> {
         log::debug!("Opening {manifest_path:?}...");
         let toml_raw_doc = std::fs::read_to_string(manifest_path)?;
 
-        let mut manifest = toml_raw_doc.parse::<toml_edit::Document>()?;
+        let mut manifest = toml_raw_doc.parse::<toml_edit::DocumentMut>()?;
         let semver_version = semver::Version::parse(
             manifest["package"]["version"]
                 .as_str()
