@@ -20,6 +20,16 @@ jobs:
       - uses: actions-rust-lang/setup-rust-toolchain@v1  # this implicitly caches Rust tools and build artifacts
       - name: Install bencher
         uses: bencherdev/bencher@main
+      - name: Add bencher thresholds on PR
+        if: github.event.pull_request.head.repo.full_name == github.repository && github.event_name == 'pull_request'
+        run: |
+          bencher threshold create \
+          --branch '${{ github.head_ref }}' \
+          --testbed ubuntu-latest \
+          --measure Latency \
+          --test z_score \
+          --upper-boundary 0.977 \
+          --min-sample-size 30
       - name: Run benchmarks on PR
         if: github.event.pull_request.head.repo.full_name == github.repository && github.event_name == 'pull_request'
         run: |
