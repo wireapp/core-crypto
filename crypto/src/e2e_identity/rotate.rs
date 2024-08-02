@@ -409,35 +409,6 @@ pub(crate) mod tests {
                             .unwrap()
                             .clone();
 
-                        const NEW_HANDLE: &str = "new_alice_wire";
-                        const NEW_DISPLAY_NAME: &str = "New Alice Smith";
-
-                        fn init(wrapper: E2eiInitWrapper) -> InitFnReturn<'_> {
-                            Box::pin(async move {
-                                let E2eiInitWrapper { cc, case } = wrapper;
-                                let cs = case.ciphersuite();
-                                match case.credential_type {
-                                    MlsCredentialType::Basic => cc.e2ei_new_activation_enrollment(
-                                        NEW_DISPLAY_NAME.to_string(),
-                                        NEW_HANDLE.to_string(),
-                                        Some(TEAM.to_string()),
-                                        E2EI_EXPIRY,
-                                        cs,
-                                    ),
-                                    MlsCredentialType::X509 => {
-                                        cc.e2ei_new_rotate_enrollment(
-                                            Some(NEW_DISPLAY_NAME.to_string()),
-                                            Some(NEW_HANDLE.to_string()),
-                                            Some(TEAM.to_string()),
-                                            E2EI_EXPIRY,
-                                            cs,
-                                        )
-                                        .await
-                                    }
-                                }
-                            })
-                        }
-
                         let is_renewal = case.credential_type == MlsCredentialType::X509;
 
                         let (mut enrollment, cert) = e2ei_enrollment(
@@ -446,7 +417,7 @@ pub(crate) mod tests {
                             x509_test_chain,
                             None,
                             is_renewal,
-                            init,
+                            init_activation_or_rotation,
                             noop_restore,
                         )
                         .await
@@ -616,35 +587,6 @@ pub(crate) mod tests {
                     // we only have a precision of 1 second for the `created_at` field of the Credential
                     async_std::task::sleep(core::time::Duration::from_secs(1)).await;
 
-                    const NEW_HANDLE: &str = "new_alice_wire";
-                    const NEW_DISPLAY_NAME: &str = "New Alice Smith";
-
-                    fn init(wrapper: E2eiInitWrapper) -> InitFnReturn<'_> {
-                        Box::pin(async move {
-                            let E2eiInitWrapper { cc, case } = wrapper;
-                            let cs = case.ciphersuite();
-                            match case.credential_type {
-                                MlsCredentialType::Basic => cc.e2ei_new_activation_enrollment(
-                                    NEW_DISPLAY_NAME.to_string(),
-                                    NEW_HANDLE.to_string(),
-                                    Some(TEAM.to_string()),
-                                    E2EI_EXPIRY,
-                                    cs,
-                                ),
-                                MlsCredentialType::X509 => {
-                                    cc.e2ei_new_rotate_enrollment(
-                                        Some(NEW_DISPLAY_NAME.to_string()),
-                                        Some(NEW_HANDLE.to_string()),
-                                        Some(TEAM.to_string()),
-                                        E2EI_EXPIRY,
-                                        cs,
-                                    )
-                                    .await
-                                }
-                            }
-                        })
-                    }
-
                     let is_renewal = case.credential_type == MlsCredentialType::X509;
 
                     let (mut enrollment, cert) = e2ei_enrollment(
@@ -653,7 +595,7 @@ pub(crate) mod tests {
                         x509_test_chain,
                         None,
                         is_renewal,
-                        init,
+                        init_activation_or_rotation,
                         noop_restore,
                     )
                     .await

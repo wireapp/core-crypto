@@ -618,25 +618,54 @@ pub(crate) mod tests {
     pub(crate) const E2EI_CLIENT_ID_URI: &str = "vUxwUxxaQCCVWc1795YZVA!4959bc6ab12f2846@world.com";
     pub(crate) const E2EI_EXPIRY: u32 = 90 * 24 * 3600;
 
+    pub(crate) fn init_enrollment(wrapper: E2eiInitWrapper) -> InitFnReturn<'_> {
+        Box::pin(async move {
+            let E2eiInitWrapper { cc, case } = wrapper;
+            let cs = case.ciphersuite();
+            cc.e2ei_new_enrollment(
+                E2EI_CLIENT_ID.into(),
+                E2EI_DISPLAY_NAME.to_string(),
+                E2EI_HANDLE.to_string(),
+                Some(TEAM.to_string()),
+                E2EI_EXPIRY,
+                cs,
+            )
+        })
+    }
+
+    pub(crate) const NEW_HANDLE: &str = "new_alice_wire";
+    pub(crate) const NEW_DISPLAY_NAME: &str = "New Alice Smith";
+    pub(crate) fn init_activation_or_rotation(wrapper: E2eiInitWrapper) -> InitFnReturn<'_> {
+        Box::pin(async move {
+            let E2eiInitWrapper { cc, case } = wrapper;
+            let cs = case.ciphersuite();
+            match case.credential_type {
+                MlsCredentialType::Basic => cc.e2ei_new_activation_enrollment(
+                    NEW_DISPLAY_NAME.to_string(),
+                    NEW_HANDLE.to_string(),
+                    Some(TEAM.to_string()),
+                    E2EI_EXPIRY,
+                    cs,
+                ),
+                MlsCredentialType::X509 => {
+                    cc.e2ei_new_rotate_enrollment(
+                        Some(NEW_DISPLAY_NAME.to_string()),
+                        Some(NEW_HANDLE.to_string()),
+                        Some(TEAM.to_string()),
+                        E2EI_EXPIRY,
+                        cs,
+                    )
+                    .await
+                }
+            }
+        })
+    }
+
     #[apply(all_cred_cipher)]
     #[wasm_bindgen_test]
     async fn e2e_identity_should_work(case: TestCase) {
         run_test_wo_clients(case.clone(), move |mut cc| {
             Box::pin(async move {
-                fn init(wrapper: E2eiInitWrapper) -> InitFnReturn<'_> {
-                    Box::pin(async move {
-                        let E2eiInitWrapper { cc, case } = wrapper;
-                        let cs = case.ciphersuite();
-                        cc.e2ei_new_enrollment(
-                            E2EI_CLIENT_ID.into(),
-                            E2EI_DISPLAY_NAME.to_string(),
-                            E2EI_HANDLE.to_string(),
-                            Some(TEAM.to_string()),
-                            E2EI_EXPIRY,
-                            cs,
-                        )
-                    })
-                }
                 let x509_test_chain = X509TestChain::init_empty(case.signature_scheme());
 
                 let is_renewal = false;
@@ -647,7 +676,7 @@ pub(crate) mod tests {
                     &x509_test_chain,
                     Some(E2EI_CLIENT_ID_URI),
                     is_renewal,
-                    init,
+                    init_enrollment,
                     noop_restore,
                 )
                 .await
