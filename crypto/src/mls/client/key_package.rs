@@ -374,6 +374,7 @@ mod tests {
 
     use mls_crypto_provider::MlsCryptoProvider;
 
+    use crate::e2e_identity::tests::{e2ei_enrollment, init_activation_or_rotation, noop_restore};
     use crate::prelude::key_package::INITIAL_KEYING_MATERIAL_COUNT;
     use crate::prelude::MlsConversationConfiguration;
     use crate::test_utils::*;
@@ -414,6 +415,64 @@ mod tests {
         // Sleep 2 seconds to make sure we make the kp expire
         async_std::task::sleep(std::time::Duration::from_secs(2)).await;
         assert!(Client::is_mls_keypackage_expired(&kp_1s_exp));
+    }
+
+    #[apply(all_cred_cipher)]
+    #[wasm_bindgen_test]
+    async fn requesting_x509_key_packages_after_basic(case: TestCase) {
+        // Basic test case
+        if !case.is_basic() {
+            return;
+        }
+        run_test_with_client_ids(case.clone(), ["alice"], move |[mut client_context]| {
+            Box::pin(async move {
+                let signature_scheme = case.signature_scheme();
+                let cipher_suite = case.ciphersuite();
+
+                // Generate 5 Basic key packages first
+                let _basic_key_packages = client_context
+                    .mls_central
+                    .get_or_create_client_keypackages(cipher_suite, MlsCredentialType::Basic, 5)
+                    .await
+                    .unwrap();
+
+                // Set up E2E identity
+                let test_chain = x509::X509TestChain::init_for_random_clients(signature_scheme, 1);
+
+                let (mut enrollment, cert_chain) = e2ei_enrollment(
+                    &mut client_context,
+                    &case,
+                    &test_chain,
+                    None,
+                    false,
+                    init_activation_or_rotation,
+                    noop_restore,
+                )
+                .await
+                .unwrap();
+
+                let _rotate_bundle = client_context
+                    .mls_central
+                    .e2ei_rotate_all(&mut enrollment, cert_chain, 5)
+                    .await
+                    .unwrap();
+
+                // E2E identity has been set up correctly
+                assert!(client_context.mls_central.e2ei_is_enabled(signature_scheme).unwrap());
+
+                // Request X509 key packages
+                let x509_key_packages = client_context
+                    .mls_central
+                    .get_or_create_client_keypackages(cipher_suite, MlsCredentialType::X509, 5)
+                    .await
+                    .unwrap();
+
+                // Verify that the key packages are X509
+                assert!(x509_key_packages.iter().all(|kp| MlsCredentialType::X509
+                    == MlsCredentialType::from(kp.leaf_node().credential().credential_type())));
+            })
+        })
+        .await
     }
 
     #[apply(all_cred_cipher)]
