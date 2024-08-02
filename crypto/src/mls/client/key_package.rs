@@ -111,7 +111,8 @@ impl Client {
             .await?
             .into_iter()
             // TODO: do this filtering in SQL when the schema is updated. Tracking issue: WPB-9599
-            .filter(|kp| kp.ciphersuite() == ciphersuite.0)
+            .filter(|kp|
+                kp.ciphersuite() == ciphersuite.0 && MlsCredentialType::from(kp.leaf_node().credential().credential_type()) == credential_type)
             .collect::<Vec<_>>();
 
         let kpb_count = existing_kps.len();
