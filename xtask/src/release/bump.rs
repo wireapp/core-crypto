@@ -241,7 +241,22 @@ pub fn bump(bump_version: BumpLevel, dry_run: bool) -> Result<()> {
     let ws = cargo::core::Workspace::new(&Path::new("./Cargo.toml").canonicalize()?, &cargo_context)
         .map_err(|e| eyre!(e.to_string()))?;
 
-    let ws_rust_dep_names_to_bump: Vec<&str> = ws.members().map(|p| p.name().as_str()).collect();
+    let toml_raw_doc_workspace = std::fs::read_to_string(ws.root().join("Cargo.toml"))?;
+    
+    let mut virtual_manifest = toml_raw_doc_workspace.parse::<toml_edit::DocumentMut>()?;
+    let workspace_dependencies_table = virtual_manifest
+        .get_mut("workspace")
+        .expect("Could not find workspace key in root Cargo.toml.")
+        .get_mut("dependencies")
+        .expect("Could not find workspace.dependencies key in Cargo.toml.")
+        .as_table_like_mut()
+        .expect("Expecting workspace.dependencies to be a table, but it is not.");
+
+    let non_workspace_internal_crates: Vec<&str> = ws
+        .members()
+        .filter(|p| !workspace_dependencies_table.contains_key(p.name().as_str()))
+        .map(|p| p.name().as_str())
+        .collect();
 
     for package in ws.members() {
         let package_name = package.name();
@@ -259,11 +274,12 @@ pub fn bump(bump_version: BumpLevel, dry_run: bool) -> Result<()> {
 
         let new_semver_version = bump_semver(bump_version, &semver_version)?;
         log::info!("Bumping Cargo package {package_name}: {semver_version} -> {new_semver_version}");
-
+        
+        // Bump internal crates that are not workspace dependencies
         bump_deps(
             package,
             &mut manifest,
-            &ws_rust_dep_names_to_bump,
+            &non_workspace_internal_crates,
             bump_version,
             dry_run,
         )?;
@@ -272,8 +288,23 @@ pub fn bump(bump_version: BumpLevel, dry_run: bool) -> Result<()> {
             manifest["package"]["version"] = toml_edit::value(new_semver_version.to_string());
             std::fs::write(manifest_path, manifest.to_string())?;
             log::debug!("Wrote new manifest");
+
+            // Bump package version in internal crates that are workspace dependencies
+            if workspace_dependencies_table.contains_key(package_name.as_str()) {
+                let dependency_table = workspace_dependencies_table
+                    .get_mut(package_name.as_str())
+                    .expect(format!("Could not find {package_name} in workspace.dependencies").as_str())
+                    .as_inline_table_mut()
+                    .expect(format!("Expecting workspace.dependencies.{package_name} to be an inline table, but it is not.").as_str());
+                let _ = dependency_table.insert_formatted(
+                    &toml_edit::Key::new(toml_edit::InternalString::from("version")),
+                    new_semver_version.to_string().into(),
+                );
+            }
         }
     }
+    std::fs::write(ws.root().join("Cargo.toml"), virtual_manifest.to_string())?;
+    log::debug!("Wrote new workspace file");
 
     bump_npm_version(bump_version, dry_run)?;
     bump_gradle_versions(bump_version, dry_run)?;
