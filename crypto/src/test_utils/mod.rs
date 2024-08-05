@@ -14,16 +14,13 @@
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see http://www.gnu.org/licenses/.
 
-#![cfg(test)]
-
-use mls_crypto_provider::PkiKeypair;
 pub use openmls_traits::types::SignatureScheme;
 pub use rstest::*;
 pub use rstest_reuse::{self, *};
 use std::collections::HashMap;
 
 use crate::{
-    prelude::{ClientId, ConversationId, E2eiEnrollment, MlsCentral, MlsCentralConfiguration},
+    prelude::{ClientId, ConversationId, MlsCentral, MlsCentralConfiguration},
     test_utils::x509::{CertificateParams, X509TestChain, X509TestChainActorArg, X509TestChainArgs},
     CoreCryptoCallbacks,
 };
@@ -46,7 +43,6 @@ pub const GROUP_SAMPLE_SIZE: usize = 9;
 #[derive(Debug)]
 pub struct ClientContext {
     pub mls_central: MlsCentral,
-    pub initial_identifier: String,
     pub x509_test_chain: std::sync::Arc<Option<X509TestChain>>,
 }
 
@@ -61,43 +57,24 @@ impl ClientContext {
     pub fn replace_x509_chain(&mut self, new_chain: std::sync::Arc<Option<X509TestChain>>) {
         self.x509_test_chain = new_chain;
     }
-
-    /// Order of priority: Enrollment, X509TestChain, MlsCentral's most recent credential bundle
-    pub async fn client_initial_pki_keypair(
-        &self,
-        sc: SignatureScheme,
-        ct: MlsCredentialType,
-        enrollment: Option<&E2eiEnrollment>,
-    ) -> Option<PkiKeypair> {
-        if let Some(enrollment) = enrollment {
-            return Some(PkiKeypair::new(sc, enrollment.sign_sk.to_vec()).unwrap());
-        }
-
-        if let Some(x509_test_chain) = self.x509_test_chain.as_ref().as_ref() {
-            return x509_test_chain
-                .find_certificate_for_actor(&self.initial_identifier)
-                .map(|cert| cert.pki_keypair.clone());
-        }
-
-        self.mls_central
-            .find_most_recent_credential_bundle(sc, ct)
-            .await
-            .map(|cred_bundle| PkiKeypair::new(sc, cred_bundle.signature_key.private().into()).unwrap())
-    }
 }
 
-fn init_x509_test_chain(case: &TestCase, client_ids: &[[&str; 3]], revoked_display_names: &[&str]) -> X509TestChain {
-    let default_params = CertificateParams::default();
+fn init_x509_test_chain(
+    case: &TestCase,
+    client_ids: &[[&str; 3]],
+    revoked_display_names: &[&str],
+    cert_params: CertificateParams,
+) -> X509TestChain {
     let root_params = {
-        let mut params = default_params.clone();
-        if let Some(root_cn) = &default_params.common_name {
+        let mut params = cert_params.clone();
+        if let Some(root_cn) = &cert_params.common_name {
             params.common_name.replace(format!("{} Root CA", root_cn));
         }
         params
     };
     let local_ca_params = {
-        let mut params = default_params.clone();
-        if let Some(root_cn) = &default_params.common_name {
+        let mut params = cert_params.clone();
+        if let Some(root_cn) = &cert_params.common_name {
             params.common_name.replace(format!("{} Intermediate CA", root_cn));
         }
         params
@@ -127,7 +104,6 @@ fn init_x509_test_chain(case: &TestCase, client_ids: &[[&str; 3]], revoked_displ
         root_params,
         local_ca_params,
         signature_scheme: case.signature_scheme(),
-        federated_test_chains: &[],
         local_actors,
         dump_pem_certs: false,
     })
@@ -148,15 +124,21 @@ pub async fn run_test_with_client_ids<const N: usize>(
     run_test_with_deterministic_client_ids(case, client_ids.map(|display_name| ["", "", display_name]), test).await
 }
 
-pub async fn run_test_with_client_ids_and_revocation<const N: usize>(
+pub async fn run_test_with_client_ids_and_revocation<const N: usize, const F: usize>(
     case: TestCase,
     client_ids: [&'static str; N],
+    other_client_ids: [&'static str; F],
     revoked_display_names: &'static [&'static str],
-    test: impl FnOnce([ClientContext; N]) -> std::pin::Pin<Box<dyn std::future::Future<Output = ()> + 'static>> + 'static,
+    test: impl FnOnce(
+            [ClientContext; N],
+            [ClientContext; F],
+        ) -> std::pin::Pin<Box<dyn std::future::Future<Output = ()> + 'static>>
+        + 'static,
 ) {
     run_test_with_deterministic_client_ids_and_revocation(
         case,
         client_ids.map(|display_name| ["", "", display_name]),
+        other_client_ids.map(|display_name| ["", "", display_name]),
         revoked_display_names,
         test,
     )
@@ -168,86 +150,183 @@ pub async fn run_test_with_deterministic_client_ids<const N: usize>(
     client_ids: [[&'static str; 3]; N],
     test: impl FnOnce([ClientContext; N]) -> std::pin::Pin<Box<dyn std::future::Future<Output = ()> + 'static>> + 'static,
 ) {
-    run_test_with_deterministic_client_ids_and_revocation(case, client_ids, &[], test).await
+    run_test_with_deterministic_client_ids_and_revocation(case, client_ids, [], &[], |context1, _| {
+        Box::pin(async move { test(context1).await })
+    })
+    .await
 }
 
-pub async fn run_test_with_deterministic_client_ids_and_revocation<const N: usize>(
+/// Generates 2 x509 test chains, where the intermediate certificates are also cross-signed.
+pub fn init_cross_signed_x509_test_chains<const N: usize, const F: usize>(
+    case: &TestCase,
+    client_ids: [[&'static str; 3]; N],
+    other_client_ids: [[&'static str; 3]; F],
+    (params1, params2): (CertificateParams, CertificateParams),
+    revoked_display_names: &'static [&'static str],
+) -> (X509TestChain, X509TestChain) {
+    let mut chain1 = init_x509_test_chain(case, &client_ids, revoked_display_names, params1);
+    let mut chain2 = init_x509_test_chain(case, &other_client_ids, revoked_display_names, params2);
+    chain1.cross_sign(&mut chain2);
+    (chain1, chain2)
+}
+
+pub async fn run_cross_signed_tests_with_client_ids<const N: usize, const F: usize>(
     case: TestCase,
     client_ids: [[&'static str; 3]; N],
-    revoked_display_names: &'static [&'static str],
-    test: impl FnOnce([ClientContext; N]) -> std::pin::Pin<Box<dyn std::future::Future<Output = ()> + 'static>> + 'static,
+    other_client_ids: [[&'static str; 3]; F],
+    (domain1, domain2): (&'static str, &'static str),
+    test: impl FnOnce([MlsCentral; N], [MlsCentral; F]) -> std::pin::Pin<Box<dyn std::future::Future<Output = ()> + 'static>>
+        + 'static,
 ) {
-    run_tests(move |paths: [String; N]| {
+    assert!(case.is_x509(), "This is only supported for x509 test cases");
+    run_cross_tests(move |paths1, paths2| {
         Box::pin(async move {
-            let x509_test_chain = std::sync::Arc::new(
-                case.is_x509()
-                    .then(|| init_x509_test_chain(&case, &client_ids, revoked_display_names)),
-            );
+            let params1 = CertificateParams {
+                org: domain1.into(),
+                common_name: Some("Wire".into()),
+                domain: Some(domain1.into()),
+                ..Default::default()
+            };
+            let params2 = CertificateParams {
+                org: domain2.into(),
+                common_name: Some("Wire DE".into()),
+                domain: Some(domain2.into()),
+                ..Default::default()
+            };
 
-            let path_x509_chains: Vec<std::sync::Arc<Option<X509TestChain>>> =
-                (0..paths.len()).map(|_| x509_test_chain.clone()).collect();
+            let (chain1, chain2) =
+                init_cross_signed_x509_test_chains(&case, client_ids, other_client_ids, (params1, params2), &[]);
 
-            let stream = paths
-                .into_iter()
-                .enumerate()
-                .zip(path_x509_chains.into_iter())
-                .zip(client_ids)
-                .map(|(((i, p), x509_test_chain), [_, _, initial_identifier])| async move {
-                    let configuration = MlsCentralConfiguration::try_new(
-                        p,
-                        "test".into(),
-                        None,
-                        vec![case.cfg.ciphersuite],
-                        None,
-                        Some(INITIAL_KEYING_MATERIAL_COUNT),
-                    )
-                    .unwrap();
-                    let mut central = MlsCentral::try_new(configuration).await.unwrap();
+            let centrals1 = create_centrals(&case, paths1, Some(&chain1)).await;
+            let centrals2 = create_centrals(&case, paths2, Some(&chain2)).await;
 
-                    // Setup the X509 PKI environment
-                    if let Some(x509_test_chain) = x509_test_chain.as_ref() {
-                        x509_test_chain.register_with_central(&central).await;
-                    }
+            test(centrals1, centrals2).await;
+        })
+    })
+    .await;
+}
 
-                    let identity = match case.credential_type {
-                        MlsCredentialType::Basic => {
-                            let client_id: ClientId = WireQualifiedClientId::generate().into();
-                            ClientIdentifier::Basic(client_id)
-                        }
-                        MlsCredentialType::X509 => {
-                            use x509_cert::der::Encode as _;
-                            let sc = case.cfg.ciphersuite.signature_algorithm();
-                            let actor_cert = &x509_test_chain.as_ref().as_ref().unwrap().actors[i];
-                            let cert_der = actor_cert.certificate.certificate.to_der().unwrap();
+async fn create_centrals<const N: usize>(
+    case: &TestCase,
+    paths: [String; N],
+    chain: Option<&X509TestChain>,
+) -> [MlsCentral; N] {
+    let stream = paths.into_iter().enumerate().map(|(i, p)| {
+        async move {
+            let configuration = MlsCentralConfiguration::try_new(
+                p,
+                "test".into(),
+                None,
+                vec![case.cfg.ciphersuite],
+                None,
+                Some(INITIAL_KEYING_MATERIAL_COUNT),
+            )
+            .unwrap();
+            let mut central = MlsCentral::try_new(configuration).await.unwrap();
 
-                            let bundle = crate::prelude::CertificateBundle {
-                                certificate_chain: vec![cert_der],
-                                private_key: crate::mls::credential::x509::CertificatePrivateKey {
-                                    signature_scheme: sc,
-                                    value: actor_cert.certificate.pki_keypair.signing_key_bytes(),
-                                },
-                            };
+            // Setup the X509 PKI environment
+            if let Some(chain) = chain {
+                chain.register_with_central(&central).await;
+            }
 
-                            ClientIdentifier::X509(HashMap::from([(sc, bundle)]))
-                        }
+            let identity = match case.credential_type {
+                MlsCredentialType::Basic => {
+                    let client_id: ClientId = WireQualifiedClientId::generate().into();
+                    ClientIdentifier::Basic(client_id)
+                }
+                MlsCredentialType::X509 => {
+                    use x509_cert::der::Encode as _;
+                    let sc = case.cfg.ciphersuite.signature_algorithm();
+                    let actor_cert = &chain.unwrap().actors[i];
+                    let cert_der = actor_cert.certificate.certificate.to_der().unwrap();
+
+                    let bundle = crate::prelude::CertificateBundle {
+                        certificate_chain: vec![cert_der],
+                        private_key: crate::mls::credential::x509::CertificatePrivateKey {
+                            signature_scheme: sc,
+                            value: actor_cert.certificate.pki_keypair.signing_key_bytes(),
+                        },
                     };
-                    central
-                        .mls_init(
-                            identity,
-                            vec![case.cfg.ciphersuite],
-                            Some(INITIAL_KEYING_MATERIAL_COUNT),
-                        )
-                        .await
-                        .unwrap();
-                    central.callbacks(std::sync::Arc::<ValidationCallbacks>::default());
-                    ClientContext {
-                        mls_central: central,
-                        initial_identifier: initial_identifier.into(),
-                        x509_test_chain,
-                    }
+
+                    ClientIdentifier::X509(HashMap::from([(sc, bundle)]))
+                }
+            };
+            central
+                .mls_init(
+                    identity,
+                    vec![case.cfg.ciphersuite],
+                    Some(INITIAL_KEYING_MATERIAL_COUNT),
+                )
+                .await
+                .unwrap();
+            central.callbacks(std::sync::Arc::<ValidationCallbacks>::default());
+            central
+        }
+    });
+    futures_util::future::join_all(stream).await.try_into().unwrap()
+}
+
+pub async fn run_test_with_deterministic_client_ids_and_revocation<const N: usize, const F: usize>(
+    case: TestCase,
+    client_ids: [[&'static str; 3]; N],
+    cross_signed_client_ids: [[&'static str; 3]; F],
+    revoked_display_names: &'static [&'static str],
+    test: impl FnOnce(
+            [ClientContext; N],
+            [ClientContext; F],
+        ) -> std::pin::Pin<Box<dyn std::future::Future<Output = ()> + 'static>>
+        + 'static,
+) {
+    run_cross_tests(move |paths1, paths2| {
+        Box::pin(async move {
+            let (chain1, chain2) = match (case.is_x509(), cross_signed_client_ids.is_empty()) {
+                (true, true) => (
+                    Some(init_x509_test_chain(
+                        &case,
+                        &client_ids,
+                        revoked_display_names,
+                        CertificateParams::default(),
+                    )),
+                    None,
+                ),
+                (true, false) => {
+                    let res = init_cross_signed_x509_test_chains(
+                        &case,
+                        client_ids,
+                        cross_signed_client_ids,
+                        (
+                            CertificateParams {
+                                org: "world1.com".into(),
+                                domain: Some("world1.com".into()),
+                                ..CertificateParams::default()
+                            },
+                            CertificateParams {
+                                org: "world2.com".into(),
+                                domain: Some("world2.com".into()),
+                                ..CertificateParams::default()
+                            },
+                        ),
+                        revoked_display_names,
+                    );
+                    (Some(res.0), Some(res.1))
+                }
+                _ => (None, None),
+            };
+
+            let centrals1 = create_centrals(&case, paths1, chain1.as_ref())
+                .await
+                .map(|mls_central| ClientContext {
+                    mls_central,
+                    x509_test_chain: std::sync::Arc::new(chain1.clone()),
                 });
-            let centrals: [ClientContext; N] = futures_util::future::join_all(stream).await.try_into().unwrap();
-            test(centrals).await;
+            let centrals2 = create_centrals(&case, paths2, chain2.as_ref())
+                .await
+                .map(|mls_central| ClientContext {
+                    mls_central,
+                    x509_test_chain: std::sync::Arc::new(chain2.clone()),
+                });
+
+            test(centrals1, centrals2).await;
         })
     })
     .await
@@ -276,7 +355,6 @@ pub async fn run_test_wo_clients(
             central.callbacks(std::sync::Arc::<ValidationCallbacks>::default());
             test(ClientContext {
                 mls_central: central,
-                initial_identifier: String::from("nobody"),
                 x509_test_chain: None.into(),
             })
             .await
@@ -299,6 +377,31 @@ pub async fn run_tests<const N: usize>(
         .unwrap();
     test(cloned_paths).await;
     drop(paths);
+}
+
+pub async fn run_cross_tests<const N: usize, const F: usize>(
+    test: impl FnOnce([String; N], [String; F]) -> std::pin::Pin<Box<dyn std::future::Future<Output = ()> + 'static>>
+        + 'static,
+) {
+    let _ = pretty_env_logger::try_init();
+    let paths1: [(String, _); N] = (0..N).map(|_| tmp_db_file()).collect::<Vec<_>>().try_into().unwrap();
+    let paths2: [(String, _); F] = (0..F).map(|_| tmp_db_file()).collect::<Vec<_>>().try_into().unwrap();
+    // We need to store TempDir because they impl Drop which would delete the file before test begins
+    let cloned_paths1 = paths1
+        .iter()
+        .map(|(path, _)| path.clone())
+        .collect::<Vec<_>>()
+        .try_into()
+        .unwrap();
+    let cloned_paths2 = paths2
+        .iter()
+        .map(|(path, _)| path.clone())
+        .collect::<Vec<_>>()
+        .try_into()
+        .unwrap();
+    test(cloned_paths1, cloned_paths2).await;
+    drop(paths1);
+    drop(paths2);
 }
 
 #[cfg(not(target_family = "wasm"))]

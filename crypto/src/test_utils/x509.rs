@@ -4,10 +4,11 @@ use crate::{
     prelude::E2eIdentityError,
     CryptoError,
 };
-use std::time::Duration;
+use std::{fmt::Display, time::Duration};
 
 use mls_crypto_provider::{CertProfile, CertificateGenerationArgs, MlsCryptoProvider, PkiKeypair, RustCrypto};
 use openmls_traits::{crypto::OpenMlsCrypto, random::OpenMlsRand, types::SignatureScheme};
+use x509_cert::der::EncodePem;
 
 const DEFAULT_CRL_DOMAIN: &str = "localhost";
 
@@ -70,7 +71,7 @@ pub struct X509TestChainActorArg {
     pub is_revoked: bool,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct X509TestChain {
     pub trust_anchor: X509Certificate,
     pub intermediates: Vec<X509Certificate>,
@@ -79,13 +80,48 @@ pub struct X509TestChain {
 }
 
 #[derive(Debug)]
-pub struct X509TestChainArgs<'a> {
+pub struct X509TestChainArgs {
     pub root_params: CertificateParams,
     pub local_ca_params: CertificateParams,
     pub signature_scheme: SignatureScheme,
-    pub federated_test_chains: &'a [X509TestChain],
     pub local_actors: Vec<X509TestChainActorArg>,
     pub dump_pem_certs: bool,
+}
+
+// Helps debugging certificate chains by printing the PEM into the stdout
+impl Display for X509TestChain {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "{}",
+            self.trust_anchor
+                .certificate
+                .to_pem(x509_cert::der::pem::LineEnding::LF)
+                .unwrap()
+        )?;
+        self.intermediates.iter().try_for_each(|certificate| {
+            write!(
+                f,
+                "{}",
+                certificate
+                    .certificate
+                    .to_pem(x509_cert::der::pem::LineEnding::LF)
+                    .unwrap()
+            )
+        })?;
+        writeln!(f, "actors")?;
+        self.actors.iter().try_for_each(|actor| {
+            write!(
+                f,
+                "{}",
+                &actor
+                    .certificate
+                    .certificate
+                    .to_pem(x509_cert::der::pem::LineEnding::LF)
+                    .unwrap()
+            )
+        })
+    }
 }
 
 impl X509TestChain {
@@ -110,7 +146,6 @@ impl X509TestChain {
             root_params,
             local_ca_params,
             signature_scheme,
-            federated_test_chains: &[],
             local_actors: vec![],
             dump_pem_certs: false,
         })
@@ -161,7 +196,6 @@ impl X509TestChain {
             root_params,
             local_ca_params,
             signature_scheme,
-            federated_test_chains: &[],
             local_actors,
             dump_pem_certs: false,
         })
@@ -189,7 +223,7 @@ impl X509TestChain {
             );
         }
 
-        let mut actors: Vec<_> = args
+        let actors: Vec<_> = args
             .local_actors
             .into_iter()
             .map(|actor| {
@@ -253,41 +287,43 @@ impl X509TestChain {
 
         crls.insert(local_crl_dp, crl);
 
-        let mut intermediates = vec![local_intermediate];
-        for federated_chain in args.federated_test_chains {
-            crls.extend(federated_chain.crls.clone());
-
-            for fed_intermediate in &federated_chain.intermediates {
-                let cross_signed_intermediate = trust_anchor.cross_sign_intermediate(fed_intermediate);
-
-                if args.dump_pem_certs {
-                    use x509_cert::der::EncodePem as _;
-                    println!(
-                        "{} => \n{}",
-                        cross_signed_intermediate.certificate.tbs_certificate.subject,
-                        cross_signed_intermediate
-                            .certificate
-                            .to_pem(x509_cert::der::pem::LineEnding::LF)
-                            .unwrap()
-                    );
-                }
-
-                intermediates.push(cross_signed_intermediate);
-            }
-            let mut federated_actors = federated_chain.actors.clone();
-            for actor in &mut federated_actors {
-                actor.certificate.is_federated = true;
-            }
-
-            actors.extend(federated_actors);
-        }
-
         Self {
             trust_anchor,
-            intermediates,
+            intermediates: vec![local_intermediate],
             crls,
             actors,
         }
+    }
+
+    /// Mutually cross-sign intermediate certificates from both chains.
+    /// re-signed by the root of the other and added to its chain and vice-versa
+    pub fn cross_sign(&mut self, other_chain: &mut Self) {
+        self.crls.extend(other_chain.crls.drain());
+        other_chain.crls = self.crls.clone();
+
+        let mut self_new_intermediates = vec![];
+        for intermediate in &other_chain.intermediates {
+            let cross_signed_intermediate = self.trust_anchor.cross_sign_intermediate(intermediate);
+            self_new_intermediates.push(cross_signed_intermediate);
+        }
+
+        let mut other_new_intermediates = vec![];
+        for intermediate in &self.intermediates {
+            let cross_signed_intermediate = other_chain.trust_anchor.cross_sign_intermediate(intermediate);
+            other_new_intermediates.push(cross_signed_intermediate);
+        }
+
+        self.intermediates.append(&mut self_new_intermediates);
+        other_chain.intermediates.append(&mut other_new_intermediates);
+
+        for actor in self.actors.iter_mut().chain(other_chain.actors.iter_mut()) {
+            actor.certificate.is_federated = true;
+        }
+        let self_actors = self.actors.clone();
+
+        // doing this way to preserve the ordering of the actors
+        self.actors.extend(other_chain.actors.iter().cloned());
+        other_chain.actors.extend(self_actors);
     }
 
     pub async fn register_with_central(&self, central: &MlsCentral) {
