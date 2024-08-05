@@ -1,0 +1,3 @@
+(function() {var implementors = {
+"core_crypto_ffi":[["impl&lt;T&gt; FfiConverterArc&lt;T&gt; for dyn <a class=\"trait\" href=\"core_crypto_ffi/trait.CoreCryptoCallbacks.html\" title=\"trait core_crypto_ffi::CoreCryptoCallbacks\">CoreCryptoCallbacks</a>"],["impl&lt;T&gt; FfiConverterArc&lt;T&gt; for dyn <a class=\"trait\" href=\"core_crypto_ffi/trait.CoreCryptoLogger.html\" title=\"trait core_crypto_ffi::CoreCryptoLogger\">CoreCryptoLogger</a>"]]
+};if (window.register_implementors) {window.register_implementors(implementors);} else {window.pending_implementors = implementors;}})()

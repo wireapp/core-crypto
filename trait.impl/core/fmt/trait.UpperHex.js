@@ -1,0 +1,3 @@
+(function() {var implementors = {
+"interop":[["impl <a class=\"trait\" href=\"https://doc.rust-lang.org/1.80.0/core/fmt/trait.UpperHex.html\" title=\"trait core::fmt::UpperHex\">UpperHex</a> for <a class=\"struct\" href=\"interop/clients/struct.EmulatedClientProtocol.html\" title=\"struct interop::clients::EmulatedClientProtocol\">EmulatedClientProtocol</a>"]]
+};if (window.register_implementors) {window.register_implementors(implementors);} else {window.pending_implementors = implementors;}})()
