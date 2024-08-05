@@ -1585,9 +1585,9 @@ dependencies = [
 
 [[package]]
 name = "fantoccini"
-version = "0.21.0"
+version = "0.21.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a0d266f4ccd0f172c4daebf7419868bb1948688097ed3b7f746493ed921023a3"
+checksum = "871139c015d646c5fbe287b85876fa060c9d7870ccc388e989c056b303d8462a"
 dependencies = [
  "base64 0.22.1",
  "cookie 0.18.1",
@@ -2429,7 +2429,7 @@ dependencies = [
  "core-crypto",
  "cryptobox 1.0.3 (git+https://github.com/wireapp/cryptobox)",
  "dirs",
- "fantoccini 0.21.0",
+ "fantoccini 0.21.1",
  "femme",
  "hex",
  "log",
