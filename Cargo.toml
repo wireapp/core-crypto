@@ -25,15 +25,15 @@ base64 = "0.22"
 bitflags = "2.6"
 cfg-if = "1.0"
 const_format = "0.2"
-core-crypto-keystore = { version = "^1.0.0", path = "keystore" }
-core-crypto-attributes = { version = "^1.0.0", path = "crypto-attributes" }
+core-crypto-keystore = { version = "1.0.1", path = "keystore" }
+core-crypto-attributes = { version = "1.0.1", path = "crypto-attributes" }
 derive_more = { version = "0.99", features = ["from", "into", "deref", "deref_mut"] }
 futures-util = "0.3"
 hex = "0.4"
 indexmap = "2"
 itertools = "0.13"
 log = "0.4"
-mls-crypto-provider = { version = "^1.0.0", path = "mls-provider" }
+mls-crypto-provider = { version = "1.0.1", path = "mls-provider" }
 pem = "3.0"
 rand = { version = "0.8", features = ["getrandom"] }
 rexie = "0.6.1"

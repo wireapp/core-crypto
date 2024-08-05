@@ -7,6 +7,38 @@ Platform support legends:
     * Note: the papercuts will majorly be with the build process. Things might be very rough to integrate as no polish at all has been given yet.
 * ❌ = tier 3 support. It doesn't work just yet, but we plan to make it work.
 
+## [1.0.1] - 2024-08-05
+
+<details>
+    <summary>git-conventional changelog</summary>
+
+### Bug Fixes
+
+- Get_or_create_key_packages() must respect credential type [WPB-10294]
+- Handle own commit after mls error [WPB-10105]
+
+### Miscellaneous Tasks
+
+- Add Cargo.lock
+- .gitignore: don't ignore Cargo.lock anymore
+- Update dependencies in release script
+- Remove unused function [WPB-10106]
+- Crypto: remove unnecessary use
+
+### Styling
+
+- Fix typo
+
+### Testing
+
+- Test handling invalid own commit
+
+</details>
+
+* Fixed handling of own commits.
+* Enabled dependency locking for reproducible builds.
+* Fixed some cases where basic key packages were still returned after enabling E2EI.
+
 ## [1.0.0] - 2024-07-18
 
 <details>
