@@ -217,11 +217,11 @@ fn bump_deps(
         if !dry_run {
             if let Some(target) = dep.platform() {
                 let target_table = manifest["target"][&target.to_string()][dep_field][dep_name]
-                    .as_inline_table_mut()
+                    .as_table_like_mut()
                     .unwrap();
-                let _ = target_table.insert_formatted(
+                let _ = target_table.insert(
                     &toml_edit::Key::new(toml_edit::InternalString::from("version")),
-                    new_required_version.to_string().into(),
+                    toml_edit::value(new_required_version.to_string()),
                 );
             } else {
                 manifest[dep_field][dep_name]["version"] = toml_edit::value(new_required_version.to_string());
