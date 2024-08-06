@@ -58,7 +58,7 @@ core-crypto-keystore = { workspace = true, features = ["ios-wal-compat"] }
 wasm-bindgen-test = "0.3"
 uuid = { workspace = true, features = ["v4", "js"] }
 openmls.workspace = true
-rstest = "0.21"
+rstest = "0.22"
 rstest_reuse = "0.7"
 async-std = { workspace = true, features = ["attributes"] }
 cfg-if.workspace = true
