@@ -1,16 +1,19 @@
 use base64::prelude::*;
+use std::borrow::Cow;
 use std::net::SocketAddr;
 use std::{collections::HashMap, path::PathBuf};
 
 use serde_json::json;
-use testcontainers::{clients::Cli, core::WaitFor, Container, Image, RunnableImage};
+use testcontainers::core::{ContainerPort, Mount};
+use testcontainers::runners::AsyncRunner;
+use testcontainers::{core::WaitFor, ContainerAsync, Image, ImageExt};
 
 use crate::utils::docker::{rand_str, NETWORK, SHM};
 
-pub struct AcmeServer<'a> {
+pub struct AcmeServer {
     pub uri: String,
     pub ca_cert: reqwest::Certificate,
-    pub node: Container<'a, StepCaImage>,
+    pub node: ContainerAsync<StepCaImage>,
     pub socket: SocketAddr,
 }
 
@@ -102,7 +105,7 @@ impl CaCfg {
 #[derive(Debug)]
 pub struct StepCaImage {
     pub is_builder: bool,
-    pub volumes: HashMap<String, String>,
+    pub volumes: Vec<Mount>,
     pub env_vars: HashMap<String, String>,
     pub host_volume: PathBuf,
 }
@@ -114,28 +117,30 @@ impl StepCaImage {
     const TAG: &'static str = "latest";
     const CA_NAME: &'static str = "wire";
     pub const ACME_PROVISIONER: &'static str = "wire";
-    pub const PORT: u16 = 9000;
+    pub const PORT: ContainerPort = ContainerPort::Tcp(9000);
+    const PORTS: &'static [ContainerPort] = &[Self::PORT];
 
-    pub fn run(docker: &Cli, ca_cfg: CaCfg) -> AcmeServer<'_> {
+    pub async fn run(ca_cfg: CaCfg) -> AcmeServer {
         // We have to create an ACME provisioner at startup which is done in `exec_after_start`.
         // Since step-ca does not support hot reload of the configuration and we cannot
         // restart the process within the container with testcontainers cli, we will start a first
         // container, do the initialization step, copy the generated configuration then use it to
         // start a second, final one
-        let builder = Self::new(true, None);
-        let host_volume = builder.host_volume.clone();
+        let builder_image = Self::new(true, None);
+        let host_volume = builder_image.host_volume.clone();
 
-        let builder_image: RunnableImage<Self> = builder.into();
         let builder_image = builder_image
             .with_container_name(format!("{}.builder", ca_cfg.host))
             .with_privileged(true)
             .with_shm_size(SHM);
-        let builder_container = docker.run(builder_image);
+
+        let container = builder_image.start().await.expect("Error running Step CA builder");
+
         // now the configuration should have been generated and mapped to our host volume.
         // We can kill this container
-        drop(builder_container);
+        drop(container);
 
-        let image: RunnableImage<Self> = Self::new(false, Some(host_volume.clone())).into();
+        let image = Self::new(false, Some(host_volume.clone()));
 
         // Alter the configuration by adding an ACME provisioner manually, waaaaay simpler than using the cli
         let cfg_file = host_volume.join("config").join("ca.json");
@@ -151,8 +156,8 @@ impl StepCaImage {
             .with_network(NETWORK)
             .with_privileged(true)
             .with_shm_size(SHM);
-        let node = docker.run(image);
-        let port = node.get_host_port_ipv4(Self::PORT);
+        let node = image.start().await.expect("Error running Step CA image");
+        let port = node.get_host_port_ipv4(Self::PORT).await.unwrap();
         let uri = format!("https://{}:{}", &ca_cfg.host, port);
         let ca_cert = Self::ca_cert(host_volume);
 
@@ -184,7 +189,7 @@ impl StepCaImage {
         let host_volume_str = host_volume.as_os_str().to_str().unwrap();
         Self {
             is_builder,
-            volumes: HashMap::from_iter(vec![(host_volume_str.to_string(), "/home/step".to_string())]),
+            volumes: vec![Mount::bind_mount(host_volume_str, "/home/step")],
             env_vars: HashMap::from_iter(
                 vec![
                     ("DOCKER_STEPCA_INIT_PROVISIONER_NAME", Self::CA_NAME),
@@ -216,15 +221,15 @@ impl Image for StepCaImage {
         vec![WaitFor::message_on_stderr("Serving HTTPS on :")]
     }
 
-    fn env_vars(&self) -> Box<dyn Iterator<Item = (&String, &String)> + '_> {
-        Box::new(self.env_vars.iter())
+    fn env_vars(&self) -> impl IntoIterator<Item = (impl Into<Cow<'_, str>>, impl Into<Cow<'_, str>>)> {
+        &self.env_vars
     }
 
-    fn volumes(&self) -> Box<dyn Iterator<Item = (&String, &String)> + '_> {
-        Box::new(self.volumes.iter())
+    fn mounts(&self) -> impl IntoIterator<Item = &Mount> {
+        &self.volumes
     }
 
-    fn expose_ports(&self) -> Vec<u16> {
-        vec![Self::PORT]
+    fn expose_ports(&self) -> &[ContainerPort] {
+        Self::PORTS
     }
 }

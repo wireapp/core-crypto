@@ -1,37 +1,39 @@
 use std::{collections::HashMap, net::SocketAddr};
 
-use testcontainers::{clients::Cli, core::WaitFor, Container, Image, RunnableImage};
+use testcontainers::core::{ContainerPort, Mount};
+use testcontainers::runners::AsyncRunner;
+use testcontainers::{core::WaitFor, ContainerAsync, Image, ImageExt};
 
 use crate::utils::docker::{ldap::LdapCfg, rand_str, SHM};
 
-pub struct DexServer<'a> {
+pub struct DexServer {
     pub uri: String,
-    pub node: Container<'a, DexImage>,
+    pub node: ContainerAsync<DexImage>,
     pub socket: SocketAddr,
 }
 
 #[derive(Debug)]
 pub struct DexImage {
-    pub volumes: HashMap<String, String>,
+    pub volumes: Vec<Mount>,
     pub env_vars: HashMap<String, String>,
 }
 
 impl DexImage {
     const NAME: &'static str = "dexidp/dex";
     const TAG: &'static str = "v2.35.3";
-    pub const PORT: u16 = 5556;
+    pub const PORT: ContainerPort = ContainerPort::Tcp(5556);
+    const PORTS: &'static [ContainerPort] = &[Self::PORT];
 
-    pub fn run(docker: &Cli, cfg: DexCfg, redirect_uri: String) -> DexServer {
+    pub async fn run(cfg: DexCfg, redirect_uri: String) -> DexServer {
         let instance = Self::new(&cfg, &redirect_uri);
-        let image: RunnableImage<Self> = instance.into();
-        let image = image
+        let image = instance
             .with_container_name(&cfg.host)
             .with_network(super::NETWORK)
-            .with_mapped_port((cfg.host_port, Self::PORT))
+            .with_mapped_port(cfg.host_port, Self::PORT)
             .with_privileged(true)
             .with_shm_size(SHM);
-        let node = docker.run(image);
-        let port = node.get_host_port_ipv4(Self::PORT);
+        let node = image.start().await.unwrap();
+        let port = node.get_host_port_ipv4(Self::PORT).await.unwrap();
         let uri = format!("http://{}:{port}", cfg.host);
 
         let ip = std::net::IpAddr::V4("127.0.0.1".parse().unwrap());
@@ -48,8 +50,9 @@ impl DexImage {
         std::fs::write(&host_cfg_file, cfg.to_yaml(redirect_uri)).unwrap();
 
         let host_vol_str = host_cfg_file.as_os_str().to_str().unwrap().to_string();
+        let host_vol_str = host_cfg_file.as_os_str().to_str().unwrap();
         Self {
-            volumes: HashMap::from_iter(vec![(host_vol_str, "/etc/dex/config.docker.yaml".to_string())]),
+            volumes: vec![Mount::bind_mount(host_vol_str, "/etc/dex/config.docker.yaml")],
             env_vars: HashMap::new(),
         }
     }
@@ -71,12 +74,12 @@ impl Image for DexImage {
         vec![WaitFor::message_on_stderr(msg)]
     }
 
-    fn volumes(&self) -> Box<dyn Iterator<Item = (&String, &String)> + '_> {
-        Box::new(self.volumes.iter())
+    fn mounts(&self) -> impl IntoIterator<Item = &Mount> {
+        &self.volumes
     }
 
-    fn expose_ports(&self) -> Vec<u16> {
-        vec![Self::PORT]
+    fn expose_ports(&self) -> &[ContainerPort] {
+        Self::PORTS
     }
 }
 

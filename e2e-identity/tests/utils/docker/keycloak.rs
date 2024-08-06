@@ -1,5 +1,6 @@
+use std::borrow::Cow;
 use std::process::Command;
-use std::str::FromStr;
+use std::sync::OnceLock;
 use std::{collections::HashMap, env, net::SocketAddr};
 
 use keycloak::types::JsonNode;
@@ -9,21 +10,25 @@ use keycloak::{
     KeycloakAdmin, KeycloakAdminToken,
 };
 use serde_json::json;
-use testcontainers::{clients::Cli, core::WaitFor, Container, Image, ImageArgs, RunnableImage};
+use testcontainers::core::{ContainerPort, IntoContainerPort, Mount};
+use testcontainers::runners::AsyncRunner;
+use testcontainers::{core::WaitFor, ContainerAsync, Image, ImageExt};
 
 use crate::utils::docker::SHM;
 
-pub struct KeycloakServer<'a> {
+pub struct KeycloakServer {
     pub http_uri: String,
-    pub node: Container<'a, KeycloakImage>,
+    pub node: ContainerAsync<KeycloakImage>,
     pub socket: SocketAddr,
 }
 
 #[derive(Debug)]
 pub struct KeycloakImage {
-    pub volumes: HashMap<String, String>,
+    pub volumes: Vec<Mount>,
     pub env_vars: HashMap<String, String>,
 }
+
+static KEYCLOAK_PORTS: OnceLock<[ContainerPort; 1]> = OnceLock::new();
 
 impl KeycloakImage {
     const NAME: &'static str = "wire-keycloak";
@@ -36,20 +41,18 @@ impl KeycloakImage {
     pub const REALM: &'static str = "master";
     pub const LOG_LEVEL: &'static str = "info";
 
-    pub async fn run(docker: &Cli, cfg: KeycloakCfg, redirect_uri: String) -> KeycloakServer {
-        std::env::set_var("KC_HTTP_PORT", cfg.http_host_port.to_string());
+    pub async fn run(cfg: KeycloakCfg, redirect_uri: String) -> KeycloakServer {
         Self::build(cfg.http_host_port.to_string());
-        let instance = Self::new();
-        let image: RunnableImage<Self> = instance.into();
-        let image = image
+        let instance = Self::new(cfg.http_host_port.tcp());
+        let image = instance
             .with_container_name(&cfg.host)
             .with_network(super::NETWORK)
-            .with_mapped_port((cfg.http_host_port, cfg.http_host_port))
+            .with_mapped_port(cfg.http_host_port, cfg.http_host_port.tcp())
             .with_privileged(true)
             .with_shm_size(SHM);
-        let node = docker.run(image);
+        let node = image.start().await.unwrap();
 
-        let http_port = node.get_host_port_ipv4(cfg.http_host_port);
+        let http_port = node.get_host_port_ipv4(cfg.http_host_port).await.unwrap();
         let http_uri = format!("http://{}:{http_port}", cfg.host);
 
         let ip = std::net::IpAddr::V4("127.0.0.1".parse().unwrap());
@@ -83,9 +86,9 @@ impl KeycloakImage {
         }
     }
 
-    pub fn new() -> Self {
+    pub fn new(host_port: ContainerPort) -> Self {
         Self {
-            volumes: HashMap::new(),
+            volumes: vec![],
             env_vars: HashMap::from_iter(vec![
                 ("KEYCLOAK_ADMIN".to_string(), Self::USER.to_string()),
                 ("KEYCLOAK_ADMIN_PASSWORD".to_string(), Self::PASSWORD.to_string()),
@@ -281,27 +284,20 @@ impl Image for KeycloakImage {
         vec![WaitFor::message_on_stdout(msg)]
     }
 
-    fn env_vars(&self) -> Box<dyn Iterator<Item = (&String, &String)> + '_> {
-        Box::new(self.env_vars.iter())
+    fn env_vars(&self) -> impl IntoIterator<Item = (impl Into<Cow<'_, str>>, impl Into<Cow<'_, str>>)> {
+        &self.env_vars
     }
 
-    fn volumes(&self) -> Box<dyn Iterator<Item = (&String, &String)> + '_> {
-        Box::new(self.volumes.iter())
+    fn mounts(&self) -> impl IntoIterator<Item = &Mount> {
+        self.volumes.as_slice()
     }
 
-    fn expose_ports(&self) -> Vec<u16> {
-        let port = std::env::var("KC_HTTP_PORT").unwrap();
-        let port = u16::from_str(&port).unwrap();
-        vec![port]
-    }
-}
-
-#[derive(Debug, Default, Clone)]
-pub struct KeycloakArgs;
-
-impl ImageArgs for KeycloakArgs {
-    fn into_iterator(self) -> Box<dyn Iterator<Item = String>> {
+    fn cmd(&self) -> impl IntoIterator<Item = impl Into<Cow<'_, str>>> {
         let options = ["--verbose", "start-dev"].map(str::to_string);
         Box::new(options.into_iter())
+    }
+
+    fn expose_ports(&self) -> &[ContainerPort] {
+        KEYCLOAK_PORTS.get_or_init(|| [self.host_port])
     }
 }

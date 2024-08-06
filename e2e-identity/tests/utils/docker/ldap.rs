@@ -1,34 +1,38 @@
 use crate::utils::docker::{rand_str, SHM};
+use std::borrow::Cow;
 use std::{collections::HashMap, net::SocketAddr};
-use testcontainers::{clients::Cli, core::WaitFor, Container, Image, ImageArgs, RunnableImage};
+use testcontainers::core::{ContainerPort, Mount};
+use testcontainers::runners::AsyncRunner;
+use testcontainers::{core::WaitFor, ContainerAsync, Image, ImageExt};
 
-pub struct LdapServer<'a> {
-    pub node: Container<'a, LdapImage>,
+pub struct LdapServer {
+    pub node: ContainerAsync<LdapImage>,
     pub socket: SocketAddr,
 }
 
 #[derive(Debug)]
 pub struct LdapImage {
-    pub volumes: HashMap<String, String>,
+    pub volumes: Vec<Mount>,
     pub env_vars: HashMap<String, String>,
+    tag: String,
 }
 
 impl LdapImage {
     const NAME: &'static str = "osixia/openldap";
     const TAG: &'static str = "1.5.0";
-    pub const PORT: u16 = 389;
+    pub const PORT: ContainerPort = ContainerPort::Tcp(389);
+    const PORTS: &'static [ContainerPort] = &[Self::PORT];
 
-    pub fn run(docker: &Cli, cfg: LdapCfg) -> LdapServer<'_> {
+    pub async fn run(cfg: LdapCfg) -> LdapServer {
         let instance = Self::new(&cfg);
-        let image: RunnableImage<Self> = instance.into();
-        let image = image
+        let image = instance
             .with_container_name(&cfg.host)
             .with_network(super::NETWORK)
             .with_privileged(true)
             .with_shm_size(SHM);
-        let node = docker.run(image);
+        let node = image.start().await.unwrap();
 
-        let port = node.get_host_port_ipv4(Self::PORT);
+        let port = node.get_host_port_ipv4(Self::PORT).await.unwrap();
         let ip = std::net::IpAddr::V4("127.0.0.1".parse().unwrap());
         let socket = SocketAddr::new(ip, port);
 
@@ -44,58 +48,50 @@ impl LdapImage {
 
         let host_vol_str = host_vol.as_os_str().to_str().unwrap().to_string();
         let container_vol = "/container/service/slapd/assets/config/bootstrap/ldif/custom/".to_string();
+        let host_vol_str = host_vol.as_os_str().to_str().unwrap();
+        let container_vol = "/container/service/slapd/assets/config/bootstrap/ldif/custom/";
         Self {
-            volumes: HashMap::from_iter(vec![(host_vol_str, container_vol)]),
+            volumes: vec![Mount::bind_mount(host_vol_str, container_vol)],
             env_vars: HashMap::from_iter(
                 vec![("LDAP_TLS_VERIFY_CLIENT", "try"), ("LDAP_DOMAIN", &cfg.domain)]
-                    .into_iter()
+                    .iter()
                     .map(|(k, v)| (k.to_string(), v.to_string())),
             ),
         }
     }
 }
 
-#[derive(Debug, Default, Clone)]
-pub struct LdapArgs;
-
-impl ImageArgs for LdapArgs {
-    fn into_iterator(self) -> Box<dyn Iterator<Item = String>> {
-        Box::new(
-            vec![
-                "--copy-service".to_string(),
-                "--loglevel".to_string(),
-                "debug".to_string(),
-            ]
-            .into_iter(),
-        )
-    }
-}
-
 impl Image for LdapImage {
-    type Args = LdapArgs;
-
-    fn name(&self) -> String {
-        Self::NAME.to_string()
+    fn name(&self) -> &str {
+        Self::NAME
     }
 
-    fn tag(&self) -> String {
-        std::env::var("OPENLDAP_VERSION").unwrap_or_else(|_| Self::TAG.to_string())
+    fn tag(&self) -> &str {
+        &self.tag
     }
 
     fn ready_conditions(&self) -> Vec<WaitFor> {
         vec![WaitFor::message_on_stderr("slapd starting")]
     }
 
-    fn env_vars(&self) -> Box<dyn Iterator<Item = (&String, &String)> + '_> {
-        Box::new(self.env_vars.iter())
+    fn env_vars(&self) -> impl IntoIterator<Item = (impl Into<Cow<'_, str>>, impl Into<Cow<'_, str>>)> {
+        &self.env_vars
     }
 
-    fn volumes(&self) -> Box<dyn Iterator<Item = (&String, &String)> + '_> {
-        Box::new(self.volumes.iter())
+    fn mounts(&self) -> impl IntoIterator<Item = &Mount> {
+        &self.volumes
     }
 
-    fn expose_ports(&self) -> Vec<u16> {
-        vec![Self::PORT]
+    fn cmd(&self) -> impl IntoIterator<Item = impl Into<Cow<'_, str>>> {
+        vec![
+            "--copy-service".to_string(),
+            "--loglevel".to_string(),
+            "debug".to_string(),
+        ]
+    }
+
+    fn expose_ports(&self) -> &[ContainerPort] {
+        Self::PORTS
     }
 }
 
