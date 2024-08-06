@@ -377,10 +377,21 @@ impl E2eTest {
             }
             OidcProvider::Google => "https://accounts.google.com/.well-known/openid-configuration".to_string(),
         };
-        let resp = self.client.get(&uri).send().await.unwrap();
-        let mut cfg = resp.json::<OidcCfg>().await.unwrap();
-        cfg.set_issuer_uri(&authz_server_uri);
-        cfg
+        let response = self.client.get(&uri).send().await.unwrap();
+        let status = response.status();
+        let response_text = response.text().await.unwrap();
+        let cfg_deserialized = serde_json::from_str::<OidcCfg>(&response_text);
+        match cfg_deserialized {
+            Ok(mut cfg) => {
+                cfg.set_issuer_uri(&authz_server_uri);
+                cfg
+            }
+            Err(e) => {
+                panic!(
+                    "Error deserializing OIDC config from response: {e}. Actual response ({status}): {response_text}."
+                )
+            }
+        }
     }
 
     pub fn wire_server_uri(&self) -> String {
