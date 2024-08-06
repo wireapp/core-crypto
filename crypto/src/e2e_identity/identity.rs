@@ -156,6 +156,7 @@ impl MlsConversation {
             return Err(CryptoError::ConsumerError);
         }
         let user_ids = user_ids.iter().map(|uid| uid.as_bytes()).collect::<Vec<_>>();
+
         self.members_with_key()
             .iter()
             .filter_map(|(id, c)| UserId::try_from(id.as_slice()).ok().zip(Some(c)))
@@ -177,7 +178,10 @@ impl MlsConversation {
 mod tests {
     use wasm_bindgen_test::*;
 
-    use crate::prelude::MlsCredentialType;
+    use crate::{
+        mls::MlsCentral,
+        prelude::{ClientId, ConversationId, MlsCredentialType},
+    };
     use crate::{
         prelude::{DeviceStatus, E2eiConversationState},
         test_utils::*,
@@ -185,6 +189,55 @@ mod tests {
     };
 
     wasm_bindgen_test_configure!(run_in_browser);
+
+    async fn all_identities_check<const N: usize>(
+        central: &mut MlsCentral,
+        id: &ConversationId,
+        user_ids: &[String; N],
+        expected_sizes: [usize; N],
+    ) {
+        let all_identities = central.get_user_identities(id, user_ids).await.unwrap();
+        assert_eq!(all_identities.len(), N);
+        for (expected_size, user_id) in expected_sizes.into_iter().zip(user_ids.iter()) {
+            let alice_identities = all_identities.get(user_id).unwrap();
+            assert_eq!(alice_identities.len(), expected_size);
+        }
+        // Not found
+        let not_found = central
+            .get_user_identities(id, &["aaaaaaaaaaaaa".to_string()])
+            .await
+            .unwrap();
+        assert!(not_found.is_empty());
+
+        // Invalid usage
+        let invalid = central.get_user_identities(id, &[]).await;
+        assert!(matches!(invalid.unwrap_err(), CryptoError::ConsumerError));
+    }
+
+    async fn check_identities_device_status<const N: usize>(
+        central: &mut MlsCentral,
+        id: &ConversationId,
+        client_ids: &[ClientId; N],
+        name_status: &[(&'static str, DeviceStatus); N],
+    ) {
+        let mut identities = central.get_device_identities(id, client_ids).await.unwrap();
+
+        for j in 0..N {
+            let client_identity = identities.remove(
+                identities
+                    .iter()
+                    .position(|i| i.x509_identity.as_ref().unwrap().display_name == name_status[j].0)
+                    .unwrap(),
+            );
+            assert_eq!(client_identity.status, name_status[j].1);
+        }
+        assert!(identities.is_empty());
+
+        assert_eq!(
+            central.e2ei_conversation_state(id).await.unwrap(),
+            E2eiConversationState::NotVerified
+        );
+    }
 
     #[async_std::test]
     #[wasm_bindgen_test]
@@ -261,13 +314,76 @@ mod tests {
 
     #[async_std::test]
     #[wasm_bindgen_test]
+    async fn should_read_revoked_device_cross_signed() {
+        let case = TestCase::default_x509();
+        run_test_with_client_ids_and_revocation(
+            case.clone(),
+            ["alice", "bob", "rupert"],
+            ["john", "dilbert"],
+            &["rupert", "dilbert"],
+            move |[mut alice, mut bob, mut rupert], [mut john, mut dilbert]| {
+                Box::pin(async move {
+                    let id = conversation_id();
+                    alice
+                        .mls_central
+                        .new_conversation(&id, case.credential_type, case.cfg.clone())
+                        .await
+                        .unwrap();
+                    alice
+                        .mls_central
+                        .invite_all(
+                            &case,
+                            &id,
+                            [
+                                &mut bob.mls_central,
+                                &mut rupert.mls_central,
+                                &mut dilbert.mls_central,
+                                &mut john.mls_central,
+                            ],
+                        )
+                        .await
+                        .unwrap();
+
+                    let (alice_id, bob_id, rupert_id, dilbert_id, john_id) = (
+                        alice.mls_central.get_client_id(),
+                        bob.mls_central.get_client_id(),
+                        rupert.mls_central.get_client_id(),
+                        dilbert.mls_central.get_client_id(),
+                        john.mls_central.get_client_id(),
+                    );
+
+                    let client_ids = [alice_id, bob_id, rupert_id, dilbert_id, john_id];
+                    let name_status = [
+                        ("alice", DeviceStatus::Valid),
+                        ("bob", DeviceStatus::Valid),
+                        ("rupert", DeviceStatus::Revoked),
+                        ("john", DeviceStatus::Valid),
+                        ("dilbert", DeviceStatus::Revoked),
+                    ];
+                    // Do it a multiple times to avoid WPB-6904 happening again
+                    for _ in 0..2 {
+                        check_identities_device_status(&mut alice.mls_central, &id, &client_ids, &name_status).await;
+                        check_identities_device_status(&mut bob.mls_central, &id, &client_ids, &name_status).await;
+                        check_identities_device_status(&mut rupert.mls_central, &id, &client_ids, &name_status).await;
+                        check_identities_device_status(&mut john.mls_central, &id, &client_ids, &name_status).await;
+                        check_identities_device_status(&mut dilbert.mls_central, &id, &client_ids, &name_status).await;
+                    }
+                })
+            },
+        )
+        .await
+    }
+
+    #[async_std::test]
+    #[wasm_bindgen_test]
     async fn should_read_revoked_device() {
         let case = TestCase::default_x509();
         run_test_with_client_ids_and_revocation(
             case.clone(),
             ["alice", "bob", "rupert"],
+            [],
             &["rupert"],
-            move |[mut alice, mut bob, mut rupert]| {
+            move |[mut alice, mut bob, mut rupert], []| {
                 Box::pin(async move {
                     let id = conversation_id();
                     alice
@@ -287,78 +403,19 @@ mod tests {
                         rupert.mls_central.get_client_id(),
                     );
 
-                    let mut identities = alice
-                        .mls_central
-                        .get_device_identities(&id, &[alice_id.clone(), bob_id.clone(), rupert_id.clone()])
-                        .await
-                        .unwrap();
+                    let client_ids = [alice_id, bob_id, rupert_id];
+                    let name_status = [
+                        ("alice", DeviceStatus::Valid),
+                        ("bob", DeviceStatus::Valid),
+                        ("rupert", DeviceStatus::Revoked),
+                    ];
 
-                    let alice_identity = identities.remove(
-                        identities
-                            .iter()
-                            .position(|i| i.x509_identity.as_ref().unwrap().display_name == "alice")
-                            .unwrap(),
-                    );
-                    let bob_identity = identities.remove(
-                        identities
-                            .iter()
-                            .position(|i| i.x509_identity.as_ref().unwrap().display_name == "bob")
-                            .unwrap(),
-                    );
-                    let rupert_identity = identities.remove(
-                        identities
-                            .iter()
-                            .position(|i| i.x509_identity.as_ref().unwrap().display_name == "rupert")
-                            .unwrap(),
-                    );
-
-                    assert!(identities.is_empty());
-
-                    assert_eq!(alice_identity.status, DeviceStatus::Valid);
-                    assert_eq!(bob_identity.status, DeviceStatus::Valid);
-                    assert_eq!(rupert_identity.status, DeviceStatus::Revoked);
-
-                    assert_eq!(
-                        alice.mls_central.e2ei_conversation_state(&id).await.unwrap(),
-                        E2eiConversationState::NotVerified
-                    );
-
-                    // Do it a second time to avoid WPB-6904 happening again
-                    let mut identities = alice
-                        .mls_central
-                        .get_device_identities(&id, &[alice_id, bob_id, rupert_id])
-                        .await
-                        .unwrap();
-
-                    let alice_identity = identities.remove(
-                        identities
-                            .iter()
-                            .position(|i| i.x509_identity.as_ref().unwrap().display_name == "alice")
-                            .unwrap(),
-                    );
-                    let bob_identity = identities.remove(
-                        identities
-                            .iter()
-                            .position(|i| i.x509_identity.as_ref().unwrap().display_name == "bob")
-                            .unwrap(),
-                    );
-                    let rupert_identity = identities.remove(
-                        identities
-                            .iter()
-                            .position(|i| i.x509_identity.as_ref().unwrap().display_name == "rupert")
-                            .unwrap(),
-                    );
-
-                    assert!(identities.is_empty());
-
-                    assert_eq!(alice_identity.status, DeviceStatus::Valid);
-                    assert_eq!(bob_identity.status, DeviceStatus::Valid);
-                    assert_eq!(rupert_identity.status, DeviceStatus::Revoked);
-
-                    assert_eq!(
-                        alice.mls_central.e2ei_conversation_state(&id).await.unwrap(),
-                        E2eiConversationState::NotVerified
-                    );
+                    // Do it a multiple times to avoid WPB-6904 happening again
+                    for _ in 0..2 {
+                        check_identities_device_status(&mut alice.mls_central, &id, &client_ids, &name_status).await;
+                        check_identities_device_status(&mut bob.mls_central, &id, &client_ids, &name_status).await;
+                        check_identities_device_status(&mut rupert.mls_central, &id, &client_ids, &name_status).await;
+                    }
                 })
             },
         )
@@ -415,6 +472,116 @@ mod tests {
                             && !i.thumbprint.is_empty()
                             && !i.client_id.is_empty()
                     }));
+                })
+            },
+        )
+        .await
+    }
+
+    // this test is a duplicate of its counterpart but taking federation into account
+    // The heavy lifting of cross-signing the certificates is being done by the test utils.
+    #[async_std::test]
+    #[wasm_bindgen_test]
+    async fn should_read_users_cross_signed() {
+        let case = TestCase::default_x509();
+
+        let (alice_android, alice_ios) = (
+            "satICT30SbiIpjj1n-XQtA:7684f3f95a5e6848@world.com",
+            "satICT30SbiIpjj1n-XQtA:7dfd976fc672c899@world.com",
+        );
+        let (alicem_android, alicem_ios) = (
+            "8h2PRVj_Qyi7p1XLGmdulw:a7c5ac4446bf@world.com",
+            "8h2PRVj_Qyi7p1XLGmdulw:10c6f7a0b5ed@world.com",
+        );
+        let bob_android = "I_7X5oRAToKy9z_kvhDKKQ:8b1fd601510d102a@world.com";
+        let bobt_android = "HSLU78bpQCOYwh4FWCac5g:68db8bac6a65d@world.com";
+
+        run_test_with_deterministic_client_ids_and_revocation(
+            case.clone(),
+            [
+                [alice_android, "alice_wire", "Alice Smith"],
+                [alice_ios, "alice_wire", "Alice Smith"],
+                [bob_android, "bob_wire", "Bob Doe"],
+            ],
+            [
+                [alicem_android, "alice_zeta", "Alice Muller"],
+                [alicem_ios, "alice_zeta", "Alice Muller"],
+                [bobt_android, "bob_zeta", "Bob Tables"],
+            ],
+            &[],
+            move |[mut alice_android_central, mut alice_ios_central, mut bob_android_central],
+                  [mut alicem_android_central, mut alicem_ios_central, mut bobt_android_central]| {
+                Box::pin(async move {
+                    let id = conversation_id();
+                    alice_android_central
+                        .mls_central
+                        .new_conversation(&id, case.credential_type, case.cfg.clone())
+                        .await
+                        .unwrap();
+                    alice_android_central
+                        .mls_central
+                        .invite_all(
+                            &case,
+                            &id,
+                            [
+                                &mut alice_ios_central.mls_central,
+                                &mut bob_android_central.mls_central,
+                                &mut bobt_android_central.mls_central,
+                                &mut alicem_ios_central.mls_central,
+                                &mut alicem_android_central.mls_central,
+                            ],
+                        )
+                        .await
+                        .unwrap();
+
+                    let nb_members = alice_android_central
+                        .mls_central
+                        .get_conversation_unchecked(&id)
+                        .await
+                        .members()
+                        .len();
+                    assert_eq!(nb_members, 6);
+
+                    assert_eq!(
+                        alice_android_central.mls_central.get_user_id(),
+                        alice_ios_central.mls_central.get_user_id()
+                    );
+
+                    let alicem_user_id = alicem_ios_central.mls_central.get_user_id();
+                    let bobt_user_id = bobt_android_central.mls_central.get_user_id();
+
+                    // Finds both Alice's devices
+                    let alice_user_id = alice_android_central.mls_central.get_user_id();
+                    let alice_identities = alice_android_central
+                        .mls_central
+                        .get_user_identities(&id, &[alice_user_id.clone()])
+                        .await
+                        .unwrap();
+                    assert_eq!(alice_identities.len(), 1);
+                    let identities = alice_identities.get(&alice_user_id).unwrap();
+                    assert_eq!(identities.len(), 2);
+
+                    // Finds Bob only device
+                    let bob_user_id = bob_android_central.mls_central.get_user_id();
+                    let bob_identities = alice_android_central
+                        .mls_central
+                        .get_user_identities(&id, &[bob_user_id.clone()])
+                        .await
+                        .unwrap();
+                    assert_eq!(bob_identities.len(), 1);
+                    let identities = bob_identities.get(&bob_user_id).unwrap();
+                    assert_eq!(identities.len(), 1);
+
+                    // Finds all devices
+                    let user_ids = [alice_user_id, bob_user_id, alicem_user_id, bobt_user_id];
+                    let expected_sizes = [2, 1, 2, 1];
+
+                    all_identities_check(&mut alice_android_central.mls_central, &id, &user_ids, expected_sizes).await;
+                    all_identities_check(&mut alicem_android_central.mls_central, &id, &user_ids, expected_sizes).await;
+                    all_identities_check(&mut alice_ios_central.mls_central, &id, &user_ids, expected_sizes).await;
+                    all_identities_check(&mut alicem_ios_central.mls_central, &id, &user_ids, expected_sizes).await;
+                    all_identities_check(&mut bob_android_central.mls_central, &id, &user_ids, expected_sizes).await;
+                    all_identities_check(&mut bobt_android_central.mls_central, &id, &user_ids, expected_sizes).await;
                 })
             },
         )
@@ -492,32 +659,94 @@ mod tests {
                     let identities = bob_identities.get(&bob_user_id).unwrap();
                     assert_eq!(identities.len(), 1);
 
-                    // Finds all devices
-                    let all_identities = alice_android_central
-                        .mls_central
-                        .get_user_identities(&id, &[alice_user_id.clone(), bob_user_id.clone()])
-                        .await
-                        .unwrap();
-                    assert_eq!(all_identities.len(), 2);
-                    let alice_identities = alice_identities.get(&alice_user_id).unwrap();
-                    assert_eq!(alice_identities.len(), 2);
-                    let bob_identities = bob_identities.get(&bob_user_id).unwrap();
-                    assert_eq!(bob_identities.len(), 1);
+                    let user_ids = [alice_user_id, bob_user_id];
+                    let expected_sizes = [2, 1];
 
-                    // Not found
-                    let not_found = alice_android_central
-                        .mls_central
-                        .get_user_identities(&id, &["aaaaaaaaaaaaa".to_string()])
-                        .await
-                        .unwrap();
-                    assert!(not_found.is_empty());
-
-                    // Invalid usage
-                    let invalid = alice_android_central.mls_central.get_user_identities(&id, &[]).await;
-                    assert!(matches!(invalid.unwrap_err(), CryptoError::ConsumerError));
+                    all_identities_check(&mut alice_android_central.mls_central, &id, &user_ids, expected_sizes).await;
+                    all_identities_check(&mut alice_ios_central.mls_central, &id, &user_ids, expected_sizes).await;
+                    all_identities_check(&mut bob_android_central.mls_central, &id, &user_ids, expected_sizes).await;
                 })
             },
         )
         .await
+    }
+
+    #[async_std::test]
+    #[wasm_bindgen_test]
+    async fn should_exchange_messages_cross_signed() {
+        let (alice_android, alice_ios) = (
+            "satICT30SbiIpjj1n-XQtA:7684f3f95a5e6848@wire.com",
+            "satICT30SbiIpjj1n-XQtA:7dfd976fc672c899@wire.com",
+        );
+        let (alicem_android, alicem_ios) = (
+            "8h2PRVj_Qyi7p1XLGmdulw:a7c5ac4446bf@zeta.com",
+            "8h2PRVj_Qyi7p1XLGmdulw:10c6f7a0b5ed@zeta.com",
+        );
+        let bob_android = "I_7X5oRAToKy9z_kvhDKKQ:8b1fd601510d102a@wire.com";
+        let bobt_android = "HSLU78bpQCOYwh4FWCac5g:68db8bac6a65d@zeta.com";
+
+        let case = TestCase::default_x509();
+
+        run_cross_signed_tests_with_client_ids(
+            case.clone(),
+            [
+                [alice_android, "alice_wire", "Alice Smith"],
+                [alice_ios, "alice_wire", "Alice Smith"],
+                [bob_android, "bob_wire", "Bob Doe"],
+            ],
+            [
+                [alicem_android, "alice_zeta", "Alice Muller"],
+                [alicem_ios, "alice_zeta", "Alice Muller"],
+                [bobt_android, "bob_zeta", "Bob Tables"],
+            ],
+            ("wire.com", "zeta.com"),
+            move |[mut alices_android_central, mut alices_ios_central, mut bob_android_central],
+                  [mut alicem_android_central, mut alicem_ios_central, mut bobt_android_central]| {
+                Box::pin(async move {
+                    let id = conversation_id();
+                    alices_ios_central
+                        .new_conversation(&id, case.credential_type, case.cfg.clone())
+                        .await
+                        .unwrap();
+
+                    alices_ios_central
+                        .invite_all(
+                            &case,
+                            &id,
+                            [
+                                &mut alices_android_central,
+                                &mut bob_android_central,
+                                &mut alicem_android_central,
+                                &mut alicem_ios_central,
+                                &mut bobt_android_central,
+                            ],
+                        )
+                        .await
+                        .unwrap();
+
+                    let nb_members = alices_android_central
+                        .get_conversation_unchecked(&id)
+                        .await
+                        .members()
+                        .len();
+                    assert_eq!(nb_members, 6);
+
+                    assert_eq!(alicem_android_central.get_user_id(), alicem_ios_central.get_user_id());
+
+                    // cross server communication
+                    bobt_android_central
+                        .try_talk_to(&id, &mut alices_ios_central)
+                        .await
+                        .unwrap();
+
+                    // same server communication
+                    bob_android_central
+                        .try_talk_to(&id, &mut alices_ios_central)
+                        .await
+                        .unwrap();
+                })
+            },
+        )
+        .await;
     }
 }
