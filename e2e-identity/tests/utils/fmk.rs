@@ -1,5 +1,4 @@
 use std::collections::{hash_map::RandomState, HashMap};
-use std::str::FromStr;
 
 use asserhttp::*;
 use base64::Engine;
@@ -624,8 +623,7 @@ impl E2eTest {
         let oidc_target = oidc_chall.target.to_string();
 
         let mut oidc_target = url::Url::parse(&oidc_target).unwrap();
-        let local_port = std::env::var("IDP_HOST_PORT").unwrap();
-        let local_port = u16::from_str(&local_port).unwrap();
+        let local_port = self.keycloak_cfg.http_host_port;
         oidc_target.set_port(Some(local_port)).unwrap();
 
         let issuer_url = IssuerUrl::new(oidc_target.as_str().to_string()).unwrap();
@@ -737,7 +735,7 @@ impl E2eTest {
 
         if let Some(refresh_token) = oauth_token_response.refresh_token() {
             self.display_token("OAuth Refresh token", refresh_token.secret(), None, &dex_pk);
-            std::env::set_var("REFRESH_TOKEN", refresh_token.secret());
+            self.refresh_token = Some(refresh_token.clone());
         }
 
         use openidconnect::TokenResponse as _;

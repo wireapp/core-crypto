@@ -4,6 +4,7 @@ use std::{
 };
 
 use jwt_simple::prelude::*;
+use oauth2::RefreshToken;
 use rand::random;
 
 use rusty_acme::prelude::{AcmeAccount, AcmeAuthz, AcmeChallenge, AcmeDirectory, AcmeFinalize, AcmeOrder};
@@ -51,6 +52,7 @@ pub struct E2eTest {
     pub oidc_cfg: Option<OidcCfg>,
     pub client: reqwest::Client,
     pub oidc_provider: OidcProvider,
+    pub refresh_token: Option<RefreshToken>,
 }
 
 impl std::fmt::Debug for E2eTest {
@@ -123,7 +125,6 @@ impl E2eTest {
         let audience = "wireapp";
         let client_secret = rand_base64_str(24);
         let idp_host_port = portpicker::pick_unused_port().unwrap();
-        std::env::set_var("IDP_HOST_PORT", idp_host_port.to_string());
         let idp_base = format!("http://{idp_host}");
         let (issuer, jwks_url, discovery_base_url) = match oidc_provider {
             OidcProvider::Dex => {
@@ -277,6 +278,7 @@ impl E2eTest {
             is_demo,
             client: reqwest::Client::new(),
             oidc_provider,
+            refresh_token: None,
         }
     }
 

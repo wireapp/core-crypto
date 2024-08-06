@@ -108,6 +108,8 @@ pub struct StepCaImage {
     pub volumes: Vec<Mount>,
     pub env_vars: HashMap<String, String>,
     pub host_volume: PathBuf,
+    name: String,
+    tag: String,
 }
 
 impl StepCaImage {
@@ -187,6 +189,8 @@ impl StepCaImage {
             std::fs::create_dir(&host_volume).unwrap();
         }
         let host_volume_str = host_volume.as_os_str().to_str().unwrap();
+        let tag = std::env::var("STEPCA_VERSION").unwrap_or(Self::TAG.to_string());
+        let name = std::env::var("STEPCA_NAME").unwrap_or(Self::NAME.to_string());
         Self {
             is_builder,
             volumes: vec![Mount::bind_mount(host_volume_str, "/home/step")],
@@ -202,19 +206,19 @@ impl StepCaImage {
                 .map(|(k, v)| (k.to_string(), v.to_string())),
             ),
             host_volume,
+            tag,
+            name,
         }
     }
 }
 
 impl Image for StepCaImage {
-    type Args = ();
-
-    fn name(&self) -> String {
-        std::env::var("STEPCA_NAME").unwrap_or_else(|_| Self::NAME.to_string())
+    fn name(&self) -> &str {
+        &self.name
     }
 
-    fn tag(&self) -> String {
-        std::env::var("STEPCA_VERSION").unwrap_or_else(|_| Self::TAG.to_string())
+    fn tag(&self) -> &str {
+        &self.tag
     }
 
     fn ready_conditions(&self) -> Vec<WaitFor> {

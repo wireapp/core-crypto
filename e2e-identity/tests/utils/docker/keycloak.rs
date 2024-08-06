@@ -26,6 +26,8 @@ pub struct KeycloakServer {
 pub struct KeycloakImage {
     pub volumes: Vec<Mount>,
     pub env_vars: HashMap<String, String>,
+    tag: String,
+    host_port: ContainerPort,
 }
 
 static KEYCLOAK_PORTS: OnceLock<[ContainerPort; 1]> = OnceLock::new();
@@ -94,6 +96,8 @@ impl KeycloakImage {
                 ("KEYCLOAK_ADMIN_PASSWORD".to_string(), Self::PASSWORD.to_string()),
                 ("KC_LOG_LEVEL".to_string(), Self::LOG_LEVEL.to_string()),
             ]),
+            tag: env::var("KEYCLOAK_VERSION").unwrap_or(Self::TAG.to_string()),
+            host_port,
         }
     }
 
@@ -269,14 +273,12 @@ impl From<&KeycloakCfg> for UserRepresentation {
 }
 
 impl Image for KeycloakImage {
-    type Args = KeycloakArgs;
-
-    fn name(&self) -> String {
-        Self::NAME.to_string()
+    fn name(&self) -> &str {
+        Self::NAME
     }
 
-    fn tag(&self) -> String {
-        env::var("KEYCLOAK_VERSION").unwrap_or_else(|_| Self::TAG.to_string())
+    fn tag(&self) -> &str {
+        &self.tag
     }
 
     fn ready_conditions(&self) -> Vec<WaitFor> {

@@ -16,6 +16,7 @@ pub struct DexServer {
 pub struct DexImage {
     pub volumes: Vec<Mount>,
     pub env_vars: HashMap<String, String>,
+    tag: String,
 }
 
 impl DexImage {
@@ -49,24 +50,23 @@ impl DexImage {
 
         std::fs::write(&host_cfg_file, cfg.to_yaml(redirect_uri)).unwrap();
 
-        let host_vol_str = host_cfg_file.as_os_str().to_str().unwrap().to_string();
         let host_vol_str = host_cfg_file.as_os_str().to_str().unwrap();
+        let tag = std::env::var("DEX_VERSION").unwrap_or(Self::TAG.to_string());
         Self {
             volumes: vec![Mount::bind_mount(host_vol_str, "/etc/dex/config.docker.yaml")],
             env_vars: HashMap::new(),
+            tag,
         }
     }
 }
 
 impl Image for DexImage {
-    type Args = ();
-
-    fn name(&self) -> String {
-        Self::NAME.to_string()
+    fn name(&self) -> &str {
+        Self::NAME
     }
 
-    fn tag(&self) -> String {
-        std::env::var("DEX_VERSION").unwrap_or_else(|_| Self::TAG.to_string())
+    fn tag(&self) -> &str {
+        &self.tag
     }
 
     fn ready_conditions(&self) -> Vec<WaitFor> {

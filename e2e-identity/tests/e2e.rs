@@ -80,7 +80,7 @@ async fn refresh_token_can_be_used_to_renew() {
     // first enrollment
     let test = test.nominal_enrollment().await.unwrap();
 
-    let refresh_token = std::env::var("REFRESH_TOKEN").unwrap();
+    let refresh_token = test.refresh_token.clone().unwrap().secret().to_string();
     assert!(!refresh_token.is_empty());
     let refresh_token = oauth2::RefreshToken::new(refresh_token);
 

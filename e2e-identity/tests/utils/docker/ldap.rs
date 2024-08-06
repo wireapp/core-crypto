@@ -46,10 +46,9 @@ impl LdapImage {
 
         std::fs::write(cfg_file, cfg.to_ldif()).unwrap();
 
-        let host_vol_str = host_vol.as_os_str().to_str().unwrap().to_string();
-        let container_vol = "/container/service/slapd/assets/config/bootstrap/ldif/custom/".to_string();
         let host_vol_str = host_vol.as_os_str().to_str().unwrap();
         let container_vol = "/container/service/slapd/assets/config/bootstrap/ldif/custom/";
+        let tag = std::env::var("OPENLDAP_VERSION").unwrap_or(Self::TAG.to_string());
         Self {
             volumes: vec![Mount::bind_mount(host_vol_str, container_vol)],
             env_vars: HashMap::from_iter(
@@ -57,6 +56,7 @@ impl LdapImage {
                     .iter()
                     .map(|(k, v)| (k.to_string(), v.to_string())),
             ),
+            tag,
         }
     }
 }
