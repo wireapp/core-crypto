@@ -5,6 +5,8 @@ use testcontainers::core::{ContainerPort, Mount};
 use testcontainers::runners::AsyncRunner;
 use testcontainers::{core::WaitFor, ContainerAsync, Image, ImageExt};
 
+/// Allows to run WireMock in Docker. Uses stubs to mock responses to predefined requests.
+/// The stubs are generated in [crate::E2eTest::new_jwks_uri_mock].
 #[derive(Debug)]
 pub struct WiremockImage {
     pub volumes: Vec<Mount>,
@@ -61,6 +63,7 @@ impl Image for WiremockImage {
     }
 
     fn cmd(&self) -> impl IntoIterator<Item = impl Into<Cow<'_, str>>> {
+        // Listen on the given port and return a response according the stubs.
         vec!["/stubs".to_string(), "-p".to_string(), WiremockImage::PORT.to_string()]
     }
 
