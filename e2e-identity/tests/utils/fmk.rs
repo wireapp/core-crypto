@@ -36,7 +36,7 @@ use crate::utils::{
 pub(crate) static mut GOOGLE_SND: Option<std::sync::Mutex<std::sync::mpsc::Sender<String>>> = None;
 static mut GOOGLE_RECV: Option<std::sync::Mutex<std::sync::mpsc::Receiver<String>>> = None;
 
-impl E2eTest<'static> {
+impl E2eTest {
     pub async fn nominal_enrollment(self) -> TestResult<Self> {
         self.enrollment(EnrollmentFlow::default()).await
     }
@@ -82,7 +82,7 @@ impl E2eTest<'static> {
     }
 }
 
-impl<'a> E2eTest<'a> {
+impl E2eTest {
     /// GET http://acme-server/directory
     pub async fn get_acme_directory(&mut self) -> TestResult<AcmeDirectory> {
         let ca_url = self.acme_server.as_ref().ok_or(TestError::Internal)?.uri.clone();
@@ -970,7 +970,7 @@ impl<'a> E2eTest<'a> {
     }
 }
 
-impl E2eTest<'_> {
+impl E2eTest {
     pub async fn fetch_idp_public_key(&self) -> String {
         let jwks_uri = self.oidc_cfg.as_ref().unwrap().jwks_uri.clone();
         let jwks_req = self.client.get(jwks_uri);

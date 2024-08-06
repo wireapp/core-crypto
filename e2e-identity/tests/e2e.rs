@@ -2,7 +2,6 @@
 
 use jwt_simple::prelude::*;
 use serde_json::{json, Value};
-use testcontainers::clients::Cli;
 
 use rusty_acme::prelude::*;
 use rusty_jwt_tools::prelude::*;
@@ -18,15 +17,11 @@ use utils::{
 #[path = "utils/mod.rs"]
 mod utils;
 
-fn docker() -> &'static Cli {
-    Box::leak(Box::new(Cli::new::<testcontainers::core::env::Os>()))
-}
-
 /// Tests the nominal case and prints the pretty output with the mermaid chart in this crate README.
 #[cfg(not(ci))]
 #[tokio::test]
 async fn demo_should_succeed() {
-    let test = E2eTest::new_demo().start(docker()).await;
+    let test = E2eTest::new_demo().start().await;
     test.nominal_enrollment().await.unwrap();
 }
 
@@ -35,7 +30,7 @@ async fn demo_should_succeed() {
 #[ignore] // since we cannot customize the id token
 async fn demo_with_dex_should_succeed() {
     let demo = E2eTest::new_internal(true, JwsAlgorithm::Ed25519, OidcProvider::Dex);
-    let test = demo.start(docker()).await;
+    let test = demo.start().await;
     test.nominal_enrollment().await.unwrap();
 }
 
@@ -72,7 +67,7 @@ async fn google_demo_should_succeed() {
         oidc_provider: OidcProvider::Google,
         ..default
     };
-    let test = test.start(docker()).await;
+    let test = test.start().await;
     assert!(test.nominal_enrollment().await.is_ok());
 }
 
@@ -80,7 +75,7 @@ async fn google_demo_should_succeed() {
 #[cfg(not(ci))]
 #[tokio::test]
 async fn refresh_token_can_be_used_to_renew() {
-    let test = E2eTest::new_demo().start(docker()).await;
+    let test = E2eTest::new_demo().start().await;
 
     // first enrollment
     let test = test.nominal_enrollment().await.unwrap();
@@ -112,7 +107,7 @@ mod alg {
     #[tokio::test]
     async fn ed25519_should_succeed() {
         let test = E2eTest::new_internal(false, JwsAlgorithm::Ed25519, OidcProvider::Dex)
-            .start(docker())
+            .start()
             .await;
         assert!(test.nominal_enrollment().await.is_ok());
     }
@@ -120,7 +115,7 @@ mod alg {
     #[tokio::test]
     async fn p256_should_succeed() {
         let test = E2eTest::new_internal(false, JwsAlgorithm::P256, OidcProvider::Keycloak)
-            .start(docker())
+            .start()
             .await;
         assert!(test.nominal_enrollment().await.is_ok());
     }
@@ -130,7 +125,7 @@ mod alg {
     #[tokio::test]
     async fn p384_should_succeed() {
         let test = E2eTest::new_internal(false, JwsAlgorithm::P384, OidcProvider::Keycloak)
-            .start(docker())
+            .start()
             .await;
         assert!(test.nominal_enrollment().await.is_ok());
     }
@@ -144,7 +139,7 @@ mod acme_server {
     /// Challenges returned by ACME server are mixed up
     #[tokio::test]
     async fn should_fail_when_no_replay_nonce_requested() {
-        let test = E2eTest::new().start(docker()).await;
+        let test = E2eTest::new().start().await;
 
         let flow = EnrollmentFlow {
             get_acme_nonce: Box::new(|test, _| {
@@ -165,7 +160,7 @@ mod acme_server {
     /// Replay nonce is reused by the client
     #[tokio::test]
     async fn should_fail_when_replay_nonce_reused() {
-        let test = E2eTest::new().start(docker()).await;
+        let test = E2eTest::new().start().await;
 
         let flow = EnrollmentFlow {
             new_order: Box::new(|mut test, (directory, account, previous_nonce)| {
@@ -192,7 +187,7 @@ mod acme_server {
     /// This verifies the DPoP challenge verification method on the acme server
     #[tokio::test]
     async fn should_fail_when_dpop_challenge_signed_by_a_different_key() {
-        let test = E2eTest::new().start(docker()).await;
+        let test = E2eTest::new().start().await;
 
         let flow = EnrollmentFlow {
             verify_dpop_challenge: Box::new(|mut test, (account, dpop_chall, access_token, previous_nonce)| {
@@ -221,7 +216,7 @@ mod acme_server {
     /// This verifies the DPoP challenge verification method on the acme server
     #[tokio::test]
     async fn should_fail_when_oidc_challenge_signed_by_a_different_key() {
-        let test = E2eTest::new().start(docker()).await;
+        let test = E2eTest::new().start().await;
 
         let flow = EnrollmentFlow {
             verify_oidc_challenge: Box::new(|mut test, (account, oidc_chall, access_token, previous_nonce)| {
@@ -253,7 +248,7 @@ mod dpop_challenge {
     /// to wire-server, it delivers a nonce which the client seals in a signed DPoP JWT.
     #[tokio::test]
     async fn should_fail_when_client_dpop_token_has_wrong_backend_nonce() {
-        let test = E2eTest::new().start(docker()).await;
+        let test = E2eTest::new().start().await;
 
         let flow = EnrollmentFlow {
             create_dpop_token: Box::new(
@@ -291,7 +286,7 @@ mod dpop_challenge {
             },
             ..default
         };
-        let test = test.start(docker()).await;
+        let test = test.start().await;
         assert!(matches!(
             test.nominal_enrollment().await.unwrap_err(),
             TestError::Acme(RustyAcmeError::ChallengeError(AcmeChallError::Invalid))
@@ -302,7 +297,7 @@ mod dpop_challenge {
     /// This is verified by the acme server
     #[tokio::test]
     async fn should_fail_when_access_token_challenge_claim_is_not_current_challenge_one() {
-        let test = E2eTest::new().start(docker()).await;
+        let test = E2eTest::new().start().await;
 
         let flow = EnrollmentFlow {
             create_dpop_token: Box::new(
@@ -333,7 +328,7 @@ mod dpop_challenge {
     /// the oidc challenge. The challenge should be invalid if they differ
     #[tokio::test]
     async fn should_fail_when_access_token_client_id_mismatches() {
-        let test = E2eTest::new().start(docker()).await;
+        let test = E2eTest::new().start().await;
 
         let flow = EnrollmentFlow {
             new_order: Box::new(|mut test, (directory, account, previous_nonce)| {
@@ -363,7 +358,7 @@ mod dpop_challenge {
     #[should_panic]
     #[tokio::test]
     async fn should_fail_when_expired_client_dpop_token() {
-        let test = E2eTest::new().start(docker()).await;
+        let test = E2eTest::new().start().await;
 
         let flow = EnrollmentFlow {
             create_dpop_token: Box::new(
@@ -391,7 +386,7 @@ mod dpop_challenge {
     #[tokio::test]
     async fn should_fail_when_access_token_iss_mismatches_target() {
         // "iss" in access token mismatches expected target
-        let test = E2eTest::new().start(docker()).await;
+        let test = E2eTest::new().start().await;
 
         let nonce_arc = std::sync::Arc::new(std::sync::Mutex::new(None));
         let (nonce_w, nonce_r) = (nonce_arc.clone(), nonce_arc.clone());
@@ -470,7 +465,7 @@ mod dpop_challenge {
     #[tokio::test]
     async fn should_fail_when_access_token_device_id_mismatches_target() {
         // "iss" deviceId mismatches the actual deviceId
-        let test = E2eTest::new().start(docker()).await;
+        let test = E2eTest::new().start().await;
 
         let nonce_arc = std::sync::Arc::new(std::sync::Mutex::new(None));
         let (nonce_w, nonce_r) = (nonce_arc.clone(), nonce_arc.clone());
@@ -555,7 +550,7 @@ mod dpop_challenge {
     /// Here we make the acme-server fail.
     #[tokio::test]
     async fn acme_should_fail_when_client_dpop_token_has_wrong_handle() {
-        let test = E2eTest::new().start(docker()).await;
+        let test = E2eTest::new().start().await;
 
         let flow = EnrollmentFlow {
             create_dpop_token: Box::new(
@@ -585,7 +580,7 @@ mod dpop_challenge {
     /// will verify the 'cnf.kid' and verify that it is indeed the JWK thumbprint of the ACME client.
     #[tokio::test]
     async fn acme_should_fail_when_client_dpop_token_has_wrong_kid() {
-        let test = E2eTest::new().start(docker()).await;
+        let test = E2eTest::new().start().await;
 
         let nonce_arc = std::sync::Arc::new(std::sync::Mutex::new(None));
         let (nonce_w, nonce_r) = (nonce_arc.clone(), nonce_arc.clone());
@@ -665,7 +660,7 @@ mod dpop_challenge {
     /// We bind the DPoP challenge "uri" to the access token. It is then validated by the ACME server
     #[tokio::test]
     async fn should_fail_when_invalid_dpop_audience() {
-        let test = E2eTest::new().start(docker()).await;
+        let test = E2eTest::new().start().await;
         let flow = EnrollmentFlow {
             create_dpop_token: Box::new(
                 |mut test, (mut dpop_chall, backend_nonce, handle, team, display_name, expiry)| {
@@ -695,7 +690,7 @@ mod dpop_challenge {
     /// display name in the acme identifier as part of the acme order
     #[tokio::test]
     async fn acme_should_fail_when_client_dpop_token_has_wrong_display_name() {
-        let test = E2eTest::new().start(docker()).await;
+        let test = E2eTest::new().start().await;
 
         let real_dn = std::sync::Arc::new(std::sync::Mutex::new(None));
         let (dn_write, dn_read) = (real_dn.clone(), real_dn.clone());
@@ -746,7 +741,7 @@ mod oidc_challenge {
         let mut discovery_uri: url::Url = test.ca_cfg.discovery_base_url.parse().unwrap();
         discovery_uri.set_port(Some(discovery_uri.port().unwrap() + 1)).unwrap();
         test.ca_cfg.discovery_base_url = discovery_uri.to_string();
-        let test = test.start(docker()).await;
+        let test = test.start().await;
 
         // cannot validate the OIDC challenge
         assert!(matches!(
@@ -760,19 +755,18 @@ mod oidc_challenge {
     #[tokio::test]
     #[ignore] // FIXME: adapt with Keycloak
     async fn should_fail_when_invalid_handle() {
-        let docker = docker();
         let mut test = E2eTest::new();
 
         // setup fake jwks_uri to be able to resign the id token
         let (jwks_stub, new_kp, kid) = test.new_jwks_uri_mock();
         let attacker_host = "attacker-keycloak";
-        let _attacker_keycloak = WiremockImage::run(docker, attacker_host, vec![jwks_stub]);
+        let _attacker_keycloak = WiremockImage::run(attacker_host, vec![jwks_stub]);
         test.ca_cfg.jwks_url = format!(
             "https://{attacker_host}/realms/{}/protocol/openid-connect/certs",
             KeycloakImage::REALM
         );
 
-        let test = test.start(docker).await;
+        let test = test.start().await;
 
         let flow = EnrollmentFlow {
             fetch_id_token: Box::new(|mut test, (oidc_chall, keyauth)| {
@@ -806,16 +800,15 @@ mod oidc_challenge {
     #[tokio::test]
     #[ignore] // FIXME: adapt with Keycloak
     async fn should_fail_when_invalid_display_name() {
-        let docker = docker();
         let mut test = E2eTest::new();
 
         // setup fake jwks_uri to be able to resign the id token
         let (jwks_stub, new_kp, kid) = test.new_jwks_uri_mock();
         let attacker_host = "attacker-dex";
-        let _attacker_dex = WiremockImage::run(docker, attacker_host, vec![jwks_stub]);
+        let _attacker_dex = WiremockImage::run(attacker_host, vec![jwks_stub]);
         test.ca_cfg.jwks_url = format!("https://{attacker_host}/realms/master/protocol/openid-connect/certs");
 
-        let test = test.start(docker).await;
+        let test = test.start().await;
 
         let flow = EnrollmentFlow {
             fetch_id_token: Box::new(|mut test, (oidc_chall, keyauth)| {
@@ -849,7 +842,7 @@ mod oidc_challenge {
     /// the current ACME session.
     #[tokio::test]
     async fn should_fail_when_invalid_keyauth() {
-        let test = E2eTest::new().start(docker()).await;
+        let test = E2eTest::new().start().await;
         let flow = EnrollmentFlow {
             fetch_id_token: Box::new(|mut test, (oidc_chall, _keyauth)| {
                 Box::pin(async move {
@@ -869,7 +862,7 @@ mod oidc_challenge {
     /// We add a "acme_aud" in the idToken which must match the OIDC challenge url
     #[tokio::test]
     async fn should_fail_when_invalid_audience() {
-        let test = E2eTest::new().start(docker()).await;
+        let test = E2eTest::new().start().await;
         let flow = EnrollmentFlow {
             fetch_id_token: Box::new(|mut test, (mut oidc_chall, keyauth)| {
                 Box::pin(async move {

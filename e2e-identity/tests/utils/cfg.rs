@@ -5,7 +5,6 @@ use std::{
 
 use jwt_simple::prelude::*;
 use rand::random;
-use testcontainers::clients::Cli;
 
 use rusty_acme::prelude::{AcmeAccount, AcmeAuthz, AcmeChallenge, AcmeDirectory, AcmeFinalize, AcmeOrder};
 use rusty_jwt_tools::{jwk::TryIntoJwk, prelude::*};
@@ -24,7 +23,7 @@ use crate::utils::{
     TestResult,
 };
 
-pub struct E2eTest<'a> {
+pub struct E2eTest {
     pub display_name: String,
     pub domain: String,
     pub team: Option<String>,
@@ -45,16 +44,16 @@ pub struct E2eTest<'a> {
     pub is_demo: bool,
     pub display: TestDisplay,
     pub wire_server: Option<WireServer>,
-    pub ldap_server: Option<LdapServer<'a>>,
-    pub keycloak_server: Option<KeycloakServer<'a>>,
-    pub dex_server: Option<DexServer<'a>>,
-    pub acme_server: Option<AcmeServer<'a>>,
+    pub ldap_server: Option<LdapServer>,
+    pub keycloak_server: Option<KeycloakServer>,
+    pub dex_server: Option<DexServer>,
+    pub acme_server: Option<AcmeServer>,
     pub oidc_cfg: Option<OidcCfg>,
     pub client: reqwest::Client,
     pub oidc_provider: OidcProvider,
 }
 
-impl std::fmt::Debug for E2eTest<'_> {
+impl std::fmt::Debug for E2eTest {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "")
     }
@@ -67,11 +66,11 @@ pub enum OidcProvider {
     Google,
 }
 
-unsafe impl<'a> Send for E2eTest<'a> {}
+unsafe impl Send for E2eTest {}
 
-unsafe impl<'a> Sync for E2eTest<'a> {}
+unsafe impl Sync for E2eTest {}
 
-impl<'a> E2eTest<'a> {
+impl E2eTest {
     const STEPCA_HOST: &'static str = "stepca";
     const LDAP_HOST: &'static str = "ldap";
     const WIRE_HOST: &'static str = "wire.com";
@@ -281,7 +280,7 @@ impl<'a> E2eTest<'a> {
         }
     }
 
-    pub async fn start(mut self, docker: &'a Cli) -> E2eTest<'a> {
+    pub async fn start(mut self) -> E2eTest {
         if self.is_demo {
             TestDisplay::clear();
             self.display.set_active();
@@ -306,16 +305,16 @@ impl<'a> E2eTest<'a> {
         match self.oidc_provider {
             OidcProvider::Dex => {
                 // LDAP (required by Dex)
-                let ldap_server = LdapImage::run(docker, self.ldap_cfg.clone());
+                let ldap_server = LdapImage::run(self.ldap_cfg.clone()).await;
                 self.ldap_server = Some(ldap_server);
 
                 // Dex (OIDC provider)
-                let dex_server = DexImage::run(docker, self.dex_cfg.clone(), redirect_uri.clone());
+                let dex_server = DexImage::run(self.dex_cfg.clone(), redirect_uri.clone()).await;
                 dns_mappings.insert(self.dex_cfg.host.clone(), dex_server.socket);
                 self.dex_server = Some(dex_server);
             }
             OidcProvider::Keycloak => {
-                let keycloak_server = KeycloakImage::run(docker, self.keycloak_cfg.clone(), redirect_uri.clone()).await;
+                let keycloak_server = KeycloakImage::run(self.keycloak_cfg.clone(), redirect_uri.clone()).await;
                 dns_mappings.insert(self.keycloak_cfg.host.clone(), keycloak_server.socket);
                 self.keycloak_server = Some(keycloak_server);
             }
@@ -327,7 +326,7 @@ impl<'a> E2eTest<'a> {
         let dpop_target_uri = format!("{wire_server_uri}/clients/{template}/access-token");
         self.ca_cfg.dpop_target_uri = Some(dpop_target_uri);
         // Acme server
-        let acme_server = StepCaImage::run(docker, self.ca_cfg.clone());
+        let acme_server = StepCaImage::run(self.ca_cfg.clone()).await;
 
         // configure http client custom dns resolution for this test
         // this helps having domain names in request URIs instead of 'localhost:{port}'
@@ -419,7 +418,7 @@ impl<'a> E2eTest<'a> {
     }
 }
 
-impl std::ops::Deref for E2eTest<'_> {
+impl std::ops::Deref for E2eTest {
     type Target = TestDisplay;
 
     fn deref(&self) -> &Self::Target {
@@ -427,7 +426,7 @@ impl std::ops::Deref for E2eTest<'_> {
     }
 }
 
-impl std::ops::DerefMut for E2eTest<'_> {
+impl std::ops::DerefMut for E2eTest {
     fn deref_mut(&mut self) -> &mut Self::Target {
         &mut self.display
     }
@@ -442,7 +441,7 @@ pub fn default_http_client() -> reqwest::ClientBuilder {
         .danger_accept_invalid_certs(true)
 }
 
-pub type E2eT = E2eTest<'static>;
+pub type E2eT = E2eTest;
 pub type FlowResp<T> = std::pin::Pin<Box<dyn std::future::Future<Output = TestResult<(E2eT, T)>>>>;
 pub type Flow<P, R> = Box<dyn FnOnce(E2eT, P) -> FlowResp<R>>;
 
