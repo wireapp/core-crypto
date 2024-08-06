@@ -106,7 +106,7 @@ mod alg {
 
     #[tokio::test]
     async fn ed25519_should_succeed() {
-        let test = E2eTest::new_internal(false, JwsAlgorithm::Ed25519, OidcProvider::Dex)
+        let test = E2eTest::new_internal(false, JwsAlgorithm::Ed25519, OidcProvider::Keycloak)
             .start()
             .await;
         assert!(test.nominal_enrollment().await.is_ok());
