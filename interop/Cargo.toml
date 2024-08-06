@@ -33,7 +33,7 @@ const_format.workspace = true
 rand.workspace = true
 bitflags.workspace = true
 uuid = { workspace = true, features = ["v4"] }
-tempfile = { version = "3.10", optional = true }
+tempfile = { version = "3.11", optional = true }
 # Terminal support
 xshell = "0.2"
 spinoff = { version = "0.8", features = ["aesthetic"], default-features = false }
