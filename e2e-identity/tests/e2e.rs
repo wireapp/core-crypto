@@ -27,7 +27,7 @@ async fn demo_should_succeed() {
 
 #[cfg(not(ci))]
 #[tokio::test]
-#[ignore] // since we cannot customize the id token
+#[ignore] // since we cannot customize the id token. TODO Tracking issue: WPB-10477
 async fn demo_with_dex_should_succeed() {
     let demo = E2eTest::new_internal(true, JwsAlgorithm::Ed25519, OidcProvider::Dex);
     let test = demo.start().await;
