@@ -162,15 +162,12 @@ impl MlsConversation {
             .filter_map(|(id, c)| UserId::try_from(id.as_slice()).ok().zip(Some(c)))
             .filter(|(uid, _)| user_ids.contains(uid))
             .map(|(uid, c)| (uid, c.extract_identity(self.ciphersuite(), env)))
-            .chunk_by(|(uid, _)| *uid)
-            .into_iter()
-            .map(|(uid, group)| {
+            .map(|(uid, identity)| {
                 let uid = String::try_from(uid);
-                let identities = group.into_iter().map(|(_, id)| id).collect::<CryptoResult<Vec<_>>>();
                 // could be simplified if `Result::zip` was available
-                uid.and_then(|uid| identities.map(|ids| (uid, ids)))
+                uid.and_then(|uid| identity.map(|id| (uid, id)))
             })
-            .collect::<CryptoResult<HashMap<_, _>>>()
+            .process_results(|iter| iter.into_group_map())
     }
 }
 
