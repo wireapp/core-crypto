@@ -113,10 +113,8 @@ pub struct StepCaImage {
 }
 
 impl StepCaImage {
-    // const NAME: &'static str = "smallstep/step-ca";
-    const NAME: &'static str = "wire-smallstep-stepca";
-    // const TAG: &'static str = "0.25.3-rc3";
-    const TAG: &'static str = "latest";
+    const NAME: &'static str = "smallstep/step-ca";
+    const TAG: &'static str = "0.25.3-rc7";
     const CA_NAME: &'static str = "wire";
     pub const ACME_PROVISIONER: &'static str = "wire";
     pub const PORT: ContainerPort = ContainerPort::Tcp(9000);
@@ -222,7 +220,13 @@ impl Image for StepCaImage {
     }
 
     fn ready_conditions(&self) -> Vec<WaitFor> {
-        vec![WaitFor::message_on_stderr("Serving HTTPS on :")]
+        if self.is_builder {
+            // This first waits for the message to appear on stderr, then for an additional second.
+            vec![WaitFor::message_on_stderr("Serving HTTPS on :"), WaitFor::seconds(1)]
+        } else {
+            // This waits for the healthcheck provided by the image to pass.
+            vec![WaitFor::healthcheck()]
+        }
     }
 
     fn env_vars(&self) -> impl IntoIterator<Item = (impl Into<Cow<'_, str>>, impl Into<Cow<'_, str>>)> {
