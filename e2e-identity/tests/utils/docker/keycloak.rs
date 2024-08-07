@@ -3,13 +3,12 @@ use std::process::Command;
 use std::sync::OnceLock;
 use std::{collections::HashMap, env, net::SocketAddr};
 
-use keycloak::types::JsonNode;
 use keycloak::{
     types::ProtocolMapperRepresentation,
     types::{ClientRepresentation, CredentialRepresentation, UserRepresentation},
     KeycloakAdmin, KeycloakAdminToken,
 };
-use serde_json::json;
+
 use testcontainers::core::{ContainerPort, IntoContainerPort, Mount};
 use testcontainers::runners::AsyncRunner;
 use testcontainers::{core::WaitFor, ContainerAsync, Image, ImageExt};
@@ -35,8 +34,8 @@ static KEYCLOAK_PORTS: OnceLock<[ContainerPort; 1]> = OnceLock::new();
 impl KeycloakImage {
     const NAME: &'static str = "wire-keycloak";
     const TAG: &'static str = "latest";
-    // has to match the version of Keycloak crate
-    const VERSION: &'static str = "22.0.5";
+    // Keep keycloak versions in sync (search for this comment to find all places to update)
+    const VERSION: &'static str = "25.0.2";
 
     pub const USER: &'static str = "admin";
     pub const PASSWORD: &'static str = "changeme";
@@ -152,7 +151,7 @@ impl KeycloakImage {
             component_cfg
                 .entry("allowed-protocol-mapper-types".to_string())
                 .and_modify(|e| {
-                    e.push(json!("oidc-claims-param-value-idtoken-mapper"));
+                    e.push("oidc-claims-param-value-idtoken-mapper".to_string());
                 });
         }
 
@@ -170,8 +169,8 @@ impl KeycloakImage {
         let scope_id = profile_scope.id.clone().unwrap();
         let keyauth_protocol_mapper = ProtocolMapperRepresentation {
             config: Some(HashMap::from_iter([
-                ("claim.name".to_string(), json!("keyauth")),
-                ("id.token.claim".to_string(), json!("true")),
+                ("claim.name".to_string(), "keyauth".to_string()),
+                ("id.token.claim".to_string(), "true".to_string()),
             ])),
             name: Some("wire-keyauth-id-token-mapper".to_string()),
             protocol: Some("openid-connect".to_string()),
@@ -179,13 +178,17 @@ impl KeycloakImage {
             ..Default::default()
         };
         admin
-            .realm_client_scopes_with_id_protocol_mappers_models_post(Self::REALM, &scope_id, keyauth_protocol_mapper)
+            .realm_client_scopes_with_client_scope_id_protocol_mappers_models_post(
+                Self::REALM,
+                &scope_id,
+                keyauth_protocol_mapper,
+            )
             .await
             .unwrap();
         let audience_protocol_mapper = ProtocolMapperRepresentation {
             config: Some(HashMap::from_iter([
-                ("claim.name".to_string(), json!("acme_aud")),
-                ("id.token.claim".to_string(), json!("true")),
+                ("claim.name".to_string(), "acme_aud".to_string()),
+                ("id.token.claim".to_string(), "true".to_string()),
             ])),
             name: Some("wire-acme-audience-id-token-mapper".to_string()),
             protocol: Some("openid-connect".to_string()),
@@ -193,7 +196,11 @@ impl KeycloakImage {
             ..Default::default()
         };
         admin
-            .realm_client_scopes_with_id_protocol_mappers_models_post(Self::REALM, &scope_id, audience_protocol_mapper)
+            .realm_client_scopes_with_client_scope_id_protocol_mappers_models_post(
+                Self::REALM,
+                &scope_id,
+                audience_protocol_mapper,
+            )
             .await
             .unwrap();
 
@@ -201,7 +208,7 @@ impl KeycloakImage {
         const EXECUTOR_NAME: &str = "wire-e2ei-claims-refresh";
         const CLIENT_PROFILE_NAME: &str = "wire-e2ei-claims-refresh-client-profile";
         let executor = keycloak::types::ClientPolicyExecutorRepresentation {
-            configuration: Some(JsonNode::default()),
+            configuration: Some(Default::default()),
             executor: Some(EXECUTOR_NAME.to_string()),
         };
         let client_profile = keycloak::types::ClientProfileRepresentation {
@@ -220,7 +227,7 @@ impl KeycloakImage {
 
         let condition = keycloak::types::ClientPolicyConditionRepresentation {
             condition: Some("any-client".to_string()),
-            configuration: Some(JsonNode::default()),
+            configuration: Some(Default::default()),
         };
 
         let client_policy = keycloak::types::ClientPolicyRepresentation {
@@ -232,6 +239,7 @@ impl KeycloakImage {
         };
         let client_policies = keycloak::types::ClientPoliciesRepresentation {
             policies: Some(vec![client_policy]),
+            global_policies: None,
         };
         admin
             .realm_client_policies_policies_put(Self::REALM, client_policies)
