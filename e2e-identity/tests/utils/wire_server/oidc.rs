@@ -1,11 +1,12 @@
-use hyper::{Body, Request, Response, StatusCode};
+use crate::utils::{ctx::*, fmk::GOOGLE_SND, wire_server::OauthCfg};
+use http_body_util::Full;
+use hyper::body::{Bytes, Incoming};
+use hyper::{Request, Response, StatusCode};
 use openidconnect::{
     core::{CoreAuthenticationFlow, CoreClient, CoreProviderMetadata},
     ClientSecret, CsrfToken, IssuerUrl, Nonce, PkceCodeChallenge, PkceCodeVerifier, RedirectUrl, Scope, TokenResponse,
 };
 use scraper::Html;
-
-use crate::utils::{ctx::*, fmk::GOOGLE_SND, wire_server::OauthCfg};
 
 #[derive(Debug, Clone, Default, serde::Serialize, serde::Deserialize, Eq, PartialEq)]
 pub struct Oidc {
@@ -14,7 +15,7 @@ pub struct Oidc {
     keyauth: String,
 }
 
-pub async fn handle_login(_req: Request<Body>) -> Result<Response<Body>, hyper::Error> {
+pub async fn handle_login(_req: Request<Incoming>) -> http::Result<Response<Full<Bytes>>> {
     let OauthCfg {
         issuer_uri,
         client_id,
@@ -53,8 +54,7 @@ pub async fn handle_login(_req: Request<Body>) -> Result<Response<Body>, hyper::
     Ok(Response::builder()
         .status(StatusCode::PERMANENT_REDIRECT)
         .header("location", auth_url.as_str())
-        .body(Body::empty())
-        .unwrap())
+        .body(Default::default())?)
 }
 
 pub fn scrap_login(html: String) -> String {
@@ -76,7 +76,7 @@ pub fn scrap_grant(html: String) -> String {
         .to_string()
 }
 
-pub async fn handle_callback(req: Request<Body>) -> Result<Response<Body>, hyper::Error> {
+pub async fn handle_callback(req: Request<Incoming>) -> http::Result<Response<Full<Bytes>>> {
     let req_uri = req.uri().clone();
     let req_uri: url::Url = format!("http://localhost{}", req_uri).parse().unwrap();
     let authorization_code = req_uri
@@ -93,7 +93,7 @@ pub async fn handle_callback(req: Request<Body>) -> Result<Response<Body>, hyper
     Ok(resp)
 }
 
-pub async fn handle_callback_google(mut req: Request<Body>) -> Result<Response<Body>, hyper::Error> {
+pub async fn handle_callback_google(mut req: Request<Incoming>) -> http::Result<Response<Full<Bytes>>> {
     let req_uri = req.uri().clone();
     let domain = ctx_get("domain").unwrap();
     let req_path = req.uri().path().trim_start_matches('/');
@@ -144,8 +144,7 @@ pub async fn handle_callback_google(mut req: Request<Body>) -> Result<Response<B
             let resp = Response::builder()
                 .status(StatusCode::TEMPORARY_REDIRECT)
                 .header("location", id_token_url)
-                .body(hyper::Body::empty())
-                .unwrap();
+                .body(Default::default())?;
             return Ok(resp);
         }
     }

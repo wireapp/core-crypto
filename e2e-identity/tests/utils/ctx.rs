@@ -8,6 +8,8 @@ use std::{
 };
 
 use base64::Engine;
+use http::Request;
+use hyper::body::Incoming;
 use itertools::Itertools;
 use reqwest::header::{HeaderMap, HeaderName, HeaderValue};
 
@@ -98,7 +100,7 @@ pub fn ctx_store_reqwest_request(key: &'static str, req: &reqwest::Request) {
     }
 }
 
-pub fn ctx_store_http_request(key: &'static str, req: &http::Request<hyper::body::Body>) {
+pub fn ctx_store_http_request(key: &'static str, req: &Request<Incoming>) {
     ctx_store(format!("{key}-request-method"), req.method().as_str());
     ctx_store(format!("{key}-request-uri"), req.uri().to_string());
     let headers = req

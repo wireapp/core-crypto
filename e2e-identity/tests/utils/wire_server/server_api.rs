@@ -1,6 +1,7 @@
 use base64::Engine;
-use hyper::{Body, Method, Request, Response, StatusCode};
-
+use http_body_util::Full;
+use hyper::body::{Bytes, Incoming};
+use hyper::{Method, Request, Response, StatusCode};
 use rusty_jwt_tools::prelude::*;
 
 use crate::utils::wire_server::oidc::handle_callback_google;
@@ -13,7 +14,7 @@ use crate::utils::{
 // simulates wire-server database
 static mut PREVIOUS_NONCE: &str = "";
 
-pub async fn wire_api(req: Request<Body>) -> Result<Response<Body>, hyper::Error> {
+pub async fn wire_api(req: Request<Incoming>) -> http::Result<Response<Full<Bytes>>> {
     let path = req.uri().path();
     let paths = path.split('/').filter(|p| !p.is_empty()).collect::<Vec<&str>>();
     let header = |k: &str| {
@@ -31,7 +32,9 @@ pub async fn wire_api(req: Request<Body>) -> Result<Response<Body>, hyper::Error
             unsafe {
                 PREVIOUS_NONCE = previous_nonce;
             }
-            Response::builder().status(StatusCode::OK).body(nonce.into()).unwrap()
+            Response::builder()
+                .status(StatusCode::OK)
+                .body(Full::new(nonce.into()))?
         }
         (&Method::POST, ["clients", device_id, "access-token"]) => {
             let dpop = header("dpop");
@@ -52,7 +55,7 @@ pub async fn wire_api(req: Request<Body>) -> Result<Response<Body>, hyper::Error
         (&Method::GET, ["login"]) => handle_login(req).await?,
         (&Method::GET, ["callback"]) => handle_callback(req).await?,
         (&Method::GET, ["callback-google"]) => handle_callback_google(req).await?,
-        _ => not_found(),
+        _ => not_found()?,
     })
 }
 
@@ -91,9 +94,8 @@ fn generate_access_token(dpop: &str, client_id: ClientId, nonce: BackendNonce) -
     })
 }
 
-fn not_found() -> Response<Body> {
-    Response::builder()
+fn not_found() -> http::Result<Response<Full<Bytes>>> {
+    Ok(Response::builder()
         .status(StatusCode::NOT_FOUND)
-        .body("".into())
-        .unwrap()
+        .body(Default::default())?)
 }

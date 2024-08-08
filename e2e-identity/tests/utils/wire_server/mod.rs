@@ -2,12 +2,10 @@ pub mod oidc;
 pub mod server_api;
 
 use crate::utils::ctx::{ctx_get, ctx_store};
-use hyper::service::{make_service_fn, service_fn};
+use hyper::server::conn::http1;
+use hyper_util::rt::TokioIo;
 use std::net::SocketAddr;
-use std::{
-    net::{TcpListener, TcpStream},
-    time::Duration,
-};
+use tokio::net::TcpListener;
 use tokio::task::LocalSet;
 
 #[derive(Debug, Clone)]
@@ -52,7 +50,7 @@ impl WireServer {
     }
 
     pub async fn run_on_port(port: u16) -> WireServer {
-        let listener = TcpListener::bind(format!("127.0.0.1:{port}")).unwrap();
+        let listener = TcpListener::bind(format!("127.0.0.1:{port}")).await.unwrap();
         let socket = listener.local_addr().unwrap();
         std::thread::spawn(move || {
             let server_future = run_server(listener);
@@ -63,21 +61,19 @@ impl WireServer {
             LocalSet::new().block_on(&runtime, server_future)
         });
 
-        // wait with backoff for tcp listener to be bound
-        let backoff = Duration::from_millis(25);
-        for _ in 0..40 {
-            if TcpStream::connect_timeout(&socket, backoff).is_ok() {
-                break;
-            }
-            tokio::time::sleep(backoff).await;
-        }
-
         Self { port, socket }
     }
 }
 
 async fn run_server(listener: TcpListener) {
-    let service = make_service_fn(|_| async { Ok::<_, std::io::Error>(service_fn(server_api::wire_api)) });
-    let server = hyper::Server::from_tcp(listener).unwrap();
-    server.serve(service).await.unwrap()
+    loop {
+        let (stream, _) = listener.accept().await.unwrap();
+        let io = TokioIo::new(stream);
+        tokio::spawn(async move {
+            let service = hyper::service::service_fn(server_api::wire_api);
+            if let Err(err) = http1::Builder::new().serve_connection(io, service).await {
+                eprintln!("server error: {}", err);
+            }
+        });
+    }
 }

@@ -2,7 +2,6 @@ use std::collections::{hash_map::RandomState, HashMap};
 
 use asserhttp::*;
 use base64::Engine;
-use http::StatusCode;
 use itertools::Itertools;
 use jwt_simple::prelude::*;
 use oauth2::{ClientSecret, CsrfToken, PkceCodeChallenge, RedirectUrl, RefreshToken, Scope};
@@ -10,6 +9,7 @@ use openidconnect::{
     core::{CoreAuthenticationFlow, CoreClient, CoreProviderMetadata},
     IssuerUrl, Nonce,
 };
+use reqwest::StatusCode;
 use serde_json::{json, Value};
 use url::Url;
 use x509_cert::der::{DecodePem, Encode};
@@ -693,9 +693,8 @@ impl E2eTest {
             .client
             .post(form_uri)
             .form(&form_body)
-            .header(http::header::COOKIE, cookies)
-            .build()
-            .unwrap();
+            .header(oauth2::http::header::COOKIE, cookies)
+            .build()?;
         let resp = self.client.execute(login_form_req).await.unwrap();
         let authz_code = resp.text().await.unwrap();
 
