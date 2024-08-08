@@ -60,6 +60,8 @@ testcontainers = { workspace = true }
 oauth2 = { workspace = true, features = ["reqwest"] }
 http = { workspace = true }
 keycloak = { workspace = true }
+http-body-util = "0.1"
+hyper-util = { version = "0.1", features = ["full"] }
 
 [target.'cfg(target_family = "wasm")'.dev-dependencies]
 rusty-acme = { version = "0.9.0", path = "../acme" }
