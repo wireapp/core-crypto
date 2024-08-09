@@ -55,7 +55,6 @@ reqwest = { workspace = true, features = ["json", "cookies"] }
 tokio = { workspace = true, features = ["macros"] }
 hyper = { workspace = true, features = ["server"] }
 native-tls = { workspace = true, features = ["vendored"] }
-asserhttp = { workspace = true, features = ["reqwest"] }
 testcontainers = { workspace = true }
 oauth2 = { workspace = true, features = ["reqwest"] }
 http = { workspace = true }
