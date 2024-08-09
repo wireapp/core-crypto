@@ -1,6 +1,3 @@
-use std::collections::{hash_map::RandomState, HashMap};
-
-use asserhttp::*;
 use base64::Engine;
 use itertools::Itertools;
 use jwt_simple::prelude::*;
@@ -11,9 +8,11 @@ use openidconnect::{
 };
 use reqwest::StatusCode;
 use serde_json::{json, Value};
+use std::collections::{hash_map::RandomState, HashMap};
 use url::Url;
 use x509_cert::der::{DecodePem, Encode};
 
+use http::header;
 use rusty_acme::prelude::*;
 use rusty_jwt_tools::{
     jwk::{TryFromJwk, TryIntoJwk},
@@ -100,7 +99,7 @@ impl E2eTest {
         self.display_step("get the ACME directory with links for newNonce, newAccount & newOrder");
         let mut resp = self.client.execute(req).await?;
         self.display_resp(Actor::AcmeServer, Actor::WireClient, Some(&resp));
-        resp.expect_status_ok().expect_content_type_json();
+        resp.expect_status(StatusCode::OK).expect_content_type_json();
         let resp = resp.json::<Value>().await?;
         let directory = RustyAcme::acme_directory_response(resp)?;
         self.display_body(&directory);
@@ -123,8 +122,8 @@ impl E2eTest {
         self.display_step("get a nonce for creating an account");
         let mut resp = self.client.execute(req).await?;
         self.display_resp(Actor::AcmeServer, Actor::WireClient, Some(&resp));
-        resp.expect_status_ok()
-            .expect_header("cache-control", "no-store")
+        resp.expect_status(StatusCode::OK)
+            .expect_header_value(header::CACHE_CONTROL, "no-store")
             .has_replay_nonce();
         let previous_nonce = resp.replay_nonce();
         self.display_str(&previous_nonce, false);
@@ -153,7 +152,6 @@ impl E2eTest {
         let mut resp = self.client.execute(req).await?;
         self.display_resp(Actor::AcmeServer, Actor::WireClient, Some(&resp));
 
-        // TODO: improve when asserhttp implements fallible errors
         if resp.status() != StatusCode::CREATED && resp.status() != StatusCode::OK {
             return Err(TestError::AccountCreationError);
         }
@@ -203,7 +201,7 @@ impl E2eTest {
         self.display_resp(Actor::AcmeServer, Actor::WireClient, Some(&resp));
         let previous_nonce = resp.replay_nonce();
         let order_url = resp.location_url();
-        resp.expect_status_created()
+        resp.expect_status(StatusCode::CREATED)
             .has_replay_nonce()
             .has_location()
             .expect_content_type_json();
@@ -242,12 +240,11 @@ impl E2eTest {
             self.display_resp(Actor::AcmeServer, Actor::WireClient, Some(&resp));
             let local_previous_nonce = resp.replay_nonce();
 
-            // TODO: improve when asserhttp implements fallible errors
             if resp.status() != StatusCode::OK {
                 return Err(TestError::AuthzCreationError);
             }
 
-            resp.expect_status_ok()
+            resp.expect_status(StatusCode::OK)
                 .has_replay_nonce()
                 .has_location()
                 .expect_content_type_json();
@@ -288,7 +285,7 @@ impl E2eTest {
         let mut resp = self.client.execute(req).await?;
 
         self.display_resp(Actor::WireServer, Actor::WireClient, Some(&resp));
-        resp.expect_status_ok();
+        resp.expect_status(StatusCode::OK);
         let backend_nonce: BackendNonce = resp.text().await?.into();
         self.display_str(&backend_nonce, false);
         Ok(backend_nonce)
@@ -369,7 +366,7 @@ impl E2eTest {
         let mut resp = self.client.execute(req).await.map_err(|_| TestError::WireServerError)?;
         // .expect("wire-server failed to generate an access token");
         self.display_resp(Actor::WireServer, Actor::WireClient, Some(&resp));
-        resp.expect_status_ok();
+        resp.expect_status(StatusCode::OK);
         let resp = resp.json::<Value>().await?;
         self.display_body(&resp);
         let access_token = resp
@@ -419,12 +416,11 @@ impl E2eTest {
         self.display_resp(Actor::AcmeServer, Actor::WireClient, Some(&resp));
         let previous_nonce = resp.replay_nonce();
 
-        // TODO: improve when asserhttp implements fallible errors
         if resp.status() != StatusCode::OK {
             return Err(TestError::DpopChallengeError);
         }
 
-        resp.expect_status_ok()
+        resp.expect_status(StatusCode::OK)
             .has_replay_nonce()
             .has_location()
             .expect_content_type_json();
@@ -471,12 +467,11 @@ impl E2eTest {
 
         // tokio::time::sleep(core::time::Duration::from_secs(10)).await;
 
-        // TODO: improve when asserhttp implements fallible errors
         if resp.status() != StatusCode::OK {
             return Err(TestError::OidcChallengeError);
         }
 
-        resp.expect_status_ok()
+        resp.expect_status(StatusCode::OK)
             .has_replay_nonce()
             .has_location()
             .expect_content_type_json();
@@ -693,7 +688,7 @@ impl E2eTest {
             .client
             .post(form_uri)
             .form(&form_body)
-            .header(oauth2::http::header::COOKIE, cookies)
+            .header(header::COOKIE, cookies)
             .build()?;
         let resp = self.client.execute(login_form_req).await.unwrap();
         let authz_code = resp.text().await.unwrap();
@@ -875,7 +870,7 @@ impl E2eTest {
         let mut resp = self.client.execute(req).await?;
         self.display_resp(Actor::AcmeServer, Actor::WireClient, Some(&resp));
         let previous_nonce = resp.replay_nonce();
-        resp.expect_status_ok()
+        resp.expect_status(StatusCode::OK)
             .has_replay_nonce()
             .has_location()
             .expect_content_type_json();
@@ -916,7 +911,7 @@ impl E2eTest {
 
         self.display_resp(Actor::AcmeServer, Actor::WireClient, Some(&resp));
         let previous_nonce = resp.replay_nonce();
-        resp.expect_status_ok()
+        resp.expect_status(StatusCode::OK)
             .has_replay_nonce()
             .has_location()
             .expect_content_type_json();
@@ -949,10 +944,10 @@ impl E2eTest {
         self.display_step("get the certificate chain");
         let mut resp = self.client.execute(req).await?;
         self.display_resp(Actor::AcmeServer, Actor::WireClient, Some(&resp));
-        resp.expect_status_ok()
+        resp.expect_status(StatusCode::OK)
             .has_replay_nonce()
-            .expect_header_absent("location")
-            .expect_header("content-type", "application/pem-certificate-chain");
+            .expect_header_absent(header::LOCATION)
+            .expect_header_value(header::CONTENT_TYPE, "application/pem-certificate-chain");
         let resp = resp.text().await?;
         self.display_body(&resp);
         let mut certificates = RustyAcme::certificate_response(resp, order, self.hash_alg, None)?;
