@@ -8,7 +8,7 @@ use std::{
 };
 
 use base64::Engine;
-use http::Request;
+use http::{Method, Request};
 use hyper::body::Incoming;
 use itertools::Itertools;
 use reqwest::header::{HeaderMap, HeaderName, HeaderValue};
@@ -46,20 +46,39 @@ pub async fn proxy_http_client(
     client: reqwest::Client,
     req: oauth2::HttpRequest,
 ) -> Result<oauth2::HttpResponse, oauth2::reqwest::Error<reqwest::Error>> {
-    let headers = req.headers.iter().filter_map(|(k, v)| {
-        let k = k.as_str().parse::<HeaderName>().ok();
-        let v = v.to_str().ok().and_then(|v| v.parse::<HeaderValue>().ok());
-        k.zip(v)
-    });
+    // Map oauth http headers to reqwest headers
+    let request_headers = req
+        .headers
+        .iter()
+        .map(|(k, v)| {
+            (
+                HeaderName::from_str(k.as_str()).unwrap(),
+                HeaderValue::from_str(v.to_str().unwrap()).unwrap(),
+            )
+        })
+        .collect();
 
+    // Now use the reqwest client
     let request = client
-        .request(req.method, req.url.as_str())
-        .headers(HeaderMap::from_iter(headers))
+        .request(Method::from_str(req.method.as_str()).unwrap(), req.url.as_str())
+        .headers(request_headers)
         .body(req.body);
     let response = request.send().await.unwrap();
+
+    // Map the reqwest headers back to oauth headers
+    let response_headers = response
+        .headers()
+        .iter()
+        .map(|(k, v)| {
+            (
+                oauth2::http::header::HeaderName::from_str(k.as_str()).unwrap(),
+                oauth2::http::header::HeaderValue::from_str(v.to_str().unwrap()).unwrap(),
+            )
+        })
+        .collect();
     Ok(oauth2::HttpResponse {
-        status_code: response.status(),
-        headers: response.headers().to_owned(),
+        status_code: oauth2::http::StatusCode::from_u16(response.status().as_u16()).unwrap(),
+        headers: response_headers,
         body: response.bytes().await.unwrap().to_vec(),
     })
 }
