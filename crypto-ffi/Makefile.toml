@@ -17,7 +17,7 @@ args = ["check"]
 
 [tasks.release-build]
 command = "cargo"
-args = ["build", "--release"]
+args = ["build", "--release", "--locked"]
 
 ##################################### DOCS ####################################
 
@@ -99,6 +99,7 @@ command = "wasm-pack"
 # env = { "WASM_BINDGEN_WEAKREF" = 1, "WASM_BINDGEN_EXTERNREF" = 1 }
 args = [
     "build",
+    "--locked",
     "--out-dir", "bindings/js/wasm",
     "--out-name", "core-crypto-ffi",
     "--mode", "normal",
@@ -122,6 +123,7 @@ dependencies = ["release-build"]
 command = "cargo"
 args = [
     "run",
+    "--locked",
     "--features", "uniffi/cli",
     "--bin", "uniffi-bindgen",
     "generate",
@@ -142,6 +144,7 @@ dependencies = ["release-build"]
 command = "cargo"
 args = [
     "run",
+    "--locked",
     "--features", "uniffi/cli",
     "--bin", "uniffi-bindgen",
     "generate",
@@ -173,7 +176,7 @@ plugin = "detect-release"
 dependencies = ["ffi-swift"]
 condition = { platforms = ["mac"] }
 command = "cargo"
-args = ["rustc", "--target", "aarch64-apple-ios", "--crate-type=cdylib", "--crate-type=staticlib", "--release", "--", "-C", "strip=symbols"]
+args = ["rustc", "--target", "aarch64-apple-ios", "--crate-type=cdylib", "--crate-type=staticlib", "--release", "--locked", "--", "-C", "strip=symbols"]
 
 [tasks.ios-simulator-x86]
 dependencies = ["ffi-swift"]
@@ -181,6 +184,7 @@ condition = { platforms = ["mac"] }
 command = "cargo"
 args = [
     "rustc",
+    "--locked",
     "--target", "x86_64-apple-ios",
     "--crate-type=cdylib",
     "--crate-type=staticlib",
@@ -197,6 +201,7 @@ condition = { platforms = ["mac"] }
 command = "cargo"
 args = [
     "rustc",
+    "--locked",
     "--target", "aarch64-apple-ios-sim",
     "--crate-type=cdylib",
     "--crate-type=staticlib",
@@ -227,6 +232,7 @@ plugin = "android-env"
 command = "cargo"
 args = [
     "rustc",
+    "--locked",
     "--target", "armv7-linux-androideabi",
     "--crate-type=cdylib",
     "--crate-type=staticlib",
@@ -240,6 +246,7 @@ dependencies = ["ffi-kotlin", "android-env"]
 command = "cargo"
 args = [
     "rustc",
+    "--locked",
     "--target", "aarch64-linux-android",
     "--crate-type=cdylib",
     "--crate-type=staticlib",
@@ -253,6 +260,7 @@ dependencies = ["ffi-kotlin", "android-env"]
 command = "cargo"
 args = [
     "rustc",
+    "--locked",
     "--target", "x86_64-linux-android",
     "--crate-type=cdylib",
     "--crate-type=staticlib",
@@ -268,6 +276,7 @@ dependencies = ["ffi-kotlin", "android-env"]
 command = "cargo"
 args = [
     "rustc",
+    "--locked",
     "--target", "i686-linux-android",
     "--crate-type=cdylib",
     "--crate-type=staticlib",
@@ -286,6 +295,7 @@ dependencies = ["android-armv7", "android-armv8", "android-x86", "android-i686"]
 command = "cargo"
 args = [
     "rustc",
+    "--locked",
     "--target", "x86_64-apple-darwin",
     "--crate-type=cdylib",
     "--crate-type=staticlib",
@@ -300,6 +310,7 @@ condition = { platforms = ["mac"] }
 command = "cargo"
 args = [
     "rustc",
+    "--locked",
     "--target", "aarch64-apple-darwin",
     "--crate-type=cdylib",
     "--crate-type=staticlib",
@@ -314,6 +325,7 @@ condition = { platforms = ["mac"] }
 command = "cargo"
 args = [
     "rustc",
+    "--locked",
     "--target", "x86_64-unknown-linux-gnu",
     "--crate-type=cdylib",
     "--crate-type=staticlib",
