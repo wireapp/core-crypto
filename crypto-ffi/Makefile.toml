@@ -273,7 +273,9 @@ args = [
     "--crate-type=staticlib",
     "--release",
     "--",
-    "-C", "strip=symbols"
+    "-C", "strip=symbols",
+    "-l", "static=clang_rt.builtins-i686-android",
+    "-L", "${CLANG_RT_DIR}"
 ]
 dependencies = ["ffi-kotlin", "android-env"]
 
