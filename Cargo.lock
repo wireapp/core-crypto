@@ -3771,9 +3771,9 @@ dependencies = [
 
 [[package]]
 name = "rexie"
-version = "0.6.1"
+version = "0.6.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1dc7b9e833b7e246d7f88952c666336eb57f7c7e715b1e4756cbfbcddd3a5816"
+checksum = "887466cfa8a12c08ee4b174998135cea8ff0fd84858627cd793e56535a045bc9"
 dependencies = [
  "idb",
  "thiserror",
