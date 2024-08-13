@@ -25,15 +25,15 @@ base64 = "0.22"
 bitflags = "2.6"
 cfg-if = "1.0"
 const_format = "0.2"
-core-crypto-keystore = { version = "1.0.1", path = "keystore" }
-core-crypto-attributes = { version = "1.0.1", path = "crypto-attributes" }
+core-crypto-keystore = { version = "^1.0.0", path = "keystore" }
+core-crypto-attributes = { version = "^1.0.0", path = "crypto-attributes" }
 derive_more = { version = "0.99", features = ["from", "into", "deref", "deref_mut"] }
 futures-util = "0.3"
 hex = "0.4"
 indexmap = "2"
 itertools = "0.13"
 log = "0.4"
-mls-crypto-provider = { version = "1.0.1", path = "mls-provider" }
+mls-crypto-provider = { version = "^1.0.0", path = "mls-provider" }
 pem = "3.0"
 rand = { version = "0.8", features = ["getrandom"] }
 rexie = "0.6.1"
@@ -59,7 +59,7 @@ openmls_traits = { git = "https://github.com/wireapp/openmls", rev = "6d2f5a2046
 openmls_basic_credential = { git = "https://github.com/wireapp/openmls", rev = "6d2f5a2046fc12aca602af207e650b94848f09ff", version = "0.2" }
 openmls_x509_credential = { git = "https://github.com/wireapp/openmls", rev = "6d2f5a2046fc12aca602af207e650b94848f09ff", version = "0.2" }
 
-wire-e2e-identity = { git = "https://github.com/wireapp/rusty-jwt-tools", rev = "98577c28d7b7bb1879fb77980566d5c2cfb0f06c", version = "0.9" }
+wire-e2e-identity = { git = "https://github.com/wireapp/rusty-jwt-tools", rev = "751f281ec75a6ae113584659b4b48940407c50f8", version = "0.9" }
 
 [patch.'https://github.com/wireapp/proteus'.proteus]
 package = "proteus"
