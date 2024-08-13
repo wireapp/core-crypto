@@ -24,11 +24,12 @@ uuid = { workspace = true, optional = true }
 x509-cert = { workspace = true, optional = true }
 const-oid = { workspace = true, optional = true }
 time = { workspace = true, optional = true }
-rcgen = { workspace = true, optional = true }
 rand = { workspace = true, optional = true }
+ed25519-dalek = { workspace = true, optional = true }
+signature = { workspace = true, optional = true }
 
 [dev-dependencies]
-wire-e2e-identity = { version = "0.9.0", path = ".", features = ["identity-builder"] }
+wire-e2e-identity = { version = "0.9.0", path = ".", features = ["builder"] }
 rusty-jwt-tools = { version = "0.9.0", path = "../jwt", features = ["test-utils", "rsa"] }
 rusty-jwt-cli = { version = "0.9.0", path = "../cli" }
 base64 = { workspace = true }
@@ -67,4 +68,4 @@ rusty-acme = { version = "0.9.0", path = "../acme" }
 
 [features]
 default = []
-identity-builder = ["dep:rcgen", "dep:uuid", "dep:rand", "dep:x509-cert", "dep:const-oid", "dep:time", "rusty-jwt-tools/test-utils"]
+builder = [ "dep:x509-cert", "rusty-jwt-tools/test-utils"]

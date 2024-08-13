@@ -11,8 +11,6 @@ use rusty_jwt_tools::{
     prelude::{ClientId, Dpop, Handle, Htm, Pem, RustyJwtTools},
 };
 
-#[cfg(feature = "identity-builder")]
-mod builder;
 mod error;
 mod types;
 
@@ -26,10 +24,7 @@ pub mod prelude {
         parse_json_jwk, ClientId as E2eiClientId, Handle, HashAlgorithm, JwsAlgorithm, RustyJwtError,
     };
 
-    #[cfg(feature = "identity-builder")]
-    pub use super::builder::*;
-
-    #[cfg(feature = "identity-builder")]
+    #[cfg(feature = "builder")]
     pub use rusty_jwt_tools::prelude::generate_jwk;
 
     pub use super::error::{E2eIdentityError, E2eIdentityResult};
