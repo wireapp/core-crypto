@@ -73,41 +73,25 @@ impl EntityBase for E2eiIntermediateCert {
     }
 
     async fn save(&self, conn: &mut Self::ConnectionType) -> crate::CryptoKeystoreResult<()> {
-        use rusqlite::OptionalExtension as _;
         use rusqlite::ToSql as _;
 
         Self::ConnectionType::check_buffer_size(self.content.len())?;
 
         let transaction = conn.transaction()?;
-        let existing_rowid = transaction
-            .query_row(
-                "SELECT rowid FROM e2ei_intermediate_certs WHERE ski_aki_pair = ?",
-                [self.ski_aki_pair.as_str()],
-                |r| r.get::<_, i64>(0),
-            )
-            .optional()?;
 
         let zb = rusqlite::blob::ZeroBlob(self.content.len() as i32);
 
-        let row_id = if let Some(row_id) = existing_rowid {
-            let params: [rusqlite::types::ToSqlOutput; 3] =
-                [self.ski_aki_pair.to_sql()?, zb.to_sql()?, row_id.to_sql()?];
+        // UPSERT (ON CONFLICT DO UPDATE) with RETURNING to get the rowid
+        let sql = "
+        INSERT INTO e2ei_intermediate_certs (ski_aki_pair, content)
+        VALUES (?, ?)
+        ON CONFLICT(ski_aki_pair) DO UPDATE SET content = excluded.content
+        RETURNING rowid";
 
-            transaction.execute(
-                "UPDATE e2ei_intermediate_certs SET ski_aki_pair = ?, content = ? WHERE rowid = ?",
-                params,
-            )?;
+        // Execute the UPSERT and get the row_id of the affected row
+        let row_id: i64 = transaction.query_row(sql, [self.ski_aki_pair.to_sql()?, zb.to_sql()?], |r| r.get(0))?;
 
-            row_id
-        } else {
-            let params: [rusqlite::types::ToSqlOutput; 2] = [self.ski_aki_pair.to_sql()?, zb.to_sql()?];
-            transaction.execute(
-                "INSERT INTO e2ei_intermediate_certs (ski_aki_pair, content) VALUES (?, ?)",
-                params,
-            )?;
-            transaction.last_insert_rowid()
-        };
-
+        // Open a blob to write the content data
         let mut blob = transaction.blob_open(
             rusqlite::DatabaseName::Main,
             "e2ei_intermediate_certs",
