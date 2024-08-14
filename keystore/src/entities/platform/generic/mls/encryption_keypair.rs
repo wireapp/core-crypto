@@ -14,6 +14,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see http://www.gnu.org/licenses/.
 
+use crate::entities::EntityIdStringExt;
 use crate::{
     connection::{DatabaseConnection, KeystoreDatabaseConnection},
     entities::{Entity, EntityBase, EntityFindParams, MlsEncryptionKeyPair, StringEntityId},
@@ -46,9 +47,9 @@ impl EntityBase for MlsEncryptionKeyPair {
 
         let mut stmt = transaction.prepare_cached(&query)?;
         let mut rows = stmt.query_map([], |r| r.get(0))?;
-        let entities = rows.try_fold(Vec::new(), |mut acc, rowid_result| {
+        let entities = rows.try_fold(Vec::new(), |mut acc, row_result| {
             use std::io::Read as _;
-            let rowid = rowid_result?;
+            let rowid = row_result?;
 
             let mut blob = transaction.blob_open(
                 rusqlite::DatabaseName::Main,
@@ -83,7 +84,7 @@ impl EntityBase for MlsEncryptionKeyPair {
     }
 
     async fn save(&self, conn: &mut Self::ConnectionType) -> crate::CryptoKeystoreResult<()> {
-        use rusqlite::OptionalExtension as _;
+        use rusqlite::ToSql as _;
 
         Self::ConnectionType::check_buffer_size(self.sk.len())?;
         Self::ConnectionType::check_buffer_size(self.pk.len())?;
@@ -92,28 +93,19 @@ impl EntityBase for MlsEncryptionKeyPair {
         let zb_sk = rusqlite::blob::ZeroBlob(self.sk.len() as i32);
 
         let transaction = conn.transaction()?;
-        let mut existing_rowid = transaction
-            .query_row(
-                "SELECT rowid FROM mls_encryption_keypairs WHERE pk = ?",
-                [&self.pk],
-                |r| r.get::<_, i64>(0),
-            )
-            .optional()?;
 
-        let row_id = if let Some(rowid) = existing_rowid.take() {
-            use rusqlite::ToSql as _;
-            transaction.execute(
-                "UPDATE mls_encryption_keypairs SET pk = ?, sk = ? WHERE rowid = ?",
-                [&zb_pk.to_sql()?, &zb_sk.to_sql()?, &rowid.to_sql()?],
-            )?;
-            rowid
-        } else {
-            use rusqlite::ToSql as _;
-            let params: [rusqlite::types::ToSqlOutput; 2] = [zb_pk.to_sql()?, zb_sk.to_sql()?];
+        // Use UPSERT (ON CONFLICT DO UPDATE)
+        let sql = "
+                INSERT INTO mls_encryption_keypairs (pk_sha256, pk, sk) 
+                VALUES (?, ?, ?) 
+                ON CONFLICT(pk_sha256) DO UPDATE SET pk = excluded.pk, sk = excluded.sk
+                RETURNING rowid";
 
-            transaction.execute("INSERT INTO mls_encryption_keypairs (pk, sk) VALUES (?, ?)", params)?;
-            transaction.last_insert_rowid()
-        };
+        let row_id: i64 = transaction.query_row(
+            sql,
+            [&self.id_sha256().to_sql()?, &zb_pk.to_sql()?, &zb_sk.to_sql()?],
+            |r| r.get(0),
+        )?;
 
         let mut blob = transaction.blob_open(
             rusqlite::DatabaseName::Main,
@@ -150,8 +142,8 @@ impl EntityBase for MlsEncryptionKeyPair {
         use rusqlite::OptionalExtension as _;
         let maybe_rowid = transaction
             .query_row(
-                "SELECT rowid FROM mls_encryption_keypairs WHERE pk = ?",
-                [id.as_slice()],
+                "SELECT rowid FROM mls_encryption_keypairs WHERE pk_sha256 = ?",
+                [id.sha256()],
                 |r| r.get::<_, i64>(0),
             )
             .optional()?;
@@ -196,7 +188,7 @@ impl EntityBase for MlsEncryptionKeyPair {
         let len = ids.len();
         let mut updated = 0;
         for id in ids {
-            updated += transaction.execute("DELETE FROM mls_encryption_keypairs WHERE pk = ?", [id.as_slice()])?;
+            updated += transaction.execute("DELETE FROM mls_encryption_keypairs WHERE pk_sha256 = ?", [id.sha256()])?;
         }
 
         if updated == len {
