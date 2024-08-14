@@ -588,10 +588,11 @@ dependencies = [
 [[package]]
 name = "cbor-codec"
 version = "0.7.1"
-source = "git+https://github.com/wireapp/proteus?branch=2.x#eff38af53a19093c3ea11cd1cf0e238432f5fbe6"
+source = "git+https://github.com/wireapp/proteus?branch=2.x#fca3639a0a0c1fc7b5c5ff499c26a25e3572073e"
 dependencies = [
  "byteorder",
  "half",
+ "rand",
 ]
 
 [[package]]
@@ -3508,7 +3509,7 @@ dependencies = [
 [[package]]
 name = "proteus-traits"
 version = "2.1.0"
-source = "git+https://github.com/wireapp/proteus?branch=2.x#eff38af53a19093c3ea11cd1cf0e238432f5fbe6"
+source = "git+https://github.com/wireapp/proteus?branch=2.x#fca3639a0a0c1fc7b5c5ff499c26a25e3572073e"
 dependencies = [
  "async-trait",
 ]
@@ -3516,7 +3517,7 @@ dependencies = [
 [[package]]
 name = "proteus-wasm"
 version = "2.1.0"
-source = "git+https://github.com/wireapp/proteus?branch=2.x#eff38af53a19093c3ea11cd1cf0e238432f5fbe6"
+source = "git+https://github.com/wireapp/proteus?branch=2.x#fca3639a0a0c1fc7b5c5ff499c26a25e3572073e"
 dependencies = [
  "cbor-codec 0.7.1 (git+https://github.com/wireapp/proteus?branch=2.x)",
  "chacha20",
