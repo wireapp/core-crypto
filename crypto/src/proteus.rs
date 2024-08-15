@@ -323,7 +323,7 @@ impl ProteusCentral {
             let pk = identity.pk_raw();
             // SAFETY: Byte lengths are ensured at the keystore level so this function is safe to call, despite being cursed
 
-            unsafe { IdentityKeyPair::from_raw_key_pair(*sk, *pk).map_err(ProteusError::from)? }
+            IdentityKeyPair::from_raw_key_pair(*sk, *pk).map_err(ProteusError::from)?
         } else {
             Self::create_identity(keystore).await?
         };
@@ -667,10 +667,10 @@ impl ProteusCentral {
         let prekey_dir = root_dir.join("prekeys");
 
         let mut identity = if let Some(store_kp) = keystore.find::<ProteusIdentity>(&[]).await? {
-            Some(unsafe {
+            Some(Box::new(
                 IdentityKeyPair::from_raw_key_pair(*store_kp.sk_raw(), *store_kp.pk_raw())
-                    .map_err(ProteusError::from)?
-            })
+                    .map_err(ProteusError::from)?,
+            ))
         } else {
             let identity_dir = root_dir.join("identities");
 
@@ -680,7 +680,7 @@ impl ProteusCentral {
             let identity_check = if legacy_identity.exists() {
                 let kp_cbor = async_fs::read(&legacy_identity).await?;
                 let kp = IdentityKeyPair::deserialise(&kp_cbor).map_err(ProteusError::from)?;
-                Some((kp, true))
+                Some((Box::new(kp), true))
             } else if identity.exists() {
                 let kp_cbor = async_fs::read(&identity).await?;
                 let kp = proteus_wasm::identity::Identity::deserialise(&kp_cbor).map_err(ProteusError::from)?;
@@ -716,6 +716,7 @@ impl ProteusCentral {
         let Some(identity) = identity.take() else {
             return Err(crate::CryptoboxMigrationError::IdentityNotFound(path.into()).into());
         };
+        let identity = *identity;
 
         use futures_lite::stream::StreamExt as _;
         // Session migration
@@ -823,10 +824,10 @@ impl ProteusCentral {
         }
 
         let mut proteus_identity = if let Some(store_kp) = keystore.find::<ProteusIdentity>(&[]).await? {
-            Some(unsafe {
+            Some(
                 proteus_wasm::keys::IdentityKeyPair::from_raw_key_pair(*store_kp.sk_raw(), *store_kp.pk_raw())
-                    .map_err(ProteusError::from)?
-            })
+                    .map_err(ProteusError::from)?,
+            )
         } else {
             let transaction = db
                 .transaction(&[local_identity_store_name], TransactionMode::ReadOnly)

@@ -134,7 +134,7 @@ async fn main() -> Result<()> {
         let identity = {
             let sk = proteus_identity.sk_raw();
             let pk = proteus_identity.pk_raw();
-            unsafe { proteus_wasm::keys::IdentityKeyPair::from_raw_key_pair(*sk, *pk)? }
+            proteus_wasm::keys::IdentityKeyPair::from_raw_key_pair(*sk, *pk)?
         };
         json_map.serialize_entry("proteus_identity", &identity)?;
 

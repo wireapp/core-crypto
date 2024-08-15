@@ -31,7 +31,5 @@ tls_codec.workspace = true
 chrono = { version = "0.4", default-features = false, features = ["clock", "std", "serde"] }
 
 [target.'cfg(not(target_family = "wasm"))'.dependencies.proteus-wasm]
-version = "2.1"
+workspace = true
 features = ["hazmat", "serde"]
-git = "https://github.com/wireapp/proteus"
-branch = "2.x"

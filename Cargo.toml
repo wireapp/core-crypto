@@ -59,19 +59,11 @@ openmls_traits = { git = "https://github.com/wireapp/openmls", rev = "6d2f5a2046
 openmls_basic_credential = { git = "https://github.com/wireapp/openmls", rev = "6d2f5a2046fc12aca602af207e650b94848f09ff", version = "0.2" }
 openmls_x509_credential = { git = "https://github.com/wireapp/openmls", rev = "6d2f5a2046fc12aca602af207e650b94848f09ff", version = "0.2" }
 
+# proteus
+proteus-traits = { git = "https://github.com/wireapp/proteus", tag = "v2.1.1" }
+proteus-wasm = { git = "https://github.com/wireapp/proteus", tag = "v2.1.1" }
+
 wire-e2e-identity = { git = "https://github.com/wireapp/rusty-jwt-tools", rev = "751f281ec75a6ae113584659b4b48940407c50f8", version = "0.9" }
-
-[patch.'https://github.com/wireapp/proteus'.proteus]
-package = "proteus"
-# Keep the extra / in the url, it prevents this error:
-# `patch for `proteus` in `https://github.com/wireapp/proteus` points to the same source, but patches must point to different sources`
-git = "https://github.com/wireapp//proteus"
-branch = "otak/fix-1.0.3"
-
-[patch.crates-io.proteus-traits]
-package = "proteus-traits"
-git = "https://github.com/wireapp/proteus"
-branch = "2.x"
 
 [profile.release]
 lto = true

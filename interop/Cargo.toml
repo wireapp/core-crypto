@@ -40,17 +40,12 @@ spinoff = { version = "0.8", features = ["aesthetic"], default-features = false 
 
 [target.'cfg(not(target_family = "wasm"))'.dependencies]
 cryptobox = { git = "https://github.com/wireapp/cryptobox", optional = true }
-proteus = { git = "https://github.com/wireapp//proteus", branch = "otak/fix-1.0.3", optional = true }
+proteus = { git = "https://github.com/wireapp/proteus", branch = "otak/fix-1.0.3", optional = true }
 tokio = { version = "1.38", features = ["full"] }
 # Http Server
 warp = { version = "0.3", default-features = false }
 # Webdriver stuff
 wasm-browser-run = { path = "../extras/wasm-browser-run" }
 fantoccini = "0.21"
+proteus-wasm = { workspace = true, optional = true }
 
-[dependencies.proteus-wasm]
-version = "2.1"
-features = ["hazmat"]
-optional = true
-git = "https://github.com/wireapp/proteus"
-branch = "2.x"

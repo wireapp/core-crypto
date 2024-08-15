@@ -49,12 +49,7 @@ openmls_basic_credential = { workspace = true, optional = true }
 openmls_x509_credential = { workspace = true, optional = true }
 serde = { workspace = true, features = ["derive"], optional = true }
 log = { workspace = true, optional = true }
-
-[dependencies.proteus-traits]
-optional = true
-package = "proteus-traits"
-git = "https://github.com/wireapp/proteus"
-branch = "2.x"
+proteus-traits = { workspace = true, optional = true }
 
 [target.'cfg(not(target_family = "wasm"))'.dependencies]
 async-fs = "2.1"
@@ -106,11 +101,7 @@ async-std = { workspace = true, features = ["attributes"] }
 futures-lite = "2.3"
 core-crypto-keystore = { path = ".", features = ["idb-regression-test", "log-queries"] }
 pretty_env_logger = "0.5"
-
-[dev-dependencies.proteus-wasm]
-version = "2.1"
-git = "https://github.com/wireapp/proteus"
-branch = "2.x"
+proteus-wasm = { workspace = true }
 
 [target.'cfg(not(target_family = "wasm"))'.dev-dependencies.criterion]
 version = "0.5"
