@@ -67,14 +67,14 @@ impl Entity for MlsPskBundle {
     }
 
     fn encrypt(&mut self, cipher: &aes_gcm::Aes256Gcm) -> CryptoKeystoreResult<()> {
-        self.psk = Self::encrypt_data(cipher, self.psk.as_slice(), self.aad())?;
+        self.psk = self.encrypt_data(cipher, self.psk.as_slice())?;
         Self::ConnectionType::check_buffer_size(self.psk.len())?;
 
         Ok(())
     }
 
     fn decrypt(&mut self, cipher: &aes_gcm::Aes256Gcm) -> CryptoKeystoreResult<()> {
-        self.psk = Self::decrypt_data(cipher, self.psk.as_slice(), self.aad())?;
+        self.psk = self.decrypt_data(cipher, self.psk.as_slice())?;
 
         Ok(())
     }

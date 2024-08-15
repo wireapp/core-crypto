@@ -83,14 +83,14 @@ impl Entity for MlsCredential {
     }
 
     fn encrypt(&mut self, cipher: &aes_gcm::Aes256Gcm) -> CryptoKeystoreResult<()> {
-        self.credential = Self::encrypt_data(cipher, self.credential.as_slice(), self.aad())?;
+        self.credential = self.encrypt_data(cipher, self.credential.as_slice())?;
         Self::ConnectionType::check_buffer_size(self.credential.len())?;
 
         Ok(())
     }
 
     fn decrypt(&mut self, cipher: &aes_gcm::Aes256Gcm) -> CryptoKeystoreResult<()> {
-        self.credential = Self::decrypt_data(cipher, self.credential.as_slice(), self.aad())?;
+        self.credential = self.decrypt_data(cipher, self.credential.as_slice())?;
 
         Ok(())
     }

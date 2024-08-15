@@ -67,14 +67,14 @@ impl Entity for MlsHpkePrivateKey {
     }
 
     fn encrypt(&mut self, cipher: &aes_gcm::Aes256Gcm) -> CryptoKeystoreResult<()> {
-        self.sk = Self::encrypt_data(cipher, self.sk.as_slice(), self.aad())?;
+        self.sk = self.encrypt_data(cipher, self.sk.as_slice())?;
         Self::ConnectionType::check_buffer_size(self.sk.len())?;
 
         Ok(())
     }
 
     fn decrypt(&mut self, cipher: &aes_gcm::Aes256Gcm) -> CryptoKeystoreResult<()> {
-        self.sk = Self::decrypt_data(cipher, self.sk.as_slice(), self.aad())?;
+        self.sk = self.decrypt_data(cipher, self.sk.as_slice())?;
 
         Ok(())
     }

@@ -67,14 +67,14 @@ impl Entity for MlsKeyPackage {
     }
 
     fn encrypt(&mut self, cipher: &aes_gcm::Aes256Gcm) -> CryptoKeystoreResult<()> {
-        self.keypackage = Self::encrypt_data(cipher, self.keypackage.as_slice(), self.aad())?;
+        self.keypackage = self.encrypt_data(cipher, self.keypackage.as_slice())?;
         Self::ConnectionType::check_buffer_size(self.keypackage.len())?;
 
         Ok(())
     }
 
     fn decrypt(&mut self, cipher: &aes_gcm::Aes256Gcm) -> CryptoKeystoreResult<()> {
-        self.keypackage = Self::decrypt_data(cipher, self.keypackage.as_slice(), self.aad())?;
+        self.keypackage = self.decrypt_data(cipher, self.keypackage.as_slice())?;
 
         Ok(())
     }
