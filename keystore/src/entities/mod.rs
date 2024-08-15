@@ -43,6 +43,8 @@ mod platform {
 pub use self::platform::*;
 
 use crate::connection::DatabaseConnection;
+#[cfg(target_family = "wasm")]
+use crate::connection::REXIE_VERSION;
 #[cfg(not(target_family = "wasm"))]
 use crate::sha256;
 use crate::{CryptoKeystoreError, CryptoKeystoreResult, MissingKeyErrorKind};
@@ -175,10 +177,22 @@ cfg_if::cfg_if! {
                 Ok(js_sys::Uint8Array::from(self.id_raw()).into())
             }
 
+            fn type_name() -> &'static [u8] {
+                let full_type_name = std::any::type_name::<Self>();
+                // Strip module path
+                let type_name = full_type_name.split("::").last().unwrap_or(full_type_name);
+                type_name.as_bytes()
+            }
+
             fn id_raw(&self) -> &[u8];
 
-            fn aad(&self) -> &[u8] {
-                self.id_raw()
+            fn aad(&self) -> CryptoKeystoreResult<Vec<u8>> {
+                let aad = Aad {
+                    db_version: REXIE_VERSION.get().map(|v| *v),
+                    type_name: Self::type_name().into(),
+                    id: self.id_raw().into(),
+                };
+                serde_json::to_vec(&aad).map_err(Into::into)
             }
             // About WASM Encryption:
             // The store key (i.e. passphrase) is hashed using SHA256 to obtain 32 bytes
