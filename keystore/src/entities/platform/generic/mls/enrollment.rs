@@ -65,42 +65,42 @@ impl EntityBase for E2eiEnrollment {
     }
 
     async fn save(&self, conn: &mut Self::ConnectionType) -> crate::CryptoKeystoreResult<()> {
-        use rusqlite::OptionalExtension as _;
         use rusqlite::ToSql as _;
 
         Self::ConnectionType::check_buffer_size(self.content.len())?;
 
         let transaction = conn.transaction()?;
-        let existing_rowid = transaction
-            .query_row("SELECT rowid FROM e2ei_enrollment WHERE id = ?", [&self.id], |r| {
-                r.get::<_, i64>(0)
-            })
-            .optional()?;
 
-        let row_id = if existing_rowid.is_some() {
-            return Err(CryptoKeystoreError::AlreadyExists);
-        } else {
-            let zb = rusqlite::blob::ZeroBlob(self.content.len() as i32);
-            let params: [rusqlite::types::ToSqlOutput; 2] = [self.id.to_sql()?, zb.to_sql()?];
-            transaction.execute("INSERT INTO e2ei_enrollment (id, content) VALUES (?, ?)", params)?;
-            transaction.last_insert_rowid()
-        };
+        // Attempt to insert directly, handling conflicts as errors
+        let zb = rusqlite::blob::ZeroBlob(self.content.len() as i32);
+        let sql = "INSERT INTO e2ei_enrollment (id, content) VALUES (?, ?) RETURNING rowid";
 
-        let mut blob = transaction.blob_open(
-            rusqlite::DatabaseName::Main,
-            "e2ei_enrollment",
-            "content",
-            row_id,
-            false,
-        )?;
+        let row_id_result: Result<i64, rusqlite::Error> =
+            transaction.query_row(sql, [self.id.to_sql()?, zb.to_sql()?], |r| r.get(0));
 
-        use std::io::Write as _;
-        blob.write_all(&self.content)?;
-        blob.close()?;
+        match row_id_result {
+            Ok(row_id) => {
+                // Open a blob to write the content data
+                let mut blob = transaction.blob_open(
+                    rusqlite::DatabaseName::Main,
+                    "e2ei_enrollment",
+                    "content",
+                    row_id,
+                    false,
+                )?;
 
-        transaction.commit()?;
+                use std::io::Write as _;
+                blob.write_all(&self.content)?;
+                blob.close()?;
 
-        Ok(())
+                transaction.commit()?;
+                Ok(())
+            }
+            Err(rusqlite::Error::SqliteFailure(e, _)) if e.extended_code == rusqlite::ffi::SQLITE_CONSTRAINT_UNIQUE => {
+                Err(CryptoKeystoreError::AlreadyExists)
+            }
+            Err(e) => Err(e.into()),
+        }
     }
 
     async fn find_one(
