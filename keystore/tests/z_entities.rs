@@ -146,6 +146,8 @@ mod tests_impl {
 #[cfg(test)]
 mod tests {
     use crate::common::*;
+    use crate::utils::EntityTestExt;
+    use core_crypto_keystore::{Connection, CryptoKeystoreError};
     use wasm_bindgen_test::*;
 
     wasm_bindgen_test_configure!(run_in_browser);
@@ -162,9 +164,11 @@ mod tests {
             test_for_entity!(test_mls_signature_keypair, MlsSignatureKeyPair ignore_update:true);
             test_for_entity!(test_mls_psk_bundle, MlsPskBundle);
             test_for_entity!(test_mls_encryption_keypair, MlsEncryptionKeyPair);
+            test_for_entity!(test_mls_epoch_encryption_keypair, MlsEpochEncryptionKeyPair);
             test_for_entity!(test_mls_hpke_private_key, MlsHpkePrivateKey);
             test_for_entity!(test_e2ei_intermediate_cert, E2eiIntermediateCert);
             test_for_entity!(test_e2ei_crl, E2eiCrl);
+            test_for_entity!(test_e2ei_enrollment, E2eiEnrollment ignore_update:true);
         }
     }
     cfg_if::cfg_if! {
@@ -173,6 +177,19 @@ mod tests {
             test_for_entity!(test_proteus_prekey, ProteusPrekey);
             test_for_entity!(test_proteus_session, ProteusSession);
         }
+    }
+    #[apply(all_storage_types)]
+    #[wasm_bindgen_test]
+    pub async fn update_e2ei_enrollment_emits_error(store: Connection) {
+        let store = store.await;
+
+        let mut entity = E2eiEnrollment::random();
+        store.save(entity.clone()).await.unwrap();
+        entity.random_update();
+        let error = store.save(entity).await.unwrap_err();
+        assert!(matches!(error, CryptoKeystoreError::AlreadyExists));
+
+        teardown(store).await;
     }
 }
 
@@ -539,6 +556,46 @@ pub mod utils {
                     let mut rng = rand::thread_rng();
                     self.content = vec![0; rng.gen_range(MAX_BLOB_SIZE)];
                     rng.fill(&mut self.content[..]);
+                }
+            }
+
+             impl EntityTestExt for core_crypto_keystore::entities::E2eiEnrollment {
+                fn random() -> Self {
+                    let mut rng = rand::thread_rng();
+
+                    let uuid = uuid::Uuid::new_v4();
+                    let id: Vec<u8> = uuid.into_bytes().into();
+                    let content = vec![0; rng.gen_range(MAX_BLOB_SIZE)];
+                    Self {
+                        id,
+                        content,
+                    }
+                }
+
+                fn random_update(&mut self) {
+                    let mut rng = rand::thread_rng();
+                    self.content = vec![0; rng.gen_range(MAX_BLOB_SIZE)];
+                    rng.fill(&mut self.content[..]);
+                }
+            }
+
+            impl EntityTestExt for core_crypto_keystore::entities::MlsEpochEncryptionKeyPair {
+                fn random() -> Self {
+                    let uuid = uuid::Uuid::new_v4();
+                    let id: Vec<u8> = uuid.into_bytes().into();
+
+                    let mut rng = rand::thread_rng();
+                    let keypairs = vec![0; rng.gen_range(MAX_BLOB_SIZE)];
+                    Self {
+                        id,
+                        keypairs,
+                    }
+                }
+
+                fn random_update(&mut self) {
+                    let mut rng = rand::thread_rng();
+                    self.keypairs = vec![0; rng.gen_range(MAX_BLOB_SIZE)];
+                    rng.fill(&mut self.keypairs[..]);
                 }
             }
         }
