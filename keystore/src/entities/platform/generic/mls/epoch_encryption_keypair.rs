@@ -14,12 +14,13 @@
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see http://www.gnu.org/licenses/.
 
-use crate::entities::MlsEpochEncryptionKeyPair;
+use crate::entities::{EntityIdStringExt, MlsEpochEncryptionKeyPair};
 use crate::{
     connection::{DatabaseConnection, KeystoreDatabaseConnection},
     entities::{Entity, EntityBase, EntityFindParams, StringEntityId},
     MissingKeyErrorKind,
 };
+use rusqlite::ToSql;
 use std::io::{Read, Write};
 
 impl Entity for MlsEpochEncryptionKeyPair {
@@ -43,25 +44,22 @@ impl EntityBase for MlsEpochEncryptionKeyPair {
         params: EntityFindParams,
     ) -> crate::CryptoKeystoreResult<Vec<Self>> {
         let transaction = conn.transaction()?;
-        let query: String = format!("SELECT rowid FROM mls_epoch_encryption_keypairs {}", params.to_sql());
+        let query: String = format!(
+            "SELECT rowid, id_hex FROM mls_epoch_encryption_keypairs {}",
+            params.to_sql()
+        );
 
         let mut stmt = transaction.prepare_cached(&query)?;
-        let mut rows = stmt.query_map([], |r| r.get(0))?;
-        let entities = rows.try_fold(Vec::new(), |mut acc, rowid_result| {
+        let mut rows = stmt.query_map([], |r| {
+            let rowid: i64 = r.get(0)?;
+            let id_hex: String = r.get(1)?;
+            Ok((rowid, id_hex))
+        })?;
+        let entities = rows.try_fold(Vec::new(), |mut acc, row_result| {
             use std::io::Read as _;
-            let rowid = rowid_result?;
+            let (rowid, id_hex) = row_result?;
 
-            let mut blob = transaction.blob_open(
-                rusqlite::DatabaseName::Main,
-                "mls_epoch_encryption_keypairs",
-                "id",
-                rowid,
-                true,
-            )?;
-
-            let mut id = vec![];
-            blob.read_to_end(&mut id)?;
-            blob.close()?;
+            let id = Self::id_from_hex(&id_hex)?;
 
             let mut blob = transaction.blob_open(
                 rusqlite::DatabaseName::Main,
@@ -84,51 +82,21 @@ impl EntityBase for MlsEpochEncryptionKeyPair {
     }
 
     async fn save(&self, conn: &mut Self::ConnectionType) -> crate::CryptoKeystoreResult<()> {
-        use rusqlite::OptionalExtension as _;
-
-        Self::ConnectionType::check_buffer_size(self.id.len())?;
         Self::ConnectionType::check_buffer_size(self.keypairs.len())?;
 
-        let zb_id = rusqlite::blob::ZeroBlob(self.id.len() as i32);
         let zb_keypairs = rusqlite::blob::ZeroBlob(self.keypairs.len() as i32);
 
         let transaction = conn.transaction()?;
-        let mut existing_rowid = transaction
-            .query_row(
-                "SELECT rowid FROM mls_epoch_encryption_keypairs WHERE id = ?",
-                [&self.id],
-                |r| r.get::<_, i64>(0),
-            )
-            .optional()?;
 
-        let row_id = if let Some(rowid) = existing_rowid.take() {
-            use rusqlite::ToSql as _;
-            transaction.execute(
-                "UPDATE mls_epoch_encryption_keypairs SET id = ?, keypairs = ? WHERE rowid = ?",
-                [&zb_id.to_sql()?, &zb_keypairs.to_sql()?, &rowid.to_sql()?],
-            )?;
-            rowid
-        } else {
-            use rusqlite::ToSql as _;
-            let params: [rusqlite::types::ToSqlOutput; 2] = [zb_id.to_sql()?, zb_keypairs.to_sql()?];
+        // Use UPSERT (ON CONFLICT DO UPDATE)
+        let sql = "
+            INSERT INTO mls_epoch_encryption_keypairs (id_hex, keypairs) 
+            VALUES (?, ?) 
+            ON CONFLICT(id_hex) DO UPDATE SET keypairs = excluded.keypairs
+            RETURNING rowid";
 
-            transaction.execute(
-                "INSERT INTO mls_epoch_encryption_keypairs (id, keypairs) VALUES (?, ?)",
-                params,
-            )?;
-            transaction.last_insert_rowid()
-        };
-
-        let mut blob = transaction.blob_open(
-            rusqlite::DatabaseName::Main,
-            "mls_epoch_encryption_keypairs",
-            "id",
-            row_id,
-            false,
-        )?;
-
-        blob.write_all(&self.id)?;
-        blob.close()?;
+        let row_id: i64 =
+            transaction.query_row(sql, [&self.id_hex().to_sql()?, &zb_keypairs.to_sql()?], |r| r.get(0))?;
 
         let mut blob = transaction.blob_open(
             rusqlite::DatabaseName::Main,
@@ -154,24 +122,14 @@ impl EntityBase for MlsEpochEncryptionKeyPair {
         use rusqlite::OptionalExtension as _;
         let maybe_rowid = transaction
             .query_row(
-                "SELECT rowid FROM mls_epoch_encryption_keypairs WHERE id = ?",
-                [id.as_slice()],
+                "SELECT rowid FROM mls_epoch_encryption_keypairs WHERE id_hex = ?",
+                [id.as_hex_string().to_sql()?],
                 |r| r.get::<_, i64>(0),
             )
             .optional()?;
 
         if let Some(rowid) = maybe_rowid {
-            let mut blob = transaction.blob_open(
-                rusqlite::DatabaseName::Main,
-                "mls_epoch_encryption_keypairs",
-                "id",
-                rowid,
-                true,
-            )?;
-
-            let mut id = Vec::with_capacity(blob.len());
-            blob.read_to_end(&mut id)?;
-            blob.close()?;
+            let id = id.as_slice().to_vec();
 
             let mut blob = transaction.blob_open(
                 rusqlite::DatabaseName::Main,
@@ -201,8 +159,8 @@ impl EntityBase for MlsEpochEncryptionKeyPair {
         let mut updated = 0;
         for id in ids {
             updated += transaction.execute(
-                "DELETE FROM mls_epoch_encryption_keypairs WHERE id = ?",
-                [id.as_slice()],
+                "DELETE FROM mls_epoch_encryption_keypairs WHERE id_hex = ?",
+                [id.as_hex_string()],
             )?;
         }
 
