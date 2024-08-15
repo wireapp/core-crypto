@@ -65,45 +65,32 @@ impl EntityBase for ProteusSession {
     }
 
     async fn save(&self, conn: &mut Self::ConnectionType) -> crate::CryptoKeystoreResult<()> {
-        use rusqlite::OptionalExtension as _;
         use rusqlite::ToSql as _;
 
         let session_id = &self.id;
         let session = &self.session;
-        let transaction = conn.transaction()?;
-
-        let id_bytes = &self.id;
 
         Self::ConnectionType::check_buffer_size(session.len())?;
-        Self::ConnectionType::check_buffer_size(id_bytes.len())?;
+        Self::ConnectionType::check_buffer_size(session_id.len())?;
 
         let zb = rusqlite::blob::ZeroBlob(session.len() as i32);
 
-        let rowid: i64 = if let Some(rowid) = transaction
-            .query_row("SELECT rowid FROM proteus_sessions WHERE id = ?", [session_id], |r| {
-                r.get::<_, i64>(0)
-            })
-            .optional()?
-        {
-            transaction.execute(
-                "UPDATE proteus_sessions SET session = ? WHERE rowid = ?",
-                [zb.to_sql()?, rowid.to_sql()?],
-            )?;
+        let transaction = conn.transaction()?;
 
-            rowid
-        } else {
-            transaction.execute(
-                "INSERT INTO proteus_sessions (id, session) VALUES(?, ?)",
-                [&session_id.to_sql()?, &zb.to_sql()?],
-            )?;
-            transaction.last_insert_rowid()
-        };
+        // Use UPSERT (ON CONFLICT DO UPDATE)
+        let sql = "
+        INSERT INTO proteus_sessions (id, session) 
+        VALUES (?, ?) 
+        ON CONFLICT(id) DO UPDATE SET session = excluded.session
+        RETURNING rowid";
+
+        let row_id: i64 = transaction.query_row(sql, [&session_id.to_sql()?, &zb.to_sql()?], |r| r.get(0))?;
 
         let mut blob = transaction.blob_open(
             rusqlite::DatabaseName::Main,
             "proteus_sessions",
             "session",
-            rowid,
+            row_id,
             false,
         )?;
         use std::io::Write as _;
