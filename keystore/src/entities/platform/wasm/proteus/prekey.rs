@@ -66,14 +66,14 @@ impl Entity for ProteusPrekey {
     }
 
     fn encrypt(&mut self, cipher: &aes_gcm::Aes256Gcm) -> CryptoKeystoreResult<()> {
-        self.prekey = Self::encrypt_data(cipher, self.prekey.as_slice(), self.aad())?;
+        self.prekey = Self::encrypt_data(cipher, self.prekey.as_slice(), &self.aad()?)?;
         Self::ConnectionType::check_buffer_size(self.prekey.len())?;
 
         Ok(())
     }
 
     fn decrypt(&mut self, cipher: &aes_gcm::Aes256Gcm) -> CryptoKeystoreResult<()> {
-        self.prekey = Self::decrypt_data(cipher, self.prekey.as_slice(), self.aad())?;
+        self.prekey = Self::decrypt_data(cipher, self.prekey.as_slice(), &self.aad()?)?;
 
         Ok(())
     }

@@ -62,18 +62,14 @@ impl Entity for MlsPendingMessage {
         Ok(js_sys::Uint8Array::from(self.id.as_slice()).into())
     }
 
-    fn aad(&self) -> &[u8] {
-        self.id.as_slice()
-    }
-
     fn encrypt(&mut self, cipher: &aes_gcm::Aes256Gcm) -> CryptoKeystoreResult<()> {
-        self.message = Self::encrypt_data(cipher, self.message.as_slice(), self.aad())?;
+        self.message = Self::encrypt_data(cipher, self.message.as_slice(), &self.aad()?)?;
 
         Ok(())
     }
 
     fn decrypt(&mut self, cipher: &aes_gcm::Aes256Gcm) -> CryptoKeystoreResult<()> {
-        self.message = Self::decrypt_data(cipher, self.message.as_slice(), self.aad())?;
+        self.message = Self::decrypt_data(cipher, self.message.as_slice(), &self.aad()?)?;
 
         Ok(())
     }

@@ -62,13 +62,13 @@ impl Entity for E2eiAcmeCA {
     }
 
     fn encrypt(&mut self, cipher: &aes_gcm::Aes256Gcm) -> CryptoKeystoreResult<()> {
-        self.content = Self::encrypt_data(cipher, self.content.as_slice(), self.aad())?;
+        self.content = Self::encrypt_data(cipher, self.content.as_slice(), &self.aad()?)?;
         Self::ConnectionType::check_buffer_size(self.content.len())?;
         Ok(())
     }
 
     fn decrypt(&mut self, cipher: &aes_gcm::Aes256Gcm) -> CryptoKeystoreResult<()> {
-        self.content = Self::decrypt_data(cipher, self.content.as_slice(), self.aad())?;
+        self.content = Self::decrypt_data(cipher, self.content.as_slice(), &self.aad()?)?;
         Ok(())
     }
 }

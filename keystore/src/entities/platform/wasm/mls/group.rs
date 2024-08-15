@@ -79,14 +79,14 @@ impl Entity for PersistedMlsGroup {
     }
 
     fn encrypt(&mut self, cipher: &aes_gcm::Aes256Gcm) -> CryptoKeystoreResult<()> {
-        self.state = Self::encrypt_data(cipher, self.state.as_slice(), self.aad())?;
+        self.state = Self::encrypt_data(cipher, self.state.as_slice(), &self.aad()?)?;
         Self::ConnectionType::check_buffer_size(self.state.len())?;
 
         Ok(())
     }
 
     fn decrypt(&mut self, cipher: &aes_gcm::Aes256Gcm) -> CryptoKeystoreResult<()> {
-        self.state = Self::decrypt_data(cipher, self.state.as_slice(), self.aad())?;
+        self.state = Self::decrypt_data(cipher, self.state.as_slice(), &self.aad()?)?;
 
         Ok(())
     }
@@ -158,18 +158,14 @@ impl Entity for PersistedMlsPendingGroup {
         Ok(js_sys::Uint8Array::from(self.id.as_slice()).into())
     }
 
-    fn aad(&self) -> &[u8] {
-        self.id.as_slice()
-    }
-
     fn encrypt(&mut self, cipher: &aes_gcm::Aes256Gcm) -> CryptoKeystoreResult<()> {
-        self.state = Self::encrypt_data(cipher, self.state.as_slice(), self.aad())?;
+        self.state = Self::encrypt_data(cipher, self.state.as_slice(), &self.aad()?)?;
 
         Ok(())
     }
 
     fn decrypt(&mut self, cipher: &aes_gcm::Aes256Gcm) -> CryptoKeystoreResult<()> {
-        self.state = Self::decrypt_data(cipher, self.state.as_slice(), self.aad())?;
+        self.state = Self::decrypt_data(cipher, self.state.as_slice(), &self.aad()?)?;
 
         Ok(())
     }

@@ -66,14 +66,14 @@ impl Entity for ProteusSession {
     }
 
     fn encrypt(&mut self, cipher: &aes_gcm::Aes256Gcm) -> CryptoKeystoreResult<()> {
-        self.session = Self::encrypt_data(cipher, self.session.as_slice(), self.aad())?;
+        self.session = Self::encrypt_data(cipher, self.session.as_slice(), &self.aad()?)?;
         Self::ConnectionType::check_buffer_size(self.session.len())?;
 
         Ok(())
     }
 
     fn decrypt(&mut self, cipher: &aes_gcm::Aes256Gcm) -> CryptoKeystoreResult<()> {
-        self.session = Self::decrypt_data(cipher, self.session.as_slice(), self.aad())?;
+        self.session = Self::decrypt_data(cipher, self.session.as_slice(), &self.aad()?)?;
 
         Ok(())
     }

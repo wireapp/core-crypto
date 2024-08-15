@@ -70,18 +70,18 @@ impl Entity for ProteusIdentity {
     }
 
     fn encrypt(&mut self, cipher: &aes_gcm::Aes256Gcm) -> CryptoKeystoreResult<()> {
-        self.pk = Self::encrypt_data(cipher, self.pk.as_slice(), self.aad())?;
+        self.pk = Self::encrypt_data(cipher, self.pk.as_slice(), &self.aad()?)?;
         Self::ConnectionType::check_buffer_size(self.pk.len())?;
 
-        self.sk = Self::encrypt_data(cipher, self.sk.as_slice(), self.aad())?;
+        self.sk = Self::encrypt_data(cipher, self.sk.as_slice(), &self.aad()?)?;
         Self::ConnectionType::check_buffer_size(self.sk.len())?;
 
         Ok(())
     }
 
     fn decrypt(&mut self, cipher: &aes_gcm::Aes256Gcm) -> CryptoKeystoreResult<()> {
-        self.pk = Self::decrypt_data(cipher, self.pk.as_slice(), self.aad())?;
-        self.sk = Self::decrypt_data(cipher, self.sk.as_slice(), self.aad())?;
+        self.pk = Self::decrypt_data(cipher, self.pk.as_slice(), &self.aad()?)?;
+        self.sk = Self::decrypt_data(cipher, self.sk.as_slice(), &self.aad()?)?;
 
         Ok(())
     }
