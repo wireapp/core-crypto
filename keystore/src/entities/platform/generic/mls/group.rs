@@ -14,10 +14,11 @@
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see http://www.gnu.org/licenses/.
 
+use crate::entities::EntityIdStringExt;
 use crate::{
     connection::{DatabaseConnection, KeystoreDatabaseConnection},
     entities::{Entity, EntityBase, EntityFindParams, PersistedMlsGroup, PersistedMlsGroupExt, StringEntityId},
-    CryptoKeystoreError, CryptoKeystoreResult, MissingKeyErrorKind,
+    CryptoKeystoreResult, MissingKeyErrorKind,
 };
 
 impl Entity for PersistedMlsGroup {
@@ -41,18 +42,19 @@ impl EntityBase for PersistedMlsGroup {
         params: EntityFindParams,
     ) -> crate::CryptoKeystoreResult<Vec<Self>> {
         let transaction = conn.transaction()?;
-        let query: String = format!("SELECT rowid FROM mls_groups {}", params.to_sql());
+        let query: String = format!("SELECT rowid, id_hex FROM mls_groups {}", params.to_sql());
 
         let mut stmt = transaction.prepare_cached(&query)?;
-        let mut rows = stmt.query_map([], |r| r.get(0))?;
-        let entities = rows.try_fold(Vec::new(), |mut acc, rowid_result| {
+        let mut rows = stmt.query_map([], |r| {
+            let rowid: i64 = r.get(0)?;
+            let id_hex: String = r.get(1)?;
+            Ok((rowid, id_hex))
+        })?;
+        let entities = rows.try_fold(Vec::new(), |mut acc, row_result| {
             use std::io::Read as _;
-            let rowid = rowid_result?;
+            let (rowid, id_hex) = row_result?;
 
-            let mut blob = transaction.blob_open(rusqlite::DatabaseName::Main, "mls_groups", "id", rowid, true)?;
-            let mut id = vec![];
-            blob.read_to_end(&mut id)?;
-            blob.close()?;
+            let id = Self::id_from_hex(&id_hex)?;
 
             let mut blob = transaction.blob_open(rusqlite::DatabaseName::Main, "mls_groups", "state", rowid, true)?;
             let mut state = vec![];
@@ -79,50 +81,30 @@ impl EntityBase for PersistedMlsGroup {
     }
 
     async fn save(&self, conn: &mut Self::ConnectionType) -> crate::CryptoKeystoreResult<()> {
-        use rusqlite::OptionalExtension as _;
         use rusqlite::ToSql as _;
 
-        let group_id = &self.id;
         let state = &self.state;
         let parent_id = self.parent_id.as_ref();
+
         let transaction = conn.transaction()?;
 
-        let id_bytes = self.id.as_slice();
-
         Self::ConnectionType::check_buffer_size(state.len())?;
-        Self::ConnectionType::check_buffer_size(id_bytes.len())?;
         Self::ConnectionType::check_buffer_size(parent_id.map(Vec::len).unwrap_or_default())?;
 
         let zbs = rusqlite::blob::ZeroBlob(state.len() as i32);
         let zbpid = rusqlite::blob::ZeroBlob(parent_id.map(Vec::len).unwrap_or_default() as i32);
-        let zid = rusqlite::blob::ZeroBlob(id_bytes.len() as i32);
 
-        let rowid: i64 = if let Some(rowid) = transaction
-            .query_row("SELECT rowid FROM mls_groups WHERE id = ?", [group_id], |r| {
-                r.get::<_, i64>(0)
-            })
-            .optional()?
-        {
-            transaction.execute(
-                "UPDATE mls_groups SET state = ?, parent_id = ? WHERE rowid = ?",
-                [zbs.to_sql()?, zbpid.to_sql()?, rowid.to_sql()?],
-            )?;
+        // Use UPSERT (ON CONFLICT DO UPDATE)
+        let sql = "
+        INSERT INTO mls_groups (id_hex, state, parent_id) 
+        VALUES (?, ?, ?) 
+        ON CONFLICT(id_hex) DO UPDATE SET state = excluded.state, parent_id = excluded.parent_id
+        RETURNING rowid";
 
-            rowid
-        } else {
-            transaction.execute(
-                "INSERT INTO mls_groups (id, state, parent_id) VALUES(?, ?, ?)",
-                [&zid.to_sql()?, &zbs.to_sql()?, &zbpid.to_sql()?],
-            )?;
-            let rowid = transaction.last_insert_rowid();
-
-            let mut blob = transaction.blob_open(rusqlite::DatabaseName::Main, "mls_groups", "id", rowid, false)?;
-            use std::io::Write as _;
-            blob.write_all(id_bytes)?;
-            blob.close()?;
-
-            rowid
-        };
+        let rowid: i64 =
+            transaction.query_row(sql, [&self.id_hex().to_sql()?, &zbs.to_sql()?, &zbpid.to_sql()?], |r| {
+                r.get(0)
+            })?;
 
         let mut blob = transaction.blob_open(rusqlite::DatabaseName::Main, "mls_groups", "state", rowid, false)?;
         use std::io::Write as _;
@@ -147,19 +129,17 @@ impl EntityBase for PersistedMlsGroup {
         use rusqlite::OptionalExtension as _;
         let transaction = conn.transaction()?;
         let mut rowid: Option<i64> = transaction
-            .query_row("SELECT rowid FROM mls_groups WHERE id = ?", [id.as_slice()], |r| {
-                r.get::<_, i64>(0)
-            })
+            .query_row(
+                "SELECT rowid FROM mls_groups WHERE id_hex = ?",
+                [id.as_hex_string()],
+                |r| r.get::<_, i64>(0),
+            )
             .optional()?;
 
         if let Some(rowid) = rowid.take() {
+            let id = id.as_slice().to_vec();
+
             use std::io::Read as _;
-
-            let mut blob = transaction.blob_open(rusqlite::DatabaseName::Main, "mls_groups", "id", rowid, true)?;
-            let mut id = Vec::with_capacity(blob.len());
-            blob.read_to_end(&mut id)?;
-            blob.close()?;
-
             let mut blob = transaction.blob_open(rusqlite::DatabaseName::Main, "mls_groups", "state", rowid, true)?;
             let mut state = Vec::with_capacity(blob.len());
             blob.read_to_end(&mut state)?;
@@ -188,52 +168,7 @@ impl EntityBase for PersistedMlsGroup {
         _ids: &[StringEntityId],
     ) -> crate::CryptoKeystoreResult<Vec<Self>> {
         // Plot twist: we always select ALL the persisted groups. Unsure if we want to make it a real API with selection
-        let mut stmt = conn.prepare_cached("SELECT rowid FROM mls_groups ORDER BY rowid ASC")?;
-        let rowids: Vec<i64> = stmt
-            .query_map([], |r| r.get(0))?
-            .map(|r| r.map_err(CryptoKeystoreError::from))
-            .collect::<crate::CryptoKeystoreResult<_>>()?;
-
-        drop(stmt);
-
-        if rowids.is_empty() {
-            return Ok(Default::default());
-        }
-
-        let transaction = conn.transaction()?;
-
-        let mut res = Vec::with_capacity(rowids.len());
-        for rowid in rowids.into_iter() {
-            use std::io::Read as _;
-
-            let mut blob = transaction.blob_open(rusqlite::DatabaseName::Main, "mls_groups", "id", rowid, true)?;
-            let mut id = Vec::with_capacity(blob.len());
-            blob.read_to_end(&mut id)?;
-            blob.close()?;
-
-            let mut blob = transaction.blob_open(rusqlite::DatabaseName::Main, "mls_groups", "state", rowid, true)?;
-            let mut state = Vec::with_capacity(blob.len());
-            blob.read_to_end(&mut state)?;
-            blob.close()?;
-
-            let mut parent_id = None;
-            if let Ok(mut blob) =
-                transaction.blob_open(rusqlite::DatabaseName::Main, "mls_groups", "parent_id", rowid, true)
-            {
-                if !blob.is_empty() {
-                    let mut tmp = Vec::with_capacity(blob.len());
-                    blob.read_to_end(&mut tmp)?;
-                    parent_id.replace(tmp);
-                }
-                blob.close()?;
-            }
-
-            res.push(Self { id, parent_id, state });
-        }
-
-        transaction.commit()?;
-
-        Ok(res)
+        Self::find_all(conn, EntityFindParams::default()).await
     }
 
     async fn count(conn: &mut Self::ConnectionType) -> crate::CryptoKeystoreResult<usize> {
@@ -245,7 +180,7 @@ impl EntityBase for PersistedMlsGroup {
         let len = ids.len();
         let mut updated = 0;
         for id in ids {
-            updated += transaction.execute("DELETE FROM mls_groups WHERE id = ?", [id.as_slice()])?;
+            updated += transaction.execute("DELETE FROM mls_groups WHERE id_hex = ?", [id.as_hex_string()])?;
         }
 
         if updated == len {
