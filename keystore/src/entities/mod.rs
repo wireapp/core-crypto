@@ -210,13 +210,13 @@ cfg_if::cfg_if! {
                 Ok(message)
             }
 
-            fn encrypt_data(cipher: &aes_gcm::Aes256Gcm, data: &[u8], aad: &[u8]) -> CryptoKeystoreResult<Vec<u8>> {
+            fn encrypt_data(&self, cipher: &aes_gcm::Aes256Gcm, data: &[u8]) -> CryptoKeystoreResult<Vec<u8>> {
                 let nonce_bytes: [u8; AES_GCM_256_NONCE_SIZE] = rand::random();
-                Self::encrypt_with_nonce_and_aad(cipher, data, &nonce_bytes, aad)
+                Self::encrypt_with_nonce_and_aad(cipher, data, &nonce_bytes, &self.aad()?)
             }
 
             fn decrypt(&mut self, cipher: &aes_gcm::Aes256Gcm) -> CryptoKeystoreResult<()>;
-            fn decrypt_data(cipher: &aes_gcm::Aes256Gcm, data: &[u8], aad: &[u8]) -> CryptoKeystoreResult<Vec<u8>> {
+            fn decrypt_data(&self, cipher: &aes_gcm::Aes256Gcm, data: &[u8]) -> CryptoKeystoreResult<Vec<u8>> {
                 use aes_gcm::aead::Aead as _;
 
                 if data.is_empty() {
@@ -229,6 +229,7 @@ cfg_if::cfg_if! {
                 let nonce_bytes = &data[..AES_GCM_256_NONCE_SIZE];
                 let nonce = aes_gcm::Nonce::from_slice(nonce_bytes);
                 let msg = &data[AES_GCM_256_NONCE_SIZE..];
+                let aad = &self.aad()?;
                 let payload = aes_gcm::aead::Payload {
                     msg,
                     aad,
