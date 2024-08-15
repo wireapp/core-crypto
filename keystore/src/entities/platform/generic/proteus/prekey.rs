@@ -20,7 +20,6 @@ use crate::{
     entities::{Entity, EntityBase},
     MissingKeyErrorKind,
 };
-use rusqlite::OptionalExtension;
 
 impl Entity for ProteusPrekey {
     fn id_raw(&self) -> &[u8] {
@@ -100,36 +99,26 @@ impl EntityBase for ProteusPrekey {
     }
 
     async fn save(&self, conn: &mut Self::ConnectionType) -> crate::CryptoKeystoreResult<()> {
-        let transaction = conn.transaction()?;
-
         use rusqlite::ToSql as _;
 
-        let mut existing_rowid = transaction
-            .query_row("SELECT rowid FROM proteus_prekeys WHERE id = ?", [self.id], |r| {
-                r.get::<_, i64>(0)
-            })
-            .optional()?;
+        let transaction = conn.transaction()?;
 
-        let row_id = if let Some(rowid) = existing_rowid.take() {
-            let zb = rusqlite::blob::ZeroBlob(self.prekey.len() as i32);
-            transaction.execute(
-                "UPDATE proteus_prekeys SET key = ? WHERE rowid = ?",
-                [zb.to_sql()?, rowid.to_sql()?],
-            )?;
+        // Use UPSERT (ON CONFLICT DO UPDATE)
+        let sql = "
+        INSERT INTO proteus_prekeys (id, key) 
+        VALUES (?, ?) 
+        ON CONFLICT(id) DO UPDATE SET key = excluded.key
+        RETURNING rowid";
 
-            rowid
-        } else {
-            transaction.execute(
-                "INSERT INTO proteus_prekeys (id, key) VALUES (?, ?)",
-                [
-                    self.id.to_sql()?,
-                    rusqlite::blob::ZeroBlob(self.prekey.len() as i32).to_sql()?,
-                ],
-            )?;
-            transaction.last_insert_rowid()
-        };
+        // Create a zeroed blob for the key
+        let zb_key = rusqlite::blob::ZeroBlob(self.prekey.len() as i32);
 
+        // Execute the UPSERT and get the row_id of the affected row
+        let row_id: i64 = transaction.query_row(sql, [self.id.to_sql()?, zb_key.to_sql()?], |r| r.get(0))?;
+
+        // Write the actual prekey data into the blob
         let mut blob = transaction.blob_open(rusqlite::DatabaseName::Main, "proteus_prekeys", "key", row_id, false)?;
+
         use std::io::Write as _;
         blob.write_all(&self.prekey)?;
         blob.close()?;
