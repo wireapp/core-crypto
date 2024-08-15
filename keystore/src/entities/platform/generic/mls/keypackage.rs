@@ -14,12 +14,14 @@
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see http://www.gnu.org/licenses/.
 
+use crate::entities::EntityIdStringExt;
 use crate::{
     connection::{DatabaseConnection, KeystoreDatabaseConnection},
     entities::{Entity, EntityBase, EntityFindParams, MlsKeyPackage, StringEntityId},
     MissingKeyErrorKind,
 };
-use std::io::Read;
+use rusqlite::ToSql;
+use std::io::{Read, Write};
 
 impl Entity for MlsKeyPackage {
     fn id_raw(&self) -> &[u8] {
@@ -42,24 +44,22 @@ impl EntityBase for MlsKeyPackage {
         params: EntityFindParams,
     ) -> crate::CryptoKeystoreResult<Vec<Self>> {
         let transaction = conn.transaction()?;
-        let query: String = format!("SELECT rowid FROM mls_keypackages {}", params.to_sql());
+        let query: String = format!(
+            "SELECT rowid, keypackage_ref_hex FROM mls_keypackages {}",
+            params.to_sql()
+        );
 
         let mut stmt = transaction.prepare_cached(&query)?;
-        let mut rows = stmt.query_map([], |r| r.get(0))?;
-        let entities = rows.try_fold(Vec::new(), |mut acc, rowid_result| {
+        let mut rows = stmt.query_map([], |r| {
+            let rowid: i64 = r.get(0)?;
+            let keypackage_ref_hex: String = r.get(1)?;
+            Ok((rowid, keypackage_ref_hex))
+        })?;
+        let entities = rows.try_fold(Vec::new(), |mut acc, row_result| {
             use std::io::Read as _;
-            let rowid = rowid_result?;
+            let (rowid, keypackage_ref_hex) = row_result?;
 
-            let mut blob = transaction.blob_open(
-                rusqlite::DatabaseName::Main,
-                "mls_keypackages",
-                "keypackage_ref",
-                rowid,
-                true,
-            )?;
-            let mut keypackage_ref = vec![];
-            blob.read_to_end(&mut keypackage_ref)?;
-            blob.close()?;
+            let keypackage_ref = Self::id_from_hex(&keypackage_ref_hex)?;
 
             let mut blob = transaction.blob_open(
                 rusqlite::DatabaseName::Main,
@@ -84,52 +84,21 @@ impl EntityBase for MlsKeyPackage {
     }
 
     async fn save(&self, conn: &mut Self::ConnectionType) -> crate::CryptoKeystoreResult<()> {
-        use rusqlite::OptionalExtension as _;
-        use rusqlite::ToSql as _;
-
-        Self::ConnectionType::check_buffer_size(self.keypackage_ref.len())?;
         Self::ConnectionType::check_buffer_size(self.keypackage.len())?;
 
         let transaction = conn.transaction()?;
-        let mut existing_rowid = transaction
-            .query_row(
-                "SELECT rowid FROM mls_keypackages WHERE keypackage_ref = ?",
-                [&self.keypackage_ref],
-                |r| r.get::<_, i64>(0),
-            )
-            .optional()?;
 
+        // Create zero blobs for keypackage and keypackage_ref
         let kp_zb = rusqlite::blob::ZeroBlob(self.keypackage.len() as i32);
 
-        let row_id = if let Some(rowid) = existing_rowid.take() {
-            transaction.execute(
-                "UPDATE mls_keypackages SET keypackage = ? WHERE rowid = ?",
-                [kp_zb.to_sql()?, rowid.to_sql()?],
-            )?;
+        // Use UPSERT (ON CONFLICT DO UPDATE)
+        let sql = "
+        INSERT INTO mls_keypackages (keypackage_ref_hex, keypackage) 
+        VALUES (?, ?) 
+        ON CONFLICT(keypackage_ref_hex) DO UPDATE SET keypackage = excluded.keypackage
+        RETURNING rowid";
 
-            rowid
-        } else {
-            let kp_ref_zb = rusqlite::blob::ZeroBlob(self.keypackage_ref.len() as i32);
-            let params: [rusqlite::types::ToSqlOutput; 2] = [kp_ref_zb.to_sql()?, kp_zb.to_sql()?];
-            transaction.execute(
-                "INSERT INTO mls_keypackages (keypackage_ref, keypackage) VALUES (?, ?)",
-                params,
-            )?;
-            let row_id = transaction.last_insert_rowid();
-            let mut blob = transaction.blob_open(
-                rusqlite::DatabaseName::Main,
-                "mls_keypackages",
-                "keypackage_ref",
-                row_id,
-                false,
-            )?;
-
-            use std::io::Write as _;
-            blob.write_all(&self.keypackage_ref)?;
-            blob.close()?;
-
-            row_id
-        };
+        let row_id: i64 = transaction.query_row(sql, [&self.id_hex().to_sql()?, &kp_zb.to_sql()?], |r| r.get(0))?;
 
         let mut blob = transaction.blob_open(
             rusqlite::DatabaseName::Main,
@@ -138,8 +107,6 @@ impl EntityBase for MlsKeyPackage {
             row_id,
             false,
         )?;
-
-        use std::io::Write as _;
         blob.write_all(&self.keypackage)?;
         blob.close()?;
 
@@ -156,24 +123,14 @@ impl EntityBase for MlsKeyPackage {
         use rusqlite::OptionalExtension as _;
         let mut row_id = transaction
             .query_row(
-                "SELECT rowid FROM mls_keypackages WHERE keypackage_ref = ?",
-                [id.as_slice()],
+                "SELECT rowid FROM mls_keypackages WHERE keypackage_ref_hex = ?",
+                [id.as_hex_string()],
                 |r| r.get::<_, i64>(0),
             )
             .optional()?;
 
         if let Some(rowid) = row_id.take() {
-            let mut blob = transaction.blob_open(
-                rusqlite::DatabaseName::Main,
-                "mls_keypackages",
-                "keypackage_ref",
-                rowid,
-                true,
-            )?;
-
-            let mut keypackage_ref = Vec::with_capacity(blob.len());
-            blob.read_to_end(&mut keypackage_ref)?;
-            blob.close()?;
+            let keypackage_ref = id.as_slice().to_vec();
 
             let mut blob = transaction.blob_open(
                 rusqlite::DatabaseName::Main,
@@ -208,7 +165,10 @@ impl EntityBase for MlsKeyPackage {
         let len = ids.len();
         let mut updated = 0;
         for id in ids {
-            updated += transaction.execute("DELETE FROM mls_keypackages WHERE keypackage_ref = ?", [id.as_slice()])?;
+            updated += transaction.execute(
+                "DELETE FROM mls_keypackages WHERE keypackage_ref_hex = ?",
+                [id.as_hex_string()],
+            )?;
         }
 
         if updated == len {
