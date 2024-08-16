@@ -25,3 +25,17 @@ SELECT LOWER(hex(id)), keypairs FROM mls_epoch_encryption_keypairs;
 DROP TABLE mls_epoch_encryption_keypairs;
 
 ALTER TABLE mls_epoch_encryption_keypairs_new RENAME TO mls_epoch_encryption_keypairs;
+
+---- mls_hpke_private_keys ----
+CREATE TABLE mls_hpke_private_keys_new (
+    pk_sha256 TEXT UNIQUE,
+    pk BLOB,
+    sk BLOB
+);
+
+INSERT INTO mls_hpke_private_keys_new (pk_sha256, pk, sk)
+SELECT sha256_blob(pk), pk, sk FROM mls_hpke_private_keys;
+
+DROP TABLE mls_hpke_private_keys;
+
+ALTER TABLE mls_hpke_private_keys_new RENAME TO mls_hpke_private_keys;
