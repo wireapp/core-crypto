@@ -52,3 +52,17 @@ SELECT LOWER(hex(keypackage_ref)), keypackage FROM mls_keypackages;
 DROP TABLE mls_keypackages;
 
 ALTER TABLE mls_keypackages_new RENAME TO mls_keypackages;
+
+---- mls_psk_bundles ----
+CREATE TABLE mls_psk_bundles_new (
+    id_sha256 TEXT UNIQUE,
+    psk_id BLOB,
+    psk BLOB
+);
+
+INSERT INTO mls_psk_bundles_new (id_sha256, psk_id, psk)
+SELECT sha256_blob(psk_id), psk_id, psk FROM mls_psk_bundles;
+
+DROP TABLE mls_psk_bundles;
+
+ALTER TABLE mls_psk_bundles_new RENAME TO mls_psk_bundles;
