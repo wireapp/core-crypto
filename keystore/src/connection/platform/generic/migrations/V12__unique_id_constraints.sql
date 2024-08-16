@@ -66,3 +66,17 @@ SELECT sha256_blob(psk_id), psk_id, psk FROM mls_psk_bundles;
 DROP TABLE mls_psk_bundles;
 
 ALTER TABLE mls_psk_bundles_new RENAME TO mls_psk_bundles;
+
+---- mls_groups ----
+CREATE TABLE mls_groups_new (
+    id_hex TEXT unique,
+    state BLOB,
+    parent_id BLOB
+);
+
+INSERT INTO mls_groups_new (id_hex, parent_id, state)
+SELECT LOWER(hex(id)), parent_id, state FROM mls_groups;
+
+DROP TABLE mls_groups;
+
+ALTER TABLE mls_groups_new RENAME TO mls_groups;
