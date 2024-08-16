@@ -7,6 +7,33 @@ Platform support legends:
     * Note: the papercuts will majorly be with the build process. Things might be very rough to integrate as no polish at all has been given yet.
 * ❌ = tier 3 support. It doesn't work just yet, but we plan to make it work.
 
+## [1.0.2] - 2024-08-24
+
+<details>
+    <summary>git-conventional changelog</summary>
+
+### Bug Fixes
+
+- Run ci to generate junit report on tags [WPB-10608]
+- Grouping were randomly failing because it expected query to be ordered
+
+### Miscellaneous Tasks
+
+- Update proteus version to latest tag
+- Update rusty-jwt-tools and dependencies
+
+### Testing
+
+- Add cross signing tests [WPB-7264]
+- Add utilities to cross sign certificate chains
+
+</details>
+
+* Added new tests for cross signed certificate chains.
+* Releases will use locked dependencies' versions.
+* Fixed a bug where retrieving the clients for multiple users would not return the full list.
+* Junit.xml should be added again to the release.
+
 ## [1.0.1] - 2024-08-05
 
 <details>
