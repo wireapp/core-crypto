@@ -39,3 +39,16 @@ SELECT sha256_blob(pk), pk, sk FROM mls_hpke_private_keys;
 DROP TABLE mls_hpke_private_keys;
 
 ALTER TABLE mls_hpke_private_keys_new RENAME TO mls_hpke_private_keys;
+
+---- mls_keypackages ----
+CREATE TABLE mls_keypackages_new (
+    keypackage_ref_hex TEXT UNIQUE,
+    keypackage BLOB
+);
+
+INSERT INTO mls_keypackages_new (keypackage_ref_hex, keypackage)
+SELECT LOWER(hex(keypackage_ref)), keypackage FROM mls_keypackages;
+
+DROP TABLE mls_keypackages;
+
+ALTER TABLE mls_keypackages_new RENAME TO mls_keypackages;
