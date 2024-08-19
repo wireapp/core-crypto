@@ -43,6 +43,8 @@ mod platform {
 pub use self::platform::*;
 
 use crate::connection::DatabaseConnection;
+#[cfg(not(target_family = "wasm"))]
+use crate::sha256;
 use crate::{CryptoKeystoreError, CryptoKeystoreResult, MissingKeyErrorKind};
 
 #[derive(Debug, Clone, PartialEq, Eq, Default)]
@@ -60,6 +62,11 @@ impl<'a> StringEntityId<'a> {
 
     pub fn as_hex_string(&self) -> String {
         hex::encode(self.0)
+    }
+
+    #[cfg(not(target_family = "wasm"))]
+    pub(crate) fn sha256(&self) -> String {
+        sha256(self.0)
     }
 
     pub fn to_bytes(&self) -> Vec<u8> {
@@ -221,5 +228,21 @@ cfg_if::cfg_if! {
         pub trait Entity: EntityBase {
             fn id_raw(&self) -> &[u8];
         }
+
+        pub trait EntityIdStringExt: Entity {
+            fn id_hex(&self) -> String {
+                hex::encode(self.id_raw())
+            }
+
+            fn id_sha256(&self) -> String {
+                sha256(self.id_raw())
+            }
+
+            fn id_from_hex(id_hex: &str) -> CryptoKeystoreResult<Vec<u8>> {
+                hex::decode(id_hex).map_err(Into::into)
+            }
+        }
+
+        impl<T: Entity> EntityIdStringExt for T {}
     }
 }

@@ -17,6 +17,7 @@
 use crate::connection::{DatabaseConnection, DatabaseConnectionRequirements};
 use crate::CryptoKeystoreResult;
 use blocking::unblock;
+use rusqlite::functions::FunctionFlags;
 
 refinery::embed_migrations!("src/connection/platform/generic/migrations");
 
@@ -67,6 +68,11 @@ impl SqlCipherConnection {
 
         // Disable FOREIGN KEYs - The 2 step blob writing process invalidates foreign key checks unfortunately
         conn.pragma_update(None, "foreign_keys", "OFF")?;
+
+        conn.create_scalar_function("sha256_blob", 1, FunctionFlags::SQLITE_DETERMINISTIC, |ctx| {
+            let input_blob = ctx.get::<Vec<u8>>(0)?;
+            Ok(crate::sha256(&input_blob))
+        })?;
 
         let mut conn = Self {
             path: path.into(),

@@ -64,6 +64,7 @@ features = [
     "limits",
     "unlock_notify",
     "uuid",
+    "functions"
 ]
 
 [target.'cfg(not(target_family = "wasm"))'.dependencies.refinery]
