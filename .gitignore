@@ -1,6 +1,3 @@
-sample-projects/android/CoreCryptoTestApp/**/build/
-sample-projects/android/CoreCryptoTestApp/app/src/main/jniLibs/**/*.so
-
 platforms/web/*
 
 # Swift/Xcode
@@ -11,7 +8,6 @@ crypto-ffi/bindings/*/.build
 crypto-ffi/bindings/*/build
 crypto-ffi/bindings/*/.swiftpm
 crypto-ffi/bindings/swift/WireCoreCrypto/WireCoreCrypto/CoreCrypto.swift
-crypto-ffi/bindings/swift/WireCoreCrypto/WireCoreCrypto/core_crypto_ffi.swift
 crypto-ffi/bindings/swift/WireCoreCrypto/WireCoreCrypto/core_crypto.swift
 crypto-ffi/bindings/swift/WireCoreCrypto/WireCoreCrypto/core_cryptoFFI.h
 crypto-ffi/bindings/swift/WireCoreCrypto/WireCoreCrypto/core_crypto_ffiFFI.h
@@ -29,15 +25,11 @@ DerivedData/
 *.ipa
 *.dSYM.zip
 *.dSYM
-sample-projects/ios/.build
-sample-projects/ios/.swiftpm
 .DS_Store
 
 # Kotlin
 crypto-ffi/bindings/jvm/src/main/kotlin/com/wire/crypto/CoreCrypto.kt
-crypto-ffi/bindings/jvm/src/main/kotlin/com/wire/crypto/core_crypto_ffi.kt
 crypto-ffi/bindings/jvm/src/main/kotlin/uniffi/core_crypto/core_crypto.kt
-crypto-ffi/bindings/local.properties
 
 # Test databases leftovers
 *.edb
@@ -215,6 +207,3 @@ dist
 .svelte-kit
 
 # End of https://www.toptal.com/developers/gitignore/api/node
-
-# Allow xtask Cargo.lock
-!xtask/Cargo.lock
