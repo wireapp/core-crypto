@@ -14,9 +14,8 @@
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see http://www.gnu.org/licenses/.
 
-use openmls_basic_credential::SignatureKeyPair;
-use openmls_traits::key_store::{MlsEntity, MlsEntityId};
-
+#[cfg(not(target_family = "wasm"))]
+use crate::entities::EntityBase;
 use crate::entities::MlsEpochEncryptionKeyPair;
 use crate::{
     entities::{
@@ -25,6 +24,8 @@ use crate::{
     },
     CryptoKeystoreError, CryptoKeystoreResult, MissingKeyErrorKind,
 };
+use openmls_basic_credential::SignatureKeyPair;
+use openmls_traits::key_store::{MlsEntity, MlsEntityId};
 
 /// An interface for the specialized queries in the KeyStore
 #[cfg_attr(target_family = "wasm", async_trait::async_trait(?Send))]
@@ -192,43 +193,17 @@ impl CryptoKeystoreMls for crate::connection::Connection {
 
     #[cfg(not(target_family = "wasm"))]
     async fn mls_fetch_keypackages<V: MlsEntity>(&self, count: u32) -> CryptoKeystoreResult<Vec<V>> {
-        let mut db = self.conn.lock().await;
+        let mut db_connection = self.conn.lock().await;
 
-        let transaction = db.transaction()?;
-
-        let mut stmt = transaction.prepare_cached("SELECT rowid FROM mls_keypackages ORDER BY rowid DESC LIMIT ?")?;
-
-        let mut keypackages: Vec<MlsKeyPackage> = vec![];
-        for kpb_rowid in stmt.query_map([count], |r| r.get(0))? {
-            use std::io::Read as _;
-            let rowid = kpb_rowid?;
-            let mut blob = transaction.blob_open(
-                rusqlite::DatabaseName::Main,
-                "mls_keypackages",
-                "keypackage_ref",
-                rowid,
-                true,
-            )?;
-            let mut keypackage_ref = vec![];
-            blob.read_to_end(&mut keypackage_ref)?;
-            blob.close()?;
-
-            let mut blob = transaction.blob_open(
-                rusqlite::DatabaseName::Main,
-                "mls_keypackages",
-                "keypackage",
-                rowid,
-                true,
-            )?;
-            let mut keypackage = vec![];
-            blob.read_to_end(&mut keypackage)?;
-            blob.close()?;
-
-            keypackages.push(MlsKeyPackage {
-                keypackage_ref,
-                keypackage,
-            });
-        }
+        let keypackages = MlsKeyPackage::find_all(
+            &mut db_connection,
+            EntityFindParams {
+                limit: Some(count),
+                offset: None,
+                reverse: true,
+            },
+        )
+        .await?;
 
         Ok(keypackages
             .into_iter()
