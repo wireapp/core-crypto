@@ -114,15 +114,15 @@ impl EntityFindParams {
     pub fn to_sql(&self) -> String {
         use std::fmt::Write as _;
         let mut query: String = "".into();
-        if let Some(limit) = self.limit {
-            let _ = write!(query, " LIMIT {limit}");
-        }
         if let Some(offset) = self.offset {
             let _ = write!(query, " OFFSET {offset}");
         }
         let _ = write!(query, " ORDER BY rowid");
         if self.reverse {
             let _ = write!(query, " DESC");
+        }
+        if let Some(limit) = self.limit {
+            let _ = write!(query, " LIMIT {limit}");
         }
 
         query
