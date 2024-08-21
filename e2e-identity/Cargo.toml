@@ -31,7 +31,6 @@ signature = { workspace = true, optional = true }
 [dev-dependencies]
 wire-e2e-identity = { version = "0.9.0", path = ".", features = ["builder"] }
 rusty-jwt-tools = { version = "0.9.0", path = "../jwt", features = ["test-utils", "rsa"] }
-rusty-jwt-cli = { version = "0.9.0", path = "../cli" }
 base64 = { workspace = true }
 url = { workspace = true }
 itertools = { workspace = true }
