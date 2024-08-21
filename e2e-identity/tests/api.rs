@@ -11,6 +11,21 @@ wasm_bindgen_test_configure!(run_in_browser);
 #[path = "utils/mod.rs"]
 mod utils;
 
+fn parse_public_key_pem(pem: String) -> (JwsAlgorithm, Pem) {
+    let alg = if Ed25519PublicKey::from_pem(&pem).is_ok() {
+        JwsAlgorithm::Ed25519
+    } else if ES256PublicKey::from_pem(&pem).is_ok() {
+        JwsAlgorithm::P256
+    } else if ES384PublicKey::from_pem(&pem).is_ok() {
+        JwsAlgorithm::P384
+    } else if ES512PublicKey::from_pem(&pem).is_ok() {
+        JwsAlgorithm::P521
+    } else {
+        panic!("PEM key did not match any supported format")
+    };
+    (alg, pem.into())
+}
+
 #[test]
 #[wasm_bindgen_test]
 fn e2e_api() {
@@ -247,22 +262,29 @@ fn e2e_api() {
                     .unwrap()
                     .kid;
 
-                rusty_jwt_cli::access_verify::AccessVerify {
-                    access_token: Some(access_token_file),
-                    client_id: client_id.to_uri(),
-                    handle: qualified_handle.to_string(),
-                    display_name: display_name.to_string(),
-                    challenge: dpop_challenge_token.to_string(),
+                let access_token = std::fs::read_to_string(access_token_file).unwrap().trim().to_string();
+
+                let challenge: AcmeNonce = dpop_challenge_token.into();
+                let (_, backend_pk) = parse_public_key_pem(std::fs::read_to_string(backend_pk_file).unwrap());
+                let issuer = issuer.as_str().try_into().expect("Invalid 'issuer'");
+                let handle = qualified_handle.parse::<QualifiedHandle>().expect("Invalid handle");
+
+                let verification = RustyJwtTools::verify_access_token(
+                    &access_token,
+                    &client_id,
+                    &handle,
+                    display_name,
+                    challenge,
                     leeway,
                     max_expiry,
                     issuer,
-                    hash_algorithm,
+                    backend_pk,
                     kid,
-                    key: backend_pk_file,
-                    api_version: 5,
-                }
-                .execute()
-                .unwrap();
+                    hash_algorithm,
+                    5,
+                );
+
+                verification.expect("access token verification should pass");
             }
 
             let resp = json!({
