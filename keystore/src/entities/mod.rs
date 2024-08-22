@@ -163,7 +163,8 @@ pub trait EntityBase: Send + Sized + Clone + PartialEq + Eq + std::fmt::Debug {
 cfg_if::cfg_if! {
     if #[cfg(target_family = "wasm")] {
         const AES_GCM_256_NONCE_SIZE: usize = 12;
-        
+
+        #[derive(Debug, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
         struct Aad {
             type_name: Vec<u8>,
             id: Vec<u8>,
