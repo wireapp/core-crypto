@@ -16,9 +16,10 @@
 
 use crate::{
     connection::{DatabaseConnection, DatabaseConnectionRequirements},
-    CryptoKeystoreResult,
+    CryptoKeystoreError, CryptoKeystoreResult,
 };
 use rexie::{Index, ObjectStore};
+use std::sync::OnceLock;
 
 pub mod storage;
 use self::storage::{WasmEncryptedStorage, WasmStorageWrapper};
@@ -29,6 +30,7 @@ pub struct WasmConnection {
     conn: WasmEncryptedStorage,
 }
 
+pub static REXIE_VERSION: OnceLock<u32> = OnceLock::new();
 impl WasmConnection {
     pub fn storage(&self) -> &WasmEncryptedStorage {
         &self.conn
@@ -93,6 +95,12 @@ impl DatabaseConnection for WasmConnection {
         // - prerelease: breaks after rc.99
         // - build: breaks after r9
         let version = version_major * 10_000_000 + version_minor * 100_000 + version_patch * 1_000 + version_pre;
+        let rexie_version_set = REXIE_VERSION.set(version);
+        if let Err(already_set_version) = rexie_version_set {
+            if already_set_version != version {
+                return Err(CryptoKeystoreError::ImplementationError); // TODO: proper error
+            }
+        }
 
         let rexie_builder = rexie::Rexie::builder(&name)
             .version(version)

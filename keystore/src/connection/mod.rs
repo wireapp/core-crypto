@@ -20,6 +20,7 @@ pub mod platform {
             mod wasm;
             pub use self::wasm::WasmConnection as KeystoreDatabaseConnection;
             pub use wasm::storage;
+            pub use self::wasm::REXIE_VERSION;
         } else {
             mod generic;
             pub use self::generic::SqlCipherConnection as KeystoreDatabaseConnection;

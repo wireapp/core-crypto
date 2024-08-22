@@ -21,7 +21,7 @@ use wasm_bindgen::JsValue;
 
 use crate::{
     entities::{Entity, EntityFindParams},
-    CryptoKeystoreResult,
+    CryptoKeystoreError, CryptoKeystoreResult,
 };
 
 use super::WasmConnection;
@@ -76,6 +76,15 @@ impl WasmEncryptedStorage {
         match self.storage {
             WasmStorageWrapper::Persistent(_) => true,
             WasmStorageWrapper::InMemory(_) => false,
+        }
+    }
+
+    pub fn rexie_version(&self) -> CryptoKeystoreResult<u32> {
+        match self.storage {
+            WasmStorageWrapper::Persistent(ref rexie) => rexie.version().map_err(Into::into),
+            WasmStorageWrapper::InMemory(_) => Err(CryptoKeystoreError::IncorrectApiUsage(
+                "Called rexie_version() on in-memory wasm storage.",
+            )),
         }
     }
 
