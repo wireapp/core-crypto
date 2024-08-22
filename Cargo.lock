@@ -1053,6 +1053,7 @@ dependencies = [
  "serde",
  "serde-big-array",
  "serde-wasm-bindgen",
+ "serde_json",
  "sha2",
  "thiserror",
  "uuid",
