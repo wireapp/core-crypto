@@ -162,6 +162,12 @@ pub trait EntityBase: Send + Sized + Clone + PartialEq + Eq + std::fmt::Debug {
 cfg_if::cfg_if! {
     if #[cfg(target_family = "wasm")] {
         const AES_GCM_256_NONCE_SIZE: usize = 12;
+        
+        struct Aad {
+            db_version: Option<u32>,
+            type_name: Vec<u8>,
+            id: Vec<u8>,
+        }
 
         pub trait Entity: EntityBase + serde::Serialize + serde::de::DeserializeOwned {
             fn id(&self) -> CryptoKeystoreResult<wasm_bindgen::JsValue> {
