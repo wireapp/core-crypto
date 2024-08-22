@@ -38,6 +38,7 @@ async-trait.workspace = true
 async-lock.workspace = true
 postcard = { version = "1.0", default-features = false, features = ["use-std"] }
 sha2.workspace = true
+serde_json.workspace = true
 
 # iOS specific things
 security-framework = { version = "2.11", optional = true }
