@@ -14,7 +14,6 @@
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see http://www.gnu.org/licenses/.
 
-#[cfg(not(target_family = "wasm"))]
 use crate::entities::EntityBase;
 use crate::entities::MlsEpochEncryptionKeyPair;
 use crate::{
@@ -138,54 +137,19 @@ pub trait CryptoKeystoreMls: Sized {
 impl CryptoKeystoreMls for crate::connection::Connection {
     #[cfg(target_family = "wasm")]
     async fn mls_fetch_keypackages<V: MlsEntity>(&self, count: u32) -> CryptoKeystoreResult<Vec<V>> {
-        use crate::{connection::storage::WasmStorageWrapper, entities::Entity};
-        let conn = self.conn.lock_arc().await;
-        let cipher = &conn.storage().cipher;
-        let storage = &conn.storage().storage;
+        let mut db_connection = self.conn.lock().await;
+        let keypackages = MlsKeyPackage::find_all(
+            &mut db_connection,
+            EntityFindParams {
+                limit: Some(count),
+                offset: None,
+                // Don't invert the cursor direction
+                reverse: false,
+            },
+        )
+        .await?;
 
-        let raw_kps: Vec<MlsKeyPackage> = match storage {
-            WasmStorageWrapper::Persistent(rexie) => {
-                let transaction = rexie.transaction(&["mls_keypackages"], rexie::TransactionMode::ReadOnly)?;
-                let store = transaction.store("mls_keypackages")?;
-                let items_fut = store.scan(None, Some(count), None, Some(rexie::Direction::Next));
-
-                let items = items_fut.await?;
-
-                if items.is_empty() {
-                    return Ok(vec![]);
-                }
-
-                let kps = items
-                    .into_iter()
-                    .map(|(_k, v)| {
-                        let mut kp: MlsKeyPackage = serde_wasm_bindgen::from_value(v)?;
-                        kp.decrypt(cipher)?;
-                        Ok(kp)
-                    })
-                    .collect::<CryptoKeystoreResult<Vec<MlsKeyPackage>>>()?;
-
-                CryptoKeystoreResult::Ok(kps)
-            }
-            WasmStorageWrapper::InMemory(map) => {
-                if let Some(collection) = map.get("mls_keypackages") {
-                    let kps = collection
-                        .iter()
-                        .take(count as usize)
-                        .map(|(_k, v)| {
-                            let mut entity: MlsKeyPackage = serde_wasm_bindgen::from_value(v.clone())?;
-                            entity.decrypt(cipher)?;
-                            Ok(entity)
-                        })
-                        .collect::<CryptoKeystoreResult<Vec<MlsKeyPackage>>>()?;
-
-                    Ok(kps)
-                } else {
-                    Ok(vec![])
-                }
-            }
-        }?;
-
-        Ok(raw_kps
+        Ok(keypackages
             .into_iter()
             .filter_map(|kpb| deser(&kpb.keypackage).ok())
             .collect())
