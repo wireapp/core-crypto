@@ -2,7 +2,7 @@ name: Continuous Benchmarks with Bencher
 on:
   push:
     branches:
-      - develop
+      - main
   pull_request:
 
 jobs:
@@ -33,10 +33,10 @@ jobs:
           --adapter rust_criterion \
           "cargo bench ${{ env.BENCH_PARAMS }}"
       - name: Run benchmarks on base branch
-        if: github.event_name == 'push' && github.ref_name == 'develop'
+        if: github.event_name == 'push' && github.ref_name == 'main'
         run: |
           bencher run \
-          --branch develop \
+          --branch main \
           --testbed ubuntu-latest \
           --err \
           --adapter rust_criterion \
