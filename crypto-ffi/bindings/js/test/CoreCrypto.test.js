@@ -7,17 +7,7 @@ let server;
 let browser;
 
 beforeAll(async () => {
-    await Bun.write("../platforms/web/index.html", `
-<!DOCTYPE html>
-<html>
-  <head>
-    <title>CoreCrypto Test</title>
-  </head>
-  <body>
-    <script type="module" src="corecrypto.js"></script>
-  </body>
-</html>
-`);
+    await Bun.write("../platforms/web/index.html", Bun.file(import.meta.dir + '/index.html'));
 
     server = Bun.serve({
         port: 3000,
