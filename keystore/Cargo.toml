@@ -42,7 +42,7 @@ sha2.workspace = true
 # iOS specific things
 security-framework = { version = "2.11", optional = true }
 security-framework-sys = { version = "2.11", optional = true }
-core-foundation = { version = "0.9", optional = true }
+core-foundation = { version = "0.10", optional = true }
 
 openmls_traits = { workspace = true, optional = true }
 openmls_basic_credential = { workspace = true, optional = true }
