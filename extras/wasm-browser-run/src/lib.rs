@@ -110,8 +110,8 @@ impl WebdriverContextInner {
             .await
             .map_err(WebdriverError::from)?;
 
-        let browser_session_handshake = browser.get_session_handshake();
-        let webdriver_bidi_uri = browser_session_handshake["capabilities"]
+        let capabilities = browser.capabilities().unwrap();
+        let webdriver_bidi_uri = capabilities
             .get("webSocketUrl")
             .and_then(|s| s.as_str())
             .map(|s| s.to_string());
