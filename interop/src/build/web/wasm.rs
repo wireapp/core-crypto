@@ -83,6 +83,11 @@ pub(crate) async fn build_wasm() -> Result<()> {
     let wasm_path = find_wasm_file(&wasm_deploy_path).await?;
     let js_path = wasm_deploy_path.join("corecrypto.js");
 
+    std::fs::copy(
+        cwd.join("crypto-ffi/bindings/js/test/index.html"),
+        wasm_deploy_path.join("index.html"),
+    )?;
+
     if !wasm_path.exists() || !js_path.exists() {
         spinner.update("WASM: No JS/WASM files found, rebuilding; Please wait...");
     } else if wasm_cache_path.exists() && js_cache_path.exists() {
