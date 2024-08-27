@@ -18,7 +18,8 @@ use crate::{
     connection::{DatabaseConnection, DatabaseConnectionRequirements},
     CryptoKeystoreResult,
 };
-use rexie::{Index, ObjectStore};
+use idb::builder::{DatabaseBuilder, IndexBuilder, ObjectStoreBuilder};
+use idb::{Factory, KeyPath};
 
 pub mod storage;
 use self::storage::{WasmEncryptedStorage, WasmStorageWrapper};
@@ -98,107 +99,113 @@ impl DatabaseConnection for WasmConnection {
         // - build: breaks after r9
         let version = version_number(version_major, version_minor, version_patch, version_pre);
 
-        let rexie_builder = rexie::Rexie::builder(&name)
+        let idb_builder = DatabaseBuilder::new(&name)
             .version(version)
             .add_object_store(
-                ObjectStore::new("mls_credentials")
+                ObjectStoreBuilder::new("mls_credentials")
                     .auto_increment(false)
-                    .add_index(Index::new("id", "id"))
-                    .add_index(Index::new("credential", "credential").unique(true)),
+                    .add_index(IndexBuilder::new("id".into(), KeyPath::new_single("id")))
+                    .add_index(IndexBuilder::new("credential".into(), KeyPath::new_single("credential")).unique(true)),
             )
             .add_object_store(
-                ObjectStore::new("mls_signature_keypairs")
+                ObjectStoreBuilder::new("mls_signature_keypairs")
                     .auto_increment(false)
-                    .add_index(Index::new("signature_scheme", "signature_scheme"))
-                    .add_index(Index::new("signature_pk", "pk")),
+                    .add_index(IndexBuilder::new(
+                        "signature_scheme".into(),
+                        KeyPath::new_single("signature_scheme"),
+                    ))
+                    .add_index(IndexBuilder::new("signature_pk".into(), KeyPath::new_single("pk"))),
             )
             .add_object_store(
-                ObjectStore::new("mls_hpke_private_keys")
+                ObjectStoreBuilder::new("mls_hpke_private_keys")
                     .auto_increment(false)
-                    .add_index(Index::new("pk", "pk").unique(true)),
+                    .add_index(IndexBuilder::new("pk".into(), KeyPath::new_single("pk")).unique(true)),
             )
             .add_object_store(
-                ObjectStore::new("mls_encryption_keypairs")
+                ObjectStoreBuilder::new("mls_encryption_keypairs")
                     .auto_increment(false)
-                    .add_index(Index::new("pk", "pk").unique(true)),
+                    .add_index(IndexBuilder::new("pk".into(), KeyPath::new_single("pk")).unique(true)),
             )
             .add_object_store(
-                ObjectStore::new("mls_epoch_encryption_keypairs")
+                ObjectStoreBuilder::new("mls_epoch_encryption_keypairs")
                     .auto_increment(false)
-                    .add_index(Index::new("id", "id").unique(true)),
+                    .add_index(IndexBuilder::new("id".into(), KeyPath::new_single("id")).unique(true)),
             )
             .add_object_store(
-                ObjectStore::new("mls_psk_bundles")
+                ObjectStoreBuilder::new("mls_psk_bundles")
                     .auto_increment(false)
-                    .add_index(Index::new("psk_id", "psk_id").unique(true)),
+                    .add_index(IndexBuilder::new("psk_id".into(), KeyPath::new_single("psk_id")).unique(true)),
             )
             .add_object_store(
-                ObjectStore::new("mls_keypackages")
+                ObjectStoreBuilder::new("mls_keypackages")
                     .auto_increment(false)
-                    .add_index(Index::new("keypackage_ref", "keypackage_ref").unique(true)),
+                    .add_index(
+                        IndexBuilder::new("keypackage_ref".into(), KeyPath::new_single("keypackage_ref")).unique(true),
+                    ),
             )
             .add_object_store(
-                ObjectStore::new("mls_groups")
+                ObjectStoreBuilder::new("mls_groups")
                     .auto_increment(false)
-                    .add_index(Index::new("id", "id").unique(true)),
+                    .add_index(IndexBuilder::new("id".into(), KeyPath::new_single("id")).unique(true)),
             )
             .add_object_store(
-                ObjectStore::new("mls_pending_groups")
+                ObjectStoreBuilder::new("mls_pending_groups")
                     .auto_increment(false)
-                    .add_index(Index::new("id", "id").unique(true)),
+                    .add_index(IndexBuilder::new("id".into(), KeyPath::new_single("id")).unique(true)),
             )
             .add_object_store(
-                ObjectStore::new("mls_pending_messages")
+                ObjectStoreBuilder::new("mls_pending_messages")
                     .auto_increment(false)
-                    .add_index(Index::new("id", "id")),
+                    .add_index(IndexBuilder::new("id".into(), KeyPath::new_single("id"))),
             )
             .add_object_store(
-                ObjectStore::new("e2ei_enrollment")
+                ObjectStoreBuilder::new("e2ei_enrollment")
                     .auto_increment(false)
-                    .add_index(Index::new("id", "id").unique(true)),
+                    .add_index(IndexBuilder::new("id".into(), KeyPath::new_single("id")).unique(true)),
             )
             .add_object_store(
-                ObjectStore::new("e2ei_refresh_token")
+                ObjectStoreBuilder::new("e2ei_refresh_token")
                     .auto_increment(false)
-                    .add_index(Index::new("id", "id").unique(true)),
+                    .add_index(IndexBuilder::new("id".into(), KeyPath::new_single("id")).unique(true)),
             )
             .add_object_store(
-                ObjectStore::new("e2ei_acme_ca")
+                ObjectStoreBuilder::new("e2ei_acme_ca")
                     .auto_increment(false)
-                    .add_index(Index::new("id", "id").unique(true)),
+                    .add_index(IndexBuilder::new("id".into(), KeyPath::new_single("id")).unique(true)),
             )
             .add_object_store(
-                ObjectStore::new("e2ei_intermediate_certs")
+                ObjectStoreBuilder::new("e2ei_intermediate_certs")
                     .auto_increment(false)
-                    .add_index(Index::new("ski_aki_pair", "ski_aki_pair").unique(true)),
+                    .add_index(
+                        IndexBuilder::new("ski_aki_pair".into(), KeyPath::new_single("ski_aki_pair")).unique(true),
+                    ),
+            )
+            .add_object_store(ObjectStoreBuilder::new("e2ei_crls").auto_increment(false).add_index(
+                IndexBuilder::new("distribution_point".into(), KeyPath::new_single("distribution_point")).unique(true),
+            ))
+            .add_object_store(
+                ObjectStoreBuilder::new("proteus_prekeys")
+                    .auto_increment(false)
+                    .add_index(IndexBuilder::new("id".into(), KeyPath::new_single("id")).unique(true)),
             )
             .add_object_store(
-                ObjectStore::new("e2ei_crls")
+                ObjectStoreBuilder::new("proteus_identities")
                     .auto_increment(false)
-                    .add_index(Index::new("distribution_point", "distribution_point").unique(true)),
+                    .add_index(IndexBuilder::new("pk".into(), KeyPath::new_single("pk")).unique(true)),
             )
             .add_object_store(
-                ObjectStore::new("proteus_prekeys")
+                ObjectStoreBuilder::new("proteus_sessions")
                     .auto_increment(false)
-                    .add_index(Index::new("id", "id").unique(true)),
-            )
-            .add_object_store(
-                ObjectStore::new("proteus_identities")
-                    .auto_increment(false)
-                    .add_index(Index::new("pk", "pk").unique(true)),
-            )
-            .add_object_store(
-                ObjectStore::new("proteus_sessions")
-                    .auto_increment(false)
-                    .add_index(Index::new("id", "id").unique(true)),
+                    .add_index(IndexBuilder::new("id".into(), KeyPath::new_single("id")).unique(true)),
             );
 
         #[cfg(feature = "idb-regression-test")]
-        let rexie_builder = rexie_builder.add_object_store(ObjectStore::new("regression_check").auto_increment(false));
+        let idb_builder =
+            idb_builder.add_object_store(ObjectStoreBuilder::new("regression_check").auto_increment(false));
 
-        let rexie = rexie_builder.build().await?;
+        let idb = idb_builder.build().await?;
 
-        let storage = WasmStorageWrapper::Persistent(rexie);
+        let storage = WasmStorageWrapper::Persistent(idb);
         let conn = WasmEncryptedStorage::new(key, storage);
 
         Ok(Self { name, conn })
@@ -222,7 +229,8 @@ impl DatabaseConnection for WasmConnection {
         self.conn.close()?;
 
         if is_persistent {
-            let _ = rexie::Rexie::builder(&self.name).delete().await?;
+            let factory = Factory::new()?;
+            factory.delete(&self.name)?.await?;
         }
 
         Ok(())

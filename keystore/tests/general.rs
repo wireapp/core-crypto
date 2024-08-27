@@ -21,8 +21,9 @@ mod common;
 
 #[cfg(test)]
 mod tests {
-
     use crate::common::*;
+    #[cfg(target_family = "wasm")]
+    use idb::builder::{DatabaseBuilder, ObjectStoreBuilder};
     use wasm_bindgen_test::*;
 
     wasm_bindgen_test_configure!(run_in_browser);
@@ -48,16 +49,16 @@ mod tests {
     #[wasm_bindgen_test]
     pub async fn can_migrate_new_idb_db_versions() {
         let store_name = store_name();
-        let rexie = rexie::Rexie::builder(&store_name)
+        let idb = DatabaseBuilder::new(&store_name)
             .version(1)
-            .add_object_store(rexie::ObjectStore::new("regression_check").auto_increment(false))
+            .add_object_store(ObjectStoreBuilder::new("regression_check").auto_increment(false))
             .build()
             .await
             .unwrap();
 
-        assert!(rexie.store_names().contains(&"regression_check".into()));
+        assert!(idb.store_names().contains(&"regression_check".into()));
 
-        rexie.close();
+        idb.close();
 
         let store = core_crypto_keystore::Connection::open_with_key(&store_name, TEST_ENCRYPTION_KEY)
             .await
