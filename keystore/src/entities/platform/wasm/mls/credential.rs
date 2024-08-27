@@ -19,7 +19,8 @@ use crate::{
     entities::{Entity, EntityBase, EntityFindParams, MlsCredential, MlsCredentialExt, StringEntityId},
     CryptoKeystoreError, CryptoKeystoreResult, MissingKeyErrorKind,
 };
-use rexie::TransactionMode;
+use idb::TransactionMode;
+use wasm_bindgen::JsValue;
 
 #[cfg_attr(target_family = "wasm", async_trait::async_trait(?Send))]
 #[cfg_attr(not(target_family = "wasm"), async_trait::async_trait)]
@@ -102,12 +103,13 @@ impl MlsCredentialExt for MlsCredential {
         let storage = conn.storage_mut();
         let (collection, index) = (Self::COLLECTION_NAME, "credential");
         match &mut storage.storage {
-            WasmStorageWrapper::Persistent(rexie) => {
-                let transaction = rexie.transaction(&[collection], TransactionMode::ReadWrite)?;
-                let store = transaction.store(collection)?;
+            WasmStorageWrapper::Persistent(idb) => {
+                let transaction = idb.transaction(&[collection], TransactionMode::ReadWrite)?;
+                let store = transaction.object_store(collection)?;
                 let store_index = store.index(index)?;
                 let credential_js: wasm_bindgen::JsValue = js_sys::Uint8Array::from(&credential[..]).into();
-                let Some(entity_raw) = store_index.get(credential_js).await? else {
+                let request = store_index.get(credential_js)?;
+                let Some(entity_raw) = request.await? else {
                     let reason = "'credential' in 'mls_credentials' collection";
                     let value = hex::encode(&credential);
                     return Err(CryptoKeystoreError::NotFound(reason, value));
@@ -116,8 +118,9 @@ impl MlsCredentialExt for MlsCredential {
                 let mut credential = serde_wasm_bindgen::from_value::<MlsCredential>(entity_raw)?;
                 credential.decrypt(&storage.cipher)?;
 
-                let id = js_sys::Uint8Array::from(credential.id.as_slice());
-                store.delete(id.into()).await?;
+                let id = JsValue::from(credential.id.clone());
+                let request = store.delete(id)?;
+                request.await?;
             }
             WasmStorageWrapper::InMemory(_) => {
                 // current table model does not fit in a hashmap (no more primary key)
