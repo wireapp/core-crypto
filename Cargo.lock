@@ -412,12 +412,6 @@ checksum = "4c7f02d4ea65f2c1853089ffd8d2787bdbc63de2f0d29dedbcf8ccdfa0ccd4cf"
 
 [[package]]
 name = "base64"
-version = "0.13.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9e1b586273c5702936fe7b7d6896644d8be71e6314cfe09d3167c95f712589e8"
-
-[[package]]
-name = "base64"
 version = "0.21.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "9d297deb1925b89f2ccc13d7635fa0714f12c87adce1c75356b39ca9b7178567"
@@ -910,7 +904,6 @@ version = "0.16.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e859cd57d0710d9e06c381b550c06e76992472a8c6d527aecd2fc673dcc231fb"
 dependencies = [
- "percent-encoding",
  "time",
  "version_check",
 ]
@@ -1555,28 +1548,6 @@ checksum = "7360491ce676a36bf9bb3c56c1aa791658183a54d2744120f27285738d90465a"
 
 [[package]]
 name = "fantoccini"
-version = "0.20.0-rc.3"
-source = "git+https://github.com/otak/fantoccini?branch=feat/session-handshake#449c5364d5862928078b3b1e4dc502835b95a21e"
-dependencies = [
- "base64 0.13.1",
- "cookie 0.16.2",
- "futures-core",
- "futures-util",
- "http 0.2.12",
- "hyper 0.14.30",
- "hyper-tls 0.5.0",
- "mime",
- "serde",
- "serde_json",
- "thiserror",
- "time",
- "tokio",
- "url",
- "webdriver 0.46.0",
-]
-
-[[package]]
-name = "fantoccini"
 version = "0.21.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "871139c015d646c5fbe287b85876fa060c9d7870ccc388e989c056b303d8462a"
@@ -1597,7 +1568,7 @@ dependencies = [
  "time",
  "tokio",
  "url",
- "webdriver 0.50.0",
+ "webdriver",
 ]
 
 [[package]]
@@ -2423,7 +2394,7 @@ dependencies = [
  "core-crypto",
  "cryptobox",
  "dirs",
- "fantoccini 0.21.1",
+ "fantoccini",
  "femme",
  "hex",
  "log",
@@ -5515,7 +5486,7 @@ dependencies = [
  "const_format",
  "dirs",
  "eyre",
- "fantoccini 0.20.0-rc.3",
+ "fantoccini",
  "flate2",
  "futures-util",
  "hex",
@@ -5586,25 +5557,6 @@ checksum = "26fdeaafd9bd129f65e7c031593c24d62186301e0c72c8978fa1678be7d532c0"
 dependencies = [
  "js-sys",
  "wasm-bindgen",
-]
-
-[[package]]
-name = "webdriver"
-version = "0.46.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9973cb72c8587d5ad5efdb91e663d36177dc37725e6c90ca86c626b0cc45c93f"
-dependencies = [
- "base64 0.13.1",
- "bytes",
- "cookie 0.16.2",
- "http 0.2.12",
- "log",
- "serde",
- "serde_derive",
- "serde_json",
- "time",
- "unicode-segmentation",
- "url",
 ]
 
 [[package]]
