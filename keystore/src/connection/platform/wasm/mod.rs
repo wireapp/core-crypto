@@ -74,6 +74,10 @@ fn determine_pre_version(pre_str: &str) -> u32 {
     base_version + pre_identifier_version
 }
 
+const fn version_number(version_major: u32, version_minor: u32, version_patch: u32, version_pre: u32) -> u32 {
+    version_major * 10_000_000 + version_minor * 100_000 + version_patch * 1_000 + version_pre
+}
+
 #[cfg_attr(target_family = "wasm", async_trait::async_trait(?Send))]
 #[cfg_attr(not(target_family = "wasm"), async_trait::async_trait)]
 impl DatabaseConnection for WasmConnection {
@@ -92,7 +96,7 @@ impl DatabaseConnection for WasmConnection {
         // - patch: breaks after version 99
         // - prerelease: breaks after rc.99
         // - build: breaks after r9
-        let version = version_major * 10_000_000 + version_minor * 100_000 + version_patch * 1_000 + version_pre;
+        let version = version_number(version_major, version_minor, version_patch, version_pre);
 
         let rexie_builder = rexie::Rexie::builder(&name)
             .version(version)
