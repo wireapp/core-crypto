@@ -55,6 +55,7 @@ lazy_static = { workspace = true }
 portpicker = { workspace = true }
 pem = { workspace = true }
 rand = { workspace = true }
+rstest = { workspace = true }
 
 [target.'cfg(not(target_family = "wasm"))'.dev-dependencies]
 reqwest = { workspace = true, features = ["json", "cookies"] }
