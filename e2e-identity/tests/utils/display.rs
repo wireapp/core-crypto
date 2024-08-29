@@ -227,7 +227,7 @@ impl TestDisplay {
     }
 
     fn readme() -> PathBuf {
-        PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("README.md")
+        PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("README.md.test")
     }
 }
 
