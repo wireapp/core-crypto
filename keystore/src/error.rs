@@ -153,6 +153,12 @@ pub enum CryptoKeystoreError {
     #[cfg(target_family = "wasm")]
     #[error(transparent)]
     IdbError(#[from] idb::Error),
+    #[cfg(target_family = "wasm")]
+    #[error(transparent)]
+    CryptoKeystoreErrorV1_0_0(#[from] keystore_v_1_0_0::CryptoKeystoreError),
+    #[cfg(target_family = "wasm")]
+    #[error("Migration from version {0} is not supported")]
+    MigrationNotSupported(u32),
 }
 
 #[cfg(target_family = "wasm")]

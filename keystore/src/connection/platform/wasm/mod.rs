@@ -14,14 +14,16 @@
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see http://www.gnu.org/licenses/.
 
+use crate::connection::platform::wasm::migrations::migrate;
 use crate::{
     connection::{DatabaseConnection, DatabaseConnectionRequirements},
     CryptoKeystoreResult,
 };
-use idb::builder::{DatabaseBuilder, IndexBuilder, ObjectStoreBuilder};
-use idb::{Factory, KeyPath};
+use idb::Factory;
 
+mod migrations;
 pub mod storage;
+
 use self::storage::{WasmEncryptedStorage, WasmStorageWrapper};
 
 #[derive(Debug)]
@@ -99,113 +101,29 @@ impl DatabaseConnection for WasmConnection {
         // - build: breaks after r9
         let version = version_number(version_major, version_minor, version_patch, version_pre);
 
-        let idb_builder = DatabaseBuilder::new(&name)
-            .version(version)
-            .add_object_store(
-                ObjectStoreBuilder::new("mls_credentials")
-                    .auto_increment(false)
-                    .add_index(IndexBuilder::new("id".into(), KeyPath::new_single("id")))
-                    .add_index(IndexBuilder::new("credential".into(), KeyPath::new_single("credential")).unique(true)),
-            )
-            .add_object_store(
-                ObjectStoreBuilder::new("mls_signature_keypairs")
-                    .auto_increment(false)
-                    .add_index(IndexBuilder::new(
-                        "signature_scheme".into(),
-                        KeyPath::new_single("signature_scheme"),
-                    ))
-                    .add_index(IndexBuilder::new("signature_pk".into(), KeyPath::new_single("pk"))),
-            )
-            .add_object_store(
-                ObjectStoreBuilder::new("mls_hpke_private_keys")
-                    .auto_increment(false)
-                    .add_index(IndexBuilder::new("pk".into(), KeyPath::new_single("pk")).unique(true)),
-            )
-            .add_object_store(
-                ObjectStoreBuilder::new("mls_encryption_keypairs")
-                    .auto_increment(false)
-                    .add_index(IndexBuilder::new("pk".into(), KeyPath::new_single("pk")).unique(true)),
-            )
-            .add_object_store(
-                ObjectStoreBuilder::new("mls_epoch_encryption_keypairs")
-                    .auto_increment(false)
-                    .add_index(IndexBuilder::new("id".into(), KeyPath::new_single("id")).unique(true)),
-            )
-            .add_object_store(
-                ObjectStoreBuilder::new("mls_psk_bundles")
-                    .auto_increment(false)
-                    .add_index(IndexBuilder::new("psk_id".into(), KeyPath::new_single("psk_id")).unique(true)),
-            )
-            .add_object_store(
-                ObjectStoreBuilder::new("mls_keypackages")
-                    .auto_increment(false)
-                    .add_index(
-                        IndexBuilder::new("keypackage_ref".into(), KeyPath::new_single("keypackage_ref")).unique(true),
-                    ),
-            )
-            .add_object_store(
-                ObjectStoreBuilder::new("mls_groups")
-                    .auto_increment(false)
-                    .add_index(IndexBuilder::new("id".into(), KeyPath::new_single("id")).unique(true)),
-            )
-            .add_object_store(
-                ObjectStoreBuilder::new("mls_pending_groups")
-                    .auto_increment(false)
-                    .add_index(IndexBuilder::new("id".into(), KeyPath::new_single("id")).unique(true)),
-            )
-            .add_object_store(
-                ObjectStoreBuilder::new("mls_pending_messages")
-                    .auto_increment(false)
-                    .add_index(IndexBuilder::new("id".into(), KeyPath::new_single("id"))),
-            )
-            .add_object_store(
-                ObjectStoreBuilder::new("e2ei_enrollment")
-                    .auto_increment(false)
-                    .add_index(IndexBuilder::new("id".into(), KeyPath::new_single("id")).unique(true)),
-            )
-            .add_object_store(
-                ObjectStoreBuilder::new("e2ei_refresh_token")
-                    .auto_increment(false)
-                    .add_index(IndexBuilder::new("id".into(), KeyPath::new_single("id")).unique(true)),
-            )
-            .add_object_store(
-                ObjectStoreBuilder::new("e2ei_acme_ca")
-                    .auto_increment(false)
-                    .add_index(IndexBuilder::new("id".into(), KeyPath::new_single("id")).unique(true)),
-            )
-            .add_object_store(
-                ObjectStoreBuilder::new("e2ei_intermediate_certs")
-                    .auto_increment(false)
-                    .add_index(
-                        IndexBuilder::new("ski_aki_pair".into(), KeyPath::new_single("ski_aki_pair")).unique(true),
-                    ),
-            )
-            .add_object_store(ObjectStoreBuilder::new("e2ei_crls").auto_increment(false).add_index(
-                IndexBuilder::new("distribution_point".into(), KeyPath::new_single("distribution_point")).unique(true),
-            ))
-            .add_object_store(
-                ObjectStoreBuilder::new("proteus_prekeys")
-                    .auto_increment(false)
-                    .add_index(IndexBuilder::new("id".into(), KeyPath::new_single("id")).unique(true)),
-            )
-            .add_object_store(
-                ObjectStoreBuilder::new("proteus_identities")
-                    .auto_increment(false)
-                    .add_index(IndexBuilder::new("pk".into(), KeyPath::new_single("pk")).unique(true)),
-            )
-            .add_object_store(
-                ObjectStoreBuilder::new("proteus_sessions")
-                    .auto_increment(false)
-                    .add_index(IndexBuilder::new("id".into(), KeyPath::new_single("id")).unique(true)),
-            );
+        let factory = Factory::new()?;
 
-        #[cfg(feature = "idb-regression-test")]
-        let idb_builder =
-            idb_builder.add_object_store(ObjectStoreBuilder::new("regression_check").auto_increment(false));
+        let open_existing = factory.open(&name, None)?;
+        let existing_db = open_existing.await?;
+        let mut migrated_version = existing_db.version()?;
 
-        let idb = idb_builder.build().await?;
+        let idb = if migrated_version == version {
+            // Migration is not needed, just return existing db
+            existing_db
+        } else {
+            // Migration is needed
+            existing_db.close();
+
+            while migrated_version < version {
+                migrated_version = migrate(migrated_version, version, &name, key).await?;
+            }
+
+            let open_request = factory.open(&name, Some(version))?;
+            open_request.await?
+        };
 
         let storage = WasmStorageWrapper::Persistent(idb);
+
         let conn = WasmEncryptedStorage::new(key, storage);
 
         Ok(Self { name, conn })
