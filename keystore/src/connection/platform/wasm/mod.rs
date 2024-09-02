@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see http://www.gnu.org/licenses/.
 
-use crate::connection::platform::wasm::migrations::migrate;
+use crate::connection::platform::wasm::migrations::open_and_migrate;
 use crate::{
     connection::{DatabaseConnection, DatabaseConnectionRequirements},
     CryptoKeystoreResult,
@@ -44,43 +44,6 @@ impl WasmConnection {
 
 impl DatabaseConnectionRequirements for WasmConnection {}
 
-fn determine_pre_version(pre_str: &str) -> u32 {
-    let mut pre_parts = pre_str.split('+');
-    // We ignore the build number for simplicity's sake and we don't really use it either
-    // So we just pick what's before the build number
-    let Some(pre_version) = pre_parts.next() else {
-        return 0;
-    };
-
-    // <pre-release identifier> "." <dot-separated pre-release identifiers>
-    let mut pre_version_parts = pre_version.split('.');
-
-    // grab the pre-version identifier (i.e. alpha, beta, pre, rc, etc)
-    let Some(pre_identifier) = pre_version_parts.next() else {
-        return 0;
-    };
-
-    // grab the pre-version build identifier i.e. rc.24, here we extract and parse the "24"
-    let pre_identifier_version = pre_version_parts
-        .next()
-        .and_then(|v| v.parse::<u32>().ok())
-        .unwrap_or_default();
-
-    let base_version = match pre_identifier {
-        "alpha" => 200,
-        "beta" => 400,
-        "pre" => 600,
-        "rc" => 800,
-        _ => 0,
-    };
-
-    base_version + pre_identifier_version
-}
-
-const fn version_number(version_major: u32, version_minor: u32, version_patch: u32, version_pre: u32) -> u32 {
-    version_major * 10_000_000 + version_minor * 100_000 + version_patch * 1_000 + version_pre
-}
-
 #[cfg_attr(target_family = "wasm", async_trait::async_trait(?Send))]
 #[cfg_attr(not(target_family = "wasm"), async_trait::async_trait)]
 impl DatabaseConnection for WasmConnection {
@@ -88,39 +51,7 @@ impl DatabaseConnection for WasmConnection {
         let name = name.to_string();
         // ? Maybe find a cleaner way to define the schema
 
-        let version_major = env!("CARGO_PKG_VERSION_MAJOR").parse::<u32>().unwrap_or_default();
-        let version_minor = env!("CARGO_PKG_VERSION_MINOR").parse::<u32>().unwrap_or_default();
-        let version_patch = env!("CARGO_PKG_VERSION_PATCH").parse::<u32>().unwrap_or_default();
-        let version_pre: u32 = determine_pre_version(env!("CARGO_PKG_VERSION_PRE"));
-
-        // ? Watch out, version limits, do NOT exceed those before patching:
-        // - major: breaks after version 429
-        // - minor: breaks after version 99
-        // - patch: breaks after version 99
-        // - prerelease: breaks after rc.99
-        // - build: breaks after r9
-        let version = version_number(version_major, version_minor, version_patch, version_pre);
-
-        let factory = Factory::new()?;
-
-        let open_existing = factory.open(&name, None)?;
-        let existing_db = open_existing.await?;
-        let mut migrated_version = existing_db.version()?;
-
-        let idb = if migrated_version == version {
-            // Migration is not needed, just return existing db
-            existing_db
-        } else {
-            // Migration is needed
-            existing_db.close();
-
-            while migrated_version < version {
-                migrated_version = migrate(migrated_version, version, &name, key).await?;
-            }
-
-            let open_request = factory.open(&name, Some(version))?;
-            open_request.await?
-        };
+        let idb = open_and_migrate(&name, key).await?;
 
         let storage = WasmStorageWrapper::Persistent(idb);
 

@@ -1,4 +1,3 @@
-use crate::connection::platform::wasm::version_number;
 use crate::connection::storage::{WasmEncryptedStorage, WasmStorageWrapper};
 use crate::connection::KeystoreDatabaseConnection;
 use crate::entities::{
@@ -9,7 +8,7 @@ use crate::entities::{
 };
 use crate::{CryptoKeystoreError, CryptoKeystoreResult};
 use idb::builder::{DatabaseBuilder, IndexBuilder, ObjectStoreBuilder};
-use idb::KeyPath;
+use idb::{Database, Factory, KeyPath};
 use keystore_v_1_0_0::connection::KeystoreDatabaseConnection as KeystoreDatabaseConnectionV1_0_0;
 use keystore_v_1_0_0::entities::{
     E2eiAcmeCA as E2eiAcmeCAV1_0_0, E2eiCrl as E2eiCrlV1_0_0, E2eiEnrollment as E2eiEnrollmentV1_0_0,
@@ -24,30 +23,64 @@ use keystore_v_1_0_0::entities::{
 };
 use keystore_v_1_0_0::CryptoKeystoreError as CryptoKeystoreErrorV1_0_0;
 
-/// This is called from a while loop. The `from` argument represents the version the migration is performed from.
-/// The function will return the version number of the DB resulting from the migration.
-///
-/// To add a new migration, adjust the previous bottom match arm to return the current version,
-///     add a new match arm below that matches on that version, perform the migration workload
-///     and finally return `final_target`.
-pub(crate) async fn migrate(from: u32, final_target: u32, name: &str, key: &str) -> CryptoKeystoreResult<u32> {
-    const VERSION_NUMBER_V1_0_2: u32 = version_number(1, 0, 2, 0);
-    match from {
-        // The latest version that results from a migration must always map to "final_target"
-        //      to ensure convergence of the while loop this is called from.
-        0..=VERSION_NUMBER_V1_0_2 => {
-            // The version passed into this function must be the same as the one returned by this match arm.
-            // Will need to be adjusted once you add a new migration.
-            migrate_to_post_v_1_0_2(name, key, final_target).await?;
-            Ok(final_target)
+const fn db_version_number(counter: u32) -> u32 {
+    // When the DB version was tied to core crypto, the version counter was the sum of 10_000_000
+    // for a major version, 1_000 for a patch version. I.e., the number for v1.0.2 was:
+    const VERSION_1_0_2: u32 = 10_000_000 + 2_000;
+    // From post v1.0.2, we will just increment whenever we need a DB migration.
+    VERSION_1_0_2 + counter
+}
+
+const DB_VERSION_0: u32 = db_version_number(0);
+
+/// Open an existing idb database with the given name and key, and migrate it if needed.
+pub(crate) async fn open_and_migrate(name: &str, key: &str) -> CryptoKeystoreResult<Database> {
+    /// Increment when adding a new migration.
+    const TARGET_VERSION: u32 = db_version_number(1);
+    let factory = Factory::new()?;
+
+    let open_existing = factory.open(name, None)?;
+    let existing_db = open_existing.await?;
+    let mut version = existing_db.version()?;
+    if version == TARGET_VERSION {
+        // Migration is not needed, just return existing db
+        Ok(existing_db)
+    } else {
+        // Migration is needed
+        existing_db.close();
+
+        while version < TARGET_VERSION {
+            version = do_migration_step(version, name, key).await?;
         }
+
+        let open_request = factory.open(name, Some(TARGET_VERSION))?;
+        open_request.await.map_err(Into::into)
+    }
+}
+
+/// The `from` argument represents the version the migration is performed from the function will
+/// return the version number of the DB resulting from the migration.
+///
+/// To add a new migration, add a new match arm below the latest one.
+/// It must match on the version it migrates from, and call a function that performs the migration
+/// workload, which returns the version it migrates to, which is the same value as TARGET_VERSION in
+/// the function above at the time the migration is added.
+///
+/// However, do not use the constant but hardcode the value into the function.
+/// This way it will keep working once a new migration is added after it.
+async fn do_migration_step(from: u32, name: &str, key: &str) -> CryptoKeystoreResult<u32> {
+    match from {
+        // The version that results from the latest migration must match TARGET_VERSION
+        //      to ensure convergence of the while loop this is called from.
+        0..=DB_VERSION_0 => migrate_to_version_1(name, key).await,
         _ => Err(CryptoKeystoreError::MigrationNotSupported(from)),
     }
 }
 
-/// Migrates from any old version to post 1.0.2 (unclear right now what number this will be).
+/// Migrates from any old DB version to DB version 1.
 /// Assumption: the entire storage fits into memory
-async fn migrate_to_post_v_1_0_2(name: &str, key: &str, version: u32) -> CryptoKeystoreResult<()> {
+async fn migrate_to_version_1(name: &str, key: &str) -> CryptoKeystoreResult<u32> {
+    const MIGRATING_TO: u32 = db_version_number(1);
     let old_storage = keystore_v_1_0_0::Connection::open_with_key(name, key).await?;
     let mut old_connection = old_storage.borrow_conn().await?;
 
@@ -76,7 +109,7 @@ async fn migrate_to_post_v_1_0_2(name: &str, key: &str, version: u32) -> CryptoK
     old_storage.close().await?;
 
     // Create new storage. Cannot use public API here because we would end in a never-ending loop
-    let new_idb = get_builder(name, version).build().await?;
+    let new_idb = get_builder(name, MIGRATING_TO).build().await?;
     let new_wrapper = WasmStorageWrapper::Persistent(new_idb);
     let mut new_storage = WasmEncryptedStorage::new(key, new_wrapper);
     // Now store all converted records in the new storage.
@@ -135,12 +168,12 @@ async fn migrate_to_post_v_1_0_2(name: &str, key: &str, version: u32) -> CryptoK
         .await?;
     // Migration finished
     new_storage.close()?;
-    Ok(())
+    Ok(MIGRATING_TO)
 }
 
 fn get_builder_v0(name: &str) -> DatabaseBuilder {
     let idb_builder = DatabaseBuilder::new(name)
-        .version(0) // TODO use constant
+        .version(DB_VERSION_0)
         .add_object_store(
             ObjectStoreBuilder::new(MlsCredential::COLLECTION_NAME)
                 .auto_increment(false)
