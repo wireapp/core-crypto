@@ -8,7 +8,7 @@ use crate::entities::{
 };
 use crate::{CryptoKeystoreError, CryptoKeystoreResult};
 use idb::builder::{DatabaseBuilder, IndexBuilder, ObjectStoreBuilder};
-use idb::{Database, Factory, KeyPath};
+use idb::{Database, Factory, KeyPath, TransactionMode};
 use keystore_v_1_0_0::connection::KeystoreDatabaseConnection as KeystoreDatabaseConnectionV1_0_0;
 use keystore_v_1_0_0::entities::{
     E2eiAcmeCA as E2eiAcmeCAV1_0_0, E2eiCrl as E2eiCrlV1_0_0, E2eiEnrollment as E2eiEnrollmentV1_0_0,
@@ -22,6 +22,7 @@ use keystore_v_1_0_0::entities::{
     ProteusSession as ProteusSessionV1_0_0, UniqueEntity as UniqueEntityV1_0_0,
 };
 use keystore_v_1_0_0::CryptoKeystoreError as CryptoKeystoreErrorV1_0_0;
+use serde::ser::Serialize;
 
 const fn db_version_number(counter: u32) -> u32 {
     // When the DB version was tied to core crypto, the version counter was the sum of 10_000_000
@@ -77,98 +78,104 @@ async fn do_migration_step(from: u32, name: &str, key: &str) -> CryptoKeystoreRe
     }
 }
 
+/// With the current feature set of stable rust macros, we're not aware how to construct an
+/// identifier for each entity inside the macro.
+///
+/// We need it for a variable to store the conversion result.
+/// So we have to take an identifier for each entity as an argument.
+/// Can be done better once [concat_idents] is stabilized, or we can use tuple indexing
+/// when ${index()} is stabilized (https://github.com/rust-lang/rust/pull/122808).
+macro_rules! migrate_entities_to_version_1 {
+    ($name:expr, $key:expr, [ $( ($records:ident, $entity:ty) ),* ]) => {
+        {
+
+            let old_storage = keystore_v_1_0_0::Connection::open_with_key($name, $key).await?;
+            let mut old_connection = old_storage.borrow_conn().await?;
+
+            // A tuple of vectors containing records of each entity.
+            // See docstring. Here, alternatively, we will be able construct an identifier for each
+            // entity or use tuple indexing below once one of the required language features is
+            // stable.
+            let converted_collections = ( $(
+                <$entity>::convert_to_db_version_1(&mut old_connection).await?,
+            )* );
+
+            drop(old_connection);
+            old_storage.close().await?;
+
+            // First open the new DB with DB_VERSION_0 – we only want to increment the version
+            // counter once the migration is complete.
+            let idb_during_migration = get_builder_v0($name).build().await?;
+            let stores = idb_during_migration.store_names();
+            let transaction = idb_during_migration.transaction(&stores, TransactionMode::ReadWrite)?;
+            let wrapper_during_migration = WasmStorageWrapper::Persistent(idb_during_migration);
+            let storage_during_migration = WasmEncryptedStorage::new($key, wrapper_during_migration);
+            let serializer = serde_wasm_bindgen::Serializer::json_compatible();
+
+            // See docstring. Here, alternatively, we'd use the identifiers constructed above for
+            // each entity or use tuple indexing once one of the required language features is
+            // stable.
+            let ( $( $records, )* ) = converted_collections;
+
+            $(
+                let store = transaction.object_store(<$entity>::COLLECTION_NAME)?;
+                for mut record in $records {
+                    let key = record.id()?;
+                    record.encrypt(&storage_during_migration.cipher)?;
+                    let js_value = record.serialize(&serializer)?;
+                    let request = store.put(&js_value, Some(&key))?;
+                    request.await?;
+                }
+            )*
+
+            let result = transaction.await?;
+
+            storage_during_migration.close()?;
+
+            if !result.is_committed() {
+                return Err(CryptoKeystoreError::MigrationFailed);
+            }
+
+            // The migration is complete and the version counter can be incremented.
+            const MIGRATING_TO: u32 = db_version_number(1);
+            let factory = Factory::new()?;
+            let open_request = factory.open($name, Some(MIGRATING_TO))?;
+            let idb = open_request.await?;
+            idb.close();
+
+            Ok(MIGRATING_TO)
+        }
+    };
+}
+
 /// Migrates from any old DB version to DB version 1.
-/// Assumption: the entire storage fits into memory
+///
+/// _**Assumption**_: the entire storage fits into memory
 async fn migrate_to_version_1(name: &str, key: &str) -> CryptoKeystoreResult<u32> {
-    const MIGRATING_TO: u32 = db_version_number(1);
-    let old_storage = keystore_v_1_0_0::Connection::open_with_key(name, key).await?;
-    let mut old_connection = old_storage.borrow_conn().await?;
-
-    // Get all "old" records and convert them
-    // ! Assumption: the entire storage fits into memory
-    let mut credentials = MlsCredential::convert_to_db_version_1(&mut old_connection).await?;
-    let mut signature_keys = MlsSignatureKeyPair::convert_to_db_version_1(&mut old_connection).await?;
-    let mut hpke_keys = MlsHpkePrivateKey::convert_to_db_version_1(&mut old_connection).await?;
-    let mut encryption_keys = MlsEncryptionKeyPair::convert_to_db_version_1(&mut old_connection).await?;
-    let mut epoch_encryption_keys = MlsEpochEncryptionKeyPair::convert_to_db_version_1(&mut old_connection).await?;
-    let mut psk_bundles = MlsPskBundle::convert_to_db_version_1(&mut old_connection).await?;
-    let mut key_packages = MlsKeyPackage::convert_to_db_version_1(&mut old_connection).await?;
-    let mut groups = PersistedMlsGroup::convert_to_db_version_1(&mut old_connection).await?;
-    let mut pending_groups = PersistedMlsPendingGroup::convert_to_db_version_1(&mut old_connection).await?;
-    let mut pending_messages = MlsPendingMessage::convert_to_db_version_1(&mut old_connection).await?;
-    let mut e2ei_enrollments = E2eiEnrollment::convert_to_db_version_1(&mut old_connection).await?;
-    let mut e2ei_tokens = E2eiRefreshToken::convert_to_db_version_1(&mut old_connection).await?;
-    let mut e2ei_acme_cas = E2eiAcmeCA::convert_to_db_version_1(&mut old_connection).await?;
-    let mut e2ei_intermediates = E2eiIntermediateCert::convert_to_db_version_1(&mut old_connection).await?;
-    let mut e2ei_crls = E2eiCrl::convert_to_db_version_1(&mut old_connection).await?;
-    let mut proteus_prekeys = ProteusPrekey::convert_to_db_version_1(&mut old_connection).await?;
-    let mut proteus_identities = ProteusIdentity::convert_to_db_version_1(&mut old_connection).await?;
-    let mut proteus_sessions = ProteusSession::convert_to_db_version_1(&mut old_connection).await?;
-    // Fetching old records finished.
-    drop(old_connection);
-    old_storage.close().await?;
-
-    // Create new storage. Cannot use public API here because we would end in a never-ending loop
-    let new_idb = get_builder(name, MIGRATING_TO).build().await?;
-    let new_wrapper = WasmStorageWrapper::Persistent(new_idb);
-    let mut new_storage = WasmEncryptedStorage::new(key, new_wrapper);
-    // Now store all converted records in the new storage.
-    // This will overwrite all previous entities in the DB.
-    new_storage
-        .save(MlsCredential::COLLECTION_NAME, &mut credentials)
-        .await?;
-    new_storage
-        .save(MlsSignatureKeyPair::COLLECTION_NAME, &mut signature_keys)
-        .await?;
-    new_storage
-        .save(MlsHpkePrivateKey::COLLECTION_NAME, &mut hpke_keys)
-        .await?;
-    new_storage
-        .save(MlsEncryptionKeyPair::COLLECTION_NAME, &mut encryption_keys)
-        .await?;
-    new_storage
-        .save(MlsEpochEncryptionKeyPair::COLLECTION_NAME, &mut epoch_encryption_keys)
-        .await?;
-    new_storage
-        .save(MlsPskBundle::COLLECTION_NAME, &mut psk_bundles)
-        .await?;
-    new_storage
-        .save(MlsKeyPackage::COLLECTION_NAME, &mut key_packages)
-        .await?;
-    new_storage
-        .save(PersistedMlsGroup::COLLECTION_NAME, &mut groups)
-        .await?;
-    new_storage
-        .save(PersistedMlsPendingGroup::COLLECTION_NAME, &mut pending_groups)
-        .await?;
-    new_storage
-        .save(MlsPendingMessage::COLLECTION_NAME, &mut pending_messages)
-        .await?;
-    new_storage
-        .save(E2eiEnrollment::COLLECTION_NAME, &mut e2ei_enrollments)
-        .await?;
-    new_storage
-        .save(E2eiRefreshToken::COLLECTION_NAME, &mut e2ei_tokens)
-        .await?;
-    new_storage
-        .save(E2eiAcmeCA::COLLECTION_NAME, &mut e2ei_acme_cas)
-        .await?;
-    new_storage
-        .save(E2eiIntermediateCert::COLLECTION_NAME, &mut e2ei_intermediates)
-        .await?;
-    new_storage.save(E2eiCrl::COLLECTION_NAME, &mut e2ei_crls).await?;
-    new_storage
-        .save(ProteusPrekey::COLLECTION_NAME, &mut proteus_prekeys)
-        .await?;
-    new_storage
-        .save(ProteusIdentity::COLLECTION_NAME, &mut proteus_identities)
-        .await?;
-    new_storage
-        .save(ProteusSession::COLLECTION_NAME, &mut proteus_sessions)
-        .await?;
-    // Migration finished
-    new_storage.close()?;
-    Ok(MIGRATING_TO)
+    migrate_entities_to_version_1!(
+        name,
+        key,
+        [
+            (identifier_01, MlsCredential),
+            (identifier_02, MlsSignatureKeyPair),
+            (identifier_03, MlsHpkePrivateKey),
+            (identifier_04, MlsEncryptionKeyPair),
+            (identifier_05, MlsEpochEncryptionKeyPair),
+            (identifier_06, MlsPskBundle),
+            (identifier_07, MlsKeyPackage),
+            (identifier_08, PersistedMlsGroup),
+            (identifier_09, PersistedMlsPendingGroup),
+            (identifier_10, MlsPendingMessage),
+            (identifier_11, E2eiEnrollment),
+            (identifier_12, E2eiRefreshToken),
+            (identifier_13, E2eiAcmeCA),
+            (identifier_14, E2eiIntermediateCert),
+            (identifier_15, E2eiCrl),
+            (identifier_16, ProteusPrekey),
+            (identifier_17, ProteusIdentity),
+            (identifier_18, ProteusSession)
+        ]
+    )
 }
 
 fn get_builder_v0(name: &str) -> DatabaseBuilder {
