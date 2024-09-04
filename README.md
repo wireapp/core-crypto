@@ -131,6 +131,24 @@ cargo install cargo-nextest
 cargo nextest run
 ```
 
+#### Run core crypto tests on WASM target
+
+If you haven't already, install the target and wasm-pack:
+
+```ignore
+rustup target add wasm32-unknown-unknown
+cargo install wasm-pack
+```
+
+If you want to test for chrome, [get chromedriver](https://getwebdriver.com/chromedriver) or the webdriver for the
+browser you want to test for, respectively.
+
+Then, to run tests for a crate in the workspace do
+
+```ignore
+wasm-pack test --headless --chrome ./<crate-folder-to-test>
+```
+
 #### Addendum: testing all ciphersuites
 
 > [!warning]
