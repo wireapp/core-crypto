@@ -68,7 +68,7 @@ jobs:
         if: startsWith(github.ref, 'refs/tags/')
         uses: softprops/action-gh-release@v2
         with:
-            files: target/nextest/default/junit.xml
+          files: target/nextest/default/junit.xml
 
   test-keystore-regressions:
     runs-on: ubuntu-latest
@@ -118,7 +118,9 @@ jobs:
           target: wasm32-unknown-unknown
           rustflags: ''
       - name: Install wasm-pack
-        run: curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
+        uses: taiki-e/install-action@v2
+        with:
+          tool: wasm-pack
       - name: WASM build
         run: wasm-pack build --dev --target web ${{ matrix.workspace }}
 
@@ -127,7 +129,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        workspace: ["core-crypto-keystore", "mls-crypto-provider"]
+        crate_paths: [ "keystore", "mls-provider" ]
     steps:
       - uses: actions/checkout@v4
       - uses: actions-rust-lang/setup-rust-toolchain@v1  # this implicitly caches Rust tools and build artifacts
@@ -140,8 +142,12 @@ jobs:
           chrome-version: stable
       - run: |
           echo "CHROME_PATH=${{ steps.setup-chrome.outputs.chrome-path }}" >> $GITHUB_ENV
+      - name: Install wasm-pack
+        uses: taiki-e/install-action@v2
+        with:
+          tool: wasm-pack
       - name: Run tests (wasm)
-        run: cargo test --target wasm32-unknown-unknown -p ${{ matrix.workspace }}
+        run: wasm-pack test --headless --chrome ./${{ matrix.crate_paths }}
 
   # TODO: pending a proper solution to fix the size limit for WASM tests. Tracking issue: WPB-9581
   wasm-core-test:
@@ -158,6 +164,10 @@ jobs:
           chrome-version: stable
       - run: |
           echo "CHROME_PATH=${{ steps.setup-chrome.outputs.chrome-path }}" >> $GITHUB_ENV
+      - name: Install wasm-pack
+        uses: taiki-e/install-action@v2
+        with:
+          tool: wasm-pack
       - name: Run core tests (wasm)
         run: sh crypto-ffi/bindings/js/test/wasm-tests.sh
 
@@ -175,10 +185,14 @@ jobs:
           chrome-version: stable
       - run: |
           echo "CHROME_PATH=${{ steps.setup-chrome.outputs.chrome-path }}" >> $GITHUB_ENV
+      - name: Install wasm-pack
+        uses: taiki-e/install-action@v2
+        with:
+          tool: wasm-pack
       - name: Run tests (wasm)
         run: |
-          cargo test --features "proteus-keystore" --target wasm32-unknown-unknown -p core-crypto-keystore proteus
-          cargo test --features "proteus,cryptobox-migrate" --target wasm32-unknown-unknown -p core-crypto proteus
+          wasm-pack test --headless --chrome ./keystore -F "proteus-keystore" -- proteus
+          wasm-pack test --headless --chrome ./crypto -F "proteus,cryptobox-migrate" -- proteus
 
   e2e-interop-test:
     runs-on: ubuntu-latest
@@ -191,7 +205,9 @@ jobs:
       - name: Setup cargo-make
         uses: davidB/rust-cargo-make@v1
       - name: Install wasm-pack
-        run: curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
+        uses: taiki-e/install-action@v2
+        with:
+          tool: wasm-pack
       - uses: browser-actions/setup-chrome@latest
         id: setup-chrome
         with:

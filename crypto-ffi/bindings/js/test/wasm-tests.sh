@@ -1,4 +1,4 @@
-cargo test --target wasm32-unknown-unknown -p core-crypto --lib e2e_identity
-cargo test --target wasm32-unknown-unknown -p core-crypto --lib mls
-cargo test --target wasm32-unknown-unknown -p core-crypto --lib group_store
-cargo test --target wasm32-unknown-unknown -p core-crypto --lib proteus
+wasm-pack test --headless --chrome ./crypto -- e2e_identity
+wasm-pack test --headless --chrome ./crypto -- mls
+wasm-pack test --headless --chrome ./crypto -- group_store
+wasm-pack test --headless --chrome ./crypto -- proteus
