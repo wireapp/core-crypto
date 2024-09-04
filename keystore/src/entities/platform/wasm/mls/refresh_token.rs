@@ -20,8 +20,6 @@ use crate::{
     CryptoKeystoreError, CryptoKeystoreResult, MissingKeyErrorKind,
 };
 
-const ID: [u8; 1] = [0];
-
 #[cfg_attr(target_family = "wasm", async_trait::async_trait(?Send))]
 #[cfg_attr(not(target_family = "wasm"), async_trait::async_trait)]
 impl EntityBase for E2eiRefreshToken {
@@ -59,7 +57,7 @@ impl EntityBase for E2eiRefreshToken {
 
 impl Entity for E2eiRefreshToken {
     fn id_raw(&self) -> &[u8] {
-        &[0]
+        &Self::ID
     }
 
     fn encrypt(&mut self, cipher: &aes_gcm::Aes256Gcm) -> CryptoKeystoreResult<()> {
@@ -80,7 +78,7 @@ impl UniqueEntity for E2eiRefreshToken {
     async fn find_unique(conn: &mut Self::ConnectionType) -> CryptoKeystoreResult<Self> {
         Ok(conn
             .storage()
-            .get(Self::COLLECTION_NAME, &ID)
+            .get(Self::COLLECTION_NAME, &Self::ID)
             .await?
             .ok_or(CryptoKeystoreError::NotFound("refresh token", "".to_string()))?)
     }
