@@ -206,6 +206,7 @@ pub struct E2eiEnrollment {
 #[cfg_attr(target_family = "wasm", async_trait::async_trait(?Send))]
 #[cfg_attr(not(target_family = "wasm"), async_trait::async_trait)]
 pub trait UniqueEntity: Entity {
+    const ID: [u8; 1] = [0];
     async fn find_unique(conn: &mut Self::ConnectionType) -> CryptoKeystoreResult<Self>;
     async fn replace(&self, conn: &mut Self::ConnectionType) -> CryptoKeystoreResult<()>;
 }
