@@ -22,21 +22,10 @@ RANLIB_i686-linux-android = "llvm-ranlib"
 # ? With us having a git dependency to ring, this triggers this local development behavior, preventing
 # ? release builds on certain platforms. Gotta love build systems that are "UB as a service"
 # TODO: Remove this once we target a crates.io version of ring. Probably never! Tracking issue: WPB-9580
-CFLAGS="-Wno-error=inline"
+CFLAGS = "-Wno-error=inline"
 
 [alias]
 xtask = "run --manifest-path ./xtask/Cargo.toml --"
-
-[target.wasm32-unknown-unknown]
-runner = [
-    "cargo", "run",
-    "--bin", "wasm-browser-test-runner",
-    "--manifest-path", "../extras/wasm-browser-test-runner/Cargo.toml",
-    "--",
-    "--no-bidi",
-    "--webdriver=chrome",
-    "--timeout=600"
-]
 
 # Android linkage
 [target.armv7-linux-androideabi]
