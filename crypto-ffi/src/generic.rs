@@ -934,12 +934,11 @@ impl CoreCrypto {
         central.restore_from_disk().await?;
         cfg_if::cfg_if! {
             if #[cfg(feature = "proteus")] {
-                central.proteus_reload_sessions().await.map_err(|e|{
+                central.proteus_reload_sessions().await.inspect_err(|e|{
                     let errcode = e.proteus_error_code();
                     if errcode > 0 {
                         self.proteus_last_error_code.store(errcode, std::sync::atomic::Ordering::SeqCst);
                     }
-                    e
                 })?;
             }
         }
