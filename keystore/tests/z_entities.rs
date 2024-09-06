@@ -64,13 +64,15 @@ macro_rules! test_for_entity {
 #[cfg(test)]
 mod tests_impl {
     use super::common::*;
-    use crate::{utils::EntityTestExt, ENTITY_COUNT};
+    use crate::{utils::EntityRandomUpdateExt, ENTITY_COUNT};
     use core_crypto_keystore::{
         connection::KeystoreDatabaseConnection,
         entities::{Entity, EntityFindParams},
     };
 
-    pub(crate) async fn can_save_entity<R: EntityTestExt + Entity<ConnectionType = KeystoreDatabaseConnection>>(
+    pub(crate) async fn can_save_entity<
+        R: EntityRandomUpdateExt + Entity<ConnectionType = KeystoreDatabaseConnection>,
+    >(
         store: &CryptoKeystore,
     ) -> R {
         let entity = R::random();
@@ -79,7 +81,7 @@ mod tests_impl {
     }
 
     pub(crate) async fn can_find_entity<
-        R: EntityTestExt + Entity<ConnectionType = KeystoreDatabaseConnection> + 'static,
+        R: EntityRandomUpdateExt + Entity<ConnectionType = KeystoreDatabaseConnection> + 'static,
     >(
         store: &CryptoKeystore,
         entity: &R,
@@ -89,7 +91,9 @@ mod tests_impl {
         assert_eq!(*entity, entity2);
     }
 
-    pub(crate) async fn can_update_entity<R: EntityTestExt + Entity<ConnectionType = KeystoreDatabaseConnection>>(
+    pub(crate) async fn can_update_entity<
+        R: EntityRandomUpdateExt + Entity<ConnectionType = KeystoreDatabaseConnection>,
+    >(
         store: &CryptoKeystore,
         entity: &mut R,
     ) {
@@ -99,7 +103,9 @@ mod tests_impl {
         assert_eq!(*entity, entity2);
     }
 
-    pub(crate) async fn can_remove_entity<R: EntityTestExt + Entity<ConnectionType = KeystoreDatabaseConnection>>(
+    pub(crate) async fn can_remove_entity<
+        R: EntityRandomUpdateExt + Entity<ConnectionType = KeystoreDatabaseConnection>,
+    >(
         store: &CryptoKeystore,
         entity: R,
     ) {
@@ -109,7 +115,7 @@ mod tests_impl {
     }
 
     pub(crate) async fn can_list_entities_with_find_many<
-        R: EntityTestExt + Entity<ConnectionType = KeystoreDatabaseConnection>,
+        R: EntityRandomUpdateExt + Entity<ConnectionType = KeystoreDatabaseConnection>,
     >(
         store: &CryptoKeystore,
         ignore_entity_count: bool,
@@ -131,7 +137,7 @@ mod tests_impl {
     }
 
     pub(crate) async fn can_list_entities_with_find_all<
-        R: EntityTestExt + Entity<ConnectionType = KeystoreDatabaseConnection>,
+        R: EntityRandomUpdateExt + Entity<ConnectionType = KeystoreDatabaseConnection>,
     >(
         store: &CryptoKeystore,
         ignore_entity_count: bool,
@@ -146,7 +152,8 @@ mod tests_impl {
 #[cfg(test)]
 mod tests {
     use crate::common::*;
-    use crate::utils::EntityTestExt;
+    use crate::utils::EntityRandomExt;
+    use crate::utils::EntityRandomUpdateExt;
     use core_crypto_keystore::{Connection, CryptoKeystoreError};
     use wasm_bindgen_test::*;
 
@@ -195,240 +202,133 @@ mod tests {
 
 #[cfg(test)]
 pub mod utils {
+    #[cfg(target_family = "wasm")]
+    // Use V1_0_0 entities
+    use super::*;
+    use core_crypto_keystore::entities::{
+        E2eiEnrollment, MlsCredential, MlsEncryptionKeyPair, MlsEpochEncryptionKeyPair, MlsHpkePrivateKey,
+        MlsKeyPackage, MlsPendingMessage, MlsPskBundle, MlsSignatureKeyPair, PersistedMlsGroup,
+        PersistedMlsPendingGroup, ProteusSession,
+    };
     use rand::Rng as _;
+
     const MAX_BLOB_SIZE: std::ops::Range<usize> = 1024..8192;
 
-    pub trait EntityTestExt: core_crypto_keystore::entities::Entity {
+    pub trait EntityRandomExt {
         fn random() -> Self;
+    }
+    pub trait EntityRandomUpdateExt: EntityRandomExt {
         fn random_update(&mut self);
         /// Removes auto-generated fields from the entity
         fn equalize(&mut self) {}
     }
 
+    macro_rules! impl_entity_random_ext {
+                (
+                    $struct_name:ty,
+                    $(id_field=$id_field:ident, )?
+                    blob_fields=[
+                        $($blob_field:ident
+                        $( id_like:$id_like:literal)?, )*
+                    ]
+                    $(, additional_fields=[
+                        $((
+                            $additional_field_ident:ident: $additional_field_value:expr
+                        ),)+
+                    ])?
+                ) => {
+                    impl EntityRandomExt for $struct_name {
+                        fn random() -> Self {
+                            use rand::Rng as _;
+                            let mut rng = rand::thread_rng();
+
+                            $(
+                                let uuid = uuid::Uuid::new_v4();
+                                let $id_field: [u8; 16] = uuid.into_bytes();
+                            )?
+
+                            $(
+                                let mut $blob_field = vec![0; rng.gen_range(MAX_BLOB_SIZE)];
+                                rng.fill(&mut $blob_field[..]);
+                            )*
+
+                            Self {
+                                $($id_field: $id_field.into(),)?
+                                $($blob_field,)*
+                                $($($additional_field_ident: $additional_field_value,)+)?
+                            }
+                        }
+                    }
+                };
+            }
+
+    macro_rules! impl_entity_random_update_ext {
+                (
+                    $struct_name:ty,
+                    $(id_field=$id_field:ident, )?
+                    blob_fields=[
+                        $($blob_field:ident
+                        $( id_like:$id_like:literal)?, )*
+                    ]
+                    $(, additional_fields=[
+                        $((
+                            $additional_field_ident:ident: $additional_field_value:expr
+                            $(; auto-generated:$equalize:literal)?
+                        ),)+
+                    ])?
+                ) => {
+
+                    impl_entity_random_ext!(
+                        $struct_name,
+                        $(id_field=$id_field,)?
+                        blob_fields=[
+                            $($blob_field $(id_like:$id_like)?, )*
+                        ]
+                        $(, additional_fields=[
+                            $(($additional_field_ident: $additional_field_value),)+
+                        ])?
+                    );
+
+                    impl EntityRandomUpdateExt for $struct_name {
+                        fn random_update(&mut self) {
+                            let mut rng = rand::thread_rng();
+                            $(
+                                // Don't include id-like fields in update
+                                let include_in_update = !pat_to_bool!($($id_like)?);
+                                if include_in_update {
+                                    self.$blob_field = vec![0; rng.gen_range(MAX_BLOB_SIZE)];
+                                    rng.fill(&mut self.$blob_field[..]);
+                                }
+                            )*
+                        }
+
+                        $(
+                            fn equalize(&mut self) {
+                                $(
+                                    let field_should_be_equalized = pat_to_bool!($($equalize)?);
+                                    if field_should_be_equalized {
+                                        self.$additional_field_ident = $additional_field_value;
+                                    }
+                                )+
+                            }
+                        )?
+                    }
+                };
+            }
+
     cfg_if::cfg_if! {
         if #[cfg(feature = "mls-keystore")] {
-            impl EntityTestExt for core_crypto_keystore::entities::MlsKeyPackage {
-                fn random() -> Self {
-                    let mut rng = rand::thread_rng();
 
-                    let keypackage_ref = uuid::Uuid::new_v4().hyphenated().to_string().into_bytes();
-                    let mut keypackage = vec![0; rng.gen_range(MAX_BLOB_SIZE)];
-                    rng.fill(&mut keypackage[..]);
+            impl_entity_random_update_ext!(MlsKeyPackage, blob_fields=[keypackage,], additional_fields=[(keypackage_ref: uuid::Uuid::new_v4().hyphenated().to_string().into()),]);
+            impl_entity_random_update_ext!(MlsCredential, blob_fields=[credential,], additional_fields=[(id: uuid::Uuid::new_v4().hyphenated().to_string().into()),(created_at: 0; auto-generated:true),]);
+            impl_entity_random_update_ext!(MlsSignatureKeyPair, blob_fields=[pk,keypair,credential_id,], additional_fields=[(signature_scheme: rand::random()),]);
+            impl_entity_random_update_ext!(MlsHpkePrivateKey, blob_fields=[pk id_like:true,sk,]);
+            impl_entity_random_update_ext!(MlsEncryptionKeyPair, blob_fields=[pk id_like:true,sk,]);
+            impl_entity_random_update_ext!(MlsPskBundle, blob_fields=[psk,psk_id id_like:true,]);
+            impl_entity_random_update_ext!(PersistedMlsGroup, id_field=id, blob_fields=[state,], additional_fields=[(parent_id: None),]);
+            impl_entity_random_update_ext!(PersistedMlsPendingGroup, id_field=id, blob_fields=[state,custom_configuration,], additional_fields=[(parent_id: None),]);
+            impl_entity_random_update_ext!(MlsPendingMessage, id_field=id, blob_fields=[message,]);
 
-                    Self {
-                        keypackage_ref,
-                        keypackage,
-                    }
-                }
-
-                fn random_update(&mut self) {
-                    let mut rng = rand::thread_rng();
-                    self.keypackage = vec![0; rng.gen_range(MAX_BLOB_SIZE)];
-                    rng.fill(&mut self.keypackage[..]);
-                }
-            }
-
-            impl EntityTestExt for core_crypto_keystore::entities::MlsCredential {
-                fn random() -> Self {
-                    let mut rng = rand::thread_rng();
-
-                    let id: String = uuid::Uuid::new_v4().hyphenated().to_string();
-
-                    let mut credential = vec![0; rng.gen_range(MAX_BLOB_SIZE)];
-                    rng.fill(&mut credential[..]);
-
-                    Self {
-                        id: id.into(),
-                        credential,
-                        created_at: 0,
-                    }
-                }
-
-                fn random_update(&mut self) {
-                    let mut rng = rand::thread_rng();
-                    self.id = uuid::Uuid::new_v4().hyphenated().to_string().into();
-                    self.credential = vec![0; rng.gen_range(MAX_BLOB_SIZE)];
-                    rng.fill(&mut self.credential[..]);
-                }
-
-                fn equalize(&mut self) {
-                    self.created_at = 0;
-                }
-            }
-
-            impl EntityTestExt for core_crypto_keystore::entities::MlsSignatureKeyPair {
-                fn random() -> Self {
-                    let mut rng = rand::thread_rng();
-
-                    let mut pk = vec![0; rng.gen_range(MAX_BLOB_SIZE)];
-                    rng.fill(&mut pk[..]);
-
-                    let mut keypair = vec![0; rng.gen_range(MAX_BLOB_SIZE)];
-                    rng.fill(&mut keypair[..]);
-
-                    let mut credential_id = vec![0; rng.gen_range(MAX_BLOB_SIZE)];
-                    rng.fill(&mut credential_id[..]);
-
-                    Self {
-                        signature_scheme: rand::random(),
-                        keypair, pk, credential_id,
-                    }
-                }
-
-                fn random_update(&mut self) {
-                    let mut rng = rand::thread_rng();
-
-                    self.keypair = vec![0; rng.gen_range(MAX_BLOB_SIZE)];
-                    rng.fill(&mut self.keypair[..]);
-
-                    self.credential_id = vec![0; rng.gen_range(MAX_BLOB_SIZE)];
-                    rng.fill(&mut self.credential_id[..]);
-                }
-            }
-
-            impl EntityTestExt for core_crypto_keystore::entities::MlsHpkePrivateKey {
-                fn random() -> Self {
-                    let mut rng = rand::thread_rng();
-
-                    let mut pk = vec![0; rng.gen_range(MAX_BLOB_SIZE)];
-                    rng.fill(&mut pk[..]);
-
-                    let mut sk = vec![0; rng.gen_range(MAX_BLOB_SIZE)];
-                    rng.fill(&mut sk[..]);
-
-                    Self {
-                        pk, sk
-                    }
-                }
-
-                fn random_update(&mut self) {
-                    let mut rng = rand::thread_rng();
-
-                    self.sk = vec![0; rng.gen_range(MAX_BLOB_SIZE)];
-                    rng.fill(&mut self.sk[..]);
-                }
-            }
-
-            impl EntityTestExt for core_crypto_keystore::entities::MlsEncryptionKeyPair {
-                fn random() -> Self {
-                    let mut rng = rand::thread_rng();
-
-                    let mut pk = vec![0; rng.gen_range(MAX_BLOB_SIZE)];
-                    rng.fill(&mut pk[..]);
-
-                    let mut sk = vec![0; rng.gen_range(MAX_BLOB_SIZE)];
-                    rng.fill(&mut sk[..]);
-
-                    Self {
-                        pk, sk
-                    }
-                }
-
-                fn random_update(&mut self) {
-                    let mut rng = rand::thread_rng();
-
-                    self.sk = vec![0; rng.gen_range(MAX_BLOB_SIZE)];
-                    rng.fill(&mut self.sk[..]);
-                }
-            }
-
-            impl EntityTestExt for core_crypto_keystore::entities::MlsPskBundle {
-                fn random() -> Self {
-                    let mut rng = rand::thread_rng();
-
-                    let mut psk_id = vec![0; rng.gen_range(MAX_BLOB_SIZE)];
-                    rng.fill(&mut psk_id[..]);
-
-                    let mut psk = vec![0; rng.gen_range(MAX_BLOB_SIZE)];
-                    rng.fill(&mut psk[..]);
-
-                    Self {
-                        psk, psk_id
-                    }
-                }
-
-                fn random_update(&mut self) {
-                    let mut rng = rand::thread_rng();
-                    self.psk = vec![0; rng.gen_range(MAX_BLOB_SIZE)];
-                    rng.fill(&mut self.psk[..]);
-                }
-            }
-
-            impl EntityTestExt for core_crypto_keystore::entities::PersistedMlsGroup {
-                fn random() -> Self {
-                    use rand::Rng as _;
-                    let mut rng = rand::thread_rng();
-
-                    let uuid = uuid::Uuid::new_v4();
-                    let id: [u8; 16] = uuid.into_bytes();
-
-                    let mut state = vec![0; rng.gen_range(MAX_BLOB_SIZE)];
-                    rng.fill(&mut state[..]);
-
-                    Self {
-                        id: id.into(),
-                        state,
-                        parent_id: None,
-                    }
-                }
-
-                fn random_update(&mut self) {
-                    let mut rng = rand::thread_rng();
-                    self.state = vec![0; rng.gen_range(MAX_BLOB_SIZE)];
-                    rng.fill(&mut self.state[..]);
-                }
-            }
-
-            impl EntityTestExt for core_crypto_keystore::entities::PersistedMlsPendingGroup {
-                fn random() -> Self {
-                    use rand::Rng as _;
-                    let mut rng = rand::thread_rng();
-
-                    let uuid = uuid::Uuid::new_v4();
-                    let id: [u8; 16] = uuid.into_bytes();
-
-                    let mut state = vec![0; rng.gen_range(MAX_BLOB_SIZE)];
-                    rng.fill(&mut state[..]);
-
-                    let mut custom_configuration = vec![0; rng.gen_range(MAX_BLOB_SIZE)];
-                    rng.fill(&mut custom_configuration[..]);
-
-                    Self {
-                        id: id.into(),
-                        state,
-                        custom_configuration,
-                        parent_id: None,
-                    }
-                }
-
-                fn random_update(&mut self) {
-                    let mut rng = rand::thread_rng();
-                    self.state = vec![0; rng.gen_range(MAX_BLOB_SIZE)];
-                    rng.fill(&mut self.state[..]);
-                }
-            }
-
-            impl EntityTestExt for core_crypto_keystore::entities::MlsPendingMessage {
-                fn random() -> Self {
-                    use rand::Rng as _;
-                    let mut rng = rand::thread_rng();
-
-                    let uuid = uuid::Uuid::new_v4();
-                    let id: [u8; 16] = uuid.into_bytes();
-
-                    let mut message = vec![0; rng.gen_range(MAX_BLOB_SIZE)];
-                    rng.fill(&mut message[..]);
-
-                    Self {
-                        id: id.into(),
-                        message,
-                    }
-                }
-
-                fn random_update(&mut self) {
-                    let mut rng = rand::thread_rng();
-                    self.message = vec![0; rng.gen_range(MAX_BLOB_SIZE)];
-                    rng.fill(&mut self.message[..]);
                 }
             }
         }
@@ -436,7 +336,10 @@ pub mod utils {
 
     cfg_if::cfg_if! {
         if #[cfg(feature = "proteus-keystore")] {
-            impl EntityTestExt for core_crypto_keystore::entities::ProteusPrekey {
+
+            impl_entity_random_update_ext!(ProteusSession, blob_fields=[session,], additional_fields=[(id: uuid::Uuid::new_v4().hyphenated().to_string()),]);
+
+            impl EntityRandomExt for core_crypto_keystore::entities::ProteusPrekey {
                 fn random() -> Self {
                     use rand::Rng as _;
                     let mut rng = rand::thread_rng();
@@ -447,7 +350,9 @@ pub mod utils {
 
                     Self::from_raw(id, prekey)
                 }
+            }
 
+            impl EntityRandomUpdateExt for core_crypto_keystore::entities::ProteusPrekey {
                 fn random_update(&mut self) {
                     let mut rng = rand::thread_rng();
                     // self.set_id(rng.gen());
@@ -456,7 +361,7 @@ pub mod utils {
                 }
             }
 
-            impl EntityTestExt for core_crypto_keystore::entities::ProteusIdentity {
+             impl EntityRandomExt for core_crypto_keystore::entities::ProteusIdentity {
                 fn random() -> Self {
                     use rand::Rng as _;
                     let mut rng = rand::thread_rng();
@@ -471,7 +376,9 @@ pub mod utils {
                         pk,
                     }
                 }
+            }
 
+            impl EntityRandomUpdateExt for core_crypto_keystore::entities::ProteusIdentity {
                 fn random_update(&mut self) {
                     let mut rng = rand::thread_rng();
                     self.sk = vec![0u8; Self::SK_KEY_SIZE];
@@ -482,31 +389,11 @@ pub mod utils {
                 }
             }
 
-            impl EntityTestExt for core_crypto_keystore::entities::ProteusSession {
-                fn random() -> Self {
-                    use rand::Rng as _;
-                    let mut rng = rand::thread_rng();
+            impl_entity_random_update_ext!(E2eiEnrollment, id_field=id, blob_fields=[content,]);
+            impl_entity_random_update_ext!(MlsEpochEncryptionKeyPair, id_field=id, blob_fields=[keypairs,]);
 
-                    let uuid = uuid::Uuid::new_v4();
 
-                    let mut session = vec![0; rng.gen_range(MAX_BLOB_SIZE)];
-                    rng.fill(&mut session[..]);
-
-                    Self {
-                        id: uuid.hyphenated().to_string(),
-                        session,
-                    }
-                }
-
-                fn random_update(&mut self) {
-                    let mut rng = rand::thread_rng();
-
-                    self.session = vec![0; rng.gen_range(MAX_BLOB_SIZE)];
-                    rng.fill(&mut self.session[..]);
-                }
-            }
-
-            impl EntityTestExt for core_crypto_keystore::entities::E2eiIntermediateCert {
+            impl EntityRandomExt for core_crypto_keystore::entities::E2eiIntermediateCert {
                 fn random() -> Self {
                     let mut rng = rand::thread_rng();
 
@@ -524,7 +411,10 @@ pub mod utils {
                         content,
                     }
                 }
+            }
 
+
+            impl EntityRandomUpdateExt for core_crypto_keystore::entities::E2eiIntermediateCert {
                 fn random_update(&mut self) {
                     let mut rng = rand::thread_rng();
                     self.content = vec![0; rng.gen_range(MAX_BLOB_SIZE)];
@@ -532,7 +422,7 @@ pub mod utils {
                 }
             }
 
-            impl EntityTestExt for core_crypto_keystore::entities::E2eiCrl {
+            impl EntityRandomExt for core_crypto_keystore::entities::E2eiCrl {
                 fn random() -> Self {
                     let mut rng = rand::thread_rng();
 
@@ -551,7 +441,9 @@ pub mod utils {
                         content,
                     }
                 }
+            }
 
+            impl EntityRandomUpdateExt for core_crypto_keystore::entities::E2eiCrl {
                 fn random_update(&mut self) {
                     let mut rng = rand::thread_rng();
                     self.content = vec![0; rng.gen_range(MAX_BLOB_SIZE)];
@@ -559,45 +451,6 @@ pub mod utils {
                 }
             }
 
-             impl EntityTestExt for core_crypto_keystore::entities::E2eiEnrollment {
-                fn random() -> Self {
-                    let mut rng = rand::thread_rng();
-
-                    let uuid = uuid::Uuid::new_v4();
-                    let id: Vec<u8> = uuid.into_bytes().into();
-                    let content = vec![0; rng.gen_range(MAX_BLOB_SIZE)];
-                    Self {
-                        id,
-                        content,
-                    }
-                }
-
-                fn random_update(&mut self) {
-                    let mut rng = rand::thread_rng();
-                    self.content = vec![0; rng.gen_range(MAX_BLOB_SIZE)];
-                    rng.fill(&mut self.content[..]);
-                }
-            }
-
-            impl EntityTestExt for core_crypto_keystore::entities::MlsEpochEncryptionKeyPair {
-                fn random() -> Self {
-                    let uuid = uuid::Uuid::new_v4();
-                    let id: Vec<u8> = uuid.into_bytes().into();
-
-                    let mut rng = rand::thread_rng();
-                    let keypairs = vec![0; rng.gen_range(MAX_BLOB_SIZE)];
-                    Self {
-                        id,
-                        keypairs,
-                    }
-                }
-
-                fn random_update(&mut self) {
-                    let mut rng = rand::thread_rng();
-                    self.keypairs = vec![0; rng.gen_range(MAX_BLOB_SIZE)];
-                    rng.fill(&mut self.keypairs[..]);
-                }
-            }
         }
     }
 }
