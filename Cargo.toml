@@ -19,7 +19,7 @@ resolver = "2"
 [workspace.dependencies]
 async-lock = "3.4"
 async-recursion = "1"
-async-std = "1.12"
+async-std = "1.13"
 async-trait = "0.1"
 base64 = "0.22"
 bitflags = "2.6"
