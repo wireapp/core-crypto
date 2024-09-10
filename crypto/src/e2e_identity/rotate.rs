@@ -1,4 +1,4 @@
-use std::{collections::HashMap, ops::Deref};
+use std::collections::HashMap;
 
 use openmls::prelude::{KeyPackage, KeyPackageRef, MlsCredentialType as OpenMlsCredential};
 use openmls_traits::OpenMlsCryptoProvider;
@@ -23,7 +23,7 @@ impl MlsCentral {
     /// Once the enrollment is finished, use the instance in [MlsCentral::e2ei_rotate_all] to do
     /// the rotation.
     #[cfg_attr(not(test), tracing::instrument(err, skip_all))]
-    pub async fn e2ei_new_activation_enrollment(
+    pub fn e2ei_new_activation_enrollment(
         &self,
         display_name: String,
         handle: String,
@@ -31,7 +31,7 @@ impl MlsCentral {
         expiry_sec: u32,
         ciphersuite: MlsCiphersuite,
     ) -> CryptoResult<E2eiEnrollment> {
-        let client = self.mls_client().await?;
+        let client = self.mls_client()?;
 
         // look for existing credential of type basic. If there isn't, then this method has been misused
         let cb = client
@@ -69,7 +69,7 @@ impl MlsCentral {
         expiry_sec: u32,
         ciphersuite: MlsCiphersuite,
     ) -> CryptoResult<E2eiEnrollment> {
-        let client = self.mls_client().await?;
+        let client = self.mls_client()?;
 
         // look for existing credential of type x509. If there isn't, then this method has been misused
         let cb = client
@@ -105,7 +105,7 @@ impl MlsCentral {
     /// or [MlsCentral::e2ei_new_rotate_enrollment]
     #[cfg_attr(not(test), tracing::instrument(err, skip_all))]
     pub async fn e2ei_rotate_all(
-        &self,
+        &mut self,
         enrollment: &mut E2eiEnrollment,
         certificate_chain: String,
         new_key_packages_count: usize,
@@ -137,8 +137,9 @@ impl MlsCentral {
         };
 
         let new_cb = self
-            .mls_client_mut()
-            .await?
+            .mls_client
+            .as_mut()
+            .ok_or(CryptoError::MlsNotInitialized)?
             .save_new_x509_credential_bundle(&self.mls_backend, cs.signature_algorithm(), cert_bundle)
             .await?;
 
@@ -147,8 +148,7 @@ impl MlsCentral {
         let key_package_refs_to_remove = self.find_key_packages_to_remove(&new_cb).await?;
 
         let new_key_packages = self
-            .mls_client()
-            .await?
+            .mls_client()?
             .generate_new_keypackages(&self.mls_backend, cs, &new_cb, new_key_packages_count)
             .await?;
 
@@ -190,16 +190,17 @@ impl MlsCentral {
     }
 
     #[cfg_attr(not(test), tracing::instrument(err, skip_all))]
-    async fn e2ei_update_all(&self, cb: &CredentialBundle) -> CryptoResult<HashMap<ConversationId, MlsCommitBundle>> {
+    async fn e2ei_update_all(
+        &mut self,
+        cb: &CredentialBundle,
+    ) -> CryptoResult<HashMap<ConversationId, MlsCommitBundle>> {
         let all_conversations = self.get_all_conversations().await?;
 
         let mut commits = HashMap::with_capacity(all_conversations.len());
         for conv in all_conversations {
             let mut conv = conv.write().await;
             let id = conv.id().clone();
-            let commit = conv
-                .e2ei_rotate(&self.mls_backend, self.mls_client().await?.deref(), cb)
-                .await?;
+            let commit = conv.e2ei_rotate(&self.mls_backend, self.mls_client()?, cb).await?;
             let _ = commits.insert(id, commit);
         }
         Ok(commits)
@@ -207,7 +208,7 @@ impl MlsCentral {
 
     #[cfg(test)]
     pub(crate) async fn e2ei_rotate(
-        &self,
+        &mut self,
         id: &crate::prelude::ConversationId,
         cb: &CredentialBundle,
     ) -> CryptoResult<MlsCommitBundle> {
@@ -215,7 +216,7 @@ impl MlsCentral {
             .await?
             .write()
             .await
-            .e2ei_rotate(&self.mls_backend, self.mls_client().await?.deref(), cb)
+            .e2ei_rotate(&self.mls_backend, self.mls_client()?, cb)
             .await
     }
 }

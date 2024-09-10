@@ -368,7 +368,7 @@ mod tests {
             run_test_with_client_ids(case.clone(), ["alice"], move |[alice_ctx]| {
                 Box::pin(async move {
                     let ClientContext {
-                        mls_central,
+                        mut mls_central,
                         x509_test_chain,
                         ..
                     } = alice_ctx;

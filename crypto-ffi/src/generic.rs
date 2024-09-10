@@ -818,7 +818,7 @@ impl From<&Level> for CoreCryptoLogLevel {
 
 #[derive(Debug, uniffi::Object)]
 pub struct CoreCrypto {
-    central: core_crypto::CoreCrypto,
+    central: async_lock::Mutex<core_crypto::CoreCrypto>,
     proteus_last_error_code: std::sync::atomic::AtomicU32,
 }
 
@@ -887,6 +887,8 @@ impl CoreCrypto {
             .map_err(CryptoError::from)?;
         Ok(self
             .central
+            .lock()
+            .await
             .mls_init(
                 ClientIdentifier::Basic(client_id.0),
                 (&ciphersuites).into(),
@@ -899,6 +901,8 @@ impl CoreCrypto {
     pub async fn mls_generate_keypairs(&self, ciphersuites: Ciphersuites) -> CoreCryptoResult<Vec<ClientId>> {
         Ok(self
             .central
+            .lock()
+            .await
             .mls_generate_keypairs((&ciphersuites).into())
             .await
             .map(|cids| cids.into_iter().map(ClientId).collect())?)
@@ -913,6 +917,8 @@ impl CoreCrypto {
     ) -> CoreCryptoResult<()> {
         Ok(self
             .central
+            .lock()
+            .await
             .mls_init_with_client_id(
                 client_id.0,
                 tmp_client_ids.into_iter().map(|cid| cid.0).collect(),
@@ -923,10 +929,12 @@ impl CoreCrypto {
 
     /// See [core_crypto::mls::MlsCentral::restore_from_disk]
     pub async fn restore_from_disk(&self) -> CoreCryptoResult<()> {
-        self.central.restore_from_disk().await?;
+        let mut central = self.central.lock().await;
+
+        central.restore_from_disk().await?;
         cfg_if::cfg_if! {
             if #[cfg(feature = "proteus")] {
-                self.central.proteus_reload_sessions().await.map_err(|e|{
+                central.proteus_reload_sessions().await.map_err(|e|{
                     let errcode = e.proteus_error_code();
                     if errcode > 0 {
                         self.proteus_last_error_code.store(errcode, std::sync::atomic::Ordering::SeqCst);
@@ -942,7 +950,8 @@ impl CoreCrypto {
     /// See [core_crypto::mls::MlsCentral::close]
     pub async fn unload(self: std::sync::Arc<Self>) -> CoreCryptoResult<()> {
         if let Some(cc) = std::sync::Arc::into_inner(self) {
-            cc.central.take().close().await?;
+            let central = cc.central.into_inner();
+            central.take().close().await?;
             Ok(())
         } else {
             Err(CryptoError::LockPoisonError.into())
@@ -952,7 +961,8 @@ impl CoreCrypto {
     /// See [core_crypto::mls::MlsCentral::wipe]
     pub async fn wipe(self: std::sync::Arc<Self>) -> CoreCryptoResult<()> {
         if let Some(cc) = std::sync::Arc::into_inner(self) {
-            cc.central.take().wipe().await?;
+            let central = cc.central.into_inner();
+            central.take().wipe().await?;
             Ok(())
         } else {
             Err(CryptoError::LockPoisonError.into())
@@ -962,6 +972,8 @@ impl CoreCrypto {
     /// See [core_crypto::mls::MlsCentral::callbacks]
     pub async fn set_callbacks(&self, callbacks: std::sync::Arc<dyn CoreCryptoCallbacks>) -> CoreCryptoResult<()> {
         self.central
+            .lock()
+            .await
             .callbacks(std::sync::Arc::new(CoreCryptoCallbacksWrapper(callbacks)));
         Ok(())
     }
@@ -974,6 +986,8 @@ impl CoreCrypto {
     ) -> CoreCryptoResult<Vec<u8>> {
         Ok(self
             .central
+            .lock()
+            .await
             .client_public_key(ciphersuite.into(), credential_type.into())?)
     }
 
@@ -986,6 +1000,8 @@ impl CoreCrypto {
     ) -> CoreCryptoResult<Vec<Vec<u8>>> {
         let kps = self
             .central
+            .lock()
+            .await
             .get_or_create_client_keypackages(ciphersuite.into(), credential_type.into(), amount_requested as usize)
             .await?;
 
@@ -1007,6 +1023,8 @@ impl CoreCrypto {
     ) -> CoreCryptoResult<u64> {
         let count = self
             .central
+            .lock()
+            .await
             .client_valid_key_packages_count(ciphersuite.into(), credential_type.into())
             .await?;
 
@@ -1020,7 +1038,7 @@ impl CoreCrypto {
             .map(|r| KeyPackageRef::from_slice(&r))
             .collect::<Vec<_>>();
 
-        Ok(self.central.delete_keypackages(&refs[..]).await?)
+        Ok(self.central.lock().await.delete_keypackages(&refs[..]).await?)
     }
 
     /// See [core_crypto::mls::MlsCentral::new_conversation]
@@ -1030,29 +1048,33 @@ impl CoreCrypto {
         creator_credential_type: MlsCredentialType,
         config: ConversationConfiguration,
     ) -> CoreCryptoResult<()> {
+        let mut central = self.central.lock().await;
         let mut lower_cfg = MlsConversationConfiguration {
             custom: config.custom.into(),
             ciphersuite: config.ciphersuite.into(),
             ..Default::default()
         };
 
-        self.central
-            .set_raw_external_senders(&mut lower_cfg, config.external_senders)?;
+        central.set_raw_external_senders(&mut lower_cfg, config.external_senders)?;
 
-        Ok(self
-            .central
+        Ok(central
             .new_conversation(&conversation_id, creator_credential_type.into(), lower_cfg)
             .await?)
     }
 
     /// See [core_crypto::mls::MlsCentral::conversation_epoch]
     pub async fn conversation_epoch(&self, conversation_id: Vec<u8>) -> CoreCryptoResult<u64> {
-        Ok(self.central.conversation_epoch(&conversation_id).await?)
+        Ok(self.central.lock().await.conversation_epoch(&conversation_id).await?)
     }
 
     /// See [core_crypto::mls::MlsCentral::conversation_ciphersuite]
     pub async fn conversation_ciphersuite(&self, conversation_id: &ConversationId) -> CoreCryptoResult<Ciphersuite> {
-        let cs = self.central.conversation_ciphersuite(conversation_id).await?;
+        let cs = self
+            .central
+            .lock()
+            .await
+            .conversation_ciphersuite(conversation_id)
+            .await?;
         Ok(Ciphersuite::from(core_crypto::prelude::CiphersuiteName::from(cs)))
     }
 
@@ -1064,6 +1086,8 @@ impl CoreCrypto {
     ) -> CoreCryptoResult<WelcomeBundle> {
         Ok(self
             .central
+            .lock()
+            .await
             .process_raw_welcome_message(welcome_message, custom_configuration.into())
             .await?
             .into())
@@ -1085,6 +1109,8 @@ impl CoreCrypto {
             .collect::<CoreCryptoResult<Vec<_>>>()?;
 
         self.central
+            .lock()
+            .await
             .add_members_to_conversation(&conversation_id, key_packages)
             .await?
             .try_into()
@@ -1098,6 +1124,8 @@ impl CoreCrypto {
     ) -> CoreCryptoResult<CommitBundle> {
         let clients: Vec<core_crypto::prelude::ClientId> = clients.into_iter().map(|c| c.0).collect();
         self.central
+            .lock()
+            .await
             .remove_members_from_conversation(&conversation_id, &clients)
             .await?
             .try_into()
@@ -1107,18 +1135,27 @@ impl CoreCrypto {
     pub async fn mark_conversation_as_child_of(&self, child_id: Vec<u8>, parent_id: Vec<u8>) -> CoreCryptoResult<()> {
         Ok(self
             .central
+            .lock()
+            .await
             .mark_conversation_as_child_of(&child_id, &parent_id)
             .await?)
     }
 
     /// See [core_crypto::mls::MlsCentral::update_keying_material]
     pub async fn update_keying_material(&self, conversation_id: Vec<u8>) -> CoreCryptoResult<CommitBundle> {
-        self.central.update_keying_material(&conversation_id).await?.try_into()
+        self.central
+            .lock()
+            .await
+            .update_keying_material(&conversation_id)
+            .await?
+            .try_into()
     }
 
     /// See [core_crypto::mls::MlsCentral::commit_pending_proposals]
     pub async fn commit_pending_proposals(&self, conversation_id: Vec<u8>) -> CoreCryptoResult<Option<CommitBundle>> {
         self.central
+            .lock()
+            .await
             .commit_pending_proposals(&conversation_id)
             .await
             .transpose()
@@ -1128,7 +1165,7 @@ impl CoreCrypto {
 
     /// see [core_crypto::mls::MlsCentral::wipe_conversation]
     pub async fn wipe_conversation(&self, conversation_id: Vec<u8>) -> CoreCryptoResult<()> {
-        Ok(self.central.wipe_conversation(&conversation_id).await?)
+        Ok(self.central.lock().await.wipe_conversation(&conversation_id).await?)
     }
 
     /// See [core_crypto::mls::MlsCentral::decrypt_message]
@@ -1137,7 +1174,12 @@ impl CoreCrypto {
         conversation_id: Vec<u8>,
         payload: Vec<u8>,
     ) -> CoreCryptoResult<DecryptedMessage> {
-        let raw_decrypted_message = self.central.decrypt_message(&conversation_id, payload).await?;
+        let raw_decrypted_message = self
+            .central
+            .lock()
+            .await
+            .decrypt_message(&conversation_id, payload)
+            .await?;
 
         let decrypted_message: DecryptedMessage = raw_decrypted_message.try_into()?;
 
@@ -1146,12 +1188,17 @@ impl CoreCrypto {
 
     /// See [core_crypto::mls::MlsCentral::encrypt_message]
     pub async fn encrypt_message(&self, conversation_id: Vec<u8>, message: Vec<u8>) -> CoreCryptoResult<Vec<u8>> {
-        Ok(self.central.encrypt_message(&conversation_id, message).await?)
+        Ok(self
+            .central
+            .lock()
+            .await
+            .encrypt_message(&conversation_id, message)
+            .await?)
     }
 
     /// See [core_crypto::mls::MlsCentral::conversation_exists]
     pub async fn conversation_exists(&self, conversation_id: Vec<u8>) -> bool {
-        self.central.conversation_exists(&conversation_id).await
+        self.central.lock().await.conversation_exists(&conversation_id).await
     }
 
     /// See [core_crypto::mls::MlsCentral::new_add_proposal]
@@ -1164,6 +1211,8 @@ impl CoreCrypto {
             .map_err(MlsError::from)
             .map_err(CryptoError::from)?;
         self.central
+            .lock()
+            .await
             .new_add_proposal(&conversation_id, kp.into())
             .await?
             .try_into()
@@ -1171,7 +1220,12 @@ impl CoreCrypto {
 
     /// See [core_crypto::mls::MlsCentral::new_update_proposal]
     pub async fn new_update_proposal(&self, conversation_id: Vec<u8>) -> CoreCryptoResult<ProposalBundle> {
-        self.central.new_update_proposal(&conversation_id).await?.try_into()
+        self.central
+            .lock()
+            .await
+            .new_update_proposal(&conversation_id)
+            .await?
+            .try_into()
     }
 
     /// See [core_crypto::mls::MlsCentral::new_remove_proposal]
@@ -1181,6 +1235,8 @@ impl CoreCrypto {
         client_id: ClientId,
     ) -> CoreCryptoResult<ProposalBundle> {
         self.central
+            .lock()
+            .await
             .new_remove_proposal(&conversation_id, client_id.0)
             .await?
             .try_into()
@@ -1196,6 +1252,8 @@ impl CoreCrypto {
     ) -> CoreCryptoResult<Vec<u8>> {
         Ok(self
             .central
+            .lock()
+            .await
             .new_external_add_proposal(
                 conversation_id,
                 epoch.into(),
@@ -1219,6 +1277,8 @@ impl CoreCrypto {
             .map_err(MlsError::from)
             .map_err(CryptoError::from)?;
         self.central
+            .lock()
+            .await
             .join_by_external_commit(group_info, custom_configuration.into(), credential_type.into())
             .await?
             .try_into()
@@ -1231,6 +1291,8 @@ impl CoreCrypto {
     ) -> CoreCryptoResult<Option<Vec<BufferedDecryptedMessage>>> {
         if let Some(decrypted_messages) = self
             .central
+            .lock()
+            .await
             .merge_pending_group_from_external_commit(&conversation_id)
             .await?
         {
@@ -1248,6 +1310,8 @@ impl CoreCrypto {
     /// See [core_crypto::mls::MlsCentral::clear_pending_group_from_external_commit]
     pub async fn clear_pending_group_from_external_commit(&self, conversation_id: Vec<u8>) -> CoreCryptoResult<()> {
         self.central
+            .lock()
+            .await
             .clear_pending_group_from_external_commit(&conversation_id)
             .await?;
 
@@ -1256,13 +1320,17 @@ impl CoreCrypto {
 
     /// See [core_crypto::mls::MlsCentral::random_bytes]
     pub async fn random_bytes(&self, len: u32) -> CoreCryptoResult<Vec<u8>> {
-        Ok(self.central.random_bytes(len.try_into().map_err(CryptoError::from)?)?)
+        Ok(self
+            .central
+            .lock()
+            .await
+            .random_bytes(len.try_into().map_err(CryptoError::from)?)?)
     }
 
     /// see [core_crypto::prelude::MlsCryptoProvider::reseed]
     pub async fn reseed_rng(&self, seed: Vec<u8>) -> CoreCryptoResult<()> {
         let seed = EntropySeed::try_from_slice(&seed).map_err(CryptoError::from)?;
-        self.central.provider().reseed(Some(seed));
+        self.central.lock().await.provider_mut().reseed(Some(seed));
 
         Ok(())
     }
@@ -1272,7 +1340,7 @@ impl CoreCrypto {
         &self,
         conversation_id: Vec<u8>,
     ) -> CoreCryptoResult<Option<Vec<BufferedDecryptedMessage>>> {
-        if let Some(decrypted_messages) = self.central.commit_accepted(&conversation_id).await? {
+        if let Some(decrypted_messages) = self.central.lock().await.commit_accepted(&conversation_id).await? {
             return Ok(Some(
                 decrypted_messages
                     .into_iter()
@@ -1292,19 +1360,23 @@ impl CoreCrypto {
     ) -> CoreCryptoResult<()> {
         Ok(self
             .central
+            .lock()
+            .await
             .clear_pending_proposal(&conversation_id, proposal_ref.into())
             .await?)
     }
 
     /// See [core_crypto::mls::MlsCentral::clear_pending_commit]
     pub async fn clear_pending_commit(&self, conversation_id: Vec<u8>) -> CoreCryptoResult<()> {
-        Ok(self.central.clear_pending_commit(&conversation_id).await?)
+        Ok(self.central.lock().await.clear_pending_commit(&conversation_id).await?)
     }
 
     /// See [core_crypto::mls::MlsCentral::get_client_ids]
     pub async fn get_client_ids(&self, conversation_id: Vec<u8>) -> CoreCryptoResult<Vec<ClientId>> {
         Ok(self
             .central
+            .lock()
+            .await
             .get_client_ids(&conversation_id)
             .await
             .map(|cids| cids.into_iter().map(ClientId).collect())?)
@@ -1314,13 +1386,15 @@ impl CoreCrypto {
     pub async fn export_secret_key(&self, conversation_id: Vec<u8>, key_length: u32) -> CoreCryptoResult<Vec<u8>> {
         Ok(self
             .central
+            .lock()
+            .await
             .export_secret_key(&conversation_id, key_length as usize)
             .await?)
     }
 
     /// See [core_crypto::mls::MlsCentral::get_external_sender]
     pub async fn get_external_sender(&self, conversation_id: Vec<u8>) -> CoreCryptoResult<Vec<u8>> {
-        Ok(self.central.get_external_sender(&conversation_id).await?)
+        Ok(self.central.lock().await.get_external_sender(&conversation_id).await?)
     }
 }
 
@@ -1352,6 +1426,8 @@ impl CoreCrypto {
     pub async fn proteus_init(&self) -> CoreCryptoResult<()> {
         proteus_impl! { self.proteus_last_error_code => {
             self.central
+                .lock()
+                .await
                 .proteus_init()
                 .await?;
 
@@ -1363,6 +1439,8 @@ impl CoreCrypto {
     pub async fn proteus_session_from_prekey(&self, session_id: String, prekey: Vec<u8>) -> CoreCryptoResult<()> {
         proteus_impl! { self.proteus_last_error_code => {
             let _ = self.central
+                .lock()
+                .await
                 .proteus_session_from_prekey(&session_id, &prekey)
                 .await?;
 
@@ -1378,6 +1456,8 @@ impl CoreCrypto {
     ) -> CoreCryptoResult<Vec<u8>> {
         proteus_impl! { self.proteus_last_error_code => {
             let (_, payload) = self.central
+                .lock()
+                .await
                 .proteus_session_from_message(&session_id, &envelope)
                 .await?;
 
@@ -1390,6 +1470,8 @@ impl CoreCrypto {
     pub async fn proteus_session_save(&self, session_id: String) -> CoreCryptoResult<()> {
         proteus_impl! { self.proteus_last_error_code => {
             Ok(self.central
+                .lock()
+                .await
                 .proteus_session_save(&session_id)
                 .await?)
         }}
@@ -1399,6 +1481,8 @@ impl CoreCrypto {
     pub async fn proteus_session_delete(&self, session_id: String) -> CoreCryptoResult<()> {
         proteus_impl! { self.proteus_last_error_code => {
             Ok(self.central
+                .lock()
+                .await
                 .proteus_session_delete(&session_id)
                 .await?)
         }}
@@ -1408,6 +1492,8 @@ impl CoreCrypto {
     pub async fn proteus_session_exists(&self, session_id: String) -> CoreCryptoResult<bool> {
         proteus_impl! { self.proteus_last_error_code => {
             Ok(self.central
+                .lock()
+                .await
                 .proteus_session_exists(&session_id)
                 .await?)
         }}
@@ -1417,6 +1503,8 @@ impl CoreCrypto {
     pub async fn proteus_decrypt(&self, session_id: String, ciphertext: Vec<u8>) -> CoreCryptoResult<Vec<u8>> {
         proteus_impl! { self.proteus_last_error_code => {
             Ok(self.central
+                .lock()
+                .await
                 .proteus_decrypt(&session_id, &ciphertext)
                 .await?)
         }}
@@ -1426,6 +1514,8 @@ impl CoreCrypto {
     pub async fn proteus_encrypt(&self, session_id: String, plaintext: Vec<u8>) -> CoreCryptoResult<Vec<u8>> {
         proteus_impl! { self.proteus_last_error_code => {
             Ok(self.central
+                .lock()
+                .await
                 .proteus_encrypt(&session_id, &plaintext)
                 .await?)
         }}
@@ -1439,6 +1529,8 @@ impl CoreCrypto {
     ) -> CoreCryptoResult<std::collections::HashMap<String, Vec<u8>>> {
         proteus_impl! { self.proteus_last_error_code => {
             Ok(self.central
+                .lock()
+                .await
                 .proteus_encrypt_batched(sessions.as_slice(), &plaintext)
                 .await?)
         }}
@@ -1448,6 +1540,8 @@ impl CoreCrypto {
     pub async fn proteus_new_prekey(&self, prekey_id: u16) -> CoreCryptoResult<Vec<u8>> {
         proteus_impl! { self.proteus_last_error_code => {
             Ok(self.central
+                .lock()
+                .await
                 .proteus_new_prekey(prekey_id)
                 .await?)
         }}
@@ -1457,6 +1551,8 @@ impl CoreCrypto {
     pub async fn proteus_new_prekey_auto(&self) -> CoreCryptoResult<ProteusAutoPrekeyBundle> {
         proteus_impl! { self.proteus_last_error_code => {
             let (id, pkb) = self.central
+                .lock()
+                .await
                 .proteus_new_prekey_auto()
                 .await?;
 
@@ -1468,6 +1564,8 @@ impl CoreCrypto {
     pub async fn proteus_last_resort_prekey(&self) -> CoreCryptoResult<Vec<u8>> {
         proteus_impl! { self.proteus_last_error_code => {
             Ok(self.central
+                .lock()
+                .await
                 .proteus_last_resort_prekey()
                 .await?)
         }}
@@ -1482,6 +1580,8 @@ impl CoreCrypto {
     pub async fn proteus_fingerprint(&self) -> CoreCryptoResult<String> {
         proteus_impl! { self.proteus_last_error_code => {
             Ok(self.central
+                .lock()
+                .await
                 .proteus_fingerprint()?)
         }}
     }
@@ -1490,6 +1590,8 @@ impl CoreCrypto {
     pub async fn proteus_fingerprint_local(&self, session_id: String) -> CoreCryptoResult<String> {
         proteus_impl! { self.proteus_last_error_code => {
             Ok(self.central
+                .lock()
+                .await
                 .proteus_fingerprint_local(&session_id)
                 .await?)
         }}
@@ -1499,6 +1601,8 @@ impl CoreCrypto {
     pub async fn proteus_fingerprint_remote(&self, session_id: String) -> CoreCryptoResult<String> {
         proteus_impl! { self.proteus_last_error_code => {
             Ok(self.central
+                .lock()
+                .await
                 .proteus_fingerprint_remote(&session_id)
                 .await?)
         }}
@@ -1514,6 +1618,8 @@ impl CoreCrypto {
     pub async fn proteus_cryptobox_migrate(&self, path: String) -> CoreCryptoResult<()> {
         proteus_impl! { self.proteus_last_error_code => {
             Ok(self.central
+                .lock()
+                .await
                 .proteus_cryptobox_migrate(&path)
                 .await?)
         }}
@@ -1544,6 +1650,8 @@ impl CoreCrypto {
     ) -> CoreCryptoResult<E2eiEnrollment> {
         Ok(self
             .central
+            .lock()
+            .await
             .e2ei_new_enrollment(
                 client_id.into_bytes().into(),
                 display_name,
@@ -1568,6 +1676,8 @@ impl CoreCrypto {
     ) -> CoreCryptoResult<E2eiEnrollment> {
         Ok(self
             .central
+            .lock()
+            .await
             .e2ei_new_activation_enrollment(display_name, handle, team, expiry_sec, ciphersuite.into())
             .map(async_lock::RwLock::new)
             .map(std::sync::Arc::new)
@@ -1585,6 +1695,8 @@ impl CoreCrypto {
     ) -> CoreCryptoResult<E2eiEnrollment> {
         Ok(self
             .central
+            .lock()
+            .await
             .e2ei_new_rotate_enrollment(display_name, handle, team, expiry_sec, ciphersuite.into())
             .await
             .map(async_lock::RwLock::new)
@@ -1593,27 +1705,44 @@ impl CoreCrypto {
     }
 
     pub async fn e2ei_dump_pki_env(&self) -> CoreCryptoResult<Option<E2eiDumpedPkiEnv>> {
-        Ok(self.central.e2ei_dump_pki_env().await?.map(Into::into))
+        Ok(self.central.lock().await.e2ei_dump_pki_env().await?.map(Into::into))
     }
 
     /// See [core_crypto::mls::MlsCentral::e2ei_is_pki_env_setup]
     pub async fn e2ei_is_pki_env_setup(&self) -> bool {
-        self.central.e2ei_is_pki_env_setup().await
+        self.central.lock().await.e2ei_is_pki_env_setup().await
     }
 
     /// See [core_crypto::mls::MlsCentral::e2ei_register_acme_ca]
     pub async fn e2ei_register_acme_ca(&self, trust_anchor_pem: String) -> CoreCryptoResult<()> {
-        Ok(self.central.e2ei_register_acme_ca(trust_anchor_pem).await?)
+        Ok(self
+            .central
+            .lock()
+            .await
+            .e2ei_register_acme_ca(trust_anchor_pem)
+            .await?)
     }
 
     /// See [core_crypto::mls::MlsCentral::e2ei_register_intermediate_ca_pem]
     pub async fn e2ei_register_intermediate_ca(&self, cert_pem: String) -> CoreCryptoResult<Option<Vec<String>>> {
-        Ok(self.central.e2ei_register_intermediate_ca_pem(cert_pem).await?.into())
+        Ok(self
+            .central
+            .lock()
+            .await
+            .e2ei_register_intermediate_ca_pem(cert_pem)
+            .await?
+            .into())
     }
 
     /// See [core_crypto::mls::MlsCentral::e2ei_register_crl]
     pub async fn e2ei_register_crl(&self, crl_dp: String, crl_der: Vec<u8>) -> CoreCryptoResult<CrlRegistration> {
-        Ok(self.central.e2ei_register_crl(crl_dp, crl_der).await?.into())
+        Ok(self
+            .central
+            .lock()
+            .await
+            .e2ei_register_crl(crl_dp, crl_der)
+            .await?
+            .into())
     }
 
     /// See [core_crypto::mls::MlsCentral::e2ei_mls_init_only]
@@ -1630,6 +1759,8 @@ impl CoreCrypto {
 
         Ok(self
             .central
+            .lock()
+            .await
             .e2ei_mls_init_only(
                 enrollment.0.write().await.deref_mut(),
                 certificate_chain,
@@ -1647,6 +1778,8 @@ impl CoreCrypto {
         new_key_packages_count: u32,
     ) -> CoreCryptoResult<RotateBundle> {
         self.central
+            .lock()
+            .await
             .e2ei_rotate_all(
                 enrollment.0.write().await.deref_mut(),
                 certificate_chain,
@@ -1663,13 +1796,15 @@ impl CoreCrypto {
             .ok_or_else(|| CryptoError::LockPoisonError)?
             .into_inner();
 
-        Ok(self.central.e2ei_enrollment_stash(enrollment).await?)
+        Ok(self.central.lock().await.e2ei_enrollment_stash(enrollment).await?)
     }
 
     /// See [core_crypto::mls::MlsCentral::e2ei_enrollment_stash_pop]
     pub async fn e2ei_enrollment_stash_pop(&self, handle: Vec<u8>) -> CoreCryptoResult<E2eiEnrollment> {
         Ok(self
             .central
+            .lock()
+            .await
             .e2ei_enrollment_stash_pop(handle)
             .await
             .map(async_lock::RwLock::new)
@@ -1681,6 +1816,8 @@ impl CoreCrypto {
     pub async fn e2ei_conversation_state(&self, conversation_id: Vec<u8>) -> CoreCryptoResult<E2eiConversationState> {
         Ok(self
             .central
+            .lock()
+            .await
             .e2ei_conversation_state(&conversation_id)
             .await
             .map(Into::into)?)
@@ -1690,7 +1827,7 @@ impl CoreCrypto {
     pub async fn e2ei_is_enabled(&self, ciphersuite: Ciphersuite) -> CoreCryptoResult<bool> {
         let sc = core_crypto::prelude::MlsCiphersuite::from(core_crypto::prelude::CiphersuiteName::from(ciphersuite))
             .signature_algorithm();
-        Ok(self.central.e2ei_is_enabled(sc).await?)
+        Ok(self.central.lock().await.e2ei_is_enabled(sc)?)
     }
 
     /// See [core_crypto::mls::MlsCentral::get_device_identities]
@@ -1702,6 +1839,8 @@ impl CoreCrypto {
         let device_ids = device_ids.into_iter().map(|cid| cid.0).collect::<Vec<_>>();
         Ok(self
             .central
+            .lock()
+            .await
             .get_device_identities(&conversation_id, &device_ids[..])
             .await?
             .into_iter()
@@ -1717,6 +1856,8 @@ impl CoreCrypto {
     ) -> CoreCryptoResult<HashMap<String, Vec<WireIdentity>>> {
         Ok(self
             .central
+            .lock()
+            .await
             .get_user_identities(&conversation_id, &user_ids[..])
             .await?
             .into_iter()
@@ -1735,6 +1876,8 @@ impl CoreCrypto {
             .map_err(CryptoError::from)?;
         Ok(self
             .central
+            .lock()
+            .await
             .get_credential_in_use(group_info, credential_type.into())
             .await?
             .into())
@@ -1832,11 +1975,12 @@ impl E2eiEnrollment {
         cc: std::sync::Arc<CoreCrypto>,
         challenge: Vec<u8>,
     ) -> CoreCryptoResult<()> {
+        let cc = cc.central.lock().await;
         Ok(self
             .0
             .write()
             .await
-            .new_oidc_challenge_response(cc.central.provider(), challenge)
+            .new_oidc_challenge_response(cc.provider(), challenge)
             .await?)
     }
 

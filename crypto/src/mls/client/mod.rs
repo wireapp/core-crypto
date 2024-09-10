@@ -27,7 +27,6 @@ use crate::{
         CryptoError, CryptoResult, MlsCentral, MlsCiphersuite, MlsCredentialType, MlsError,
     },
 };
-use async_lock::{RwLockReadGuard, RwLockWriteGuard};
 use core_crypto_keystore::CryptoKeystoreError;
 use openmls::prelude::{Credential, CredentialType};
 use openmls_basic_credential::SignatureKeyPair;
@@ -41,14 +40,8 @@ use mls_crypto_provider::MlsCryptoProvider;
 use tracing::{debug, Instrument};
 
 impl MlsCentral {
-    pub(crate) async fn mls_client(&self) -> CryptoResult<RwLockReadGuard<'_, Client>> {
-        let guard = self.mls_client.as_ref().ok_or(CryptoError::MlsNotInitialized)?;
-        Ok(guard.read().await)
-    }
-
-    pub(crate) async fn mls_client_mut(&self) -> CryptoResult<RwLockWriteGuard<'_, Client>> {
-        let guard = self.mls_client.as_ref().ok_or(CryptoError::MlsNotInitialized)?;
-        Ok(guard.write().await)
+    pub(crate) fn mls_client(&self) -> CryptoResult<&Client> {
+        self.mls_client.as_ref().ok_or(CryptoError::MlsNotInitialized)
     }
 }
 
@@ -559,7 +552,7 @@ mod tests {
                         .unwrap();
 
                     let mut identities = backend
-                        .keystore()
+                        .borrow_keystore()
                         .find_all::<MlsSignatureKeyPair>(EntityFindParams::default())
                         .await
                         .unwrap();

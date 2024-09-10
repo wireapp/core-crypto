@@ -23,7 +23,6 @@
 #![deny(missing_docs)]
 #![allow(clippy::single_component_path_imports)]
 
-use async_lock::Mutex;
 #[cfg(test)]
 pub use core_crypto_attributes::{dispotent, durable, idempotent};
 
@@ -147,7 +146,7 @@ pub trait CoreCryptoCallbacks: std::fmt::Debug + Send + Sync {
 pub struct CoreCrypto {
     mls: mls::MlsCentral,
     #[cfg(feature = "proteus")]
-    proteus: Option<Mutex<proteus::ProteusCentral>>,
+    proteus: Option<proteus::ProteusCentral>,
     #[cfg(not(feature = "proteus"))]
     #[allow(dead_code)]
     proteus: (),

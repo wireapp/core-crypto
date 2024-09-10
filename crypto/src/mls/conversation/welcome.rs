@@ -1,5 +1,3 @@
-use std::borrow::BorrowMut;
-
 use crate::{
     e2e_identity::init_certificates::NewCrlDistributionPoint,
     group_store::GroupStore,
@@ -39,7 +37,7 @@ impl MlsCentral {
     #[cfg_attr(test, crate::dispotent)]
     #[cfg_attr(not(test), tracing::instrument(err, skip_all))]
     pub async fn process_raw_welcome_message(
-        &self,
+        &mut self,
         welcome: Vec<u8>,
         custom_cfg: MlsCustomConfiguration,
     ) -> CryptoResult<WelcomeBundle> {
@@ -64,7 +62,7 @@ impl MlsCentral {
     #[cfg_attr(test, crate::dispotent)]
     #[cfg_attr(not(test), tracing::instrument(err, skip_all))]
     pub async fn process_welcome_message(
-        &self,
+        &mut self,
         welcome: MlsMessageIn,
         custom_cfg: MlsCustomConfiguration,
     ) -> CryptoResult<WelcomeBundle> {
@@ -78,9 +76,8 @@ impl MlsCentral {
             custom: custom_cfg,
             ..Default::default()
         };
-        let mut mls_groups = self.mls_groups.write().await;
         let conversation =
-            MlsConversation::from_welcome_message(welcome, configuration, &self.mls_backend, mls_groups.borrow_mut())
+            MlsConversation::from_welcome_message(welcome, configuration, &mut self.mls_backend, &mut self.mls_groups)
                 .await?;
 
         // We wait for the group to be created then we iterate through all members
@@ -89,7 +86,7 @@ impl MlsCentral {
                 .await?;
 
         let id = conversation.id.clone();
-        mls_groups.insert(id.clone(), conversation);
+        self.mls_groups.insert(id.clone(), conversation);
 
         Ok(WelcomeBundle {
             id,
@@ -113,7 +110,7 @@ impl MlsConversation {
     async fn from_welcome_message(
         welcome: Welcome,
         configuration: MlsConversationConfiguration,
-        backend: &MlsCryptoProvider,
+        backend: &mut MlsCryptoProvider,
         mls_groups: &mut GroupStore<MlsConversation>,
     ) -> CryptoResult<Self> {
         let mls_group_config = configuration.as_openmls_default_configuration()?;
@@ -127,7 +124,7 @@ impl MlsConversation {
         };
 
         let id = ConversationId::from(group.group_id().as_slice());
-        let existing_conversation = mls_groups.get_fetch(&id[..], &backend.keystore(), None).await;
+        let existing_conversation = mls_groups.get_fetch(&id[..], backend.borrow_keystore_mut(), None).await;
         let conversation_exists = existing_conversation.ok().flatten().is_some();
 
         let pending_group = backend.key_store().find::<PersistedMlsPendingGroup>(&id[..]).await;

@@ -2,7 +2,7 @@ use crate::EntropySeed;
 use crate::MlsProviderError;
 use rand_core::{RngCore, SeedableRng};
 use signature::digest::typenum::Unsigned;
-use std::sync::{RwLock, RwLockWriteGuard};
+use std::sync::RwLock;
 
 use aes_gcm::{
     aead::{Aead, Payload},
@@ -46,12 +46,6 @@ impl RustCrypto {
         Self {
             rng: rand_chacha::ChaCha20Rng::from_seed(seed.0).into(),
         }
-    }
-
-    pub fn reseed(&self, seed: Option<EntropySeed>) -> Result<(), MlsProviderError> {
-        let mut val = self.rng.write().map_err(|_| MlsProviderError::RngLockPoison)?;
-        *val = rand_chacha::ChaCha20Rng::from_seed(seed.unwrap_or_default().0);
-        Ok(())
     }
 
     pub fn normalize_p521_secret_key(sk: &[u8]) -> zeroize::Zeroizing<[u8; 66]> {
@@ -695,7 +689,7 @@ impl OpenMlsRand for RustCrypto {
     type Error = MlsProviderError;
 
     type RandImpl = rand_chacha::ChaCha20Rng;
-    type BorrowTarget<'a> = RwLockWriteGuard<'a, Self::RandImpl>;
+    type BorrowTarget<'a> = std::sync::RwLockWriteGuard<'a, Self::RandImpl>;
 
     fn borrow_rand(&self) -> Result<Self::BorrowTarget<'_>, Self::Error> {
         self.rng.write().map_err(|_| MlsProviderError::RngLockPoison)

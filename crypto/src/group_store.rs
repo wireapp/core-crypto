@@ -202,7 +202,7 @@ impl<V: GroupStoreEntity> GroupStore<V> {
     pub(crate) async fn get_fetch(
         &mut self,
         k: &[u8],
-        keystore: &core_crypto_keystore::Connection,
+        keystore: &mut core_crypto_keystore::Connection,
         identity: Option<V::IdentityType>,
     ) -> crate::CryptoResult<Option<GroupStoreValue<V>>> {
         // Optimistic cache lookup
@@ -229,7 +229,7 @@ impl<V: GroupStoreEntity> GroupStore<V> {
 
     pub(crate) async fn get_fetch_all(
         &mut self,
-        keystore: &core_crypto_keystore::Connection,
+        keystore: &mut core_crypto_keystore::Connection,
     ) -> CryptoResult<Vec<GroupStoreValue<V>>> {
         let mut keystore_connection = keystore
             .borrow_conn()

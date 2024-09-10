@@ -6,8 +6,8 @@ use openmls_traits::types::SignatureScheme;
 impl MlsCentral {
     /// Returns true when end-to-end-identity is enabled for the given SignatureScheme
     #[cfg_attr(not(test), tracing::instrument(err, skip_all))]
-    pub async fn e2ei_is_enabled(&self, signature_scheme: SignatureScheme) -> CryptoResult<bool> {
-        let client = self.mls_client().await?;
+    pub fn e2ei_is_enabled(&self, signature_scheme: SignatureScheme) -> CryptoResult<bool> {
+        let client = self.mls_client.as_ref().ok_or(CryptoError::MlsNotInitialized)?;
         let maybe_x509 = client.find_most_recent_credential_bundle(signature_scheme, MlsCredentialType::X509);
         match maybe_x509 {
             None => {

@@ -11,11 +11,11 @@ use core_crypto_keystore::entities::{MlsPendingMessage, PersistedMlsPendingGroup
 impl MlsCentral {
     #[cfg_attr(not(test), tracing::instrument(err, skip(self, message), fields(id = base64::Engine::encode(&base64::prelude::BASE64_STANDARD, id))))]
     pub(crate) async fn handle_when_group_is_pending(
-        &self,
+        &mut self,
         id: &ConversationId,
         message: impl AsRef<[u8]>,
     ) -> CryptoResult<MlsConversationDecryptMessage> {
-        let keystore = self.mls_backend.keystore();
+        let keystore = self.mls_backend.borrow_keystore();
         let Ok(Some(pending_group)) = keystore.find::<PersistedMlsPendingGroup>(id).await else {
             return Err(CryptoError::ConversationNotFound(id.clone()));
         };

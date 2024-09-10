@@ -64,7 +64,7 @@ fn benchmark_writes_mls(c: &mut Criterion) {
     let mut group = c.benchmark_group("MLS Writes");
     group.throughput(Throughput::Elements(1));
 
-    group.bench_with_input("Writes", backend.keystore(), |b, store| {
+    group.bench_with_input("Writes", backend.borrow_keystore(), |b, store| {
         b.to_async(FuturesExecutor).iter_batched(
             || {
                 let ciphersuite = Ciphersuite::MLS_128_DHKEMX25519_CHACHA20POLY1305_SHA256_Ed25519;

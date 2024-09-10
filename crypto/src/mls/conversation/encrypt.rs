@@ -7,8 +7,6 @@
 //! | 0 pend. Proposal  | ✅              | ❌              |
 //! | 1+ pend. Proposal | ❌              | ❌              |
 
-use std::ops::Deref;
-
 use mls_crypto_provider::MlsCryptoProvider;
 use openmls::prelude::MlsMessageOutBody;
 
@@ -64,7 +62,7 @@ impl MlsCentral {
     #[cfg_attr(test, crate::idempotent)]
     #[cfg_attr(not(test), tracing::instrument(err, skip_all))]
     pub async fn encrypt_message(
-        &self,
+        &mut self,
         conversation: &ConversationId,
         message: impl AsRef<[u8]>,
     ) -> CryptoResult<Vec<u8>> {
@@ -72,7 +70,7 @@ impl MlsCentral {
             .await?
             .write()
             .await
-            .encrypt_message(self.mls_client().await?.deref(), message, &self.mls_backend)
+            .encrypt_message(self.mls_client()?, message, &self.mls_backend)
             .await
     }
 }

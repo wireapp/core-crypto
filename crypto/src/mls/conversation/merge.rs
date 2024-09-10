@@ -96,7 +96,7 @@ impl MlsCentral {
     /// in the keystore. The previous can be discarded to respect Forward Secrecy.
     #[cfg_attr(not(test), tracing::instrument(err, skip_all))]
     pub async fn commit_accepted(
-        &self,
+        &mut self,
         id: &ConversationId,
     ) -> CryptoResult<Option<Vec<MlsBufferedConversationDecryptMessage>>> {
         let conv = self.get_conversation(id).await?;
@@ -126,7 +126,7 @@ impl MlsCentral {
     /// in the local pending proposal store
     #[cfg_attr(not(test), tracing::instrument(err, skip_all))]
     pub async fn clear_pending_proposal(
-        &self,
+        &mut self,
         conversation_id: &ConversationId,
         proposal_ref: MlsProposalRef,
     ) -> CryptoResult<()> {
@@ -153,7 +153,7 @@ impl MlsCentral {
     /// When the conversation is not found or there is no pending commit
     #[cfg_attr(test, crate::idempotent)]
     #[cfg_attr(not(test), tracing::instrument(err, skip_all))]
-    pub async fn clear_pending_commit(&self, conversation_id: &ConversationId) -> CryptoResult<()> {
+    pub async fn clear_pending_commit(&mut self, conversation_id: &ConversationId) -> CryptoResult<()> {
         self.get_conversation(conversation_id)
             .await?
             .write()

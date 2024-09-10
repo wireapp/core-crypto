@@ -1,6 +1,3 @@
-use std::ops::DerefMut;
-
-use async_lock::RwLock;
 use tracing::{trace, Instrument};
 
 use mls_crypto_provider::{MlsCryptoProvider, MlsCryptoProviderConfiguration};
@@ -142,11 +139,10 @@ pub(crate) mod config {
 /// and manage groups, make proposals and commits.
 #[derive(Debug)]
 pub struct MlsCentral {
-    pub(crate) mls_client: RwLock<Option<Client>>,
+    pub(crate) mls_client: Option<Client>,
     pub(crate) mls_backend: MlsCryptoProvider,
-    // this should be moved to the context
-    pub(crate) mls_groups: RwLock<crate::group_store::GroupStore<MlsConversation>>,
-    pub(crate) callbacks: RwLock<Option<std::sync::Arc<dyn CoreCryptoCallbacks + 'static>>>,
+    pub(crate) mls_groups: crate::group_store::GroupStore<MlsConversation>,
+    pub(crate) callbacks: Option<std::sync::Arc<dyn CoreCryptoCallbacks + 'static>>,
 }
 
 impl MlsCentral {
@@ -178,7 +174,7 @@ impl MlsCentral {
         .await?;
         let mls_client = if let Some(id) = configuration.client_id {
             // Init client identity (load or create)
-            RwLock::new(Some(
+            Some(
                 Client::init(
                     ClientIdentifier::Basic(id),
                     configuration.ciphersuites.as_slice(),
@@ -188,20 +184,20 @@ impl MlsCentral {
                         .unwrap_or(INITIAL_KEYING_MATERIAL_COUNT),
                 )
                 .await?,
-            ))
+            )
         } else {
-            None.into()
+            None
         };
 
         trace!("Trying to restore groups");
         // Restore persisted groups if there are any
-        let mls_groups = RwLock::new(Self::restore_groups(&mls_backend).await?);
+        let mls_groups = Self::restore_groups(&mls_backend).await?;
 
         let central = Self {
             mls_backend,
             mls_client,
             mls_groups,
-            callbacks: None.into(),
+            callbacks: None,
         };
 
         central.init_pki_env().in_current_span().await?;
@@ -221,7 +217,7 @@ impl MlsCentral {
         .in_current_span()
         .await?;
         let mls_client = if let Some(id) = configuration.client_id {
-            RwLock::new(Some(
+            Some(
                 Client::init(
                     ClientIdentifier::Basic(id),
                     configuration.ciphersuites.as_slice(),
@@ -231,17 +227,17 @@ impl MlsCentral {
                         .unwrap_or(INITIAL_KEYING_MATERIAL_COUNT),
                 )
                 .await?,
-            ))
+            )
         } else {
-            None.into()
+            None
         };
-        let mls_groups = RwLock::new(Self::restore_groups(&mls_backend).await?);
+        let mls_groups = Self::restore_groups(&mls_backend).await?;
 
         let central = Self {
             mls_backend,
             mls_client,
             mls_groups,
-            callbacks: None.into(),
+            callbacks: None,
         };
 
         central.init_pki_env().in_current_span().await?;
@@ -254,12 +250,12 @@ impl MlsCentral {
     /// This should stay as long as proteus is supported. Then it should be removed.
     #[cfg_attr(not(test), tracing::instrument(err, skip(self, identifier), fields(ciphersuites = ?ciphersuites)))]
     pub async fn mls_init(
-        &self,
+        &mut self,
         identifier: ClientIdentifier,
         ciphersuites: Vec<MlsCiphersuite>,
         nb_init_key_packages: Option<usize>,
     ) -> CryptoResult<()> {
-        if self.mls_client.read().await.is_some() {
+        if self.mls_client.is_some() {
             // prevents wrong usage of the method instead of silently hiding the mistake
             return Err(CryptoError::ConsumerError);
         }
@@ -271,7 +267,7 @@ impl MlsCentral {
             self.init_pki_env().in_current_span().await?;
         }
 
-        self.mls_client.write().await.replace(mls_client);
+        self.mls_client.replace(mls_client);
 
         Ok(())
     }
@@ -282,7 +278,7 @@ impl MlsCentral {
     /// This returns the TLS-serialized identity keys (i.e. the signature keypair's public key)
     #[cfg_attr(test, crate::dispotent)]
     pub async fn mls_generate_keypairs(&self, ciphersuites: Vec<MlsCiphersuite>) -> CryptoResult<Vec<ClientId>> {
-        if self.mls_client.read().await.is_some() {
+        if self.mls_client.is_some() {
             // prevents wrong usage of the method instead of silently hiding the mistake
             return Err(CryptoError::ConsumerError);
         }
@@ -296,12 +292,12 @@ impl MlsCentral {
     #[cfg_attr(test, crate::dispotent)]
     #[cfg_attr(not(test), tracing::instrument(err, skip(self), fields(ciphersuites = ?ciphersuites, client_id = ?client_id, tmp_client_ids = ?tmp_client_ids)))]
     pub async fn mls_init_with_client_id(
-        &self,
+        &mut self,
         client_id: ClientId,
         tmp_client_ids: Vec<ClientId>,
         ciphersuites: Vec<MlsCiphersuite>,
     ) -> CryptoResult<()> {
-        if self.mls_client.read().await.is_some() {
+        if self.mls_client.is_some() {
             // prevents wrong usage of the method instead of silently hiding the mistake
             return Err(CryptoError::ConsumerError);
         }
@@ -309,7 +305,7 @@ impl MlsCentral {
         let mls_client =
             Client::init_with_external_client_id(client_id, tmp_client_ids, &ciphersuites, &self.mls_backend).await?;
 
-        self.mls_client.write().await.replace(mls_client);
+        self.mls_client = Some(mls_client);
         Ok(())
     }
 
@@ -317,8 +313,8 @@ impl MlsCentral {
     ///
     /// # Arguments
     /// * `callbacks` - a callback to be called to perform authorization
-    pub async fn callbacks(&self, callbacks: std::sync::Arc<dyn CoreCryptoCallbacks>) {
-        self.callbacks.write().await.replace(callbacks);
+    pub fn callbacks(&mut self, callbacks: std::sync::Arc<dyn CoreCryptoCallbacks>) {
+        self.callbacks.replace(callbacks);
     }
 
     /// Returns the client's most recent public signature key as a buffer.
@@ -327,12 +323,12 @@ impl MlsCentral {
     /// # Arguments
     /// * `ciphersuite` - a callback to be called to perform authorization
     /// * `credential_type` - of the credential to look for
-    pub async fn client_public_key(
+    pub fn client_public_key(
         &self,
         ciphersuite: MlsCiphersuite,
         credential_type: MlsCredentialType,
     ) -> CryptoResult<Vec<u8>> {
-        let mls_client = self.mls_client().await?;
+        let mls_client = self.mls_client()?;
         let cb = mls_client
             .find_most_recent_credential_bundle(ciphersuite.signature_algorithm(), credential_type)
             .ok_or(CryptoError::ClientSignatureNotFound)?;
@@ -340,8 +336,8 @@ impl MlsCentral {
     }
 
     /// Returns the client's id as a buffer
-    pub async fn client_id(&self) -> CryptoResult<ClientId> {
-        Ok(self.mls_client().await?.id().clone())
+    pub fn client_id(&self) -> CryptoResult<ClientId> {
+        Ok(self.mls_client()?.id().clone())
     }
 
     /// Create a new empty conversation
@@ -358,7 +354,7 @@ impl MlsCentral {
     #[cfg_attr(test, crate::dispotent)]
     #[cfg_attr(not(test), tracing::instrument(err, skip(self, config), fields(id = base64::Engine::encode(&base64::prelude::BASE64_STANDARD, id))))]
     pub async fn new_conversation(
-        &self,
+        &mut self,
         id: &ConversationId,
         creator_credential_type: MlsCredentialType,
         config: MlsConversationConfiguration,
@@ -367,10 +363,10 @@ impl MlsCentral {
             return Err(CryptoError::ConversationAlreadyExists(id.clone()));
         }
 
-        let mut mls_client = self.mls_client_mut().await?;
+        let mls_client = self.mls_client.as_mut().ok_or(CryptoError::MlsNotInitialized)?;
         let conversation = MlsConversation::create(
             id.clone(),
-            mls_client.deref_mut(),
+            mls_client,
             creator_credential_type,
             config,
             &self.mls_backend,
@@ -378,17 +374,15 @@ impl MlsCentral {
         .in_current_span()
         .await?;
 
-        self.mls_groups.write().await.insert(id.clone(), conversation);
+        self.mls_groups.insert(id.clone(), conversation);
 
         Ok(())
     }
 
     /// Checks if a given conversation id exists locally
-    pub async fn conversation_exists(&self, id: &ConversationId) -> bool {
+    pub async fn conversation_exists(&mut self, id: &ConversationId) -> bool {
         self.mls_groups
-            .write()
-            .await
-            .get_fetch(id, &self.mls_backend.keystore(), None)
+            .get_fetch(id, self.mls_backend.borrow_keystore_mut(), None)
             .await
             .ok()
             .flatten()
@@ -409,7 +403,7 @@ impl MlsCentral {
     /// # Errors
     /// If the conversation can't be found
     #[cfg_attr(test, crate::idempotent)]
-    pub async fn conversation_ciphersuite(&self, id: &ConversationId) -> CryptoResult<MlsCiphersuite> {
+    pub async fn conversation_ciphersuite(&mut self, id: &ConversationId) -> CryptoResult<MlsCiphersuite> {
         Ok(self.get_conversation(id).await?.read().await.ciphersuite())
     }
 
@@ -440,6 +434,11 @@ impl MlsCentral {
     /// Returns a reference for the internal Crypto Provider
     pub fn provider(&self) -> &MlsCryptoProvider {
         &self.mls_backend
+    }
+
+    /// Returns a mutable reference for the internal Crypto Provider
+    pub fn provider_mut(&mut self) -> &mut MlsCryptoProvider {
+        &mut self.mls_backend
     }
 }
 
