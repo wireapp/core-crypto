@@ -141,7 +141,7 @@ async fn run_mls_test(chrome_driver_addr: &std::net::SocketAddr) -> Result<()> {
         None,
         Some(100),
     )?;
-    let mut master_client = MlsCentral::try_new_in_memory(configuration).await?;
+    let master_client = MlsCentral::try_new_in_memory(configuration).await?;
 
     let conversation_id = MLS_CONVERSATION_ID.to_vec();
     let config = MlsConversationConfiguration {
@@ -195,7 +195,7 @@ async fn run_mls_test(chrome_driver_addr: &std::net::SocketAddr) -> Result<()> {
 
         log::info!(
             "Master client [{}] >>> {}",
-            hex::encode(master_client.client_id()?.as_slice()),
+            hex::encode(master_client.client_id().await?.as_slice()),
             message
         );
 
@@ -286,10 +286,10 @@ async fn run_proteus_test(chrome_driver_addr: &std::net::SocketAddr) -> Result<(
         None,
         Some(100),
     )?;
-    let mut master_client = CoreCrypto::from(MlsCentral::try_new_in_memory(configuration).await?);
+    let master_client = CoreCrypto::from(MlsCentral::try_new_in_memory(configuration).await?);
     master_client.proteus_init().await?;
 
-    let master_fingerprint = master_client.proteus_fingerprint()?;
+    let master_fingerprint = master_client.proteus_fingerprint().await?;
 
     spinner.success("[Proteus] Step 0: Initializing clients [OK]");
 

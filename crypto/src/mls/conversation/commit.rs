@@ -39,12 +39,14 @@ impl MlsCentral {
     #[cfg_attr(test, crate::idempotent)]
     #[cfg_attr(not(test), tracing::instrument(err, skip(self, key_packages), fields(id = base64::Engine::encode(&base64::prelude::BASE64_STANDARD, id))))]
     pub async fn add_members_to_conversation(
-        &mut self,
+        &self,
         id: &ConversationId,
         key_packages: Vec<KeyPackageIn>,
     ) -> CryptoResult<MlsConversationCreationMessage> {
-        if let Some(callbacks) = self.callbacks.as_ref() {
-            let client_id = self.mls_client()?.id().clone();
+        let client_guard = self.mls_client().await;
+        let client = client_guard.as_ref().ok_or(CryptoError::MlsNotInitialized)?;
+        if let Some(callbacks) = self.callbacks.read().await.as_ref() {
+            let client_id = client.id().clone();
             if !callbacks.authorize(id.clone(), client_id).await {
                 return Err(CryptoError::Unauthorized);
             }
@@ -53,7 +55,7 @@ impl MlsCentral {
             .await?
             .write()
             .await
-            .add_members(self.mls_client()?, key_packages, &self.mls_backend)
+            .add_members(client, key_packages, &self.mls_backend)
             .await
     }
 
@@ -73,12 +75,14 @@ impl MlsCentral {
     #[cfg_attr(test, crate::idempotent)]
     #[cfg_attr(not(test), tracing::instrument(err, skip(self), fields(id = base64::Engine::encode(&base64::prelude::BASE64_STANDARD, id))))]
     pub async fn remove_members_from_conversation(
-        &mut self,
+        &self,
         id: &ConversationId,
         clients: &[ClientId],
     ) -> CryptoResult<MlsCommitBundle> {
-        if let Some(callbacks) = self.callbacks.as_ref() {
-            let client_id = self.mls_client()?.id().clone();
+        let client_guard = self.mls_client().await;
+        let client = client_guard.as_ref().ok_or(CryptoError::MlsNotInitialized)?;
+        if let Some(callbacks) = self.callbacks.read().await.as_ref() {
+            let client_id = client.id().clone();
             if !callbacks.authorize(id.clone(), client_id).await {
                 return Err(CryptoError::Unauthorized);
             }
@@ -87,7 +91,7 @@ impl MlsCentral {
             .await?
             .write()
             .await
-            .remove_members(self.mls_client()?, clients, &self.mls_backend)
+            .remove_members(client, clients, &self.mls_backend)
             .await
     }
 
@@ -106,12 +110,14 @@ impl MlsCentral {
     /// from OpenMls and the KeyStore
     #[cfg_attr(test, crate::idempotent)]
     #[cfg_attr(not(test), tracing::instrument(err, skip(self), fields(id = base64::Engine::encode(&base64::prelude::BASE64_STANDARD, id))))]
-    pub async fn update_keying_material(&mut self, id: &ConversationId) -> CryptoResult<MlsCommitBundle> {
+    pub async fn update_keying_material(&self, id: &ConversationId) -> CryptoResult<MlsCommitBundle> {
+        let client_guard = self.mls_client().await;
+        let client = client_guard.as_ref().ok_or(CryptoError::MlsNotInitialized)?;
         self.get_conversation(id)
             .await?
             .write()
             .await
-            .update_keying_material(self.mls_client()?, &self.mls_backend, None, None)
+            .update_keying_material(client, &self.mls_backend, None, None)
             .await
     }
 
@@ -127,12 +133,14 @@ impl MlsCentral {
     /// Errors can be originating from the KeyStore and OpenMls
     #[cfg_attr(test, crate::idempotent)]
     #[cfg_attr(not(test), tracing::instrument(err, skip(self), fields(id = base64::Engine::encode(&base64::prelude::BASE64_STANDARD, id))))]
-    pub async fn commit_pending_proposals(&mut self, id: &ConversationId) -> CryptoResult<Option<MlsCommitBundle>> {
+    pub async fn commit_pending_proposals(&self, id: &ConversationId) -> CryptoResult<Option<MlsCommitBundle>> {
+        let client_guard = self.mls_client().await;
+        let client = client_guard.as_ref().ok_or(CryptoError::MlsNotInitialized)?;
         self.get_conversation(id)
             .await?
             .write()
             .await
-            .commit_pending_proposals(self.mls_client()?, &self.mls_backend)
+            .commit_pending_proposals(client, &self.mls_backend)
             .await
     }
 }
