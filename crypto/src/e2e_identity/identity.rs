@@ -84,7 +84,7 @@ impl MlsCentral {
     /// If no member has a x509 certificate, it will return an empty Vec
     #[cfg_attr(not(test), tracing::instrument(err, skip_all))]
     pub async fn get_device_identities(
-        &mut self,
+        &self,
         conversation_id: &ConversationId,
         client_ids: &[ClientId],
     ) -> CryptoResult<Vec<WireIdentity>> {
@@ -110,7 +110,7 @@ impl MlsCentral {
     /// reduce those identities to determine the actual status of a user.
     #[cfg_attr(not(test), tracing::instrument(err, skip_all))]
     pub async fn get_user_identities(
-        &mut self,
+        &self,
         conversation_id: &ConversationId,
         user_ids: &[String],
     ) -> CryptoResult<HashMap<String, Vec<WireIdentity>>> {

@@ -80,7 +80,7 @@ impl MlsCentral {
     /// to initialize the MLS client with a certificate
     #[cfg_attr(not(test), tracing::instrument(err, skip_all))]
     pub async fn e2ei_mls_init_only(
-        &mut self,
+        &self,
         enrollment: &mut E2eiEnrollment,
         certificate_chain: String,
         nb_init_key_packages: Option<usize>,

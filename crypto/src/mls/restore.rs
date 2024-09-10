@@ -13,8 +13,9 @@ impl MlsCentral {
     /// It simply fetches the MLS group from keystore in memory.
     #[cfg_attr(test, crate::idempotent)]
     #[cfg_attr(not(test), tracing::instrument(skip(self), err))]
-    pub async fn restore_from_disk(&mut self) -> CryptoResult<()> {
-        self.mls_groups = Self::restore_groups(&self.mls_backend).await?;
+    pub async fn restore_from_disk(&self) -> CryptoResult<()> {
+        let mut guard = self.mls_groups.write().await;
+        *guard = Self::restore_groups(&self.mls_backend).await?;
         self.init_pki_env().in_current_span().await?;
 
         Ok(())

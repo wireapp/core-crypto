@@ -77,7 +77,7 @@ pub trait DatabaseConnection: DatabaseConnectionRequirements {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Connection {
     pub(crate) conn: Arc<Mutex<KeystoreDatabaseConnection>>,
 }
