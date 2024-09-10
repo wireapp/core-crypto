@@ -92,15 +92,16 @@ impl MlsCentral {
     /// Errors resulting from OpenMls, the KeyStore calls and serialization
     #[cfg_attr(not(test), tracing::instrument(err, skip(self, group_info, custom_cfg)))]
     pub async fn join_by_external_commit(
-        &mut self,
+        &self,
         group_info: VerifiableGroupInfo,
         custom_cfg: MlsCustomConfiguration,
         credential_type: MlsCredentialType,
     ) -> CryptoResult<MlsConversationInitBundle> {
-        let mls_client = self.mls_client.as_mut().ok_or(CryptoError::MlsNotInitialized)?;
+        let mut client_guard = self.mls_client_mut().await;
+        let client = client_guard.as_mut().ok_or(CryptoError::MlsNotInitialized)?;
 
         let cs: MlsCiphersuite = group_info.ciphersuite().into();
-        let cb = mls_client
+        let cb = client
             .get_most_recent_or_create_credential_bundle(&self.mls_backend, cs.signature_algorithm(), credential_type)
             .await?;
 
@@ -161,7 +162,7 @@ impl MlsCentral {
     #[cfg_attr(test, crate::dispotent)]
     #[cfg_attr(not(test), tracing::instrument(err, skip_all))]
     pub async fn merge_pending_group_from_external_commit(
-        &mut self,
+        &self,
         id: &ConversationId,
     ) -> CryptoResult<Option<Vec<MlsBufferedConversationDecryptMessage>>> {
         // Retrieve the pending MLS group from the keystore
@@ -191,7 +192,7 @@ impl MlsCentral {
 
         let pending_messages = self.restore_pending_messages(&mut conversation, is_rejoin).await?;
 
-        self.mls_groups.insert(id.clone(), conversation);
+        self.mls_groups.write().await.insert(id.clone(), conversation);
 
         // cleanup the pending group we no longer need
         self.mls_backend.key_store().mls_pending_groups_delete(id).await?;
@@ -213,13 +214,13 @@ impl MlsCentral {
     /// # Errors
     /// Errors resulting from the KeyStore calls
     #[cfg_attr(test, crate::dispotent)]
-    pub async fn clear_pending_group_from_external_commit(&mut self, id: &ConversationId) -> CryptoResult<()> {
+    pub async fn clear_pending_group_from_external_commit(&self, id: &ConversationId) -> CryptoResult<()> {
         Ok(self.mls_backend.key_store().mls_pending_groups_delete(id).await?)
     }
 
     pub(crate) async fn pending_group_exists(&self, id: &ConversationId) -> bool {
         self.mls_backend
-            .borrow_keystore()
+            .keystore()
             .find::<PersistedMlsPendingGroup>(id.as_slice())
             .await
             .ok()

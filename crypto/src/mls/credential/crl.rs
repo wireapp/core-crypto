@@ -88,7 +88,7 @@ impl MlsCentral {
     /// and all the intermediates
     #[cfg_attr(not(test), tracing::instrument(err, skip_all))]
     pub(crate) async fn extract_dp_on_init(
-        &mut self,
+        &self,
         certificate_chain: &[Vec<u8>],
     ) -> CryptoResult<NewCrlDistributionPoint> {
         use x509_cert::der::Decode as _;

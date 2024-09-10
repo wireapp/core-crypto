@@ -158,8 +158,8 @@ impl MlsCryptoProvider {
     /// Reseeds the internal CSPRNG entropy pool with a brand new one.
     ///
     /// If [None] is provided, the new entropy will be pulled through the current OS target's capabilities
-    pub fn reseed(&mut self, entropy_seed: Option<EntropySeed>) {
-        self.crypto = entropy_seed.map(RustCrypto::new_with_seed).unwrap_or_default();
+    pub fn reseed(&self, entropy_seed: Option<EntropySeed>) -> MlsProviderResult<()> {
+        self.crypto.reseed(entropy_seed)
     }
 
     /// Closes this provider, which in turns tears down the backing store
@@ -176,13 +176,9 @@ impl MlsCryptoProvider {
         Ok(self.key_store.wipe().await?)
     }
 
-    /// Borrow keystore
-    pub fn borrow_keystore(&self) -> &CryptoKeystore {
-        &self.key_store
-    }
-
-    pub fn borrow_keystore_mut(&mut self) -> &mut CryptoKeystore {
-        &mut self.key_store
+    /// Clone keystore (its an `Arc` internnaly)
+    pub fn keystore(&self) -> CryptoKeystore {
+        self.key_store.clone()
     }
 
     /// Allows to retrieve the underlying key store directly
