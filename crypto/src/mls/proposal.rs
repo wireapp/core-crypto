@@ -14,6 +14,8 @@
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see http://www.gnu.org/licenses/.
 
+use std::ops::Deref;
+
 use openmls::prelude::{hash_ref::ProposalRef, KeyPackage};
 
 use mls_crypto_provider::MlsCryptoProvider;
@@ -95,7 +97,7 @@ impl MlsCentral {
     /// Creates a new Add proposal
     #[cfg_attr(test, crate::idempotent)]
     pub async fn new_add_proposal(
-        &mut self,
+        &self,
         id: &ConversationId,
         key_package: KeyPackage,
     ) -> CryptoResult<MlsProposalBundle> {
@@ -105,7 +107,7 @@ impl MlsCentral {
     /// Creates a new Add proposal
     #[cfg_attr(test, crate::idempotent)]
     pub async fn new_remove_proposal(
-        &mut self,
+        &self,
         id: &ConversationId,
         client_id: ClientId,
     ) -> CryptoResult<MlsProposalBundle> {
@@ -114,7 +116,7 @@ impl MlsCentral {
 
     /// Creates a new Add proposal
     #[cfg_attr(test, crate::dispotent)]
-    pub async fn new_update_proposal(&mut self, id: &ConversationId) -> CryptoResult<MlsProposalBundle> {
+    pub async fn new_update_proposal(&self, id: &ConversationId) -> CryptoResult<MlsProposalBundle> {
         self.new_proposal(id, MlsProposal::Update).await
     }
 
@@ -131,11 +133,11 @@ impl MlsCentral {
     /// If the conversation is not found, an error will be returned. Errors from OpenMls can be
     /// returned as well, when for example there's a commit pending to be merged
     #[cfg_attr(not(test), tracing::instrument(err, skip(self, proposal), fields(id = base64::Engine::encode(&base64::prelude::BASE64_STANDARD, id))))]
-    async fn new_proposal(&mut self, id: &ConversationId, proposal: MlsProposal) -> CryptoResult<MlsProposalBundle> {
+    async fn new_proposal(&self, id: &ConversationId, proposal: MlsProposal) -> CryptoResult<MlsProposalBundle> {
         let conversation = self.get_conversation(id).await?;
-        let client = self.mls_client()?;
+        let client = self.mls_client().await?;
         proposal
-            .create(client, &self.mls_backend, conversation.write().await)
+            .create(client.deref(), &self.mls_backend, conversation.write().await)
             .await
     }
 }

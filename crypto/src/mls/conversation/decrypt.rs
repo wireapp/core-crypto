@@ -8,6 +8,8 @@
 //! | 0 pend. Proposal  | ✅              | ✅              |
 //! | 1+ pend. Proposal | ✅              | ✅              |
 
+use std::ops::Deref;
+
 use openmls::prelude::StageCommitError;
 use openmls::{
     framing::errors::{MessageDecryptionError, SecretTreeError},
@@ -384,7 +386,7 @@ impl MlsCentral {
     /// from OpenMls and the KeyStore
     #[cfg_attr(not(test), tracing::instrument(err, skip(self, message), fields(id = base64::Engine::encode(&base64::prelude::BASE64_STANDARD, id))))]
     pub async fn decrypt_message(
-        &mut self,
+        &self,
         id: &ConversationId,
         message: impl AsRef<[u8]>,
     ) -> CryptoResult<MlsConversationDecryptMessage> {
@@ -393,14 +395,15 @@ impl MlsCentral {
             return self.handle_when_group_is_pending(id, message).await;
         };
         let parent_conversation = self.get_parent_conversation(&conversation).await?;
-        let callbacks = self.callbacks.as_ref().map(|boxed| boxed.as_ref());
+        let guard = self.callbacks.read().await;
+        let callbacks = guard.as_ref().map(|boxed| boxed.as_ref());
         let decrypt_message = conversation
             .write()
             .await
             .decrypt_message(
                 msg,
                 parent_conversation.as_ref(),
-                self.mls_client()?,
+                self.mls_client().await?.deref(),
                 &self.mls_backend,
                 callbacks,
                 true,

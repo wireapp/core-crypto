@@ -257,19 +257,21 @@ impl MlsConversation {
 
 impl MlsCentral {
     pub(crate) async fn get_conversation(
-        &mut self,
+        &self,
         id: &ConversationId,
     ) -> CryptoResult<crate::group_store::GroupStoreValue<MlsConversation>> {
-        let keystore = self.mls_backend.borrow_keystore_mut();
+        let mut keystore = self.mls_backend.keystore();
         self.mls_groups
-            .get_fetch(id, keystore, None)
+            .write()
+            .await
+            .get_fetch(id, &mut keystore, None)
             .await?
             .ok_or_else(|| CryptoError::ConversationNotFound(id.clone()))
     }
 
     #[cfg_attr(not(test), tracing::instrument(err, skip_all))]
     pub(crate) async fn get_parent_conversation(
-        &mut self,
+        &self,
         conversation: &GroupStoreValue<MlsConversation>,
     ) -> CryptoResult<Option<crate::group_store::GroupStoreValue<MlsConversation>>> {
         let conversation_lock = conversation.read().await;
@@ -285,10 +287,10 @@ impl MlsCentral {
     }
 
     pub(crate) async fn get_all_conversations(
-        &mut self,
+        &self,
     ) -> CryptoResult<Vec<crate::group_store::GroupStoreValue<MlsConversation>>> {
-        let keystore = self.mls_backend.borrow_keystore_mut();
-        self.mls_groups.get_fetch_all(keystore).await
+        let keystore = self.mls_backend.keystore();
+        self.mls_groups.write().await.get_fetch_all(&keystore).await
     }
 
     /// Mark a conversation as child of another one
@@ -296,7 +298,7 @@ impl MlsCentral {
     #[cfg_attr(test, crate::idempotent)]
     #[cfg_attr(not(test), tracing::instrument(err, skip(self), fields(parent_id = base64::Engine::encode(&base64::prelude::BASE64_STANDARD, parent_id), child_id = base64::Engine::encode(&base64::prelude::BASE64_STANDARD, child_id))))]
     pub async fn mark_conversation_as_child_of(
-        &mut self,
+        &self,
         child_id: &ConversationId,
         parent_id: &ConversationId,
     ) -> CryptoResult<()> {
