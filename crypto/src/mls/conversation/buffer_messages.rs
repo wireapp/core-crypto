@@ -3,6 +3,7 @@
 //!
 //! Feel free to delete all of this when the issue is fixed on the DS side !
 
+
 use crate::{
     group_store::GroupStoreValue,
     prelude::{
@@ -19,11 +20,11 @@ use tracing::{error, span, trace, Instrument, Level};
 impl MlsCentral {
     #[cfg_attr(not(test), tracing::instrument(err, skip(self, message), fields(id = base64::Engine::encode(&base64::prelude::BASE64_STANDARD, id))))]
     pub(crate) async fn handle_future_message(
-        &mut self,
+        &self,
         id: &ConversationId,
         message: impl AsRef<[u8]>,
     ) -> CryptoResult<MlsConversationDecryptMessage> {
-        let keystore = self.mls_backend.borrow_keystore();
+        let keystore = self.mls_backend.keystore();
 
         let pending_msg = MlsPendingMessage {
             id: id.clone(),
@@ -35,7 +36,7 @@ impl MlsCentral {
 
     #[cfg_attr(not(test), tracing::instrument(err, skip(self, conversation)))]
     pub(crate) async fn restore_pending_messages(
-        &mut self,
+        &self,
         conversation: &mut MlsConversation,
         is_rejoin: bool,
     ) -> CryptoResult<Option<Vec<MlsBufferedConversationDecryptMessage>>> {
@@ -43,10 +44,13 @@ impl MlsCentral {
             Some(id) => self.get_conversation(id).await.ok(),
             _ => None,
         };
-        let callbacks = self.callbacks.as_ref().map(|boxed| boxed.as_ref());
+        let guard = self.callbacks.read().await;
+        let callbacks = guard.as_ref().map(|boxed| boxed.as_ref());
+        let client_guard = self.mls_client().await;
+        let client = client_guard.as_ref().ok_or(CryptoError::MlsNotInitialized)?;
         conversation
             .restore_pending_messages(
-                self.mls_client()?,
+                client,
                 &self.mls_backend,
                 callbacks,
                 parent_conversation.as_ref(),
@@ -70,7 +74,7 @@ impl MlsConversation {
         // using the macro produces a clippy warning
         let span = span!(target:module_path!(), Level::INFO, "restore_pending_messages");
         let result = async move {
-            let keystore = backend.borrow_keystore();
+            let keystore = backend.keystore();
 
             let group_id = self.id().as_slice();
             if is_rejoin {

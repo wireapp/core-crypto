@@ -86,7 +86,7 @@ mod tests {
     #[apply(use_provider)]
     #[wasm_bindgen_test]
     async fn can_be_externally_seeded_ietf_vectors_1_2(backend: MlsCryptoProvider) {
-        let mut backend = backend.await;
+        let backend = backend.await;
         // Test vectors 1 and 2 from
         // https://tools.ietf.org/html/draft-nir-cfrg-chacha20-poly1305-04
         let seed = [0u8; 32];
@@ -120,7 +120,7 @@ mod tests {
     #[apply(use_provider)]
     #[wasm_bindgen_test]
     async fn can_be_externally_seeded_ietf_vector_3(backend: MlsCryptoProvider) {
-        let mut backend = backend.await;
+        let backend = backend.await;
         // Test vector 3 from
         // https://tools.ietf.org/html/draft-nir-cfrg-chacha20-poly1305-04
         let seed = [
@@ -152,7 +152,7 @@ mod tests {
     #[apply(use_provider)]
     #[wasm_bindgen_test]
     async fn can_be_externally_seeded_ietf_vector_4(backend: MlsCryptoProvider) {
-        let mut backend = backend.await;
+        let backend = backend.await;
         // Test vector 4 from
         // https://tools.ietf.org/html/draft-nir-cfrg-chacha20-poly1305-04
         let seed = [
@@ -209,7 +209,7 @@ mod tests {
     #[apply(use_provider)]
     #[wasm_bindgen_test]
     async fn can_be_externally_seeded_ietf_vector_5(backend: MlsCryptoProvider) {
-        let mut backend = backend.await;
+        let backend = backend.await;
         // Test vector 5 from
         // https://tools.ietf.org/html/draft-nir-cfrg-chacha20-poly1305-04
         let seed = [0u8; 32];

@@ -334,7 +334,9 @@ impl MlsCentral {
         credential_type: MlsCredentialType,
         amount_requested: usize,
     ) -> CryptoResult<Vec<KeyPackage>> {
-        self.mls_client()?
+        let client_guard = self.mls_client().await;
+        let client = client_guard.as_ref().ok_or(CryptoError::MlsNotInitialized)?;
+        client
             .request_key_packages(amount_requested, ciphersuite, credential_type, &self.mls_backend)
             .await
     }
@@ -347,7 +349,9 @@ impl MlsCentral {
         ciphersuite: MlsCiphersuite,
         credential_type: MlsCredentialType,
     ) -> CryptoResult<usize> {
-        self.mls_client()?
+        let client_guard = self.mls_client().await;
+        let client = client_guard.as_ref().ok_or(CryptoError::MlsNotInitialized)?;
+        client
             .valid_keypackages_count(&self.mls_backend, ciphersuite, credential_type)
             .await
     }
@@ -356,11 +360,12 @@ impl MlsCentral {
     /// You should only use this after [MlsCentral::e2ei_rotate_all]
     #[cfg_attr(test, crate::dispotent)]
     #[cfg_attr(not(test), tracing::instrument(err, skip_all))]
-    pub async fn delete_keypackages(&mut self, refs: &[KeyPackageRef]) -> CryptoResult<()> {
+    pub async fn delete_keypackages(&self, refs: &[KeyPackageRef]) -> CryptoResult<()> {
         if refs.is_empty() {
             return Err(CryptoError::ConsumerError);
         }
-        let client = self.mls_client.as_mut().ok_or(CryptoError::MlsNotInitialized)?;
+        let mut client_guard = self.mls_client_mut().await;
+        let client = client_guard.as_mut().ok_or(CryptoError::MlsNotInitialized)?;
         client.prune_keypackages_and_credential(&self.mls_backend, refs).await
     }
 }

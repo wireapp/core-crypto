@@ -56,7 +56,7 @@ mod tests {
         ciphersuite: Ciphersuite,
         entropy_seed: Option<EntropySeed>,
     ) {
-        let mut backend = backend.await;
+        let backend = backend.await;
         backend.reseed(entropy_seed);
         let len = rand::thread_rng().gen_range(LEN_RANGE);
         let crypto = backend.crypto();
@@ -89,7 +89,7 @@ mod tests {
         ciphersuite: Ciphersuite,
         entropy_seed: Option<EntropySeed>,
     ) {
-        let mut backend = backend.await;
+        let backend = backend.await;
         backend.reseed(entropy_seed);
         let len = rand::thread_rng().gen_range(LEN_RANGE);
         let data = backend.rand().random_vec(len).unwrap();
@@ -108,7 +108,7 @@ mod tests {
         ciphersuite: Ciphersuite,
         entropy_seed: Option<EntropySeed>,
     ) {
-        let mut backend = backend.await;
+        let backend = backend.await;
         backend.reseed(entropy_seed);
         let len = rand::thread_rng().gen_range(LEN_RANGE);
         let data = backend.rand().random_vec(len).unwrap();
@@ -142,7 +142,7 @@ mod tests {
         ciphersuite: Ciphersuite,
         entropy_seed: Option<EntropySeed>,
     ) {
-        let mut backend = backend.await;
+        let backend = backend.await;
         backend.reseed(entropy_seed);
 
         let len = rand::thread_rng().gen_range(LEN_RANGE);
@@ -166,7 +166,7 @@ mod tests {
         ciphersuite: Ciphersuite,
         entropy_seed: Option<EntropySeed>,
     ) {
-        let mut backend = backend.await;
+        let backend = backend.await;
         backend.reseed(entropy_seed);
 
         let crypto = backend.crypto();

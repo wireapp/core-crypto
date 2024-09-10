@@ -35,6 +35,7 @@ use async_lock::{Mutex, MutexGuard};
 use std::sync::Arc;
 
 /// Limit on the length of a blob to be stored in the database.
+///
 /// This limit applies to both SQLCipher-backed stores and WASM.
 /// This limit is conservative on purpose when targeting WASM, as the lower bound that exists is Safari with a limit of 1GB per origin.
 ///
@@ -77,7 +78,7 @@ pub trait DatabaseConnection: DatabaseConnectionRequirements {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Connection {
     pub(crate) conn: Arc<Mutex<KeystoreDatabaseConnection>>,
 }

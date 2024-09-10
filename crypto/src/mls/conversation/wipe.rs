@@ -10,7 +10,7 @@ impl MlsCentral {
     /// KeyStore errors, such as IO
     #[cfg_attr(test, crate::dispotent)]
     #[cfg_attr(not(test), tracing::instrument(err, skip(self), fields(id = base64::Engine::encode(&base64::prelude::BASE64_STANDARD, id))))]
-    pub async fn wipe_conversation(&mut self, id: &ConversationId) -> CryptoResult<()> {
+    pub async fn wipe_conversation(&self, id: &ConversationId) -> CryptoResult<()> {
         self.get_conversation(id)
             .await?
             .write()
@@ -18,7 +18,7 @@ impl MlsCentral {
             .wipe_associated_entities(&self.mls_backend)
             .await?;
         self.mls_backend.key_store().mls_group_delete(id).await?;
-        let _ = self.mls_groups.remove(id);
+        let _ = self.mls_groups.write().await.remove(id);
         Ok(())
     }
 }

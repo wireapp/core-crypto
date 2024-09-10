@@ -188,6 +188,6 @@ impl crate::clients::EmulatedProteusClient for CoreCryptoNativeClient {
     }
 
     async fn fingerprint(&self) -> Result<String> {
-        Ok(self.cc.proteus_fingerprint()?)
+        Ok(self.cc.proteus_fingerprint().await?)
     }
 }

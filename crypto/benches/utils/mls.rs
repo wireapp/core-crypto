@@ -122,7 +122,7 @@ pub(crate) async fn setup_mls(
     credential: Option<&CertificateBundle>,
     in_memory: bool,
 ) -> (MlsCentral, ConversationId) {
-    let (mut central, _) = new_central(ciphersuite, credential, in_memory).await;
+    let (central, _) = new_central(ciphersuite, credential, in_memory).await;
     let id = conversation_id();
     central
         .new_conversation(

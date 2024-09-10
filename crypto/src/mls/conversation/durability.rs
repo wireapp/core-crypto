@@ -23,7 +23,7 @@ impl MlsConversation {
 impl MlsCentral {
     /// Replaces the MLS group in memory with the one from keystore.
     #[cfg_attr(not(test), tracing::instrument(skip(self), fields (id = BASE64_STANDARD.encode(id))))]
-    pub async fn drop_and_restore(&mut self, id: &ConversationId) {
+    pub async fn drop_and_restore(&self, id: &ConversationId) {
         use core_crypto_keystore::CryptoKeystoreMls as _;
         use openmls_traits::OpenMlsCryptoProvider as _;
 
@@ -35,6 +35,6 @@ impl MlsCentral {
             .map(|mut groups| groups.remove(id.as_slice()).unwrap())
             .unwrap();
         let group = MlsConversation::from_serialized_state(group, parent_id).unwrap();
-        self.mls_groups.insert(id.clone(), group);
+        self.mls_groups.write().await.insert(id.clone(), group);
     }
 }
