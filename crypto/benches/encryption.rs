@@ -23,7 +23,7 @@ fn encryption_bench_var_group_size(c: &mut Criterion) {
                             (central, id, text)
                         })
                     },
-                    |(mut central, id, text)| async move {
+                    |(central, id, text)| async move {
                         black_box(central.encrypt_message(&id, text).await.unwrap());
                     },
                     BatchSize::SmallInput,
@@ -48,7 +48,7 @@ fn encryption_bench_var_msg_size(c: &mut Criterion) {
                             (central, id, text)
                         })
                     },
-                    |(mut central, id, text)| async move {
+                    |(central, id, text)| async move {
                         black_box(central.encrypt_message(&id, text).await.unwrap());
                     },
                     BatchSize::SmallInput,
@@ -76,7 +76,7 @@ fn decryption_bench_var_msg_size(c: &mut Criterion) {
                             (bob_central, id, encrypted)
                         })
                     },
-                    |(mut central, id, encrypted)| async move {
+                    |(central, id, encrypted)| async move {
                         black_box(central.decrypt_message(&id, encrypted).await.unwrap());
                     },
                     BatchSize::SmallInput,

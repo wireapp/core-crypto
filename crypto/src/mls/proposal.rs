@@ -97,7 +97,7 @@ impl MlsCentral {
     /// Creates a new Add proposal
     #[cfg_attr(test, crate::idempotent)]
     pub async fn new_add_proposal(
-        &mut self,
+        &self,
         id: &ConversationId,
         key_package: KeyPackage,
     ) -> CryptoResult<MlsProposalBundle> {
@@ -107,7 +107,7 @@ impl MlsCentral {
     /// Creates a new Add proposal
     #[cfg_attr(test, crate::idempotent)]
     pub async fn new_remove_proposal(
-        &mut self,
+        &self,
         id: &ConversationId,
         client_id: ClientId,
     ) -> CryptoResult<MlsProposalBundle> {
@@ -116,7 +116,7 @@ impl MlsCentral {
 
     /// Creates a new Add proposal
     #[cfg_attr(test, crate::dispotent)]
-    pub async fn new_update_proposal(&mut self, id: &ConversationId) -> CryptoResult<MlsProposalBundle> {
+    pub async fn new_update_proposal(&self, id: &ConversationId) -> CryptoResult<MlsProposalBundle> {
         self.new_proposal(id, MlsProposal::Update).await
     }
 
@@ -132,9 +132,10 @@ impl MlsCentral {
     /// # Errors
     /// If the conversation is not found, an error will be returned. Errors from OpenMls can be
     /// returned as well, when for example there's a commit pending to be merged
-    async fn new_proposal(&mut self, id: &ConversationId, proposal: MlsProposal) -> CryptoResult<MlsProposalBundle> {
+    async fn new_proposal(&self, id: &ConversationId, proposal: MlsProposal) -> CryptoResult<MlsProposalBundle> {
         let conversation = self.get_conversation(id).await?;
-        let client = self.mls_client()?;
+        let client_guard = self.mls_client().await;
+        let client = client_guard.as_ref().ok_or(CryptoError::MlsNotInitialized)?;
         proposal
             .create(client, &self.mls_backend, conversation.write().await)
             .await

@@ -59,15 +59,17 @@ impl MlsCentral {
     /// from OpenMls and the KeyStore
     #[cfg_attr(test, crate::idempotent)]
     pub async fn encrypt_message(
-        &mut self,
+        &self,
         conversation: &ConversationId,
         message: impl AsRef<[u8]>,
     ) -> CryptoResult<Vec<u8>> {
+        let client_guard = self.mls_client().await;
+        let client = client_guard.as_ref().ok_or(CryptoError::MlsNotInitialized)?;
         self.get_conversation(conversation)
             .await?
             .write()
             .await
-            .encrypt_message(self.mls_client()?, message, &self.mls_backend)
+            .encrypt_message(client, message, &self.mls_backend)
             .await
     }
 }

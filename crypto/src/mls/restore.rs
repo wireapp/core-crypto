@@ -12,8 +12,9 @@ impl MlsCentral {
     /// [MlsCentral] instance has to be used. This method has to be used to synchronize instances.
     /// It simply fetches the MLS group from keystore in memory.
     #[cfg_attr(test, crate::idempotent)]
-    pub async fn restore_from_disk(&mut self) -> CryptoResult<()> {
-        self.mls_groups = Self::restore_groups(&self.mls_backend).await?;
+    pub async fn restore_from_disk(&self) -> CryptoResult<()> {
+        let mut guard = self.mls_groups.write().await;
+        *guard = Self::restore_groups(&self.mls_backend).await?;
         self.init_pki_env().await?;
 
         Ok(())

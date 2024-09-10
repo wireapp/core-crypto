@@ -92,7 +92,7 @@ impl MlsCentral {
     /// We can now safely "merge" it (effectively apply the commit to the group) and update it
     /// in the keystore. The previous can be discarded to respect Forward Secrecy.
     pub async fn commit_accepted(
-        &mut self,
+        &self,
         id: &ConversationId,
     ) -> CryptoResult<Option<Vec<MlsBufferedConversationDecryptMessage>>> {
         let conv = self.get_conversation(id).await?;
@@ -121,7 +121,7 @@ impl MlsCentral {
     /// When the conversation is not found or the proposal reference does not identify a proposal
     /// in the local pending proposal store
     pub async fn clear_pending_proposal(
-        &mut self,
+        &self,
         conversation_id: &ConversationId,
         proposal_ref: MlsProposalRef,
     ) -> CryptoResult<()> {
@@ -147,7 +147,7 @@ impl MlsCentral {
     /// # Errors
     /// When the conversation is not found or there is no pending commit
     #[cfg_attr(test, crate::idempotent)]
-    pub async fn clear_pending_commit(&mut self, conversation_id: &ConversationId) -> CryptoResult<()> {
+    pub async fn clear_pending_commit(&self, conversation_id: &ConversationId) -> CryptoResult<()> {
         self.get_conversation(conversation_id)
             .await?
             .write()

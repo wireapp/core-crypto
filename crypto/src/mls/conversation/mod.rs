@@ -253,18 +253,20 @@ impl MlsConversation {
 
 impl MlsCentral {
     pub(crate) async fn get_conversation(
-        &mut self,
+        &self,
         id: &ConversationId,
     ) -> CryptoResult<crate::group_store::GroupStoreValue<MlsConversation>> {
-        let keystore = self.mls_backend.borrow_keystore_mut();
+        let mut keystore = self.mls_backend.keystore();
         self.mls_groups
-            .get_fetch(id, keystore, None)
+            .write()
+            .await
+            .get_fetch(id, &mut keystore, None)
             .await?
             .ok_or_else(|| CryptoError::ConversationNotFound(id.clone()))
     }
 
     pub(crate) async fn get_parent_conversation(
-        &mut self,
+        &self,
         conversation: &GroupStoreValue<MlsConversation>,
     ) -> CryptoResult<Option<crate::group_store::GroupStoreValue<MlsConversation>>> {
         let conversation_lock = conversation.read().await;
@@ -280,17 +282,17 @@ impl MlsCentral {
     }
 
     pub(crate) async fn get_all_conversations(
-        &mut self,
+        &self,
     ) -> CryptoResult<Vec<crate::group_store::GroupStoreValue<MlsConversation>>> {
-        let keystore = self.mls_backend.borrow_keystore_mut();
-        self.mls_groups.get_fetch_all(keystore).await
+        let keystore = self.mls_backend.keystore();
+        self.mls_groups.write().await.get_fetch_all(&keystore).await
     }
 
     /// Mark a conversation as child of another one
     /// This will affect the behavior of callbacks in particular
     #[cfg_attr(test, crate::idempotent)]
     pub async fn mark_conversation_as_child_of(
-        &mut self,
+        &self,
         child_id: &ConversationId,
         parent_id: &ConversationId,
     ) -> CryptoResult<()> {

@@ -22,7 +22,7 @@ impl MlsCentral {
     /// ClientId which should remain the same as the Basic one.
     /// Once the enrollment is finished, use the instance in [MlsCentral::e2ei_rotate_all] to do
     /// the rotation.
-    pub fn e2ei_new_activation_enrollment(
+    pub async fn e2ei_new_activation_enrollment(
         &self,
         display_name: String,
         handle: String,
@@ -30,7 +30,8 @@ impl MlsCentral {
         expiry_sec: u32,
         ciphersuite: MlsCiphersuite,
     ) -> CryptoResult<E2eiEnrollment> {
-        let client = self.mls_client()?;
+        let client_guard = self.mls_client().await;
+        let client = client_guard.as_ref().ok_or(CryptoError::MlsNotInitialized)?;
 
         // look for existing credential of type basic. If there isn't, then this method has been misused
         let cb = client
@@ -67,7 +68,8 @@ impl MlsCentral {
         expiry_sec: u32,
         ciphersuite: MlsCiphersuite,
     ) -> CryptoResult<E2eiEnrollment> {
-        let client = self.mls_client()?;
+        let client_guard = self.mls_client().await;
+        let client = client_guard.as_ref().ok_or(CryptoError::MlsNotInitialized)?;
 
         // look for existing credential of type x509. If there isn't, then this method has been misused
         let cb = client
@@ -102,7 +104,7 @@ impl MlsCentral {
     /// having enrolled a new X509 certificate with either [MlsCentral::e2ei_new_activation_enrollment]
     /// or [MlsCentral::e2ei_new_rotate_enrollment]
     pub async fn e2ei_rotate_all(
-        &mut self,
+        &self,
         enrollment: &mut E2eiEnrollment,
         certificate_chain: String,
         new_key_packages_count: usize,
@@ -133,10 +135,9 @@ impl MlsCentral {
             private_key,
         };
 
-        let new_cb = self
-            .mls_client
-            .as_mut()
-            .ok_or(CryptoError::MlsNotInitialized)?
+        let mut client_guard = self.mls_client_mut().await;
+        let client = client_guard.as_mut().ok_or(CryptoError::MlsNotInitialized)?;
+        let new_cb = client
             .save_new_x509_credential_bundle(&self.mls_backend, cs.signature_algorithm(), cert_bundle)
             .await?;
 
@@ -144,8 +145,7 @@ impl MlsCentral {
 
         let key_package_refs_to_remove = self.find_key_packages_to_remove(&new_cb).await?;
 
-        let new_key_packages = self
-            .mls_client()?
+        let new_key_packages = client
             .generate_new_keypackages(&self.mls_backend, cs, &new_cb, new_key_packages_count)
             .await?;
 
@@ -185,19 +185,16 @@ impl MlsCentral {
         Ok(kp_refs)
     }
 
-    async fn e2ei_update_all(
-        &mut self,
-        cb: &CredentialBundle,
-    ) -> CryptoResult<HashMap<ConversationId, MlsCommitBundle>> {
+    async fn e2ei_update_all(&self, cb: &CredentialBundle) -> CryptoResult<HashMap<ConversationId, MlsCommitBundle>> {
         let all_conversations = self.get_all_conversations().await?;
 
         let mut commits = HashMap::with_capacity(all_conversations.len());
+        let client_guard = self.mls_client().await;
+        let client = client_guard.as_ref().ok_or(CryptoError::MlsNotInitialized)?;
         for conv in all_conversations {
             let mut conv = conv.write().await;
             let id = conv.id().clone();
-            let commit = conv
-                .e2ei_rotate(&self.mls_backend, self.mls_client()?, Some(cb))
-                .await?;
+            let commit = conv.e2ei_rotate(&self.mls_backend, client, Some(cb)).await?;
             let _ = commits.insert(id, commit);
         }
         Ok(commits)
@@ -207,15 +204,17 @@ impl MlsCentral {
     /// having enrolled a new X509 certificate with either [MlsCentral::e2ei_new_activation_enrollment]
     /// or [MlsCentral::e2ei_new_rotate_enrollment]
     pub async fn e2ei_rotate(
-        &mut self,
+        &self,
         id: &crate::prelude::ConversationId,
         cb: Option<&CredentialBundle>,
     ) -> CryptoResult<MlsCommitBundle> {
+        let client_guard = self.mls_client().await;
+        let client = client_guard.as_ref().ok_or(CryptoError::MlsNotInitialized)?;
         self.get_conversation(id)
             .await?
             .write()
             .await
-            .e2ei_rotate(&self.mls_backend, self.mls_client()?, cb)
+            .e2ei_rotate(&self.mls_backend, client, cb)
             .await
     }
 }
