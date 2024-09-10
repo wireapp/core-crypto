@@ -106,7 +106,7 @@ impl MlsCentral {
     /// for it beforehand with [MlsCentral::e2ei_mls_init_only] or variants.
     #[cfg_attr(test, crate::dispotent)]
     pub async fn new_external_add_proposal(
-        &mut self,
+        &self,
         conversation_id: ConversationId,
         epoch: GroupEpoch,
         ciphersuite: MlsCiphersuite,
@@ -114,27 +114,24 @@ impl MlsCentral {
     ) -> CryptoResult<MlsMessageOut> {
         let group_id = GroupId::from_slice(&conversation_id[..]);
 
-        let cb = self
-            .mls_client()?
-            .find_most_recent_credential_bundle(ciphersuite.signature_algorithm(), credential_type);
+        let mut client_guard = self.mls_client_mut().await;
+        let client = client_guard.as_mut().ok_or(CryptoError::MlsNotInitialized)?;
+        let cb = client.find_most_recent_credential_bundle(ciphersuite.signature_algorithm(), credential_type);
         let cb = match (cb, credential_type) {
             (Some(cb), _) => cb,
             (None, MlsCredentialType::Basic) => {
                 // If a Basic CredentialBundle does not exist, just create one instead of failing
-                self.mls_client
-                    .as_mut()
-                    .ok_or(CryptoError::MlsNotInitialized)?
+                client
                     .init_basic_credential_bundle_if_missing(&self.mls_backend, ciphersuite.signature_algorithm())
                     .await?;
 
-                self.mls_client()?
+                client
                     .find_most_recent_credential_bundle(ciphersuite.signature_algorithm(), credential_type)
                     .ok_or(CryptoError::CredentialNotFound(credential_type))?
             }
             (None, MlsCredentialType::X509) => return Err(CryptoError::E2eiEnrollmentNotDone),
         };
-        let kp = self
-            .mls_client()?
+        let kp = client
             .generate_one_keypackage_from_credential_bundle(&self.mls_backend, ciphersuite, cb)
             .await?;
 

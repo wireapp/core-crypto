@@ -21,12 +21,13 @@ pub(crate) mod key_package;
 pub(crate) mod user_id;
 
 use crate::{
-    mls::{credential::ext::CredentialExt, credential::CredentialBundle},
+    mls::credential::{ext::CredentialExt, CredentialBundle},
     prelude::{
         identifier::ClientIdentifier, key_package::KEYPACKAGE_DEFAULT_LIFETIME, CertificateBundle, ClientId,
         CryptoError, CryptoResult, MlsCentral, MlsCiphersuite, MlsCredentialType, MlsError,
     },
 };
+use async_lock::{RwLockReadGuard, RwLockWriteGuard};
 use core_crypto_keystore::CryptoKeystoreError;
 use log::debug;
 use openmls::prelude::{Credential, CredentialType};
@@ -40,12 +41,17 @@ use identities::ClientIdentities;
 use mls_crypto_provider::MlsCryptoProvider;
 
 impl MlsCentral {
-    pub(crate) fn mls_client(&self) -> CryptoResult<&Client> {
-        self.mls_client.as_ref().ok_or(CryptoError::MlsNotInitialized)
+    pub(crate) async fn mls_client(&self) -> RwLockReadGuard<'_, Option<Client>> {
+        self.mls_client.read().await
+    }
+
+    pub(crate) async fn mls_client_mut(&self) -> RwLockWriteGuard<'_, Option<Client>> {
+        self.mls_client.write().await
     }
 }
 
 /// Represents a MLS client which in our case is the equivalent of a device.
+///
 /// It can be the Android, iOS, web or desktop application which the authenticated user is using.
 /// A user has many client, a client has only one user.
 /// A client can belong to many MLS groups
@@ -542,7 +548,7 @@ mod tests {
                         .unwrap();
 
                     let mut identities = backend
-                        .borrow_keystore()
+                        .keystore()
                         .find_all::<MlsSignatureKeyPair>(EntityFindParams::default())
                         .await
                         .unwrap();

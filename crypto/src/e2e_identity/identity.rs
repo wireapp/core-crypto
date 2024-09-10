@@ -30,6 +30,7 @@ pub struct WireIdentity {
 }
 
 /// Represents the parts of [WireIdentity] that are specific to a X509 certificate (and not a Basic one).
+///
 /// We don't use an enum here since the sole purpose of this is to be exposed through the FFI (and
 /// union types are impossible to carry over the FFI boundary)
 #[derive(Debug, Clone, Eq, PartialEq, Ord, PartialOrd)]
@@ -83,7 +84,7 @@ impl MlsCentral {
     /// members with a Certificate Credential (after turning on end-to-end identity).
     /// If no member has a x509 certificate, it will return an empty Vec
     pub async fn get_device_identities(
-        &mut self,
+        &self,
         conversation_id: &ConversationId,
         client_ids: &[ClientId],
     ) -> CryptoResult<Vec<WireIdentity>> {
@@ -108,7 +109,7 @@ impl MlsCentral {
     /// Returns a Map with all the identities for a given users. Consumers are then recommended to
     /// reduce those identities to determine the actual status of a user.
     pub async fn get_user_identities(
-        &mut self,
+        &self,
         conversation_id: &ConversationId,
         user_ids: &[String],
     ) -> CryptoResult<HashMap<String, Vec<WireIdentity>>> {

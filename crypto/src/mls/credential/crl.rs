@@ -84,7 +84,7 @@ impl MlsCentral {
     /// When x509 new credentials are registered this extracts the new CRL Distribution Point from the end entity certificate
     /// and all the intermediates
     pub(crate) async fn extract_dp_on_init(
-        &mut self,
+        &self,
         certificate_chain: &[Vec<u8>],
     ) -> CryptoResult<NewCrlDistributionPoint> {
         use x509_cert::der::Decode as _;

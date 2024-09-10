@@ -78,7 +78,7 @@ impl MlsCentral {
     /// Parses the ACME server response from the endpoint fetching x509 certificates and uses it
     /// to initialize the MLS client with a certificate
     pub async fn e2ei_mls_init_only(
-        &mut self,
+        &self,
         enrollment: &mut E2eiEnrollment,
         certificate_chain: String,
         nb_init_key_packages: Option<usize>,
@@ -619,13 +619,16 @@ pub(crate) mod tests {
             let E2eiInitWrapper { cc, case } = wrapper;
             let cs = case.ciphersuite();
             match case.credential_type {
-                MlsCredentialType::Basic => cc.e2ei_new_activation_enrollment(
-                    NEW_DISPLAY_NAME.to_string(),
-                    NEW_HANDLE.to_string(),
-                    Some(TEAM.to_string()),
-                    E2EI_EXPIRY,
-                    cs,
-                ),
+                MlsCredentialType::Basic => {
+                    cc.e2ei_new_activation_enrollment(
+                        NEW_DISPLAY_NAME.to_string(),
+                        NEW_HANDLE.to_string(),
+                        Some(TEAM.to_string()),
+                        E2EI_EXPIRY,
+                        cs,
+                    )
+                    .await
+                }
                 MlsCredentialType::X509 => {
                     cc.e2ei_new_rotate_enrollment(
                         Some(NEW_DISPLAY_NAME.to_string()),
