@@ -27,6 +27,11 @@ DerivedData/
 *.dSYM
 .DS_Store
 
+# neovim
+.nvim.lua
+.nvimrc
+.exrc
+
 # Kotlin
 crypto-ffi/bindings/jvm/src/main/kotlin/com/wire/crypto/CoreCrypto.kt
 crypto-ffi/bindings/jvm/src/main/kotlin/uniffi/core_crypto/core_crypto.kt
