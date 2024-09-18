@@ -14,7 +14,11 @@
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see http://www.gnu.org/licenses/.
 
-use crate::entities::EntityIdStringExt;
+use crate::{
+    connection::TransactionWrapper,
+    entities::{EntityIdStringExt, EntityMlsExt},
+    CryptoKeystoreResult,
+};
 use crate::{
     connection::{DatabaseConnection, KeystoreDatabaseConnection},
     entities::{Entity, EntityBase, EntityFindParams, MlsHpkePrivateKey, StringEntityId},
@@ -75,55 +79,6 @@ impl EntityBase for MlsHpkePrivateKey {
         Ok(entities)
     }
 
-    async fn save(&self, conn: &mut Self::ConnectionType) -> crate::CryptoKeystoreResult<()> {
-        Self::ConnectionType::check_buffer_size(self.sk.len())?;
-        Self::ConnectionType::check_buffer_size(self.pk.len())?;
-        let zb_pk = rusqlite::blob::ZeroBlob(self.pk.len() as i32);
-        let zb_sk = rusqlite::blob::ZeroBlob(self.sk.len() as i32);
-
-        let transaction = conn.transaction()?;
-
-        // Use UPSERT (ON CONFLICT DO UPDATE)
-        let sql = "
-                INSERT INTO mls_hpke_private_keys (pk_sha256, pk, sk) 
-                VALUES (?, ?, ?) 
-                ON CONFLICT(pk_sha256) DO UPDATE SET pk = excluded.pk, sk = excluded.sk
-                RETURNING rowid";
-
-        // Execute the UPSERT and get the row_id of the affected row
-        let row_id: i64 = transaction.query_row(
-            sql,
-            [&self.id_sha256().to_sql()?, &zb_pk.to_sql()?, &zb_sk.to_sql()?],
-            |r| r.get(0),
-        )?;
-
-        let mut blob = transaction.blob_open(
-            rusqlite::DatabaseName::Main,
-            "mls_hpke_private_keys",
-            "pk",
-            row_id,
-            false,
-        )?;
-
-        blob.write_all(&self.pk)?;
-        blob.close()?;
-
-        let mut blob = transaction.blob_open(
-            rusqlite::DatabaseName::Main,
-            "mls_hpke_private_keys",
-            "sk",
-            row_id,
-            false,
-        )?;
-
-        blob.write_all(&self.sk)?;
-        blob.close()?;
-
-        transaction.commit()?;
-
-        Ok(())
-    }
-
     async fn find_one(
         conn: &mut Self::ConnectionType,
         id: &StringEntityId,
@@ -162,20 +117,62 @@ impl EntityBase for MlsHpkePrivateKey {
     async fn count(conn: &mut Self::ConnectionType) -> crate::CryptoKeystoreResult<usize> {
         Ok(conn.query_row("SELECT COUNT(*) FROM mls_hpke_private_keys", [], |r| r.get(0))?)
     }
+}
 
-    async fn delete(conn: &mut Self::ConnectionType, ids: &[StringEntityId]) -> crate::CryptoKeystoreResult<()> {
-        let transaction = conn.transaction()?;
-        let len = ids.len();
-        let mut updated = 0;
-        for id in ids {
-            updated += transaction.execute("DELETE FROM mls_hpke_private_keys WHERE pk_sha256 = ?", [id.sha256()])?;
-        }
+#[cfg_attr(target_family = "wasm", async_trait::async_trait(?Send))]
+#[cfg_attr(not(target_family = "wasm"), async_trait::async_trait)]
+impl EntityMlsExt for MlsHpkePrivateKey {
+    async fn mls_save(&self, transaction: &TransactionWrapper<'_>) -> CryptoKeystoreResult<()> {
+        Self::ConnectionType::check_buffer_size(self.sk.len())?;
+        Self::ConnectionType::check_buffer_size(self.pk.len())?;
+        let zb_pk = rusqlite::blob::ZeroBlob(self.pk.len() as i32);
+        let zb_sk = rusqlite::blob::ZeroBlob(self.sk.len() as i32);
 
-        if updated == len {
-            transaction.commit()?;
+        // Use UPSERT (ON CONFLICT DO UPDATE)
+        let sql = "
+                INSERT INTO mls_hpke_private_keys (pk_sha256, pk, sk)
+                VALUES (?, ?, ?)
+                ON CONFLICT(pk_sha256) DO UPDATE SET pk = excluded.pk, sk = excluded.sk
+                RETURNING rowid";
+
+        // Execute the UPSERT and get the row_id of the affected row
+        let row_id: i64 = transaction.query_row(
+            sql,
+            [&self.id_sha256().to_sql()?, &zb_pk.to_sql()?, &zb_sk.to_sql()?],
+            |r| r.get(0),
+        )?;
+
+        let mut blob = transaction.blob_open(
+            rusqlite::DatabaseName::Main,
+            "mls_hpke_private_keys",
+            "pk",
+            row_id,
+            false,
+        )?;
+
+        blob.write_all(&self.pk)?;
+        blob.close()?;
+
+        let mut blob = transaction.blob_open(
+            rusqlite::DatabaseName::Main,
+            "mls_hpke_private_keys",
+            "sk",
+            row_id,
+            false,
+        )?;
+
+        blob.write_all(&self.sk)?;
+        blob.close()?;
+
+        Ok(())
+    }
+
+    async fn mls_delete(transaction: &TransactionWrapper<'_>, id: StringEntityId<'_>) -> CryptoKeystoreResult<()> {
+        let updated = transaction.execute("DELETE FROM mls_hpke_private_keys WHERE pk_sha256 = ?", [id.sha256()])?;
+
+        if updated > 0 {
             Ok(())
         } else {
-            transaction.rollback()?;
             Err(Self::to_missing_key_err_kind().into())
         }
     }

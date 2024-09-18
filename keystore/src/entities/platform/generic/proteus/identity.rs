@@ -143,7 +143,7 @@ impl EntityBase for ProteusIdentity {
 
     async fn delete(
         conn: &mut Self::ConnectionType,
-        _ids: &[crate::entities::StringEntityId],
+        _ids: crate::entities::StringEntityId<'_>,
     ) -> crate::CryptoKeystoreResult<()> {
         let transaction = conn.transaction()?;
         let row_id = transaction.query_row(
