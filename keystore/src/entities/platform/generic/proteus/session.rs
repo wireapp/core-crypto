@@ -80,8 +80,8 @@ impl EntityBase for ProteusSession {
 
         // Use UPSERT (ON CONFLICT DO UPDATE)
         let sql = "
-        INSERT INTO proteus_sessions (id, session) 
-        VALUES (?, ?) 
+        INSERT INTO proteus_sessions (id, session)
+        VALUES (?, ?)
         ON CONFLICT(id) DO UPDATE SET session = excluded.session
         RETURNING rowid";
 
@@ -172,16 +172,12 @@ impl EntityBase for ProteusSession {
         Ok(conn.query_row("SELECT COUNT(*) FROM proteus_sessions", [], |r| r.get(0))?)
     }
 
-    async fn delete(conn: &mut Self::ConnectionType, ids: &[StringEntityId]) -> crate::CryptoKeystoreResult<()> {
+    async fn delete(conn: &mut Self::ConnectionType, ids: StringEntityId<'_>) -> crate::CryptoKeystoreResult<()> {
         let transaction = conn.transaction()?;
-        let len = ids.len();
-        let mut updated = 0;
-        for id in ids {
-            let id_string: String = id.try_into()?;
-            updated += transaction.execute("DELETE FROM proteus_sessions WHERE id = ?", [id_string])?;
-        }
+        let id_string: String = (&ids).try_into()?;
+        let updated = transaction.execute("DELETE FROM proteus_sessions WHERE id = ?", [id_string])?;
 
-        if updated == len {
+        if updated > 0 {
             transaction.commit()?;
             Ok(())
         } else {

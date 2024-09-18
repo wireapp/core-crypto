@@ -14,11 +14,15 @@
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see http://www.gnu.org/licenses/.
 
-use crate::connection::DatabaseConnection;
 use crate::{
     connection::KeystoreDatabaseConnection,
     entities::{Entity, EntityBase, EntityFindParams, PersistedMlsPendingGroup, StringEntityId},
     CryptoKeystoreError, MissingKeyErrorKind,
+};
+use crate::{
+    connection::{DatabaseConnection, TransactionWrapper},
+    entities::EntityMlsExt,
+    CryptoKeystoreResult,
 };
 
 impl Entity for PersistedMlsPendingGroup {
@@ -36,87 +40,6 @@ impl EntityBase for PersistedMlsPendingGroup {
 
     fn to_missing_key_err_kind() -> MissingKeyErrorKind {
         MissingKeyErrorKind::MlsPendingGroup
-    }
-
-    async fn save(&self, conn: &mut Self::ConnectionType) -> crate::CryptoKeystoreResult<()> {
-        let parent_id = self.parent_id.as_ref();
-
-        let transaction = conn.transaction()?;
-        use rusqlite::OptionalExtension as _;
-
-        Self::ConnectionType::check_buffer_size(self.state.len())?;
-        Self::ConnectionType::check_buffer_size(self.id.len())?;
-        Self::ConnectionType::check_buffer_size(parent_id.map(Vec::len).unwrap_or_default())?;
-
-        let zcfg = rusqlite::blob::ZeroBlob(self.custom_configuration.len() as i32);
-        let zpid = rusqlite::blob::ZeroBlob(parent_id.map(Vec::len).unwrap_or_default() as i32);
-        let zb = rusqlite::blob::ZeroBlob(self.state.len() as i32);
-        let zid = rusqlite::blob::ZeroBlob(self.id.len() as i32);
-
-        let rowid: i64 = if let Some(rowid) = transaction
-            .query_row(
-                "SELECT rowid FROM mls_pending_groups WHERE id = ?",
-                [self.id.as_slice()],
-                |r| r.get(0),
-            )
-            .optional()?
-        {
-            use rusqlite::ToSql as _;
-            transaction.execute(
-                "UPDATE mls_pending_groups SET state = ?, parent_id = ?, cfg = ? WHERE id = ?",
-                [&zb.to_sql()?, &zpid.to_sql()?, &zcfg.to_sql()?, &self.id.to_sql()?],
-            )?;
-            rowid
-        } else {
-            let id_bytes = &self.id;
-
-            use rusqlite::ToSql as _;
-            transaction.execute(
-                "INSERT INTO mls_pending_groups (id, state, cfg, parent_id) VALUES(?, ?, ?, ?)",
-                [&zid.to_sql()?, &zb.to_sql()?, &zcfg.to_sql()?, &zpid.to_sql()?],
-            )?;
-            let rowid = transaction.last_insert_rowid();
-
-            let mut blob =
-                transaction.blob_open(rusqlite::DatabaseName::Main, "mls_pending_groups", "id", rowid, false)?;
-            use std::io::Write as _;
-            blob.write_all(id_bytes)?;
-            blob.close()?;
-
-            rowid
-        };
-
-        let mut blob = transaction.blob_open(
-            rusqlite::DatabaseName::Main,
-            "mls_pending_groups",
-            "state",
-            rowid,
-            false,
-        )?;
-        use std::io::Write as _;
-        blob.write_all(&self.state)?;
-        blob.close()?;
-
-        let mut blob =
-            transaction.blob_open(rusqlite::DatabaseName::Main, "mls_pending_groups", "cfg", rowid, false)?;
-        blob.write_all(&self.custom_configuration)?;
-        blob.close()?;
-
-        let mut blob = transaction.blob_open(
-            rusqlite::DatabaseName::Main,
-            "mls_pending_groups",
-            "parent_id",
-            rowid,
-            false,
-        )?;
-        if let Some(parent_id) = self.parent_id.as_ref() {
-            blob.write_all(parent_id)?;
-        }
-        blob.close()?;
-
-        transaction.commit()?;
-
-        Ok(())
     }
 
     async fn find_one(
@@ -310,20 +233,95 @@ impl EntityBase for PersistedMlsPendingGroup {
     async fn count(conn: &mut Self::ConnectionType) -> crate::CryptoKeystoreResult<usize> {
         Ok(conn.query_row("SELECT COUNT(*) FROM mls_pending_groups", [], |r| r.get(0))?)
     }
+}
 
-    async fn delete(conn: &mut Self::ConnectionType, ids: &[StringEntityId]) -> crate::CryptoKeystoreResult<()> {
-        let transaction = conn.transaction()?;
-        let len = ids.len();
-        let mut updated = 0;
-        for id in ids {
-            updated += transaction.execute("DELETE FROM mls_pending_groups WHERE id = ?", [id.as_slice()])?;
+#[cfg_attr(target_family = "wasm", async_trait::async_trait(?Send))]
+#[cfg_attr(not(target_family = "wasm"), async_trait::async_trait)]
+impl EntityMlsExt for PersistedMlsPendingGroup {
+    async fn mls_save(&self, transaction: &TransactionWrapper<'_>) -> CryptoKeystoreResult<()> {
+        let parent_id = self.parent_id.as_ref();
+
+        use rusqlite::OptionalExtension as _;
+
+        Self::ConnectionType::check_buffer_size(self.state.len())?;
+        Self::ConnectionType::check_buffer_size(self.id.len())?;
+        Self::ConnectionType::check_buffer_size(parent_id.map(Vec::len).unwrap_or_default())?;
+
+        let zcfg = rusqlite::blob::ZeroBlob(self.custom_configuration.len() as i32);
+        let zpid = rusqlite::blob::ZeroBlob(parent_id.map(Vec::len).unwrap_or_default() as i32);
+        let zb = rusqlite::blob::ZeroBlob(self.state.len() as i32);
+        let zid = rusqlite::blob::ZeroBlob(self.id.len() as i32);
+
+        let rowid: i64 = if let Some(rowid) = transaction
+            .query_row(
+                "SELECT rowid FROM mls_pending_groups WHERE id = ?",
+                [self.id.as_slice()],
+                |r| r.get(0),
+            )
+            .optional()?
+        {
+            use rusqlite::ToSql as _;
+            transaction.execute(
+                "UPDATE mls_pending_groups SET state = ?, parent_id = ?, cfg = ? WHERE id = ?",
+                [&zb.to_sql()?, &zpid.to_sql()?, &zcfg.to_sql()?, &self.id.to_sql()?],
+            )?;
+            rowid
+        } else {
+            let id_bytes = &self.id;
+
+            use rusqlite::ToSql as _;
+            transaction.execute(
+                "INSERT INTO mls_pending_groups (id, state, cfg, parent_id) VALUES(?, ?, ?, ?)",
+                [&zid.to_sql()?, &zb.to_sql()?, &zcfg.to_sql()?, &zpid.to_sql()?],
+            )?;
+            let rowid = transaction.last_insert_rowid();
+
+            let mut blob =
+                transaction.blob_open(rusqlite::DatabaseName::Main, "mls_pending_groups", "id", rowid, false)?;
+            use std::io::Write as _;
+            blob.write_all(id_bytes)?;
+            blob.close()?;
+
+            rowid
+        };
+
+        let mut blob = transaction.blob_open(
+            rusqlite::DatabaseName::Main,
+            "mls_pending_groups",
+            "state",
+            rowid,
+            false,
+        )?;
+        use std::io::Write as _;
+        blob.write_all(&self.state)?;
+        blob.close()?;
+
+        let mut blob =
+            transaction.blob_open(rusqlite::DatabaseName::Main, "mls_pending_groups", "cfg", rowid, false)?;
+        blob.write_all(&self.custom_configuration)?;
+        blob.close()?;
+
+        let mut blob = transaction.blob_open(
+            rusqlite::DatabaseName::Main,
+            "mls_pending_groups",
+            "parent_id",
+            rowid,
+            false,
+        )?;
+        if let Some(parent_id) = self.parent_id.as_ref() {
+            blob.write_all(parent_id)?;
         }
+        blob.close()?;
 
-        if updated == len {
-            transaction.commit()?;
+        Ok(())
+    }
+
+    async fn mls_delete(transaction: &TransactionWrapper<'_>, id: StringEntityId<'_>) -> CryptoKeystoreResult<()> {
+        let updated = transaction.execute("DELETE FROM mls_pending_groups WHERE id = ?", [id.as_slice()])?;
+
+        if updated > 0 {
             Ok(())
         } else {
-            transaction.rollback()?;
             Err(Self::to_missing_key_err_kind().into())
         }
     }

@@ -19,12 +19,12 @@ use crate::{
     connection::{DatabaseConnection, DatabaseConnectionRequirements},
     CryptoKeystoreResult,
 };
-use idb::Factory;
+use idb::{Factory, TransactionMode};
 
 mod migrations;
 pub mod storage;
 
-use self::storage::{WasmEncryptedStorage, WasmStorageWrapper};
+use self::storage::{WasmEncryptedStorage, WasmStorageTransaction, WasmStorageWrapper};
 
 #[derive(Debug)]
 pub struct WasmConnection {
@@ -83,5 +83,21 @@ impl DatabaseConnection for WasmConnection {
         }
 
         Ok(())
+    }
+
+    async fn new_transaction<T: AsRef<str>>(
+        &mut self,
+        tables: &[T],
+    ) -> CryptoKeystoreResult<WasmStorageTransaction<'_>> {
+        match &self.conn.storage {
+            WasmStorageWrapper::Persistent(db) => Ok(WasmStorageTransaction::Persistent {
+                tx: db.transaction(tables, TransactionMode::ReadWrite)?,
+                cipher: &self.conn.cipher,
+            }),
+            WasmStorageWrapper::InMemory(db) => Ok(WasmStorageTransaction::InMemory {
+                db: db.clone(),
+                cipher: &self.conn.cipher,
+            }),
+        }
     }
 }

@@ -17,8 +17,8 @@
 use crate::{
     connection::{DatabaseConnection, KeystoreDatabaseConnection},
     entities::{
-        Entity, EntityBase, EntityFindParams, PersistedMlsGroup, PersistedMlsGroupExt, PersistedMlsPendingGroup,
-        StringEntityId,
+        Entity, EntityBase, EntityFindParams, EntityMlsExt, PersistedMlsGroup, PersistedMlsGroupExt,
+        PersistedMlsPendingGroup, StringEntityId,
     },
     CryptoKeystoreResult, MissingKeyErrorKind,
 };
@@ -37,11 +37,6 @@ impl EntityBase for PersistedMlsGroup {
     async fn find_all(conn: &mut Self::ConnectionType, params: EntityFindParams) -> CryptoKeystoreResult<Vec<Self>> {
         let storage = conn.storage();
         storage.get_all(Self::COLLECTION_NAME, Some(params)).await
-    }
-
-    async fn save(&self, conn: &mut Self::ConnectionType) -> crate::CryptoKeystoreResult<()> {
-        let storage = conn.storage_mut();
-        storage.save(Self::COLLECTION_NAME, &mut [self.clone()]).await
     }
 
     async fn find_one(
@@ -65,12 +60,16 @@ impl EntityBase for PersistedMlsGroup {
         let storage = conn.storage();
         storage.count(Self::COLLECTION_NAME).await
     }
+}
 
-    async fn delete(conn: &mut Self::ConnectionType, ids: &[StringEntityId]) -> crate::CryptoKeystoreResult<()> {
-        let storage = conn.storage_mut();
-        let ids: Vec<Vec<u8>> = ids.iter().map(StringEntityId::to_bytes).collect();
-        let _ = storage.delete(Self::COLLECTION_NAME, &ids).await?;
-        Ok(())
+#[cfg_attr(target_family = "wasm", async_trait::async_trait(?Send))]
+#[cfg_attr(not(target_family = "wasm"), async_trait::async_trait)]
+impl EntityMlsExt for PersistedMlsGroup {
+    async fn mls_save<'a>(
+        &'a self,
+        tx: &crate::connection::storage::WasmStorageTransaction<'a>,
+    ) -> CryptoKeystoreResult<()> {
+        tx.save(Self::COLLECTION_NAME, self.clone()).await
     }
 }
 
@@ -117,14 +116,6 @@ impl EntityBase for PersistedMlsPendingGroup {
         storage.get_all(Self::COLLECTION_NAME, Some(params)).await
     }
 
-    async fn save(&self, conn: &mut Self::ConnectionType) -> crate::CryptoKeystoreResult<()> {
-        let storage = conn.storage_mut();
-
-        storage.save(Self::COLLECTION_NAME, &mut [self.clone()]).await?;
-
-        Ok(())
-    }
-
     async fn find_one(
         conn: &mut Self::ConnectionType,
         id: &StringEntityId,
@@ -143,11 +134,16 @@ impl EntityBase for PersistedMlsPendingGroup {
     async fn count(conn: &mut Self::ConnectionType) -> crate::CryptoKeystoreResult<usize> {
         conn.storage().count(Self::COLLECTION_NAME).await
     }
+}
 
-    async fn delete(conn: &mut Self::ConnectionType, ids: &[StringEntityId]) -> crate::CryptoKeystoreResult<()> {
-        let ids: Vec<Vec<u8>> = ids.iter().map(StringEntityId::to_bytes).collect();
-        let _ = conn.storage_mut().delete(Self::COLLECTION_NAME, &ids).await?;
-        Ok(())
+#[cfg_attr(target_family = "wasm", async_trait::async_trait(?Send))]
+#[cfg_attr(not(target_family = "wasm"), async_trait::async_trait)]
+impl EntityMlsExt for PersistedMlsPendingGroup {
+    async fn mls_save<'a>(
+        &'a self,
+        tx: &crate::connection::storage::WasmStorageTransaction<'a>,
+    ) -> CryptoKeystoreResult<()> {
+        tx.save(Self::COLLECTION_NAME, self.clone()).await
     }
 }
 
