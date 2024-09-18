@@ -106,8 +106,8 @@ impl EntityBase for ProteusPrekey {
 
         // Use UPSERT (ON CONFLICT DO UPDATE)
         let sql = "
-        INSERT INTO proteus_prekeys (id, key) 
-        VALUES (?, ?) 
+        INSERT INTO proteus_prekeys (id, key)
+        VALUES (?, ?)
         ON CONFLICT(id) DO UPDATE SET key = excluded.key
         RETURNING rowid";
 
@@ -131,18 +131,14 @@ impl EntityBase for ProteusPrekey {
 
     async fn delete(
         conn: &mut Self::ConnectionType,
-        ids: &[crate::entities::StringEntityId],
+        ids: crate::entities::StringEntityId<'_>,
     ) -> crate::CryptoKeystoreResult<()> {
         let transaction = conn.transaction()?;
-        let len = ids.len();
 
-        let mut updated = 0;
-        for id in ids {
-            let id = ProteusPrekey::id_from_slice(id.as_slice());
-            updated += transaction.execute("DELETE FROM proteus_prekeys WHERE id = ?", [id])?;
-        }
+        let id = ProteusPrekey::id_from_slice(ids.as_slice());
+        let updated = transaction.execute("DELETE FROM proteus_prekeys WHERE id = ?", [id])?;
 
-        if updated == len {
+        if updated > 0 {
             transaction.commit()?;
             Ok(())
         } else {

@@ -16,7 +16,7 @@
 
 use idb::{CursorDirection, KeyRange, ObjectStore, TransactionMode};
 use js_sys::Uint8Array;
-use std::collections::HashMap;
+use std::{cell::RefCell, collections::HashMap, rc::Rc};
 use wasm_bindgen::JsValue;
 
 use crate::{
@@ -26,9 +26,83 @@ use crate::{
 
 use super::WasmConnection;
 
+type InMemoryDB = HashMap<String, HashMap<Vec<u8>, JsValue>>;
+
 pub enum WasmStorageWrapper {
     Persistent(idb::Database),
-    InMemory(HashMap<String, HashMap<Vec<u8>, JsValue>>),
+    InMemory(Rc<RefCell<InMemoryDB>>),
+}
+
+// The lifetime is to comply with the sqlite implementation.
+pub enum WasmStorageTransaction<'a> {
+    Persistent {
+        tx: idb::Transaction,
+        cipher: &'a aes_gcm::Aes256Gcm,
+    },
+    InMemory {
+        db: Rc<RefCell<InMemoryDB>>,
+        cipher: &'a aes_gcm::Aes256Gcm,
+    },
+}
+
+impl<'a> WasmStorageTransaction<'a> {
+    pub(crate) async fn commit_tx(self) -> CryptoKeystoreResult<()> {
+        let Self::Persistent {
+            tx: transaction,
+            cipher: _cipher,
+        } = self
+        else {
+            return Ok(());
+        };
+        transaction.commit()?.await?;
+        Ok(())
+    }
+
+    pub(crate) async fn delete(&self, collection_name: &'static str, id: impl AsRef<[u8]>) -> CryptoKeystoreResult<()> {
+        match self {
+            WasmStorageTransaction::Persistent { tx, cipher: _cipher } => {
+                let store = tx.object_store(collection_name)?;
+                let k = Uint8Array::from(id.as_ref());
+                store.delete(JsValue::from(k))?.await?;
+            }
+            WasmStorageTransaction::InMemory { db, cipher: _cipher } => {
+                db.borrow_mut().entry(collection_name.into()).and_modify(|store| {
+                    let result = store.remove(id.as_ref());
+                    debug_assert!(result.is_some());
+                });
+            }
+        }
+        Ok(())
+    }
+
+    pub(crate) async fn save<R: Entity<ConnectionType = WasmConnection> + 'static>(
+        &self,
+        collection_name: &'static str,
+        mut entity: R,
+    ) -> CryptoKeystoreResult<()> {
+        let serializer = serde_wasm_bindgen::Serializer::json_compatible();
+        let key = entity.id()?;
+        match self {
+            WasmStorageTransaction::Persistent { tx, cipher } => {
+                entity.encrypt(cipher)?;
+                let js_value = entity.serialize(&serializer)?;
+                let store = tx.object_store(collection_name)?;
+                store.put(&js_value, Some(&key))?.await?;
+            }
+            WasmStorageTransaction::InMemory { db, cipher } => {
+                entity.encrypt(cipher)?;
+                let js_value = entity.serialize(&serializer)?;
+                let mut map = db.borrow_mut();
+                let entry = map.entry(collection_name.into()).or_default();
+                let id = key
+                    .as_string()
+                    .map(|s| CryptoKeystoreResult::Ok(s.as_bytes().into()))
+                    .unwrap_or_else(|| Ok(serde_wasm_bindgen::from_value(key)?))?;
+                entry.insert(id, js_value);
+            }
+        }
+        Ok(())
+    }
 }
 
 impl std::fmt::Debug for WasmStorageWrapper {
@@ -88,8 +162,8 @@ impl WasmEncryptedStorage {
             WasmStorageWrapper::Persistent(idb) => {
                 idb.close();
             }
-            WasmStorageWrapper::InMemory(mut map) => {
-                map.clear();
+            WasmStorageWrapper::InMemory(map) => {
+                map.borrow_mut().clear();
             }
         }
         Ok(())
@@ -116,7 +190,7 @@ impl WasmEncryptedStorage {
                 }
             }
             WasmStorageWrapper::InMemory(map) => {
-                if let Some(store) = map.get(collection) {
+                if let Some(store) = map.borrow().get(collection) {
                     if let Some(js_value) = store.get(id.as_ref()).cloned() {
                         if let Some(mut entity) = serde_wasm_bindgen::from_value::<Option<R>>(js_value)? {
                             entity.decrypt(&self.cipher)?;
@@ -232,6 +306,7 @@ impl WasmEncryptedStorage {
                 Ok(data)
             }
             WasmStorageWrapper::InMemory(map) => Ok(map
+                .borrow()
                 .get(collection)
                 .map(|v| {
                     v.values()
@@ -260,7 +335,11 @@ impl WasmEncryptedStorage {
 
                 Ok(data as usize)
             }
-            WasmStorageWrapper::InMemory(map) => Ok(map.get(collection).map(|v| v.values().len()).unwrap_or_default()),
+            WasmStorageWrapper::InMemory(map) => Ok(map
+                .borrow()
+                .get(collection)
+                .map(|v| v.values().len())
+                .unwrap_or_default()),
         }
     }
 
@@ -284,6 +363,7 @@ impl WasmEncryptedStorage {
                 }
             }
             WasmStorageWrapper::InMemory(map) => {
+                let mut map = map.borrow_mut();
                 let entry = map.entry(collection.into()).or_default();
                 for v in values {
                     let js_id = v.id()?;
@@ -314,6 +394,7 @@ impl WasmEncryptedStorage {
                 }
             }
             WasmStorageWrapper::InMemory(map) => {
+                let mut map = map.borrow_mut();
                 map.entry(collection.into()).and_modify(|store| {
                     for k in ids {
                         let result = store.remove(k.as_ref());

@@ -277,9 +277,9 @@ impl Client {
 
         for (kp, kp_ref) in &kp_to_delete {
             // TODO: maybe rewrite this to optimize it. But honestly it's called so rarely and on a so tiny amount of data. Tacking issue: WPB-9600
-            MlsKeyPackage::delete(conn, &[kp_ref.as_slice().into()]).await?;
-            MlsHpkePrivateKey::delete(conn, &[kp.hpke_init_key().as_slice().into()]).await?;
-            MlsEncryptionKeyPair::delete(conn, &[kp.leaf_node().encryption_key().as_slice().into()]).await?;
+            MlsKeyPackage::delete(conn, kp_ref.as_slice().into()).await?;
+            MlsHpkePrivateKey::delete(conn, kp.hpke_init_key().as_slice().into()).await?;
+            MlsEncryptionKeyPair::delete(conn, kp.leaf_node().encryption_key().as_slice().into()).await?;
         }
 
         let kp_to_delete = kp_to_delete

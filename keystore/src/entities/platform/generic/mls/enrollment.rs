@@ -15,9 +15,9 @@
 // along with this program. If not, see http://www.gnu.org/licenses/.
 
 use crate::{
-    connection::{DatabaseConnection, KeystoreDatabaseConnection},
-    entities::{E2eiEnrollment, Entity, EntityBase, EntityFindParams, StringEntityId},
-    CryptoKeystoreError, MissingKeyErrorKind,
+    connection::{DatabaseConnection, KeystoreDatabaseConnection, TransactionWrapper},
+    entities::{E2eiEnrollment, Entity, EntityBase, EntityFindParams, EntityMlsExt, StringEntityId},
+    CryptoKeystoreError, CryptoKeystoreResult, MissingKeyErrorKind,
 };
 
 impl Entity for E2eiEnrollment {
@@ -65,45 +65,6 @@ impl EntityBase for E2eiEnrollment {
         Ok(entities)
     }
 
-    async fn save(&self, conn: &mut Self::ConnectionType) -> crate::CryptoKeystoreResult<()> {
-        use rusqlite::ToSql as _;
-
-        Self::ConnectionType::check_buffer_size(self.content.len())?;
-
-        let transaction = conn.transaction()?;
-
-        // Attempt to insert directly, handling conflicts as errors
-        let zb = rusqlite::blob::ZeroBlob(self.content.len() as i32);
-        let sql = "INSERT INTO e2ei_enrollment (id, content) VALUES (?, ?) RETURNING rowid";
-
-        let row_id_result: Result<i64, rusqlite::Error> =
-            transaction.query_row(sql, [self.id.to_sql()?, zb.to_sql()?], |r| r.get(0));
-
-        match row_id_result {
-            Ok(row_id) => {
-                // Open a blob to write the content data
-                let mut blob = transaction.blob_open(
-                    rusqlite::DatabaseName::Main,
-                    "e2ei_enrollment",
-                    "content",
-                    row_id,
-                    false,
-                )?;
-
-                use std::io::Write as _;
-                blob.write_all(&self.content)?;
-                blob.close()?;
-
-                transaction.commit()?;
-                Ok(())
-            }
-            Err(rusqlite::Error::SqliteFailure(e, _)) if e.extended_code == rusqlite::ffi::SQLITE_CONSTRAINT_UNIQUE => {
-                Err(CryptoKeystoreError::AlreadyExists)
-            }
-            Err(e) => Err(e.into()),
-        }
-    }
-
     async fn find_one(
         conn: &mut Self::ConnectionType,
         id: &StringEntityId,
@@ -138,20 +99,53 @@ impl EntityBase for E2eiEnrollment {
     async fn count(conn: &mut Self::ConnectionType) -> crate::CryptoKeystoreResult<usize> {
         Ok(conn.query_row("SELECT COUNT(*) FROM e2ei_enrollment", [], |r| r.get(0))?)
     }
+}
 
-    async fn delete(conn: &mut Self::ConnectionType, ids: &[StringEntityId]) -> crate::CryptoKeystoreResult<()> {
-        let transaction = conn.transaction()?;
-        let len = ids.len();
-        let mut updated = 0;
-        for id in ids {
-            updated += transaction.execute("DELETE FROM e2ei_enrollment WHERE id = ?", [id.as_slice()])?;
+#[cfg_attr(target_family = "wasm", async_trait::async_trait(?Send))]
+#[cfg_attr(not(target_family = "wasm"), async_trait::async_trait)]
+impl EntityMlsExt for E2eiEnrollment {
+    async fn mls_save(&self, transaction: &TransactionWrapper<'_>) -> CryptoKeystoreResult<()> {
+        use rusqlite::ToSql as _;
+
+        Self::ConnectionType::check_buffer_size(self.content.len())?;
+
+        // Attempt to insert directly, handling conflicts as errors
+        let zb = rusqlite::blob::ZeroBlob(self.content.len() as i32);
+        let sql = "INSERT INTO e2ei_enrollment (id, content) VALUES (?, ?) RETURNING rowid";
+
+        let row_id_result: Result<i64, rusqlite::Error> =
+            transaction.query_row(sql, [self.id.to_sql()?, zb.to_sql()?], |r| r.get(0));
+
+        match row_id_result {
+            Ok(row_id) => {
+                // Open a blob to write the content data
+                let mut blob = transaction.blob_open(
+                    rusqlite::DatabaseName::Main,
+                    "e2ei_enrollment",
+                    "content",
+                    row_id,
+                    false,
+                )?;
+
+                use std::io::Write as _;
+                blob.write_all(&self.content)?;
+                blob.close()?;
+
+                Ok(())
+            }
+            Err(rusqlite::Error::SqliteFailure(e, _)) if e.extended_code == rusqlite::ffi::SQLITE_CONSTRAINT_UNIQUE => {
+                Err(CryptoKeystoreError::AlreadyExists)
+            }
+            Err(e) => Err(e.into()),
         }
+    }
 
-        if updated == len {
-            transaction.commit()?;
+    async fn mls_delete(transaction: &TransactionWrapper<'_>, id: StringEntityId<'_>) -> CryptoKeystoreResult<()> {
+        let updated = transaction.execute("DELETE FROM e2ei_enrollment WHERE id = ?", [id.as_slice()])?;
+
+        if updated > 0 {
             Ok(())
         } else {
-            transaction.rollback()?;
             Err(Self::to_missing_key_err_kind().into())
         }
     }

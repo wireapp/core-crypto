@@ -20,9 +20,11 @@ pub mod platform {
             mod wasm;
             pub use self::wasm::WasmConnection as KeystoreDatabaseConnection;
             pub use wasm::storage;
+            pub(crate) use self::wasm::storage::WasmStorageTransaction as TransactionWrapper;
         } else {
             mod generic;
             pub use self::generic::SqlCipherConnection as KeystoreDatabaseConnection;
+            pub(crate) use self::generic::TransactionWrapper;
         }
     }
 }
@@ -76,6 +78,13 @@ pub trait DatabaseConnection: DatabaseConnectionRequirements {
 
         Ok(())
     }
+    #[cfg(not(target_family = "wasm"))]
+    async fn new_transaction(&mut self) -> CryptoKeystoreResult<crate::connection::TransactionWrapper<'_>>;
+    #[cfg(target_family = "wasm")]
+    async fn new_transaction<T: AsRef<str>>(
+        &mut self,
+        tables: &[T],
+    ) -> CryptoKeystoreResult<crate::connection::TransactionWrapper<'_>>;
 }
 
 #[derive(Debug, Clone)]
@@ -110,7 +119,8 @@ impl Connection {
         Ok(self.conn.lock().await)
     }
 
-    pub async fn save<E: Entity<ConnectionType = KeystoreDatabaseConnection>>(
+    // TODO: Check why the compiler wants this to be sync
+    pub async fn save<E: Entity<ConnectionType = KeystoreDatabaseConnection> + std::marker::Sync>(
         &self,
         entity: E,
     ) -> CryptoKeystoreResult<E> {
@@ -158,7 +168,7 @@ impl Connection {
         id: S,
     ) -> CryptoKeystoreResult<()> {
         let mut conn = self.conn.lock().await;
-        E::delete(&mut conn, &[id.as_ref().into()]).await?;
+        E::delete(&mut conn, id.as_ref().into()).await?;
         Ok(())
     }
 

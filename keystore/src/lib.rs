@@ -22,6 +22,7 @@ pub use error::*;
 
 pub mod connection;
 pub mod entities;
+pub mod transaction;
 
 cfg_if::cfg_if! {
     if #[cfg(feature = "mls-keystore")] {
@@ -41,9 +42,12 @@ cfg_if::cfg_if! {
 pub use connection::Connection;
 #[cfg(not(target_family = "wasm"))]
 use sha2::{Digest, Sha256};
+pub use transaction::KeystoreTransaction;
 
 #[cfg(feature = "dummy-entity")]
 pub mod dummy_entity {
+    use std::marker::PhantomData;
+
     use crate::{
         entities::{Entity, EntityBase, EntityFindParams, StringEntityId},
         CryptoKeystoreResult, MissingKeyErrorKind,
@@ -75,7 +79,7 @@ pub mod dummy_entity {
             _conn: &mut Self::ConnectionType,
             _id: &StringEntityId,
         ) -> CryptoKeystoreResult<Option<Self>> {
-            Ok(Some(DummyStoreValue))
+            Ok(Some(DummyStoreValue { _phantom: PhantomData }))
         }
         async fn find_many(conn: &mut Self::ConnectionType, ids: &[StringEntityId]) -> CryptoKeystoreResult<Vec<Self>> {
             // Default, inefficient & naive method

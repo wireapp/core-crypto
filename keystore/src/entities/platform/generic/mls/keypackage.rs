@@ -14,7 +14,11 @@
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see http://www.gnu.org/licenses/.
 
-use crate::entities::EntityIdStringExt;
+use crate::{
+    connection::TransactionWrapper,
+    entities::{EntityIdStringExt, EntityMlsExt},
+    CryptoKeystoreResult,
+};
 use crate::{
     connection::{DatabaseConnection, KeystoreDatabaseConnection},
     entities::{Entity, EntityBase, EntityFindParams, MlsKeyPackage, StringEntityId},
@@ -84,38 +88,6 @@ impl EntityBase for MlsKeyPackage {
         Ok(entities)
     }
 
-    async fn save(&self, conn: &mut Self::ConnectionType) -> crate::CryptoKeystoreResult<()> {
-        Self::ConnectionType::check_buffer_size(self.keypackage.len())?;
-
-        let transaction = conn.transaction()?;
-
-        // Create zero blobs for keypackage and keypackage_ref
-        let kp_zb = rusqlite::blob::ZeroBlob(self.keypackage.len() as i32);
-
-        // Use UPSERT (ON CONFLICT DO UPDATE)
-        let sql = "
-        INSERT INTO mls_keypackages (keypackage_ref_hex, keypackage) 
-        VALUES (?, ?) 
-        ON CONFLICT(keypackage_ref_hex) DO UPDATE SET keypackage = excluded.keypackage
-        RETURNING rowid";
-
-        let row_id: i64 = transaction.query_row(sql, [&self.id_hex().to_sql()?, &kp_zb.to_sql()?], |r| r.get(0))?;
-
-        let mut blob = transaction.blob_open(
-            rusqlite::DatabaseName::Main,
-            "mls_keypackages",
-            "keypackage",
-            row_id,
-            false,
-        )?;
-        blob.write_all(&self.keypackage)?;
-        blob.close()?;
-
-        transaction.commit()?;
-
-        Ok(())
-    }
-
     async fn find_one(
         conn: &mut Self::ConnectionType,
         id: &StringEntityId,
@@ -160,23 +132,48 @@ impl EntityBase for MlsKeyPackage {
         let count: usize = conn.query_row("SELECT COUNT(*) FROM mls_keypackages", [], |r| r.get(0))?;
         Ok(count)
     }
+}
 
-    async fn delete(conn: &mut Self::ConnectionType, ids: &[StringEntityId]) -> crate::CryptoKeystoreResult<()> {
-        let transaction = conn.transaction()?;
-        let len = ids.len();
-        let mut updated = 0;
-        for id in ids {
-            updated += transaction.execute(
-                "DELETE FROM mls_keypackages WHERE keypackage_ref_hex = ?",
-                [id.as_hex_string()],
-            )?;
-        }
+#[cfg_attr(target_family = "wasm", async_trait::async_trait(?Send))]
+#[cfg_attr(not(target_family = "wasm"), async_trait::async_trait)]
+impl EntityMlsExt for MlsKeyPackage {
+    async fn mls_save(&self, transaction: &TransactionWrapper<'_>) -> CryptoKeystoreResult<()> {
+        Self::ConnectionType::check_buffer_size(self.keypackage.len())?;
 
-        if updated == len {
-            transaction.commit()?;
+        // Create zero blobs for keypackage and keypackage_ref
+        let kp_zb = rusqlite::blob::ZeroBlob(self.keypackage.len() as i32);
+
+        // Use UPSERT (ON CONFLICT DO UPDATE)
+        let sql = "
+        INSERT INTO mls_keypackages (keypackage_ref_hex, keypackage)
+        VALUES (?, ?)
+        ON CONFLICT(keypackage_ref_hex) DO UPDATE SET keypackage = excluded.keypackage
+        RETURNING rowid";
+
+        let row_id: i64 = transaction.query_row(sql, [&self.id_hex().to_sql()?, &kp_zb.to_sql()?], |r| r.get(0))?;
+
+        let mut blob = transaction.blob_open(
+            rusqlite::DatabaseName::Main,
+            "mls_keypackages",
+            "keypackage",
+            row_id,
+            false,
+        )?;
+        blob.write_all(&self.keypackage)?;
+        blob.close()?;
+
+        Ok(())
+    }
+
+    async fn mls_delete(transaction: &TransactionWrapper<'_>, id: StringEntityId<'_>) -> CryptoKeystoreResult<()> {
+        let updated = transaction.execute(
+            "DELETE FROM mls_keypackages WHERE keypackage_ref_hex = ?",
+            [id.as_hex_string()],
+        )?;
+
+        if updated > 0 {
             Ok(())
         } else {
-            transaction.rollback()?;
             Err(Self::to_missing_key_err_kind().into())
         }
     }

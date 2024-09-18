@@ -19,9 +19,8 @@ use std::io::Write;
 use rusqlite::ToSql;
 
 use crate::{
-    connection::{DatabaseConnection, KeystoreDatabaseConnection},
-    entities::UniqueEntity,
-    entities::{E2eiAcmeCA, Entity, EntityBase, EntityFindParams, StringEntityId},
+    connection::{DatabaseConnection, KeystoreDatabaseConnection, TransactionWrapper},
+    entities::{E2eiAcmeCA, Entity, EntityBase, EntityFindParams, EntityMlsExt, StringEntityId, UniqueEntity},
     CryptoKeystoreError, CryptoKeystoreResult, MissingKeyErrorKind,
 };
 
@@ -91,10 +90,6 @@ impl EntityBase for E2eiAcmeCA {
         return Err(CryptoKeystoreError::NotImplemented);
     }
 
-    async fn save(&self, _conn: &mut Self::ConnectionType) -> CryptoKeystoreResult<()> {
-        return Err(CryptoKeystoreError::NotImplemented);
-    }
-
     async fn find_one(_conn: &mut Self::ConnectionType, _id: &StringEntityId) -> CryptoKeystoreResult<Option<Self>> {
         return Err(CryptoKeystoreError::NotImplemented);
     }
@@ -102,8 +97,15 @@ impl EntityBase for E2eiAcmeCA {
     async fn count(_conn: &mut Self::ConnectionType) -> CryptoKeystoreResult<usize> {
         return Err(CryptoKeystoreError::NotImplemented);
     }
+}
 
-    async fn delete(_conn: &mut Self::ConnectionType, _ids: &[StringEntityId]) -> CryptoKeystoreResult<()> {
+#[cfg_attr(target_family = "wasm", async_trait::async_trait(?Send))]
+#[cfg_attr(not(target_family = "wasm"), async_trait::async_trait)]
+impl EntityMlsExt for E2eiAcmeCA {
+    async fn mls_save(&self, _: &TransactionWrapper<'_>) -> CryptoKeystoreResult<()> {
+        return Err(CryptoKeystoreError::NotImplemented);
+    }
+    async fn mls_delete(_: &TransactionWrapper<'_>, _id: StringEntityId<'_>) -> CryptoKeystoreResult<()> {
         return Err(CryptoKeystoreError::NotImplemented);
     }
 }

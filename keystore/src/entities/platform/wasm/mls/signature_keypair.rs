@@ -16,7 +16,7 @@
 
 use crate::{
     connection::{DatabaseConnection, KeystoreDatabaseConnection},
-    entities::{Entity, EntityBase, EntityFindParams, MlsSignatureKeyPair, StringEntityId},
+    entities::{Entity, EntityBase, EntityFindParams, EntityMlsExt, MlsSignatureKeyPair, StringEntityId},
     CryptoKeystoreResult, MissingKeyErrorKind,
 };
 
@@ -36,13 +36,6 @@ impl EntityBase for MlsSignatureKeyPair {
         storage.get_all(Self::COLLECTION_NAME, Some(params)).await
     }
 
-    async fn save(&self, conn: &mut Self::ConnectionType) -> crate::CryptoKeystoreResult<()> {
-        let storage = conn.storage_mut();
-        storage.save(Self::COLLECTION_NAME, &mut [self.clone()]).await?;
-
-        Ok(())
-    }
-
     async fn find_one(
         conn: &mut Self::ConnectionType,
         id: &StringEntityId,
@@ -53,11 +46,16 @@ impl EntityBase for MlsSignatureKeyPair {
     async fn count(conn: &mut Self::ConnectionType) -> crate::CryptoKeystoreResult<usize> {
         conn.storage().count(Self::COLLECTION_NAME).await
     }
+}
 
-    async fn delete(conn: &mut Self::ConnectionType, ids: &[StringEntityId]) -> crate::CryptoKeystoreResult<()> {
-        let storage = conn.storage_mut();
-        let ids: Vec<Vec<u8>> = ids.iter().map(StringEntityId::to_bytes).collect();
-        storage.delete(Self::COLLECTION_NAME, &ids).await
+#[cfg_attr(target_family = "wasm", async_trait::async_trait(?Send))]
+#[cfg_attr(not(target_family = "wasm"), async_trait::async_trait)]
+impl EntityMlsExt for MlsSignatureKeyPair {
+    async fn mls_save<'a>(
+        &'a self,
+        tx: &crate::connection::storage::WasmStorageTransaction<'a>,
+    ) -> CryptoKeystoreResult<()> {
+        tx.save(Self::COLLECTION_NAME, self.clone()).await
     }
 }
 

@@ -14,10 +14,12 @@
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see http://www.gnu.org/licenses/.
 
+use std::ops::Deref;
+
 use crate::connection::{DatabaseConnection, DatabaseConnectionRequirements};
 use crate::CryptoKeystoreResult;
 use blocking::unblock;
-use rusqlite::functions::FunctionFlags;
+use rusqlite::{functions::FunctionFlags, Transaction};
 
 refinery::embed_migrations!("src/connection/platform/generic/migrations");
 
@@ -27,8 +29,28 @@ pub struct SqlCipherConnection {
     path: String,
 }
 
+pub(crate) struct TransactionWrapper<'conn> {
+    transaction: Transaction<'conn>,
+}
+impl<'conn> TransactionWrapper<'conn> {
+    // this is async just to conform with the wasm impl
+    pub(crate) async fn commit_tx(self) -> CryptoKeystoreResult<()> {
+        Ok(self.transaction.commit()?)
+    }
+}
+
+impl<'conn> Deref for TransactionWrapper<'conn> {
+    type Target = Transaction<'conn>;
+
+    fn deref(&self) -> &Self::Target {
+        &self.transaction
+    }
+}
+
 unsafe impl Send for SqlCipherConnection {}
 unsafe impl Sync for SqlCipherConnection {}
+unsafe impl<'conn> Send for TransactionWrapper<'conn> {}
+unsafe impl<'conn> Sync for TransactionWrapper<'conn> {}
 
 impl std::ops::Deref for SqlCipherConnection {
     type Target = rusqlite::Connection;
@@ -254,5 +276,10 @@ impl DatabaseConnection for SqlCipherConnection {
     async fn wipe(self) -> CryptoKeystoreResult<()> {
         self.wipe().await?;
         Ok(())
+    }
+    async fn new_transaction(&mut self) -> CryptoKeystoreResult<TransactionWrapper<'_>> {
+        Ok(TransactionWrapper {
+            transaction: self.conn.transaction()?,
+        })
     }
 }

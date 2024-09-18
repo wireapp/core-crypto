@@ -14,7 +14,11 @@
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see http://www.gnu.org/licenses/.
 
-use crate::entities::{EntityIdStringExt, MlsEpochEncryptionKeyPair};
+use crate::{
+    connection::TransactionWrapper,
+    entities::{EntityIdStringExt, EntityMlsExt, MlsEpochEncryptionKeyPair},
+    CryptoKeystoreResult,
+};
 use crate::{
     connection::{DatabaseConnection, KeystoreDatabaseConnection},
     entities::{Entity, EntityBase, EntityFindParams, StringEntityId},
@@ -82,39 +86,6 @@ impl EntityBase for MlsEpochEncryptionKeyPair {
         Ok(entities)
     }
 
-    async fn save(&self, conn: &mut Self::ConnectionType) -> crate::CryptoKeystoreResult<()> {
-        Self::ConnectionType::check_buffer_size(self.keypairs.len())?;
-
-        let zb_keypairs = rusqlite::blob::ZeroBlob(self.keypairs.len() as i32);
-
-        let transaction = conn.transaction()?;
-
-        // Use UPSERT (ON CONFLICT DO UPDATE)
-        let sql = "
-            INSERT INTO mls_epoch_encryption_keypairs (id_hex, keypairs) 
-            VALUES (?, ?) 
-            ON CONFLICT(id_hex) DO UPDATE SET keypairs = excluded.keypairs
-            RETURNING rowid";
-
-        let row_id: i64 =
-            transaction.query_row(sql, [&self.id_hex().to_sql()?, &zb_keypairs.to_sql()?], |r| r.get(0))?;
-
-        let mut blob = transaction.blob_open(
-            rusqlite::DatabaseName::Main,
-            "mls_epoch_encryption_keypairs",
-            "keypairs",
-            row_id,
-            false,
-        )?;
-
-        blob.write_all(&self.keypairs)?;
-        blob.close()?;
-
-        transaction.commit()?;
-
-        Ok(())
-    }
-
     async fn find_one(
         conn: &mut Self::ConnectionType,
         id: &StringEntityId,
@@ -153,23 +124,48 @@ impl EntityBase for MlsEpochEncryptionKeyPair {
     async fn count(conn: &mut Self::ConnectionType) -> crate::CryptoKeystoreResult<usize> {
         Ok(conn.query_row("SELECT COUNT(*) FROM mls_epoch_encryption_keypairs", [], |r| r.get(0))?)
     }
+}
 
-    async fn delete(conn: &mut Self::ConnectionType, ids: &[StringEntityId]) -> crate::CryptoKeystoreResult<()> {
-        let transaction = conn.transaction()?;
-        let len = ids.len();
-        let mut updated = 0;
-        for id in ids {
-            updated += transaction.execute(
-                "DELETE FROM mls_epoch_encryption_keypairs WHERE id_hex = ?",
-                [id.as_hex_string()],
-            )?;
-        }
+#[cfg_attr(target_family = "wasm", async_trait::async_trait(?Send))]
+#[cfg_attr(not(target_family = "wasm"), async_trait::async_trait)]
+impl EntityMlsExt for MlsEpochEncryptionKeyPair {
+    async fn mls_save(&self, transaction: &TransactionWrapper<'_>) -> CryptoKeystoreResult<()> {
+        Self::ConnectionType::check_buffer_size(self.keypairs.len())?;
 
-        if updated == len {
-            transaction.commit()?;
+        let zb_keypairs = rusqlite::blob::ZeroBlob(self.keypairs.len() as i32);
+
+        // Use UPSERT (ON CONFLICT DO UPDATE)
+        let sql = "
+            INSERT INTO mls_epoch_encryption_keypairs (id_hex, keypairs)
+            VALUES (?, ?)
+            ON CONFLICT(id_hex) DO UPDATE SET keypairs = excluded.keypairs
+            RETURNING rowid";
+
+        let row_id: i64 =
+            transaction.query_row(sql, [&self.id_hex().to_sql()?, &zb_keypairs.to_sql()?], |r| r.get(0))?;
+
+        let mut blob = transaction.blob_open(
+            rusqlite::DatabaseName::Main,
+            "mls_epoch_encryption_keypairs",
+            "keypairs",
+            row_id,
+            false,
+        )?;
+
+        blob.write_all(&self.keypairs)?;
+        blob.close()?;
+
+        Ok(())
+    }
+    async fn mls_delete(transaction: &TransactionWrapper<'_>, id: StringEntityId<'_>) -> CryptoKeystoreResult<()> {
+        let updated = transaction.execute(
+            "DELETE FROM mls_epoch_encryption_keypairs WHERE id_hex = ?",
+            [id.as_hex_string()],
+        )?;
+
+        if updated > 0 {
             Ok(())
         } else {
-            transaction.rollback()?;
             Err(Self::to_missing_key_err_kind().into())
         }
     }
