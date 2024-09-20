@@ -31,6 +31,10 @@ impl EntityBase for E2eiRefreshToken {
         MissingKeyErrorKind::E2eiRefreshToken
     }
 
+    fn to_transaction_entity(self) -> crate::transaction::Entity {
+        crate::transaction::Entity::E2eiRefreshToken(self)
+    }
+
     async fn find_all(_conn: &mut Self::ConnectionType, _params: EntityFindParams) -> CryptoKeystoreResult<Vec<Self>> {
         return Err(CryptoKeystoreError::NotImplemented);
     }

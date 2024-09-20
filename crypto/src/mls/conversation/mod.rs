@@ -33,7 +33,7 @@ use openmls::prelude::{CredentialWithKey, SignaturePublicKey};
 use openmls::{group::MlsGroup, prelude::Credential};
 use openmls_traits::{types::SignatureScheme, OpenMlsCryptoProvider};
 
-use core_crypto_keystore::CryptoKeystoreMls;
+use core_crypto_keystore::{CryptoKeystoreMls, KeystoreTransaction};
 use mls_crypto_provider::MlsCryptoProvider;
 
 use config::MlsConversationConfiguration;
@@ -43,6 +43,8 @@ use crate::{
     mls::{client::Client, MlsCentral},
     prelude::{CryptoError, CryptoResult, MlsCiphersuite, MlsCredentialType, MlsError},
 };
+
+use super::context::CentralContext;
 
 mod buffer_messages;
 pub(crate) mod commit;
@@ -199,13 +201,12 @@ impl MlsConversation {
 
     pub(crate) async fn persist_group_when_changed(
         &mut self,
-        backend: &MlsCryptoProvider,
+        backend: &KeystoreTransaction,
         force: bool,
     ) -> CryptoResult<()> {
         if force || self.group.state_changed() == openmls::group::InnerState::Changed {
             use core_crypto_keystore::CryptoKeystoreMls as _;
             backend
-                .key_store()
                 .mls_group_persist(
                     &self.id,
                     &core_crypto_keystore::ser(&self.group)?,
@@ -225,9 +226,9 @@ impl MlsConversation {
     pub async fn mark_as_child_of(
         &mut self,
         parent_id: &ConversationId,
-        backend: &MlsCryptoProvider,
+        backend: &KeystoreTransaction,
     ) -> CryptoResult<()> {
-        if backend.key_store().mls_group_exists(parent_id).await {
+        if backend.mls_group_exists(parent_id).await {
             self.parent_id = Some(parent_id.clone());
             self.persist_group_when_changed(backend, true).await?;
             Ok(())
@@ -255,16 +256,15 @@ impl MlsConversation {
     }
 }
 
-impl MlsCentral {
+impl CentralContext {
     pub(crate) async fn get_conversation(
         &self,
         id: &ConversationId,
     ) -> CryptoResult<crate::group_store::GroupStoreValue<MlsConversation>> {
-        let mut keystore = self.mls_backend.keystore();
-        self.mls_groups
-            .write()
-            .await
-            .get_fetch(id, &mut keystore, None)
+        let keystore = self.transaction().await?;
+        self.mls_groups_mut()
+            .await?
+            .get_fetch(id, keystore, None)
             .await?
             .ok_or_else(|| CryptoError::ConversationNotFound(id.clone()))
     }
@@ -289,8 +289,8 @@ impl MlsCentral {
     pub(crate) async fn get_all_conversations(
         &self,
     ) -> CryptoResult<Vec<crate::group_store::GroupStoreValue<MlsConversation>>> {
-        let keystore = self.mls_backend.keystore();
-        self.mls_groups.write().await.get_fetch_all(&keystore).await
+        let keystore = self.transaction().await?;
+        self.mls_groups_mut().await?.get_fetch_all(&keystore).await
     }
 
     /// Mark a conversation as child of another one
@@ -306,7 +306,7 @@ impl MlsCentral {
         conversation
             .write()
             .await
-            .mark_as_child_of(parent_id, &self.mls_backend)
+            .mark_as_child_of(parent_id, self.transaction().await?)
             .await?;
 
         Ok(())

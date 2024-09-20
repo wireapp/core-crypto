@@ -249,6 +249,9 @@ pub enum CryptoError {
     /// Not supported for the moment
     #[error("Not supported for the moment")]
     Unsupported,
+    /// Invalid Context. This context was finished and cannot be further used
+    #[error("This context was already finished and cannot be further used")]
+    InvalidContext,
 }
 
 impl From<MlsError> for CryptoError {

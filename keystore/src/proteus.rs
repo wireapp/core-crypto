@@ -14,7 +14,11 @@
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see http://www.gnu.org/licenses/.
 
-use crate::{connection::Connection, entities::ProteusPrekey, CryptoKeystoreError, CryptoKeystoreResult};
+use crate::{
+    connection::{Connection, FetchFromDatabase},
+    entities::ProteusPrekey,
+    CryptoKeystoreError, CryptoKeystoreResult,
+};
 
 #[cfg_attr(target_family = "wasm", async_trait::async_trait(?Send))]
 #[cfg_attr(not(target_family = "wasm"), async_trait::async_trait)]

@@ -1,3 +1,5 @@
+use std::{ops::Deref, sync::Arc};
+
 use async_lock::RwLock;
 use tracing::{trace, Instrument};
 
@@ -13,6 +15,7 @@ use crate::prelude::{
 pub(crate) mod buffer_external_commit;
 pub(crate) mod ciphersuite;
 pub(crate) mod client;
+pub mod context;
 pub mod conversation;
 pub(crate) mod credential;
 pub(crate) mod external_commit;
@@ -138,13 +141,12 @@ pub(crate) mod config {
 
 /// The entry point for the MLS CoreCrypto library. This struct provides all functionality to create
 /// and manage groups, make proposals and commits.
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct MlsCentral {
-    pub(crate) mls_client: RwLock<Option<Client>>,
-    pub(crate) mls_backend: MlsCryptoProvider,
+    pub(crate) mls_client: Arc<RwLock<Option<Client>>>,
+    pub(crate) mls_backend: Arc<MlsCryptoProvider>,
     // this should be moved to the context
-    pub(crate) mls_groups: RwLock<crate::group_store::GroupStore<MlsConversation>>,
-    pub(crate) callbacks: RwLock<Option<std::sync::Arc<dyn CoreCryptoCallbacks + 'static>>>,
+    pub(crate) callbacks: Arc<RwLock<Option<std::sync::Arc<dyn CoreCryptoCallbacks + 'static>>>>,
 }
 
 impl MlsCentral {
@@ -166,29 +168,34 @@ impl MlsCentral {
     #[cfg_attr(not(test), tracing::instrument(skip_all, err))]
     pub async fn try_new(configuration: MlsCentralConfiguration) -> CryptoResult<Self> {
         // Init backend (crypto + rand + keystore)
-        let mls_backend = MlsCryptoProvider::try_new_with_configuration(MlsCryptoProviderConfiguration {
-            db_path: &configuration.store_path,
-            identity_key: &configuration.identity_key,
-            in_memory: false,
-            entropy_seed: configuration.external_entropy,
-        })
-        .in_current_span()
-        .await?;
+        let mls_backend = Arc::new(
+            MlsCryptoProvider::try_new_with_configuration(MlsCryptoProviderConfiguration {
+                db_path: &configuration.store_path,
+                identity_key: &configuration.identity_key,
+                in_memory: false,
+                entropy_seed: configuration.external_entropy,
+            })
+            .in_current_span()
+            .await?,
+        );
         let mls_client = if let Some(id) = configuration.client_id {
             // Init client identity (load or create)
-            RwLock::new(Some(
-                Client::init(
-                    ClientIdentifier::Basic(id),
-                    configuration.ciphersuites.as_slice(),
-                    &mls_backend,
-                    configuration
-                        .nb_init_key_packages
-                        .unwrap_or(INITIAL_KEYING_MATERIAL_COUNT),
+            Arc::new(
+                Some(
+                    Client::init(
+                        ClientIdentifier::Basic(id),
+                        configuration.ciphersuites.as_slice(),
+                        mls_backend.deref(),
+                        configuration
+                            .nb_init_key_packages
+                            .unwrap_or(INITIAL_KEYING_MATERIAL_COUNT),
+                    )
+                    .await?,
                 )
-                .await?,
-            ))
+                .into(),
+            )
         } else {
-            None.into()
+            Arc::new(None.into())
         };
 
         trace!("Trying to restore groups");
@@ -198,7 +205,6 @@ impl MlsCentral {
         let central = Self {
             mls_backend,
             mls_client,
-            mls_groups,
             callbacks: None.into(),
         };
 
@@ -210,35 +216,39 @@ impl MlsCentral {
     /// Same as the [MlsCentral::try_new] but instead, it uses an in memory KeyStore. Although required, the `store_path` parameter from the `MlsCentralConfiguration` won't be used here.
     #[cfg_attr(not(test), tracing::instrument(skip_all, err))]
     pub async fn try_new_in_memory(configuration: MlsCentralConfiguration) -> CryptoResult<Self> {
-        let mls_backend = MlsCryptoProvider::try_new_with_configuration(MlsCryptoProviderConfiguration {
-            db_path: &configuration.store_path,
-            identity_key: &configuration.identity_key,
-            in_memory: true,
-            entropy_seed: configuration.external_entropy,
-        })
-        .in_current_span()
-        .await?;
+        let mls_backend = Arc::new(
+            MlsCryptoProvider::try_new_with_configuration(MlsCryptoProviderConfiguration {
+                db_path: &configuration.store_path,
+                identity_key: &configuration.identity_key,
+                in_memory: true,
+                entropy_seed: configuration.external_entropy,
+            })
+            .in_current_span()
+            .await?,
+        );
         let mls_client = if let Some(id) = configuration.client_id {
-            RwLock::new(Some(
-                Client::init(
-                    ClientIdentifier::Basic(id),
-                    configuration.ciphersuites.as_slice(),
-                    &mls_backend,
-                    configuration
-                        .nb_init_key_packages
-                        .unwrap_or(INITIAL_KEYING_MATERIAL_COUNT),
+            Arc::new(
+                Some(
+                    Client::init(
+                        ClientIdentifier::Basic(id),
+                        configuration.ciphersuites.as_slice(),
+                        mls_backend.deref(),
+                        configuration
+                            .nb_init_key_packages
+                            .unwrap_or(INITIAL_KEYING_MATERIAL_COUNT),
+                    )
+                    .await?,
                 )
-                .await?,
-            ))
+                .into(),
+            )
         } else {
-            None.into()
+            Arc::new(None.into())
         };
         let mls_groups = RwLock::new(Self::restore_groups(&mls_backend).await?);
 
         let central = Self {
             mls_backend,
             mls_client,
-            mls_groups,
             callbacks: None.into(),
         };
 

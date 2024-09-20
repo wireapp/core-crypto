@@ -16,6 +16,8 @@
 
 use zeroize::Zeroize;
 
+use crate::connection::FetchFromDatabase;
+
 #[derive(Debug, Clone, Zeroize, PartialEq, Eq)]
 #[zeroize(drop)]
 #[cfg_attr(
