@@ -66,6 +66,10 @@ pub mod dummy_entity {
             MissingKeyErrorKind::MlsGroup
         }
 
+        fn to_transaction_entity(self) -> crate::transaction::Entity {
+            unimplemented!("Not implemented")
+        }
+
         async fn save(&self, _conn: &mut Self::ConnectionType) -> CryptoKeystoreResult<()> {
             Ok(())
         }
@@ -79,7 +83,7 @@ pub mod dummy_entity {
             _conn: &mut Self::ConnectionType,
             _id: &StringEntityId,
         ) -> CryptoKeystoreResult<Option<Self>> {
-            Ok(Some(DummyStoreValue { _phantom: PhantomData }))
+            Ok(Some(DummyStoreValue))
         }
         async fn find_many(conn: &mut Self::ConnectionType, ids: &[StringEntityId]) -> CryptoKeystoreResult<Vec<Self>> {
             // Default, inefficient & naive method
@@ -95,7 +99,7 @@ pub mod dummy_entity {
         async fn count(_conn: &mut Self::ConnectionType) -> CryptoKeystoreResult<usize> {
             Ok(0)
         }
-        async fn delete(_conn: &mut Self::ConnectionType, _id: &[StringEntityId]) -> CryptoKeystoreResult<()> {
+        async fn delete(_conn: &mut Self::ConnectionType, _id: StringEntityId<'_>) -> CryptoKeystoreResult<()> {
             Ok(())
         }
     }
