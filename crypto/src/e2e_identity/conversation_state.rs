@@ -1,3 +1,5 @@
+use std::ops::Deref;
+
 use crate::{
     mls::credential::ext::CredentialExt,
     prelude::{ConversationId, CryptoResult, MlsCentral, MlsConversation, MlsCredentialType},
@@ -87,7 +89,7 @@ impl MlsCentral {
         // participants once joining it.
         // This 👇 verifies the GroupInfo and the RatchetTree btw
         let rt = group_info
-            .take_ratchet_tree(&self.mls_backend, false)
+            .take_ratchet_tree(self.mls_backend.deref(), false)
             .await
             .map_err(MlsError::from)?;
         self.get_credential_in_use_in_ratchet_tree(cs, rt, credential_type)

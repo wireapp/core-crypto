@@ -1,7 +1,11 @@
-use crate::prelude::MlsCentral;
-use core_crypto_keystore::entities::{
-    E2eiEnrollment, MlsCredential, MlsEncryptionKeyPair, MlsEpochEncryptionKeyPair, MlsHpkePrivateKey, MlsKeyPackage,
-    MlsPendingMessage, MlsPskBundle, MlsSignatureKeyPair, PersistedMlsGroup, PersistedMlsPendingGroup,
+use crate::{mls::context::CentralContext, prelude::MlsCentral};
+use core_crypto_keystore::{
+    connection::FetchFromDatabase,
+    entities::{
+        E2eiEnrollment, MlsCredential, MlsEncryptionKeyPair, MlsEpochEncryptionKeyPair, MlsHpkePrivateKey,
+        MlsKeyPackage, MlsPendingMessage, MlsPskBundle, MlsSignatureKeyPair, PersistedMlsGroup,
+        PersistedMlsPendingGroup,
+    },
 };
 
 #[derive(Debug, Clone, Eq, PartialEq)]
@@ -22,6 +26,36 @@ pub struct EntitiesCount {
 impl MlsCentral {
     pub async fn count_entities(&self) -> EntitiesCount {
         let keystore = self.mls_backend.keystore();
+        let credential = keystore.count::<MlsCredential>().await.unwrap();
+        let encryption_keypair = keystore.count::<MlsEncryptionKeyPair>().await.unwrap();
+        let epoch_encryption_keypair = keystore.count::<MlsEpochEncryptionKeyPair>().await.unwrap();
+        let enrollment = keystore.count::<E2eiEnrollment>().await.unwrap();
+        let group = keystore.count::<PersistedMlsGroup>().await.unwrap();
+        let hpke_private_key = keystore.count::<MlsHpkePrivateKey>().await.unwrap();
+        let key_package = keystore.count::<MlsKeyPackage>().await.unwrap();
+        let pending_group = keystore.count::<PersistedMlsPendingGroup>().await.unwrap();
+        let pending_messages = keystore.count::<MlsPendingMessage>().await.unwrap();
+        let psk_bundle = keystore.count::<MlsPskBundle>().await.unwrap();
+        let signature_keypair = keystore.count::<MlsSignatureKeyPair>().await.unwrap();
+        EntitiesCount {
+            credential,
+            encryption_keypair,
+            epoch_encryption_keypair,
+            enrollment,
+            group,
+            hpke_private_key,
+            key_package,
+            pending_group,
+            pending_messages,
+            psk_bundle,
+            signature_keypair,
+        }
+    }
+}
+
+impl CentralContext {
+    pub async fn count_entities(&self) -> EntitiesCount {
+        let keystore = self.transaction().await.unwrap();
         let credential = keystore.count::<MlsCredential>().await.unwrap();
         let encryption_keypair = keystore.count::<MlsEncryptionKeyPair>().await.unwrap();
         let epoch_encryption_keypair = keystore.count::<MlsEpochEncryptionKeyPair>().await.unwrap();

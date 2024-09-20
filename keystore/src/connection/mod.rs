@@ -30,7 +30,10 @@ pub mod platform {
 }
 
 pub use self::platform::*;
-use crate::entities::{Entity, EntityFindParams, StringEntityId};
+use crate::{
+    entities::{Entity, EntityFindParams, StringEntityId},
+    KeystoreTransaction,
+};
 
 use crate::{CryptoKeystoreError, CryptoKeystoreResult};
 use async_lock::{Mutex, MutexGuard};
@@ -92,6 +95,26 @@ pub struct Connection {
     pub(crate) conn: Arc<Mutex<KeystoreDatabaseConnection>>,
 }
 
+/// Interface to fetch from the database either from the connection directly or through a
+/// transaaction
+pub trait FetchFromDatabase {
+    async fn find<E: Entity<ConnectionType = KeystoreDatabaseConnection>>(
+        &self,
+        id: impl AsRef<[u8]>,
+    ) -> CryptoKeystoreResult<Option<E>>;
+
+    async fn find_all<E: Entity<ConnectionType = KeystoreDatabaseConnection>>(
+        &self,
+        params: EntityFindParams,
+    ) -> CryptoKeystoreResult<Vec<E>>;
+
+    async fn find_many<E: Entity<ConnectionType = KeystoreDatabaseConnection>, S: AsRef<[u8]>>(
+        &self,
+        ids: &[S],
+    ) -> CryptoKeystoreResult<Vec<E>>;
+    async fn count<E: Entity<ConnectionType = KeystoreDatabaseConnection>>(&self) -> CryptoKeystoreResult<usize>;
+}
+
 // * SAFETY: this has mutexes and atomics protecting underlying data so this is safe to share between threads
 unsafe impl Send for Connection {}
 unsafe impl Sync for Connection {}
@@ -119,7 +142,7 @@ impl Connection {
         Ok(self.conn.lock().await)
     }
 
-    // TODO: Check why the compiler wants this to be sync
+    // TODO: only allow this for proteus for now
     pub async fn save<E: Entity<ConnectionType = KeystoreDatabaseConnection> + std::marker::Sync>(
         &self,
         entity: E,
@@ -129,6 +152,7 @@ impl Connection {
         Ok(entity)
     }
 
+    // TODO: only allow this for proteus for now
     pub async fn insert<E: Entity<ConnectionType = KeystoreDatabaseConnection> + std::marker::Sync>(
         &self,
         entity: E,
@@ -138,31 +162,7 @@ impl Connection {
         Ok(fields)
     }
 
-    pub async fn find<E: Entity<ConnectionType = KeystoreDatabaseConnection>>(
-        &self,
-        id: impl AsRef<[u8]>,
-    ) -> CryptoKeystoreResult<Option<E>> {
-        let mut conn = self.conn.lock().await;
-        E::find_one(&mut conn, &id.as_ref().into()).await
-    }
-
-    pub async fn find_all<E: Entity<ConnectionType = KeystoreDatabaseConnection>>(
-        &self,
-        params: EntityFindParams,
-    ) -> CryptoKeystoreResult<Vec<E>> {
-        let mut conn = self.conn.lock().await;
-        E::find_all(&mut conn, params).await
-    }
-
-    pub async fn find_many<E: Entity<ConnectionType = KeystoreDatabaseConnection>, S: AsRef<[u8]>>(
-        &self,
-        ids: &[S],
-    ) -> CryptoKeystoreResult<Vec<E>> {
-        let entity_ids: Vec<StringEntityId> = ids.iter().map(|id| id.as_ref().into()).collect();
-        let mut conn = self.conn.lock().await;
-        E::find_many(&mut conn, &entity_ids).await
-    }
-
+    // TODO: only allow this for proteus for now
     pub async fn remove<E: Entity<ConnectionType = KeystoreDatabaseConnection>, S: AsRef<[u8]>>(
         &self,
         id: S,
@@ -170,11 +170,6 @@ impl Connection {
         let mut conn = self.conn.lock().await;
         E::delete(&mut conn, id.as_ref().into()).await?;
         Ok(())
-    }
-
-    pub async fn count<E: Entity<ConnectionType = KeystoreDatabaseConnection>>(&self) -> CryptoKeystoreResult<usize> {
-        let mut conn = self.conn.lock().await;
-        E::count(&mut conn).await
     }
 
     pub async fn wipe(self) -> CryptoKeystoreResult<()> {
@@ -188,5 +183,41 @@ impl Connection {
         let conn: KeystoreDatabaseConnection = Arc::try_unwrap(self.conn).unwrap().into_inner();
         conn.close().await?;
         Ok(())
+    }
+
+    pub fn new_transaction(&self) -> KeystoreTransaction {
+        KeystoreTransaction::new(self.clone())
+    }
+}
+
+impl FetchFromDatabase for Connection {
+    async fn find<E: Entity<ConnectionType = KeystoreDatabaseConnection>>(
+        &self,
+        id: impl AsRef<[u8]>,
+    ) -> CryptoKeystoreResult<Option<E>> {
+        let mut conn = self.conn.lock().await;
+        E::find_one(&mut conn, &id.as_ref().into()).await
+    }
+
+    async fn find_all<E: Entity<ConnectionType = KeystoreDatabaseConnection>>(
+        &self,
+        params: EntityFindParams,
+    ) -> CryptoKeystoreResult<Vec<E>> {
+        let mut conn = self.conn.lock().await;
+        E::find_all(&mut conn, params).await
+    }
+
+    async fn find_many<E: Entity<ConnectionType = KeystoreDatabaseConnection>, S: AsRef<[u8]>>(
+        &self,
+        ids: &[S],
+    ) -> CryptoKeystoreResult<Vec<E>> {
+        let entity_ids: Vec<StringEntityId> = ids.iter().map(|id| id.as_ref().into()).collect();
+        let mut conn = self.conn.lock().await;
+        E::find_many(&mut conn, &entity_ids).await
+    }
+
+    async fn count<E: Entity<ConnectionType = KeystoreDatabaseConnection>>(&self) -> CryptoKeystoreResult<usize> {
+        let mut conn = self.conn.lock().await;
+        E::count(&mut conn).await
     }
 }

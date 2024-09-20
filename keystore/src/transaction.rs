@@ -6,16 +6,18 @@ use openmls_traits::key_store::OpenMlsKeyStore;
 use openmls_traits::key_store::{MlsEntity, MlsEntityId};
 
 use crate::{
-    connection::{Connection, DatabaseConnection, TransactionWrapper},
+    connection::{Connection, DatabaseConnection, FetchFromDatabase, KeystoreDatabaseConnection, TransactionWrapper},
     entities::{
-        E2eiAcmeCA, E2eiCrl, E2eiEnrollment, E2eiIntermediateCert, E2eiRefreshToken, EntityMlsExt, MlsCredential,
-        MlsEncryptionKeyPair, MlsEpochEncryptionKeyPair, MlsHpkePrivateKey, MlsKeyPackage, MlsPendingMessage,
-        MlsPskBundle, MlsSignatureKeyPair, PersistedMlsGroup, PersistedMlsPendingGroup, StringEntityId,
+        E2eiAcmeCA, E2eiCrl, E2eiEnrollment, E2eiIntermediateCert, E2eiRefreshToken, EntityFindParams, EntityMlsExt,
+        MlsCredential, MlsEncryptionKeyPair, MlsEpochEncryptionKeyPair, MlsHpkePrivateKey, MlsKeyPackage,
+        MlsPendingMessage, MlsPskBundle, MlsSignatureKeyPair, PersistedMlsGroup, PersistedMlsPendingGroup,
+        StringEntityId,
     },
     CryptoKeystoreError, CryptoKeystoreResult,
 };
 
-enum Entity {
+#[derive(Debug)]
+pub(crate) enum Entity {
     SignatureKeyPair(MlsSignatureKeyPair),
     HpkePrivateKey(MlsHpkePrivateKey),
     KeyPackage(MlsKeyPackage),
@@ -33,6 +35,7 @@ enum Entity {
     E2eiCrl(E2eiCrl),
 }
 
+#[derive(Debug)]
 enum EntityId {
     SignatureKeyPair(Vec<u8>),
     HpkePrivateKey(Vec<u8>),
@@ -51,6 +54,7 @@ enum EntityId {
     E2eiCrl(Vec<u8>),
 }
 
+#[derive(Debug)]
 enum Operation {
     Store(Entity),
     Remove(EntityId),
@@ -100,6 +104,28 @@ impl EntityId {
             MlsEntityId::EncryptionKeyPair => Self::EncryptionKeyPair(id.into()),
             MlsEntityId::EpochEncryptionKeyPair => Self::EpochEncryptionKeyPair(id.into()),
             MlsEntityId::GroupState => Self::PersistedMlsGroup(id.into()),
+        }
+    }
+
+    fn from_collection_name(entity_id: &'static str, id: &[u8]) -> CryptoKeystoreResult<Self> {
+        use crate::entities::EntityBase;
+        match entity_id {
+            crate::entities::MlsSignatureKeyPair::COLLECTION_NAME => Ok(Self::SignatureKeyPair(id.into())),
+            crate::entities::MlsHpkePrivateKey::COLLECTION_NAME => Ok(Self::HpkePrivateKey(id.into())),
+            crate::entities::MlsKeyPackage::COLLECTION_NAME => Ok(Self::KeyPackage(id.into())),
+            crate::entities::MlsPskBundle::COLLECTION_NAME => Ok(Self::PskBundle(id.into())),
+            crate::entities::MlsEncryptionKeyPair::COLLECTION_NAME => Ok(Self::EncryptionKeyPair(id.into())),
+            crate::entities::MlsEpochEncryptionKeyPair::COLLECTION_NAME => Ok(Self::EpochEncryptionKeyPair(id.into())),
+            crate::entities::PersistedMlsGroup::COLLECTION_NAME => Ok(Self::PersistedMlsGroup(id.into())),
+            crate::entities::PersistedMlsPendingGroup::COLLECTION_NAME => Ok(Self::PersistedMlsPendingGroup(id.into())),
+            crate::entities::MlsCredential::COLLECTION_NAME => Ok(Self::MlsCredential(id.into())),
+            crate::entities::MlsPendingMessage::COLLECTION_NAME => Ok(Self::MlsPendingMessage(id.into())),
+            crate::entities::E2eiEnrollment::COLLECTION_NAME => Ok(Self::E2eiEnrollment(id.into())),
+            crate::entities::E2eiCrl::COLLECTION_NAME => Ok(Self::E2eiCrl(id.into())),
+            crate::entities::E2eiAcmeCA::COLLECTION_NAME => Ok(Self::E2eiAcmeCA(id.into())),
+            crate::entities::E2eiRefreshToken::COLLECTION_NAME => Ok(Self::E2eiRefreshToken(id.into())),
+            crate::entities::E2eiIntermediateCert::COLLECTION_NAME => Ok(Self::E2eiIntermediateCert(id.into())),
+            _ => Err(CryptoKeystoreError::NotImplemented),
         }
     }
 }
@@ -207,7 +233,7 @@ impl Operation {
 
 /// This represents a transaction, where all operations will be done in memory and committed at the
 /// end
-#[derive(Clone)]
+#[derive(Debug, Clone)]
 pub struct KeystoreTransaction {
     /// Reference to the connection
     conn: Connection,
@@ -216,12 +242,72 @@ pub struct KeystoreTransaction {
     operations: Arc<RwLock<VecDeque<Operation>>>,
 }
 
+impl FetchFromDatabase for KeystoreTransaction {
+    async fn find<E: crate::entities::Entity<ConnectionType = KeystoreDatabaseConnection>>(
+        &self,
+        id: impl AsRef<[u8]>,
+    ) -> CryptoKeystoreResult<Option<E>> {
+        self.find(id).await
+    }
+
+    async fn find_all<E: crate::entities::Entity<ConnectionType = KeystoreDatabaseConnection>>(
+        &self,
+        params: EntityFindParams,
+    ) -> CryptoKeystoreResult<Vec<E>> {
+        self.conn.find_all(params).await
+    }
+
+    async fn find_many<E: crate::entities::Entity<ConnectionType = KeystoreDatabaseConnection>, S: AsRef<[u8]>>(
+        &self,
+        ids: &[S],
+    ) -> CryptoKeystoreResult<Vec<E>> {
+        self.conn.find_many(ids).await
+    }
+
+    async fn count<E: crate::entities::Entity<ConnectionType = KeystoreDatabaseConnection>>(
+        &self,
+    ) -> CryptoKeystoreResult<usize> {
+        let mut conn = self.conn.borrow_conn().await?;
+        E::count(&mut conn).await
+    }
+}
+
 impl KeystoreTransaction {
     pub fn new(conn: Connection) -> Self {
         Self {
             conn,
             operations: Default::default(),
         }
+    }
+
+    async fn add_operation(&self, op: Operation) {
+        self.operations.write().await.push_back(op);
+    }
+
+    pub async fn save<E: crate::entities::Entity<ConnectionType = KeystoreDatabaseConnection>>(
+        &self,
+        entity: E,
+    ) -> CryptoKeystoreResult<E> {
+        self.add_operation(entity.clone().to_transaction_entity().into()).await;
+        Ok(entity)
+    }
+
+    // TODO: only allow this for proteus for now
+    pub async fn insert<E: crate::entities::Entity<ConnectionType = KeystoreDatabaseConnection>>(
+        &self,
+        entity: E,
+    ) -> CryptoKeystoreResult<()> {
+        self.save(entity).await?;
+        Ok(())
+    }
+
+    pub async fn remove<E: crate::entities::Entity<ConnectionType = KeystoreDatabaseConnection>, S: AsRef<[u8]>>(
+        &self,
+        id: S,
+    ) -> CryptoKeystoreResult<()> {
+        self.add_operation(EntityId::from_collection_name(E::COLLECTION_NAME, id.as_ref())?.into())
+            .await;
+        Ok(())
     }
 
     /// Persists all the operations in the database. It will effectively open a transaction

@@ -15,6 +15,10 @@ impl EntityBase for MlsPendingMessage {
         MissingKeyErrorKind::MlsPendingMessages
     }
 
+    fn to_transaction_entity(self) -> crate::transaction::Entity {
+        crate::transaction::Entity::MlsPendingMessage(self)
+    }
+
     async fn find_all(conn: &mut Self::ConnectionType, params: EntityFindParams) -> CryptoKeystoreResult<Vec<Self>> {
         let storage = conn.storage();
         storage.get_all(Self::COLLECTION_NAME, Some(params)).await

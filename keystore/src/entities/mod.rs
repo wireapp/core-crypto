@@ -139,6 +139,7 @@ pub trait EntityBase: Send + Sized + Clone + PartialEq + Eq + std::fmt::Debug {
     const COLLECTION_NAME: &'static str;
 
     fn to_missing_key_err_kind() -> MissingKeyErrorKind;
+    fn to_transaction_entity(self) -> crate::transaction::Entity;
 
     async fn find_all(conn: &mut Self::ConnectionType, params: EntityFindParams) -> CryptoKeystoreResult<Vec<Self>>;
     async fn find_one(conn: &mut Self::ConnectionType, id: &StringEntityId) -> CryptoKeystoreResult<Option<Self>>;

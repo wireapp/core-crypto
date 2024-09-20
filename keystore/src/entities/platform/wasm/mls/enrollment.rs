@@ -31,6 +31,10 @@ impl EntityBase for E2eiEnrollment {
         MissingKeyErrorKind::E2eiEnrollment
     }
 
+    fn to_transaction_entity(self) -> crate::transaction::Entity {
+        crate::transaction::Entity::E2eiEnrollment(self)
+    }
+
     async fn find_all(_conn: &mut Self::ConnectionType, _params: EntityFindParams) -> CryptoKeystoreResult<Vec<Self>> {
         Err(CryptoKeystoreError::ImplementationError)
     }

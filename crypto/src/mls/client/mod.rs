@@ -28,7 +28,7 @@ use crate::{
     },
 };
 use async_lock::{RwLockReadGuard, RwLockWriteGuard};
-use core_crypto_keystore::CryptoKeystoreError;
+use core_crypto_keystore::{CryptoKeystoreError, KeystoreTransaction};
 use openmls::prelude::{Credential, CredentialType};
 use openmls_basic_credential::SignatureKeyPair;
 use openmls_traits::{crypto::OpenMlsCrypto, types::SignatureScheme, OpenMlsCryptoProvider};
@@ -367,13 +367,11 @@ impl Client {
     #[cfg_attr(not(test), tracing::instrument(err, skip(self, backend, cb), fields(id = id.as_ref().map(|id| id.to_string()))))]
     pub(crate) async fn save_identity(
         &mut self,
-        backend: &MlsCryptoProvider,
+        backend: &KeystoreTransaction,
         id: Option<&ClientId>,
         sc: SignatureScheme,
         mut cb: CredentialBundle,
     ) -> CryptoResult<CredentialBundle> {
-        let mut conn = backend.key_store().borrow_conn().await?;
-
         let id = id.unwrap_or_else(|| self.id());
 
         let credential = cb.credential.tls_serialize_detached().map_err(MlsError::from)?;

@@ -89,7 +89,7 @@ pub struct MlsCryptoProviderConfiguration<'a> {
     pub entropy_seed: Option<EntropySeed>,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct MlsCryptoProvider {
     crypto: RustCrypto,
     key_store: CryptoKeystore,

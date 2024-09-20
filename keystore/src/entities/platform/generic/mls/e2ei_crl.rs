@@ -37,6 +37,10 @@ impl EntityBase for E2eiCrl {
         MissingKeyErrorKind::E2eiCrl
     }
 
+    fn to_transaction_entity(self) -> crate::transaction::Entity {
+        crate::transaction::Entity::E2eiCrl(self)
+    }
+
     async fn find_all(
         conn: &mut Self::ConnectionType,
         params: EntityFindParams,

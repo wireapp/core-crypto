@@ -39,6 +39,10 @@ impl EntityBase for ProteusSession {
         MissingKeyErrorKind::ProteusSession
     }
 
+    fn to_transaction_entity(self) -> crate::transaction::Entity {
+        unimplemented!("This has not yet been implemented for Proteus")
+    }
+
     async fn find_all(
         conn: &mut Self::ConnectionType,
         params: EntityFindParams,
