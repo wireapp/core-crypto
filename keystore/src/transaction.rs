@@ -242,12 +242,14 @@ pub struct KeystoreTransaction {
     operations: Arc<RwLock<VecDeque<Operation>>>,
 }
 
+#[cfg_attr(target_family = "wasm", async_trait::async_trait(?Send))]
+#[cfg_attr(not(target_family = "wasm"), async_trait::async_trait)]
 impl FetchFromDatabase for KeystoreTransaction {
     async fn find<E: crate::entities::Entity<ConnectionType = KeystoreDatabaseConnection>>(
         &self,
-        id: impl AsRef<[u8]>,
+        id: &[u8],
     ) -> CryptoKeystoreResult<Option<E>> {
-        self.find(id).await
+        self.conn.find(id).await
     }
 
     async fn find_all<E: crate::entities::Entity<ConnectionType = KeystoreDatabaseConnection>>(
@@ -257,9 +259,9 @@ impl FetchFromDatabase for KeystoreTransaction {
         self.conn.find_all(params).await
     }
 
-    async fn find_many<E: crate::entities::Entity<ConnectionType = KeystoreDatabaseConnection>, S: AsRef<[u8]>>(
+    async fn find_many<E: crate::entities::Entity<ConnectionType = KeystoreDatabaseConnection>>(
         &self,
-        ids: &[S],
+        ids: &[Vec<u8>],
     ) -> CryptoKeystoreResult<Vec<E>> {
         self.conn.find_many(ids).await
     }

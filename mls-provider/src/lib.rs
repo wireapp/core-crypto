@@ -104,6 +104,12 @@ pub struct TransactionalCryptoProvider {
     pki_env: PkiEnvironmentProvider,
 }
 
+impl TransactionalCryptoProvider {
+    pub fn transaction(&self) -> KeystoreTransaction {
+        self.tx.clone()
+    }
+}
+
 impl MlsCryptoProvider {
     /// Initialize a CryptoProvider with a backend following the provided `config` (see: [MlsCryptoProviderConfiguration])
     pub async fn try_new_with_configuration(config: MlsCryptoProviderConfiguration<'_>) -> MlsProviderResult<Self> {
@@ -156,16 +162,6 @@ impl MlsCryptoProvider {
         TransactionalCryptoProvider {
             crypto: self.crypto.clone(),
             tx: self.key_store.new_transaction(),
-            pki_env: self.pki_env.clone(),
-        }
-    }
-
-    /// Clones the references of the PkiEnvironment and the CryptoProvider into a transaction
-    /// keystore to pass to openmls as the `OpenMlsCryptoProvider`
-    pub fn with_transaction(&self, tx: KeystoreTransaction) -> TransactionalCryptoProvider {
-        TransactionalCryptoProvider {
-            crypto: self.crypto.clone(),
-            tx,
             pki_env: self.pki_env.clone(),
         }
     }

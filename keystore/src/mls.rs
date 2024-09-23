@@ -264,7 +264,6 @@ impl openmls_traits::key_store::OpenMlsKeyStore for crate::connection::Connectio
     where
         Self: Sized,
     {
-        // TODO: remove
         if k.is_empty() {
             return Err(CryptoKeystoreError::MlsKeyStoreError(
                 "The provided key is empty".into(),
@@ -369,11 +368,6 @@ impl openmls_traits::key_store::OpenMlsKeyStore for crate::connection::Connectio
     }
 
     async fn delete<V: MlsEntity>(&self, k: &[u8]) -> Result<(), Self::Error> {
-        // TODO: remove
-        if k.is_empty() {
-            return Ok(());
-        }
-
         match V::ID {
             MlsEntityId::GroupState => self.remove::<PersistedMlsGroup, _>(k).await?,
             MlsEntityId::SignatureKeyPair => self.remove::<MlsSignatureKeyPair, _>(k).await?,

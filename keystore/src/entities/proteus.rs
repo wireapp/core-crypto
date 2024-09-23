@@ -96,7 +96,7 @@ impl ProteusPrekey {
             if id == limit {
                 return Err(crate::CryptoKeystoreError::NoFreePrekeyId);
             }
-            if conn.find::<Self>(id.to_le_bytes()).await?.is_none() {
+            if conn.find::<Self>(&id.to_le_bytes()).await?.is_none() {
                 break;
             }
             id += 1;

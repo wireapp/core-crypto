@@ -46,7 +46,7 @@ impl proteus_traits::PreKeyStore for Connection {
         id: proteus_traits::RawPreKeyId,
     ) -> Result<Option<proteus_traits::RawPreKey>, Self::Error> {
         Ok(self
-            .find::<ProteusPrekey>(id.to_le_bytes())
+            .find::<ProteusPrekey>(&id.to_le_bytes())
             .await?
             .map(|db_prekey| db_prekey.prekey.clone()))
     }
