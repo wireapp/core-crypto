@@ -22,6 +22,7 @@ mod crypto_provider;
 mod error;
 mod pki;
 
+use core_crypto_keystore::KeystoreTransaction;
 pub use error::{MlsProviderError, MlsProviderResult};
 
 pub use crypto_provider::RustCrypto;
@@ -96,6 +97,13 @@ pub struct MlsCryptoProvider {
     pki_env: PkiEnvironmentProvider,
 }
 
+#[derive(Debug, Clone)]
+pub struct TransactionalCryptoProvider {
+    crypto: RustCrypto,
+    tx: KeystoreTransaction,
+    pki_env: PkiEnvironmentProvider,
+}
+
 impl MlsCryptoProvider {
     /// Initialize a CryptoProvider with a backend following the provided `config` (see: [MlsCryptoProviderConfiguration])
     pub async fn try_new_with_configuration(config: MlsCryptoProviderConfiguration<'_>) -> MlsProviderResult<Self> {
@@ -139,6 +147,26 @@ impl MlsCryptoProvider {
             crypto,
             key_store,
             pki_env: PkiEnvironmentProvider::default(),
+        }
+    }
+
+    /// Clones the references of the PkiEnvironment and the CryptoProvider into a transaction
+    /// keystore to pass to openmls as the `OpenMlsCryptoProvider`
+    pub fn new_transaction(&self) -> TransactionalCryptoProvider {
+        TransactionalCryptoProvider {
+            crypto: self.crypto.clone(),
+            tx: self.key_store.new_transaction(),
+            pki_env: self.pki_env.clone(),
+        }
+    }
+
+    /// Clones the references of the PkiEnvironment and the CryptoProvider into a transaction
+    /// keystore to pass to openmls as the `OpenMlsCryptoProvider`
+    pub fn with_transaction(&self, tx: KeystoreTransaction) -> TransactionalCryptoProvider {
+        TransactionalCryptoProvider {
+            crypto: self.crypto.clone(),
+            tx,
+            pki_env: self.pki_env.clone(),
         }
     }
 
@@ -203,6 +231,29 @@ impl openmls_traits::OpenMlsCryptoProvider for MlsCryptoProvider {
 
     fn key_store(&self) -> &Self::KeyStoreProvider {
         &self.key_store
+    }
+
+    fn authentication_service(&self) -> &Self::AuthenticationServiceProvider {
+        &self.pki_env
+    }
+}
+
+impl openmls_traits::OpenMlsCryptoProvider for TransactionalCryptoProvider {
+    type CryptoProvider = RustCrypto;
+    type RandProvider = RustCrypto;
+    type KeyStoreProvider = KeystoreTransaction;
+    type AuthenticationServiceProvider = PkiEnvironmentProvider;
+
+    fn crypto(&self) -> &Self::CryptoProvider {
+        &self.crypto
+    }
+
+    fn rand(&self) -> &Self::RandProvider {
+        &self.crypto
+    }
+
+    fn key_store(&self) -> &Self::KeyStoreProvider {
+        &self.tx
     }
 
     fn authentication_service(&self) -> &Self::AuthenticationServiceProvider {
