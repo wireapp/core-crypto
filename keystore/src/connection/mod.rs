@@ -97,10 +97,12 @@ pub struct Connection {
 
 /// Interface to fetch from the database either from the connection directly or through a
 /// transaaction
+#[cfg_attr(target_family = "wasm", async_trait::async_trait(?Send))]
+#[cfg_attr(not(target_family = "wasm"), async_trait::async_trait)]
 pub trait FetchFromDatabase {
     async fn find<E: Entity<ConnectionType = KeystoreDatabaseConnection>>(
         &self,
-        id: impl AsRef<[u8]>,
+        id: &[u8],
     ) -> CryptoKeystoreResult<Option<E>>;
 
     async fn find_all<E: Entity<ConnectionType = KeystoreDatabaseConnection>>(
@@ -108,9 +110,9 @@ pub trait FetchFromDatabase {
         params: EntityFindParams,
     ) -> CryptoKeystoreResult<Vec<E>>;
 
-    async fn find_many<E: Entity<ConnectionType = KeystoreDatabaseConnection>, S: AsRef<[u8]>>(
+    async fn find_many<E: Entity<ConnectionType = KeystoreDatabaseConnection>>(
         &self,
-        ids: &[S],
+        ids: &[Vec<u8>],
     ) -> CryptoKeystoreResult<Vec<E>>;
     async fn count<E: Entity<ConnectionType = KeystoreDatabaseConnection>>(&self) -> CryptoKeystoreResult<usize>;
 }
@@ -190,13 +192,15 @@ impl Connection {
     }
 }
 
+#[cfg_attr(target_family = "wasm", async_trait::async_trait(?Send))]
+#[cfg_attr(not(target_family = "wasm"), async_trait::async_trait)]
 impl FetchFromDatabase for Connection {
     async fn find<E: Entity<ConnectionType = KeystoreDatabaseConnection>>(
         &self,
-        id: impl AsRef<[u8]>,
+        id: &[u8],
     ) -> CryptoKeystoreResult<Option<E>> {
         let mut conn = self.conn.lock().await;
-        E::find_one(&mut conn, &id.as_ref().into()).await
+        E::find_one(&mut conn, &id.into()).await
     }
 
     async fn find_all<E: Entity<ConnectionType = KeystoreDatabaseConnection>>(
@@ -207,11 +211,11 @@ impl FetchFromDatabase for Connection {
         E::find_all(&mut conn, params).await
     }
 
-    async fn find_many<E: Entity<ConnectionType = KeystoreDatabaseConnection>, S: AsRef<[u8]>>(
+    async fn find_many<E: Entity<ConnectionType = KeystoreDatabaseConnection>>(
         &self,
-        ids: &[S],
+        ids: &[Vec<u8>],
     ) -> CryptoKeystoreResult<Vec<E>> {
-        let entity_ids: Vec<StringEntityId> = ids.iter().map(|id| id.as_ref().into()).collect();
+        let entity_ids: Vec<StringEntityId> = ids.iter().map(|id| id.as_slice().into()).collect();
         let mut conn = self.conn.lock().await;
         E::find_many(&mut conn, &entity_ids).await
     }
