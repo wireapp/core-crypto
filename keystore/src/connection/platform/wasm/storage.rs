@@ -80,12 +80,12 @@ impl<'a> WasmStorageTransaction<'a> {
         Ok(())
     }
 
-    pub(crate) async fn save<R: Entity<ConnectionType = WasmConnection> + 'static>(
+    pub(crate) async fn save<R: Entity<ConnectionType = WasmConnection>>(
         &self,
-        collection_name: &'static str,
         mut entity: R,
     ) -> CryptoKeystoreResult<()> {
         let serializer = serde_wasm_bindgen::Serializer::json_compatible();
+        let collection_name = R::COLLECTION_NAME;
         let key = entity.id()?;
         match self {
             WasmStorageTransaction::Persistent { tx, cipher } => {

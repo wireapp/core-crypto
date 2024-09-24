@@ -54,14 +54,7 @@ impl EntityBase for MlsEncryptionKeyPair {
 
 #[cfg_attr(target_family = "wasm", async_trait::async_trait(?Send))]
 #[cfg_attr(not(target_family = "wasm"), async_trait::async_trait)]
-impl EntityMlsExt for MlsEncryptionKeyPair {
-    async fn mls_save<'a>(
-        &'a self,
-        tx: &crate::connection::storage::WasmStorageTransaction<'a>,
-    ) -> CryptoKeystoreResult<()> {
-        tx.save(Self::COLLECTION_NAME, self.clone()).await
-    }
-}
+impl EntityMlsExt for MlsEncryptionKeyPair {}
 
 impl Entity for MlsEncryptionKeyPair {
     fn id_raw(&self) -> &[u8] {

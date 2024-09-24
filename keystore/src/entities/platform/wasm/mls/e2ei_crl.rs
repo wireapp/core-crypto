@@ -51,14 +51,7 @@ impl EntityBase for E2eiCrl {
 
 #[cfg_attr(target_family = "wasm", async_trait::async_trait(?Send))]
 #[cfg_attr(not(target_family = "wasm"), async_trait::async_trait)]
-impl EntityMlsExt for E2eiCrl {
-    async fn mls_save<'a>(
-        &'a self,
-        tx: &crate::connection::storage::WasmStorageTransaction<'a>,
-    ) -> CryptoKeystoreResult<()> {
-        tx.save(Self::COLLECTION_NAME, self.clone()).await
-    }
-}
+impl EntityMlsExt for E2eiCrl {}
 
 impl Entity for E2eiCrl {
     fn id_raw(&self) -> &[u8] {
