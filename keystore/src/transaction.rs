@@ -337,7 +337,8 @@ impl KeystoreTransaction {
         let mut conn = self.conn.borrow_conn().await?;
         cfg_if::cfg_if! {
             if #[cfg(target_family = "wasm")] {
-                let tables = operations.iter().map(|op| op.scan_collection_name()).collect::<Vec<_>>();
+                use itertools::Itertools;
+                let tables = operations.iter().map(|op| op.scan_collection_name()).unique().collect::<Vec<_>>();
                 let tx = conn.new_transaction(&tables).await?;
             } else {
                 let tx = conn.new_transaction().await?;
