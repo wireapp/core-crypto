@@ -5,7 +5,7 @@ use crate::{
     },
     prelude::{CryptoError, CryptoResult, MlsConversation, MlsConversationDecryptMessage},
 };
-use mls_crypto_provider::MlsCryptoProvider;
+use mls_crypto_provider::{MlsCryptoProvider, TransactionalCryptoProvider};
 use openmls::prelude::{
     ConfirmationTag, ContentType, CredentialWithKey, FramedContentBodyIn, MlsMessageIn, MlsMessageInBody, Sender,
 };
@@ -52,7 +52,7 @@ impl MlsConversation {
     #[cfg_attr(not(test), tracing::instrument(skip_all, err))]
     pub(crate) async fn handle_own_commit<'a>(
         &mut self,
-        backend: &MlsCryptoProvider,
+        backend: &TransactionalCryptoProvider,
         ct: &ConfirmationTag,
     ) -> CryptoResult<MlsConversationDecryptMessage> {
         if self.group.pending_commit().is_some() {

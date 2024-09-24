@@ -33,13 +33,13 @@ use openmls::prelude::{CredentialWithKey, SignaturePublicKey};
 use openmls::{group::MlsGroup, prelude::Credential};
 use openmls_traits::{types::SignatureScheme, OpenMlsCryptoProvider};
 
-use core_crypto_keystore::{CryptoKeystoreMls, KeystoreTransaction};
-use mls_crypto_provider::MlsCryptoProvider;
+use core_crypto_keystore::{connection::FetchFromDatabase, CryptoKeystoreMls, KeystoreTransaction};
+use mls_crypto_provider::{MlsCryptoProvider, TransactionalCryptoProvider};
 
 use config::MlsConversationConfiguration;
 
 use crate::{
-    group_store::GroupStoreValue,
+    group_store::{GroupStore, GroupStoreValue},
     mls::{client::Client, MlsCentral},
     prelude::{CryptoError, CryptoResult, MlsCiphersuite, MlsCredentialType, MlsError},
 };
@@ -101,7 +101,7 @@ impl MlsConversation {
         author_client: &mut Client,
         creator_credential_type: MlsCredentialType,
         configuration: MlsConversationConfiguration,
-        backend: &MlsCryptoProvider,
+        backend: &TransactionalCryptoProvider,
     ) -> CryptoResult<Self> {
         let (cs, ct) = (configuration.ciphersuite, creator_credential_type);
         let cb = author_client
@@ -256,15 +256,22 @@ impl MlsConversation {
     }
 }
 
-impl CentralContext {
+impl MlsCentral {
     pub(crate) async fn get_conversation(
         &self,
         id: &ConversationId,
-    ) -> CryptoResult<crate::group_store::GroupStoreValue<MlsConversation>> {
+        keystore: &impl FetchFromDatabase,
+    ) -> CryptoResult<Option<MlsConversation>> {
+        GroupStore::fetch_from_keystore(id, keystore, None).await
+    }
+}
+
+impl CentralContext {
+    pub(crate) async fn get_conversation(&self, id: &ConversationId) -> CryptoResult<GroupStoreValue<MlsConversation>> {
         let keystore = self.transaction().await?;
         self.mls_groups_mut()
             .await?
-            .get_fetch(id, keystore, None)
+            .get_fetch(id, &keystore, None)
             .await?
             .ok_or_else(|| CryptoError::ConversationNotFound(id.clone()))
     }
@@ -273,7 +280,7 @@ impl CentralContext {
     pub(crate) async fn get_parent_conversation(
         &self,
         conversation: &GroupStoreValue<MlsConversation>,
-    ) -> CryptoResult<Option<crate::group_store::GroupStoreValue<MlsConversation>>> {
+    ) -> CryptoResult<Option<GroupStoreValue<MlsConversation>>> {
         let conversation_lock = conversation.read().await;
         if let Some(parent_id) = conversation_lock.parent_id.as_ref() {
             Ok(Some(
@@ -286,9 +293,7 @@ impl CentralContext {
         }
     }
 
-    pub(crate) async fn get_all_conversations(
-        &self,
-    ) -> CryptoResult<Vec<crate::group_store::GroupStoreValue<MlsConversation>>> {
+    pub(crate) async fn get_all_conversations(&self) -> CryptoResult<Vec<GroupStoreValue<MlsConversation>>> {
         let keystore = self.transaction().await?;
         self.mls_groups_mut().await?.get_fetch_all(&keystore).await
     }
@@ -306,7 +311,7 @@ impl CentralContext {
         conversation
             .write()
             .await
-            .mark_as_child_of(parent_id, self.transaction().await?)
+            .mark_as_child_of(parent_id, &self.transaction().await?)
             .await?;
 
         Ok(())

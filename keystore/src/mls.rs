@@ -255,6 +255,7 @@ pub fn ser<T: MlsEntity>(value: &T) -> Result<Vec<u8>, CryptoKeystoreError> {
     Ok(postcard::to_stdvec(value)?)
 }
 
+// FIXME: CHECK IF THIS IS REALLY NEEDED
 #[cfg_attr(target_family = "wasm", async_trait::async_trait(?Send))]
 #[cfg_attr(not(target_family = "wasm"), async_trait::async_trait)]
 impl openmls_traits::key_store::OpenMlsKeyStore for crate::connection::Connection {

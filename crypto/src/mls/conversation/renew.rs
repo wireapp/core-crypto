@@ -2,7 +2,7 @@ use core_crypto_keystore::entities::MlsEncryptionKeyPair;
 use openmls::prelude::{LeafNode, LeafNodeIndex, Proposal, QueuedProposal, Sender, StagedCommit};
 use openmls_traits::OpenMlsCryptoProvider;
 
-use mls_crypto_provider::MlsCryptoProvider;
+use mls_crypto_provider::{MlsCryptoProvider, TransactionalCryptoProvider};
 
 use crate::prelude::{Client, CryptoError, CryptoResult, MlsConversation, MlsProposalBundle};
 
@@ -100,7 +100,7 @@ impl MlsConversation {
     pub(crate) async fn renew_proposals_for_current_epoch(
         &mut self,
         client: &Client,
-        backend: &MlsCryptoProvider,
+        backend: &TransactionalCryptoProvider,
         proposals: impl Iterator<Item = QueuedProposal>,
         needs_update: bool,
     ) -> CryptoResult<Vec<MlsProposalBundle>> {

@@ -197,7 +197,7 @@ impl<V: GroupStoreEntity> GroupStore<V> {
     }
 
     pub(crate) async fn get_fetch(
-        &self,
+        &mut self,
         k: &[u8],
         keystore: &impl FetchFromDatabase,
         identity: Option<V::IdentityType>,
@@ -219,19 +219,22 @@ impl<V: GroupStoreEntity> GroupStore<V> {
         }
     }
 
-    pub(crate) async fn get(
+    /// Returns the value from the keystore.
+    /// WARNING: the returned value is not attached to the keystore and mutations on it will be
+    /// lost when the object is dropped
+    pub(crate) async fn fetch_from_keystore(
         k: &[u8],
         keystore: &impl FetchFromDatabase,
         identity: Option<V::IdentityType>,
-    ) -> crate::CryptoResult<Option<GroupStoreValue<V>>> {
-        Ok(V::fetch_from_id(k, identity, &keystore).await?)
+    ) -> crate::CryptoResult<Option<V>> {
+        Ok(V::fetch_from_id(k, identity, keystore).await?)
     }
 
     pub(crate) async fn get_fetch_all(
         &mut self,
         keystore: &impl FetchFromDatabase,
     ) -> CryptoResult<Vec<GroupStoreValue<V>>> {
-        let all = V::fetch_all(&keystore)
+        let all = V::fetch_all(keystore)
             .await?
             .into_iter()
             .map(|g| {
