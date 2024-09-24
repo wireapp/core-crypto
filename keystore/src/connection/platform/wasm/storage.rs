@@ -21,7 +21,7 @@ use wasm_bindgen::JsValue;
 
 use crate::{
     entities::{Entity, EntityFindParams},
-    CryptoKeystoreResult,
+    CryptoKeystoreError, CryptoKeystoreResult,
 };
 
 use super::WasmConnection;
@@ -54,7 +54,12 @@ impl<'a> WasmStorageTransaction<'a> {
         else {
             return Ok(());
         };
-        transaction.commit()?.await?;
+        let result = transaction.await?;
+        if !result.is_commited() {
+            return Err(CryptoKeystoreError::MlsKeyStoreError(
+                "Transaction aborted. Check console logs for details.".to_string(),
+            ));
+        }
         Ok(())
     }
 
