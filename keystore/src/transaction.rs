@@ -58,7 +58,7 @@ enum EntityId {
 enum Operation {
     Store(Entity),
     Remove(EntityId),
-    CredentialExt(Vec<u8>),
+    RemoveCredential(Vec<u8>),
 }
 
 impl EntityId {
@@ -136,7 +136,7 @@ impl Operation {
         match self {
             Operation::Store(entity) => Self::handle_entity(tx, &entity).await,
             Operation::Remove(id) => Self::handle_entity_id(tx, &id).await,
-            Operation::CredentialExt(cred) => MlsCredential::delete_by_credential(tx, cred).await,
+            Operation::RemoveCredential(cred) => MlsCredential::delete_by_credential(tx, cred).await,
         }
     }
 
@@ -208,7 +208,7 @@ impl Operation {
             | Operation::Remove(EntityId::EpochEncryptionKeyPair(_)) => MlsEpochEncryptionKeyPair::COLLECTION_NAME,
             Operation::Store(Entity::MlsCredential(_))
             | Operation::Remove(EntityId::MlsCredential(_))
-            | Operation::CredentialExt(_) => MlsCredential::COLLECTION_NAME,
+            | Operation::RemoveCredential(_) => MlsCredential::COLLECTION_NAME,
             Operation::Store(Entity::PersistedMlsGroup(_)) | Operation::Remove(EntityId::PersistedMlsGroup(_)) => {
                 PersistedMlsGroup::COLLECTION_NAME
             }
@@ -321,7 +321,7 @@ impl KeystoreTransaction {
     }
 
     pub async fn cred_delete_by_credential(&self, cred: Vec<u8>) {
-        self.add_operation(Operation::CredentialExt(cred)).await;
+        self.add_operation(Operation::RemoveCredential(cred)).await;
     }
 
     /// Persists all the operations in the database. It will effectively open a transaction
