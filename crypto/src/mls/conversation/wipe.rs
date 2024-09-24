@@ -1,9 +1,12 @@
-use crate::prelude::{ConversationId, CryptoResult, MlsCentral, MlsConversation, MlsError};
+use crate::{
+    mls::context::CentralContext,
+    prelude::{ConversationId, CryptoResult, MlsConversation, MlsError},
+};
 use core_crypto_keystore::CryptoKeystoreMls;
-use mls_crypto_provider::MlsCryptoProvider;
+use mls_crypto_provider::TransactionalCryptoProvider;
 use openmls_traits::OpenMlsCryptoProvider;
 
-impl MlsCentral {
+impl CentralContext {
     /// Destroys a group locally
     ///
     /// # Errors
@@ -11,21 +14,22 @@ impl MlsCentral {
     #[cfg_attr(test, crate::dispotent)]
     #[cfg_attr(not(test), tracing::instrument(err, skip(self), fields(id = base64::Engine::encode(&base64::prelude::BASE64_STANDARD, id))))]
     pub async fn wipe_conversation(&self, id: &ConversationId) -> CryptoResult<()> {
+        let provider = self.mls_provider().await?;
         self.get_conversation(id)
             .await?
             .write()
             .await
-            .wipe_associated_entities(&self.mls_backend)
+            .wipe_associated_entities(&provider)
             .await?;
-        self.mls_backend.key_store().mls_group_delete(id).await?;
-        let _ = self.mls_groups.write().await.remove(id);
+        provider.key_store().mls_group_delete(id).await?;
+        let _ = self.mls_groups_mut().await?.remove(id);
         Ok(())
     }
 }
 
 impl MlsConversation {
     #[cfg_attr(not(test), tracing::instrument(err, skip_all))]
-    async fn wipe_associated_entities(&mut self, backend: &MlsCryptoProvider) -> CryptoResult<()> {
+    async fn wipe_associated_entities(&mut self, backend: &TransactionalCryptoProvider) -> CryptoResult<()> {
         // the own client may or may not have generated an epoch keypair in the previous epoch
         // Since it is a terminal operation, ignoring the error is fine here.
         let _ = self.group.delete_previous_epoch_keypairs(backend).await;

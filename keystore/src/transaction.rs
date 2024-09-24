@@ -1,4 +1,4 @@
-use std::{collections::VecDeque, sync::Arc};
+use std::{collections::VecDeque, ops::DerefMut, sync::Arc};
 
 use async_lock::RwLock;
 use openmls_basic_credential::SignatureKeyPair;
@@ -286,21 +286,15 @@ impl KeystoreTransaction {
         self.operations.write().await.push_back(op);
     }
 
-    pub async fn save<E: crate::entities::Entity<ConnectionType = KeystoreDatabaseConnection>>(
+    pub async fn save<
+        E: crate::entities::Entity<ConnectionType = KeystoreDatabaseConnection> + crate::entities::EntityMlsExt,
+    >(
         &self,
-        entity: E,
+        mut entity: E,
     ) -> CryptoKeystoreResult<E> {
+        entity.pre_save().await?;
         self.add_operation(entity.clone().to_transaction_entity().into()).await;
         Ok(entity)
-    }
-
-    // TODO: only allow this for proteus for now
-    pub async fn insert<E: crate::entities::Entity<ConnectionType = KeystoreDatabaseConnection>>(
-        &self,
-        entity: E,
-    ) -> CryptoKeystoreResult<()> {
-        self.save(entity).await?;
-        Ok(())
     }
 
     pub async fn remove<E: crate::entities::Entity<ConnectionType = KeystoreDatabaseConnection>, S: AsRef<[u8]>>(
@@ -310,6 +304,18 @@ impl KeystoreTransaction {
         self.add_operation(EntityId::from_collection_name(E::COLLECTION_NAME, id.as_ref())?.into())
             .await;
         Ok(())
+    }
+
+    pub async fn child_groups<
+        E: crate::entities::Entity<ConnectionType = KeystoreDatabaseConnection>
+            + crate::entities::PersistedMlsGroupExt
+            + Sync,
+    >(
+        &self,
+        entity: E,
+    ) -> CryptoKeystoreResult<Vec<E>> {
+        let mut conn = self.conn.borrow_conn().await?;
+        entity.child_groups(conn.deref_mut()).await
     }
 
     /// Persists all the operations in the database. It will effectively open a transaction

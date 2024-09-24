@@ -46,8 +46,6 @@ pub use transaction::KeystoreTransaction;
 
 #[cfg(feature = "dummy-entity")]
 pub mod dummy_entity {
-    use std::marker::PhantomData;
-
     use crate::{
         entities::{Entity, EntityBase, EntityFindParams, StringEntityId},
         CryptoKeystoreResult, MissingKeyErrorKind,

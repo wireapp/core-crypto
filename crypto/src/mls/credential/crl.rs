@@ -2,7 +2,7 @@ use crate::e2e_identity::init_certificates::NewCrlDistributionPoint;
 use crate::prelude::MlsCentral;
 use crate::{CryptoError, CryptoResult};
 use core_crypto_keystore::entities::E2eiCrl;
-use mls_crypto_provider::MlsCryptoProvider;
+use mls_crypto_provider::{MlsCryptoProvider, TransactionalCryptoProvider};
 use openmls::{
     group::MlsGroup,
     prelude::{Certificate, MlsCredentialType, Proposal, StagedCommit},
@@ -69,7 +69,7 @@ pub(crate) fn extract_dp(cert: &Certificate) -> CryptoResult<HashSet<String>> {
 
 #[cfg_attr(not(test), tracing::instrument(err, skip_all))]
 pub(crate) async fn get_new_crl_distribution_points(
-    backend: &MlsCryptoProvider,
+    backend: &TransactionalCryptoProvider,
     mut crl_dps: HashSet<String>,
 ) -> CryptoResult<NewCrlDistributionPoint> {
     if crl_dps.is_empty() {

@@ -3,10 +3,15 @@ use std::{
     sync::Arc,
 };
 
-use async_lock::RwLock;
+use async_lock::{RwLock, RwLockReadGuardArc, RwLockWriteGuardArc};
 use core_crypto_keystore::KeystoreTransaction;
+use mls_crypto_provider::TransactionalCryptoProvider;
 
-use crate::{group_store::GroupStore, prelude::MlsConversation, CryptoError, CryptoResult};
+use crate::{
+    group_store::GroupStore,
+    prelude::{Client, MlsConversation},
+    CoreCryptoCallbacks, CryptoError, CryptoResult,
+};
 
 use super::MlsCentral;
 
@@ -18,8 +23,9 @@ pub struct CentralContext {
 #[derive(Debug, Clone)]
 enum ContextState {
     Valid {
-        central: MlsCentral,
-        transaction: KeystoreTransaction,
+        transaction: TransactionalCryptoProvider,
+        callbacks: Arc<RwLock<Option<std::sync::Arc<dyn CoreCryptoCallbacks + 'static>>>>,
+        mls_client: Arc<RwLock<Option<Client>>>,
         mls_groups: Arc<RwLock<GroupStore<MlsConversation>>>,
     },
     Invalid,
@@ -27,12 +33,15 @@ enum ContextState {
 
 impl CentralContext {
     pub fn new(central: MlsCentral) -> Self {
-        let transaction = central.mls_backend.keystore().new_transaction();
-        let mls_groups = Arc::new(Default::default().into());
+        let transaction = central.mls_backend.new_transaction();
+        let mls_groups = Arc::new(RwLock::new(Default::default()));
+        let callbacks = central.callbacks.clone();
+        let mls_client = central.mls_client.clone();
         Self {
             state: Arc::new(
                 ContextState::Valid {
-                    central,
+                    mls_client,
+                    callbacks,
                     transaction,
                     mls_groups,
                 }
@@ -41,59 +50,101 @@ impl CentralContext {
         }
     }
 
-    async fn central(&self) -> CryptoResult<&MlsCentral> {
+    pub(crate) async fn central(&self) -> CryptoResult<&MlsCentral> {
         match self.state.read().await.deref() {
             ContextState::Valid {
                 central,
-                transaction,
-                mls_groups,
+                transaction: _,
+                mls_groups: _,
             } => Ok(central),
             ContextState::Invalid => Err(CryptoError::InvalidContext),
         }
     }
 
-    pub(crate) async fn transaction(&self) -> CryptoResult<&KeystoreTransaction> {
+    pub(crate) async fn mls_client(&self) -> CryptoResult<RwLockReadGuardArc<Option<Client>>> {
         match self.state.read().await.deref() {
             ContextState::Valid {
-                central,
-                transaction,
-                mls_groups,
-            } => Ok(transaction),
+                mls_client,
+                callbacks: _,
+                transaction: _,
+                mls_groups: _,
+            } => Ok(mls_client.read_arc().await),
             ContextState::Invalid => Err(CryptoError::InvalidContext),
         }
     }
 
-    pub(crate) async fn mls_groups(&self) -> CryptoResult<&GroupStore<MlsConversation>> {
+    pub(crate) async fn callbacks(
+        &self,
+    ) -> CryptoResult<RwLockReadGuardArc<Option<std::sync::Arc<dyn CoreCryptoCallbacks + 'static>>>> {
         match self.state.read().await.deref() {
             ContextState::Valid {
-                central,
-                transaction,
-                mls_groups,
-            } => Ok(mls_groups),
+                mls_client: _,
+                callbacks,
+                transaction: _,
+                mls_groups: _,
+            } => Ok(callbacks.read_arc().await),
             ContextState::Invalid => Err(CryptoError::InvalidContext),
         }
     }
 
-    pub(crate) async fn mls_groups_mut(&self) -> CryptoResult<&mut GroupStore<MlsConversation>> {
-        match self.state.write().await.deref_mut() {
+    pub(crate) async fn mls_provider(&self) -> CryptoResult<TransactionalCryptoProvider> {
+        match self.state.read().await.deref() {
             ContextState::Valid {
-                central,
+                mls_client: _,
+                callbacks: _,
                 transaction,
+                mls_groups: _,
+            } => Ok(transaction.clone()),
+            ContextState::Invalid => Err(CryptoError::InvalidContext),
+        }
+    }
+
+    pub(crate) async fn transaction(&self) -> CryptoResult<KeystoreTransaction> {
+        match self.state.read().await.deref() {
+            ContextState::Valid {
+                mls_client: _,
+                callbacks: _,
+                transaction,
+                mls_groups: _,
+            } => Ok(transaction.transaction()),
+            ContextState::Invalid => Err(CryptoError::InvalidContext),
+        }
+    }
+
+    pub(crate) async fn mls_groups(&self) -> CryptoResult<RwLockReadGuardArc<GroupStore<MlsConversation>>> {
+        match self.state.read().await.deref() {
+            ContextState::Valid {
+                mls_client: _,
+                callbacks: _,
+                transaction: _,
                 mls_groups,
-            } => Ok(mls_groups),
+            } => Ok(mls_groups.read_arc().await),
+            ContextState::Invalid => Err(CryptoError::InvalidContext),
+        }
+    }
+
+    pub(crate) async fn mls_groups_mut(&self) -> CryptoResult<RwLockWriteGuardArc<GroupStore<MlsConversation>>> {
+        match self.state.read().await.deref() {
+            ContextState::Valid {
+                mls_client: _,
+                callbacks: _,
+                transaction: _,
+                mls_groups,
+            } => Ok(mls_groups.write_arc().await),
             ContextState::Invalid => Err(CryptoError::InvalidContext),
         }
     }
 
     pub async fn finish(&self) -> CryptoResult<()> {
-        let guard = self.state.write().await;
+        let mut guard = self.state.write().await;
         match guard.deref() {
             ContextState::Valid {
-                central,
+                mls_client: _,
+                callbacks: _,
                 transaction,
-                mls_groups,
+                mls_groups: _,
             } => {
-                transaction.commit().await?;
+                transaction.transaction().commit().await?;
             }
             ContextState::Invalid => return Err(CryptoError::InvalidContext),
         }

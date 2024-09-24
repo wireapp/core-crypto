@@ -15,7 +15,7 @@
 // along with this program. If not, see http://www.gnu.org/licenses/.
 
 use super::Entity;
-use crate::CryptoKeystoreResult;
+use crate::{connection::TransactionWrapper, CryptoKeystoreResult};
 use openmls_traits::types::SignatureScheme;
 use zeroize::Zeroize;
 
@@ -100,12 +100,6 @@ pub struct MlsCredential {
     pub id: Vec<u8>,
     pub credential: Vec<u8>,
     pub created_at: u64,
-}
-
-#[cfg_attr(target_family = "wasm", async_trait::async_trait(?Send))]
-#[cfg_attr(not(target_family = "wasm"), async_trait::async_trait)]
-pub trait MlsCredentialExt: Entity {
-    async fn delete_by_credential(conn: &mut Self::ConnectionType, credential: Vec<u8>) -> CryptoKeystoreResult<()>;
 }
 
 /// Entity representing a persisted `SignatureKeyPair`
