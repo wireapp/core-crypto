@@ -16,13 +16,13 @@
 
 use crate::{
     connection::{
-        storage::{WasmStorageTransaction, WasmStorageWrapper},
+        storage::WasmStorageTransaction,
         DatabaseConnection, KeystoreDatabaseConnection,
     },
     entities::{Entity, EntityBase, EntityFindParams, EntityMlsExt, MlsCredential, MlsCredentialExt, StringEntityId},
     CryptoKeystoreError, CryptoKeystoreResult, MissingKeyErrorKind,
 };
-use idb::TransactionMode;
+use fluvio_wasm_timer::SystemTime;
 use wasm_bindgen::JsValue;
 
 #[cfg_attr(target_family = "wasm", async_trait::async_trait(?Send))]
@@ -96,14 +96,17 @@ impl Entity for MlsCredential {
 
 #[async_trait::async_trait(?Send)]
 impl MlsCredentialExt for MlsCredential {
-    async fn delete_by_credential(conn: &mut Self::ConnectionType, credential: Vec<u8>) -> CryptoKeystoreResult<()> {
-        let storage = conn.storage_mut();
-        let (collection, index) = (Self::COLLECTION_NAME, "credential");
-        match &mut storage.storage {
-            WasmStorageWrapper::Persistent(idb) => {
-                let transaction = idb.transaction(&[collection], TransactionMode::ReadWrite)?;
-                let store = transaction.object_store(collection)?;
-                let store_index = store.index(index)?;
+    async fn delete_by_credential(
+        transaction: &WasmStorageTransaction<'_>,
+        credential: Vec<u8>,
+    ) -> CryptoKeystoreResult<()> {
+        match transaction {
+            WasmStorageTransaction::Persistent {
+                tx: transaction,
+                cipher,
+            } => {
+                let store = transaction.object_store(Self::COLLECTION_NAME)?;
+                let store_index = store.index("credential")?;
                 let credential_js: wasm_bindgen::JsValue = js_sys::Uint8Array::from(&credential[..]).into();
                 let request = store_index.get(credential_js)?;
                 let Some(entity_raw) = request.await? else {
@@ -113,13 +116,13 @@ impl MlsCredentialExt for MlsCredential {
                 };
 
                 let mut credential = serde_wasm_bindgen::from_value::<MlsCredential>(entity_raw)?;
-                credential.decrypt(&storage.cipher)?;
+                credential.decrypt(&cipher)?;
 
                 let id = JsValue::from(credential.id.clone());
                 let request = store.delete(id)?;
                 request.await?;
             }
-            WasmStorageWrapper::InMemory(_) => {
+            WasmStorageTransaction::InMemory { db: _, cipher: _ } => {
                 // current table model does not fit in a hashmap (no more primary key)
                 // memory keystore is never used in prod
             }

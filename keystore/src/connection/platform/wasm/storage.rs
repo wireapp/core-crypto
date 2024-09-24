@@ -55,7 +55,7 @@ impl<'a> WasmStorageTransaction<'a> {
             return Ok(());
         };
         let result = transaction.await?;
-        if !result.is_commited() {
+        if !result.is_committed() {
             return Err(CryptoKeystoreError::MlsKeyStoreError(
                 "Transaction aborted. Check console logs for details.".to_string(),
             ));

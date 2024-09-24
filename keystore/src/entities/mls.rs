@@ -102,6 +102,12 @@ pub struct MlsCredential {
     pub created_at: u64,
 }
 
+#[cfg_attr(target_family = "wasm", async_trait::async_trait(?Send))]
+#[cfg_attr(not(target_family = "wasm"), async_trait::async_trait)]
+pub trait MlsCredentialExt: Entity {
+    async fn delete_by_credential(tx: &TransactionWrapper<'_>, credential: Vec<u8>) -> CryptoKeystoreResult<()>;
+}
+
 /// Entity representing a persisted `SignatureKeyPair`
 #[derive(Debug, Clone, PartialEq, Eq, Zeroize)]
 #[zeroize(drop)]

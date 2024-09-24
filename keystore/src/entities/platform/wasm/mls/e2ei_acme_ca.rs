@@ -32,7 +32,7 @@ impl EntityBase for E2eiAcmeCA {
     }
 
     fn to_transaction_entity(self) -> crate::transaction::Entity {
-        crate::transaction::Entity::MlsCredential(self)
+        crate::transaction::Entity::E2eiAcmeCA(self)
     }
 
     async fn find_all(_conn: &mut Self::ConnectionType, _params: EntityFindParams) -> CryptoKeystoreResult<Vec<Self>> {

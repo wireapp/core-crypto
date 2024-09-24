@@ -9,9 +9,9 @@ use crate::{
     connection::{Connection, DatabaseConnection, FetchFromDatabase, KeystoreDatabaseConnection, TransactionWrapper},
     entities::{
         E2eiAcmeCA, E2eiCrl, E2eiEnrollment, E2eiIntermediateCert, E2eiRefreshToken, EntityFindParams, EntityMlsExt,
-        MlsCredential, MlsEncryptionKeyPair, MlsEpochEncryptionKeyPair, MlsHpkePrivateKey, MlsKeyPackage,
-        MlsPendingMessage, MlsPskBundle, MlsSignatureKeyPair, PersistedMlsGroup, PersistedMlsPendingGroup,
-        StringEntityId,
+        MlsCredential, MlsCredentialExt, MlsEncryptionKeyPair, MlsEpochEncryptionKeyPair, MlsHpkePrivateKey,
+        MlsKeyPackage, MlsPendingMessage, MlsPskBundle, MlsSignatureKeyPair, PersistedMlsGroup,
+        PersistedMlsPendingGroup, StringEntityId,
     },
     CryptoKeystoreError, CryptoKeystoreResult,
 };
@@ -58,6 +58,7 @@ enum EntityId {
 enum Operation {
     Store(Entity),
     Remove(EntityId),
+    CredentialExt(Vec<u8>),
 }
 
 impl EntityId {
@@ -131,10 +132,11 @@ impl EntityId {
 }
 
 impl Operation {
-    async fn execute(&self, tx: &TransactionWrapper<'_>) -> CryptoKeystoreResult<()> {
+    async fn execute(self, tx: &TransactionWrapper<'_>) -> CryptoKeystoreResult<()> {
         match self {
-            Operation::Store(entity) => Self::handle_entity(tx, entity).await,
-            Operation::Remove(id) => Self::handle_entity_id(tx, id).await,
+            Operation::Store(entity) => Self::handle_entity(tx, &entity).await,
+            Operation::Remove(id) => Self::handle_entity_id(tx, &id).await,
+            Operation::CredentialExt(cred) => MlsCredential::delete_by_credential(tx, cred).await,
         }
     }
 
@@ -204,9 +206,9 @@ impl Operation {
             }
             Operation::Store(Entity::EpochEncryptionKeyPair(_))
             | Operation::Remove(EntityId::EpochEncryptionKeyPair(_)) => MlsEpochEncryptionKeyPair::COLLECTION_NAME,
-            Operation::Store(Entity::MlsCredential(_)) | Operation::Remove(EntityId::MlsCredential(_)) => {
-                MlsCredential::COLLECTION_NAME
-            }
+            Operation::Store(Entity::MlsCredential(_))
+            | Operation::Remove(EntityId::MlsCredential(_))
+            | Operation::CredentialExt(_) => MlsCredential::COLLECTION_NAME,
             Operation::Store(Entity::PersistedMlsGroup(_)) | Operation::Remove(EntityId::PersistedMlsGroup(_)) => {
                 PersistedMlsGroup::COLLECTION_NAME
             }
@@ -316,6 +318,10 @@ impl KeystoreTransaction {
     ) -> CryptoKeystoreResult<Vec<E>> {
         let mut conn = self.conn.borrow_conn().await?;
         entity.child_groups(conn.deref_mut()).await
+    }
+
+    pub async fn cred_delete_by_credential(&self, cred: Vec<u8>) {
+        self.add_operation(Operation::CredentialExt(cred)).await;
     }
 
     /// Persists all the operations in the database. It will effectively open a transaction
