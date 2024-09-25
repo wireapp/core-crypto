@@ -4,7 +4,7 @@
 
 use crate::prelude::MlsConversation;
 use crate::{CryptoError, MlsError};
-use mls_crypto_provider::{MlsCryptoProvider, TransactionalCryptoProvider};
+use mls_crypto_provider::TransactionalCryptoProvider;
 use openmls::prelude::{ContentType, FramedContentBodyIn, Proposal, PublicMessageIn, Sender};
 
 impl MlsConversation {
