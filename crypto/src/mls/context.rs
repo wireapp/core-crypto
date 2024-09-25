@@ -50,17 +50,6 @@ impl CentralContext {
         }
     }
 
-    pub(crate) async fn central(&self) -> CryptoResult<&MlsCentral> {
-        match self.state.read().await.deref() {
-            ContextState::Valid {
-                central,
-                transaction: _,
-                mls_groups: _,
-            } => Ok(central),
-            ContextState::Invalid => Err(CryptoError::InvalidContext),
-        }
-    }
-
     pub(crate) async fn mls_client(&self) -> CryptoResult<RwLockReadGuardArc<Option<Client>>> {
         match self.state.read().await.deref() {
             ContextState::Valid {
@@ -69,6 +58,18 @@ impl CentralContext {
                 transaction: _,
                 mls_groups: _,
             } => Ok(mls_client.read_arc().await),
+            ContextState::Invalid => Err(CryptoError::InvalidContext),
+        }
+    }
+
+    pub(crate) async fn mls_client_mut(&self) -> CryptoResult<RwLockWriteGuardArc<Option<Client>>> {
+        match self.state.read().await.deref() {
+            ContextState::Valid {
+                mls_client,
+                callbacks: _,
+                transaction: _,
+                mls_groups: _,
+            } => Ok(mls_client.write_arc().await),
             ContextState::Invalid => Err(CryptoError::InvalidContext),
         }
     }

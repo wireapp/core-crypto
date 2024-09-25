@@ -21,11 +21,8 @@ use openmls_traits::OpenMlsCryptoProvider;
 use tls_codec::{Deserialize, Serialize};
 
 use core_crypto_keystore::{
-    connection::{FetchFromDatabase, KeystoreDatabaseConnection},
-    entities::{
-        EntityBase, EntityFindParams, MlsCredential, MlsCredentialExt, MlsEncryptionKeyPair, MlsHpkePrivateKey,
-        MlsKeyPackage,
-    },
+    connection::FetchFromDatabase,
+    entities::{EntityFindParams, MlsEncryptionKeyPair, MlsHpkePrivateKey, MlsKeyPackage},
     KeystoreTransaction,
 };
 use mls_crypto_provider::TransactionalCryptoProvider;
@@ -238,7 +235,10 @@ impl Client {
             let all_to_delete = kps.iter().all(|kpr| kp_to_delete.contains(&kpr.as_slice()));
             if all_to_delete {
                 // then delete this Credential
-                MlsCredential::delete_by_credential(&mut conn, credential.clone()).await?;
+                backend
+                    .transaction()
+                    .cred_delete_by_credential(credential.clone())
+                    .await;
                 let credential = Credential::tls_deserialize(&mut credential.as_slice()).map_err(MlsError::from)?;
                 self.identities.remove(&credential)?;
             }
@@ -366,8 +366,8 @@ impl CentralContext {
         if refs.is_empty() {
             return Err(CryptoError::ConsumerError);
         }
-        let mut client_guard = self.mls_client().await?;
-        let client = client_guard.as_ref().ok_or(CryptoError::MlsNotInitialized)?;
+        let mut client_guard = self.mls_client_mut().await?;
+        let client = client_guard.as_mut().ok_or(CryptoError::MlsNotInitialized)?;
         client
             .prune_keypackages_and_credential(&self.mls_provider().await?, refs)
             .await
