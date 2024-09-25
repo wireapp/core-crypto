@@ -260,9 +260,8 @@ impl MlsCentral {
     pub(crate) async fn get_conversation(
         &self,
         id: &ConversationId,
-        keystore: &impl FetchFromDatabase,
     ) -> CryptoResult<Option<MlsConversation>> {
-        GroupStore::fetch_from_keystore(id, keystore, None).await
+        GroupStore::fetch_from_keystore(id, &self.mls_backend.keystore(), None).await
     }
 }
 
