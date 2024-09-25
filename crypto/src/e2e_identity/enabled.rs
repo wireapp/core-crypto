@@ -1,18 +1,36 @@
 //! Utility for clients to get the current state of E2EI when the app resumes
 
-use crate::prelude::{CryptoError, CryptoResult, MlsCentral, MlsCredentialType};
+use crate::prelude::{Client, CryptoError, CryptoResult, MlsCentral, MlsCredentialType};
 use openmls_traits::types::SignatureScheme;
+use crate::mls::context::CentralContext;
+
+impl CentralContext {
+    #[cfg_attr(not(test), tracing::instrument(err, skip_all))]
+    pub async fn e2ei_is_enabled(&self, signature_scheme: SignatureScheme) -> CryptoResult<bool> {
+        let client_guard = self.mls_client().await?;
+        let client = client_guard.as_ref().ok_or(CryptoError::MlsNotInitialized)?;
+        client.e2ei_is_enabled(signature_scheme).await
+    }
+}
 
 impl MlsCentral {
-    /// Returns true when end-to-end-identity is enabled for the given SignatureScheme
     #[cfg_attr(not(test), tracing::instrument(err, skip_all))]
     pub async fn e2ei_is_enabled(&self, signature_scheme: SignatureScheme) -> CryptoResult<bool> {
         let client_guard = self.mls_client().await;
         let client = client_guard.as_ref().ok_or(CryptoError::MlsNotInitialized)?;
-        let maybe_x509 = client.find_most_recent_credential_bundle(signature_scheme, MlsCredentialType::X509);
+        client.e2ei_is_enabled(signature_scheme).await
+    }
+}
+
+impl Client {
+    async fn e2ei_is_enabled(
+        &self,
+        signature_scheme: SignatureScheme,
+    ) -> CryptoResult<bool> {
+        let maybe_x509 = self.find_most_recent_credential_bundle(signature_scheme, MlsCredentialType::X509);
         match maybe_x509 {
             None => {
-                client
+                self
                     .find_most_recent_credential_bundle(signature_scheme, MlsCredentialType::Basic)
                     .ok_or(CryptoError::CredentialNotFound(MlsCredentialType::Basic))?;
                 Ok(false)
