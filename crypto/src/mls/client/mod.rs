@@ -35,9 +35,9 @@ use openmls_traits::{crypto::OpenMlsCrypto, types::SignatureScheme, OpenMlsCrypt
 use std::collections::HashSet;
 use tls_codec::{Deserialize, Serialize};
 
-use core_crypto_keystore::entities::{EntityBase, EntityFindParams, MlsCredential, MlsSignatureKeyPair};
+use core_crypto_keystore::entities::{EntityFindParams, MlsCredential, MlsSignatureKeyPair};
 use identities::ClientIdentities;
-use mls_crypto_provider::{MlsCryptoProvider, TransactionalCryptoProvider};
+use mls_crypto_provider::TransactionalCryptoProvider;
 use tracing::{debug, Instrument};
 
 impl MlsCentral {
@@ -78,7 +78,7 @@ impl Client {
     pub async fn init(
         identifier: ClientIdentifier,
         ciphersuites: &[MlsCiphersuite],
-        backend: &MlsCryptoProvider,
+        backend: &TransactionalCryptoProvider,
         nb_key_package: usize,
     ) -> CryptoResult<Self> {
         let id = identifier.get_id()?;
@@ -265,7 +265,7 @@ impl Client {
         let identities = identifier.generate_credential_bundles(backend, signature_schemes)?;
 
         for (sc, id, cb) in identities {
-            client.save_identity(backend, Some(&id), sc, cb).await?;
+            client.save_identity(&backend.transaction(), Some(&id), sc, cb).await?;
         }
 
         if nb_key_package != 0 {
@@ -286,7 +286,7 @@ impl Client {
     /// Loads the client from the keystore.
     #[cfg_attr(not(test), tracing::instrument(err, skip(backend, credentials), fields(id = %id)))]
     pub(crate) async fn load(
-        backend: &MlsCryptoProvider,
+        backend: &TransactionalCryptoProvider,
         id: &ClientId,
         mut credentials: Vec<(Credential, u64)>,
         signature_schemes: HashSet<SignatureScheme>,
@@ -364,7 +364,7 @@ impl Client {
         Ok(credentials)
     }
 
-    #[cfg_attr(not(test), tracing::instrument(err, skip(self, backend, cb), fields(id = id.as_ref().map(|id| id.to_string()))))]
+    #[cfg_attr(not(test), tracing::instrument(err, skip(self, keystore, cb), fields(id = id.as_ref().map(|id| id.to_string()))))]
     pub(crate) async fn save_identity(
         &mut self,
         keystore: &KeystoreTransaction,
@@ -474,7 +474,7 @@ impl Eq for Client {}
 impl Client {
     pub async fn random_generate(
         case: &crate::test_utils::TestCase,
-        backend: &MlsCryptoProvider,
+        backend: &TransactionalCryptoProvider,
         signer: Option<&crate::test_utils::x509::X509Certificate>,
         provision: bool,
     ) -> CryptoResult<Self> {
