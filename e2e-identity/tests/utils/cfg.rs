@@ -585,7 +585,7 @@ impl Default for EnrollmentFlow {
             }),
             get_x509_certificates: Box::new(|mut test, (account, finalize, order, previous_nonce)| {
                 Box::pin(async move {
-                    test.get_x509_certificates(account, finalize, order, previous_nonce)
+                    test.get_x509_certificates(account, finalize, order, previous_nonce, None)
                         .await?;
                     Ok((test, ()))
                 })

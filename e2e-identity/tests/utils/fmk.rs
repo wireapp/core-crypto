@@ -13,6 +13,7 @@ use url::Url;
 use x509_cert::der::{DecodePem, Encode};
 
 use http::header;
+use rusty_acme::prelude::x509::revocation::PkiEnvironment;
 use rusty_acme::prelude::*;
 use rusty_jwt_tools::{
     jwk::{TryFromJwk, TryIntoJwk},
@@ -928,6 +929,7 @@ impl E2eTest {
         finalize: AcmeFinalize,
         order: AcmeOrder,
         previous_nonce: String,
+        env: Option<&PkiEnvironment>,
     ) -> TestResult<Vec<Vec<u8>>> {
         self.display_step("fetch the certificate");
         let certificate_url = finalize.certificate.clone();
@@ -950,7 +952,7 @@ impl E2eTest {
             .expect_header_value(header::CONTENT_TYPE, "application/pem-certificate-chain");
         let resp = resp.text().await?;
         self.display_body(&resp);
-        let mut certificates = RustyAcme::certificate_response(resp, order, self.hash_alg, None)?;
+        let mut certificates = RustyAcme::certificate_response(resp, order, self.hash_alg, env)?;
         let root_ca = self.fetch_acme_root_ca().await;
         let root_ca_der = x509_cert::Certificate::from_pem(root_ca).unwrap().to_der().unwrap();
         certificates.push(root_ca_der);

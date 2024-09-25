@@ -135,6 +135,58 @@ mod alg {
 #[cfg(not(ci))]
 mod acme_server {
     use super::*;
+    use rusty_acme::prelude::x509::reexports::certval;
+    use rusty_acme::prelude::x509::reexports::certval::PathValidationStatus;
+    use rusty_acme::prelude::x509::revocation::{PkiEnvironment, PkiEnvironmentParams};
+    use rusty_acme::prelude::x509::RustyX509CheckError;
+    use x509_cert::der::Decode;
+
+    /// Acme server has been man-in-middle:ed and returns untrusted certificates
+    #[tokio::test]
+    async fn should_fail_when_certificate_path_doesnt_contain_trust_anchor() {
+        let test = E2eTest::new().start().await;
+
+        let flow = EnrollmentFlow {
+            get_x509_certificates: Box::new(|mut test, (account, finalize, order, previous_nonce)| {
+                Box::pin(async move {
+                    let root_ca_pem = "-----BEGIN CERTIFICATE-----\n\
+                                            MIIBjzCCATWgAwIBAgIQdHdgbnBWCOcqt0xfERAGSzAKBggqhkjOPQQDAjAmMQ0w\n\
+                                            CwYDVQQKEwR3aXJlMRUwEwYDVQQDEwx3aXJlIFJvb3QgQ0EwHhcNMjQwMjI2MDkz\n\
+                                            NDM1WhcNMzQwMjIzMDkzNDM1WjAmMQ0wCwYDVQQKEwR3aXJlMRUwEwYDVQQDEwx3\n\
+                                            aXJlIFJvb3QgQ0EwWTATBgcqhkjOPQIBBggqhkjOPQMBBwNCAATWsFsKwcSDoc+n\n\
+                                            TXX9DO6f+Nb7gtIVSKtQl2xSJDvpNpdeYUZjg6nc8GeYNUKLqnJPIQAdj9JGLnw4\n\
+                                            Why9AK8Co0UwQzAOBgNVHQ8BAf8EBAMCAQYwEgYDVR0TAQH/BAgwBgEB/wIBATAd\n\
+                                            BgNVHQ4EFgQUphlmx0pZ/MHL67QV0pA7hF/TjekwCgYIKoZIzj0EAwIDSAAwRQIg\n\
+                                            Bx8ho/AKTivBDXNS3nmjzTKiTkqoJgbm1DxvPGlAaZ8CIQDHucaxDKCkYxkwMOJN\n\
+                                            AThK4U8jq2OyiecPruKv0Cj16Q==\n\
+                                            -----END CERTIFICATE-----";
+                    let root_ca = PkiEnvironment::decode_pem_cert(root_ca_pem.to_string());
+                    let root_ca_der = PkiEnvironment::encode_cert_to_der(&root_ca.unwrap()).unwrap();
+                    let trust_anchor = x509_cert::Certificate::from_der(&root_ca_der)
+                        .map(x509_cert::anchor::TrustAnchorChoice::Certificate)
+                        .unwrap();
+                    let trust_roots = vec![trust_anchor];
+                    let params = PkiEnvironmentParams {
+                        trust_roots: &trust_roots,
+                        intermediates: &vec![],
+                        crls: &vec![],
+                        time_of_interest: None,
+                    };
+                    let env = PkiEnvironment::init(params).unwrap();
+                    test.get_x509_certificates(account, finalize, order, previous_nonce, Some(&env))
+                        .await?;
+                    Ok((test, ()))
+                })
+            }),
+            ..Default::default()
+        };
+        assert!(matches!(
+            test.enrollment(flow).await.unwrap_err(),
+            TestError::Acme(RustyAcmeError::X509CheckError(RustyX509CheckError::CertValError(
+                certval::Error::PathValidation(PathValidationStatus::NoPathsFound)
+            )))
+        ));
+    }
 
     /// Challenges returned by ACME server are mixed up
     #[tokio::test]
