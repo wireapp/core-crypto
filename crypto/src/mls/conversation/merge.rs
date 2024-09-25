@@ -18,7 +18,7 @@ use openmls_traits::OpenMlsCryptoProvider;
 use mls_crypto_provider::TransactionalCryptoProvider;
 
 use crate::{
-    mls::{context::CentralContext, ConversationId, MlsCentral, MlsConversation},
+    mls::{context::CentralContext, ConversationId, MlsConversation},
     prelude::{decrypt::MlsBufferedConversationDecryptMessage, MlsProposalRef},
     CryptoError, CryptoResult, MlsError,
 };
@@ -105,7 +105,7 @@ impl CentralContext {
 
         let pending_messages = self.restore_pending_messages(&mut conv, false).await?;
         if pending_messages.is_some() {
-            self.mls_backend.key_store().remove::<MlsPendingMessage, _>(id).await?;
+            self.transaction().await?.remove::<MlsPendingMessage, _>(id).await?;
         }
         Ok(pending_messages)
     }
@@ -134,7 +134,7 @@ impl CentralContext {
             .await?
             .write()
             .await
-            .clear_pending_proposal(proposal_ref, &self.mls_backend)
+            .clear_pending_proposal(proposal_ref, &self.mls_provider().await?)
             .await
     }
 
@@ -158,7 +158,7 @@ impl CentralContext {
             .await?
             .write()
             .await
-            .clear_pending_commit(&self.mls_backend)
+            .clear_pending_commit(&self.mls_provider().await?)
             .await
     }
 }

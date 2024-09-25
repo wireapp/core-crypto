@@ -1,7 +1,7 @@
 use crate::e2e_identity::init_certificates::NewCrlDistributionPoint;
 use crate::prelude::MlsCentral;
 use crate::{CryptoError, CryptoResult};
-use core_crypto_keystore::entities::E2eiCrl;
+use core_crypto_keystore::{connection::FetchFromDatabase, entities::E2eiCrl};
 use mls_crypto_provider::{MlsCryptoProvider, TransactionalCryptoProvider};
 use openmls::{
     group::MlsGroup,

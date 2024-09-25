@@ -89,7 +89,7 @@ impl MlsCentral {
         conversation_id: &ConversationId,
         key_length: usize,
     ) -> CryptoResult<Vec<u8>> {
-        self.get_conversation(conversation_id, &self.mls_backend.keystore())
+        self.get_conversation(conversation_id)
             .await?
             .ok_or_else(|| CryptoError::ConversationNotFound(conversation_id.clone()))?
             .export_secret_key(self.mls_backend.as_ref(), key_length)
@@ -105,7 +105,7 @@ impl MlsCentral {
     #[cfg_attr(test, crate::idempotent)]
     pub async fn get_client_ids(&self, conversation_id: &ConversationId) -> CryptoResult<Vec<ClientId>> {
         Ok(self
-            .get_conversation(conversation_id, &self.mls_backend.keystore())
+            .get_conversation(conversation_id)
             .await?
             .ok_or_else(|| CryptoError::ConversationNotFound(conversation_id.clone()))?
             .get_client_ids())
