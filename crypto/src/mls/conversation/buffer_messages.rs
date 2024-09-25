@@ -8,15 +8,14 @@ use crate::{
     mls::context::CentralContext,
     prelude::{
         decrypt::MlsBufferedConversationDecryptMessage, Client, ConversationId, CoreCryptoCallbacks, CryptoError,
-        CryptoResult, MlsCentral, MlsConversation, MlsConversationDecryptMessage, MlsError,
+        CryptoResult, MlsConversation, MlsConversationDecryptMessage, MlsError,
     },
 };
 use core_crypto_keystore::{
     connection::FetchFromDatabase,
     entities::{EntityFindParams, MlsPendingMessage},
-    KeystoreTransaction,
 };
-use mls_crypto_provider::{MlsCryptoProvider, TransactionalCryptoProvider};
+use mls_crypto_provider::TransactionalCryptoProvider;
 use openmls::prelude::{MlsMessageIn, MlsMessageInBody};
 use tls_codec::Deserialize;
 use tracing::{error, span, trace, Instrument, Level};
@@ -52,9 +51,15 @@ impl CentralContext {
         let callbacks = guard.as_ref().map(|boxed| boxed.as_ref());
         let client_guard = self.mls_client().await?;
         let client = client_guard.as_ref().ok_or(CryptoError::MlsNotInitialized)?;
-        let transaction = self.transaction().await?;
+        let mls_provider = self.mls_provider().await?;
         conversation
-            .restore_pending_messages(client, transaction, callbacks, parent_conversation.as_ref(), is_rejoin)
+            .restore_pending_messages(
+                client,
+                &mls_provider,
+                callbacks,
+                parent_conversation.as_ref(),
+                is_rejoin,
+            )
             .await
     }
 }
