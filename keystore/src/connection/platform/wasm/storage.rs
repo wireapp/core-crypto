@@ -195,16 +195,18 @@ impl WasmEncryptedStorage {
                 }
             }
             WasmStorageWrapper::InMemory(map) => {
-                if let Some(store) = map.borrow().get(collection) {
-                    if let Some(js_value) = store.get(id.as_ref()).cloned() {
-                        if let Some(mut entity) = serde_wasm_bindgen::from_value::<Option<R>>(js_value)? {
-                            entity.decrypt(&self.cipher)?;
-                            return Ok(Some(entity));
-                        }
-                    }
-                }
-
-                Ok(None)
+                let map = map.borrow();
+                let Some(store) = map.get(collection) else {
+                    return Ok(None);
+                };
+                let Some(js_value) = store.get(id.as_ref()).cloned() else {
+                    return Ok(None);
+                };
+                let Some(mut entity) = serde_wasm_bindgen::from_value::<Option<R>>(js_value)? else {
+                    return Ok(None);
+                };
+                entity.decrypt(&self.cipher)?;
+                Ok(Some(entity))
             }
         }
     }
