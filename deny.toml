@@ -27,7 +27,7 @@ ignore = [
     # - https://github.com/RustCrypto/RSA/issues/390
     # -https://github.com/RustCrypto/RSA/pull/394
     "RUSTSEC-2023-0071",
-    # ? Only used in wasm-browser-run
+    # ? Only used in webdriver-installation
     "RUSTSEC-2023-0072"
 ]
 

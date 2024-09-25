@@ -2409,7 +2409,7 @@ dependencies = [
  "tokio",
  "uuid",
  "warp",
- "wasm-browser-run",
+ "webdriver-installation",
  "xshell",
 ]
 
@@ -5436,43 +5436,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "wasm-browser-run"
-version = "0.1.0"
-dependencies = [
- "better_term",
- "bitflags 2.6.0",
- "chrono",
- "const_format",
- "dirs",
- "eyre",
- "fantoccini",
- "flate2",
- "futures-util",
- "hex",
- "indicatif",
- "ordered-float",
- "reqwest",
- "semver",
- "serde",
- "serde-enum-str",
- "serde_json",
- "tar",
- "tempfile",
- "thiserror",
- "tokio",
- "tokio-stream",
- "tokio-tungstenite",
- "tracing",
- "url",
- "walrus",
- "warp",
- "wasm-bindgen",
- "wasm-bindgen-cli-support",
- "xshell",
- "zip",
-]
-
-[[package]]
 name = "wasm-encoder"
 version = "0.212.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -5536,6 +5499,43 @@ dependencies = [
  "time",
  "unicode-segmentation",
  "url",
+]
+
+[[package]]
+name = "webdriver-installation"
+version = "0.1.0"
+dependencies = [
+ "better_term",
+ "bitflags 2.6.0",
+ "chrono",
+ "const_format",
+ "dirs",
+ "eyre",
+ "fantoccini",
+ "flate2",
+ "futures-util",
+ "hex",
+ "indicatif",
+ "ordered-float",
+ "reqwest",
+ "semver",
+ "serde",
+ "serde-enum-str",
+ "serde_json",
+ "tar",
+ "tempfile",
+ "thiserror",
+ "tokio",
+ "tokio-stream",
+ "tokio-tungstenite",
+ "tracing",
+ "url",
+ "walrus",
+ "warp",
+ "wasm-bindgen",
+ "wasm-bindgen-cli-support",
+ "xshell",
+ "zip",
 ]
 
 [[package]]
