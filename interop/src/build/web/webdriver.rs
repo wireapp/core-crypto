@@ -22,7 +22,7 @@ pub(crate) async fn setup_webdriver(force: bool) -> Result<()> {
     let mut spinner = RunningProcess::new("Setting up WebDriver & co...", false);
 
     let wd_dir = dirs::home_dir().unwrap().join(".webdrivers");
-    let chrome = wasm_browser_run::WebdriverKind::Chrome;
+    let chrome = webdriver_installation::WebdriverKind::Chrome;
 
     if force {
         spinner.update("FORCE_WEBDRIVER_INSTALL is set. Forcefully removing webdrivers...");

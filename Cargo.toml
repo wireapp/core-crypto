@@ -10,7 +10,7 @@ members = [
 ]
 exclude = [
     "xtask",
-    "extras/wasm-browser-run",
+    "extras/webdriver-installation",
     "extras/keystore-regression-versions"
 ]
 resolver = "2"

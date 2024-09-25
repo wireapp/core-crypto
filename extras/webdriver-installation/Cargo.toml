@@ -1,5 +1,5 @@
 [package]
-name = "wasm-browser-run"
+name = "webdriver-installation"
 version = "0.1.0"
 edition = "2021"
 license = "GPL-3.0-only"
