@@ -21,7 +21,7 @@ impl CentralContext {
         message: impl AsRef<[u8]>,
     ) -> CryptoResult<MlsConversationDecryptMessage> {
         let keystore = self.transaction().await?;
-        let Ok(Some(pending_group)) = keystore.find::<PersistedMlsPendingGroup>(id).await else {
+        let Some(pending_group) = keystore.find::<PersistedMlsPendingGroup>(id).await? else {
             return Err(CryptoError::ConversationNotFound(id.clone()));
         };
 
