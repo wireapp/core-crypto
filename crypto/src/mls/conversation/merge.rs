@@ -15,10 +15,10 @@ use core_crypto_keystore::entities::{MlsEncryptionKeyPair, MlsPendingMessage};
 use openmls::prelude::MlsGroupStateError;
 use openmls_traits::OpenMlsCryptoProvider;
 
-use mls_crypto_provider::MlsCryptoProvider;
+use mls_crypto_provider::TransactionalCryptoProvider;
 
 use crate::{
-    mls::{ConversationId, MlsCentral, MlsConversation},
+    mls::{context::CentralContext, ConversationId, MlsCentral, MlsConversation},
     prelude::{decrypt::MlsBufferedConversationDecryptMessage, MlsProposalRef},
     CryptoError, CryptoResult, MlsError,
 };
@@ -28,12 +28,12 @@ impl MlsConversation {
     /// see [MlsCentral::commit_accepted]
     #[cfg_attr(test, crate::durable)]
     #[cfg_attr(not(test), tracing::instrument(err, skip_all))]
-    pub async fn commit_accepted(&mut self, backend: &MlsCryptoProvider) -> CryptoResult<()> {
+    pub async fn commit_accepted(&mut self, backend: &TransactionalCryptoProvider) -> CryptoResult<()> {
         // openmls stores here all the encryption keypairs used for update proposals..
         let previous_own_leaf_nodes = self.group.own_leaf_nodes.clone();
 
         self.group.merge_pending_commit(backend).await.map_err(MlsError::from)?;
-        self.persist_group_when_changed(backend, false).await?;
+        self.persist_group_when_changed(&backend.transaction(), false).await?;
 
         // ..so if there's any, we clear them after the commit is merged
         for oln in &previous_own_leaf_nodes {
@@ -50,7 +50,7 @@ impl MlsConversation {
     pub async fn clear_pending_proposal(
         &mut self,
         proposal_ref: MlsProposalRef,
-        backend: &MlsCryptoProvider,
+        backend: &TransactionalCryptoProvider,
     ) -> CryptoResult<()> {
         self.group
             .remove_pending_proposal(backend.key_store(), &proposal_ref)
@@ -59,17 +59,17 @@ impl MlsConversation {
                 MlsGroupStateError::PendingProposalNotFound => CryptoError::PendingProposalNotFound(proposal_ref),
                 _ => CryptoError::from(MlsError::from(e)),
             })?;
-        self.persist_group_when_changed(backend, true).await?;
+        self.persist_group_when_changed(&backend.transaction(), true).await?;
         Ok(())
     }
 
     /// see [MlsCentral::clear_pending_commit]
     #[cfg_attr(test, crate::durable)]
     #[cfg_attr(not(test), tracing::instrument(err, skip_all))]
-    pub async fn clear_pending_commit(&mut self, backend: &MlsCryptoProvider) -> CryptoResult<()> {
+    pub async fn clear_pending_commit(&mut self, backend: &TransactionalCryptoProvider) -> CryptoResult<()> {
         if self.group.pending_commit().is_some() {
             self.group.clear_pending_commit();
-            self.persist_group_when_changed(backend, true).await?;
+            self.persist_group_when_changed(&backend.transaction(), true).await?;
             Ok(())
         } else {
             Err(CryptoError::PendingCommitNotFound)
@@ -89,7 +89,7 @@ impl MlsConversation {
 ///     * 200 OK --> use [MlsCentral::commit_accepted] to merge the commit
 ///     * 409 CONFLICT --> do nothing. [MlsCentral::decrypt_message] will restore the proposals not committed
 ///     * 5xx --> retry
-impl MlsCentral {
+impl CentralContext {
     /// The commit we created has been accepted by the Delivery Service. Hence it is guaranteed
     /// to be used for the new epoch.
     /// We can now safely "merge" it (effectively apply the commit to the group) and update it
@@ -101,7 +101,7 @@ impl MlsCentral {
     ) -> CryptoResult<Option<Vec<MlsBufferedConversationDecryptMessage>>> {
         let conv = self.get_conversation(id).await?;
         let mut conv = conv.write().await;
-        conv.commit_accepted(&self.mls_backend).await?;
+        conv.commit_accepted(&self.mls_provider().await?).await?;
 
         let pending_messages = self.restore_pending_messages(&mut conv, false).await?;
         if pending_messages.is_some() {
