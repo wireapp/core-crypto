@@ -2,7 +2,6 @@ use crate::mls::context::CentralContext;
 use crate::{e2e_identity::CrlRegistration, prelude::MlsCentral, CryptoError, CryptoResult};
 use core_crypto_keystore::connection::FetchFromDatabase;
 use core_crypto_keystore::entities::{E2eiAcmeCA, E2eiCrl, E2eiIntermediateCert, EntityBase, UniqueEntity};
-use mls_crypto_provider::{MlsCryptoProvider, TransactionalCryptoProvider};
 use openmls_traits::OpenMlsCryptoProvider;
 use std::collections::HashSet;
 use std::ops::DerefMut;
@@ -103,11 +102,7 @@ impl CentralContext {
     pub(crate) async fn init_pki_env(&self) -> CryptoResult<()> {
         if let Some(pki_env) = restore_pki_env(&self.transaction().await?).await? {
             let provider = self.mls_provider().await?;
-            provider
-                .authentication_service()
-                .borrow_mut()
-                .update_env(pki_env)
-                .await?;
+            provider.authentication_service().update_env(pki_env).await?;
         }
 
         Ok(())
@@ -143,12 +138,12 @@ impl CentralContext {
     ) -> CryptoResult<NewCrlDistributionPoint> {
         // TrustAnchor must have been registered at this point
         let transaction = self.transaction().await?;
-        let ta = transaction.find_unique::<E2eiAcmeCA>().await?;
-        let ta = x509_cert::Certificate::from_der(&ta.content)?;
+        let trust_anchor = transaction.find_unique::<E2eiAcmeCA>().await?;
+        let trust_anchor = x509_cert::Certificate::from_der(&trust_anchor.content)?;
 
         // the `/federation` endpoint from smallstep repeats the root CA
         // so we filter it out here so that clients don't have to do it
-        if inter_ca == ta {
+        if inter_ca == trust_anchor {
             return Ok(None.into());
         }
 
@@ -163,9 +158,9 @@ impl CentralContext {
 
         // Validate it
         {
-            let auth_service_arc = self.mls_provider().await?.authentication_service();
-            let auth_service = auth_service_arc.borrow().await;
-            let Some(pki_env) = auth_service.as_ref() else {
+            let provider = self.mls_provider().await?;
+            let auth_service_arc = provider.authentication_service().borrow().await;
+            let Some(pki_env) = auth_service_arc.as_ref() else {
                 return Err(CryptoError::ConsumerError);
             };
             pki_env
@@ -201,9 +196,9 @@ impl CentralContext {
     pub async fn e2ei_register_crl(&self, crl_dp: String, crl_der: Vec<u8>) -> CryptoResult<CrlRegistration> {
         // Parse & Validate CRL
         let crl = {
-            let auth_service_arc = self.mls_provider().await?.authentication_service();
-            let auth_service = auth_service_arc.borrow().await;
-            let Some(pki_env) = auth_service.as_ref() else {
+            let provider = self.mls_provider().await?;
+            let auth_service_arc = provider.authentication_service().borrow().await;
+            let Some(pki_env) = auth_service_arc.as_ref() else {
                 return Err(CryptoError::ConsumerError);
             };
             pki_env
@@ -309,7 +304,7 @@ impl E2eiDumpedPkiEnv {
 }
 
 #[cfg_attr(not(test), tracing::instrument(err, skip_all))]
-pub(crate) async fn restore_pki_env(data_provider: impl FetchFromDatabase) -> CryptoResult<Option<PkiEnvironment>> {
+pub(crate) async fn restore_pki_env(data_provider: &impl FetchFromDatabase) -> CryptoResult<Option<PkiEnvironment>> {
     let mut trust_roots = vec![];
     let Ok(ta_raw) = data_provider.find_unique::<E2eiAcmeCA>().await else {
         return Ok(None);
@@ -319,15 +314,18 @@ pub(crate) async fn restore_pki_env(data_provider: impl FetchFromDatabase) -> Cr
         x509_cert::Certificate::from_der(&ta_raw.content).map(x509_cert::anchor::TrustAnchorChoice::Certificate)?,
     );
 
-    let intermediates = data_provider.find_all(Default::default())
-        .await?
-        .into_iter()
-        .try_fold(vec![], |mut acc, inter| {
-            acc.push(x509_cert::Certificate::from_der(&inter.content)?);
-            CryptoResult::Ok(acc)
-        })?;
+    let intermediates =
+        data_provider
+            .find_all::<E2eiIntermediateCert>(Default::default())
+            .await?
+            .into_iter()
+            .try_fold(vec![], |mut acc, inter| {
+                acc.push(x509_cert::Certificate::from_der(&inter.content)?);
+                CryptoResult::Ok(acc)
+            })?;
 
-    let crls = data_provider.find_all(Default::default())
+    let crls = data_provider
+        .find_all::<E2eiCrl>(Default::default())
         .await?
         .into_iter()
         .try_fold(vec![], |mut acc, crl| {
