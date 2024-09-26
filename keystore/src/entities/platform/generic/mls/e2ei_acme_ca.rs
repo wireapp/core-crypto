@@ -14,63 +14,26 @@
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see http://www.gnu.org/licenses/.
 
-use std::io::Write;
-
-use rusqlite::ToSql;
-
 use crate::{
     connection::{DatabaseConnection, KeystoreDatabaseConnection, TransactionWrapper},
     entities::{E2eiAcmeCA, Entity, EntityBase, EntityFindParams, EntityMlsExt, StringEntityId, UniqueEntity},
     CryptoKeystoreError, CryptoKeystoreResult, MissingKeyErrorKind,
 };
 
-const ID: usize = 0;
-
 impl Entity for E2eiAcmeCA {
     fn id_raw(&self) -> &[u8] {
-        &[0]
+        &[Self::ID as u8]
     }
 }
 
 #[cfg_attr(target_family = "wasm", async_trait::async_trait(?Send))]
 #[cfg_attr(not(target_family = "wasm"), async_trait::async_trait)]
 impl UniqueEntity for E2eiAcmeCA {
-    async fn find_unique(conn: &mut Self::ConnectionType) -> CryptoKeystoreResult<Self> {
-        let transaction = conn.transaction()?;
-        use rusqlite::OptionalExtension as _;
-
-        let maybe_content = transaction
-            .query_row("SELECT content FROM e2ei_acme_ca WHERE id = ?", [ID], |r| {
-                r.get::<_, Vec<u8>>(0)
-            })
-            .optional()?;
-
-        if let Some(content) = maybe_content {
-            Ok(Self { content })
-        } else {
-            Err(CryptoKeystoreError::NotFound("E2EI ACME root CA", "".to_string()))
-        }
+    fn new(content: Vec<u8>) -> Self {
+        Self { content }
     }
-
-    async fn replace(&self, conn: &mut Self::ConnectionType) -> CryptoKeystoreResult<()> {
-        Self::ConnectionType::check_buffer_size(self.content.len())?;
-        let zb_content = rusqlite::blob::ZeroBlob(self.content.len() as i32);
-
-        let transaction = conn.transaction()?;
-
-        let params: [rusqlite::types::ToSqlOutput; 2] = [ID.to_sql()?, zb_content.to_sql()?];
-
-        transaction.execute("INSERT INTO e2ei_acme_ca (id, content) VALUES (?, ?)", params)?;
-        let row_id = transaction.last_insert_rowid();
-
-        let mut blob = transaction.blob_open(rusqlite::DatabaseName::Main, "e2ei_acme_ca", "content", row_id, false)?;
-
-        blob.write_all(&self.content)?;
-        blob.close()?;
-
-        transaction.commit()?;
-
-        Ok(())
+    fn content(&self) -> &[u8] {
+        &self.content
     }
 }
 

@@ -82,7 +82,7 @@ pub trait DatabaseConnection: DatabaseConnectionRequirements {
         Ok(())
     }
     #[cfg(not(target_family = "wasm"))]
-    async fn new_transaction(&mut self) -> CryptoKeystoreResult<crate::connection::TransactionWrapper<'_>>;
+    async fn new_transaction(&mut self) -> CryptoKeystoreResult<TransactionWrapper<'_>>;
     #[cfg(target_family = "wasm")]
     async fn new_transaction<T: AsRef<str>>(
         &mut self,

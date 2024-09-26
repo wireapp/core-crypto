@@ -82,18 +82,4 @@ impl Entity for E2eiRefreshToken {
 
 #[cfg_attr(target_family = "wasm", async_trait::async_trait(?Send))]
 #[cfg_attr(not(target_family = "wasm"), async_trait::async_trait)]
-impl UniqueEntity for E2eiRefreshToken {
-    async fn find_unique(conn: &mut Self::ConnectionType) -> CryptoKeystoreResult<Self> {
-        Ok(conn
-            .storage()
-            .get(Self::COLLECTION_NAME, &Self::ID)
-            .await?
-            .ok_or(CryptoKeystoreError::NotFound("refresh token", "".to_string()))?)
-    }
-
-    async fn replace(&self, conn: &mut Self::ConnectionType) -> CryptoKeystoreResult<()> {
-        let storage = conn.storage_mut();
-        storage.save(Self::COLLECTION_NAME, &mut [self.clone()]).await?;
-        Ok(())
-    }
-}
+impl UniqueEntity for E2eiRefreshToken {}

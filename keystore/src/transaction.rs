@@ -15,6 +15,7 @@ use crate::{
     },
     CryptoKeystoreError, CryptoKeystoreResult,
 };
+use crate::entities::UniqueEntity;
 
 #[derive(Debug)]
 pub(crate) enum Entity {
