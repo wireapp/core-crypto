@@ -3,10 +3,13 @@ use std::collections::HashMap;
 use openmls::prelude::{KeyPackage, KeyPackageRef, MlsCredentialType as OpenMlsCredential};
 use openmls_traits::OpenMlsCryptoProvider;
 
+use core_crypto_keystore::connection::FetchFromDatabase;
 use core_crypto_keystore::{entities::MlsKeyPackage, CryptoKeystoreMls};
-use mls_crypto_provider::MlsCryptoProvider;
+use mls_crypto_provider::TransactionalCryptoProvider;
 
 use crate::e2e_identity::init_certificates::NewCrlDistributionPoint;
+use crate::e2e_identity::refresh_token::RefreshToken;
+use crate::mls::context::CentralContext;
 use crate::{
     mls::credential::{ext::CredentialExt, x509::CertificatePrivateKey, CredentialBundle},
     prelude::{
@@ -16,12 +19,8 @@ use crate::{
     MlsError,
 };
 
-impl MlsCentral {
-    /// Generates an E2EI enrollment instance for a "regular" client (with a Basic credential)
-    /// willing to migrate to E2EI. As a consequence, this method does not support changing the
-    /// ClientId which should remain the same as the Basic one.
-    /// Once the enrollment is finished, use the instance in [MlsCentral::e2ei_rotate_all] to do
-    /// the rotation.
+impl CentralContext {
+    /// See [MlsCentral::e2ei_new_activation_enrollment]
     #[cfg_attr(not(test), tracing::instrument(err, skip_all))]
     pub async fn e2ei_new_activation_enrollment(
         &self,
@@ -31,36 +30,22 @@ impl MlsCentral {
         expiry_sec: u32,
         ciphersuite: MlsCiphersuite,
     ) -> CryptoResult<E2eiEnrollment> {
-        let client_guard = self.mls_client().await;
+        let client_guard = self.mls_client().await?;
         let client = client_guard.as_ref().ok_or(CryptoError::MlsNotInitialized)?;
-
-        // look for existing credential of type basic. If there isn't, then this method has been misused
-        let cb = client
-            .find_most_recent_credential_bundle(ciphersuite.signature_algorithm(), MlsCredentialType::Basic)
-            .ok_or(E2eIdentityError::MissingExistingClient(MlsCredentialType::Basic))?;
-        let client_id = cb.credential().identity().into();
-
-        let sign_keypair = Some((&cb.signature_key).try_into()?);
-
-        E2eiEnrollment::try_new(
-            client_id,
+        let mls_provider = self.mls_provider().await?;
+        e2ei_new_activation_enrollment(
+            client,
+            &mls_provider,
             display_name,
             handle,
             team,
             expiry_sec,
-            &self.mls_backend,
             ciphersuite,
-            sign_keypair,
-            #[cfg(not(target_family = "wasm"))]
-            None, // no x509 credential yet at this point so no OIDC authn yet so no refresh token to restore
         )
+        .await
     }
 
-    /// Generates an E2EI enrollment instance for a E2EI client (with a X509 certificate credential)
-    /// having to change/rotate their credential, either because the former one is expired or it
-    /// has been revoked. As a consequence, this method does not support changing neither ClientId which
-    /// should remain the same as the previous one. It lets you change the DisplayName or the handle
-    /// if you need to. Once the enrollment is finished, use the instance in [MlsCentral::e2ei_rotate_all] to do the rotation.
+    /// See [MlsCentral::e2ei_new_rotate_enrollment]
     #[cfg_attr(not(test), tracing::instrument(err, skip_all))]
     pub async fn e2ei_new_rotate_enrollment(
         &self,
@@ -70,36 +55,19 @@ impl MlsCentral {
         expiry_sec: u32,
         ciphersuite: MlsCiphersuite,
     ) -> CryptoResult<E2eiEnrollment> {
-        let client_guard = self.mls_client().await;
+        let client_guard = self.mls_client().await?;
         let client = client_guard.as_ref().ok_or(CryptoError::MlsNotInitialized)?;
-
-        // look for existing credential of type x509. If there isn't, then this method has been misused
-        let cb = client
-            .find_most_recent_credential_bundle(ciphersuite.signature_algorithm(), MlsCredentialType::X509)
-            .ok_or(E2eIdentityError::MissingExistingClient(MlsCredentialType::X509))?;
-        let client_id = cb.credential().identity().into();
-        let sign_keypair = Some((&cb.signature_key).try_into()?);
-        let existing_identity = cb
-            .to_mls_credential_with_key()
-            .extract_identity(ciphersuite, None)?
-            .x509_identity
-            .ok_or(E2eIdentityError::ImplementationError)?;
-
-        let display_name = display_name.unwrap_or(existing_identity.display_name);
-        let handle = handle.unwrap_or(existing_identity.handle);
-
-        E2eiEnrollment::try_new(
-            client_id,
+        let mls_provider = self.mls_provider().await?;
+        e2ei_new_rotate_enrollment(
+            client,
+            &mls_provider,
             display_name,
             handle,
             team,
             expiry_sec,
-            &self.mls_backend,
             ciphersuite,
-            sign_keypair,
-            #[cfg(not(target_family = "wasm"))]
-            Some(self.find_refresh_token().await?), // Since we are renewing an e2ei certificate we MUST have already generated one hence we MUST already have done an OIDC authn and gotten a refresh token from it we also MUST have stored in CoreCrypto
         )
+        .await
     }
 
     /// Creates a commit in all local conversations for changing the credential. Requires first
@@ -117,7 +85,8 @@ impl MlsCentral {
         let certificate_chain = enrollment
             .certificate_response(
                 certificate_chain,
-                self.mls_backend
+                self.mls_provider()
+                    .await?
                     .authentication_service()
                     .borrow()
                     .await
@@ -138,10 +107,10 @@ impl MlsCentral {
             private_key,
         };
 
-        let mut client_guard = self.mls_client_mut().await;
+        let mut client_guard = self.mls_client_mut().await?;
         let client = client_guard.as_mut().ok_or(CryptoError::MlsNotInitialized)?;
         let new_cb = client
-            .save_new_x509_credential_bundle(&self.mls_backend, cs.signature_algorithm(), cert_bundle)
+            .save_new_x509_credential_bundle(&self.transaction().await?, cs.signature_algorithm(), cert_bundle)
             .await?;
 
         let commits = self.e2ei_update_all(&new_cb).await?;
@@ -149,7 +118,7 @@ impl MlsCentral {
         let key_package_refs_to_remove = self.find_key_packages_to_remove(&new_cb).await?;
 
         let new_key_packages = client
-            .generate_new_keypackages(&self.mls_backend, cs, &new_cb, new_key_packages_count)
+            .generate_new_keypackages(&self.mls_provider().await?, cs, &new_cb, new_key_packages_count)
             .await?;
 
         Ok(MlsRotateBundle {
@@ -161,18 +130,35 @@ impl MlsCentral {
     }
 
     #[cfg_attr(not(test), tracing::instrument(err, skip_all))]
+    async fn e2ei_update_all(&self, cb: &CredentialBundle) -> CryptoResult<HashMap<ConversationId, MlsCommitBundle>> {
+        let all_conversations = self.get_all_conversations().await?;
+
+        let mut commits = HashMap::with_capacity(all_conversations.len());
+        let client_guard = self.mls_client().await?;
+        let client = client_guard.as_ref().ok_or(CryptoError::MlsNotInitialized)?;
+        for conv in all_conversations {
+            let mut conv = conv.write().await;
+            let id = conv.id().clone();
+            let commit = conv.e2ei_rotate(&self.mls_provider().await?, client, cb).await?;
+            let _ = commits.insert(id, commit);
+        }
+        Ok(commits)
+    }
+
+    #[cfg_attr(not(test), tracing::instrument(err, skip_all))]
     async fn find_key_packages_to_remove(&self, cb: &CredentialBundle) -> CryptoResult<Vec<KeyPackageRef>> {
-        let nb_kp = self.mls_backend.key_store().count::<MlsKeyPackage>().await?;
-        let kps: Vec<KeyPackage> = self.mls_backend.key_store().mls_fetch_keypackages(nb_kp as u32).await?;
+        let transaction = self.transaction().await?;
+        let nb_kp = transaction.count::<MlsKeyPackage>().await?;
+        let kps: Vec<KeyPackage> = transaction.mls_fetch_keypackages(nb_kp as u32).await?;
 
         let mut kp_refs = vec![];
 
         for kp in kps {
             let kp_cred = kp.leaf_node().credential().mls_credential();
             let local_cred = cb.credential().mls_credential();
-
+            let provider = self.mls_provider().await?;
             let mut push_kpr = || {
-                let kpr = kp.hash_ref(self.mls_backend.crypto()).map_err(MlsError::from)?;
+                let kpr = kp.hash_ref(provider.crypto()).map_err(MlsError::from)?;
                 kp_refs.push(kpr);
                 CryptoResult::Ok(())
             };
@@ -189,37 +175,149 @@ impl MlsCentral {
         Ok(kp_refs)
     }
 
-    #[cfg_attr(not(test), tracing::instrument(err, skip_all))]
-    async fn e2ei_update_all(&self, cb: &CredentialBundle) -> CryptoResult<HashMap<ConversationId, MlsCommitBundle>> {
-        let all_conversations = self.get_all_conversations().await?;
-
-        let mut commits = HashMap::with_capacity(all_conversations.len());
-        let client_guard = self.mls_client().await;
-        let client = client_guard.as_ref().ok_or(CryptoError::MlsNotInitialized)?;
-        for conv in all_conversations {
-            let mut conv = conv.write().await;
-            let id = conv.id().clone();
-            let commit = conv.e2ei_rotate(&self.mls_backend, client, cb).await?;
-            let _ = commits.insert(id, commit);
-        }
-        Ok(commits)
-    }
-
     #[cfg(test)]
     pub(crate) async fn e2ei_rotate(
         &self,
         id: &crate::prelude::ConversationId,
         cb: &CredentialBundle,
     ) -> CryptoResult<MlsCommitBundle> {
-        let client_guard = self.mls_client().await;
+        let client_guard = self.mls_client().await?;
         let client = client_guard.as_ref().ok_or(CryptoError::MlsNotInitialized)?;
         self.get_conversation(id)
             .await?
             .write()
             .await
-            .e2ei_rotate(&self.mls_backend, client, cb)
+            .e2ei_rotate(&self.mls_provider().await?, client, cb)
             .await
     }
+}
+
+impl MlsCentral {
+    /// Generates an E2EI enrollment instance for a "regular" client (with a Basic credential)
+    /// willing to migrate to E2EI. As a consequence, this method does not support changing the
+    /// ClientId which should remain the same as the Basic one.
+    /// Once the enrollment is finished, use the instance in [MlsCentral::e2ei_rotate_all] to do
+    /// the rotation.
+    #[cfg_attr(not(test), tracing::instrument(err, skip_all))]
+    pub async fn e2ei_new_activation_enrollment(
+        &self,
+        display_name: String,
+        handle: String,
+        team: Option<String>,
+        expiry_sec: u32,
+        ciphersuite: MlsCiphersuite,
+    ) -> CryptoResult<E2eiEnrollment> {
+        let client_guard = self.mls_client().await;
+        let client = client_guard.as_ref().ok_or(CryptoError::MlsNotInitialized)?;
+
+        e2ei_new_activation_enrollment(
+            client,
+            &self.mls_backend.new_transaction(),
+            display_name,
+            handle,
+            team,
+            expiry_sec,
+            ciphersuite,
+        )
+        .await
+    }
+
+    /// Generates an E2EI enrollment instance for a E2EI client (with a X509 certificate credential)
+    /// having to change/rotate their credential, either because the former one is expired or it
+    /// has been revoked. As a consequence, this method does not support changing neither ClientId which
+    /// should remain the same as the previous one. It lets you change the DisplayName or the handle
+    /// if you need to. Once the enrollment is finished, use the instance in [MlsCentral::e2ei_rotate_all] to do the rotation.
+    #[cfg_attr(not(test), tracing::instrument(err, skip_all))]
+    pub async fn e2ei_new_rotate_enrollment(
+        &self,
+        display_name: Option<String>,
+        handle: Option<String>,
+        team: Option<String>,
+        expiry_sec: u32,
+        ciphersuite: MlsCiphersuite,
+    ) -> CryptoResult<E2eiEnrollment> {
+        let client_guard = self.mls_client().await;
+        let client = client_guard.as_ref().ok_or(CryptoError::MlsNotInitialized)?;
+        e2ei_new_rotate_enrollment(
+            client,
+            &self.mls_backend.new_transaction(),
+            display_name,
+            handle,
+            team,
+            expiry_sec,
+            ciphersuite,
+        )
+        .await
+    }
+}
+
+async fn e2ei_new_activation_enrollment(
+    client: &Client,
+    backend: &TransactionalCryptoProvider,
+    display_name: String,
+    handle: String,
+    team: Option<String>,
+    expiry_sec: u32,
+    ciphersuite: MlsCiphersuite,
+) -> CryptoResult<E2eiEnrollment> {
+    // look for existing credential of type basic. If there isn't, then this method has been misused
+    let cb = client
+        .find_most_recent_credential_bundle(ciphersuite.signature_algorithm(), MlsCredentialType::Basic)
+        .ok_or(E2eIdentityError::MissingExistingClient(MlsCredentialType::Basic))?;
+    let client_id = cb.credential().identity().into();
+
+    let sign_keypair = Some((&cb.signature_key).try_into()?);
+
+    E2eiEnrollment::try_new(
+        client_id,
+        display_name,
+        handle,
+        team,
+        expiry_sec,
+        backend,
+        ciphersuite,
+        sign_keypair,
+        #[cfg(not(target_family = "wasm"))]
+        None, // no x509 credential yet at this point so no OIDC authn yet so no refresh token to restore
+    )
+}
+
+async fn e2ei_new_rotate_enrollment(
+    client: &Client,
+    backend: &TransactionalCryptoProvider,
+    display_name: Option<String>,
+    handle: Option<String>,
+    team: Option<String>,
+    expiry_sec: u32,
+    ciphersuite: MlsCiphersuite,
+) -> CryptoResult<E2eiEnrollment> {
+    // look for existing credential of type x509. If there isn't, then this method has been misused
+    let cb = client
+        .find_most_recent_credential_bundle(ciphersuite.signature_algorithm(), MlsCredentialType::X509)
+        .ok_or(E2eIdentityError::MissingExistingClient(MlsCredentialType::X509))?;
+    let client_id = cb.credential().identity().into();
+    let sign_keypair = Some((&cb.signature_key).try_into()?);
+    let existing_identity = cb
+        .to_mls_credential_with_key()
+        .extract_identity(ciphersuite, None)?
+        .x509_identity
+        .ok_or(E2eIdentityError::ImplementationError)?;
+
+    let display_name = display_name.unwrap_or(existing_identity.display_name);
+    let handle = handle.unwrap_or(existing_identity.handle);
+
+    E2eiEnrollment::try_new(
+        client_id,
+        display_name,
+        handle,
+        team,
+        expiry_sec,
+        backend,
+        ciphersuite,
+        sign_keypair,
+        #[cfg(not(target_family = "wasm"))]
+        Some(RefreshToken::find(&backend.transaction()).await?), // Since we are renewing an e2ei certificate we MUST have already generated one hence we MUST already have done an OIDC authn and gotten a refresh token from it we also MUST have stored in CoreCrypto
+    )
 }
 
 impl MlsConversation {
@@ -227,7 +325,7 @@ impl MlsConversation {
     #[cfg_attr(not(test), tracing::instrument(err, skip_all))]
     pub(crate) async fn e2ei_rotate(
         &mut self,
-        backend: &MlsCryptoProvider,
+        backend: &TransactionalCryptoProvider,
         client: &Client,
         cb: &CredentialBundle,
     ) -> CryptoResult<MlsCommitBundle> {
