@@ -1,9 +1,9 @@
 use openmls_traits::{random::OpenMlsRand, OpenMlsCryptoProvider};
 
+use crate::mls::context::CentralContext;
+use crate::prelude::{CryptoError, CryptoResult, E2eiEnrollment};
 use core_crypto_keystore::CryptoKeystoreMls;
-use mls_crypto_provider::MlsCryptoProvider;
-
-use crate::prelude::{CryptoError, CryptoResult, E2eiEnrollment, MlsCentral};
+use mls_crypto_provider::{MlsCryptoProvider, TransactionalCryptoProvider};
 
 /// A unique identifier for an enrollment a consumer can use to fetch it from the keystore when he
 /// wants to resume the process
@@ -11,7 +11,7 @@ pub(crate) type EnrollmentHandle = Vec<u8>;
 
 impl E2eiEnrollment {
     #[cfg_attr(not(test), tracing::instrument(err, skip_all))]
-    pub(crate) async fn stash(self, backend: &MlsCryptoProvider) -> CryptoResult<EnrollmentHandle> {
+    pub(crate) async fn stash(self, backend: &TransactionalCryptoProvider) -> CryptoResult<EnrollmentHandle> {
         // should be enough to prevent collisions
         const HANDLE_SIZE: usize = 32;
 
@@ -26,7 +26,10 @@ impl E2eiEnrollment {
     }
 
     #[cfg_attr(not(test), tracing::instrument(err, skip_all))]
-    pub(crate) async fn stash_pop(backend: &MlsCryptoProvider, handle: EnrollmentHandle) -> CryptoResult<Self> {
+    pub(crate) async fn stash_pop(
+        backend: &TransactionalCryptoProvider,
+        handle: EnrollmentHandle,
+    ) -> CryptoResult<Self> {
         let content = backend
             .key_store()
             .pop_e2ei_enrollment(&handle)
@@ -36,9 +39,9 @@ impl E2eiEnrollment {
     }
 }
 
-impl MlsCentral {
+impl CentralContext {
     /// Allows persisting an active enrollment (for example while redirecting the user during OAuth)
-    /// in order to resume it later with [MlsCentral::e2ei_enrollment_stash_pop]
+    /// in order to resume it later with [CentralContext::e2ei_enrollment_stash_pop]
     ///
     /// # Arguments
     /// * `enrollment` - the enrollment instance to persist
@@ -47,16 +50,16 @@ impl MlsCentral {
     /// A handle for retrieving the enrollment later on
     #[cfg_attr(not(test), tracing::instrument(err, skip_all))]
     pub async fn e2ei_enrollment_stash(&self, enrollment: E2eiEnrollment) -> CryptoResult<EnrollmentHandle> {
-        enrollment.stash(&self.mls_backend).await
+        enrollment.stash(&self.mls_provider().await?).await
     }
 
     /// Fetches the persisted enrollment and deletes it from the keystore
     ///
     /// # Arguments
-    /// * `handle` - returned by [MlsCentral::e2ei_enrollment_stash]
+    /// * `handle` - returned by [CentralContext::e2ei_enrollment_stash]
     #[cfg_attr(not(test), tracing::instrument(err, skip_all))]
     pub async fn e2ei_enrollment_stash_pop(&self, handle: EnrollmentHandle) -> CryptoResult<E2eiEnrollment> {
-        E2eiEnrollment::stash_pop(&self.mls_backend, handle).await
+        E2eiEnrollment::stash_pop(&self.mls_provider().await?, handle).await
     }
 }
 
