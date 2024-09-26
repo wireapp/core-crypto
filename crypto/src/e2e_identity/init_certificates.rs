@@ -76,7 +76,7 @@ impl CentralContext {
             crls: Default::default(),
             time_of_interest: Default::default(),
         })
-            .map_err(|e| CryptoError::E2eiError(e.into()))?;
+        .map_err(|e| CryptoError::E2eiError(e.into()))?;
 
         // Parse/decode PEM cert
         let root_cert =
@@ -314,15 +314,14 @@ pub(crate) async fn restore_pki_env(data_provider: &impl FetchFromDatabase) -> C
         x509_cert::Certificate::from_der(&ta_raw.content).map(x509_cert::anchor::TrustAnchorChoice::Certificate)?,
     );
 
-    let intermediates =
-        data_provider
-            .find_all::<E2eiIntermediateCert>(Default::default())
-            .await?
-            .into_iter()
-            .try_fold(vec![], |mut acc, inter| {
-                acc.push(x509_cert::Certificate::from_der(&inter.content)?);
-                CryptoResult::Ok(acc)
-            })?;
+    let intermediates = data_provider
+        .find_all::<E2eiIntermediateCert>(Default::default())
+        .await?
+        .into_iter()
+        .try_fold(vec![], |mut acc, inter| {
+            acc.push(x509_cert::Certificate::from_der(&inter.content)?);
+            CryptoResult::Ok(acc)
+        })?;
 
     let crls = data_provider
         .find_all::<E2eiCrl>(Default::default())
