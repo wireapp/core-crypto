@@ -31,10 +31,10 @@ use std::collections::HashMap;
 
 use openmls::prelude::{CredentialWithKey, SignaturePublicKey};
 use openmls::{group::MlsGroup, prelude::Credential};
-use openmls_traits::{types::SignatureScheme, OpenMlsCryptoProvider};
+use openmls_traits::types::SignatureScheme;
 
-use core_crypto_keystore::{connection::FetchFromDatabase, CryptoKeystoreMls, KeystoreTransaction};
-use mls_crypto_provider::{MlsCryptoProvider, TransactionalCryptoProvider};
+use core_crypto_keystore::{CryptoKeystoreMls, KeystoreTransaction};
+use mls_crypto_provider::TransactionalCryptoProvider;
 
 use config::MlsConversationConfiguration;
 
@@ -125,7 +125,9 @@ impl MlsConversation {
             configuration,
         };
 
-        conversation.persist_group_when_changed(backend, true).await?;
+        conversation
+            .persist_group_when_changed(&backend.transaction(), true)
+            .await?;
 
         Ok(conversation)
     }
@@ -135,7 +137,7 @@ impl MlsConversation {
     pub(crate) async fn from_mls_group(
         group: MlsGroup,
         configuration: MlsConversationConfiguration,
-        backend: &MlsCryptoProvider,
+        backend: &TransactionalCryptoProvider,
     ) -> CryptoResult<Self> {
         let id = ConversationId::from(group.group_id().as_slice());
 
@@ -146,7 +148,9 @@ impl MlsConversation {
             parent_id: None,
         };
 
-        conversation.persist_group_when_changed(backend, true).await?;
+        conversation
+            .persist_group_when_changed(&backend.transaction(), true)
+            .await?;
 
         Ok(conversation)
     }
@@ -257,10 +261,7 @@ impl MlsConversation {
 }
 
 impl MlsCentral {
-    pub(crate) async fn get_conversation(
-        &self,
-        id: &ConversationId,
-    ) -> CryptoResult<Option<MlsConversation>> {
+    pub(crate) async fn get_conversation(&self, id: &ConversationId) -> CryptoResult<Option<MlsConversation>> {
         GroupStore::fetch_from_keystore(id, &self.mls_backend.keystore(), None).await
     }
 }

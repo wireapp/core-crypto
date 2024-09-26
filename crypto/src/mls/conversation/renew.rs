@@ -2,7 +2,7 @@ use core_crypto_keystore::entities::MlsEncryptionKeyPair;
 use openmls::prelude::{LeafNode, LeafNodeIndex, Proposal, QueuedProposal, Sender, StagedCommit};
 use openmls_traits::OpenMlsCryptoProvider;
 
-use mls_crypto_provider::{MlsCryptoProvider, TransactionalCryptoProvider};
+use mls_crypto_provider::TransactionalCryptoProvider;
 
 use crate::prelude::{Client, CryptoError, CryptoResult, MlsConversation, MlsProposalBundle};
 
@@ -130,7 +130,7 @@ impl MlsConversation {
     async fn renew_update(
         &mut self,
         client: &Client,
-        backend: &MlsCryptoProvider,
+        backend: &TransactionalCryptoProvider,
         leaf_node: Option<&LeafNode>,
     ) -> CryptoResult<MlsProposalBundle> {
         if let Some(leaf_node) = leaf_node {
