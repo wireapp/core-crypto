@@ -16,12 +16,14 @@
 
 use openmls::prelude::{hash_ref::ProposalRef, KeyPackage};
 
-use mls_crypto_provider::MlsCryptoProvider;
+use mls_crypto_provider::TransactionalCryptoProvider;
 
 use crate::{
-    mls::{ClientId, ConversationId, MlsCentral, MlsConversation},
+    mls::{ClientId, ConversationId, MlsConversation},
     prelude::{Client, CryptoError, CryptoResult, MlsProposalBundle},
 };
+
+use super::context::CentralContext;
 
 /// Abstraction over a [openmls::prelude::hash_ref::ProposalRef] to deal with conversions
 #[derive(Debug, Clone, Eq, PartialEq, derive_more::From, derive_more::Deref, derive_more::Display)]
@@ -67,7 +69,7 @@ impl MlsProposal {
     async fn create(
         self,
         client: &Client,
-        backend: &MlsCryptoProvider,
+        backend: &TransactionalCryptoProvider,
         mut conversation: impl std::ops::DerefMut<Target = MlsConversation>,
     ) -> CryptoResult<MlsProposalBundle> {
         let proposal = match self {
@@ -91,7 +93,7 @@ impl MlsProposal {
     }
 }
 
-impl MlsCentral {
+impl CentralContext {
     /// Creates a new Add proposal
     #[cfg_attr(test, crate::idempotent)]
     pub async fn new_add_proposal(
@@ -133,10 +135,10 @@ impl MlsCentral {
     #[cfg_attr(not(test), tracing::instrument(err, skip(self, proposal), fields(id = base64::Engine::encode(&base64::prelude::BASE64_STANDARD, id))))]
     async fn new_proposal(&self, id: &ConversationId, proposal: MlsProposal) -> CryptoResult<MlsProposalBundle> {
         let conversation = self.get_conversation(id).await?;
-        let client_guard = self.mls_client().await;
+        let client_guard = self.mls_client().await?;
         let client = client_guard.as_ref().ok_or(CryptoError::MlsNotInitialized)?;
         proposal
-            .create(client, &self.mls_backend, conversation.write().await)
+            .create(client, &self.mls_provider().await?, conversation.write().await)
             .await
     }
 }

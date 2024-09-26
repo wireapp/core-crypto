@@ -19,6 +19,7 @@ use crate::{
     CoreCrypto, CryptoError, CryptoResult, ProteusError,
 };
 use core_crypto_keystore::{
+    connection::FetchFromDatabase,
     entities::{ProteusIdentity, ProteusSession},
     Connection as CryptoKeystore,
 };

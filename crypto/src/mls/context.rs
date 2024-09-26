@@ -1,7 +1,4 @@
-use std::{
-    ops::{Deref, DerefMut},
-    sync::Arc,
-};
+use std::{ops::Deref, sync::Arc};
 
 use async_lock::{RwLock, RwLockReadGuardArc, RwLockWriteGuardArc};
 use core_crypto_keystore::KeystoreTransaction;

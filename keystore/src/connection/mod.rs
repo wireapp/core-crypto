@@ -100,7 +100,7 @@ pub struct Connection {
 /// transaaction
 #[cfg_attr(target_family = "wasm", async_trait::async_trait(?Send))]
 #[cfg_attr(not(target_family = "wasm"), async_trait::async_trait)]
-pub trait FetchFromDatabase {
+pub trait FetchFromDatabase: Send + Sync {
     async fn find<E: Entity<ConnectionType = KeystoreDatabaseConnection>>(
         &self,
         id: &[u8],
