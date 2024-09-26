@@ -5,7 +5,7 @@ use wire_e2e_identity::prelude::{E2eiAcmeAuthorization, RustyE2eIdentity};
 use zeroize::Zeroize;
 
 use error::*;
-use mls_crypto_provider::MlsCryptoProvider;
+use mls_crypto_provider::{MlsCryptoProvider, RustCrypto, TransactionalCryptoProvider};
 
 use crate::e2e_identity::init_certificates::NewCrlDistributionPoint;
 use crate::{
@@ -29,6 +29,7 @@ pub(crate) mod rotate;
 pub(crate) mod stash;
 pub mod types;
 
+use crate::mls::context::CentralContext;
 pub use init_certificates::E2eiDumpedPkiEnv;
 
 type Json = Vec<u8>;
@@ -40,6 +41,74 @@ pub struct CrlRegistration {
     pub dirty: bool,
     /// Optional expiration timestamp
     pub expiration: Option<u64>,
+}
+
+impl CentralContext {
+    /// See [MlsCentral::e2ei_new_enrollment].
+    #[cfg_attr(not(test), tracing::instrument(err, skip_all))]
+    pub async fn e2ei_new_enrollment(
+        &self,
+        client_id: ClientId,
+        display_name: String,
+        handle: String,
+        team: Option<String>,
+        expiry_sec: u32,
+        ciphersuite: MlsCiphersuite,
+    ) -> CryptoResult<E2eiEnrollment> {
+        let signature_keypair = None; // fresh install without a Basic client. Supplying None will generate a new keypair
+        E2eiEnrollment::try_new(
+            client_id,
+            display_name,
+            handle,
+            team,
+            expiry_sec,
+            &self.mls_provider().await?,
+            ciphersuite,
+            signature_keypair,
+            #[cfg(not(target_family = "wasm"))]
+            None, // fresh install so no refresh token registered yet
+        )
+    }
+
+    /// Parses the ACME server response from the endpoint fetching x509 certificates and uses it
+    /// to initialize the MLS client with a certificate
+    #[cfg_attr(not(test), tracing::instrument(err, skip_all))]
+    pub async fn e2ei_mls_init_only(
+        &self,
+        enrollment: &mut E2eiEnrollment,
+        certificate_chain: String,
+        nb_init_key_packages: Option<usize>,
+    ) -> CryptoResult<NewCrlDistributionPoint> {
+        let sk = enrollment.get_sign_key_for_mls()?;
+        let cs = enrollment.ciphersuite;
+        let certificate_chain = enrollment
+            .certificate_response(
+                certificate_chain,
+                self.mls_provider()
+                    .await?
+                    .authentication_service()
+                    .borrow()
+                    .await
+                    .as_ref()
+                    .ok_or(CryptoError::ConsumerError)?,
+            )
+            .await?;
+
+        let crl_new_distribution_points = self.extract_dp_on_init(&certificate_chain[..]).await?;
+
+        let private_key = CertificatePrivateKey {
+            value: sk,
+            signature_scheme: cs.signature_algorithm(),
+        };
+
+        let cert_bundle = CertificateBundle {
+            certificate_chain,
+            private_key,
+        };
+        let identifier = ClientIdentifier::X509(HashMap::from([(cs.signature_algorithm(), cert_bundle)]));
+        self.mls_init(identifier, vec![cs], nb_init_key_packages).await?;
+        Ok(crl_new_distribution_points)
+    }
 }
 
 impl MlsCentral {
@@ -68,51 +137,12 @@ impl MlsCentral {
             handle,
             team,
             expiry_sec,
-            &self.mls_backend,
+            &self.mls_backend.new_transaction(),
             ciphersuite,
             signature_keypair,
             #[cfg(not(target_family = "wasm"))]
             None, // fresh install so no refresh token registered yet
         )
-    }
-
-    /// Parses the ACME server response from the endpoint fetching x509 certificates and uses it
-    /// to initialize the MLS client with a certificate
-    #[cfg_attr(not(test), tracing::instrument(err, skip_all))]
-    pub async fn e2ei_mls_init_only(
-        &self,
-        enrollment: &mut E2eiEnrollment,
-        certificate_chain: String,
-        nb_init_key_packages: Option<usize>,
-    ) -> CryptoResult<NewCrlDistributionPoint> {
-        let sk = enrollment.get_sign_key_for_mls()?;
-        let cs = enrollment.ciphersuite;
-        let certificate_chain = enrollment
-            .certificate_response(
-                certificate_chain,
-                self.mls_backend
-                    .authentication_service()
-                    .borrow()
-                    .await
-                    .as_ref()
-                    .ok_or(CryptoError::ConsumerError)?,
-            )
-            .await?;
-
-        let crl_new_distribution_points = self.extract_dp_on_init(&certificate_chain[..]).await?;
-
-        let private_key = CertificatePrivateKey {
-            value: sk,
-            signature_scheme: cs.signature_algorithm(),
-        };
-
-        let cert_bundle = CertificateBundle {
-            certificate_chain,
-            private_key,
-        };
-        let identifier = ClientIdentifier::X509(HashMap::from([(cs.signature_algorithm(), cert_bundle)]));
-        self.mls_init(identifier, vec![cs], nb_init_key_packages).await?;
-        Ok(crl_new_distribution_points)
     }
 }
 
@@ -162,7 +192,7 @@ impl E2eiEnrollment {
         handle: String,
         team: Option<String>,
         expiry_sec: u32,
-        backend: &MlsCryptoProvider,
+        backend: &TransactionalCryptoProvider,
         ciphersuite: MlsCiphersuite,
         sign_keypair: Option<E2eiSignatureKeypair>,
         #[cfg(not(target_family = "wasm"))] refresh_token: Option<refresh_token::RefreshToken>,
@@ -450,7 +480,7 @@ impl E2eiEnrollment {
     #[cfg_attr(not(test), tracing::instrument(err, skip_all))]
     pub async fn new_oidc_challenge_response(
         &mut self,
-        #[cfg(not(target_family = "wasm"))] backend: &MlsCryptoProvider,
+        #[cfg(not(target_family = "wasm"))] backend: &TransactionalCryptoProvider,
         challenge: Json,
     ) -> E2eIdentityResult<()> {
         let challenge = serde_json::from_slice(&challenge[..])?;
@@ -465,7 +495,7 @@ impl E2eiEnrollment {
             let refresh_token = self.refresh_token.take().ok_or(E2eIdentityError::OutOfOrderEnrollment(
                 "You must first call 'new_oidc_challenge_request()'",
             ))?;
-            self.replace_refresh_token(backend, refresh_token).await?;
+            refresh_token.replace(backend).await?;
         }
         Ok(())
     }
