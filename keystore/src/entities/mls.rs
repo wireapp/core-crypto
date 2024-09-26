@@ -223,9 +223,8 @@ where
                     .ok_or(CryptoKeystoreError::NotFound(Self::COLLECTION_NAME, "".to_string()))?)
             }
 
-            async fn replace(&self, conn: &mut Self::ConnectionType) -> CryptoKeystoreResult<()> {
-                let storage = conn.storage_mut();
-                storage.save(Self::COLLECTION_NAME, &mut [self.clone()]).await?;
+            async fn replace<'a>(&'a self, transaction: &TransactionWrapper<'a>) -> CryptoKeystoreResult<()> {
+                transaction.save(self.clone()).await?;
                 Ok(())
             }
         } else {
@@ -252,12 +251,11 @@ where
 
             fn content(&self) -> &[u8];
 
-            async fn replace(&self, conn: &mut Self::ConnectionType) -> CryptoKeystoreResult<()> {
+            async fn replace(&self, transaction: &TransactionWrapper<'_>) -> CryptoKeystoreResult<()> {
                 use crate::connection::DatabaseConnection;
                 Self::ConnectionType::check_buffer_size(self.content().len())?;
                 let zb_content = rusqlite::blob::ZeroBlob(self.content().len() as i32);
-
-                let transaction = conn.transaction()?;
+                
                 use rusqlite::ToSql;
                 let params: [rusqlite::types::ToSqlOutput; 2] = [Self::ID.to_sql()?, zb_content.to_sql()?];
 

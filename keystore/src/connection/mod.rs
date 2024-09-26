@@ -38,6 +38,7 @@ use crate::{
 use crate::{CryptoKeystoreError, CryptoKeystoreResult};
 use async_lock::{Mutex, MutexGuard};
 use std::sync::Arc;
+use crate::entities::UniqueEntity;
 
 /// Limit on the length of a blob to be stored in the database.
 ///
@@ -104,6 +105,10 @@ pub trait FetchFromDatabase {
         &self,
         id: &[u8],
     ) -> CryptoKeystoreResult<Option<E>>;
+
+    async fn find_unique<U: UniqueEntity<ConnectionType=KeystoreDatabaseConnection>>(
+        &self,
+    ) -> CryptoKeystoreResult<U>;
 
     async fn find_all<E: Entity<ConnectionType = KeystoreDatabaseConnection>>(
         &self,
@@ -201,6 +206,13 @@ impl FetchFromDatabase for Connection {
     ) -> CryptoKeystoreResult<Option<E>> {
         let mut conn = self.conn.lock().await;
         E::find_one(&mut conn, &id.into()).await
+    }
+
+    async fn find_unique<U: UniqueEntity>(
+        &self
+    ) -> CryptoKeystoreResult<U> {
+        let mut conn = self.conn.lock().await;
+        U::find_unique(&mut conn).await
     }
 
     async fn find_all<E: Entity<ConnectionType = KeystoreDatabaseConnection>>(

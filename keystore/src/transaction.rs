@@ -158,8 +158,8 @@ impl Operation {
             }
             Entity::MlsPendingMessage(mls_pending_message) => mls_pending_message.mls_save(tx).await,
             Entity::E2eiEnrollment(e2ei_enrollment) => e2ei_enrollment.mls_save(tx).await,
-            Entity::E2eiRefreshToken(e2ei_refresh_token) => e2ei_refresh_token.mls_save(tx).await,
-            Entity::E2eiAcmeCA(e2ei_acme_ca) => e2ei_acme_ca.mls_save(tx).await,
+            Entity::E2eiRefreshToken(e2ei_refresh_token) => e2ei_refresh_token.replace(tx).await,
+            Entity::E2eiAcmeCA(e2ei_acme_ca) => e2ei_acme_ca.replace(tx).await,
             Entity::E2eiIntermediateCert(e2ei_intermediate_cert) => e2ei_intermediate_cert.mls_save(tx).await,
             Entity::E2eiCrl(e2ei_crl) => e2ei_crl.mls_save(tx).await,
         }
@@ -253,6 +253,12 @@ impl FetchFromDatabase for KeystoreTransaction {
         id: &[u8],
     ) -> CryptoKeystoreResult<Option<E>> {
         self.conn.find(id).await
+    }
+
+    async fn find_unique<U: UniqueEntity<ConnectionType=KeystoreDatabaseConnection>>(
+        &self
+    ) -> CryptoKeystoreResult<U> {
+        self.conn.find_unique().await
     }
 
     async fn find_all<E: crate::entities::Entity<ConnectionType = KeystoreDatabaseConnection>>(
