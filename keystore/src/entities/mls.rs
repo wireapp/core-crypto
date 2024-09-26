@@ -205,80 +205,85 @@ pub struct E2eiEnrollment {
     pub content: Vec<u8>,
 }
 
-#[cfg_attr(target_family = "wasm", async_trait::async_trait(?Send))]
-#[cfg_attr(not(target_family = "wasm"), async_trait::async_trait)]
-pub trait UniqueEntity: Entity<ConnectionType=crate::connection::KeystoreDatabaseConnection>
+#[cfg(target_family = "wasm")]
+#[async_trait::async_trait(?Send)]
+pub trait UniqueEntity: Entity<ConnectionType = crate::connection::KeystoreDatabaseConnection>
 where
     Self: 'static,
 {
-    cfg_if::cfg_if! {
-        if #[cfg(target_family = "wasm")] {
-            const ID: [u8; 1] = [0];
+    const ID: [u8; 1] = [0];
 
-            async fn find_unique(conn: &mut Self::ConnectionType) -> CryptoKeystoreResult<Self> {
-                Ok(conn
-                    .storage()
-                    .get(Self::COLLECTION_NAME, &Self::ID)
-                    .await?
-                    .ok_or(CryptoKeystoreError::NotFound(Self::COLLECTION_NAME, "".to_string()))?)
-            }
+    async fn find_unique(conn: &mut Self::ConnectionType) -> CryptoKeystoreResult<Self> {
+        Ok(conn
+            .storage()
+            .get(Self::COLLECTION_NAME, &Self::ID)
+            .await?
+            .ok_or(CryptoKeystoreError::NotFound(Self::COLLECTION_NAME, "".to_string()))?)
+    }
 
-            async fn replace<'a>(&'a self, transaction: &TransactionWrapper<'a>) -> CryptoKeystoreResult<()> {
-                transaction.save(self.clone()).await?;
-                Ok(())
-            }
+    async fn replace<'a>(&'a self, transaction: &TransactionWrapper<'a>) -> CryptoKeystoreResult<()> {
+        transaction.save(self.clone()).await?;
+        Ok(())
+    }
+}
+
+#[cfg(not(target_family = "wasm"))]
+#[async_trait::async_trait]
+pub trait UniqueEntity: Entity<ConnectionType = crate::connection::KeystoreDatabaseConnection> {
+    const ID: usize = 0;
+
+    fn new(content: Vec<u8>) -> Self;
+
+    async fn find_unique(conn: &mut Self::ConnectionType) -> CryptoKeystoreResult<Self> {
+        let transaction = conn.transaction()?;
+        use rusqlite::OptionalExtension as _;
+
+        let maybe_content = transaction
+            .query_row(
+                &format!("SELECT content FROM {} WHERE id = ?", Self::COLLECTION_NAME),
+                [Self::ID],
+                |r| r.get::<_, Vec<u8>>(0),
+            )
+            .optional()?;
+
+        if let Some(content) = maybe_content {
+            Ok(Self::new(content))
         } else {
-            const ID: usize = 0;
-
-            fn new(content: Vec<u8>) -> Self;
-
-            async fn find_unique(conn: &mut Self::ConnectionType) -> CryptoKeystoreResult<Self> {
-                let transaction = conn.transaction()?;
-                use rusqlite::OptionalExtension as _;
-
-                let maybe_content = transaction
-                    .query_row(&format!("SELECT content FROM {} WHERE id = ?", Self::COLLECTION_NAME), [Self::ID], |r| {
-                        r.get::<_, Vec<u8>>(0)
-                    })
-                    .optional()?;
-
-                if let Some(content) = maybe_content {
-                    Ok(Self::new(content))
-                } else {
-                    Err(CryptoKeystoreError::NotFound(Self::COLLECTION_NAME, "".to_string()))
-                }
-            }
-
-            fn content(&self) -> &[u8];
-
-            async fn replace(&self, transaction: &TransactionWrapper<'_>) -> CryptoKeystoreResult<()> {
-                use crate::connection::DatabaseConnection;
-                Self::ConnectionType::check_buffer_size(self.content().len())?;
-                let zb_content = rusqlite::blob::ZeroBlob(self.content().len() as i32);
-                
-                use rusqlite::ToSql;
-                let params: [rusqlite::types::ToSqlOutput; 2] = [Self::ID.to_sql()?, zb_content.to_sql()?];
-
-                transaction.execute(
-                    &format!("INSERT OR REPLACE INTO {} (id, content) VALUES (?, ?)", Self::COLLECTION_NAME),
-                    params,
-                )?;
-                let row_id = transaction.last_insert_rowid();
-
-                let mut blob = transaction.blob_open(
-                    rusqlite::DatabaseName::Main,
-                    Self::COLLECTION_NAME,
-                    "content",
-                    row_id,
-                    false,
-                )?;
-                use std::io::Write;
-                blob.write_all(self.content())?;
-                blob.close()?;
-
-                Ok(())
-            }
+            Err(CryptoKeystoreError::NotFound(Self::COLLECTION_NAME, "".to_string()))
         }
+    }
+
+    fn content(&self) -> &[u8];
+
+    async fn replace(&self, transaction: &TransactionWrapper<'_>) -> CryptoKeystoreResult<()> {
+        use crate::connection::DatabaseConnection;
+        Self::ConnectionType::check_buffer_size(self.content().len())?;
+        let zb_content = rusqlite::blob::ZeroBlob(self.content().len() as i32);
+
+        use rusqlite::ToSql;
+        let params: [rusqlite::types::ToSqlOutput; 2] = [Self::ID.to_sql()?, zb_content.to_sql()?];
+
+        transaction.execute(
+            &format!(
+                "INSERT OR REPLACE INTO {} (id, content) VALUES (?, ?)",
+                Self::COLLECTION_NAME
+            ),
+            params,
+        )?;
+        let row_id = transaction.last_insert_rowid();
+
+        let mut blob = transaction.blob_open(
+            rusqlite::DatabaseName::Main,
+            Self::COLLECTION_NAME,
+            "content",
+            row_id,
+            false,
+        )?;
+        use std::io::Write;
+        blob.write_all(self.content())?;
+        blob.close()?;
+
+        Ok(())
     }
 }
 

@@ -295,6 +295,45 @@ impl MlsCentral {
             .ok_or(CryptoError::MlsNotInitialized)
     }
 
+    /// Checks if a given conversation id exists locally
+    pub async fn conversation_exists(&self, id: &ConversationId) -> CryptoResult<bool> {
+        Ok(self.get_conversation(id).await?.is_some())
+    }
+
+    /// Returns the epoch of a given conversation
+    ///
+    /// # Errors
+    /// If the conversation can't be found
+    #[cfg_attr(test, crate::idempotent)]
+    pub async fn conversation_epoch(&self, id: &ConversationId) -> CryptoResult<u64> {
+        Ok(self
+            .get_conversation(id)
+            .await?
+            .ok_or_else(|| CryptoError::ConversationNotFound(id.clone()))?
+            .group
+            .epoch()
+            .as_u64())
+    }
+
+    /// Returns the ciphersuite of a given conversation
+    ///
+    /// # Errors
+    /// If the conversation can't be found
+    #[cfg_attr(test, crate::idempotent)]
+    pub async fn conversation_ciphersuite(&self, id: &ConversationId) -> CryptoResult<MlsCiphersuite> {
+        Ok(self
+            .get_conversation(id)
+            .await?
+            .ok_or_else(|| CryptoError::ConversationNotFound(id.clone()))?
+            .ciphersuite())
+    }
+
+    /// Generates a random byte array of the specified size
+    pub fn random_bytes(&self, len: usize) -> CryptoResult<Vec<u8>> {
+        use openmls_traits::random::OpenMlsRand as _;
+        Ok(self.mls_backend.rand().random_vec(len)?)
+    }
+
     /// Closes the connection with the local KeyStore
     ///
     /// # Errors
@@ -302,6 +341,16 @@ impl MlsCentral {
     /// TODO: check if there's an active transaction
     pub async fn close(self) -> CryptoResult<()> {
         self.mls_backend.close().await?;
+        Ok(())
+    }
+
+    /// Destroys everything we have, in-memory and on disk.
+    ///
+    /// # Errors
+    /// KeyStore errors, such as IO
+    /// TODO: check if there's an active transaction
+    pub async fn wipe(self) -> CryptoResult<()> {
+        self.mls_backend.destroy_and_reset().await?;
         Ok(())
     }
 }
@@ -467,24 +516,10 @@ impl CentralContext {
         Ok(self.get_conversation(id).await?.read().await.ciphersuite())
     }
 
-    /// Destroys everything we have, in-memory and on disk.
-    ///
-    /// # Errors
-    /// KeyStore errors, such as IO
-    pub async fn wipe(self) -> CryptoResult<()> {
-        self.mls_backend.destroy_and_reset().await?;
-        Ok(())
-    }
-
     /// Generates a random byte array of the specified size
-    pub fn random_bytes(&self, len: usize) -> CryptoResult<Vec<u8>> {
+    pub async fn random_bytes(&self, len: usize) -> CryptoResult<Vec<u8>> {
         use openmls_traits::random::OpenMlsRand as _;
-        Ok(self.mls_backend.rand().random_vec(len)?)
-    }
-
-    /// Returns a reference for the internal Crypto Provider
-    pub fn provider(&self) -> &MlsCryptoProvider {
-        &self.mls_backend
+        Ok(self.mls_provider().await?.rand().random_vec(len)?)
     }
 }
 
