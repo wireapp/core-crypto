@@ -300,10 +300,10 @@ impl KeystoreTransaction {
     >(
         &self,
         mut entity: E,
-    ) -> CryptoKeystoreResult<E> {
+    ) -> CryptoKeystoreResult<()> {
         entity.pre_save().await?;
-        self.add_operation(entity.clone().to_transaction_entity().into()).await;
-        Ok(entity)
+        self.add_operation(entity.to_transaction_entity().into()).await;
+        Ok(())
     }
 
     pub async fn remove<E: crate::entities::Entity<ConnectionType = KeystoreDatabaseConnection>, S: AsRef<[u8]>>(
