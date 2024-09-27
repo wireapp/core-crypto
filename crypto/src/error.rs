@@ -249,8 +249,8 @@ pub enum CryptoError {
     /// Not supported for the moment
     #[error("Not supported for the moment")]
     Unsupported,
-    /// Invalid Context. This context was finished and cannot be further used
-    #[error("This context was already finished and cannot be further used")]
+    /// Invalid Context. This context has been finished and can no longer be used.
+    #[error("This context has already been finished and can no longer be used.")]
     InvalidContext,
 }
 
