@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use async_lock::RwLock;
+use async_lock::{Mutex, RwLock};
 use tracing::{trace, Instrument};
 
 use mls_crypto_provider::{MlsCryptoProvider, MlsCryptoProviderConfiguration};
@@ -148,6 +148,7 @@ pub struct MlsCentral {
     pub(crate) mls_backend: MlsCryptoProvider,
     // this should be moved to the context
     pub(crate) callbacks: Arc<RwLock<Option<std::sync::Arc<dyn CoreCryptoCallbacks + 'static>>>>,
+    pub(crate) transaction_lock: Arc<Mutex<()>>,
 }
 
 impl MlsCentral {
@@ -202,12 +203,13 @@ impl MlsCentral {
             mls_backend,
             mls_client,
             callbacks: Arc::new(None.into()),
+            transaction_lock: Arc::new(Mutex::new(())),
         };
 
         transaction.transaction().commit().await?;
         drop(transaction);
 
-        let context = central.new_transaction();
+        let context = central.new_transaction().await;
 
         context.init_pki_env().in_current_span().await?;
         context.finish().await?;
@@ -249,11 +251,12 @@ impl MlsCentral {
             mls_backend,
             mls_client,
             callbacks: Arc::new(None.into()),
+            transaction_lock: Arc::new(Mutex::new(())),
         };
         transaction.transaction().commit().await?;
         drop(transaction);
 
-        let context = central.new_transaction();
+        let context = central.new_transaction().await;
 
         context.init_pki_env().in_current_span().await?;
         context.finish().await?;

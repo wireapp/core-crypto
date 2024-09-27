@@ -3,7 +3,7 @@
 
 use std::{ops::Deref, sync::Arc};
 
-use async_lock::{RwLock, RwLockReadGuardArc, RwLockWriteGuardArc};
+use async_lock::{MutexGuardArc, RwLock, RwLockReadGuardArc, RwLockWriteGuardArc};
 use core_crypto_keystore::KeystoreTransaction;
 use mls_crypto_provider::TransactionalCryptoProvider;
 
@@ -24,6 +24,7 @@ use super::MlsCentral;
 #[derive(Debug, Clone)]
 pub struct CentralContext {
     state: Arc<RwLock<ContextState>>,
+    _lock_guard: Arc<MutexGuardArc<()>>,
 }
 
 /// Due to uniffi's design, we can't force the context to be dropped after the transaction is
@@ -44,17 +45,18 @@ impl MlsCentral {
     /// Creates a new transaction within the MlsCentral. All operations that persist data will be
     /// buffered in memory and when [CentralContext::finish] is called, the data will be persisted
     /// in a single database transaction.
-    pub fn new_transaction(&self) -> CentralContext {
-        CentralContext::new(self)
+    pub async fn new_transaction(&self) -> CentralContext {
+        CentralContext::new(self).await
     }
 }
 
 impl CentralContext {
-    fn new(central: &MlsCentral) -> Self {
+    async fn new(central: &MlsCentral) -> Self {
         let transaction = central.mls_backend.new_transaction();
         let mls_groups = Arc::new(RwLock::new(Default::default()));
         let callbacks = central.callbacks.clone();
         let mls_client = central.mls_client.clone();
+        let lock_guard = Arc::new(central.transaction_lock.lock_arc().await);
         Self {
             state: Arc::new(
                 ContextState::Valid {
@@ -65,6 +67,7 @@ impl CentralContext {
                 }
                 .into(),
             ),
+            _lock_guard: lock_guard,
         }
     }
 
