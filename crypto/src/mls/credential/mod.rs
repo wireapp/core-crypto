@@ -13,7 +13,7 @@ use openmls_basic_credential::SignatureKeyPair;
 use openmls_traits::types::SignatureScheme;
 use openmls_x509_credential::CertificateKeyPair;
 
-use mls_crypto_provider::MlsCryptoProvider;
+use mls_crypto_provider::TransactionalCryptoProvider;
 
 use crate::prelude::{CertificateBundle, Client, ClientId, CryptoResult, MlsError};
 
@@ -104,7 +104,7 @@ impl Client {
     pub(crate) fn new_basic_credential_bundle(
         id: &ClientId,
         sc: SignatureScheme,
-        backend: &MlsCryptoProvider,
+        backend: &TransactionalCryptoProvider,
     ) -> CryptoResult<CredentialBundle> {
         let (sk, pk) = backend.crypto().signature_key_gen(sc).map_err(MlsError::from)?;
 

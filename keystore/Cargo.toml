@@ -86,6 +86,7 @@ wasm-bindgen-futures = "0.4"
 # Crypto stuff
 aes-gcm = "0.10"
 rand.workspace = true
+itertools.workspace = true
 getrandom = { version = "0.2", features = ["js"] }
 fluvio-wasm-timer = "0.2"
 # Old keystore versions for idb migrations

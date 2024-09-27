@@ -1,6 +1,6 @@
 use super::error::*;
 use crate::{prelude::MlsCiphersuite, CryptoError, CryptoResult, MlsError};
-use mls_crypto_provider::{MlsCryptoProvider, PkiKeypair, RustCrypto};
+use mls_crypto_provider::{PkiKeypair, RustCrypto, TransactionalCryptoProvider};
 use openmls_basic_credential::SignatureKeyPair as OpenMlsSignatureKeyPair;
 use openmls_traits::{
     crypto::OpenMlsCrypto,
@@ -13,7 +13,7 @@ use zeroize::Zeroize;
 impl super::E2eiEnrollment {
     pub(super) fn new_sign_key(
         ciphersuite: MlsCiphersuite,
-        backend: &MlsCryptoProvider,
+        backend: &TransactionalCryptoProvider,
     ) -> CryptoResult<E2eiSignatureKeypair> {
         let (sk, _) = backend
             .crypto()

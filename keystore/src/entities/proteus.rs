@@ -16,6 +16,8 @@
 
 use zeroize::Zeroize;
 
+use crate::connection::FetchFromDatabase;
+
 #[derive(Debug, Clone, Zeroize, PartialEq, Eq)]
 #[zeroize(drop)]
 #[cfg_attr(
@@ -94,7 +96,7 @@ impl ProteusPrekey {
             if id == limit {
                 return Err(crate::CryptoKeystoreError::NoFreePrekeyId);
             }
-            if conn.find::<Self>(id.to_le_bytes()).await?.is_none() {
+            if conn.find::<Self>(&id.to_le_bytes()).await?.is_none() {
                 break;
             }
             id += 1;

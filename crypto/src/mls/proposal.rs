@@ -16,12 +16,14 @@
 
 use openmls::prelude::{hash_ref::ProposalRef, KeyPackage};
 
-use mls_crypto_provider::MlsCryptoProvider;
+use mls_crypto_provider::TransactionalCryptoProvider;
 
 use crate::{
-    mls::{ClientId, ConversationId, MlsCentral, MlsConversation},
+    mls::{ClientId, ConversationId, MlsConversation},
     prelude::{Client, CryptoError, CryptoResult, MlsProposalBundle},
 };
+
+use super::context::CentralContext;
 
 /// Abstraction over a [openmls::prelude::hash_ref::ProposalRef] to deal with conversions
 #[derive(Debug, Clone, Eq, PartialEq, derive_more::From, derive_more::Deref, derive_more::Display)]
@@ -52,7 +54,9 @@ impl From<MlsProposalRef> for Vec<u8> {
 }
 
 /// Internal representation of proposal to ease further additions
-// KeyPackage is large
+// To solve the clippy issue we'd need to box the `KeyPackage`, but we can't because we need an
+// owned value of it. We can have it when Box::into_inner is stablized.
+// https://github.com/rust-lang/rust/issues/80437
 #[allow(clippy::large_enum_variant)]
 pub enum MlsProposal {
     /// Requests that a client with a specified KeyPackage be added to the group
@@ -69,7 +73,7 @@ impl MlsProposal {
     async fn create(
         self,
         client: &Client,
-        backend: &MlsCryptoProvider,
+        backend: &TransactionalCryptoProvider,
         mut conversation: impl std::ops::DerefMut<Target = MlsConversation>,
     ) -> CryptoResult<MlsProposalBundle> {
         let proposal = match self {
@@ -93,7 +97,7 @@ impl MlsProposal {
     }
 }
 
-impl MlsCentral {
+impl CentralContext {
     /// Creates a new Add proposal
     #[cfg_attr(test, crate::idempotent)]
     pub async fn new_add_proposal(
@@ -134,10 +138,10 @@ impl MlsCentral {
     /// returned as well, when for example there's a commit pending to be merged
     async fn new_proposal(&self, id: &ConversationId, proposal: MlsProposal) -> CryptoResult<MlsProposalBundle> {
         let conversation = self.get_conversation(id).await?;
-        let client_guard = self.mls_client().await;
+        let client_guard = self.mls_client().await?;
         let client = client_guard.as_ref().ok_or(CryptoError::MlsNotInitialized)?;
         proposal
-            .create(client, &self.mls_backend, conversation.write().await)
+            .create(client, &self.mls_provider().await?, conversation.write().await)
             .await
     }
 }

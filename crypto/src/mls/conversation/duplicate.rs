@@ -4,13 +4,13 @@
 
 use crate::prelude::MlsConversation;
 use crate::{CryptoError, MlsError};
-use mls_crypto_provider::MlsCryptoProvider;
+use mls_crypto_provider::TransactionalCryptoProvider;
 use openmls::prelude::{ContentType, FramedContentBodyIn, Proposal, PublicMessageIn, Sender};
 
 impl MlsConversation {
     pub(crate) fn is_duplicate_message(
         &self,
-        backend: &MlsCryptoProvider,
+        backend: &TransactionalCryptoProvider,
         msg: &PublicMessageIn,
     ) -> Result<bool, CryptoError> {
         let (sender, content_type) = (msg.sender(), msg.body().content_type());

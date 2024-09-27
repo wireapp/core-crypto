@@ -3,7 +3,7 @@ use crate::{
     prelude::CryptoError,
     prelude::{CertificateBundle, Client, ClientId, CryptoResult},
 };
-use mls_crypto_provider::MlsCryptoProvider;
+use mls_crypto_provider::TransactionalCryptoProvider;
 use openmls_traits::types::SignatureScheme;
 use std::collections::{HashMap, HashSet};
 
@@ -38,7 +38,7 @@ impl ClientIdentifier {
     /// This method does not persist them in the keystore !
     pub fn generate_credential_bundles(
         self,
-        backend: &MlsCryptoProvider,
+        backend: &TransactionalCryptoProvider,
         signature_schemes: HashSet<SignatureScheme>,
     ) -> CryptoResult<Vec<(SignatureScheme, ClientId, CredentialBundle)>> {
         match self {

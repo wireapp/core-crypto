@@ -15,7 +15,7 @@
 // along with this program. If not, see http://www.gnu.org/licenses/.
 
 use crate::{
-    connection::{storage::WasmStorageTransaction, DatabaseConnection, KeystoreDatabaseConnection},
+    connection::{storage::WasmStorageTransaction, KeystoreDatabaseConnection},
     entities::{E2eiAcmeCA, Entity, EntityBase, EntityFindParams, EntityMlsExt, StringEntityId, UniqueEntity},
     CryptoKeystoreError, CryptoKeystoreResult, MissingKeyErrorKind,
 };
@@ -29,6 +29,10 @@ impl EntityBase for E2eiAcmeCA {
 
     fn to_missing_key_err_kind() -> MissingKeyErrorKind {
         MissingKeyErrorKind::E2eiAcmeCA
+    }
+
+    fn to_transaction_entity(self) -> crate::transaction::Entity {
+        crate::transaction::Entity::E2eiAcmeCA(self)
     }
 
     async fn find_all(_conn: &mut Self::ConnectionType, _params: EntityFindParams) -> CryptoKeystoreResult<Vec<Self>> {
@@ -78,18 +82,4 @@ impl Entity for E2eiAcmeCA {
 
 #[cfg_attr(target_family = "wasm", async_trait::async_trait(?Send))]
 #[cfg_attr(not(target_family = "wasm"), async_trait::async_trait)]
-impl UniqueEntity for E2eiAcmeCA {
-    async fn find_unique(conn: &mut Self::ConnectionType) -> CryptoKeystoreResult<Self> {
-        Ok(conn
-            .storage()
-            .get(Self::COLLECTION_NAME, &Self::ID)
-            .await?
-            .ok_or(CryptoKeystoreError::NotFound("E2EI ACME root CA", "".to_string()))?)
-    }
-
-    async fn replace(&self, conn: &mut Self::ConnectionType) -> CryptoKeystoreResult<()> {
-        let storage = conn.storage_mut();
-        storage.save(Self::COLLECTION_NAME, &mut [self.clone()]).await?;
-        Ok(())
-    }
-}
+impl UniqueEntity for E2eiAcmeCA {}

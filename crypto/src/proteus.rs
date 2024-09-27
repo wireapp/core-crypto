@@ -19,6 +19,7 @@ use crate::{
     CoreCrypto, CryptoError, CryptoResult, ProteusError,
 };
 use core_crypto_keystore::{
+    connection::FetchFromDatabase,
     entities::{ProteusIdentity, ProteusSession},
     Connection as CryptoKeystore,
 };
@@ -291,6 +292,7 @@ impl CoreCrypto {
 }
 
 /// Proteus counterpart of [crate::mls::MlsCentral]
+///
 /// The big difference is that [ProteusCentral] doesn't *own* its own keystore but must borrow it from the outside.
 /// Whether it's exclusively for this struct's purposes or it's shared with our main struct, [crate::mls::MlsCentral]
 #[derive(Debug)]
@@ -569,7 +571,9 @@ impl ProteusCentral {
     /// If it cannot be found, one will be created.
     pub async fn last_resort_prekey(&self, keystore: &CryptoKeystore) -> CryptoResult<Vec<u8>> {
         let last_resort = if let Some(last_resort) = keystore
-            .find::<core_crypto_keystore::entities::ProteusPrekey>(Self::last_resort_prekey_id().to_le_bytes())
+            .find::<core_crypto_keystore::entities::ProteusPrekey>(
+                Self::last_resort_prekey_id().to_le_bytes().as_slice(),
+            )
             .await?
         {
             proteus_wasm::keys::PreKey::deserialise(&last_resort.prekey).map_err(ProteusError::from)?

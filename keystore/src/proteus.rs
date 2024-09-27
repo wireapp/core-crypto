@@ -14,7 +14,11 @@
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see http://www.gnu.org/licenses/.
 
-use crate::{connection::Connection, entities::ProteusPrekey, CryptoKeystoreError, CryptoKeystoreResult};
+use crate::{
+    connection::{Connection, FetchFromDatabase},
+    entities::ProteusPrekey,
+    CryptoKeystoreError, CryptoKeystoreResult,
+};
 
 #[cfg_attr(target_family = "wasm", async_trait::async_trait(?Send))]
 #[cfg_attr(not(target_family = "wasm"), async_trait::async_trait)]
@@ -42,7 +46,7 @@ impl proteus_traits::PreKeyStore for Connection {
         id: proteus_traits::RawPreKeyId,
     ) -> Result<Option<proteus_traits::RawPreKey>, Self::Error> {
         Ok(self
-            .find::<ProteusPrekey>(id.to_le_bytes())
+            .find::<ProteusPrekey>(&id.to_le_bytes())
             .await?
             .map(|db_prekey| db_prekey.prekey.clone()))
     }

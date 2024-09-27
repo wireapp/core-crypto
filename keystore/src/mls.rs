@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see http://www.gnu.org/licenses/.
 
-use crate::entities::EntityBase;
+use crate::connection::FetchFromDatabase;
 use crate::entities::MlsEpochEncryptionKeyPair;
 use crate::{
     entities::{
@@ -134,40 +134,22 @@ pub trait CryptoKeystoreMls: Sized {
 
 #[cfg_attr(target_family = "wasm", async_trait::async_trait(?Send))]
 #[cfg_attr(not(target_family = "wasm"), async_trait::async_trait)]
-impl CryptoKeystoreMls for crate::connection::Connection {
-    #[cfg(target_family = "wasm")]
+impl CryptoKeystoreMls for crate::KeystoreTransaction {
     async fn mls_fetch_keypackages<V: MlsEntity>(&self, count: u32) -> CryptoKeystoreResult<Vec<V>> {
-        let mut db_connection = self.conn.lock().await;
-        let keypackages = MlsKeyPackage::find_all(
-            &mut db_connection,
-            EntityFindParams {
+        cfg_if::cfg_if! {
+            if #[cfg(not(target_family = "wasm"))] {
+                let reverse = true;
+            } else {
+                let reverse = false;
+            }
+        }
+        let keypackages = self
+            .find_all::<MlsKeyPackage>(EntityFindParams {
                 limit: Some(count),
                 offset: None,
-                // Don't invert the cursor direction
-                reverse: false,
-            },
-        )
-        .await?;
-
-        Ok(keypackages
-            .into_iter()
-            .filter_map(|kpb| deser(&kpb.keypackage).ok())
-            .collect())
-    }
-
-    #[cfg(not(target_family = "wasm"))]
-    async fn mls_fetch_keypackages<V: MlsEntity>(&self, count: u32) -> CryptoKeystoreResult<Vec<V>> {
-        let mut db_connection = self.conn.lock().await;
-
-        let keypackages = MlsKeyPackage::find_all(
-            &mut db_connection,
-            EntityFindParams {
-                limit: Some(count),
-                offset: None,
-                reverse: true,
-            },
-        )
-        .await?;
+                reverse,
+            })
+            .await?;
 
         Ok(keypackages
             .into_iter()
@@ -273,6 +255,7 @@ pub fn ser<T: MlsEntity>(value: &T) -> Result<Vec<u8>, CryptoKeystoreError> {
     Ok(postcard::to_stdvec(value)?)
 }
 
+// FIXME: CHECK IF THIS IS REALLY NEEDED
 #[cfg_attr(target_family = "wasm", async_trait::async_trait(?Send))]
 #[cfg_attr(not(target_family = "wasm"), async_trait::async_trait)]
 impl openmls_traits::key_store::OpenMlsKeyStore for crate::connection::Connection {
@@ -282,7 +265,6 @@ impl openmls_traits::key_store::OpenMlsKeyStore for crate::connection::Connectio
     where
         Self: Sized,
     {
-        // TODO: remove
         if k.is_empty() {
             return Err(CryptoKeystoreError::MlsKeyStoreError(
                 "The provided key is empty".into(),
@@ -387,11 +369,6 @@ impl openmls_traits::key_store::OpenMlsKeyStore for crate::connection::Connectio
     }
 
     async fn delete<V: MlsEntity>(&self, k: &[u8]) -> Result<(), Self::Error> {
-        // TODO: remove
-        if k.is_empty() {
-            return Ok(());
-        }
-
         match V::ID {
             MlsEntityId::GroupState => self.remove::<PersistedMlsGroup, _>(k).await?,
             MlsEntityId::SignatureKeyPair => self.remove::<MlsSignatureKeyPair, _>(k).await?,

@@ -7,10 +7,11 @@
 //! | 0 pend. Proposal  | ✅              | ❌              |
 //! | 1+ pend. Proposal | ❌              | ❌              |
 
-use crate::prelude::Client;
-use crate::{mls::ConversationId, mls::MlsCentral, CryptoError, CryptoResult, MlsError};
-use mls_crypto_provider::MlsCryptoProvider;
+use mls_crypto_provider::TransactionalCryptoProvider;
 use openmls::prelude::MlsMessageOutBody;
+
+use crate::{mls::context::CentralContext, prelude::Client};
+use crate::{mls::ConversationId, CryptoError, CryptoResult, MlsError};
 
 use super::MlsConversation;
 
@@ -23,7 +24,7 @@ impl MlsConversation {
         &mut self,
         client: &Client,
         message: impl AsRef<[u8]>,
-        backend: &MlsCryptoProvider,
+        backend: &TransactionalCryptoProvider,
     ) -> CryptoResult<Vec<u8>> {
         let signer = &self
             .find_current_credential_bundle(client)?
@@ -39,12 +40,12 @@ impl MlsConversation {
 
         let encrypted = encrypted.to_bytes().map_err(MlsError::from)?;
 
-        self.persist_group_when_changed(backend, false).await?;
+        self.persist_group_when_changed(&backend.transaction(), false).await?;
         Ok(encrypted)
     }
 }
 
-impl MlsCentral {
+impl CentralContext {
     /// Encrypts a raw payload then serializes it to the TLS wire format
     ///
     /// # Arguments
@@ -63,13 +64,13 @@ impl MlsCentral {
         conversation: &ConversationId,
         message: impl AsRef<[u8]>,
     ) -> CryptoResult<Vec<u8>> {
-        let client_guard = self.mls_client().await;
+        let client_guard = self.mls_client().await?;
         let client = client_guard.as_ref().ok_or(CryptoError::MlsNotInitialized)?;
         self.get_conversation(conversation)
             .await?
             .write()
             .await
-            .encrypt_message(client, message, &self.mls_backend)
+            .encrypt_message(client, message, &self.mls_provider().await?)
             .await
     }
 }
