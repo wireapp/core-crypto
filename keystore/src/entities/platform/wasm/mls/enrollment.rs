@@ -31,6 +31,10 @@ impl EntityBase for E2eiEnrollment {
         MissingKeyErrorKind::E2eiEnrollment
     }
 
+    fn to_transaction_entity(self) -> crate::transaction::Entity {
+        crate::transaction::Entity::E2eiEnrollment(self)
+    }
+
     async fn find_all(_conn: &mut Self::ConnectionType, _params: EntityFindParams) -> CryptoKeystoreResult<Vec<Self>> {
         Err(CryptoKeystoreError::ImplementationError)
     }
@@ -46,14 +50,7 @@ impl EntityBase for E2eiEnrollment {
 
 #[cfg_attr(target_family = "wasm", async_trait::async_trait(?Send))]
 #[cfg_attr(not(target_family = "wasm"), async_trait::async_trait)]
-impl EntityMlsExt for E2eiEnrollment {
-    async fn mls_save<'a>(
-        &'a self,
-        tx: &crate::connection::storage::WasmStorageTransaction<'a>,
-    ) -> CryptoKeystoreResult<()> {
-        tx.save(Self::COLLECTION_NAME, self.clone()).await
-    }
-}
+impl EntityMlsExt for E2eiEnrollment {}
 
 impl Entity for E2eiEnrollment {
     fn id_raw(&self) -> &[u8] {

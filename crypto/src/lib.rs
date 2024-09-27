@@ -96,6 +96,8 @@ pub mod prelude {
     };
 }
 
+/// Client callbacks in order to Core Crypto to verify user authorization
+///
 /// This trait is used to provide callback mechanisms for the MlsCentral struct, for example for
 /// operations like adding or removing memebers that can be authorized through a caller provided
 /// authorization method.
@@ -143,6 +145,7 @@ pub trait CoreCryptoCallbacks: std::fmt::Debug + Send + Sync {
 
 #[derive(Debug)]
 /// Wrapper superstruct for both [mls::MlsCentral] and [proteus::ProteusCentral]
+///
 /// As [std::ops::Deref] is implemented, this struct is automatically dereferred to [mls::MlsCentral] apart from `proteus_*` calls
 pub struct CoreCrypto {
     mls: mls::MlsCentral,

@@ -6,6 +6,7 @@ use openmls_traits::OpenMlsCryptoProvider;
 use x509_cert::der::pem::LineEnding;
 
 use crate::e2e_identity::id::WireQualifiedClientId;
+use crate::mls::context::CentralContext;
 use crate::mls::credential::ext::CredentialExt;
 use crate::prelude::MlsCredentialType;
 use crate::{
@@ -79,6 +80,40 @@ impl<'a> TryFrom<(wire_e2e_identity::prelude::WireIdentity, &'a [u8])> for WireI
     }
 }
 
+impl CentralContext {
+    /// See [MlsCentral::get_device_identities].
+    #[cfg_attr(not(test), tracing::instrument(err, skip_all))]
+    pub async fn get_device_identities(
+        &self,
+        conversation_id: &ConversationId,
+        client_ids: &[ClientId],
+    ) -> CryptoResult<Vec<WireIdentity>> {
+        let mls_provider = self.mls_provider().await?;
+        let auth_service = mls_provider.authentication_service();
+        auth_service.refresh_time_of_interest().await;
+        let auth_service = auth_service.borrow().await;
+        let conversation = self.get_conversation(conversation_id).await?;
+        let conversation_guard = conversation.read().await;
+        conversation_guard.get_device_identities(client_ids, auth_service.as_ref())
+    }
+
+    /// See [MlsCentral::get_user_identities].
+    #[cfg_attr(not(test), tracing::instrument(err, skip_all))]
+    pub async fn get_user_identities(
+        &self,
+        conversation_id: &ConversationId,
+        user_ids: &[String],
+    ) -> CryptoResult<HashMap<String, Vec<WireIdentity>>> {
+        let mls_provider = self.mls_provider().await?;
+        let auth_service = mls_provider.authentication_service();
+        auth_service.refresh_time_of_interest().await;
+        let auth_service = auth_service.borrow().await;
+        let conversation = self.get_conversation(conversation_id).await?;
+        let conversation_guard = conversation.read().await;
+        conversation_guard.get_user_identities(user_ids, auth_service.as_ref())
+    }
+}
+
 impl MlsCentral {
     /// From a given conversation, get the identity of the members supplied. Identity is only present for
     /// members with a Certificate Credential (after turning on end-to-end identity).
@@ -93,14 +128,14 @@ impl MlsCentral {
             .authentication_service()
             .refresh_time_of_interest()
             .await;
-        self.get_conversation(conversation_id)
-            .await?
-            .read()
-            .await
-            .get_device_identities(
-                client_ids,
-                self.mls_backend.authentication_service().borrow().await.as_ref(),
-            )
+        let conversation = self.get_conversation(conversation_id).await?;
+        let Some(conversation) = conversation else {
+            return Err(CryptoError::ConversationNotFound(conversation_id.clone()));
+        };
+        conversation.get_device_identities(
+            client_ids,
+            self.mls_backend.authentication_service().borrow().await.as_ref(),
+        )
     }
 
     /// From a given conversation, get the identity of the users (device holders) supplied.
@@ -119,14 +154,13 @@ impl MlsCentral {
             .authentication_service()
             .refresh_time_of_interest()
             .await;
-        self.get_conversation(conversation_id)
-            .await?
-            .read()
-            .await
-            .get_user_identities(
-                user_ids,
-                self.mls_backend.authentication_service().borrow().await.as_ref(),
-            )
+        let Some(conversation) = self.get_conversation(conversation_id).await? else {
+            return Err(CryptoError::ConversationNotFound(conversation_id.clone()));
+        };
+        conversation.get_user_identities(
+            user_ids,
+            self.mls_backend.authentication_service().borrow().await.as_ref(),
+        )
     }
 }
 

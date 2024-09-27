@@ -21,13 +21,14 @@ use openmls_traits::OpenMlsCryptoProvider;
 use tls_codec::Deserialize;
 
 use core_crypto_keystore::entities::MlsPendingMessage;
-use mls_crypto_provider::MlsCryptoProvider;
+use mls_crypto_provider::TransactionalCryptoProvider;
 
 use crate::{
     e2e_identity::{conversation_state::compute_state, init_certificates::NewCrlDistributionPoint},
     group_store::GroupStoreValue,
     mls::{
         client::Client,
+        context::CentralContext,
         conversation::renew::Renew,
         credential::{
             crl::{
@@ -35,7 +36,7 @@ use crate::{
             },
             ext::CredentialExt,
         },
-        ClientId, ConversationId, MlsCentral, MlsConversation,
+        ClientId, ConversationId, MlsConversation,
     },
     prelude::{E2eiConversationState, MlsProposalBundle, WireIdentity},
     CoreCryptoCallbacks, CryptoError, CryptoResult, MlsError,
@@ -119,7 +120,7 @@ impl MlsConversation {
         message: MlsMessageIn,
         parent_conv: Option<&GroupStoreValue<MlsConversation>>,
         client: &Client,
-        backend: &MlsCryptoProvider,
+        backend: &TransactionalCryptoProvider,
         callbacks: Option<&dyn CoreCryptoCallbacks>,
         restore_pending: bool,
     ) -> CryptoResult<MlsConversationDecryptMessage> {
@@ -269,7 +270,7 @@ impl MlsConversation {
             }
         };
 
-        self.persist_group_when_changed(backend, false).await?;
+        self.persist_group_when_changed(&backend.transaction(), false).await?;
 
         Ok(decrypted)
     }
@@ -277,7 +278,7 @@ impl MlsConversation {
     #[cfg_attr(not(test), tracing::instrument(err, skip_all))]
     async fn parse_message(
         &mut self,
-        backend: &MlsCryptoProvider,
+        backend: &TransactionalCryptoProvider,
         msg_in: MlsMessageIn,
     ) -> CryptoResult<ProcessedMessage> {
         let mut is_duplicate = false;
@@ -339,7 +340,7 @@ impl MlsConversation {
     }
 
     #[cfg_attr(not(test), tracing::instrument(err, skip_all))]
-    async fn validate_commit(&self, commit: &StagedCommit, backend: &MlsCryptoProvider) -> CryptoResult<()> {
+    async fn validate_commit(&self, commit: &StagedCommit, backend: &TransactionalCryptoProvider) -> CryptoResult<()> {
         if backend.authentication_service().is_env_setup().await {
             let credentials: Vec<_> = commit
                 .add_proposals()
@@ -365,7 +366,7 @@ impl MlsConversation {
     }
 }
 
-impl MlsCentral {
+impl CentralContext {
     /// Deserializes a TLS-serialized message, then deciphers it
     ///
     /// # Arguments
@@ -392,9 +393,9 @@ impl MlsCentral {
             return self.handle_when_group_is_pending(id, message).await;
         };
         let parent_conversation = self.get_parent_conversation(&conversation).await?;
-        let guard = self.callbacks.read().await;
+        let guard = self.callbacks().await?;
         let callbacks = guard.as_ref().map(|boxed| boxed.as_ref());
-        let client_guard = self.mls_client().await;
+        let client_guard = self.mls_client().await?;
         let client = client_guard.as_ref().ok_or(CryptoError::MlsNotInitialized)?;
         let decrypt_message = conversation
             .write()
@@ -403,7 +404,7 @@ impl MlsCentral {
                 msg,
                 parent_conversation.as_ref(),
                 client,
-                &self.mls_backend,
+                &self.mls_provider().await?,
                 callbacks,
                 true,
             )

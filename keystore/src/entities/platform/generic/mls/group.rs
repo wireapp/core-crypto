@@ -41,6 +41,10 @@ impl EntityBase for PersistedMlsGroup {
         MissingKeyErrorKind::MlsGroup
     }
 
+    fn to_transaction_entity(self) -> crate::transaction::Entity {
+        crate::transaction::Entity::PersistedMlsGroup(self)
+    }
+
     async fn find_all(
         conn: &mut Self::ConnectionType,
         params: EntityFindParams,

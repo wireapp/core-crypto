@@ -31,6 +31,10 @@ impl EntityBase for MlsKeyPackage {
         MissingKeyErrorKind::MlsKeyPackageBundle
     }
 
+    fn to_transaction_entity(self) -> crate::transaction::Entity {
+        crate::transaction::Entity::KeyPackage(self)
+    }
+
     async fn find_all(conn: &mut Self::ConnectionType, params: EntityFindParams) -> CryptoKeystoreResult<Vec<Self>> {
         let storage = conn.storage();
         storage.get_all(Self::COLLECTION_NAME, Some(params)).await
@@ -50,14 +54,7 @@ impl EntityBase for MlsKeyPackage {
 
 #[cfg_attr(target_family = "wasm", async_trait::async_trait(?Send))]
 #[cfg_attr(not(target_family = "wasm"), async_trait::async_trait)]
-impl EntityMlsExt for MlsKeyPackage {
-    async fn mls_save<'a>(
-        &'a self,
-        tx: &crate::connection::storage::WasmStorageTransaction<'a>,
-    ) -> CryptoKeystoreResult<()> {
-        tx.save(Self::COLLECTION_NAME, self.clone()).await
-    }
-}
+impl EntityMlsExt for MlsKeyPackage {}
 
 impl Entity for MlsKeyPackage {
     fn id_raw(&self) -> &[u8] {

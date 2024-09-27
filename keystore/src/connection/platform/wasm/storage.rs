@@ -21,7 +21,7 @@ use wasm_bindgen::JsValue;
 
 use crate::{
     entities::{Entity, EntityFindParams},
-    CryptoKeystoreResult,
+    CryptoKeystoreError, CryptoKeystoreResult,
 };
 
 use super::WasmConnection;
@@ -54,7 +54,12 @@ impl<'a> WasmStorageTransaction<'a> {
         else {
             return Ok(());
         };
-        transaction.commit()?.await?;
+        let result = transaction.await?;
+        if !result.is_committed() {
+            return Err(CryptoKeystoreError::MlsKeyStoreError(
+                "Transaction aborted. Check console logs for details.".to_string(),
+            ));
+        }
         Ok(())
     }
 
@@ -75,12 +80,12 @@ impl<'a> WasmStorageTransaction<'a> {
         Ok(())
     }
 
-    pub(crate) async fn save<R: Entity<ConnectionType = WasmConnection> + 'static>(
+    pub(crate) async fn save<R: Entity<ConnectionType = WasmConnection>>(
         &self,
-        collection_name: &'static str,
         mut entity: R,
     ) -> CryptoKeystoreResult<()> {
         let serializer = serde_wasm_bindgen::Serializer::json_compatible();
+        let collection_name = R::COLLECTION_NAME;
         let key = entity.id()?;
         match self {
             WasmStorageTransaction::Persistent { tx, cipher } => {
@@ -190,16 +195,18 @@ impl WasmEncryptedStorage {
                 }
             }
             WasmStorageWrapper::InMemory(map) => {
-                if let Some(store) = map.borrow().get(collection) {
-                    if let Some(js_value) = store.get(id.as_ref()).cloned() {
-                        if let Some(mut entity) = serde_wasm_bindgen::from_value::<Option<R>>(js_value)? {
-                            entity.decrypt(&self.cipher)?;
-                            return Ok(Some(entity));
-                        }
-                    }
-                }
-
-                Ok(None)
+                let map = map.borrow();
+                let Some(store) = map.get(collection) else {
+                    return Ok(None);
+                };
+                let Some(js_value) = store.get(id.as_ref()).cloned() else {
+                    return Ok(None);
+                };
+                let Some(mut entity) = serde_wasm_bindgen::from_value::<Option<R>>(js_value)? else {
+                    return Ok(None);
+                };
+                entity.decrypt(&self.cipher)?;
+                Ok(Some(entity))
             }
         }
     }

@@ -43,6 +43,10 @@ impl EntityBase for MlsEncryptionKeyPair {
         MissingKeyErrorKind::MlsEncryptionKeyPair
     }
 
+    fn to_transaction_entity(self) -> crate::transaction::Entity {
+        crate::transaction::Entity::EncryptionKeyPair(self)
+    }
+
     async fn find_all(
         conn: &mut Self::ConnectionType,
         params: EntityFindParams,

@@ -38,6 +38,10 @@ impl EntityBase for ProteusPrekey {
         MissingKeyErrorKind::ProteusPrekey
     }
 
+    fn to_transaction_entity(self) -> crate::transaction::Entity {
+        unimplemented!("This has not yet been implemented for Proteus")
+    }
+
     async fn find_all(
         conn: &mut Self::ConnectionType,
         params: EntityFindParams,
@@ -131,11 +135,11 @@ impl EntityBase for ProteusPrekey {
 
     async fn delete(
         conn: &mut Self::ConnectionType,
-        ids: crate::entities::StringEntityId<'_>,
+        id: crate::entities::StringEntityId<'_>,
     ) -> crate::CryptoKeystoreResult<()> {
         let transaction = conn.transaction()?;
 
-        let id = ProteusPrekey::id_from_slice(ids.as_slice());
+        let id = ProteusPrekey::id_from_slice(id.as_slice());
         let updated = transaction.execute("DELETE FROM proteus_prekeys WHERE id = ?", [id])?;
 
         if updated > 0 {

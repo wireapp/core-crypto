@@ -34,6 +34,10 @@ impl EntityBase for PersistedMlsGroup {
         MissingKeyErrorKind::MlsGroup
     }
 
+    fn to_transaction_entity(self) -> crate::transaction::Entity {
+        crate::transaction::Entity::PersistedMlsGroup(self)
+    }
+
     async fn find_all(conn: &mut Self::ConnectionType, params: EntityFindParams) -> CryptoKeystoreResult<Vec<Self>> {
         let storage = conn.storage();
         storage.get_all(Self::COLLECTION_NAME, Some(params)).await
@@ -64,14 +68,7 @@ impl EntityBase for PersistedMlsGroup {
 
 #[cfg_attr(target_family = "wasm", async_trait::async_trait(?Send))]
 #[cfg_attr(not(target_family = "wasm"), async_trait::async_trait)]
-impl EntityMlsExt for PersistedMlsGroup {
-    async fn mls_save<'a>(
-        &'a self,
-        tx: &crate::connection::storage::WasmStorageTransaction<'a>,
-    ) -> CryptoKeystoreResult<()> {
-        tx.save(Self::COLLECTION_NAME, self.clone()).await
-    }
-}
+impl EntityMlsExt for PersistedMlsGroup {}
 
 impl Entity for PersistedMlsGroup {
     fn id_raw(&self) -> &[u8] {
@@ -111,6 +108,10 @@ impl EntityBase for PersistedMlsPendingGroup {
         MissingKeyErrorKind::MlsPendingGroup
     }
 
+    fn to_transaction_entity(self) -> crate::transaction::Entity {
+        crate::transaction::Entity::PersistedMlsPendingGroup(self)
+    }
+
     async fn find_all(conn: &mut Self::ConnectionType, params: EntityFindParams) -> CryptoKeystoreResult<Vec<Self>> {
         let storage = conn.storage();
         storage.get_all(Self::COLLECTION_NAME, Some(params)).await
@@ -138,14 +139,7 @@ impl EntityBase for PersistedMlsPendingGroup {
 
 #[cfg_attr(target_family = "wasm", async_trait::async_trait(?Send))]
 #[cfg_attr(not(target_family = "wasm"), async_trait::async_trait)]
-impl EntityMlsExt for PersistedMlsPendingGroup {
-    async fn mls_save<'a>(
-        &'a self,
-        tx: &crate::connection::storage::WasmStorageTransaction<'a>,
-    ) -> CryptoKeystoreResult<()> {
-        tx.save(Self::COLLECTION_NAME, self.clone()).await
-    }
-}
+impl EntityMlsExt for PersistedMlsPendingGroup {}
 
 impl Entity for PersistedMlsPendingGroup {
     fn id_raw(&self) -> &[u8] {

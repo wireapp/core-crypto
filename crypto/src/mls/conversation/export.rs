@@ -16,10 +16,9 @@
 
 //! Primitives to export data from a group, such as derived keys and client ids.
 
-use mls_crypto_provider::MlsCryptoProvider;
-
 use crate::mls::{
-    client::id::ClientId, ConversationId, CryptoError, CryptoResult, MlsCentral, MlsConversation, MlsError,
+    client::id::ClientId, context::CentralContext, ConversationId, CryptoError, CryptoResult, MlsCentral,
+    MlsConversation, MlsError,
 };
 
 impl MlsConversation {
@@ -27,7 +26,11 @@ impl MlsConversation {
     const EXPORTER_CONTEXT: &'static [u8] = &[];
 
     /// See [MlsCentral::export_secret_key]
-    pub fn export_secret_key(&self, backend: &MlsCryptoProvider, key_length: usize) -> CryptoResult<Vec<u8>> {
+    pub fn export_secret_key(
+        &self,
+        backend: &impl openmls_traits::OpenMlsCryptoProvider,
+        key_length: usize,
+    ) -> CryptoResult<Vec<u8>> {
         self.group
             .export_secret(backend, Self::EXPORTER_LABEL, Self::EXPORTER_CONTEXT, key_length)
             .map_err(MlsError::from)
@@ -40,6 +43,33 @@ impl MlsConversation {
             .members()
             .map(|kp| ClientId::from(kp.credential.identity()))
             .collect()
+    }
+}
+
+impl CentralContext {
+    /// See [MlsCentral::export_secret_key]
+    #[cfg_attr(test, crate::idempotent)]
+    pub async fn export_secret_key(
+        &self,
+        conversation_id: &ConversationId,
+        key_length: usize,
+    ) -> CryptoResult<Vec<u8>> {
+        self.get_conversation(conversation_id)
+            .await?
+            .read()
+            .await
+            .export_secret_key(&self.mls_provider().await?, key_length)
+    }
+
+    /// See [MlsCentral::get_client_ids]
+    #[cfg_attr(test, crate::idempotent)]
+    pub async fn get_client_ids(&self, conversation_id: &ConversationId) -> CryptoResult<Vec<ClientId>> {
+        Ok(self
+            .get_conversation(conversation_id)
+            .await?
+            .read()
+            .await
+            .get_client_ids())
     }
 }
 
@@ -61,8 +91,7 @@ impl MlsCentral {
     ) -> CryptoResult<Vec<u8>> {
         self.get_conversation(conversation_id)
             .await?
-            .read()
-            .await
+            .ok_or_else(|| CryptoError::ConversationNotFound(conversation_id.clone()))?
             .export_secret_key(&self.mls_backend, key_length)
     }
 
@@ -78,8 +107,7 @@ impl MlsCentral {
         Ok(self
             .get_conversation(conversation_id)
             .await?
-            .read()
-            .await
+            .ok_or_else(|| CryptoError::ConversationNotFound(conversation_id.clone()))?
             .get_client_ids())
     }
 }

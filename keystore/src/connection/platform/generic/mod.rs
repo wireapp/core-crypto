@@ -29,7 +29,7 @@ pub struct SqlCipherConnection {
     path: String,
 }
 
-pub(crate) struct TransactionWrapper<'conn> {
+pub struct TransactionWrapper<'conn> {
     transaction: Transaction<'conn>,
 }
 impl<'conn> TransactionWrapper<'conn> {

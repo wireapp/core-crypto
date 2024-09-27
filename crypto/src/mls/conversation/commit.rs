@@ -7,21 +7,24 @@
 
 use openmls::prelude::{KeyPackageIn, LeafNode, LeafNodeIndex, MlsMessageOut};
 
-use mls_crypto_provider::MlsCryptoProvider;
+use mls_crypto_provider::TransactionalCryptoProvider;
 
 use crate::{
     e2e_identity::init_certificates::NewCrlDistributionPoint,
-    mls::credential::{
-        crl::{extract_crl_uris_from_credentials, get_new_crl_distribution_points},
-        CredentialBundle,
+    mls::{
+        context::CentralContext,
+        credential::{
+            crl::{extract_crl_uris_from_credentials, get_new_crl_distribution_points},
+            CredentialBundle,
+        },
     },
-    prelude::{Client, ClientId, ConversationId, CryptoError, CryptoResult, MlsCentral, MlsError, MlsGroupInfoBundle},
+    prelude::{Client, ClientId, ConversationId, CryptoError, CryptoResult, MlsError, MlsGroupInfoBundle},
 };
 use tracing::Instrument;
 
 use super::MlsConversation;
 
-impl MlsCentral {
+impl CentralContext {
     /// Adds new members to the group/conversation
     ///
     /// # Arguments
@@ -43,9 +46,9 @@ impl MlsCentral {
         id: &ConversationId,
         key_packages: Vec<KeyPackageIn>,
     ) -> CryptoResult<MlsConversationCreationMessage> {
-        let client_guard = self.mls_client().await;
+        let client_guard = self.mls_client().await?;
         let client = client_guard.as_ref().ok_or(CryptoError::MlsNotInitialized)?;
-        if let Some(callbacks) = self.callbacks.read().await.as_ref() {
+        if let Some(callbacks) = self.callbacks().await?.as_ref() {
             let client_id = client.id().clone();
             if !callbacks.authorize(id.clone(), client_id).await {
                 return Err(CryptoError::Unauthorized);
@@ -55,7 +58,7 @@ impl MlsCentral {
             .await?
             .write()
             .await
-            .add_members(client, key_packages, &self.mls_backend)
+            .add_members(client, key_packages, &self.mls_provider().await?)
             .await
     }
 
@@ -79,9 +82,9 @@ impl MlsCentral {
         id: &ConversationId,
         clients: &[ClientId],
     ) -> CryptoResult<MlsCommitBundle> {
-        let client_guard = self.mls_client().await;
+        let client_guard = self.mls_client().await?;
         let client = client_guard.as_ref().ok_or(CryptoError::MlsNotInitialized)?;
-        if let Some(callbacks) = self.callbacks.read().await.as_ref() {
+        if let Some(callbacks) = self.callbacks().await?.as_ref() {
             let client_id = client.id().clone();
             if !callbacks.authorize(id.clone(), client_id).await {
                 return Err(CryptoError::Unauthorized);
@@ -91,7 +94,7 @@ impl MlsCentral {
             .await?
             .write()
             .await
-            .remove_members(client, clients, &self.mls_backend)
+            .remove_members(client, clients, &self.mls_provider().await?)
             .await
     }
 
@@ -111,13 +114,13 @@ impl MlsCentral {
     #[cfg_attr(test, crate::idempotent)]
     #[cfg_attr(not(test), tracing::instrument(err, skip(self), fields(id = base64::Engine::encode(&base64::prelude::BASE64_STANDARD, id))))]
     pub async fn update_keying_material(&self, id: &ConversationId) -> CryptoResult<MlsCommitBundle> {
-        let client_guard = self.mls_client().await;
+        let client_guard = self.mls_client().await?;
         let client = client_guard.as_ref().ok_or(CryptoError::MlsNotInitialized)?;
         self.get_conversation(id)
             .await?
             .write()
             .await
-            .update_keying_material(client, &self.mls_backend, None, None)
+            .update_keying_material(client, &self.mls_provider().await?, None, None)
             .await
     }
 
@@ -134,13 +137,13 @@ impl MlsCentral {
     #[cfg_attr(test, crate::idempotent)]
     #[cfg_attr(not(test), tracing::instrument(err, skip(self), fields(id = base64::Engine::encode(&base64::prelude::BASE64_STANDARD, id))))]
     pub async fn commit_pending_proposals(&self, id: &ConversationId) -> CryptoResult<Option<MlsCommitBundle>> {
-        let client_guard = self.mls_client().await;
+        let client_guard = self.mls_client().await?;
         let client = client_guard.as_ref().ok_or(CryptoError::MlsNotInitialized)?;
         self.get_conversation(id)
             .await?
             .write()
             .await
-            .commit_pending_proposals(client, &self.mls_backend)
+            .commit_pending_proposals(client, &self.mls_provider().await?)
             .await
     }
 }
@@ -155,7 +158,7 @@ impl MlsConversation {
         &mut self,
         client: &Client,
         key_packages: Vec<KeyPackageIn>,
-        backend: &MlsCryptoProvider,
+        backend: &TransactionalCryptoProvider,
     ) -> CryptoResult<MlsConversationCreationMessage> {
         let signer = &self
             .find_most_recent_credential_bundle(client)?
@@ -187,7 +190,7 @@ impl MlsConversation {
         let gi = gi.ok_or(CryptoError::ImplementationError)?;
         let group_info = MlsGroupInfoBundle::try_new_full_plaintext(gi)?;
 
-        self.persist_group_when_changed(backend, false).await?;
+        self.persist_group_when_changed(&backend.transaction(), false).await?;
 
         Ok(MlsConversationCreationMessage {
             welcome,
@@ -205,7 +208,7 @@ impl MlsConversation {
         &mut self,
         client: &Client,
         clients: &[ClientId],
-        backend: &MlsCryptoProvider,
+        backend: &TransactionalCryptoProvider,
     ) -> CryptoResult<MlsCommitBundle> {
         let member_kps = self
             .group
@@ -236,7 +239,7 @@ impl MlsConversation {
         let gi = gi.ok_or(CryptoError::ImplementationError)?;
         let group_info = MlsGroupInfoBundle::try_new_full_plaintext(gi)?;
 
-        self.persist_group_when_changed(backend, false).await?;
+        self.persist_group_when_changed(&backend.transaction(), false).await?;
 
         Ok(MlsCommitBundle {
             commit,
@@ -251,7 +254,7 @@ impl MlsConversation {
     pub(crate) async fn update_keying_material(
         &mut self,
         client: &Client,
-        backend: &MlsCryptoProvider,
+        backend: &TransactionalCryptoProvider,
         cb: Option<&CredentialBundle>,
         leaf_node: Option<LeafNode>,
     ) -> CryptoResult<MlsCommitBundle> {
@@ -269,7 +272,7 @@ impl MlsConversation {
         let group_info = group_info.ok_or(CryptoError::ImplementationError)?;
         let group_info = MlsGroupInfoBundle::try_new_full_plaintext(group_info)?;
 
-        self.persist_group_when_changed(backend, false).await?;
+        self.persist_group_when_changed(&backend.transaction(), false).await?;
 
         Ok(MlsCommitBundle {
             welcome,
@@ -284,7 +287,7 @@ impl MlsConversation {
     pub(crate) async fn commit_pending_proposals(
         &mut self,
         client: &Client,
-        backend: &MlsCryptoProvider,
+        backend: &TransactionalCryptoProvider,
     ) -> CryptoResult<Option<MlsCommitBundle>> {
         if self.group.pending_proposals().count() > 0 {
             let signer = &self
@@ -300,7 +303,7 @@ impl MlsConversation {
                 .map_err(MlsError::from)?;
             let group_info = MlsGroupInfoBundle::try_new_full_plaintext(gi.unwrap())?;
 
-            self.persist_group_when_changed(backend, false).await?;
+            self.persist_group_when_changed(&backend.transaction(), false).await?;
 
             Ok(Some(MlsCommitBundle {
                 welcome,
