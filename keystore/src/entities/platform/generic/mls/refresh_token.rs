@@ -14,13 +14,13 @@
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see http://www.gnu.org/licenses/.
 
+use crate::connection::TransactionWrapper;
+use crate::entities::EntityMlsExt;
 use crate::{
     connection::KeystoreDatabaseConnection,
     entities::{E2eiRefreshToken, Entity, EntityBase, EntityFindParams, StringEntityId, UniqueEntity},
     CryptoKeystoreError, CryptoKeystoreResult, MissingKeyErrorKind,
 };
-use crate::connection::TransactionWrapper;
-use crate::entities::EntityMlsExt;
 
 impl Entity for E2eiRefreshToken {
     fn id_raw(&self) -> &[u8] {

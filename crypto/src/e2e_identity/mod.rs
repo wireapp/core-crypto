@@ -44,7 +44,14 @@ pub struct CrlRegistration {
 }
 
 impl CentralContext {
-    /// See [MlsCentral::e2ei_new_enrollment].
+    /// Creates an enrollment instance with private key material you can use in order to fetch
+    /// a new x509 certificate from the acme server.
+    ///
+    /// # Parameters
+    /// * `client_id` - client identifier e.g. `b7ac11a4-8f01-4527-af88-1c30885a7931:6add501bacd1d90e@example.com`
+    /// * `display_name` - human readable name displayed in the application e.g. `Smith, Alice M (QA)`
+    /// * `handle` - user handle e.g. `alice.smith.qa@example.com`
+    /// * `expiry_sec` - generated x509 certificate expiry in seconds
     #[cfg_attr(not(test), tracing::instrument(err, skip_all))]
     pub async fn e2ei_new_enrollment(
         &self,
@@ -108,41 +115,6 @@ impl CentralContext {
         let identifier = ClientIdentifier::X509(HashMap::from([(cs.signature_algorithm(), cert_bundle)]));
         self.mls_init(identifier, vec![cs], nb_init_key_packages).await?;
         Ok(crl_new_distribution_points)
-    }
-}
-
-impl MlsCentral {
-    /// Creates an enrollment instance with private key material you can use in order to fetch
-    /// a new x509 certificate from the acme server.
-    ///
-    /// # Parameters
-    /// * `client_id` - client identifier e.g. `b7ac11a4-8f01-4527-af88-1c30885a7931:6add501bacd1d90e@example.com`
-    /// * `display_name` - human readable name displayed in the application e.g. `Smith, Alice M (QA)`
-    /// * `handle` - user handle e.g. `alice.smith.qa@example.com`
-    /// * `expiry_sec` - generated x509 certificate expiry in seconds
-    #[cfg_attr(not(test), tracing::instrument(err, skip_all))]
-    pub fn e2ei_new_enrollment(
-        &self,
-        client_id: ClientId,
-        display_name: String,
-        handle: String,
-        team: Option<String>,
-        expiry_sec: u32,
-        ciphersuite: MlsCiphersuite,
-    ) -> CryptoResult<E2eiEnrollment> {
-        let signature_keypair = None; // fresh install without a Basic client. Supplying None will generate a new keypair
-        E2eiEnrollment::try_new(
-            client_id,
-            display_name,
-            handle,
-            team,
-            expiry_sec,
-            &self.mls_backend.new_transaction(),
-            ciphersuite,
-            signature_keypair,
-            #[cfg(not(target_family = "wasm"))]
-            None, // fresh install so no refresh token registered yet
-        )
     }
 }
 
