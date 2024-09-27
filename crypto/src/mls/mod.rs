@@ -343,8 +343,8 @@ impl MlsCentral {
     ///
     /// # Errors
     /// KeyStore errors, such as IO
-    /// TODO: check if there's an active transaction
     pub async fn close(self) -> CryptoResult<()> {
+        self.transaction_lock.lock().await;
         self.mls_backend.close().await?;
         Ok(())
     }
@@ -353,8 +353,8 @@ impl MlsCentral {
     ///
     /// # Errors
     /// KeyStore errors, such as IO
-    /// TODO: check if there's an active transaction
     pub async fn wipe(self) -> CryptoResult<()> {
+        self.transaction_lock.lock().await;
         self.mls_backend.destroy_and_reset().await?;
         Ok(())
     }
