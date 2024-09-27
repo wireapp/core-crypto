@@ -875,6 +875,7 @@ impl CoreCrypto {
     }
 
     /// See [core_crypto::mls::MlsCentral::mls_init]
+    #[deprecated = "Please create a transaction in Core Crypto and call this method from it."]
     pub async fn mls_init(
         &self,
         client_id: ClientId,
@@ -897,6 +898,7 @@ impl CoreCrypto {
     }
 
     /// See [core_crypto::mls::MlsCentral::mls_generate_keypairs]
+    #[deprecated = "Please create a transaction in Core Crypto and call this method from it."]
     pub async fn mls_generate_keypairs(&self, ciphersuites: Ciphersuites) -> CoreCryptoResult<Vec<ClientId>> {
         let context = self.central.new_transaction().await;
         context
@@ -907,6 +909,7 @@ impl CoreCrypto {
     }
 
     /// See [core_crypto::mls::MlsCentral::mls_init_with_client_id]
+    #[deprecated = "Please create a transaction in Core Crypto and call this method from it."]
     pub async fn mls_init_with_client_id(
         &self,
         client_id: ClientId,
@@ -926,7 +929,6 @@ impl CoreCrypto {
 
     /// See [core_crypto::mls::MlsCentral::restore_from_disk]
     pub async fn restore_from_disk(&self) -> CoreCryptoResult<()> {
-        self.central.restore_from_disk().await?;
         cfg_if::cfg_if! {
             if #[cfg(feature = "proteus")] {
                 self.central.proteus_reload_sessions().await.inspect_err(|e|{
@@ -982,6 +984,7 @@ impl CoreCrypto {
     }
 
     /// See [core_crypto::mls::MlsCentral::get_or_create_client_keypackages]
+    #[deprecated = "Please create a transaction in Core Crypto and call this method from it."]
     pub async fn client_keypackages(
         &self,
         ciphersuite: Ciphersuite,
@@ -1007,6 +1010,7 @@ impl CoreCrypto {
     }
 
     /// See [core_crypto::mls::MlsCentral::client_valid_key_packages_count]
+    #[deprecated = "Please create a transaction in Core Crypto and call this method from it."]
     pub async fn client_valid_keypackages_count(
         &self,
         ciphersuite: Ciphersuite,
@@ -1022,6 +1026,7 @@ impl CoreCrypto {
     }
 
     /// See [core_crypto::mls::MlsCentral::delete_keypackages]
+    #[deprecated = "Please create a transaction in Core Crypto and call this method from it."]
     pub async fn delete_keypackages(&self, refs: Vec<Vec<u8>>) -> CoreCryptoResult<()> {
         let refs = refs
             .into_iter()
@@ -1035,6 +1040,7 @@ impl CoreCrypto {
     }
 
     /// See [core_crypto::mls::MlsCentral::new_conversation]
+    #[deprecated = "Please create a transaction in Core Crypto and call this method from it."]
     pub async fn create_conversation(
         &self,
         conversation_id: Vec<u8>,
@@ -1050,10 +1056,12 @@ impl CoreCrypto {
         self.central
             .set_raw_external_senders(&mut lower_cfg, config.external_senders)?;
 
-        Ok(self
-            .central
+        let context = self.central.new_transaction().await;
+        context
             .new_conversation(&conversation_id, creator_credential_type.into(), lower_cfg)
-            .await?)
+            .await?;
+        context.finish().await?;
+        Ok(())
     }
 
     /// See [core_crypto::mls::MlsCentral::conversation_epoch]
@@ -1068,19 +1076,23 @@ impl CoreCrypto {
     }
 
     /// See [core_crypto::mls::MlsCentral::process_raw_welcome_message]
+    #[deprecated = "Please create a transaction in Core Crypto and call this method from it."]
     pub async fn process_welcome_message(
         &self,
         welcome_message: Vec<u8>,
         custom_configuration: CustomConfiguration,
     ) -> CoreCryptoResult<WelcomeBundle> {
-        Ok(self
-            .central
+        let context = self.central.new_transaction().await;
+        let result = context
             .process_raw_welcome_message(welcome_message, custom_configuration.into())
             .await?
-            .into())
+            .into();
+        context.finish().await?;
+        Ok(result)
     }
 
     /// See [core_crypto::mls::MlsCentral::add_members_to_conversation]
+    #[deprecated = "Please create a transaction in Core Crypto and call this method from it."]
     pub async fn add_clients_to_conversation(
         &self,
         conversation_id: Vec<u8>,
@@ -1095,77 +1107,104 @@ impl CoreCrypto {
             })
             .collect::<CoreCryptoResult<Vec<_>>>()?;
 
-        self.central
+        let context = self.central.new_transaction().await;
+        let result = context
             .add_members_to_conversation(&conversation_id, key_packages)
             .await?
-            .try_into()
+            .try_into()?;
+        context.finish().await?;
+        Ok(result)
     }
 
     /// See [core_crypto::mls::MlsCentral::remove_members_from_conversation]
+    #[deprecated = "Please create a transaction in Core Crypto and call this method from it."]
     pub async fn remove_clients_from_conversation(
         &self,
         conversation_id: Vec<u8>,
         clients: Vec<ClientId>,
     ) -> CoreCryptoResult<CommitBundle> {
         let clients: Vec<core_crypto::prelude::ClientId> = clients.into_iter().map(|c| c.0).collect();
-        self.central
+        let context = self.central.new_transaction().await;
+        let result = context
             .remove_members_from_conversation(&conversation_id, &clients)
             .await?
-            .try_into()
+            .try_into()?;
+
+        context.finish().await?;
+        Ok(result)
     }
 
     /// See [core_crypto::mls::MlsCentral::mark_conversation_as_child_of]
+    #[deprecated = "Please create a transaction in Core Crypto and call this method from it."]
     pub async fn mark_conversation_as_child_of(&self, child_id: Vec<u8>, parent_id: Vec<u8>) -> CoreCryptoResult<()> {
-        Ok(self
-            .central
-            .mark_conversation_as_child_of(&child_id, &parent_id)
-            .await?)
+        let context = self.central.new_transaction().await;
+        context.mark_conversation_as_child_of(&child_id, &parent_id).await?;
+        Ok(context.finish().await?)
     }
 
     /// See [core_crypto::mls::MlsCentral::update_keying_material]
+    #[deprecated = "Please create a transaction in Core Crypto and call this method from it."]
     pub async fn update_keying_material(&self, conversation_id: Vec<u8>) -> CoreCryptoResult<CommitBundle> {
-        self.central.update_keying_material(&conversation_id).await?.try_into()
+        let context = self.central.new_transaction().await;
+        let result = context.update_keying_material(&conversation_id).await?.try_into()?;
+        context.finish().await?;
+        Ok(result)
     }
 
     /// See [core_crypto::mls::MlsCentral::commit_pending_proposals]
+    #[deprecated = "Please create a transaction in Core Crypto and call this method from it."]
     pub async fn commit_pending_proposals(&self, conversation_id: Vec<u8>) -> CoreCryptoResult<Option<CommitBundle>> {
-        self.central
+        let context = self.central.new_transaction().await;
+        let result = context
             .commit_pending_proposals(&conversation_id)
             .await
             .transpose()
             .map(|r| r?.try_into())
-            .transpose()
+            .transpose()?;
+        context.finish().await?;
+        Ok(result)
     }
 
     /// see [core_crypto::mls::MlsCentral::wipe_conversation]
+    #[deprecated = "Please create a transaction in Core Crypto and call this method from it."]
     pub async fn wipe_conversation(&self, conversation_id: Vec<u8>) -> CoreCryptoResult<()> {
-        Ok(self.central.wipe_conversation(&conversation_id).await?)
+        let context = self.central.new_transaction().await;
+        context.wipe_conversation(&conversation_id).await?;
+        Ok(context.finish().await?)
     }
 
     /// See [core_crypto::mls::MlsCentral::decrypt_message]
+    #[deprecated = "Please create a transaction in Core Crypto and call this method from it."]
     pub async fn decrypt_message(
         &self,
         conversation_id: Vec<u8>,
         payload: Vec<u8>,
     ) -> CoreCryptoResult<DecryptedMessage> {
-        let raw_decrypted_message = self.central.decrypt_message(&conversation_id, payload).await?;
+        let context = self.central.new_transaction().await;
+        let raw_decrypted_message = context.decrypt_message(&conversation_id, payload).await?;
 
         let decrypted_message: DecryptedMessage = raw_decrypted_message.try_into()?;
 
+        context.finish().await?;
         Ok(decrypted_message)
     }
 
     /// See [core_crypto::mls::MlsCentral::encrypt_message]
+    #[deprecated = "Please create a transaction in Core Crypto and call this method from it."]
     pub async fn encrypt_message(&self, conversation_id: Vec<u8>, message: Vec<u8>) -> CoreCryptoResult<Vec<u8>> {
-        Ok(self.central.encrypt_message(&conversation_id, message).await?)
+        let context = self.central.new_transaction().await;
+        let result = context.encrypt_message(&conversation_id, message).await?;
+        context.finish().await?;
+        Ok(result)
     }
 
     /// See [core_crypto::mls::MlsCentral::conversation_exists]
-    pub async fn conversation_exists(&self, conversation_id: Vec<u8>) -> bool {
-        self.central.conversation_exists(&conversation_id).await
+    pub async fn conversation_exists(&self, conversation_id: Vec<u8>) -> CoreCryptoResult<bool> {
+        Ok(self.central.conversation_exists(&conversation_id).await?)
     }
 
     /// See [core_crypto::mls::MlsCentral::new_add_proposal]
+    #[deprecated = "Please create a transaction in Core Crypto and call this method from it."]
     pub async fn new_add_proposal(
         &self,
         conversation_id: Vec<u8>,
@@ -1174,30 +1213,42 @@ impl CoreCrypto {
         let kp = KeyPackageIn::tls_deserialize(&mut keypackage.as_slice())
             .map_err(MlsError::from)
             .map_err(CryptoError::from)?;
-        self.central
+        let context = self.central.new_transaction().await;
+        let result = context
             .new_add_proposal(&conversation_id, kp.into())
             .await?
-            .try_into()
+            .try_into()?;
+        context.finish().await?;
+        Ok(result)
     }
 
     /// See [core_crypto::mls::MlsCentral::new_update_proposal]
+    #[deprecated = "Please create a transaction in Core Crypto and call this method from it."]
     pub async fn new_update_proposal(&self, conversation_id: Vec<u8>) -> CoreCryptoResult<ProposalBundle> {
-        self.central.new_update_proposal(&conversation_id).await?.try_into()
+        let context = self.central.new_transaction().await;
+        let result = context.new_update_proposal(&conversation_id).await?.try_into()?;
+        context.finish().await?;
+        Ok(result)
     }
 
     /// See [core_crypto::mls::MlsCentral::new_remove_proposal]
+    #[deprecated = "Please create a transaction in Core Crypto and call this method from it."]
     pub async fn new_remove_proposal(
         &self,
         conversation_id: Vec<u8>,
         client_id: ClientId,
     ) -> CoreCryptoResult<ProposalBundle> {
-        self.central
+        let context = self.central.new_transaction().await;
+        let result = context
             .new_remove_proposal(&conversation_id, client_id.0)
             .await?
-            .try_into()
+            .try_into()?;
+        context.finish().await?;
+        Ok(result)
     }
 
     /// See [core_crypto::mls::MlsCentral::new_external_add_proposal]
+    #[deprecated = "Please create a transaction in Core Crypto and call this method from it."]
     pub async fn new_external_add_proposal(
         &self,
         conversation_id: Vec<u8>,
@@ -1205,8 +1256,8 @@ impl CoreCrypto {
         ciphersuite: Ciphersuite,
         credential_type: MlsCredentialType,
     ) -> CoreCryptoResult<Vec<u8>> {
-        Ok(self
-            .central
+        let context = self.central.new_transaction().await;
+        let result = context
             .new_external_add_proposal(
                 conversation_id,
                 epoch.into(),
@@ -1216,10 +1267,13 @@ impl CoreCrypto {
             .await?
             .to_bytes()
             .map_err(MlsError::from)
-            .map_err(CryptoError::from)?)
+            .map_err(CryptoError::from)?;
+        context.finish().await?;
+        Ok(result)
     }
 
     /// See [core_crypto::mls::MlsCentral::join_by_external_commit]
+    #[deprecated = "Please create a transaction in Core Crypto and call this method from it."]
     pub async fn join_by_external_commit(
         &self,
         group_info: Vec<u8>,
@@ -1229,40 +1283,46 @@ impl CoreCrypto {
         let group_info = VerifiableGroupInfo::tls_deserialize(&mut group_info.as_slice())
             .map_err(MlsError::from)
             .map_err(CryptoError::from)?;
-        self.central
+        let context = self.central.new_transaction().await;
+        let result = context
             .join_by_external_commit(group_info, custom_configuration.into(), credential_type.into())
             .await?
-            .try_into()
+            .try_into()?;
+        context.finish().await?;
+        Ok(result)
     }
 
     /// See [core_crypto::mls::MlsCentral::merge_pending_group_from_external_commit]
+    #[deprecated = "Please create a transaction in Core Crypto and call this method from it."]
     pub async fn merge_pending_group_from_external_commit(
         &self,
         conversation_id: Vec<u8>,
     ) -> CoreCryptoResult<Option<Vec<BufferedDecryptedMessage>>> {
-        if let Some(decrypted_messages) = self
-            .central
+        let context = self.central.new_transaction().await;
+        if let Some(decrypted_messages) = context
             .merge_pending_group_from_external_commit(&conversation_id)
             .await?
         {
-            return Ok(Some(
-                decrypted_messages
-                    .into_iter()
-                    .map(TryInto::try_into)
-                    .collect::<CoreCryptoResult<Vec<_>>>()?,
-            ));
+            let result = decrypted_messages
+                .into_iter()
+                .map(TryInto::try_into)
+                .collect::<CoreCryptoResult<Vec<_>>>()?;
+            context.finish().await?;
+            return Ok(Some(result));
         }
 
         Ok(None)
     }
 
     /// See [core_crypto::mls::MlsCentral::clear_pending_group_from_external_commit]
+    #[deprecated = "Please create a transaction in Core Crypto and call this method from it."]
     pub async fn clear_pending_group_from_external_commit(&self, conversation_id: Vec<u8>) -> CoreCryptoResult<()> {
-        self.central
+        let context = self.central.new_transaction().await;
+        context
             .clear_pending_group_from_external_commit(&conversation_id)
             .await?;
 
-        Ok(())
+        Ok(context.finish().await?)
     }
 
     /// See [core_crypto::mls::MlsCentral::random_bytes]
@@ -1273,7 +1333,7 @@ impl CoreCrypto {
     /// see [core_crypto::prelude::MlsCryptoProvider::reseed]
     pub async fn reseed_rng(&self, seed: Vec<u8>) -> CoreCryptoResult<()> {
         let seed = EntropySeed::try_from_slice(&seed).map_err(CryptoError::from)?;
-        self.central.provider().reseed(Some(seed)).map_err(CryptoError::from)?;
+        self.central.reseed(Some(seed)).await?;
 
         Ok(())
     }

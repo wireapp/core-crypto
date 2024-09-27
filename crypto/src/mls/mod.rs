@@ -3,7 +3,7 @@ use std::sync::Arc;
 use async_lock::{Mutex, RwLock};
 use tracing::{trace, Instrument};
 
-use mls_crypto_provider::{MlsCryptoProvider, MlsCryptoProviderConfiguration};
+use mls_crypto_provider::{EntropySeed, MlsCryptoProvider, MlsCryptoProviderConfiguration};
 use openmls_traits::OpenMlsCryptoProvider;
 
 use crate::prelude::{
@@ -356,6 +356,13 @@ impl MlsCentral {
     pub async fn wipe(self) -> CryptoResult<()> {
         self.transaction_lock.lock().await;
         self.mls_backend.destroy_and_reset().await?;
+        Ok(())
+    }
+
+    /// see [mls_crypto_provider::MlsCryptoProvider::reseed]
+    pub async fn reseed(&self, seed: Option<EntropySeed>) -> CryptoResult<()> {
+        self.transaction_lock.lock().await;
+        self.mls_backend.reseed(seed)?;
         Ok(())
     }
 }
