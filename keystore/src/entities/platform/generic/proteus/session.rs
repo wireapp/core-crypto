@@ -176,9 +176,9 @@ impl EntityBase for ProteusSession {
         Ok(conn.query_row("SELECT COUNT(*) FROM proteus_sessions", [], |r| r.get(0))?)
     }
 
-    async fn delete(conn: &mut Self::ConnectionType, ids: StringEntityId<'_>) -> crate::CryptoKeystoreResult<()> {
+    async fn delete(conn: &mut Self::ConnectionType, id: StringEntityId<'_>) -> crate::CryptoKeystoreResult<()> {
         let transaction = conn.transaction()?;
-        let id_string: String = (&ids).try_into()?;
+        let id_string: String = (&id).try_into()?;
         let updated = transaction.execute("DELETE FROM proteus_sessions WHERE id = ?", [id_string])?;
 
         if updated > 0 {
