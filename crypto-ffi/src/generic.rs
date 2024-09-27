@@ -885,23 +885,25 @@ impl CoreCrypto {
             .map(usize::try_from)
             .transpose()
             .map_err(CryptoError::from)?;
-        Ok(self
-            .central
+        let context = self.central.new_transaction().await;
+        context
             .mls_init(
                 ClientIdentifier::Basic(client_id.0),
                 (&ciphersuites).into(),
                 nb_key_package,
             )
-            .await?)
+            .await?;
+        Ok(context.finish().await?)
     }
 
     /// See [core_crypto::mls::MlsCentral::mls_generate_keypairs]
     pub async fn mls_generate_keypairs(&self, ciphersuites: Ciphersuites) -> CoreCryptoResult<Vec<ClientId>> {
-        Ok(self
-            .central
+        let context = self.central.new_transaction().await;
+        context
             .mls_generate_keypairs((&ciphersuites).into())
             .await
-            .map(|cids| cids.into_iter().map(ClientId).collect())?)
+            .map(|cids| cids.into_iter().map(ClientId).collect())?;
+        Ok(context.finish().await?)
     }
 
     /// See [core_crypto::mls::MlsCentral::mls_init_with_client_id]
@@ -911,14 +913,15 @@ impl CoreCrypto {
         tmp_client_ids: Vec<ClientId>,
         ciphersuites: Ciphersuites,
     ) -> CoreCryptoResult<()> {
-        Ok(self
-            .central
+        let context = self.central.new_transaction().await;
+        context
             .mls_init_with_client_id(
                 client_id.0,
                 tmp_client_ids.into_iter().map(|cid| cid.0).collect(),
                 (&ciphersuites).into(),
             )
-            .await?)
+            .await?;
+        Ok(context.finish().await?)
     }
 
     /// See [core_crypto::mls::MlsCentral::restore_from_disk]
@@ -985,19 +988,22 @@ impl CoreCrypto {
         credential_type: MlsCredentialType,
         amount_requested: u32,
     ) -> CoreCryptoResult<Vec<Vec<u8>>> {
-        let kps = self
-            .central
+        let context = self.central.new_transaction().await;
+        let kps = context
             .get_or_create_client_keypackages(ciphersuite.into(), credential_type.into(), amount_requested as usize)
             .await?;
 
-        kps.into_iter()
+        let result = kps
+            .into_iter()
             .map(|kp| {
                 Ok(kp
                     .tls_serialize_detached()
                     .map_err(MlsError::from)
                     .map_err(CryptoError::from)?)
             })
-            .collect::<CoreCryptoResult<Vec<Vec<u8>>>>()
+            .collect::<CoreCryptoResult<Vec<Vec<u8>>>>()?;
+        context.finish().await?;
+        Ok(result)
     }
 
     /// See [core_crypto::mls::MlsCentral::client_valid_key_packages_count]
@@ -1006,11 +1012,12 @@ impl CoreCrypto {
         ciphersuite: Ciphersuite,
         credential_type: MlsCredentialType,
     ) -> CoreCryptoResult<u64> {
-        let count = self
-            .central
+        let context = self.central.new_transaction().await;
+        let count = context
             .client_valid_key_packages_count(ciphersuite.into(), credential_type.into())
             .await?;
 
+        context.finish().await?;
         Ok(count.try_into().unwrap_or(0))
     }
 
@@ -1021,7 +1028,10 @@ impl CoreCrypto {
             .map(|r| KeyPackageRef::from_slice(&r))
             .collect::<Vec<_>>();
 
-        Ok(self.central.delete_keypackages(&refs[..]).await?)
+        let context = self.central.new_transaction().await;
+        context.delete_keypackages(&refs[..]).await?;
+        context.finish().await?;
+        Ok(())
     }
 
     /// See [core_crypto::mls::MlsCentral::new_conversation]
