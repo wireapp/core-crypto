@@ -73,12 +73,7 @@ impl CentralContext {
 
     pub(crate) async fn mls_client(&self) -> CryptoResult<RwLockReadGuardArc<Option<Client>>> {
         match self.state.read().await.deref() {
-            ContextState::Valid {
-                mls_client,
-                callbacks: _,
-                transaction: _,
-                mls_groups: _,
-            } => Ok(mls_client.read_arc().await),
+            ContextState::Valid { mls_client, .. } => Ok(mls_client.read_arc().await),
             ContextState::Invalid => Err(CryptoError::InvalidContext),
         }
     }
