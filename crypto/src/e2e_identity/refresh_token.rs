@@ -23,7 +23,8 @@ impl RefreshToken {
     pub(crate) async fn replace(self, backend: &TransactionalCryptoProvider) -> CryptoKeystoreResult<()> {
         let transaction = backend.transaction();
         let rt = E2eiRefreshToken::from(self);
-        transaction.save(rt).await
+        transaction.save(rt).await?;
+        Ok(())
     }
 }
 

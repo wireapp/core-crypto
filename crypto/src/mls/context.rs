@@ -32,7 +32,7 @@ impl MlsCentral {
     /// Creates a new transaction within the MlsCentral. All operations that persist data will be
     /// buffered in memory and when [CentralContext::finish] is called, the data will be persisted
     /// in a single database transaction.
-    pub async fn new_transaction(&self) -> CentralContext {
+    pub fn new_transaction(&self) -> CentralContext {
         CentralContext::new(self)
     }
 }

@@ -381,7 +381,7 @@ impl Client {
             created_at: 0,
         };
 
-        let credential = keystore.save(credential).await?;
+        let credential = keystore.save_mut(credential).await?;
 
         let sign_kp = MlsSignatureKeyPair::new(
             sc,

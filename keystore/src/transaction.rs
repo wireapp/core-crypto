@@ -5,6 +5,7 @@ use openmls_basic_credential::SignatureKeyPair;
 use openmls_traits::key_store::OpenMlsKeyStore;
 use openmls_traits::key_store::{MlsEntity, MlsEntityId};
 
+use crate::entities::UniqueEntity;
 use crate::{
     connection::{Connection, DatabaseConnection, FetchFromDatabase, KeystoreDatabaseConnection, TransactionWrapper},
     entities::{
@@ -15,7 +16,6 @@ use crate::{
     },
     CryptoKeystoreError, CryptoKeystoreResult,
 };
-use crate::entities::UniqueEntity;
 
 #[derive(Debug)]
 pub(crate) enum Entity {
@@ -255,8 +255,8 @@ impl FetchFromDatabase for KeystoreTransaction {
         self.conn.find(id).await
     }
 
-    async fn find_unique<U: UniqueEntity<ConnectionType=KeystoreDatabaseConnection>>(
-        &self
+    async fn find_unique<U: UniqueEntity<ConnectionType = KeystoreDatabaseConnection>>(
+        &self,
     ) -> CryptoKeystoreResult<U> {
         self.conn.find_unique().await
     }
@@ -299,11 +299,21 @@ impl KeystoreTransaction {
         E: crate::entities::Entity<ConnectionType = KeystoreDatabaseConnection> + crate::entities::EntityMlsExt,
     >(
         &self,
-        mut entity: E,
+        entity: E,
     ) -> CryptoKeystoreResult<()> {
-        entity.pre_save().await?;
-        self.add_operation(entity.to_transaction_entity().into()).await;
+        self.add_operation(entity.clone().to_transaction_entity().into()).await;
         Ok(())
+    }
+
+    pub async fn save_mut<
+        E: crate::entities::Entity<ConnectionType = KeystoreDatabaseConnection> + crate::entities::EntityMlsExt,
+    >(
+        &self,
+        mut entity: E,
+    ) -> CryptoKeystoreResult<E> {
+        entity.pre_save().await?;
+        self.add_operation(entity.clone().to_transaction_entity().into()).await;
+        Ok(entity)
     }
 
     pub async fn remove<E: crate::entities::Entity<ConnectionType = KeystoreDatabaseConnection>, S: AsRef<[u8]>>(

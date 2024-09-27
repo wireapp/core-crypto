@@ -23,7 +23,6 @@ pub(crate) mod credential;
 pub(crate) mod external_commit;
 pub(crate) mod external_proposal;
 pub(crate) mod proposal;
-pub(crate) mod restore;
 
 // Prevents direct instantiation of [MlsCentralConfiguration]
 pub(crate) mod config {
@@ -205,9 +204,13 @@ impl MlsCentral {
             callbacks: Arc::new(None.into()),
         };
 
-        central.init_pki_env().in_current_span().await?;
-
         transaction.transaction().commit().await?;
+        drop(transaction);
+
+        let context = central.new_transaction();
+
+        context.init_pki_env().in_current_span().await?;
+        context.finish().await?;
 
         Ok(central)
     }
@@ -247,10 +250,13 @@ impl MlsCentral {
             mls_client,
             callbacks: Arc::new(None.into()),
         };
-
-        central.init_pki_env().in_current_span().await?;
-
         transaction.transaction().commit().await?;
+        drop(transaction);
+
+        let context = central.new_transaction();
+
+        context.init_pki_env().in_current_span().await?;
+        context.finish().await?;
 
         Ok(central)
     }
