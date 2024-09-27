@@ -841,7 +841,7 @@ pub async fn core_crypto_deferred_init(path: String, key: String) -> CoreCryptoR
     CoreCrypto::new(path, key, None, None, None).await
 }
 
-#[allow(dead_code, unused_variables, deprecated)]
+#[allow(dead_code, unused_variables)]
 #[uniffi::export]
 impl CoreCrypto {
     #[uniffi::constructor]
@@ -901,11 +901,12 @@ impl CoreCrypto {
     #[deprecated = "Please create a transaction in Core Crypto and call this method from it."]
     pub async fn mls_generate_keypairs(&self, ciphersuites: Ciphersuites) -> CoreCryptoResult<Vec<ClientId>> {
         let context = self.central.new_transaction().await;
-        context
+        let result = context
             .mls_generate_keypairs((&ciphersuites).into())
             .await
             .map(|cids| cids.into_iter().map(ClientId).collect())?;
-        Ok(context.finish().await?)
+        context.finish().await?;
+        Ok(result)
     }
 
     /// See [core_crypto::mls::MlsCentral::mls_init_with_client_id]
@@ -1425,7 +1426,6 @@ impl From<core_crypto::prelude::E2eiConversationState> for E2eiConversationState
 
 #[cfg_attr(not(feature = "proteus"), allow(unused_variables))]
 #[uniffi::export]
-#[allow(deprecated)]
 impl CoreCrypto {
     /// See [core_crypto::proteus::ProteusCentral::try_new]
     pub async fn proteus_init(&self) -> CoreCryptoResult<()> {
@@ -1608,7 +1608,7 @@ impl CoreCrypto {
 }
 
 // End-to-end identity methods
-#[allow(dead_code, unused_variables, deprecated)]
+#[allow(dead_code, unused_variables)]
 #[uniffi::export]
 impl CoreCrypto {
     /// See [core_crypto::mls::MlsCentral::e2ei_new_enrollment]
@@ -1952,14 +1952,12 @@ impl E2eiEnrollment {
         challenge: Vec<u8>,
     ) -> CoreCryptoResult<()> {
         let context = cc.central.new_transaction().await;
-        let result = self
-            .0
+        self.0
             .write()
             .await
             .new_oidc_challenge_response(&context.mls_provider().await?, challenge)
             .await?;
-        context.finish().await?;
-        Ok(result)
+        Ok(context.finish().await?)
     }
 
     /// See [core_crypto::e2e_identity::E2eiEnrollment::check_order_request]
