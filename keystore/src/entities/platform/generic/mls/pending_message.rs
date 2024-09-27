@@ -37,6 +37,10 @@ impl EntityBase for MlsPendingMessage {
         MissingKeyErrorKind::MlsPendingMessages
     }
 
+    fn to_transaction_entity(self) -> crate::transaction::Entity {
+        crate::transaction::Entity::MlsPendingMessage(self)
+    }
+
     async fn find_one(
         conn: &mut Self::ConnectionType,
         id: &StringEntityId,

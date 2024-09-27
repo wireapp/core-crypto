@@ -2,7 +2,7 @@ use crate::EntropySeed;
 use crate::MlsProviderError;
 use rand_core::{RngCore, SeedableRng};
 use signature::digest::typenum::Unsigned;
-use std::sync::{RwLock, RwLockWriteGuard};
+use std::sync::{Arc, RwLock, RwLockWriteGuard};
 
 use aes_gcm::{
     aead::{Aead, Payload},
@@ -21,15 +21,15 @@ use openmls_traits::{
 use sha2::{Digest, Sha256, Sha384, Sha512};
 use tls_codec::SecretVLBytes;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct RustCrypto {
-    pub(crate) rng: RwLock<rand_chacha::ChaCha20Rng>,
+    pub(crate) rng: Arc<RwLock<rand_chacha::ChaCha20Rng>>,
 }
 
 impl Default for RustCrypto {
     fn default() -> Self {
         Self {
-            rng: RwLock::new(rand_chacha::ChaCha20Rng::from_entropy()),
+            rng: Arc::new(rand_chacha::ChaCha20Rng::from_entropy().into()),
         }
     }
 }
@@ -44,7 +44,7 @@ fn normalize_p521_secret_key(sk: &[u8]) -> zeroize::Zeroizing<[u8; 66]> {
 impl RustCrypto {
     pub fn new_with_seed(seed: EntropySeed) -> Self {
         Self {
-            rng: rand_chacha::ChaCha20Rng::from_seed(seed.0).into(),
+            rng: Arc::new(rand_chacha::ChaCha20Rng::from_seed(seed.0).into()),
         }
     }
 

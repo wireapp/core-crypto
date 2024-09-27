@@ -40,6 +40,10 @@ impl EntityBase for ProteusIdentity {
         MissingKeyErrorKind::ProteusIdentity
     }
 
+    fn to_transaction_entity(self) -> crate::transaction::Entity {
+        unimplemented!("This has not yet been implemented for Proteus")
+    }
+
     async fn find_all(
         conn: &mut Self::ConnectionType,
         _params: EntityFindParams,
@@ -143,7 +147,7 @@ impl EntityBase for ProteusIdentity {
 
     async fn delete(
         conn: &mut Self::ConnectionType,
-        _ids: crate::entities::StringEntityId<'_>,
+        _id: crate::entities::StringEntityId<'_>,
     ) -> crate::CryptoKeystoreResult<()> {
         let transaction = conn.transaction()?;
         let row_id = transaction.query_row(

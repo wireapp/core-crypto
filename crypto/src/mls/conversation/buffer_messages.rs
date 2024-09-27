@@ -5,24 +5,28 @@
 
 use crate::{
     group_store::GroupStoreValue,
+    mls::context::CentralContext,
     prelude::{
         decrypt::MlsBufferedConversationDecryptMessage, Client, ConversationId, CoreCryptoCallbacks, CryptoError,
-        CryptoResult, MlsCentral, MlsConversation, MlsConversationDecryptMessage, MlsError,
+        CryptoResult, MlsConversation, MlsConversationDecryptMessage, MlsError,
     },
 };
-use core_crypto_keystore::entities::{EntityFindParams, MlsPendingMessage};
+use core_crypto_keystore::{
+    connection::FetchFromDatabase,
+    entities::{EntityFindParams, MlsPendingMessage},
+};
 use log::{error, info, trace};
-use mls_crypto_provider::MlsCryptoProvider;
+use mls_crypto_provider::TransactionalCryptoProvider;
 use openmls::prelude::{MlsMessageIn, MlsMessageInBody};
 use tls_codec::Deserialize;
 
-impl MlsCentral {
+impl CentralContext {
     pub(crate) async fn handle_future_message(
         &self,
         id: &ConversationId,
         message: impl AsRef<[u8]>,
     ) -> CryptoResult<MlsConversationDecryptMessage> {
-        let keystore = self.mls_backend.keystore();
+        let keystore = self.transaction().await?;
 
         let pending_msg = MlsPendingMessage {
             id: id.clone(),
@@ -41,14 +45,15 @@ impl MlsCentral {
             Some(id) => self.get_conversation(id).await.ok(),
             _ => None,
         };
-        let guard = self.callbacks.read().await;
+        let guard = self.callbacks().await?;
         let callbacks = guard.as_ref().map(|boxed| boxed.as_ref());
-        let client_guard = self.mls_client().await;
+        let client_guard = self.mls_client().await?;
         let client = client_guard.as_ref().ok_or(CryptoError::MlsNotInitialized)?;
+        let mls_provider = self.mls_provider().await?;
         conversation
             .restore_pending_messages(
                 client,
-                &self.mls_backend,
+                &mls_provider,
                 callbacks,
                 parent_conversation.as_ref(),
                 is_rejoin,
@@ -63,7 +68,7 @@ impl MlsConversation {
     pub(crate) async fn restore_pending_messages<'a>(
         &'a mut self,
         client: &'a Client,
-        backend: &'a MlsCryptoProvider,
+        backend: &'a TransactionalCryptoProvider,
         callbacks: Option<&'a dyn CoreCryptoCallbacks>,
         parent_conversation: Option<&'a GroupStoreValue<Self>>,
         is_rejoin: bool,
@@ -71,8 +76,7 @@ impl MlsConversation {
         // using the macro produces a clippy warning
         info!("restore_pending_messages");
         let result = async move {
-            let keystore = backend.keystore();
-
+            let keystore = backend.transaction();
             let group_id = self.id().as_slice();
             if is_rejoin {
                 // This means the external commit is about rejoining the group.

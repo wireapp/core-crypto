@@ -15,7 +15,7 @@
 // along with this program. If not, see http://www.gnu.org/licenses/.
 
 use crate::prelude::{CryptoResult, MlsConversation};
-use core_crypto_keystore::entities::EntityFindParams;
+use core_crypto_keystore::{connection::FetchFromDatabase, entities::EntityFindParams};
 
 #[cfg_attr(target_family = "wasm", async_trait::async_trait(?Send))]
 #[cfg_attr(not(target_family = "wasm"), async_trait::async_trait)]
@@ -28,14 +28,12 @@ pub(crate) trait GroupStoreEntity: std::fmt::Debug {
     async fn fetch_from_id(
         id: &[u8],
         identity: Option<Self::IdentityType>,
-        keystore: &mut core_crypto_keystore::connection::KeystoreDatabaseConnection,
+        keystore: &impl FetchFromDatabase,
     ) -> CryptoResult<Option<Self>>
     where
         Self: Sized;
 
-    async fn fetch_all(
-        keystore: &mut core_crypto_keystore::connection::KeystoreDatabaseConnection,
-    ) -> CryptoResult<Vec<Self>>
+    async fn fetch_all(keystore: &impl FetchFromDatabase) -> CryptoResult<Vec<Self>>
     where
         Self: Sized;
 }
@@ -53,10 +51,10 @@ impl GroupStoreEntity for MlsConversation {
     async fn fetch_from_id(
         id: &[u8],
         _: Option<Self::IdentityType>,
-        keystore: &mut core_crypto_keystore::connection::KeystoreDatabaseConnection,
+        keystore: &impl FetchFromDatabase,
     ) -> crate::CryptoResult<Option<Self>> {
-        use core_crypto_keystore::entities::EntityBase as _;
-        let Some(store_value) = Self::RawStoreValue::find_one(keystore, &id.into()).await? else {
+        let result = keystore.find::<Self::RawStoreValue>(id).await?;
+        let Some(store_value) = result else {
             return Ok(None);
         };
 
@@ -69,14 +67,11 @@ impl GroupStoreEntity for MlsConversation {
         })
     }
 
-    async fn fetch_all(
-        keystore: &mut core_crypto_keystore::connection::KeystoreDatabaseConnection,
-    ) -> CryptoResult<Vec<Self>> {
-        use core_crypto_keystore::entities::EntityBase as _;
-
-        let all_conversations = Self::RawStoreValue::find_all(keystore, EntityFindParams::default());
+    async fn fetch_all(keystore: &impl FetchFromDatabase) -> CryptoResult<Vec<Self>> {
+        let all_conversations = keystore
+            .find_all::<Self::RawStoreValue>(EntityFindParams::default())
+            .await?;
         Ok(all_conversations
-            .await?
             .iter()
             .filter_map(|c| {
                 let conversation = Self::from_serialized_state(c.state.clone(), c.parent_id.clone()).unwrap();
@@ -100,10 +95,10 @@ impl GroupStoreEntity for crate::proteus::ProteusConversationSession {
     async fn fetch_from_id(
         id: &[u8],
         identity: Option<Self::IdentityType>,
-        keystore: &mut core_crypto_keystore::connection::KeystoreDatabaseConnection,
+        keystore: &impl FetchFromDatabase,
     ) -> crate::CryptoResult<Option<Self>> {
-        use core_crypto_keystore::entities::EntityBase as _;
-        let Some(store_value) = Self::RawStoreValue::find_one(keystore, &id.into()).await? else {
+        let result = keystore.find::<Self::RawStoreValue>(id).await?;
+        let Some(store_value) = result else {
             return Ok(None);
         };
 
@@ -120,9 +115,7 @@ impl GroupStoreEntity for crate::proteus::ProteusConversationSession {
         }))
     }
 
-    async fn fetch_all(
-        _keystore: &mut core_crypto_keystore::connection::KeystoreDatabaseConnection,
-    ) -> CryptoResult<Vec<Self>>
+    async fn fetch_all(_keystore: &impl FetchFromDatabase) -> CryptoResult<Vec<Self>>
     where
         Self: Sized,
     {
@@ -202,7 +195,7 @@ impl<V: GroupStoreEntity> GroupStore<V> {
     pub(crate) async fn get_fetch(
         &mut self,
         k: &[u8],
-        keystore: &core_crypto_keystore::Connection,
+        keystore: &impl FetchFromDatabase,
         identity: Option<V::IdentityType>,
     ) -> crate::CryptoResult<Option<GroupStoreValue<V>>> {
         // Optimistic cache lookup
@@ -210,13 +203,8 @@ impl<V: GroupStoreEntity> GroupStore<V> {
             return Ok(Some(value.clone()));
         }
 
-        let mut keystore_connection = keystore
-            .borrow_conn()
-            .await
-            .map_err(|_| crate::CryptoError::LockPoisonError)?;
-
         // Not in store, fetch the thing in the keystore
-        let mut value = V::fetch_from_id(k, identity, &mut keystore_connection).await?;
+        let mut value = V::fetch_from_id(k, identity, keystore).await?;
         if let Some(value) = value.take() {
             let value_to_insert = std::sync::Arc::new(async_lock::RwLock::new(value));
             self.insert_prepped(k.to_vec(), value_to_insert.clone());
@@ -227,16 +215,22 @@ impl<V: GroupStoreEntity> GroupStore<V> {
         }
     }
 
+    /// Returns the value from the keystore.
+    /// WARNING: the returned value is not attached to the keystore and mutations on it will be
+    /// lost when the object is dropped
+    pub(crate) async fn fetch_from_keystore(
+        k: &[u8],
+        keystore: &impl FetchFromDatabase,
+        identity: Option<V::IdentityType>,
+    ) -> crate::CryptoResult<Option<V>> {
+        V::fetch_from_id(k, identity, keystore).await
+    }
+
     pub(crate) async fn get_fetch_all(
         &mut self,
-        keystore: &core_crypto_keystore::Connection,
+        keystore: &impl FetchFromDatabase,
     ) -> CryptoResult<Vec<GroupStoreValue<V>>> {
-        let mut keystore_connection = keystore
-            .borrow_conn()
-            .await
-            .map_err(|_| crate::CryptoError::LockPoisonError)?;
-
-        let all = V::fetch_all(&mut keystore_connection)
+        let all = V::fetch_all(keystore)
             .await?
             .into_iter()
             .map(|g| {

@@ -7,9 +7,11 @@ use std::collections::HashSet;
 
 use crate::{
     group_store::GroupStoreValue,
-    mls::{credential::typ::MlsCredentialType, ClientId, ConversationId, MlsCentral},
+    mls::{credential::typ::MlsCredentialType, ClientId, ConversationId},
     prelude::{CoreCryptoCallbacks, CryptoError, CryptoResult, MlsCiphersuite, MlsConversation, MlsError},
 };
+
+use super::context::CentralContext;
 
 impl MlsConversation {
     /// Validates the proposal. If it is external and an `Add` proposal it will call the callback
@@ -87,7 +89,7 @@ impl MlsConversation {
     }
 }
 
-impl MlsCentral {
+impl CentralContext {
     /// Crafts a new external Add proposal. Enables a client outside a group to request addition to this group.
     /// For Wire only, the client must belong to an user already in the group
     ///
@@ -113,8 +115,9 @@ impl MlsCentral {
         credential_type: MlsCredentialType,
     ) -> CryptoResult<MlsMessageOut> {
         let group_id = GroupId::from_slice(&conversation_id[..]);
+        let mls_provider = self.mls_provider().await?;
 
-        let mut client_guard = self.mls_client_mut().await;
+        let mut client_guard = self.mls_client_mut().await?;
         let client = client_guard.as_mut().ok_or(CryptoError::MlsNotInitialized)?;
         let cb = client.find_most_recent_credential_bundle(ciphersuite.signature_algorithm(), credential_type);
         let cb = match (cb, credential_type) {
@@ -122,7 +125,7 @@ impl MlsCentral {
             (None, MlsCredentialType::Basic) => {
                 // If a Basic CredentialBundle does not exist, just create one instead of failing
                 client
-                    .init_basic_credential_bundle_if_missing(&self.mls_backend, ciphersuite.signature_algorithm())
+                    .init_basic_credential_bundle_if_missing(&mls_provider, ciphersuite.signature_algorithm())
                     .await?;
 
                 client
@@ -132,7 +135,7 @@ impl MlsCentral {
             (None, MlsCredentialType::X509) => return Err(CryptoError::E2eiEnrollmentNotDone),
         };
         let kp = client
-            .generate_one_keypackage_from_credential_bundle(&self.mls_backend, ciphersuite, cb)
+            .generate_one_keypackage_from_credential_bundle(&mls_provider, ciphersuite, cb)
             .await?;
 
         Ok(JoinProposal::new(kp, group_id, epoch, &cb.signature_key).map_err(MlsError::from)?)

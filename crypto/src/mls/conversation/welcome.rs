@@ -3,14 +3,17 @@ use std::borrow::BorrowMut;
 use crate::{
     e2e_identity::init_certificates::NewCrlDistributionPoint,
     group_store::GroupStore,
-    mls::credential::crl::{extract_crl_uris_from_group, get_new_crl_distribution_points},
+    mls::{
+        context::CentralContext,
+        credential::crl::{extract_crl_uris_from_group, get_new_crl_distribution_points},
+    },
     prelude::{
-        ConversationId, CryptoError, CryptoResult, MlsCentral, MlsConversation, MlsConversationConfiguration,
+        ConversationId, CryptoError, CryptoResult, MlsConversation, MlsConversationConfiguration,
         MlsCustomConfiguration, MlsError,
     },
 };
-use core_crypto_keystore::entities::PersistedMlsPendingGroup;
-use mls_crypto_provider::MlsCryptoProvider;
+use core_crypto_keystore::{connection::FetchFromDatabase, entities::PersistedMlsPendingGroup};
+use mls_crypto_provider::TransactionalCryptoProvider;
 use openmls::prelude::{MlsGroup, MlsMessageIn, MlsMessageInBody, Welcome};
 use openmls_traits::OpenMlsCryptoProvider;
 use tls_codec::Deserialize;
@@ -24,7 +27,7 @@ pub struct WelcomeBundle {
     pub crl_new_distribution_points: NewCrlDistributionPoint,
 }
 
-impl MlsCentral {
+impl CentralContext {
     /// Create a conversation from a TLS serialized MLS Welcome message. The `MlsConversationConfiguration` used in this function will be the default implementation.
     ///
     /// # Arguments
@@ -76,15 +79,15 @@ impl MlsCentral {
             custom: custom_cfg,
             ..Default::default()
         };
-        let mut mls_groups = self.mls_groups.write().await;
+        let mls_provider = self.mls_provider().await?;
+        let mut mls_groups = self.mls_groups().await?;
         let conversation =
-            MlsConversation::from_welcome_message(welcome, configuration, &self.mls_backend, mls_groups.borrow_mut())
+            MlsConversation::from_welcome_message(welcome, configuration, &mls_provider, mls_groups.borrow_mut())
                 .await?;
 
         // We wait for the group to be created then we iterate through all members
         let crl_new_distribution_points =
-            get_new_crl_distribution_points(&self.mls_backend, extract_crl_uris_from_group(&conversation.group)?)
-                .await?;
+            get_new_crl_distribution_points(&mls_provider, extract_crl_uris_from_group(&conversation.group)?).await?;
 
         let id = conversation.id.clone();
         mls_groups.insert(id.clone(), conversation);
@@ -110,7 +113,7 @@ impl MlsConversation {
     async fn from_welcome_message(
         welcome: Welcome,
         configuration: MlsConversationConfiguration,
-        backend: &MlsCryptoProvider,
+        backend: &TransactionalCryptoProvider,
         mls_groups: &mut GroupStore<MlsConversation>,
     ) -> CryptoResult<Self> {
         let mls_group_config = configuration.as_openmls_default_configuration()?;
@@ -124,7 +127,7 @@ impl MlsConversation {
         };
 
         let id = ConversationId::from(group.group_id().as_slice());
-        let existing_conversation = mls_groups.get_fetch(&id[..], &backend.keystore(), None).await;
+        let existing_conversation = mls_groups.get_fetch(&id[..], &backend.transaction(), None).await;
         let conversation_exists = existing_conversation.ok().flatten().is_some();
 
         let pending_group = backend.key_store().find::<PersistedMlsPendingGroup>(&id[..]).await;
