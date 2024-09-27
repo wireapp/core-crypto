@@ -11,7 +11,7 @@ use crate::e2e_identity::init_certificates::NewCrlDistributionPoint;
 use crate::{
     e2e_identity::{crypto::E2eiSignatureKeypair, id::QualifiedE2eiClientId},
     mls::credential::x509::CertificatePrivateKey,
-    prelude::{id::ClientId, identifier::ClientIdentifier, CertificateBundle, MlsCentral, MlsCiphersuite},
+    prelude::{id::ClientId, identifier::ClientIdentifier, CertificateBundle, MlsCiphersuite},
     CryptoError, CryptoResult,
 };
 

@@ -101,7 +101,7 @@ impl CentralContext {
             ciphersuite,
             sign_keypair,
             #[cfg(not(target_family = "wasm"))]
-            Some(RefreshToken::find(&backend.transaction()).await?), // Since we are renewing an e2ei certificate we MUST have already generated one hence we MUST already have done an OIDC authn and gotten a refresh token from it we also MUST have stored in CoreCrypto
+            Some(RefreshToken::find(&mls_provider.transaction()).await?), // Since we are renewing an e2ei certificate we MUST have already generated one hence we MUST already have done an OIDC authn and gotten a refresh token from it we also MUST have stored in CoreCrypto
         )
     }
 
