@@ -42,7 +42,7 @@ serde_json.workspace = true
 
 # iOS specific things
 security-framework = { version = "2.11", optional = true }
-security-framework-sys = { version = "2.11", optional = true }
+security-framework-sys = { version = "2.12", optional = true }
 core-foundation = { version = "0.10", optional = true }
 
 openmls_traits = { workspace = true, optional = true }
