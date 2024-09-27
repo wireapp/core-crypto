@@ -54,6 +54,10 @@ impl From<MlsProposalRef> for Vec<u8> {
 }
 
 /// Internal representation of proposal to ease further additions
+#[allow(clippy::large_enum_variant)]
+// To solve the clippy issue we'd need to box the `KeyPackage`, but we can't because we need an
+// owned value of it. We can have it when Box::into_inner is stablized.
+// https://github.com/rust-lang/rust/issues/80437
 pub enum MlsProposal {
     /// Requests that a client with a specified KeyPackage be added to the group
     Add(KeyPackage),

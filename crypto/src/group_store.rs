@@ -53,7 +53,6 @@ impl GroupStoreEntity for MlsConversation {
         _: Option<Self::IdentityType>,
         keystore: &impl FetchFromDatabase,
     ) -> crate::CryptoResult<Option<Self>> {
-        use core_crypto_keystore::entities::EntityBase as _;
         let result = keystore.find::<Self::RawStoreValue>(id).await?;
         let Some(store_value) = result else {
             return Ok(None);
@@ -69,8 +68,6 @@ impl GroupStoreEntity for MlsConversation {
     }
 
     async fn fetch_all(keystore: &impl FetchFromDatabase) -> CryptoResult<Vec<Self>> {
-        use core_crypto_keystore::entities::EntityBase as _;
-
         let all_conversations = keystore
             .find_all::<Self::RawStoreValue>(EntityFindParams::default())
             .await?;
@@ -100,7 +97,6 @@ impl GroupStoreEntity for crate::proteus::ProteusConversationSession {
         identity: Option<Self::IdentityType>,
         keystore: &impl FetchFromDatabase,
     ) -> crate::CryptoResult<Option<Self>> {
-        use core_crypto_keystore::entities::EntityBase as _;
         let result = keystore.find::<Self::RawStoreValue>(id).await?;
         let Some(store_value) = result else {
             return Ok(None);
@@ -227,7 +223,7 @@ impl<V: GroupStoreEntity> GroupStore<V> {
         keystore: &impl FetchFromDatabase,
         identity: Option<V::IdentityType>,
     ) -> crate::CryptoResult<Option<V>> {
-        Ok(V::fetch_from_id(k, identity, keystore).await?)
+        V::fetch_from_id(k, identity, keystore).await
     }
 
     pub(crate) async fn get_fetch_all(

@@ -1,4 +1,4 @@
-use std::{ops::Deref, sync::Arc};
+use std::sync::Arc;
 
 use async_lock::RwLock;
 use tracing::{trace, Instrument};
@@ -483,7 +483,7 @@ impl CentralContext {
         .in_current_span()
         .await?;
 
-        self.mls_groups_mut().await?.insert(id.clone(), conversation);
+        self.mls_groups().await?.insert(id.clone(), conversation);
 
         Ok(())
     }
@@ -491,7 +491,7 @@ impl CentralContext {
     /// Checks if a given conversation id exists locally
     pub async fn conversation_exists(&self, id: &ConversationId) -> CryptoResult<bool> {
         Ok(self
-            .mls_groups_mut()
+            .mls_groups()
             .await?
             .get_fetch(id, &self.transaction().await?, None)
             .await

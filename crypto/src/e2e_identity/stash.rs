@@ -3,7 +3,7 @@ use openmls_traits::{random::OpenMlsRand, OpenMlsCryptoProvider};
 use crate::mls::context::CentralContext;
 use crate::prelude::{CryptoError, CryptoResult, E2eiEnrollment};
 use core_crypto_keystore::CryptoKeystoreMls;
-use mls_crypto_provider::{MlsCryptoProvider, TransactionalCryptoProvider};
+use mls_crypto_provider::TransactionalCryptoProvider;
 
 /// A unique identifier for an enrollment a consumer can use to fetch it from the keystore when he
 /// wants to resume the process

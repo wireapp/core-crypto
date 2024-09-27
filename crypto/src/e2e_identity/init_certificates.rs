@@ -1,10 +1,9 @@
 use crate::mls::context::CentralContext;
 use crate::{e2e_identity::CrlRegistration, prelude::MlsCentral, CryptoError, CryptoResult};
 use core_crypto_keystore::connection::FetchFromDatabase;
-use core_crypto_keystore::entities::{E2eiAcmeCA, E2eiCrl, E2eiIntermediateCert, EntityBase, UniqueEntity};
+use core_crypto_keystore::entities::{E2eiAcmeCA, E2eiCrl, E2eiIntermediateCert};
 use openmls_traits::OpenMlsCryptoProvider;
 use std::collections::HashSet;
-use std::ops::DerefMut;
 use wire_e2e_identity::prelude::x509::{
     extract_crl_uris, extract_expiration_from_crl,
     revocation::{PkiEnvironment, PkiEnvironmentParams},

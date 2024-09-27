@@ -197,7 +197,7 @@ impl CentralContext {
 
         let pending_messages = self.restore_pending_messages(&mut conversation, is_rejoin).await?;
 
-        self.mls_groups_mut().await?.insert(id.clone(), conversation);
+        self.mls_groups().await?.insert(id.clone(), conversation);
 
         // cleanup the pending group we no longer need
         mls_provider.key_store().mls_pending_groups_delete(id).await?;

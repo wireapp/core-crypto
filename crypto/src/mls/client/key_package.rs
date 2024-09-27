@@ -212,8 +212,8 @@ impl Client {
         refs: &[KeyPackageRef],
     ) -> CryptoResult<()> {
         let keystore = backend.key_store();
-        let kps = self.find_all_keypackages(&keystore).await?;
-        let kp_to_delete = self._prune_keypackages(&kps, &keystore, refs).await?;
+        let kps = self.find_all_keypackages(keystore).await?;
+        let kp_to_delete = self._prune_keypackages(&kps, keystore, refs).await?;
 
         // Let's group KeyPackages by Credential
         let mut grouped_kps = HashMap::<Vec<u8>, Vec<KeyPackageRef>>::new();

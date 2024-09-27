@@ -71,6 +71,8 @@ mod wipe;
 /// A unique identifier for a group/conversation. The identifier must be unique within a client.
 pub type ConversationId = Vec<u8>;
 
+/// This is a wrapper on top of the OpenMls's [MlsGroup], that provides Core Crypto specific functionality
+///
 /// This type will store the state of a group. With the [MlsGroup] it holds, it provides all
 /// operations that can be done in a group, such as creating proposals and commits.
 /// More information [here](https://messaginglayersecurity.rocks/mls-architecture/draft-ietf-mls-architecture.html#name-general-setting)
@@ -269,7 +271,7 @@ impl MlsCentral {
 impl CentralContext {
     pub(crate) async fn get_conversation(&self, id: &ConversationId) -> CryptoResult<GroupStoreValue<MlsConversation>> {
         let keystore = self.transaction().await?;
-        self.mls_groups_mut()
+        self.mls_groups()
             .await?
             .get_fetch(id, &keystore, None)
             .await?
@@ -295,7 +297,7 @@ impl CentralContext {
 
     pub(crate) async fn get_all_conversations(&self) -> CryptoResult<Vec<GroupStoreValue<MlsConversation>>> {
         let keystore = self.transaction().await?;
-        self.mls_groups_mut().await?.get_fetch_all(&keystore).await
+        self.mls_groups().await?.get_fetch_all(&keystore).await
     }
 
     /// Mark a conversation as child of another one

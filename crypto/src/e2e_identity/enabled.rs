@@ -5,6 +5,7 @@ use crate::prelude::{Client, CryptoError, CryptoResult, MlsCentral, MlsCredentia
 use openmls_traits::types::SignatureScheme;
 
 impl CentralContext {
+    /// See [MlsCentral::e2ei_is_enabled]
     #[cfg_attr(not(test), tracing::instrument(err, skip_all))]
     pub async fn e2ei_is_enabled(&self, signature_scheme: SignatureScheme) -> CryptoResult<bool> {
         let client_guard = self.mls_client().await?;
@@ -14,6 +15,7 @@ impl CentralContext {
 }
 
 impl MlsCentral {
+    /// Returns true when end-to-end-identity is enabled for the given SignatureScheme
     #[cfg_attr(not(test), tracing::instrument(err, skip_all))]
     pub async fn e2ei_is_enabled(&self, signature_scheme: SignatureScheme) -> CryptoResult<bool> {
         let client_guard = self.mls_client().await;

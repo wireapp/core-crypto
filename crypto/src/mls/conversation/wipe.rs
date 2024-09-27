@@ -22,7 +22,7 @@ impl CentralContext {
             .wipe_associated_entities(&provider)
             .await?;
         provider.key_store().mls_group_delete(id).await?;
-        let _ = self.mls_groups_mut().await?.remove(id);
+        let _ = self.mls_groups().await?.remove(id);
         Ok(())
     }
 }

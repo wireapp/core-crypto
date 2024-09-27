@@ -5,7 +5,7 @@ use wire_e2e_identity::prelude::{E2eiAcmeAuthorization, RustyE2eIdentity};
 use zeroize::Zeroize;
 
 use error::*;
-use mls_crypto_provider::{MlsCryptoProvider, RustCrypto, TransactionalCryptoProvider};
+use mls_crypto_provider::TransactionalCryptoProvider;
 
 use crate::e2e_identity::init_certificates::NewCrlDistributionPoint;
 use crate::{

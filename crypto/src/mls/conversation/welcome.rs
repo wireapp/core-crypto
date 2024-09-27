@@ -82,7 +82,7 @@ impl CentralContext {
             ..Default::default()
         };
         let mls_provider = self.mls_provider().await?;
-        let mut mls_groups = self.mls_groups_mut().await?;
+        let mut mls_groups = self.mls_groups().await?;
         let conversation =
             MlsConversation::from_welcome_message(welcome, configuration, &mls_provider, mls_groups.borrow_mut())
                 .await?;

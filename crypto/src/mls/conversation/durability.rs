@@ -34,6 +34,6 @@ impl CentralContext {
             .map(|mut groups| groups.remove(id.as_slice()).unwrap())
             .unwrap();
         let group = MlsConversation::from_serialized_state(group, parent_id).unwrap();
-        self.mls_groups_mut().await.unwrap().insert(id.clone(), group);
+        self.mls_groups().await.unwrap().insert(id.clone(), group);
     }
 }

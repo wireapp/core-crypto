@@ -1,5 +1,3 @@
-use std::ops::Deref;
-
 use crate::{
     mls::credential::ext::CredentialExt,
     prelude::{ConversationId, CryptoResult, MlsCentral, MlsConversation, MlsCredentialType},

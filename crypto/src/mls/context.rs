@@ -1,3 +1,6 @@
+//! This module contains the primitives to enable transactional support on a higher level within the
+//! [MlsCentral]. All mutating operations need to be done through a [CentralContext].
+
 use std::{ops::Deref, sync::Arc};
 
 use async_lock::{RwLock, RwLockReadGuardArc, RwLockWriteGuardArc};
@@ -12,11 +15,20 @@ use crate::{
 
 use super::MlsCentral;
 
+/// This struct provides transactional support for Core Crypto.
+///
+/// This is struct provides mutable access to the internals of Core Crypto. Every operation that
+/// causes data to be persisted needs to be done through this struct. This struct will buffer all
+/// operations in memory and when [CentraContext::finish] is called, it will persist the data into
+/// the keystore.
 #[derive(Debug, Clone)]
 pub struct CentralContext {
     state: Arc<RwLock<ContextState>>,
 }
 
+/// Due to uniffi's design, we can't force the context to be dropped after the transaction is
+/// committed. To work around that we switch the value to `Invalid` when the context is finished
+/// and throw errors if something is called
 #[derive(Debug, Clone)]
 enum ContextState {
     Valid {
@@ -118,19 +130,7 @@ impl CentralContext {
         }
     }
 
-    pub(crate) async fn mls_groups(&self) -> CryptoResult<RwLockReadGuardArc<GroupStore<MlsConversation>>> {
-        match self.state.read().await.deref() {
-            ContextState::Valid {
-                mls_client: _,
-                callbacks: _,
-                transaction: _,
-                mls_groups,
-            } => Ok(mls_groups.read_arc().await),
-            ContextState::Invalid => Err(CryptoError::InvalidContext),
-        }
-    }
-
-    pub(crate) async fn mls_groups_mut(&self) -> CryptoResult<RwLockWriteGuardArc<GroupStore<MlsConversation>>> {
+    pub(crate) async fn mls_groups(&self) -> CryptoResult<RwLockWriteGuardArc<GroupStore<MlsConversation>>> {
         match self.state.read().await.deref() {
             ContextState::Valid {
                 mls_client: _,
@@ -142,6 +142,9 @@ impl CentralContext {
         }
     }
 
+    /// Commits the transaction, meaning it takes all the enqueued operations and persist them into
+    /// the keystore. After that the internal state is switched to invalid, causing errors if
+    /// something is called from this object.
     pub async fn finish(&self) -> CryptoResult<()> {
         let mut guard = self.state.write().await;
         match guard.deref() {

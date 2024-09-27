@@ -27,7 +27,7 @@ use crate::{
         CryptoError, CryptoResult, MlsCentral, MlsCiphersuite, MlsCredentialType, MlsError,
     },
 };
-use async_lock::{RwLockReadGuard, RwLockWriteGuard};
+use async_lock::RwLockReadGuard;
 use core_crypto_keystore::{connection::FetchFromDatabase, CryptoKeystoreError, KeystoreTransaction};
 use openmls::prelude::{Credential, CredentialType};
 use openmls_basic_credential::SignatureKeyPair;
@@ -43,10 +43,6 @@ use tracing::{debug, Instrument};
 impl MlsCentral {
     pub(crate) async fn mls_client(&self) -> RwLockReadGuard<'_, Option<Client>> {
         self.mls_client.read().await
-    }
-
-    pub(crate) async fn mls_client_mut(&self) -> RwLockWriteGuard<'_, Option<Client>> {
-        self.mls_client.write().await
     }
 }
 
