@@ -20,11 +20,11 @@ pub mod platform {
             mod wasm;
             pub use self::wasm::WasmConnection as KeystoreDatabaseConnection;
             pub use wasm::storage;
-            pub(crate) use self::wasm::storage::WasmStorageTransaction as TransactionWrapper;
+            pub use self::wasm::storage::WasmStorageTransaction as TransactionWrapper;
         } else {
             mod generic;
             pub use self::generic::SqlCipherConnection as KeystoreDatabaseConnection;
-            pub(crate) use self::generic::TransactionWrapper;
+            pub use self::generic::TransactionWrapper;
         }
     }
 }

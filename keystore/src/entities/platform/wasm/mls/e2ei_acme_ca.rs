@@ -15,7 +15,7 @@
 // along with this program. If not, see http://www.gnu.org/licenses/.
 
 use crate::{
-    connection::{storage::WasmStorageTransaction, DatabaseConnection, KeystoreDatabaseConnection},
+    connection::{storage::WasmStorageTransaction, KeystoreDatabaseConnection},
     entities::{E2eiAcmeCA, Entity, EntityBase, EntityFindParams, EntityMlsExt, StringEntityId, UniqueEntity},
     CryptoKeystoreError, CryptoKeystoreResult, MissingKeyErrorKind,
 };

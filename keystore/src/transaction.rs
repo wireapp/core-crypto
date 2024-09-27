@@ -18,7 +18,7 @@ use crate::{
 };
 
 #[derive(Debug)]
-pub(crate) enum Entity {
+pub enum Entity {
     SignatureKeyPair(MlsSignatureKeyPair),
     HpkePrivateKey(MlsHpkePrivateKey),
     KeyPackage(MlsKeyPackage),

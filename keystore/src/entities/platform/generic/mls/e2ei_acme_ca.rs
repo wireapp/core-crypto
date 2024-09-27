@@ -15,7 +15,7 @@
 // along with this program. If not, see http://www.gnu.org/licenses/.
 
 use crate::{
-    connection::{DatabaseConnection, KeystoreDatabaseConnection, TransactionWrapper},
+    connection::{KeystoreDatabaseConnection, TransactionWrapper},
     entities::{E2eiAcmeCA, Entity, EntityBase, EntityFindParams, EntityMlsExt, StringEntityId, UniqueEntity},
     CryptoKeystoreError, CryptoKeystoreResult, MissingKeyErrorKind,
 };
