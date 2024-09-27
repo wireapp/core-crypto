@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see http://www.gnu.org/licenses/.
 
-use mls_crypto_provider::MlsCryptoProvider;
+use mls_crypto_provider::TransactionalCryptoProvider;
 use openmls::prelude::{
     group_info::VerifiableGroupInfo, CredentialType, MlsGroup, MlsMessageOut, Proposal, Sender, StagedCommit,
 };
@@ -23,6 +23,7 @@ use tls_codec::Serialize;
 use tracing::Instrument;
 
 use core_crypto_keystore::{
+    connection::FetchFromDatabase,
     entities::{MlsPendingMessage, PersistedMlsPendingGroup},
     CryptoKeystoreMls,
 };
@@ -33,10 +34,12 @@ use crate::{
     mls::credential::crl::{extract_crl_uris_from_group, get_new_crl_distribution_points},
     prelude::{
         decrypt::MlsBufferedConversationDecryptMessage, id::ClientId, ConversationId, CoreCryptoCallbacks, CryptoError,
-        CryptoResult, E2eiConversationState, MlsCentral, MlsCiphersuite, MlsConversation, MlsConversationConfiguration,
+        CryptoResult, E2eiConversationState, MlsCiphersuite, MlsConversation, MlsConversationConfiguration,
         MlsCredentialType, MlsCustomConfiguration, MlsError, MlsGroupInfoBundle,
     },
 };
+
+use super::context::CentralContext;
 
 /// Returned when a commit is created
 #[derive(Debug)]
@@ -62,7 +65,7 @@ impl MlsConversationInitBundle {
     }
 }
 
-impl MlsCentral {
+impl CentralContext {
     /// Issues an external commit and stores the group in a temporary table. This method is
     /// intended for example when a new client wants to join the user's existing groups.
     /// On success this function will return the group id and a message to be fanned out to other
@@ -97,12 +100,13 @@ impl MlsCentral {
         custom_cfg: MlsCustomConfiguration,
         credential_type: MlsCredentialType,
     ) -> CryptoResult<MlsConversationInitBundle> {
-        let mut client_guard = self.mls_client_mut().await;
+        let mut client_guard = self.mls_client_mut().await?;
         let client = client_guard.as_mut().ok_or(CryptoError::MlsNotInitialized)?;
 
         let cs: MlsCiphersuite = group_info.ciphersuite().into();
+        let mls_provider = self.mls_provider().await?;
         let cb = client
-            .get_most_recent_or_create_credential_bundle(&self.mls_backend, cs.signature_algorithm(), credential_type)
+            .get_most_recent_or_create_credential_bundle(&mls_provider, cs.signature_algorithm(), credential_type)
             .await?;
 
         let serialized_cfg = serde_json::to_vec(&custom_cfg).map_err(MlsError::MlsKeystoreSerializationError)?;
@@ -114,7 +118,7 @@ impl MlsCentral {
         };
 
         let (group, commit, group_info) = MlsGroup::join_by_external_commit(
-            &self.mls_backend,
+            &mls_provider,
             &cb.signature_key,
             None,
             group_info,
@@ -131,9 +135,9 @@ impl MlsCentral {
         let group_info = MlsGroupInfoBundle::try_new_full_plaintext(group_info)?;
 
         let crl_new_distribution_points =
-            get_new_crl_distribution_points(&self.mls_backend, extract_crl_uris_from_group(&group)?).await?;
+            get_new_crl_distribution_points(&mls_provider, extract_crl_uris_from_group(&group)?).await?;
 
-        self.mls_backend
+        mls_provider
             .key_store()
             .mls_pending_groups_save(
                 group.group_id().as_slice(),
@@ -166,13 +170,14 @@ impl MlsCentral {
         id: &ConversationId,
     ) -> CryptoResult<Option<Vec<MlsBufferedConversationDecryptMessage>>> {
         // Retrieve the pending MLS group from the keystore
-        let (group, cfg) = self.mls_backend.key_store().mls_pending_groups_load(id).await?;
+        let mls_provider = self.mls_provider().await?;
+        let (group, cfg) = mls_provider.key_store().mls_pending_groups_load(id).await?;
 
         let mut mls_group = core_crypto_keystore::deser::<MlsGroup>(&group)?;
 
         // Merge it aka bring the MLS group to life and make it usable
         mls_group
-            .merge_pending_commit(&self.mls_backend)
+            .merge_pending_commit(&mls_provider)
             .await
             .map_err(MlsError::from)?;
 
@@ -184,21 +189,21 @@ impl MlsCentral {
             ..Default::default()
         };
 
-        let is_rejoin = self.mls_backend.key_store().mls_group_exists(id.as_slice()).await;
+        let is_rejoin = mls_provider.key_store().mls_group_exists(id.as_slice()).await;
 
         // Persist the now usable MLS group in the keystore
         // TODO: find a way to make the insertion of the MlsGroup and deletion of the pending group transactional. Tracking issue: WPB-9595
-        let mut conversation = MlsConversation::from_mls_group(mls_group, configuration, &self.mls_backend).await?;
+        let mut conversation = MlsConversation::from_mls_group(mls_group, configuration, &mls_provider).await?;
 
         let pending_messages = self.restore_pending_messages(&mut conversation, is_rejoin).await?;
 
-        self.mls_groups.write().await.insert(id.clone(), conversation);
+        self.mls_groups().await?.insert(id.clone(), conversation);
 
         // cleanup the pending group we no longer need
-        self.mls_backend.key_store().mls_pending_groups_delete(id).await?;
+        mls_provider.key_store().mls_pending_groups_delete(id).await?;
 
         if pending_messages.is_some() {
-            self.mls_backend.key_store().remove::<MlsPendingMessage, _>(id).await?;
+            mls_provider.key_store().remove::<MlsPendingMessage, _>(id).await?;
         }
 
         Ok(pending_messages)
@@ -215,17 +220,18 @@ impl MlsCentral {
     /// Errors resulting from the KeyStore calls
     #[cfg_attr(test, crate::dispotent)]
     pub async fn clear_pending_group_from_external_commit(&self, id: &ConversationId) -> CryptoResult<()> {
-        Ok(self.mls_backend.key_store().mls_pending_groups_delete(id).await?)
+        Ok(self.transaction().await?.mls_pending_groups_delete(id).await?)
     }
 
-    pub(crate) async fn pending_group_exists(&self, id: &ConversationId) -> bool {
-        self.mls_backend
-            .keystore()
+    pub(crate) async fn pending_group_exists(&self, id: &ConversationId) -> CryptoResult<bool> {
+        Ok(self
+            .transaction()
+            .await?
             .find::<PersistedMlsPendingGroup>(id.as_slice())
             .await
             .ok()
             .flatten()
-            .is_some()
+            .is_some())
     }
 }
 
@@ -236,7 +242,7 @@ impl MlsConversation {
         commit: &StagedCommit,
         sender: ClientId,
         parent_conversation: Option<&GroupStoreValue<MlsConversation>>,
-        backend: &MlsCryptoProvider,
+        backend: &TransactionalCryptoProvider,
         callbacks: Option<&dyn CoreCryptoCallbacks>,
     ) -> CryptoResult<()> {
         // i.e. has this commit been created by [MlsCentral::join_by_external_commit] ?

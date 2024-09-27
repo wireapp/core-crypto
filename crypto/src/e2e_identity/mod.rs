@@ -5,13 +5,13 @@ use wire_e2e_identity::prelude::{E2eiAcmeAuthorization, RustyE2eIdentity};
 use zeroize::Zeroize;
 
 use error::*;
-use mls_crypto_provider::MlsCryptoProvider;
+use mls_crypto_provider::TransactionalCryptoProvider;
 
 use crate::e2e_identity::init_certificates::NewCrlDistributionPoint;
 use crate::{
     e2e_identity::{crypto::E2eiSignatureKeypair, id::QualifiedE2eiClientId},
     mls::credential::x509::CertificatePrivateKey,
-    prelude::{id::ClientId, identifier::ClientIdentifier, CertificateBundle, MlsCentral, MlsCiphersuite},
+    prelude::{id::ClientId, identifier::ClientIdentifier, CertificateBundle, MlsCiphersuite},
     CryptoError, CryptoResult,
 };
 
@@ -29,6 +29,7 @@ pub(crate) mod rotate;
 pub(crate) mod stash;
 pub mod types;
 
+use crate::mls::context::CentralContext;
 pub use init_certificates::E2eiDumpedPkiEnv;
 
 type Json = Vec<u8>;
@@ -42,7 +43,7 @@ pub struct CrlRegistration {
     pub expiration: Option<u64>,
 }
 
-impl MlsCentral {
+impl CentralContext {
     /// Creates an enrollment instance with private key material you can use in order to fetch
     /// a new x509 certificate from the acme server.
     ///
@@ -52,7 +53,7 @@ impl MlsCentral {
     /// * `handle` - user handle e.g. `alice.smith.qa@example.com`
     /// * `expiry_sec` - generated x509 certificate expiry in seconds
     #[cfg_attr(not(test), tracing::instrument(err, skip_all))]
-    pub fn e2ei_new_enrollment(
+    pub async fn e2ei_new_enrollment(
         &self,
         client_id: ClientId,
         display_name: String,
@@ -68,7 +69,7 @@ impl MlsCentral {
             handle,
             team,
             expiry_sec,
-            &self.mls_backend,
+            &self.mls_provider().await?,
             ciphersuite,
             signature_keypair,
             #[cfg(not(target_family = "wasm"))]
@@ -90,7 +91,8 @@ impl MlsCentral {
         let certificate_chain = enrollment
             .certificate_response(
                 certificate_chain,
-                self.mls_backend
+                self.mls_provider()
+                    .await?
                     .authentication_service()
                     .borrow()
                     .await
@@ -162,7 +164,7 @@ impl E2eiEnrollment {
         handle: String,
         team: Option<String>,
         expiry_sec: u32,
-        backend: &MlsCryptoProvider,
+        backend: &TransactionalCryptoProvider,
         ciphersuite: MlsCiphersuite,
         sign_keypair: Option<E2eiSignatureKeypair>,
         #[cfg(not(target_family = "wasm"))] refresh_token: Option<refresh_token::RefreshToken>,
@@ -450,7 +452,7 @@ impl E2eiEnrollment {
     #[cfg_attr(not(test), tracing::instrument(err, skip_all))]
     pub async fn new_oidc_challenge_response(
         &mut self,
-        #[cfg(not(target_family = "wasm"))] backend: &MlsCryptoProvider,
+        #[cfg(not(target_family = "wasm"))] backend: &TransactionalCryptoProvider,
         challenge: Json,
     ) -> E2eIdentityResult<()> {
         let challenge = serde_json::from_slice(&challenge[..])?;
@@ -465,7 +467,7 @@ impl E2eiEnrollment {
             let refresh_token = self.refresh_token.take().ok_or(E2eIdentityError::OutOfOrderEnrollment(
                 "You must first call 'new_oidc_challenge_request()'",
             ))?;
-            self.replace_refresh_token(backend, refresh_token).await?;
+            refresh_token.replace(backend).await?;
         }
         Ok(())
     }

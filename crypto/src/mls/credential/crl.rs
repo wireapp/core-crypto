@@ -1,8 +1,7 @@
-use crate::e2e_identity::init_certificates::NewCrlDistributionPoint;
-use crate::prelude::MlsCentral;
+use crate::{e2e_identity::init_certificates::NewCrlDistributionPoint, mls::context::CentralContext};
 use crate::{CryptoError, CryptoResult};
-use core_crypto_keystore::entities::E2eiCrl;
-use mls_crypto_provider::MlsCryptoProvider;
+use core_crypto_keystore::{connection::FetchFromDatabase, entities::E2eiCrl};
+use mls_crypto_provider::TransactionalCryptoProvider;
 use openmls::{
     group::MlsGroup,
     prelude::{Certificate, MlsCredentialType, Proposal, StagedCommit},
@@ -69,7 +68,7 @@ pub(crate) fn extract_dp(cert: &Certificate) -> CryptoResult<HashSet<String>> {
 
 #[cfg_attr(not(test), tracing::instrument(err, skip_all))]
 pub(crate) async fn get_new_crl_distribution_points(
-    backend: &MlsCryptoProvider,
+    backend: &TransactionalCryptoProvider,
     mut crl_dps: HashSet<String>,
 ) -> CryptoResult<NewCrlDistributionPoint> {
     if crl_dps.is_empty() {
@@ -83,7 +82,7 @@ pub(crate) async fn get_new_crl_distribution_points(
     Ok(Some(crl_dps).into())
 }
 
-impl MlsCentral {
+impl CentralContext {
     /// When x509 new credentials are registered this extracts the new CRL Distribution Point from the end entity certificate
     /// and all the intermediates
     #[cfg_attr(not(test), tracing::instrument(err, skip_all))]
@@ -113,6 +112,6 @@ impl MlsCentral {
             crl_new_distribution_points.extend(crl_dp);
         }
 
-        get_new_crl_distribution_points(&self.mls_backend, crl_new_distribution_points).await
+        get_new_crl_distribution_points(&self.mls_provider().await?, crl_new_distribution_points).await
     }
 }

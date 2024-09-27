@@ -1,20 +1,32 @@
 use super::E2eiEnrollment;
 use crate::{
-    prelude::{E2eIdentityError, E2eIdentityResult, MlsCentral},
+    prelude::{E2eIdentityError, E2eIdentityResult},
     CryptoError, CryptoResult,
 };
-use core_crypto_keystore::{
-    entities::{E2eiRefreshToken, UniqueEntity},
-    CryptoKeystoreResult,
-};
-use mls_crypto_provider::MlsCryptoProvider;
-use openmls_traits::OpenMlsCryptoProvider;
+use core_crypto_keystore::connection::FetchFromDatabase;
+use core_crypto_keystore::{entities::E2eiRefreshToken, CryptoKeystoreResult};
+use mls_crypto_provider::TransactionalCryptoProvider;
 use zeroize::Zeroize;
 
 /// An OIDC refresh token managed by CoreCrypto to benefit from encryption-at-rest
 #[derive(Debug, serde::Serialize, serde::Deserialize, Zeroize, derive_more::From, derive_more::Deref)]
 #[zeroize(drop)]
 pub struct RefreshToken(String);
+
+impl RefreshToken {
+    #[cfg_attr(not(test), tracing::instrument(err, skip_all))]
+    pub(crate) async fn find(key_store: &impl FetchFromDatabase) -> CryptoResult<RefreshToken> {
+        key_store.find_unique::<E2eiRefreshToken>().await?.try_into()
+    }
+
+    #[cfg_attr(not(test), tracing::instrument(err, skip_all))]
+    pub(crate) async fn replace(self, backend: &TransactionalCryptoProvider) -> CryptoKeystoreResult<()> {
+        let transaction = backend.transaction();
+        let rt = E2eiRefreshToken::from(self);
+        transaction.save(rt).await?;
+        Ok(())
+    }
+}
 
 impl E2eiEnrollment {
     /// Lets clients retrieve the OIDC refresh token to try to renew the user's authorization.
@@ -28,25 +40,6 @@ impl E2eiEnrollment {
             .ok_or(E2eIdentityError::OutOfOrderEnrollment(
                 "No OIDC refresh token registered yet or it has been persisted",
             ))
-    }
-
-    #[cfg_attr(not(test), tracing::instrument(err, skip_all))]
-    pub(crate) async fn replace_refresh_token(
-        &self,
-        backend: &MlsCryptoProvider,
-        rt: RefreshToken,
-    ) -> CryptoKeystoreResult<()> {
-        let mut conn = backend.key_store().borrow_conn().await?;
-        let rt = E2eiRefreshToken::from(rt);
-        rt.replace(&mut conn).await
-    }
-}
-
-impl MlsCentral {
-    #[cfg_attr(not(test), tracing::instrument(err, skip_all))]
-    pub(crate) async fn find_refresh_token(&self) -> CryptoResult<RefreshToken> {
-        let mut conn = self.mls_backend.key_store().borrow_conn().await?;
-        E2eiRefreshToken::find_unique(&mut conn).await?.try_into()
     }
 }
 
