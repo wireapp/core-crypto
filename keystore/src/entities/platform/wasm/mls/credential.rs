@@ -115,7 +115,7 @@ impl MlsCredentialExt for MlsCredential {
                 let request = store.delete(id)?;
                 request.await?;
             }
-            WasmStorageTransaction::InMemory { db: _, cipher: _ } => {
+            WasmStorageTransaction::InMemory { .. } => {
                 // current table model does not fit in a hashmap (no more primary key)
                 // memory keystore is never used in prod
             }
