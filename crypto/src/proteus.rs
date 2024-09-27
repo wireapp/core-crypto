@@ -570,7 +570,9 @@ impl ProteusCentral {
     /// If it cannot be found, one will be created.
     pub async fn last_resort_prekey(&self, keystore: &CryptoKeystore) -> CryptoResult<Vec<u8>> {
         let last_resort = if let Some(last_resort) = keystore
-            .find::<core_crypto_keystore::entities::ProteusPrekey>(Self::last_resort_prekey_id().to_le_bytes())
+            .find::<core_crypto_keystore::entities::ProteusPrekey>(
+                Self::last_resort_prekey_id().to_le_bytes().as_slice(),
+            )
             .await?
         {
             proteus_wasm::keys::PreKey::deserialise(&last_resort.prekey).map_err(ProteusError::from)?

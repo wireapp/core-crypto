@@ -146,7 +146,7 @@ pub(crate) mod config {
 #[derive(Debug, Clone)]
 pub struct MlsCentral {
     pub(crate) mls_client: Arc<RwLock<Option<Client>>>,
-    pub(crate) mls_backend: Arc<MlsCryptoProvider>,
+    pub(crate) mls_backend: MlsCryptoProvider,
     // this should be moved to the context
     pub(crate) callbacks: Arc<RwLock<Option<std::sync::Arc<dyn CoreCryptoCallbacks + 'static>>>>,
 }
@@ -170,16 +170,14 @@ impl MlsCentral {
     #[cfg_attr(not(test), tracing::instrument(skip_all, err))]
     pub async fn try_new(configuration: MlsCentralConfiguration) -> CryptoResult<Self> {
         // Init backend (crypto + rand + keystore)
-        let mls_backend = Arc::new(
-            MlsCryptoProvider::try_new_with_configuration(MlsCryptoProviderConfiguration {
-                db_path: &configuration.store_path,
-                identity_key: &configuration.identity_key,
-                in_memory: false,
-                entropy_seed: configuration.external_entropy,
-            })
-            .in_current_span()
-            .await?,
-        );
+        let mls_backend = MlsCryptoProvider::try_new_with_configuration(MlsCryptoProviderConfiguration {
+            db_path: &configuration.store_path,
+            identity_key: &configuration.identity_key,
+            in_memory: false,
+            entropy_seed: configuration.external_entropy,
+        })
+        .in_current_span()
+        .await?;
         let transaction = mls_backend.new_transaction();
         let mls_client = if let Some(id) = configuration.client_id {
             // Init client identity (load or create)
@@ -217,16 +215,14 @@ impl MlsCentral {
     /// Same as the [MlsCentral::try_new] but instead, it uses an in memory KeyStore. Although required, the `store_path` parameter from the `MlsCentralConfiguration` won't be used here.
     #[cfg_attr(not(test), tracing::instrument(skip_all, err))]
     pub async fn try_new_in_memory(configuration: MlsCentralConfiguration) -> CryptoResult<Self> {
-        let mls_backend = Arc::new(
-            MlsCryptoProvider::try_new_with_configuration(MlsCryptoProviderConfiguration {
-                db_path: &configuration.store_path,
-                identity_key: &configuration.identity_key,
-                in_memory: true,
-                entropy_seed: configuration.external_entropy,
-            })
-            .in_current_span()
-            .await?,
-        );
+        let mls_backend = MlsCryptoProvider::try_new_with_configuration(MlsCryptoProviderConfiguration {
+            db_path: &configuration.store_path,
+            identity_key: &configuration.identity_key,
+            in_memory: true,
+            entropy_seed: configuration.external_entropy,
+        })
+        .in_current_span()
+        .await?;
         let transaction = mls_backend.new_transaction();
         let mls_client = if let Some(id) = configuration.client_id {
             Arc::new(
@@ -489,7 +485,7 @@ impl CentralContext {
     /// Checks if a given conversation id exists locally
     pub async fn conversation_exists(&self, id: &ConversationId) -> CryptoResult<bool> {
         Ok(self
-            .mls_groups()
+            .mls_groups_mut()
             .await?
             .get_fetch(id, &self.transaction().await?, None)
             .await

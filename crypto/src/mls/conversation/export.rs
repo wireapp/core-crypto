@@ -92,7 +92,7 @@ impl MlsCentral {
         self.get_conversation(conversation_id)
             .await?
             .ok_or_else(|| CryptoError::ConversationNotFound(conversation_id.clone()))?
-            .export_secret_key(self.mls_backend.as_ref(), key_length)
+            .export_secret_key(&self.mls_backend, key_length)
     }
 
     /// Exports the clients from a conversation

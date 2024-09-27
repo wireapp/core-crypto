@@ -28,8 +28,17 @@ enum ContextState {
     Invalid,
 }
 
+impl MlsCentral {
+    /// Creates a new transaction within the MlsCentral. All operations that persist data will be
+    /// buffered in memory and when [CentralContext::finish] is called, the data will be persisted
+    /// in a single database transaction.
+    pub async fn new_transaction(&self) -> CentralContext {
+        CentralContext::new(self)
+    }
+}
+
 impl CentralContext {
-    pub fn new(central: MlsCentral) -> Self {
+    fn new(central: &MlsCentral) -> Self {
         let transaction = central.mls_backend.new_transaction();
         let mls_groups = Arc::new(RwLock::new(Default::default()));
         let callbacks = central.callbacks.clone();
