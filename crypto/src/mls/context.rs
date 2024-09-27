@@ -94,7 +94,8 @@ impl CentralContext {
         }
     }
 
-    pub(crate) async fn mls_provider(&self) -> CryptoResult<TransactionalCryptoProvider> {
+    /// Creates a read guard on the internal mls provider for the current transaction
+    pub async fn mls_provider(&self) -> CryptoResult<TransactionalCryptoProvider> {
         match self.state.read().await.deref() {
             ContextState::Valid { transaction, .. } => Ok(transaction.clone()),
             ContextState::Invalid => Err(CryptoError::InvalidContext),
