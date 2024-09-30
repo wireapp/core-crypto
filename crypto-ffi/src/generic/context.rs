@@ -2,7 +2,10 @@ use std::{ops::Deref, sync::Arc};
 
 use core_crypto::{
     mls::context::CentralContext,
-    prelude::{ClientIdentifier, KeyPackageIn, KeyPackageRef, MlsConversationConfiguration, VerifiableGroupInfo},
+    prelude::{
+        ClientIdentifier, ConversationId, KeyPackageIn, KeyPackageRef, MlsConversationConfiguration,
+        VerifiableGroupInfo,
+    },
     CryptoError, MlsError,
 };
 use tls_codec::{Deserialize, Serialize};
@@ -96,6 +99,56 @@ impl CoreCryptoContext {
                 (&ciphersuites).into(),
             )
             .await?)
+    }
+
+    /// See [core_crypto::mls::MlsCentral::client_public_key]
+    pub async fn client_public_key(
+        &self,
+        ciphersuite: Ciphersuite,
+        credential_type: MlsCredentialType,
+    ) -> CoreCryptoResult<Vec<u8>> {
+        Ok(self
+            .context
+            .client_public_key(ciphersuite.into(), credential_type.into())
+            .await?)
+    }
+
+    /// See [core_crypto::mls::MlsCentral::conversation_epoch]
+    pub async fn conversation_epoch(&self, conversation_id: Vec<u8>) -> CoreCryptoResult<u64> {
+        Ok(self.context.conversation_epoch(&conversation_id).await?)
+    }
+
+    /// See [core_crypto::mls::MlsCentral::conversation_ciphersuite]
+    pub async fn conversation_ciphersuite(&self, conversation_id: &ConversationId) -> CoreCryptoResult<Ciphersuite> {
+        let cs = self.context.conversation_ciphersuite(conversation_id).await?;
+        Ok(Ciphersuite::from(core_crypto::prelude::CiphersuiteName::from(cs)))
+    }
+
+    /// See [core_crypto::mls::MlsCentral::conversation_exists]
+    pub async fn conversation_exists(&self, conversation_id: Vec<u8>) -> CoreCryptoResult<bool> {
+        Ok(self.context.conversation_exists(&conversation_id).await?)
+    }
+
+    /// See [core_crypto::mls::MlsCentral::get_client_ids]
+    pub async fn get_client_ids(&self, conversation_id: Vec<u8>) -> CoreCryptoResult<Vec<ClientId>> {
+        Ok(self
+            .context
+            .get_client_ids(&conversation_id)
+            .await
+            .map(|cids| cids.into_iter().map(ClientId).collect())?)
+    }
+
+    /// See [core_crypto::mls::MlsCentral::export_secret_key]
+    pub async fn export_secret_key(&self, conversation_id: Vec<u8>, key_length: u32) -> CoreCryptoResult<Vec<u8>> {
+        Ok(self
+            .context
+            .export_secret_key(&conversation_id, key_length as usize)
+            .await?)
+    }
+
+    /// See [core_crypto::mls::MlsCentral::get_external_sender]
+    pub async fn get_external_sender(&self, conversation_id: Vec<u8>) -> CoreCryptoResult<Vec<u8>> {
+        Ok(self.context.get_external_sender(&conversation_id).await?)
     }
 
     /// See [core_crypto::mls::context::CentralContext::get_or_create_client_keypackages]

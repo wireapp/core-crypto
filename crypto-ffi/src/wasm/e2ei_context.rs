@@ -50,7 +50,7 @@ impl CoreCryptoContext {
                     .map_err(CoreCryptoError::from)?;
                 WasmCryptoResult::Ok(enrollment.into())
             }
-                .err_into(),
+            .err_into(),
         )
     }
 
@@ -79,7 +79,7 @@ impl CoreCryptoContext {
                     .map_err(CoreCryptoError::from)?;
                 WasmCryptoResult::Ok(enrollment.into())
             }
-                .err_into(),
+            .err_into(),
         )
     }
 
@@ -108,7 +108,7 @@ impl CoreCryptoContext {
                     .map_err(CoreCryptoError::from)?;
                 WasmCryptoResult::Ok(enrollment.into())
             }
-                .err_into(),
+            .err_into(),
         )
     }
 
@@ -120,7 +120,7 @@ impl CoreCryptoContext {
                 let dump: Option<E2eiDumpedPkiEnv> = context.e2ei_dump_pki_env().await?.map(Into::into);
                 WasmCryptoResult::Ok(serde_wasm_bindgen::to_value(&dump)?)
             }
-                .err_into(),
+            .err_into(),
         )
     }
 
@@ -139,7 +139,7 @@ impl CoreCryptoContext {
                 context.e2ei_register_acme_ca(trust_anchor_pem).await?;
                 WasmCryptoResult::Ok(JsValue::UNDEFINED)
             }
-                .err_into(),
+            .err_into(),
         )
     }
 
@@ -158,7 +158,7 @@ impl CoreCryptoContext {
                 };
                 WasmCryptoResult::Ok(crls.into())
             }
-                .err_into(),
+            .err_into(),
         )
     }
 
@@ -172,7 +172,7 @@ impl CoreCryptoContext {
                 let registration: CrlRegistration = cc_registration.into();
                 WasmCryptoResult::Ok(serde_wasm_bindgen::to_value(&registration)?)
             }
-                .err_into(),
+            .err_into(),
         )
     }
 
@@ -207,7 +207,7 @@ impl CoreCryptoContext {
                 };
                 WasmCryptoResult::Ok(crls.into())
             }
-                .err_into(),
+            .err_into(),
         )
     }
 
@@ -232,7 +232,7 @@ impl CoreCryptoContext {
                     .try_into()?;
                 WasmCryptoResult::Ok(serde_wasm_bindgen::to_value(&rotate_bundle)?)
             }
-                .err_into(),
+            .err_into(),
         )
     }
 
@@ -248,7 +248,7 @@ impl CoreCryptoContext {
                 let handle = context.e2ei_enrollment_stash(enrollment).await?;
                 WasmCryptoResult::Ok(Uint8Array::from(handle.as_slice()).into())
             }
-                .err_into(),
+            .err_into(),
         )
     }
 
@@ -267,7 +267,7 @@ impl CoreCryptoContext {
                     .map_err(CoreCryptoError::from)?;
                 WasmCryptoResult::Ok(enrollment.into())
             }
-                .err_into(),
+            .err_into(),
         )
     }
 
@@ -286,7 +286,7 @@ impl CoreCryptoContext {
                     .into();
                 WasmCryptoResult::Ok((state as u8).into())
             }
-                .err_into(),
+            .err_into(),
         )
     }
 
@@ -301,7 +301,7 @@ impl CoreCryptoContext {
                 let is_enabled = context.e2ei_is_enabled(sc).await.map_err(CoreCryptoError::from)?.into();
                 WasmCryptoResult::Ok(is_enabled)
             }
-                .err_into(),
+            .err_into(),
         )
     }
 
@@ -322,7 +322,7 @@ impl CoreCryptoContext {
                     .collect::<Vec<WireIdentity>>();
                 WasmCryptoResult::Ok(serde_wasm_bindgen::to_value(&identities)?)
             }
-                .err_into(),
+            .err_into(),
         )
     }
 
@@ -348,7 +348,7 @@ impl CoreCryptoContext {
                 }
                 WasmCryptoResult::Ok(js_obj.into())
             }
-                .err_into(),
+            .err_into(),
         )
     }
 
@@ -373,7 +373,70 @@ impl CoreCryptoContext {
 
                 WasmCryptoResult::Ok((state as u8).into())
             }
-                .err_into(),
+            .err_into(),
         )
+    }
+
+    pub async fn e2ei_dump_pki_env(&self) -> CoreCryptoResult<Option<E2eiDumpedPkiEnv>> {
+        Ok(self.context.e2ei_dump_pki_env().await?.map(Into::into))
+    }
+
+    /// See [core_crypto::mls::MlsCentral::e2ei_is_pki_env_setup]
+    pub async fn e2ei_is_pki_env_setup(&self) -> bool {
+        self.context.e2ei_is_pki_env_setup().await
+    }
+
+    /// See [core_crypto::mls::MlsCentral::e2ei_is_enabled]
+    pub async fn e2ei_is_enabled(&self, ciphersuite: Ciphersuite) -> CoreCryptoResult<bool> {
+        let sc = core_crypto::prelude::MlsCiphersuite::from(core_crypto::prelude::CiphersuiteName::from(ciphersuite))
+            .signature_algorithm();
+        Ok(self.context.e2ei_is_enabled(sc).await?)
+    }
+
+    /// See [core_crypto::mls::MlsCentral::get_device_identities]
+    pub async fn get_device_identities(
+        &self,
+        conversation_id: Vec<u8>,
+        device_ids: Vec<ClientId>,
+    ) -> CoreCryptoResult<Vec<WireIdentity>> {
+        let device_ids = device_ids.into_iter().map(|cid| cid.0).collect::<Vec<_>>();
+        Ok(self
+            .context
+            .get_device_identities(&conversation_id, &device_ids[..])
+            .await?
+            .into_iter()
+            .map(Into::into)
+            .collect::<Vec<_>>())
+    }
+
+    /// See [core_crypto::mls::MlsCentral::get_user_identities]
+    pub async fn get_user_identities(
+        &self,
+        conversation_id: Vec<u8>,
+        user_ids: Vec<String>,
+    ) -> CoreCryptoResult<HashMap<String, Vec<WireIdentity>>> {
+        Ok(self
+            .context
+            .get_user_identities(&conversation_id, &user_ids[..])
+            .await?
+            .into_iter()
+            .map(|(k, v)| (k, v.into_iter().map(Into::into).collect()))
+            .collect::<HashMap<String, Vec<WireIdentity>>>())
+    }
+
+    /// See [core_crypto::mls::MlsCentral::get_credential_in_use]
+    pub async fn get_credential_in_use(
+        &self,
+        group_info: Vec<u8>,
+        credential_type: MlsCredentialType,
+    ) -> CoreCryptoResult<E2eiConversationState> {
+        let group_info = VerifiableGroupInfo::tls_deserialize(&mut group_info.as_slice())
+            .map_err(MlsError::from)
+            .map_err(CryptoError::from)?;
+        Ok(self
+            .context
+            .get_credential_in_use(group_info, credential_type.into())
+            .await?
+            .into())
     }
 }
