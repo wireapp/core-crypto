@@ -20,7 +20,6 @@ impl CoreCryptoContext {
     /// Returns: [`WasmCryptoResult<E2eiEnrollment>`]
     ///
     /// see [core_crypto::mls::context::CentralContext::e2ei_new_enrollment]
-    #[deprecated = "Please create a transaction in Core Crypto and call this method from it."]
     pub fn e2ei_new_enrollment(
         &self,
         client_id: String,
@@ -57,7 +56,6 @@ impl CoreCryptoContext {
     /// Returns: [`WasmCryptoResult<E2eiEnrollment>`]
     ///
     /// see [core_crypto::mls::context::CentralContext::e2ei_new_activation_enrollment]
-    #[deprecated = "Please create a transaction in Core Crypto and call this method from it."]
     pub fn e2ei_new_activation_enrollment(
         &self,
         display_name: String,
@@ -131,7 +129,6 @@ impl CoreCryptoContext {
     }
 
     /// See [core_crypto::mls::context::CentralContext::e2ei_register_acme_ca]
-    #[deprecated = "Please create a transaction in Core Crypto and call this method from it."]
     pub async fn e2ei_register_acme_ca(&self, trust_anchor_pem: String) -> Promise {
         let context = self.inner.clone();
         future_to_promise(
@@ -144,7 +141,6 @@ impl CoreCryptoContext {
     }
 
     /// See [core_crypto::mls::context::CentralContext::e2ei_register_intermediate_ca]
-    #[deprecated = "Please create a transaction in Core Crypto and call this method from it."]
     pub async fn e2ei_register_intermediate_ca(&self, cert_pem: String) -> Promise {
         let context = self.inner.clone();
         future_to_promise(
@@ -163,7 +159,6 @@ impl CoreCryptoContext {
     }
 
     /// See [core_crypto::mls::context::CentralContext::e2ei_register_crl]
-    #[deprecated = "Please create a transaction in Core Crypto and call this method from it."]
     pub async fn e2ei_register_crl(&self, crl_dp: String, crl_der: Box<[u8]>) -> Promise {
         let context = self.inner.clone();
         future_to_promise(
@@ -177,7 +172,6 @@ impl CoreCryptoContext {
     }
 
     /// see [core_crypto::mls::context::CentralContext::e2ei_mls_init_only]
-    #[deprecated = "Please create a transaction in Core Crypto and call this method from it."]
     pub fn e2ei_mls_init_only(
         &self,
         enrollment: E2eiEnrollment,
@@ -212,7 +206,6 @@ impl CoreCryptoContext {
     }
 
     /// see [core_crypto::mls::context::CentralContext::e2ei_rotate_all]
-    #[deprecated = "Please create a transaction in Core Crypto and call this method from it."]
     pub fn e2ei_rotate_all(
         &self,
         enrollment: E2eiEnrollment,
@@ -237,7 +230,6 @@ impl CoreCryptoContext {
     }
 
     /// see [core_crypto::mls::context::CentralContext::e2ei_enrollment_stash]
-    #[deprecated = "Please create a transaction in Core Crypto and call this method from it."]
     pub fn e2ei_enrollment_stash(&self, enrollment: E2eiEnrollment) -> Promise {
         let context = self.inner.clone();
         future_to_promise(
@@ -253,7 +245,6 @@ impl CoreCryptoContext {
     }
 
     /// see [core_crypto::mls::context::CentralContext::e2ei_enrollment_stash_pop]
-    #[deprecated = "Please create a transaction in Core Crypto and call this method from it."]
     pub fn e2ei_enrollment_stash_pop(&self, handle: Box<[u8]>) -> Promise {
         let context = self.inner.clone();
         future_to_promise(
@@ -274,7 +265,6 @@ impl CoreCryptoContext {
     /// Returns [`WasmCryptoResult<u8>`]
     ///
     /// see [core_crypto::mls::context::CentralContext::e2ei_conversation_state]
-    #[deprecated = "Please create a transaction in Core Crypto and call this method from it."]
     pub fn e2ei_conversation_state(&self, conversation_id: ConversationId) -> Promise {
         let context = self.inner.clone();
         future_to_promise(
@@ -375,68 +365,5 @@ impl CoreCryptoContext {
             }
             .err_into(),
         )
-    }
-
-    pub async fn e2ei_dump_pki_env(&self) -> CoreCryptoResult<Option<E2eiDumpedPkiEnv>> {
-        Ok(self.context.e2ei_dump_pki_env().await?.map(Into::into))
-    }
-
-    /// See [core_crypto::mls::MlsCentral::e2ei_is_pki_env_setup]
-    pub async fn e2ei_is_pki_env_setup(&self) -> bool {
-        self.context.e2ei_is_pki_env_setup().await
-    }
-
-    /// See [core_crypto::mls::MlsCentral::e2ei_is_enabled]
-    pub async fn e2ei_is_enabled(&self, ciphersuite: Ciphersuite) -> CoreCryptoResult<bool> {
-        let sc = core_crypto::prelude::MlsCiphersuite::from(core_crypto::prelude::CiphersuiteName::from(ciphersuite))
-            .signature_algorithm();
-        Ok(self.context.e2ei_is_enabled(sc).await?)
-    }
-
-    /// See [core_crypto::mls::MlsCentral::get_device_identities]
-    pub async fn get_device_identities(
-        &self,
-        conversation_id: Vec<u8>,
-        device_ids: Vec<ClientId>,
-    ) -> CoreCryptoResult<Vec<WireIdentity>> {
-        let device_ids = device_ids.into_iter().map(|cid| cid.0).collect::<Vec<_>>();
-        Ok(self
-            .context
-            .get_device_identities(&conversation_id, &device_ids[..])
-            .await?
-            .into_iter()
-            .map(Into::into)
-            .collect::<Vec<_>>())
-    }
-
-    /// See [core_crypto::mls::MlsCentral::get_user_identities]
-    pub async fn get_user_identities(
-        &self,
-        conversation_id: Vec<u8>,
-        user_ids: Vec<String>,
-    ) -> CoreCryptoResult<HashMap<String, Vec<WireIdentity>>> {
-        Ok(self
-            .context
-            .get_user_identities(&conversation_id, &user_ids[..])
-            .await?
-            .into_iter()
-            .map(|(k, v)| (k, v.into_iter().map(Into::into).collect()))
-            .collect::<HashMap<String, Vec<WireIdentity>>>())
-    }
-
-    /// See [core_crypto::mls::MlsCentral::get_credential_in_use]
-    pub async fn get_credential_in_use(
-        &self,
-        group_info: Vec<u8>,
-        credential_type: MlsCredentialType,
-    ) -> CoreCryptoResult<E2eiConversationState> {
-        let group_info = VerifiableGroupInfo::tls_deserialize(&mut group_info.as_slice())
-            .map_err(MlsError::from)
-            .map_err(CryptoError::from)?;
-        Ok(self
-            .context
-            .get_credential_in_use(group_info, credential_type.into())
-            .await?
-            .into())
     }
 }
