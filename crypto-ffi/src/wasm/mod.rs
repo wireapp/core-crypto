@@ -15,9 +15,9 @@
 // along with this program. If not, see http://www.gnu.org/licenses/.
 
 #![allow(unused_variables, deprecated)]
-mod utils;
 mod context;
 mod e2ei_context;
+mod utils;
 
 use std::collections::HashMap;
 use std::ops::Deref;
@@ -1655,7 +1655,9 @@ impl CoreCrypto {
                 }
 
                 let context = central.new_transaction().await;
-                context.set_raw_external_senders(&mut lower_cfg, config.external_senders).await?;
+                context
+                    .set_raw_external_senders(&mut lower_cfg, config.external_senders)
+                    .await?;
                 context
                     .new_conversation(&conversation_id.to_vec(), creator_credential_type.into(), lower_cfg)
                     .await
