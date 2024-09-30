@@ -35,7 +35,10 @@ use tracing_subscriber::fmt::{self, MakeWriter};
 
 use crate::UniffiCustomTypeConverter;
 
+use self::context::CoreCryptoContext;
+
 pub mod context;
+pub mod e2ei_context;
 
 #[allow(dead_code)]
 pub(crate) const VERSION: &str = env!("CARGO_PKG_VERSION");
@@ -1956,7 +1959,7 @@ impl E2eiEnrollment {
     }
 
     /// See [core_crypto::e2e_identity::E2eiEnrollment::new_oidc_challenge_response]
-    #[deprecated = "Please create a transaction in Core Crypto and call this method from it."]
+    #[deprecated = "Please create a transaction in Core Crypto and call Self::context_newoidc_challenge_response."]
     pub async fn new_oidc_challenge_response(
         &self,
         cc: std::sync::Arc<CoreCrypto>,
@@ -1969,6 +1972,20 @@ impl E2eiEnrollment {
             .new_oidc_challenge_response(&context.mls_provider().await?, challenge)
             .await?;
         Ok(context.finish().await?)
+    }
+
+    /// See [core_crypto::e2e_identity::E2eiEnrollment::new_oidc_challenge_response]
+    pub async fn context_new_oidc_challenge_response(
+        &self,
+        cc: std::sync::Arc<CoreCryptoContext>,
+        challenge: Vec<u8>,
+    ) -> CoreCryptoResult<()> {
+        self.0
+            .write()
+            .await
+            .new_oidc_challenge_response(&cc.context.mls_provider().await?, challenge)
+            .await?;
+        Ok(())
     }
 
     /// See [core_crypto::e2e_identity::E2eiEnrollment::check_order_request]
