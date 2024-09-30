@@ -1451,6 +1451,18 @@ impl CoreCrypto {
     ///
     /// see [core_crypto::mls::MlsCentral::close]
     pub fn close(self) -> Promise {
+        if self.has_outstanding_refs() {
+            return Promise::reject(
+                &js_sys::JsString::from(
+                    format!(
+                        "There are other outstanding references to this CoreCrypto instance [refs = {}]",
+                        Arc::strong_count(&self.inner)
+                    )
+                        .as_str(),
+                )
+                    .into(),
+            );
+        }
         let central = self.inner.clone();
         future_to_promise(
                 async move {
@@ -1466,6 +1478,18 @@ impl CoreCrypto {
     ///
     /// see [core_crypto::mls::MlsCentral::wipe]
     pub fn wipe(self) -> Promise {
+        if self.has_outstanding_refs() {
+            return Promise::reject(
+                &js_sys::JsString::from(
+                    format!(
+                        "There are other outstanding references to this CoreCrypto instance [refs = {}]",
+                        Arc::strong_count(&self.inner)
+                    )
+                        .as_str(),
+                )
+                    .into(),
+            );
+        }
         let central = self.inner.clone();
         future_to_promise(
                 async move {
