@@ -1451,26 +1451,28 @@ impl CoreCrypto {
     ///
     /// see [core_crypto::mls::MlsCentral::close]
     pub fn close(self) -> Promise {
+        let error_message = &js_sys::JsString::from(
+            format!(
+                "There are other outstanding references to this CoreCrypto instance [refs = {}]",
+                Arc::strong_count(&self.inner)
+            )
+                .as_str(),
+        );
         if self.has_outstanding_refs() {
-            return Promise::reject(
-                &js_sys::JsString::from(
-                    format!(
-                        "There are other outstanding references to this CoreCrypto instance [refs = {}]",
-                        Arc::strong_count(&self.inner)
-                    )
-                        .as_str(),
-                )
-                    .into(),
-            );
+            return Promise::reject(error_message);
         }
         let central = self.inner.clone();
         future_to_promise(
-                async move {
-                    let central = Arc::into_inner(central).ok_or(CryptoError::ConsumerError)?;
-                    central.take().close().await.map_err(CoreCryptoError::from)?;
-                    WasmCryptoResult::Ok(JsValue::UNDEFINED)
+            async move {
+                match Arc::try_unwrap(self.inner) {
+                    Ok(central) => {
+                        central.take().close().await.map_err(CoreCryptoError::from)?;
+                        WasmCryptoResult::Ok(JsValue::UNDEFINED)
+                    }
+                    Err(_) => Promise::reject(error_message).into(),
                 }
-                    .err_into()
+            }
+                .err_into(),
         )
     }
 
@@ -1478,26 +1480,28 @@ impl CoreCrypto {
     ///
     /// see [core_crypto::mls::MlsCentral::wipe]
     pub fn wipe(self) -> Promise {
+        let error_message = &js_sys::JsString::from(
+            format!(
+                "There are other outstanding references to this CoreCrypto instance [refs = {}]",
+                Arc::strong_count(&self.inner)
+            )
+                .as_str(),
+        );
         if self.has_outstanding_refs() {
-            return Promise::reject(
-                &js_sys::JsString::from(
-                    format!(
-                        "There are other outstanding references to this CoreCrypto instance [refs = {}]",
-                        Arc::strong_count(&self.inner)
-                    )
-                        .as_str(),
-                )
-                    .into(),
-            );
+            return Promise::reject(error_message);
         }
         let central = self.inner.clone();
         future_to_promise(
-                async move {
-                    let central = Arc::into_inner(central).ok_or(CryptoError::ConsumerError)?;
-                    central.take().wipe().await.map_err(CoreCryptoError::from)?;
-                    WasmCryptoResult::Ok(JsValue::UNDEFINED)
+            async move {
+                match Arc::try_unwrap(self.inner) {
+                    Ok(central) => {
+                        central.take().wipe().await.map_err(CoreCryptoError::from)?;
+                        WasmCryptoResult::Ok(JsValue::UNDEFINED)
+                    }
+                    Err(_) => Promise::reject(error_message).into(),
                 }
-                    .err_into()
+            }
+                .err_into(),
         )
     }
 
@@ -1525,7 +1529,8 @@ impl CoreCrypto {
         future_to_promise(
             async move {
                 let pk = central
-                    .client_public_key(ciphersuite.into(), credential_type.into()).await
+                    .client_public_key(ciphersuite.into(), credential_type.into())
+                    .await
                     .map_err(CoreCryptoError::from)?;
                 WasmCryptoResult::Ok(Uint8Array::from(pk.as_slice()).into())
             }
@@ -2114,7 +2119,8 @@ impl CoreCrypto {
         future_to_promise(
             async move {
                 let context = central.new_transaction().await;
-                context.clear_pending_group_from_external_commit(&conversation_id)
+                context
+                    .clear_pending_group_from_external_commit(&conversation_id)
                     .await
                     .map_err(CoreCryptoError::from)?;
 
@@ -2411,7 +2417,8 @@ impl CoreCrypto {
                     let prekey_raw = central.proteus_new_prekey(prekey_id).await.map_err(CoreCryptoError::from)?;
                     WasmCryptoResult::Ok(Uint8Array::from(prekey_raw.as_slice()).into())
                 } or throw WasmCryptoResult<_> }
-            }.err_into()
+            }
+                .err_into(),
         )
     }
 
@@ -2636,7 +2643,8 @@ impl CoreCrypto {
                         team,
                         expiry_sec,
                         ciphersuite.into(),
-                    ).await
+                    )
+                    .await
                     .map(async_lock::RwLock::new)
                     .map(std::sync::Arc::new)
                     .map(E2eiEnrollment)
@@ -2667,7 +2675,8 @@ impl CoreCrypto {
             async move {
                 let context = central.new_transaction().await;
                 let enrollment = context
-                    .e2ei_new_activation_enrollment(display_name, handle, team, expiry_sec, ciphersuite.into()).await
+                    .e2ei_new_activation_enrollment(display_name, handle, team, expiry_sec, ciphersuite.into())
+                    .await
                     .map(async_lock::RwLock::new)
                     .map(std::sync::Arc::new)
                     .map(E2eiEnrollment)
@@ -2725,12 +2734,7 @@ impl CoreCrypto {
     /// See [core_crypto::mls::MlsCentral::e2ei_is_pki_env_setup]
     pub async fn e2ei_is_pki_env_setup(&self) -> Promise {
         let central = self.inner.clone();
-        future_to_promise(
-            async move {
-                WasmCryptoResult::Ok(central.e2ei_is_pki_env_setup().await.into())
-            }
-            .err_into(),
-        )
+        future_to_promise(async move { WasmCryptoResult::Ok(central.e2ei_is_pki_env_setup().await.into()) }.err_into())
     }
 
     /// See [core_crypto::mls::MlsCentral::e2ei_register_acme_ca]
@@ -2917,10 +2921,7 @@ impl CoreCrypto {
         let central = self.inner.clone();
         future_to_promise(
             async move {
-                let is_enabled = central
-                    .e2ei_is_enabled(sc).await
-                    .map_err(CoreCryptoError::from)?
-                    .into();
+                let is_enabled = central.e2ei_is_enabled(sc).await.map_err(CoreCryptoError::from)?.into();
                 WasmCryptoResult::Ok(is_enabled)
             }
             .err_into(),
