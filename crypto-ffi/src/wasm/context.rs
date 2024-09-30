@@ -226,7 +226,7 @@ impl CoreCryptoContext {
                     lower_cfg.ciphersuite = mls_ciphersuite.into();
                 }
 
-                // context.set_raw_external_senders(&mut lower_cfg, config.external_senders)?;
+                context.set_raw_external_senders(&mut lower_cfg, config.external_senders).await?;
 
                 context
                     .new_conversation(&conversation_id.to_vec(), creator_credential_type.into(), lower_cfg)
