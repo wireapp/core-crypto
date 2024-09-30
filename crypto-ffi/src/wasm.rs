@@ -1435,6 +1435,7 @@ impl CoreCrypto {
                     .mls_init_with_client_id(client_id.into(), signature_public_keys, ciphersuites)
                     .await
                     .map_err(CoreCryptoError::from)?;
+                context.finish().await?;
 
                 WasmCryptoResult::Ok(JsValue::UNDEFINED)
             }
@@ -1742,6 +1743,7 @@ impl CoreCrypto {
                     .await
                     .map_err(CoreCryptoError::from)?;
                 let bundle: WelcomeBundle = bundle.into();
+                context.finish().await?;
                 WasmCryptoResult::Ok(serde_wasm_bindgen::to_value(&bundle)?)
             }
             .err_into(),
@@ -1889,6 +1891,7 @@ impl CoreCrypto {
                     .wipe_conversation(&conversation_id)
                     .await
                     .map_err(CoreCryptoError::from)?;
+                context.finish().await?;
                 WasmCryptoResult::Ok(JsValue::UNDEFINED)
             }
             .err_into(),
@@ -1910,6 +1913,7 @@ impl CoreCrypto {
                     .map_err(CoreCryptoError::from)?;
 
                 let decrypted_message = DecryptedMessage::try_from(raw_decrypted_message)?;
+                context.finish().await?;
 
                 WasmCryptoResult::Ok(serde_wasm_bindgen::to_value(&decrypted_message)?)
             }
