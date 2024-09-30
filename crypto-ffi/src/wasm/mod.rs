@@ -1464,18 +1464,16 @@ impl CoreCrypto {
             return Promise::reject(error_message);
         }
         let central = self.inner.clone();
-        future_to_promise(
-            async move {
-                match Arc::try_unwrap(self.inner) {
-                    Ok(central) => {
-                        central.take().close().await.map_err(CoreCryptoError::from)?;
-                        WasmCryptoResult::Ok(JsValue::UNDEFINED)
-                    }
-                    Err(_) => Promise::reject(error_message).into(),
+        match Arc::try_unwrap(self.inner) {
+            Ok(central) => future_to_promise(
+                async move {
+                    central.take().close().await.map_err(CoreCryptoError::from)?;
+                    WasmCryptoResult::Ok(JsValue::UNDEFINED)
                 }
-            }
                 .err_into(),
-        )
+            ),
+            Err(_) => Promise::reject(error_message),
+        }
     }
 
     /// Returns: [`WasmCryptoResult<()>`]
@@ -1493,18 +1491,16 @@ impl CoreCrypto {
             return Promise::reject(error_message);
         }
         let central = self.inner.clone();
-        future_to_promise(
-            async move {
-                match Arc::try_unwrap(self.inner) {
-                    Ok(central) => {
-                        central.take().wipe().await.map_err(CoreCryptoError::from)?;
-                        WasmCryptoResult::Ok(JsValue::UNDEFINED)
-                    }
-                    Err(_) => Promise::reject(error_message).into(),
+        match Arc::try_unwrap(self.inner) {
+            Ok(central) => future_to_promise(
+                async move {
+                    central.take().wipe().await.map_err(CoreCryptoError::from)?;
+                    WasmCryptoResult::Ok(JsValue::UNDEFINED)
                 }
-            }
-                .err_into(),
-        )
+                    .err_into(),
+            ),
+            Err(_) => Promise::reject(error_message),
+        }
     }
 
     /// Returns: [`WasmCryptoResult<()>`]
@@ -1514,7 +1510,7 @@ impl CoreCrypto {
         let central = self.inner.clone();
         future_to_promise(
             async move {
-                central.callbacks(std::sync::Arc::new(callbacks));
+                central.callbacks(std::sync::Arc::new(callbacks)).await;
 
                 WasmCryptoResult::Ok(JsValue::UNDEFINED)
             }
