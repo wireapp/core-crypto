@@ -1,7 +1,14 @@
 use crate::wasm::{lower_ciphersuites, WasmError};
-use crate::{BufferedDecryptedMessage, Ciphersuite, CommitBundle, ConversationConfiguration, ConversationInitBundle, CoreCrypto, CoreCryptoError, CoreCryptoResult, CredentialType, CustomConfiguration, DecryptedMessage, FfiClientId, MemberAddedMessages, ProposalBundle, WasmCryptoResult, WelcomeBundle};
+use crate::{
+    BufferedDecryptedMessage, Ciphersuite, CommitBundle, ConversationConfiguration, ConversationInitBundle, CoreCrypto,
+    CoreCryptoError, CoreCryptoResult, CredentialType, CustomConfiguration, DecryptedMessage, FfiClientId,
+    MemberAddedMessages, ProposalBundle, WasmCryptoResult, WelcomeBundle,
+};
 use core_crypto::mls::context::CentralContext;
-use core_crypto::prelude::{CiphersuiteName, ClientId, ClientIdentifier, ConversationId, KeyPackageIn, KeyPackageRef, MlsConversationConfiguration, VerifiableGroupInfo};
+use core_crypto::prelude::{
+    CiphersuiteName, ClientId, ClientIdentifier, ConversationId, KeyPackageIn, KeyPackageRef,
+    MlsConversationConfiguration, VerifiableGroupInfo,
+};
 use core_crypto::{CryptoError, CryptoResult, MlsError};
 use futures_util::TryFutureExt;
 use js_sys::{Promise, Uint8Array};
@@ -14,7 +21,7 @@ use wasm_bindgen_futures::future_to_promise;
 #[wasm_bindgen]
 #[derive(Clone)]
 pub struct CoreCryptoContext {
-    inner: Arc<CentralContext>,
+    pub(crate) inner: Arc<CentralContext>,
 }
 
 #[wasm_bindgen]
@@ -226,7 +233,9 @@ impl CoreCryptoContext {
                     lower_cfg.ciphersuite = mls_ciphersuite.into();
                 }
 
-                context.set_raw_external_senders(&mut lower_cfg, config.external_senders).await?;
+                context
+                    .set_raw_external_senders(&mut lower_cfg, config.external_senders)
+                    .await?;
 
                 context
                     .new_conversation(&conversation_id.to_vec(), creator_credential_type.into(), lower_cfg)
@@ -332,7 +341,7 @@ impl CoreCryptoContext {
                     .iter()
                     .map(|kp| {
                         KeyPackageIn::tls_deserialize(&mut kp.to_vec().as_slice())
-                            .map_err(|e| CoreCryptoError(WasmError::CryptoError(CryptoError::MlsError(e.into()))))
+                            .map_err(|e| CoreCryptoError::from(WasmError::CryptoError(CryptoError::MlsError(e.into()))))
                     })
                     .collect::<CoreCryptoResult<Vec<_>>>()?;
 
@@ -705,6 +714,77 @@ impl CoreCryptoContext {
                     .map_err(CoreCryptoError::from)?;
                 context.finish().await?;
                 WasmCryptoResult::Ok(JsValue::UNDEFINED)
+            }
+                .err_into(),
+        )
+    }
+
+    /// Returns: [`WasmCryptoResult<js_sys::Uint8Array>`]
+    ///
+    /// see [core_crypto::mls::context::CentralContext::random_bytes]
+    pub fn random_bytes(&self, len: usize) -> Promise {
+        let context = self.inner.clone();
+        future_to_promise(
+            async move {
+                let bytes = context.random_bytes(len).map_err(CoreCryptoError::from).await?;
+                WasmCryptoResult::Ok(Uint8Array::from(bytes.as_slice()).into())
+            }
+                .err_into(),
+        )
+    }
+
+    /// Returns: [`WasmCryptoResult<Vec<u8>>`]
+    ///
+    /// see [core_crypto::mls::context::CentralContext::export_secret_key]
+    pub fn export_secret_key(&self, conversation_id: ConversationId, key_length: usize) -> Promise {
+        let context = self.inner.clone();
+        future_to_promise(
+            async move {
+                let key = context
+                    .export_secret_key(&conversation_id.to_vec(), key_length)
+                    .await
+                    .map_err(CoreCryptoError::from)?;
+                WasmCryptoResult::Ok(Uint8Array::from(key.as_slice()).into())
+            }
+                .err_into(),
+        )
+    }
+
+    /// Returns: [`WasmCryptoResult<Vec<u8>>`]
+    ///
+    /// see [core_crypto::mls::context::CentralContext::get_external_sender]
+    pub fn get_external_sender(&self, id: ConversationId) -> Promise {
+        let context = self.inner.clone();
+        future_to_promise(
+            async move {
+                let ext_sender = context
+                    .get_external_sender(&id.to_vec())
+                    .await
+                    .map_err(CoreCryptoError::from)?;
+                WasmCryptoResult::Ok(Uint8Array::from(ext_sender.as_slice()).into())
+            }
+                .err_into(),
+        )
+    }
+
+    /// Returns: [`WasmCryptoResult<Box<[js_sys::Uint8Array]>`]
+    ///
+    /// see [core_crypto::mls::context::CentralContext::get_client_ids]
+    pub fn get_client_ids(&self, conversation_id: ConversationId) -> Promise {
+        let context = self.inner.clone();
+        future_to_promise(
+            async move {
+                let clients = context
+                    .get_client_ids(&conversation_id.to_vec())
+                    .await
+                    .map_err(CoreCryptoError::from)?;
+                let clients = js_sys::Array::from_iter(
+                    clients
+                        .into_iter()
+                        .map(|client| Uint8Array::from(client.as_slice()))
+                        .map(JsValue::from),
+                );
+                WasmCryptoResult::Ok(clients.into())
             }
                 .err_into(),
         )

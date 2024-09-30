@@ -17,6 +17,7 @@
 #![allow(unused_variables, deprecated)]
 mod utils;
 mod context;
+mod e2ei_context;
 
 use std::collections::HashMap;
 use std::ops::Deref;
@@ -2198,7 +2199,7 @@ impl CoreCrypto {
 
     /// Returns: [`WasmCryptoResult<js_sys::Uint8Array>`]
     ///
-    /// see [core_crypto::mls::context::CentralContext::random_bytes]
+    /// see [core_crypto::mls::MlsCentral::random_bytes]
     pub fn random_bytes(&self, len: usize) -> Promise {
         let central = self.inner.clone();
         future_to_promise(
@@ -3006,7 +3007,7 @@ impl CoreCrypto {
 #[derive(Debug)]
 #[wasm_bindgen(js_name = FfiWireE2EIdentity)]
 #[repr(transparent)]
-pub struct E2eiEnrollment(std::sync::Arc<async_lock::RwLock<core_crypto::prelude::E2eiEnrollment>>);
+pub struct E2eiEnrollment(pub(crate) Arc<async_lock::RwLock<core_crypto::prelude::E2eiEnrollment>>);
 
 #[wasm_bindgen(js_class = FfiWireE2EIdentity)]
 impl E2eiEnrollment {
