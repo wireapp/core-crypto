@@ -15,11 +15,11 @@
 // along with this program. If not, see http://www.gnu.org/licenses/.
 
 #![allow(unused_variables)]
+mod utils;
 
 use std::collections::HashMap;
 use std::ops::Deref;
 
-use super::wasm_utils::*;
 use core_crypto::prelude::*;
 use core_crypto::CryptoError;
 use futures_util::future::TryFutureExt;
@@ -29,6 +29,7 @@ use std::sync::Arc;
 use tls_codec::{Deserialize, Serialize};
 use tracing::{level_filters::LevelFilter, Level};
 use tracing_subscriber::fmt::{self, MakeWriter};
+use utils::*;
 use wasm_bindgen::prelude::*;
 use wasm_bindgen::JsCast;
 use wasm_bindgen_futures::future_to_promise;
