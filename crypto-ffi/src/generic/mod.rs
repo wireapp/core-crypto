@@ -35,6 +35,8 @@ use tracing_subscriber::fmt::{self, MakeWriter};
 
 use crate::UniffiCustomTypeConverter;
 
+pub mod context;
+
 #[allow(dead_code)]
 pub(crate) const VERSION: &str = env!("CARGO_PKG_VERSION");
 
@@ -55,6 +57,14 @@ pub enum CoreCryptoError {
         #[from]
         error: E2eIdentityError,
     },
+    #[error("Client thrown error {0}")]
+    ClientException(String),
+}
+
+impl From<uniffi::UnexpectedUniFFICallbackError> for CoreCryptoError {
+    fn from(value: uniffi::UnexpectedUniFFICallbackError) -> Self {
+        Self::ClientException(value.reason)
+    }
 }
 
 type CoreCryptoResult<T> = Result<T, CoreCryptoError>;
@@ -1054,10 +1064,11 @@ impl CoreCrypto {
             ..Default::default()
         };
 
-        self.central
-            .set_raw_external_senders(&mut lower_cfg, config.external_senders)?;
-
         let context = self.central.new_transaction().await;
+        context
+            .set_raw_external_senders(&mut lower_cfg, config.external_senders)
+            .await?;
+
         context
             .new_conversation(&conversation_id, creator_credential_type.into(), lower_cfg)
             .await?;
