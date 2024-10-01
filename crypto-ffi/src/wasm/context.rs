@@ -130,6 +130,24 @@ impl CoreCryptoContext {
         )
     }
 
+    /// Returns:: [`WasmCryptoResult<js_sys::Uint8Array>`]
+    ///
+    /// see [core_crypto::mls::context::CentralContext::client_public_key]
+    pub fn client_public_key(&self, ciphersuite: Ciphersuite, credential_type: CredentialType) -> Promise {
+        let ciphersuite: CiphersuiteName = ciphersuite.into();
+        let context = self.inner.clone();
+        future_to_promise(
+            async move {
+                let pk = context
+                    .client_public_key(ciphersuite.into(), credential_type.into())
+                    .await
+                    .map_err(CoreCryptoError::from)?;
+                WasmCryptoResult::Ok(Uint8Array::from(pk.as_slice()).into())
+            }
+                .err_into(),
+        )
+    }
+
     /// Returns: [`WasmCryptoResult<js_sys::Array<js_sys::Uint8Array>>`]
     ///
     /// see [core_crypto::mls::context::CentralContext::get_or_create_client_keypackages]
@@ -351,7 +369,6 @@ impl CoreCryptoContext {
                     .add_members_to_conversation(&conversation_id, key_packages)
                     .await?;
                 let commit: MemberAddedMessages = commit.try_into()?;
-                context.finish().await?;
                 WasmCryptoResult::Ok(serde_wasm_bindgen::to_value(&commit)?)
             }
                 .err_into(),
@@ -418,7 +435,6 @@ impl CoreCryptoContext {
                     .map_err(CoreCryptoError::from)?;
 
                 let commit: CommitBundle = commit.try_into()?;
-                context.finish().await?;
                 WasmCryptoResult::Ok(serde_wasm_bindgen::to_value(&commit)?)
             }
                 .err_into(),
@@ -452,7 +468,6 @@ impl CoreCryptoContext {
                     .wipe_conversation(&conversation_id)
                     .await
                     .map_err(CoreCryptoError::from)?;
-                context.finish().await?;
                 WasmCryptoResult::Ok(JsValue::UNDEFINED)
             }
                 .err_into(),
@@ -681,8 +696,6 @@ impl CoreCryptoContext {
 
                     return WasmCryptoResult::Ok(serde_wasm_bindgen::to_value(&messages)?);
                 }
-
-                context.finish().await?;
                 WasmCryptoResult::Ok(JsValue::UNDEFINED)
             }
                 .err_into(),
@@ -698,7 +711,6 @@ impl CoreCryptoContext {
                     .clear_pending_proposal(&conversation_id.to_vec(), proposal_ref.to_vec().into())
                     .await
                     .map_err(CoreCryptoError::from)?;
-                context.finish().await?;
                 WasmCryptoResult::Ok(JsValue::UNDEFINED)
             }
                 .err_into(),
@@ -714,7 +726,6 @@ impl CoreCryptoContext {
                     .clear_pending_commit(&conversation_id.to_vec())
                     .await
                     .map_err(CoreCryptoError::from)?;
-                context.finish().await?;
                 WasmCryptoResult::Ok(JsValue::UNDEFINED)
             }
                 .err_into(),
