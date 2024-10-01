@@ -37,7 +37,7 @@ use wasm_bindgen::JsCast;
 use wasm_bindgen_futures::future_to_promise;
 
 #[allow(dead_code)]
-pub(crate) const VERSION: &str = env!("CARGO_PKG_VERSION");
+pub(super) const VERSION: &str = env!("CARGO_PKG_VERSION");
 
 // This is intended to hotfix this import:
 // ❯ wasmer inspect bindings/js/wasm/core-crypto-ffi_bg.wasm | grep env
@@ -3009,7 +3009,7 @@ impl CoreCrypto {
 #[derive(Debug)]
 #[wasm_bindgen(js_name = FfiWireE2EIdentity)]
 #[repr(transparent)]
-pub struct E2eiEnrollment(pub(crate) Arc<async_lock::RwLock<core_crypto::prelude::E2eiEnrollment>>);
+pub struct E2eiEnrollment(pub(super) Arc<async_lock::RwLock<core_crypto::prelude::E2eiEnrollment>>);
 
 #[wasm_bindgen(js_class = FfiWireE2EIdentity)]
 impl E2eiEnrollment {

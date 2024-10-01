@@ -36,6 +36,8 @@ extern "C" {
 
 #[wasm_bindgen]
 impl CoreCrypto {
+    /// Starts a new transaction in Core Crypto. If the callback succeeds, it will be committed,
+    /// otherwise, every operation performed with the context will be discarded.
     pub async fn transaction(&self, command: CoreCryptoCommand) -> WasmCryptoResult<()> {
         let context = CoreCryptoContext {
             inner: Arc::new(self.inner.new_transaction().await),
