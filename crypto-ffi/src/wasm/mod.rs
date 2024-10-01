@@ -1361,6 +1361,7 @@ impl CoreCrypto {
     }
 
     /// see [core_crypto::mls::context::CentralContext::mls_init]
+    /// @deprecated Please create a transaction in Core Crypto and call this method from it.
     #[deprecated = "Please create a transaction in Core Crypto and call this method from it."]
     pub fn mls_init(&self, client_id: FfiClientId, ciphersuites: Box<[u16]>, nb_key_package: Option<u32>) -> Promise {
         let central = self.inner.clone();
@@ -1390,6 +1391,7 @@ impl CoreCrypto {
     /// Returns [`WasmCryptoResult<Vec<u8>>`]
     ///
     /// See [core_crypto::mls::context::CentralContext::mls_generate_keypair]
+    /// @deprecated Please create a transaction in Core Crypto and call this method from it.
     #[deprecated = "Please create a transaction in Core Crypto and call this method from it."]
     pub fn mls_generate_keypair(&self, ciphersuites: Box<[u16]>) -> Promise {
         let central = self.inner.clone();
@@ -1417,6 +1419,7 @@ impl CoreCrypto {
     /// Returns [`WasmCryptoResult<()>`]
     ///
     /// See [core_crypto::mls::context::CentralContext::mls_init_with_client_id]
+    /// @deprecated Please create a transaction in Core Crypto and call this method from it.
     #[deprecated = "Please create a transaction in Core Crypto and call this method from it."]
     pub fn mls_init_with_client_id(
         &self,
@@ -1541,6 +1544,7 @@ impl CoreCrypto {
     /// Returns: [`WasmCryptoResult<js_sys::Array<js_sys::Uint8Array>>`]
     ///
     /// see [core_crypto::mls::context::CentralContext::client_keypackages]
+    /// @deprecated Please create a transaction in Core Crypto and call this method from it.
     #[deprecated = "Please create a transaction in Core Crypto and call this method from it."]
     pub fn client_keypackages(
         &self,
@@ -1586,6 +1590,7 @@ impl CoreCrypto {
     /// Returns: [`WasmCryptoResult<usize>`]
     ///
     /// see [core_crypto::mls::context::CentralContext::client_valid_key_packages_count]
+    /// @deprecated Please create a transaction in Core Crypto and call this method from it.
     #[deprecated = "Please create a transaction in Core Crypto and call this method from it."]
     pub fn client_valid_keypackages_count(&self, ciphersuite: Ciphersuite, credential_type: CredentialType) -> Promise {
         let ciphersuite: CiphersuiteName = ciphersuite.into();
@@ -1607,6 +1612,7 @@ impl CoreCrypto {
     /// Returns: [`WasmCryptoResult<usize>`]
     ///
     /// see [core_crypto::mls::context::CentralContext::delete_keypackages]
+    /// @deprecated Please create a transaction in Core Crypto and call this method from it.
     #[deprecated = "Please create a transaction in Core Crypto and call this method from it."]
     #[allow(clippy::boxed_local)]
     pub fn delete_keypackages(&self, refs: Box<[Uint8Array]>) -> Promise {
@@ -1634,6 +1640,7 @@ impl CoreCrypto {
     /// Returns: [`WasmCryptoResult<()>`]
     ///
     /// see [core_crypto::mls::context::CentralContext::new_conversation]
+    /// @deprecated Please create a transaction in Core Crypto and call this method from it.
     #[deprecated = "Please create a transaction in Core Crypto and call this method from it."]
     pub fn create_conversation(
         &self,
@@ -1729,6 +1736,7 @@ impl CoreCrypto {
     /// Returns: [`WasmCryptoResult<Uint8Array>`]
     ///
     /// see [core_crypto::mls::context::CentralContext::process_raw_welcome_message]
+    /// @deprecated Please create a transaction in Core Crypto and call this method from it.
     #[deprecated = "Please create a transaction in Core Crypto and call this method from it."]
     pub fn process_welcome_message(
         &self,
@@ -1754,6 +1762,7 @@ impl CoreCrypto {
     /// Returns: [`WasmCryptoResult<Option<MemberAddedMessages>>`]
     ///
     /// see [core_crypto::mls::context::CentralContext::add_members_to_conversation]
+    /// @deprecated Please create a transaction in Core Crypto and call this method from it.
     #[deprecated = "Please create a transaction in Core Crypto and call this method from it."]
     pub fn add_clients_to_conversation(
         &self,
@@ -1786,6 +1795,7 @@ impl CoreCrypto {
     /// Returns: [`WasmCryptoResult<Option<js_sys::Uint8Array>>`]
     ///
     /// see [core_crypto::mls::context::CentralContext::remove_members_from_conversation]
+    /// @deprecated Please create a transaction in Core Crypto and call this method from it.
     #[deprecated = "Please create a transaction in Core Crypto and call this method from it."]
     pub fn remove_clients_from_conversation(
         &self,
@@ -1819,6 +1829,7 @@ impl CoreCrypto {
     /// Returns: [`WasmCryptoResult<()>`]
     ///
     /// see [core_crypto::mls::context::CentralContext::mark_conversation_as_child_of]
+    /// @deprecated Please create a transaction in Core Crypto and call this method from it.
     #[deprecated = "Please create a transaction in Core Crypto and call this method from it."]
     pub fn mark_conversation_as_child_of(&self, child_id: Box<[u8]>, parent_id: Box<[u8]>) -> Promise {
         let central = self.inner.clone();
@@ -1840,6 +1851,7 @@ impl CoreCrypto {
     /// Returns: [`WasmCryptoResult<CommitBundle>`]
     ///
     /// see [core_crypto::mls::context::CentralContext::update_keying_material]
+    /// @deprecated Please create a transaction in Core Crypto and call this method from it.
     #[deprecated = "Please create a transaction in Core Crypto and call this method from it."]
     pub fn update_keying_material(&self, conversation_id: ConversationId) -> Promise {
         let central = self.inner.clone();
@@ -1860,6 +1872,7 @@ impl CoreCrypto {
     }
 
     /// see [core_crypto::mls::context::CentralContext::commit_pending_proposals]
+    /// @deprecated Please create a transaction in Core Crypto and call this method from it.
     #[deprecated = "Please create a transaction in Core Crypto and call this method from it."]
     pub fn commit_pending_proposals(&self, conversation_id: ConversationId) -> Promise {
         let central = self.inner.clone();
@@ -1882,6 +1895,7 @@ impl CoreCrypto {
     /// Returns: [`WasmCryptoResult<()>`]
     ///
     /// see [core_crypto::mls::context::CentralContext::wipe_conversation]
+    /// @deprecated Please create a transaction in Core Crypto and call this method from it.
     #[deprecated = "Please create a transaction in Core Crypto and call this method from it."]
     pub fn wipe_conversation(&self, conversation_id: ConversationId) -> Promise {
         let central = self.inner.clone();
@@ -1902,6 +1916,7 @@ impl CoreCrypto {
     /// Returns: [`WasmCryptoResult<DecryptedMessage>`]
     ///
     /// see [core_crypto::mls::context::CentralContext::decrypt_message]
+    /// @deprecated Please create a transaction in Core Crypto and call this method from it.
     #[deprecated = "Please create a transaction in Core Crypto and call this method from it."]
     pub fn decrypt_message(&self, conversation_id: ConversationId, payload: Box<[u8]>) -> Promise {
         let central = self.inner.clone();
@@ -1925,6 +1940,7 @@ impl CoreCrypto {
     /// Returns: [`WasmCryptoResult<Uint8Array>`]
     ///
     /// see [core_crypto::mls::context::CentralContext::encrypt_message]
+    /// @deprecated Please create a transaction in Core Crypto and call this method from it.
     #[deprecated = "Please create a transaction in Core Crypto and call this method from it."]
     pub fn encrypt_message(&self, conversation_id: ConversationId, message: Box<[u8]>) -> Promise {
         let central = self.inner.clone();
@@ -1947,6 +1963,7 @@ impl CoreCrypto {
     /// Returns: [`WasmCryptoResult<js_sys::Uint8Array>`]
     ///
     /// see [core_crypto::mls::context::CentralContext::new_add_proposal]
+    /// @deprecated Please create a transaction in Core Crypto and call this method from it.
     #[deprecated = "Please create a transaction in Core Crypto and call this method from it."]
     pub fn new_add_proposal(&self, conversation_id: ConversationId, keypackage: Box<[u8]>) -> Promise {
         let central = self.inner.clone();
@@ -1975,6 +1992,7 @@ impl CoreCrypto {
     /// Returns: [`WasmCryptoResult<js_sys::Uint8Array>`]
     ///
     /// see [core_crypto::mls::context::new_update_proposal]
+    /// @deprecated Please create a transaction in Core Crypto and call this method from it.
     #[deprecated = "Please create a transaction in Core Crypto and call this method from it."]
     pub fn new_update_proposal(&self, conversation_id: ConversationId) -> Promise {
         let central = self.inner.clone();
@@ -1996,6 +2014,7 @@ impl CoreCrypto {
     /// Returns: [`WasmCryptoResult<js_sys::Uint8Array>`]
     ///
     /// see [core_crypto::mls::context::CentralContext::new_remove_proposal]
+    /// @deprecated Please create a transaction in Core Crypto and call this method from it.
     #[deprecated = "Please create a transaction in Core Crypto and call this method from it."]
     pub fn new_remove_proposal(&self, conversation_id: ConversationId, client_id: FfiClientId) -> Promise {
         let central = self.inner.clone();
@@ -2018,6 +2037,7 @@ impl CoreCrypto {
     /// Returns: [`WasmCryptoResult<js_sys::Uint8Array>`]
     ///
     /// see [core_crypto::mls::context::CentralContext::new_external_add_proposal]
+    /// @deprecated Please create a transaction in Core Crypto and call this method from it.
     #[deprecated = "Please create a transaction in Core Crypto and call this method from it."]
     pub fn new_external_add_proposal(
         &self,
@@ -2057,6 +2077,7 @@ impl CoreCrypto {
     /// Returns: [`WasmCryptoResult<ConversationInitBundle>`]
     ///
     /// see [core_crypto::mls::context::CentralContext::join_by_external_commit]
+    /// @deprecated Please create a transaction in Core Crypto and call this method from it.
     #[deprecated = "Please create a transaction in Core Crypto and call this method from it."]
     pub fn join_by_external_commit(
         &self,
@@ -2089,6 +2110,7 @@ impl CoreCrypto {
     /// Returns: [`WasmCryptoResult<()>`]
     ///
     /// see [core_crypto::mls::context::CentralContext::merge_pending_group_from_external_commit]
+    /// @deprecated Please create a transaction in Core Crypto and call this method from it.
     #[deprecated = "Please create a transaction in Core Crypto and call this method from it."]
     pub fn merge_pending_group_from_external_commit(&self, conversation_id: ConversationId) -> Promise {
         let central = self.inner.clone();
@@ -2118,6 +2140,7 @@ impl CoreCrypto {
     /// Returns: [`WasmCryptoResult<()>`]
     ///
     /// see [core_crypto::mls::context::CentralContext::clear_pending_group_from_external_commit]
+    /// @deprecated Please create a transaction in Core Crypto and call this method from it.
     #[deprecated = "Please create a transaction in Core Crypto and call this method from it."]
     pub fn clear_pending_group_from_external_commit(&self, conversation_id: ConversationId) -> Promise {
         let central = self.inner.clone();
@@ -2137,6 +2160,7 @@ impl CoreCrypto {
     }
 
     /// see [core_crypto::mls::context::CentralContext::commit_accepted]
+    /// @deprecated Please create a transaction in Core Crypto and call this method from it.
     #[deprecated = "Please create a transaction in Core Crypto and call this method from it."]
     pub fn commit_accepted(&self, conversation_id: ConversationId) -> Promise {
         let central = self.inner.clone();
@@ -2164,6 +2188,7 @@ impl CoreCrypto {
     }
 
     /// see [core_crypto::mls::context::CentralContext::clear_pending_proposal]
+    /// @deprecated Please create a transaction in Core Crypto and call this method from it.
     #[deprecated = "Please create a transaction in Core Crypto and call this method from it."]
     pub fn clear_pending_proposal(&self, conversation_id: ConversationId, proposal_ref: Box<[u8]>) -> Promise {
         let central = self.inner.clone();
@@ -2182,6 +2207,7 @@ impl CoreCrypto {
     }
 
     /// see [core_crypto::mls::context::CentralContext::clear_pending_commit]
+    /// @deprecated Please create a transaction in Core Crypto and call this method from it.
     #[deprecated = "Please create a transaction in Core Crypto and call this method from it."]
     pub fn clear_pending_commit(&self, conversation_id: ConversationId) -> Promise {
         let central = self.inner.clone();
@@ -2625,6 +2651,7 @@ impl CoreCrypto {
     /// Returns: [`WasmCryptoResult<E2eiEnrollment>`]
     ///
     /// see [core_crypto::mls::context::CentralContext::e2ei_new_enrollment]
+    /// @deprecated Please create a transaction in Core Crypto and call this method from it.
     #[deprecated = "Please create a transaction in Core Crypto and call this method from it."]
     pub fn e2ei_new_enrollment(
         &self,
@@ -2665,6 +2692,7 @@ impl CoreCrypto {
     /// Returns: [`WasmCryptoResult<E2eiEnrollment>`]
     ///
     /// see [core_crypto::mls::context::CentralContext::e2ei_new_activation_enrollment]
+    /// @deprecated Please create a transaction in Core Crypto and call this method from it.
     #[deprecated = "Please create a transaction in Core Crypto and call this method from it."]
     pub fn e2ei_new_activation_enrollment(
         &self,
@@ -2696,6 +2724,7 @@ impl CoreCrypto {
     /// Returns: [`WasmCryptoResult<E2eiEnrollment>`]
     ///
     /// see [core_crypto::mls::context::CentralContext::e2ei_new_rotate_enrollment]
+    /// @deprecated Please create a transaction in Core Crypto and call this method from it.
     #[deprecated = "Please create a transaction in Core Crypto and call this method from it."]
     pub fn e2ei_new_rotate_enrollment(
         &self,
@@ -2743,6 +2772,7 @@ impl CoreCrypto {
     }
 
     /// See [core_crypto::mls::context::CentralContext::e2ei_register_acme_ca]
+    /// @deprecated Please create a transaction in Core Crypto and call this method from it.
     #[deprecated = "Please create a transaction in Core Crypto and call this method from it."]
     pub async fn e2ei_register_acme_ca(&self, trust_anchor_pem: String) -> Promise {
         let central = self.inner.clone();
@@ -2758,6 +2788,7 @@ impl CoreCrypto {
     }
 
     /// See [core_crypto::mls::context::CentralContext::e2ei_register_intermediate_ca]
+    /// @deprecated Please create a transaction in Core Crypto and call this method from it.
     #[deprecated = "Please create a transaction in Core Crypto and call this method from it."]
     pub async fn e2ei_register_intermediate_ca(&self, cert_pem: String) -> Promise {
         let central = self.inner.clone();
@@ -2779,6 +2810,7 @@ impl CoreCrypto {
     }
 
     /// See [core_crypto::mls::context::CentralContext::e2ei_register_crl]
+    /// @deprecated Please create a transaction in Core Crypto and call this method from it.
     #[deprecated = "Please create a transaction in Core Crypto and call this method from it."]
     pub async fn e2ei_register_crl(&self, crl_dp: String, crl_der: Box<[u8]>) -> Promise {
         let central = self.inner.clone();
@@ -2795,6 +2827,7 @@ impl CoreCrypto {
     }
 
     /// see [core_crypto::mls::context::CentralContext::e2ei_mls_init_only]
+    /// @deprecated Please create a transaction in Core Crypto and call this method from it.
     #[deprecated = "Please create a transaction in Core Crypto and call this method from it."]
     pub fn e2ei_mls_init_only(
         &self,
@@ -2832,6 +2865,7 @@ impl CoreCrypto {
     }
 
     /// see [core_crypto::mls::context::CentralContext::e2ei_rotate_all]
+    /// @deprecated Please create a transaction in Core Crypto and call this method from it.
     #[deprecated = "Please create a transaction in Core Crypto and call this method from it."]
     pub fn e2ei_rotate_all(
         &self,
@@ -2859,6 +2893,7 @@ impl CoreCrypto {
     }
 
     /// see [core_crypto::mls::context::CentralContext::e2ei_enrollment_stash]
+    /// @deprecated Please create a transaction in Core Crypto and call this method from it.
     #[deprecated = "Please create a transaction in Core Crypto and call this method from it."]
     pub fn e2ei_enrollment_stash(&self, enrollment: E2eiEnrollment) -> Promise {
         let central = self.inner.clone();
@@ -2877,6 +2912,7 @@ impl CoreCrypto {
     }
 
     /// see [core_crypto::mls::context::CentralContext::e2ei_enrollment_stash_pop]
+    /// @deprecated Please create a transaction in Core Crypto and call this method from it.
     #[deprecated = "Please create a transaction in Core Crypto and call this method from it."]
     pub fn e2ei_enrollment_stash_pop(&self, handle: Box<[u8]>) -> Promise {
         let central = self.inner.clone();
@@ -2900,6 +2936,7 @@ impl CoreCrypto {
     /// Returns [`WasmCryptoResult<u8>`]
     ///
     /// see [core_crypto::mls::context::CentralContext::e2ei_conversation_state]
+    /// @deprecated Please create a transaction in Core Crypto and call this method from it.
     #[deprecated = "Please create a transaction in Core Crypto and call this method from it."]
     pub fn e2ei_conversation_state(&self, conversation_id: ConversationId) -> Promise {
         let central = self.inner.clone();
