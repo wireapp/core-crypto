@@ -30,8 +30,6 @@ extern "C" {
 
     #[wasm_bindgen(structural, method, catch)]
     pub async fn execute(this: &CoreCryptoCommand, ctx: CoreCryptoContext) -> Result<(), JsValue>;
-    #[wasm_bindgen(js_namespace = console)]
-    fn log(s: &str);
 }
 
 #[wasm_bindgen]
