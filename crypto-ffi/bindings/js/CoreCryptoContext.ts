@@ -28,7 +28,8 @@ import {
     ProposalType,
     RemoveProposalArgs,
     RotateBundle,
-    WelcomeBundle, WireIdentity
+    WelcomeBundle,
+    WireIdentity,
 } from "./CoreCrypto";
 
 import * as CoreCryptoFfiTypes from "./wasm/core-crypto-ffi.d.js";
@@ -43,7 +44,9 @@ export default class CoreCryptoContext {
     }
 
     /** @hidden */
-    static fromFfiContext(ctx: CoreCryptoFfiTypes.CoreCryptoContext): CoreCryptoContext {
+    static fromFfiContext(
+        ctx: CoreCryptoFfiTypes.CoreCryptoContext
+    ): CoreCryptoContext {
         return new CoreCryptoContext(ctx);
     }
 
@@ -59,7 +62,7 @@ export default class CoreCryptoContext {
         ciphersuites: Ciphersuite[],
         nbKeyPackage?: number
     ): Promise<void> {
-        let cs = ciphersuites.map((cs) => cs.valueOf());
+        const cs = ciphersuites.map((cs) => cs.valueOf());
         return await CoreCryptoError.asyncMapErr(
             this.#ctx.mls_init(clientId, Uint16Array.of(...cs), nbKeyPackage)
         );
@@ -75,7 +78,7 @@ export default class CoreCryptoContext {
     async mlsGenerateKeypair(
         ciphersuites: Ciphersuite[]
     ): Promise<Uint8Array[]> {
-        let cs = ciphersuites.map((cs) => cs.valueOf());
+        const cs = ciphersuites.map((cs) => cs.valueOf());
         return await CoreCryptoError.asyncMapErr(
             this.#ctx.mls_generate_keypair(Uint16Array.of(...cs))
         );
@@ -95,7 +98,7 @@ export default class CoreCryptoContext {
         signaturePublicKeys: Uint8Array[],
         ciphersuites: Ciphersuite[]
     ): Promise<void> {
-        let cs = ciphersuites.map((cs) => cs.valueOf());
+        const cs = ciphersuites.map((cs) => cs.valueOf());
         return await CoreCryptoError.asyncMapErr(
             this.#ctx.mls_init_with_client_id(
                 clientId,
@@ -282,7 +285,7 @@ export default class CoreCryptoContext {
                     })
                 ),
                 crlNewDistributionPoints:
-                ffiDecryptedMessage.crl_new_distribution_points,
+                    ffiDecryptedMessage.crl_new_distribution_points,
             };
         } catch (e) {
             throw CoreCryptoError.fromStdError(e as Error);
@@ -322,7 +325,7 @@ export default class CoreCryptoContext {
         configuration: CustomConfiguration = {}
     ): Promise<WelcomeBundle> {
         try {
-            const {keyRotationSpan, wirePolicy} = configuration || {};
+            const { keyRotationSpan, wirePolicy } = configuration || {};
             const config = new CustomConfigurationFfi(
                 keyRotationSpan,
                 wirePolicy
@@ -368,7 +371,10 @@ export default class CoreCryptoContext {
         credentialType: CredentialType
     ): Promise<number> {
         return await CoreCryptoError.asyncMapErr(
-            this.#ctx.client_valid_keypackages_count(ciphersuite, credentialType)
+            this.#ctx.client_valid_keypackages_count(
+                ciphersuite,
+                credentialType
+            )
         );
     }
 
@@ -624,7 +630,7 @@ export default class CoreCryptoContext {
     ): Promise<Uint8Array> {
         switch (externalProposalType) {
             case ExternalProposalType.Add: {
-                let addArgs = args as ExternalAddProposalArgs;
+                const addArgs = args as ExternalAddProposalArgs;
                 return await CoreCryptoError.asyncMapErr(
                     this.#ctx.new_external_add_proposal(
                         args.conversationId,
@@ -662,7 +668,7 @@ export default class CoreCryptoContext {
         configuration: CustomConfiguration = {}
     ): Promise<ConversationInitBundle> {
         try {
-            const {keyRotationSpan, wirePolicy} = configuration || {};
+            const { keyRotationSpan, wirePolicy } = configuration || {};
             const config = new CustomConfigurationFfi(
                 keyRotationSpan,
                 wirePolicy
@@ -687,7 +693,7 @@ export default class CoreCryptoContext {
                     payload: gi.payload,
                 },
                 crlNewDistributionPoints:
-                ffiInitMessage.crl_new_distribution_points,
+                    ffiInitMessage.crl_new_distribution_points,
             };
         } catch (e) {
             throw CoreCryptoError.fromStdError(e as Error);
@@ -828,7 +834,9 @@ export default class CoreCryptoContext {
      * @returns A `Uint8Array` buffer that contains `length` cryptographically-secure random bytes
      */
     async randomBytes(length: number): Promise<Uint8Array> {
-        return await CoreCryptoError.asyncMapErr(this.#ctx.random_bytes(length));
+        return await CoreCryptoError.asyncMapErr(
+            this.#ctx.random_bytes(length)
+        );
     }
 
     /**
@@ -1075,7 +1083,7 @@ export default class CoreCryptoContext {
     async e2eiConversationState(
         conversationId: ConversationId
     ): Promise<E2eiConversationState> {
-        let state = await CoreCryptoError.asyncMapErr(
+        const state = await CoreCryptoError.asyncMapErr(
             this.#ctx.e2ei_conversation_state(conversationId)
         );
 
@@ -1156,7 +1164,7 @@ export default class CoreCryptoContext {
         groupInfo: Uint8Array,
         credentialType: CredentialType = CredentialType.X509
     ): Promise<E2eiConversationState> {
-        let state = await CoreCryptoError.asyncMapErr(
+        const state = await CoreCryptoError.asyncMapErr(
             this.#ctx.get_credential_in_use(groupInfo, credentialType)
         );
         return normalizeEnum(E2eiConversationState, state);
