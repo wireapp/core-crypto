@@ -37,7 +37,7 @@ export {
     E2eiDumpedPkiEnv,
     ConversationConfigurationFfi,
     CoreCryptoContext,
-    CustomConfigurationFfi
+    CustomConfigurationFfi,
 };
 
 interface CoreCryptoRichError {
@@ -88,7 +88,7 @@ export class CoreCryptoError extends Error {
             const cause = new Error(
                 "CoreCrypto WASM FFI Error doesn't have enough elements to build a rich error"
             );
-            return this.fallback(msg, {cause}, ...params);
+            return this.fallback(msg, { cause }, ...params);
         }
 
         const [errMsg, richErrorJSON] = parts;
@@ -96,7 +96,7 @@ export class CoreCryptoError extends Error {
             const richError: CoreCryptoRichError = JSON.parse(richErrorJSON);
             return new this(errMsg, richError, ...params);
         } catch (cause) {
-            return this.fallback(msg, {cause}, ...params);
+            return this.fallback(msg, { cause }, ...params);
         }
     }
 
@@ -980,14 +980,14 @@ export class CoreCrypto {
      * ````
      */
     static async init({
-                          databaseName,
-                          key,
-                          clientId,
-                          wasmFilePath,
-                          ciphersuites,
-                          entropySeed,
-                          nbKeyPackage,
-                      }: CoreCryptoParams): Promise<CoreCrypto> {
+        databaseName,
+        key,
+        clientId,
+        wasmFilePath,
+        ciphersuites,
+        entropySeed,
+        nbKeyPackage,
+    }: CoreCryptoParams): Promise<CoreCrypto> {
         await this.#loadModule(wasmFilePath);
 
         let cs = ciphersuites.map((cs) => cs.valueOf());
@@ -1012,11 +1012,11 @@ export class CoreCrypto {
      * @param params - {@link CoreCryptoDeferredParams}
      */
     static async deferredInit({
-                                  databaseName,
-                                  key,
-                                  entropySeed,
-                                  wasmFilePath,
-                              }: CoreCryptoDeferredParams): Promise<CoreCrypto> {
+        databaseName,
+        key,
+        entropySeed,
+        wasmFilePath,
+    }: CoreCryptoDeferredParams): Promise<CoreCrypto> {
         await this.#loadModule(wasmFilePath);
 
         const cc = await CoreCryptoError.asyncMapErr(
@@ -1030,13 +1030,23 @@ export class CoreCrypto {
      * otherwise, every operation performed with the context will be discarded.
      *
      * @param callback - The callback to execute within the transaction
+     *
+     * @returns the result of the callback will be returned from this call
      */
-    async transaction(callback: (ctx: CoreCryptoContext) => Promise<void>): Promise<void> {
-        return await CoreCryptoError.asyncMapErr(this.#cc.transaction({
-            execute: async (ctx: CoreCryptoFfiTypes.CoreCryptoContext) => await callback(
-                CoreCryptoContext.fromFfiContext(ctx)
-            ),
-        }));
+    async transaction<R>(
+        callback: (ctx: CoreCryptoContext) => Promise<R>
+    ): Promise<R> {
+        var result!: R;
+        await CoreCryptoError.asyncMapErr(
+            this.#cc.transaction({
+                execute: async (ctx: CoreCryptoFfiTypes.CoreCryptoContext) => {
+                    result = await callback(
+                        CoreCryptoContext.fromFfiContext(ctx)
+                    );
+                },
+            })
+        );
+        return result;
     }
 
     /**
@@ -1330,7 +1340,7 @@ export class CoreCrypto {
                     })
                 ),
                 crlNewDistributionPoints:
-                ffiDecryptedMessage.crl_new_distribution_points,
+                    ffiDecryptedMessage.crl_new_distribution_points,
             };
 
             return ret;
@@ -1365,7 +1375,7 @@ export class CoreCrypto {
         configuration: CustomConfiguration = {}
     ): Promise<WelcomeBundle> {
         try {
-            const {keyRotationSpan, wirePolicy} = configuration || {};
+            const { keyRotationSpan, wirePolicy } = configuration || {};
             const config = new CustomConfigurationFfi(
                 keyRotationSpan,
                 wirePolicy
@@ -1674,7 +1684,7 @@ export class CoreCrypto {
         configuration: CustomConfiguration = {}
     ): Promise<ConversationInitBundle> {
         try {
-            const {keyRotationSpan, wirePolicy} = configuration || {};
+            const { keyRotationSpan, wirePolicy } = configuration || {};
             const config = new CustomConfigurationFfi(
                 keyRotationSpan,
                 wirePolicy
@@ -1699,7 +1709,7 @@ export class CoreCrypto {
                     payload: gi.payload,
                 },
                 crlNewDistributionPoints:
-                ffiInitMessage.crl_new_distribution_points,
+                    ffiInitMessage.crl_new_distribution_points,
             };
 
             return ret;
