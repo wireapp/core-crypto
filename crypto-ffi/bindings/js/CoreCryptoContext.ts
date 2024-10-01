@@ -105,6 +105,27 @@ export default class CoreCryptoContext {
         );
     }
 
+    /**
+     * Checks if the Client is member of a given conversation and if the MLS Group is loaded up
+     *
+     * @returns Whether the given conversation ID exists
+     *
+     * @example
+     * ```ts
+     *  const cc = await CoreCrypto.init({ databaseName: "test", key: "test", clientId: "test" });
+     *  const encoder = new TextEncoder();
+     *  if (await cc.conversationExists(encoder.encode("my super chat"))) {
+     *    // Do something
+     *  } else {
+     *    // Do something else
+     *  }
+     * ```
+     */
+    async conversationExists(conversationId: ConversationId): Promise<boolean> {
+        return await CoreCryptoError.asyncMapErr(
+            this.#ctx.conversation_exists(conversationId)
+        );
+    }
 
     /**
      * Marks a conversation as child of another one

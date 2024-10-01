@@ -1036,7 +1036,7 @@ export class CoreCrypto {
     async transaction<R>(
         callback: (ctx: CoreCryptoContext) => Promise<R>
     ): Promise<R> {
-        var result!: R;
+        let result!: R;
         await CoreCryptoError.asyncMapErr(
             this.#cc.transaction({
                 execute: async (ctx: CoreCryptoFfiTypes.CoreCryptoContext) => {
@@ -1050,11 +1050,7 @@ export class CoreCrypto {
     }
 
     /**
-     * Use this after {@link CoreCrypto.deferredInit} when you have a clientId. It initializes MLS.
-     *
-     * @param clientId - {@link CoreCryptoParams#clientId} but required
-     * @param ciphersuites - All the ciphersuites supported by this MLS client
-     * @param nbKeyPackage - number of initial KeyPackage to create when initializing the client
+     * See {@link CoreCryptoContext.mlsInit}.
      *
      * @deprecated Create a transaction with {@link CoreCrypto.transaction}
      * and use {@link CoreCryptoContext.mlsInit} instead.
@@ -1071,11 +1067,7 @@ export class CoreCrypto {
     }
 
     /**
-     * Generates a MLS KeyPair/CredentialBundle with a temporary, random client ID.
-     * This method is designed to be used in conjunction with {@link CoreCrypto.mlsInitWithClientId} and represents the first step in this process
-     *
-     * @param ciphersuites - All the ciphersuites supported by this MLS client
-     * @returns This returns the TLS-serialized identity key (i.e. the signature keypair's public key)
+     * See {@link CoreCryptoContext.mlsGenerateKeypair}.
      *
      * @deprecated Create a transaction with {@link CoreCrypto.transaction}
      * and use {@link CoreCryptoContext.mlsGenerateKeypair} instead.
@@ -1090,13 +1082,7 @@ export class CoreCrypto {
     }
 
     /**
-     * Updates the current temporary Client ID with the newly provided one. This is the second step in the externally-generated clients process
-     *
-     * Important: This is designed to be called after {@link CoreCrypto.mlsGenerateKeypair}
-     *
-     * @param clientId - The newly-allocated client ID by the MLS Authentication Service
-     * @param signaturePublicKeys - The public key you were given at the first step; This is for authentication purposes
-     * @param ciphersuites - All the ciphersuites supported by this MLS client
+     * See {@link CoreCryptoContext.mlsInitWithClientId}.
      *
      * @deprecated Create a transaction with {@link CoreCrypto.transaction}
      * and use {@link CoreCryptoContext.mlsInitWithClientId} instead.
@@ -1172,20 +1158,7 @@ export class CoreCrypto {
     }
 
     /**
-     * Checks if the Client is member of a given conversation and if the MLS Group is loaded up
-     *
-     * @returns Whether the given conversation ID exists
-     *
-     * @example
-     * ```ts
-     *  const cc = await CoreCrypto.init({ databaseName: "test", key: "test", clientId: "test" });
-     *  const encoder = new TextEncoder();
-     *  if (await cc.conversationExists(encoder.encode("my super chat"))) {
-     *    // Do something
-     *  } else {
-     *    // Do something else
-     *  }
-     * ```
+     * See {@link CoreCryptoContext.conversationExists}.
      */
     async conversationExists(conversationId: ConversationId): Promise<boolean> {
         return await CoreCryptoError.asyncMapErr(
@@ -1194,11 +1167,7 @@ export class CoreCrypto {
     }
 
     /**
-     * Marks a conversation as child of another one
-     * This will mostly affect the behavior of the callbacks (the parentConversationClients parameter will be filled)
-     *
-     * @param childId - conversation identifier of the child conversation
-     * @param parentId - conversation identifier of the parent conversation
+     * See {@link CoreCryptoContext.markConversationAsChildOf}.
      *
      * @deprecated Create a transaction with {@link CoreCrypto.transaction}
      * and use {@link CoreCryptoContext.markConversationAsChildOf} instead.
@@ -1213,7 +1182,7 @@ export class CoreCrypto {
     }
 
     /**
-     * Returns the current epoch of a conversation
+     * See {@link CoreCryptoContext.conversationEpoch}.
      *
      * @returns the epoch of the conversation
      *
@@ -1231,7 +1200,7 @@ export class CoreCrypto {
     }
 
     /**
-     * Returns the ciphersuite of a conversation
+     * See {@link CoreCryptoContext.conversationCiphersuite}.
      *
      * @returns the ciphersuite of the conversation
      */
@@ -1398,6 +1367,10 @@ export class CoreCrypto {
 
     /**
      * See {@link CoreCryptoContext.clientPublicKey}.
+     *
+     * @param ciphersuite - of the signature key to get
+     * @param credentialType - of the public key to look for
+     * @returns the client's public signature key
      */
     async clientPublicKey(
         ciphersuite: Ciphersuite,
