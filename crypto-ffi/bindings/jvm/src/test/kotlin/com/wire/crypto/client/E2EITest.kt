@@ -38,7 +38,7 @@ internal class E2EITest {
             clientId = "b7ac11a4-8f01-4527-af88-1c30885a7931:6c1866f567616f31@wire.com",
             displayName = "Alice Smith",
             handle = "alice_wire",
-            expirySec = 90u * 24 * 3600,
+            expirySec = (90 * 24 * 3600).toUInt(),
             ciphersuite = Ciphersuite.DEFAULT
         )
         val directoryResponse = """{
@@ -138,7 +138,7 @@ internal class E2EITest {
             "token": "LoqXcYV8q5ONbJQxbmR7SCTNo3tiAXDfowyjxAjEuX0",
             "target": "http://example.com/target"
         }""".toByteArray()
-        enrollment.challengeResponse(dpopChallengeResponse)
+        enrollment.dpopChallengeResponse(dpopChallengeResponse)
 
         enrollment.checkOrderRequest(orderUrl, previousNonce)
         val checkOrderResponse = """{
@@ -203,13 +203,12 @@ internal class E2EITest {
         bob.createConversation(id)
 
         val aliceKp = alice.generateKeyPackages(1U, Ciphersuite.DEFAULT, CredentialType.DEFAULT).first()
-        val aliceMember = mapOf(aliceId.toClientId() to aliceKp)
-        val welcome = bob.addMember(id, aliceMember).welcome!!
+        val welcome = bob.addMember(id, listOf(aliceKp)).welcome!!
         bob.commitAccepted(id)
         val groupId = alice.processWelcomeMessage(welcome)
 
-        assertThat(alice.e2eiConversationState(groupId)).isEqualTo(E2eiConversationState.NOT_ENABLED)
-        assertThat(bob.e2eiConversationState(groupId)).isEqualTo(E2eiConversationState.NOT_ENABLED)
+        assertThat(alice.e2eiConversationState(groupId.id)).isEqualTo(E2eiConversationState.NOT_ENABLED)
+        assertThat(bob.e2eiConversationState(groupId.id)).isEqualTo(E2eiConversationState.NOT_ENABLED)
     }
 
     @Test

@@ -36,6 +36,7 @@ pub trait CoreCryptoCommand: std::fmt::Debug + Send + Sync {
     async fn execute(&self, context: Arc<CoreCryptoContext>) -> CoreCryptoResult<()>;
 }
 
+#[uniffi::export]
 impl CoreCrypto {
     /// Starts a new transaction in Core Crypto. If the callback succeeds, it will be committed,
     /// otherwise, every operation performed with the context will be discarded.

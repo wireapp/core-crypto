@@ -122,15 +122,14 @@ impl CoreCryptoContext {
         certificate_chain: String,
         new_key_packages_count: u32,
     ) -> CoreCryptoResult<RotateBundle> {
-        Ok(self
-            .context
+        self.context
             .e2ei_rotate_all(
                 enrollment.0.write().await.deref_mut(),
                 certificate_chain,
                 new_key_packages_count as usize,
             )
             .await?
-            .try_into()?)
+            .try_into()
     }
 
     /// See [core_crypto::mls::context::CentralContext::e2ei_enrollment_stash]
