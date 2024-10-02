@@ -926,7 +926,7 @@ pub(crate) mod tests {
                                 .await
                                 .unwrap();
                             // ...and verifies that now Alice is represented with her new identity
-                            alice_central.context.verify_sender_identity(&case, &decrypted);
+                            alice_central.context.verify_sender_identity(&case, &decrypted).await;
 
                             // Finally, Alice merges her commit and verifies her new identity gets applied
                             alice_central.context.commit_accepted(&id).await.unwrap();
