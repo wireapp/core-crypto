@@ -95,21 +95,21 @@ mod tests {
                 Box::pin(async move {
                     let id = conversation_id();
                     alice_central
-                        .mls_central
+                        .context
                         .new_conversation(&id, case.credential_type, case.cfg.clone())
                         .await
                         .unwrap();
                     alice_central
-                        .mls_central
-                        .invite_all(&case, &id, [&mut bob_central.mls_central])
+                        .context
+                        .invite_all(&case, &id, [&mut bob_central.context])
                         .await
                         .unwrap();
 
                     let msg = b"Hello bob";
-                    let encrypted = alice_central.mls_central.encrypt_message(&id, msg).await.unwrap();
+                    let encrypted = alice_central.context.encrypt_message(&id, msg).await.unwrap();
                     assert_ne!(&msg[..], &encrypted[..]);
                     let decrypted = bob_central
-                        .mls_central
+                        .context
                         .decrypt_message(&id, encrypted)
                         .await
                         .unwrap()
@@ -133,21 +133,21 @@ mod tests {
                 Box::pin(async move {
                     let id = conversation_id();
                     alice_central
-                        .mls_central
+                        .context
                         .new_conversation(&id, case.credential_type, case.cfg.clone())
                         .await
                         .unwrap();
                     alice_central
-                        .mls_central
-                        .invite_all(&case, &id, [&mut bob_central.mls_central])
+                        .context
+                        .invite_all(&case, &id, [&mut bob_central.context])
                         .await
                         .unwrap();
 
                     let msg = b"Hello bob";
-                    let encrypted = alice_central.mls_central.encrypt_message(&id, msg).await.unwrap();
+                    let encrypted = alice_central.context.encrypt_message(&id, msg).await.unwrap();
                     assert_ne!(&msg[..], &encrypted[..]);
                     let decrypted = bob_central
-                        .mls_central
+                        .context
                         .decrypt_message(&id, encrypted)
                         .await
                         .unwrap()
@@ -156,10 +156,10 @@ mod tests {
                     assert_eq!(&decrypted[..], &msg[..]);
 
                     let msg = b"Hello bob again";
-                    let encrypted = alice_central.mls_central.encrypt_message(&id, msg).await.unwrap();
+                    let encrypted = alice_central.context.encrypt_message(&id, msg).await.unwrap();
                     assert_ne!(&msg[..], &encrypted[..]);
                     let decrypted = bob_central
-                        .mls_central
+                        .context
                         .decrypt_message(&id, encrypted)
                         .await
                         .unwrap()

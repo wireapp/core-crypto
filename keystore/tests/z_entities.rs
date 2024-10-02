@@ -144,12 +144,12 @@ mod tests_impl {
     use super::common::*;
     use crate::{utils::EntityRandomUpdateExt, ENTITY_COUNT};
     use core_crypto_keystore::{
-        connection::KeystoreDatabaseConnection,
+        connection::{FetchFromDatabase, KeystoreDatabaseConnection},
         entities::{Entity, EntityFindParams},
     };
 
     pub(crate) async fn can_save_entity<
-        R: EntityRandomUpdateExt + Entity<ConnectionType = KeystoreDatabaseConnection>,
+        R: EntityRandomUpdateExt + Entity<ConnectionType = KeystoreDatabaseConnection> + Sync,
     >(
         store: &CryptoKeystore,
     ) -> R {
@@ -159,7 +159,7 @@ mod tests_impl {
     }
 
     pub(crate) async fn can_find_entity<
-        R: EntityRandomUpdateExt + Entity<ConnectionType = KeystoreDatabaseConnection> + 'static,
+        R: EntityRandomUpdateExt + Entity<ConnectionType = KeystoreDatabaseConnection> + 'static + Sync,
     >(
         store: &CryptoKeystore,
         entity: &R,
@@ -170,7 +170,7 @@ mod tests_impl {
     }
 
     pub(crate) async fn can_update_entity<
-        R: EntityRandomUpdateExt + Entity<ConnectionType = KeystoreDatabaseConnection>,
+        R: EntityRandomUpdateExt + Entity<ConnectionType = KeystoreDatabaseConnection> + Sync,
     >(
         store: &CryptoKeystore,
         entity: &mut R,
@@ -182,7 +182,7 @@ mod tests_impl {
     }
 
     pub(crate) async fn can_remove_entity<
-        R: EntityRandomUpdateExt + Entity<ConnectionType = KeystoreDatabaseConnection>,
+        R: EntityRandomUpdateExt + Entity<ConnectionType = KeystoreDatabaseConnection> + Sync,
     >(
         store: &CryptoKeystore,
         entity: R,
@@ -193,7 +193,7 @@ mod tests_impl {
     }
 
     pub(crate) async fn can_list_entities_with_find_many<
-        R: EntityRandomUpdateExt + Entity<ConnectionType = KeystoreDatabaseConnection>,
+        R: EntityRandomUpdateExt + Entity<ConnectionType = KeystoreDatabaseConnection> + Sync,
     >(
         store: &CryptoKeystore,
         ignore_entity_count: bool,
@@ -207,7 +207,7 @@ mod tests_impl {
         }
 
         if !ignore_find_many {
-            let entities = store.find_many::<R, _>(&ids).await.unwrap();
+            let entities = store.find_many::<R>(&ids).await.unwrap();
             if !ignore_entity_count {
                 assert_eq!(entities.len(), ENTITY_COUNT);
             }
@@ -215,7 +215,7 @@ mod tests_impl {
     }
 
     pub(crate) async fn can_list_entities_with_find_all<
-        R: EntityRandomUpdateExt + Entity<ConnectionType = KeystoreDatabaseConnection>,
+        R: EntityRandomUpdateExt + Entity<ConnectionType = KeystoreDatabaseConnection> + Sync,
     >(
         store: &CryptoKeystore,
         ignore_entity_count: bool,

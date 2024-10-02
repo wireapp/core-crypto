@@ -24,7 +24,9 @@ fn encryption_bench_var_group_size(c: &mut Criterion) {
                         })
                     },
                     |(central, id, text)| async move {
-                        black_box(central.encrypt_message(&id, text).await.unwrap());
+                        let context = central.new_transaction().await;
+                        black_box(context.encrypt_message(&id, text).await.unwrap());
+                        context.finish().await.unwrap();
                     },
                     BatchSize::SmallInput,
                 )
@@ -49,7 +51,9 @@ fn encryption_bench_var_msg_size(c: &mut Criterion) {
                         })
                     },
                     |(central, id, text)| async move {
-                        black_box(central.encrypt_message(&id, text).await.unwrap());
+                        let context = central.new_transaction().await;
+                        black_box(context.encrypt_message(&id, text).await.unwrap());
+                        context.finish().await.unwrap();
                     },
                     BatchSize::SmallInput,
                 )
@@ -71,13 +75,17 @@ fn decryption_bench_var_msg_size(c: &mut Criterion) {
                             let (mut bob_central, ..) = new_central(ciphersuite, credential.as_ref(), in_memory).await;
                             invite(&mut alice_central, &mut bob_central, &id, ciphersuite).await;
 
+                            let context = alice_central.new_transaction().await;
                             let text = Alphanumeric.sample_string(&mut rand::thread_rng(), *i);
-                            let encrypted = alice_central.encrypt_message(&id, text).await.unwrap();
+                            let encrypted = context.encrypt_message(&id, text).await.unwrap();
+                            context.finish().await.unwrap();
                             (bob_central, id, encrypted)
                         })
                     },
                     |(central, id, encrypted)| async move {
-                        black_box(central.decrypt_message(&id, encrypted).await.unwrap());
+                        let context = central.new_transaction().await;
+                        black_box(context.decrypt_message(&id, encrypted).await.unwrap());
+                        context.finish().await.unwrap();
                     },
                     BatchSize::SmallInput,
                 )

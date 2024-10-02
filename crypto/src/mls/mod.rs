@@ -557,11 +557,11 @@ mod tests {
                 Box::pin(async move {
                     let id = conversation_id();
                     central
-                        .mls_central
+                        .context
                         .new_conversation(&id, case.credential_type, case.cfg.clone())
                         .await
                         .unwrap();
-                    let epoch = central.mls_central.conversation_epoch(&id).await.unwrap();
+                    let epoch = central.context.conversation_epoch(&id).await.unwrap();
                     assert_eq!(epoch, 0);
                 })
             })
@@ -578,16 +578,16 @@ mod tests {
                     Box::pin(async move {
                         let id = conversation_id();
                         alice_central
-                            .mls_central
+                            .context
                             .new_conversation(&id, case.credential_type, case.cfg.clone())
                             .await
                             .unwrap();
                         alice_central
-                            .mls_central
-                            .invite_all(&case, &id, [&mut bob_central.mls_central])
+                            .context
+                            .invite_all(&case, &id, [&mut bob_central.context])
                             .await
                             .unwrap();
-                        let epoch = alice_central.mls_central.conversation_epoch(&id).await.unwrap();
+                        let epoch = alice_central.context.conversation_epoch(&id).await.unwrap();
                         assert_eq!(epoch, 1);
                     })
                 },
@@ -601,7 +601,7 @@ mod tests {
             run_test_with_central(case.clone(), move |[mut central]| {
                 Box::pin(async move {
                     let id = conversation_id();
-                    let err = central.mls_central.conversation_epoch(&id).await.unwrap_err();
+                    let err = central.context.conversation_epoch(&id).await.unwrap_err();
                     assert!(matches!(err, CryptoError::ConversationNotFound(conv_id) if conv_id == id));
                 })
             })
@@ -709,14 +709,14 @@ mod tests {
                 let id = conversation_id();
 
                 let create = alice_central
-                    .mls_central
+                    .context
                     .new_conversation(&id, case.credential_type, case.cfg.clone())
                     .await;
                 assert!(create.is_ok());
 
                 // creating a conversation should first verify that the conversation does not already exist ; only then create it
                 let repeat_create = alice_central
-                    .mls_central
+                    .context
                     .new_conversation(&id, case.credential_type, case.cfg.clone())
                     .await;
                 assert!(matches!(repeat_create.unwrap_err(), CryptoError::ConversationAlreadyExists(i) if i == id));
@@ -763,10 +763,11 @@ mod tests {
                 )
                 .unwrap();
                 // phase 1: init without mls_client
-                let mut central = MlsCentral::try_new(configuration).await.unwrap();
-                x509_test_chain.register_with_central(&central).await;
+                let central = MlsCentral::try_new(configuration).await.unwrap();
+                let context = central.new_transaction().await;
+                x509_test_chain.register_with_central(&context).await;
 
-                assert!(central.mls_client.is_none());
+                assert!(context.mls_client().await.unwrap().is_none());
                 // phase 2: init mls_client
                 let client_id = "alice";
                 let identifier = match case.credential_type {
@@ -775,7 +776,7 @@ mod tests {
                         CertificateBundle::rand_identifier(client_id, &[x509_test_chain.find_local_intermediate_ca()])
                     }
                 };
-                central
+                context
                     .mls_init(
                         identifier,
                         vec![case.ciphersuite()],
@@ -783,10 +784,10 @@ mod tests {
                     )
                     .await
                     .unwrap();
-                assert!(central.mls_client.is_some());
+                assert!(context.mls_client().await.unwrap().is_some());
                 // expect mls_client to work
                 assert_eq!(
-                    central
+                    context
                         .get_or_create_client_keypackages(case.ciphersuite(), case.credential_type, 2)
                         .await
                         .unwrap()

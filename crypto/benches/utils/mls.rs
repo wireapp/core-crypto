@@ -123,8 +123,9 @@ pub(crate) async fn setup_mls(
     in_memory: bool,
 ) -> (MlsCentral, ConversationId) {
     let (central, _) = new_central(ciphersuite, credential, in_memory).await;
+    let context = central.new_transaction().await;
     let id = conversation_id();
-    central
+    context
         .new_conversation(
             &id,
             MlsCredentialType::Basic,
@@ -136,6 +137,7 @@ pub(crate) async fn setup_mls(
         .await
         .unwrap();
 
+    context.finish().await.unwrap();
     (central, id)
 }
 
@@ -194,7 +196,8 @@ pub(crate) async fn add_clients(
         key_packages.push(kp.into())
     }
 
-    let commit_bundle = central.add_members_to_conversation(id, key_packages).await.unwrap();
+    let context = central.new_transaction().await;
+    let commit_bundle = context.add_members_to_conversation(id, key_packages).await.unwrap();
 
     let group_info = commit_bundle.group_info.payload.bytes();
     let group_info = openmls::prelude::MlsMessageIn::tls_deserialize(&mut group_info.as_slice()).unwrap();
@@ -202,7 +205,9 @@ pub(crate) async fn add_clients(
         panic!("error")
     };
 
-    central.commit_accepted(id).await.unwrap();
+    context.commit_accepted(id).await.unwrap();
+
+    context.finish().await.unwrap();
     (client_ids, group_info)
 }
 
@@ -240,19 +245,23 @@ pub(crate) async fn invite(
     id: &ConversationId,
     ciphersuite: MlsCiphersuite,
 ) {
-    let other_kps = other
+    let from_context = from.new_transaction().await;
+    let other_context = other.new_transaction().await;
+    let other_kps = other_context
         .get_or_create_client_keypackages(ciphersuite, MlsCredentialType::Basic, 1)
         .await
         .unwrap();
     let other_kp = other_kps.first().unwrap().clone();
-    let welcome = from
+    let welcome = from_context
         .add_members_to_conversation(id, vec![other_kp.into()])
         .await
         .unwrap()
         .welcome;
-    other
+    other_context
         .process_welcome_message(welcome.into(), MlsCustomConfiguration::default())
         .await
         .unwrap();
-    from.commit_accepted(id).await.unwrap();
+    from_context.commit_accepted(id).await.unwrap();
+    from_context.finish().await.unwrap();
+    other_context.finish().await.unwrap();
 }

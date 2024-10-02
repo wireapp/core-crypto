@@ -367,15 +367,13 @@ mod tests {
         async fn fetch_from_id(
             id: &[u8],
             _identity: Option<Self::IdentityType>,
-            _keystore: &mut core_crypto_keystore::connection::KeystoreDatabaseConnection,
+            _keystore: &impl FetchFromDatabase,
         ) -> crate::CryptoResult<Option<Self>> {
             let id = std::str::from_utf8(id)?;
             Ok(Some(id.into()))
         }
 
-        async fn fetch_all(
-            _keystore: &mut core_crypto_keystore::connection::KeystoreDatabaseConnection,
-        ) -> CryptoResult<Vec<Self>> {
+        async fn fetch_all(_keystore: &impl FetchFromDatabase) -> CryptoResult<Vec<Self>> {
             unreachable!()
         }
     }
