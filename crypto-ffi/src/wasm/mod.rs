@@ -14,26 +14,30 @@
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see http://www.gnu.org/licenses/.
 
-#![allow(unused_variables)]
+#![allow(unused_variables, deprecated)]
+mod context;
+mod e2ei_context;
+mod utils;
 
 use std::collections::HashMap;
 use std::ops::Deref;
 
-use super::wasm_utils::*;
 use core_crypto::prelude::*;
 use core_crypto::CryptoError;
 use futures_util::future::TryFutureExt;
 use js_sys::{Promise, Uint8Array};
 use std::ops::DerefMut;
+use std::sync::Arc;
 use tls_codec::{Deserialize, Serialize};
 use tracing::{level_filters::LevelFilter, Level};
 use tracing_subscriber::fmt::{self, MakeWriter};
+use utils::*;
 use wasm_bindgen::prelude::*;
 use wasm_bindgen::JsCast;
 use wasm_bindgen_futures::future_to_promise;
 
 #[allow(dead_code)]
-pub(crate) const VERSION: &str = env!("CARGO_PKG_VERSION");
+pub(super) const VERSION: &str = env!("CARGO_PKG_VERSION");
 
 // This is intended to hotfix this import:
 // ❯ wasmer inspect bindings/js/wasm/core-crypto-ffi_bg.wasm | grep env
@@ -1291,7 +1295,7 @@ impl CoreCryptoCallbacks for CoreCryptoWasmCallbacks {
 #[derive(Debug)]
 #[wasm_bindgen]
 pub struct CoreCrypto {
-    inner: std::sync::Arc<async_lock::RwLock<core_crypto::CoreCrypto>>,
+    inner: Arc<core_crypto::CoreCrypto>,
     proteus_last_error_code: std::sync::Arc<async_lock::RwLock<u32>>,
 }
 
@@ -1331,7 +1335,7 @@ impl CoreCrypto {
             .await
             .map_err(CoreCryptoError::from)?;
         Ok(CoreCrypto {
-            inner: async_lock::RwLock::new(central.into()).into(),
+            inner: Arc::new(central.into()),
             proteus_last_error_code: async_lock::RwLock::new(0).into(),
         })
     }
@@ -1351,23 +1355,25 @@ impl CoreCrypto {
             .map_err(CoreCryptoError::from)?;
 
         Ok(CoreCrypto {
-            inner: async_lock::RwLock::new(central.into()).into(),
+            inner: Arc::new(central.into()),
             proteus_last_error_code: async_lock::RwLock::new(0).into(),
         })
     }
 
-    /// see [core_crypto::mls::MlsCentral::mls_init]
+    /// see [core_crypto::mls::context::CentralContext::mls_init]
+    /// @deprecated Please create a transaction in Core Crypto and call this method from it.
+    #[deprecated = "Please create a transaction in Core Crypto and call this method from it."]
     pub fn mls_init(&self, client_id: FfiClientId, ciphersuites: Box<[u16]>, nb_key_package: Option<u32>) -> Promise {
-        let this = self.inner.clone();
+        let central = self.inner.clone();
         future_to_promise(
             async move {
-                let mut central = this.write().await;
+                let context = central.new_transaction().await;
                 let ciphersuites = lower_ciphersuites(&ciphersuites)?;
                 let nb_key_package = nb_key_package
                     .map(usize::try_from)
                     .transpose()
                     .map_err(CryptoError::from)?;
-                central
+                context
                     .mls_init(
                         ClientIdentifier::Basic(client_id.clone().into()),
                         ciphersuites,
@@ -1375,6 +1381,7 @@ impl CoreCrypto {
                     )
                     .await
                     .map_err(CoreCryptoError::from)?;
+                context.finish().await?;
                 WasmCryptoResult::Ok(JsValue::UNDEFINED)
             }
             .err_into(),
@@ -1383,15 +1390,16 @@ impl CoreCrypto {
 
     /// Returns [`WasmCryptoResult<Vec<u8>>`]
     ///
-    /// See [core_crypto::mls::MlsCentral::mls_generate_keypair]
+    /// See [core_crypto::mls::context::CentralContext::mls_generate_keypair]
+    /// @deprecated Please create a transaction in Core Crypto and call this method from it.
+    #[deprecated = "Please create a transaction in Core Crypto and call this method from it."]
     pub fn mls_generate_keypair(&self, ciphersuites: Box<[u16]>) -> Promise {
-        let this = self.inner.clone();
-
+        let central = self.inner.clone();
         future_to_promise(
             async move {
                 let ciphersuites = lower_ciphersuites(&ciphersuites)?;
-                let central = this.read().await;
-                let pks = central
+                let context = central.new_transaction().await;
+                let pks = context
                     .mls_generate_keypairs(ciphersuites)
                     .await
                     .map_err(CoreCryptoError::from)?;
@@ -1401,7 +1409,7 @@ impl CoreCrypto {
                         .map(|kp| js_sys::Uint8Array::from(kp.as_slice()))
                         .map(JsValue::from),
                 );
-
+                context.finish().await?;
                 WasmCryptoResult::Ok(js_pks.into())
             }
             .err_into(),
@@ -1410,15 +1418,16 @@ impl CoreCrypto {
 
     /// Returns [`WasmCryptoResult<()>`]
     ///
-    /// See [core_crypto::mls::MlsCentral::mls_init_with_client_id]
+    /// See [core_crypto::mls::context::CentralContext::mls_init_with_client_id]
+    /// @deprecated Please create a transaction in Core Crypto and call this method from it.
+    #[deprecated = "Please create a transaction in Core Crypto and call this method from it."]
     pub fn mls_init_with_client_id(
         &self,
         client_id: FfiClientId,
         signature_public_keys: Box<[Uint8Array]>,
         ciphersuites: Box<[u16]>,
     ) -> Promise {
-        let this = self.inner.clone();
-
+        let central = self.inner.clone();
         future_to_promise(
             async move {
                 let ciphersuites = lower_ciphersuites(&ciphersuites)?;
@@ -1427,11 +1436,12 @@ impl CoreCrypto {
                     .map(|c| ClientId::from(c.to_vec()))
                     .collect();
 
-                let mut central = this.write().await;
-                central
+                let context = central.new_transaction().await;
+                context
                     .mls_init_with_client_id(client_id.into(), signature_public_keys, ciphersuites)
                     .await
                     .map_err(CoreCryptoError::from)?;
+                context.finish().await?;
 
                 WasmCryptoResult::Ok(JsValue::UNDEFINED)
             }
@@ -1441,44 +1451,33 @@ impl CoreCrypto {
 
     /// Returns the Arc strong ref count
     pub fn has_outstanding_refs(&self) -> bool {
-        std::sync::Arc::strong_count(&self.inner) > 1
+        Arc::strong_count(&self.inner) > 1
     }
 
     /// Returns: [`WasmCryptoResult<()>`]
     ///
     /// see [core_crypto::mls::MlsCentral::close]
     pub fn close(self) -> Promise {
+        let error_message = &js_sys::JsString::from(
+            format!(
+                "There are other outstanding references to this CoreCrypto instance [refs = {}]",
+                Arc::strong_count(&self.inner)
+            )
+                .as_str(),
+        );
         if self.has_outstanding_refs() {
-            return js_sys::Promise::reject(
-                &js_sys::JsString::from(
-                    format!(
-                        "There are other outstanding references to this CoreCrypto instance [refs = {}]",
-                        std::sync::Arc::strong_count(&self.inner)
-                    )
-                    .as_str(),
-                )
-                .into(),
-            );
+            return Promise::reject(error_message);
         }
-
-        match std::sync::Arc::try_unwrap(self.inner).map(async_lock::RwLock::into_inner) {
-            Ok(cc) => future_to_promise(
+        let central = self.inner.clone();
+        match Arc::try_unwrap(self.inner) {
+            Ok(central) => future_to_promise(
                 async move {
-                    cc.take().close().await.map_err(CoreCryptoError::from)?;
+                    central.take().close().await.map_err(CoreCryptoError::from)?;
                     WasmCryptoResult::Ok(JsValue::UNDEFINED)
                 }
                 .err_into(),
             ),
-            Err(arc) => js_sys::Promise::reject(
-                &js_sys::JsString::from(
-                    format!(
-                        "There are other outstanding references to this CoreCrypto instance [refs = {}]",
-                        std::sync::Arc::strong_count(&arc)
-                    )
-                    .as_str(),
-                )
-                .into(),
-            ),
+            Err(_) => Promise::reject(error_message),
         }
     }
 
@@ -1486,37 +1485,26 @@ impl CoreCrypto {
     ///
     /// see [core_crypto::mls::MlsCentral::wipe]
     pub fn wipe(self) -> Promise {
+        let error_message = &js_sys::JsString::from(
+            format!(
+                "There are other outstanding references to this CoreCrypto instance [refs = {}]",
+                Arc::strong_count(&self.inner)
+            )
+                .as_str(),
+        );
         if self.has_outstanding_refs() {
-            return js_sys::Promise::reject(
-                &js_sys::JsString::from(
-                    format!(
-                        "There are other outstanding references to this CoreCrypto instance [refs = {}]",
-                        std::sync::Arc::strong_count(&self.inner)
-                    )
-                    .as_str(),
-                )
-                .into(),
-            );
+            return Promise::reject(error_message);
         }
-
-        match std::sync::Arc::try_unwrap(self.inner).map(async_lock::RwLock::into_inner) {
-            Ok(cc) => future_to_promise(
+        let central = self.inner.clone();
+        match Arc::try_unwrap(self.inner) {
+            Ok(central) => future_to_promise(
                 async move {
-                    cc.take().wipe().await.map_err(CoreCryptoError::from)?;
+                    central.take().wipe().await.map_err(CoreCryptoError::from)?;
                     WasmCryptoResult::Ok(JsValue::UNDEFINED)
                 }
-                .err_into(),
+                    .err_into(),
             ),
-            Err(arc) => js_sys::Promise::reject(
-                &js_sys::JsString::from(
-                    format!(
-                        "There are other outstanding references to this CoreCrypto instance [refs = {}]",
-                        std::sync::Arc::strong_count(&arc)
-                    )
-                    .as_str(),
-                )
-                .into(),
-            ),
+            Err(_) => Promise::reject(error_message),
         }
     }
 
@@ -1524,10 +1512,10 @@ impl CoreCrypto {
     ///
     /// see [core_crypto::mls::MlsCentral::callbacks]
     pub fn set_callbacks(&self, callbacks: CoreCryptoWasmCallbacks) -> Promise {
-        let this = self.inner.clone();
+        let central = self.inner.clone();
         future_to_promise(
             async move {
-                this.write().await.callbacks(std::sync::Arc::new(callbacks));
+                central.callbacks(std::sync::Arc::new(callbacks)).await;
 
                 WasmCryptoResult::Ok(JsValue::UNDEFINED)
             }
@@ -1539,13 +1527,13 @@ impl CoreCrypto {
     ///
     /// see [core_crypto::mls::MlsCentral::client_public_key]
     pub fn client_public_key(&self, ciphersuite: Ciphersuite, credential_type: CredentialType) -> Promise {
-        let this = self.inner.clone();
         let ciphersuite: CiphersuiteName = ciphersuite.into();
+        let central = self.inner.clone();
         future_to_promise(
             async move {
-                let cc = this.read().await;
-                let pk = cc
+                let pk = central
                     .client_public_key(ciphersuite.into(), credential_type.into())
+                    .await
                     .map_err(CoreCryptoError::from)?;
                 WasmCryptoResult::Ok(Uint8Array::from(pk.as_slice()).into())
             }
@@ -1555,20 +1543,21 @@ impl CoreCrypto {
 
     /// Returns: [`WasmCryptoResult<js_sys::Array<js_sys::Uint8Array>>`]
     ///
-    /// see [core_crypto::mls::MlsCentral::client_keypackages]
+    /// see [core_crypto::mls::context::CentralContext::client_keypackages]
+    /// @deprecated Please create a transaction in Core Crypto and call this method from it.
+    #[deprecated = "Please create a transaction in Core Crypto and call this method from it."]
     pub fn client_keypackages(
         &self,
         ciphersuite: Ciphersuite,
         credential_type: CredentialType,
         amount_requested: u32,
     ) -> Promise {
-        let this = self.inner.clone();
         let ciphersuite: CiphersuiteName = ciphersuite.into();
+        let central = self.inner.clone();
         future_to_promise(
             async move {
-                let kps = this
-                    .write()
-                    .await
+                let context = central.new_transaction().await;
+                let kps = context
                     .get_or_create_client_keypackages(
                         ciphersuite.into(),
                         credential_type.into(),
@@ -1590,6 +1579,7 @@ impl CoreCrypto {
                         .map(|kp| js_sys::Uint8Array::from(kp.as_slice()))
                         .map(JsValue::from),
                 );
+                context.finish().await?;
 
                 WasmCryptoResult::Ok(js_kps.into())
             }
@@ -1599,19 +1589,20 @@ impl CoreCrypto {
 
     /// Returns: [`WasmCryptoResult<usize>`]
     ///
-    /// see [core_crypto::mls::MlsCentral::client_valid_keypackages_count]
+    /// see [core_crypto::mls::context::CentralContext::client_valid_key_packages_count]
+    /// @deprecated Please create a transaction in Core Crypto and call this method from it.
+    #[deprecated = "Please create a transaction in Core Crypto and call this method from it."]
     pub fn client_valid_keypackages_count(&self, ciphersuite: Ciphersuite, credential_type: CredentialType) -> Promise {
-        let this = self.inner.clone();
         let ciphersuite: CiphersuiteName = ciphersuite.into();
-
+        let central = self.inner.clone();
         future_to_promise(
             async move {
-                let count = this
-                    .read()
-                    .await
+                let context = central.new_transaction().await;
+                let count = context
                     .client_valid_key_packages_count(ciphersuite.into(), credential_type.into())
                     .await
                     .map_err(CoreCryptoError::from)?;
+                context.finish().await?;
                 WasmCryptoResult::Ok(count.into())
             }
             .err_into(),
@@ -1620,24 +1611,26 @@ impl CoreCrypto {
 
     /// Returns: [`WasmCryptoResult<usize>`]
     ///
-    /// see [core_crypto::mls::MlsCentral::delete_keypackages]
+    /// see [core_crypto::mls::context::CentralContext::delete_keypackages]
+    /// @deprecated Please create a transaction in Core Crypto and call this method from it.
+    #[deprecated = "Please create a transaction in Core Crypto and call this method from it."]
     #[allow(clippy::boxed_local)]
     pub fn delete_keypackages(&self, refs: Box<[Uint8Array]>) -> Promise {
-        let this = self.inner.clone();
-
         let refs = refs
             .iter()
             .map(|r| r.to_vec())
             .map(|r| KeyPackageRef::from(r.as_slice()))
             .collect::<Vec<_>>();
 
+        let central = self.inner.clone();
         future_to_promise(
             async move {
-                this.write()
-                    .await
+                let context = central.new_transaction().await;
+                context
                     .delete_keypackages(&refs[..])
                     .await
                     .map_err(CoreCryptoError::from)?;
+                context.finish().await?;
                 WasmCryptoResult::Ok(JsValue::UNDEFINED)
             }
             .err_into(),
@@ -1646,14 +1639,16 @@ impl CoreCrypto {
 
     /// Returns: [`WasmCryptoResult<()>`]
     ///
-    /// see [core_crypto::mls::MlsCentral::new_conversation]
+    /// see [core_crypto::mls::context::CentralContext::new_conversation]
+    /// @deprecated Please create a transaction in Core Crypto and call this method from it.
+    #[deprecated = "Please create a transaction in Core Crypto and call this method from it."]
     pub fn create_conversation(
         &self,
         conversation_id: ConversationId,
         creator_credential_type: CredentialType,
         mut config: ConversationConfiguration,
     ) -> Promise {
-        let this = self.inner.clone();
+        let central = self.inner.clone();
         future_to_promise(
             async move {
                 let mut lower_cfg = MlsConversationConfiguration {
@@ -1666,15 +1661,15 @@ impl CoreCrypto {
                     lower_cfg.ciphersuite = mls_ciphersuite.into();
                 }
 
-                this.read()
-                    .await
-                    .set_raw_external_senders(&mut lower_cfg, config.external_senders)?;
-
-                this.write()
-                    .await
+                let context = central.new_transaction().await;
+                context
+                    .set_raw_external_senders(&mut lower_cfg, config.external_senders)
+                    .await?;
+                context
                     .new_conversation(&conversation_id.to_vec(), creator_credential_type.into(), lower_cfg)
                     .await
                     .map_err(CoreCryptoError::from)?;
+                context.finish().await?;
                 WasmCryptoResult::Ok(JsValue::UNDEFINED)
             }
             .err_into(),
@@ -1685,12 +1680,11 @@ impl CoreCrypto {
     ///
     /// see [core_crypto::mls::MlsCentral::conversation_epoch]
     pub fn conversation_epoch(&self, conversation_id: ConversationId) -> Promise {
-        let this = self.inner.clone();
+        let central = self.inner.clone();
         future_to_promise(
             async move {
                 WasmCryptoResult::Ok(
-                    this.write()
-                        .await
+                    central
                         .conversation_epoch(&conversation_id)
                         .await
                         .map_err(CoreCryptoError::from)?
@@ -1705,13 +1699,12 @@ impl CoreCrypto {
     ///
     /// see [core_crypto::mls::MlsCentral::conversation_ciphersuite]
     pub fn conversation_ciphersuite(&self, conversation_id: ConversationId) -> Promise {
-        let this = self.inner.clone();
+        let central = self.inner.clone();
         future_to_promise(
             async move {
                 WasmCryptoResult::Ok(
                     Ciphersuite::from(
-                        this.write()
-                            .await
+                        central
                             .conversation_ciphersuite(&conversation_id)
                             .await
                             .map_err(CoreCryptoError::from)?,
@@ -1727,10 +1720,10 @@ impl CoreCrypto {
     ///
     /// see [core_crypto::mls::MlsCentral::conversation_exists]
     pub fn conversation_exists(&self, conversation_id: ConversationId) -> Promise {
-        let this = self.inner.clone();
+        let central = self.inner.clone();
         future_to_promise(
             async move {
-                WasmCryptoResult::Ok(if this.write().await.conversation_exists(&conversation_id).await {
+                WasmCryptoResult::Ok(if central.conversation_exists(&conversation_id).await? {
                     JsValue::TRUE
                 } else {
                     JsValue::FALSE
@@ -1742,22 +1735,24 @@ impl CoreCrypto {
 
     /// Returns: [`WasmCryptoResult<Uint8Array>`]
     ///
-    /// see [core_crypto::mls::MlsCentral::process_raw_welcome_message]
+    /// see [core_crypto::mls::context::CentralContext::process_raw_welcome_message]
+    /// @deprecated Please create a transaction in Core Crypto and call this method from it.
+    #[deprecated = "Please create a transaction in Core Crypto and call this method from it."]
     pub fn process_welcome_message(
         &self,
         welcome_message: Box<[u8]>,
         custom_configuration: CustomConfiguration,
     ) -> Promise {
-        let this = self.inner.clone();
+        let central = self.inner.clone();
         future_to_promise(
             async move {
-                let bundle = this
-                    .write()
-                    .await
+                let context = central.new_transaction().await;
+                let bundle = context
                     .process_raw_welcome_message(welcome_message.into(), custom_configuration.into())
                     .await
                     .map_err(CoreCryptoError::from)?;
                 let bundle: WelcomeBundle = bundle.into();
+                context.finish().await?;
                 WasmCryptoResult::Ok(serde_wasm_bindgen::to_value(&bundle)?)
             }
             .err_into(),
@@ -1766,14 +1761,15 @@ impl CoreCrypto {
 
     /// Returns: [`WasmCryptoResult<Option<MemberAddedMessages>>`]
     ///
-    /// see [core_crypto::mls::MlsCentral::add_members_to_conversation]
+    /// see [core_crypto::mls::context::CentralContext::add_members_to_conversation]
+    /// @deprecated Please create a transaction in Core Crypto and call this method from it.
+    #[deprecated = "Please create a transaction in Core Crypto and call this method from it."]
     pub fn add_clients_to_conversation(
         &self,
         conversation_id: ConversationId,
         key_packages: Box<[Uint8Array]>,
     ) -> Promise {
-        let this = self.inner.clone();
-
+        let central = self.inner.clone();
         future_to_promise(
             async move {
                 let key_packages = key_packages
@@ -1784,11 +1780,12 @@ impl CoreCrypto {
                     })
                     .collect::<CoreCryptoResult<Vec<_>>>()?;
 
-                let mut central = this.write().await;
-                let commit = central
+                let context = central.new_transaction().await;
+                let commit = context
                     .add_members_to_conversation(&conversation_id, key_packages)
                     .await?;
                 let commit: MemberAddedMessages = commit.try_into()?;
+                context.finish().await?;
                 WasmCryptoResult::Ok(serde_wasm_bindgen::to_value(&commit)?)
             }
             .err_into(),
@@ -1797,14 +1794,15 @@ impl CoreCrypto {
 
     /// Returns: [`WasmCryptoResult<Option<js_sys::Uint8Array>>`]
     ///
-    /// see [core_crypto::mls::MlsCentral::remove_members_from_conversation]
+    /// see [core_crypto::mls::context::CentralContext::remove_members_from_conversation]
+    /// @deprecated Please create a transaction in Core Crypto and call this method from it.
+    #[deprecated = "Please create a transaction in Core Crypto and call this method from it."]
     pub fn remove_clients_from_conversation(
         &self,
         conversation_id: ConversationId,
         clients: Box<[Uint8Array]>,
     ) -> Promise {
-        let this = self.inner.clone();
-
+        let central = self.inner.clone();
         future_to_promise(
             async move {
                 let clients = clients
@@ -1813,13 +1811,14 @@ impl CoreCrypto {
                     .map(|c| c.to_vec().into())
                     .collect::<Vec<ClientId>>();
 
-                let mut central = this.write().await;
-                let commit = central
+                let context = central.new_transaction().await;
+                let commit = context
                     .remove_members_from_conversation(&conversation_id, &clients)
                     .await
                     .map_err(CoreCryptoError::from)?;
 
                 let commit: CommitBundle = commit.try_into()?;
+                context.finish().await?;
 
                 WasmCryptoResult::Ok(serde_wasm_bindgen::to_value(&commit)?)
             }
@@ -1829,18 +1828,20 @@ impl CoreCrypto {
 
     /// Returns: [`WasmCryptoResult<()>`]
     ///
-    /// see [core_crypto::mls::MlsCentral::mark_conversation_as_child_of]
+    /// see [core_crypto::mls::context::CentralContext::mark_conversation_as_child_of]
+    /// @deprecated Please create a transaction in Core Crypto and call this method from it.
+    #[deprecated = "Please create a transaction in Core Crypto and call this method from it."]
     pub fn mark_conversation_as_child_of(&self, child_id: Box<[u8]>, parent_id: Box<[u8]>) -> Promise {
-        let this = self.inner.clone();
-
+        let central = self.inner.clone();
         future_to_promise(
             async move {
-                let mut central = this.write().await;
-                central
+                let context = central.new_transaction().await;
+                context
                     .mark_conversation_as_child_of(&child_id.into(), &parent_id.into())
                     .await
                     .map_err(CoreCryptoError::from)?;
 
+                context.finish().await?;
                 WasmCryptoResult::Ok(JsValue::UNDEFINED)
             }
             .err_into(),
@@ -1849,39 +1850,42 @@ impl CoreCrypto {
 
     /// Returns: [`WasmCryptoResult<CommitBundle>`]
     ///
-    /// see [core_crypto::mls::MlsCentral::update_keying_material]
+    /// see [core_crypto::mls::context::CentralContext::update_keying_material]
+    /// @deprecated Please create a transaction in Core Crypto and call this method from it.
+    #[deprecated = "Please create a transaction in Core Crypto and call this method from it."]
     pub fn update_keying_material(&self, conversation_id: ConversationId) -> Promise {
-        let this = self.inner.clone();
-
+        let central = self.inner.clone();
         future_to_promise(
             async move {
-                let mut central = this.write().await;
-                let commit = central
+                let context = central.new_transaction().await;
+                let commit = context
                     .update_keying_material(&conversation_id)
                     .await
                     .map_err(CoreCryptoError::from)?;
 
                 let commit: CommitBundle = commit.try_into()?;
-
+                context.finish().await?;
                 WasmCryptoResult::Ok(serde_wasm_bindgen::to_value(&commit)?)
             }
             .err_into(),
         )
     }
 
-    /// see [core_crypto::mls::MlsCentral::commit_pending_proposals]
+    /// see [core_crypto::mls::context::CentralContext::commit_pending_proposals]
+    /// @deprecated Please create a transaction in Core Crypto and call this method from it.
+    #[deprecated = "Please create a transaction in Core Crypto and call this method from it."]
     pub fn commit_pending_proposals(&self, conversation_id: ConversationId) -> Promise {
-        let this = self.inner.clone();
-
+        let central = self.inner.clone();
         future_to_promise(
             async move {
-                let mut central = this.write().await;
-                let commit: Option<CommitBundle> = central
+                let context = central.new_transaction().await;
+                let commit: Option<CommitBundle> = context
                     .commit_pending_proposals(&conversation_id)
                     .await?
                     .map(|c| c.try_into())
                     .transpose()?;
 
+                context.finish().await?;
                 WasmCryptoResult::Ok(serde_wasm_bindgen::to_value(&commit)?)
             }
             .err_into(),
@@ -1890,16 +1894,19 @@ impl CoreCrypto {
 
     /// Returns: [`WasmCryptoResult<()>`]
     ///
-    /// see [core_crypto::mls::MlsCentral::wipe_conversation]
+    /// see [core_crypto::mls::context::CentralContext::wipe_conversation]
+    /// @deprecated Please create a transaction in Core Crypto and call this method from it.
+    #[deprecated = "Please create a transaction in Core Crypto and call this method from it."]
     pub fn wipe_conversation(&self, conversation_id: ConversationId) -> Promise {
-        let this = self.inner.clone();
+        let central = self.inner.clone();
         future_to_promise(
             async move {
-                let mut central = this.write().await;
-                central
+                let context = central.new_transaction().await;
+                context
                     .wipe_conversation(&conversation_id)
                     .await
                     .map_err(CoreCryptoError::from)?;
+                context.finish().await?;
                 WasmCryptoResult::Ok(JsValue::UNDEFINED)
             }
             .err_into(),
@@ -1908,19 +1915,21 @@ impl CoreCrypto {
 
     /// Returns: [`WasmCryptoResult<DecryptedMessage>`]
     ///
-    /// see [core_crypto::mls::MlsCentral::decrypt_message]
+    /// see [core_crypto::mls::context::CentralContext::decrypt_message]
+    /// @deprecated Please create a transaction in Core Crypto and call this method from it.
+    #[deprecated = "Please create a transaction in Core Crypto and call this method from it."]
     pub fn decrypt_message(&self, conversation_id: ConversationId, payload: Box<[u8]>) -> Promise {
-        let this = self.inner.clone();
+        let central = self.inner.clone();
         future_to_promise(
             async move {
-                let raw_decrypted_message = this
-                    .write()
-                    .await
+                let context = central.new_transaction().await;
+                let raw_decrypted_message = context
                     .decrypt_message(&conversation_id.to_vec(), payload)
                     .await
                     .map_err(CoreCryptoError::from)?;
 
                 let decrypted_message = DecryptedMessage::try_from(raw_decrypted_message)?;
+                context.finish().await?;
 
                 WasmCryptoResult::Ok(serde_wasm_bindgen::to_value(&decrypted_message)?)
             }
@@ -1930,19 +1939,21 @@ impl CoreCrypto {
 
     /// Returns: [`WasmCryptoResult<Uint8Array>`]
     ///
-    /// see [core_crypto::mls::MlsCentral::encrypt_message]
+    /// see [core_crypto::mls::context::CentralContext::encrypt_message]
+    /// @deprecated Please create a transaction in Core Crypto and call this method from it.
+    #[deprecated = "Please create a transaction in Core Crypto and call this method from it."]
     pub fn encrypt_message(&self, conversation_id: ConversationId, message: Box<[u8]>) -> Promise {
-        let this = self.inner.clone();
+        let central = self.inner.clone();
         future_to_promise(
             async move {
-                let ciphertext = this
-                    .write()
-                    .await
+                let context = central.new_transaction().await;
+                let ciphertext = context
                     .encrypt_message(&conversation_id.to_vec(), message)
                     .await
                     .map(|ciphertext| Uint8Array::from(ciphertext.as_slice()))
                     .map_err(CoreCryptoError::from)?;
 
+                context.finish().await?;
                 WasmCryptoResult::Ok(ciphertext.into())
             }
             .err_into(),
@@ -1951,9 +1962,11 @@ impl CoreCrypto {
 
     /// Returns: [`WasmCryptoResult<js_sys::Uint8Array>`]
     ///
-    /// see [core_crypto::mls::MlsCentral::new_add_proposal]
+    /// see [core_crypto::mls::context::CentralContext::new_add_proposal]
+    /// @deprecated Please create a transaction in Core Crypto and call this method from it.
+    #[deprecated = "Please create a transaction in Core Crypto and call this method from it."]
     pub fn new_add_proposal(&self, conversation_id: ConversationId, keypackage: Box<[u8]>) -> Promise {
-        let this = self.inner.clone();
+        let central = self.inner.clone();
         future_to_promise(
             async move {
                 let kp = KeyPackageIn::tls_deserialize(&mut keypackage.as_ref())
@@ -1961,14 +1974,15 @@ impl CoreCrypto {
                     .map_err(CryptoError::from)
                     .map_err(CoreCryptoError::from)?;
 
-                let proposal: ProposalBundle = this
-                    .write()
-                    .await
+                let context = central.new_transaction().await;
+
+                let proposal: ProposalBundle = context
                     .new_add_proposal(&conversation_id.to_vec(), kp.into())
                     .await
                     .map_err(CoreCryptoError::from)?
                     .try_into()?;
 
+                context.finish().await?;
                 WasmCryptoResult::Ok(serde_wasm_bindgen::to_value(&proposal)?)
             }
             .err_into(),
@@ -1977,18 +1991,20 @@ impl CoreCrypto {
 
     /// Returns: [`WasmCryptoResult<js_sys::Uint8Array>`]
     ///
-    /// see [core_crypto::mls::MlsCentral::new_update_proposal]
+    /// see [core_crypto::mls::context::new_update_proposal]
+    /// @deprecated Please create a transaction in Core Crypto and call this method from it.
+    #[deprecated = "Please create a transaction in Core Crypto and call this method from it."]
     pub fn new_update_proposal(&self, conversation_id: ConversationId) -> Promise {
-        let this = self.inner.clone();
+        let central = self.inner.clone();
         future_to_promise(
             async move {
-                let proposal: ProposalBundle = this
-                    .write()
-                    .await
+                let context = central.new_transaction().await;
+                let proposal: ProposalBundle = context
                     .new_update_proposal(&conversation_id.to_vec())
                     .await?
                     .try_into()?;
 
+                context.finish().await?;
                 WasmCryptoResult::Ok(serde_wasm_bindgen::to_value(&proposal)?)
             }
             .err_into(),
@@ -1997,19 +2013,21 @@ impl CoreCrypto {
 
     /// Returns: [`WasmCryptoResult<js_sys::Uint8Array>`]
     ///
-    /// see [core_crypto::mls::MlsCentral::new_remove_proposal]
+    /// see [core_crypto::mls::context::CentralContext::new_remove_proposal]
+    /// @deprecated Please create a transaction in Core Crypto and call this method from it.
+    #[deprecated = "Please create a transaction in Core Crypto and call this method from it."]
     pub fn new_remove_proposal(&self, conversation_id: ConversationId, client_id: FfiClientId) -> Promise {
-        let this = self.inner.clone();
+        let central = self.inner.clone();
         future_to_promise(
             async move {
-                let proposal: ProposalBundle = this
-                    .write()
-                    .await
+                let context = central.new_transaction().await;
+                let proposal: ProposalBundle = context
                     .new_remove_proposal(&conversation_id.to_vec(), client_id.into())
                     .await
                     .map_err(CoreCryptoError::from)?
                     .try_into()?;
 
+                context.finish().await?;
                 WasmCryptoResult::Ok(serde_wasm_bindgen::to_value(&proposal)?)
             }
             .err_into(),
@@ -2018,7 +2036,9 @@ impl CoreCrypto {
 
     /// Returns: [`WasmCryptoResult<js_sys::Uint8Array>`]
     ///
-    /// see [core_crypto::mls::MlsCentral::new_external_add_proposal]
+    /// see [core_crypto::mls::context::CentralContext::new_external_add_proposal]
+    /// @deprecated Please create a transaction in Core Crypto and call this method from it.
+    #[deprecated = "Please create a transaction in Core Crypto and call this method from it."]
     pub fn new_external_add_proposal(
         &self,
         conversation_id: ConversationId,
@@ -2026,13 +2046,12 @@ impl CoreCrypto {
         ciphersuite: Ciphersuite,
         credential_type: CredentialType,
     ) -> Promise {
-        let this = self.inner.clone();
         let ciphersuite: CiphersuiteName = ciphersuite.into();
+        let central = self.inner.clone();
         future_to_promise(
             async move {
-                let proposal_bytes = this
-                    .write()
-                    .await
+                let context = central.new_transaction().await;
+                let proposal_bytes = context
                     .new_external_add_proposal(
                         conversation_id.to_vec(),
                         u64::from(epoch).into(),
@@ -2047,6 +2066,7 @@ impl CoreCrypto {
                     .map_err(CryptoError::from)
                     .map_err(CoreCryptoError::from)?;
 
+                context.finish().await?;
                 WasmCryptoResult::Ok(proposal_bytes.into())
             }
             .err_into(),
@@ -2056,14 +2076,16 @@ impl CoreCrypto {
     #[allow(clippy::boxed_local)]
     /// Returns: [`WasmCryptoResult<ConversationInitBundle>`]
     ///
-    /// see [core_crypto::mls::MlsCentral::join_by_external_commit]
+    /// see [core_crypto::mls::context::CentralContext::join_by_external_commit]
+    /// @deprecated Please create a transaction in Core Crypto and call this method from it.
+    #[deprecated = "Please create a transaction in Core Crypto and call this method from it."]
     pub fn join_by_external_commit(
         &self,
         group_info: Box<[u8]>,
         custom_configuration: CustomConfiguration,
         credential_type: CredentialType,
     ) -> Promise {
-        let this = self.inner.clone();
+        let central = self.inner.clone();
         future_to_promise(
             async move {
                 let group_info = VerifiableGroupInfo::tls_deserialize(&mut group_info.as_ref())
@@ -2071,14 +2093,14 @@ impl CoreCrypto {
                     .map_err(CryptoError::from)
                     .map_err(CoreCryptoError::from)?;
 
-                let result: ConversationInitBundle = this
-                    .write()
-                    .await
+                let context = central.new_transaction().await;
+                let result: ConversationInitBundle = context
                     .join_by_external_commit(group_info, custom_configuration.into(), credential_type.into())
                     .await
                     .map_err(CoreCryptoError::from)?
                     .try_into()?;
 
+                context.finish().await?;
                 WasmCryptoResult::Ok(serde_wasm_bindgen::to_value(&result)?)
             }
             .err_into(),
@@ -2087,14 +2109,15 @@ impl CoreCrypto {
 
     /// Returns: [`WasmCryptoResult<()>`]
     ///
-    /// see [core_crypto::mls::MlsCentral::merge_pending_group_from_external_commit]
+    /// see [core_crypto::mls::context::CentralContext::merge_pending_group_from_external_commit]
+    /// @deprecated Please create a transaction in Core Crypto and call this method from it.
+    #[deprecated = "Please create a transaction in Core Crypto and call this method from it."]
     pub fn merge_pending_group_from_external_commit(&self, conversation_id: ConversationId) -> Promise {
-        let this = self.inner.clone();
+        let central = self.inner.clone();
         future_to_promise(
             async move {
-                if let Some(decrypted_messages) = this
-                    .write()
-                    .await
+                let context = central.new_transaction().await;
+                if let Some(decrypted_messages) = context
                     .merge_pending_group_from_external_commit(&conversation_id)
                     .await
                     .map_err(CoreCryptoError::from)?
@@ -2107,6 +2130,7 @@ impl CoreCrypto {
                     return WasmCryptoResult::Ok(serde_wasm_bindgen::to_value(&messages)?);
                 }
 
+                context.finish().await?;
                 WasmCryptoResult::Ok(JsValue::UNDEFINED)
             }
             .err_into(),
@@ -2115,30 +2139,35 @@ impl CoreCrypto {
 
     /// Returns: [`WasmCryptoResult<()>`]
     ///
-    /// see [core_crypto::mls::MlsCentral::clear_pending_group_from_external_commit]
+    /// see [core_crypto::mls::context::CentralContext::clear_pending_group_from_external_commit]
+    /// @deprecated Please create a transaction in Core Crypto and call this method from it.
+    #[deprecated = "Please create a transaction in Core Crypto and call this method from it."]
     pub fn clear_pending_group_from_external_commit(&self, conversation_id: ConversationId) -> Promise {
-        let this = self.inner.clone();
+        let central = self.inner.clone();
         future_to_promise(
             async move {
-                this.write()
-                    .await
+                let context = central.new_transaction().await;
+                context
                     .clear_pending_group_from_external_commit(&conversation_id)
                     .await
                     .map_err(CoreCryptoError::from)?;
+
+                context.finish().await?;
                 WasmCryptoResult::Ok(JsValue::UNDEFINED)
             }
             .err_into(),
         )
     }
 
-    /// see [core_crypto::mls::MlsCentral::commit_accepted]
+    /// see [core_crypto::mls::context::CentralContext::commit_accepted]
+    /// @deprecated Please create a transaction in Core Crypto and call this method from it.
+    #[deprecated = "Please create a transaction in Core Crypto and call this method from it."]
     pub fn commit_accepted(&self, conversation_id: ConversationId) -> Promise {
-        let this = self.inner.clone();
+        let central = self.inner.clone();
         future_to_promise(
             async move {
-                if let Some(decrypted_messages) = this
-                    .write()
-                    .await
+                let context = central.new_transaction().await;
+                if let Some(decrypted_messages) = context
                     .commit_accepted(&conversation_id)
                     .await
                     .map_err(CoreCryptoError::from)?
@@ -2151,40 +2180,45 @@ impl CoreCrypto {
                     return WasmCryptoResult::Ok(serde_wasm_bindgen::to_value(&messages)?);
                 }
 
+                context.finish().await?;
                 WasmCryptoResult::Ok(JsValue::UNDEFINED)
             }
             .err_into(),
         )
     }
 
-    /// see [core_crypto::mls::MlsCentral::clear_pending_proposal]
+    /// see [core_crypto::mls::context::CentralContext::clear_pending_proposal]
+    /// @deprecated Please create a transaction in Core Crypto and call this method from it.
+    #[deprecated = "Please create a transaction in Core Crypto and call this method from it."]
     pub fn clear_pending_proposal(&self, conversation_id: ConversationId, proposal_ref: Box<[u8]>) -> Promise {
-        let this = self.inner.clone();
+        let central = self.inner.clone();
         future_to_promise(
             async move {
-                this.write()
-                    .await
+                let context = central.new_transaction().await;
+                context
                     .clear_pending_proposal(&conversation_id.to_vec(), proposal_ref.to_vec().into())
                     .await
                     .map_err(CoreCryptoError::from)?;
-
+                context.finish().await?;
                 WasmCryptoResult::Ok(JsValue::UNDEFINED)
             }
             .err_into(),
         )
     }
 
-    /// see [core_crypto::mls::MlsCentral::clear_pending_commit]
+    /// see [core_crypto::mls::context::CentralContext::clear_pending_commit]
+    /// @deprecated Please create a transaction in Core Crypto and call this method from it.
+    #[deprecated = "Please create a transaction in Core Crypto and call this method from it."]
     pub fn clear_pending_commit(&self, conversation_id: ConversationId) -> Promise {
-        let this = self.inner.clone();
+        let central = self.inner.clone();
         future_to_promise(
             async move {
-                this.write()
-                    .await
+                let context = central.new_transaction().await;
+                context
                     .clear_pending_commit(&conversation_id.to_vec())
                     .await
                     .map_err(CoreCryptoError::from)?;
-
+                context.finish().await?;
                 WasmCryptoResult::Ok(JsValue::UNDEFINED)
             }
             .err_into(),
@@ -2195,10 +2229,10 @@ impl CoreCrypto {
     ///
     /// see [core_crypto::mls::MlsCentral::random_bytes]
     pub fn random_bytes(&self, len: usize) -> Promise {
-        let this = self.inner.clone();
+        let central = self.inner.clone();
         future_to_promise(
             async move {
-                let bytes = this.read().await.random_bytes(len).map_err(CoreCryptoError::from)?;
+                let bytes = central.random_bytes(len).map_err(CoreCryptoError::from)?;
                 WasmCryptoResult::Ok(Uint8Array::from(bytes.as_slice()).into())
             }
             .err_into(),
@@ -2210,14 +2244,14 @@ impl CoreCrypto {
     ///
     /// see [mls_crypto_provider::MlsCryptoProvider::reseed]
     pub fn reseed_rng(&self, seed: Box<[u8]>) -> Promise {
-        let this = self.inner.clone();
+        let central = self.inner.clone();
         future_to_promise(
             async move {
                 let seed = EntropySeed::try_from_slice(&seed)
                     .map_err(CryptoError::from)
                     .map_err(CoreCryptoError::from)?;
 
-                this.write().await.provider_mut().reseed(Some(seed));
+                central.reseed(Some(seed)).await?;
                 WasmCryptoResult::Ok(JsValue::UNDEFINED)
             }
             .err_into(),
@@ -2229,13 +2263,13 @@ impl CoreCrypto {
     /// see [core_crypto::proteus::ProteusCentral::try_new]
     #[cfg_attr(not(feature = "proteus"), allow(unused_variables))]
     pub fn proteus_init(&self) -> Promise {
-        let this = self.inner.clone();
         let errcode_dest = self.proteus_last_error_code.clone();
+        let central = self.inner.clone();
 
         future_to_promise(
             async move {
                 proteus_impl! { errcode_dest => {
-                    this.write().await.proteus_init().await.map_err(CoreCryptoError::from)?;
+                    central.proteus_init().await.map_err(CoreCryptoError::from)?;
                     WasmCryptoResult::Ok(JsValue::UNDEFINED)
                 } or throw WasmCryptoResult<_> }
             }
@@ -2248,13 +2282,13 @@ impl CoreCrypto {
     /// see [core_crypto::proteus::ProteusCentral::session_from_prekey]
     #[cfg_attr(not(feature = "proteus"), allow(unused_variables))]
     pub fn proteus_session_from_prekey(&self, session_id: String, prekey: Box<[u8]>) -> Promise {
-        let this = self.inner.clone();
         let errcode_dest = self.proteus_last_error_code.clone();
+        let central = self.inner.clone();
 
         future_to_promise(
             async move {
                 proteus_impl! { errcode_dest => {
-                    this.write().await.proteus_session_from_prekey(&session_id, &prekey).await.map_err(CoreCryptoError::from)?;
+                    central.proteus_session_from_prekey(&session_id, &prekey).await.map_err(CoreCryptoError::from)?;
                     WasmCryptoResult::Ok(JsValue::UNDEFINED)
                 } or throw WasmCryptoResult<_> }
             }
@@ -2267,13 +2301,13 @@ impl CoreCrypto {
     /// see [core_crypto::proteus::ProteusCentral::session_from_message]
     #[cfg_attr(not(feature = "proteus"), allow(unused_variables))]
     pub fn proteus_session_from_message(&self, session_id: String, envelope: Box<[u8]>) -> Promise {
-        let this = self.inner.clone();
         let errcode_dest = self.proteus_last_error_code.clone();
+        let central = self.inner.clone();
 
         future_to_promise(
             async move {
                 proteus_impl! { errcode_dest => {
-                    let (_, payload) = this.write().await.proteus_session_from_message(&session_id, &envelope).await.map_err(CoreCryptoError::from)?;
+                    let (_, payload) = central.proteus_session_from_message(&session_id, &envelope).await.map_err(CoreCryptoError::from)?;
                     WasmCryptoResult::Ok(Uint8Array::from(payload.as_slice()).into())
                 } or throw WasmCryptoResult<_> }
             }
@@ -2288,13 +2322,13 @@ impl CoreCrypto {
     /// see [core_crypto::proteus::ProteusCentral::session_save]
     #[cfg_attr(not(feature = "proteus"), allow(unused_variables))]
     pub fn proteus_session_save(&self, session_id: String) -> Promise {
-        let this = self.inner.clone();
         let errcode_dest = self.proteus_last_error_code.clone();
+        let central = self.inner.clone();
 
         future_to_promise(
             async move {
                 proteus_impl! { errcode_dest => {
-                    this.write().await.proteus_session_save(&session_id).await.map_err(CoreCryptoError::from)?;
+                    central.proteus_session_save(&session_id).await.map_err(CoreCryptoError::from)?;
                     WasmCryptoResult::Ok(JsValue::UNDEFINED)
                 } or throw WasmCryptoResult<_> }
             }
@@ -2307,13 +2341,13 @@ impl CoreCrypto {
     /// see [core_crypto::proteus::ProteusCentral::session_delete]
     #[cfg_attr(not(feature = "proteus"), allow(unused_variables))]
     pub fn proteus_session_delete(&self, session_id: String) -> Promise {
-        let this = self.inner.clone();
         let errcode_dest = self.proteus_last_error_code.clone();
+        let central = self.inner.clone();
 
         future_to_promise(
             async move {
                 proteus_impl! { errcode_dest => {
-                    this.write().await.proteus_session_delete(&session_id).await.map_err(CoreCryptoError::from)?;
+                    central.proteus_session_delete(&session_id).await.map_err(CoreCryptoError::from)?;
                     WasmCryptoResult::Ok(JsValue::UNDEFINED)
                 } or throw WasmCryptoResult<_> }
             }
@@ -2326,13 +2360,13 @@ impl CoreCrypto {
     /// see [core_crypto::proteus::ProteusCentral::session_exists]
     #[cfg_attr(not(feature = "proteus"), allow(unused_variables))]
     pub fn proteus_session_exists(&self, session_id: String) -> Promise {
-        let this = self.inner.clone();
         let errcode_dest = self.proteus_last_error_code.clone();
+        let central = self.inner.clone();
 
         future_to_promise(
             async move {
                 proteus_impl! { errcode_dest => {
-                    let exists = this.write().await.proteus_session_exists(&session_id).await.map_err(CoreCryptoError::from)?;
+                    let exists = central.proteus_session_exists(&session_id).await.map_err(CoreCryptoError::from)?;
                     WasmCryptoResult::Ok(JsValue::from_bool(exists))
                 } or throw WasmCryptoResult<_> }
             }
@@ -2345,13 +2379,13 @@ impl CoreCrypto {
     /// see [core_crypto::proteus::ProteusCentral::decrypt]
     #[cfg_attr(not(feature = "proteus"), allow(unused_variables))]
     pub fn proteus_decrypt(&self, session_id: String, ciphertext: Box<[u8]>) -> Promise {
-        let this = self.inner.clone();
         let errcode_dest = self.proteus_last_error_code.clone();
+        let central = self.inner.clone();
 
         future_to_promise(
             async move {
                 proteus_impl! { errcode_dest => {
-                    let cleartext = this.write().await.proteus_decrypt(&session_id, &ciphertext).await.map_err(CoreCryptoError::from)?;
+                    let cleartext = central.proteus_decrypt(&session_id, &ciphertext).await.map_err(CoreCryptoError::from)?;
                     WasmCryptoResult::Ok(Uint8Array::from(cleartext.as_slice()).into())
                 } or throw WasmCryptoResult<_> }
             }
@@ -2364,13 +2398,13 @@ impl CoreCrypto {
     /// see [core_crypto::proteus::ProteusCentral::encrypt]
     #[cfg_attr(not(feature = "proteus"), allow(unused_variables))]
     pub fn proteus_encrypt(&self, session_id: String, plaintext: Box<[u8]>) -> Promise {
-        let this = self.inner.clone();
         let errcode_dest = self.proteus_last_error_code.clone();
+        let central = self.inner.clone();
 
         future_to_promise(
             async move {
                 proteus_impl! { errcode_dest => {
-                    let encrypted = this.write().await.proteus_encrypt(&session_id, &plaintext).await.map_err(CoreCryptoError::from)?;
+                    let encrypted = central.proteus_encrypt(&session_id, &plaintext).await.map_err(CoreCryptoError::from)?;
                     WasmCryptoResult::Ok(Uint8Array::from(encrypted.as_slice()).into())
                 } or throw WasmCryptoResult<_> }
             }.err_into()
@@ -2382,14 +2416,14 @@ impl CoreCrypto {
     /// see [core_crypto::proteus::ProteusCentral::encrypt_batched]
     #[cfg_attr(not(feature = "proteus"), allow(unused_variables))]
     pub fn proteus_encrypt_batched(&self, sessions: Box<[js_sys::JsString]>, plaintext: Box<[u8]>) -> Promise {
-        let this = self.inner.clone();
         let errcode_dest = self.proteus_last_error_code.clone();
+        let central = self.inner.clone();
 
         future_to_promise(
             async move {
                 proteus_impl! { errcode_dest => {
                     let session_ids: Vec<String> = sessions.iter().map(String::from).collect();
-                    let batch = this.write().await.proteus_encrypt_batched(session_ids.as_slice(), &plaintext).await.map_err(CoreCryptoError::from)?;
+                    let batch = central.proteus_encrypt_batched(session_ids.as_slice(), &plaintext).await.map_err(CoreCryptoError::from)?;
                     let js_obj = js_sys::Map::new();
                     for (key, payload) in batch.into_iter() {
                         js_obj.set(&js_sys::JsString::from(key).into(), &Uint8Array::from(payload.as_slice()));
@@ -2405,16 +2439,17 @@ impl CoreCrypto {
     /// see [core_crypto::proteus::ProteusCentral::new_prekey]
     #[cfg_attr(not(feature = "proteus"), allow(unused_variables))]
     pub fn proteus_new_prekey(&self, prekey_id: u16) -> Promise {
-        let this = self.inner.clone();
         let errcode_dest = self.proteus_last_error_code.clone();
 
+        let central = self.inner.clone();
         future_to_promise(
             async move {
                 proteus_impl! { errcode_dest => {
-                    let prekey_raw = this.read().await.proteus_new_prekey(prekey_id).await.map_err(CoreCryptoError::from)?;
+                    let prekey_raw = central.proteus_new_prekey(prekey_id).await.map_err(CoreCryptoError::from)?;
                     WasmCryptoResult::Ok(Uint8Array::from(prekey_raw.as_slice()).into())
                 } or throw WasmCryptoResult<_> }
-            }.err_into()
+            }
+                .err_into(),
         )
     }
 
@@ -2423,12 +2458,12 @@ impl CoreCrypto {
     /// see [core_crypto::proteus::ProteusCentral::new_prekey]
     #[cfg_attr(not(feature = "proteus"), allow(unused_variables))]
     pub fn proteus_new_prekey_auto(&self) -> Promise {
-        let this = self.inner.clone();
         let errcode_dest = self.proteus_last_error_code.clone();
+        let central = self.inner.clone();
         future_to_promise(
             async move {
                 proteus_impl! { errcode_dest => {
-                    let (id, pkb) = this.read().await.proteus_new_prekey_auto().await.map_err(CoreCryptoError::from)?;
+                    let (id, pkb) = central.proteus_new_prekey_auto().await.map_err(CoreCryptoError::from)?;
                     WasmCryptoResult::Ok(ProteusAutoPrekeyBundle { id, pkb }.into())
                 } or throw WasmCryptoResult<_> }
             }
@@ -2440,12 +2475,12 @@ impl CoreCrypto {
     ///
     /// see [core_crypto::proteus::ProteusCentral::last_resort_prekey]
     pub fn proteus_last_resort_prekey(&self) -> Promise {
-        let this = self.inner.clone();
         let errcode_dest = self.proteus_last_error_code.clone();
+        let central = self.inner.clone();
 
         future_to_promise(async move {
             proteus_impl! { errcode_dest => {
-                let last_resort_pkbundle = this.read().await.proteus_last_resort_prekey().await.map_err(CoreCryptoError::from)?;
+                let last_resort_pkbundle = central.proteus_last_resort_prekey().await.map_err(CoreCryptoError::from)?;
                 WasmCryptoResult::Ok(Uint8Array::from(last_resort_pkbundle.as_slice()).into())
             } or throw WasmCryptoResult<_> }
         }.err_into())
@@ -2467,9 +2502,10 @@ impl CoreCrypto {
     #[cfg_attr(not(feature = "proteus"), allow(unused_variables))]
     pub async fn proteus_fingerprint(&self) -> WasmCryptoResult<String> {
         let errcode_dest = self.proteus_last_error_code.clone();
+        let central = self.inner.clone();
 
         proteus_impl! { errcode_dest => {
-            self.inner.read().await.proteus_fingerprint().map_err(CoreCryptoError::from).map(Into::into)
+            central.proteus_fingerprint().await.map_err(CoreCryptoError::from).map(Into::into)
         } or throw WasmCryptoResult<_> }
     }
 
@@ -2479,11 +2515,10 @@ impl CoreCrypto {
     #[cfg_attr(not(feature = "proteus"), allow(unused_variables))]
     pub async fn proteus_fingerprint_local(&self, session_id: String) -> WasmCryptoResult<String> {
         let errcode_dest = self.proteus_last_error_code.clone();
+        let central = self.inner.clone();
 
         proteus_impl! { errcode_dest => {
-            self.inner
-                .write()
-                .await
+            central
                 .proteus_fingerprint_local(&session_id)
                 .await
                 .map_err(CoreCryptoError::from)
@@ -2497,9 +2532,10 @@ impl CoreCrypto {
     #[cfg_attr(not(feature = "proteus"), allow(unused_variables))]
     pub async fn proteus_fingerprint_remote(&self, session_id: String) -> WasmCryptoResult<String> {
         let errcode_dest = self.proteus_last_error_code.clone();
+        let central = self.inner.clone();
 
         proteus_impl! { errcode_dest => {
-            self.inner.write().await.proteus_fingerprint_remote(&session_id).await
+            central.proteus_fingerprint_remote(&session_id).await
                 .map_err(CoreCryptoError::from).map(Into::into)
         } or throw WasmCryptoResult<_> }
     }
@@ -2520,12 +2556,12 @@ impl CoreCrypto {
     /// see [core_crypto::proteus::ProteusCentral::cryptobox_migrate]
     #[cfg_attr(not(feature = "proteus"), allow(unused_variables))]
     pub fn proteus_cryptobox_migrate(&self, path: String) -> Promise {
-        let this = self.inner.clone();
         let errcode_dest = self.proteus_last_error_code.clone();
+        let central = self.inner.clone();
         future_to_promise(
             async move {
                 proteus_impl! { errcode_dest => {
-                    this.read().await.proteus_cryptobox_migrate(&path).await.map_err(CoreCryptoError::from)?;
+                    central.proteus_cryptobox_migrate(&path).await.map_err(CoreCryptoError::from)?;
                     WasmCryptoResult::Ok(JsValue::UNDEFINED)
                 } or throw WasmCryptoResult<_> }
             }
@@ -2553,14 +2589,12 @@ impl CoreCrypto {
 
     /// Returns: [`WasmCryptoResult<Vec<u8>>`]
     ///
-    /// see [core_crypto::mls::MlsCentral::export_secret_key]
+    /// see [core_crypto::mls::context::CentralContext::export_secret_key]
     pub fn export_secret_key(&self, conversation_id: ConversationId, key_length: usize) -> Promise {
-        let this = self.inner.clone();
+        let central = self.inner.clone();
         future_to_promise(
             async move {
-                let key = this
-                    .write()
-                    .await
+                let key = central
                     .export_secret_key(&conversation_id.to_vec(), key_length)
                     .await
                     .map_err(CoreCryptoError::from)?;
@@ -2572,14 +2606,12 @@ impl CoreCrypto {
 
     /// Returns: [`WasmCryptoResult<Vec<u8>>`]
     ///
-    /// see [core_crypto::mls::MlsCentral::get_external_sender]
+    /// see [core_crypto::mls::context::CentralContext::get_external_sender]
     pub fn get_external_sender(&self, id: ConversationId) -> Promise {
-        let this = self.inner.clone();
+        let central = self.inner.clone();
         future_to_promise(
             async move {
-                let ext_sender = this
-                    .write()
-                    .await
+                let ext_sender = central
                     .get_external_sender(&id.to_vec())
                     .await
                     .map_err(CoreCryptoError::from)?;
@@ -2591,14 +2623,12 @@ impl CoreCrypto {
 
     /// Returns: [`WasmCryptoResult<Box<[js_sys::Uint8Array]>`]
     ///
-    /// see [core_crypto::mls::MlsCentral::get_client_ids]
+    /// see [core_crypto::mls::context::CentralContext::get_client_ids]
     pub fn get_client_ids(&self, conversation_id: ConversationId) -> Promise {
-        let this = self.inner.clone();
+        let central = self.inner.clone();
         future_to_promise(
             async move {
-                let clients = this
-                    .write()
-                    .await
+                let clients = central
                     .get_client_ids(&conversation_id.to_vec())
                     .await
                     .map_err(CoreCryptoError::from)?;
@@ -2620,7 +2650,9 @@ impl CoreCrypto {
 impl CoreCrypto {
     /// Returns: [`WasmCryptoResult<E2eiEnrollment>`]
     ///
-    /// see [core_crypto::mls::MlsCentral::e2ei_new_enrollment]
+    /// see [core_crypto::mls::context::CentralContext::e2ei_new_enrollment]
+    /// @deprecated Please create a transaction in Core Crypto and call this method from it.
+    #[deprecated = "Please create a transaction in Core Crypto and call this method from it."]
     pub fn e2ei_new_enrollment(
         &self,
         client_id: String,
@@ -2630,12 +2662,12 @@ impl CoreCrypto {
         expiry_sec: u32,
         ciphersuite: Ciphersuite,
     ) -> Promise {
-        let this = self.inner.clone();
         let ciphersuite: CiphersuiteName = ciphersuite.into();
+        let central = self.inner.clone();
         future_to_promise(
             async move {
-                let this = this.read().await;
-                let enrollment = this
+                let context = central.new_transaction().await;
+                let enrollment = context
                     .e2ei_new_enrollment(
                         client_id.into_bytes().into(),
                         display_name,
@@ -2644,10 +2676,12 @@ impl CoreCrypto {
                         expiry_sec,
                         ciphersuite.into(),
                     )
+                    .await
                     .map(async_lock::RwLock::new)
                     .map(std::sync::Arc::new)
                     .map(E2eiEnrollment)
                     .map_err(CoreCryptoError::from)?;
+                context.finish().await?;
 
                 WasmCryptoResult::Ok(enrollment.into())
             }
@@ -2657,7 +2691,9 @@ impl CoreCrypto {
 
     /// Returns: [`WasmCryptoResult<E2eiEnrollment>`]
     ///
-    /// see [core_crypto::mls::MlsCentral::e2ei_new_activation_enrollment]
+    /// see [core_crypto::mls::context::CentralContext::e2ei_new_activation_enrollment]
+    /// @deprecated Please create a transaction in Core Crypto and call this method from it.
+    #[deprecated = "Please create a transaction in Core Crypto and call this method from it."]
     pub fn e2ei_new_activation_enrollment(
         &self,
         display_name: String,
@@ -2666,18 +2702,19 @@ impl CoreCrypto {
         expiry_sec: u32,
         ciphersuite: Ciphersuite,
     ) -> Promise {
-        let this = self.inner.clone();
         let ciphersuite: CiphersuiteName = ciphersuite.into();
+        let central = self.inner.clone();
         future_to_promise(
             async move {
-                let this = this.read().await;
-                let enrollment = this
+                let context = central.new_transaction().await;
+                let enrollment = context
                     .e2ei_new_activation_enrollment(display_name, handle, team, expiry_sec, ciphersuite.into())
+                    .await
                     .map(async_lock::RwLock::new)
                     .map(std::sync::Arc::new)
                     .map(E2eiEnrollment)
                     .map_err(CoreCryptoError::from)?;
-
+                context.finish().await?;
                 WasmCryptoResult::Ok(enrollment.into())
             }
             .err_into(),
@@ -2686,7 +2723,9 @@ impl CoreCrypto {
 
     /// Returns: [`WasmCryptoResult<E2eiEnrollment>`]
     ///
-    /// see [core_crypto::mls::MlsCentral::e2ei_new_rotate_enrollment]
+    /// see [core_crypto::mls::context::CentralContext::e2ei_new_rotate_enrollment]
+    /// @deprecated Please create a transaction in Core Crypto and call this method from it.
+    #[deprecated = "Please create a transaction in Core Crypto and call this method from it."]
     pub fn e2ei_new_rotate_enrollment(
         &self,
         display_name: Option<String>,
@@ -2695,113 +2734,117 @@ impl CoreCrypto {
         expiry_sec: u32,
         ciphersuite: Ciphersuite,
     ) -> Promise {
-        let this = self.inner.clone();
         let ciphersuite: CiphersuiteName = ciphersuite.into();
+        let central = self.inner.clone();
         future_to_promise(
             async move {
-                let this = this.read().await;
-                let enrollment = this
+                let context = central.new_transaction().await;
+                let enrollment = context
                     .e2ei_new_rotate_enrollment(display_name, handle, team, expiry_sec, ciphersuite.into())
                     .await
                     .map(async_lock::RwLock::new)
                     .map(std::sync::Arc::new)
                     .map(E2eiEnrollment)
                     .map_err(CoreCryptoError::from)?;
-
+                context.finish().await?;
                 WasmCryptoResult::Ok(enrollment.into())
             }
             .err_into(),
         )
     }
 
-    /// See [core_crypto::mls::MlsCentral::e2ei_dump_pki_env]
+    /// See [core_crypto::mls::context::CentralContext::e2ei_dump_pki_env]
     pub async fn e2ei_dump_pki_env(&self) -> Promise {
-        let this = self.inner.clone();
+        let central = self.inner.clone();
         future_to_promise(
             async move {
-                let this = this.read().await;
-                let dump: Option<E2eiDumpedPkiEnv> = this.e2ei_dump_pki_env().await?.map(Into::into);
+                let dump: Option<E2eiDumpedPkiEnv> = central.e2ei_dump_pki_env().await?.map(Into::into);
                 WasmCryptoResult::Ok(serde_wasm_bindgen::to_value(&dump)?)
             }
             .err_into(),
         )
     }
 
-    /// See [core_crypto::mls::MlsCentral::e2ei_is_pki_env_setup]
+    /// See [core_crypto::mls::context::CentralContext::e2ei_is_pki_env_setup]
     pub async fn e2ei_is_pki_env_setup(&self) -> Promise {
-        let this = self.inner.clone();
-        future_to_promise(
-            async move {
-                let this = this.read().await;
-                WasmCryptoResult::Ok(this.e2ei_is_pki_env_setup().await.into())
-            }
-            .err_into(),
-        )
+        let central = self.inner.clone();
+        future_to_promise(async move { WasmCryptoResult::Ok(central.e2ei_is_pki_env_setup().await.into()) }.err_into())
     }
 
-    /// See [core_crypto::mls::MlsCentral::e2ei_register_acme_ca]
+    /// See [core_crypto::mls::context::CentralContext::e2ei_register_acme_ca]
+    /// @deprecated Please create a transaction in Core Crypto and call this method from it.
+    #[deprecated = "Please create a transaction in Core Crypto and call this method from it."]
     pub async fn e2ei_register_acme_ca(&self, trust_anchor_pem: String) -> Promise {
-        let this = self.inner.clone();
+        let central = self.inner.clone();
         future_to_promise(
             async move {
-                let this = this.read().await;
-                this.e2ei_register_acme_ca(trust_anchor_pem).await?;
+                let context = central.new_transaction().await;
+                context.e2ei_register_acme_ca(trust_anchor_pem).await?;
+                context.finish().await?;
                 WasmCryptoResult::Ok(JsValue::UNDEFINED)
             }
             .err_into(),
         )
     }
 
-    /// See [core_crypto::mls::MlsCentral::e2ei_register_intermediate_ca]
+    /// See [core_crypto::mls::context::CentralContext::e2ei_register_intermediate_ca]
+    /// @deprecated Please create a transaction in Core Crypto and call this method from it.
+    #[deprecated = "Please create a transaction in Core Crypto and call this method from it."]
     pub async fn e2ei_register_intermediate_ca(&self, cert_pem: String) -> Promise {
-        let this = self.inner.clone();
+        let central = self.inner.clone();
         future_to_promise(
             async move {
-                let this = this.read().await;
-                let crls = this.e2ei_register_intermediate_ca_pem(cert_pem).await?;
+                let context = central.new_transaction().await;
+                let crls = context.e2ei_register_intermediate_ca_pem(cert_pem).await?;
 
                 let crls = if let Some(crls) = &*crls {
                     js_sys::Array::from_iter(crls.iter().map(JsValue::from))
                 } else {
                     js_sys::Array::new()
                 };
+                context.finish().await?;
                 WasmCryptoResult::Ok(crls.into())
             }
             .err_into(),
         )
     }
 
-    /// See [core_crypto::mls::MlsCentral::e2ei_register_crl]
+    /// See [core_crypto::mls::context::CentralContext::e2ei_register_crl]
+    /// @deprecated Please create a transaction in Core Crypto and call this method from it.
+    #[deprecated = "Please create a transaction in Core Crypto and call this method from it."]
     pub async fn e2ei_register_crl(&self, crl_dp: String, crl_der: Box<[u8]>) -> Promise {
-        let this = self.inner.clone();
+        let central = self.inner.clone();
         future_to_promise(
             async move {
-                let this = this.read().await;
-                let cc_registration = this.e2ei_register_crl(crl_dp, crl_der.to_vec()).await?;
+                let context = central.new_transaction().await;
+                let cc_registration = context.e2ei_register_crl(crl_dp, crl_der.to_vec()).await?;
                 let registration: CrlRegistration = cc_registration.into();
+                context.finish().await?;
                 WasmCryptoResult::Ok(serde_wasm_bindgen::to_value(&registration)?)
             }
             .err_into(),
         )
     }
 
-    /// see [core_crypto::mls::MlsCentral::e2ei_mls_init_only]
+    /// see [core_crypto::mls::context::CentralContext::e2ei_mls_init_only]
+    /// @deprecated Please create a transaction in Core Crypto and call this method from it.
+    #[deprecated = "Please create a transaction in Core Crypto and call this method from it."]
     pub fn e2ei_mls_init_only(
         &self,
         enrollment: E2eiEnrollment,
         certificate_chain: String,
         nb_key_package: Option<u32>,
     ) -> Promise {
-        let this = self.inner.clone();
+        let central = self.inner.clone();
         future_to_promise(
             async move {
-                let mut this = this.write().await;
                 let nb_key_package = nb_key_package
                     .map(usize::try_from)
                     .transpose()
                     .map_err(CryptoError::from)?;
 
-                let crls = this
+                let context = central.new_transaction().await;
+                let crls = context
                     .e2ei_mls_init_only(
                         enrollment.0.write().await.deref_mut(),
                         certificate_chain,
@@ -2814,24 +2857,27 @@ impl CoreCrypto {
                 } else {
                     js_sys::Array::new()
                 };
+                context.finish().await?;
                 WasmCryptoResult::Ok(crls.into())
             }
             .err_into(),
         )
     }
 
-    /// see [core_crypto::mls::MlsCentral::e2ei_rotate_all]
+    /// see [core_crypto::mls::context::CentralContext::e2ei_rotate_all]
+    /// @deprecated Please create a transaction in Core Crypto and call this method from it.
+    #[deprecated = "Please create a transaction in Core Crypto and call this method from it."]
     pub fn e2ei_rotate_all(
         &self,
         enrollment: E2eiEnrollment,
         certificate_chain: String,
         new_key_packages_count: u32,
     ) -> Promise {
-        let this = self.inner.clone();
+        let central = self.inner.clone();
         future_to_promise(
             async move {
-                let mut this = this.write().await;
-                let rotate_bundle: RotateBundle = this
+                let context = central.new_transaction().await;
+                let rotate_bundle: RotateBundle = context
                     .e2ei_rotate_all(
                         enrollment.0.write().await.deref_mut(),
                         certificate_chain,
@@ -2839,42 +2885,48 @@ impl CoreCrypto {
                     )
                     .await?
                     .try_into()?;
+                context.finish().await?;
                 WasmCryptoResult::Ok(serde_wasm_bindgen::to_value(&rotate_bundle)?)
             }
             .err_into(),
         )
     }
 
-    /// see [core_crypto::mls::MlsCentral::e2ei_enrollment_stash]
+    /// see [core_crypto::mls::context::CentralContext::e2ei_enrollment_stash]
+    /// @deprecated Please create a transaction in Core Crypto and call this method from it.
+    #[deprecated = "Please create a transaction in Core Crypto and call this method from it."]
     pub fn e2ei_enrollment_stash(&self, enrollment: E2eiEnrollment) -> Promise {
-        let this = self.inner.clone();
+        let central = self.inner.clone();
         future_to_promise(
             async move {
-                let this = this.write().await;
                 let enrollment = std::sync::Arc::try_unwrap(enrollment.0)
                     .map_err(|_| CryptoError::LockPoisonError)?
                     .into_inner();
-                let handle = this.e2ei_enrollment_stash(enrollment).await?;
+                let context = central.new_transaction().await;
+                let handle = context.e2ei_enrollment_stash(enrollment).await?;
+                context.finish().await?;
                 WasmCryptoResult::Ok(Uint8Array::from(handle.as_slice()).into())
             }
             .err_into(),
         )
     }
 
-    /// see [core_crypto::mls::MlsCentral::e2ei_enrollment_stash_pop]
+    /// see [core_crypto::mls::context::CentralContext::e2ei_enrollment_stash_pop]
+    /// @deprecated Please create a transaction in Core Crypto and call this method from it.
+    #[deprecated = "Please create a transaction in Core Crypto and call this method from it."]
     pub fn e2ei_enrollment_stash_pop(&self, handle: Box<[u8]>) -> Promise {
-        let this = self.inner.clone();
+        let central = self.inner.clone();
         future_to_promise(
             async move {
-                let this = this.read().await;
-                let enrollment = this
+                let context = central.new_transaction().await;
+                let enrollment = context
                     .e2ei_enrollment_stash_pop(handle.to_vec())
                     .await
                     .map(async_lock::RwLock::new)
                     .map(std::sync::Arc::new)
                     .map(E2eiEnrollment)
                     .map_err(CoreCryptoError::from)?;
-
+                context.finish().await?;
                 WasmCryptoResult::Ok(enrollment.into())
             }
             .err_into(),
@@ -2883,18 +2935,20 @@ impl CoreCrypto {
 
     /// Returns [`WasmCryptoResult<u8>`]
     ///
-    /// see [core_crypto::mls::MlsCentral::e2ei_conversation_state]
+    /// see [core_crypto::mls::context::CentralContext::e2ei_conversation_state]
+    /// @deprecated Please create a transaction in Core Crypto and call this method from it.
+    #[deprecated = "Please create a transaction in Core Crypto and call this method from it."]
     pub fn e2ei_conversation_state(&self, conversation_id: ConversationId) -> Promise {
-        let this = self.inner.clone();
+        let central = self.inner.clone();
         future_to_promise(
             async move {
-                let state: E2eiConversationState = this
-                    .write()
-                    .await
+                let context = central.new_transaction().await;
+                let state: E2eiConversationState = context
                     .e2ei_conversation_state(&conversation_id)
                     .await
                     .map_err(CoreCryptoError::from)?
                     .into();
+                context.finish().await?;
                 WasmCryptoResult::Ok((state as u8).into())
             }
             .err_into(),
@@ -2903,18 +2957,13 @@ impl CoreCrypto {
 
     /// Returns [`WasmCryptoResult<bool>`]
     ///
-    /// see [core_crypto::mls::MlsCentral::e2ei_is_enabled]
+    /// see [core_crypto::mls::context::CentralContext::e2ei_is_enabled]
     pub fn e2ei_is_enabled(&self, ciphersuite: Ciphersuite) -> Promise {
         let sc = MlsCiphersuite::from(ciphersuite).signature_algorithm();
-        let this = self.inner.clone();
+        let central = self.inner.clone();
         future_to_promise(
             async move {
-                let is_enabled = this
-                    .write()
-                    .await
-                    .e2ei_is_enabled(sc)
-                    .map_err(CoreCryptoError::from)?
-                    .into();
+                let is_enabled = central.e2ei_is_enabled(sc).await.map_err(CoreCryptoError::from)?.into();
                 WasmCryptoResult::Ok(is_enabled)
             }
             .err_into(),
@@ -2923,15 +2972,13 @@ impl CoreCrypto {
 
     /// Returns [`WasmCryptoResult<Vec<WireIdentity>>`]
     ///
-    /// see [core_crypto::mls::MlsCentral::get_device_identities]
+    /// see [core_crypto::mls::context::CentralContext::get_device_identities]
     pub fn get_device_identities(&self, conversation_id: ConversationId, device_ids: Box<[Uint8Array]>) -> Promise {
-        let this = self.inner.clone();
+        let central = self.inner.clone();
         future_to_promise(
             async move {
                 let device_ids = device_ids.iter().map(|c| c.to_vec().into()).collect::<Vec<ClientId>>();
-                let identities = this
-                    .write()
-                    .await
+                let identities = central
                     .get_device_identities(&conversation_id, &device_ids[..])
                     .await
                     .map_err(CoreCryptoError::from)?
@@ -2946,14 +2993,12 @@ impl CoreCrypto {
 
     /// Returns [`WasmCryptoResult<HashMap<String, Vec<WireIdentity>>>`]
     ///
-    /// see [core_crypto::mls::MlsCentral::get_user_identities]
+    /// see [core_crypto::mls::context::CentralContext::get_user_identities]
     pub fn get_user_identities(&self, conversation_id: ConversationId, user_ids: Box<[String]>) -> Promise {
-        let this = self.inner.clone();
+        let central = self.inner.clone();
         future_to_promise(
             async move {
-                let identities = this
-                    .write()
-                    .await
+                let identities = central
                     .get_user_identities(&conversation_id, user_ids.deref())
                     .await
                     .map_err(CoreCryptoError::from)?
@@ -2975,9 +3020,9 @@ impl CoreCrypto {
     #[allow(clippy::boxed_local)]
     /// Returns: [`WasmCryptoResult<u8>`]
     ///
-    /// see [core_crypto::mls::MlsCentral::get_credential_in_use]
+    /// see [core_crypto::mls::context::CentralContext::get_credential_in_use]
     pub fn get_credential_in_use(&self, group_info: Box<[u8]>, credential_type: CredentialType) -> Promise {
-        let this = self.inner.clone();
+        let central = self.inner.clone();
         future_to_promise(
             async move {
                 let group_info = VerifiableGroupInfo::tls_deserialize(&mut group_info.as_ref())
@@ -2985,9 +3030,7 @@ impl CoreCrypto {
                     .map_err(CryptoError::from)
                     .map_err(CoreCryptoError::from)?;
 
-                let state: E2eiConversationState = this
-                    .write()
-                    .await
+                let state: E2eiConversationState = central
                     .get_credential_in_use(group_info, credential_type.into())
                     .await
                     .map(Into::into)
@@ -3003,7 +3046,7 @@ impl CoreCrypto {
 #[derive(Debug)]
 #[wasm_bindgen(js_name = FfiWireE2EIdentity)]
 #[repr(transparent)]
-pub struct E2eiEnrollment(std::sync::Arc<async_lock::RwLock<core_crypto::prelude::E2eiEnrollment>>);
+pub struct E2eiEnrollment(pub(super) Arc<async_lock::RwLock<core_crypto::prelude::E2eiEnrollment>>);
 
 #[wasm_bindgen(js_class = FfiWireE2EIdentity)]
 impl E2eiEnrollment {
