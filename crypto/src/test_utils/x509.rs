@@ -328,8 +328,8 @@ impl X509TestChain {
 
     pub async fn register_with_central(&self, central: &MlsCentral) {
         use x509_cert::der::{Encode as _, EncodePem as _};
-
-        match central
+        let context = central.new_transaction().await;
+        match context
             .e2ei_register_acme_ca(
                 self.trust_anchor
                     .certificate
@@ -343,7 +343,7 @@ impl X509TestChain {
         }
 
         for intermediate in &self.intermediates {
-            central
+            context
                 .e2ei_register_intermediate_ca_pem(
                     intermediate
                         .certificate
@@ -355,11 +355,12 @@ impl X509TestChain {
         }
 
         for (crl_dp, crl) in &self.crls {
-            central
+            context
                 .e2ei_register_crl(crl_dp.clone(), crl.to_der().unwrap())
                 .await
                 .unwrap();
         }
+        context.finish().await.unwrap();
     }
 
     pub async fn register_with_provider(&self, backend: &MlsCryptoProvider) {

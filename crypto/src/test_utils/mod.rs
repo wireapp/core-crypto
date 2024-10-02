@@ -251,7 +251,8 @@ async fn create_centrals<const N: usize>(
                     ClientIdentifier::X509(HashMap::from([(sc, bundle)]))
                 }
             };
-            central
+            let context = central.new_transaction().await;
+            context 
                 .mls_init(
                     identity,
                     vec![case.cfg.ciphersuite],
@@ -259,6 +260,7 @@ async fn create_centrals<const N: usize>(
                 )
                 .await
                 .unwrap();
+            context.finish().await.unwrap();
             central.callbacks(std::sync::Arc::<ValidationCallbacks>::default());
             central
         }
