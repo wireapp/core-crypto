@@ -704,10 +704,10 @@ pub(crate) mod tests {
             run_test_with_client_ids(
                 case.clone(),
                 ["alice", "bob"],
-                move |[alice_central, bob_central]| {
+                move |[mut alice_central, mut bob_central]| {
                     Box::pin(async move {
                         let x509_test_chain_arc =
-                            failsafe_ctx(&mut [&alice_central, &mut bob_central], case.signature_scheme()).await;
+                            failsafe_ctx(&mut [&mut alice_central, &mut bob_central], case.signature_scheme()).await;
 
                         let x509_test_chain = x509_test_chain_arc.as_ref().as_ref().unwrap();
 
@@ -729,7 +729,7 @@ pub(crate) mod tests {
 
                         fn init_alice(wrapper: E2eiInitWrapper) -> InitFnReturn<'_> {
                             Box::pin(async move {
-                                let E2eiInitWrapper { cc, case } = wrapper;
+                                let E2eiInitWrapper { context: cc, case } = wrapper;
                                 let cs = case.ciphersuite();
                                 match case.credential_type {
                                     MlsCredentialType::Basic => cc.e2ei_new_activation_enrollment(
@@ -746,8 +746,7 @@ pub(crate) mod tests {
                                             Some(TEAM.to_string()),
                                             E2EI_EXPIRY,
                                             cs,
-                                        )
-                                        .await
+                                        ).await
                                     }
                                 }
                             })
@@ -794,7 +793,7 @@ pub(crate) mod tests {
 
                         fn init_bob(wrapper: E2eiInitWrapper) -> InitFnReturn<'_> {
                             Box::pin(async move {
-                                let E2eiInitWrapper { cc, case } = wrapper;
+                                let E2eiInitWrapper { context: cc, case } = wrapper;
                                 let cs = case.ciphersuite();
                                 match case.credential_type {
                                     MlsCredentialType::Basic => cc.e2ei_new_activation_enrollment(

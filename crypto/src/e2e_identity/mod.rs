@@ -611,6 +611,8 @@ pub(crate) mod tests {
         test_utils::{central::TEAM, *},
         CryptoResult,
     };
+    use crate::e2e_identity::refresh_token::RefreshToken;
+    use crate::mls::context::CentralContext;
 
     wasm_bindgen_test_configure!(run_in_browser);
 
@@ -622,7 +624,7 @@ pub(crate) mod tests {
 
     pub(crate) fn init_enrollment(wrapper: E2eiInitWrapper) -> InitFnReturn<'_> {
         Box::pin(async move {
-            let E2eiInitWrapper { cc, case } = wrapper;
+            let E2eiInitWrapper { context: cc, case } = wrapper;
             let cs = case.ciphersuite();
             cc.e2ei_new_enrollment(
                 E2EI_CLIENT_ID.into(),
@@ -631,7 +633,7 @@ pub(crate) mod tests {
                 Some(TEAM.to_string()),
                 E2EI_EXPIRY,
                 cs,
-            )
+            ).await
         })
     }
 
@@ -639,7 +641,7 @@ pub(crate) mod tests {
     pub(crate) const NEW_DISPLAY_NAME: &str = "New Alice Smith";
     pub(crate) fn init_activation_or_rotation(wrapper: E2eiInitWrapper) -> InitFnReturn<'_> {
         Box::pin(async move {
-            let E2eiInitWrapper { cc, case } = wrapper;
+            let E2eiInitWrapper { context: cc, case } = wrapper;
             let cs = case.ciphersuite();
             match case.credential_type {
                 MlsCredentialType::Basic => {
@@ -703,7 +705,7 @@ pub(crate) mod tests {
                     cc.context.e2ei_conversation_state(&id).await.unwrap(),
                     E2eiConversationState::Verified
                 );
-                assert!(cc.context.e2ei_is_enabled(case.signature_scheme()).unwrap());
+                assert!(cc.context.e2ei_is_enabled(case.signature_scheme()).await.unwrap());
             })
         })
         .await
@@ -711,7 +713,7 @@ pub(crate) mod tests {
 
     pub(crate) type RestoreFnReturn<'a> = std::pin::Pin<Box<dyn std::future::Future<Output = E2eiEnrollment> + 'a>>;
 
-    pub(crate) fn noop_restore(e: E2eiEnrollment, _cc: &MlsCentral) -> RestoreFnReturn<'_> {
+    pub(crate) fn noop_restore(e: E2eiEnrollment, _cc: &CentralContext) -> RestoreFnReturn<'_> {
         Box::pin(async move { e })
     }
 
@@ -720,7 +722,7 @@ pub(crate) mod tests {
 
     /// Helps the compiler with its lifetime inference rules while passing async closures
     pub(crate) struct E2eiInitWrapper<'a> {
-        pub(crate) cc: &'a MlsCentral,
+        pub(crate) context: &'a CentralContext,
         pub(crate) case: &'a TestCase,
     }
 
@@ -732,10 +734,11 @@ pub(crate) mod tests {
         is_renewal: bool,
         init: impl Fn(E2eiInitWrapper) -> InitFnReturn<'_>,
         // used to verify persisting the instance actually does restore it entirely
-        restore: impl Fn(E2eiEnrollment, &'a MlsCentral) -> RestoreFnReturn<'a>,
+        restore: impl Fn(E2eiEnrollment, &'a CentralContext) -> RestoreFnReturn<'a>,
     ) -> CryptoResult<(E2eiEnrollment, String)> {
         x509_test_chain.register_with_central(&ctx.context).await;
 
+        let transaction = ctx.context.transaction().await?;
         #[cfg(not(target_family = "wasm"))]
         {
             if is_renewal {
@@ -743,26 +746,24 @@ pub(crate) mod tests {
                     crate::e2e_identity::refresh_token::RefreshToken::from("initial-refresh-token".to_string());
                 let initial_refresh_token =
                     core_crypto_keystore::entities::E2eiRefreshToken::from(initial_refresh_token);
-                let mut conn = ctx.context.mls_backend.key_store().borrow_conn().await?;
-                use core_crypto_keystore::entities::UniqueEntity as _;
-                initial_refresh_token.replace(&mut conn).await.unwrap();
+                transaction.save(initial_refresh_token).await?;
             }
         }
 
-        let wrapper = E2eiInitWrapper { cc: &ctx.context, case };
+        let wrapper = E2eiInitWrapper { context: &ctx.context, case };
         let mut enrollment = init(wrapper).await?;
 
         #[cfg(not(target_family = "wasm"))]
         {
             if is_renewal {
                 assert!(enrollment.refresh_token.is_some());
-                assert!(ctx.context.find_refresh_token().await.is_ok());
+                assert!(RefreshToken::find(&transaction).await.is_ok());
             } else {
                 assert!(matches!(
                     enrollment.get_refresh_token().unwrap_err(),
                     E2eIdentityError::OutOfOrderEnrollment(_)
                 ));
-                assert!(ctx.context.find_refresh_token().await.is_err());
+                assert!(RefreshToken::find(&transaction).await.is_err());
             }
         }
 
@@ -792,10 +793,10 @@ pub(crate) mod tests {
         let enrollment = restore(enrollment, &ctx.context).await;
 
         let _order_req = enrollment.new_order_request(previous_nonce.to_string()).unwrap();
-
+        let client_uri = ctx.context.get_e2ei_client_id().await.to_uri();
         let client_id = client_id
             .map(|c| format!("{}{c}", wire_e2e_identity::prelude::E2eiClientId::URI_SCHEME))
-            .unwrap_or_else(|| ctx.context.get_e2ei_client_id().to_uri());
+            .unwrap_or_else(|| client_uri);
         let device_identifier = format!("{{\"name\":\"{display_name}\",\"domain\":\"world.com\",\"client-id\":\"{client_id}\",\"handle\":\"wireapp://%40{handle}@world.com\"}}");
         let user_identifier = format!(
             "{{\"name\":\"{display_name}\",\"domain\":\"world.com\",\"handle\":\"wireapp://%40{handle}@world.com\"}}"
@@ -921,11 +922,11 @@ pub(crate) mod tests {
         #[cfg(not(target_family = "wasm"))]
         {
             enrollment
-                .new_oidc_challenge_response(&ctx.context.mls_backend, oidc_chall_resp)
+                .new_oidc_challenge_response(&ctx.context.mls_provider().await.unwrap(), oidc_chall_resp)
                 .await?;
             // Now Refresh token is persisted in the keystore
             assert_eq!(
-                ctx.context.find_refresh_token().await.unwrap().as_str(),
+                RefreshToken::find(&transaction).await?.as_str(),
                 new_refresh_token
             );
             // No reason at this point to have the refresh token in memory
