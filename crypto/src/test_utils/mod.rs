@@ -286,7 +286,7 @@ async fn create_centrals<const N: usize>(
                 .await
                 .unwrap();
             context.finish().await.unwrap();
-            central.callbacks(std::sync::Arc::<ValidationCallbacks>::default());
+            central.callbacks(std::sync::Arc::<ValidationCallbacks>::default()).await;
             central
         }
     });

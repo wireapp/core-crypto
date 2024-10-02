@@ -997,7 +997,7 @@ mod tests {
         run_test_with_client_ids(
             case.clone(),
             ["alice", "bob", "guest"],
-            move |[mut alice_central, bob_central, mut guest_central]| {
+            move |[mut alice_central, bob_central, guest_central]| {
                 Box::pin(async move {
                     let expiration_time = 14;
                     let start = fluvio_wasm_timer::Instant::now();
