@@ -219,6 +219,7 @@ mod tests {
         test_utils::*,
         CryptoError,
     };
+    use crate::mls::context::CentralContext;
 
     wasm_bindgen_test_configure!(run_in_browser);
 
@@ -247,7 +248,7 @@ mod tests {
     }
 
     async fn check_identities_device_status<const N: usize>(
-        central: &mut MlsCentral,
+        central: &CentralContext,
         id: &ConversationId,
         client_ids: &[ClientId; N],
         name_status: &[(&'static str, DeviceStatus); N],
@@ -293,8 +294,8 @@ mod tests {
                         .unwrap();
 
                     let (android_id, ios_id) = (
-                        alice_android_central.context.get_client_id(),
-                        alice_ios_central.context.get_client_id(),
+                        alice_android_central.context.get_client_id().await,
+                        alice_ios_central.context.get_client_id().await,
                     );
 
                     let mut android_ids = alice_android_central
@@ -333,7 +334,7 @@ mod tests {
                     let ios_id = ios_identities.first().unwrap();
                     assert_eq!(
                         ios_id.client_id.as_bytes(),
-                        alice_ios_central.context.client_id().unwrap().0.as_slice()
+                        alice_ios_central.context.client_id().await.unwrap().0.as_slice()
                     );
 
                     let invalid = alice_android_central.context.get_device_identities(&id, &[]).await;

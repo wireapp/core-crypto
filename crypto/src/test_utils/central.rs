@@ -154,7 +154,7 @@ impl CentralContext {
 
     /// Streamlines the ceremony of adding a client and process its welcome message
     pub async fn invite_all<const N: usize>(
-        &mut self,
+        &self,
         case: &TestCase,
         id: &ConversationId,
         others: [&CentralContext; N],

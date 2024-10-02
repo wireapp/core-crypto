@@ -639,23 +639,20 @@ pub(crate) mod tests {
                         .find_credential_bundle(case.signature_scheme(), case.credential_type, &old_spk)
                         .await
                         .unwrap();
-                    assert_eq!(&old_cb, old_cb_found);
-                    let old_nb_identities = alice_central
-                        .context
-                        .mls_client
-                        .as_ref()
-                        .unwrap()
+                    assert_eq!(old_cb, old_cb_found);
+                    let alice_client_guard = alice_central.context.mls_client().await.unwrap();
+                    let alice_client = alice_client_guard.as_ref().unwrap();
+                    let old_nb_identities = alice_client
                         .identities
                         .iter()
                         .count();
 
                     // Let's simulate an app crash, client gets deleted and restored from keystore
-                    let cid = alice_central.context.client_id().unwrap();
+                    let cid = alice_client.id().clone();
                     let scs = HashSet::from([case.signature_scheme()]);
                     let all_credentials = alice_central
                         .context
-                        .mls_backend
-                        .key_store()
+                        .transaction().await.unwrap()
                         .find_all::<MlsCredential>(EntityFindParams::default())
                         .await
                         .unwrap()
@@ -668,10 +665,13 @@ pub(crate) mod tests {
                         .collect::<Vec<_>>();
                     assert_eq!(all_credentials.len(), 2);
 
-                    let client = Client::load(&alice_central.context.mls_backend, &cid, all_credentials, scs)
+                    let client = Client::load(&alice_central.context.mls_provider().await.unwrap(), &cid, all_credentials, scs)
                         .await
                         .unwrap();
-                    alice_central.context.mls_client = Some(client);
+                    let mut alice_client_guard = alice_central.context.mls_client_mut().await.unwrap();
+                    alice_client_guard
+                        .replace(client)
+                        .unwrap();
 
                     // Verify that Alice has the same credentials
                     let cb = alice_central
@@ -690,7 +690,7 @@ pub(crate) mod tests {
                     );
 
                     assert_eq!(
-                        alice_central.context.mls_client().unwrap().identities.iter().count(),
+                        alice_client.identities.iter().count(),
                         old_nb_identities
                     );
                 })
@@ -704,10 +704,10 @@ pub(crate) mod tests {
             run_test_with_client_ids(
                 case.clone(),
                 ["alice", "bob"],
-                move |[mut alice_central, mut bob_central]| {
+                move |[alice_central, bob_central]| {
                     Box::pin(async move {
                         let x509_test_chain_arc =
-                            failsafe_ctx(&mut [&mut alice_central, &mut bob_central], case.signature_scheme()).await;
+                            failsafe_ctx(&mut [&alice_central, &mut bob_central], case.signature_scheme()).await;
 
                         let x509_test_chain = x509_test_chain_arc.as_ref().as_ref().unwrap();
 
@@ -720,10 +720,9 @@ pub(crate) mod tests {
 
                         alice_central
                             .context
-                            .invite_all(&case, &id, [&mut bob_central.context])
+                            .invite_all(&case, &id, [&bob_central.context])
                             .await
                             .unwrap();
-
                         // Alice's turn
                         const ALICE_NEW_HANDLE: &str = "new_alice_wire";
                         const ALICE_NEW_DISPLAY_NAME: &str = "New Alice Smith";
@@ -896,7 +895,7 @@ pub(crate) mod tests {
                                 .certificate;
 
                             // Alice creates a new Credential, updating her handle/display_name
-                            let alice_cid = alice_central.context.get_client_id();
+                            let alice_cid = alice_central.context.get_client_id().await;
                             let (new_handle, new_display_name) = ("new_alice_wire", "New Alice Smith");
                             let cb = alice_central
                                 .context
