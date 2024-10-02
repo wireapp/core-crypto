@@ -207,7 +207,7 @@ mod tests {
                         );
                         alice_central
                             .context
-                            .remove_members_from_conversation(&id, &[bob_central.context.get_client_id()])
+                            .remove_members_from_conversation(&id, &[bob_central.context.get_client_id().await])
                             .await
                             .unwrap();
                         assert_eq!(
@@ -333,7 +333,7 @@ mod tests {
 
                         let remove_ref = alice_central
                             .context
-                            .new_remove_proposal(&id, bob_central.context.get_client_id())
+                            .new_remove_proposal(&id, bob_central.context.get_client_id().await)
                             .await
                             .unwrap()
                             .proposal_ref;

@@ -69,7 +69,7 @@ mod tests {
                 assert!(central.context.get_conversation_unchecked(&id).await.group.is_active());
 
                 central.context.wipe_conversation(&id).await.unwrap();
-                assert!(!central.context.conversation_exists(&id).await);
+                assert!(!central.context.conversation_exists(&id).await.unwrap());
             })
         })
         .await;

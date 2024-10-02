@@ -269,10 +269,10 @@ mod tests {
                 Box::pin(async move {
                     let id = conversation_id();
 
-                    let ds_signature_key = ds.context.client_signature_key(&case).as_slice().to_vec();
+                    let ds_signature_key = ds.context.client_signature_key(&case).await.as_slice().to_vec();
                     let mut cfg = case.cfg.clone();
                     owner_central
-                        .set_raw_external_senders(&mut cfg, vec![ds_signature_key])
+                        .set_raw_external_senders(&mut cfg, vec![ds_signature_key]).await
                         .unwrap();
                     owner_central
                         .new_conversation(&id, case.credential_type, cfg)
@@ -287,16 +287,13 @@ mod tests {
 
                     // now, as e.g. a Delivery Service, let's create an external remove proposal
                     // and kick guest out of the conversation
-                    let to_remove = owner_central.index_of(&id, guest_central.get_client_id()).await;
+                    let to_remove = owner_central.index_of(&id, guest_central.get_client_id().await).await;
                     let sender_index = SenderExtensionIndex::new(0);
 
                     let (sc, ct) = (case.signature_scheme(), case.credential_type);
                     let cb = ds
                         .context
-                        .mls_client
-                        .as_ref()
-                        .unwrap()
-                        .find_most_recent_credential_bundle(sc, ct)
+                        .find_most_recent_credential_bundle(sc, ct).await
                         .unwrap();
 
                     let group_id = GroupId::from_slice(&id[..]);
@@ -346,10 +343,10 @@ mod tests {
                     Box::pin(async move {
                         let id = conversation_id();
                         // Delivery service key is used in the group..
-                        let ds_signature_key = ds.context.client_signature_key(&case).as_slice().to_vec();
+                        let ds_signature_key = ds.context.client_signature_key(&case).await.as_slice().to_vec();
                         let mut cfg = case.cfg.clone();
                         owner_central
-                            .set_raw_external_senders(&mut cfg, vec![ds_signature_key])
+                            .set_raw_external_senders(&mut cfg, vec![ds_signature_key]).await
                             .unwrap();
                         owner_central
                             .new_conversation(&id, case.credential_type, cfg)
@@ -357,22 +354,18 @@ mod tests {
                             .unwrap();
 
                         owner_central
-                            .invite_all(&case, &id, [&mut guest_central])
-                            .await
+                            .invite_all(&case, &id, [&mut guest_central]).await
                             .unwrap();
                         assert_eq!(owner_central.get_conversation_unchecked(&id).await.members().len(), 2);
 
                         // now, attacker will try to remove guest from the group, and should fail
-                        let to_remove = owner_central.index_of(&id, guest_central.get_client_id()).await;
+                        let to_remove = owner_central.index_of(&id, guest_central.get_client_id().await).await;
                         let sender_index = SenderExtensionIndex::new(1);
 
                         let (sc, ct) = (case.signature_scheme(), case.credential_type);
                         let cb = attacker
                             .context
-                            .mls_client
-                            .as_ref()
-                            .unwrap()
-                            .find_most_recent_credential_bundle(sc, ct)
+                            .find_most_recent_credential_bundle(sc, ct).await
                             .unwrap();
                         let group_id = GroupId::from_slice(&id[..]);
                         let epoch = owner_central.get_conversation_unchecked(&id).await.group.epoch();
@@ -415,10 +408,10 @@ mod tests {
                     // Here we're going to add the Delivery Service's (DS) signature key to the
                     // external senders list. However, for the purpose of this test, we will
                     // intentionally _not_ use that key when generating the remove proposal below.
-                    let key = ds.context.client_signature_key(&case).as_slice().to_vec();
+                    let key = ds.context.client_signature_key(&case).await.as_slice().to_vec();
                     let mut cfg = case.cfg.clone();
                     owner_central
-                        .set_raw_external_senders(&mut cfg, vec![key.as_slice().to_vec()])
+                        .set_raw_external_senders(&mut cfg, vec![key.as_slice().to_vec()]).await
                         .unwrap();
                     owner_central
                         .new_conversation(&id, case.credential_type, cfg)
@@ -426,22 +419,18 @@ mod tests {
                         .unwrap();
 
                     owner_central
-                        .invite_all(&case, &id, [&mut guest_central])
-                        .await
+                        .invite_all(&case, &id, [&mut guest_central]).await
                         .unwrap();
                     assert_eq!(owner_central.get_conversation_unchecked(&id).await.members().len(), 2);
 
-                    let to_remove = owner_central.index_of(&id, guest_central.get_client_id()).await;
+                    let to_remove = owner_central.index_of(&id, guest_central.get_client_id().await).await;
                     let sender_index = SenderExtensionIndex::new(0);
 
                     let (sc, ct) = (case.signature_scheme(), case.credential_type);
                     // Intentionally use the guest's credential, and therefore the guest's signature
                     // key when generating the proposal so that the signature verification fails.
                     let cb = guest_central
-                        .mls_client
-                        .as_ref()
-                        .unwrap()
-                        .find_most_recent_credential_bundle(sc, ct)
+                        .find_most_recent_credential_bundle(sc, ct).await
                         .unwrap();
                     let group_id = GroupId::from_slice(&id[..]);
                     let epoch = owner_central.get_conversation_unchecked(&id).await.group.epoch();
@@ -479,10 +468,10 @@ mod tests {
                     Box::pin(async move {
                         let id = conversation_id();
 
-                        let ds_signature_key = ds.context.client_signature_key(&case).as_slice().to_vec();
+                        let ds_signature_key = ds.context.client_signature_key(&case).await.as_slice().to_vec();
                         let mut cfg = case.cfg.clone();
                         alice_central
-                            .set_raw_external_senders(&mut cfg, vec![ds_signature_key])
+                            .set_raw_external_senders(&mut cfg, vec![ds_signature_key]).await
                             .unwrap();
 
                         alice_central
@@ -516,15 +505,12 @@ mod tests {
 
                         // now, as e.g. a Delivery Service, let's create an external remove proposal
                         // and kick Bob out of the conversation
-                        let to_remove = alice_central.index_of(&id, bob_central.get_client_id()).await;
+                        let to_remove = alice_central.index_of(&id, bob_central.get_client_id().await).await;
                         let sender_index = SenderExtensionIndex::new(0);
                         let (sc, ct) = (case.signature_scheme(), case.credential_type);
                         let cb = ds
                             .context
-                            .mls_client
-                            .as_ref()
-                            .unwrap()
-                            .find_most_recent_credential_bundle(sc, ct)
+                            .find_most_recent_credential_bundle(sc, ct).await
                             .unwrap();
                         let group_id = GroupId::from_slice(&id[..]);
                         let epoch = alice_central.get_conversation_unchecked(&id).await.group.epoch();
@@ -587,10 +573,10 @@ mod tests {
                     Box::pin(async move {
                         let id = conversation_id();
 
-                        let ds_signature_key = ds.context.client_signature_key(&case).as_slice().to_vec();
+                        let ds_signature_key = ds.context.client_signature_key(&case).await.as_slice().to_vec();
                         let mut cfg = case.cfg.clone();
                         alice_central
-                            .set_raw_external_senders(&mut cfg, vec![ds_signature_key])
+                            .set_raw_external_senders(&mut cfg, vec![ds_signature_key]).await
                             .unwrap();
 
                         alice_central
@@ -629,15 +615,12 @@ mod tests {
 
                         // now, as e.g. a Delivery Service, let's create an external remove proposal
                         // and kick Bob out of the conversation
-                        let to_remove = alice_central.index_of(&id, bob_central.get_client_id()).await;
+                        let to_remove = alice_central.index_of(&id, bob_central.get_client_id().await).await;
                         let sender_index = SenderExtensionIndex::new(0);
                         let (sc, ct) = (case.signature_scheme(), case.credential_type);
                         let cb = ds
                             .context
-                            .mls_client
-                            .as_ref()
-                            .unwrap()
-                            .find_most_recent_credential_bundle(sc, ct)
+                            .find_most_recent_credential_bundle(sc, ct).await
                             .unwrap();
                         let group_id = GroupId::from_slice(&id[..]);
                         let epoch = alice_central.get_conversation_unchecked(&id).await.group.epoch();

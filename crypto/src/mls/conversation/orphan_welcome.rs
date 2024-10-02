@@ -31,7 +31,7 @@ mod tests {
 
                     let bob = bob_central.context.rand_key_package(&case).await;
                     let bob_kp_ref = KeyPackage::from(bob.clone())
-                        .hash_ref(bob_central.context.mls_backend.crypto())
+                        .hash_ref(bob_central.context.mls_provider().await.unwrap().crypto())
                         .unwrap();
 
                     // Alice invites Bob with a KeyPackage...

@@ -574,7 +574,7 @@ mod tests {
 
                         let MlsCommitBundle { commit, welcome, .. } = alice_central
                             .context
-                            .remove_members_from_conversation(&id, &[bob_central.context.get_client_id()])
+                            .remove_members_from_conversation(&id, &[bob_central.context.get_client_id().await])
                             .await
                             .unwrap();
                         assert!(welcome.is_none());
@@ -656,7 +656,7 @@ mod tests {
 
                         let welcome = alice_central
                             .context
-                            .remove_members_from_conversation(&id, &[bob_central.context.get_client_id()])
+                            .remove_members_from_conversation(&id, &[bob_central.context.get_client_id().await])
                             .await
                             .unwrap()
                             .welcome;
@@ -707,7 +707,7 @@ mod tests {
 
                         let commit_bundle = alice_central
                             .context
-                            .remove_members_from_conversation(&id, &[bob_central.context.get_client_id()])
+                            .remove_members_from_conversation(&id, &[bob_central.context.get_client_id().await])
                             .await
                             .unwrap();
 
@@ -773,7 +773,7 @@ mod tests {
 
                         let alice_key = alice_central
                             .context
-                            .encryption_key_of(&id, alice_central.context.get_client_id())
+                            .encryption_key_of(&id, alice_central.context.get_client_id().await)
                             .await;
 
                         // proposing the key update for alice
@@ -876,7 +876,7 @@ mod tests {
 
                         let alice_key = alice_central
                             .context
-                            .encryption_key_of(&id, alice_central.context.get_client_id())
+                            .encryption_key_of(&id, alice_central.context.get_client_id().await)
                             .await;
 
                         // proposing adding charlie

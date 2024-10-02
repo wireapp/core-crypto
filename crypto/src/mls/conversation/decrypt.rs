@@ -496,7 +496,7 @@ mod tests {
 
                         let MlsCommitBundle { commit, .. } = bob_central
                             .context
-                            .remove_members_from_conversation(&id, &[alice_central.context.get_client_id()])
+                            .remove_members_from_conversation(&id, &[alice_central.context.get_client_id().await])
                             .await
                             .unwrap();
                         let MlsConversationDecryptMessage { is_active, .. } = alice_central
@@ -879,7 +879,7 @@ mod tests {
                             .get_conversation_unchecked(&id)
                             .await
                             .members()
-                            .get::<Vec<u8>>(&charlie_central.context.get_client_id().to_vec())
+                            .get::<Vec<u8>>(&charlie_central.context.get_client_id().await.to_vec())
                             .is_some());
 
                         // Bob also has Charlie in the group
@@ -889,7 +889,7 @@ mod tests {
                             .get_conversation_unchecked(&id)
                             .await
                             .members()
-                            .get::<Vec<u8>>(&charlie_central.context.get_client_id().to_vec())
+                            .get::<Vec<u8>>(&charlie_central.context.get_client_id().await.to_vec())
                             .is_some());
                         assert!(decrypted.has_epoch_changed);
                     })
@@ -1087,7 +1087,7 @@ mod tests {
                             .await
                             .unwrap();
 
-                        alice_central.context.callbacks = None;
+                        alice_central.context.set_callbacks(None).await.unwrap();
                         let error = alice_central
                             .context
                             .decrypt_message(&id, &message.to_bytes().unwrap())
@@ -1096,7 +1096,7 @@ mod tests {
 
                         assert!(matches!(error, CryptoError::CallbacksNotSet));
 
-                        bob_central.context.callbacks = None;
+                        bob_central.context.set_callbacks(None).await.unwrap();
                         let error = bob_central
                             .context
                             .decrypt_message(&id, &message.to_bytes().unwrap())
@@ -1121,10 +1121,7 @@ mod tests {
                         let id = conversation_id();
                         alice_central
                             .context
-                            .callbacks(std::sync::Arc::new(ValidationCallbacks {
-                                client_is_existing_group_user: false,
-                                ..Default::default()
-                            }));
+                            .callbacks().await.unwrap();
 
                         alice_central
                             .context
@@ -1157,7 +1154,7 @@ mod tests {
 
                         assert!(matches!(error, CryptoError::UnauthorizedExternalAddProposal));
 
-                        bob_central.context.callbacks = None;
+                      bob_central.context.set_callbacks(None).await.unwrap();
                         let error = bob_central
                             .context
                             .decrypt_message(&id, &external_proposal.to_bytes().unwrap())
@@ -1502,7 +1499,7 @@ mod tests {
                             .unwrap()
                             .sender_client_id
                             .unwrap();
-                        assert_eq!(sender_client_id, alice_central.context.get_client_id());
+                        assert_eq!(sender_client_id, alice_central.context.get_client_id().await);
                     })
                 },
             )

@@ -292,7 +292,7 @@ mod tests {
                         assert!(alice_central.context.pending_proposals(&id).await.is_empty());
                         let proposal = alice_central
                             .context
-                            .new_remove_proposal(&id, charlie_central.context.get_client_id())
+                            .new_remove_proposal(&id, charlie_central.context.get_client_id().await)
                             .await
                             .unwrap()
                             .proposal;
@@ -381,7 +381,7 @@ mod tests {
                         assert!(alice_keys.iter().all(|a_key| bob_keys.contains(a_key)));
                         let alice_key = alice_central
                             .context
-                            .encryption_key_of(&id, alice_central.context.get_client_id())
+                            .encryption_key_of(&id, alice_central.context.get_client_id().await)
                             .await;
 
                         let proposal = alice_central.context.new_update_proposal(&id).await.unwrap().proposal;

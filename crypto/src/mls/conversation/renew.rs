@@ -723,14 +723,14 @@ mod tests {
                         assert!(alice_central.context.pending_proposals(&id).await.is_empty());
                         alice_central
                             .context
-                            .new_remove_proposal(&id, charlie_central.context.get_client_id())
+                            .new_remove_proposal(&id, charlie_central.context.get_client_id().await)
                             .await
                             .unwrap();
                         assert_eq!(alice_central.context.pending_proposals(&id).await.len(), 1);
 
                         let commit = bob_central
                             .context
-                            .remove_members_from_conversation(&id, &[charlie_central.context.get_client_id()])
+                            .remove_members_from_conversation(&id, &[charlie_central.context.get_client_id().await])
                             .await
                             .unwrap()
                             .commit;
@@ -774,7 +774,7 @@ mod tests {
 
                         let proposal = bob_central
                             .context
-                            .new_remove_proposal(&id, charlie_central.context.get_client_id())
+                            .new_remove_proposal(&id, charlie_central.context.get_client_id().await)
                             .await
                             .unwrap()
                             .proposal;
@@ -842,7 +842,7 @@ mod tests {
                         assert!(alice_central.context.pending_proposals(&id).await.is_empty());
                         alice_central
                             .context
-                            .new_remove_proposal(&id, charlie_central.context.get_client_id())
+                            .new_remove_proposal(&id, charlie_central.context.get_client_id().await)
                             .await
                             .unwrap();
                         assert_eq!(alice_central.context.pending_proposals(&id).await.len(), 1);
@@ -850,7 +850,7 @@ mod tests {
                         // Whereas Bob wants to remove Debbie
                         let commit = bob_central
                             .context
-                            .remove_members_from_conversation(&id, &[debbie_central.context.get_client_id()])
+                            .remove_members_from_conversation(&id, &[debbie_central.context.get_client_id().await])
                             .await
                             .unwrap()
                             .commit;
@@ -903,7 +903,7 @@ mod tests {
                         // Alice wants to remove Charlie
                         alice_central
                             .context
-                            .remove_members_from_conversation(&id, &[charlie_central.context.get_client_id()])
+                            .remove_members_from_conversation(&id, &[charlie_central.context.get_client_id().await])
                             .await
                             .unwrap();
                         assert!(alice_central.context.pending_commit(&id).await.is_some());
@@ -911,7 +911,7 @@ mod tests {
                         // Whereas Bob wants to remove Debbie
                         let commit = bob_central
                             .context
-                            .remove_members_from_conversation(&id, &[debbie_central.context.get_client_id()])
+                            .remove_members_from_conversation(&id, &[debbie_central.context.get_client_id().await])
                             .await
                             .unwrap()
                             .commit;
@@ -964,7 +964,7 @@ mod tests {
                         // Alice wants to remove Charlie
                         alice_central
                             .context
-                            .new_remove_proposal(&id, charlie_central.context.get_client_id())
+                            .new_remove_proposal(&id, charlie_central.context.get_client_id().await)
                             .await
                             .unwrap();
                         alice_central.context.commit_pending_proposals(&id).await.unwrap();
@@ -974,7 +974,7 @@ mod tests {
                         // Whereas Bob wants to remove Debbie
                         let commit = bob_central
                             .context
-                            .remove_members_from_conversation(&id, &[debbie_central.context.get_client_id()])
+                            .remove_members_from_conversation(&id, &[debbie_central.context.get_client_id().await])
                             .await
                             .unwrap()
                             .commit;

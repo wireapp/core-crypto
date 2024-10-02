@@ -319,14 +319,14 @@ mod tests {
             Box::pin(async move {
                 let (_sk, pk) = cc
                     .context
-                    .mls_backend
+                    .mls_provider().await.unwrap()
                     .crypto()
                     .signature_key_gen(case.signature_scheme())
                     .unwrap();
 
                 assert!(cc
                     .context
-                    .set_raw_external_senders(&mut case.cfg.clone(), vec![pk])
+                    .set_raw_external_senders(&mut case.cfg.clone(), vec![pk]).await
                     .is_ok());
             })
         })
@@ -351,7 +351,7 @@ mod tests {
                 let jwk = wire_e2e_identity::prelude::generate_jwk(alg);
                 let _ = cc
                     .context
-                    .set_raw_external_senders(&mut case.cfg.clone(), vec![jwk])
+                    .set_raw_external_senders(&mut case.cfg.clone(), vec![jwk]).await
                     .unwrap();
             })
         })

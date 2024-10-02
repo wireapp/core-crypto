@@ -376,6 +376,7 @@ impl CentralContext {
 
 #[cfg(test)]
 mod tests {
+    use futures_lite::{stream, StreamExt};
     use openmls::prelude::{KeyPackage, KeyPackageIn, KeyPackageRef, ProtocolVersion};
     use openmls_traits::types::VerifiableCiphersuite;
     use openmls_traits::OpenMlsCryptoProvider;
@@ -405,6 +406,7 @@ mod tests {
             None
         };
 
+        let backend = backend.new_transaction();
         let mut client = Client::random_generate(
             &case,
             &backend,
@@ -467,7 +469,7 @@ mod tests {
                     .unwrap();
 
                 // E2E identity has been set up correctly
-                assert!(client_context.context.e2ei_is_enabled(signature_scheme).unwrap());
+                assert!(client_context.context.e2ei_is_enabled(signature_scheme).await.unwrap());
 
                 // Request X509 key packages
                 let x509_key_packages = client_context
@@ -501,6 +503,8 @@ mod tests {
 
                 // since 'delete_keypackages' will evict all Credentials unlinked to a KeyPackage, each iteration
                 // generates 1 extra KeyPackage in order for this Credential no to be evicted and next iteration sto succeed.
+                let transactional_provider = cc.context.mls_provider().await.unwrap();
+                let crypto_provider = transactional_provider.crypto();
                 let mut pinned_kp = None;
 
                 let mut prev_kps: Option<Vec<KeyPackage>> = None;
@@ -523,13 +527,13 @@ mod tests {
 
                     let kpbs_refs = kps
                         .iter()
-                        .map(|kp| kp.hash_ref(cc.context.mls_backend.crypto()).unwrap())
+                        .map(|kp| kp.hash_ref(crypto_provider).unwrap())
                         .collect::<Vec<KeyPackageRef>>();
 
                     if let Some(pkpbs) = prev_kps.replace(kps) {
                         let pkpbs_refs = pkpbs
                             .into_iter()
-                            .map(|kpb| kpb.hash_ref(cc.context.mls_backend.crypto()).unwrap())
+                            .map(|kpb| kpb.hash_ref(crypto_provider).unwrap())
                             .collect::<Vec<KeyPackageRef>>();
 
                         let has_duplicates = kpbs_refs.iter().any(|href| pkpbs_refs.contains(href));
@@ -546,7 +550,7 @@ mod tests {
                     .unwrap();
                 assert_eq!(count, 1);
 
-                let pinned_kpr = pinned_kp.unwrap().hash_ref(cc.context.mls_backend.crypto()).unwrap();
+                let pinned_kpr = pinned_kp.unwrap().hash_ref(crypto_provider).unwrap();
                 cc.context.delete_keypackages(&[pinned_kpr]).await.unwrap();
                 let count = cc
                     .context
@@ -577,9 +581,10 @@ mod tests {
         } else {
             None
         };
+        let transaction = backend.new_transaction();
         let mut client = Client::random_generate(
             &case,
-            &backend,
+            &transaction,
             x509_test_chain.as_ref().map(|chain| chain.find_local_intermediate_ca()),
             false,
         )
@@ -588,11 +593,11 @@ mod tests {
 
         // Generate `UNEXPIRED_COUNT` kpbs that are with default 3 months expiration. We *should* keep them for the duration of the test
         let unexpired_kpbs = client
-            .request_key_packages(UNEXPIRED_COUNT, case.ciphersuite(), case.credential_type, &backend)
+            .request_key_packages(UNEXPIRED_COUNT, case.ciphersuite(), case.credential_type, &transaction)
             .await
             .unwrap();
         let len = client
-            .valid_keypackages_count(&backend, case.ciphersuite(), case.credential_type)
+            .valid_keypackages_count(&transaction, case.ciphersuite(), case.credential_type)
             .await
             .unwrap();
         assert_eq!(len, unexpired_kpbs.len());
@@ -603,7 +608,7 @@ mod tests {
 
         // Generate new keypackages that are normally partially expired 2s after they're requested
         let partially_expired_kpbs = client
-            .request_key_packages(EXPIRED_COUNT, case.ciphersuite(), case.credential_type, &backend)
+            .request_key_packages(EXPIRED_COUNT, case.ciphersuite(), case.credential_type, &transaction)
             .await
             .unwrap();
         assert_eq!(partially_expired_kpbs.len(), EXPIRED_COUNT);
@@ -614,11 +619,11 @@ mod tests {
         // Request the same number of keypackages. The automatic lifetime-based expiration should take
         // place and remove old expired keypackages and generate fresh ones instead
         let fresh_kpbs = client
-            .request_key_packages(EXPIRED_COUNT, case.ciphersuite(), case.credential_type, &backend)
+            .request_key_packages(EXPIRED_COUNT, case.ciphersuite(), case.credential_type, &transaction)
             .await
             .unwrap();
         let len = client
-            .valid_keypackages_count(&backend, case.ciphersuite(), case.credential_type)
+            .valid_keypackages_count(&transaction, case.ciphersuite(), case.credential_type)
             .await
             .unwrap();
         assert_eq!(len, fresh_kpbs.len());
@@ -657,7 +662,7 @@ mod tests {
 
                 // make sure it's valid
                 let _ = KeyPackageIn::from(kp.clone())
-                    .standalone_validate(&cc.context.mls_backend, ProtocolVersion::Mls10, true)
+                    .standalone_validate(&cc.context.mls_provider().await.unwrap(), ProtocolVersion::Mls10, true)
                     .await
                     .unwrap();
 

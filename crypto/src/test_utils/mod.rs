@@ -247,10 +247,11 @@ async fn create_centrals<const N: usize>(
             )
             .unwrap();
             let central = MlsCentral::try_new(configuration).await.unwrap();
+            let context = central.new_transaction().await;
 
             // Setup the X509 PKI environment
             if let Some(chain) = chain {
-                chain.register_with_central(&central).await;
+                chain.register_with_central(&context).await;
             }
 
             let identity = match case.credential_type {

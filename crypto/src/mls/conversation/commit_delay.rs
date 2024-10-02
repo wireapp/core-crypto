@@ -268,7 +268,7 @@ mod tests {
 
                     let proposal_bundle = alice_central
                         .context
-                        .new_remove_proposal(&id, alice_central.context.get_client_id())
+                        .new_remove_proposal(&id, alice_central.context.get_client_id().await)
                         .await
                         .unwrap();
 

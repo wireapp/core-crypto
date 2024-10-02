@@ -9,6 +9,7 @@ use std::{fmt::Display, time::Duration};
 use mls_crypto_provider::{CertProfile, CertificateGenerationArgs, MlsCryptoProvider, PkiKeypair, RustCrypto};
 use openmls_traits::{crypto::OpenMlsCrypto, random::OpenMlsRand, types::SignatureScheme};
 use x509_cert::der::EncodePem;
+use crate::mls::context::CentralContext;
 
 const DEFAULT_CRL_DOMAIN: &str = "localhost";
 
@@ -326,9 +327,8 @@ impl X509TestChain {
         other_chain.actors.extend(self_actors);
     }
 
-    pub async fn register_with_central(&self, central: &MlsCentral) {
+    pub async fn register_with_central(&self, context: &CentralContext) {
         use x509_cert::der::{Encode as _, EncodePem as _};
-        let context = central.new_transaction().await;
         match context
             .e2ei_register_acme_ca(
                 self.trust_anchor

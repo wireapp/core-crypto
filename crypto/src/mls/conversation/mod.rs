@@ -322,6 +322,7 @@ impl CentralContext {
 
 #[cfg(test)]
 mod tests {
+    use futures_lite::{stream, StreamExt};
     use crate::e2e_identity::rotate::tests::all::failsafe_ctx;
     use wasm_bindgen_test::*;
 
@@ -480,8 +481,9 @@ mod tests {
                     )
                     .unwrap();
                     let mut central = MlsCentral::try_new(config).await.unwrap();
+                    let friend_context = central.new_transaction().await;
 
-                    x509_test_chain.register_with_central(&central).await;
+                    x509_test_chain.register_with_central(&friend_context).await;
 
                     let client_id: crate::prelude::ClientId = name.as_str().into();
                     let identity = match case.credential_type {
@@ -499,7 +501,7 @@ mod tests {
                             ClientIdentifier::X509(HashMap::from([(case.cfg.ciphersuite.signature_algorithm(), cert)]))
                         }
                     };
-                    central
+                    friend_context
                         .mls_init(
                             identity,
                             vec![case.cfg.ciphersuite],
@@ -507,11 +509,15 @@ mod tests {
                         )
                         .await
                         .unwrap();
-
+                    friend_context.finish().await.unwrap();
                     bob_and_friends.push(central);
                 }
 
                 let number_of_friends = bob_and_friends.len();
+                
+                let bob_and_friends = stream::iter(bob_and_friends).then(|member_central| async move {
+                    member_central.new_transaction().await
+                }).collect::<Vec<_>>().await;
 
                 let mut bob_and_friends_kps = vec![];
                 for c in &bob_and_friends {

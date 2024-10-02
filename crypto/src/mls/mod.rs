@@ -763,10 +763,11 @@ mod tests {
                 )
                 .unwrap();
                 // phase 1: init without mls_client
-                let mut central = MlsCentral::try_new(configuration).await.unwrap();
-                x509_test_chain.register_with_central(&central).await;
+                let central = MlsCentral::try_new(configuration).await.unwrap();
+                let context = central.new_transaction().await;
+                x509_test_chain.register_with_central(&context).await;
 
-                assert!(central.mls_client.is_none());
+                assert!(context.mls_client().await.unwrap().is_none());
                 // phase 2: init mls_client
                 let client_id = "alice";
                 let identifier = match case.credential_type {
@@ -775,7 +776,7 @@ mod tests {
                         CertificateBundle::rand_identifier(client_id, &[x509_test_chain.find_local_intermediate_ca()])
                     }
                 };
-                central
+                context
                     .mls_init(
                         identifier,
                         vec![case.ciphersuite()],
@@ -783,10 +784,10 @@ mod tests {
                     )
                     .await
                     .unwrap();
-                assert!(central.mls_client.is_some());
+                assert!(context.mls_client().await.unwrap().is_some());
                 // expect mls_client to work
                 assert_eq!(
-                    central
+                    context
                         .get_or_create_client_keypackages(case.ciphersuite(), case.credential_type, 2)
                         .await
                         .unwrap()

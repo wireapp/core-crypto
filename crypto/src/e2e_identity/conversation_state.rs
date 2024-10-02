@@ -320,14 +320,16 @@ mod tests {
                     let x509_test_chain = x509_test_chain_arc.as_ref().as_ref().unwrap();
 
                     // That way the conversation creator (Alice) will have a different credential type than Bob
-                    let creator_client = alice_central.context.mls_client.as_mut().unwrap();
+                    let mut alice_client_guard = alice_central.context.mls_client_mut().await.unwrap();
+                    let alice_client = alice_client_guard.as_mut().unwrap();
+                    let alice_provider = alice_central.context.mls_provider().await.unwrap();
                     let creator_ct = match case.credential_type {
                         MlsCredentialType::Basic => {
                             let intermediate_ca = x509_test_chain.find_local_intermediate_ca();
-                            let cert_bundle = CertificateBundle::rand(creator_client.id(), intermediate_ca);
-                            creator_client
+                            let cert_bundle = CertificateBundle::rand(alice_client.id(), intermediate_ca);
+                            alice_client
                                 .init_x509_credential_bundle_if_missing(
-                                    &alice_central.context.mls_backend,
+                                    &alice_provider,
                                     case.signature_scheme(),
                                     cert_bundle,
                                 )
@@ -336,9 +338,9 @@ mod tests {
                             MlsCredentialType::X509
                         }
                         MlsCredentialType::X509 => {
-                            creator_client
+                            alice_client
                                 .init_basic_credential_bundle_if_missing(
-                                    &alice_central.context.mls_backend,
+                                    &alice_provider,
                                     case.signature_scheme(),
                                 )
                                 .await
@@ -420,14 +422,13 @@ mod tests {
                             .await
                             .unwrap();
 
+                        let mut alice_client_guard = alice_central.context.mls_client_mut().await.unwrap();
+                        let alice_client = alice_client_guard.as_mut().unwrap();
+                        let alice_provider = alice_central.context.mls_provider().await.unwrap();
                         // Needed because 'e2ei_rotate' does not do it directly and it's required for 'get_group_info'
-                        alice_central
-                            .context
-                            .mls_client
-                            .as_mut()
-                            .unwrap()
+                        alice_client
                             .save_new_x509_credential_bundle(
-                                &alice_central.context.mls_backend,
+                                &alice_provider.transaction(),
                                 case.signature_scheme(),
                                 cert,
                             )
@@ -493,14 +494,14 @@ mod tests {
                     alice_central.context.e2ei_rotate(&id, &cb).await.unwrap();
                     alice_central.context.commit_accepted(&id).await.unwrap();
 
+                    let mut alice_client_guard = alice_central.context.mls_client_mut().await.unwrap();
+                    let alice_client = alice_client_guard.as_mut().unwrap();
+                    let alice_provider = alice_central.context.mls_provider().await.unwrap();
+
                     // Needed because 'e2ei_rotate' does not do it directly and it's required for 'get_group_info'
-                    alice_central
-                        .context
-                        .mls_client
-                        .as_mut()
-                        .unwrap()
+                    alice_client
                         .save_new_x509_credential_bundle(
-                            &alice_central.context.mls_backend,
+                            &alice_provider.transaction(),
                             case.signature_scheme(),
                             alice_cert.certificate.clone().into(),
                         )

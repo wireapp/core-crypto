@@ -131,7 +131,7 @@ impl CentralContext {
             .cloned()
     }
 
-    pub async fn try_talk_to(&mut self, id: &ConversationId, other: &CentralContext) -> CryptoResult<()> {
+    pub async fn try_talk_to(&self, id: &ConversationId, other: &CentralContext) -> CryptoResult<()> {
         let msg = b"Hello other";
         let encrypted = self.encrypt_message(id, msg).await?;
         let decrypted = other
@@ -169,7 +169,7 @@ impl CentralContext {
 
     /// Streamlines the ceremony of adding a client and process its welcome message
     pub async fn invite_all_members<const N: usize>(
-        &mut self,
+        &self,
         case: &TestCase,
         id: &ConversationId,
         others: [(&CentralContext, KeyPackageIn); N],
@@ -409,7 +409,7 @@ impl CentralContext {
         pk: &SignaturePublicKey,
     ) -> Option<CredentialBundle> {
         let client_guard = self.mls_client().await.unwrap();
-        let client = client_guard.as_ref().unwrap();
+        let client = client_guard.as_ref()?;
         client
             .identities
             .find_credential_bundle_by_public_key(sc, ct, pk)

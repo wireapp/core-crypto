@@ -87,9 +87,21 @@ impl CentralContext {
 
     pub(crate) async fn callbacks(
         &self,
-    ) -> CryptoResult<RwLockReadGuardArc<Option<std::sync::Arc<dyn CoreCryptoCallbacks + 'static>>>> {
+    ) -> CryptoResult<RwLockReadGuardArc<Option<Arc<dyn CoreCryptoCallbacks + 'static>>>> {
         match self.state.read().await.deref() {
             ContextState::Valid { callbacks, .. } => Ok(callbacks.read_arc().await),
+            ContextState::Invalid => Err(CryptoError::InvalidContext),
+        }
+    }
+    
+    #[cfg(test)]
+    pub(crate) async fn set_callbacks(&self, callbacks: Option<Arc<dyn CoreCryptoCallbacks + 'static>>) -> CryptoResult<()> {
+        match self.state.read().await.deref() {
+            ContextState::Valid { 
+                callbacks: cbs, .. } => {
+                *cbs.write_arc().await = callbacks;
+                Ok(())
+            },
             ContextState::Invalid => Err(CryptoError::InvalidContext),
         }
     }

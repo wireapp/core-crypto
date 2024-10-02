@@ -318,6 +318,7 @@ impl MlsConversation {
 
 #[cfg(test)]
 mod tests {
+    use std::sync::Arc;
     use openmls::prelude::*;
     use wasm_bindgen_test::*;
 
@@ -413,8 +414,7 @@ mod tests {
                     // Pending group removed from keystore
                     let error = alice_central
                         .context
-                        .mls_backend
-                        .key_store()
+                        .transaction().await.unwrap()
                         .mls_pending_groups_load(&id)
                         .await;
                     assert!(matches!(
@@ -778,10 +778,7 @@ mod tests {
 
                     alice_central
                         .context
-                        .callbacks(std::sync::Arc::new(ValidationCallbacks {
-                            client_is_existing_group_user: false,
-                            ..Default::default()
-                        }));
+                        .callbacks();
 
                     alice_central
                         .context
@@ -818,16 +815,16 @@ mod tests {
         run_test_with_client_ids(
             case.clone(),
             ["alice", "bob"],
-            move |[mut alice_central, mut bob_central]| {
+            move |[mut alice_central, bob_central]| {
                 Box::pin(async move {
                     let id = conversation_id();
-
-                    alice_central
+                    
+                   alice_central
                         .context
-                        .callbacks(std::sync::Arc::new(ValidationCallbacks {
+                        .set_callbacks(Some(Arc::new(ValidationCallbacks {
                             user_authorize: false,
                             ..Default::default()
-                        }));
+                        }))).await.unwrap();
 
                     alice_central
                         .context
