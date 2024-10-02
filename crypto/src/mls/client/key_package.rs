@@ -376,7 +376,6 @@ impl CentralContext {
 
 #[cfg(test)]
 mod tests {
-    use futures_lite::{stream, StreamExt};
     use openmls::prelude::{KeyPackage, KeyPackageIn, KeyPackageRef, ProtocolVersion};
     use openmls_traits::types::VerifiableCiphersuite;
     use openmls_traits::OpenMlsCryptoProvider;

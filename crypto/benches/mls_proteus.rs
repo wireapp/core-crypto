@@ -52,7 +52,7 @@ fn encrypt_message_bench(c: &mut Criterion) {
                             (central, id, text)
                         })
                     },
-                    |(mut central, id, text)| async move {
+                    |(central, id, text)| async move {
                         let context = central.new_transaction().await;
                         black_box(context.encrypt_message(&id, text).await.unwrap());
                         context.finish().await.unwrap();
@@ -79,16 +79,14 @@ fn encrypt_message_bench(c: &mut Criterion) {
                         })
                     },
                     |(mut central, mut keystore, session_material, text)| async move {
-                        let context = central.new_transaction().await;
                         for (session_id, _) in session_material {
                             black_box(
-                                context
+                                central
                                     .encrypt(&mut keystore, &session_id, text.as_bytes())
                                     .await
                                     .unwrap(),
                             );
                         }
-                        context.finish().await.unwrap();
                     },
                     BatchSize::SmallInput,
                 )
@@ -113,9 +111,11 @@ fn add_client_bench(c: &mut Criterion) {
                             (central, id, vec![kp.into()])
                         })
                     },
-                    |(mut central, id, kps)| async move {
-                        black_box(central.add_members_to_conversation(&id, kps).await.unwrap());
-                        central.commit_accepted(&id).await.unwrap();
+                    |(central, id, kps)| async move {
+                        let context = central.new_transaction().await;
+                        black_box(context.add_members_to_conversation(&id, kps).await.unwrap());
+                        context.commit_accepted(&id).await.unwrap();
+                        context.finish().await.unwrap();
                         black_box(());
                     },
                     BatchSize::SmallInput,
@@ -165,14 +165,16 @@ fn remove_client_bench(c: &mut Criterion) {
                             (central, id, to_remove)
                         })
                     },
-                    |(mut central, id, client_ids)| async move {
+                    |(central, id, client_ids)| async move {
+                        let context = central.new_transaction().await;
                         black_box(
-                            central
+                            context
                                 .remove_members_from_conversation(&id, client_ids.as_slice())
                                 .await
                                 .unwrap(),
                         );
-                        central.commit_accepted(&id).await.unwrap();
+                        context.commit_accepted(&id).await.unwrap();
+                        context.finish().await.unwrap();
                         black_box(());
                     },
                     BatchSize::SmallInput,
@@ -225,9 +227,11 @@ fn update_client_bench(c: &mut Criterion) {
                             (central, id)
                         })
                     },
-                    |(mut central, id)| async move {
-                        black_box(central.update_keying_material(&id).await.unwrap());
-                        central.commit_accepted(&id).await.unwrap();
+                    |(central, id)| async move {
+                        let context = central.new_transaction().await;
+                        black_box(context.update_keying_material(&id).await.unwrap());
+                        context.commit_accepted(&id).await.unwrap();
+                        context.finish().await.unwrap();
                         black_box(());
                     },
                     BatchSize::SmallInput,
