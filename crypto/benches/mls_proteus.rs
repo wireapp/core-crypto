@@ -53,7 +53,9 @@ fn encrypt_message_bench(c: &mut Criterion) {
                         })
                     },
                     |(mut central, id, text)| async move {
-                        black_box(central.encrypt_message(&id, text).await.unwrap());
+                        let context = central.new_transaction().await;
+                        black_box(context.encrypt_message(&id, text).await.unwrap());
+                        context.finish().await.unwrap();
                     },
                     BatchSize::SmallInput,
                 )
@@ -77,14 +79,16 @@ fn encrypt_message_bench(c: &mut Criterion) {
                         })
                     },
                     |(mut central, mut keystore, session_material, text)| async move {
+                        let context = central.new_transaction().await;
                         for (session_id, _) in session_material {
                             black_box(
-                                central
+                                context
                                     .encrypt(&mut keystore, &session_id, text.as_bytes())
                                     .await
                                     .unwrap(),
                             );
                         }
+                        context.finish().await.unwrap();
                     },
                     BatchSize::SmallInput,
                 )
