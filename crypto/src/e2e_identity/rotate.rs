@@ -738,7 +738,7 @@ pub(crate) mod tests {
                                         Some(TEAM.to_string()),
                                         E2EI_EXPIRY,
                                         cs,
-                                    ),
+                                    ).await,
                                     MlsCredentialType::X509 => {
                                         cc.e2ei_new_rotate_enrollment(
                                             Some(ALICE_NEW_DISPLAY_NAME.to_string()),
@@ -802,7 +802,7 @@ pub(crate) mod tests {
                                         Some(TEAM.to_string()),
                                         E2EI_EXPIRY,
                                         cs,
-                                    ),
+                                    ).await,
                                     MlsCredentialType::X509 => {
                                         cc.e2ei_new_rotate_enrollment(
                                             Some(BOB_NEW_DISPLAY_NAME.to_string()),
@@ -810,8 +810,7 @@ pub(crate) mod tests {
                                             Some(TEAM.to_string()),
                                             E2EI_EXPIRY,
                                             cs,
-                                        )
-                                        .await
+                                        ).await
                                     }
                                 }
                             })

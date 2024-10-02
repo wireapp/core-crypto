@@ -224,7 +224,7 @@ mod tests {
     wasm_bindgen_test_configure!(run_in_browser);
 
     async fn all_identities_check<const N: usize>(
-        central: &mut MlsCentral,
+        central: &CentralContext,
         id: &ConversationId,
         user_ids: &[String; N],
         expected_sizes: [usize; N],
@@ -323,7 +323,7 @@ mod tests {
                     let android_id = android_identities.first().unwrap();
                     assert_eq!(
                         android_id.client_id.as_bytes(),
-                        alice_android_central.context.client_id().unwrap().0.as_slice()
+                        alice_android_central.context.client_id().await.unwrap().0.as_slice()
                     );
 
                     let ios_identities = alice_android_central
@@ -378,11 +378,11 @@ mod tests {
                         .unwrap();
 
                     let (alice_id, bob_id, rupert_id, dilbert_id, john_id) = (
-                        alice.context.get_client_id(),
-                        bob.context.get_client_id(),
-                        rupert.context.get_client_id(),
-                        dilbert.context.get_client_id(),
-                        john.context.get_client_id(),
+                        alice.context.get_client_id().await,
+                        bob.context.get_client_id().await,
+                        rupert.context.get_client_id().await,
+                        dilbert.context.get_client_id().await,
+                        john.context.get_client_id().await,
                     );
 
                     let client_ids = [alice_id, bob_id, rupert_id, dilbert_id, john_id];
@@ -431,9 +431,9 @@ mod tests {
                         .unwrap();
 
                     let (alice_id, bob_id, rupert_id) = (
-                        alice.context.get_client_id(),
-                        bob.context.get_client_id(),
-                        rupert.context.get_client_id(),
+                        alice.context.get_client_id().await,
+                        bob.context.get_client_id().await,
+                        rupert.context.get_client_id().await,
                     );
 
                     let client_ids = [alice_id, bob_id, rupert_id];
@@ -477,8 +477,8 @@ mod tests {
                         .unwrap();
 
                     let (android_id, ios_id) = (
-                        alice_android_central.context.get_client_id(),
-                        alice_ios_central.context.get_client_id(),
+                        alice_android_central.context.get_client_id().await,
+                        alice_ios_central.context.get_client_id().await,
                     );
 
                     let mut android_ids = alice_android_central
@@ -576,15 +576,15 @@ mod tests {
                     assert_eq!(nb_members, 6);
 
                     assert_eq!(
-                        alice_android_central.context.get_user_id(),
-                        alice_ios_central.context.get_user_id()
+                        alice_android_central.context.get_user_id().await,
+                        alice_ios_central.context.get_user_id().await
                     );
 
-                    let alicem_user_id = alicem_ios_central.context.get_user_id();
-                    let bobt_user_id = bobt_android_central.context.get_user_id();
+                    let alicem_user_id = alicem_ios_central.context.get_user_id().await;
+                    let bobt_user_id = bobt_android_central.context.get_user_id().await;
 
                     // Finds both Alice's devices
-                    let alice_user_id = alice_android_central.context.get_user_id();
+                    let alice_user_id = alice_android_central.context.get_user_id().await;
                     let alice_identities = alice_android_central
                         .context
                         .get_user_identities(&id, &[alice_user_id.clone()])
@@ -595,7 +595,7 @@ mod tests {
                     assert_eq!(identities.len(), 2);
 
                     // Finds Bob only device
-                    let bob_user_id = bob_android_central.context.get_user_id();
+                    let bob_user_id = bob_android_central.context.get_user_id().await;
                     let bob_identities = alice_android_central
                         .context
                         .get_user_identities(&id, &[bob_user_id.clone()])
@@ -609,12 +609,12 @@ mod tests {
                     let user_ids = [alice_user_id, bob_user_id, alicem_user_id, bobt_user_id];
                     let expected_sizes = [2, 1, 2, 1];
 
-                    all_identities_check(&mut alice_android_central.context, &id, &user_ids, expected_sizes).await;
-                    all_identities_check(&mut alicem_android_central.context, &id, &user_ids, expected_sizes).await;
-                    all_identities_check(&mut alice_ios_central.context, &id, &user_ids, expected_sizes).await;
-                    all_identities_check(&mut alicem_ios_central.context, &id, &user_ids, expected_sizes).await;
-                    all_identities_check(&mut bob_android_central.context, &id, &user_ids, expected_sizes).await;
-                    all_identities_check(&mut bobt_android_central.context, &id, &user_ids, expected_sizes).await;
+                    all_identities_check(&alice_android_central.context, &id, &user_ids, expected_sizes).await;
+                    all_identities_check(&alicem_android_central.context, &id, &user_ids, expected_sizes).await;
+                    all_identities_check(&alice_ios_central.context, &id, &user_ids, expected_sizes).await;
+                    all_identities_check(&alicem_ios_central.context, &id, &user_ids, expected_sizes).await;
+                    all_identities_check(&bob_android_central.context, &id, &user_ids, expected_sizes).await;
+                    all_identities_check(&bobt_android_central.context, &id, &user_ids, expected_sizes).await;
                 })
             },
         )
@@ -666,12 +666,12 @@ mod tests {
                     assert_eq!(nb_members, 3);
 
                     assert_eq!(
-                        alice_android_central.context.get_user_id(),
-                        alice_ios_central.context.get_user_id()
+                        alice_android_central.context.get_user_id().await,
+                        alice_ios_central.context.get_user_id().await
                     );
 
                     // Finds both Alice's devices
-                    let alice_user_id = alice_android_central.context.get_user_id();
+                    let alice_user_id = alice_android_central.context.get_user_id().await;
                     let alice_identities = alice_android_central
                         .context
                         .get_user_identities(&id, &[alice_user_id.clone()])
@@ -682,7 +682,7 @@ mod tests {
                     assert_eq!(identities.len(), 2);
 
                     // Finds Bob only device
-                    let bob_user_id = bob_android_central.context.get_user_id();
+                    let bob_user_id = bob_android_central.context.get_user_id().await;
                     let bob_identities = alice_android_central
                         .context
                         .get_user_identities(&id, &[bob_user_id.clone()])
@@ -764,7 +764,7 @@ mod tests {
                         .len();
                     assert_eq!(nb_members, 6);
 
-                    assert_eq!(alicem_android_central.get_user_id(), alicem_ios_central.get_user_id());
+                    assert_eq!(alicem_android_central.get_user_id().await, alicem_ios_central.get_user_id().await);
 
                     // cross server communication
                     bobt_android_central
