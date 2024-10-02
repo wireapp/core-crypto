@@ -16,19 +16,29 @@
 
 import * as CoreCryptoFfiTypes from "./wasm/core-crypto-ffi.d.js";
 import initWasm, {
-    CoreCrypto as CoreCryptoFfi,
+    AcmeChallenge,
     ConversationConfiguration as ConversationConfigurationFfi,
-    CustomConfiguration as CustomConfigurationFfi,
+    CoreCrypto as CoreCryptoFfi,
     CoreCryptoWasmCallbacks,
     CoreCryptoWasmLogger,
+    CustomConfiguration as CustomConfigurationFfi,
+    E2eiDumpedPkiEnv,
+    NewAcmeAuthz,
+    NewAcmeOrder,
+} from "./wasm";
+
+import CoreCryptoContext from "./CoreCryptoContext";
+
+// re-exports
+export {
     NewAcmeOrder,
     NewAcmeAuthz,
     AcmeChallenge,
     E2eiDumpedPkiEnv,
-} from "./wasm";
-
-// re-exports
-export { NewAcmeOrder, NewAcmeAuthz, AcmeChallenge, E2eiDumpedPkiEnv };
+    ConversationConfigurationFfi,
+    CoreCryptoContext,
+    CustomConfigurationFfi,
+};
 
 interface CoreCryptoRichError {
     errorName: string;
@@ -611,13 +621,13 @@ export interface X509Identity {
     notAfter: bigint;
 }
 
-function normalizeEnum<T>(enumType: T, value: number): T[keyof T] {
+export function normalizeEnum<T>(enumType: T, value: number): T[keyof T] {
     const enumAsString = enumType[value as unknown as keyof T];
     const enumAsDiscriminant = enumType[enumAsString as unknown as keyof T];
     return enumAsDiscriminant;
 }
 
-const mapWireIdentity = (
+export const mapWireIdentity = (
     ffiIdentity?: CoreCryptoFfiTypes.WireIdentity
 ): WireIdentity | undefined => {
     if (!ffiIdentity) {
@@ -884,6 +894,7 @@ export enum CoreCryptoLogLevel {
     Warn = 5,
     Error = 6,
 }
+
 /**
  * Initializes the global logger for Core Crypto and registers the callback. Can be called only once
  * @param logger - the interface to be called when something is going to be logged
@@ -1019,11 +1030,34 @@ export class CoreCrypto {
     }
 
     /**
-     * Use this after {@link CoreCrypto.deferredInit} when you have a clientId. It initializes MLS.
+     * Starts a new transaction in Core Crypto. If the callback succeeds, it will be committed,
+     * otherwise, every operation performed with the context will be discarded.
      *
-     * @param clientId - {@link CoreCryptoParams#clientId} but required
-     * @param ciphersuites - All the ciphersuites supported by this MLS client
-     * @param nbKeyPackage - number of initial KeyPackage to create when initializing the client
+     * @param callback - The callback to execute within the transaction
+     *
+     * @returns the result of the callback will be returned from this call
+     */
+    async transaction<R>(
+        callback: (ctx: CoreCryptoContext) => Promise<R>
+    ): Promise<R> {
+        let result!: R;
+        await CoreCryptoError.asyncMapErr(
+            this.#cc.transaction({
+                execute: async (ctx: CoreCryptoFfiTypes.CoreCryptoContext) => {
+                    result = await callback(
+                        CoreCryptoContext.fromFfiContext(ctx)
+                    );
+                },
+            })
+        );
+        return result;
+    }
+
+    /**
+     * See {@link CoreCryptoContext.mlsInit}.
+     *
+     * @deprecated Create a transaction with {@link CoreCrypto.transaction}
+     * and use {@link CoreCryptoContext.mlsInit} instead.
      */
     async mlsInit(
         clientId: ClientId,
@@ -1037,11 +1071,10 @@ export class CoreCrypto {
     }
 
     /**
-     * Generates a MLS KeyPair/CredentialBundle with a temporary, random client ID.
-     * This method is designed to be used in conjunction with {@link CoreCrypto.mlsInitWithClientId} and represents the first step in this process
+     * See {@link CoreCryptoContext.mlsGenerateKeypair}.
      *
-     * @param ciphersuites - All the ciphersuites supported by this MLS client
-     * @returns This returns the TLS-serialized identity key (i.e. the signature keypair's public key)
+     * @deprecated Create a transaction with {@link CoreCrypto.transaction}
+     * and use {@link CoreCryptoContext.mlsGenerateKeypair} instead.
      */
     async mlsGenerateKeypair(
         ciphersuites: Ciphersuite[]
@@ -1053,13 +1086,10 @@ export class CoreCrypto {
     }
 
     /**
-     * Updates the current temporary Client ID with the newly provided one. This is the second step in the externally-generated clients process
+     * See {@link CoreCryptoContext.mlsInitWithClientId}.
      *
-     * Important: This is designed to be called after {@link CoreCrypto.mlsGenerateKeypair}
-     *
-     * @param clientId - The newly-allocated client ID by the MLS Authentication Service
-     * @param signaturePublicKeys - The public key you were given at the first step; This is for authentication purposes
-     * @param ciphersuites - All the ciphersuites supported by this MLS client
+     * @deprecated Create a transaction with {@link CoreCrypto.transaction}
+     * and use {@link CoreCryptoContext.mlsInitWithClientId} instead.
      */
     async mlsInitWithClientId(
         clientId: ClientId,
@@ -1132,20 +1162,7 @@ export class CoreCrypto {
     }
 
     /**
-     * Checks if the Client is member of a given conversation and if the MLS Group is loaded up
-     *
-     * @returns Whether the given conversation ID exists
-     *
-     * @example
-     * ```ts
-     *  const cc = await CoreCrypto.init({ databaseName: "test", key: "test", clientId: "test" });
-     *  const encoder = new TextEncoder();
-     *  if (await cc.conversationExists(encoder.encode("my super chat"))) {
-     *    // Do something
-     *  } else {
-     *    // Do something else
-     *  }
-     * ```
+     * See {@link CoreCryptoContext.conversationExists}.
      */
     async conversationExists(conversationId: ConversationId): Promise<boolean> {
         return await CoreCryptoError.asyncMapErr(
@@ -1154,11 +1171,10 @@ export class CoreCrypto {
     }
 
     /**
-     * Marks a conversation as child of another one
-     * This will mostly affect the behavior of the callbacks (the parentConversationClients parameter will be filled)
+     * See {@link CoreCryptoContext.markConversationAsChildOf}.
      *
-     * @param childId - conversation identifier of the child conversation
-     * @param parentId - conversation identifier of the parent conversation
+     * @deprecated Create a transaction with {@link CoreCrypto.transaction}
+     * and use {@link CoreCryptoContext.markConversationAsChildOf} instead.
      */
     async markConversationAsChildOf(
         childId: ConversationId,
@@ -1170,7 +1186,7 @@ export class CoreCrypto {
     }
 
     /**
-     * Returns the current epoch of a conversation
+     * See {@link CoreCryptoContext.conversationEpoch}.
      *
      * @returns the epoch of the conversation
      *
@@ -1188,7 +1204,7 @@ export class CoreCrypto {
     }
 
     /**
-     * Returns the ciphersuite of a conversation
+     * See {@link CoreCryptoContext.conversationCiphersuite}.
      *
      * @returns the ciphersuite of the conversation
      */
@@ -1201,9 +1217,10 @@ export class CoreCrypto {
     }
 
     /**
-     * Wipes and destroys the local storage of a given conversation / MLS group
+     * See {@link CoreCryptoContext.wipeConversation}.
      *
-     * @param conversationId - The ID of the conversation to remove
+     * @deprecated Create a transaction with {@link CoreCrypto.transaction}
+     * and use {@link CoreCryptoContext.wipeConversation} instead.
      */
     async wipeConversation(conversationId: ConversationId): Promise<void> {
         return await CoreCryptoError.asyncMapErr(
@@ -1212,15 +1229,10 @@ export class CoreCrypto {
     }
 
     /**
-     * Creates a new conversation with the current client being the sole member
-     * You will want to use {@link CoreCrypto.addClientsToConversation} afterwards to add clients to this conversation
+     * See {@link CoreCryptoContext.createConversation}.
      *
-     * @param conversationId - The conversation ID; You can either make them random or let the backend attribute MLS group IDs
-     * @param creatorCredentialType - kind of credential the creator wants to create the group with
-     * @param configuration - configuration of the MLS group
-     * @param configuration.ciphersuite - The {@link Ciphersuite} that is chosen to be the group's
-     * @param configuration.externalSenders - Array of Client IDs that are qualified as external senders within the group
-     * @param configuration.custom - {@link CustomConfiguration}
+     * @deprecated Create a transaction with {@link transaction}
+     * and use {@link CoreCryptoContext.createConversation} instead.
      */
     async createConversation(
         conversationId: ConversationId,
@@ -1252,17 +1264,10 @@ export class CoreCrypto {
     }
 
     /**
-     * Decrypts a message for a given conversation.
+     * See {@link CoreCryptoContext.decryptMessage}.
      *
-     * Note: you should catch & ignore the following error reasons:
-     * * "We already decrypted this message once"
-     * * "You tried to join with an external commit but did not merge it yet. We will reapply this message for you when you merge your external commit"
-     * * "Incoming message is for a future epoch. We will buffer it until the commit for that epoch arrives"
-     *
-     * @param conversationId - The ID of the conversation
-     * @param payload - The encrypted message buffer
-     *
-     * @returns a {@link DecryptedMessage}. Note that {@link DecryptedMessage#message} is `undefined` when the encrypted payload contains a system message such a proposal or commit
+     * @deprecated Create a transaction with {@link CoreCrypto.transaction}
+     * and use {@link CoreCryptoContext.decryptMessage} instead.
      */
     async decryptMessage(
         conversationId: ConversationId,
@@ -1316,12 +1321,10 @@ export class CoreCrypto {
     }
 
     /**
-     * Encrypts a message for a given conversation
+     * See {@link CoreCryptoContext.encryptMessage}.
      *
-     * @param conversationId - The ID of the conversation
-     * @param message - The plaintext message to encrypt
-     *
-     * @returns The encrypted payload for the given group. This needs to be fanned out to the other members of the group.
+     * @deprecated Create a transaction with {@link CoreCrypto.transaction}
+     * and use {@link CoreCryptoContext.encryptMessage} instead.
      */
     async encryptMessage(
         conversationId: ConversationId,
@@ -1333,15 +1336,10 @@ export class CoreCrypto {
     }
 
     /**
-     * Ingest a TLS-serialized MLS welcome message to join an existing MLS group
+     * See {@link CoreCryptoContext.processWelcomeMessage}.
      *
-     * Important: you have to catch the error with this reason "Although this Welcome seems valid, the local KeyPackage
-     * it references has already been deleted locally. Join this group with an external commit", ignore it and then try
-     * to join this group with an external commit.
-     *
-     * @param welcomeMessage - TLS-serialized MLS Welcome message
-     * @param configuration - configuration of the MLS group
-     * @returns The conversation ID of the newly joined group. You can use the same ID to decrypt/encrypt messages
+     * @deprecated Create a transaction with {@link CoreCrypto.transaction}
+     * and use {@link CoreCryptoContext.processWelcomeMessage} instead.
      */
     async processWelcomeMessage(
         welcomeMessage: Uint8Array,
@@ -1368,7 +1366,7 @@ export class CoreCrypto {
     }
 
     /**
-     * Get the client's public signature key. To upload to the DS for further backend side validation
+     * See {@link CoreCryptoContext.clientPublicKey}.
      *
      * @param ciphersuite - of the signature key to get
      * @param credentialType - of the public key to look for
@@ -1384,10 +1382,10 @@ export class CoreCrypto {
     }
 
     /**
+     * See {@link CoreCryptoContext.clientValidKeypackagesCount}.
      *
-     * @param ciphersuite - of the KeyPackages to count
-     * @param credentialType - of the KeyPackages to count
-     * @returns The amount of valid, non-expired KeyPackages that are persisted in the backing storage
+     * @deprecated Create a transaction with {@link CoreCrypto.transaction}
+     * and use {@link CoreCryptoContext.processWelcomeMessage} instead.
      */
     async clientValidKeypackagesCount(
         ciphersuite: Ciphersuite,
@@ -1399,12 +1397,10 @@ export class CoreCrypto {
     }
 
     /**
-     * Fetches a requested amount of keypackages
+     * See {@link CoreCryptoContext.clientKeypackages}.
      *
-     * @param ciphersuite - of the KeyPackages to generate
-     * @param credentialType - of the KeyPackages to generate
-     * @param amountRequested - The amount of keypackages requested
-     * @returns An array of length `amountRequested` containing TLS-serialized KeyPackages
+     * @deprecated Create a transaction with {@link CoreCrypto.transaction}
+     * and use {@link CoreCryptoContext.clientKeypackages} instead.
      */
     async clientKeypackages(
         ciphersuite: Ciphersuite,
@@ -1421,10 +1417,10 @@ export class CoreCrypto {
     }
 
     /**
-     * Prunes local KeyPackages after making sure they also have been deleted on the backend side
-     * You should only use this after {@link CoreCrypto.e2eiRotateAll}
+     * See {@link CoreCryptoContext.deleteKeypackages}.
      *
-     * @param refs - KeyPackage references to delete obtained from a {RotateBundle}
+     * @deprecated Create a transaction with {@link CoreCrypto.transaction}
+     * and use {@link CoreCryptoContext.deleteKeypackages} instead.
      */
     async deleteKeypackages(refs: Uint8Array[]): Promise<void> {
         return await CoreCryptoError.asyncMapErr(
@@ -1433,16 +1429,10 @@ export class CoreCrypto {
     }
 
     /**
-     * Adds new clients to a conversation, assuming the current client has the right to add new clients to the conversation.
+     * See {@link CoreCryptoContext.addClientsToConversation}.
      *
-     * **CAUTION**: {@link CoreCrypto.commitAccepted} **HAS TO** be called afterward **ONLY IF** the Delivery Service responds
-     * '200 OK' to the {@link CommitBundle} upload. It will "merge" the commit locally i.e. increment the local group
-     * epoch, use new encryption secrets etc...
-     *
-     * @param conversationId - The ID of the conversation
-     * @param keyPackages - KeyPackages of the new clients to add
-     *
-     * @returns A {@link CommitBundle}
+     * @deprecated Create a transaction with {@link CoreCrypto.transaction}
+     * and use {@link CoreCryptoContext.addClientsToConversation} instead.
      */
     async addClientsToConversation(
         conversationId: ConversationId,
@@ -1475,17 +1465,10 @@ export class CoreCrypto {
     }
 
     /**
-     * Removes the provided clients from a conversation; Assuming those clients exist and the current client is allowed
-     * to do so, otherwise this operation does nothing.
+     * See {@link CoreCryptoContext.removeClientsFromConversation}.
      *
-     * **CAUTION**: {@link CoreCrypto.commitAccepted} **HAS TO** be called afterward **ONLY IF** the Delivery Service responds
-     * '200 OK' to the {@link CommitBundle} upload. It will "merge" the commit locally i.e. increment the local group
-     * epoch, use new encryption secrets etc...
-     *
-     * @param conversationId - The ID of the conversation
-     * @param clientIds - Array of Client IDs to remove.
-     *
-     * @returns A {@link CommitBundle}
+     * @deprecated Create a transaction with {@link CoreCrypto.transaction}
+     * and use {@link CoreCryptoContext.removeClientsFromConversation} instead.
      */
     async removeClientsFromConversation(
         conversationId: ConversationId,
@@ -1517,15 +1500,10 @@ export class CoreCrypto {
     }
 
     /**
-     * Creates an update commit which forces every client to update their LeafNode in the conversation
+     * See {@link CoreCryptoContext.updateKeyingMaterial}.
      *
-     * **CAUTION**: {@link CoreCrypto.commitAccepted} **HAS TO** be called afterward **ONLY IF** the Delivery Service responds
-     * '200 OK' to the {@link CommitBundle} upload. It will "merge" the commit locally i.e. increment the local group
-     * epoch, use new encryption secrets etc...
-     *
-     * @param conversationId - The ID of the conversation
-     *
-     * @returns A {@link CommitBundle}
+     * @deprecated Create a transaction with {@link CoreCrypto.transaction}
+     * and use {@link CoreCryptoContext.updateKeyingMaterial} instead.
      */
     async updateKeyingMaterial(
         conversationId: ConversationId
@@ -1590,15 +1568,10 @@ export class CoreCrypto {
     }
 
     /**
-     * Commits the local pending proposals and returns the {@link CommitBundle} object containing what can result from this operation.
+     * See {@link CoreCryptoContext.commitPendingProposals}.
      *
-     * **CAUTION**: {@link CoreCrypto.commitAccepted} **HAS TO** be called afterwards **ONLY IF** the Delivery Service responds
-     * '200 OK' to the {@link CommitBundle} upload. It will "merge" the commit locally i.e. increment the local group
-     * epoch, use new encryption secrets etc...
-     *
-     * @param conversationId - The ID of the conversation
-     *
-     * @returns A {@link CommitBundle} or `undefined` when there was no pending proposal to commit
+     * @deprecated Create a transaction with {@link CoreCrypto.transaction}
+     * and use {@link CoreCryptoContext.commitPendingProposals} instead.
      */
     async commitPendingProposals(
         conversationId: ConversationId
@@ -1630,12 +1603,10 @@ export class CoreCrypto {
     }
 
     /**
-     * Creates a new proposal for the provided Conversation ID
+     * See {@link CoreCryptoContext.newProposal}.
      *
-     * @param proposalType - The type of proposal, see {@link ProposalType}
-     * @param args - The arguments of the proposal, see {@link ProposalArgs}, {@link AddProposalArgs} or {@link RemoveProposalArgs}
-     *
-     * @returns A {@link ProposalBundle} containing the Proposal and its reference in order to roll it back if necessary
+     * @deprecated Create a transaction with {@link CoreCrypto.transaction}
+     * and use {@link CoreCryptoContext.newProposal} instead.
      */
     async newProposal(
         proposalType: ProposalType,
@@ -1679,7 +1650,10 @@ export class CoreCrypto {
     }
 
     /**
-     * Creates a new external Add proposal for self client to join a conversation.
+     * See {@link CoreCryptoContext.newExternalProposal}.
+     *
+     * @deprecated Create a transaction with {@link CoreCrypto.transaction}
+     * and use {@link CoreCryptoContext.newExternalProposal} instead.
      */
     async newExternalProposal(
         externalProposalType: ExternalProposalType,
@@ -1703,21 +1677,10 @@ export class CoreCrypto {
     }
 
     /**
-     * Allows to create an external commit to "apply" to join a group through its GroupInfo.
+     * See {@link CoreCryptoContext.joinByExternalCommit}.
      *
-     * If the Delivery Service accepts the external commit, you have to {@link CoreCrypto.mergePendingGroupFromExternalCommit}
-     * in order to get back a functional MLS group. On the opposite, if it rejects it, you can either retry by just
-     * calling again {@link CoreCrypto.joinByExternalCommit}, no need to {@link CoreCrypto.clearPendingGroupFromExternalCommit}.
-     * If you want to abort the operation (too many retries or the user decided to abort), you can use
-     * {@link CoreCrypto.clearPendingGroupFromExternalCommit} in order not to bloat the user's storage but nothing
-     * bad can happen if you forget to except some storage space wasted.
-     *
-     * @param groupInfo - a TLS encoded GroupInfo fetched from the Delivery Service
-     * @param credentialType - kind of Credential to use for joining this group. If {@link CredentialType.Basic} is
-     * chosen and no Credential has been created yet for it, a new one will be generated.
-     * @param configuration - configuration of the MLS group
-     * When {@link CredentialType.X509} is chosen, it fails when no Credential has been created for the given {@link Ciphersuite}.
-     * @returns see {@link ConversationInitBundle}
+     * @deprecated Create a transaction with {@link CoreCrypto.transaction}
+     * and use {@link CoreCryptoContext.joinByExternalCommit} instead.
      */
     async joinByExternalCommit(
         groupInfo: Uint8Array,
@@ -1758,11 +1721,10 @@ export class CoreCrypto {
     }
 
     /**
-     * This merges the commit generated by {@link CoreCrypto.joinByExternalCommit}, persists the group permanently
-     * and deletes the temporary one. This step makes the group operational and ready to encrypt/decrypt message
+     * See {@link CoreCryptoContext.mergePendingGroupFromExternalCommit}.
      *
-     * @param conversationId - The ID of the conversation
-     * @returns eventually decrypted buffered messages if any
+     * @deprecated Create a transaction with {@link CoreCrypto.transaction}
+     * and use {@link CoreCryptoContext.mergePendingGroupFromExternalCommit} instead.
      */
     async mergePendingGroupFromExternalCommit(
         conversationId: ConversationId
@@ -1773,11 +1735,10 @@ export class CoreCrypto {
     }
 
     /**
-     * In case the external commit generated by {@link CoreCrypto.joinByExternalCommit} is rejected by the Delivery Service, and we
-     * want to abort this external commit once for all, we can wipe out the pending group from the keystore in order
-     * not to waste space
+     * See {@link CoreCryptoContext.clearPendingGroupFromExternalCommit}.
      *
-     * @param conversationId - The ID of the conversation
+     * @deprecated Create a transaction with {@link CoreCrypto.transaction}
+     * and use {@link CoreCryptoContext.clearPendingGroupFromExternalCommit} instead.
      */
     async clearPendingGroupFromExternalCommit(
         conversationId: ConversationId
@@ -1788,10 +1749,10 @@ export class CoreCrypto {
     }
 
     /**
-     * Allows to mark the latest commit produced as "accepted" and be able to safely merge it into the local group state
+     * See {@link CoreCryptoContext.commitAccepted}.
      *
-     * @param conversationId - The group's ID
-     * @returns the messages from current epoch which had been buffered, if any
+     * @deprecated Create a transaction with {@link CoreCrypto.transaction}
+     * and use {@link CoreCryptoContext.commitAccepted} instead.
      */
     async commitAccepted(
         conversationId: ConversationId
@@ -1802,13 +1763,10 @@ export class CoreCrypto {
     }
 
     /**
-     * Allows to remove a pending proposal (rollback). Use this when backend rejects the proposal you just sent e.g. if permissions have changed meanwhile.
+     * See {@link CoreCryptoContext.clearPendingProposal}.
      *
-     * **CAUTION**: only use this when you had an explicit response from the Delivery Service
-     * e.g. 403 or 409. Do not use otherwise e.g. 5xx responses, timeout etc…
-     *
-     * @param conversationId - The group's ID
-     * @param proposalRef - A reference to the proposal to delete. You get one when using {@link CoreCrypto.newProposal}
+     * @deprecated Create a transaction with {@link CoreCrypto.transaction}
+     * and use {@link CoreCryptoContext.clearPendingProposal} instead.
      */
     async clearPendingProposal(
         conversationId: ConversationId,
@@ -1820,14 +1778,10 @@ export class CoreCrypto {
     }
 
     /**
-     * Allows to remove a pending commit (rollback). Use this when backend rejects the commit you just sent e.g. if permissions have changed meanwhile.
+     * See {@link CoreCryptoContext.clearPendingCommit}.
      *
-     * **CAUTION**: only use this when you had an explicit response from the Delivery Service
-     * e.g. 403. Do not use otherwise e.g. 5xx responses, timeout etc..
-     * **DO NOT** use when Delivery Service responds 409, pending state will be renewed
-     * in {@link CoreCrypto.decryptMessage}
-     *
-     * @param conversationId - The group's ID
+     * @deprecated Create a transaction with {@link CoreCrypto.transaction}
+     * and use {@link CoreCryptoContext.clearPendingCommit} instead.
      */
     async clearPendingCommit(conversationId: ConversationId): Promise<void> {
         return await CoreCryptoError.asyncMapErr(
@@ -1836,7 +1790,7 @@ export class CoreCrypto {
     }
 
     /**
-     * Derives a new key from the group
+     * See {@link CoreCryptoContext.exportSecretKey}.
      *
      * @param conversationId - The group's ID
      * @param keyLength - the length of the key to be derived. If the value is higher than the
@@ -1854,8 +1808,7 @@ export class CoreCrypto {
     }
 
     /**
-     * Returns the raw public key of the single external sender present in this group.
-     * This should be used to initialize a subconversation
+     * See {@link CoreCryptoContext.getExternalSender}.
      *
      * @param conversationId - The group's ID
      *
@@ -1870,7 +1823,7 @@ export class CoreCrypto {
     }
 
     /**
-     * Returns all clients from group's members
+     * See {@link CoreCryptoContext.getClientIds}.
      *
      * @param conversationId - The group's ID
      *
@@ -1883,8 +1836,7 @@ export class CoreCrypto {
     }
 
     /**
-     * Allows {@link CoreCrypto} to act as a CSPRNG provider
-     * @note The underlying CSPRNG algorithm is ChaCha20 and takes in account the external seed provider either at init time or provided with {@link CoreCrypto.reseedRng}
+     * See {@link CoreCryptoContext.randomBytes}.
      *
      * @param length - The number of bytes to be returned in the `Uint8Array`
      *
@@ -2147,16 +2099,10 @@ export class CoreCrypto {
     }
 
     /**
-     * Creates an enrollment instance with private key material you can use in order to fetch
-     * a new x509 certificate from the acme server.
+     * See {@link CoreCryptoContext.e2eiNewEnrollment}.
      *
-     * @param clientId - client identifier e.g. `b7ac11a4-8f01-4527-af88-1c30885a7931:6add501bacd1d90e@example.com`
-     * @param displayName - human-readable name displayed in the application e.g. `Smith, Alice M (QA)`
-     * @param handle - user handle e.g. `alice.smith.qa@example.com`
-     * @param expirySec - generated x509 certificate expiry
-     * @param ciphersuite - for generating signing key material
-     * @param team - name of the Wire team a user belongs to
-     * @returns The new {@link E2eiEnrollment} enrollment instance to use with {@link CoreCrypto.e2eiMlsInitOnly}
+     * @deprecated Create a transaction with {@link CoreCrypto.transaction}
+     * and use {@link CoreCryptoContext.e2eiNewEnrollment} instead.
      */
     async e2eiNewEnrollment(
         clientId: string,
@@ -2180,15 +2126,10 @@ export class CoreCrypto {
     }
 
     /**
-     * Generates an E2EI enrollment instance for a "regular" client (with a Basic credential) willing to migrate to E2EI.
-     * Once the enrollment is finished, use the instance in {@link CoreCrypto.e2eiRotateAll} to do the rotation.
+     * See {@link CoreCryptoContext.e2eiNewActivationEnrollment}.
      *
-     * @param displayName - human-readable name displayed in the application e.g. `Smith, Alice M (QA)`
-     * @param handle - user handle e.g. `alice.smith.qa@example.com`
-     * @param expirySec - generated x509 certificate expiry
-     * @param ciphersuite - for generating signing key material
-     * @param team - name of the Wire team a user belongs to
-     * @returns The new {@link E2eiEnrollment} enrollment instance to use with {@link CoreCrypto.e2eiRotateAll}
+     * @deprecated Create a transaction with {@link CoreCrypto.transaction}
+     * and use {@link CoreCryptoContext.e2eiNewActivationEnrollment} instead.
      */
     async e2eiNewActivationEnrollment(
         displayName: string,
@@ -2210,17 +2151,10 @@ export class CoreCrypto {
     }
 
     /**
-     * Generates an E2EI enrollment instance for a E2EI client (with a X509 certificate credential)
-     * having to change/rotate their credential, either because the former one is expired or it
-     * has been revoked. It lets you change the DisplayName or the handle
-     * if you need to. Once the enrollment is finished, use the instance in {@link CoreCrypto.e2eiRotateAll} to do the rotation.
+     * See {@link CoreCryptoContext.e2eiNewRotateEnrollment}.
      *
-     * @param expirySec - generated x509 certificate expiry
-     * @param ciphersuite - for generating signing key material
-     * @param displayName - human-readable name displayed in the application e.g. `Smith, Alice M (QA)`
-     * @param handle - user handle e.g. `alice.smith.qa@example.com`
-     * @param team - name of the Wire team a user belongs to
-     * @returns The new {@link E2eiEnrollment} enrollment instance to use with {@link CoreCrypto.e2eiRotateAll}
+     * @deprecated Create a transaction with {@link CoreCrypto.transaction}
+     * and use {@link CoreCryptoContext.e2eiNewRotateEnrollment} instead.
      */
     async e2eiNewRotateEnrollment(
         expirySec: number,
@@ -2242,13 +2176,10 @@ export class CoreCrypto {
     }
 
     /**
-     * Use this method to initialize end-to-end identity when a client signs up and the grace period is already expired ;
-     * that means he cannot initialize with a Basic credential
+     * See {@link CoreCryptoContext.e2eiMlsInitOnly}.
      *
-     * @param enrollment - the enrollment instance used to fetch the certificates
-     * @param certificateChain - the raw response from ACME server
-     * @param nbKeyPackage - number of initial KeyPackage to create when initializing the client
-     * @returns a MlsClient initialized with only a x509 credential
+     * @deprecated Create a transaction with {@link CoreCrypto.transaction}
+     * and use {@link CoreCryptoContext.e2eiMlsInitOnly} instead.
      */
     async e2eiMlsInitOnly(
         enrollment: E2eiEnrollment,
@@ -2263,7 +2194,7 @@ export class CoreCrypto {
     }
 
     /**
-     * Dumps the PKI environment as PEM
+     * See {@link CoreCryptoContext.e2eiDumpPKIEnv}.
      *
      * @returns a struct with different fields representing the PKI environment as PEM strings
      */
@@ -2272,6 +2203,7 @@ export class CoreCrypto {
     }
 
     /**
+     * See {@link CoreCryptoContext.e2eiIsPKIEnvSetup}.
      * @returns whether the E2EI PKI environment is setup (i.e. Root CA, Intermediates, CRLs)
      */
     async e2eiIsPKIEnvSetup(): Promise<boolean> {
@@ -2279,24 +2211,20 @@ export class CoreCrypto {
     }
 
     /**
-     * Registers a Root Trust Anchor CA for the use in E2EI processing.
+     * See {@link CoreCryptoContext.e2eiRegisterAcmeCA}.
      *
-     * Please note that without a Root Trust Anchor, all validations *will* fail;
-     * So this is the first step to perform after initializing your E2EI client
-     *
-     * @param trustAnchorPEM - PEM certificate to anchor as a Trust Root
+     * @deprecated Create a transaction with {@link CoreCrypto.transaction}
+     * and use {@link CoreCryptoContext.e2eiRegisterAcmeCA} instead.
      */
     async e2eiRegisterAcmeCA(trustAnchorPEM: string): Promise<void> {
         return await this.#cc.e2ei_register_acme_ca(trustAnchorPEM);
     }
 
     /**
-     * Registers an Intermediate CA for the use in E2EI processing.
+     * See {@link CoreCryptoContext.e2eiRegisterIntermediateCA}.
      *
-     * Please note that a Root Trust Anchor CA is needed to validate Intermediate CAs;
-     * You **need** to have a Root CA registered before calling this
-     *
-     * @param certPEM - PEM certificate to register as an Intermediate CA
+     * @deprecated Create a transaction with {@link CoreCrypto.transaction}
+     * and use {@link CoreCryptoContext.e2eiRegisterIntermediateCA} instead.
      */
     async e2eiRegisterIntermediateCA(
         certPEM: string
@@ -2305,15 +2233,10 @@ export class CoreCrypto {
     }
 
     /**
-     * Registers a CRL for the use in E2EI processing.
+     * See {@link CoreCryptoContext.e2eiRegisterCRL}.
      *
-     * Please note that a Root Trust Anchor CA is needed to validate CRLs;
-     * You **need** to have a Root CA registered before calling this
-     *
-     * @param crlDP - CRL Distribution Point; Basically the URL you fetched it from
-     * @param crlDER - DER representation of the CRL
-     *
-     * @returns a {@link CRLRegistration} with the dirty state of the new CRL (see struct) and its expiration timestamp
+     * @deprecated Create a transaction with {@link CoreCrypto.transaction}
+     * and use {@link CoreCryptoContext.e2eiRegisterCRL} instead.
      */
     async e2eiRegisterCRL(
         crlDP: string,
@@ -2323,14 +2246,10 @@ export class CoreCrypto {
     }
 
     /**
-     * Creates a commit in all local conversations for changing the credential. Requires first
-     * having enrolled a new X509 certificate with either {@link CoreCrypto.e2eiNewActivationEnrollment}
-     * or {@link CoreCrypto.e2eiNewRotateEnrollment}
+     * See {@link CoreCryptoContext.e2eiRotateAll}.
      *
-     * @param enrollment - the enrollment instance used to fetch the certificates
-     * @param certificateChain - the raw response from ACME server
-     * @param newKeyPackageCount - number of KeyPackages with new identity to generate
-     * @returns a {@link RotateBundle} with commits to fan-out to other group members, KeyPackages to upload and old ones to delete
+     * @deprecated Create a transaction with {@link CoreCrypto.transaction}
+     * and use {@link CoreCryptoContext.e2eiRotateAll} instead.
      */
     async e2eiRotateAll(
         enrollment: E2eiEnrollment,
@@ -2353,11 +2272,10 @@ export class CoreCrypto {
     }
 
     /**
-     * Allows persisting an active enrollment (for example while redirecting the user during OAuth) in order to resume
-     * it later with {@link e2eiEnrollmentStashPop}
+     * See {@link CoreCryptoContext.e2eiEnrollmentStash}.
      *
-     * @param enrollment the enrollment instance to persist
-     * @returns a handle to fetch the enrollment later with {@link e2eiEnrollmentStashPop}
+     * @deprecated Create a transaction with {@link CoreCrypto.transaction}
+     * and use {@link CoreCryptoContext.e2eiEnrollmentStash} instead.
      */
     async e2eiEnrollmentStash(enrollment: E2eiEnrollment): Promise<Uint8Array> {
         return await CoreCryptoError.asyncMapErr(
@@ -2368,10 +2286,10 @@ export class CoreCrypto {
     }
 
     /**
-     * Fetches the persisted enrollment and deletes it from the keystore
+     * See {@link CoreCryptoContext.e2eiEnrollmentStashPop}.
      *
-     * @param handle returned by {@link e2eiEnrollmentStash}
-     * @returns the persisted enrollment instance
+     * @deprecated Create a transaction with {@link CoreCrypto.transaction}
+     * and use {@link CoreCryptoContext.e2eiEnrollmentStashPop} instead.
      */
     async e2eiEnrollmentStashPop(handle: Uint8Array): Promise<E2eiEnrollment> {
         const e2ei = await CoreCryptoError.asyncMapErr(
@@ -2381,11 +2299,10 @@ export class CoreCrypto {
     }
 
     /**
-     * Indicates when to mark a conversation as not verified i.e. when not all its members have a X509.
-     * Credential generated by Wire's end-to-end identity enrollment
+     * See {@link CoreCryptoContext.e2eiConversationState}.
      *
-     * @param conversationId The group's ID
-     * @returns the conversation state given current members
+     * @deprecated Create a transaction with {@link CoreCrypto.transaction}
+     * and use {@link CoreCryptoContext.e2eiConversationState} instead.
      */
     async e2eiConversationState(
         conversationId: ConversationId
@@ -2398,7 +2315,7 @@ export class CoreCrypto {
     }
 
     /**
-     * Returns true when end-to-end-identity is enabled for the given Ciphersuite
+     * See {@link CoreCryptoContext.e2eiIsEnabled}.
      *
      * @param ciphersuite of the credential to check
      * @returns true if end-to-end identity is enabled for the given ciphersuite
@@ -2410,8 +2327,7 @@ export class CoreCrypto {
     }
 
     /**
-     * From a given conversation, get the identity of the members supplied. Identity is only present for members with a
-     * Certificate Credential (after turning on end-to-end identity).
+     * See {@link CoreCryptoContext.getDeviceIdentities}.
      *
      * @param conversationId - identifier of the conversation
      * @param deviceIds - identifiers of the devices
@@ -2429,9 +2345,7 @@ export class CoreCrypto {
     }
 
     /**
-     * From a given conversation, get the identity of the users (device holders) supplied.
-     * Identity is only present for devices with a Certificate Credential (after turning on end-to-end identity).
-     * If no member has a x509 certificate, it will return an empty Vec.
+     * See {@link CoreCryptoContext.getUserIdentities}.
      *
      * @param conversationId - identifier of the conversation
      * @param userIds - user identifiers hyphenated UUIDv4 e.g. 'bd4c7053-1c5a-4020-9559-cd7bf7961954'
@@ -2460,8 +2374,7 @@ export class CoreCrypto {
     }
 
     /**
-     * Gets the e2ei conversation state from a `GroupInfo`. Useful to check if the group has e2ei
-     * turned on or not before joining it.
+     * See {@link CoreCryptoContext.getCredentialInUse}.
      *
      * @param groupInfo - a TLS encoded GroupInfo fetched from the Delivery Service
      * @param credentialType - kind of Credential to check usage of. Defaults to X509 for now as no other value will give any result.

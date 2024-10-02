@@ -21,10 +21,10 @@ use super::MlsCentral;
 /// causes data to be persisted needs to be done through this struct. This struct will buffer all
 /// operations in memory and when [CentraContext::finish] is called, it will persist the data into
 /// the keystore.
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub struct CentralContext {
     state: Arc<RwLock<ContextState>>,
-    _lock_guard: Arc<MutexGuardArc<()>>,
+    _lock_guard: MutexGuardArc<()>,
 }
 
 /// Due to uniffi's design, we can't force the context to be dropped after the transaction is
@@ -56,7 +56,7 @@ impl CentralContext {
         let mls_groups = Arc::new(RwLock::new(Default::default()));
         let callbacks = central.callbacks.clone();
         let mls_client = central.mls_client.clone();
-        let lock_guard = Arc::new(central.transaction_lock.lock_arc().await);
+        let lock_guard = central.transaction_lock.lock_arc().await;
         Self {
             state: Arc::new(
                 ContextState::Valid {
@@ -94,7 +94,8 @@ impl CentralContext {
         }
     }
 
-    pub(crate) async fn mls_provider(&self) -> CryptoResult<TransactionalCryptoProvider> {
+    /// Creates a read guard on the internal mls provider for the current transaction
+    pub async fn mls_provider(&self) -> CryptoResult<TransactionalCryptoProvider> {
         match self.state.read().await.deref() {
             ContextState::Valid { transaction, .. } => Ok(transaction.clone()),
             ContextState::Invalid => Err(CryptoError::InvalidContext),

@@ -38,7 +38,7 @@ internal class E2EITest {
             clientId = "b7ac11a4-8f01-4527-af88-1c30885a7931:6c1866f567616f31@wire.com",
             displayName = "Alice Smith",
             handle = "alice_wire",
-            expirySec = 90u * 24u * 3600u,
+            expirySec = (90 * 24 * 3600).toUInt(),
             ciphersuite = Ciphersuite.DEFAULT
         )
         val directoryResponse = """{
