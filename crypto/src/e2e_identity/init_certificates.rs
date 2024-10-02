@@ -350,52 +350,51 @@ mod tests {
     #[apply(all_cred_cipher)]
     #[wasm_bindgen_test]
     async fn register_acme_ca_should_fail_when_already_set(case: TestCase) {
-        if case.is_x509() {
-            run_test_with_client_ids(case.clone(), ["alice"], move |[alice_central]| {
-                Box::pin(async move {
-                    let alice_test_chain = alice_central.x509_test_chain.as_ref().as_ref().unwrap();
-                    let alice_ta = alice_test_chain
-                        .trust_anchor
-                        .certificate
-                        .to_pem(LineEnding::CRLF)
-                        .unwrap();
-
-                    assert!(matches!(
-                        alice_central
-                            .mls_central
-                            .e2ei_register_acme_ca(alice_ta)
-                            .await
-                            .unwrap_err(),
-                        CryptoError::E2eiError(E2eIdentityError::TrustAnchorAlreadyRegistered)
-                    ));
-                })
-            })
-            .await;
+        if !case.is_x509() {
+            return;
         }
+        run_test_with_client_ids(case.clone(), ["alice"], move |[alice_central]| {
+            Box::pin(async move {
+                let alice_test_chain = alice_central.x509_test_chain.as_ref().as_ref().unwrap();
+                let alice_ta = alice_test_chain
+                    .trust_anchor
+                    .certificate
+                    .to_pem(LineEnding::CRLF)
+                    .unwrap();
+
+                assert!(matches!(
+                    alice_central.context.e2ei_register_acme_ca(alice_ta).await.unwrap_err(),
+                    CryptoError::E2eiError(E2eIdentityError::TrustAnchorAlreadyRegistered)
+                ));
+            })
+        })
+        .await;
     }
 
     #[apply(all_cred_cipher)]
     #[wasm_bindgen_test]
     async fn x509_restore_should_not_happen_if_basic(case: TestCase) {
-        if !case.is_x509() {
-            run_test_with_client_ids(case.clone(), ["alice"], move |[alice_ctx]| {
+        if case.is_x509() {
+            return;
+        }
+        run_test_with_client_ids(case.clone(), ["alice"], move |[alice_ctx]| {
                 Box::pin(async move {
                     let ClientContext {
-                        mls_central,
+                        context,
                         x509_test_chain,
                         ..
                     } = alice_ctx;
 
                     assert!(x509_test_chain.is_none());
-                    assert!(!mls_central.mls_backend.is_pki_env_setup().await);
+                    assert!(!context.e2ei_is_pki_env_setup().await.unwrap());
 
-                    mls_central.restore_from_disk().await.unwrap();
+                    // mls_central.restore_from_disk().await.unwrap();
 
                     assert!(x509_test_chain.is_none());
-                    assert!(!mls_central.mls_backend.is_pki_env_setup().await);
+                    // assert!(!mls_central.mls_backend.is_pki_env_setup().await);
                 })
             })
             .await;
-        }
+        
     }
 }

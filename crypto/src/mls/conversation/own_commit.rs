@@ -141,12 +141,12 @@ mod tests {
 
                     let id = conversation_id();
                     alice_central
-                        .mls_central
+                        .context
                         .new_conversation(&id, case.credential_type, case.cfg.clone())
                         .await
                         .unwrap();
 
-                    assert!(alice_central.mls_central.pending_commit(&id).await.is_none());
+                    assert!(alice_central.context.pending_commit(&id).await.is_none());
 
                     let alice_og_cert = &x509_test_chain
                         .actors
@@ -158,7 +158,7 @@ mod tests {
                     // change credential to verify later what we return in the decrypt message
                     let (new_handle, new_display_name) = ("new_alice_wire", "New Alice Smith");
                     let cb = alice_central
-                        .mls_central
+                        .context
                         .rotate_credential(
                             &case,
                             new_handle,
@@ -170,16 +170,16 @@ mod tests {
 
                     // create a commit. This will also store it in the store
                     let commit = alice_central
-                        .mls_central
+                        .context
                         .e2ei_rotate(&id, Some(&cb))
                         .await
                         .unwrap()
                         .commit;
-                    assert!(alice_central.mls_central.pending_commit(&id).await.is_some());
+                    assert!(alice_central.context.pending_commit(&id).await.is_some());
 
                     // since the pending commit is the same as the incoming one, it should succeed
                     let decrypt_self = alice_central
-                        .mls_central
+                        .context
                         .decrypt_message(&id, &commit.to_bytes().unwrap())
                         .await;
                     assert!(decrypt_self.is_ok());
@@ -189,9 +189,9 @@ mod tests {
                     assert!(decrypt_self.proposals.is_empty());
 
                     // verify that we return the new identity
-                    alice_central.mls_central.verify_sender_identity(&case, &decrypt_self);
+                    alice_central.context.verify_sender_identity(&case, &decrypt_self);
                     alice_central
-                        .mls_central
+                        .context
                         .verify_local_credential_rotated(&id, new_handle, new_display_name)
                         .await;
                 })
@@ -212,37 +212,37 @@ mod tests {
                     Box::pin(async move {
                         let id = conversation_id();
                         alice_central
-                            .mls_central
+                            .context
                             .new_conversation(&id, case.credential_type, case.cfg.clone())
                             .await
                             .unwrap();
 
-                        assert!(alice_central.mls_central.pending_commit(&id).await.is_none());
+                        assert!(alice_central.context.pending_commit(&id).await.is_none());
 
-                        let bob = bob_central.mls_central.rand_key_package(&case).await;
-                        let charlie = charlie_central.mls_central.rand_key_package(&case).await;
+                        let bob = bob_central.context.rand_key_package(&case).await;
+                        let charlie = charlie_central.context.rand_key_package(&case).await;
 
                         // create a first commit then discard it from the store to be able to create a second one
                         let add_bob = alice_central
-                            .mls_central
+                            .context
                             .add_members_to_conversation(&id, vec![bob])
                             .await
                             .unwrap();
-                        assert!(alice_central.mls_central.pending_commit(&id).await.is_some());
-                        alice_central.mls_central.clear_pending_commit(&id).await.unwrap();
-                        assert!(alice_central.mls_central.pending_commit(&id).await.is_none());
+                        assert!(alice_central.context.pending_commit(&id).await.is_some());
+                        alice_central.context.clear_pending_commit(&id).await.unwrap();
+                        assert!(alice_central.context.pending_commit(&id).await.is_none());
 
                         // create another commit for the sole purpose of having it in the store
                         let add_charlie = alice_central
-                            .mls_central
+                            .context
                             .add_members_to_conversation(&id, vec![charlie])
                             .await
                             .unwrap();
-                        assert!(alice_central.mls_central.pending_commit(&id).await.is_some());
+                        assert!(alice_central.context.pending_commit(&id).await.is_some());
                         assert_ne!(add_bob.commit, add_charlie.commit);
 
                         let decrypt = alice_central
-                            .mls_central
+                            .context
                             .decrypt_message(&id, &add_bob.commit.to_bytes().unwrap())
                             .await;
                         assert!(matches!(decrypt.unwrap_err(), CryptoError::ClearingPendingCommitError));
@@ -262,28 +262,23 @@ mod tests {
                 Box::pin(async move {
                     let id = conversation_id();
                     alice_central
-                        .mls_central
+                        .context
                         .new_conversation(&id, case.credential_type, case.cfg.clone())
                         .await
                         .unwrap();
 
-                    assert!(alice_central.mls_central.pending_commit(&id).await.is_none());
+                    assert!(alice_central.context.pending_commit(&id).await.is_none());
 
                     // create a commit, have it in store...
-                    let commit = alice_central
-                        .mls_central
-                        .update_keying_material(&id)
-                        .await
-                        .unwrap()
-                        .commit;
-                    assert!(alice_central.mls_central.pending_commit(&id).await.is_some());
+                    let commit = alice_central.context.update_keying_material(&id).await.unwrap().commit;
+                    assert!(alice_central.context.pending_commit(&id).await.is_some());
 
                     // then delete the pending commit
-                    alice_central.mls_central.clear_pending_commit(&id).await.unwrap();
-                    assert!(alice_central.mls_central.pending_commit(&id).await.is_none());
+                    alice_central.context.clear_pending_commit(&id).await.unwrap();
+                    assert!(alice_central.context.pending_commit(&id).await.is_none());
 
                     let decrypt_self = alice_central
-                        .mls_central
+                        .context
                         .decrypt_message(&id, &commit.to_bytes().unwrap())
                         .await;
                     // this means DS replayed the commit. In that case just ignore, we have already merged the commit anyway
@@ -307,33 +302,25 @@ mod tests {
                 Box::pin(async move {
                     let conversation_id = conversation_id();
                     alice_central
-                        .mls_central
+                        .context
                         .new_conversation(&conversation_id, case.credential_type, case.cfg.clone())
                         .await
                         .unwrap();
 
                     // No pending commit yet.
-                    assert!(alice_central
-                        .mls_central
-                        .pending_commit(&conversation_id)
-                        .await
-                        .is_none());
+                    assert!(alice_central.context.pending_commit(&conversation_id).await.is_none());
 
-                    let bob_key_package = bob_central.mls_central.rand_key_package(&case).await;
+                    let bob_key_package = bob_central.context.rand_key_package(&case).await;
 
                     // Create the commit that we're going to tamper with.
                     let add_bob_message = alice_central
-                        .mls_central
+                        .context
                         .add_members_to_conversation(&conversation_id, vec![bob_key_package])
                         .await
                         .unwrap();
 
                     // Now there is a pending commit.
-                    assert!(alice_central
-                        .mls_central
-                        .pending_commit(&conversation_id)
-                        .await
-                        .is_some());
+                    assert!(alice_central.context.pending_commit(&conversation_id).await.is_some());
 
                     let commit_serialized = &mut add_bob_message.commit.to_bytes().unwrap();
 
@@ -343,7 +330,7 @@ mod tests {
                     commit_serialized[355] = commit_serialized[355].wrapping_add(1);
 
                     let decryption_result = alice_central
-                        .mls_central
+                        .context
                         .decrypt_message(&conversation_id, commit_serialized)
                         .await;
                     assert!(matches!(
@@ -354,25 +341,17 @@ mod tests {
                     ));
 
                     // There is still a pending commit.
-                    assert!(alice_central
-                        .mls_central
-                        .pending_commit(&conversation_id)
-                        .await
-                        .is_some());
+                    assert!(alice_central.context.pending_commit(&conversation_id).await.is_some());
 
                     // Positive case: Alice decrypts the commit...
                     assert!(alice_central
-                        .mls_central
+                        .context
                         .decrypt_message(&conversation_id, &add_bob_message.commit.to_bytes().unwrap())
                         .await
                         .is_ok());
 
                     // ...and has cleared the pending commit.
-                    assert!(alice_central
-                        .mls_central
-                        .pending_commit(&conversation_id)
-                        .await
-                        .is_none());
+                    assert!(alice_central.context.pending_commit(&conversation_id).await.is_none());
                 })
             },
         )

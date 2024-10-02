@@ -20,6 +20,7 @@ pub use rstest_reuse::{self, *};
 use std::collections::HashMap;
 
 use crate::{
+    mls::context::CentralContext,
     prelude::{ClientId, ConversationId, MlsCentral, MlsCentralConfiguration},
     test_utils::x509::{CertificateParams, X509TestChain, X509TestChainActorArg, X509TestChainArgs},
     CoreCryptoCallbacks,
@@ -40,9 +41,10 @@ pub use message::*;
 
 pub const GROUP_SAMPLE_SIZE: usize = 9;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct ClientContext {
-    pub mls_central: MlsCentral,
+    pub context: CentralContext,
+    pub central: MlsCentral,
     pub x509_test_chain: std::sync::Arc<Option<X509TestChain>>,
 }
 
@@ -175,11 +177,14 @@ pub async fn run_cross_signed_tests_with_client_ids<const N: usize, const F: usi
     client_ids: [[&'static str; 3]; N],
     other_client_ids: [[&'static str; 3]; F],
     (domain1, domain2): (&'static str, &'static str),
-    test: impl FnOnce([MlsCentral; N], [MlsCentral; F]) -> std::pin::Pin<Box<dyn std::future::Future<Output = ()> + 'static>>
+    test: impl FnOnce(
+            [CentralContext; N],
+            [CentralContext; F],
+        ) -> std::pin::Pin<Box<dyn std::future::Future<Output = ()> + 'static>>
         + 'static,
 ) {
     assert!(case.is_x509(), "This is only supported for x509 test cases");
-    run_cross_tests(move |paths1, paths2| {
+    run_cross_tests(move |paths1: [String; N], paths2: [String; F]| {
         Box::pin(async move {
             let params1 = CertificateParams {
                 org: domain1.into(),
@@ -199,8 +204,27 @@ pub async fn run_cross_signed_tests_with_client_ids<const N: usize, const F: usi
 
             let centrals1 = create_centrals(&case, paths1, Some(&chain1)).await;
             let centrals2 = create_centrals(&case, paths2, Some(&chain2)).await;
+            let mut contexts1 = Vec::new();
+            for central in centrals1 {
+                contexts1.push(central.new_transaction().await);
+            }
 
-            test(centrals1, centrals2).await;
+            let mut contexts2 = Vec::new();
+            for central in centrals2 {
+                contexts2.push(central.new_transaction().await);
+            }
+
+            test(
+                contexts1.clone().try_into().unwrap(),
+                contexts2.clone().try_into().unwrap(),
+            )
+            .await;
+            for c in contexts1 {
+                c.finish().await.unwrap();
+            }
+            for c in contexts2 {
+                c.finish().await.unwrap();
+            }
         })
     })
     .await;
@@ -222,11 +246,12 @@ async fn create_centrals<const N: usize>(
                 Some(INITIAL_KEYING_MATERIAL_COUNT),
             )
             .unwrap();
-            let mut central = MlsCentral::try_new(configuration).await.unwrap();
+            let central = MlsCentral::try_new(configuration).await.unwrap();
+            let context = central.new_transaction().await;
 
             // Setup the X509 PKI environment
             if let Some(chain) = chain {
-                chain.register_with_central(&central).await;
+                chain.register_with_central(&context).await;
             }
 
             let identity = match case.credential_type {
@@ -251,7 +276,8 @@ async fn create_centrals<const N: usize>(
                     ClientIdentifier::X509(HashMap::from([(sc, bundle)]))
                 }
             };
-            central
+            let context = central.new_transaction().await;
+            context
                 .mls_init(
                     identity,
                     vec![case.cfg.ciphersuite],
@@ -259,7 +285,8 @@ async fn create_centrals<const N: usize>(
                 )
                 .await
                 .unwrap();
-            central.callbacks(std::sync::Arc::<ValidationCallbacks>::default());
+            context.finish().await.unwrap();
+            central.callbacks(std::sync::Arc::<ValidationCallbacks>::default()).await;
             central
         }
     });
@@ -277,7 +304,7 @@ pub async fn run_test_with_deterministic_client_ids_and_revocation<const N: usiz
         ) -> std::pin::Pin<Box<dyn std::future::Future<Output = ()> + 'static>>
         + 'static,
 ) {
-    run_cross_tests(move |paths1, paths2| {
+    run_cross_tests(move |paths1: [String; N], paths2: [String; F]| {
         Box::pin(async move {
             let (chain1, chain2) = match (case.is_x509(), cross_signed_client_ids.is_empty()) {
                 (true, true) => (
@@ -313,20 +340,39 @@ pub async fn run_test_with_deterministic_client_ids_and_revocation<const N: usiz
                 _ => (None, None),
             };
 
-            let centrals1 = create_centrals(&case, paths1, chain1.as_ref())
-                .await
-                .map(|mls_central| ClientContext {
-                    mls_central,
+            let centrals = create_centrals(&case, paths1, chain1.as_ref()).await;
+            let mut centrals1 = Vec::new();
+            for (index, mls_central) in centrals.into_iter().enumerate() {
+                let context = ClientContext {
+                    context: mls_central.new_transaction().await,
+                    central: mls_central,
                     x509_test_chain: std::sync::Arc::new(chain1.clone()),
-                });
-            let centrals2 = create_centrals(&case, paths2, chain2.as_ref())
-                .await
-                .map(|mls_central| ClientContext {
-                    mls_central,
+                };
+                centrals1.insert(index, context);
+            }
+            let centrals = create_centrals(&case, paths2, chain2.as_ref()).await;
+            let mut centrals2 = Vec::new();
+            for (index, mls_central) in centrals.into_iter().enumerate() {
+                let context = ClientContext {
+                    context: mls_central.new_transaction().await,
+                    central: mls_central,
                     x509_test_chain: std::sync::Arc::new(chain2.clone()),
-                });
+                };
+                centrals2.insert(index, context);
+            }
 
-            test(centrals1, centrals2).await;
+            test(
+                centrals1.clone().try_into().unwrap(),
+                centrals2.clone().try_into().unwrap(),
+            )
+            .await;
+
+            for c in centrals1 {
+                c.context.finish().await.unwrap();
+            }
+            for c in centrals2 {
+                c.context.finish().await.unwrap();
+            }
         })
     })
     .await
@@ -351,13 +397,16 @@ pub async fn run_test_wo_clients(
                 Some(INITIAL_KEYING_MATERIAL_COUNT),
             )
             .unwrap();
-            let mut central = MlsCentral::try_new(configuration).await.unwrap();
+            let central = MlsCentral::try_new(configuration).await.unwrap();
             central.callbacks(std::sync::Arc::<ValidationCallbacks>::default());
+            let context = central.new_transaction().await;
             test(ClientContext {
-                mls_central: central,
+                context: context.clone(),
+                central,
                 x509_test_chain: None.into(),
             })
-            .await
+            .await;
+            context.finish().await.unwrap();
         })
     })
     .await
