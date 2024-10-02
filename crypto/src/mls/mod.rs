@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use async_lock::{Mutex, RwLock};
 use log::trace;
-use mls_crypto_provider::{MlsCryptoProvider, MlsCryptoProviderConfiguration};
+use mls_crypto_provider::{EntropySeed, MlsCryptoProvider, MlsCryptoProviderConfiguration};
 use openmls_traits::OpenMlsCryptoProvider;
 
 use crate::prelude::{
@@ -337,8 +337,8 @@ impl MlsCentral {
     ///
     /// # Errors
     /// KeyStore errors, such as IO
-    /// TODO: check if there's an active transaction
     pub async fn close(self) -> CryptoResult<()> {
+        self.transaction_lock.lock().await;
         self.mls_backend.close().await?;
         Ok(())
     }
@@ -347,9 +347,16 @@ impl MlsCentral {
     ///
     /// # Errors
     /// KeyStore errors, such as IO
-    /// TODO: check if there's an active transaction
     pub async fn wipe(self) -> CryptoResult<()> {
+        self.transaction_lock.lock().await;
         self.mls_backend.destroy_and_reset().await?;
+        Ok(())
+    }
+
+    /// see [mls_crypto_provider::MlsCryptoProvider::reseed]
+    pub async fn reseed(&self, seed: Option<EntropySeed>) -> CryptoResult<()> {
+        self.transaction_lock.lock().await;
+        self.mls_backend.reseed(seed)?;
         Ok(())
     }
 }
