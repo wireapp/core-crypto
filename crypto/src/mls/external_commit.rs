@@ -778,7 +778,10 @@ mod tests {
 
                     alice_central
                         .context
-                        .callbacks();
+                        .set_callbacks(Some(Arc::new(ValidationCallbacks {
+                            client_is_existing_group_user: false,
+                            ..Default::default()
+                        }))).await.unwrap();
 
                     alice_central
                         .context

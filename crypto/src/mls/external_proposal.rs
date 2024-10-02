@@ -204,7 +204,7 @@ mod tests {
                         );
 
                         // verify Guest's (sender) identity
-                        guest_central.context.verify_sender_identity(&case, &decrypted);
+                        guest_central.context.verify_sender_identity(&case, &decrypted).await;
 
                         // simulate commit message reception from server
                         let MlsCommitBundle { welcome, .. } = owner_central

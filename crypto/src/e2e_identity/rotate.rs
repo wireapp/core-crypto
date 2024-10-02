@@ -449,7 +449,7 @@ pub(crate) mod tests {
                                 .decrypt_message(&id, commit.commit.to_bytes().unwrap())
                                 .await
                                 .unwrap();
-                            alice_central.context.verify_sender_identity(&case, &decrypted);
+                            alice_central.context.verify_sender_identity(&case, &decrypted).await;
 
                             alice_central.context.commit_accepted(&id).await.unwrap();
                             alice_central
@@ -779,7 +779,7 @@ pub(crate) mod tests {
                             .decrypt_message(&id, commit.to_bytes().unwrap())
                             .await
                             .unwrap();
-                        alice_central.context.verify_sender_identity(&case, &decrypted);
+                        alice_central.context.verify_sender_identity(&case, &decrypted).await;
 
                         alice_central.context.commit_accepted(&id).await.unwrap();
                         alice_central
@@ -842,7 +842,7 @@ pub(crate) mod tests {
                             .decrypt_message(&id, commit.to_bytes().unwrap())
                             .await
                             .unwrap();
-                        bob_central.context.verify_sender_identity(&case, &decrypted);
+                        bob_central.context.verify_sender_identity(&case, &decrypted).await;
 
                         bob_central.context.commit_accepted(&id).await.unwrap();
                         bob_central
@@ -1037,7 +1037,7 @@ pub(crate) mod tests {
                                 .decrypt_message(&id, rotate_commit.commit.to_bytes().unwrap())
                                 .await
                                 .unwrap();
-                            alice_central.context.verify_sender_identity(&case, &decrypted);
+                            alice_central.context.verify_sender_identity(&case, &decrypted).await;
 
                             let final_count = alice_central.context.count_entities().await;
                             assert_eq!(init_count.encryption_keypair, final_count.encryption_keypair);
