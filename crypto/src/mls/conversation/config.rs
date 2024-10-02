@@ -246,11 +246,11 @@ mod tests {
         run_test_with_client_ids(case.clone(), ["alice"], move |[mut cc]| {
             Box::pin(async move {
                 let id = conversation_id();
-                cc.mls_central
+                cc.context
                     .new_conversation(&id, case.credential_type, case.cfg.clone())
                     .await
                     .unwrap();
-                let conv = cc.mls_central.get_conversation(&id).await.unwrap();
+                let conv = cc.context.get_conversation(&id).await.unwrap();
                 let group = conv.read().await;
 
                 let capabilities = group.group.group_context_extensions().required_capabilities().unwrap();
@@ -273,11 +273,11 @@ mod tests {
         run_test_with_client_ids(case.clone(), ["alice"], move |[mut cc]| {
             Box::pin(async move {
                 let id = conversation_id();
-                cc.mls_central
+                cc.context
                     .new_conversation(&id, case.credential_type, case.cfg.clone())
                     .await
                     .unwrap();
-                let conv = cc.mls_central.get_conversation(&id).await.unwrap();
+                let conv = cc.context.get_conversation(&id).await.unwrap();
                 let group = conv.read().await;
 
                 // verifying https://www.rfc-editor.org/rfc/rfc9420.html#section-7.2
@@ -318,15 +318,15 @@ mod tests {
         run_test_with_client_ids(case.clone(), ["alice"], move |[cc]| {
             Box::pin(async move {
                 let (_sk, pk) = cc
-                    .mls_central
-                    .mls_backend
+                    .context
+                    .mls_provider().await.unwrap()
                     .crypto()
                     .signature_key_gen(case.signature_scheme())
                     .unwrap();
 
                 assert!(cc
-                    .mls_central
-                    .set_raw_external_senders(&mut case.cfg.clone(), vec![pk])
+                    .context
+                    .set_raw_external_senders(&mut case.cfg.clone(), vec![pk]).await
                     .is_ok());
             })
         })
@@ -350,8 +350,8 @@ mod tests {
 
                 let jwk = wire_e2e_identity::prelude::generate_jwk(alg);
                 let _ = cc
-                    .mls_central
-                    .set_raw_external_senders(&mut case.cfg.clone(), vec![jwk])
+                    .context
+                    .set_raw_external_senders(&mut case.cfg.clone(), vec![jwk]).await
                     .unwrap();
             })
         })

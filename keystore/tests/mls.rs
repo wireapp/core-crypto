@@ -80,6 +80,7 @@ mod tests {
     #[apply(all_storage_types)]
     #[wasm_bindgen_test]
     pub async fn can_add_read_delete_credential_bundle_openmls_traits(store: Connection) {
+        use core_crypto_keystore::connection::FetchFromDatabase;
         use openmls_basic_credential::SignatureKeyPair;
 
         let store = store.await;
