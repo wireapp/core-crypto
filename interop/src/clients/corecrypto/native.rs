@@ -88,9 +88,9 @@ impl EmulatedClient for CoreCryptoNativeClient {
 #[async_trait::async_trait(?Send)]
 impl EmulatedMlsClient for CoreCryptoNativeClient {
     async fn get_keypackage(&mut self) -> Result<Vec<u8>> {
+        let transaction = self.cc.new_transaction().await;
         let start = std::time::Instant::now();
-        let kp = self
-            .cc
+        let kp = transaction
             .get_or_create_client_keypackages(CIPHERSUITE_IN_USE.into(), MlsCredentialType::Basic, 1)
             .await?
             .pop()
@@ -103,18 +103,20 @@ impl EmulatedMlsClient for CoreCryptoNativeClient {
             hex::encode(&self.client_id),
             hex::encode(kp.hpke_init_key()),
         );
+        transaction.finish().await?;
 
         Ok(kp.tls_serialize_detached()?)
     }
 
     async fn add_client(&mut self, conversation_id: &[u8], kp: &[u8]) -> Result<Vec<u8>> {
         let conversation_id = conversation_id.to_vec();
-        if !self.cc.conversation_exists(&conversation_id).await {
+        let transaction = self.cc.new_transaction().await;
+        if !transaction.conversation_exists(&conversation_id).await? {
             let config = MlsConversationConfiguration {
                 ciphersuite: CIPHERSUITE_IN_USE.into(),
                 ..Default::default()
             };
-            self.cc
+            transaction
                 .new_conversation(&conversation_id, MlsCredentialType::Basic, config)
                 .await?;
         }
@@ -122,38 +124,50 @@ impl EmulatedMlsClient for CoreCryptoNativeClient {
         use tls_codec::Deserialize as _;
 
         let kp = KeyPackageIn::tls_deserialize(&mut &kp[..])?;
-        let welcome = self.cc.add_members_to_conversation(&conversation_id, vec![kp]).await?;
+        let welcome = transaction
+            .add_members_to_conversation(&conversation_id, vec![kp])
+            .await?;
+        transaction.finish().await?;
 
         Ok(welcome.welcome.tls_serialize_detached()?)
     }
 
     async fn kick_client(&mut self, conversation_id: &[u8], client_id: &[u8]) -> Result<Vec<u8>> {
-        let commit = self
-            .cc
+        let transaction = self.cc.new_transaction().await;
+        let commit = transaction
             .remove_members_from_conversation(&conversation_id.to_vec(), &[client_id.to_vec().into()])
             .await?;
+        transaction.finish().await?;
 
         Ok(commit.commit.to_bytes()?)
     }
 
     async fn process_welcome(&mut self, welcome: &[u8]) -> Result<Vec<u8>> {
-        Ok(self
-            .cc
+        let transaction = self.cc.new_transaction().await;
+
+        let result = transaction
             .process_raw_welcome_message(welcome.into(), MlsCustomConfiguration::default())
             .await?
-            .id)
+            .id;
+        transaction.finish().await?;
+        Ok(result)
     }
 
     async fn encrypt_message(&mut self, conversation_id: &[u8], message: &[u8]) -> Result<Vec<u8>> {
-        Ok(self.cc.encrypt_message(&conversation_id.to_vec(), message).await?)
+        let transaction = self.cc.new_transaction().await;
+        let result = transaction.encrypt_message(&conversation_id.to_vec(), message).await?;
+        transaction.finish().await?;
+        Ok(result)
     }
 
     async fn decrypt_message(&mut self, conversation_id: &[u8], message: &[u8]) -> Result<Option<Vec<u8>>> {
-        Ok(self
-            .cc
+        let transaction = self.cc.new_transaction().await;
+        let result = transaction
             .decrypt_message(&conversation_id.to_vec(), message)
             .await?
-            .app_msg)
+            .app_msg;
+        transaction.finish().await?;
+        Ok(result)
     }
 }
 

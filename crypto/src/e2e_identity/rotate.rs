@@ -8,6 +8,7 @@ use core_crypto_keystore::{entities::MlsKeyPackage, CryptoKeystoreMls};
 use mls_crypto_provider::TransactionalCryptoProvider;
 
 use crate::e2e_identity::init_certificates::NewCrlDistributionPoint;
+#[cfg(not(target_family = "wasm"))]
 use crate::e2e_identity::refresh_token::RefreshToken;
 use crate::mls::context::CentralContext;
 use crate::{

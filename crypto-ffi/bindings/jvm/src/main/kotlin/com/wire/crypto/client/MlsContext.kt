@@ -18,13 +18,17 @@
 
 package com.wire.crypto.client
 
+import com.wire.crypto.CoreCryptoContext
+import com.wire.crypto.CrlRegistration
+import com.wire.crypto.E2eiDumpedPkiEnv
 import com.wire.crypto.client.CoreCryptoCentral.Companion.DEFAULT_NB_KEY_PACKAGE
 import kotlin.time.Duration
 import kotlin.time.DurationUnit
 import kotlin.time.toDuration
 
 @Suppress("TooManyFunctions")
-class MLSClient(private val cc: com.wire.crypto.CoreCrypto) {
+class MlsContext(private val cc: CoreCryptoContext) {
+    internal fun lower() = cc
 
     companion object {
         private val keyRotationDuration: Duration = 30.toDuration(DurationUnit.DAYS)
@@ -37,7 +41,6 @@ class MLSClient(private val cc: com.wire.crypto.CoreCrypto) {
     /**
      * This is your entrypoint to initialize [com.wire.crypto.client.MLSClient] with a Basic Credential
      */
-    @Deprecated("Use this method from the MlsContext object created from a CoreCryptoCentral.transaction call")
     suspend fun mlsInit(
         id: ClientId,
         ciphersuites: Ciphersuites = Ciphersuites.DEFAULT,
@@ -53,7 +56,6 @@ class MLSClient(private val cc: com.wire.crypto.CoreCrypto) {
      * @param ciphersuites - All the ciphersuites supported by this MLS client
      * @return a list of random ClientId to use in [mlsInitWithClientId]
      */
-    @Deprecated("Use this method from the MlsContext object created from a CoreCryptoCentral.transaction call")
     suspend fun mlsGenerateKeypairs(ciphersuites: Ciphersuites = Ciphersuites.DEFAULT): ExternallyGeneratedHandle {
         return cc.mlsGenerateKeypairs(ciphersuites.lower()).toExternallyGeneratedHandle()
     }
@@ -67,7 +69,6 @@ class MLSClient(private val cc: com.wire.crypto.CoreCrypto) {
      * @param tmpClientIds - The random clientId you obtained in [mlsGenerateKeypairs], for authentication purposes
      * @param ciphersuites - All the ciphersuites supported by this MLS client
      */
-    @Deprecated("Use this method from the MlsContext object created from a CoreCryptoCentral.transaction call")
     suspend fun mlsInitWithClientId(
         clientId: ClientId,
         tmpClientIds: ExternallyGeneratedHandle,
@@ -96,7 +97,6 @@ class MLSClient(private val cc: com.wire.crypto.CoreCrypto) {
      * @param ciphersuite of the KeyPackage to create
      * @param credentialType of the KeyPackage to create
      */
-    @Deprecated("Use this method from the MlsContext object created from a CoreCryptoCentral.transaction call")
     suspend fun generateKeyPackages(
         amount: UInt,
         ciphersuite: Ciphersuite = Ciphersuite.DEFAULT,
@@ -111,7 +111,6 @@ class MLSClient(private val cc: com.wire.crypto.CoreCrypto) {
      * @param ciphersuite of the KeyPackage to count
      * @param credentialType of the KeyPackage to count
      */
-    @Deprecated("Use this method from the MlsContext object created from a CoreCryptoCentral.transaction call")
     suspend fun validKeyPackageCount(
         ciphersuite: Ciphersuite = Ciphersuite.DEFAULT,
         credentialType: CredentialType = CredentialType.DEFAULT
@@ -125,7 +124,6 @@ class MLSClient(private val cc: com.wire.crypto.CoreCrypto) {
      *
      * @param refs KeyPackage references from the [RotateBundle]
      */
-    @Deprecated("Use this method from the MlsContext object created from a CoreCryptoCentral.transaction call")
     suspend fun deleteKeyPackages(refs: List<MLSKeyPackageRef>) {
         // cannot be tested with the current API & helpers
         return cc.deleteKeypackages(refs.map { it.lower() })
@@ -153,7 +151,6 @@ class MLSClient(private val cc: com.wire.crypto.CoreCrypto) {
      * @param ciphersuite of the conversation to join
      * @param ciphersuite to join the conversation with
      */
-    @Deprecated("Use this method from the MlsContext object created from a CoreCryptoCentral.transaction call")
     suspend fun joinConversation(
         id: MLSGroupId,
         epoch: ULong,
@@ -175,7 +172,6 @@ class MLSClient(private val cc: com.wire.crypto.CoreCrypto) {
      * @param groupInfo a TLS encoded GroupInfo fetched from the Delivery Service
      * @param credentialType to join the group with
      */
-    @Deprecated("Use this method from the MlsContext object created from a CoreCryptoCentral.transaction call")
     suspend fun joinByExternalCommit(
         groupInfo: GroupInfo,
         credentialType: CredentialType = CredentialType.DEFAULT,
@@ -193,7 +189,6 @@ class MLSClient(private val cc: com.wire.crypto.CoreCrypto) {
      * @param id conversation identifier
      * @return eventually decrypted buffered messages if any
      */
-    @Deprecated("Use this method from the MlsContext object created from a CoreCryptoCentral.transaction call")
     suspend fun mergePendingGroupFromExternalCommit(id: MLSGroupId): List<BufferedDecryptedMessage>? {
         return cc.mergePendingGroupFromExternalCommit(id.lower())?.map { it.lift() }
     }
@@ -205,7 +200,6 @@ class MLSClient(private val cc: com.wire.crypto.CoreCrypto) {
      *
      * @param id conversation identifier
      */
-    @Deprecated("Use this method from the MlsContext object created from a CoreCryptoCentral.transaction call")
     suspend fun clearPendingGroupFromExternalCommit(id: MLSGroupId) = cc.clearPendingGroupFromExternalCommit(id.lower())
 
     /**
@@ -217,7 +211,6 @@ class MLSClient(private val cc: com.wire.crypto.CoreCrypto) {
      * @param creatorCredentialType kind of credential the creator wants to create the group with
      * @param externalSenders keys fetched from backend for validating external remove proposals
      */
-    @Deprecated("Use this method from the MlsContext object created from a CoreCryptoCentral.transaction call")
     suspend fun createConversation(
         id: MLSGroupId,
         ciphersuite: Ciphersuite = Ciphersuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519,
@@ -238,7 +231,6 @@ class MLSClient(private val cc: com.wire.crypto.CoreCrypto) {
      *
      * @param id conversation identifier
      */
-    @Deprecated("Use this method from the MlsContext object created from a CoreCryptoCentral.transaction call")
     suspend fun wipeConversation(id: MLSGroupId) = cc.wipeConversation(id.lower())
 
     /**
@@ -250,7 +242,6 @@ class MLSClient(private val cc: com.wire.crypto.CoreCrypto) {
      * @param configuration - configuration of the MLS group
      * @return The conversation ID of the newly joined group. You can use the same ID to decrypt/encrypt messages
      */
-    @Deprecated("Use this method from the MlsContext object created from a CoreCryptoCentral.transaction call")
     suspend fun processWelcomeMessage(
         welcome: Welcome,
         configuration: com.wire.crypto.CustomConfiguration = defaultGroupConfiguration
@@ -265,7 +256,6 @@ class MLSClient(private val cc: com.wire.crypto.CoreCrypto) {
      * @param message - The plaintext message to encrypt
      * @return the encrypted payload for the given group. This needs to be fanned out to the other members of the group.
      */
-    @Deprecated("Use this method from the MlsContext object created from a CoreCryptoCentral.transaction call")
     suspend fun encryptMessage(id: MLSGroupId, message: PlaintextMessage): MlsMessage {
         return cc.encryptMessage(id.lower(), message.lower()).toMlsMessage()
     }
@@ -276,7 +266,6 @@ class MLSClient(private val cc: com.wire.crypto.CoreCrypto) {
      * @param id conversation identifier
      * @param message [MlsMessage] (either Application or Handshake message) from the DS
      */
-    @Deprecated("Use this method from the MlsContext object created from a CoreCryptoCentral.transaction call")
     suspend fun decryptMessage(id: MLSGroupId, message: MlsMessage): DecryptedMessage {
         return cc.decryptMessage(id.lower(), message.lower()).lift()
     }
@@ -291,7 +280,6 @@ class MLSClient(private val cc: com.wire.crypto.CoreCrypto) {
      * @param KeyPackages of the new clients to add
      * @return a [CommitBundle] to upload to the backend and if it succeeds call [commitAccepted]
      */
-    @Deprecated("Use this method from the MlsContext object created from a CoreCryptoCentral.transaction call")
     suspend fun addMember(id: MLSGroupId, keyPackages: List<MLSKeyPackage>): CommitBundle {
         return cc.addClientsToConversation(id.lower(), keyPackages.map { it.lower() }).lift()
     }
@@ -307,7 +295,6 @@ class MLSClient(private val cc: com.wire.crypto.CoreCrypto) {
      * @param members client identifier to delete
      * @return a [CommitBundle] to upload to the backend and if it succeeds call [commitAccepted]
      */
-    @Deprecated("Use this method from the MlsContext object created from a CoreCryptoCentral.transaction call")
     suspend fun removeMember(id: MLSGroupId, members: List<ClientId>): CommitBundle {
         val clientIds = members.map { it.lower() }
         return cc.removeClientsFromConversation(id.lower(), clientIds).lift()
@@ -322,22 +309,7 @@ class MLSClient(private val cc: com.wire.crypto.CoreCrypto) {
      * @param id conversation identifier
      * @return a [CommitBundle] to upload to the backend and if it succeeds call [commitAccepted]
      */
-    @Deprecated("Use this method from the MlsContext object created from a CoreCryptoCentral.transaction call")
     suspend fun updateKeyingMaterial(id: MLSGroupId) = cc.updateKeyingMaterial(id.lower()).lift()
-
-    /**
-     * Creates an update commit which replaces your leaf containing basic credentials with a leaf node containing x509 credentials in the conversation.
-     *
-     * NOTE: you can only call this after you've completed the enrollment for an end-to-end identity, calling this without
-     * a valid end-to-end identity will result in an error.
-     *
-     * **CAUTION**: [commitAccepted] **HAS TO** be called afterward **ONLY IF** the Delivery Service responds'200 OK' to the [CommitBundle] upload.
-     * It will "merge" the commit locally i.e. increment the local group epoch, use new encryption secrets etc...
-     *
-     * @param id conversation identifier
-     * @return a [CommitBundle] to upload to the backend and if it succeeds call [commitAccepted]
-     */
-    suspend fun e2eiRotate(id: MLSGroupId) = cc.e2eiRotate(id.lower()).lift()
 
     /**
      * Commits the local pending proposals and returns the {@link CommitBundle} object containing what can result from this operation.
@@ -348,7 +320,6 @@ class MLSClient(private val cc: com.wire.crypto.CoreCrypto) {
      * @param id conversation identifier
      * @return a [CommitBundle] to upload to the backend and if it succeeds call [commitAccepted]
      */
-    @Deprecated("Use this method from the MlsContext object created from a CoreCryptoCentral.transaction call")
     suspend fun commitPendingProposals(id: MLSGroupId): CommitBundle? {
         return cc.commitPendingProposals(id.lower())?.lift()
     }
@@ -360,7 +331,6 @@ class MLSClient(private val cc: com.wire.crypto.CoreCrypto) {
      * @param keyPackage (TLS serialized) fetched from the DS
      * @return a [ProposalBundle] which allows to roll back this proposal with [clearPendingProposal] in case the DS rejects it
      */
-    @Deprecated("Use this method from the MlsContext object created from a CoreCryptoCentral.transaction call")
     suspend fun newAddProposal(id: MLSGroupId, keyPackage: MLSKeyPackage): ProposalBundle {
         return cc.newAddProposal(id.lower(), keyPackage.lower()).lift()
     }
@@ -372,7 +342,6 @@ class MLSClient(private val cc: com.wire.crypto.CoreCrypto) {
      * @param clientId of the client to remove
      * @return a [ProposalBundle] which allows to roll back this proposal with [clearPendingProposal] in case the DS rejects it
      */
-    @Deprecated("Use this method from the MlsContext object created from a CoreCryptoCentral.transaction call")
     suspend fun newRemoveProposal(id: MLSGroupId, clientId: ClientId): ProposalBundle {
         return cc.newRemoveProposal(id.lower(), clientId.lower()).lift()
     }
@@ -383,7 +352,6 @@ class MLSClient(private val cc: com.wire.crypto.CoreCrypto) {
      * @param id conversation identifier
      * @return a [ProposalBundle] which allows to roll back this proposal with [clearPendingProposal] in case the DS rejects it
      */
-    @Deprecated("Use this method from the MlsContext object created from a CoreCryptoCentral.transaction call")
     suspend fun newUpdateProposal(id: MLSGroupId): ProposalBundle {
         return cc.newUpdateProposal(id.lower()).lift()
     }
@@ -393,7 +361,6 @@ class MLSClient(private val cc: com.wire.crypto.CoreCrypto) {
      *
      * @param id conversation identifier
      */
-    @Deprecated("Use this method from the MlsContext object created from a CoreCryptoCentral.transaction call")
     suspend fun commitAccepted(id: MLSGroupId): List<BufferedDecryptedMessage>? {
         return cc.commitAccepted(id.lower())?.map { it.lift() }
     }
@@ -407,7 +374,6 @@ class MLSClient(private val cc: com.wire.crypto.CoreCrypto) {
      * @param id conversation identifier
      * @param proposalRef you get from a [ProposalBundle]
      */
-    @Deprecated("Use this method from the MlsContext object created from a CoreCryptoCentral.transaction call")
     suspend fun clearPendingProposal(id: MLSGroupId, proposalRef: ProposalRef) {
         cc.clearPendingProposal(id.lower(), proposalRef.lower())
     }
@@ -421,7 +387,6 @@ class MLSClient(private val cc: com.wire.crypto.CoreCrypto) {
      *
      * @param id conversation identifier
      */
-    @Deprecated("Use this method from the MlsContext object created from a CoreCryptoCentral.transaction call")
     suspend fun clearPendingCommit(id: MLSGroupId) {
         cc.clearPendingCommit(id.lower())
     }
@@ -464,7 +429,6 @@ class MLSClient(private val cc: com.wire.crypto.CoreCrypto) {
      * @param id conversation identifier
      * @return the conversation state given current members
      */
-    @Deprecated("Use this method from the MlsContext object created from a CoreCryptoCentral.transaction call")
     suspend fun e2eiConversationState(id: MLSGroupId): com.wire.crypto.E2eiConversationState {
         return cc.e2eiConversationState(id.lower())
     }
@@ -513,5 +477,196 @@ class MLSClient(private val cc: com.wire.crypto.CoreCrypto) {
      */
     suspend fun getCredentialInUse(groupInfo: GroupInfo, credentialType: CredentialType = CredentialType.X509): com.wire.crypto.E2eiConversationState {
         return cc.getCredentialInUse(groupInfo.lower(), credentialType.lower())
+    }
+
+    /**
+     * Creates an enrollment instance with private key material you can use in order to fetch a new x509 certificate from the acme server.
+     *
+     * @param clientId client identifier e.g. `b7ac11a4-8f01-4527-af88-1c30885a7931:6add501bacd1d90e@example.com`
+     * @param displayName human-readable name displayed in the application e.g. `Smith, Alice M (QA)`
+     * @param handle user handle e.g. `alice.smith.qa@example.com`
+     * @param expirySec generated x509 certificate expiry
+     * @param ciphersuite for generating signing key material
+     * @param team name of the Wire team a user belongs to
+     * @return The new [E2EIEnrollment] enrollment to use with [e2eiMlsInitOnly]
+     */
+    suspend fun e2eiNewEnrollment(
+        clientId: String,
+        displayName: String,
+        handle: String,
+        expirySec: UInt,
+        ciphersuite: Ciphersuite,
+        team: String? = null,
+    ): E2EIEnrollment {
+        return E2EIEnrollment(cc.e2eiNewEnrollment(clientId, displayName, handle, team, expirySec, ciphersuite.lower()))
+    }
+
+    /**
+     * Generates an E2EI enrollment instance for a "regular" client (with a Basic credential) willing to migrate to E2EI.
+     * Once the enrollment is finished, use the instance in [e2eiRotateAll] to do the rotation.
+     *
+     * @param displayName human-readable name displayed in the application e.g. `Smith, Alice M (QA)`
+     * @param handle user handle e.g. `alice.smith.qa@example.com`
+     * @param expirySec generated x509 certificate expiry
+     * @param ciphersuite for generating signing key material
+     * @param team name of the Wire team a user belongs to
+     * @return The new [E2EIEnrollment] enrollment to use with [e2eiRotateAll]
+     */
+    suspend fun e2eiNewActivationEnrollment(
+        displayName: String,
+        handle: String,
+        expirySec: UInt,
+        ciphersuite: Ciphersuite,
+        team: String? = null,
+    ): E2EIEnrollment {
+        return E2EIEnrollment(
+            cc.e2eiNewActivationEnrollment(
+                displayName,
+                handle,
+                team,
+                expirySec,
+                ciphersuite.lower()
+            )
+        )
+    }
+
+    /**
+     * Generates an E2EI enrollment instance for a E2EI client (with a X509 certificate credential) having to change/rotate
+     * their credential, either because the former one is expired or it has been revoked. It lets you change the DisplayName
+     * or the handle if you need to. Once the enrollment is finished, use the instance in [e2eiRotateAll] to do the rotation.
+     *
+     * @param expirySec generated x509 certificate expiry
+     * @param ciphersuite for generating signing key material
+     * @param displayName human-readable name displayed in the application e.g. `Smith, Alice M (QA)`
+     * @param handle user handle e.g. `alice.smith.qa@example.com`
+     * @param team name of the Wire team a user belongs to
+     * @return The new [E2EIEnrollment] enrollment to use with [e2eiRotateAll]
+     */
+    suspend fun e2eiNewRotateEnrollment(
+        expirySec: UInt,
+        ciphersuite: Ciphersuite,
+        displayName: String? = null,
+        handle: String? = null,
+        team: String? = null,
+    ): E2EIEnrollment {
+        return E2EIEnrollment(
+            cc.e2eiNewRotateEnrollment(
+                displayName,
+                handle,
+                team,
+                expirySec,
+                ciphersuite.lower()
+            )
+        )
+    }
+
+    /**
+     * Use this method to initialize end-to-end identity when a client signs up and the grace period is already expired ;
+     * that means he cannot initialize with a Basic credential
+     *
+     * @param enrollment the enrollment instance used to fetch the certificates
+     * @param certificateChain the raw response from ACME server
+     * @param nbKeyPackage number of initial KeyPackage to create when initializing the client
+     * @return the [CrlDistributionPoints] if any
+     */
+    suspend fun e2eiMlsInitOnly(
+        enrollment: E2EIEnrollment,
+        certificateChain: String,
+        nbKeyPackage: UInt? = DEFAULT_NB_KEY_PACKAGE
+    ): CrlDistributionPoints? {
+        val crlsDps = cc.e2eiMlsInitOnly(enrollment.lower(), certificateChain, nbKeyPackage)
+        return crlsDps?.toCrlDistributionPoint()
+    }
+
+    /**
+     * Dumps the PKI environment as PEM
+     *
+     * @return a struct with different fields representing the PKI environment as PEM strings
+     */
+    suspend fun e2eiDumpPKIEnv(): E2eiDumpedPkiEnv? {
+        return cc.e2eiDumpPkiEnv()
+    }
+
+    /**
+     * Returns whether the E2EI PKI environment is setup (i.e. Root CA, Intermediates, CRLs)
+     */
+    suspend fun e2eiIsPKIEnvSetup(): Boolean {
+        return cc.e2eiIsPkiEnvSetup()
+    }
+
+    /**
+     * Registers a Root Trust Anchor CA for the use in E2EI processing.
+     *
+     * Please note that without a Root Trust Anchor, all validations *will* fail;
+     * So this is the first step to perform after initializing your E2EI client
+     *
+     * @param trustAnchorPEM - PEM certificate to anchor as a Trust Root
+     */
+    suspend fun e2eiRegisterAcmeCA(trustAnchorPEM: String) {
+        return cc.e2eiRegisterAcmeCa(trustAnchorPEM)
+    }
+
+    /**
+     * Registers an Intermediate CA for the use in E2EI processing.
+     *
+     * Please note that a Root Trust Anchor CA is needed to validate Intermediate CAs;
+     * You **need** to have a Root CA registered before calling this
+     *
+     * @param certPEM PEM certificate to register as an Intermediate CA
+     */
+    suspend fun e2eiRegisterIntermediateCA(certPEM: String): CrlDistributionPoints? {
+        return cc.e2eiRegisterIntermediateCa(certPEM)?.toCrlDistributionPoint()
+    }
+
+    /**
+     * Registers a CRL for the use in E2EI processing.
+     *
+     * Please note that a Root Trust Anchor CA is needed to validate CRLs;
+     * You **need** to have a Root CA registered before calling this
+     *
+     * @param crlDP CRL Distribution Point; Basically the URL you fetched it from
+     * @param crlDER DER representation of the CRL
+     * @return A [CrlRegistration] with the dirty state of the new CRL (see struct) and its expiration timestamp
+     */
+    suspend fun e2eiRegisterCRL(crlDP: String, crlDER: ByteArray): CRLRegistration {
+        return cc.e2eiRegisterCrl(crlDP, crlDER).lift()
+    }
+
+    /**
+     * Creates a commit in all local conversations for changing the credential. Requires first having enrolled a new X509
+     * certificate with either [e2eiNewActivationEnrollment] or []e2eiNewRotateEnrollment]
+     *
+     * @param enrollment the enrollment instance used to fetch the certificates
+     * @param certificateChain the raw response from ACME server
+     * @param newKeyPackageCount number of KeyPackages with the new identity to create
+     * @return a [RotateBundle] with commits to fan-out to other group members, KeyPackages to upload and old ones to delete
+     */
+    suspend fun e2eiRotateAll(
+        enrollment: E2EIEnrollment,
+        certificateChain: String,
+        newKeyPackageCount: UInt
+    ): RotateBundle {
+        return cc.e2eiRotateAll(enrollment.lower(), certificateChain, newKeyPackageCount).toRotateBundle()
+    }
+
+    /**
+     * Allows persisting an active enrollment (for example while redirecting the user during OAuth) in order to resume
+     * it later with [e2eiEnrollmentStashPop]
+     *
+     * @param enrollment the enrollment instance to persist
+     * @return a handle to fetch the enrollment later with [e2eiEnrollmentStashPop]
+     */
+    suspend fun e2eiEnrollmentStash(enrollment: E2EIEnrollment): EnrollmentHandle {
+        return cc.e2eiEnrollmentStash(enrollment.lower()).toUByteArray().asByteArray()
+    }
+
+    /**
+     * Fetches the persisted enrollment and deletes it from the keystore
+     *
+     * @param handle returned by [e2eiEnrollmentStash]
+     * @returns the persisted enrollment instance
+     */
+    suspend fun e2eiEnrollmentStashPop(handle: EnrollmentHandle): E2EIEnrollment {
+        return E2EIEnrollment(cc.e2eiEnrollmentStashPop(handle))
     }
 }

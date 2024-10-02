@@ -19,6 +19,7 @@ use crate::{
     entities::{E2eiAcmeCA, Entity, EntityBase, EntityFindParams, EntityMlsExt, StringEntityId, UniqueEntity},
     CryptoKeystoreError, CryptoKeystoreResult, MissingKeyErrorKind,
 };
+use crate::connection::DatabaseConnection;
 
 #[cfg_attr(target_family = "wasm", async_trait::async_trait(?Send))]
 #[cfg_attr(not(target_family = "wasm"), async_trait::async_trait)]

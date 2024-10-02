@@ -47,6 +47,8 @@ impl<'conn> Deref for TransactionWrapper<'conn> {
     }
 }
 
+// Safety: Both these structs are properly being locked with a RwLock and for the transaction it is created
+// and dropped in a single call.
 unsafe impl Send for SqlCipherConnection {}
 unsafe impl Sync for SqlCipherConnection {}
 unsafe impl<'conn> Send for TransactionWrapper<'conn> {}

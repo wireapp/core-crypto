@@ -148,7 +148,8 @@ async fn run_mls_test(chrome_driver_addr: &std::net::SocketAddr) -> Result<()> {
         ciphersuite: CIPHERSUITE_IN_USE.into(),
         ..Default::default()
     };
-    master_client
+    let transaction = master_client.new_transaction().await;
+    transaction
         .new_conversation(&conversation_id, MlsCredentialType::Basic, config)
         .await?;
 
@@ -168,11 +169,11 @@ async fn run_mls_test(chrome_driver_addr: &std::net::SocketAddr) -> Result<()> {
 
     let spinner = util::RunningProcess::new("[MLS] Step 2: Adding clients to conversation...", true);
 
-    let conversation_add_msg = master_client
+    let conversation_add_msg = transaction
         .add_members_to_conversation(&conversation_id, key_packages)
         .await?;
 
-    master_client.commit_accepted(&conversation_id).await?;
+    transaction.commit_accepted(&conversation_id).await?;
 
     let welcome_raw = conversation_add_msg.welcome.tls_serialize_detached()?;
 
@@ -199,7 +200,7 @@ async fn run_mls_test(chrome_driver_addr: &std::net::SocketAddr) -> Result<()> {
             message
         );
 
-        let mut message_to_decrypt = master_client.encrypt_message(&conversation_id, &message).await?;
+        let mut message_to_decrypt = transaction.encrypt_message(&conversation_id, &message).await?;
 
         for c in clients.iter_mut() {
             let decrypted_message_raw = c
@@ -233,7 +234,7 @@ async fn run_mls_test(chrome_driver_addr: &std::net::SocketAddr) -> Result<()> {
                 .await?;
         }
 
-        let decrypted_master_raw = master_client
+        let decrypted_master_raw = transaction
             .decrypt_message(&conversation_id, message_to_decrypt)
             .await?
             .app_msg

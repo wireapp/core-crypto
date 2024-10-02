@@ -19,7 +19,7 @@
 //! Either use [MlsConversationConfiguration] when creating a conversation or [MlsCustomConfiguration]
 //! when joining one by Welcome or external commit
 
-use mls_crypto_provider::MlsCryptoProvider;
+use mls_crypto_provider::TransactionalCryptoProvider;
 use openmls::prelude::{
     Capabilities, Credential, CredentialType, ExternalSender, OpenMlsSignaturePublicKey, ProtocolVersion,
     RequiredCapabilitiesExtension, SenderRatchetConfiguration, WireFormatPolicy, PURE_CIPHERTEXT_WIRE_FORMAT_POLICY,
@@ -31,8 +31,11 @@ use openmls_traits::OpenMlsCryptoProvider;
 use serde::{Deserialize, Serialize};
 use wire_e2e_identity::prelude::parse_json_jwk;
 
-use crate::prelude::{CryptoResult, E2eIdentityError, MlsCentral, MlsCiphersuite};
 use crate::MlsError;
+use crate::{
+    mls::context::CentralContext,
+    prelude::{CryptoResult, E2eIdentityError, MlsCiphersuite},
+};
 
 /// Sets the config in OpenMls for the oldest possible epoch(past current) that a message can be decrypted
 pub(crate) const MAX_PAST_EPOCHS: usize = 3;
@@ -44,13 +47,14 @@ pub(crate) const OUT_OF_ORDER_TOLERANCE: u32 = 2;
 /// How many application messages can be skipped. Use this when the Delivery Service can drop application messages
 pub(crate) const MAXIMUM_FORWARD_DISTANCE: u32 = 1000;
 
-impl MlsCentral {
+impl CentralContext {
     /// Parses supplied key from Delivery Service in order to build back an [ExternalSender]
-    pub fn set_raw_external_senders(
+    pub async fn set_raw_external_senders(
         &self,
         cfg: &mut MlsConversationConfiguration,
         external_senders: Vec<Vec<u8>>,
     ) -> CryptoResult<()> {
+        let mls_provider = self.mls_provider().await?;
         cfg.external_senders = external_senders
             .into_iter()
             .map(|key| {
@@ -58,7 +62,7 @@ impl MlsCentral {
                     MlsConversationConfiguration::legacy_external_sender(
                         key,
                         cfg.ciphersuite.signature_algorithm(),
-                        &self.mls_backend,
+                        &mls_provider,
                     )
                 })
             })
@@ -158,7 +162,7 @@ impl MlsConversationConfiguration {
     fn legacy_external_sender(
         key: Vec<u8>,
         signature_scheme: SignatureScheme,
-        backend: &MlsCryptoProvider,
+        backend: &TransactionalCryptoProvider,
     ) -> CryptoResult<ExternalSender> {
         backend
             .crypto()

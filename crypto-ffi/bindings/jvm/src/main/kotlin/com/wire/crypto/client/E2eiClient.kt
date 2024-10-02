@@ -164,7 +164,17 @@ class E2EIEnrollment(private val delegate: com.wire.crypto.E2eiEnrollment) {
      * @param challenge HTTP response body
      * @see https://www.rfc-editor.org/rfc/rfc8555.html#section-7.5.1
      */
+    @Deprecated("Use contextOidcChallengeResponse() with the MlsContext object created from a CoreCryptoCentral.transaction call")
     suspend fun oidcChallengeResponse(cc: CoreCryptoCentral, challenge: JsonRawData) = delegate.newOidcChallengeResponse(cc.lower(), challenge)
+
+    /**
+     * Parses the response from `POST /acme/{provisioner-name}/challenge/{challenge-id}` for OIDC challenge within a MlsContext.
+     *
+     * @param cc CoreCrypto instance
+     * @param challenge HTTP response body
+     * @see https://www.rfc-editor.org/rfc/rfc8555.html#section-7.5.1
+     */
+    suspend fun contextOidcChallengeResponse(cc: MlsContext, challenge: JsonRawData) = delegate.contextNewOidcChallengeResponse(cc.lower(), challenge)
 
     /**
      * Verifies that the previous challenge has been completed.
