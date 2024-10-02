@@ -135,13 +135,13 @@ mod tests {
                 Box::pin(async move {
                     let id = conversation_id();
                     alice_central
-                        .mls_central
+                        .context
                         .new_conversation(&id, case.credential_type, case.cfg.clone())
                         .await
                         .unwrap();
 
                     let key_length = 128;
-                    let result = alice_central.mls_central.export_secret_key(&id, key_length).await;
+                    let result = alice_central.context.export_secret_key(&id, key_length).await;
                     assert!(result.is_ok());
                     assert_eq!(result.unwrap().len(), key_length);
                 })
@@ -156,12 +156,12 @@ mod tests {
                 Box::pin(async move {
                     let id = conversation_id();
                     alice_central
-                        .mls_central
+                        .context
                         .new_conversation(&id, case.credential_type, case.cfg.clone())
                         .await
                         .unwrap();
 
-                    let result = alice_central.mls_central.export_secret_key(&id, usize::MAX).await;
+                    let result = alice_central.context.export_secret_key(&id, usize::MAX).await;
                     assert!(matches!(
                         result.unwrap_err(),
                         CryptoError::MlsError(MlsError::MlsExportSecretError(ExportSecretError::KeyLengthTooLong))
@@ -178,13 +178,13 @@ mod tests {
                 Box::pin(async move {
                     let id = conversation_id();
                     alice_central
-                        .mls_central
+                        .context
                         .new_conversation(&id, case.credential_type, case.cfg.clone())
                         .await
                         .unwrap();
 
                     let unknown_id = b"not_found".to_vec();
-                    let error = alice_central.mls_central.get_client_ids(&unknown_id).await.unwrap_err();
+                    let error = alice_central.context.get_client_ids(&unknown_id).await.unwrap_err();
                     assert!(matches!(error, CryptoError::ConversationNotFound(c) if c == unknown_id));
                 })
             })
@@ -205,19 +205,19 @@ mod tests {
                     Box::pin(async move {
                         let id = conversation_id();
                         alice_central
-                            .mls_central
+                            .context
                             .new_conversation(&id, case.credential_type, case.cfg.clone())
                             .await
                             .unwrap();
 
-                        assert_eq!(alice_central.mls_central.get_client_ids(&id).await.unwrap().len(), 1);
+                        assert_eq!(alice_central.context.get_client_ids(&id).await.unwrap().len(), 1);
 
                         alice_central
-                            .mls_central
-                            .invite_all(&case, &id, [&mut bob_central.mls_central])
+                            .context
+                            .invite_all(&case, &id, [&mut bob_central.context])
                             .await
                             .unwrap();
-                        assert_eq!(alice_central.mls_central.get_client_ids(&id).await.unwrap().len(), 2);
+                        assert_eq!(alice_central.context.get_client_ids(&id).await.unwrap().len(), 2);
                     })
                 },
             )
@@ -231,13 +231,13 @@ mod tests {
                 Box::pin(async move {
                     let id = conversation_id();
                     alice_central
-                        .mls_central
+                        .context
                         .new_conversation(&id, case.credential_type, case.cfg.clone())
                         .await
                         .unwrap();
 
                     let unknown_id = b"not_found".to_vec();
-                    let error = alice_central.mls_central.get_client_ids(&unknown_id).await.unwrap_err();
+                    let error = alice_central.context.get_client_ids(&unknown_id).await.unwrap_err();
                     assert!(matches!(error, CryptoError::ConversationNotFound(c) if c == unknown_id));
                 })
             })

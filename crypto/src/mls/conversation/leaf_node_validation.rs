@@ -28,14 +28,14 @@ mod tests {
                         let start = fluvio_wasm_timer::Instant::now();
                         let id = conversation_id();
                         alice_central
-                            .mls_central
+                            .context
                             .new_conversation(&id, case.credential_type, case.cfg.clone())
                             .await
                             .unwrap();
 
                         // should fail when creating Add proposal
                         let invalid_kp = bob_central
-                            .mls_central
+                            .context
                             .new_keypackage(&case, Lifetime::new(expiration_time))
                             .await;
 
@@ -47,21 +47,21 @@ mod tests {
                                 .await;
                         }
 
-                        let proposal_creation = alice_central.mls_central.new_add_proposal(&id, invalid_kp).await;
+                        let proposal_creation = alice_central.context.new_add_proposal(&id, invalid_kp).await;
                         assert!(matches!(
                             proposal_creation.unwrap_err(),
                             CryptoError::MlsError(MlsError::ProposeAddMemberError(
                                 ProposeAddMemberError::KeyPackageVerifyError(KeyPackageVerifyError::InvalidLeafNode(_))
                             ))
                         ));
-                        assert!(alice_central.mls_central.pending_proposals(&id).await.is_empty());
+                        assert!(alice_central.context.pending_proposals(&id).await.is_empty());
 
                         // should fail when creating Add commits
                         let expiration_time = 14;
                         let start = fluvio_wasm_timer::Instant::now();
 
                         let invalid_kp = bob_central
-                            .mls_central
+                            .context
                             .new_keypackage(&case, Lifetime::new(expiration_time))
                             .await;
 
@@ -74,7 +74,7 @@ mod tests {
                         }
 
                         let commit_creation = alice_central
-                            .mls_central
+                            .context
                             .add_members_to_conversation(&id, vec![invalid_kp.into()])
                             .await;
 
@@ -84,8 +84,8 @@ mod tests {
                                 AddMembersError::KeyPackageVerifyError(KeyPackageVerifyError::InvalidLeafNode(_))
                             ))
                         ));
-                        assert!(alice_central.mls_central.pending_proposals(&id).await.is_empty());
-                        assert!(alice_central.mls_central.pending_commit(&id).await.is_none());
+                        assert!(alice_central.context.pending_proposals(&id).await.is_empty());
+                        assert!(alice_central.context.pending_commit(&id).await.is_none());
                     })
                 },
             )
@@ -106,26 +106,22 @@ mod tests {
                         let start = fluvio_wasm_timer::Instant::now();
                         let id = conversation_id();
                         alice_central
-                            .mls_central
+                            .context
                             .new_conversation(&id, case.credential_type, case.cfg.clone())
                             .await
                             .unwrap();
                         alice_central
-                            .mls_central
-                            .invite_all(&case, &id, [&mut bob_central.mls_central])
+                            .context
+                            .invite_all(&case, &id, [&mut bob_central.context])
                             .await
                             .unwrap();
 
                         let invalid_kp = charlie_central
-                            .mls_central
+                            .context
                             .new_keypackage(&case, Lifetime::new(expiration_time))
                             .await;
 
-                        let proposal = alice_central
-                            .mls_central
-                            .new_add_proposal(&id, invalid_kp)
-                            .await
-                            .unwrap();
+                        let proposal = alice_central.context.new_add_proposal(&id, invalid_kp).await.unwrap();
                         let proposal = proposal.proposal.to_bytes().unwrap();
 
                         let elapsed = start.elapsed();
@@ -136,7 +132,7 @@ mod tests {
                                 .await;
                         }
 
-                        let decrypting = bob_central.mls_central.decrypt_message(&id, proposal).await;
+                        let decrypting = bob_central.context.decrypt_message(&id, proposal).await;
 
                         // TODO: currently succeeds as we don't anymore validate KeyPackage lifetime upon reception: find another way to craft an invalid KeyPackage. Tracking issue number: WPB-9623
                         decrypting.unwrap();
@@ -168,24 +164,24 @@ mod tests {
                         let start = fluvio_wasm_timer::Instant::now();
                         let id = conversation_id();
                         alice_central
-                            .mls_central
+                            .context
                             .new_conversation(&id, case.credential_type, case.cfg.clone())
                             .await
                             .unwrap();
                         alice_central
-                            .mls_central
-                            .invite_all(&case, &id, [&mut bob_central.mls_central])
+                            .context
+                            .invite_all(&case, &id, [&mut bob_central.context])
                             .await
                             .unwrap();
 
                         // should fail when receiving Add commit
                         let invalid_kp = charlie_central
-                            .mls_central
+                            .context
                             .new_keypackage(&case, Lifetime::new(expiration_time))
                             .await;
 
                         let commit = alice_central
-                            .mls_central
+                            .context
                             .add_members_to_conversation(&id, vec![invalid_kp.into()])
                             .await
                             .unwrap();
@@ -199,7 +195,7 @@ mod tests {
                                 .await;
                         }
 
-                        let decrypting = bob_central.mls_central.decrypt_message(&id, commit).await;
+                        let decrypting = bob_central.context.decrypt_message(&id, commit).await;
 
                         // TODO: currently succeeds as we don't anymore validate KeyPackage lifetime upon reception: find another way to craft an invalid KeyPackage. Tracking issue number: WPB-9623
                         decrypting.unwrap();
@@ -229,21 +225,21 @@ mod tests {
                         let start = fluvio_wasm_timer::Instant::now();
                         let id = conversation_id();
                         alice_central
-                            .mls_central
+                            .context
                             .new_conversation(&id, case.credential_type, case.cfg.clone())
                             .await
                             .unwrap();
 
                         let invalid_kp = bob_central
-                            .mls_central
+                            .context
                             .new_keypackage(&case, Lifetime::new(expiration_time))
                             .await;
                         let commit = alice_central
-                            .mls_central
+                            .context
                             .add_members_to_conversation(&id, vec![invalid_kp.into()])
                             .await
                             .unwrap();
-                        alice_central.mls_central.commit_accepted(&id).await.unwrap();
+                        alice_central.context.commit_accepted(&id).await.unwrap();
 
                         let elapsed = start.elapsed();
                         // Give time to the certificate to expire
@@ -254,7 +250,7 @@ mod tests {
                         }
 
                         let process_welcome = bob_central
-                            .mls_central
+                            .context
                             .process_welcome_message(commit.welcome.into(), case.custom_cfg())
                             .await;
 

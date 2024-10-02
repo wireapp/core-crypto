@@ -509,7 +509,7 @@ impl Client {
 mod tests {
     use core_crypto_keystore::entities::{EntityFindParams, MlsSignatureKeyPair};
     use wasm_bindgen_test::*;
-
+    use core_crypto_keystore::connection::FetchFromDatabase;
     use crate::prelude::ClientId;
     use crate::test_utils::*;
     use mls_crypto_provider::MlsCryptoProvider;
@@ -529,9 +529,10 @@ mod tests {
         } else {
             None
         };
+        let transaction = backend.new_transaction();
         let _ = Client::random_generate(
             &case,
-            &backend,
+            &transaction,
             x509_test_chain.as_ref().map(|chain| chain.find_local_intermediate_ca()),
             false,
         )
@@ -546,6 +547,7 @@ mod tests {
             run_tests(move |[tmp_dir_argument]| {
                 Box::pin(async move {
                     let backend = MlsCryptoProvider::try_new(tmp_dir_argument, "test").await.unwrap();
+                    let backend = backend.new_transaction();
                     // phase 1: generate standalone keypair
                     // TODO: test with multi-ciphersuite. Tracking issue: WPB-9601
                     let handles = Client::generate_raw_keypairs(&[case.ciphersuite()], &backend)
@@ -553,7 +555,7 @@ mod tests {
                         .unwrap();
 
                     let mut identities = backend
-                        .keystore()
+                        .transaction()
                         .find_all::<MlsSignatureKeyPair>(EntityFindParams::default())
                         .await
                         .unwrap();

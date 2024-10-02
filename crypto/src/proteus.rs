@@ -1015,8 +1015,9 @@ mod tests {
         )
         .unwrap();
         let mut cc: CoreCrypto = MlsCentral::try_new(cfg).await.unwrap().into();
+        let transaction = cc.new_transaction().await;
         let x509_test_chain = X509TestChain::init_empty(case.signature_scheme());
-        x509_test_chain.register_with_central(&cc.mls).await;
+        x509_test_chain.register_with_central(&transaction).await;
         assert!(cc.proteus_init().await.is_ok());
         // proteus is initialized, prekeys can be generated
         assert!(cc.proteus_new_prekey(1).await.is_ok());
@@ -1028,7 +1029,7 @@ mod tests {
                 CertificateBundle::rand_identifier(client_id, &[x509_test_chain.find_local_intermediate_ca()])
             }
         };
-        cc.mls_init(
+        transaction.mls_init(
             identifier,
             vec![case.ciphersuite()],
             Some(INITIAL_KEYING_MATERIAL_COUNT),
@@ -1037,7 +1038,7 @@ mod tests {
         .unwrap();
         // expect MLS to work
         assert_eq!(
-            cc.get_or_create_client_keypackages(case.ciphersuite(), case.credential_type, 2)
+            transaction.get_or_create_client_keypackages(case.ciphersuite(), case.credential_type, 2)
                 .await
                 .unwrap()
                 .len(),
