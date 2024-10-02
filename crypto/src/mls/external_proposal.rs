@@ -168,12 +168,12 @@ mod tests {
                     Box::pin(async move {
                         let id = conversation_id();
                         owner_central
-                            .mls_central
+                            .context
                             .new_conversation(&id, case.credential_type, case.cfg.clone())
                             .await
                             .unwrap();
                         let epoch = owner_central
-                            .mls_central
+                            .context
                             .get_conversation_unchecked(&id)
                             .await
                             .group
@@ -181,21 +181,21 @@ mod tests {
 
                         // Craft an external proposal from guest
                         let external_add = guest_central
-                            .mls_central
+                            .context
                             .new_external_add_proposal(id.clone(), epoch, case.ciphersuite(), case.credential_type)
                             .await
                             .unwrap();
 
                         // Owner receives external proposal message from server
                         let decrypted = owner_central
-                            .mls_central
+                            .context
                             .decrypt_message(&id, external_add.to_bytes().unwrap())
                             .await
                             .unwrap();
                         // just owner for now
                         assert_eq!(
                             owner_central
-                                .mls_central
+                                .context
                                 .get_conversation_unchecked(&id)
                                 .await
                                 .members()
@@ -204,20 +204,20 @@ mod tests {
                         );
 
                         // verify Guest's (sender) identity
-                        guest_central.mls_central.verify_sender_identity(&case, &decrypted);
+                        guest_central.context.verify_sender_identity(&case, &decrypted);
 
                         // simulate commit message reception from server
                         let MlsCommitBundle { welcome, .. } = owner_central
-                            .mls_central
+                            .context
                             .commit_pending_proposals(&id)
                             .await
                             .unwrap()
                             .unwrap();
-                        owner_central.mls_central.commit_accepted(&id).await.unwrap();
+                        owner_central.context.commit_accepted(&id).await.unwrap();
                         // guest joined the group
                         assert_eq!(
                             owner_central
-                                .mls_central
+                                .context
                                 .get_conversation_unchecked(&id)
                                 .await
                                 .members()
@@ -226,13 +226,13 @@ mod tests {
                         );
 
                         guest_central
-                            .mls_central
+                            .context
                             .process_welcome_message(welcome.unwrap().into(), case.custom_cfg())
                             .await
                             .unwrap();
                         assert_eq!(
                             guest_central
-                                .mls_central
+                                .context
                                 .get_conversation_unchecked(&id)
                                 .await
                                 .members()
@@ -241,8 +241,8 @@ mod tests {
                         );
                         // guest can send messages in the group
                         assert!(guest_central
-                            .mls_central
-                            .try_talk_to(&id, &mut owner_central.mls_central)
+                            .context
+                            .try_talk_to(&id, &mut owner_central.context)
                             .await
                             .is_ok());
                     })
@@ -263,13 +263,13 @@ mod tests {
         #[wasm_bindgen_test]
         async fn ds_should_remove_guest_from_conversation(case: TestCase) {
             run_test_with_client_ids(case.clone(), ["owner", "guest", "ds"], move |[owner, guest, ds]| {
-                let mut owner_central = owner.mls_central;
-                let mut guest_central = guest.mls_central;
+                let mut owner_central = owner.context;
+                let mut guest_central = guest.context;
 
                 Box::pin(async move {
                     let id = conversation_id();
 
-                    let ds_signature_key = ds.mls_central.client_signature_key(&case).as_slice().to_vec();
+                    let ds_signature_key = ds.context.client_signature_key(&case).as_slice().to_vec();
                     let mut cfg = case.cfg.clone();
                     owner_central
                         .set_raw_external_senders(&mut cfg, vec![ds_signature_key])
@@ -292,7 +292,7 @@ mod tests {
 
                     let (sc, ct) = (case.signature_scheme(), case.credential_type);
                     let cb = ds
-                        .mls_central
+                        .context
                         .mls_client
                         .as_ref()
                         .unwrap()
@@ -340,13 +340,13 @@ mod tests {
                 case.clone(),
                 ["owner", "guest", "ds", "attacker"],
                 move |[owner, guest, ds, attacker]| {
-                    let mut owner_central = owner.mls_central;
-                    let mut guest_central = guest.mls_central;
+                    let mut owner_central = owner.context;
+                    let mut guest_central = guest.context;
 
                     Box::pin(async move {
                         let id = conversation_id();
                         // Delivery service key is used in the group..
-                        let ds_signature_key = ds.mls_central.client_signature_key(&case).as_slice().to_vec();
+                        let ds_signature_key = ds.context.client_signature_key(&case).as_slice().to_vec();
                         let mut cfg = case.cfg.clone();
                         owner_central
                             .set_raw_external_senders(&mut cfg, vec![ds_signature_key])
@@ -368,7 +368,7 @@ mod tests {
 
                         let (sc, ct) = (case.signature_scheme(), case.credential_type);
                         let cb = attacker
-                            .mls_central
+                            .context
                             .mls_client
                             .as_ref()
                             .unwrap()
@@ -406,8 +406,8 @@ mod tests {
         #[wasm_bindgen_test]
         async fn should_fail_when_wrong_signature_key(case: TestCase) {
             run_test_with_client_ids(case.clone(), ["owner", "guest", "ds"], move |[owner, guest, ds]| {
-                let mut owner_central = owner.mls_central;
-                let mut guest_central = guest.mls_central;
+                let mut owner_central = owner.context;
+                let mut guest_central = guest.context;
 
                 Box::pin(async move {
                     let id = conversation_id();
@@ -415,7 +415,7 @@ mod tests {
                     // Here we're going to add the Delivery Service's (DS) signature key to the
                     // external senders list. However, for the purpose of this test, we will
                     // intentionally _not_ use that key when generating the remove proposal below.
-                    let key = ds.mls_central.client_signature_key(&case).as_slice().to_vec();
+                    let key = ds.context.client_signature_key(&case).as_slice().to_vec();
                     let mut cfg = case.cfg.clone();
                     owner_central
                         .set_raw_external_senders(&mut cfg, vec![key.as_slice().to_vec()])
@@ -472,14 +472,14 @@ mod tests {
                 case.clone(),
                 ["alice", "bob", "charlie", "ds"],
                 move |[alice, bob, charlie, ds]| {
-                    let mut alice_central = alice.mls_central;
-                    let mut bob_central = bob.mls_central;
-                    let mut charlie_central = charlie.mls_central;
+                    let mut alice_central = alice.context;
+                    let mut bob_central = bob.context;
+                    let mut charlie_central = charlie.context;
 
                     Box::pin(async move {
                         let id = conversation_id();
 
-                        let ds_signature_key = ds.mls_central.client_signature_key(&case).as_slice().to_vec();
+                        let ds_signature_key = ds.context.client_signature_key(&case).as_slice().to_vec();
                         let mut cfg = case.cfg.clone();
                         alice_central
                             .set_raw_external_senders(&mut cfg, vec![ds_signature_key])
@@ -520,7 +520,7 @@ mod tests {
                         let sender_index = SenderExtensionIndex::new(0);
                         let (sc, ct) = (case.signature_scheme(), case.credential_type);
                         let cb = ds
-                            .mls_central
+                            .context
                             .mls_client
                             .as_ref()
                             .unwrap()
@@ -580,14 +580,14 @@ mod tests {
                 case.clone(),
                 ["alice", "bob", "charlie", "ds"],
                 move |[alice, bob, charlie, ds]| {
-                    let mut alice_central = alice.mls_central;
-                    let mut bob_central = bob.mls_central;
-                    let mut charlie_central = charlie.mls_central;
+                    let mut alice_central = alice.context;
+                    let mut bob_central = bob.context;
+                    let mut charlie_central = charlie.context;
 
                     Box::pin(async move {
                         let id = conversation_id();
 
-                        let ds_signature_key = ds.mls_central.client_signature_key(&case).as_slice().to_vec();
+                        let ds_signature_key = ds.context.client_signature_key(&case).as_slice().to_vec();
                         let mut cfg = case.cfg.clone();
                         alice_central
                             .set_raw_external_senders(&mut cfg, vec![ds_signature_key])
@@ -633,7 +633,7 @@ mod tests {
                         let sender_index = SenderExtensionIndex::new(0);
                         let (sc, ct) = (case.signature_scheme(), case.credential_type);
                         let cb = ds
-                            .mls_central
+                            .context
                             .mls_client
                             .as_ref()
                             .unwrap()

@@ -343,14 +343,14 @@ mod tests {
             Box::pin(async move {
                 let id = conversation_id();
                 alice_central
-                    .mls_central
+                    .context
                     .new_conversation(&id, case.credential_type, case.cfg.clone())
                     .await
                     .unwrap();
-                assert_eq!(alice_central.mls_central.get_conversation_unchecked(&id).await.id, id);
+                assert_eq!(alice_central.context.get_conversation_unchecked(&id).await.id, id);
                 assert_eq!(
                     alice_central
-                        .mls_central
+                        .context
                         .get_conversation_unchecked(&id)
                         .await
                         .group
@@ -360,14 +360,14 @@ mod tests {
                 );
                 assert_eq!(
                     alice_central
-                        .mls_central
+                        .context
                         .get_conversation_unchecked(&id)
                         .await
                         .members()
                         .len(),
                     1
                 );
-                let alice_can_send_message = alice_central.mls_central.encrypt_message(&id, b"me").await;
+                let alice_can_send_message = alice_central.context.encrypt_message(&id, b"me").await;
                 assert!(alice_can_send_message.is_ok());
             })
         })
@@ -385,33 +385,33 @@ mod tests {
                     let id = conversation_id();
 
                     alice_central
-                        .mls_central
+                        .context
                         .new_conversation(&id, case.credential_type, case.cfg.clone())
                         .await
                         .unwrap();
 
-                    let bob = bob_central.mls_central.rand_key_package(&case).await;
+                    let bob = bob_central.context.rand_key_package(&case).await;
                     let MlsConversationCreationMessage { welcome, .. } = alice_central
-                        .mls_central
+                        .context
                         .add_members_to_conversation(&id, vec![bob])
                         .await
                         .unwrap();
                     // before merging, commit is not applied
                     assert_eq!(
                         alice_central
-                            .mls_central
+                            .context
                             .get_conversation_unchecked(&id)
                             .await
                             .members()
                             .len(),
                         1
                     );
-                    alice_central.mls_central.commit_accepted(&id).await.unwrap();
+                    alice_central.context.commit_accepted(&id).await.unwrap();
 
-                    assert_eq!(alice_central.mls_central.get_conversation_unchecked(&id).await.id, id);
+                    assert_eq!(alice_central.context.get_conversation_unchecked(&id).await.id, id);
                     assert_eq!(
                         alice_central
-                            .mls_central
+                            .context
                             .get_conversation_unchecked(&id)
                             .await
                             .group
@@ -421,7 +421,7 @@ mod tests {
                     );
                     assert_eq!(
                         alice_central
-                            .mls_central
+                            .context
                             .get_conversation_unchecked(&id)
                             .await
                             .members()
@@ -430,18 +430,18 @@ mod tests {
                     );
 
                     bob_central
-                        .mls_central
+                        .context
                         .process_welcome_message(welcome.into(), case.custom_cfg())
                         .await
                         .unwrap();
 
                     assert_eq!(
-                        bob_central.mls_central.get_conversation_unchecked(&id).await.id(),
-                        alice_central.mls_central.get_conversation_unchecked(&id).await.id()
+                        bob_central.context.get_conversation_unchecked(&id).await.id(),
+                        alice_central.context.get_conversation_unchecked(&id).await.id()
                     );
                     assert!(alice_central
-                        .mls_central
-                        .try_talk_to(&id, &mut bob_central.mls_central)
+                        .context
+                        .try_talk_to(&id, &mut bob_central.context)
                         .await
                         .is_ok());
                 })
@@ -460,7 +460,7 @@ mod tests {
 
                 let id = conversation_id();
                 alice_central
-                    .mls_central
+                    .context
                     .new_conversation(&id, case.credential_type, case.cfg.clone())
                     .await
                     .unwrap();
@@ -519,26 +519,26 @@ mod tests {
                 }
 
                 let MlsConversationCreationMessage { welcome, .. } = alice_central
-                    .mls_central
+                    .context
                     .add_members_to_conversation(&id, bob_and_friends_kps)
                     .await
                     .unwrap();
                 // before merging, commit is not applied
                 assert_eq!(
                     alice_central
-                        .mls_central
+                        .context
                         .get_conversation_unchecked(&id)
                         .await
                         .members()
                         .len(),
                     1
                 );
-                alice_central.mls_central.commit_accepted(&id).await.unwrap();
+                alice_central.context.commit_accepted(&id).await.unwrap();
 
-                assert_eq!(alice_central.mls_central.get_conversation_unchecked(&id).await.id, id);
+                assert_eq!(alice_central.context.get_conversation_unchecked(&id).await.id, id);
                 assert_eq!(
                     alice_central
-                        .mls_central
+                        .context
                         .get_conversation_unchecked(&id)
                         .await
                         .group
@@ -548,7 +548,7 @@ mod tests {
                 );
                 assert_eq!(
                     alice_central
-                        .mls_central
+                        .context
                         .get_conversation_unchecked(&id)
                         .await
                         .members()
@@ -562,7 +562,7 @@ mod tests {
                     c.process_welcome_message(welcome.clone().into(), case.custom_cfg())
                         .await
                         .unwrap();
-                    assert!(c.try_talk_to(&id, &mut alice_central.mls_central).await.is_ok());
+                    assert!(c.try_talk_to(&id, &mut alice_central.context).await.is_ok());
                     bob_and_friends_groups.push(c);
                 }
 

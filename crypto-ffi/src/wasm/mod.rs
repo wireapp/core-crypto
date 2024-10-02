@@ -1463,7 +1463,7 @@ impl CoreCrypto {
                 "There are other outstanding references to this CoreCrypto instance [refs = {}]",
                 Arc::strong_count(&self.inner)
             )
-                .as_str(),
+            .as_str(),
         );
         if self.has_outstanding_refs() {
             return Promise::reject(error_message);
@@ -1490,7 +1490,7 @@ impl CoreCrypto {
                 "There are other outstanding references to this CoreCrypto instance [refs = {}]",
                 Arc::strong_count(&self.inner)
             )
-                .as_str(),
+            .as_str(),
         );
         if self.has_outstanding_refs() {
             return Promise::reject(error_message);
@@ -1502,7 +1502,7 @@ impl CoreCrypto {
                     central.take().wipe().await.map_err(CoreCryptoError::from)?;
                     WasmCryptoResult::Ok(JsValue::UNDEFINED)
                 }
-                    .err_into(),
+                .err_into(),
             ),
             Err(_) => Promise::reject(error_message),
         }
@@ -2449,7 +2449,7 @@ impl CoreCrypto {
                     WasmCryptoResult::Ok(Uint8Array::from(prekey_raw.as_slice()).into())
                 } or throw WasmCryptoResult<_> }
             }
-                .err_into(),
+            .err_into(),
         )
     }
 

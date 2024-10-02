@@ -370,11 +370,7 @@ mod tests {
                         .unwrap();
 
                     assert!(matches!(
-                        alice_central
-                            .mls_central
-                            .e2ei_register_acme_ca(alice_ta)
-                            .await
-                            .unwrap_err(),
+                        alice_central.context.e2ei_register_acme_ca(alice_ta).await.unwrap_err(),
                         CryptoError::E2eiError(E2eIdentityError::TrustAnchorAlreadyRegistered)
                     ));
                 })
@@ -390,7 +386,7 @@ mod tests {
             run_test_with_client_ids(case.clone(), ["alice"], move |[alice_ctx]| {
                 Box::pin(async move {
                     let ClientContext {
-                        mls_central,
+                        context,
                         x509_test_chain,
                         ..
                     } = alice_ctx;

@@ -282,30 +282,30 @@ mod tests {
                 Box::pin(async move {
                     let id = conversation_id();
                     alice_android_central
-                        .mls_central
+                        .context
                         .new_conversation(&id, case.credential_type, case.cfg.clone())
                         .await
                         .unwrap();
                     alice_android_central
-                        .mls_central
-                        .invite_all(&case, &id, [&mut alice_ios_central.mls_central])
+                        .context
+                        .invite_all(&case, &id, [&mut alice_ios_central.context])
                         .await
                         .unwrap();
 
                     let (android_id, ios_id) = (
-                        alice_android_central.mls_central.get_client_id(),
-                        alice_ios_central.mls_central.get_client_id(),
+                        alice_android_central.context.get_client_id(),
+                        alice_ios_central.context.get_client_id(),
                     );
 
                     let mut android_ids = alice_android_central
-                        .mls_central
+                        .context
                         .get_device_identities(&id, &[android_id.clone(), ios_id.clone()])
                         .await
                         .unwrap();
                     android_ids.sort_by(|a, b| a.client_id.cmp(&b.client_id));
                     assert_eq!(android_ids.len(), 2);
                     let mut ios_ids = alice_ios_central
-                        .mls_central
+                        .context
                         .get_device_identities(&id, &[android_id.clone(), ios_id.clone()])
                         .await
                         .unwrap();
@@ -315,28 +315,28 @@ mod tests {
                     assert_eq!(android_ids, ios_ids);
 
                     let android_identities = alice_android_central
-                        .mls_central
+                        .context
                         .get_device_identities(&id, &[android_id])
                         .await
                         .unwrap();
                     let android_id = android_identities.first().unwrap();
                     assert_eq!(
                         android_id.client_id.as_bytes(),
-                        alice_android_central.mls_central.client_id().unwrap().0.as_slice()
+                        alice_android_central.context.client_id().unwrap().0.as_slice()
                     );
 
                     let ios_identities = alice_android_central
-                        .mls_central
+                        .context
                         .get_device_identities(&id, &[ios_id])
                         .await
                         .unwrap();
                     let ios_id = ios_identities.first().unwrap();
                     assert_eq!(
                         ios_id.client_id.as_bytes(),
-                        alice_ios_central.mls_central.client_id().unwrap().0.as_slice()
+                        alice_ios_central.context.client_id().unwrap().0.as_slice()
                     );
 
-                    let invalid = alice_android_central.mls_central.get_device_identities(&id, &[]).await;
+                    let invalid = alice_android_central.context.get_device_identities(&id, &[]).await;
                     assert!(matches!(invalid.unwrap_err(), CryptoError::ConsumerError));
                 })
             },
@@ -357,31 +357,31 @@ mod tests {
                 Box::pin(async move {
                     let id = conversation_id();
                     alice
-                        .mls_central
+                        .context
                         .new_conversation(&id, case.credential_type, case.cfg.clone())
                         .await
                         .unwrap();
                     alice
-                        .mls_central
+                        .context
                         .invite_all(
                             &case,
                             &id,
                             [
-                                &mut bob.mls_central,
-                                &mut rupert.mls_central,
-                                &mut dilbert.mls_central,
-                                &mut john.mls_central,
+                                &mut bob.context,
+                                &mut rupert.context,
+                                &mut dilbert.context,
+                                &mut john.context,
                             ],
                         )
                         .await
                         .unwrap();
 
                     let (alice_id, bob_id, rupert_id, dilbert_id, john_id) = (
-                        alice.mls_central.get_client_id(),
-                        bob.mls_central.get_client_id(),
-                        rupert.mls_central.get_client_id(),
-                        dilbert.mls_central.get_client_id(),
-                        john.mls_central.get_client_id(),
+                        alice.context.get_client_id(),
+                        bob.context.get_client_id(),
+                        rupert.context.get_client_id(),
+                        dilbert.context.get_client_id(),
+                        john.context.get_client_id(),
                     );
 
                     let client_ids = [alice_id, bob_id, rupert_id, dilbert_id, john_id];
@@ -394,11 +394,11 @@ mod tests {
                     ];
                     // Do it a multiple times to avoid WPB-6904 happening again
                     for _ in 0..2 {
-                        check_identities_device_status(&mut alice.mls_central, &id, &client_ids, &name_status).await;
-                        check_identities_device_status(&mut bob.mls_central, &id, &client_ids, &name_status).await;
-                        check_identities_device_status(&mut rupert.mls_central, &id, &client_ids, &name_status).await;
-                        check_identities_device_status(&mut john.mls_central, &id, &client_ids, &name_status).await;
-                        check_identities_device_status(&mut dilbert.mls_central, &id, &client_ids, &name_status).await;
+                        check_identities_device_status(&mut alice.context, &id, &client_ids, &name_status).await;
+                        check_identities_device_status(&mut bob.context, &id, &client_ids, &name_status).await;
+                        check_identities_device_status(&mut rupert.context, &id, &client_ids, &name_status).await;
+                        check_identities_device_status(&mut john.context, &id, &client_ids, &name_status).await;
+                        check_identities_device_status(&mut dilbert.context, &id, &client_ids, &name_status).await;
                     }
                 })
             },
@@ -419,20 +419,20 @@ mod tests {
                 Box::pin(async move {
                     let id = conversation_id();
                     alice
-                        .mls_central
+                        .context
                         .new_conversation(&id, case.credential_type, case.cfg.clone())
                         .await
                         .unwrap();
                     alice
-                        .mls_central
-                        .invite_all(&case, &id, [&mut bob.mls_central, &mut rupert.mls_central])
+                        .context
+                        .invite_all(&case, &id, [&mut bob.context, &mut rupert.context])
                         .await
                         .unwrap();
 
                     let (alice_id, bob_id, rupert_id) = (
-                        alice.mls_central.get_client_id(),
-                        bob.mls_central.get_client_id(),
-                        rupert.mls_central.get_client_id(),
+                        alice.context.get_client_id(),
+                        bob.context.get_client_id(),
+                        rupert.context.get_client_id(),
                     );
 
                     let client_ids = [alice_id, bob_id, rupert_id];
@@ -444,9 +444,9 @@ mod tests {
 
                     // Do it a multiple times to avoid WPB-6904 happening again
                     for _ in 0..2 {
-                        check_identities_device_status(&mut alice.mls_central, &id, &client_ids, &name_status).await;
-                        check_identities_device_status(&mut bob.mls_central, &id, &client_ids, &name_status).await;
-                        check_identities_device_status(&mut rupert.mls_central, &id, &client_ids, &name_status).await;
+                        check_identities_device_status(&mut alice.context, &id, &client_ids, &name_status).await;
+                        check_identities_device_status(&mut bob.context, &id, &client_ids, &name_status).await;
+                        check_identities_device_status(&mut rupert.context, &id, &client_ids, &name_status).await;
                     }
                 })
             },
@@ -465,30 +465,30 @@ mod tests {
                 Box::pin(async move {
                     let id = conversation_id();
                     alice_android_central
-                        .mls_central
+                        .context
                         .new_conversation(&id, case.credential_type, case.cfg.clone())
                         .await
                         .unwrap();
                     alice_android_central
-                        .mls_central
-                        .invite_all(&case, &id, [&mut alice_ios_central.mls_central])
+                        .context
+                        .invite_all(&case, &id, [&mut alice_ios_central.context])
                         .await
                         .unwrap();
 
                     let (android_id, ios_id) = (
-                        alice_android_central.mls_central.get_client_id(),
-                        alice_ios_central.mls_central.get_client_id(),
+                        alice_android_central.context.get_client_id(),
+                        alice_ios_central.context.get_client_id(),
                     );
 
                     let mut android_ids = alice_android_central
-                        .mls_central
+                        .context
                         .get_device_identities(&id, &[android_id.clone(), ios_id.clone()])
                         .await
                         .unwrap();
                     android_ids.sort();
 
                     let mut ios_ids = alice_ios_central
-                        .mls_central
+                        .context
                         .get_device_identities(&id, &[android_id, ios_id])
                         .await
                         .unwrap();
@@ -546,28 +546,28 @@ mod tests {
                 Box::pin(async move {
                     let id = conversation_id();
                     alice_android_central
-                        .mls_central
+                        .context
                         .new_conversation(&id, case.credential_type, case.cfg.clone())
                         .await
                         .unwrap();
                     alice_android_central
-                        .mls_central
+                        .context
                         .invite_all(
                             &case,
                             &id,
                             [
-                                &mut alice_ios_central.mls_central,
-                                &mut bob_android_central.mls_central,
-                                &mut bobt_android_central.mls_central,
-                                &mut alicem_ios_central.mls_central,
-                                &mut alicem_android_central.mls_central,
+                                &mut alice_ios_central.context,
+                                &mut bob_android_central.context,
+                                &mut bobt_android_central.context,
+                                &mut alicem_ios_central.context,
+                                &mut alicem_android_central.context,
                             ],
                         )
                         .await
                         .unwrap();
 
                     let nb_members = alice_android_central
-                        .mls_central
+                        .context
                         .get_conversation_unchecked(&id)
                         .await
                         .members()
@@ -575,17 +575,17 @@ mod tests {
                     assert_eq!(nb_members, 6);
 
                     assert_eq!(
-                        alice_android_central.mls_central.get_user_id(),
-                        alice_ios_central.mls_central.get_user_id()
+                        alice_android_central.context.get_user_id(),
+                        alice_ios_central.context.get_user_id()
                     );
 
-                    let alicem_user_id = alicem_ios_central.mls_central.get_user_id();
-                    let bobt_user_id = bobt_android_central.mls_central.get_user_id();
+                    let alicem_user_id = alicem_ios_central.context.get_user_id();
+                    let bobt_user_id = bobt_android_central.context.get_user_id();
 
                     // Finds both Alice's devices
-                    let alice_user_id = alice_android_central.mls_central.get_user_id();
+                    let alice_user_id = alice_android_central.context.get_user_id();
                     let alice_identities = alice_android_central
-                        .mls_central
+                        .context
                         .get_user_identities(&id, &[alice_user_id.clone()])
                         .await
                         .unwrap();
@@ -594,9 +594,9 @@ mod tests {
                     assert_eq!(identities.len(), 2);
 
                     // Finds Bob only device
-                    let bob_user_id = bob_android_central.mls_central.get_user_id();
+                    let bob_user_id = bob_android_central.context.get_user_id();
                     let bob_identities = alice_android_central
-                        .mls_central
+                        .context
                         .get_user_identities(&id, &[bob_user_id.clone()])
                         .await
                         .unwrap();
@@ -608,12 +608,12 @@ mod tests {
                     let user_ids = [alice_user_id, bob_user_id, alicem_user_id, bobt_user_id];
                     let expected_sizes = [2, 1, 2, 1];
 
-                    all_identities_check(&mut alice_android_central.mls_central, &id, &user_ids, expected_sizes).await;
-                    all_identities_check(&mut alicem_android_central.mls_central, &id, &user_ids, expected_sizes).await;
-                    all_identities_check(&mut alice_ios_central.mls_central, &id, &user_ids, expected_sizes).await;
-                    all_identities_check(&mut alicem_ios_central.mls_central, &id, &user_ids, expected_sizes).await;
-                    all_identities_check(&mut bob_android_central.mls_central, &id, &user_ids, expected_sizes).await;
-                    all_identities_check(&mut bobt_android_central.mls_central, &id, &user_ids, expected_sizes).await;
+                    all_identities_check(&mut alice_android_central.context, &id, &user_ids, expected_sizes).await;
+                    all_identities_check(&mut alicem_android_central.context, &id, &user_ids, expected_sizes).await;
+                    all_identities_check(&mut alice_ios_central.context, &id, &user_ids, expected_sizes).await;
+                    all_identities_check(&mut alicem_ios_central.context, &id, &user_ids, expected_sizes).await;
+                    all_identities_check(&mut bob_android_central.context, &id, &user_ids, expected_sizes).await;
+                    all_identities_check(&mut bobt_android_central.context, &id, &user_ids, expected_sizes).await;
                 })
             },
         )
@@ -642,22 +642,22 @@ mod tests {
                 Box::pin(async move {
                     let id = conversation_id();
                     alice_android_central
-                        .mls_central
+                        .context
                         .new_conversation(&id, case.credential_type, case.cfg.clone())
                         .await
                         .unwrap();
                     alice_android_central
-                        .mls_central
+                        .context
                         .invite_all(
                             &case,
                             &id,
-                            [&mut alice_ios_central.mls_central, &mut bob_android_central.mls_central],
+                            [&mut alice_ios_central.context, &mut bob_android_central.context],
                         )
                         .await
                         .unwrap();
 
                     let nb_members = alice_android_central
-                        .mls_central
+                        .context
                         .get_conversation_unchecked(&id)
                         .await
                         .members()
@@ -665,14 +665,14 @@ mod tests {
                     assert_eq!(nb_members, 3);
 
                     assert_eq!(
-                        alice_android_central.mls_central.get_user_id(),
-                        alice_ios_central.mls_central.get_user_id()
+                        alice_android_central.context.get_user_id(),
+                        alice_ios_central.context.get_user_id()
                     );
 
                     // Finds both Alice's devices
-                    let alice_user_id = alice_android_central.mls_central.get_user_id();
+                    let alice_user_id = alice_android_central.context.get_user_id();
                     let alice_identities = alice_android_central
-                        .mls_central
+                        .context
                         .get_user_identities(&id, &[alice_user_id.clone()])
                         .await
                         .unwrap();
@@ -681,9 +681,9 @@ mod tests {
                     assert_eq!(identities.len(), 2);
 
                     // Finds Bob only device
-                    let bob_user_id = bob_android_central.mls_central.get_user_id();
+                    let bob_user_id = bob_android_central.context.get_user_id();
                     let bob_identities = alice_android_central
-                        .mls_central
+                        .context
                         .get_user_identities(&id, &[bob_user_id.clone()])
                         .await
                         .unwrap();
@@ -694,9 +694,9 @@ mod tests {
                     let user_ids = [alice_user_id, bob_user_id];
                     let expected_sizes = [2, 1];
 
-                    all_identities_check(&mut alice_android_central.mls_central, &id, &user_ids, expected_sizes).await;
-                    all_identities_check(&mut alice_ios_central.mls_central, &id, &user_ids, expected_sizes).await;
-                    all_identities_check(&mut bob_android_central.mls_central, &id, &user_ids, expected_sizes).await;
+                    all_identities_check(&mut alice_android_central.context, &id, &user_ids, expected_sizes).await;
+                    all_identities_check(&mut alice_ios_central.context, &id, &user_ids, expected_sizes).await;
+                    all_identities_check(&mut bob_android_central.context, &id, &user_ids, expected_sizes).await;
                 })
             },
         )

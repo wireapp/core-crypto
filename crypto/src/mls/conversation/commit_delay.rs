@@ -176,32 +176,32 @@ mod tests {
                     let id = conversation_id();
 
                     alice_central
-                        .mls_central
+                        .context
                         .new_conversation(&id, case.credential_type, case.cfg.clone())
                         .await
                         .unwrap();
 
-                    let bob = bob_central.mls_central.rand_key_package(&case).await;
+                    let bob = bob_central.context.rand_key_package(&case).await;
                     let MlsConversationCreationMessage {
                         welcome: bob_welcome, ..
                     } = alice_central
-                        .mls_central
+                        .context
                         .add_members_to_conversation(&id, vec![bob])
                         .await
                         .unwrap();
                     assert_eq!(
                         alice_central
-                            .mls_central
+                            .context
                             .get_conversation_unchecked(&id)
                             .await
                             .members()
                             .len(),
                         1
                     );
-                    alice_central.mls_central.commit_accepted(&id).await.unwrap();
+                    alice_central.context.commit_accepted(&id).await.unwrap();
                     assert_eq!(
                         alice_central
-                            .mls_central
+                            .context
                             .get_conversation_unchecked(&id)
                             .await
                             .members()
@@ -210,34 +210,34 @@ mod tests {
                     );
 
                     bob_central
-                        .mls_central
+                        .context
                         .process_welcome_message(bob_welcome.clone().into(), case.custom_cfg())
                         .await
                         .unwrap();
 
-                    let charlie = charlie_central.mls_central.rand_key_package(&case).await;
+                    let charlie = charlie_central.context.rand_key_package(&case).await;
                     let MlsConversationCreationMessage {
                         welcome: charlie_welcome,
                         commit,
                         ..
                     } = alice_central
-                        .mls_central
+                        .context
                         .add_members_to_conversation(&id, vec![charlie])
                         .await
                         .unwrap();
                     assert_eq!(
                         alice_central
-                            .mls_central
+                            .context
                             .get_conversation_unchecked(&id)
                             .await
                             .members()
                             .len(),
                         2
                     );
-                    alice_central.mls_central.commit_accepted(&id).await.unwrap();
+                    alice_central.context.commit_accepted(&id).await.unwrap();
                     assert_eq!(
                         alice_central
-                            .mls_central
+                            .context
                             .get_conversation_unchecked(&id)
                             .await
                             .members()
@@ -246,29 +246,29 @@ mod tests {
                     );
 
                     let _ = bob_central
-                        .mls_central
+                        .context
                         .decrypt_message(&id, &commit.tls_serialize_detached().unwrap())
                         .await
                         .unwrap();
 
                     charlie_central
-                        .mls_central
+                        .context
                         .process_welcome_message(charlie_welcome.into(), case.custom_cfg())
                         .await
                         .unwrap();
 
                     assert_eq!(
-                        bob_central.mls_central.get_conversation_unchecked(&id).await.id(),
-                        alice_central.mls_central.get_conversation_unchecked(&id).await.id()
+                        bob_central.context.get_conversation_unchecked(&id).await.id(),
+                        alice_central.context.get_conversation_unchecked(&id).await.id()
                     );
                     assert_eq!(
-                        charlie_central.mls_central.get_conversation_unchecked(&id).await.id(),
-                        alice_central.mls_central.get_conversation_unchecked(&id).await.id()
+                        charlie_central.context.get_conversation_unchecked(&id).await.id(),
+                        alice_central.context.get_conversation_unchecked(&id).await.id()
                     );
 
                     let proposal_bundle = alice_central
-                        .mls_central
-                        .new_remove_proposal(&id, alice_central.mls_central.get_client_id())
+                        .context
+                        .new_remove_proposal(&id, alice_central.context.get_client_id())
                         .await
                         .unwrap();
 
@@ -276,7 +276,7 @@ mod tests {
                     let charlie_hypothetical_position = 1;
 
                     let bob_decrypted_message = bob_central
-                        .mls_central
+                        .context
                         .decrypt_message(&id, &proposal_bundle.proposal.tls_serialize_detached().unwrap())
                         .await
                         .unwrap();
@@ -287,7 +287,7 @@ mod tests {
                     );
 
                     let charlie_decrypted_message = charlie_central
-                        .mls_central
+                        .context
                         .decrypt_message(&id, &proposal_bundle.proposal.tls_serialize_detached().unwrap())
                         .await
                         .unwrap();

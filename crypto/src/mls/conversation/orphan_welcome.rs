@@ -24,31 +24,31 @@ mod tests {
                     let id = conversation_id();
 
                     alice_central
-                        .mls_central
+                        .context
                         .new_conversation(&id, case.credential_type, case.cfg.clone())
                         .await
                         .unwrap();
 
-                    let bob = bob_central.mls_central.rand_key_package(&case).await;
+                    let bob = bob_central.context.rand_key_package(&case).await;
                     let bob_kp_ref = KeyPackage::from(bob.clone())
-                        .hash_ref(bob_central.mls_central.mls_backend.crypto())
+                        .hash_ref(bob_central.context.mls_backend.crypto())
                         .unwrap();
 
                     // Alice invites Bob with a KeyPackage...
                     let welcome = alice_central
-                        .mls_central
+                        .context
                         .add_members_to_conversation(&id, vec![bob])
                         .await
                         .unwrap()
                         .welcome;
 
                     // ...Bob deletes locally (with the associated private key) before processing the Welcome
-                    bob_central.mls_central.delete_keypackages(&[bob_kp_ref]).await.unwrap();
+                    bob_central.context.delete_keypackages(&[bob_kp_ref]).await.unwrap();
 
                     // in that case a dedicated error is thrown for clients to identify this case
                     // and rejoin with an external commit
                     let process_welcome = bob_central
-                        .mls_central
+                        .context
                         .process_welcome_message(welcome.into(), case.custom_cfg())
                         .await;
                     assert!(matches!(process_welcome.unwrap_err(), CryptoError::OrphanWelcome));
