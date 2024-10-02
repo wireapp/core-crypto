@@ -611,6 +611,8 @@ pub(crate) mod tests {
         test_utils::{central::TEAM, *},
         CryptoResult,
     };
+    use crate::e2e_identity::refresh_token::RefreshToken;
+    use crate::mls::context::CentralContext;
 
     wasm_bindgen_test_configure!(run_in_browser);
 
@@ -622,7 +624,7 @@ pub(crate) mod tests {
 
     pub(crate) fn init_enrollment(wrapper: E2eiInitWrapper) -> InitFnReturn<'_> {
         Box::pin(async move {
-            let E2eiInitWrapper { cc, case } = wrapper;
+            let E2eiInitWrapper { context: cc, case } = wrapper;
             let cs = case.ciphersuite();
             cc.e2ei_new_enrollment(
                 E2EI_CLIENT_ID.into(),
@@ -631,7 +633,7 @@ pub(crate) mod tests {
                 Some(TEAM.to_string()),
                 E2EI_EXPIRY,
                 cs,
-            )
+            ).await
         })
     }
 
@@ -639,7 +641,7 @@ pub(crate) mod tests {
     pub(crate) const NEW_DISPLAY_NAME: &str = "New Alice Smith";
     pub(crate) fn init_activation_or_rotation(wrapper: E2eiInitWrapper) -> InitFnReturn<'_> {
         Box::pin(async move {
-            let E2eiInitWrapper { cc, case } = wrapper;
+            let E2eiInitWrapper { context: cc, case } = wrapper;
             let cs = case.ciphersuite();
             match case.credential_type {
                 MlsCredentialType::Basic => {
@@ -687,26 +689,23 @@ pub(crate) mod tests {
                 .await
                 .unwrap();
 
-                cc.mls_central
+                cc.context
                     .e2ei_mls_init_only(&mut enrollment, cert, Some(INITIAL_KEYING_MATERIAL_COUNT))
                     .await
                     .unwrap();
 
                 // verify the created client can create a conversation
                 let id = conversation_id();
-                cc.mls_central
+                cc.context
                     .new_conversation(&id, MlsCredentialType::X509, case.cfg.clone())
                     .await
                     .unwrap();
-                cc.mls_central
-                    .encrypt_message(&id, "Hello e2e identity !")
-                    .await
-                    .unwrap();
+                cc.context.encrypt_message(&id, "Hello e2e identity !").await.unwrap();
                 assert_eq!(
-                    cc.mls_central.e2ei_conversation_state(&id).await.unwrap(),
+                    cc.context.e2ei_conversation_state(&id).await.unwrap(),
                     E2eiConversationState::Verified
                 );
-                assert!(cc.mls_central.e2ei_is_enabled(case.signature_scheme()).unwrap());
+                assert!(cc.context.e2ei_is_enabled(case.signature_scheme()).await.unwrap());
             })
         })
         .await
@@ -714,7 +713,7 @@ pub(crate) mod tests {
 
     pub(crate) type RestoreFnReturn<'a> = std::pin::Pin<Box<dyn std::future::Future<Output = E2eiEnrollment> + 'a>>;
 
-    pub(crate) fn noop_restore(e: E2eiEnrollment, _cc: &MlsCentral) -> RestoreFnReturn<'_> {
+    pub(crate) fn noop_restore(e: E2eiEnrollment, _cc: &CentralContext) -> RestoreFnReturn<'_> {
         Box::pin(async move { e })
     }
 
@@ -723,7 +722,7 @@ pub(crate) mod tests {
 
     /// Helps the compiler with its lifetime inference rules while passing async closures
     pub(crate) struct E2eiInitWrapper<'a> {
-        pub(crate) cc: &'a MlsCentral,
+        pub(crate) context: &'a CentralContext,
         pub(crate) case: &'a TestCase,
     }
 
@@ -735,10 +734,11 @@ pub(crate) mod tests {
         is_renewal: bool,
         init: impl Fn(E2eiInitWrapper) -> InitFnReturn<'_>,
         // used to verify persisting the instance actually does restore it entirely
-        restore: impl Fn(E2eiEnrollment, &'a MlsCentral) -> RestoreFnReturn<'a>,
+        restore: impl Fn(E2eiEnrollment, &'a CentralContext) -> RestoreFnReturn<'a>,
     ) -> CryptoResult<(E2eiEnrollment, String)> {
-        x509_test_chain.register_with_central(&ctx.mls_central).await;
+        x509_test_chain.register_with_central(&ctx.context).await;
 
+        let transaction = ctx.context.transaction().await?;
         #[cfg(not(target_family = "wasm"))]
         {
             if is_renewal {
@@ -746,29 +746,24 @@ pub(crate) mod tests {
                     crate::e2e_identity::refresh_token::RefreshToken::from("initial-refresh-token".to_string());
                 let initial_refresh_token =
                     core_crypto_keystore::entities::E2eiRefreshToken::from(initial_refresh_token);
-                let mut conn = ctx.mls_central.mls_backend.key_store().borrow_conn().await?;
-                use core_crypto_keystore::entities::UniqueEntity as _;
-                initial_refresh_token.replace(&mut conn).await.unwrap();
+                transaction.save(initial_refresh_token).await?;
             }
         }
 
-        let wrapper = E2eiInitWrapper {
-            cc: &ctx.mls_central,
-            case,
-        };
+        let wrapper = E2eiInitWrapper { context: &ctx.context, case };
         let mut enrollment = init(wrapper).await?;
 
         #[cfg(not(target_family = "wasm"))]
         {
             if is_renewal {
                 assert!(enrollment.refresh_token.is_some());
-                assert!(ctx.mls_central.find_refresh_token().await.is_ok());
+                assert!(RefreshToken::find(&transaction).await.is_ok());
             } else {
                 assert!(matches!(
                     enrollment.get_refresh_token().unwrap_err(),
                     E2eIdentityError::OutOfOrderEnrollment(_)
                 ));
-                assert!(ctx.mls_central.find_refresh_token().await.is_err());
+                assert!(RefreshToken::find(&transaction).await.is_err());
             }
         }
 
@@ -783,7 +778,7 @@ pub(crate) mod tests {
         let directory = serde_json::to_vec(&directory)?;
         enrollment.directory_response(directory)?;
 
-        let mut enrollment = restore(enrollment, &ctx.mls_central).await;
+        let mut enrollment = restore(enrollment, &ctx.context).await;
 
         let previous_nonce = "YUVndEZQVTV6ZUNlUkJxRG10c0syQmNWeW1kanlPbjM";
         let _account_req = enrollment.new_account_request(previous_nonce.to_string())?;
@@ -795,13 +790,13 @@ pub(crate) mod tests {
         let account_resp = serde_json::to_vec(&account_resp)?;
         enrollment.new_account_response(account_resp)?;
 
-        let enrollment = restore(enrollment, &ctx.mls_central).await;
+        let enrollment = restore(enrollment, &ctx.context).await;
 
         let _order_req = enrollment.new_order_request(previous_nonce.to_string()).unwrap();
-
+        let client_uri = ctx.context.get_e2ei_client_id().await.to_uri();
         let client_id = client_id
             .map(|c| format!("{}{c}", wire_e2e_identity::prelude::E2eiClientId::URI_SCHEME))
-            .unwrap_or_else(|| ctx.mls_central.get_e2ei_client_id().to_uri());
+            .unwrap_or_else(|| client_uri);
         let device_identifier = format!("{{\"name\":\"{display_name}\",\"domain\":\"world.com\",\"client-id\":\"{client_id}\",\"handle\":\"wireapp://%40{handle}@world.com\"}}");
         let user_identifier = format!(
             "{{\"name\":\"{display_name}\",\"domain\":\"world.com\",\"handle\":\"wireapp://%40{handle}@world.com\"}}"
@@ -830,7 +825,7 @@ pub(crate) mod tests {
         let order_resp = serde_json::to_vec(&order_resp)?;
         let new_order = enrollment.new_order_response(order_resp)?;
 
-        let mut enrollment = restore(enrollment, &ctx.mls_central).await;
+        let mut enrollment = restore(enrollment, &ctx.context).await;
 
         let order_url = "https://example.com/acme/wire-acme/order/C7uOXEgg5KPMPtbdE3aVMzv7cJjwUVth";
 
@@ -883,7 +878,7 @@ pub(crate) mod tests {
         let device_authz_resp = serde_json::to_vec(&device_authz_resp)?;
         enrollment.new_authz_response(device_authz_resp)?;
 
-        let enrollment = restore(enrollment, &ctx.mls_central).await;
+        let enrollment = restore(enrollment, &ctx.context).await;
 
         let backend_nonce = "U09ZR0tnWE5QS1ozS2d3bkF2eWJyR3ZVUHppSTJsMnU";
         let _dpop_token = enrollment.create_dpop_token(3600, backend_nonce.to_string())?;
@@ -900,7 +895,7 @@ pub(crate) mod tests {
         let dpop_chall_resp = serde_json::to_vec(&dpop_chall_resp)?;
         enrollment.new_dpop_challenge_response(dpop_chall_resp)?;
 
-        let mut enrollment = restore(enrollment, &ctx.mls_central).await;
+        let mut enrollment = restore(enrollment, &ctx.context).await;
 
         let id_token = "eyJhbGciOiJFZERTQSIsInR5cCI6IkpXVCJ9.eyJpYXQiOjE2NzU5NjE3NTYsImV4cCI6MTY3NjA0ODE1NiwibmJmIjoxNjc1OTYxNzU2LCJpc3MiOiJodHRwOi8vaWRwLyIsInN1YiI6ImltcHA6d2lyZWFwcD1OREV5WkdZd05qYzJNekZrTkRCaU5UbGxZbVZtTWpReVpUSXpOVGM0TldRLzY1YzNhYzFhMTYzMWMxMzZAZXhhbXBsZS5jb20iLCJhdWQiOiJodHRwOi8vaWRwLyIsIm5hbWUiOiJTbWl0aCwgQWxpY2UgTSAoUUEpIiwiaGFuZGxlIjoiaW1wcDp3aXJlYXBwPWFsaWNlLnNtaXRoLnFhQGV4YW1wbGUuY29tIiwia2V5YXV0aCI6IlNZNzR0Sm1BSUloZHpSdEp2cHgzODlmNkVLSGJYdXhRLi15V29ZVDlIQlYwb0ZMVElSRGw3cjhPclZGNFJCVjhOVlFObEw3cUxjbWcifQ.0iiq3p5Bmmp8ekoFqv4jQu_GrnPbEfxJ36SCuw-UvV6hCi6GlxOwU7gwwtguajhsd1sednGWZpN8QssKI5_CDQ".to_string();
         #[cfg(not(target_family = "wasm"))]
@@ -927,11 +922,11 @@ pub(crate) mod tests {
         #[cfg(not(target_family = "wasm"))]
         {
             enrollment
-                .new_oidc_challenge_response(&ctx.mls_central.mls_backend, oidc_chall_resp)
+                .new_oidc_challenge_response(&ctx.context.mls_provider().await.unwrap(), oidc_chall_resp)
                 .await?;
             // Now Refresh token is persisted in the keystore
             assert_eq!(
-                ctx.mls_central.find_refresh_token().await.unwrap().as_str(),
+                RefreshToken::find(&transaction).await?.as_str(),
                 new_refresh_token
             );
             // No reason at this point to have the refresh token in memory
@@ -941,7 +936,7 @@ pub(crate) mod tests {
         #[cfg(target_family = "wasm")]
         enrollment.new_oidc_challenge_response(oidc_chall_resp).await?;
 
-        let mut enrollment = restore(enrollment, &ctx.mls_central).await;
+        let mut enrollment = restore(enrollment, &ctx.context).await;
 
         let _get_order_req = enrollment.check_order_request(order_url.to_string(), previous_nonce.to_string())?;
 
@@ -969,7 +964,7 @@ pub(crate) mod tests {
         let order_resp = serde_json::to_vec(&order_resp)?;
         enrollment.check_order_response(order_resp)?;
 
-        let mut enrollment = restore(enrollment, &ctx.mls_central).await;
+        let mut enrollment = restore(enrollment, &ctx.context).await;
 
         let _finalize_req = enrollment.finalize_request(previous_nonce.to_string())?;
         let finalize_resp = json!({
@@ -997,7 +992,7 @@ pub(crate) mod tests {
         let finalize_resp = serde_json::to_vec(&finalize_resp)?;
         enrollment.finalize_response(finalize_resp)?;
 
-        let mut enrollment = restore(enrollment, &ctx.mls_central).await;
+        let mut enrollment = restore(enrollment, &ctx.context).await;
 
         let _certificate_req = enrollment.certificate_request(previous_nonce.to_string())?;
 

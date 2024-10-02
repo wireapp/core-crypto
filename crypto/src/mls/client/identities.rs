@@ -126,7 +126,7 @@ mod tests {
             run_test_with_client_ids(case.clone(), ["alice"], move |[mut central]| {
                 Box::pin(async move {
                     let old = central
-                        .mls_central
+                        .context
                         .new_credential_bundle(
                             &case,
                             central
@@ -141,7 +141,7 @@ mod tests {
                     async_std::task::sleep(core::time::Duration::from_secs(1)).await;
 
                     let new = central
-                        .mls_central
+                        .context
                         .new_credential_bundle(
                             &case,
                             central
@@ -154,14 +154,11 @@ mod tests {
                     assert_ne!(old, new);
 
                     let found = central
-                        .mls_central
-                        .mls_client
-                        .as_ref()
-                        .unwrap()
-                        .identities
+                        .context
                         .find_most_recent_credential_bundle(case.signature_scheme(), case.credential_type)
+                        .await
                         .unwrap();
-                    assert_eq!(found, &new);
+                    assert_eq!(found, new);
                 })
             })
             .await
@@ -178,7 +175,7 @@ mod tests {
                     let mut to_search = None;
                     for i in 0..N {
                         let cb = central
-                            .mls_central
+                            .context
                             .new_credential_bundle(
                                 &case,
                                 central
@@ -194,7 +191,8 @@ mod tests {
                     }
                     let to_search = to_search.unwrap();
                     let pk = SignaturePublicKey::from(to_search.signature_key.public());
-                    let client = central.mls_central.mls_client.as_ref().unwrap();
+                    let mut client = central.context.mls_client_mut().await.unwrap();
+                    let client = client.as_mut().unwrap();
                     let found = client
                         .identities
                         .find_credential_bundle_by_public_key(case.signature_scheme(), case.credential_type, &pk)
@@ -214,18 +212,16 @@ mod tests {
         async fn should_add_credential(case: TestCase) {
             run_test_with_client_ids(case.clone(), ["alice"], move |[mut central]| {
                 Box::pin(async move {
-                    let prev_count = central
-                        .mls_central
-                        .mls_client
-                        .as_ref()
-                        .unwrap()
+                    let mut client = central.context.mls_client_mut().await.unwrap();
+                    let client = client.as_mut().unwrap();
+                    let prev_count = client
                         .identities
                         .iter()
                         .count();
 
                     // this calls 'push_credential_bundle' under the hood
                     central
-                        .mls_central
+                        .context
                         .new_credential_bundle(
                             &case,
                             central
@@ -236,11 +232,7 @@ mod tests {
                         )
                         .await;
 
-                    let next_count = central
-                        .mls_central
-                        .mls_client
-                        .as_ref()
-                        .unwrap()
+                    let next_count = client
                         .identities
                         .iter()
                         .count();
@@ -256,7 +248,7 @@ mod tests {
             run_test_with_client_ids(case.clone(), ["alice"], move |[mut central]| {
                 Box::pin(async move {
                     let cb = central
-                        .mls_central
+                        .context
                         .new_credential_bundle(
                             &case,
                             central
@@ -266,7 +258,8 @@ mod tests {
                                 .map(|chain| chain.find_local_intermediate_ca()),
                         )
                         .await;
-                    let client = central.mls_central.mls_client.as_mut().unwrap();
+                    let mut client = central.context.mls_client_mut().await.unwrap();
+                    let client = client.as_mut().unwrap();
                     let push = client.identities.push_credential_bundle(case.signature_scheme(), cb);
                     assert!(matches!(
                         push.unwrap_err(),

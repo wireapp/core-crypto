@@ -14,12 +14,12 @@
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see http://www.gnu.org/licenses/.
 
+use crate::connection::DatabaseConnection;
 use crate::{
     connection::{storage::WasmStorageTransaction, KeystoreDatabaseConnection},
     entities::{E2eiAcmeCA, Entity, EntityBase, EntityFindParams, EntityMlsExt, StringEntityId, UniqueEntity},
     CryptoKeystoreError, CryptoKeystoreResult, MissingKeyErrorKind,
 };
-use crate::connection::DatabaseConnection;
 
 #[cfg_attr(target_family = "wasm", async_trait::async_trait(?Send))]
 #[cfg_attr(not(target_family = "wasm"), async_trait::async_trait)]
