@@ -57,16 +57,16 @@ mod tests {
 
                 // by default in test no external sender is set. Let's add one
                 let mut cfg = case.cfg.clone();
-                let external_sender = alice_central.mls_central.rand_external_sender(&case);
+                let external_sender = alice_central.context.rand_external_sender(&case).await;
                 cfg.external_senders = vec![external_sender.clone()];
 
                 alice_central
-                    .mls_central
+                    .context
                     .new_conversation(&id, case.credential_type, cfg)
                     .await
                     .unwrap();
 
-                let alice_ext_sender = alice_central.mls_central.get_external_sender(&id).await.unwrap();
+                let alice_ext_sender = alice_central.context.get_external_sender(&id).await.unwrap();
                 assert!(!alice_ext_sender.is_empty());
                 assert_eq!(alice_ext_sender, external_sender.signature_key().as_slice().to_vec());
             })

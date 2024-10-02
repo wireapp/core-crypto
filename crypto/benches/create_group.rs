@@ -32,11 +32,13 @@ fn create_group_bench(c: &mut Criterion) {
                             (central, id, cfg)
                         })
                     },
-                    |(mut central, id, cfg)| async move {
-                        central
+                    |(central, id, cfg)| async move {
+                        let context = central.new_transaction().await;
+                        context
                             .new_conversation(&id, MlsCredentialType::Basic, cfg)
                             .await
                             .unwrap();
+                        context.finish().await.unwrap();
                         black_box(());
                     },
                     BatchSize::SmallInput,
@@ -60,26 +62,32 @@ fn join_from_welcome_bench(c: &mut Criterion) {
                             add_clients(&mut alice_central, &id, ciphersuite, *i).await;
 
                             let (bob_central, ..) = new_central(ciphersuite, credential.as_ref(), in_memory).await;
-                            let bob_kpbs = bob_central
+                            let bob_context = bob_central.new_transaction().await;
+                            let bob_kpbs = bob_context
                                 .get_or_create_client_keypackages(ciphersuite, MlsCredentialType::Basic, 1)
                                 .await
                                 .unwrap();
                             let bob_kp = bob_kpbs.first().unwrap().clone();
-                            let welcome = alice_central
+                            bob_context.finish().await.unwrap();
+                            let alice_context = alice_central.new_transaction().await;
+                            let welcome = alice_context
                                 .add_members_to_conversation(&id, vec![bob_kp.into()])
                                 .await
                                 .unwrap()
                                 .welcome;
+                            alice_context.finish().await.unwrap();
                             (bob_central, welcome)
                         })
                     },
                     |(mut central, welcome)| async move {
+                        let context = central.new_transaction().await;
                         black_box(
-                            central
+                            context
                                 .process_welcome_message(welcome.into(), MlsCustomConfiguration::default())
                                 .await
                                 .unwrap(),
                         );
+                        context.finish().await.unwrap();
                     },
                     BatchSize::SmallInput,
                 )
@@ -105,8 +113,9 @@ fn join_from_group_info_bench(c: &mut Criterion) {
                         })
                     },
                     |(mut central, group_info)| async move {
+                        let context = central.new_transaction().await;
                         let MlsConversationInitBundle { conversation_id, .. } = black_box(
-                            central
+                            context
                                 .join_by_external_commit(
                                     group_info,
                                     MlsCustomConfiguration::default(),
@@ -115,10 +124,11 @@ fn join_from_group_info_bench(c: &mut Criterion) {
                                 .await
                                 .unwrap(),
                         );
-                        central
+                        context
                             .merge_pending_group_from_external_commit(&conversation_id)
                             .await
                             .unwrap();
+                        context.finish().await.unwrap();
                         black_box(());
                     },
                     BatchSize::SmallInput,

@@ -26,8 +26,10 @@ fn commit_add_bench(c: &mut Criterion) {
                         })
                     },
                     |(central, id, kps)| async move {
-                        black_box(central.add_members_to_conversation(&id, kps).await.unwrap());
-                        central.commit_accepted(&id).await.unwrap();
+                        let context = central.new_transaction().await;
+                        black_box(context.add_members_to_conversation(&id, kps).await.unwrap());
+                        context.commit_accepted(&id).await.unwrap();
+                        context.finish().await.unwrap();
                         black_box(());
                     },
                     BatchSize::LargeInput,
@@ -57,8 +59,10 @@ fn commit_add_n_clients_bench(c: &mut Criterion) {
                         })
                     },
                     |(central, id, kps)| async move {
-                        black_box(central.add_members_to_conversation(&id, kps).await.unwrap());
-                        central.commit_accepted(&id).await.unwrap();
+                        let context = central.new_transaction().await;
+                        black_box(context.add_members_to_conversation(&id, kps).await.unwrap());
+                        context.commit_accepted(&id).await.unwrap();
+                        context.finish().await.unwrap();
                         black_box(());
                     },
                     BatchSize::SmallInput,
@@ -85,13 +89,15 @@ fn commit_remove_bench(c: &mut Criterion) {
                         })
                     },
                     |(central, id, client_ids)| async move {
+                        let context = central.new_transaction().await;
                         black_box(
-                            central
+                            context
                                 .remove_members_from_conversation(&id, client_ids.as_slice())
                                 .await
                                 .unwrap(),
                         );
-                        central.commit_accepted(&id).await.unwrap();
+                        context.commit_accepted(&id).await.unwrap();
+                        context.finish().await.unwrap();
                         black_box(());
                     },
                     BatchSize::SmallInput,
@@ -119,13 +125,15 @@ fn commit_remove_n_clients_bench(c: &mut Criterion) {
                         })
                     },
                     |(central, id, client_ids)| async move {
+                        let context = central.new_transaction().await;
                         black_box(
-                            central
+                            context
                                 .remove_members_from_conversation(&id, client_ids.as_slice())
                                 .await
                                 .unwrap(),
                         );
-                        central.commit_accepted(&id).await.unwrap();
+                        context.commit_accepted(&id).await.unwrap();
+                        context.finish().await.unwrap();
                         black_box(());
                     },
                     BatchSize::SmallInput,
@@ -151,8 +159,10 @@ fn commit_update_bench(c: &mut Criterion) {
                         })
                     },
                     |(central, id)| async move {
-                        black_box(central.update_keying_material(&id).await.unwrap());
-                        central.commit_accepted(&id).await.unwrap();
+                        let context = central.new_transaction().await;
+                        black_box(context.update_keying_material(&id).await.unwrap());
+                        context.commit_accepted(&id).await.unwrap();
+                        context.finish().await.unwrap();
                         black_box(());
                     },
                     BatchSize::SmallInput,
@@ -176,17 +186,21 @@ fn commit_pending_proposals_bench_var_n_proposals(c: &mut Criterion) {
                             let (mut central, id) = setup_mls(ciphersuite, credential.as_ref(), in_memory).await;
                             add_clients(&mut central, &id, ciphersuite, GROUP_MAX).await;
 
+                            let context = central.new_transaction().await;
                             for _ in 0..*i {
                                 let (kp, ..) = rand_key_package(ciphersuite).await;
-                                central.new_add_proposal(&id, kp).await.unwrap();
+                                context.new_add_proposal(&id, kp).await.unwrap();
                             }
+                            context.finish().await.unwrap();
 
                             (central, id)
                         })
                     },
                     |(central, id)| async move {
-                        black_box(central.commit_pending_proposals(&id).await.unwrap());
-                        central.commit_accepted(&id).await.unwrap();
+                        let context = central.new_transaction().await;
+                        black_box(context.commit_pending_proposals(&id).await.unwrap());
+                        context.commit_accepted(&id).await.unwrap();
+                        context.finish().await.unwrap();
                         black_box(());
                     },
                     BatchSize::SmallInput,
@@ -209,16 +223,20 @@ fn commit_pending_proposals_bench_var_group_size(c: &mut Criterion) {
                         async_std::task::block_on(async {
                             let (mut central, id) = setup_mls(ciphersuite, credential.as_ref(), in_memory).await;
                             add_clients(&mut central, &id, ciphersuite, *i).await;
+                            let context = central.new_transaction().await;
                             for _ in 0..PENDING_MAX {
                                 let (kp, ..) = rand_key_package(ciphersuite).await;
-                                central.new_add_proposal(&id, kp).await.unwrap();
+                                context.new_add_proposal(&id, kp).await.unwrap();
                             }
+                            context.finish().await.unwrap();
                             (central, id)
                         })
                     },
                     |(central, id)| async move {
-                        black_box(central.commit_pending_proposals(&id).await.unwrap());
-                        central.commit_accepted(&id).await.unwrap();
+                        let context = central.new_transaction().await;
+                        black_box(context.commit_pending_proposals(&id).await.unwrap());
+                        context.commit_accepted(&id).await.unwrap();
+                        context.finish().await.unwrap();
                         black_box(());
                     },
                     BatchSize::SmallInput,
