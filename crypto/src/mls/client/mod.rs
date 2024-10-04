@@ -519,7 +519,7 @@ mod tests {
         } else {
             None
         };
-        let transaction = backend.new_transaction();
+        let transaction = backend.new_transaction().await.unwrap();
         let _ = Client::random_generate(
             &case,
             &transaction,
@@ -537,7 +537,7 @@ mod tests {
             run_tests(move |[tmp_dir_argument]| {
                 Box::pin(async move {
                     let backend = MlsCryptoProvider::try_new(tmp_dir_argument, "test").await.unwrap();
-                    let backend = backend.new_transaction();
+                    let backend = backend.new_transaction().await.unwrap();
                     // phase 1: generate standalone keypair
                     // TODO: test with multi-ciphersuite. Tracking issue: WPB-9601
                     let handles = Client::generate_raw_keypairs(&[case.ciphersuite()], &backend)

@@ -123,7 +123,7 @@ pub(crate) async fn setup_mls(
     in_memory: bool,
 ) -> (MlsCentral, ConversationId) {
     let (central, _) = new_central(ciphersuite, credential, in_memory).await;
-    let context = central.new_transaction().await;
+    let context = central.new_transaction().await?;
     let id = conversation_id();
     context
         .new_conversation(
@@ -196,7 +196,7 @@ pub(crate) async fn add_clients(
         key_packages.push(kp.into())
     }
 
-    let context = central.new_transaction().await;
+    let context = central.new_transaction().await?;
     let commit_bundle = context.add_members_to_conversation(id, key_packages).await.unwrap();
 
     let group_info = commit_bundle.group_info.payload.bytes();
@@ -245,8 +245,8 @@ pub(crate) async fn invite(
     id: &ConversationId,
     ciphersuite: MlsCiphersuite,
 ) {
-    let from_context = from.new_transaction().await;
-    let other_context = other.new_transaction().await;
+    let from_context = from.new_transaction().await?;
+    let other_context = other.new_transaction().await?;
     let other_kps = other_context
         .get_or_create_client_keypackages(ciphersuite, MlsCredentialType::Basic, 1)
         .await
