@@ -53,7 +53,7 @@ fn encrypt_message_bench(c: &mut Criterion) {
                         })
                     },
                     |(central, id, text)| async move {
-                        let context = central.new_transaction().await;
+                        let context = central.new_transaction().await?;
                         black_box(context.encrypt_message(&id, text).await.unwrap());
                         context.finish().await.unwrap();
                     },
@@ -112,7 +112,7 @@ fn add_client_bench(c: &mut Criterion) {
                         })
                     },
                     |(central, id, kps)| async move {
-                        let context = central.new_transaction().await;
+                        let context = central.new_transaction().await?;
                         black_box(context.add_members_to_conversation(&id, kps).await.unwrap());
                         context.commit_accepted(&id).await.unwrap();
                         context.finish().await.unwrap();
@@ -166,7 +166,7 @@ fn remove_client_bench(c: &mut Criterion) {
                         })
                     },
                     |(central, id, client_ids)| async move {
-                        let context = central.new_transaction().await;
+                        let context = central.new_transaction().await?;
                         black_box(
                             context
                                 .remove_members_from_conversation(&id, client_ids.as_slice())
@@ -228,7 +228,7 @@ fn update_client_bench(c: &mut Criterion) {
                         })
                     },
                     |(central, id)| async move {
-                        let context = central.new_transaction().await;
+                        let context = central.new_transaction().await?;
                         black_box(context.update_keying_material(&id).await.unwrap());
                         context.commit_accepted(&id).await.unwrap();
                         context.finish().await.unwrap();

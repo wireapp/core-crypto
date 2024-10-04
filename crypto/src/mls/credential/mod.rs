@@ -390,7 +390,7 @@ mod tests {
             )
             .await
             .unwrap();
-            let charlie_transaction = charlie_central.new_transaction().await;
+            let charlie_transaction = charlie_central.new_transaction().await.unwrap();
             charlie_transaction
                 .mls_init(
                     charlie_identifier,
@@ -504,7 +504,7 @@ mod tests {
         )?;
 
         let creator_central = MlsCentral::try_new(creator_cfg).await?;
-        let creator_transaction = creator_central.new_transaction().await;
+        let creator_transaction = creator_central.new_transaction().await?;
         if let Some(x509_test_chain) = &x509_test_chain {
             x509_test_chain.register_with_central(&creator_transaction).await;
         }
@@ -527,7 +527,7 @@ mod tests {
         )?;
 
         let guest_central = MlsCentral::try_new(guest_cfg).await?;
-        let guest_transaction = guest_central.new_transaction().await;
+        let guest_transaction = guest_central.new_transaction().await?;
         if let Some(x509_test_chain) = &x509_test_chain {
             x509_test_chain.register_with_central(&guest_transaction).await;
         }
