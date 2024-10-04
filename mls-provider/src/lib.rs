@@ -158,12 +158,12 @@ impl MlsCryptoProvider {
 
     /// Clones the references of the PkiEnvironment and the CryptoProvider into a transaction
     /// keystore to pass to openmls as the `OpenMlsCryptoProvider`
-    pub fn new_transaction(&self) -> TransactionalCryptoProvider {
-        TransactionalCryptoProvider {
+    pub async fn new_transaction(&self) -> MlsProviderResult<TransactionalCryptoProvider> {
+        Ok(TransactionalCryptoProvider {
             crypto: self.crypto.clone(),
-            tx: self.key_store.new_transaction(),
+            tx: self.key_store.new_transaction().await?,
             pki_env: self.pki_env.clone(),
-        }
+        })
     }
 
     /// Replaces the PKI env currently in place

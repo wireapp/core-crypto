@@ -45,19 +45,19 @@ impl MlsCentral {
     /// Creates a new transaction within the MlsCentral. All operations that persist data will be
     /// buffered in memory and when [CentralContext::finish] is called, the data will be persisted
     /// in a single database transaction.
-    pub async fn new_transaction(&self) -> CentralContext {
+    pub async fn new_transaction(&self) -> CryptoResult<CentralContext> {
         CentralContext::new(self).await
     }
 }
 
 impl CentralContext {
-    async fn new(central: &MlsCentral) -> Self {
-        let transaction = central.mls_backend.new_transaction();
+    async fn new(central: &MlsCentral) -> CryptoResult<Self> {
+        let transaction = central.mls_backend.new_transaction().await?;
         let mls_groups = Arc::new(RwLock::new(Default::default()));
         let callbacks = central.callbacks.clone();
         let mls_client = central.mls_client.clone();
         let lock_guard = Arc::new(central.transaction_lock.lock_arc().await);
-        Self {
+        Ok(Self {
             state: Arc::new(
                 ContextState::Valid {
                     mls_client,
@@ -68,7 +68,7 @@ impl CentralContext {
                 .into(),
             ),
             _lock_guard: lock_guard,
-        }
+        })
     }
 
     pub(crate) async fn mls_client(&self) -> CryptoResult<RwLockReadGuardArc<Option<Client>>> {
