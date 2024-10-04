@@ -1015,7 +1015,7 @@ mod tests {
         )
         .unwrap();
         let mut cc: CoreCrypto = MlsCentral::try_new(cfg).await.unwrap().into();
-        let transaction = cc.new_transaction().await;
+        let transaction = cc.new_transaction().await.unwrap();
         let x509_test_chain = X509TestChain::init_empty(case.signature_scheme());
         x509_test_chain.register_with_central(&transaction).await;
         assert!(cc.proteus_init().await.is_ok());

@@ -475,7 +475,7 @@ mod tests {
                     )
                     .unwrap();
                     let mut central = MlsCentral::try_new(config).await.unwrap();
-                    let friend_context = central.new_transaction().await;
+                    let friend_context = central.new_transaction().await.unwrap();
 
                     x509_test_chain.register_with_central(&friend_context).await;
 
@@ -510,7 +510,7 @@ mod tests {
                 let number_of_friends = bob_and_friends.len();
                 
                 let bob_and_friends = stream::iter(bob_and_friends).then(|member_central| async move {
-                    member_central.new_transaction().await
+                    member_central.new_transaction().await.unwrap()
                 }).collect::<Vec<_>>().await;
 
                 let mut bob_and_friends_kps = vec![];

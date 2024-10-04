@@ -174,7 +174,7 @@ impl MlsCentral {
             entropy_seed: configuration.external_entropy,
         })
         .await?;
-        let transaction = mls_backend.new_transaction();
+        let transaction = mls_backend.new_transaction().await?;
         let mls_client = if let Some(id) = configuration.client_id {
             // Init client identity (load or create)
             Arc::new(
@@ -205,7 +205,7 @@ impl MlsCentral {
         transaction.transaction().commit().await?;
         drop(transaction);
 
-        let context = central.new_transaction().await;
+        let context = central.new_transaction().await?;
 
         context.init_pki_env().await?;
         context.finish().await?;
@@ -222,7 +222,7 @@ impl MlsCentral {
             entropy_seed: configuration.external_entropy,
         })
         .await?;
-        let transaction = mls_backend.new_transaction();
+        let transaction = mls_backend.new_transaction().await?;
         let mls_client = if let Some(id) = configuration.client_id {
             Arc::new(
                 Some(
@@ -250,7 +250,7 @@ impl MlsCentral {
         transaction.transaction().commit().await?;
         drop(transaction);
 
-        let context = central.new_transaction().await;
+        let context = central.new_transaction().await?;
 
         context.init_pki_env().await?;
         context.finish().await?;
@@ -754,7 +754,7 @@ mod tests {
                 .unwrap();
                 // phase 1: init without mls_client
                 let central = MlsCentral::try_new(configuration).await.unwrap();
-                let context = central.new_transaction().await;
+                let context = central.new_transaction().await.unwrap();
                 x509_test_chain.register_with_central(&context).await;
 
                 assert!(context.mls_client().await.unwrap().is_none());

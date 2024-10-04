@@ -873,7 +873,7 @@ impl CoreCrypto {
             .map(usize::try_from)
             .transpose()
             .map_err(CryptoError::from)?;
-        let context = self.central.new_transaction().await;
+        let context = self.central.new_transaction().await?;
         context
             .mls_init(
                 ClientIdentifier::Basic(client_id.0),
@@ -887,7 +887,7 @@ impl CoreCrypto {
     /// See [core_crypto::mls::MlsCentral::mls_generate_keypairs]
     #[deprecated = "Please create a transaction in Core Crypto and call this method from it."]
     pub async fn mls_generate_keypairs(&self, ciphersuites: Ciphersuites) -> CoreCryptoResult<Vec<ClientId>> {
-        let context = self.central.new_transaction().await;
+        let context = self.central.new_transaction().await?;
         let result = context
             .mls_generate_keypairs((&ciphersuites).into())
             .await
@@ -904,7 +904,7 @@ impl CoreCrypto {
         tmp_client_ids: Vec<ClientId>,
         ciphersuites: Ciphersuites,
     ) -> CoreCryptoResult<()> {
-        let context = self.central.new_transaction().await;
+        let context = self.central.new_transaction().await?;
         context
             .mls_init_with_client_id(
                 client_id.0,
@@ -979,7 +979,7 @@ impl CoreCrypto {
         credential_type: MlsCredentialType,
         amount_requested: u32,
     ) -> CoreCryptoResult<Vec<Vec<u8>>> {
-        let context = self.central.new_transaction().await;
+        let context = self.central.new_transaction().await?;
         let kps = context
             .get_or_create_client_keypackages(ciphersuite.into(), credential_type.into(), amount_requested as usize)
             .await?;
@@ -1004,7 +1004,7 @@ impl CoreCrypto {
         ciphersuite: Ciphersuite,
         credential_type: MlsCredentialType,
     ) -> CoreCryptoResult<u64> {
-        let context = self.central.new_transaction().await;
+        let context = self.central.new_transaction().await?;
         let count = context
             .client_valid_key_packages_count(ciphersuite.into(), credential_type.into())
             .await?;
@@ -1021,7 +1021,7 @@ impl CoreCrypto {
             .map(|r| KeyPackageRef::from_slice(&r))
             .collect::<Vec<_>>();
 
-        let context = self.central.new_transaction().await;
+        let context = self.central.new_transaction().await?;
         context.delete_keypackages(&refs[..]).await?;
         context.finish().await?;
         Ok(())
@@ -1041,7 +1041,7 @@ impl CoreCrypto {
             ..Default::default()
         };
 
-        let context = self.central.new_transaction().await;
+        let context = self.central.new_transaction().await?;
         context
             .set_raw_external_senders(&mut lower_cfg, config.external_senders)
             .await?;
@@ -1071,7 +1071,7 @@ impl CoreCrypto {
         welcome_message: Vec<u8>,
         custom_configuration: CustomConfiguration,
     ) -> CoreCryptoResult<WelcomeBundle> {
-        let context = self.central.new_transaction().await;
+        let context = self.central.new_transaction().await?;
         let result = context
             .process_raw_welcome_message(welcome_message, custom_configuration.into())
             .await?
@@ -1096,7 +1096,7 @@ impl CoreCrypto {
             })
             .collect::<CoreCryptoResult<Vec<_>>>()?;
 
-        let context = self.central.new_transaction().await;
+        let context = self.central.new_transaction().await?;
         let result = context
             .add_members_to_conversation(&conversation_id, key_packages)
             .await?
@@ -1113,7 +1113,7 @@ impl CoreCrypto {
         clients: Vec<ClientId>,
     ) -> CoreCryptoResult<CommitBundle> {
         let clients: Vec<core_crypto::prelude::ClientId> = clients.into_iter().map(|c| c.0).collect();
-        let context = self.central.new_transaction().await;
+        let context = self.central.new_transaction().await?;
         let result = context
             .remove_members_from_conversation(&conversation_id, &clients)
             .await?
@@ -1126,7 +1126,7 @@ impl CoreCrypto {
     /// See [core_crypto::mls::MlsCentral::mark_conversation_as_child_of]
     #[deprecated = "Please create a transaction in Core Crypto and call this method from it."]
     pub async fn mark_conversation_as_child_of(&self, child_id: Vec<u8>, parent_id: Vec<u8>) -> CoreCryptoResult<()> {
-        let context = self.central.new_transaction().await;
+        let context = self.central.new_transaction().await?;
         context.mark_conversation_as_child_of(&child_id, &parent_id).await?;
         Ok(context.finish().await?)
     }
@@ -1134,7 +1134,7 @@ impl CoreCrypto {
     /// See [core_crypto::mls::MlsCentral::update_keying_material]
     #[deprecated = "Please create a transaction in Core Crypto and call this method from it."]
     pub async fn update_keying_material(&self, conversation_id: Vec<u8>) -> CoreCryptoResult<CommitBundle> {
-        let context = self.central.new_transaction().await;
+        let context = self.central.new_transaction().await?;
         let result = context.update_keying_material(&conversation_id).await?.try_into()?;
         context.finish().await?;
         Ok(result)
@@ -1143,7 +1143,7 @@ impl CoreCrypto {
     /// See [core_crypto::mls::MlsCentral::commit_pending_proposals]
     #[deprecated = "Please create a transaction in Core Crypto and call this method from it."]
     pub async fn commit_pending_proposals(&self, conversation_id: Vec<u8>) -> CoreCryptoResult<Option<CommitBundle>> {
-        let context = self.central.new_transaction().await;
+        let context = self.central.new_transaction().await?;
         let result = context
             .commit_pending_proposals(&conversation_id)
             .await
@@ -1157,7 +1157,7 @@ impl CoreCrypto {
     /// see [core_crypto::mls::MlsCentral::wipe_conversation]
     #[deprecated = "Please create a transaction in Core Crypto and call this method from it."]
     pub async fn wipe_conversation(&self, conversation_id: Vec<u8>) -> CoreCryptoResult<()> {
-        let context = self.central.new_transaction().await;
+        let context = self.central.new_transaction().await?;
         context.wipe_conversation(&conversation_id).await?;
         Ok(context.finish().await?)
     }
@@ -1169,7 +1169,7 @@ impl CoreCrypto {
         conversation_id: Vec<u8>,
         payload: Vec<u8>,
     ) -> CoreCryptoResult<DecryptedMessage> {
-        let context = self.central.new_transaction().await;
+        let context = self.central.new_transaction().await?;
         let raw_decrypted_message = context.decrypt_message(&conversation_id, payload).await?;
 
         let decrypted_message: DecryptedMessage = raw_decrypted_message.try_into()?;
@@ -1181,7 +1181,7 @@ impl CoreCrypto {
     /// See [core_crypto::mls::MlsCentral::encrypt_message]
     #[deprecated = "Please create a transaction in Core Crypto and call this method from it."]
     pub async fn encrypt_message(&self, conversation_id: Vec<u8>, message: Vec<u8>) -> CoreCryptoResult<Vec<u8>> {
-        let context = self.central.new_transaction().await;
+        let context = self.central.new_transaction().await?;
         let result = context.encrypt_message(&conversation_id, message).await?;
         context.finish().await?;
         Ok(result)
@@ -1202,7 +1202,7 @@ impl CoreCrypto {
         let kp = KeyPackageIn::tls_deserialize(&mut keypackage.as_slice())
             .map_err(MlsError::from)
             .map_err(CryptoError::from)?;
-        let context = self.central.new_transaction().await;
+        let context = self.central.new_transaction().await?;
         let result = context
             .new_add_proposal(&conversation_id, kp.into())
             .await?
@@ -1214,7 +1214,7 @@ impl CoreCrypto {
     /// See [core_crypto::mls::MlsCentral::new_update_proposal]
     #[deprecated = "Please create a transaction in Core Crypto and call this method from it."]
     pub async fn new_update_proposal(&self, conversation_id: Vec<u8>) -> CoreCryptoResult<ProposalBundle> {
-        let context = self.central.new_transaction().await;
+        let context = self.central.new_transaction().await?;
         let result = context.new_update_proposal(&conversation_id).await?.try_into()?;
         context.finish().await?;
         Ok(result)
@@ -1227,7 +1227,7 @@ impl CoreCrypto {
         conversation_id: Vec<u8>,
         client_id: ClientId,
     ) -> CoreCryptoResult<ProposalBundle> {
-        let context = self.central.new_transaction().await;
+        let context = self.central.new_transaction().await?;
         let result = context
             .new_remove_proposal(&conversation_id, client_id.0)
             .await?
@@ -1245,7 +1245,7 @@ impl CoreCrypto {
         ciphersuite: Ciphersuite,
         credential_type: MlsCredentialType,
     ) -> CoreCryptoResult<Vec<u8>> {
-        let context = self.central.new_transaction().await;
+        let context = self.central.new_transaction().await?;
         let result = context
             .new_external_add_proposal(
                 conversation_id,
@@ -1272,7 +1272,7 @@ impl CoreCrypto {
         let group_info = VerifiableGroupInfo::tls_deserialize(&mut group_info.as_slice())
             .map_err(MlsError::from)
             .map_err(CryptoError::from)?;
-        let context = self.central.new_transaction().await;
+        let context = self.central.new_transaction().await?;
         let result = context
             .join_by_external_commit(group_info, custom_configuration.into(), credential_type.into())
             .await?
@@ -1287,7 +1287,7 @@ impl CoreCrypto {
         &self,
         conversation_id: Vec<u8>,
     ) -> CoreCryptoResult<Option<Vec<BufferedDecryptedMessage>>> {
-        let context = self.central.new_transaction().await;
+        let context = self.central.new_transaction().await?;
         if let Some(decrypted_messages) = context
             .merge_pending_group_from_external_commit(&conversation_id)
             .await?
@@ -1306,7 +1306,7 @@ impl CoreCrypto {
     /// See [core_crypto::mls::MlsCentral::clear_pending_group_from_external_commit]
     #[deprecated = "Please create a transaction in Core Crypto and call this method from it."]
     pub async fn clear_pending_group_from_external_commit(&self, conversation_id: Vec<u8>) -> CoreCryptoResult<()> {
-        let context = self.central.new_transaction().await;
+        let context = self.central.new_transaction().await?;
         context
             .clear_pending_group_from_external_commit(&conversation_id)
             .await?;
@@ -1333,7 +1333,7 @@ impl CoreCrypto {
         &self,
         conversation_id: Vec<u8>,
     ) -> CoreCryptoResult<Option<Vec<BufferedDecryptedMessage>>> {
-        let context = self.central.new_transaction().await;
+        let context = self.central.new_transaction().await?;
         if let Some(decrypted_messages) = context.commit_accepted(&conversation_id).await? {
             let result = decrypted_messages
                 .into_iter()
@@ -1353,7 +1353,7 @@ impl CoreCrypto {
         conversation_id: Vec<u8>,
         proposal_ref: Vec<u8>,
     ) -> CoreCryptoResult<()> {
-        let context = self.central.new_transaction().await;
+        let context = self.central.new_transaction().await?;
         context
             .clear_pending_proposal(&conversation_id, proposal_ref.into())
             .await?;
@@ -1363,7 +1363,7 @@ impl CoreCrypto {
     /// See [core_crypto::mls::MlsCentral::clear_pending_commit]
     #[deprecated = "Please create a transaction in Core Crypto and call this method from it."]
     pub async fn clear_pending_commit(&self, conversation_id: Vec<u8>) -> CoreCryptoResult<()> {
-        let context = self.central.new_transaction().await;
+        let context = self.central.new_transaction().await?;
         context.clear_pending_commit(&conversation_id).await?;
         Ok(context.finish().await?)
     }
@@ -1610,7 +1610,7 @@ impl CoreCrypto {
         expiry_sec: u32,
         ciphersuite: Ciphersuite,
     ) -> CoreCryptoResult<E2eiEnrollment> {
-        let context = self.central.new_transaction().await;
+        let context = self.central.new_transaction().await?;
         let result = context
             .e2ei_new_enrollment(
                 client_id.into_bytes().into(),
@@ -1638,7 +1638,7 @@ impl CoreCrypto {
         expiry_sec: u32,
         ciphersuite: Ciphersuite,
     ) -> CoreCryptoResult<E2eiEnrollment> {
-        let context = self.central.new_transaction().await;
+        let context = self.central.new_transaction().await?;
         let result = context
             .e2ei_new_activation_enrollment(display_name, handle, team, expiry_sec, ciphersuite.into())
             .await
@@ -1659,7 +1659,7 @@ impl CoreCrypto {
         expiry_sec: u32,
         ciphersuite: Ciphersuite,
     ) -> CoreCryptoResult<E2eiEnrollment> {
-        let context = self.central.new_transaction().await;
+        let context = self.central.new_transaction().await?;
         let result = context
             .e2ei_new_rotate_enrollment(display_name, handle, team, expiry_sec, ciphersuite.into())
             .await
@@ -1682,7 +1682,7 @@ impl CoreCrypto {
     /// See [core_crypto::mls::MlsCentral::e2ei_register_acme_ca]
     #[deprecated = "Please create a transaction in Core Crypto and call this method from it."]
     pub async fn e2ei_register_acme_ca(&self, trust_anchor_pem: String) -> CoreCryptoResult<()> {
-        let context = self.central.new_transaction().await;
+        let context = self.central.new_transaction().await?;
         context.e2ei_register_acme_ca(trust_anchor_pem).await?;
         Ok(context.finish().await?)
     }
@@ -1690,7 +1690,7 @@ impl CoreCrypto {
     /// See [core_crypto::mls::MlsCentral::e2ei_register_intermediate_ca_pem]
     #[deprecated = "Please create a transaction in Core Crypto and call this method from it."]
     pub async fn e2ei_register_intermediate_ca(&self, cert_pem: String) -> CoreCryptoResult<Option<Vec<String>>> {
-        let context = self.central.new_transaction().await;
+        let context = self.central.new_transaction().await?;
         let result = context.e2ei_register_intermediate_ca_pem(cert_pem).await?.into();
         context.finish().await?;
         Ok(result)
@@ -1699,7 +1699,7 @@ impl CoreCrypto {
     /// See [core_crypto::mls::MlsCentral::e2ei_register_crl]
     #[deprecated = "Please create a transaction in Core Crypto and call this method from it."]
     pub async fn e2ei_register_crl(&self, crl_dp: String, crl_der: Vec<u8>) -> CoreCryptoResult<CrlRegistration> {
-        let context = self.central.new_transaction().await;
+        let context = self.central.new_transaction().await?;
         let result = context.e2ei_register_crl(crl_dp, crl_der).await?.into();
         context.finish().await?;
         Ok(result)
@@ -1718,7 +1718,7 @@ impl CoreCrypto {
             .transpose()
             .map_err(CryptoError::from)?;
 
-        let context = self.central.new_transaction().await;
+        let context = self.central.new_transaction().await?;
         let result = context
             .e2ei_mls_init_only(
                 enrollment.0.write().await.deref_mut(),
@@ -1749,7 +1749,7 @@ impl CoreCrypto {
         certificate_chain: String,
         new_key_packages_count: u32,
     ) -> CoreCryptoResult<RotateBundle> {
-        let context = self.central.new_transaction().await;
+        let context = self.central.new_transaction().await?;
         let result = context
             .e2ei_rotate_all(
                 enrollment.0.write().await.deref_mut(),
@@ -1770,7 +1770,7 @@ impl CoreCrypto {
             .ok_or_else(|| CryptoError::LockPoisonError)?
             .into_inner();
 
-        let context = self.central.new_transaction().await;
+        let context = self.central.new_transaction().await?;
         let result = context.e2ei_enrollment_stash(enrollment).await?;
         context.finish().await?;
         Ok(result)
@@ -1779,7 +1779,7 @@ impl CoreCrypto {
     /// See [core_crypto::mls::MlsCentral::e2ei_enrollment_stash_pop]
     #[deprecated = "Please create a transaction in Core Crypto and call this method from it."]
     pub async fn e2ei_enrollment_stash_pop(&self, handle: Vec<u8>) -> CoreCryptoResult<E2eiEnrollment> {
-        let context = self.central.new_transaction().await;
+        let context = self.central.new_transaction().await?;
         let result = context
             .e2ei_enrollment_stash_pop(handle)
             .await
@@ -1793,7 +1793,7 @@ impl CoreCrypto {
     /// See [core_crypto::mls::MlsCentral::e2ei_conversation_state]
     #[deprecated = "Please create a transaction in Core Crypto and call this method from it."]
     pub async fn e2ei_conversation_state(&self, conversation_id: Vec<u8>) -> CoreCryptoResult<E2eiConversationState> {
-        let context = self.central.new_transaction().await;
+        let context = self.central.new_transaction().await?;
         let result = context
             .e2ei_conversation_state(&conversation_id)
             .await
@@ -1949,7 +1949,7 @@ impl E2eiEnrollment {
         cc: std::sync::Arc<CoreCrypto>,
         challenge: Vec<u8>,
     ) -> CoreCryptoResult<()> {
-        let context = cc.central.new_transaction().await;
+        let context = cc.central.new_transaction().await?;
         self.0
             .write()
             .await

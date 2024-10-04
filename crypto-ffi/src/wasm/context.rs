@@ -38,7 +38,7 @@ impl CoreCrypto {
     /// otherwise, every operation performed with the context will be discarded.
     pub async fn transaction(&self, command: CoreCryptoCommand) -> WasmCryptoResult<()> {
         let context = CoreCryptoContext {
-            inner: Arc::new(self.inner.new_transaction().await),
+            inner: Arc::new(self.inner.new_transaction().await?),
         };
 
         let result = command.execute(context.clone()).await;

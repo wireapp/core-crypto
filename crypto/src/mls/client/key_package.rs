@@ -396,7 +396,7 @@ mod tests {
             None
         };
 
-        let backend = backend.new_transaction();
+        let backend = backend.new_transaction().await.unwrap();
         let mut client = Client::random_generate(
             &case,
             &backend,
@@ -571,7 +571,7 @@ mod tests {
         } else {
             None
         };
-        let transaction = backend.new_transaction();
+        let transaction = backend.new_transaction().await.unwrap();
         let mut client = Client::random_generate(
             &case,
             &transaction,
