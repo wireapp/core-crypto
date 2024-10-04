@@ -206,12 +206,12 @@ pub async fn run_cross_signed_tests_with_client_ids<const N: usize, const F: usi
             let centrals2 = create_centrals(&case, paths2, Some(&chain2)).await;
             let mut contexts1 = Vec::new();
             for central in centrals1 {
-                contexts1.push(central.new_transaction().await);
+                contexts1.push(central.new_transaction().await.unwrap());
             }
 
             let mut contexts2 = Vec::new();
             for central in centrals2 {
-                contexts2.push(central.new_transaction().await);
+                contexts2.push(central.new_transaction().await.unwrap());
             }
 
             test(
@@ -247,7 +247,7 @@ async fn create_centrals<const N: usize>(
             )
             .unwrap();
             let central = MlsCentral::try_new(configuration).await.unwrap();
-            let context = central.new_transaction().await;
+            let context = central.new_transaction().await.unwrap();
 
             // Setup the X509 PKI environment
             if let Some(chain) = chain {
@@ -276,7 +276,7 @@ async fn create_centrals<const N: usize>(
                     ClientIdentifier::X509(HashMap::from([(sc, bundle)]))
                 }
             };
-            let context = central.new_transaction().await;
+            let context = central.new_transaction().await.unwrap();
             context
                 .mls_init(
                     identity,
@@ -344,7 +344,7 @@ pub async fn run_test_with_deterministic_client_ids_and_revocation<const N: usiz
             let mut centrals1 = Vec::new();
             for (index, mls_central) in centrals.into_iter().enumerate() {
                 let context = ClientContext {
-                    context: mls_central.new_transaction().await,
+                    context: mls_central.new_transaction().await.unwrap(),
                     central: mls_central,
                     x509_test_chain: std::sync::Arc::new(chain1.clone()),
                 };
@@ -354,7 +354,7 @@ pub async fn run_test_with_deterministic_client_ids_and_revocation<const N: usiz
             let mut centrals2 = Vec::new();
             for (index, mls_central) in centrals.into_iter().enumerate() {
                 let context = ClientContext {
-                    context: mls_central.new_transaction().await,
+                    context: mls_central.new_transaction().await.unwrap(),
                     central: mls_central,
                     x509_test_chain: std::sync::Arc::new(chain2.clone()),
                 };
@@ -399,7 +399,7 @@ pub async fn run_test_wo_clients(
             .unwrap();
             let central = MlsCentral::try_new(configuration).await.unwrap();
             central.callbacks(std::sync::Arc::<ValidationCallbacks>::default());
-            let context = central.new_transaction().await;
+            let context = central.new_transaction().await.unwrap();
             test(ClientContext {
                 context: context.clone(),
                 central,

@@ -42,7 +42,7 @@ impl CoreCrypto {
     /// otherwise, every operation performed with the context will be discarded.
     pub async fn transaction(&self, command: Arc<dyn CoreCryptoCommand>) -> CoreCryptoResult<()> {
         let context = Arc::new(CoreCryptoContext {
-            context: Arc::new(self.central.new_transaction().await),
+            context: Arc::new(self.central.new_transaction().await?),
         });
 
         let result = command.execute(context.clone()).await;

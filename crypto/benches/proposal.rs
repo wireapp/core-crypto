@@ -23,7 +23,7 @@ fn proposal_add_bench(c: &mut Criterion) {
                         })
                     },
                     |(mut central, id, kp)| async move {
-                        let context = central.new_transaction().await;
+                        let context = central.new_transaction().await?;
                         black_box(context.new_add_proposal(&id, kp).await.unwrap());
                         context.finish().await.unwrap();
                     },
@@ -49,7 +49,7 @@ fn proposal_remove_bench(c: &mut Criterion) {
                         })
                     },
                     |(mut central, id, client_id)| async move {
-                        let context = central.new_transaction().await;
+                        let context = central.new_transaction().await?;
                         black_box(context.new_remove_proposal(&id, client_id).await.unwrap());
                         context.finish().await.unwrap();
                     },
@@ -75,7 +75,7 @@ fn proposal_update_bench(c: &mut Criterion) {
                         })
                     },
                     |(mut central, id)| async move {
-                        let context = central.new_transaction().await;
+                        let context = central.new_transaction().await?;
                         black_box(context.new_update_proposal(&id).await.unwrap());
                         context.finish().await.unwrap();
                     },
