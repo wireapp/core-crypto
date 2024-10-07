@@ -65,6 +65,8 @@ pub enum CryptoKeystoreError {
     MissingKeyInStore(#[from] MissingKeyErrorKind),
     #[error("The given key doesn't contain valid utf-8")]
     KeyReprError(#[from] std::str::Utf8Error),
+    #[error("A transaction must be in progress to perform this operation.")]
+    MutatingOperationWithoutTransaction,
     #[error("Cannot perform the operation \"{attempted_operation:?}\" while a transaction is in progress.")]
     TransactionInProgress {
         attempted_operation: String,
