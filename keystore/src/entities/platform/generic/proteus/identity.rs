@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see http://www.gnu.org/licenses/.
 
-use crate::entities::{EntityFindParams, ProteusIdentity, StringEntityId};
+use crate::entities::{EntityFindParams, EntityTransactionExt, ProteusIdentity, StringEntityId};
 use crate::CryptoKeystoreError;
 use crate::{
     connection::KeystoreDatabaseConnection,
@@ -22,6 +22,7 @@ use crate::{
     MissingKeyErrorKind,
 };
 use rusqlite::OptionalExtension;
+use crate::connection::TransactionWrapper;
 
 impl Entity for ProteusIdentity {
     fn id_raw(&self) -> &[u8] {
@@ -110,17 +111,15 @@ impl EntityBase for ProteusIdentity {
         debug_assert!(count <= 1);
         Ok(count)
     }
+}
 
-    async fn save(&self, conn: &mut Self::ConnectionType) -> crate::CryptoKeystoreResult<()> {
-        if Self::count(conn).await? == 1 {
-            return Ok(());
-        }
-
-        let transaction = conn.transaction()?;
-
+#[cfg_attr(target_family = "wasm", async_trait::async_trait(?Send))]
+#[cfg_attr(not(target_family = "wasm"), async_trait::async_trait)]
+impl EntityTransactionExt for ProteusIdentity {
+    async fn save(&self, transaction: &TransactionWrapper<'_>) -> crate::CryptoKeystoreResult<()> {
         use rusqlite::ToSql as _;
         transaction.execute(
-            "INSERT INTO proteus_identities (sk, pk) VALUES (?, ?)",
+            "INSERT INTO proteus_identities (sk, pk) VALUES (?, ?) WHERE SELECT COUNT(*) FROM proteus_identities = 0",
             [
                 rusqlite::blob::ZeroBlob(self.sk.len() as i32).to_sql()?,
                 rusqlite::blob::ZeroBlob(self.pk.len() as i32).to_sql()?,
@@ -140,16 +139,10 @@ impl EntityBase for ProteusIdentity {
         blob.write_all(&self.pk)?;
         blob.close()?;
 
-        transaction.commit()?;
-
         Ok(())
     }
 
-    async fn delete(
-        conn: &mut Self::ConnectionType,
-        _id: crate::entities::StringEntityId<'_>,
-    ) -> crate::CryptoKeystoreResult<()> {
-        let transaction = conn.transaction()?;
+    async fn delete(transaction: &TransactionWrapper<'_>, _id: StringEntityId<'_>) -> crate::CryptoKeystoreResult<()> {
         let row_id = transaction.query_row(
             "SELECT rowid FROM proteus_identities ORDER BY rowid ASC LIMIT 1",
             [],
@@ -158,8 +151,7 @@ impl EntityBase for ProteusIdentity {
         use rusqlite::ToSql as _;
         transaction.execute("DELETE FROM proteus_identities WHERE rowid = ?", [row_id.to_sql()?])?;
 
-        transaction.commit()?;
-
         Ok(())
     }
+    
 }
