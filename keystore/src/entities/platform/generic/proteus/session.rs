@@ -14,13 +14,14 @@
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see http://www.gnu.org/licenses/.
 
-use crate::entities::{EntityFindParams, ProteusSession, StringEntityId};
+use crate::entities::{EntityFindParams, EntityTransactionExt, ProteusSession, StringEntityId};
 use crate::CryptoKeystoreError;
 use crate::{
     connection::{DatabaseConnection, KeystoreDatabaseConnection},
     entities::{Entity, EntityBase},
     MissingKeyErrorKind,
 };
+use crate::connection::TransactionWrapper;
 
 impl Entity for ProteusSession {
     fn id_raw(&self) -> &[u8] {
@@ -67,44 +68,6 @@ impl EntityBase for ProteusSession {
         })?;
 
         Ok(entities)
-    }
-
-    async fn save(&self, conn: &mut Self::ConnectionType) -> crate::CryptoKeystoreResult<()> {
-        use rusqlite::ToSql as _;
-
-        let session_id = &self.id;
-        let session = &self.session;
-
-        Self::ConnectionType::check_buffer_size(session.len())?;
-        Self::ConnectionType::check_buffer_size(session_id.len())?;
-
-        let zb = rusqlite::blob::ZeroBlob(session.len() as i32);
-
-        let transaction = conn.transaction()?;
-
-        // Use UPSERT (ON CONFLICT DO UPDATE)
-        let sql = "
-        INSERT INTO proteus_sessions (id, session)
-        VALUES (?, ?)
-        ON CONFLICT(id) DO UPDATE SET session = excluded.session
-        RETURNING rowid";
-
-        let row_id: i64 = transaction.query_row(sql, [&session_id.to_sql()?, &zb.to_sql()?], |r| r.get(0))?;
-
-        let mut blob = transaction.blob_open(
-            rusqlite::DatabaseName::Main,
-            "proteus_sessions",
-            "session",
-            row_id,
-            false,
-        )?;
-        use std::io::Write as _;
-        blob.write_all(session)?;
-        blob.close()?;
-
-        transaction.commit()?;
-
-        Ok(())
     }
 
     async fn find_one(
@@ -175,17 +138,52 @@ impl EntityBase for ProteusSession {
     async fn count(conn: &mut Self::ConnectionType) -> crate::CryptoKeystoreResult<usize> {
         Ok(conn.query_row("SELECT COUNT(*) FROM proteus_sessions", [], |r| r.get(0))?)
     }
+}
 
-    async fn delete(conn: &mut Self::ConnectionType, id: StringEntityId<'_>) -> crate::CryptoKeystoreResult<()> {
-        let transaction = conn.transaction()?;
+#[cfg_attr(target_family = "wasm", async_trait::async_trait(?Send))]
+#[cfg_attr(not(target_family = "wasm"), async_trait::async_trait)]
+impl EntityTransactionExt for ProteusSession {
+    async fn save(&self, transaction: &TransactionWrapper<'_>) -> crate::CryptoKeystoreResult<()> {
+        use rusqlite::ToSql as _;
+
+        let session_id = &self.id;
+        let session = &self.session;
+
+        Self::ConnectionType::check_buffer_size(session.len())?;
+        Self::ConnectionType::check_buffer_size(session_id.len())?;
+
+        let zb = rusqlite::blob::ZeroBlob(session.len() as i32);
+
+        // Use UPSERT (ON CONFLICT DO UPDATE)
+        let sql = "
+        INSERT INTO proteus_sessions (id, session)
+        VALUES (?, ?)
+        ON CONFLICT(id) DO UPDATE SET session = excluded.session
+        RETURNING rowid";
+
+        let row_id: i64 = transaction.query_row(sql, [&session_id.to_sql()?, &zb.to_sql()?], |r| r.get(0))?;
+
+        let mut blob = transaction.blob_open(
+            rusqlite::DatabaseName::Main,
+            "proteus_sessions",
+            "session",
+            row_id,
+            false,
+        )?;
+        use std::io::Write as _;
+        blob.write_all(session)?;
+        blob.close()?;
+
+        Ok(())
+    }
+
+    async fn delete(transaction: &TransactionWrapper<'_>, id: StringEntityId<'_>) -> crate::CryptoKeystoreResult<()> {
         let id_string: String = (&id).try_into()?;
         let updated = transaction.execute("DELETE FROM proteus_sessions WHERE id = ?", [id_string])?;
 
         if updated > 0 {
-            transaction.commit()?;
             Ok(())
         } else {
-            transaction.rollback()?;
             Err(Self::to_missing_key_err_kind().into())
         }
     }
