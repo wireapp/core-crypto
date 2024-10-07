@@ -171,7 +171,7 @@ mod tests {
                             .new_conversation(&id, case.credential_type, case.cfg.clone())
                             .await
                             .unwrap();
-                        let bob_kp = bob_central.context.get_one_key_package(&case).await;
+                        let bob_kp = bob_central.get_one_key_package(&case).await;
                         alice_central.context.new_add_proposal(&id, bob_kp).await.unwrap();
                         let MlsCommitBundle { welcome, .. } = alice_central
                             .context
@@ -182,7 +182,6 @@ mod tests {
                         alice_central.context.commit_accepted(&id).await.unwrap();
                         assert_eq!(
                             alice_central
-                                .context
                                 .get_conversation_unchecked(&id)
                                 .await
                                 .members()
@@ -197,8 +196,7 @@ mod tests {
                             .id;
                         assert_eq!(id, new_id);
                         assert!(bob_central
-                            .context
-                            .try_talk_to(&id, &mut alice_central.context)
+                            .try_talk_to(&id, &alice_central)
                             .await
                             .is_ok());
                     })
@@ -224,7 +222,6 @@ mod tests {
                         .await
                         .unwrap();
                     let before = central
-                        .context
                         .get_conversation_unchecked(&id)
                         .await
                         .encryption_keys()
@@ -234,7 +231,6 @@ mod tests {
                     central.context.commit_pending_proposals(&id).await.unwrap();
                     central.context.commit_accepted(&id).await.unwrap();
                     let after = central
-                        .context
                         .get_conversation_unchecked(&id)
                         .await
                         .encryption_keys()
@@ -262,13 +258,11 @@ mod tests {
                         .await
                         .unwrap();
                     alice_central
-                        .context
-                        .invite_all(&case, &id, [&mut bob_central.context])
+                        .invite_all(&case, &id, [&bob_central])
                         .await
                         .unwrap();
                     assert_eq!(
                         alice_central
-                            .context
                             .get_conversation_unchecked(&id)
                             .await
                             .members()
@@ -277,7 +271,6 @@ mod tests {
                     );
                     assert_eq!(
                         bob_central
-                            .context
                             .get_conversation_unchecked(&id)
                             .await
                             .members()
@@ -287,7 +280,7 @@ mod tests {
 
                     let remove_proposal = alice_central
                         .context
-                        .new_remove_proposal(&id, bob_central.context.get_client_id().await)
+                        .new_remove_proposal(&id, bob_central.get_client_id().await)
                         .await
                         .unwrap();
                     bob_central
@@ -304,7 +297,6 @@ mod tests {
                     alice_central.context.commit_accepted(&id).await.unwrap();
                     assert_eq!(
                         alice_central
-                            .context
                             .get_conversation_unchecked(&id)
                             .await
                             .members()

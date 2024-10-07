@@ -183,20 +183,19 @@ mod tests {
                             .await
                             .unwrap();
                         alice_central
-                            .context
-                            .invite_all(&case, &id, [&mut bob_central.context])
+                            .invite_all(&case, &id, [&bob_central])
                             .await
                             .unwrap();
-                        let charlie_kp = charlie_central.context.get_one_key_package(&case).await;
+                        let charlie_kp = charlie_central.get_one_key_package(&case).await;
 
-                        assert!(alice_central.context.pending_proposals(&id).await.is_empty());
+                        assert!(alice_central.pending_proposals(&id).await.is_empty());
                         let proposal = alice_central
                             .context
                             .new_add_proposal(&id, charlie_kp)
                             .await
                             .unwrap()
                             .proposal;
-                        assert_eq!(alice_central.context.pending_proposals(&id).await.len(), 1);
+                        assert_eq!(alice_central.pending_proposals(&id).await.len(), 1);
                         bob_central
                             .context
                             .decrypt_message(&id, proposal.to_bytes().unwrap())
@@ -211,7 +210,6 @@ mod tests {
                         bob_central.context.commit_accepted(&id).await.unwrap();
                         assert_eq!(
                             bob_central
-                                .context
                                 .get_conversation_unchecked(&id)
                                 .await
                                 .members()
@@ -228,7 +226,6 @@ mod tests {
                             .unwrap();
                         assert_eq!(
                             alice_central
-                                .context
                                 .get_conversation_unchecked(&id)
                                 .await
                                 .members()
@@ -237,18 +234,16 @@ mod tests {
                         );
 
                         charlie_central
-                            .context
                             .try_join_from_welcome(
                                 &id,
                                 welcome.unwrap().into(),
                                 case.custom_cfg(),
-                                vec![&mut alice_central.context, &mut bob_central.context],
+                                vec![&alice_central, &bob_central],
                             )
                             .await
                             .unwrap();
                         assert_eq!(
                             charlie_central
-                                .context
                                 .get_conversation_unchecked(&id)
                                 .await
                                 .members()
@@ -280,19 +275,18 @@ mod tests {
                             .await
                             .unwrap();
                         alice_central
-                            .context
-                            .invite_all(&case, &id, [&mut bob_central.context, &mut charlie_central.context])
+                            .invite_all(&case, &id, [&bob_central, &charlie_central])
                             .await
                             .unwrap();
 
-                        assert!(alice_central.context.pending_proposals(&id).await.is_empty());
+                        assert!(alice_central.pending_proposals(&id).await.is_empty());
                         let proposal = alice_central
                             .context
-                            .new_remove_proposal(&id, charlie_central.context.get_client_id().await)
+                            .new_remove_proposal(&id, charlie_central.get_client_id().await)
                             .await
                             .unwrap()
                             .proposal;
-                        assert_eq!(alice_central.context.pending_proposals(&id).await.len(), 1);
+                        assert_eq!(alice_central.pending_proposals(&id).await.len(), 1);
                         bob_central
                             .context
                             .decrypt_message(&id, proposal.to_bytes().unwrap())
@@ -308,7 +302,6 @@ mod tests {
                         bob_central.context.commit_accepted(&id).await.unwrap();
                         assert_eq!(
                             bob_central
-                                .context
                                 .get_conversation_unchecked(&id)
                                 .await
                                 .members()
@@ -325,7 +318,6 @@ mod tests {
                             .unwrap();
                         assert_eq!(
                             alice_central
-                                .context
                                 .get_conversation_unchecked(&id)
                                 .await
                                 .members()
@@ -357,27 +349,23 @@ mod tests {
                             .await
                             .unwrap();
                         alice_central
-                            .context
-                            .invite_all(&case, &id, [&mut bob_central.context])
+                            .invite_all(&case, &id, [&bob_central])
                             .await
                             .unwrap();
 
                         let bob_keys = bob_central
-                            .context
                             .get_conversation_unchecked(&id)
                             .await
                             .signature_keys()
                             .collect::<Vec<SignaturePublicKey>>();
                         let alice_keys = alice_central
-                            .context
                             .get_conversation_unchecked(&id)
                             .await
                             .signature_keys()
                             .collect::<Vec<SignaturePublicKey>>();
                         assert!(alice_keys.iter().all(|a_key| bob_keys.contains(a_key)));
                         let alice_key = alice_central
-                            .context
-                            .encryption_key_of(&id, alice_central.context.get_client_id().await)
+                            .encryption_key_of(&id, alice_central.get_client_id().await)
                             .await;
 
                         let proposal = alice_central.context.new_update_proposal(&id).await.unwrap().proposal;
@@ -396,21 +384,18 @@ mod tests {
 
                         // before merging, commit is not applied
                         assert!(bob_central
-                            .context
                             .get_conversation_unchecked(&id)
                             .await
                             .encryption_keys()
                             .contains(&alice_key));
                         bob_central.context.commit_accepted(&id).await.unwrap();
                         assert!(!bob_central
-                            .context
                             .get_conversation_unchecked(&id)
                             .await
                             .encryption_keys()
                             .contains(&alice_key));
 
                         assert!(alice_central
-                            .context
                             .get_conversation_unchecked(&id)
                             .await
                             .encryption_keys()
@@ -423,7 +408,6 @@ mod tests {
                             .await
                             .unwrap();
                         assert!(!alice_central
-                            .context
                             .get_conversation_unchecked(&id)
                             .await
                             .encryption_keys()
@@ -431,8 +415,7 @@ mod tests {
 
                         // ensuring both can encrypt messages
                         assert!(alice_central
-                            .context
-                            .try_talk_to(&id, &mut bob_central.context)
+                            .try_talk_to(&id, &bob_central)
                             .await
                             .is_ok());
                     })
@@ -460,8 +443,7 @@ mod tests {
                             .await
                             .unwrap();
                         alice_central
-                            .context
-                            .invite_all(&case, &id, [&mut bob_central.context])
+                            .invite_all(&case, &id, [&bob_central])
                             .await
                             .unwrap();
 

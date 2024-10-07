@@ -143,6 +143,7 @@ impl Client {
 mod tests {
     use mls_crypto_provider::PkiKeypair;
     use std::collections::HashMap;
+    use std::sync::Arc;
     use wasm_bindgen_test::*;
 
     use crate::{
@@ -312,7 +313,7 @@ mod tests {
                     .unwrap();
 
             assert_eq!(
-                alice_central.e2ei_conversation_state(&id).await.unwrap(),
+                alice_central.context.e2ei_conversation_state(&id).await.unwrap(),
                 E2eiConversationState::Verified
             );
 
@@ -324,7 +325,7 @@ mod tests {
 
             alice_central.try_talk_to(&id, &bob_central).await.unwrap();
             assert_eq!(
-                alice_central.e2ei_conversation_state(&id).await.unwrap(),
+                alice_central.context.e2ei_conversation_state(&id).await.unwrap(),
                 E2eiConversationState::NotVerified
             );
         })
@@ -350,23 +351,23 @@ mod tests {
                     .unwrap();
 
             assert_eq!(
-                alice_central.e2ei_conversation_state(&id).await.unwrap(),
+                alice_central.context.e2ei_conversation_state(&id).await.unwrap(),
                 E2eiConversationState::Verified
             );
 
             assert_eq!(
-                bob_central.e2ei_conversation_state(&id).await.unwrap(),
+                bob_central.context.e2ei_conversation_state(&id).await.unwrap(),
                 E2eiConversationState::Verified
             );
 
-            alice_central.try_talk_to(&id, &mut bob_central).await.unwrap();
+            alice_central.try_talk_to(&id, &bob_central).await.unwrap();
             assert_eq!(
-                alice_central.e2ei_conversation_state(&id).await.unwrap(),
+                alice_central.context.e2ei_conversation_state(&id).await.unwrap(),
                 E2eiConversationState::Verified
             );
 
             assert_eq!(
-                bob_central.e2ei_conversation_state(&id).await.unwrap(),
+                bob_central.context.e2ei_conversation_state(&id).await.unwrap(),
                 E2eiConversationState::Verified
             );
 
@@ -398,25 +399,31 @@ mod tests {
                 )
                 .await
                 .unwrap();
+            
+            let charlie_context = ClientContext {
+                context: charlie_transaction,
+                central: charlie_central,
+                x509_test_chain: Arc::new(Some(x509_test_chain)),
+            };
 
-            let charlie_kp = charlie_transaction
+            let charlie_kp = charlie_context
                 .rand_key_package_of_type(&case, MlsCredentialType::Basic)
                 .await;
 
             alice_central
-                .invite_all_members(&case, &id, [(&charlie_transaction, charlie_kp)])
+                .invite_all_members(&case, &id, [(&charlie_context, charlie_kp)])
                 .await
                 .unwrap();
 
             assert_eq!(
-                alice_central.e2ei_conversation_state(&id).await.unwrap(),
+                alice_central.context.e2ei_conversation_state(&id).await.unwrap(),
                 E2eiConversationState::NotVerified
             );
 
-            alice_central.try_talk_to(&id, &charlie_transaction).await.unwrap();
+            alice_central.try_talk_to(&id, &charlie_context).await.unwrap();
 
             assert_eq!(
-                alice_central.e2ei_conversation_state(&id).await.unwrap(),
+                alice_central.context.e2ei_conversation_state(&id).await.unwrap(),
                 E2eiConversationState::NotVerified
             );
         })
@@ -478,7 +485,7 @@ mod tests {
         x509_test_chain: Option<&X509TestChain>,
         creator_identifier: ClientIdentifier,
         guest_identifier: ClientIdentifier,
-    ) -> CryptoResult<(CentralContext, CentralContext, ConversationId)> {
+    ) -> CryptoResult<(ClientContext, ClientContext, ConversationId)> {
         let id = conversation_id();
         let ciphersuites = vec![case.ciphersuite()];
 
@@ -507,6 +514,12 @@ mod tests {
         if let Some(x509_test_chain) = &x509_test_chain {
             x509_test_chain.register_with_central(&creator_transaction).await;
         }
+        let creator_client_context = ClientContext{
+            context: creator_transaction.clone(),
+            central: creator_central,
+            x509_test_chain: Arc::new(x509_test_chain.cloned()),
+        };
+        
         creator_transaction
             .mls_init(
                 creator_identifier,
@@ -541,13 +554,19 @@ mod tests {
         creator_transaction
             .new_conversation(&id, creator_ct, case.cfg.clone())
             .await?;
+        
+        let guest_client_context = ClientContext{
+            context: guest_transaction.clone(),
+            central: guest_central,
+            x509_test_chain: Arc::new(x509_test_chain.cloned()),
+        };
 
-        let guest = guest_transaction.rand_key_package_of_type(case, guest_ct).await;
-        creator_transaction
-            .invite_all_members(case, &id, [(&guest_transaction, guest)])
+        let guest = guest_client_context.rand_key_package_of_type(case, guest_ct).await;
+        creator_client_context
+            .invite_all_members(case, &id, [(&guest_client_context, guest)])
             .await?;
 
-        creator_transaction.try_talk_to(&id, &guest_transaction).await?;
-        Ok((creator_transaction, guest_transaction, id))
+        creator_client_context.try_talk_to(&id, &guest_client_context).await?;
+        Ok((creator_client_context, guest_client_context, id))
     }
 }

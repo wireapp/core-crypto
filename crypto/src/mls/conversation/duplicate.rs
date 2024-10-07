@@ -66,8 +66,7 @@ mod tests {
                             .await
                             .unwrap();
                         alice_central
-                            .context
-                            .invite_all(&case, &id, [&mut bob_central.context])
+                            .invite_all(&case, &id, [&bob_central])
                             .await
                             .unwrap();
 
@@ -120,7 +119,7 @@ mod tests {
                         .await
                         .unwrap();
 
-                    let gi = alice_central.context.get_group_info(&id).await;
+                    let gi = alice_central.get_group_info(&id).await;
 
                     // an external commit to verify that we can still detect wrong epoch correctly
                     let unknown_ext_commit = bob_central
@@ -188,8 +187,7 @@ mod tests {
                         .await
                         .unwrap();
                     alice_central
-                        .context
-                        .invite_all(&case, &id, [&mut bob_central.context])
+                        .invite_all(&case, &id, [&bob_central])
                         .await
                         .unwrap();
 
@@ -294,8 +292,7 @@ mod tests {
                         .await
                         .unwrap();
                     alice_central
-                        .context
-                        .invite_all(&case, &id, [&mut bob_central.context])
+                        .invite_all(&case, &id, [&bob_central])
                         .await
                         .unwrap();
 

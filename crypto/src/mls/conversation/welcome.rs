@@ -161,7 +161,7 @@ mod tests {
                 Box::pin(async move {
                     let id = conversation_id();
                     // has to be before the original key_package count because it creates one
-                    let bob = bob_central.context.rand_key_package(&case).await;
+                    let bob = bob_central.rand_key_package(&case).await;
                     // Keep track of the whatever amount was initially generated
                     let prev_count = bob_central.context.count_entities().await;
 
@@ -210,7 +210,7 @@ mod tests {
                         .new_conversation(&id, case.credential_type, case.cfg.clone())
                         .await
                         .unwrap();
-                    let bob = bob_central.context.rand_key_package(&case).await;
+                    let bob = bob_central.rand_key_package(&case).await;
                     let welcome = alice_central
                         .context
                         .add_members_to_conversation(&id, vec![bob])

@@ -125,15 +125,11 @@ mod tests {
         async fn should_find_most_recent(case: TestCase) {
             run_test_with_client_ids(case.clone(), ["alice"], move |[mut central]| {
                 Box::pin(async move {
+                    let cert = central.get_intermediate_ca().cloned();
                     let old = central
-                        .context
                         .new_credential_bundle(
                             &case,
-                            central
-                                .x509_test_chain
-                                .as_ref()
-                                .as_ref()
-                                .map(|chain| chain.find_local_intermediate_ca()),
+                            cert.as_ref()
                         )
                         .await;
 
@@ -141,20 +137,14 @@ mod tests {
                     async_std::task::sleep(core::time::Duration::from_secs(1)).await;
 
                     let new = central
-                        .context
                         .new_credential_bundle(
                             &case,
-                            central
-                                .x509_test_chain
-                                .as_ref()
-                                .as_ref()
-                                .map(|chain| chain.find_local_intermediate_ca()),
+                            cert.as_ref()
                         )
                         .await;
                     assert_ne!(old, new);
 
                     let found = central
-                        .context
                         .find_most_recent_credential_bundle(case.signature_scheme(), case.credential_type)
                         .await
                         .unwrap();
@@ -174,15 +164,11 @@ mod tests {
                     let r = rand::thread_rng().gen_range(0..N);
                     let mut to_search = None;
                     for i in 0..N {
+                        let cert = central.get_intermediate_ca().cloned();
                         let cb = central
-                            .context
                             .new_credential_bundle(
                                 &case,
-                                central
-                                    .x509_test_chain
-                                    .as_ref()
-                                    .as_ref()
-                                    .map(|chain| chain.find_local_intermediate_ca()),
+                                cert.as_ref(),
                             )
                             .await;
                         if i == r {
@@ -212,26 +198,19 @@ mod tests {
         async fn should_add_credential(case: TestCase) {
             run_test_with_client_ids(case.clone(), ["alice"], move |[mut central]| {
                 Box::pin(async move {
-                    let mut client = central.context.mls_client_mut().await.unwrap();
-                    let client = client.as_mut().unwrap();
+                    let client = central.client().await;
                     let prev_count = client
                         .identities
                         .iter()
                         .count();
-
+                    let cert = central.get_intermediate_ca().cloned();
                     // this calls 'push_credential_bundle' under the hood
                     central
-                        .context
                         .new_credential_bundle(
                             &case,
-                            central
-                                .x509_test_chain
-                                .as_ref()
-                                .as_ref()
-                                .map(|chain| chain.find_local_intermediate_ca()),
+                           cert.as_ref(),
                         )
                         .await;
-
                     let next_count = client
                         .identities
                         .iter()
@@ -247,15 +226,11 @@ mod tests {
         async fn pushing_duplicates_should_fail(case: TestCase) {
             run_test_with_client_ids(case.clone(), ["alice"], move |[mut central]| {
                 Box::pin(async move {
+                    let cert = central.get_intermediate_ca().cloned();
                     let cb = central
-                        .context
                         .new_credential_bundle(
                             &case,
-                            central
-                                .x509_test_chain
-                                .as_ref()
-                                .as_ref()
-                                .map(|chain| chain.find_local_intermediate_ca()),
+                            cert.as_ref(),
                         )
                         .await;
                     let mut client = central.context.mls_client_mut().await.unwrap();
