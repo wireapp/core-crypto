@@ -3,7 +3,7 @@ use crate::{
     connection::{Connection, DatabaseConnection, FetchFromDatabase, KeystoreDatabaseConnection, TransactionWrapper},
     deser,
     entities::{
-        E2eiAcmeCA, E2eiCrl, E2eiEnrollment, E2eiIntermediateCert, E2eiRefreshToken, EntityFindParams, EntityMlsExt,
+        E2eiAcmeCA, E2eiCrl, E2eiEnrollment, E2eiIntermediateCert, E2eiRefreshToken, EntityFindParams, EntityTransactionExt,
         MlsCredential, MlsCredentialExt, MlsEncryptionKeyPair, MlsEpochEncryptionKeyPair, MlsHpkePrivateKey,
         MlsKeyPackage, MlsPendingMessage, MlsPskBundle, MlsSignatureKeyPair, PersistedMlsGroup,
         PersistedMlsPendingGroup, StringEntityId,
@@ -34,6 +34,9 @@ pub enum Entity {
     E2eiAcmeCA(E2eiAcmeCA),
     E2eiIntermediateCert(E2eiIntermediateCert),
     E2eiCrl(E2eiCrl),
+    ProteusIdentity(ProteusIdentity),
+    ProteusPrekey(ProteusPrekey),
+    ProteusSession(ProteusSession),
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -53,6 +56,9 @@ enum EntityId {
     E2eiAcmeCA(Vec<u8>),
     E2eiIntermediateCert(Vec<u8>),
     E2eiCrl(Vec<u8>),
+    ProteusIdentity(Vec<u8>),
+    ProteusPrekey(Vec<u8>),
+    ProteusSession(Vec<u8>),
 }
 
 impl EntityId {
@@ -73,6 +79,9 @@ impl EntityId {
             EntityId::E2eiAcmeCA(vec) => vec.as_slice().into(),
             EntityId::E2eiIntermediateCert(vec) => vec.as_slice().into(),
             EntityId::E2eiCrl(vec) => vec.as_slice().into(),
+            EntityId::ProteusIdentity(vec) => vec.as_slice().into(),
+            EntityId::ProteusSession(id) => id.as_slice().into(),
+            EntityId::ProteusPrekey(vec) => vec.as_slice().into(),
         }
     }
 }
@@ -92,21 +101,24 @@ impl EntityId {
 
     fn from_collection_name(entity_id: &'static str, id: &[u8]) -> CryptoKeystoreResult<Self> {
         match entity_id {
-            crate::entities::MlsSignatureKeyPair::COLLECTION_NAME => Ok(Self::SignatureKeyPair(id.into())),
-            crate::entities::MlsHpkePrivateKey::COLLECTION_NAME => Ok(Self::HpkePrivateKey(id.into())),
-            crate::entities::MlsKeyPackage::COLLECTION_NAME => Ok(Self::KeyPackage(id.into())),
-            crate::entities::MlsPskBundle::COLLECTION_NAME => Ok(Self::PskBundle(id.into())),
-            crate::entities::MlsEncryptionKeyPair::COLLECTION_NAME => Ok(Self::EncryptionKeyPair(id.into())),
-            crate::entities::MlsEpochEncryptionKeyPair::COLLECTION_NAME => Ok(Self::EpochEncryptionKeyPair(id.into())),
-            crate::entities::PersistedMlsGroup::COLLECTION_NAME => Ok(Self::PersistedMlsGroup(id.into())),
-            crate::entities::PersistedMlsPendingGroup::COLLECTION_NAME => Ok(Self::PersistedMlsPendingGroup(id.into())),
-            crate::entities::MlsCredential::COLLECTION_NAME => Ok(Self::MlsCredential(id.into())),
-            crate::entities::MlsPendingMessage::COLLECTION_NAME => Ok(Self::MlsPendingMessage(id.into())),
-            crate::entities::E2eiEnrollment::COLLECTION_NAME => Ok(Self::E2eiEnrollment(id.into())),
-            crate::entities::E2eiCrl::COLLECTION_NAME => Ok(Self::E2eiCrl(id.into())),
-            crate::entities::E2eiAcmeCA::COLLECTION_NAME => Ok(Self::E2eiAcmeCA(id.into())),
-            crate::entities::E2eiRefreshToken::COLLECTION_NAME => Ok(Self::E2eiRefreshToken(id.into())),
-            crate::entities::E2eiIntermediateCert::COLLECTION_NAME => Ok(Self::E2eiIntermediateCert(id.into())),
+            MlsSignatureKeyPair::COLLECTION_NAME => Ok(Self::SignatureKeyPair(id.into())),
+            MlsHpkePrivateKey::COLLECTION_NAME => Ok(Self::HpkePrivateKey(id.into())),
+            MlsKeyPackage::COLLECTION_NAME => Ok(Self::KeyPackage(id.into())),
+            MlsPskBundle::COLLECTION_NAME => Ok(Self::PskBundle(id.into())),
+            MlsEncryptionKeyPair::COLLECTION_NAME => Ok(Self::EncryptionKeyPair(id.into())),
+            MlsEpochEncryptionKeyPair::COLLECTION_NAME => Ok(Self::EpochEncryptionKeyPair(id.into())),
+            PersistedMlsGroup::COLLECTION_NAME => Ok(Self::PersistedMlsGroup(id.into())),
+            PersistedMlsPendingGroup::COLLECTION_NAME => Ok(Self::PersistedMlsPendingGroup(id.into())),
+            MlsCredential::COLLECTION_NAME => Ok(Self::MlsCredential(id.into())),
+            MlsPendingMessage::COLLECTION_NAME => Ok(Self::MlsPendingMessage(id.into())),
+            E2eiEnrollment::COLLECTION_NAME => Ok(Self::E2eiEnrollment(id.into())),
+            E2eiCrl::COLLECTION_NAME => Ok(Self::E2eiCrl(id.into())),
+            E2eiAcmeCA::COLLECTION_NAME => Ok(Self::E2eiAcmeCA(id.into())),
+            E2eiRefreshToken::COLLECTION_NAME => Ok(Self::E2eiRefreshToken(id.into())),
+            E2eiIntermediateCert::COLLECTION_NAME => Ok(Self::E2eiIntermediateCert(id.into())),
+            ProteusIdentity::COLLECTION_NAME => Ok(Self::ProteusIdentity(id.into())),
+            ProteusPrekey::COLLECTION_NAME => Ok(Self::ProteusPrekey(id.into())),
+            ProteusSession::COLLECTION_NAME => Ok(Self::ProteusSession(id.into())),
             _ => Err(CryptoKeystoreError::NotImplemented),
         }
     }
@@ -114,44 +126,49 @@ impl EntityId {
 
 async fn execute_save(tx: &TransactionWrapper<'_>, entity: &Entity) -> CryptoKeystoreResult<()> {
     match entity {
-        Entity::SignatureKeyPair(mls_signature_key_pair) => mls_signature_key_pair.mls_save(tx).await,
-        Entity::HpkePrivateKey(mls_hpke_private_key) => mls_hpke_private_key.mls_save(tx).await,
-        Entity::KeyPackage(mls_key_package) => mls_key_package.mls_save(tx).await,
-        Entity::PskBundle(mls_psk_bundle) => mls_psk_bundle.mls_save(tx).await,
-        Entity::EncryptionKeyPair(mls_encryption_key_pair) => mls_encryption_key_pair.mls_save(tx).await,
+        Entity::SignatureKeyPair(mls_signature_key_pair) => mls_signature_key_pair.save(tx).await,
+        Entity::HpkePrivateKey(mls_hpke_private_key) => mls_hpke_private_key.save(tx).await,
+        Entity::KeyPackage(mls_key_package) => mls_key_package.save(tx).await,
+        Entity::PskBundle(mls_psk_bundle) => mls_psk_bundle.save(tx).await,
+        Entity::EncryptionKeyPair(mls_encryption_key_pair) => mls_encryption_key_pair.save(tx).await,
         Entity::EpochEncryptionKeyPair(mls_epoch_encryption_key_pair) => {
-            mls_epoch_encryption_key_pair.mls_save(tx).await
+            mls_epoch_encryption_key_pair.save(tx).await
         }
-        Entity::MlsCredential(mls_credential) => mls_credential.mls_save(tx).await,
-        Entity::PersistedMlsGroup(persisted_mls_group) => persisted_mls_group.mls_save(tx).await,
-        Entity::PersistedMlsPendingGroup(persisted_mls_pending_group) => persisted_mls_pending_group.mls_save(tx).await,
-        Entity::MlsPendingMessage(mls_pending_message) => mls_pending_message.mls_save(tx).await,
-        Entity::E2eiEnrollment(e2ei_enrollment) => e2ei_enrollment.mls_save(tx).await,
+        Entity::MlsCredential(mls_credential) => mls_credential.save(tx).await,
+        Entity::PersistedMlsGroup(persisted_mls_group) => persisted_mls_group.save(tx).await,
+        Entity::PersistedMlsPendingGroup(persisted_mls_pending_group) => persisted_mls_pending_group.save(tx).await,
+        Entity::MlsPendingMessage(mls_pending_message) => mls_pending_message.save(tx).await,
+        Entity::E2eiEnrollment(e2ei_enrollment) => e2ei_enrollment.save(tx).await,
         Entity::E2eiRefreshToken(e2ei_refresh_token) => e2ei_refresh_token.replace(tx).await,
         Entity::E2eiAcmeCA(e2ei_acme_ca) => e2ei_acme_ca.replace(tx).await,
-        Entity::E2eiIntermediateCert(e2ei_intermediate_cert) => e2ei_intermediate_cert.mls_save(tx).await,
-        Entity::E2eiCrl(e2ei_crl) => e2ei_crl.mls_save(tx).await,
+        Entity::E2eiIntermediateCert(e2ei_intermediate_cert) => e2ei_intermediate_cert.save(tx).await,
+        Entity::E2eiCrl(e2ei_crl) => e2ei_crl.save(tx).await,
+        Entity::ProteusSession(_record) => todo!(),
+        Entity::ProteusIdentity(_record) => todo!(),
+        Entity::ProteusPrekey(_record) => todo!(),
     }
 }
 
 async fn execute_delete(tx: &TransactionWrapper<'_>, entity_id: &EntityId) -> CryptoKeystoreResult<()> {
-    use crate::entities::EntityMlsExt;
     match entity_id {
-        id @ EntityId::SignatureKeyPair(_) => MlsSignatureKeyPair::mls_delete(tx, id.as_id()).await,
-        id @ EntityId::HpkePrivateKey(_) => MlsHpkePrivateKey::mls_delete(tx, id.as_id()).await,
-        id @ EntityId::KeyPackage(_) => MlsKeyPackage::mls_delete(tx, id.as_id()).await,
-        id @ EntityId::PskBundle(_) => MlsPskBundle::mls_delete(tx, id.as_id()).await,
-        id @ EntityId::EncryptionKeyPair(_) => MlsEncryptionKeyPair::mls_delete(tx, id.as_id()).await,
-        id @ EntityId::EpochEncryptionKeyPair(_) => MlsEpochEncryptionKeyPair::mls_delete(tx, id.as_id()).await,
-        id @ EntityId::MlsCredential(_) => MlsCredential::mls_delete(tx, id.as_id()).await,
-        id @ EntityId::PersistedMlsGroup(_) => PersistedMlsGroup::mls_delete(tx, id.as_id()).await,
-        id @ EntityId::PersistedMlsPendingGroup(_) => PersistedMlsPendingGroup::mls_delete(tx, id.as_id()).await,
-        id @ EntityId::MlsPendingMessage(_) => MlsPendingMessage::mls_delete(tx, id.as_id()).await,
-        id @ EntityId::E2eiEnrollment(_) => E2eiEnrollment::mls_delete(tx, id.as_id()).await,
-        id @ EntityId::E2eiRefreshToken(_) => E2eiRefreshToken::mls_delete(tx, id.as_id()).await,
-        id @ EntityId::E2eiAcmeCA(_) => E2eiAcmeCA::mls_delete(tx, id.as_id()).await,
-        id @ EntityId::E2eiIntermediateCert(_) => E2eiIntermediateCert::mls_delete(tx, id.as_id()).await,
-        id @ EntityId::E2eiCrl(_) => E2eiCrl::mls_delete(tx, id.as_id()).await,
+        id @ EntityId::SignatureKeyPair(_) => MlsSignatureKeyPair::delete(tx, id.as_id()).await,
+        id @ EntityId::HpkePrivateKey(_) => MlsHpkePrivateKey::delete(tx, id.as_id()).await,
+        id @ EntityId::KeyPackage(_) => MlsKeyPackage::delete(tx, id.as_id()).await,
+        id @ EntityId::PskBundle(_) => MlsPskBundle::delete(tx, id.as_id()).await,
+        id @ EntityId::EncryptionKeyPair(_) => MlsEncryptionKeyPair::delete(tx, id.as_id()).await,
+        id @ EntityId::EpochEncryptionKeyPair(_) => MlsEpochEncryptionKeyPair::delete(tx, id.as_id()).await,
+        id @ EntityId::MlsCredential(_) => MlsCredential::delete(tx, id.as_id()).await,
+        id @ EntityId::PersistedMlsGroup(_) => PersistedMlsGroup::delete(tx, id.as_id()).await,
+        id @ EntityId::PersistedMlsPendingGroup(_) => PersistedMlsPendingGroup::delete(tx, id.as_id()).await,
+        id @ EntityId::MlsPendingMessage(_) => MlsPendingMessage::delete(tx, id.as_id()).await,
+        id @ EntityId::E2eiEnrollment(_) => E2eiEnrollment::delete(tx, id.as_id()).await,
+        id @ EntityId::E2eiRefreshToken(_) => E2eiRefreshToken::delete(tx, id.as_id()).await,
+        id @ EntityId::E2eiAcmeCA(_) => E2eiAcmeCA::delete(tx, id.as_id()).await,
+        id @ EntityId::E2eiIntermediateCert(_) => E2eiIntermediateCert::delete(tx, id.as_id()).await,
+        id @ EntityId::E2eiCrl(_) => E2eiCrl::delete(tx, id.as_id()).await,
+        id @ EntityId::ProteusSession(_) => todo!(),
+        id @ EntityId::ProteusIdentity(_) => todo!(),
+        id @ EntityId::ProteusPrekey(_) => todo!(),
     }
 }
 
@@ -293,7 +310,7 @@ impl KeystoreTransaction {
     }
 
     pub async fn save<
-        E: crate::entities::Entity<ConnectionType = KeystoreDatabaseConnection> + crate::entities::EntityMlsExt + Sync,
+        E: crate::entities::Entity<ConnectionType = KeystoreDatabaseConnection> + Sync,
     >(
         &self,
         entity: E,
@@ -303,7 +320,7 @@ impl KeystoreTransaction {
     }
 
     pub async fn save_mut<
-        E: crate::entities::Entity<ConnectionType = KeystoreDatabaseConnection> + crate::entities::EntityMlsExt + Sync,
+        E: crate::entities::Entity<ConnectionType = KeystoreDatabaseConnection> + EntityTransactionExt + Sync,
     >(
         &self,
         mut entity: E,
