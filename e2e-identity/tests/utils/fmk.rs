@@ -35,6 +35,30 @@ use crate::utils::{
 pub(crate) static mut GOOGLE_SND: Option<std::sync::Mutex<std::sync::mpsc::Sender<String>>> = None;
 static mut GOOGLE_RECV: Option<std::sync::Mutex<std::sync::mpsc::Receiver<String>>> = None;
 
+fn keypair_to_pubkey(alg: JwsAlgorithm, keypair: &Pem) -> Pem {
+    match alg {
+        JwsAlgorithm::P256 => ES256KeyPair::from_pem(keypair)
+            .unwrap()
+            .public_key()
+            .to_pem()
+            .unwrap()
+            .into(),
+        JwsAlgorithm::P384 => ES384KeyPair::from_pem(keypair)
+            .unwrap()
+            .public_key()
+            .to_pem()
+            .unwrap()
+            .into(),
+        JwsAlgorithm::P521 => ES512KeyPair::from_pem(keypair)
+            .unwrap()
+            .public_key()
+            .to_pem()
+            .unwrap()
+            .into(),
+        JwsAlgorithm::Ed25519 => Ed25519KeyPair::from_pem(keypair).unwrap().public_key().to_pem().into(),
+    }
+}
+
 impl E2eTest {
     pub async fn nominal_enrollment(self) -> TestResult<Self> {
         self.enrollment(EnrollmentFlow::default()).await
@@ -325,9 +349,9 @@ impl E2eTest {
             &self.acme_kp,
         )?;
         let alg = self.alg;
-        let client_kp = self.acme_kp.to_string();
+        let pubkey = keypair_to_pubkey(alg, &self.acme_kp);
         self.display_operation(Actor::WireClient, "create DPoP token");
-        self.display_token("Dpop token", &client_dpop_token, Some(alg), &client_kp);
+        self.display_token("Dpop token", &client_dpop_token, Some(alg), &pubkey);
         Ok(client_dpop_token)
     }
 
@@ -377,8 +401,8 @@ impl E2eTest {
             .map(str::to_string)
             .ok_or(TestError::Internal)?;
         let alg = self.alg;
-        let backend_kp = self.backend_kp.to_string();
-        self.display_token("Access token", &access_token, Some(alg), &backend_kp);
+        let pubkey = keypair_to_pubkey(alg, &self.backend_kp);
+        self.display_token("Access token", &access_token, Some(alg), &pubkey);
         Ok(access_token)
     }
 
