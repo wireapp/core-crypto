@@ -147,7 +147,7 @@ mod tests {
                         .await
                         .unwrap();
 
-                    assert!(alice_central.context.pending_commit(&id).await.is_none());
+                    assert!(alice_central.pending_commit(&id).await.is_none());
 
                     let alice_og_cert = &x509_test_chain
                         .actors
@@ -159,7 +159,6 @@ mod tests {
                     // change credential to verify later what we return in the decrypt message
                     let (new_handle, new_display_name) = ("new_alice_wire", "New Alice Smith");
                     let cb = alice_central
-                        .context
                         .rotate_credential(
                             &case,
                             new_handle,
@@ -176,7 +175,7 @@ mod tests {
                         .await
                         .unwrap()
                         .commit;
-                    assert!(alice_central.context.pending_commit(&id).await.is_some());
+                    assert!(alice_central.pending_commit(&id).await.is_some());
 
                     // since the pending commit is the same as the incoming one, it should succeed
                     let decrypt_self = alice_central
@@ -190,9 +189,8 @@ mod tests {
                     assert!(decrypt_self.proposals.is_empty());
 
                     // verify that we return the new identity
-                    alice_central.context.verify_sender_identity(&case, &decrypt_self);
+                    alice_central.verify_sender_identity(&case, &decrypt_self);
                     alice_central
-                        .context
                         .verify_local_credential_rotated(&id, new_handle, new_display_name)
                         .await;
                 })
@@ -218,10 +216,10 @@ mod tests {
                             .await
                             .unwrap();
 
-                        assert!(alice_central.context.pending_commit(&id).await.is_none());
+                        assert!(alice_central.pending_commit(&id).await.is_none());
 
-                        let bob = bob_central.context.rand_key_package(&case).await;
-                        let charlie = charlie_central.context.rand_key_package(&case).await;
+                        let bob = bob_central.rand_key_package(&case).await;
+                        let charlie = charlie_central.rand_key_package(&case).await;
 
                         // create a first commit then discard it from the store to be able to create a second one
                         let add_bob = alice_central
@@ -229,9 +227,9 @@ mod tests {
                             .add_members_to_conversation(&id, vec![bob])
                             .await
                             .unwrap();
-                        assert!(alice_central.context.pending_commit(&id).await.is_some());
+                        assert!(alice_central.pending_commit(&id).await.is_some());
                         alice_central.context.clear_pending_commit(&id).await.unwrap();
-                        assert!(alice_central.context.pending_commit(&id).await.is_none());
+                        assert!(alice_central.pending_commit(&id).await.is_none());
 
                         // create another commit for the sole purpose of having it in the store
                         let add_charlie = alice_central
@@ -239,7 +237,7 @@ mod tests {
                             .add_members_to_conversation(&id, vec![charlie])
                             .await
                             .unwrap();
-                        assert!(alice_central.context.pending_commit(&id).await.is_some());
+                        assert!(alice_central.pending_commit(&id).await.is_some());
                         assert_ne!(add_bob.commit, add_charlie.commit);
 
                         let decrypt = alice_central
@@ -268,15 +266,15 @@ mod tests {
                         .await
                         .unwrap();
 
-                    assert!(alice_central.context.pending_commit(&id).await.is_none());
+                    assert!(alice_central.pending_commit(&id).await.is_none());
 
                     // create a commit, have it in store...
                     let commit = alice_central.context.update_keying_material(&id).await.unwrap().commit;
-                    assert!(alice_central.context.pending_commit(&id).await.is_some());
+                    assert!(alice_central.pending_commit(&id).await.is_some());
 
                     // then delete the pending commit
                     alice_central.context.clear_pending_commit(&id).await.unwrap();
-                    assert!(alice_central.context.pending_commit(&id).await.is_none());
+                    assert!(alice_central.pending_commit(&id).await.is_none());
 
                     let decrypt_self = alice_central
                         .context
@@ -309,9 +307,9 @@ mod tests {
                         .unwrap();
 
                     // No pending commit yet.
-                    assert!(alice_central.context.pending_commit(&conversation_id).await.is_none());
+                    assert!(alice_central.pending_commit(&conversation_id).await.is_none());
 
-                    let bob_key_package = bob_central.context.rand_key_package(&case).await;
+                    let bob_key_package = bob_central.rand_key_package(&case).await;
 
                     // Create the commit that we're going to tamper with.
                     let add_bob_message = alice_central
@@ -321,7 +319,7 @@ mod tests {
                         .unwrap();
 
                     // Now there is a pending commit.
-                    assert!(alice_central.context.pending_commit(&conversation_id).await.is_some());
+                    assert!(alice_central.pending_commit(&conversation_id).await.is_some());
 
                     let commit_serialized = &mut add_bob_message.commit.to_bytes().unwrap();
 
@@ -342,7 +340,7 @@ mod tests {
                     ));
 
                     // There is still a pending commit.
-                    assert!(alice_central.context.pending_commit(&conversation_id).await.is_some());
+                    assert!(alice_central.pending_commit(&conversation_id).await.is_some());
 
                     // Positive case: Alice decrypts the commit...
                     assert!(alice_central
@@ -352,7 +350,7 @@ mod tests {
                         .is_ok());
 
                     // ...and has cleared the pending commit.
-                    assert!(alice_central.context.pending_commit(&conversation_id).await.is_none());
+                    assert!(alice_central.pending_commit(&conversation_id).await.is_none());
                 })
             },
         )

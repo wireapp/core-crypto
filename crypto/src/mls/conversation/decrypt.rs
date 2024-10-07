@@ -455,8 +455,7 @@ mod tests {
                             .await
                             .unwrap();
                         alice_central
-                            .context
-                            .invite_all(&case, &id, [&mut bob_central.context])
+                            .invite_all(&case, &id, [&bob_central])
                             .await
                             .unwrap();
 
@@ -489,14 +488,13 @@ mod tests {
                             .await
                             .unwrap();
                         alice_central
-                            .context
-                            .invite_all(&case, &id, [&mut bob_central.context])
+                            .invite_all(&case, &id, [&bob_central])
                             .await
                             .unwrap();
 
                         let MlsCommitBundle { commit, .. } = bob_central
                             .context
-                            .remove_members_from_conversation(&id, &[alice_central.context.get_client_id().await])
+                            .remove_members_from_conversation(&id, &[alice_central.get_client_id().await])
                             .await
                             .unwrap();
                         let MlsConversationDecryptMessage { is_active, .. } = alice_central
@@ -530,8 +528,7 @@ mod tests {
                             .await
                             .unwrap();
                         alice_central
-                            .context
-                            .invite_all(&case, &id, [&mut bob_central.context])
+                            .invite_all(&case, &id, [&bob_central])
                             .await
                             .unwrap();
 
@@ -552,7 +549,7 @@ mod tests {
                         assert!(decrypted.delay.is_none());
                         assert!(decrypted.app_msg.is_none());
 
-                        alice_central.context.verify_sender_identity(&case, &decrypted);
+                        alice_central.verify_sender_identity(&case, &decrypted);
                     })
                 },
             )
@@ -574,20 +571,19 @@ mod tests {
                             .await
                             .unwrap();
                         alice_central
-                            .context
-                            .invite_all(&case, &id, [&mut bob_central.context])
+                            .invite_all(&case, &id, [&bob_central])
                             .await
                             .unwrap();
 
                         // Alice creates a commit which will be superseded by Bob's one
-                        let charlie = charlie_central.context.rand_key_package(&case).await;
-                        let debbie = debbie_central.context.rand_key_package(&case).await;
+                        let charlie = charlie_central.rand_key_package(&case).await;
+                        let debbie = debbie_central.rand_key_package(&case).await;
                         alice_central
                             .context
                             .add_members_to_conversation(&id, vec![charlie.clone()])
                             .await
                             .unwrap();
-                        assert!(alice_central.context.pending_commit(&id).await.is_some());
+                        assert!(alice_central.pending_commit(&id).await.is_some());
 
                         let add_debbie_commit = bob_central
                             .context
@@ -601,7 +597,7 @@ mod tests {
                             .await
                             .unwrap();
                         // Now Debbie should be in members and not Charlie
-                        let members = alice_central.context.get_conversation_unchecked(&id).await.members();
+                        let members = alice_central.get_conversation_unchecked(&id).await.members();
 
                         let dc = debbie.unverified_credential();
                         let debbie_id = dc.credential.identity();
@@ -612,7 +608,7 @@ mod tests {
                         assert!(members.get(charlie_id).is_none());
 
                         // Previous commit to add Charlie has been discarded but its proposals will be renewed
-                        assert!(alice_central.context.pending_commit(&id).await.is_none());
+                        assert!(alice_central.pending_commit(&id).await.is_none());
                         assert!(decrypted.has_epoch_changed)
                     })
                 },
@@ -635,15 +631,14 @@ mod tests {
                             .await
                             .unwrap();
                         alice_central
-                            .context
-                            .invite_all(&case, &id, [&mut bob_central.context])
+                            .invite_all(&case, &id, [&bob_central])
                             .await
                             .unwrap();
 
                         // Alice will create a commit to add Charlie
                         // Bob will create a commit which will be accepted first by DS so Alice will decrypt it
                         // Then Alice will renew the proposal in her pending commit
-                        let charlie = charlie_central.context.rand_key_package(&case).await;
+                        let charlie = charlie_central.rand_key_package(&case).await;
 
                         let bob_commit = bob_central.context.update_keying_material(&id).await.unwrap().commit;
                         bob_central.context.commit_accepted(&id).await.unwrap();
@@ -654,7 +649,7 @@ mod tests {
                             .add_members_to_conversation(&id, vec![charlie.clone()])
                             .await
                             .unwrap();
-                        assert!(alice_central.context.pending_commit(&id).await.is_some());
+                        assert!(alice_central.pending_commit(&id).await.is_some());
 
                         // But first she receives Bob commit
                         let MlsConversationDecryptMessage { proposals, delay, .. } = alice_central
@@ -666,7 +661,6 @@ mod tests {
                         let cc = charlie.unverified_credential();
                         let charlie_id = cc.credential.identity();
                         assert!(alice_central
-                            .context
                             .get_conversation_unchecked(&id)
                             .await
                             .members()
@@ -677,8 +671,8 @@ mod tests {
 
                         // But its proposal to add Charlie has been renewed and is also in store
                         assert!(!proposals.is_empty());
-                        assert_eq!(alice_central.context.pending_proposals(&id).await.len(), 1);
-                        assert!(alice_central.context.pending_commit(&id).await.is_none());
+                        assert_eq!(alice_central.pending_proposals(&id).await.len(), 1);
+                        assert!(alice_central.pending_commit(&id).await.is_none());
 
                         // Let's commit this proposal to see if it works
                         for p in proposals {
@@ -699,7 +693,6 @@ mod tests {
                         alice_central.context.commit_accepted(&id).await.unwrap();
                         // Charlie is now in the group
                         assert!(alice_central
-                            .context
                             .get_conversation_unchecked(&id)
                             .await
                             .members()
@@ -715,7 +708,6 @@ mod tests {
                         let cc = charlie.unverified_credential();
                         let charlie_id = cc.credential.identity();
                         assert!(bob_central
-                            .context
                             .get_conversation_unchecked(&id)
                             .await
                             .members()
@@ -731,8 +723,7 @@ mod tests {
                             .unwrap()
                             .id;
                         assert!(charlie_central
-                            .context
-                            .try_talk_to(&id, &mut alice_central.context)
+                            .try_talk_to(&id, &alice_central)
                             .await
                             .is_ok());
                     })
@@ -756,8 +747,7 @@ mod tests {
                             .await
                             .unwrap();
                         alice_central
-                            .context
-                            .invite_all(&case, &id, [&mut bob_central.context])
+                            .invite_all(&case, &id, [&bob_central])
                             .await
                             .unwrap();
 
@@ -765,7 +755,7 @@ mod tests {
                         // Alice will decrypt this proposal
                         // Then Bob will create a commit to update
                         // Alice will decrypt the commit but musn't renew the proposal to add Charlie
-                        let charlie_kp = charlie_central.context.get_one_key_package(&case).await;
+                        let charlie_kp = charlie_central.get_one_key_package(&case).await;
 
                         let add_charlie_proposal = bob_central.context.new_add_proposal(&id, charlie_kp).await.unwrap();
                         alice_central
@@ -788,7 +778,7 @@ mod tests {
                             .unwrap();
                         assert!(proposals.is_empty());
                         assert!(delay.is_none());
-                        assert!(alice_central.context.pending_proposals(&id).await.is_empty());
+                        assert!(alice_central.pending_proposals(&id).await.is_empty());
                         assert!(has_epoch_changed)
                     })
                 },
@@ -812,8 +802,7 @@ mod tests {
                             .await
                             .unwrap();
                         alice_central
-                            .context
-                            .invite_all(&case, &id, [&mut bob_central.context])
+                            .invite_all(&case, &id, [&bob_central])
                             .await
                             .unwrap();
 
@@ -825,9 +814,9 @@ mod tests {
                         let commit_epoch = bob_commit.epoch().unwrap();
 
                         // Alice propose to add Charlie
-                        let charlie_kp = charlie_central.context.get_one_key_package(&case).await;
+                        let charlie_kp = charlie_central.get_one_key_package(&case).await;
                         alice_central.context.new_add_proposal(&id, charlie_kp).await.unwrap();
-                        assert_eq!(alice_central.context.pending_proposals(&id).await.len(), 1);
+                        assert_eq!(alice_central.pending_proposals(&id).await.len(), 1);
 
                         // But first she receives Bob commit
                         let MlsConversationDecryptMessage { proposals, delay, .. } = alice_central
@@ -837,7 +826,6 @@ mod tests {
                             .unwrap();
                         // So Charlie has not been added to the group
                         assert!(alice_central
-                            .context
                             .get_conversation_unchecked(&id)
                             .await
                             .members()
@@ -848,7 +836,7 @@ mod tests {
 
                         // But its proposal to add Charlie has been renewed and is also in store
                         assert!(!proposals.is_empty());
-                        assert_eq!(alice_central.context.pending_proposals(&id).await.len(), 1);
+                        assert_eq!(alice_central.pending_proposals(&id).await.len(), 1);
                         let renewed_proposal = proposals.first().unwrap();
                         assert_eq!(
                             commit_epoch.as_u64() + 1,
@@ -861,7 +849,7 @@ mod tests {
                             .decrypt_message(&id, renewed_proposal.proposal.to_bytes().unwrap())
                             .await
                             .unwrap();
-                        assert_eq!(bob_central.context.pending_proposals(&id).await.len(), 1);
+                        assert_eq!(bob_central.pending_proposals(&id).await.len(), 1);
                         let MlsCommitBundle { commit, .. } = bob_central
                             .context
                             .commit_pending_proposals(&id)
@@ -875,21 +863,19 @@ mod tests {
                             .unwrap();
                         // Charlie is now in the group
                         assert!(alice_central
-                            .context
                             .get_conversation_unchecked(&id)
                             .await
                             .members()
-                            .get::<Vec<u8>>(&charlie_central.context.get_client_id().await.to_vec())
+                            .get::<Vec<u8>>(&charlie_central.get_client_id().await.to_vec())
                             .is_some());
 
                         // Bob also has Charlie in the group
                         bob_central.context.commit_accepted(&id).await.unwrap();
                         assert!(bob_central
-                            .context
                             .get_conversation_unchecked(&id)
                             .await
                             .members()
-                            .get::<Vec<u8>>(&charlie_central.context.get_client_id().await.to_vec())
+                            .get::<Vec<u8>>(&charlie_central.get_client_id().await.to_vec())
                             .is_some());
                         assert!(decrypted.has_epoch_changed);
                     })
@@ -913,8 +899,7 @@ mod tests {
                             .await
                             .unwrap();
                         alice_central
-                            .context
-                            .invite_all(&case, &id, [&mut bob_central.context])
+                            .invite_all(&case, &id, [&bob_central])
                             .await
                             .unwrap();
 
@@ -927,7 +912,6 @@ mod tests {
                             .new_external_add_proposal(
                                 id.clone(),
                                 alice_central
-                                    .context
                                     .get_conversation_unchecked(&id)
                                     .await
                                     .group
@@ -937,13 +921,13 @@ mod tests {
                             )
                             .await
                             .unwrap();
-                        assert!(alice_central.context.pending_proposals(&id).await.is_empty());
+                        assert!(alice_central.pending_proposals(&id).await.is_empty());
                         alice_central
                             .context
                             .decrypt_message(&id, ext_proposal.to_bytes().unwrap())
                             .await
                             .unwrap();
-                        assert_eq!(alice_central.context.pending_proposals(&id).await.len(), 1);
+                        assert_eq!(alice_central.pending_proposals(&id).await.len(), 1);
 
                         let MlsCommitBundle { commit, .. } =
                             bob_central.context.update_keying_material(&id).await.unwrap();
@@ -954,7 +938,7 @@ mod tests {
                             .unwrap()
                             .proposals;
                         assert!(alice_renewed_proposals.is_empty());
-                        assert!(alice_central.context.pending_proposals(&id).await.is_empty());
+                        assert!(alice_central.pending_proposals(&id).await.is_empty());
                     })
                 },
             )
@@ -976,8 +960,7 @@ mod tests {
                             .await
                             .unwrap();
                         alice_central
-                            .context
-                            .invite_all(&case, &id, [&mut bob_central.context])
+                            .invite_all(&case, &id, [&bob_central])
                             .await
                             .unwrap();
 
@@ -998,6 +981,7 @@ mod tests {
     }
 
     mod external_proposal {
+        use std::sync::Arc;
         use super::*;
 
         #[apply(all_cred_cipher)]
@@ -1015,13 +999,11 @@ mod tests {
                             .await
                             .unwrap();
                         alice_central
-                            .context
-                            .invite_all(&case, &id, [&mut bob_central.context])
+                            .invite_all(&case, &id, [&bob_central])
                             .await
                             .unwrap();
 
                         let epoch = alice_central
-                            .context
                             .get_conversation_unchecked(&id)
                             .await
                             .group
@@ -1070,13 +1052,11 @@ mod tests {
                             .await
                             .unwrap();
                         alice_central
-                            .context
-                            .invite_all(&case, &id, [&mut bob_central.context])
+                            .invite_all(&case, &id, [&bob_central])
                             .await
                             .unwrap();
 
                         let epoch = alice_central
-                            .context
                             .get_conversation_unchecked(&id)
                             .await
                             .group
@@ -1121,7 +1101,10 @@ mod tests {
                         let id = conversation_id();
                         alice_central
                             .context
-                            .callbacks().await.unwrap();
+                            .set_callbacks(Some(Arc::new(ValidationCallbacks {
+                                client_is_existing_group_user: false,
+                                ..Default::default()
+                            }))).await.unwrap();
 
                         alice_central
                             .context
@@ -1129,13 +1112,11 @@ mod tests {
                             .await
                             .unwrap();
                         alice_central
-                            .context
-                            .invite_all(&case, &id, [&mut bob_central.context])
+                            .invite_all(&case, &id, [&bob_central])
                             .await
                             .unwrap();
 
                         let epoch = alice_central
-                            .context
                             .get_conversation_unchecked(&id)
                             .await
                             .group
@@ -1188,12 +1169,11 @@ mod tests {
                             .await
                             .unwrap();
                         alice_central
-                            .context
-                            .invite_all(&case, &id, [&mut bob_central.context])
+                            .invite_all(&case, &id, [&bob_central])
                             .await
                             .unwrap();
 
-                        let charlie_kp = charlie_central.context.get_one_key_package(&case).await;
+                        let charlie_kp = charlie_central.get_one_key_package(&case).await;
                         let proposal = alice_central
                             .context
                             .new_add_proposal(&id, charlie_kp)
@@ -1209,7 +1189,6 @@ mod tests {
 
                         assert_eq!(
                             bob_central
-                                .context
                                 .get_conversation_unchecked(&id)
                                 .await
                                 .members()
@@ -1226,7 +1205,6 @@ mod tests {
                         bob_central.context.commit_accepted(&id).await.unwrap();
                         assert_eq!(
                             bob_central
-                                .context
                                 .get_conversation_unchecked(&id)
                                 .await
                                 .members()
@@ -1235,7 +1213,7 @@ mod tests {
                         );
                         assert!(!decrypted.has_epoch_changed);
 
-                        alice_central.context.verify_sender_identity(&case, &decrypted);
+                        alice_central.verify_sender_identity(&case, &decrypted);
                     })
                 },
             )
@@ -1257,8 +1235,7 @@ mod tests {
                             .await
                             .unwrap();
                         alice_central
-                            .context
-                            .invite_all(&case, &id, [&mut bob_central.context])
+                            .invite_all(&case, &id, [&bob_central])
                             .await
                             .unwrap();
 
@@ -1296,8 +1273,7 @@ mod tests {
                             .await
                             .unwrap();
                         alice_central
-                            .context
-                            .invite_all(&case, &id, [&mut bob_central.context])
+                            .invite_all(&case, &id, [&bob_central])
                             .await
                             .unwrap();
 
@@ -1308,7 +1284,7 @@ mod tests {
                         let dec_msg = decrypted.app_msg.as_ref().unwrap().as_slice();
                         assert_eq!(dec_msg, &msg[..]);
                         assert!(!decrypted.has_epoch_changed);
-                        alice_central.context.verify_sender_identity(&case, &decrypted);
+                        alice_central.verify_sender_identity(&case, &decrypted);
 
                         let msg = b"Hello alice";
                         let encrypted = bob_central.context.encrypt_message(&id, msg).await.unwrap();
@@ -1317,7 +1293,7 @@ mod tests {
                         let dec_msg = decrypted.app_msg.as_ref().unwrap().as_slice();
                         assert_eq!(dec_msg, &msg[..]);
                         assert!(!decrypted.has_epoch_changed);
-                        bob_central.context.verify_sender_identity(&case, &decrypted);
+                        bob_central.verify_sender_identity(&case, &decrypted);
                     })
                 },
             )
@@ -1339,8 +1315,7 @@ mod tests {
                             .await
                             .unwrap();
                         alice_central
-                            .context
-                            .invite_all(&case, &id, [&mut bob_central.context])
+                            .invite_all(&case, &id, [&bob_central])
                             .await
                             .unwrap();
 
@@ -1350,7 +1325,7 @@ mod tests {
 
                         // Now Bob will rejoin the group and try to decrypt Alice's message
                         // in epoch 2 which should fail
-                        let gi = alice_central.context.get_group_info(&id).await;
+                        let gi = alice_central.get_group_info(&id).await;
                         bob_central
                             .context
                             .join_by_external_commit(gi, case.custom_cfg(), case.credential_type)
@@ -1386,8 +1361,7 @@ mod tests {
                             .await
                             .unwrap();
                         alice_central
-                            .context
-                            .invite_all(&case, &id, [&mut bob_central.context])
+                            .invite_all(&case, &id, [&bob_central])
                             .await
                             .unwrap();
 
@@ -1435,8 +1409,7 @@ mod tests {
                             .await
                             .unwrap();
                         alice_central
-                            .context
-                            .invite_all(&case, &id, [&mut bob_central.context])
+                            .invite_all(&case, &id, [&bob_central])
                             .await
                             .unwrap();
 
@@ -1483,8 +1456,7 @@ mod tests {
                             .await
                             .unwrap();
                         alice_central
-                            .context
-                            .invite_all(&case, &id, [&mut bob_central.context])
+                            .invite_all(&case, &id, [&bob_central])
                             .await
                             .unwrap();
 
@@ -1499,7 +1471,7 @@ mod tests {
                             .unwrap()
                             .sender_client_id
                             .unwrap();
-                        assert_eq!(sender_client_id, alice_central.context.get_client_id().await);
+                        assert_eq!(sender_client_id, alice_central.get_client_id().await);
                     })
                 },
             )
@@ -1526,8 +1498,7 @@ mod tests {
                             .await
                             .unwrap();
                         alice_central
-                            .context
-                            .invite_all(&case, &id, [&mut bob_central.context])
+                            .invite_all(&case, &id, [&bob_central])
                             .await
                             .unwrap();
 
@@ -1586,8 +1557,7 @@ mod tests {
                             .await
                             .unwrap();
                         alice_central
-                            .context
-                            .invite_all(&case, &id, [&mut bob_central.context])
+                            .invite_all(&case, &id, [&bob_central])
                             .await
                             .unwrap();
 
@@ -1601,7 +1571,6 @@ mod tests {
                             .to_bytes()
                             .unwrap();
                         alice_central
-                            .context
                             .get_conversation_unchecked(&id)
                             .await
                             .group

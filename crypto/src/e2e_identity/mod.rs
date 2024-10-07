@@ -602,6 +602,8 @@ pub(crate) mod tests {
     use serde_json::json;
     use wasm_bindgen_test::*;
 
+    use crate::e2e_identity::refresh_token::RefreshToken;
+    use crate::mls::context::CentralContext;
     use crate::{
         e2e_identity::{id::QualifiedE2eiClientId, tests::x509::X509TestChain},
         prelude::{
@@ -611,8 +613,6 @@ pub(crate) mod tests {
         test_utils::{central::TEAM, *},
         CryptoResult,
     };
-    use crate::e2e_identity::refresh_token::RefreshToken;
-    use crate::mls::context::CentralContext;
 
     wasm_bindgen_test_configure!(run_in_browser);
 
@@ -633,7 +633,8 @@ pub(crate) mod tests {
                 Some(TEAM.to_string()),
                 E2EI_EXPIRY,
                 cs,
-            ).await
+            )
+            .await
         })
     }
 
@@ -750,7 +751,10 @@ pub(crate) mod tests {
             }
         }
 
-        let wrapper = E2eiInitWrapper { context: &ctx.context, case };
+        let wrapper = E2eiInitWrapper {
+            context: &ctx.context,
+            case,
+        };
         let mut enrollment = init(wrapper).await?;
 
         #[cfg(not(target_family = "wasm"))]
@@ -793,10 +797,10 @@ pub(crate) mod tests {
         let enrollment = restore(enrollment, &ctx.context).await;
 
         let _order_req = enrollment.new_order_request(previous_nonce.to_string()).unwrap();
-        let client_uri = ctx.context.get_e2ei_client_id().await.to_uri();
-        let client_id = client_id
-            .map(|c| format!("{}{c}", wire_e2e_identity::prelude::E2eiClientId::URI_SCHEME))
-            .unwrap_or_else(|| client_uri);
+        let client_id = match client_id {
+            None => ctx.get_e2ei_client_id().await.to_uri(),
+            Some(client_id) => format!("{}{client_id}", wire_e2e_identity::prelude::E2eiClientId::URI_SCHEME),
+        };
         let device_identifier = format!("{{\"name\":\"{display_name}\",\"domain\":\"world.com\",\"client-id\":\"{client_id}\",\"handle\":\"wireapp://%40{handle}@world.com\"}}");
         let user_identifier = format!(
             "{{\"name\":\"{display_name}\",\"domain\":\"world.com\",\"handle\":\"wireapp://%40{handle}@world.com\"}}"
@@ -925,10 +929,7 @@ pub(crate) mod tests {
                 .new_oidc_challenge_response(&ctx.context.mls_provider().await.unwrap(), oidc_chall_resp)
                 .await?;
             // Now Refresh token is persisted in the keystore
-            assert_eq!(
-                RefreshToken::find(keystore).await?.as_str(),
-                new_refresh_token
-            );
+            assert_eq!(RefreshToken::find(keystore).await?.as_str(), new_refresh_token);
             // No reason at this point to have the refresh token in memory
             assert!(enrollment.get_refresh_token().is_err());
         }
