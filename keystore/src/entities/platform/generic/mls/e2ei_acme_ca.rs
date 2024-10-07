@@ -16,7 +16,7 @@
 
 use crate::{
     connection::{KeystoreDatabaseConnection, TransactionWrapper},
-    entities::{E2eiAcmeCA, Entity, EntityBase, EntityFindParams, EntityMlsExt, StringEntityId, UniqueEntity},
+    entities::{E2eiAcmeCA, Entity, EntityBase, EntityFindParams, EntityTransactionExt, StringEntityId, UniqueEntity},
     CryptoKeystoreError, CryptoKeystoreResult, MissingKeyErrorKind,
 };
 
@@ -68,11 +68,11 @@ impl EntityBase for E2eiAcmeCA {
 
 #[cfg_attr(target_family = "wasm", async_trait::async_trait(?Send))]
 #[cfg_attr(not(target_family = "wasm"), async_trait::async_trait)]
-impl EntityMlsExt for E2eiAcmeCA {
-    async fn mls_save(&self, _: &TransactionWrapper<'_>) -> CryptoKeystoreResult<()> {
+impl EntityTransactionExt for E2eiAcmeCA {
+    async fn save(&self, _: &TransactionWrapper<'_>) -> CryptoKeystoreResult<()> {
         return Err(CryptoKeystoreError::NotImplemented);
     }
-    async fn mls_delete(_: &TransactionWrapper<'_>, _id: StringEntityId<'_>) -> CryptoKeystoreResult<()> {
+    async fn delete(_: &TransactionWrapper<'_>, _id: StringEntityId<'_>) -> CryptoKeystoreResult<()> {
         return Err(CryptoKeystoreError::NotImplemented);
     }
 }

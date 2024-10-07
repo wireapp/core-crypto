@@ -16,7 +16,7 @@
 
 use crate::{
     connection::TransactionWrapper,
-    entities::{EntityIdStringExt, EntityMlsExt, MlsEpochEncryptionKeyPair},
+    entities::{EntityIdStringExt, EntityTransactionExt, MlsEpochEncryptionKeyPair},
     CryptoKeystoreResult,
 };
 use crate::{
@@ -132,8 +132,8 @@ impl EntityBase for MlsEpochEncryptionKeyPair {
 
 #[cfg_attr(target_family = "wasm", async_trait::async_trait(?Send))]
 #[cfg_attr(not(target_family = "wasm"), async_trait::async_trait)]
-impl EntityMlsExt for MlsEpochEncryptionKeyPair {
-    async fn mls_save(&self, transaction: &TransactionWrapper<'_>) -> CryptoKeystoreResult<()> {
+impl EntityTransactionExt for MlsEpochEncryptionKeyPair {
+    async fn save(&self, transaction: &TransactionWrapper<'_>) -> CryptoKeystoreResult<()> {
         Self::ConnectionType::check_buffer_size(self.keypairs.len())?;
 
         let zb_keypairs = rusqlite::blob::ZeroBlob(self.keypairs.len() as i32);
@@ -161,7 +161,7 @@ impl EntityMlsExt for MlsEpochEncryptionKeyPair {
 
         Ok(())
     }
-    async fn mls_delete(transaction: &TransactionWrapper<'_>, id: StringEntityId<'_>) -> CryptoKeystoreResult<()> {
+    async fn delete(transaction: &TransactionWrapper<'_>, id: StringEntityId<'_>) -> CryptoKeystoreResult<()> {
         let updated = transaction.execute(
             "DELETE FROM mls_epoch_encryption_keypairs WHERE id_hex = ?",
             [id.as_hex_string()],
