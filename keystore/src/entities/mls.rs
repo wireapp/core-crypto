@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see http://www.gnu.org/licenses/.
 
-use super::Entity;
+use super::{Entity, EntityFindParams};
 #[cfg(target_family = "wasm")]
 use crate::connection::storage::WasmEncryptedStorage;
 use crate::{connection::TransactionWrapper, CryptoKeystoreError, CryptoKeystoreResult};
@@ -250,6 +250,16 @@ pub trait UniqueEntity: Entity<ConnectionType = crate::connection::KeystoreDatab
             Ok(Self::new(content))
         } else {
             Err(CryptoKeystoreError::NotFound(Self::COLLECTION_NAME, "".to_string()))
+        }
+    }
+    
+    async fn find_all(conn: &mut Self::ConnectionType, _params: EntityFindParams) -> CryptoKeystoreResult<Vec<Self>> {
+        match Self::find_unique(conn).await {
+            Ok(record) => {
+                Ok(vec![record])
+            }
+            Err(CryptoKeystoreError::NotFound(_, _)) => Ok(vec![]),
+            Err(err) => Err(err),
         }
     }
 
