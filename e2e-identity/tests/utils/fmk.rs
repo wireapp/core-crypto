@@ -997,7 +997,15 @@ impl E2eTest {
         let jwks_uri = self.oidc_cfg.as_ref().unwrap().jwks_uri.clone();
         let jwks_req = self.client.get(jwks_uri);
         let jwks = jwks_req.send().await.unwrap().json::<Value>().await.unwrap();
-        let jwk = jwks.get("keys").unwrap().as_array().unwrap().first().unwrap();
+        // Make sure to pick the signature key.
+        let jwk = jwks
+            .get("keys")
+            .unwrap()
+            .as_array()
+            .unwrap()
+            .iter()
+            .find(|&key| key.get("use").unwrap() == "sig")
+            .unwrap();
         let jwk = serde_json::from_value::<Jwk>(jwk.clone()).unwrap();
         match &jwk.algorithm {
             AlgorithmParameters::RSA(_) => RS256PublicKey::try_from_jwk(&jwk).unwrap().to_pem().unwrap(),
