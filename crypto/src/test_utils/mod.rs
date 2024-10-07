@@ -276,7 +276,6 @@ async fn create_centrals<const N: usize>(
                     ClientIdentifier::X509(HashMap::from([(sc, bundle)]))
                 }
             };
-            let context = central.new_transaction().await.unwrap();
             context
                 .mls_init(
                     identity,
