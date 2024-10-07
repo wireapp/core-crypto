@@ -57,11 +57,5 @@ license-files = [
     { path = "COPYRIGHT", hash = 0x39f8ad31 }
 ]
 
-[sources]
-allow-git = [
-    # ? Needed for our interop runner.
-    "https://github.com/otak/fantoccini",
-]
-
 [sources.allow-org]
 github = ["wireapp"]
