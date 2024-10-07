@@ -18,7 +18,7 @@ pub use openmls_traits::types::SignatureScheme;
 pub use rstest::*;
 pub use rstest_reuse::{self, *};
 use std::collections::HashMap;
-
+use std::sync::Arc;
 use crate::{
     mls::context::CentralContext,
     prelude::{ClientId, ConversationId, MlsCentral, MlsCentralConfiguration},
@@ -38,6 +38,7 @@ use crate::e2e_identity::id::{QualifiedE2eiClientId, WireQualifiedClientId};
 pub use crate::prelude::{ClientIdentifier, MlsCredentialType, INITIAL_KEYING_MATERIAL_COUNT};
 pub use fixtures::{TestCase, *};
 pub use message::*;
+use crate::prelude::Client;
 
 pub const GROUP_SAMPLE_SIZE: usize = 9;
 
@@ -58,6 +59,15 @@ impl ClientContext {
 
     pub fn replace_x509_chain(&mut self, new_chain: std::sync::Arc<Option<X509TestChain>>) {
         self.x509_test_chain = new_chain;
+    }
+    
+    pub async fn client(&self) -> Client {
+        let client_guard = self.context.mls_client().await.unwrap();
+        client_guard.as_ref().unwrap().clone()
+    }
+    
+    pub async fn get_client_id(&self) -> ClientId {
+        self.client().await.id().clone()
     }
 }
 
@@ -178,8 +188,8 @@ pub async fn run_cross_signed_tests_with_client_ids<const N: usize, const F: usi
     other_client_ids: [[&'static str; 3]; F],
     (domain1, domain2): (&'static str, &'static str),
     test: impl FnOnce(
-            [CentralContext; N],
-            [CentralContext; F],
+            [ClientContext; N],
+            [ClientContext; F],
         ) -> std::pin::Pin<Box<dyn std::future::Future<Output = ()> + 'static>>
         + 'static,
 ) {
@@ -206,12 +216,20 @@ pub async fn run_cross_signed_tests_with_client_ids<const N: usize, const F: usi
             let centrals2 = create_centrals(&case, paths2, Some(&chain2)).await;
             let mut contexts1 = Vec::new();
             for central in centrals1 {
-                contexts1.push(central.new_transaction().await.unwrap());
+                contexts1.push(ClientContext{
+                    context: central.new_transaction().await.unwrap(),
+                    central,
+                    x509_test_chain: Arc::new(None),
+                });
             }
 
             let mut contexts2 = Vec::new();
             for central in centrals2 {
-                contexts2.push(central.new_transaction().await.unwrap());
+                contexts2.push(ClientContext{
+                    context: central.new_transaction().await.unwrap(),
+                    central,
+                    x509_test_chain: Arc::new(None),
+                });
             }
 
             test(
@@ -220,10 +238,10 @@ pub async fn run_cross_signed_tests_with_client_ids<const N: usize, const F: usi
             )
             .await;
             for c in contexts1 {
-                c.finish().await.unwrap();
+                c.context.finish().await.unwrap();
             }
             for c in contexts2 {
-                c.finish().await.unwrap();
+                c.context.finish().await.unwrap();
             }
         })
     })
@@ -276,7 +294,6 @@ async fn create_centrals<const N: usize>(
                     ClientIdentifier::X509(HashMap::from([(sc, bundle)]))
                 }
             };
-            let context = central.new_transaction().await.unwrap();
             context
                 .mls_init(
                     identity,

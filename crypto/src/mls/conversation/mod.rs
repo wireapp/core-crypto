@@ -347,10 +347,9 @@ mod tests {
                     .new_conversation(&id, case.credential_type, case.cfg.clone())
                     .await
                     .unwrap();
-                assert_eq!(alice_central.context.get_conversation_unchecked(&id).await.id, id);
+                assert_eq!(alice_central.get_conversation_unchecked(&id).await.id, id);
                 assert_eq!(
                     alice_central
-                        .context
                         .get_conversation_unchecked(&id)
                         .await
                         .group
@@ -360,7 +359,6 @@ mod tests {
                 );
                 assert_eq!(
                     alice_central
-                        .context
                         .get_conversation_unchecked(&id)
                         .await
                         .members()
@@ -390,7 +388,7 @@ mod tests {
                         .await
                         .unwrap();
 
-                    let bob = bob_central.context.rand_key_package(&case).await;
+                    let bob = bob_central.rand_key_package(&case).await;
                     let MlsConversationCreationMessage { welcome, .. } = alice_central
                         .context
                         .add_members_to_conversation(&id, vec![bob])
@@ -399,7 +397,6 @@ mod tests {
                     // before merging, commit is not applied
                     assert_eq!(
                         alice_central
-                            .context
                             .get_conversation_unchecked(&id)
                             .await
                             .members()
@@ -408,10 +405,9 @@ mod tests {
                     );
                     alice_central.context.commit_accepted(&id).await.unwrap();
 
-                    assert_eq!(alice_central.context.get_conversation_unchecked(&id).await.id, id);
+                    assert_eq!(alice_central.get_conversation_unchecked(&id).await.id, id);
                     assert_eq!(
                         alice_central
-                            .context
                             .get_conversation_unchecked(&id)
                             .await
                             .group
@@ -421,7 +417,6 @@ mod tests {
                     );
                     assert_eq!(
                         alice_central
-                            .context
                             .get_conversation_unchecked(&id)
                             .await
                             .members()
@@ -436,12 +431,11 @@ mod tests {
                         .unwrap();
 
                     assert_eq!(
-                        bob_central.context.get_conversation_unchecked(&id).await.id(),
-                        alice_central.context.get_conversation_unchecked(&id).await.id()
+                        bob_central.get_conversation_unchecked(&id).await.id(),
+                        alice_central.get_conversation_unchecked(&id).await.id()
                     );
                     assert!(alice_central
-                        .context
-                        .try_talk_to(&id, &mut bob_central.context)
+                        .try_talk_to(&id, &bob_central)
                         .await
                         .is_ok());
                 })
@@ -465,7 +459,7 @@ mod tests {
                     .await
                     .unwrap();
 
-                let mut bob_and_friends = Vec::with_capacity(GROUP_SAMPLE_SIZE);
+                let mut bob_and_friends: Vec<ClientContext> = Vec::with_capacity(GROUP_SAMPLE_SIZE);
                 for _ in 0..GROUP_SAMPLE_SIZE {
                     let uuid = uuid::Uuid::new_v4();
                     let name = uuid.hyphenated().to_string();
@@ -479,7 +473,7 @@ mod tests {
                         Some(INITIAL_KEYING_MATERIAL_COUNT),
                     )
                     .unwrap();
-                    let mut central = MlsCentral::try_new(config).await.unwrap();
+                    let central = MlsCentral::try_new(config).await.unwrap();
                     let friend_context = central.new_transaction().await.unwrap();
 
                     x509_test_chain.register_with_central(&friend_context).await;
@@ -508,15 +502,16 @@ mod tests {
                         )
                         .await
                         .unwrap();
-                    friend_context.finish().await.unwrap();
-                    bob_and_friends.push(central);
+
+                    let context = ClientContext {
+                        context: friend_context,
+                        central,
+                        x509_test_chain: x509_test_chain_arc.clone(),
+                    };
+                    bob_and_friends.push(context);
                 }
 
                 let number_of_friends = bob_and_friends.len();
-                
-                let bob_and_friends = stream::iter(bob_and_friends).then(|member_central| async move {
-                    member_central.new_transaction().await.unwrap()
-                }).collect::<Vec<_>>().await;
 
                 let mut bob_and_friends_kps = vec![];
                 for c in &bob_and_friends {
@@ -531,7 +526,6 @@ mod tests {
                 // before merging, commit is not applied
                 assert_eq!(
                     alice_central
-                        .context
                         .get_conversation_unchecked(&id)
                         .await
                         .members()
@@ -540,10 +534,9 @@ mod tests {
                 );
                 alice_central.context.commit_accepted(&id).await.unwrap();
 
-                assert_eq!(alice_central.context.get_conversation_unchecked(&id).await.id, id);
+                assert_eq!(alice_central.get_conversation_unchecked(&id).await.id, id);
                 assert_eq!(
                     alice_central
-                        .context
                         .get_conversation_unchecked(&id)
                         .await
                         .group
@@ -553,7 +546,6 @@ mod tests {
                 );
                 assert_eq!(
                     alice_central
-                        .context
                         .get_conversation_unchecked(&id)
                         .await
                         .members()
@@ -563,11 +555,11 @@ mod tests {
 
                 let mut bob_and_friends_groups = Vec::with_capacity(bob_and_friends.len());
                 // TODO: Do things in parallel, this is waaaaay too slow (takes around 5 minutes). Tracking issue: WPB-9624
-                for mut c in bob_and_friends {
-                    c.process_welcome_message(welcome.clone().into(), case.custom_cfg())
+                for c in bob_and_friends {
+                    c.context.process_welcome_message(welcome.clone().into(), case.custom_cfg())
                         .await
                         .unwrap();
-                    assert!(c.try_talk_to(&id, &mut alice_central.context).await.is_ok());
+                    assert!(c.try_talk_to(&id, &alice_central).await.is_ok());
                     bob_and_friends_groups.push(c);
                 }
 

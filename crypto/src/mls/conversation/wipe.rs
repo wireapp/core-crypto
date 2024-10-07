@@ -66,7 +66,7 @@ mod tests {
                     .new_conversation(&id, case.credential_type, case.cfg.clone())
                     .await
                     .unwrap();
-                assert!(central.context.get_conversation_unchecked(&id).await.group.is_active());
+                assert!(central.get_conversation_unchecked(&id).await.group.is_active());
 
                 central.context.wipe_conversation(&id).await.unwrap();
                 assert!(!central.context.conversation_exists(&id).await.unwrap());

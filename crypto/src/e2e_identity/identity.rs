@@ -288,14 +288,13 @@ mod tests {
                         .await
                         .unwrap();
                     alice_android_central
-                        .context
-                        .invite_all(&case, &id, [&mut alice_ios_central.context])
+                        .invite_all(&case, &id, [&alice_ios_central])
                         .await
                         .unwrap();
 
                     let (android_id, ios_id) = (
-                        alice_android_central.context.get_client_id().await,
-                        alice_ios_central.context.get_client_id().await,
+                        alice_android_central.get_client_id().await,
+                        alice_ios_central.get_client_id().await,
                     );
 
                     let mut android_ids = alice_android_central
@@ -363,26 +362,25 @@ mod tests {
                         .await
                         .unwrap();
                     alice
-                        .context
                         .invite_all(
                             &case,
                             &id,
                             [
-                                &mut bob.context,
-                                &mut rupert.context,
-                                &mut dilbert.context,
-                                &mut john.context,
+                                &bob,
+                                &rupert,
+                                &dilbert,
+                                &john,
                             ],
                         )
                         .await
                         .unwrap();
 
                     let (alice_id, bob_id, rupert_id, dilbert_id, john_id) = (
-                        alice.context.get_client_id().await,
-                        bob.context.get_client_id().await,
-                        rupert.context.get_client_id().await,
-                        dilbert.context.get_client_id().await,
-                        john.context.get_client_id().await,
+                        alice.get_client_id().await,
+                        bob.get_client_id().await,
+                        rupert.get_client_id().await,
+                        dilbert.get_client_id().await,
+                        john.get_client_id().await,
                     );
 
                     let client_ids = [alice_id, bob_id, rupert_id, dilbert_id, john_id];
@@ -425,15 +423,14 @@ mod tests {
                         .await
                         .unwrap();
                     alice
-                        .context
-                        .invite_all(&case, &id, [&mut bob.context, &mut rupert.context])
+                        .invite_all(&case, &id, [&bob, &rupert])
                         .await
                         .unwrap();
 
                     let (alice_id, bob_id, rupert_id) = (
-                        alice.context.get_client_id().await,
-                        bob.context.get_client_id().await,
-                        rupert.context.get_client_id().await,
+                        alice.get_client_id().await,
+                        bob.get_client_id().await,
+                        rupert.get_client_id().await,
                     );
 
                     let client_ids = [alice_id, bob_id, rupert_id];
@@ -471,14 +468,13 @@ mod tests {
                         .await
                         .unwrap();
                     alice_android_central
-                        .context
-                        .invite_all(&case, &id, [&mut alice_ios_central.context])
+                        .invite_all(&case, &id, [&alice_ios_central])
                         .await
                         .unwrap();
 
                     let (android_id, ios_id) = (
-                        alice_android_central.context.get_client_id().await,
-                        alice_ios_central.context.get_client_id().await,
+                        alice_android_central.get_client_id().await,
+                        alice_ios_central.get_client_id().await,
                     );
 
                     let mut android_ids = alice_android_central
@@ -552,23 +548,21 @@ mod tests {
                         .await
                         .unwrap();
                     alice_android_central
-                        .context
                         .invite_all(
                             &case,
                             &id,
                             [
-                                &mut alice_ios_central.context,
-                                &mut bob_android_central.context,
-                                &mut bobt_android_central.context,
-                                &mut alicem_ios_central.context,
-                                &mut alicem_android_central.context,
+                                &alice_ios_central,
+                                &bob_android_central,
+                                &bobt_android_central,
+                                &alicem_ios_central,
+                                &alicem_android_central,
                             ],
                         )
                         .await
                         .unwrap();
 
                     let nb_members = alice_android_central
-                        .context
                         .get_conversation_unchecked(&id)
                         .await
                         .members()
@@ -576,15 +570,15 @@ mod tests {
                     assert_eq!(nb_members, 6);
 
                     assert_eq!(
-                        alice_android_central.context.get_user_id().await,
-                        alice_ios_central.context.get_user_id().await
+                        alice_android_central.get_user_id().await,
+                        alice_ios_central.get_user_id().await
                     );
 
-                    let alicem_user_id = alicem_ios_central.context.get_user_id().await;
-                    let bobt_user_id = bobt_android_central.context.get_user_id().await;
+                    let alicem_user_id = alicem_ios_central.get_user_id().await;
+                    let bobt_user_id = bobt_android_central.get_user_id().await;
 
                     // Finds both Alice's devices
-                    let alice_user_id = alice_android_central.context.get_user_id().await;
+                    let alice_user_id = alice_android_central.get_user_id().await;
                     let alice_identities = alice_android_central
                         .context
                         .get_user_identities(&id, &[alice_user_id.clone()])
@@ -595,7 +589,7 @@ mod tests {
                     assert_eq!(identities.len(), 2);
 
                     // Finds Bob only device
-                    let bob_user_id = bob_android_central.context.get_user_id().await;
+                    let bob_user_id = bob_android_central.get_user_id().await;
                     let bob_identities = alice_android_central
                         .context
                         .get_user_identities(&id, &[bob_user_id.clone()])
@@ -648,17 +642,15 @@ mod tests {
                         .await
                         .unwrap();
                     alice_android_central
-                        .context
                         .invite_all(
                             &case,
                             &id,
-                            [&mut alice_ios_central.context, &mut bob_android_central.context],
+                            [&alice_ios_central, &bob_android_central],
                         )
                         .await
                         .unwrap();
 
                     let nb_members = alice_android_central
-                        .context
                         .get_conversation_unchecked(&id)
                         .await
                         .members()
@@ -666,12 +658,12 @@ mod tests {
                     assert_eq!(nb_members, 3);
 
                     assert_eq!(
-                        alice_android_central.context.get_user_id().await,
-                        alice_ios_central.context.get_user_id().await
+                        alice_android_central.get_user_id().await,
+                        alice_ios_central.get_user_id().await
                     );
 
                     // Finds both Alice's devices
-                    let alice_user_id = alice_android_central.context.get_user_id().await;
+                    let alice_user_id = alice_android_central.get_user_id().await;
                     let alice_identities = alice_android_central
                         .context
                         .get_user_identities(&id, &[alice_user_id.clone()])
@@ -682,7 +674,7 @@ mod tests {
                     assert_eq!(identities.len(), 2);
 
                     // Finds Bob only device
-                    let bob_user_id = bob_android_central.context.get_user_id().await;
+                    let bob_user_id = bob_android_central.get_user_id().await;
                     let bob_identities = alice_android_central
                         .context
                         .get_user_identities(&id, &[bob_user_id.clone()])
@@ -738,6 +730,7 @@ mod tests {
                 Box::pin(async move {
                     let id = conversation_id();
                     alices_ios_central
+                        .context
                         .new_conversation(&id, case.credential_type, case.cfg.clone())
                         .await
                         .unwrap();

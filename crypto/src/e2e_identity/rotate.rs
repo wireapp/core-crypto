@@ -390,8 +390,7 @@ pub(crate) mod tests {
                                 .await
                                 .unwrap();
                             alice_central
-                                .context
-                                .invite_all(&case, &id, [&mut bob_central.context])
+                                .invite_all(&case, &id, [&bob_central])
                                 .await
                                 .unwrap();
                             ids.push(id)
@@ -408,7 +407,6 @@ pub(crate) mod tests {
 
                         assert_eq!(before_rotate.credential, 1);
                         let old_credential = alice_central
-                            .context
                             .find_most_recent_credential_bundle(case.signature_scheme(), case.credential_type)
                             .await
                             .unwrap()
@@ -447,11 +445,10 @@ pub(crate) mod tests {
                                 .decrypt_message(&id, commit.commit.to_bytes().unwrap())
                                 .await
                                 .unwrap();
-                            alice_central.context.verify_sender_identity(&case, &decrypted).await;
+                            alice_central.verify_sender_identity(&case, &decrypted).await;
 
                             alice_central.context.commit_accepted(&id).await.unwrap();
                             alice_central
-                                .context
                                 .verify_local_credential_rotated(&id, NEW_HANDLE, NEW_DISPLAY_NAME)
                                 .await;
                         }
@@ -475,7 +472,6 @@ pub(crate) mod tests {
 
                         // But first let's verify the previous credential material is present
                         assert!(alice_central
-                            .context
                             .find_credential_bundle(
                                 case.signature_scheme(),
                                 case.credential_type,
@@ -496,7 +492,6 @@ pub(crate) mod tests {
 
                         // and the signature keypair is still present
                         assert!(alice_central
-                            .context
                             .find_signature_keypair_from_keystore(old_credential.signature_key.public())
                             .await
                             .is_some());
@@ -511,13 +506,11 @@ pub(crate) mod tests {
 
                         // Alice should just have the number of X509 KeyPackages she requested
                         let nb_x509_kp = alice_central
-                            .context
                             .count_key_package(case.ciphersuite(), Some(MlsCredentialType::X509))
                             .await;
                         assert_eq!(nb_x509_kp, NB_KEY_PACKAGE);
                         // in both cases, Alice should not anymore have any Basic KeyPackage
                         let nb_basic_kp = alice_central
-                            .context
                             .count_key_package(case.ciphersuite(), Some(MlsCredentialType::Basic))
                             .await;
                         assert_eq!(nb_basic_kp, 0);
@@ -528,7 +521,6 @@ pub(crate) mod tests {
                         let after_delete = alice_central.context.count_entities().await;
                         assert_eq!(after_delete.credential, 1);
                         assert!(alice_central
-                            .context
                             .find_credential_from_keystore(&old_credential)
                             .await
                             .is_none());
@@ -551,12 +543,10 @@ pub(crate) mod tests {
                             .unwrap();
                         // required because now Alice does not anymore have a Basic credential
                         let alice = alice_central
-                            .context
                             .rand_key_package_of_type(&case, MlsCredentialType::X509)
                             .await;
                         charlie_central
-                            .context
-                            .invite_all_members(&case, &id, [(&mut alice_central.context, alice)])
+                            .invite_all_members(&case, &id, [(&alice_central, alice)])
                             .await
                             .unwrap();
                     })
@@ -582,7 +572,6 @@ pub(crate) mod tests {
                         .unwrap();
 
                     let old_cb = alice_central
-                        .context
                         .find_most_recent_credential_bundle(case.signature_scheme(), case.credential_type)
                         .await
                         .unwrap()
@@ -616,7 +605,6 @@ pub(crate) mod tests {
 
                     // So alice has a new Credential as expected
                     let cb = alice_central
-                        .context
                         .find_most_recent_credential_bundle(case.signature_scheme(), MlsCredentialType::X509)
                         .await
                         .unwrap();
@@ -633,47 +621,51 @@ pub(crate) mod tests {
                     // but keeps her old one since it's referenced from some KeyPackages
                     let old_spk = SignaturePublicKey::from(old_cb.signature_key.public());
                     let old_cb_found = alice_central
-                        .context
                         .find_credential_bundle(case.signature_scheme(), case.credential_type, &old_spk)
                         .await
                         .unwrap();
                     assert_eq!(old_cb, old_cb_found);
-                    let alice_client_guard = alice_central.context.mls_client().await.unwrap();
-                    let alice_client = alice_client_guard.as_ref().unwrap();
-                    let old_nb_identities = alice_client
-                        .identities
-                        .iter()
-                        .count();
+                    let (cid, all_credentials, scs, old_nb_identities) = {
+                        let alice_client = alice_central.client().await;
+                        let old_nb_identities = alice_client
+                            .identities
+                            .iter()
+                            .count();
 
-                    // Let's simulate an app crash, client gets deleted and restored from keystore
-                    let cid = alice_client.id().clone();
-                    let scs = HashSet::from([case.signature_scheme()]);
-                    let all_credentials = alice_central
-                        .context
-                        .keystore().await.unwrap()
-                        .find_all::<MlsCredential>(EntityFindParams::default())
-                        .await
-                        .unwrap()
-                        .into_iter()
-                        .map(|c| {
-                            let credential =
-                                openmls::prelude::Credential::tls_deserialize(&mut c.credential.as_slice()).unwrap();
-                            (credential, c.created_at)
-                        })
-                        .collect::<Vec<_>>();
-                    assert_eq!(all_credentials.len(), 2);
+                        // Let's simulate an app crash, client gets deleted and restored from keystore
+                        let cid = alice_client.id().clone();
+                        let scs = HashSet::from([case.signature_scheme()]);
+                        let all_credentials = alice_central
+                            .context
+                            .keystore().await.unwrap()
+                            .find_all::<MlsCredential>(EntityFindParams::default())
+                            .await
+                            .unwrap()
+                            .into_iter()
+                            .map(|c| {
+                                let credential =
+                                    openmls::prelude::Credential::tls_deserialize(&mut c.credential.as_slice()).unwrap();
+                                (credential, c.created_at)
+                            })
+                            .collect::<Vec<_>>();
+                        assert_eq!(all_credentials.len(), 2);
+                        (cid, all_credentials, scs, old_nb_identities)
+                    };
+                    let backend = &alice_central.context.mls_provider().await.unwrap();
+                    backend.keystore().commit_transaction().await.unwrap();
+                    backend.keystore().new_transaction().await.unwrap();
 
-                    let client = Client::load(&alice_central.context.mls_provider().await.unwrap(), &cid, all_credentials, scs)
+                    let client = Client::load(backend, &cid, all_credentials, scs)
                         .await
                         .unwrap();
                     let mut alice_client_guard = alice_central.context.mls_client_mut().await.unwrap();
-                    alice_client_guard
-                        .replace(client)
-                        .unwrap();
+                    *alice_client_guard = Some(client);
+                    drop(alice_client_guard);
+
+                    let alice_client = alice_central.client().await;
 
                     // Verify that Alice has the same credentials
                     let cb = alice_central
-                        .context
                         .find_most_recent_credential_bundle(case.signature_scheme(), MlsCredentialType::X509)
                         .await
                         .unwrap();
@@ -681,6 +673,7 @@ pub(crate) mod tests {
                         .to_mls_credential_with_key()
                         .extract_identity(case.ciphersuite(), None)
                         .unwrap();
+                    // backend.keystore().commit_transaction().await.unwrap();
                     assert_eq!(identity.x509_identity.as_ref().unwrap().display_name, NEW_DISPLAY_NAME);
                     assert_eq!(
                         identity.x509_identity.as_ref().unwrap().handle,
@@ -717,8 +710,7 @@ pub(crate) mod tests {
                             .unwrap();
 
                         alice_central
-                            .context
-                            .invite_all(&case, &id, [&bob_central.context])
+                            .invite_all(&case, &id, [&bob_central])
                             .await
                             .unwrap();
                         // Alice's turn
@@ -777,11 +769,10 @@ pub(crate) mod tests {
                             .decrypt_message(&id, commit.to_bytes().unwrap())
                             .await
                             .unwrap();
-                        alice_central.context.verify_sender_identity(&case, &decrypted).await;
+                        alice_central.verify_sender_identity(&case, &decrypted).await;
 
                         alice_central.context.commit_accepted(&id).await.unwrap();
                         alice_central
-                            .context
                             .verify_local_credential_rotated(&id, ALICE_NEW_HANDLE, ALICE_NEW_DISPLAY_NAME)
                             .await;
 
@@ -840,11 +831,10 @@ pub(crate) mod tests {
                             .decrypt_message(&id, commit.to_bytes().unwrap())
                             .await
                             .unwrap();
-                        bob_central.context.verify_sender_identity(&case, &decrypted).await;
+                        bob_central.verify_sender_identity(&case, &decrypted).await;
 
                         bob_central.context.commit_accepted(&id).await.unwrap();
                         bob_central
-                            .context
                             .verify_local_credential_rotated(&id, BOB_NEW_HANDLE, BOB_NEW_DISPLAY_NAME)
                             .await;
                     })
@@ -874,8 +864,7 @@ pub(crate) mod tests {
                                 .unwrap();
 
                             alice_central
-                                .context
-                                .invite_all(&case, &id, [&mut bob_central.context])
+                                .invite_all(&case, &id, [&bob_central])
                                 .await
                                 .unwrap();
 
@@ -891,10 +880,9 @@ pub(crate) mod tests {
                                 .certificate;
 
                             // Alice creates a new Credential, updating her handle/display_name
-                            let alice_cid = alice_central.context.get_client_id().await;
+                            let alice_cid = alice_central.get_client_id().await;
                             let (new_handle, new_display_name) = ("new_alice_wire", "New Alice Smith");
                             let cb = alice_central
-                                .context
                                 .rotate_credential(&case, new_handle, new_display_name, alice_og_cert, intermediate_ca)
                                 .await;
 
@@ -924,12 +912,11 @@ pub(crate) mod tests {
                                 .await
                                 .unwrap();
                             // ...and verifies that now Alice is represented with her new identity
-                            alice_central.context.verify_sender_identity(&case, &decrypted).await;
+                            alice_central.verify_sender_identity(&case, &decrypted).await;
 
                             // Finally, Alice merges her commit and verifies her new identity gets applied
                             alice_central.context.commit_accepted(&id).await.unwrap();
                             alice_central
-                                .context
                                 .verify_local_credential_rotated(&id, new_handle, new_display_name)
                                 .await;
 
@@ -964,8 +951,7 @@ pub(crate) mod tests {
                                 .unwrap();
 
                             alice_central
-                                .context
-                                .invite_all(&case, &id, [&mut bob_central.context])
+                                .invite_all(&case, &id, [&bob_central])
                                 .await
                                 .unwrap();
 
@@ -981,7 +967,6 @@ pub(crate) mod tests {
                             // Alice creates a new Credential, updating her handle/display_name
                             let (new_handle, new_display_name) = ("new_alice_wire", "New Alice Smith");
                             let cb = alice_central
-                                .context
                                 .rotate_credential(
                                     &case,
                                     new_handle,
@@ -1025,7 +1010,6 @@ pub(crate) mod tests {
                             // Finally, Alice merges her commit and verifies her new identity gets applied
                             alice_central.context.commit_accepted(&id).await.unwrap();
                             alice_central
-                                .context
                                 .verify_local_credential_rotated(&id, new_handle, new_display_name)
                                 .await;
 
@@ -1035,7 +1019,7 @@ pub(crate) mod tests {
                                 .decrypt_message(&id, rotate_commit.commit.to_bytes().unwrap())
                                 .await
                                 .unwrap();
-                            alice_central.context.verify_sender_identity(&case, &decrypted).await;
+                            alice_central.verify_sender_identity(&case, &decrypted).await;
 
                             let final_count = alice_central.context.count_entities().await;
                             assert_eq!(init_count.encryption_keypair, final_count.encryption_keypair);

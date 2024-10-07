@@ -100,8 +100,7 @@ mod tests {
                         .await
                         .unwrap();
                     alice_central
-                        .context
-                        .invite_all(&case, &id, [&mut bob_central.context])
+                        .invite_all(&case, &id, [&bob_central])
                         .await
                         .unwrap();
 
@@ -138,8 +137,7 @@ mod tests {
                         .await
                         .unwrap();
                     alice_central
-                        .context
-                        .invite_all(&case, &id, [&mut bob_central.context])
+                        .invite_all(&case, &id, [&bob_central])
                         .await
                         .unwrap();
 
