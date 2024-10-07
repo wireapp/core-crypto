@@ -180,7 +180,7 @@ mod tests {
                         .await
                         .unwrap();
 
-                    let bob = bob_central.context.rand_key_package(&case).await;
+                    let bob = bob_central.rand_key_package(&case).await;
                     let MlsConversationCreationMessage {
                         welcome: bob_welcome, ..
                     } = alice_central
@@ -190,7 +190,6 @@ mod tests {
                         .unwrap();
                     assert_eq!(
                         alice_central
-                            .context
                             .get_conversation_unchecked(&id)
                             .await
                             .members()
@@ -200,7 +199,6 @@ mod tests {
                     alice_central.context.commit_accepted(&id).await.unwrap();
                     assert_eq!(
                         alice_central
-                            .context
                             .get_conversation_unchecked(&id)
                             .await
                             .members()
@@ -214,7 +212,7 @@ mod tests {
                         .await
                         .unwrap();
 
-                    let charlie = charlie_central.context.rand_key_package(&case).await;
+                    let charlie = charlie_central.rand_key_package(&case).await;
                     let MlsConversationCreationMessage {
                         welcome: charlie_welcome,
                         commit,
@@ -226,7 +224,6 @@ mod tests {
                         .unwrap();
                     assert_eq!(
                         alice_central
-                            .context
                             .get_conversation_unchecked(&id)
                             .await
                             .members()
@@ -236,7 +233,6 @@ mod tests {
                     alice_central.context.commit_accepted(&id).await.unwrap();
                     assert_eq!(
                         alice_central
-                            .context
                             .get_conversation_unchecked(&id)
                             .await
                             .members()
@@ -257,17 +253,17 @@ mod tests {
                         .unwrap();
 
                     assert_eq!(
-                        bob_central.context.get_conversation_unchecked(&id).await.id(),
-                        alice_central.context.get_conversation_unchecked(&id).await.id()
+                        bob_central.get_conversation_unchecked(&id).await.id(),
+                        alice_central.get_conversation_unchecked(&id).await.id()
                     );
                     assert_eq!(
-                        charlie_central.context.get_conversation_unchecked(&id).await.id(),
-                        alice_central.context.get_conversation_unchecked(&id).await.id()
+                        charlie_central.get_conversation_unchecked(&id).await.id(),
+                        alice_central.get_conversation_unchecked(&id).await.id()
                     );
 
                     let proposal_bundle = alice_central
                         .context
-                        .new_remove_proposal(&id, alice_central.context.get_client_id().await)
+                        .new_remove_proposal(&id, alice_central.get_client_id().await)
                         .await
                         .unwrap();
 

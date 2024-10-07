@@ -337,7 +337,7 @@ mod tests {
                         .unwrap();
 
                     // export Alice group info
-                    let group_info = alice_central.context.get_group_info(&id).await;
+                    let group_info = alice_central.get_group_info(&id).await;
 
                     // Bob tries to join Alice's group
                     let MlsConversationInitBundle {
@@ -354,7 +354,6 @@ mod tests {
                     // Alice acks the request and adds the new member
                     assert_eq!(
                         alice_central
-                            .context
                             .get_conversation_unchecked(&id)
                             .await
                             .members()
@@ -368,7 +367,6 @@ mod tests {
                         .unwrap();
                     assert_eq!(
                         alice_central
-                            .context
                             .get_conversation_unchecked(&id)
                             .await
                             .members()
@@ -377,7 +375,7 @@ mod tests {
                     );
 
                     // verify Bob's (sender) identity
-                    bob_central.context.verify_sender_identity(&case, &decrypted);
+                    bob_central.verify_sender_identity(&case, &decrypted);
 
                     // Let's say backend accepted our external commit.
                     // So Bob can merge the commit and update the local state
@@ -390,7 +388,6 @@ mod tests {
                     assert!(bob_central.context.get_conversation(&id).await.is_ok());
                     assert_eq!(
                         bob_central
-                            .context
                             .get_conversation_unchecked(&id)
                             .await
                             .members()
@@ -398,8 +395,7 @@ mod tests {
                         2
                     );
                     assert!(alice_central
-                        .context
-                        .try_talk_to(&id, &mut bob_central.context)
+                        .try_talk_to(&id, &bob_central)
                         .await
                         .is_ok());
 
@@ -417,8 +413,7 @@ mod tests {
                     // Ensure it's durable i.e. MLS group has been persisted
                     bob_central.context.drop_and_restore(&group_id).await;
                     assert!(bob_central
-                        .context
-                        .try_talk_to(&id, &mut alice_central.context)
+                        .try_talk_to(&id, &alice_central)
                         .await
                         .is_ok());
                 })
@@ -443,7 +438,7 @@ mod tests {
                         .unwrap();
 
                     // export Alice group info
-                    let group_info = alice_central.context.get_group_info(&id).await;
+                    let group_info = alice_central.get_group_info(&id).await;
 
                     // Bob tries to join Alice's group
                     bob_central
@@ -469,7 +464,6 @@ mod tests {
                     // Alice decrypts the external commit and adds Bob
                     assert_eq!(
                         alice_central
-                            .context
                             .get_conversation_unchecked(&id)
                             .await
                             .members()
@@ -483,7 +477,6 @@ mod tests {
                         .unwrap();
                     assert_eq!(
                         alice_central
-                            .context
                             .get_conversation_unchecked(&id)
                             .await
                             .members()
@@ -500,7 +493,6 @@ mod tests {
                     assert!(bob_central.context.get_conversation(&id).await.is_ok());
                     assert_eq!(
                         bob_central
-                            .context
                             .get_conversation_unchecked(&id)
                             .await
                             .members()
@@ -508,8 +500,7 @@ mod tests {
                         2
                     );
                     assert!(alice_central
-                        .context
-                        .try_talk_to(&id, &mut bob_central.context)
+                        .try_talk_to(&id, &bob_central)
                         .await
                         .is_ok());
                 })
@@ -533,7 +524,7 @@ mod tests {
                         .await
                         .unwrap();
 
-                    let group_info = alice_central.context.get_group_info(&id).await;
+                    let group_info = alice_central.get_group_info(&id).await;
                     // try to make an external join into Alice's group
                     let MlsConversationInitBundle {
                         commit: external_commit,
@@ -576,11 +567,10 @@ mod tests {
                         .await
                         .unwrap();
                     alice_central
-                        .context
-                        .invite_all(&case, &id, [&mut bob_central.context])
+                        .invite_all(&case, &id, [&bob_central])
                         .await
                         .unwrap();
-                    let group_info = alice_central.context.get_group_info(&id).await;
+                    let group_info = alice_central.get_group_info(&id).await;
                     // Alice can rejoin by external commit
                     alice_central
                         .context
@@ -634,7 +624,7 @@ mod tests {
                         .unwrap();
 
                     // export Alice group info
-                    let group_info = alice_central.context.get_group_info(&id).await;
+                    let group_info = alice_central.get_group_info(&id).await;
 
                     // Bob tries to join Alice's group
                     let MlsConversationInitBundle {
@@ -655,7 +645,6 @@ mod tests {
                         .unwrap();
                     assert_eq!(
                         alice_central
-                            .context
                             .get_conversation_unchecked(&id)
                             .await
                             .members()
@@ -672,7 +661,6 @@ mod tests {
                     assert!(bob_central.context.get_conversation(&id).await.is_ok());
                     assert_eq!(
                         bob_central
-                            .context
                             .get_conversation_unchecked(&id)
                             .await
                             .members()
@@ -680,8 +668,7 @@ mod tests {
                         2
                     );
                     assert!(alice_central
-                        .context
-                        .try_talk_to(&id, &mut bob_central.context)
+                        .try_talk_to(&id, &bob_central)
                         .await
                         .is_ok());
 
@@ -709,7 +696,6 @@ mod tests {
                         .unwrap();
                     assert_eq!(
                         alice_central
-                            .context
                             .get_conversation_unchecked(&id)
                             .await
                             .members()
@@ -718,7 +704,6 @@ mod tests {
                     );
                     assert_eq!(
                         bob_central
-                            .context
                             .get_conversation_unchecked(&id)
                             .await
                             .members()
@@ -735,7 +720,6 @@ mod tests {
                     assert!(charlie_central.context.get_conversation(&id).await.is_ok());
                     assert_eq!(
                         charlie_central
-                            .context
                             .get_conversation_unchecked(&id)
                             .await
                             .members()
@@ -743,13 +727,11 @@ mod tests {
                         3
                     );
                     assert!(charlie_central
-                        .context
-                        .try_talk_to(&id, &mut alice_central.context)
+                        .try_talk_to(&id, &alice_central)
                         .await
                         .is_ok());
                     assert!(charlie_central
-                        .context
-                        .try_talk_to(&id, &mut bob_central.context)
+                        .try_talk_to(&id, &bob_central)
                         .await
                         .is_ok());
                 })
@@ -782,7 +764,7 @@ mod tests {
                         .unwrap();
 
                     // export Alice group info
-                    let group_info = alice_central.context.get_group_info(&id).await;
+                    let group_info = alice_central.get_group_info(&id).await;
 
                     // Bob tries to join Alice's group
                     let MlsConversationInitBundle { commit, .. } = bob_central
@@ -828,7 +810,7 @@ mod tests {
                         .unwrap();
 
                     // export Alice group info
-                    let group_info = alice_central.context.get_group_info(&id).await;
+                    let group_info = alice_central.get_group_info(&id).await;
 
                     // Bob tries to join Alice's group
                     let MlsConversationInitBundle { commit, .. } = bob_central
@@ -868,7 +850,7 @@ mod tests {
                     let initial_count = alice_central.context.count_entities().await;
 
                     // export Alice group info
-                    let group_info = alice_central.context.get_group_info(&id).await;
+                    let group_info = alice_central.get_group_info(&id).await;
 
                     // Bob tries to join Alice's group
                     bob_central
@@ -915,7 +897,7 @@ mod tests {
                         .new_conversation(&id, case.credential_type, case.cfg.clone())
                         .await
                         .unwrap();
-                    let gi = alice_central.context.get_group_info(&id).await;
+                    let gi = alice_central.get_group_info(&id).await;
 
                     // Bob to join a conversation but while the server processes its request he
                     // creates a conversation with the id of the conversation he's trying to join
@@ -950,7 +932,7 @@ mod tests {
                         .new_conversation(&id, case.credential_type, case.cfg.clone())
                         .await
                         .unwrap();
-                    let gi = alice_central.context.get_group_info(&id).await;
+                    let gi = alice_central.get_group_info(&id).await;
 
                     // While Bob tries to join a conversation via external commit he's also invited
                     // to a conversation with the same id through a Welcome message
@@ -960,7 +942,7 @@ mod tests {
                         .await
                         .unwrap();
 
-                    let bob = bob_central.context.rand_key_package(&case).await;
+                    let bob = bob_central.rand_key_package(&case).await;
                     let welcome = alice_central
                         .context
                         .add_members_to_conversation(&id, vec![bob])
@@ -1001,7 +983,6 @@ mod tests {
                         .unwrap();
 
                     let invalid_kp = bob_central
-                        .context
                         .new_keypackage(&case, Lifetime::new(expiration_time))
                         .await;
                     alice_central
@@ -1018,7 +999,7 @@ mod tests {
                         async_std::task::sleep(expiration_time - elapsed + core::time::Duration::from_secs(1)).await;
                     }
 
-                    let group_info = alice_central.context.get_group_info(&id).await;
+                    let group_info = alice_central.get_group_info(&id).await;
 
                     let join_ext_commit = guest_central
                         .context
@@ -1056,7 +1037,7 @@ mod tests {
                         .await
                         .unwrap();
 
-                    let gi = alice_central.context.get_group_info(&id).await;
+                    let gi = alice_central.get_group_info(&id).await;
                     bob_central
                         .context
                         .join_by_external_commit(gi, case.custom_cfg(), case.credential_type)
@@ -1067,7 +1048,7 @@ mod tests {
                         .merge_pending_group_from_external_commit(&id)
                         .await
                         .unwrap();
-                    let group = bob_central.context.get_conversation_unchecked(&id).await;
+                    let group = bob_central.get_conversation_unchecked(&id).await;
 
                     let capabilities = group.group.group_context_extensions().required_capabilities().unwrap();
 

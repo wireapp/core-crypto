@@ -186,13 +186,11 @@ mod tests {
                             .await
                             .unwrap();
                         alice_central
-                            .context
-                            .invite_all(&case, &id, [&mut bob_central.context])
+                            .invite_all(&case, &id, [&bob_central])
                             .await
                             .unwrap();
                         assert_eq!(
                             alice_central
-                                .context
                                 .get_conversation_unchecked(&id)
                                 .await
                                 .members()
@@ -201,12 +199,11 @@ mod tests {
                         );
                         alice_central
                             .context
-                            .remove_members_from_conversation(&id, &[bob_central.context.get_client_id().await])
+                            .remove_members_from_conversation(&id, &[bob_central.get_client_id().await])
                             .await
                             .unwrap();
                         assert_eq!(
                             alice_central
-                                .context
                                 .get_conversation_unchecked(&id)
                                 .await
                                 .members()
@@ -216,7 +213,6 @@ mod tests {
                         alice_central.context.commit_accepted(&id).await.unwrap();
                         assert_eq!(
                             alice_central
-                                .context
                                 .get_conversation_unchecked(&id)
                                 .await
                                 .members()
@@ -244,17 +240,17 @@ mod tests {
                             .await
                             .unwrap();
                         alice_central.context.new_update_proposal(&id).await.unwrap();
-                        let bob = bob_central.context.rand_key_package(&case).await;
+                        let bob = bob_central.rand_key_package(&case).await;
                         alice_central
                             .context
                             .add_members_to_conversation(&id, vec![bob])
                             .await
                             .unwrap();
-                        assert!(!alice_central.context.pending_proposals(&id).await.is_empty());
-                        assert!(alice_central.context.pending_commit(&id).await.is_some());
+                        assert!(!alice_central.pending_proposals(&id).await.is_empty());
+                        assert!(alice_central.pending_commit(&id).await.is_some());
                         alice_central.context.commit_accepted(&id).await.unwrap();
-                        assert!(alice_central.context.pending_commit(&id).await.is_none());
-                        assert!(alice_central.context.pending_proposals(&id).await.is_empty());
+                        assert!(alice_central.pending_commit(&id).await.is_none());
+                        assert!(alice_central.pending_proposals(&id).await.is_empty());
                     })
                 },
             )
@@ -311,13 +307,12 @@ mod tests {
                             .await
                             .unwrap();
                         alice_central
-                            .context
-                            .invite_all(&case, &id, [&mut bob_central.context])
+                            .invite_all(&case, &id, [&bob_central])
                             .await
                             .unwrap();
-                        assert!(alice_central.context.pending_proposals(&id).await.is_empty());
+                        assert!(alice_central.pending_proposals(&id).await.is_empty());
 
-                        let charlie_kp = charlie_central.context.get_one_key_package(&case).await;
+                        let charlie_kp = charlie_central.get_one_key_package(&case).await;
                         let add_ref = alice_central
                             .context
                             .new_add_proposal(&id, charlie_kp)
@@ -327,7 +322,7 @@ mod tests {
 
                         let remove_ref = alice_central
                             .context
-                            .new_remove_proposal(&id, bob_central.context.get_client_id().await)
+                            .new_remove_proposal(&id, bob_central.get_client_id().await)
                             .await
                             .unwrap()
                             .proposal_ref;
@@ -339,15 +334,14 @@ mod tests {
                             .unwrap()
                             .proposal_ref;
 
-                        assert_eq!(alice_central.context.pending_proposals(&id).await.len(), 3);
+                        assert_eq!(alice_central.pending_proposals(&id).await.len(), 3);
                         alice_central
                             .context
                             .clear_pending_proposal(&id, add_ref)
                             .await
                             .unwrap();
-                        assert_eq!(alice_central.context.pending_proposals(&id).await.len(), 2);
+                        assert_eq!(alice_central.pending_proposals(&id).await.len(), 2);
                         assert!(!alice_central
-                            .context
                             .pending_proposals(&id)
                             .await
                             .into_iter()
@@ -358,9 +352,8 @@ mod tests {
                             .clear_pending_proposal(&id, remove_ref)
                             .await
                             .unwrap();
-                        assert_eq!(alice_central.context.pending_proposals(&id).await.len(), 1);
+                        assert_eq!(alice_central.pending_proposals(&id).await.len(), 1);
                         assert!(!alice_central
-                            .context
                             .pending_proposals(&id)
                             .await
                             .into_iter()
@@ -371,9 +364,8 @@ mod tests {
                             .clear_pending_proposal(&id, update_ref)
                             .await
                             .unwrap();
-                        assert!(alice_central.context.pending_proposals(&id).await.is_empty());
+                        assert!(alice_central.pending_proposals(&id).await.is_empty());
                         assert!(!alice_central
-                            .context
                             .pending_proposals(&id)
                             .await
                             .into_iter()
@@ -408,7 +400,7 @@ mod tests {
                         .context.new_conversation(&id, case.credential_type, case.cfg.clone())
                         .await
                         .unwrap();
-                    assert!(alice_central.context.pending_proposals(&id).await.is_empty());
+                    assert!(alice_central.pending_proposals(&id).await.is_empty());
                     let any_ref = MlsProposalRef::from(vec![0; case.ciphersuite().hash_length()]);
                     let clear = alice_central.context.clear_pending_proposal(&id, any_ref.clone()).await;
                     assert!(matches!(clear.unwrap_err(), CryptoError::PendingProposalNotFound(prop_ref) if prop_ref == any_ref))
@@ -427,15 +419,15 @@ mod tests {
                         .new_conversation(&id, case.credential_type, case.cfg.clone())
                         .await
                         .unwrap();
-                    assert!(cc.context.pending_proposals(&id).await.is_empty());
+                    assert!(cc.pending_proposals(&id).await.is_empty());
 
                     let init = cc.context.count_entities().await;
 
                     let proposal_ref = cc.context.new_update_proposal(&id).await.unwrap().proposal_ref;
-                    assert_eq!(cc.context.pending_proposals(&id).await.len(), 1);
+                    assert_eq!(cc.pending_proposals(&id).await.len(), 1);
 
                     cc.context.clear_pending_proposal(&id, proposal_ref).await.unwrap();
-                    assert!(cc.context.pending_proposals(&id).await.is_empty());
+                    assert!(cc.pending_proposals(&id).await.is_empty());
 
                     // This whole flow should be idempotent.
                     // Here we verify that we are indeed deleting the `EncryptionKeyPair` created
@@ -462,12 +454,12 @@ mod tests {
                         .new_conversation(&id, case.credential_type, case.cfg.clone())
                         .await
                         .unwrap();
-                    assert!(alice_central.context.pending_commit(&id).await.is_none());
+                    assert!(alice_central.pending_commit(&id).await.is_none());
 
                     alice_central.context.update_keying_material(&id).await.unwrap();
-                    assert!(alice_central.context.pending_commit(&id).await.is_some());
+                    assert!(alice_central.pending_commit(&id).await.is_some());
                     alice_central.context.clear_pending_commit(&id).await.unwrap();
-                    assert!(alice_central.context.pending_commit(&id).await.is_none());
+                    assert!(alice_central.pending_commit(&id).await.is_none());
                 })
             })
             .await
@@ -497,7 +489,7 @@ mod tests {
                         .new_conversation(&id, case.credential_type, case.cfg.clone())
                         .await
                         .unwrap();
-                    assert!(alice_central.context.pending_commit(&id).await.is_none());
+                    assert!(alice_central.pending_commit(&id).await.is_none());
                     let clear = alice_central.context.clear_pending_commit(&id).await;
                     assert!(matches!(clear.unwrap_err(), CryptoError::PendingCommitNotFound))
                 })
@@ -515,15 +507,15 @@ mod tests {
                         .new_conversation(&id, case.credential_type, case.cfg.clone())
                         .await
                         .unwrap();
-                    assert!(cc.context.pending_commit(&id).await.is_none());
+                    assert!(cc.pending_commit(&id).await.is_none());
 
                     let init = cc.context.count_entities().await;
 
                     cc.context.update_keying_material(&id).await.unwrap();
-                    assert!(cc.context.pending_commit(&id).await.is_some());
+                    assert!(cc.pending_commit(&id).await.is_some());
 
                     cc.context.clear_pending_commit(&id).await.unwrap();
-                    assert!(cc.context.pending_commit(&id).await.is_none());
+                    assert!(cc.pending_commit(&id).await.is_none());
 
                     // This whole flow should be idempotent.
                     // Here we verify that we are indeed deleting the `EncryptionKeyPair` created
