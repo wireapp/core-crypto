@@ -753,6 +753,10 @@ impl E2eTest {
         self.display_token("OAuth Access token", access_token, None, &dex_pk);
 
         if let Some(refresh_token) = oauth_token_response.refresh_token() {
+            // Note that this refresh token will always be shown as having an invalid signature
+            // because Keycloak generates a HS512 refresh token, which we can't verify due to the
+            // fact that verification requires possession of a secret key that only Keycloak has
+            // access to.
             self.display_token("OAuth Refresh token", refresh_token.secret(), None, &dex_pk);
             self.refresh_token = Some(refresh_token.clone());
         }
