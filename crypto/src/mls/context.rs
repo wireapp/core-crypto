@@ -3,8 +3,7 @@
 
 use std::{ops::Deref, sync::Arc};
 
-use async_lock::{MutexGuardArc, RwLock, RwLockReadGuardArc, RwLockWriteGuardArc};
-use core_crypto_keystore::KeystoreTransaction;
+use async_lock::{RwLock, RwLockReadGuardArc, RwLockWriteGuardArc};
 use mls_crypto_provider::TransactionalCryptoProvider;
 
 use crate::{
@@ -24,7 +23,6 @@ use super::MlsCentral;
 #[derive(Debug, Clone)]
 pub struct CentralContext {
     state: Arc<RwLock<ContextState>>,
-    _lock_guard: Arc<MutexGuardArc<()>>,
 }
 
 /// Due to uniffi's design, we can't force the context to be dropped after the transaction is
@@ -33,7 +31,7 @@ pub struct CentralContext {
 #[derive(Debug, Clone)]
 enum ContextState {
     Valid {
-        transaction: TransactionalCryptoProvider,
+        provider: TransactionalCryptoProvider,
         callbacks: Arc<RwLock<Option<std::sync::Arc<dyn CoreCryptoCallbacks + 'static>>>>,
         mls_client: Arc<RwLock<Option<Client>>>,
         mls_groups: Arc<RwLock<GroupStore<MlsConversation>>>,
@@ -52,22 +50,20 @@ impl MlsCentral {
 
 impl CentralContext {
     async fn new(central: &MlsCentral) -> CryptoResult<Self> {
-        let transaction = central.mls_backend.new_transaction().await?;
+        central.mls_backend.new_transaction().await?;
         let mls_groups = Arc::new(RwLock::new(Default::default()));
         let callbacks = central.callbacks.clone();
         let mls_client = central.mls_client.clone();
-        let lock_guard = Arc::new(central.transaction_lock.lock_arc().await);
         Ok(Self {
             state: Arc::new(
                 ContextState::Valid {
                     mls_client,
                     callbacks,
-                    transaction,
+                    provider: central.mls_backend.clone(),
                     mls_groups,
                 }
                 .into(),
             ),
-            _lock_guard: lock_guard,
         })
     }
 
@@ -93,30 +89,25 @@ impl CentralContext {
             ContextState::Invalid => Err(CryptoError::InvalidContext),
         }
     }
-    
+
     #[cfg(test)]
-    pub(crate) async fn set_callbacks(&self, callbacks: Option<Arc<dyn CoreCryptoCallbacks + 'static>>) -> CryptoResult<()> {
+    pub(crate) async fn set_callbacks(
+        &self,
+        callbacks: Option<Arc<dyn CoreCryptoCallbacks + 'static>>,
+    ) -> CryptoResult<()> {
         match self.state.read().await.deref() {
-            ContextState::Valid { 
-                callbacks: cbs, .. } => {
+            ContextState::Valid { callbacks: cbs, .. } => {
                 *cbs.write_arc().await = callbacks;
                 Ok(())
-            },
+            }
             ContextState::Invalid => Err(CryptoError::InvalidContext),
         }
     }
 
-    /// Creates a read guard on the internal mls provider for the current transaction
+    /// Clones all references that the [MlsCryptoProvider] comprises. 
     pub async fn mls_provider(&self) -> CryptoResult<TransactionalCryptoProvider> {
         match self.state.read().await.deref() {
-            ContextState::Valid { transaction, .. } => Ok(transaction.clone()),
-            ContextState::Invalid => Err(CryptoError::InvalidContext),
-        }
-    }
-
-    pub(crate) async fn transaction(&self) -> CryptoResult<KeystoreTransaction> {
-        match self.state.read().await.deref() {
-            ContextState::Valid { transaction, .. } => Ok(transaction.transaction()),
+            ContextState::Valid { provider, .. } => Ok(provider.clone()),
             ContextState::Invalid => Err(CryptoError::InvalidContext),
         }
     }
@@ -134,8 +125,8 @@ impl CentralContext {
     pub async fn finish(&self) -> CryptoResult<()> {
         let mut guard = self.state.write().await;
         match guard.deref() {
-            ContextState::Valid { transaction, .. } => {
-                transaction.transaction().commit().await?;
+            ContextState::Valid { provider, .. } => {
+                provider.keystore().commit_transaction().await?;
             }
             ContextState::Invalid => return Err(CryptoError::InvalidContext),
         }
