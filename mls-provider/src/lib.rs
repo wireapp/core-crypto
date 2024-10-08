@@ -22,7 +22,6 @@ mod crypto_provider;
 mod error;
 mod pki;
 
-use core_crypto_keystore::KeystoreTransaction;
 pub use error::{MlsProviderError, MlsProviderResult};
 
 pub use crypto_provider::RustCrypto;

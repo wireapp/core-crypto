@@ -267,7 +267,7 @@ impl CentralContext {
             .mls_groups()
             .await
             .unwrap()
-            .get_fetch(conv_id, &self.transaction().await.unwrap(), None)
+            .get_fetch(conv_id, &self.keystore().await.unwrap(), None)
             .await
             .unwrap()
             .unwrap()
@@ -287,7 +287,7 @@ impl CentralContext {
         self.mls_groups()
             .await
             .unwrap()
-            .get_fetch(conv_id, &self.transaction().await.unwrap(), None)
+            .get_fetch(conv_id, &self.keystore().await.unwrap(), None)
             .await
             .unwrap()
             .unwrap()
@@ -305,7 +305,7 @@ impl CentralContext {
         self.mls_groups()
             .await
             .unwrap()
-            .get_fetch(conv_id, &self.transaction().await.unwrap(), None)
+            .get_fetch(conv_id, &self.keystore().await.unwrap(), None)
             .await
             .unwrap()
             .unwrap()
@@ -330,7 +330,7 @@ impl CentralContext {
     }
 
     pub async fn get_conversation_unchecked(&self, conv_id: &ConversationId) -> MlsConversation {
-        GroupStore::fetch_from_keystore(conv_id, &self.transaction().await.unwrap(), None)
+        GroupStore::fetch_from_keystore(conv_id, &self.keystore().await.unwrap(), None)
             .await
             .unwrap()
             .unwrap()
@@ -353,13 +353,13 @@ impl CentralContext {
         let mut client = self.mls_client_mut().await.unwrap();
         let client = client.as_mut().unwrap();
         let backend = &self.mls_provider().await.unwrap();
-        let transaction = &self.transaction().await.unwrap();
+        let transaction = &self.keystore().await.unwrap();
 
         match case.credential_type {
             MlsCredentialType::Basic => {
                 let cb = Client::new_basic_credential_bundle(client.id(), case.signature_scheme(), backend).unwrap();
                 client
-                    .save_identity(transaction, None, case.signature_scheme(), cb)
+                    .save_identity(&backend.keystore(), None, case.signature_scheme(), cb)
                     .await
                     .unwrap()
             }
@@ -417,7 +417,7 @@ impl CentralContext {
     }
 
     pub async fn find_signature_keypair_from_keystore(&self, id: &[u8]) -> Option<MlsSignatureKeyPair> {
-        self.transaction()
+        self.keystore()
             .await
             .unwrap()
             .find::<MlsSignatureKeyPair>(id)
@@ -426,7 +426,7 @@ impl CentralContext {
     }
 
     pub async fn find_hpke_private_key_from_keystore(&self, skp: &HpkePublicKey) -> Option<MlsHpkePrivateKey> {
-        self.transaction()
+        self.keystore()
             .await
             .unwrap()
             .find::<MlsHpkePrivateKey>(&skp.tls_serialize_detached().unwrap())
@@ -436,7 +436,7 @@ impl CentralContext {
 
     pub async fn find_credential_from_keystore(&self, cb: &CredentialBundle) -> Option<MlsCredential> {
         let credential = cb.credential.tls_serialize_detached().unwrap();
-        self.transaction()
+        self.keystore()
             .await
             .unwrap()
             .find_all::<MlsCredential>(EntityFindParams::default())
@@ -447,7 +447,7 @@ impl CentralContext {
     }
 
     pub async fn count_hpke_private_key(&self) -> usize {
-        self.transaction()
+        self.keystore()
             .await
             .unwrap()
             .count::<MlsHpkePrivateKey>()
@@ -456,7 +456,7 @@ impl CentralContext {
     }
 
     pub async fn count_encryption_keypairs(&self) -> usize {
-        self.transaction()
+        self.keystore()
             .await
             .unwrap()
             .count::<MlsEncryptionKeyPair>()
@@ -465,7 +465,7 @@ impl CentralContext {
     }
 
     pub async fn count_credentials_in_keystore(&self) -> usize {
-        self.transaction()
+        self.keystore()
             .await
             .unwrap()
             .count::<MlsCredential>()
@@ -492,7 +492,7 @@ impl CentralContext {
             signer,
         );
         client
-            .save_new_x509_credential_bundle(&self.transaction().await.unwrap(), case.signature_scheme(), new_cert)
+            .save_new_x509_credential_bundle(&self.keystore().await.unwrap(), case.signature_scheme(), new_cert)
             .await
             .unwrap()
     }
@@ -674,7 +674,7 @@ impl Client {
             .find_most_recent_credential_bundle(sc, MlsCredentialType::X509)
             .is_none();
         if existing_cb {
-            self.save_new_x509_credential_bundle(&backend.transaction(), sc, cb)
+            self.save_new_x509_credential_bundle(&backend.keystore(), sc, cb)
                 .await
                 .unwrap();
         }

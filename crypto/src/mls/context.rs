@@ -4,7 +4,7 @@
 use std::{ops::Deref, sync::Arc};
 
 use async_lock::{RwLock, RwLockReadGuardArc, RwLockWriteGuardArc};
-use mls_crypto_provider::TransactionalCryptoProvider;
+use mls_crypto_provider::{CryptoKeystore, TransactionalCryptoProvider};
 
 use crate::{
     group_store::GroupStore,
@@ -106,6 +106,13 @@ impl CentralContext {
     pub async fn mls_provider(&self) -> CryptoResult<TransactionalCryptoProvider> {
         match self.state.read().await.deref() {
             ContextState::Valid { provider: transaction, .. } => Ok(transaction.clone()),
+            ContextState::Invalid => Err(CryptoError::InvalidContext),
+        }
+    }
+
+    pub(crate) async fn keystore(&self) -> CryptoResult<CryptoKeystore> {
+        match self.state.read().await.deref() {
+            ContextState::Valid { provider, .. } => Ok(provider.keystore()),
             ContextState::Invalid => Err(CryptoError::InvalidContext),
         }
     }

@@ -41,7 +41,7 @@ impl MlsConversation {
 
         let encrypted = encrypted.to_bytes().map_err(MlsError::from)?;
 
-        self.persist_group_when_changed(&backend.transaction(), false).await?;
+        self.persist_group_when_changed(&backend.keystore(), false).await?;
         Ok(encrypted)
     }
 }

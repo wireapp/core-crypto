@@ -62,7 +62,7 @@ impl CentralContext {
     #[cfg_attr(not(test), tracing::instrument(err, skip_all))]
     pub async fn e2ei_register_acme_ca(&self, trust_anchor_pem: String) -> CryptoResult<()> {
         {
-            if self.transaction().await?.find_unique::<E2eiAcmeCA>().await.is_ok() {
+            if self.mls_provider().await?.keystore().find_unique::<E2eiAcmeCA>().await.is_ok() {
                 return Err(CryptoError::E2eiError(
                     super::E2eIdentityError::TrustAnchorAlreadyRegistered,
                 ));
@@ -89,7 +89,7 @@ impl CentralContext {
         // Save DER repr in keystore
         let cert_der = PkiEnvironment::encode_cert_to_der(&root_cert).map_err(|e| CryptoError::E2eiError(e.into()))?;
         let acme_ca = E2eiAcmeCA { content: cert_der };
-        self.transaction().await?.save(acme_ca).await?;
+        self.mls_provider().await?.keystore().save(acme_ca).await?;
 
         // To do that, tear down and recreate the pki env
         self.init_pki_env().await?;
@@ -99,7 +99,7 @@ impl CentralContext {
 
     #[cfg_attr(not(test), tracing::instrument(err, skip_all))]
     pub(crate) async fn init_pki_env(&self) -> CryptoResult<()> {
-        if let Some(pki_env) = restore_pki_env(&self.transaction().await?).await? {
+        if let Some(pki_env) = restore_pki_env(&self.mls_provider().await?.keystore()).await? {
             let provider = self.mls_provider().await?;
             provider.authentication_service().update_env(pki_env).await?;
         }
@@ -136,8 +136,8 @@ impl CentralContext {
         inter_ca: x509_cert::Certificate,
     ) -> CryptoResult<NewCrlDistributionPoint> {
         // TrustAnchor must have been registered at this point
-        let transaction = self.transaction().await?;
-        let trust_anchor = transaction.find_unique::<E2eiAcmeCA>().await?;
+        let keystore = self.keystore().await?;
+        let trust_anchor = keystore.find_unique::<E2eiAcmeCA>().await?;
         let trust_anchor = x509_cert::Certificate::from_der(&trust_anchor.content)?;
 
         // the `/federation` endpoint from smallstep repeats the root CA
@@ -173,7 +173,7 @@ impl CentralContext {
             content: cert_der,
             ski_aki_pair,
         };
-        transaction.save(intermediate_ca).await?;
+        keystore.save(intermediate_ca).await?;
 
         self.init_pki_env().await?;
 
@@ -207,7 +207,7 @@ impl CentralContext {
 
         let expiration = extract_expiration_from_crl(&crl);
 
-        let ks = self.transaction().await?;
+        let ks = self.keystore().await?;
 
         let dirty = if let Some(existing_crl) = ks.find::<E2eiCrl>(crl_dp.as_bytes()).await.ok().flatten() {
             let old_crl = PkiEnvironment::decode_der_crl(existing_crl.content.clone())
