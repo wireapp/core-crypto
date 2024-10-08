@@ -139,9 +139,9 @@ async fn execute_save(tx: &TransactionWrapper<'_>, entity: &Entity) -> CryptoKey
         Entity::E2eiAcmeCA(e2ei_acme_ca) => e2ei_acme_ca.replace(tx).await,
         Entity::E2eiIntermediateCert(e2ei_intermediate_cert) => e2ei_intermediate_cert.save(tx).await,
         Entity::E2eiCrl(e2ei_crl) => e2ei_crl.save(tx).await,
-        Entity::ProteusSession(_record) => todo!(),
-        Entity::ProteusIdentity(_record) => todo!(),
-        Entity::ProteusPrekey(_record) => todo!(),
+        Entity::ProteusSession(record) => record.save(tx).await,
+        Entity::ProteusIdentity(record) => record.save(tx).await,
+        Entity::ProteusPrekey(record) => record.save(tx).await,
     }
 }
 
@@ -162,9 +162,9 @@ async fn execute_delete(tx: &TransactionWrapper<'_>, entity_id: &EntityId) -> Cr
         id @ EntityId::E2eiAcmeCA(_) => E2eiAcmeCA::delete(tx, id.as_id()).await,
         id @ EntityId::E2eiIntermediateCert(_) => E2eiIntermediateCert::delete(tx, id.as_id()).await,
         id @ EntityId::E2eiCrl(_) => E2eiCrl::delete(tx, id.as_id()).await,
-        id @ EntityId::ProteusSession(_) => todo!(),
-        id @ EntityId::ProteusIdentity(_) => todo!(),
-        id @ EntityId::ProteusPrekey(_) => todo!(),
+        id @ EntityId::ProteusSession(_) => ProteusSession::delete(tx, id.as_id()).await,
+        id @ EntityId::ProteusIdentity(_) => ProteusIdentity::delete(tx, id.as_id()).await,
+        id @ EntityId::ProteusPrekey(_) => ProteusPrekey::delete(tx, id.as_id()).await,
     }
 }
 
