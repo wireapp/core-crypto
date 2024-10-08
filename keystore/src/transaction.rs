@@ -1,7 +1,6 @@
 use crate::entities::{EntityBase, ProteusIdentity, ProteusPrekey, ProteusSession, UniqueEntity};
 use crate::{
-    connection::{Connection, DatabaseConnection, FetchFromDatabase, KeystoreDatabaseConnection, TransactionWrapper}
-    ,
+    connection::{Connection, DatabaseConnection, FetchFromDatabase, KeystoreDatabaseConnection, TransactionWrapper},
     entities::{
         E2eiAcmeCA, E2eiCrl, E2eiEnrollment, E2eiIntermediateCert, E2eiRefreshToken, EntityFindParams,
         EntityTransactionExt, MlsCredential, MlsCredentialExt, MlsEncryptionKeyPair, MlsEpochEncryptionKeyPair,
@@ -171,7 +170,7 @@ async fn execute_delete(tx: &TransactionWrapper<'_>, entity_id: &EntityId) -> Cr
 /// This represents a transaction, where all operations will be done in memory and committed at the
 /// end
 #[derive(Debug, Clone)]
-pub struct KeystoreTransaction {
+pub(crate) struct KeystoreTransaction {
     /// Just needed to create the actual db transaction when committing.
     db: Connection,
     /// In-memory cache
@@ -181,6 +180,87 @@ pub struct KeystoreTransaction {
 }
 
 impl KeystoreTransaction {
+    pub async fn new(db: Connection) -> CryptoKeystoreResult<Self> {
+        Ok(Self {
+            db,
+            // We're not using a proper key because we're not using the DB for security (memory is unencrypted).
+            // We're using it for its API.
+            cache: Connection::open_in_memory_with_key("core_crypto_transaction_cache", "").await?,
+            deleted: Arc::new(Default::default()),
+            deleted_credentials: Arc::new(Default::default()),
+        })
+    }
+
+    pub(crate) async fn save<
+        E: crate::entities::Entity<ConnectionType=KeystoreDatabaseConnection> + Sync + EntityTransactionExt,
+    >(
+        &self,
+        entity: E,
+    ) -> CryptoKeystoreResult<()> {
+        let mut conn = self.cache.borrow_conn().await?;
+        let transaction = conn.new_transaction().await?;
+        entity.save(&transaction).await?;
+        transaction.commit_tx().await
+    }
+
+    pub(crate) async fn save_mut<
+        E: crate::entities::Entity<ConnectionType=KeystoreDatabaseConnection> + EntityTransactionExt + Sync,
+    >(
+        &self,
+        mut entity: E,
+    ) -> CryptoKeystoreResult<E> {
+        entity.pre_save().await?;
+        let mut conn = self.cache.borrow_conn().await?;
+        let transaction = conn.new_transaction().await?;
+        entity.save(&transaction).await?;
+        transaction.commit_tx().await?;
+        Ok(entity)
+    }
+
+    pub(crate) async fn remove<
+        E: crate::entities::Entity<ConnectionType=KeystoreDatabaseConnection> + EntityTransactionExt,
+        S: AsRef<[u8]>,
+    >(
+        &self,
+        id: S,
+    ) -> CryptoKeystoreResult<()> {
+        let mut conn = self.cache.borrow_conn().await?;
+        let transaction = conn.new_transaction().await?;
+        E::delete(&transaction, id.as_ref().into()).await?;
+        transaction.commit_tx().await?;
+        let mut deleted_list = self.deleted.write().await;
+        deleted_list.push(EntityId::from_collection_name(E::COLLECTION_NAME, id.as_ref())?);
+        Ok(())
+    }
+
+    pub(crate) async fn child_groups<
+        E: crate::entities::Entity<ConnectionType=KeystoreDatabaseConnection>
+        + crate::entities::PersistedMlsGroupExt
+        + Sync,
+    >(
+        &self,
+        entity: E,
+        persisted_records: Vec<E>,
+    ) -> CryptoKeystoreResult<Vec<E>> {
+        let mut conn = self.cache.borrow_conn().await?;
+        let cached_records = entity.child_groups(conn.deref_mut()).await?;
+        Ok(Self::merge_records(
+            cached_records,
+            persisted_records,
+            EntityFindParams::default(),
+        ))
+    }
+
+    pub(crate) async fn cred_delete_by_credential(&self, cred: Vec<u8>) -> CryptoKeystoreResult<()> {
+        let mut conn = self.cache.borrow_conn().await?;
+        let transaction = conn.new_transaction().await?;
+        MlsCredential::delete_by_credential(&transaction, cred.clone()).await?;
+        transaction.commit_tx().await?;
+        let mut deleted_list = self.deleted_credentials.write().await;
+        deleted_list.push(cred);
+        Ok(())
+    }
+    
     pub(crate) async fn find<E>(&self, id: &[u8]) -> CryptoKeystoreResult<Option<Option<E>>>
     where
         E: crate::entities::Entity<ConnectionType = KeystoreDatabaseConnection>,
@@ -304,86 +384,6 @@ macro_rules! commit_transaction {
 }
 
 impl KeystoreTransaction {
-    pub async fn new(db: Connection) -> CryptoKeystoreResult<Self> {
-        Ok(Self {
-            db,
-            // We're not using a proper key because we're not using the DB for security (memory is unencrypted).
-            // We're using it for its API.
-            cache: Connection::open_in_memory_with_key("core_crypto_transaction_cache", "").await?,
-            deleted: Arc::new(Default::default()),
-            deleted_credentials: Arc::new(Default::default()),
-        })
-    }
-
-    pub async fn save<
-        E: crate::entities::Entity<ConnectionType = KeystoreDatabaseConnection> + Sync + EntityTransactionExt,
-    >(
-        &self,
-        entity: E,
-    ) -> CryptoKeystoreResult<()> {
-        let mut conn = self.cache.borrow_conn().await?;
-        let transaction = conn.new_transaction().await?;
-        entity.save(&transaction).await?;
-        transaction.commit_tx().await
-    }
-
-    pub async fn save_mut<
-        E: crate::entities::Entity<ConnectionType = KeystoreDatabaseConnection> + EntityTransactionExt + Sync,
-    >(
-        &self,
-        mut entity: E,
-    ) -> CryptoKeystoreResult<E> {
-        entity.pre_save().await?;
-        let mut conn = self.cache.borrow_conn().await?;
-        let transaction = conn.new_transaction().await?;
-        entity.save(&transaction).await?;
-        transaction.commit_tx().await?;
-        Ok(entity)
-    }
-
-    pub async fn remove<
-        E: crate::entities::Entity<ConnectionType = KeystoreDatabaseConnection> + EntityTransactionExt,
-        S: AsRef<[u8]>,
-    >(
-        &self,
-        id: S,
-    ) -> CryptoKeystoreResult<()> {
-        let mut conn = self.cache.borrow_conn().await?;
-        let transaction = conn.new_transaction().await?;
-        E::delete(&transaction, id.as_ref().into()).await?;
-        transaction.commit_tx().await?;
-        let mut deleted_list = self.deleted.write().await;
-        deleted_list.push(EntityId::from_collection_name(E::COLLECTION_NAME, id.as_ref())?);
-        Ok(())
-    }
-
-    pub async fn child_groups<
-        E: crate::entities::Entity<ConnectionType = KeystoreDatabaseConnection>
-            + crate::entities::PersistedMlsGroupExt
-            + Sync,
-    >(
-        &self,
-        entity: E,
-        persisted_records: Vec<E>,
-    ) -> CryptoKeystoreResult<Vec<E>> {
-        let mut conn = self.cache.borrow_conn().await?;
-        let cached_records = entity.child_groups(conn.deref_mut()).await?;
-        Ok(Self::merge_records(
-            cached_records,
-            persisted_records,
-            EntityFindParams::default(),
-        ))
-    }
-
-    pub async fn cred_delete_by_credential(&self, cred: Vec<u8>) -> CryptoKeystoreResult<()> {
-        let mut conn = self.cache.borrow_conn().await?;
-        let transaction = conn.new_transaction().await?;
-        MlsCredential::delete_by_credential(&transaction, cred.clone()).await?;
-        transaction.commit_tx().await?;
-        let mut deleted_list = self.deleted_credentials.write().await;
-        deleted_list.push(cred);
-        Ok(())
-    }
 
     /// Persists all the operations in the database. It will effectively open a transaction
     /// internally, perform all the buffered operations and commit.
@@ -391,7 +391,7 @@ impl KeystoreTransaction {
     /// TODO: currently only MLS is supported. Implement for proteus. For that, remove the default
     /// save, insert and delete functions in the `EntityBase` trait
     /// FIXME: implement a transaction wrapper for the wasm platform to await on the transaction
-    pub async fn commit(&self) -> Result<(), CryptoKeystoreError> {
+    pub(crate) async fn commit(&self) -> Result<(), CryptoKeystoreError> {
         commit_transaction!(
             self,
             [
