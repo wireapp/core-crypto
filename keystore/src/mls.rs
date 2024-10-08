@@ -134,7 +134,7 @@ pub trait CryptoKeystoreMls: Sized {
 
 #[cfg_attr(target_family = "wasm", async_trait::async_trait(?Send))]
 #[cfg_attr(not(target_family = "wasm"), async_trait::async_trait)]
-impl CryptoKeystoreMls for crate::KeystoreTransaction {
+impl CryptoKeystoreMls for crate::Connection {
     async fn mls_fetch_keypackages<V: MlsEntity>(&self, count: u32) -> CryptoKeystoreResult<Vec<V>> {
         cfg_if::cfg_if! {
             if #[cfg(not(target_family = "wasm"))] {
@@ -157,6 +157,10 @@ impl CryptoKeystoreMls for crate::KeystoreTransaction {
             .collect())
     }
 
+    async fn mls_group_exists(&self, group_id: &[u8]) -> bool {
+        matches!(self.find::<PersistedMlsGroup>(group_id).await, Ok(Some(_)))
+    }
+
     async fn mls_group_persist(
         &self,
         group_id: &[u8],
@@ -173,16 +177,6 @@ impl CryptoKeystoreMls for crate::KeystoreTransaction {
         Ok(())
     }
 
-    async fn mls_group_exists(&self, group_id: &[u8]) -> bool {
-        matches!(self.find::<PersistedMlsGroup>(group_id).await, Ok(Some(_)))
-    }
-
-    async fn mls_group_delete(&self, group_id: &[u8]) -> CryptoKeystoreResult<()> {
-        self.remove::<PersistedMlsGroup, _>(group_id).await?;
-
-        Ok(())
-    }
-
     async fn mls_groups_restore(
         &self,
     ) -> CryptoKeystoreResult<std::collections::HashMap<Vec<u8>, (Option<Vec<u8>>, Vec<u8>)>> {
@@ -191,6 +185,12 @@ impl CryptoKeystoreMls for crate::KeystoreTransaction {
             .into_iter()
             .map(|group: PersistedMlsGroup| (group.id.clone(), (group.parent_id.clone(), group.state.clone())))
             .collect())
+    }
+
+    async fn mls_group_delete(&self, group_id: &[u8]) -> CryptoKeystoreResult<()> {
+        self.remove::<PersistedMlsGroup, _>(group_id).await?;
+
+        Ok(())
     }
 
     async fn mls_pending_groups_save(
@@ -255,7 +255,6 @@ pub fn ser<T: MlsEntity>(value: &T) -> Result<Vec<u8>, CryptoKeystoreError> {
     Ok(postcard::to_stdvec(value)?)
 }
 
-// FIXME: CHECK IF THIS IS REALLY NEEDED
 #[cfg_attr(target_family = "wasm", async_trait::async_trait(?Send))]
 #[cfg_attr(not(target_family = "wasm"), async_trait::async_trait)]
 impl openmls_traits::key_store::OpenMlsKeyStore for crate::connection::Connection {
