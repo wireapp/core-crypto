@@ -29,6 +29,7 @@ pub mod platform {
     }
 }
 
+use std::ops::DerefMut;
 pub use self::platform::*;
 use crate::{
     entities::{Entity, EntityFindParams, StringEntityId},
@@ -94,6 +95,7 @@ pub trait DatabaseConnection: DatabaseConnectionRequirements {
 #[derive(Debug, Clone)]
 pub struct Connection {
     pub(crate) conn: Arc<Mutex<KeystoreDatabaseConnection>>,
+    pub(crate) transaction: Arc<Mutex<Option<KeystoreTransaction>>>,
 }
 
 /// Interface to fetch from the database either from the connection directly or through a
@@ -133,7 +135,7 @@ impl Connection {
             .into();
         #[allow(clippy::arc_with_non_send_sync)] // see https://github.com/rustwasm/wasm-bindgen/pull/955
         let conn = Arc::new(conn);
-        Ok(Self { conn })
+        Ok(Self { conn, transaction: Default::default() })
     }
 
     pub async fn open_in_memory_with_key(name: impl AsRef<str>, key: impl AsRef<str>) -> CryptoKeystoreResult<Self> {
@@ -142,7 +144,7 @@ impl Connection {
             .into();
         #[allow(clippy::arc_with_non_send_sync)] // see https://github.com/rustwasm/wasm-bindgen/pull/955
         let conn = Arc::new(conn);
-        Ok(Self { conn })
+        Ok(Self { conn, transaction: Default::default() })
     }
 
     pub async fn borrow_conn(&self) -> CryptoKeystoreResult<MutexGuard<'_, KeystoreDatabaseConnection>> {
@@ -192,8 +194,31 @@ impl Connection {
         Ok(())
     }
 
-    pub async fn new_transaction(&self) -> CryptoKeystoreResult<KeystoreTransaction> {
-        KeystoreTransaction::new(self.clone()).await
+    pub async fn new_transaction(&self) -> CryptoKeystoreResult<()> {
+        let mut transaction = self.transaction.lock().await;
+        if transaction.is_some() {
+            return Err(CryptoKeystoreError::TransactionInProgress);
+        }
+        *transaction = Some(KeystoreTransaction::new().await?);
+        Ok(())
+    }
+
+    pub async fn child_groups<
+        E: Entity<ConnectionType = KeystoreDatabaseConnection>
+        + crate::entities::PersistedMlsGroupExt
+        + Sync,
+    >(
+        &self,
+        entity: E,
+    ) -> CryptoKeystoreResult<Vec<E>> {
+        let mut conn = self.conn.lock().await;
+        let persisted_records = entity.child_groups(conn.deref_mut()).await?;
+
+        let transaction_guard = self.transaction.lock().await;
+        let Some(transaction) = transaction_guard.as_ref() else {
+            return Ok(persisted_records);
+        };
+        transaction.child_groups(entity, persisted_records).await
     }
 }
 
@@ -204,11 +229,30 @@ impl FetchFromDatabase for Connection {
         &self,
         id: &[u8],
     ) -> CryptoKeystoreResult<Option<E>> {
+        // If a transaction is in progress... 
+        if let Some(transaction) = self.transaction.lock().await.as_ref() {
+            //... and it has information about this entity, ... 
+            if let Some(result) = transaction.find::<E>(id).await? {
+                // ... return that result
+                return Ok(result);
+            }
+        }
+        
+        // Otherwise get it from the database
         let mut conn = self.conn.lock().await;
         E::find_one(&mut conn, &id.into()).await
     }
 
     async fn find_unique<U: UniqueEntity>(&self) -> CryptoKeystoreResult<U> {
+        // If a transaction is in progress... 
+        if let Some(transaction) = self.transaction.lock().await.as_ref() {
+            //... and it has information about this entity, ... 
+            if let Some(result) = transaction.find_unique::<U>().await? {
+                // ... return that result
+                return Ok(result);
+            }
+        }
+        // Otherwise get it from the database
         let mut conn = self.conn.lock().await;
         U::find_unique(&mut conn).await
     }
@@ -218,7 +262,13 @@ impl FetchFromDatabase for Connection {
         params: EntityFindParams,
     ) -> CryptoKeystoreResult<Vec<E>> {
         let mut conn = self.conn.lock().await;
-        E::find_all(&mut conn, params).await
+        let persisted_records = E::find_all(&mut conn, params.clone()).await?;
+        
+        let transaction_guard = self.transaction.lock().await;
+        let Some(transaction) = transaction_guard.as_ref() else {
+            return Ok(persisted_records);
+        };
+        transaction.find_all(persisted_records, params).await
     }
 
     async fn find_many<E: Entity<ConnectionType = KeystoreDatabaseConnection>>(
@@ -227,10 +277,21 @@ impl FetchFromDatabase for Connection {
     ) -> CryptoKeystoreResult<Vec<E>> {
         let entity_ids: Vec<StringEntityId> = ids.iter().map(|id| id.as_slice().into()).collect();
         let mut conn = self.conn.lock().await;
-        E::find_many(&mut conn, &entity_ids).await
+        let persisted_records = E::find_many(&mut conn, &entity_ids).await?;
+
+        let transaction_guard = self.transaction.lock().await;
+        let Some(transaction) = transaction_guard.as_ref() else {
+            return Ok(persisted_records);
+        };
+        transaction.find_many(persisted_records, ids).await
     }
 
     async fn count<E: Entity<ConnectionType = KeystoreDatabaseConnection>>(&self) -> CryptoKeystoreResult<usize> {
+        if self.transaction.lock().await.is_some() {
+            // Unfortunately, we have to do this because of possible record id overlap 
+            // between cache and db.
+            return Ok(self.find_all::<E>(Default::default()).await?.len());
+        };
         let mut conn = self.conn.lock().await;
         E::count(&mut conn).await
     }
