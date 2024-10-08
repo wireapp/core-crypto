@@ -65,6 +65,8 @@ pub enum CryptoKeystoreError {
     MissingKeyInStore(#[from] MissingKeyErrorKind),
     #[error("The given key doesn't contain valid utf-8")]
     KeyReprError(#[from] std::str::Utf8Error),
+    #[error("Cannot perform this operation while a transaction is in progress.")]
+    TransactionInProgress,
     #[error(transparent)]
     TryFromSliceError(#[from] std::array::TryFromSliceError),
     #[error("One of the Keystore locks has been poisoned")]
