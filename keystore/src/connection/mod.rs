@@ -33,13 +33,13 @@ use std::ops::DerefMut;
 pub use self::platform::*;
 use crate::{
     entities::{Entity, EntityFindParams, StringEntityId},
-    KeystoreTransaction,
 };
 
 use crate::entities::{EntityTransactionExt, UniqueEntity};
 use crate::{CryptoKeystoreError, CryptoKeystoreResult};
 use async_lock::{Mutex, MutexGuard};
 use std::sync::Arc;
+use crate::transaction::KeystoreTransaction;
 
 /// Limit on the length of a blob to be stored in the database.
 ///
@@ -170,6 +170,16 @@ impl Connection {
             return Err(CryptoKeystoreError::TransactionInProgress);
         }
         *transaction = Some(KeystoreTransaction::new(self.clone()).await?);
+        Ok(())
+    }
+    
+    pub async fn commit_transaction(&self) -> CryptoKeystoreResult<()> {
+        let mut transaction_guard = self.transaction.lock().await;
+        let Some(transaction) = transaction_guard.as_ref() else {
+            return Err(CryptoKeystoreError::MutatingOperationWithoutTransaction);
+        };
+        transaction.commit().await?;
+        *transaction_guard = None;
         Ok(())
     }
 
