@@ -96,19 +96,7 @@ pub struct MlsCryptoProvider {
     key_store: CryptoKeystore,
     pki_env: PkiEnvironmentProvider,
 }
-
-#[derive(Debug, Clone)]
-pub struct TransactionalCryptoProvider {
-    crypto: RustCrypto,
-    tx: KeystoreTransaction,
-    pki_env: PkiEnvironmentProvider,
-}
-
-impl TransactionalCryptoProvider {
-    pub fn transaction(&self) -> KeystoreTransaction {
-        self.tx.clone()
-    }
-}
+pub type  TransactionalCryptoProvider = MlsCryptoProvider;
 
 impl MlsCryptoProvider {
     /// Initialize a CryptoProvider with a backend following the provided `config` (see: [MlsCryptoProviderConfiguration])
@@ -158,12 +146,8 @@ impl MlsCryptoProvider {
 
     /// Clones the references of the PkiEnvironment and the CryptoProvider into a transaction
     /// keystore to pass to openmls as the `OpenMlsCryptoProvider`
-    pub async fn new_transaction(&self) -> MlsProviderResult<TransactionalCryptoProvider> {
-        Ok(TransactionalCryptoProvider {
-            crypto: self.crypto.clone(),
-            tx: self.key_store.new_transaction().await?,
-            pki_env: self.pki_env.clone(),
-        })
+    pub async fn new_transaction(&self) -> MlsProviderResult<()> {
+        self.key_store.new_transaction().await.map_err(Into::into)
     }
 
     /// Replaces the PKI env currently in place
@@ -227,29 +211,6 @@ impl openmls_traits::OpenMlsCryptoProvider for MlsCryptoProvider {
 
     fn key_store(&self) -> &Self::KeyStoreProvider {
         &self.key_store
-    }
-
-    fn authentication_service(&self) -> &Self::AuthenticationServiceProvider {
-        &self.pki_env
-    }
-}
-
-impl openmls_traits::OpenMlsCryptoProvider for TransactionalCryptoProvider {
-    type CryptoProvider = RustCrypto;
-    type RandProvider = RustCrypto;
-    type KeyStoreProvider = KeystoreTransaction;
-    type AuthenticationServiceProvider = PkiEnvironmentProvider;
-
-    fn crypto(&self) -> &Self::CryptoProvider {
-        &self.crypto
-    }
-
-    fn rand(&self) -> &Self::RandProvider {
-        &self.crypto
-    }
-
-    fn key_store(&self) -> &Self::KeyStoreProvider {
-        &self.tx
     }
 
     fn authentication_service(&self) -> &Self::AuthenticationServiceProvider {
