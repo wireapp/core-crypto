@@ -67,10 +67,6 @@ pub mod dummy_entity {
         fn to_transaction_entity(self) -> crate::transaction::Entity {
             unimplemented!("Not implemented")
         }
-
-        async fn save(&self, _conn: &mut Self::ConnectionType) -> CryptoKeystoreResult<()> {
-            Ok(())
-        }
         async fn find_all(
             _conn: &mut Self::ConnectionType,
             _params: EntityFindParams,
@@ -96,9 +92,6 @@ pub mod dummy_entity {
         }
         async fn count(_conn: &mut Self::ConnectionType) -> CryptoKeystoreResult<usize> {
             Ok(0)
-        }
-        async fn delete(_conn: &mut Self::ConnectionType, _id: StringEntityId<'_>) -> CryptoKeystoreResult<()> {
-            Ok(())
         }
     }
 
