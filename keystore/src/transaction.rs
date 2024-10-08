@@ -1,20 +1,18 @@
 use crate::entities::{EntityBase, ProteusIdentity, ProteusPrekey, ProteusSession, UniqueEntity};
 use crate::{
-    connection::{Connection, DatabaseConnection, FetchFromDatabase, KeystoreDatabaseConnection, TransactionWrapper},
-    deser,
+    connection::{Connection, DatabaseConnection, FetchFromDatabase, KeystoreDatabaseConnection, TransactionWrapper}
+    ,
     entities::{
-        E2eiAcmeCA, E2eiCrl, E2eiEnrollment, E2eiIntermediateCert, E2eiRefreshToken, EntityFindParams, EntityTransactionExt,
-        MlsCredential, MlsCredentialExt, MlsEncryptionKeyPair, MlsEpochEncryptionKeyPair, MlsHpkePrivateKey,
-        MlsKeyPackage, MlsPendingMessage, MlsPskBundle, MlsSignatureKeyPair, PersistedMlsGroup,
+        E2eiAcmeCA, E2eiCrl, E2eiEnrollment, E2eiIntermediateCert, E2eiRefreshToken, EntityFindParams,
+        EntityTransactionExt, MlsCredential, MlsCredentialExt, MlsEncryptionKeyPair, MlsEpochEncryptionKeyPair,
+        MlsHpkePrivateKey, MlsKeyPackage, MlsPendingMessage, MlsPskBundle, MlsSignatureKeyPair, PersistedMlsGroup,
         PersistedMlsPendingGroup, StringEntityId,
     },
     CryptoKeystoreError, CryptoKeystoreResult,
 };
 use async_lock::RwLock;
 use itertools::Itertools;
-use openmls_basic_credential::SignatureKeyPair;
-use openmls_traits::key_store::OpenMlsKeyStore;
-use openmls_traits::key_store::{MlsEntity, MlsEntityId};
+use openmls_traits::key_store::MlsEntityId;
 use std::{ops::DerefMut, sync::Arc};
 
 #[derive(Debug)]
@@ -131,9 +129,7 @@ async fn execute_save(tx: &TransactionWrapper<'_>, entity: &Entity) -> CryptoKey
         Entity::KeyPackage(mls_key_package) => mls_key_package.save(tx).await,
         Entity::PskBundle(mls_psk_bundle) => mls_psk_bundle.save(tx).await,
         Entity::EncryptionKeyPair(mls_encryption_key_pair) => mls_encryption_key_pair.save(tx).await,
-        Entity::EpochEncryptionKeyPair(mls_epoch_encryption_key_pair) => {
-            mls_epoch_encryption_key_pair.save(tx).await
-        }
+        Entity::EpochEncryptionKeyPair(mls_epoch_encryption_key_pair) => mls_epoch_encryption_key_pair.save(tx).await,
         Entity::MlsCredential(mls_credential) => mls_credential.save(tx).await,
         Entity::PersistedMlsGroup(persisted_mls_group) => persisted_mls_group.save(tx).await,
         Entity::PersistedMlsPendingGroup(persisted_mls_pending_group) => persisted_mls_pending_group.save(tx).await,
@@ -176,7 +172,7 @@ async fn execute_delete(tx: &TransactionWrapper<'_>, entity_id: &EntityId) -> Cr
 /// end
 #[derive(Debug, Clone)]
 pub struct KeystoreTransaction {
-    /// Persistent storage
+    /// Just needed to create the actual db transaction when committing.
     db: Connection,
     /// In-memory cache
     cache: Connection,
@@ -184,73 +180,83 @@ pub struct KeystoreTransaction {
     deleted_credentials: Arc<RwLock<Vec<Vec<u8>>>>,
 }
 
-#[cfg_attr(target_family = "wasm", async_trait::async_trait(?Send))]
-#[cfg_attr(not(target_family = "wasm"), async_trait::async_trait)]
-impl FetchFromDatabase for KeystoreTransaction {
-    async fn find<E: crate::entities::Entity<ConnectionType = KeystoreDatabaseConnection>>(
-        &self,
-        id: &[u8],
-    ) -> CryptoKeystoreResult<Option<E>> {
+impl KeystoreTransaction {
+    pub(crate) async fn find<E>(&self, id: &[u8]) -> CryptoKeystoreResult<Option<Option<E>>>
+    where
+        E: crate::entities::Entity<ConnectionType = KeystoreDatabaseConnection>,
+    {
         let cache_result = self.cache.find(id).await?;
         if let Some(cache_result) = cache_result {
-            Ok(Some(cache_result))
+            Ok(Some(Some(cache_result)))
         } else {
             let deleted_list = self.deleted.read().await;
             if deleted_list.contains(&EntityId::from_collection_name(E::COLLECTION_NAME, id)?) {
-                Ok(None)
+                Ok(Some(None))
             } else {
-                self.db.find(id).await
+                Ok(None)
             }
         }
     }
 
-    async fn find_unique<U: UniqueEntity<ConnectionType = KeystoreDatabaseConnection>>(
+    pub(crate) async fn find_unique<U: UniqueEntity<ConnectionType = KeystoreDatabaseConnection>>(
         &self,
-    ) -> CryptoKeystoreResult<U> {
+    ) -> CryptoKeystoreResult<Option<U>> {
         let cache_result = self.cache.find_unique().await;
         if let Ok(cache_result) = cache_result {
-            Ok(cache_result)
+            Ok(Some(cache_result))
         } else {
-            // The deleted list doesn't have to be checked because unique entities don't implement 
-            // deletion, just replace. So we can directly forward the query to the db.
-            self.db.find_unique().await
+            // The deleted list doesn't have to be checked because unique entities don't implement
+            // deletion, just replace. So we can directly return None.
+            Ok(None)
         }
     }
 
-    async fn find_all<E: crate::entities::Entity<ConnectionType = KeystoreDatabaseConnection>>(
+    pub(crate) async fn find_all<E: crate::entities::Entity<ConnectionType = KeystoreDatabaseConnection>>(
         &self,
+        persisted_records: Vec<E>,
         params: EntityFindParams,
     ) -> CryptoKeystoreResult<Vec<E>> {
         let cached_records: Vec<E> = self.cache.find_all(params.clone()).await?;
-        let persisted_records = self.db.find_all(params).await?;
-        let merged: Vec<E> = cached_records
-            .into_iter()
-            .chain(persisted_records)
-            .unique_by(|e| e.id_raw().to_vec())
-            .collect();
-        Ok(merged)
+        Ok(Self::merge_records(cached_records, persisted_records, params))
     }
 
-    async fn find_many<E: crate::entities::Entity<ConnectionType = KeystoreDatabaseConnection>>(
+    pub(crate) async fn find_many<E: crate::entities::Entity<ConnectionType = KeystoreDatabaseConnection>>(
         &self,
+        persisted_records: Vec<E>,
         ids: &[Vec<u8>],
     ) -> CryptoKeystoreResult<Vec<E>> {
         let cached_records: Vec<E> = self.cache.find_many(ids).await?;
-        let persisted_records = self.db.find_many(ids).await?;
-        let merged: Vec<E> = cached_records
-            .into_iter()
-            .chain(persisted_records)
-            .unique_by(|e| e.id_raw().to_vec())
-            .collect();
-        Ok(merged)
+        Ok(Self::merge_records(
+            cached_records,
+            persisted_records,
+            EntityFindParams::default(),
+        ))
     }
 
-    async fn count<E: crate::entities::Entity<ConnectionType = KeystoreDatabaseConnection>>(
-        &self,
-    ) -> CryptoKeystoreResult<usize> {
-        // Unfortunately, we have to do this. We cannot just add the counts of the cache and the db
-        // because of possible record id overlap between cache and db.
-        Ok(self.find_all::<E>(Default::default()).await?.len())
+    fn merge_records<E: crate::entities::Entity<ConnectionType = KeystoreDatabaseConnection>>(
+        records_a: Vec<E>,
+        records_b: Vec<E>,
+        params: EntityFindParams,
+    ) -> Vec<E> {
+        let merged = records_a
+            .into_iter()
+            .chain(records_b)
+            .unique_by(|e| e.id_raw().to_vec());
+
+        // The alternative to giving up laziness here would be to use a dynamically
+        // typed iterator Box<dyn Iterator<Item = E>> assigned to `merged`. The below approach
+        // trades stack allocation instead of heap allocation for laziness.
+        let merged: Vec<E> = if params.reverse {
+            merged.rev().collect()
+        } else {
+            merged.collect()
+        };
+
+        merged
+            .into_iter()
+            .skip(params.offset.unwrap_or(0) as usize)
+            .take(params.limit.unwrap_or(u32::MAX) as usize)
+            .collect()
     }
 }
 
@@ -298,10 +304,10 @@ macro_rules! commit_transaction {
 }
 
 impl KeystoreTransaction {
-    pub async fn new(conn: Connection) -> CryptoKeystoreResult<Self> {
+    pub async fn new(db: Connection) -> CryptoKeystoreResult<Self> {
         Ok(Self {
-            db: conn,
-            // We're not using a proper key because we're not using the DB for security (memory is unencrypted). 
+            db,
+            // We're not using a proper key because we're not using the DB for security (memory is unencrypted).
             // We're using it for its API.
             cache: Connection::open_in_memory_with_key("core_crypto_transaction_cache", "").await?,
             deleted: Arc::new(Default::default()),
@@ -310,13 +316,15 @@ impl KeystoreTransaction {
     }
 
     pub async fn save<
-        E: crate::entities::Entity<ConnectionType = KeystoreDatabaseConnection> + Sync,
+        E: crate::entities::Entity<ConnectionType = KeystoreDatabaseConnection> + Sync + EntityTransactionExt,
     >(
         &self,
         entity: E,
     ) -> CryptoKeystoreResult<()> {
-        self.cache.save(entity).await?;
-        Ok(())
+        let mut conn = self.cache.borrow_conn().await?;
+        let transaction = conn.new_transaction().await?;
+        entity.save(&transaction).await?;
+        transaction.commit_tx().await
     }
 
     pub async fn save_mut<
@@ -326,15 +334,24 @@ impl KeystoreTransaction {
         mut entity: E,
     ) -> CryptoKeystoreResult<E> {
         entity.pre_save().await?;
-        self.cache.save(entity.clone()).await?;
+        let mut conn = self.cache.borrow_conn().await?;
+        let transaction = conn.new_transaction().await?;
+        entity.save(&transaction).await?;
+        transaction.commit_tx().await?;
         Ok(entity)
     }
 
-    pub async fn remove<E: crate::entities::Entity<ConnectionType = KeystoreDatabaseConnection>, S: AsRef<[u8]>>(
+    pub async fn remove<
+        E: crate::entities::Entity<ConnectionType = KeystoreDatabaseConnection> + EntityTransactionExt,
+        S: AsRef<[u8]>,
+    >(
         &self,
         id: S,
     ) -> CryptoKeystoreResult<()> {
-        self.cache.remove::<E, &S>(&id).await?;
+        let mut conn = self.cache.borrow_conn().await?;
+        let transaction = conn.new_transaction().await?;
+        E::delete(&transaction, id.as_ref().into()).await?;
+        transaction.commit_tx().await?;
         let mut deleted_list = self.deleted.write().await;
         deleted_list.push(EntityId::from_collection_name(E::COLLECTION_NAME, id.as_ref())?);
         Ok(())
@@ -347,19 +364,25 @@ impl KeystoreTransaction {
     >(
         &self,
         entity: E,
+        persisted_records: Vec<E>,
     ) -> CryptoKeystoreResult<Vec<E>> {
         let mut conn = self.cache.borrow_conn().await?;
         let cached_records = entity.child_groups(conn.deref_mut()).await?;
-        let mut conn = self.db.borrow_conn().await?;
-        let persisted_records = entity.child_groups(conn.deref_mut()).await?;
-        let mut merged: Vec<E> = cached_records.into_iter().chain(persisted_records).collect();
-        merged.dedup_by_key(|e| e.id_raw().to_vec());
-        Ok(merged)
+        Ok(Self::merge_records(
+            cached_records,
+            persisted_records,
+            EntityFindParams::default(),
+        ))
     }
 
-    pub async fn cred_delete_by_credential(&self, cred: Vec<u8>) {
+    pub async fn cred_delete_by_credential(&self, cred: Vec<u8>) -> CryptoKeystoreResult<()> {
+        let mut conn = self.cache.borrow_conn().await?;
+        let transaction = conn.new_transaction().await?;
+        MlsCredential::delete_by_credential(&transaction, cred.clone()).await?;
+        transaction.commit_tx().await?;
         let mut deleted_list = self.deleted_credentials.write().await;
         deleted_list.push(cred);
+        Ok(())
     }
 
     /// Persists all the operations in the database. It will effectively open a transaction
@@ -393,125 +416,6 @@ impl KeystoreTransaction {
             ]
         );
 
-        Ok(())
-    }
-}
-
-#[cfg_attr(target_family = "wasm", async_trait::async_trait(?Send))]
-#[cfg_attr(not(target_family = "wasm"), async_trait::async_trait)]
-impl OpenMlsKeyStore for KeystoreTransaction {
-    type Error = CryptoKeystoreError;
-
-    async fn store<V: MlsEntity + Sync>(&self, k: &[u8], v: &V) -> Result<(), Self::Error>
-    where
-        Self: Sized,
-    {
-        if k.is_empty() {
-            return Err(CryptoKeystoreError::MlsKeyStoreError(
-                "The provided key is empty".into(),
-            ));
-        }
-
-        let data = crate::mls::ser(v)?;
-
-        match V::ID {
-            MlsEntityId::GroupState => {
-                return Err(CryptoKeystoreError::IncorrectApiUsage(
-                    "Groups must not be saved using OpenMLS's APIs. You should use the keystore's provided methods",
-                ));
-            }
-            MlsEntityId::SignatureKeyPair => {
-                let concrete_signature_keypair: &SignatureKeyPair = v
-                    .downcast()
-                    .expect("There's an implementation issue in OpenMLS. This shouln't be happening.");
-
-                // Having an empty credential id seems tolerable, since the SignatureKeyPair type is retrieved from the key store via its public key.
-                let credential_id = vec![];
-                let kp = MlsSignatureKeyPair::new(
-                    concrete_signature_keypair.signature_scheme(),
-                    k.into(),
-                    data,
-                    credential_id,
-                );
-                self.cache.save(kp).await?;
-            }
-            MlsEntityId::KeyPackage => {
-                let kp = MlsKeyPackage {
-                    keypackage_ref: k.into(),
-                    keypackage: data,
-                };
-                self.cache.save(kp).await?;
-            }
-            MlsEntityId::HpkePrivateKey => {
-                let kp = MlsHpkePrivateKey { pk: k.into(), sk: data };
-                self.cache.save(kp).await?;
-            }
-            MlsEntityId::PskBundle => {
-                let kp = MlsPskBundle {
-                    psk_id: k.into(),
-                    psk: data,
-                };
-                self.cache.save(kp).await?;
-            }
-            MlsEntityId::EncryptionKeyPair => {
-                let kp = MlsEncryptionKeyPair { pk: k.into(), sk: data };
-                self.cache.save(kp).await?;
-            }
-            MlsEntityId::EpochEncryptionKeyPair => {
-                let kp = MlsEpochEncryptionKeyPair {
-                    id: k.into(),
-                    keypairs: data,
-                };
-                self.cache.save(kp).await?;
-            }
-        }
-        Ok(())
-    }
-
-    async fn read<V: MlsEntity>(&self, k: &[u8]) -> Option<V>
-    where
-        Self: Sized,
-    {
-        if k.is_empty() {
-            return None;
-        }
-
-        match V::ID {
-            MlsEntityId::GroupState => {
-                let group: PersistedMlsGroup = self.find(k).await.ok().flatten()?;
-                deser(&group.state).ok()
-            }
-            MlsEntityId::SignatureKeyPair => {
-                let sig: MlsSignatureKeyPair = self.find(k).await.ok().flatten()?;
-                deser(&sig.keypair).ok()
-            }
-            MlsEntityId::KeyPackage => {
-                let kp: MlsKeyPackage = self.find(k).await.ok().flatten()?;
-                deser(&kp.keypackage).ok()
-            }
-            MlsEntityId::HpkePrivateKey => {
-                let hpke_pk: MlsHpkePrivateKey = self.find(k).await.ok().flatten()?;
-                deser(&hpke_pk.sk).ok()
-            }
-            MlsEntityId::PskBundle => {
-                let psk_bundle: MlsPskBundle = self.find(k).await.ok().flatten()?;
-                deser(&psk_bundle.psk).ok()
-            }
-            MlsEntityId::EncryptionKeyPair => {
-                let kp: MlsEncryptionKeyPair = self.find(k).await.ok().flatten()?;
-                deser(&kp.sk).ok()
-            }
-            MlsEntityId::EpochEncryptionKeyPair => {
-                let kp: MlsEpochEncryptionKeyPair = self.find(k).await.ok().flatten()?;
-                deser(&kp.keypairs).ok()
-            }
-        }
-    }
-
-    async fn delete<V: MlsEntity>(&self, k: &[u8]) -> Result<(), Self::Error> {
-        self.cache.delete::<V>(k).await?;
-        let mut deleted_list = self.deleted.write().await;
-        deleted_list.push(EntityId::from_mls_entity_id(V::ID, k));
         Ok(())
     }
 }
