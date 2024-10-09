@@ -360,7 +360,6 @@ impl X509TestChain {
                 .await
                 .unwrap();
         }
-        context.finish().await.unwrap();
     }
 
     pub async fn register_with_provider(&self, backend: &MlsCryptoProvider) {
