@@ -42,11 +42,11 @@ mod tests {
 
     #[apply(all_storage_types)]
     #[wasm_bindgen_test]
-    pub async fn can_add_read_delete_prekey_traits(store: Connection) {
+    pub async fn can_add_read_delete_prekey_traits(mut context: KeystoreTestContext) {
         use core_crypto_keystore::CryptoKeystoreProteus as _;
         use proteus_traits::PreKeyStore as _;
 
-        let mut store = store.await;
+        let store = context.store_mut();
 
         let prekey_id = PreKeyId::new(28273u16);
         let prekey = PreKey::new(prekey_id);
@@ -58,10 +58,8 @@ mod tests {
 
         assert!(store.prekey(prekey_id.value()).await.unwrap().is_some());
 
-        proteus_traits::PreKeyStore::remove(&mut store, prekey.key_id.value())
+        proteus_traits::PreKeyStore::remove(store, prekey.key_id.value())
             .await
             .unwrap();
-
-        teardown(store).await;
     }
 }
