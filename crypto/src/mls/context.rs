@@ -89,15 +89,17 @@ impl CentralContext {
             ContextState::Invalid => Err(CryptoError::InvalidContext),
         }
     }
-    
+
     #[cfg(test)]
-    pub(crate) async fn set_callbacks(&self, callbacks: Option<Arc<dyn CoreCryptoCallbacks + 'static>>) -> CryptoResult<()> {
+    pub(crate) async fn set_callbacks(
+        &self,
+        callbacks: Option<Arc<dyn CoreCryptoCallbacks + 'static>>,
+    ) -> CryptoResult<()> {
         match self.state.read().await.deref() {
-            ContextState::Valid { 
-                callbacks: cbs, .. } => {
+            ContextState::Valid { callbacks: cbs, .. } => {
                 *cbs.write_arc().await = callbacks;
                 Ok(())
-            },
+            }
             ContextState::Invalid => Err(CryptoError::InvalidContext),
         }
     }
@@ -105,7 +107,7 @@ impl CentralContext {
     /// Creates a read guard on the internal mls provider for the current transaction
     pub async fn mls_provider(&self) -> CryptoResult<TransactionalCryptoProvider> {
         match self.state.read().await.deref() {
-            ContextState::Valid { provider: transaction, .. } => Ok(transaction.clone()),
+            ContextState::Valid { provider, .. } => Ok(provider.clone()),
             ContextState::Invalid => Err(CryptoError::InvalidContext),
         }
     }
