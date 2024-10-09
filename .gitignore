@@ -59,6 +59,7 @@ crypto-ffi/bindings/android/src/main/kotlin/uniffi/core_crypto/core_crypto.kt
 *.iws
 *.iml
 *.ipr
+local.properties
 out/
 
 # Created by https://www.toptal.com/developers/gitignore/api/node
