@@ -149,7 +149,7 @@ impl CentralContext {
             .save_new_x509_credential_bundle(&self.mls_provider().await?.keystore(), cs.signature_algorithm(), cert_bundle)
             .await?;
 
-        let commits = self.e2ei_update_all(&new_cb).await?;
+        let commits = self.e2ei_update_all(client, &new_cb).await?;
 
         let key_package_refs_to_remove = self.find_key_packages_to_remove(&new_cb).await?;
 
@@ -166,12 +166,10 @@ impl CentralContext {
     }
 
     #[cfg_attr(not(test), tracing::instrument(err, skip_all))]
-    async fn e2ei_update_all(&self, cb: &CredentialBundle) -> CryptoResult<HashMap<ConversationId, MlsCommitBundle>> {
+    async fn e2ei_update_all(&self, client: &mut Client, cb: &CredentialBundle) -> CryptoResult<HashMap<ConversationId, MlsCommitBundle>> {
         let all_conversations = self.get_all_conversations().await?;
 
         let mut commits = HashMap::with_capacity(all_conversations.len());
-        let client_guard = self.mls_client().await?;
-        let client = client_guard.as_ref().ok_or(CryptoError::MlsNotInitialized)?;
         for conv in all_conversations {
             let mut conv = conv.write().await;
             let id = conv.id().clone();
