@@ -409,7 +409,7 @@ pub(crate) mod tests {
                         assert_eq!(before_rotate.credential, 1);
                         let old_credential = alice_central
                             .context
-                            .find_most_recent_credential_bundle(case.signature_scheme(), case.credential_type)
+                            .find_most_recent_credential_bundle(alice_central.context.mls_client().await.unwrap().as_ref().unwrap(), case.signature_scheme(), case.credential_type)
                             .await
                             .unwrap()
                             .clone();
@@ -583,7 +583,7 @@ pub(crate) mod tests {
 
                     let old_cb = alice_central
                         .context
-                        .find_most_recent_credential_bundle(case.signature_scheme(), case.credential_type)
+                        .find_most_recent_credential_bundle(alice_central.context.mls_client().await.unwrap().as_ref().unwrap(), case.signature_scheme(), case.credential_type)
                         .await
                         .unwrap()
                         .clone();
@@ -617,7 +617,7 @@ pub(crate) mod tests {
                     // So alice has a new Credential as expected
                     let cb = alice_central
                         .context
-                        .find_most_recent_credential_bundle(case.signature_scheme(), MlsCredentialType::X509)
+                        .find_most_recent_credential_bundle(alice_central.context.mls_client().await.unwrap().as_ref().unwrap(), case.signature_scheme(), MlsCredentialType::X509)
                         .await
                         .unwrap();
                     let identity = cb
@@ -638,49 +638,55 @@ pub(crate) mod tests {
                         .await
                         .unwrap();
                     assert_eq!(old_cb, old_cb_found);
-                    let alice_client_guard = alice_central.context.mls_client().await.unwrap();
-                    let alice_client = alice_client_guard.as_ref().unwrap();
-                    let old_nb_identities = alice_client
-                        .identities
-                        .iter()
-                        .count();
-
-                    // Let's simulate an app crash, client gets deleted and restored from keystore
-                    let cid = alice_client.id().clone();
-                    let scs = HashSet::from([case.signature_scheme()]);
-                    let all_credentials = alice_central
-                        .context
-                        .keystore().await.unwrap()
-                        .find_all::<MlsCredential>(EntityFindParams::default())
-                        .await
-                        .unwrap()
-                        .into_iter()
-                        .map(|c| {
-                            let credential =
-                                openmls::prelude::Credential::tls_deserialize(&mut c.credential.as_slice()).unwrap();
-                            (credential, c.created_at)
-                        })
-                        .collect::<Vec<_>>();
-                    assert_eq!(all_credentials.len(), 2);
-
-                    let client = Client::load(&alice_central.context.mls_provider().await.unwrap(), &cid, all_credentials, scs)
-                        .await
-                        .unwrap();
                     let mut alice_client_guard = alice_central.context.mls_client_mut().await.unwrap();
-                    alice_client_guard
-                        .replace(client)
+                    let (cid, all_credentials, scs, old_nb_identities) = {
+                        let alice_client = alice_client_guard.as_ref().unwrap();
+                        let old_nb_identities = alice_client
+                            .identities
+                            .iter()
+                            .count();
+
+                        // Let's simulate an app crash, client gets deleted and restored from keystore
+                        let cid = alice_client.id().clone();
+                        let scs = HashSet::from([case.signature_scheme()]);
+                        let all_credentials = alice_central
+                            .context
+                            .keystore().await.unwrap()
+                            .find_all::<MlsCredential>(EntityFindParams::default())
+                            .await
+                            .unwrap()
+                            .into_iter()
+                            .map(|c| {
+                                let credential =
+                                    openmls::prelude::Credential::tls_deserialize(&mut c.credential.as_slice()).unwrap();
+                                (credential, c.created_at)
+                            })
+                            .collect::<Vec<_>>();
+                        assert_eq!(all_credentials.len(), 2);
+                        (cid, all_credentials, scs, old_nb_identities)
+                    };
+                    let backend = &alice_central.context.mls_provider().await.unwrap();
+                    backend.keystore().commit_transaction().await.unwrap();
+                    backend.keystore().new_transaction().await.unwrap();
+
+                    let client = Client::load(backend, &cid, all_credentials, scs)
+                        .await
                         .unwrap();
+                    *alice_client_guard = Some(client);
+
+                    let alice_client = alice_client_guard.as_ref().unwrap();
 
                     // Verify that Alice has the same credentials
                     let cb = alice_central
                         .context
-                        .find_most_recent_credential_bundle(case.signature_scheme(), MlsCredentialType::X509)
+                        .find_most_recent_credential_bundle(&alice_client, case.signature_scheme(), MlsCredentialType::X509)
                         .await
                         .unwrap();
                     let identity = cb
                         .to_mls_credential_with_key()
                         .extract_identity(case.ciphersuite(), None)
                         .unwrap();
+                    // backend.keystore().commit_transaction().await.unwrap();
                     assert_eq!(identity.x509_identity.as_ref().unwrap().display_name, NEW_DISPLAY_NAME);
                     assert_eq!(
                         identity.x509_identity.as_ref().unwrap().handle,

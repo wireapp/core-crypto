@@ -57,9 +57,9 @@ impl CentralContext {
         kps.first().unwrap().clone()
     }
 
-    pub async fn new_keypackage(&self, case: &TestCase, lifetime: Lifetime) -> KeyPackage {
+    pub async fn new_keypackage(&self, client: &Client, case: &TestCase, lifetime: Lifetime) -> KeyPackage {
         let cb = self
-            .find_most_recent_credential_bundle(case.signature_scheme(), case.credential_type)
+            .find_most_recent_credential_bundle(client, case.signature_scheme(), case.credential_type)
             .await
             .unwrap();
         KeyPackage::builder()
@@ -391,13 +391,11 @@ impl CentralContext {
 
     pub async fn find_most_recent_credential_bundle(
         &self,
+        client: &Client,
         sc: SignatureScheme,
         ct: MlsCredentialType,
     ) -> Option<CredentialBundle> {
-        self.mls_client()
-            .await
-            .unwrap()
-            .as_ref()?
+        client
             .find_most_recent_credential_bundle(sc, ct)
             .map(|cb| cb.clone())
     }

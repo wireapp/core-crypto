@@ -155,7 +155,7 @@ mod tests {
 
                     let found = central
                         .context
-                        .find_most_recent_credential_bundle(case.signature_scheme(), case.credential_type)
+                        .find_most_recent_credential_bundle(central.context.mls_client().await.unwrap().as_ref().unwrap(), case.signature_scheme(), case.credential_type)
                         .await
                         .unwrap();
                     assert_eq!(found, new);

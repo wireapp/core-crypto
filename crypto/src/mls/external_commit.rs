@@ -1010,7 +1010,7 @@ mod tests {
 
                     let invalid_kp = bob_central
                         .context
-                        .new_keypackage(&case, Lifetime::new(expiration_time))
+                        .new_keypackage(bob_central.context.mls_client().await.unwrap().as_ref().unwrap(), &case, Lifetime::new(expiration_time))
                         .await;
                     alice_central
                         .context

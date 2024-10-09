@@ -36,7 +36,7 @@ mod tests {
                         // should fail when creating Add proposal
                         let invalid_kp = bob_central
                             .context
-                            .new_keypackage(&case, Lifetime::new(expiration_time))
+                            .new_keypackage(alice_central.context.mls_client().await.unwrap().as_ref().unwrap(), &case, Lifetime::new(expiration_time))
                             .await;
 
                         // Give time to the KeyPackage to expire
@@ -62,7 +62,7 @@ mod tests {
 
                         let invalid_kp = bob_central
                             .context
-                            .new_keypackage(&case, Lifetime::new(expiration_time))
+                            .new_keypackage(bob_central.context.mls_client().await.unwrap().as_ref().unwrap(), &case, Lifetime::new(expiration_time))
                             .await;
 
                         // Give time to the KeyPackage to expire
@@ -118,7 +118,7 @@ mod tests {
 
                         let invalid_kp = charlie_central
                             .context
-                            .new_keypackage(&case, Lifetime::new(expiration_time))
+                            .new_keypackage(charlie_central.context.mls_client().await.unwrap().as_ref().unwrap(), &case, Lifetime::new(expiration_time))
                             .await;
 
                         let proposal = alice_central.context.new_add_proposal(&id, invalid_kp).await.unwrap();
@@ -177,7 +177,7 @@ mod tests {
                         // should fail when receiving Add commit
                         let invalid_kp = charlie_central
                             .context
-                            .new_keypackage(&case, Lifetime::new(expiration_time))
+                            .new_keypackage(charlie_central.context.mls_client().await.unwrap().as_ref().unwrap(), &case, Lifetime::new(expiration_time))
                             .await;
 
                         let commit = alice_central
@@ -232,7 +232,7 @@ mod tests {
 
                         let invalid_kp = bob_central
                             .context
-                            .new_keypackage(&case, Lifetime::new(expiration_time))
+                            .new_keypackage(bob_central.context.mls_client().await.unwrap().as_ref().unwrap(), &case, Lifetime::new(expiration_time))
                             .await;
                         let commit = alice_central
                             .context

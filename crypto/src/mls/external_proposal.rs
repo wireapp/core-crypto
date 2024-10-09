@@ -293,7 +293,7 @@ mod tests {
                     let (sc, ct) = (case.signature_scheme(), case.credential_type);
                     let cb = ds
                         .context
-                        .find_most_recent_credential_bundle(sc, ct).await
+                        .find_most_recent_credential_bundle(ds.context.mls_client().await.unwrap().as_ref().unwrap(), sc, ct).await
                         .unwrap();
 
                     let group_id = GroupId::from_slice(&id[..]);
@@ -365,7 +365,7 @@ mod tests {
                         let (sc, ct) = (case.signature_scheme(), case.credential_type);
                         let cb = attacker
                             .context
-                            .find_most_recent_credential_bundle(sc, ct).await
+                            .find_most_recent_credential_bundle(attacker.context.mls_client().await.unwrap().as_ref().unwrap(), sc, ct).await
                             .unwrap();
                         let group_id = GroupId::from_slice(&id[..]);
                         let epoch = owner_central.get_conversation_unchecked(&id).await.group.epoch();
@@ -430,7 +430,7 @@ mod tests {
                     // Intentionally use the guest's credential, and therefore the guest's signature
                     // key when generating the proposal so that the signature verification fails.
                     let cb = guest_central
-                        .find_most_recent_credential_bundle(sc, ct).await
+                        .find_most_recent_credential_bundle(guest_central.mls_client().await.unwrap().as_ref().unwrap(), sc, ct).await
                         .unwrap();
                     let group_id = GroupId::from_slice(&id[..]);
                     let epoch = owner_central.get_conversation_unchecked(&id).await.group.epoch();
@@ -510,7 +510,7 @@ mod tests {
                         let (sc, ct) = (case.signature_scheme(), case.credential_type);
                         let cb = ds
                             .context
-                            .find_most_recent_credential_bundle(sc, ct).await
+                            .find_most_recent_credential_bundle(ds.context.mls_client().await.unwrap().as_ref().unwrap(),sc, ct).await
                             .unwrap();
                         let group_id = GroupId::from_slice(&id[..]);
                         let epoch = alice_central.get_conversation_unchecked(&id).await.group.epoch();
@@ -620,7 +620,7 @@ mod tests {
                         let (sc, ct) = (case.signature_scheme(), case.credential_type);
                         let cb = ds
                             .context
-                            .find_most_recent_credential_bundle(sc, ct).await
+                            .find_most_recent_credential_bundle(ds.context.mls_client().await.unwrap().as_ref().unwrap(), sc, ct).await
                             .unwrap();
                         let group_id = GroupId::from_slice(&id[..]);
                         let epoch = alice_central.get_conversation_unchecked(&id).await.group.epoch();
