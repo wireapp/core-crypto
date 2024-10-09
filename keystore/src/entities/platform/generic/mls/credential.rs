@@ -33,6 +33,12 @@ impl Entity for MlsCredential {
     fn id_raw(&self) -> &[u8] {
         self.id.as_slice()
     }
+
+    fn merge_key(&self) -> Vec<u8> {
+        let mut merge_key = self.id_raw().to_vec();
+        merge_key.extend(self.created_at.to_be_bytes().to_vec());
+        merge_key
+    }
 }
 
 #[cfg_attr(target_family = "wasm", async_trait::async_trait(?Send))]
@@ -151,7 +157,7 @@ impl EntityTransactionExt for MlsCredential {
         use rusqlite::ToSql as _;
         let params: [rusqlite::types::ToSqlOutput; 3] = [zb_id.to_sql()?, zb_cred.to_sql()?, self.created_at.to_sql()?];
 
-        let sql = "INSERT INTO mls_credentials (id, credential, created_at) VALUES (?, ?, datetime(?, 'unixepoch')";
+        let sql = "INSERT INTO mls_credentials (id, credential, created_at) VALUES (?, ?, datetime(?, 'unixepoch'))";
         transaction.execute(sql, params)?;
         let row_id = transaction.last_insert_rowid();
 
