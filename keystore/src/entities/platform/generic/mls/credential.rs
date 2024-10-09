@@ -184,7 +184,7 @@ impl EntityTransactionExt for MlsCredential {
         Ok(created_at)
     }
 
-    async fn delete(
+    async fn delete_fail_on_missing_id(
         transaction: &TransactionWrapper<'_>,
         id: StringEntityId<'_>,
     ) -> crate::CryptoKeystoreResult<()> {

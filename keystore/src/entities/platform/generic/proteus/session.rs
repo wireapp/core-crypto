@@ -177,7 +177,7 @@ impl EntityTransactionExt for ProteusSession {
         Ok(())
     }
 
-    async fn delete(transaction: &TransactionWrapper<'_>, id: StringEntityId<'_>) -> crate::CryptoKeystoreResult<()> {
+    async fn delete_fail_on_missing_id(transaction: &TransactionWrapper<'_>, id: StringEntityId<'_>) -> crate::CryptoKeystoreResult<()> {
         let id_string: String = (&id).try_into()?;
         let updated = transaction.execute("DELETE FROM proteus_sessions WHERE id = ?", [id_string])?;
 
