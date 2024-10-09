@@ -14,8 +14,6 @@
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see http://www.gnu.org/licenses/.
 
-use crate::connection::TransactionWrapper;
-use crate::entities::EntityTransactionExt;
 use crate::{
     connection::KeystoreDatabaseConnection,
     entities::{E2eiRefreshToken, Entity, EntityBase, EntityFindParams, StringEntityId, UniqueEntity},
@@ -60,21 +58,10 @@ impl EntityBase for E2eiRefreshToken {
     }
 
     async fn find_one(_conn: &mut Self::ConnectionType, _id: &StringEntityId) -> CryptoKeystoreResult<Option<Self>> {
-        return Err(CryptoKeystoreError::NotImplemented);
+        Err(CryptoKeystoreError::NotImplemented)
     }
 
     async fn count(_conn: &mut Self::ConnectionType) -> CryptoKeystoreResult<usize> {
-        return Err(CryptoKeystoreError::NotImplemented);
-    }
-}
-
-#[cfg_attr(target_family = "wasm", async_trait::async_trait(?Send))]
-#[cfg_attr(not(target_family = "wasm"), async_trait::async_trait)]
-impl EntityTransactionExt for E2eiRefreshToken {
-    async fn save(&self, _: &TransactionWrapper<'_>) -> CryptoKeystoreResult<()> {
-        return Err(CryptoKeystoreError::NotImplemented);
-    }
-    async fn delete(_: &TransactionWrapper<'_>, _: StringEntityId<'_>) -> CryptoKeystoreResult<()> {
-        return Err(CryptoKeystoreError::NotImplemented);
+        Err(CryptoKeystoreError::NotImplemented)
     }
 }
