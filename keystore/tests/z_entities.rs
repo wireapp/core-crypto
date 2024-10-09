@@ -46,8 +46,8 @@ macro_rules! test_for_entity {
     ($test_name:ident, $entity:ident $(ignore_entity_count:$ignore_entity_count:literal)? $(ignore_update:$ignore_update:literal)? $(ignore_find_many:$ignore_find_many:literal)?) => {
         #[apply(all_storage_types)]
         #[wasm_bindgen_test]
-        async fn $test_name(store: core_crypto_keystore::Connection) {
-            let store = store.await;
+        async fn $test_name(context: KeystoreTestContext) {
+            let store = context.store();
             let _ = pretty_env_logger::try_init();
             let mut entity = crate::tests_impl::can_save_entity::<$entity>(&store).await;
 
@@ -67,8 +67,6 @@ macro_rules! test_for_entity {
             let ignore_find_many = pat_to_bool!($($ignore_find_many)?);
             crate::tests_impl::can_list_entities_with_find_many::<$entity>(&store, ignore_count, ignore_find_many).await;
             crate::tests_impl::can_list_entities_with_find_all::<$entity>(&store, ignore_count).await;
-
-            store.wipe().await.unwrap();
         }
     };
 }
@@ -147,9 +145,10 @@ mod tests_impl {
         connection::{FetchFromDatabase, KeystoreDatabaseConnection},
         entities::{Entity, EntityFindParams},
     };
+    use core_crypto_keystore::entities::EntityTransactionExt;
 
     pub(crate) async fn can_save_entity<
-        R: EntityRandomUpdateExt + Entity<ConnectionType = KeystoreDatabaseConnection> + Sync,
+        R: EntityRandomUpdateExt + Entity<ConnectionType = KeystoreDatabaseConnection> + EntityTransactionExt + Sync,
     >(
         store: &CryptoKeystore,
     ) -> R {
@@ -170,7 +169,7 @@ mod tests_impl {
     }
 
     pub(crate) async fn can_update_entity<
-        R: EntityRandomUpdateExt + Entity<ConnectionType = KeystoreDatabaseConnection> + Sync,
+        R: EntityRandomUpdateExt + Entity<ConnectionType = KeystoreDatabaseConnection> + EntityTransactionExt + Sync,
     >(
         store: &CryptoKeystore,
         entity: &mut R,
@@ -182,7 +181,7 @@ mod tests_impl {
     }
 
     pub(crate) async fn can_remove_entity<
-        R: EntityRandomUpdateExt + Entity<ConnectionType = KeystoreDatabaseConnection> + Sync,
+        R: EntityRandomUpdateExt + Entity<ConnectionType = KeystoreDatabaseConnection> + EntityTransactionExt + Sync,
     >(
         store: &CryptoKeystore,
         entity: R,
@@ -193,7 +192,7 @@ mod tests_impl {
     }
 
     pub(crate) async fn can_list_entities_with_find_many<
-        R: EntityRandomUpdateExt + Entity<ConnectionType = KeystoreDatabaseConnection> + Sync,
+        R: EntityRandomUpdateExt + Entity<ConnectionType = KeystoreDatabaseConnection> + EntityTransactionExt + Sync,
     >(
         store: &CryptoKeystore,
         ignore_entity_count: bool,
@@ -295,16 +294,14 @@ mod tests {
     }
     #[apply(all_storage_types)]
     #[wasm_bindgen_test]
-    pub async fn update_e2ei_enrollment_emits_error(store: Connection) {
-        let store = store.await;
+    pub async fn update_e2ei_enrollment_emits_error(context: KeystoreTestContext) {
+        let store = context.store();
 
         let mut entity = E2eiEnrollment::random();
         store.save(entity.clone()).await.unwrap();
         entity.random_update();
         let error = store.save(entity).await.unwrap_err();
         assert!(matches!(error, CryptoKeystoreError::AlreadyExists));
-
-        teardown(store).await;
     }
 }
 

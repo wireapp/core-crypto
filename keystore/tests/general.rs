@@ -30,18 +30,17 @@ mod tests {
 
     #[apply(all_storage_types)]
     #[wasm_bindgen_test]
-    pub async fn can_create_and_init_store(store: CryptoKeystore) {
-        let store = store.await;
-        teardown(store).await;
+    pub async fn can_create_and_init_store(_context: KeystoreTestContext) {
+        // just runs the setup and teardown, which creates the store and wipes it afterward.
     }
 
     #[cfg(feature = "ios-wal-compat")]
     #[cfg_attr(not(target_family = "wasm"), async_std::test)]
     async fn can_preserve_wal_compat_for_ios() {
         let store1 = setup("ios-wal-compat", false).await;
-        store1.close().await.unwrap();
+        drop(store1);
         let store2 = setup("ios-wal-compat-2", true).await;
-        store2.close().await.unwrap();
+        drop(store2);
         let _store1 = setup("ios-wal-compat", false).await;
     }
 
