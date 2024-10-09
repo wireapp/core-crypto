@@ -2844,6 +2844,26 @@ impl CoreCrypto {
             .err_into(),
         )
     }
+    /// Returns: [`WasmCryptoResult<CommitBundle>`]
+    ///
+    /// see [core_crypto::mls::MlsCentral::e2ei_rotate_all]
+    pub fn e2ei_rotate(&self, conversation_id: ConversationId) -> Promise {
+        let this = self.inner.clone();
+        future_to_promise(
+            async move {
+                let mut central = this.write().await;
+                let commit = central
+                    .e2ei_rotate(&conversation_id, None)
+                    .await
+                    .map_err(CoreCryptoError::from)?;
+
+                let commit: CommitBundle = commit.try_into()?;
+
+                WasmCryptoResult::Ok(serde_wasm_bindgen::to_value(&commit)?)
+            }
+            .err_into(),
+        )
+    }
 
     /// see [core_crypto::mls::MlsCentral::e2ei_enrollment_stash]
     pub fn e2ei_enrollment_stash(&self, enrollment: E2eiEnrollment) -> Promise {
