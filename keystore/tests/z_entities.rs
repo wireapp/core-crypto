@@ -147,9 +147,10 @@ mod tests_impl {
         connection::{FetchFromDatabase, KeystoreDatabaseConnection},
         entities::{Entity, EntityFindParams},
     };
+    use core_crypto_keystore::entities::EntityTransactionExt;
 
     pub(crate) async fn can_save_entity<
-        R: EntityRandomUpdateExt + Entity<ConnectionType = KeystoreDatabaseConnection> + Sync,
+        R: EntityRandomUpdateExt + Entity<ConnectionType = KeystoreDatabaseConnection> + EntityTransactionExt + Sync,
     >(
         store: &CryptoKeystore,
     ) -> R {
@@ -170,7 +171,7 @@ mod tests_impl {
     }
 
     pub(crate) async fn can_update_entity<
-        R: EntityRandomUpdateExt + Entity<ConnectionType = KeystoreDatabaseConnection> + Sync,
+        R: EntityRandomUpdateExt + Entity<ConnectionType = KeystoreDatabaseConnection> + EntityTransactionExt + Sync,
     >(
         store: &CryptoKeystore,
         entity: &mut R,
@@ -182,7 +183,7 @@ mod tests_impl {
     }
 
     pub(crate) async fn can_remove_entity<
-        R: EntityRandomUpdateExt + Entity<ConnectionType = KeystoreDatabaseConnection> + Sync,
+        R: EntityRandomUpdateExt + Entity<ConnectionType = KeystoreDatabaseConnection> + EntityTransactionExt + Sync,
     >(
         store: &CryptoKeystore,
         entity: R,
@@ -193,7 +194,7 @@ mod tests_impl {
     }
 
     pub(crate) async fn can_list_entities_with_find_many<
-        R: EntityRandomUpdateExt + Entity<ConnectionType = KeystoreDatabaseConnection> + Sync,
+        R: EntityRandomUpdateExt + Entity<ConnectionType = KeystoreDatabaseConnection> + EntityTransactionExt + Sync,
     >(
         store: &CryptoKeystore,
         ignore_entity_count: bool,
