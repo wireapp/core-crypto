@@ -79,14 +79,14 @@ mod tests {
 
     #[apply(all_storage_types)]
     #[wasm_bindgen_test]
-    pub async fn can_add_read_delete_credential_bundle_openmls_traits(store: Connection) {
+    pub async fn can_add_read_delete_credential_bundle_openmls_traits(context: KeystoreTestContext) {
         use core_crypto_keystore::connection::FetchFromDatabase;
         use openmls_basic_credential::SignatureKeyPair;
 
-        let store = store.await;
+        let store = context.store();
         let ciphersuite = Ciphersuite::MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519;
 
-        let backend = MlsCryptoProvider::new_with_store(store, None);
+        let backend = MlsCryptoProvider::new_with_store(store.clone(), None);
         let identity_id: [u8; 16] = rand::random();
         let identity_id = uuid::Uuid::from_bytes(identity_id);
 
@@ -139,8 +139,6 @@ mod tests {
             .remove::<MlsSignatureKeyPair, _>(keypair.public())
             .await
             .unwrap();
-
-        teardown(backend.unwrap_keystore()).await;
     }
 
     // FIXME: rewrite the tests using the new OpenMLS apis. Tracking issue: WPB-9657
