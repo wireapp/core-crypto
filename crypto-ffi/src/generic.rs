@@ -32,7 +32,6 @@ use core_crypto::{
 };
 use tracing::{level_filters::LevelFilter, Level};
 use tracing_subscriber::fmt::{self, MakeWriter};
-
 use crate::UniffiCustomTypeConverter;
 
 #[allow(dead_code)]
@@ -1767,6 +1766,19 @@ impl CoreCrypto {
             )
             .await?
             .into())
+    }
+
+    /// See [core_crypto::mls::MlsCentral::e2ei_rotate]
+    pub async fn e2ei_rotate(
+        &self,
+        conversation_id: Vec<u8>,
+    ) -> CoreCryptoResult<CommitBundle> {
+        self.central
+            .lock()
+            .await
+            .e2ei_rotate(&conversation_id, None)
+            .await?
+            .try_into()
     }
 
     /// See [core_crypto::mls::MlsCentral::e2ei_rotate_all]

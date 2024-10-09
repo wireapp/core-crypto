@@ -356,7 +356,7 @@ mod tests {
                             Some(expiration_time),
                         );
                         let cb = Client::new_x509_credential_bundle(cert.clone()).unwrap();
-                        let commit = alice_central.mls_central.e2ei_rotate(&id, &cb).await.unwrap().commit;
+                        let commit = alice_central.mls_central.e2ei_rotate(&id, Some(&cb)).await.unwrap().commit;
                         alice_central.mls_central.commit_accepted(&id).await.unwrap();
                         bob_central
                             .mls_central
@@ -434,7 +434,7 @@ mod tests {
                     alice_intermediate_ca.update_end_identity(&mut alice_cert.certificate, Some(expiration_time));
 
                     let cb = Client::new_x509_credential_bundle(alice_cert.certificate.clone().into()).unwrap();
-                    alice_central.mls_central.e2ei_rotate(&id, &cb).await.unwrap();
+                    alice_central.mls_central.e2ei_rotate(&id, Some(&cb)).await.unwrap();
                     alice_central.mls_central.commit_accepted(&id).await.unwrap();
 
                     // Needed because 'e2ei_rotate' does not do it directly and it's required for 'get_group_info'

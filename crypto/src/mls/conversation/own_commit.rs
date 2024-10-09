@@ -170,7 +170,7 @@ mod tests {
                         .await;
 
                     // create a commit. This will also store it in the store
-                    let commit = alice_central.mls_central.e2ei_rotate(&id, &cb).await.unwrap().commit;
+                    let commit = alice_central.mls_central.e2ei_rotate(&id, Some(&cb)).await.unwrap().commit;
                     assert!(alice_central.mls_central.pending_commit(&id).await.is_some());
 
                     // since the pending commit is the same as the incoming one, it should succeed

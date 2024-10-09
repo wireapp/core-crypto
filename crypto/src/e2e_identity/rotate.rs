@@ -200,17 +200,20 @@ impl MlsCentral {
         for conv in all_conversations {
             let mut conv = conv.write().await;
             let id = conv.id().clone();
-            let commit = conv.e2ei_rotate(&self.mls_backend, self.mls_client()?, cb).await?;
+            let commit = conv.e2ei_rotate(&self.mls_backend, self.mls_client()?, Some(cb)).await?;
             let _ = commits.insert(id, commit);
         }
         Ok(commits)
     }
 
-    #[cfg(test)]
-    pub(crate) async fn e2ei_rotate(
+    /// Creates a commit in all local conversations for changing the credential. Requires first
+    /// having enrolled a new X509 certificate with either [MlsCentral::e2ei_new_activation_enrollment]
+    /// or [MlsCentral::e2ei_new_rotate_enrollment]
+    #[cfg_attr(not(test), tracing::instrument(err, skip_all))]
+    pub async fn e2ei_rotate(
         &mut self,
         id: &crate::prelude::ConversationId,
-        cb: &CredentialBundle,
+        cb: Option<&CredentialBundle>,
     ) -> CryptoResult<MlsCommitBundle> {
         self.get_conversation(id)
             .await?
@@ -228,8 +231,10 @@ impl MlsConversation {
         &mut self,
         backend: &MlsCryptoProvider,
         client: &Client,
-        cb: &CredentialBundle,
+        cb: Option<&CredentialBundle>,
     ) -> CryptoResult<MlsCommitBundle> {
+        let cb = cb.or_else(|| client.find_most_recent_credential_bundle(self.ciphersuite().signature_algorithm(), MlsCredentialType::X509))
+            .ok_or(E2eIdentityError::MissingExistingClient(MlsCredentialType::X509))?;
         let mut leaf_node = self.group.own_leaf().ok_or(CryptoError::InternalMlsError)?.clone();
         leaf_node.set_credential_with_key(cb.to_mls_credential_with_key());
         self.update_keying_material(client, backend, Some(cb), Some(leaf_node))
@@ -919,7 +924,7 @@ pub(crate) mod tests {
                             );
 
                             // Alice issues an Update commit to replace her current identity
-                            let commit = alice_central.mls_central.e2ei_rotate(&id, &cb).await.unwrap();
+                            let commit = alice_central.mls_central.e2ei_rotate(&id, Some(&cb)).await.unwrap();
 
                             // Bob decrypts the commit...
                             let decrypted = bob_central
@@ -996,7 +1001,7 @@ pub(crate) mod tests {
                                 .await;
 
                             // Alice issues an Update commit to replace her current identity
-                            let _rotate_commit = alice_central.mls_central.e2ei_rotate(&id, &cb).await.unwrap();
+                            let _rotate_commit = alice_central.mls_central.e2ei_rotate(&id, Some(&cb)).await.unwrap();
 
                             // Meanwhile, Bob creates a simple commit
                             let bob_commit = bob_central.mls_central.update_keying_material(&id).await.unwrap();
