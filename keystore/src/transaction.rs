@@ -198,6 +198,9 @@ impl KeystoreTransaction {
         entity: E,
     ) -> CryptoKeystoreResult<()> {
         let mut conn = self.cache.borrow_conn().await?;
+        #[cfg(target_family = "wasm")]
+        let transaction = conn.new_transaction(&[E::COLLECTION_NAME]).await?;
+        #[cfg(not(target_family = "wasm"))]
         let transaction = conn.new_transaction().await?;
         entity.save(&transaction).await?;
         transaction.commit_tx().await
@@ -211,6 +214,9 @@ impl KeystoreTransaction {
     ) -> CryptoKeystoreResult<E> {
         entity.pre_save().await?;
         let mut conn = self.cache.borrow_conn().await?;
+        #[cfg(target_family = "wasm")]
+        let transaction = conn.new_transaction(&[E::COLLECTION_NAME]).await?;
+        #[cfg(not(target_family = "wasm"))]
         let transaction = conn.new_transaction().await?;
         entity.save(&transaction).await?;
         transaction.commit_tx().await?;
@@ -225,6 +231,9 @@ impl KeystoreTransaction {
         id: S,
     ) -> CryptoKeystoreResult<()> {
         let mut conn = self.cache.borrow_conn().await?;
+        #[cfg(target_family = "wasm")]
+        let transaction = conn.new_transaction(&[E::COLLECTION_NAME]).await?;
+        #[cfg(not(target_family = "wasm"))]
         let transaction = conn.new_transaction().await?;
         E::delete(&transaction, id.as_ref().into()).await?;
         transaction.commit_tx().await?;
