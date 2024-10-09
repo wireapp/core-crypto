@@ -151,7 +151,7 @@ impl EntityTransactionExt for MlsCredential {
         use rusqlite::ToSql as _;
         let params: [rusqlite::types::ToSqlOutput; 3] = [zb_id.to_sql()?, zb_cred.to_sql()?, self.created_at.to_sql()?];
 
-        let sql = "INSERT INTO mls_credentials (id, credential, created_at) VALUES (?, ?, datetime(?, 'unixepoch')";
+        let sql = "INSERT INTO mls_credentials (id, credential, created_at) VALUES (?, ?, datetime(?, 'unixepoch'))";
         transaction.execute(sql, params)?;
         let row_id = transaction.last_insert_rowid();
 
