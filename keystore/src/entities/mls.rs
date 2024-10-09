@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see http://www.gnu.org/licenses/.
 
-use super::{Entity, EntityFindParams};
+use super::{Entity, EntityFindParams, EntityTransactionExt, StringEntityId};
 #[cfg(target_family = "wasm")]
 use crate::connection::storage::WasmEncryptedStorage;
 use crate::{connection::TransactionWrapper, CryptoKeystoreError, CryptoKeystoreResult};
@@ -294,6 +294,17 @@ pub trait UniqueEntity: Entity<ConnectionType = crate::connection::KeystoreDatab
         blob.close()?;
 
         Ok(())
+    }
+}
+
+#[cfg_attr(target_family = "wasm", async_trait::async_trait(?Send))]
+#[cfg_attr(not(target_family = "wasm"), async_trait::async_trait)]
+impl <T: UniqueEntity + Send + Sync> EntityTransactionExt for T {
+    async fn save(&self, tx: &TransactionWrapper<'_>) -> CryptoKeystoreResult<()> {
+        self.replace(tx).await
+    }
+    async fn delete(_: &TransactionWrapper<'_>, _id: StringEntityId<'_>) -> CryptoKeystoreResult<()> {
+        Err(CryptoKeystoreError::NotImplemented)
     }
 }
 
