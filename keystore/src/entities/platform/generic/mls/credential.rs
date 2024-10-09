@@ -33,6 +33,12 @@ impl Entity for MlsCredential {
     fn id_raw(&self) -> &[u8] {
         self.id.as_slice()
     }
+
+    fn merge_key(&self) -> Vec<u8> {
+        let mut merge_key = self.id_raw().to_vec();
+        merge_key.extend(self.created_at.to_be_bytes().to_vec());
+        merge_key
+    }
 }
 
 #[cfg_attr(target_family = "wasm", async_trait::async_trait(?Send))]

@@ -330,7 +330,7 @@ impl KeystoreTransaction {
         let merged = records_a
             .into_iter()
             .chain(records_b)
-            .unique_by(|e| e.id_raw().to_vec());
+            .unique_by(|e| e.merge_key());
 
         // The alternative to giving up laziness here would be to use a dynamically
         // typed iterator Box<dyn Iterator<Item = E>> assigned to `merged`. The below approach
