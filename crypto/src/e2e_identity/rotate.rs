@@ -1067,5 +1067,79 @@ pub(crate) mod tests {
                 .await
             }
         }
+
+        #[apply(all_cred_cipher)]
+        #[wasm_bindgen_test]
+        pub async fn rotate_should_replace_existing_basic_credentials(case: TestCase) {
+            if case.is_x509() {
+                run_test_with_client_ids(
+                    case.clone(),
+                    ["alice", "bob"],
+                    move |[mut alice_central, mut bob_central]| {
+                        Box::pin(async move {
+                            let id = conversation_id();
+                            alice_central
+                                .mls_central
+                                .new_conversation(&id, MlsCredentialType::Basic, case.cfg.clone())
+                                .await
+                                .unwrap();
+
+                            alice_central
+                                .mls_central
+                                .invite_all(&case, &id, [&mut bob_central.mls_central])
+                                .await
+                                .unwrap();
+
+                            let x509_test_chain = alice_central.x509_test_chain.as_ref().as_ref().unwrap();
+                            let intermediate_ca = x509_test_chain.find_local_intermediate_ca();
+                            let alice_og_cert = &x509_test_chain
+                                .actors
+                                .iter()
+                                .find(|actor| actor.name == "alice")
+                                .unwrap()
+                                .certificate;
+
+                            // Alice creates a new Credential, updating her handle/display_name
+                            let alice_cid = alice_central.mls_central.get_client_id();
+                            let (new_handle, new_display_name) = ("new_alice_wire", "New Alice Smith");
+                            alice_central
+                                .mls_central
+                                .rotate_credential(&case, new_handle, new_display_name, alice_og_cert, intermediate_ca)
+                                .await;
+
+                            // Verify old identity is a basic identity in the MLS group
+                            let alice_old_identities = alice_central
+                                .mls_central
+                                .get_device_identities(&id, &[alice_cid])
+                                .await
+                                .unwrap();
+                            let alice_old_identity = alice_old_identities.first().unwrap();
+                            assert_eq!(alice_old_identity.credential_type, MlsCredentialType::Basic);
+                            assert_eq!(alice_old_identity.x509_identity, None);
+
+                            // Alice issues an Update commit to replace her current identity
+                            let commit = alice_central.mls_central.e2ei_rotate(&id, None).await.unwrap();
+
+                            // Bob decrypts the commit...
+                            let decrypted = bob_central
+                                .mls_central
+                                .decrypt_message(&id, commit.commit.to_bytes().unwrap())
+                                .await
+                                .unwrap();
+                            // ...and verifies that now Alice is represented with her new identity
+                            alice_central.mls_central.verify_sender_identity(&case, &decrypted);
+
+                            // Finally, Alice merges her commit and verifies her new identity gets applied
+                            alice_central.mls_central.commit_accepted(&id).await.unwrap();
+                            alice_central
+                                .mls_central
+                                .verify_local_credential_rotated(&id, new_handle, new_display_name)
+                                .await;
+                        })
+                    },
+                )
+                .await
+            }
+        }
     }
 }
