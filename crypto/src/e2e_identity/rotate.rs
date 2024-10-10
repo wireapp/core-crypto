@@ -625,9 +625,8 @@ pub(crate) mod tests {
                         .await
                         .unwrap();
                     assert_eq!(old_cb, old_cb_found);
-                    let mut alice_client_guard = alice_central.context.mls_client_mut().await.unwrap();
                     let (cid, all_credentials, scs, old_nb_identities) = {
-                        let alice_client = alice_client_guard.as_ref().unwrap();
+                        let alice_client = alice_central.client().await;
                         let old_nb_identities = alice_client
                             .identities
                             .iter()
@@ -659,9 +658,11 @@ pub(crate) mod tests {
                     let client = Client::load(backend, &cid, all_credentials, scs)
                         .await
                         .unwrap();
+                    let mut alice_client_guard = alice_central.context.mls_client_mut().await.unwrap();
                     *alice_client_guard = Some(client);
+                    drop(alice_client_guard);
 
-                    let alice_client = alice_client_guard.as_ref().unwrap();
+                    let alice_client = alice_central.client().await;
 
                     // Verify that Alice has the same credentials
                     let cb = alice_central

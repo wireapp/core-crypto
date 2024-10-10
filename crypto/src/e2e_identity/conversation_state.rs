@@ -485,9 +485,8 @@ mod tests {
                     let cb = Client::new_x509_credential_bundle(alice_cert.certificate.clone().into()).unwrap();
                     alice_central.context.e2ei_rotate(&id, &cb).await.unwrap();
                     alice_central.context.commit_accepted(&id).await.unwrap();
-
-                    let mut alice_client_guard = alice_central.context.mls_client_mut().await.unwrap();
-                    let alice_client = alice_client_guard.as_mut().unwrap();
+                    
+                    let mut alice_client = alice_central.client().await;
                     let alice_provider = alice_central.context.mls_provider().await.unwrap();
 
                     // Needed because 'e2ei_rotate' does not do it directly and it's required for 'get_group_info'
