@@ -242,16 +242,13 @@ impl CentralContext {
         Ok(())
     }
 
-    pub async fn get_group_info(&mut self, id: &ConversationId) -> VerifiableGroupInfo {
+    pub async fn get_group_info(&mut self, client: &Client, id: &ConversationId) -> VerifiableGroupInfo {
         let conversation_arc = self.get_conversation(id).await.unwrap();
         let mut conversation = conversation_arc.write().await;
         let group = &mut conversation.group;
         let ct = group.credential().unwrap().credential_type();
         let cs = group.ciphersuite();
-        let client = self.mls_client().await.unwrap();
         let cb = client
-            .as_ref()
-            .unwrap()
             .find_most_recent_credential_bundle(cs.into(), ct.into())
             .unwrap();
 
@@ -318,12 +315,9 @@ impl CentralContext {
             .index
     }
 
-    pub async fn client_signature_key(&self, case: &TestCase) -> SignaturePublicKey {
-        let client = self.mls_client().await.unwrap();
+    pub async fn client_signature_key(&self, client: &Client, case: &TestCase) -> SignaturePublicKey {
         let (sc, ct) = (case.signature_scheme(), case.credential_type);
         let cb = client
-            .as_ref()
-            .unwrap()
             .find_most_recent_credential_bundle(sc, ct)
             .unwrap();
         SignaturePublicKey::from(cb.signature_key.public())
@@ -336,22 +330,20 @@ impl CentralContext {
             .unwrap()
     }
 
-    pub async fn get_client_id(&self) -> ClientId {
-        let client = self.mls_client().await.unwrap();
-        client.as_ref().unwrap().id().clone()
+    pub async fn get_client_id(&self, client: &Client) -> ClientId {
+        client.id().clone()
     }
-
-    pub async fn get_user_id(&self) -> String {
-        WireQualifiedClientId::from(self.get_client_id().await).get_user_id()
+    
+    pub async fn get_user_id(&self, client: &Client) -> String {
+        WireQualifiedClientId::from(self.get_client_id(client).await).get_user_id()
     }
 
     pub async fn new_credential_bundle(
         &mut self,
         case: &TestCase,
+        client: &mut Client,
         signer: Option<&X509Certificate>,
     ) -> CredentialBundle {
-        let mut client = self.mls_client_mut().await.unwrap();
-        let client = client.as_mut().unwrap();
         let backend = &self.mls_provider().await.unwrap();
         let transaction = &self.keystore().await.unwrap();
 
@@ -375,10 +367,9 @@ impl CentralContext {
 
     pub async fn find_most_recent_credential_bundle_for_conversation(
         &mut self,
+        client: &Client,
         id: &ConversationId,
     ) -> Option<CredentialBundle> {
-        let client_guard = self.mls_client().await.unwrap();
-        let client = client_guard.as_ref().unwrap();
         self.get_conversation(id)
             .await
             .unwrap()
@@ -402,12 +393,11 @@ impl CentralContext {
 
     pub async fn find_credential_bundle(
         &self,
+        client: &Client,
         sc: SignatureScheme,
         ct: MlsCredentialType,
         pk: &SignaturePublicKey,
     ) -> Option<CredentialBundle> {
-        let client_guard = self.mls_client().await.unwrap();
-        let client = client_guard.as_ref()?;
         client
             .identities
             .find_credential_bundle_by_public_key(sc, ct, pk)
@@ -474,14 +464,13 @@ impl CentralContext {
     pub async fn rotate_credential(
         &mut self,
         case: &TestCase,
+        client: &mut Client,
         handle: &str,
         display_name: &str,
         existing_cert: &X509Certificate,
         signer: &X509Certificate,
     ) -> CredentialBundle {
-        let cid = QualifiedE2eiClientId::try_from(self.get_client_id().await.as_slice()).unwrap();
-        let mut client_guard = self.mls_client_mut().await.unwrap();
-        let client = client_guard.as_mut().unwrap();
+        let cid = QualifiedE2eiClientId::try_from(self.get_client_id(client).await.as_slice()).unwrap();
         let new_cert = CertificateBundle::new(
             handle,
             display_name,
@@ -495,9 +484,8 @@ impl CentralContext {
             .unwrap()
     }
 
-    pub async fn get_e2ei_client_id(&self) -> wire_e2e_identity::prelude::E2eiClientId {
-        let client_guard = self.mls_client().await.unwrap();
-        let cid = client_guard.as_ref().map(|c| c.id().clone()).unwrap();
+    pub async fn get_e2ei_client_id(&self, client: &Client) -> wire_e2e_identity::prelude::E2eiClientId {
+        let cid = self.get_client_id(client).await;
         let cid = std::str::from_utf8(&cid.0).unwrap();
         let cid: String = cid.parse::<QualifiedE2eiClientId>().unwrap().try_into().unwrap();
         wire_e2e_identity::prelude::E2eiClientId::try_from_qualified(&cid).unwrap()
@@ -505,6 +493,7 @@ impl CentralContext {
 
     pub async fn verify_local_credential_rotated(
         &mut self,
+        client: &Client,
         id: &ConversationId,
         new_handle: &str,
         new_display_name: &str,
@@ -512,7 +501,7 @@ impl CentralContext {
         let new_handle = format!("wireapp://%40{new_handle}@world.com");
         // verify the identity in..
         // the MLS group
-        let cid = self.get_client_id().await;
+        let cid = self.get_client_id(client).await;
         let group_identities = self.get_device_identities(id, &[cid.clone()]).await.unwrap();
         let group_identity = group_identities.first().unwrap();
         assert_eq!(group_identity.client_id.as_bytes(), cid.0.as_slice());
@@ -526,7 +515,7 @@ impl CentralContext {
 
         // the in-memory mapping
         let cb = self
-            .find_most_recent_credential_bundle_for_conversation(id)
+            .find_most_recent_credential_bundle_for_conversation(client, id)
             .await
             .unwrap()
             .clone();
@@ -565,11 +554,9 @@ impl CentralContext {
         assert!(!keystore_identity.thumbprint.is_empty());
     }
 
-    pub async fn verify_sender_identity(&self, case: &TestCase, decrypted: &MlsConversationDecryptMessage) {
-        let client_guard = self.mls_client().await.unwrap();
-        let mls_client = client_guard.as_ref().unwrap();
+    pub async fn verify_sender_identity(&self, case: &TestCase, client: &Client, decrypted: &MlsConversationDecryptMessage) {
         let (sc, ct) = (case.signature_scheme(), case.credential_type);
-        let sender_cb = mls_client.find_most_recent_credential_bundle(sc, ct).unwrap();
+        let sender_cb = client.find_most_recent_credential_bundle(sc, ct).unwrap();
 
         if let openmls::prelude::MlsCredentialType::X509(certificate) = &sender_cb.credential().mls_credential() {
             let mls_identity = certificate.extract_identity(case.ciphersuite(), None).unwrap();

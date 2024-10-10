@@ -480,7 +480,8 @@ impl CentralContext {
         if self.conversation_exists(id).await? || self.pending_group_exists(id).await? {
             return Err(CryptoError::ConversationAlreadyExists(id.clone()));
         }
-
+        // TODO(SimonThormeyer): Solve the following:
+        // This may cause a deadlock if the caller's scope already has a lock held on mls client.
         let mut client_guard = self.mls_client_mut().await?;
         let client = client_guard.as_mut().ok_or(CryptoError::MlsNotInitialized)?;
         let conversation = MlsConversation::create(
