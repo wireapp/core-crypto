@@ -6,13 +6,12 @@ use std::{ops::Deref, sync::Arc};
 use async_lock::{RwLock, RwLockReadGuardArc, RwLockWriteGuardArc};
 use mls_crypto_provider::{CryptoKeystore, TransactionalCryptoProvider};
 
+use super::MlsCentral;
 use crate::{
     group_store::GroupStore,
     prelude::{Client, MlsConversation},
     CoreCryptoCallbacks, CryptoError, CryptoResult,
 };
-
-use super::MlsCentral;
 
 /// This struct provides transactional support for Core Crypto.
 ///

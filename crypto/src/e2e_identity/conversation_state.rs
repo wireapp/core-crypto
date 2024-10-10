@@ -263,8 +263,7 @@ mod tests {
                         .await
                         .unwrap();
                     alice_central
-                        .context
-                        .invite_all(&case, &id, [&mut bob_central.context])
+                        .invite_all(&case, &id, [&bob_central])
                         .await
                         .unwrap();
 
@@ -275,7 +274,7 @@ mod tests {
                             assert_eq!(alice_state, E2eiConversationState::NotEnabled);
                             assert_eq!(bob_state, E2eiConversationState::NotEnabled);
 
-                            let gi = alice_central.context.get_group_info(&id).await;
+                            let gi = alice_central.get_group_info(&id).await;
                             let state = alice_central
                                 .context
                                 .get_credential_in_use(gi, MlsCredentialType::X509)
@@ -289,7 +288,7 @@ mod tests {
                             assert_eq!(alice_state, E2eiConversationState::Verified);
                             assert_eq!(bob_state, E2eiConversationState::Verified);
 
-                            let gi = alice_central.context.get_group_info(&id).await;
+                            let gi = alice_central.get_group_info(&id).await;
                             let state = alice_central
                                 .context
                                 .get_credential_in_use(gi, MlsCredentialType::X509)
@@ -353,8 +352,7 @@ mod tests {
                         .await
                         .unwrap();
                     alice_central
-                        .context
-                        .invite_all(&case, &id, [&mut bob_central.context])
+                        .invite_all(&case, &id, [&bob_central])
                         .await
                         .unwrap();
 
@@ -364,7 +362,7 @@ mod tests {
                     assert_eq!(alice_state, E2eiConversationState::NotVerified);
                     assert_eq!(bob_state, E2eiConversationState::NotVerified);
 
-                    let gi = alice_central.context.get_group_info(&id).await;
+                    let gi = alice_central.get_group_info(&id).await;
                     let state = alice_central
                         .context
                         .get_credential_in_use(gi, MlsCredentialType::X509)
@@ -396,8 +394,7 @@ mod tests {
                         .await
                         .unwrap();
                     alice_central
-                        .context
-                        .invite_all(&case, &id, [&mut bob_central.context])
+                        .invite_all(&case, &id, [&bob_central])
                         .await
                         .unwrap();
 
@@ -430,10 +427,10 @@ mod tests {
                         .save_new_x509_credential_bundle(&alice_provider.keystore(), case.signature_scheme(), cert)
                         .await
                         .unwrap();
-                    
+
                     drop(alice_client_guard);
                     // Need to fetch it before it becomes invalid & expires
-                    let gi = alice_central.context.get_group_info(&id).await;
+                    let gi = alice_central.get_group_info(&id).await;
 
                     let elapsed = start.elapsed();
                     // Give time to the certificate to expire
@@ -513,7 +510,7 @@ mod tests {
                     assert_eq!(alice_state, E2eiConversationState::NotVerified);
 
                     // Need to fetch it before it becomes invalid & expires
-                    let gi = alice_central.context.get_group_info(&id).await;
+                    let gi = alice_central.get_group_info(&id).await;
 
                     let state = alice_central
                         .context

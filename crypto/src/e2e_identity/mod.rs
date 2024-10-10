@@ -798,7 +798,7 @@ pub(crate) mod tests {
 
         let _order_req = enrollment.new_order_request(previous_nonce.to_string()).unwrap();
         let client_id = match client_id {
-            None => ctx.context.get_e2ei_client_id().await.to_uri(),
+            None => ctx.get_e2ei_client_id().await.to_uri(),
             Some(client_id) => format!("{}{client_id}", wire_e2e_identity::prelude::E2eiClientId::URI_SCHEME),
         };
         let device_identifier = format!("{{\"name\":\"{display_name}\",\"domain\":\"world.com\",\"client-id\":\"{client_id}\",\"handle\":\"wireapp://%40{handle}@world.com\"}}");

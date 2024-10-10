@@ -584,8 +584,7 @@ mod tests {
                             .await
                             .unwrap();
                         alice_central
-                            .context
-                            .invite_all(&case, &id, [&mut bob_central.context])
+                            .invite_all(&case, &id, [&bob_central])
                             .await
                             .unwrap();
                         let epoch = alice_central.context.conversation_epoch(&id).await.unwrap();

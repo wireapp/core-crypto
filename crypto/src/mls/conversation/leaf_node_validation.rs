@@ -35,8 +35,7 @@ mod tests {
 
                         // should fail when creating Add proposal
                         let invalid_kp = bob_central
-                            .context
-                            .new_keypackage(alice_central.context.mls_client().await.unwrap().as_ref().unwrap(), &case, Lifetime::new(expiration_time))
+                            .new_keypackage(&case, Lifetime::new(expiration_time))
                             .await;
 
                         // Give time to the KeyPackage to expire
@@ -54,15 +53,14 @@ mod tests {
                                 ProposeAddMemberError::KeyPackageVerifyError(KeyPackageVerifyError::InvalidLeafNode(_))
                             ))
                         ));
-                        assert!(alice_central.context.pending_proposals(&id).await.is_empty());
+                        assert!(alice_central.pending_proposals(&id).await.is_empty());
 
                         // should fail when creating Add commits
                         let expiration_time = 14;
                         let start = fluvio_wasm_timer::Instant::now();
 
                         let invalid_kp = bob_central
-                            .context
-                            .new_keypackage(bob_central.context.mls_client().await.unwrap().as_ref().unwrap(), &case, Lifetime::new(expiration_time))
+                            .new_keypackage(&case, Lifetime::new(expiration_time))
                             .await;
 
                         // Give time to the KeyPackage to expire
@@ -84,8 +82,8 @@ mod tests {
                                 AddMembersError::KeyPackageVerifyError(KeyPackageVerifyError::InvalidLeafNode(_))
                             ))
                         ));
-                        assert!(alice_central.context.pending_proposals(&id).await.is_empty());
-                        assert!(alice_central.context.pending_commit(&id).await.is_none());
+                        assert!(alice_central.pending_proposals(&id).await.is_empty());
+                        assert!(alice_central.pending_commit(&id).await.is_none());
                     })
                 },
             )
@@ -111,14 +109,12 @@ mod tests {
                             .await
                             .unwrap();
                         alice_central
-                            .context
-                            .invite_all(&case, &id, [&mut bob_central.context])
+                            .invite_all(&case, &id, [&bob_central])
                             .await
                             .unwrap();
 
                         let invalid_kp = charlie_central
-                            .context
-                            .new_keypackage(charlie_central.context.mls_client().await.unwrap().as_ref().unwrap(), &case, Lifetime::new(expiration_time))
+                            .new_keypackage(&case, Lifetime::new(expiration_time))
                             .await;
 
                         let proposal = alice_central.context.new_add_proposal(&id, invalid_kp).await.unwrap();
@@ -169,15 +165,13 @@ mod tests {
                             .await
                             .unwrap();
                         alice_central
-                            .context
-                            .invite_all(&case, &id, [&mut bob_central.context])
+                            .invite_all(&case, &id, [&bob_central])
                             .await
                             .unwrap();
 
                         // should fail when receiving Add commit
                         let invalid_kp = charlie_central
-                            .context
-                            .new_keypackage(charlie_central.context.mls_client().await.unwrap().as_ref().unwrap(), &case, Lifetime::new(expiration_time))
+                            .new_keypackage(&case, Lifetime::new(expiration_time))
                             .await;
 
                         let commit = alice_central
@@ -231,8 +225,7 @@ mod tests {
                             .unwrap();
 
                         let invalid_kp = bob_central
-                            .context
-                            .new_keypackage(bob_central.context.mls_client().await.unwrap().as_ref().unwrap(), &case, Lifetime::new(expiration_time))
+                            .new_keypackage(&case, Lifetime::new(expiration_time))
                             .await;
                         let commit = alice_central
                             .context

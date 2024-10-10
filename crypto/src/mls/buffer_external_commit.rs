@@ -55,9 +55,8 @@ mod tests {
                         .new_conversation(&id, case.credential_type, case.cfg.clone())
                         .await
                         .unwrap();
-
                     // Bob tries to join Alice's group with an external commit
-                    let gi = alice_central.context.get_group_info(&id).await;
+                    let gi = alice_central.get_group_info(&id).await;
                     let external_commit = bob_central
                         .context
                         .join_by_external_commit(gi, case.custom_cfg(), case.credential_type)
@@ -91,7 +90,7 @@ mod tests {
                         .decrypt_message(&id, external_proposal.to_bytes().unwrap())
                         .await
                         .unwrap();
-                    let charlie = charlie_central.context.rand_key_package(&case).await;
+                    let charlie = charlie_central.rand_key_package(&case).await;
                     let commit = alice_central
                         .context
                         .add_members_to_conversation(&id, vec![charlie])
@@ -156,20 +155,17 @@ mod tests {
                     }
                     // because external commit got merged
                     assert!(bob_central
-                        .context
-                        .try_talk_to(&id, &mut alice_central.context)
+                        .try_talk_to(&id, &alice_central)
                         .await
                         .is_ok());
                     // because Alice's commit got merged
                     assert!(bob_central
-                        .context
-                        .try_talk_to(&id, &mut charlie_central.context)
+                        .try_talk_to(&id, &charlie_central)
                         .await
                         .is_ok());
                     // because Debbie's external proposal got merged through the commit
                     assert!(bob_central
-                        .context
-                        .try_talk_to(&id, &mut debbie_central.context)
+                        .try_talk_to(&id, &debbie_central)
                         .await
                         .is_ok());
 
@@ -196,8 +192,7 @@ mod tests {
                         .await
                         .unwrap();
                     alice_central
-                        .context
-                        .invite_all(&case, &id, [&mut bob_central.context])
+                        .invite_all(&case, &id, [&mut bob_central])
                         .await
                         .unwrap();
 
@@ -215,7 +210,7 @@ mod tests {
                     assert!(matches!(decrypt.unwrap_err(), CryptoError::BufferedFutureMessage));
                     assert_eq!(alice_central.context.count_entities().await.pending_messages, 2);
 
-                    let gi = bob_central.context.get_group_info(&id).await;
+                    let gi = bob_central.get_group_info(&id).await;
                     let ext_commit = alice_central
                         .context
                         .join_by_external_commit(gi, case.custom_cfg(), case.credential_type)

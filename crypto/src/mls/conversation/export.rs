@@ -213,8 +213,7 @@ mod tests {
                         assert_eq!(alice_central.context.get_client_ids(&id).await.unwrap().len(), 1);
 
                         alice_central
-                            .context
-                            .invite_all(&case, &id, [&mut bob_central.context])
+                            .invite_all(&case, &id, [&bob_central])
                             .await
                             .unwrap();
                         assert_eq!(alice_central.context.get_client_ids(&id).await.unwrap().len(), 2);
