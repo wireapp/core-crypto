@@ -1235,14 +1235,13 @@ export class CoreCrypto {
                 custom?.keyRotationSpan,
                 custom?.wirePolicy
             );
-            const ret = await CoreCryptoError.asyncMapErr(
+            return await CoreCryptoError.asyncMapErr(
                 this.#cc.create_conversation(
                     conversationId,
                     creatorCredentialType,
                     config
                 )
             );
-            return ret;
         } catch (e) {
             throw CoreCryptoError.fromStdError(e as Error);
         }
@@ -1284,7 +1283,7 @@ export class CoreCrypto {
 
             const identity = mapWireIdentity(ffiDecryptedMessage.identity);
 
-            const ret: DecryptedMessage = {
+            return {
                 message: ffiDecryptedMessage.message,
                 proposals: ffiDecryptedMessage.proposals,
                 isActive: ffiDecryptedMessage.is_active,
@@ -1307,8 +1306,6 @@ export class CoreCrypto {
                 crlNewDistributionPoints:
                     ffiDecryptedMessage.crl_new_distribution_points,
             };
-
-            return ret;
         } catch (e) {
             throw CoreCryptoError.fromStdError(e as Error);
         }
@@ -1357,12 +1354,10 @@ export class CoreCrypto {
                     this.#cc.process_welcome_message(welcomeMessage, config)
                 );
 
-            const ret: WelcomeBundle = {
+            return {
                 id: ffiRet.id,
                 crlNewDistributionPoints: ffiRet.crl_new_distribution_points,
             };
-
-            return ret;
         } catch (e) {
             throw CoreCryptoError.fromStdError(e as Error);
         }
@@ -1460,7 +1455,7 @@ export class CoreCrypto {
 
             const gi = ffiRet.group_info;
 
-            const ret: MemberAddedMessages = {
+            return {
                 welcome: ffiRet.welcome,
                 commit: ffiRet.commit,
                 groupInfo: {
@@ -1470,8 +1465,6 @@ export class CoreCrypto {
                 },
                 crlNewDistributionPoints: ffiRet.crl_new_distribution_points,
             };
-
-            return ret;
         } catch (e) {
             throw CoreCryptoError.fromStdError(e as Error);
         }
@@ -1505,7 +1498,7 @@ export class CoreCrypto {
 
             const gi = ffiRet.group_info;
 
-            const ret: CommitBundle = {
+            return {
                 welcome: ffiRet.welcome,
                 commit: ffiRet.commit,
                 groupInfo: {
@@ -1514,8 +1507,6 @@ export class CoreCrypto {
                     payload: gi.payload,
                 },
             };
-
-            return ret;
         } catch (e) {
             throw CoreCryptoError.fromStdError(e as Error);
         }
@@ -1543,7 +1534,7 @@ export class CoreCrypto {
 
             const gi = ffiRet.group_info;
 
-            const ret: CommitBundle = {
+            return {
                 welcome: ffiRet.welcome,
                 commit: ffiRet.commit,
                 groupInfo: {
@@ -1552,8 +1543,6 @@ export class CoreCrypto {
                     payload: gi.payload,
                 },
             };
-
-            return ret;
         } catch (e) {
             throw CoreCryptoError.fromStdError(e as Error);
         }
@@ -1584,7 +1573,7 @@ export class CoreCrypto {
 
             const gi = ffiRet.group_info;
 
-            const ret: CommitBundle = {
+            return {
                 welcome: ffiRet.welcome,
                 commit: ffiRet.commit,
                 groupInfo: {
@@ -1593,8 +1582,6 @@ export class CoreCrypto {
                     payload: gi.payload,
                 },
             };
-
-            return ret;
         } catch (e) {
             throw CoreCryptoError.fromStdError(e as Error);
         }
@@ -1752,7 +1739,7 @@ export class CoreCrypto {
 
             const gi = ffiInitMessage.group_info;
 
-            const ret: ConversationInitBundle = {
+            return {
                 conversationId: ffiInitMessage.conversation_id,
                 commit: ffiInitMessage.commit,
                 groupInfo: {
@@ -1763,8 +1750,6 @@ export class CoreCrypto {
                 crlNewDistributionPoints:
                     ffiInitMessage.crl_new_distribution_points,
             };
-
-            return ret;
         } catch (e) {
             throw CoreCryptoError.fromStdError(e as Error);
         }
@@ -2357,14 +2342,12 @@ export class CoreCrypto {
                 newKeyPackageCount
             );
 
-        const ret: RotateBundle = {
+        return {
             commits: ffiRet.commits,
             newKeyPackages: ffiRet.new_key_packages,
             keyPackageRefsToRemove: ffiRet.key_package_refs_to_remove,
             crlNewDistributionPoints: ffiRet.crl_new_distribution_points,
         };
-
-        return ret;
     }
 
     /**
