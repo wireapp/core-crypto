@@ -1,4 +1,4 @@
-use crate::entities::{EntityBase, ProteusIdentity, ProteusPrekey, ProteusSession, UniqueEntity};
+use crate::entities::{EntityBase, EntityIdStringExt, ProteusIdentity, ProteusPrekey, ProteusSession, UniqueEntity};
 use crate::{
     connection::{Connection, DatabaseConnection, FetchFromDatabase, KeystoreDatabaseConnection, TransactionWrapper},
     entities::{
@@ -119,6 +119,10 @@ impl EntityId {
             _ => Err(CryptoKeystoreError::NotImplemented),
         }
     }
+
+    fn matches_entity<E: crate::entities::Entity>(&self, e: &E) -> CryptoKeystoreResult<bool> {
+        Ok(EntityId::from_collection_name(E::COLLECTION_NAME, e.id_raw())? == *self)
+    }
 }
 
 async fn execute_save(tx: &TransactionWrapper<'_>, entity: &Entity) -> CryptoKeystoreResult<()> {
@@ -192,7 +196,7 @@ impl KeystoreTransaction {
     }
 
     pub(crate) async fn save<
-        E: crate::entities::Entity<ConnectionType=KeystoreDatabaseConnection> + Sync + EntityTransactionExt,
+        E: crate::entities::Entity<ConnectionType = KeystoreDatabaseConnection> + Sync + EntityTransactionExt,
     >(
         &self,
         entity: E,
@@ -207,7 +211,7 @@ impl KeystoreTransaction {
     }
 
     pub(crate) async fn save_mut<
-        E: crate::entities::Entity<ConnectionType=KeystoreDatabaseConnection> + EntityTransactionExt + Sync,
+        E: crate::entities::Entity<ConnectionType = KeystoreDatabaseConnection> + EntityTransactionExt + Sync,
     >(
         &self,
         mut entity: E,
@@ -224,7 +228,7 @@ impl KeystoreTransaction {
     }
 
     pub(crate) async fn remove<
-        E: crate::entities::Entity<ConnectionType=KeystoreDatabaseConnection> + EntityTransactionExt,
+        E: crate::entities::Entity<ConnectionType = KeystoreDatabaseConnection> + EntityTransactionExt,
         S: AsRef<[u8]>,
     >(
         &self,
@@ -243,9 +247,9 @@ impl KeystoreTransaction {
     }
 
     pub(crate) async fn child_groups<
-        E: crate::entities::Entity<ConnectionType=KeystoreDatabaseConnection>
-        + crate::entities::PersistedMlsGroupExt
-        + Sync,
+        E: crate::entities::Entity<ConnectionType = KeystoreDatabaseConnection>
+            + crate::entities::PersistedMlsGroupExt
+            + Sync,
     >(
         &self,
         entity: E,
@@ -253,11 +257,9 @@ impl KeystoreTransaction {
     ) -> CryptoKeystoreResult<Vec<E>> {
         let mut conn = self.cache.borrow_conn().await?;
         let cached_records = entity.child_groups(conn.deref_mut()).await?;
-        Ok(Self::merge_records(
-            cached_records,
-            persisted_records,
-            EntityFindParams::default(),
-        ))
+        Ok(self
+            .merge_records(cached_records, persisted_records, EntityFindParams::default())
+            .await)
     }
 
     pub(crate) async fn cred_delete_by_credential(&self, cred: Vec<u8>) -> CryptoKeystoreResult<()> {
@@ -269,7 +271,7 @@ impl KeystoreTransaction {
         deleted_list.push(cred);
         Ok(())
     }
-    
+
     pub(crate) async fn find<E>(&self, id: &[u8]) -> CryptoKeystoreResult<Option<Option<E>>>
     where
         E: crate::entities::Entity<ConnectionType = KeystoreDatabaseConnection>,
@@ -306,7 +308,7 @@ impl KeystoreTransaction {
         params: EntityFindParams,
     ) -> CryptoKeystoreResult<Vec<E>> {
         let cached_records: Vec<E> = self.cache.find_all(params.clone()).await?;
-        Ok(Self::merge_records(cached_records, persisted_records, params))
+        Ok(self.merge_records(cached_records, persisted_records, params).await)
     }
 
     pub(crate) async fn find_many<E: crate::entities::Entity<ConnectionType = KeystoreDatabaseConnection>>(
@@ -315,30 +317,43 @@ impl KeystoreTransaction {
         ids: &[Vec<u8>],
     ) -> CryptoKeystoreResult<Vec<E>> {
         let cached_records: Vec<E> = self.cache.find_many(ids).await?;
-        Ok(Self::merge_records(
-            cached_records,
-            persisted_records,
-            EntityFindParams::default(),
-        ))
+        Ok(self
+            .merge_records(cached_records, persisted_records, EntityFindParams::default())
+            .await)
     }
 
-    fn merge_records<E: crate::entities::Entity<ConnectionType = KeystoreDatabaseConnection>>(
+    async fn merge_records<E: crate::entities::Entity<ConnectionType = KeystoreDatabaseConnection>>(
+        &self,
         records_a: Vec<E>,
         records_b: Vec<E>,
         params: EntityFindParams,
     ) -> Vec<E> {
-        let merged = records_a
-            .into_iter()
-            .chain(records_b)
-            .unique_by(|e| e.merge_key());
+        let merged = records_a.into_iter().chain(records_b).unique_by(|e| e.merge_key());
 
         // The alternative to giving up laziness here would be to use a dynamically
         // typed iterator Box<dyn Iterator<Item = E>> assigned to `merged`. The below approach
         // trades stack allocation instead of heap allocation for laziness.
+        //
+        // Also, we have to do this before filtering by deleted records since filter map does not
+        // return an iterator that is double ended.
         let merged: Vec<E> = if params.reverse {
             merged.rev().collect()
         } else {
             merged.collect()
+        };
+
+        let deleted_list = self.deleted.read().await;
+        let merged = if deleted_list.is_empty() || merged.is_empty() {
+            merged
+        } else {
+            merged
+                .into_iter()
+                .filter(|e| {
+                    let id = EntityId::from_collection_name(E::COLLECTION_NAME, e.id_raw());
+                    let Ok(id) = id else { return false };
+                    !deleted_list.contains(&id)
+                })
+                .collect()
         };
 
         merged
@@ -393,7 +408,6 @@ macro_rules! commit_transaction {
 }
 
 impl KeystoreTransaction {
-
     /// Persists all the operations in the database. It will effectively open a transaction
     /// internally, perform all the buffered operations and commit.
     ///
