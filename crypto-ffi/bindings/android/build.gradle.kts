@@ -15,6 +15,7 @@ val copyBindings by tasks.register<Copy>("copyBindings") {
     group = "uniffi"
     from(kotlinSources)
     include("**/*")
+    exclude("**/CoreCrypto.kt", "**/core_crypto.kt")
     into(generatedDir)
 }
 

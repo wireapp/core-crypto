@@ -139,7 +139,33 @@ script = '''
 '''
 
 
-[tasks.compile-ffi-kotlin]
+[tasks.compile-ffi-kotlin-android]
+dependencies = ["release-build"]
+command = "cargo"
+args = [
+    "run",
+    "--locked",
+    "--features", "uniffi/cli",
+    "--bin", "uniffi-bindgen",
+    "generate",
+    "--config", "uniffi-android.toml",
+    "--language", "kotlin",
+    "--out-dir", "./bindings/android/src/main/kotlin/",
+    "--library", "../target/release/libcore_crypto_ffi.${LIBRARY_EXTENSION}"
+]
+
+[tasks.ffi-kotlin-android]
+dependencies = ["compile-ffi-kotlin-android"]
+script = '''
+    mv ./bindings/android/src/main/kotlin/com/wire/crypto/core_crypto_ffi.kt ./bindings/android/src/main/kotlin/com/wire/crypto/CoreCrypto.kt
+
+    perl -i \
+        -pe 's/\bCryptoException\b/CryptoError/g;' \
+        -pe 's/\bE2eIdentityException\b/E2eIdentityError/g;' \
+        ./bindings/android/src/main/kotlin/uniffi/core_crypto/core_crypto.kt
+'''
+
+[tasks.compile-ffi-kotlin-jvm]
 dependencies = ["release-build"]
 command = "cargo"
 args = [
@@ -153,8 +179,8 @@ args = [
     "--library", "../target/release/libcore_crypto_ffi.${LIBRARY_EXTENSION}"
 ]
 
-[tasks.ffi-kotlin]
-dependencies = ["compile-ffi-kotlin"]
+[tasks.ffi-kotlin-jvm]
+dependencies = ["compile-ffi-kotlin-jvm"]
 script = '''
     mv ./bindings/jvm/src/main/kotlin/com/wire/crypto/core_crypto_ffi.kt ./bindings/jvm/src/main/kotlin/com/wire/crypto/CoreCrypto.kt
 
@@ -240,7 +266,7 @@ args = [
     "--",
     "-C", "strip=symbols"
 ]
-dependencies = ["ffi-kotlin", "android-env"]
+dependencies = ["ffi-kotlin-android", "android-env"]
 
 [tasks.android-armv8]
 command = "cargo"
@@ -254,7 +280,7 @@ args = [
     "--",
     "-C", "strip=symbols"
 ]
-dependencies = ["ffi-kotlin", "android-env"]
+dependencies = ["ffi-kotlin-android", "android-env"]
 
 [tasks.android-x86]
 command = "cargo"
@@ -270,7 +296,7 @@ args = [
     "-l", "static=clang_rt.builtins-x86_64-android",
     "-L", "${CLANG_RT_DIR}"
 ]
-dependencies = ["ffi-kotlin", "android-env"]
+dependencies = ["ffi-kotlin-android", "android-env"]
 
 [tasks.android-i686]
 command = "cargo"
@@ -286,7 +312,7 @@ args = [
     "-l", "static=clang_rt.builtins-i686-android",
     "-L", "${CLANG_RT_DIR}"
 ]
-dependencies = ["ffi-kotlin", "android-env"]
+dependencies = ["ffi-kotlin-android", "android-env"]
 
 [tasks.android]
 dependencies = ["android-armv7", "android-armv8", "android-x86", "android-i686"]
@@ -305,7 +331,7 @@ args = [
     "--",
     "-C", "strip=symbols"
 ]
-dependencies = ["ffi-kotlin"]
+dependencies = ["ffi-kotlin-jvm"]
 condition = { platforms = ["mac"] }
 
 [tasks.jvm-aarch64-darwin]
@@ -320,7 +346,7 @@ args = [
     "--",
     "-C", "strip=symbols"
 ]
-dependencies = ["ffi-kotlin"]
+dependencies = ["ffi-kotlin-jvm"]
 condition = { platforms = ["mac"] }
 
 [tasks.jvm-x86-linux]
@@ -335,7 +361,7 @@ args = [
     "--",
     "-C", "strip=symbols"
 ]
-dependencies = ["ffi-kotlin"]
+dependencies = ["ffi-kotlin-jvm"]
 condition = { platforms = ["linux"] }
 
 [tasks.jvm-darwin]
