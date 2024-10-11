@@ -88,7 +88,7 @@ jobs:
       - name: Build Artifacts
         run: |
           cd crypto-ffi
-          cargo make ffi-kotlin
+          cargo make ffi-kotlin-jvm
       - name: Gradle Setup
         uses: gradle/actions/setup-gradle@v4
       - name: Validate Gradle wrapper
