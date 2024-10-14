@@ -119,7 +119,7 @@ impl CentralContext {
 
         let mut client_guard = self.mls_client_mut().await?;
         let client = client_guard.as_mut().ok_or(CryptoError::MlsNotInitialized)?;
-        let cb = client.find_most_recent_credential_bundle(ciphersuite.signature_algorithm(), credential_type);
+        let cb = client.find_most_recent_credential_bundle(ciphersuite.signature_algorithm(), credential_type).await;
         let cb = match (cb, credential_type) {
             (Some(cb), _) => cb,
             (None, MlsCredentialType::Basic) => {
@@ -129,13 +129,13 @@ impl CentralContext {
                     .await?;
 
                 client
-                    .find_most_recent_credential_bundle(ciphersuite.signature_algorithm(), credential_type)
+                    .find_most_recent_credential_bundle(ciphersuite.signature_algorithm(), credential_type).await
                     .ok_or(CryptoError::CredentialNotFound(credential_type))?
             }
             (None, MlsCredentialType::X509) => return Err(CryptoError::E2eiEnrollmentNotDone),
         };
         let kp = client
-            .generate_one_keypackage_from_credential_bundle(&mls_provider, ciphersuite, cb)
+            .generate_one_keypackage_from_credential_bundle(&mls_provider, ciphersuite, &cb)
             .await?;
 
         Ok(JoinProposal::new(kp, group_id, epoch, &cb.signature_key).map_err(MlsError::from)?)

@@ -155,7 +155,7 @@ impl MlsConversation {
         backend: &TransactionalCryptoProvider,
     ) -> CryptoResult<MlsConversationCreationMessage> {
         let signer = &self
-            .find_most_recent_credential_bundle(client)?
+            .find_most_recent_credential_bundle(client).await?
             .ok_or(CryptoError::IdentityInitializationError)?
             .signature_key;
 
@@ -216,7 +216,7 @@ impl MlsConversation {
             })?;
 
         let signer = &self
-            .find_most_recent_credential_bundle(client)?
+            .find_most_recent_credential_bundle(client).await?
             .ok_or(CryptoError::IdentityInitializationError)?
             .signature_key;
 
@@ -248,9 +248,11 @@ impl MlsConversation {
         cb: Option<&CredentialBundle>,
         leaf_node: Option<LeafNode>,
     ) -> CryptoResult<MlsCommitBundle> {
-        let cb = cb
-            .or_else(|| self.find_most_recent_credential_bundle(client).ok().flatten())
-            .ok_or(CryptoError::IdentityInitializationError)?;
+        let cb = match cb {
+            None =>  &self.find_most_recent_credential_bundle(client).await.ok().flatten()
+                .ok_or(CryptoError::IdentityInitializationError)?,
+            Some(cb) => cb
+        };
         let (commit, welcome, group_info) = self
             .group
             .explicit_self_update(backend, &cb.signature_key, leaf_node)
@@ -279,7 +281,7 @@ impl MlsConversation {
     ) -> CryptoResult<Option<MlsCommitBundle>> {
         if self.group.pending_proposals().count() > 0 {
             let signer = &self
-                .find_most_recent_credential_bundle(client)?
+                .find_most_recent_credential_bundle(client).await?
                 .ok_or(CryptoError::IdentityInitializationError)?
                 .signature_key;
 

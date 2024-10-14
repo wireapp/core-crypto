@@ -29,7 +29,7 @@ impl MlsConversation {
         key_package: KeyPackageIn,
     ) -> CryptoResult<MlsProposalBundle> {
         let signer = &self
-            .find_current_credential_bundle(client)?
+            .find_current_credential_bundle(client).await?
             .ok_or(CryptoError::IdentityInitializationError)?
             .signature_key;
 
@@ -62,7 +62,7 @@ impl MlsConversation {
         member: LeafNodeIndex,
     ) -> CryptoResult<MlsProposalBundle> {
         let signer = &self
-            .find_current_credential_bundle(client)?
+            .find_current_credential_bundle(client).await?
             .ok_or(CryptoError::IdentityInitializationError)?
             .signature_key;
         let proposal = self
@@ -94,13 +94,13 @@ impl MlsConversation {
         leaf_node: Option<LeafNode>,
     ) -> CryptoResult<MlsProposalBundle> {
         let msg_signer = &self
-            .find_current_credential_bundle(client)?
+            .find_current_credential_bundle(client).await?
             .ok_or(CryptoError::IdentityInitializationError)?
             .signature_key;
 
         let proposal = if let Some(leaf_node) = leaf_node {
             let leaf_node_signer = &self
-                .find_most_recent_credential_bundle(client)?
+                .find_most_recent_credential_bundle(client).await?
                 .ok_or(CryptoError::IdentityInitializationError)?
                 .signature_key;
 
