@@ -341,17 +341,21 @@ impl KeystoreTransaction {
         } else {
             merged.collect()
         };
+        
+        if merged.is_empty() {
+            return merged;
+        }
 
-        let deleted_list = self.deleted.read().await;
-        let merged = if deleted_list.is_empty() || merged.is_empty() {
+        let deleted_records = self.deleted.read().await;
+        let deleted_credentials = self.deleted_credentials.read().await;
+        let merged = if deleted_records.is_empty() && deleted_credentials.is_empty() {
             merged
         } else {
             merged
                 .into_iter()
-                .filter(|e| {
-                    let id = EntityId::from_collection_name(E::COLLECTION_NAME, e.id_raw());
-                    let Ok(id) = id else { return false };
-                    !deleted_list.contains(&id)
+                .filter(|record| {
+                    !Self::record_is_in_deleted_list(record, &deleted_records)
+                        && !Self::credential_is_in_deleted_list(record, &deleted_credentials)
                 })
                 .collect()
         };
@@ -361,6 +365,24 @@ impl KeystoreTransaction {
             .skip(params.offset.unwrap_or(0) as usize)
             .take(params.limit.unwrap_or(u32::MAX) as usize)
             .collect()
+    }
+
+    fn record_is_in_deleted_list<E: crate::entities::Entity<ConnectionType = KeystoreDatabaseConnection>>(
+        record: &E,
+        deleted_records: &[EntityId],
+    ) -> bool {
+        let id = EntityId::from_collection_name(E::COLLECTION_NAME, record.id_raw());
+        let Ok(id) = id else { return false };
+        deleted_records.contains(&id)
+    }
+    fn credential_is_in_deleted_list<E: crate::entities::Entity<ConnectionType = KeystoreDatabaseConnection>>(
+        maybe_credential: &E,
+        deleted_credentials: &[Vec<u8>],
+    ) -> bool {
+        let Some(credential) = maybe_credential.downcast::<MlsCredential>() else {
+            return false;
+        };
+        deleted_credentials.contains(&credential.credential)
     }
 }
 
