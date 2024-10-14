@@ -5,49 +5,55 @@ use crate::{
 use openmls::prelude::{Credential, SignaturePublicKey};
 use openmls_traits::types::SignatureScheme;
 use std::collections::HashMap;
+use std::sync::Arc;
+use async_lock::Mutex;
 
 /// In memory Map of a Client's identities: one per SignatureScheme.
 /// We need `indexmap::IndexSet` because each `CredentialBundle` has to be unique and insertion
 /// order matters in order to keep values sorted by time `created_at` so that we can identify most recent ones.
 #[derive(Debug, Clone)]
-pub(crate) struct ClientIdentities(HashMap<SignatureScheme, indexmap::IndexSet<CredentialBundle>>);
+pub(crate) struct ClientIdentities(Arc<Mutex<HashMap<SignatureScheme, indexmap::IndexSet<CredentialBundle>>>>);
 
 impl ClientIdentities {
     pub(crate) fn new(capacity: usize) -> Self {
-        Self(HashMap::with_capacity(capacity))
+        Self(Arc::new(Mutex::new(HashMap::with_capacity(capacity))))
     }
 
-    pub(crate) fn find_credential_bundle_by_public_key(
+    pub(crate) async fn find_credential_bundle_by_public_key(
         &self,
         sc: SignatureScheme,
         ct: MlsCredentialType,
         pk: &SignaturePublicKey,
-    ) -> Option<&CredentialBundle> {
-        self.0.get(&sc)?.iter().find(|c| {
+    ) -> Option<CredentialBundle> {
+        let credential_bundles_by_signature_schemes = self.0.lock().await;
+        let credential_bundles = credential_bundles_by_signature_schemes.get(&sc)?;
+        credential_bundles.iter().find(|c| {
             let ct_match = ct == c.credential.credential_type().into();
             let pk_match = c.signature_key.public() == pk.as_slice();
             ct_match && pk_match
-        })
+        }).cloned()
     }
 
-    pub(crate) fn find_most_recent_credential_bundle(
+    pub(crate) async fn find_most_recent_credential_bundle(
         &self,
         sc: SignatureScheme,
         ct: MlsCredentialType,
-    ) -> Option<&CredentialBundle> {
-        self.0
-            .get(&sc)?
+    ) -> Option<CredentialBundle> {
+        let credential_bundles_by_signature_schemes = self.0.lock().await;
+        let credential_bundles = credential_bundles_by_signature_schemes.get(&sc)?;
+        credential_bundles
             .iter()
-            .rfind(|c| ct == c.credential.credential_type().into())
+            .rfind(|c| ct == c.credential.credential_type().into()).cloned()
     }
 
     /// Having `cb` requiring ownership kinda forces the caller to first persist it in the keystore and
     /// only then store it in this in-memory map
-    pub(crate) fn push_credential_bundle(&mut self, sc: SignatureScheme, cb: CredentialBundle) -> CryptoResult<()> {
+    pub(crate) async fn push_credential_bundle(&mut self, sc: SignatureScheme, cb: CredentialBundle) -> CryptoResult<()> {
         // this would mean we have messed something up and that we do no init this CredentialBundle from a keypair just inserted in the keystore
         debug_assert_ne!(cb.created_at, 0);
+        let mut credential_bundles_by_signature_schemes = self.0.lock().await;
 
-        match self.0.get_mut(&sc) {
+        match credential_bundles_by_signature_schemes.get_mut(&sc) {
             Some(cbs) => {
                 let already_exists = !cbs.insert(cb);
                 if already_exists {
@@ -55,56 +61,64 @@ impl ClientIdentities {
                 }
             }
             None => {
-                self.0.insert(sc, indexmap::IndexSet::from([cb]));
+                credential_bundles_by_signature_schemes.insert(sc, indexmap::IndexSet::from([cb]));
             }
         }
         Ok(())
     }
 
-    pub(crate) fn remove(&mut self, credential: &Credential) -> CryptoResult<()> {
-        self.0.iter_mut().for_each(|(_, cbs)| {
+    pub(crate) async fn remove(&mut self, credential: &Credential) -> CryptoResult<()> {
+        let mut credential_bundles_by_signature_schemes = self.0.lock().await;
+        credential_bundles_by_signature_schemes.iter_mut().for_each(|(_, cbs)| {
             cbs.retain(|c| c.credential() != credential);
         });
         Ok(())
     }
 
-    pub(crate) fn iter(&self) -> impl Iterator<Item = (SignatureScheme, &CredentialBundle)> {
-        self.0.iter().flat_map(|(sc, cb)| cb.iter().map(|c| (*sc, c)))
+    pub(crate) async fn as_vec(&self) -> Vec<(SignatureScheme, CredentialBundle)> {
+        let credential_bundles_by_signature_schemes = self.0.lock().await;
+        
+        credential_bundles_by_signature_schemes
+            .iter()
+            .flat_map(|(sig_scheme, bundles)| {
+                bundles.iter().cloned().map(move |bundle| (*sig_scheme, bundle))
+            })
+            .collect()
     }
 }
 
 impl MlsConversation {
-    pub(crate) fn find_current_credential_bundle<'a>(
+    pub(crate) async fn find_current_credential_bundle(
         &self,
-        client: &'a Client,
-    ) -> CryptoResult<Option<&'a CredentialBundle>> {
+        client: &Client,
+    ) -> CryptoResult<Option<CredentialBundle>> {
         let own_leaf = self.group.own_leaf().ok_or(CryptoError::InternalMlsError)?;
         let sc = self.ciphersuite().signature_algorithm();
         let ct = self.own_credential_type()?;
 
         Ok(client
             .identities
-            .find_credential_bundle_by_public_key(sc, ct, own_leaf.signature_key()))
+            .find_credential_bundle_by_public_key(sc, ct, own_leaf.signature_key()).await)
     }
 
-    pub(crate) fn find_most_recent_credential_bundle<'a>(
+    pub(crate) async fn find_most_recent_credential_bundle(
         &self,
-        client: &'a Client,
-    ) -> CryptoResult<Option<&'a CredentialBundle>> {
+        client: &Client,
+    ) -> CryptoResult<Option<CredentialBundle>> {
         let sc = self.ciphersuite().signature_algorithm();
         let ct = self.own_credential_type()?;
 
-        Ok(client.identities.find_most_recent_credential_bundle(sc, ct))
+        Ok(client.identities.find_most_recent_credential_bundle(sc, ct).await)
     }
 }
 
 impl Client {
-    pub(crate) fn find_most_recent_credential_bundle(
+    pub(crate) async fn find_most_recent_credential_bundle(
         &self,
         sc: SignatureScheme,
         ct: MlsCredentialType,
-    ) -> Option<&CredentialBundle> {
-        self.identities.find_most_recent_credential_bundle(sc, ct)
+    ) -> Option<CredentialBundle> {
+        self.identities.find_most_recent_credential_bundle(sc, ct).await
     }
 }
 
