@@ -251,7 +251,7 @@ impl ClientContext {
         let cs = group.ciphersuite();
         let client = self.client().await;
         let cb = client
-            .find_most_recent_credential_bundle(cs.into(), ct.into())
+            .find_most_recent_credential_bundle(cs.into(), ct.into()).await
             .unwrap();
 
         let gi = group
@@ -321,7 +321,7 @@ impl ClientContext {
         let (sc, ct) = (case.signature_scheme(), case.credential_type);
         let client = self.client().await;
         let cb = client
-            .find_most_recent_credential_bundle(sc, ct)
+            .find_most_recent_credential_bundle(sc, ct).await
             .unwrap();
         SignaturePublicKey::from(cb.signature_key.public())
     }
@@ -373,7 +373,7 @@ impl ClientContext {
             .unwrap()
             .read()
             .await
-            .find_most_recent_credential_bundle(&self.client().await)
+            .find_most_recent_credential_bundle(&self.client().await).await
             .unwrap()
             .map(|cb| cb.clone())
     }
@@ -384,7 +384,7 @@ impl ClientContext {
         ct: MlsCredentialType,
     ) -> Option<CredentialBundle> {
         self.client().await
-            .find_most_recent_credential_bundle(sc, ct)
+            .find_most_recent_credential_bundle(sc, ct).await
             .map(|cb| cb.clone())
     }
 
@@ -396,7 +396,7 @@ impl ClientContext {
     ) -> Option<CredentialBundle> {
         self.client().await
             .identities
-            .find_credential_bundle_by_public_key(sc, ct, pk)
+            .find_credential_bundle_by_public_key(sc, ct, pk).await
             .map(|cb| cb.clone())
     }
 
@@ -560,7 +560,7 @@ impl ClientContext {
     pub async fn verify_sender_identity(&self, case: &TestCase, decrypted: &MlsConversationDecryptMessage) {
         let (sc, ct) = (case.signature_scheme(), case.credential_type);
         let client = self.client().await;
-        let sender_cb = client.find_most_recent_credential_bundle(sc, ct).unwrap();
+        let sender_cb = client.find_most_recent_credential_bundle(sc, ct).await.unwrap();
 
         if let openmls::prelude::MlsCredentialType::X509(certificate) = &sender_cb.credential().mls_credential() {
             let mls_identity = certificate.extract_identity(case.ciphersuite(), None).unwrap();
@@ -660,7 +660,7 @@ impl Client {
     ) -> CryptoResult<()> {
         let existing_cb = self
             .identities
-            .find_most_recent_credential_bundle(sc, MlsCredentialType::X509)
+            .find_most_recent_credential_bundle(sc, MlsCredentialType::X509).await
             .is_none();
         if existing_cb {
             self.save_new_x509_credential_bundle(&backend.keystore(), sc, cb)
@@ -677,9 +677,9 @@ impl Client {
         ct: MlsCredentialType,
     ) -> CryptoResult<KeyPackage> {
         let cb = self
-            .find_most_recent_credential_bundle(cs.signature_algorithm(), ct)
+            .find_most_recent_credential_bundle(cs.signature_algorithm(), ct).await
             .ok_or(CryptoError::MlsNotInitialized)?;
-        self.generate_one_keypackage_from_credential_bundle(backend, cs, cb)
+        self.generate_one_keypackage_from_credential_bundle(backend, cs, &cb)
             .await
     }
 }

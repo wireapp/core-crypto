@@ -115,9 +115,9 @@ impl Client {
         let mut kps = if count > kpb_count {
             let to_generate = count - kpb_count;
             let cb = self
-                .find_most_recent_credential_bundle(ciphersuite.signature_algorithm(), credential_type)
+                .find_most_recent_credential_bundle(ciphersuite.signature_algorithm(), credential_type).await
                 .ok_or(CryptoError::MlsNotInitialized)?;
-            self.generate_new_keypackages(backend, ciphersuite, cb, to_generate)
+            self.generate_new_keypackages(backend, ciphersuite, &cb, to_generate)
                 .await?
         } else {
             vec![]
@@ -239,7 +239,7 @@ impl Client {
                     .cred_delete_by_credential(credential.clone())
                     .await?;
                 let credential = Credential::tls_deserialize(&mut credential.as_slice()).map_err(MlsError::from)?;
-                self.identities.remove(&credential)?;
+                self.identities.remove(&credential).await?;
             }
         }
 

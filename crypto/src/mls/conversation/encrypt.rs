@@ -28,7 +28,7 @@ impl MlsConversation {
         backend: &TransactionalCryptoProvider,
     ) -> CryptoResult<Vec<u8>> {
         let signer = &self
-            .find_current_credential_bundle(client)?
+            .find_current_credential_bundle(client).await?
             .ok_or(CryptoError::IdentityInitializationError)?
             .signature_key;
         let encrypted = self

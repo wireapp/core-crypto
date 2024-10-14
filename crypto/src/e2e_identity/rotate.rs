@@ -40,7 +40,7 @@ impl CentralContext {
         let mls_provider = self.mls_provider().await?;
         // look for existing credential of type basic. If there isn't, then this method has been misused
         let cb = client
-            .find_most_recent_credential_bundle(ciphersuite.signature_algorithm(), MlsCredentialType::Basic)
+            .find_most_recent_credential_bundle(ciphersuite.signature_algorithm(), MlsCredentialType::Basic).await
             .ok_or(E2eIdentityError::MissingExistingClient(MlsCredentialType::Basic))?;
         let client_id = cb.credential().identity().into();
 
@@ -79,7 +79,7 @@ impl CentralContext {
         let mls_provider = self.mls_provider().await?;
         // look for existing credential of type x509. If there isn't, then this method has been misused
         let cb = client
-            .find_most_recent_credential_bundle(ciphersuite.signature_algorithm(), MlsCredentialType::X509)
+            .find_most_recent_credential_bundle(ciphersuite.signature_algorithm(), MlsCredentialType::X509).await
             .ok_or(E2eIdentityError::MissingExistingClient(MlsCredentialType::X509))?;
         let client_id = cb.credential().identity().into();
         let sign_keypair = Some((&cb.signature_key).try_into()?);
@@ -629,8 +629,8 @@ pub(crate) mod tests {
                         let alice_client = alice_central.client().await;
                         let old_nb_identities = alice_client
                             .identities
-                            .iter()
-                            .count();
+                            .as_vec().await
+                            .len();
 
                         // Let's simulate an app crash, client gets deleted and restored from keystore
                         let cid = alice_client.id().clone();
@@ -681,7 +681,7 @@ pub(crate) mod tests {
                     );
 
                     assert_eq!(
-                        alice_client.identities.iter().count(),
+                        alice_client.identities.as_vec().await.len(),
                         old_nb_identities
                     );
                 })
