@@ -196,8 +196,9 @@ mod tests {
                     let found = client
                         .identities
                         .find_credential_bundle_by_public_key(case.signature_scheme(), case.credential_type, &pk)
+                        .await
                         .unwrap();
-                    assert_eq!(&to_search, found);
+                    assert_eq!(to_search, found);
                 })
             })
             .await
@@ -215,8 +216,9 @@ mod tests {
                     let client = central.client().await;
                     let prev_count = client
                         .identities
-                        .iter()
-                        .count();
+                        .as_vec()
+                        .await
+                        .len();
                     let cert = central.get_intermediate_ca().cloned();
                     // this calls 'push_credential_bundle' under the hood
                     central
@@ -227,8 +229,9 @@ mod tests {
                         .await;
                     let next_count = client
                         .identities
-                        .iter()
-                        .count();
+                        .as_vec()
+                        .await
+                        .len();
                     assert_eq!(next_count, prev_count + 1);
                 })
             })
@@ -249,7 +252,7 @@ mod tests {
                         .await;
                     let mut client = central.context.mls_client_mut().await.unwrap();
                     let client = client.as_mut().unwrap();
-                    let push = client.identities.push_credential_bundle(case.signature_scheme(), cb);
+                    let push = client.identities.push_credential_bundle(case.signature_scheme(), cb).await;
                     assert!(matches!(
                         push.unwrap_err(),
                         crate::CryptoError::CredentialBundleConflict

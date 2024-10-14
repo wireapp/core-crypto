@@ -280,7 +280,7 @@ impl MlsCentral {
         let client_guard = self.mls_client.read().await;
         let client = client_guard.as_ref().ok_or(CryptoError::MlsNotInitialized)?;
         let cb = client
-            .find_most_recent_credential_bundle(ciphersuite.signature_algorithm(), credential_type)
+            .find_most_recent_credential_bundle(ciphersuite.signature_algorithm(), credential_type).await
             .ok_or(CryptoError::ClientSignatureNotFound)?;
         Ok(cb.signature_key.to_public_vec())
     }
@@ -379,7 +379,7 @@ impl CentralContext {
         let nb_key_package = nb_init_key_packages.unwrap_or(INITIAL_KEYING_MATERIAL_COUNT);
         let mls_client = Client::init(identifier, &ciphersuites, &self.mls_provider().await?, nb_key_package).await?;
 
-        if mls_client.is_e2ei_capable() {
+        if mls_client.is_e2ei_capable().await {
             trace!(client_id:% = mls_client.id(); "Initializing PKI environment");
             self.init_pki_env().await?;
         }
@@ -436,7 +436,7 @@ impl CentralContext {
         let client_guard = self.mls_client().await?;
         let client = client_guard.as_ref().ok_or(CryptoError::MlsNotInitialized)?;
         let cb = client
-            .find_most_recent_credential_bundle(ciphersuite.signature_algorithm(), credential_type)
+            .find_most_recent_credential_bundle(ciphersuite.signature_algorithm(), credential_type).await
             .ok_or(CryptoError::ClientSignatureNotFound)?;
         Ok(cb.signature_key.to_public_vec())
     }

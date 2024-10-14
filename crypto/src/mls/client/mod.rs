@@ -264,7 +264,8 @@ impl Client {
         if nb_key_package != 0 {
             for cs in ciphersuites {
                 let sc = cs.signature_algorithm();
-                let identity = client.identities.iter().filter(|(id_sc, _)| id_sc == &sc);
+                let identities = client.identities.as_vec().await;
+                let identity = identities.iter().filter(|(id_sc, _)| id_sc == &sc);
                 for (_, cb) in identity {
                     client
                         .request_key_packages(nb_key_package, *cs, cb.credential.credential_type().into(), backend)
@@ -326,7 +327,7 @@ impl Client {
                     signature_key: signature_key.clone(),
                     created_at: *created_at,
                 };
-                identities.push_credential_bundle(sc, cb)?;
+                identities.push_credential_bundle(sc, cb).await?;
             }
         }
 
@@ -387,7 +388,7 @@ impl Client {
         // set the creation date of the signature keypair which is the same for the CredentialBundle
         cb.created_at = credential.created_at;
 
-        self.identities.push_credential_bundle(sc, cb.clone())?;
+        self.identities.push_credential_bundle(sc, cb.clone()).await?;
 
         Ok(cb)
     }
@@ -398,8 +399,9 @@ impl Client {
     }
 
     /// Returns whether this client is E2EI capable
-    pub fn is_e2ei_capable(&self) -> bool {
-        self.identities
+    pub async fn is_e2ei_capable(&self) -> bool {
+        let identities = self.identities.as_vec().await;
+        identities
             .iter()
             .any(|(_, cred)| cred.credential().credential_type() == CredentialType::X509)
     }
@@ -409,15 +411,15 @@ impl Client {
         backend: &TransactionalCryptoProvider,
         sc: SignatureScheme,
         ct: MlsCredentialType,
-    ) -> CryptoResult<&CredentialBundle> {
+    ) -> CryptoResult<CredentialBundle> {
         match ct {
             MlsCredentialType::Basic => {
                 self.init_basic_credential_bundle_if_missing(backend, sc).await?;
-                self.find_most_recent_credential_bundle(sc, ct)
+                self.find_most_recent_credential_bundle(sc, ct).await
                     .ok_or(CryptoError::CredentialNotFound(ct))
             }
             MlsCredentialType::X509 => self
-                .find_most_recent_credential_bundle(sc, ct)
+                .find_most_recent_credential_bundle(sc, ct).await
                 .ok_or(CryptoError::E2eiEnrollmentNotDone),
         }
     }
@@ -427,7 +429,7 @@ impl Client {
         backend: &TransactionalCryptoProvider,
         sc: SignatureScheme,
     ) -> CryptoResult<()> {
-        let existing_cb = self.find_most_recent_credential_bundle(sc, MlsCredentialType::Basic);
+        let existing_cb = self.find_most_recent_credential_bundle(sc, MlsCredentialType::Basic).await;
         if existing_cb.is_none() {
             debug!(id:% = self.id(); "Initializing basic credential bundle");
             let cb = Self::new_basic_credential_bundle(self.id(), sc, backend)?;
@@ -573,7 +575,7 @@ mod tests {
                     // Make sure both client id and PK are intact
                     assert_eq!(alice.id(), &client_id);
                     let cb = alice
-                        .find_most_recent_credential_bundle(case.signature_scheme(), case.credential_type)
+                        .find_most_recent_credential_bundle(case.signature_scheme(), case.credential_type).await
                         .unwrap();
                     let client_id: ClientId = cb.credential().identity().into();
                     assert_eq!(&client_id, handles.first().unwrap());

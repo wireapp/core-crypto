@@ -147,7 +147,7 @@ impl MlsConversation {
         let sc = self.signature_scheme();
         let ct = self.own_credential_type()?;
         let cb = client
-            .find_most_recent_credential_bundle(sc, ct)
+            .find_most_recent_credential_bundle(sc, ct).await
             .ok_or(CryptoError::MlsNotInitialized)?;
 
         leaf_node.set_credential_with_key(cb.to_mls_credential_with_key());
