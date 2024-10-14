@@ -139,6 +139,16 @@ pub trait EntityBase: Send + Sized + Clone + PartialEq + Eq + std::fmt::Debug {
     const COLLECTION_NAME: &'static str;
 
     fn to_missing_key_err_kind() -> MissingKeyErrorKind;
+
+    fn downcast<T: EntityBase>(&self) -> Option<&T> {
+        if T::COLLECTION_NAME == Self::COLLECTION_NAME {
+            // SAFETY: The above check ensures that this transmutation is safe.
+            Some(unsafe { std::mem::transmute::<&Self, &T>(self) })
+        } else {
+            None
+        }
+    }
+
     fn to_transaction_entity(self) -> crate::transaction::Entity;
 
     async fn find_all(conn: &mut Self::ConnectionType, params: EntityFindParams) -> CryptoKeystoreResult<Vec<Self>>;
@@ -280,7 +290,7 @@ cfg_if::cfg_if! {
 
         pub trait Entity: EntityBase {
             fn id_raw(&self) -> &[u8];
-            
+
             /// The query results that are obtained during a transaction
             /// from the transaction cache and the database are merged by this key.
             fn merge_key(&self) -> Vec<u8> {
