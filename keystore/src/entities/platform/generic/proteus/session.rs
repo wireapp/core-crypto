@@ -41,7 +41,7 @@ impl EntityBase for ProteusSession {
     }
 
     fn to_transaction_entity(self) -> crate::transaction::Entity {
-        unimplemented!("This has not yet been implemented for Proteus")
+        crate::transaction::Entity::ProteusSession(self)
     }
 
     async fn find_all(
