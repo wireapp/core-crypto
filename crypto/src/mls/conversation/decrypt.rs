@@ -981,6 +981,7 @@ mod tests {
     }
 
     mod external_proposal {
+        use std::sync::Arc;
         use super::*;
 
         #[apply(all_cred_cipher)]
@@ -1100,7 +1101,10 @@ mod tests {
                         let id = conversation_id();
                         alice_central
                             .context
-                            .callbacks().await.unwrap();
+                            .set_callbacks(Some(Arc::new(ValidationCallbacks {
+                                client_is_existing_group_user: false,
+                                ..Default::default()
+                            }))).await.unwrap();
 
                         alice_central
                             .context
