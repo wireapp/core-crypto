@@ -30,7 +30,6 @@ use wire_e2e_identity::prelude::WireIdentityReader;
 use x509_cert::der::Encode;
 
 use crate::group_store::GroupStore;
-use crate::mls::context::CentralContext;
 use crate::{
     e2e_identity::{
         device_status::DeviceStatus,
@@ -365,7 +364,7 @@ impl ClientContext {
     }
 
     pub async fn find_most_recent_credential_bundle_for_conversation(
-        &mut self,
+        &self,
         id: &ConversationId,
     ) -> Option<CredentialBundle> {
         self.context.get_conversation(id)
@@ -496,7 +495,7 @@ impl ClientContext {
     }
 
     pub async fn verify_local_credential_rotated(
-        &mut self,
+        &self,
         id: &ConversationId,
         new_handle: &str,
         new_display_name: &str,

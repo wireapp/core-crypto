@@ -61,7 +61,7 @@ impl CentralContext {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
+    
     use mls_crypto_provider::MlsCryptoProvider;
     use wasm_bindgen_test::*;
 
