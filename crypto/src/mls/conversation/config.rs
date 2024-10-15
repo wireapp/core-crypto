@@ -243,7 +243,7 @@ mod tests {
     #[wasm_bindgen_test]
     pub async fn group_should_have_required_capabilities() {
         let case = TestCase::default();
-        run_test_with_client_ids(case.clone(), ["alice"], move |[mut cc]| {
+        run_test_with_client_ids(case.clone(), ["alice"], move |[cc]| {
             Box::pin(async move {
                 let id = conversation_id();
                 cc.context
@@ -270,7 +270,7 @@ mod tests {
     #[apply(all_cred_cipher)]
     #[wasm_bindgen_test]
     pub async fn creator_leaf_node_should_have_default_capabilities(case: TestCase) {
-        run_test_with_client_ids(case.clone(), ["alice"], move |[mut cc]| {
+        run_test_with_client_ids(case.clone(), ["alice"], move |[cc]| {
             Box::pin(async move {
                 let id = conversation_id();
                 cc.context

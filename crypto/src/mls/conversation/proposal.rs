@@ -178,7 +178,7 @@ mod tests {
             run_test_with_client_ids(
                 case.clone(),
                 ["alice", "bob", "charlie"],
-                move |[mut alice_central, mut bob_central, mut charlie_central]| {
+                move |[mut alice_central, bob_central, mut charlie_central]| {
                     Box::pin(async move {
                         let id = conversation_id();
                         alice_central
@@ -270,7 +270,7 @@ mod tests {
             run_test_with_client_ids(
                 case.clone(),
                 ["alice", "bob", "charlie"],
-                move |[mut alice_central, mut bob_central, mut charlie_central]| {
+                move |[mut alice_central, bob_central, charlie_central]| {
                     Box::pin(async move {
                         let id = conversation_id();
                         alice_central
@@ -344,7 +344,7 @@ mod tests {
             run_test_with_client_ids(
                 case.clone(),
                 ["alice", "bob"],
-                move |[mut alice_central, mut bob_central]| {
+                move |[alice_central, bob_central]| {
                     Box::pin(async move {
                         let id = conversation_id();
                         alice_central
@@ -438,7 +438,7 @@ mod tests {
             run_test_with_client_ids(
                 case.clone(),
                 ["alice", "bob"],
-                move |[mut alice_central, mut bob_central]| {
+                move |[alice_central, bob_central]| {
                     Box::pin(async move {
                         let id = conversation_id();
                         alice_central

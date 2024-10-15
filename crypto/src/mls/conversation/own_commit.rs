@@ -184,7 +184,7 @@ mod tests {
                     assert!(decrypt_self.proposals.is_empty());
 
                     // verify that we return the new identity
-                    alice_central.verify_sender_identity(&case, &decrypt_self);
+                    alice_central.verify_sender_identity(&case, &decrypt_self).await;
                     alice_central
                         .verify_local_credential_rotated(&id, new_handle, new_display_name)
                         .await;
@@ -202,7 +202,7 @@ mod tests {
             run_test_with_client_ids(
                 case.clone(),
                 ["alice", "bob", "charlie"],
-                move |[mut alice_central, bob_central, charlie_central]| {
+                move |[alice_central, bob_central, charlie_central]| {
                     Box::pin(async move {
                         let id = conversation_id();
                         alice_central
@@ -252,7 +252,7 @@ mod tests {
     #[wasm_bindgen_test]
     pub async fn should_ignore_self_incoming_commit_when_no_pending_commit(case: TestCase) {
         if !case.is_pure_ciphertext() {
-            run_test_with_client_ids(case.clone(), ["alice"], move |[mut alice_central]| {
+            run_test_with_client_ids(case.clone(), ["alice"], move |[alice_central]| {
                 Box::pin(async move {
                     let id = conversation_id();
                     alice_central
@@ -292,7 +292,7 @@ mod tests {
         run_test_with_client_ids(
             case.clone(),
             ["alice", "bob"],
-            move |[mut alice_central, bob_central]| {
+            move |[alice_central, bob_central]| {
                 Box::pin(async move {
                     let conversation_id = conversation_id();
                     alice_central

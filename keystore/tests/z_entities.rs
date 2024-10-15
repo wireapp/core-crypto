@@ -234,7 +234,7 @@ mod tests {
     use crate::common::*;
     use crate::utils::EntityRandomExt;
     use crate::utils::EntityRandomUpdateExt;
-    use core_crypto_keystore::{Connection, CryptoKeystoreError};
+    use core_crypto_keystore::CryptoKeystoreError;
     use wasm_bindgen_test::*;
 
     wasm_bindgen_test_configure!(run_in_browser);

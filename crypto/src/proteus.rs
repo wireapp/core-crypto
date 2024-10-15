@@ -18,11 +18,7 @@ use crate::{
     group_store::{GroupStore, GroupStoreValue},
     CoreCrypto, CryptoError, CryptoResult, ProteusError,
 };
-use core_crypto_keystore::{
-    connection::FetchFromDatabase,
-    entities::{ProteusIdentity, ProteusSession},
-    Connection as CryptoKeystore,
-};
+use core_crypto_keystore::{connection::FetchFromDatabase, entities::{ProteusIdentity, ProteusSession}, Connection as CryptoKeystore, CryptoKeystoreError};
 use proteus_wasm::{
     keys::{IdentityKeyPair, PreKeyBundle},
     message::Envelope,
@@ -85,6 +81,16 @@ impl CoreCrypto {
     pub async fn proteus_init(&self) -> CryptoResult<()> {
         // ? Cannot inline the statement or the borrow checker gets really confused about the type of `keystore`
         let keystore = self.mls.mls_backend.keystore();
+        
+        let mut new_transaction_is_needed = true;
+        match keystore.new_transaction().await {
+            Ok(_) => {}
+            Err(CryptoKeystoreError::TransactionInProgress) => {
+                // Just attach operations to running transaction if there is one
+                new_transaction_is_needed = false;
+            }
+            Err(e) => return Err(e.into()),
+        }
         let proteus_client = ProteusCentral::try_new(&keystore).await?;
 
         // ? Make sure the last resort prekey exists
@@ -92,6 +98,9 @@ impl CoreCrypto {
 
         let mut guard = self.proteus.lock().await;
         *guard = Some(proteus_client);
+        if new_transaction_is_needed {
+            keystore.commit_transaction().await?;
+        }
         Ok(())
     }
 
@@ -990,8 +999,9 @@ mod tests {
             Some(INITIAL_KEYING_MATERIAL_COUNT),
         )
         .unwrap();
-        let mut cc: CoreCrypto = MlsCentral::try_new(cfg).await.unwrap().into();
+        let cc: CoreCrypto = MlsCentral::try_new(cfg).await.unwrap().into();
         assert!(cc.proteus_init().await.is_ok());
+        let _context = cc.new_transaction().await.unwrap();
         assert!(cc.proteus_new_prekey(1).await.is_ok());
         #[cfg(not(target_family = "wasm"))]
         drop(db_file);
@@ -1014,7 +1024,7 @@ mod tests {
             Some(INITIAL_KEYING_MATERIAL_COUNT),
         )
         .unwrap();
-        let mut cc: CoreCrypto = MlsCentral::try_new(cfg).await.unwrap().into();
+        let cc: CoreCrypto = MlsCentral::try_new(cfg).await.unwrap().into();
         let transaction = cc.new_transaction().await.unwrap();
         let x509_test_chain = X509TestChain::init_empty(case.signature_scheme());
         x509_test_chain.register_with_central(&transaction).await;
@@ -1058,15 +1068,17 @@ mod tests {
         let keystore = core_crypto_keystore::Connection::open_with_key(&path, "test")
             .await
             .unwrap();
+        keystore.new_transaction().await.unwrap();
         let central = ProteusCentral::try_new(&keystore).await.unwrap();
         let identity = (*central.proteus_identity).clone();
+        keystore.commit_transaction().await.unwrap();
 
         let keystore = core_crypto_keystore::Connection::open_with_key(path, "test")
             .await
             .unwrap();
-
+        keystore.new_transaction().await.unwrap();
         let central = ProteusCentral::try_new(&keystore).await.unwrap();
-
+        keystore.commit_transaction().await.unwrap();
         assert_eq!(identity, *central.proteus_identity);
 
         keystore.wipe().await.unwrap();
@@ -1087,6 +1099,8 @@ mod tests {
         let mut keystore = core_crypto_keystore::Connection::open_with_key(path, "test")
             .await
             .unwrap();
+        keystore.new_transaction().await.unwrap();
+        
         let mut alice = ProteusCentral::try_new(&keystore).await.unwrap();
 
         let mut bob = CryptoboxLike::init();
@@ -1106,7 +1120,8 @@ mod tests {
         let encrypted = bob.encrypt(&session_id, message);
         let decrypted = alice.decrypt(&mut keystore, &session_id, &encrypted).await.unwrap();
         assert_eq!(decrypted, message);
-
+        
+        keystore.commit_transaction().await.unwrap();
         keystore.wipe().await.unwrap();
         #[cfg(not(target_family = "wasm"))]
         drop(db_file);
@@ -1125,6 +1140,7 @@ mod tests {
         let mut keystore = core_crypto_keystore::Connection::open_with_key(path, "test")
             .await
             .unwrap();
+        keystore.new_transaction().await.unwrap();
         let mut alice = ProteusCentral::try_new(&keystore).await.unwrap();
 
         let mut bob = CryptoboxLike::init();
@@ -1146,7 +1162,7 @@ mod tests {
         let decrypted = bob.decrypt(&session_id, &encrypted).await;
 
         assert_eq!(message, decrypted.as_slice());
-
+        keystore.commit_transaction().await.unwrap();
         keystore.wipe().await.unwrap();
         #[cfg(not(target_family = "wasm"))]
         drop(db_file);
@@ -1167,6 +1183,7 @@ mod tests {
         let keystore = core_crypto_keystore::Connection::open_with_key(path, "test")
             .await
             .unwrap();
+        keystore.new_transaction().await.unwrap();
         let alice = ProteusCentral::try_new(&keystore).await.unwrap();
 
         for i in ID_TEST_RANGE {
@@ -1219,7 +1236,7 @@ mod tests {
             let prekey = proteus_wasm::keys::PreKeyBundle::deserialise(&pkb).unwrap();
             assert_eq!(prekey.prekey_id.value(), pk_id);
         }
-
+        keystore.commit_transaction().await.unwrap();
         keystore.wipe().await.unwrap();
         #[cfg(not(target_family = "wasm"))]
         drop(db_file);
@@ -1267,6 +1284,7 @@ mod tests {
             core_crypto_keystore::Connection::open_with_key(keystore_file.as_os_str().to_string_lossy(), "test")
                 .await
                 .unwrap();
+        keystore.new_transaction().await.unwrap();
 
         let Err(crate::CryptoError::CryptoboxMigrationError(crate::CryptoboxMigrationError::ProvidedPathDoesNotExist(
             _,
@@ -1333,7 +1351,7 @@ mod tests {
         assert_eq!(&decrypted, &message[..]);
 
         proteus_central.session_save(&mut keystore, &session_id).await.unwrap();
-
+        keystore.commit_transaction().await.unwrap();
         keystore.wipe().await.unwrap();
     }
 

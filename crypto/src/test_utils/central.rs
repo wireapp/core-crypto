@@ -30,7 +30,6 @@ use wire_e2e_identity::prelude::WireIdentityReader;
 use x509_cert::der::Encode;
 
 use crate::group_store::GroupStore;
-use crate::mls::context::CentralContext;
 use crate::{
     e2e_identity::{
         device_status::DeviceStatus,

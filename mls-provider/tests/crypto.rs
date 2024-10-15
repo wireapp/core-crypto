@@ -57,7 +57,7 @@ mod tests {
         entropy_seed: Option<EntropySeed>,
     ) {
         let backend = backend.await;
-        backend.reseed(entropy_seed);
+        backend.reseed(entropy_seed).unwrap();
         let len = rand::thread_rng().gen_range(LEN_RANGE);
         let crypto = backend.crypto();
         let ikm = hex!("0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b");
@@ -90,7 +90,7 @@ mod tests {
         entropy_seed: Option<EntropySeed>,
     ) {
         let backend = backend.await;
-        backend.reseed(entropy_seed);
+        backend.reseed(entropy_seed).unwrap();
         let len = rand::thread_rng().gen_range(LEN_RANGE);
         let data = backend.rand().random_vec(len).unwrap();
         let crypto = backend.crypto();
@@ -109,7 +109,7 @@ mod tests {
         entropy_seed: Option<EntropySeed>,
     ) {
         let backend = backend.await;
-        backend.reseed(entropy_seed);
+        backend.reseed(entropy_seed).unwrap();
         let len = rand::thread_rng().gen_range(LEN_RANGE);
         let data = backend.rand().random_vec(len).unwrap();
         let aad = backend
@@ -143,7 +143,7 @@ mod tests {
         entropy_seed: Option<EntropySeed>,
     ) {
         let backend = backend.await;
-        backend.reseed(entropy_seed);
+        backend.reseed(entropy_seed).unwrap();
 
         let len = rand::thread_rng().gen_range(LEN_RANGE);
         let data = backend.rand().random_vec(len).unwrap();
@@ -167,7 +167,7 @@ mod tests {
         entropy_seed: Option<EntropySeed>,
     ) {
         let backend = backend.await;
-        backend.reseed(entropy_seed);
+        backend.reseed(entropy_seed).unwrap();
 
         let crypto = backend.crypto();
 

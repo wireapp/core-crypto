@@ -335,7 +335,7 @@ mod tests {
         run_test_with_client_ids(
             case.clone(),
             ["alice", "bob"],
-            move |[mut alice_central, mut bob_central]| {
+            move |[alice_central, mut bob_central]| {
                 Box::pin(async move {
                     let id = conversation_id();
                     alice_central
@@ -383,7 +383,7 @@ mod tests {
                     );
 
                     // verify Bob's (sender) identity
-                    bob_central.verify_sender_identity(&case, &decrypted);
+                    bob_central.verify_sender_identity(&case, &decrypted).await;
 
                     // Let's say backend accepted our external commit.
                     // So Bob can merge the commit and update the local state
@@ -436,7 +436,7 @@ mod tests {
         run_test_with_client_ids(
             case.clone(),
             ["alice", "bob"],
-            move |[mut alice_central, mut bob_central]| {
+            move |[alice_central, bob_central]| {
                 Box::pin(async move {
                     let id = conversation_id();
                     alice_central
@@ -523,7 +523,7 @@ mod tests {
         run_test_with_client_ids(
             case.clone(),
             ["alice", "bob"],
-            move |[mut alice_central, mut bob_central]| {
+            move |[alice_central, bob_central]| {
                 Box::pin(async move {
                     let id = conversation_id();
                     alice_central
@@ -566,7 +566,7 @@ mod tests {
         run_test_with_client_ids(
             case.clone(),
             ["alice", "bob"],
-            move |[mut alice_central, mut bob_central]| {
+            move |[alice_central, bob_central]| {
                 Box::pin(async move {
                     let id = conversation_id();
                     alice_central
@@ -599,7 +599,7 @@ mod tests {
     #[apply(all_cred_cipher)]
     #[wasm_bindgen_test]
     async fn should_fail_when_no_pending_external_commit(case: TestCase) {
-        run_test_with_central(case.clone(), move |[mut central]| {
+        run_test_with_central(case.clone(), move |[central]| {
             Box::pin(async move {
                 let id = conversation_id();
                 // try to merge an inexisting pending group
@@ -622,7 +622,7 @@ mod tests {
         run_test_with_client_ids(
             case.clone(),
             ["alice", "bob", "charlie"],
-            move |[mut alice_central, mut bob_central, mut charlie_central]| {
+            move |[alice_central, bob_central, charlie_central]| {
                 Box::pin(async move {
                     let id = conversation_id();
                     alice_central
@@ -754,7 +754,7 @@ mod tests {
         run_test_with_client_ids(
             case.clone(),
             ["alice", "bob"],
-            move |[mut alice_central, mut bob_central]| {
+            move |[alice_central, bob_central]| {
                 Box::pin(async move {
                     let id = conversation_id();
 
@@ -800,7 +800,7 @@ mod tests {
         run_test_with_client_ids(
             case.clone(),
             ["alice", "bob"],
-            move |[mut alice_central, bob_central]| {
+            move |[alice_central, bob_central]| {
                 Box::pin(async move {
                     let id = conversation_id();
                     
@@ -846,7 +846,7 @@ mod tests {
         run_test_with_client_ids(
             case.clone(),
             ["alice", "bob"],
-            move |[mut alice_central, mut bob_central]| {
+            move |[alice_central, bob_central]| {
                 Box::pin(async move {
                     let id = conversation_id();
                     alice_central
@@ -897,7 +897,7 @@ mod tests {
         run_test_with_client_ids(
             case.clone(),
             ["alice", "bob"],
-            move |[mut alice_central, mut bob_central]| {
+            move |[alice_central, bob_central]| {
                 Box::pin(async move {
                     let id = conversation_id();
                     alice_central
@@ -932,7 +932,7 @@ mod tests {
         run_test_with_client_ids(
             case.clone(),
             ["alice", "bob"],
-            move |[mut alice_central, mut bob_central]| {
+            move |[alice_central, bob_central]| {
                 Box::pin(async move {
                     let id = conversation_id();
                     alice_central
@@ -979,7 +979,7 @@ mod tests {
         run_test_with_client_ids(
             case.clone(),
             ["alice", "bob", "guest"],
-            move |[mut alice_central, bob_central, guest_central]| {
+            move |[alice_central, bob_central, guest_central]| {
                 Box::pin(async move {
                     let expiration_time = 14;
                     let start = fluvio_wasm_timer::Instant::now();
@@ -1036,7 +1036,7 @@ mod tests {
         run_test_with_client_ids(
             case.clone(),
             ["alice", "bob"],
-            move |[mut alice_central, mut bob_central]| {
+            move |[alice_central, bob_central]| {
                 Box::pin(async move {
                     let id = conversation_id();
                     alice_central

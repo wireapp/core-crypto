@@ -183,7 +183,7 @@ mod tests {
             run_test_with_client_ids(
                 case.clone(),
                 ["alice", "bob"],
-                move |[mut alice_central, mut bob_central]| {
+                move |[alice_central, bob_central]| {
                     Box::pin(async move {
                         let id = conversation_id();
                         alice_central
@@ -266,7 +266,7 @@ mod tests {
         #[apply(all_cred_cipher)]
         #[wasm_bindgen_test]
         async fn should_clean_associated_key_material(case: TestCase) {
-            run_test_with_client_ids(case.clone(), ["alice"], move |[mut alice_central]| {
+            run_test_with_client_ids(case.clone(), ["alice"], move |[alice_central]| {
                 Box::pin(async move {
                     let id = conversation_id();
                     alice_central
@@ -304,7 +304,7 @@ mod tests {
             run_test_with_client_ids(
                 case.clone(),
                 ["alice", "bob", "charlie"],
-                move |[mut alice_central, mut bob_central, charlie_central]| {
+                move |[mut alice_central, bob_central, charlie_central]| {
                     Box::pin(async move {
                         let id = conversation_id();
                         alice_central
@@ -385,7 +385,7 @@ mod tests {
         #[apply(all_cred_cipher)]
         #[wasm_bindgen_test]
         pub async fn should_fail_when_conversation_not_found(case: TestCase) {
-            run_test_with_client_ids(case.clone(), ["alice"], move |[mut alice_central]| {
+            run_test_with_client_ids(case.clone(), ["alice"], move |[alice_central]| {
                 Box::pin(async move {
                     let id = conversation_id();
                     let simple_ref = MlsProposalRef::from(vec![0; case.ciphersuite().hash_length()]);
@@ -452,7 +452,7 @@ mod tests {
         #[apply(all_cred_cipher)]
         #[wasm_bindgen_test]
         pub async fn should_remove_commit(case: TestCase) {
-            run_test_with_client_ids(case.clone(), ["alice"], move |[mut alice_central]| {
+            run_test_with_client_ids(case.clone(), ["alice"], move |[alice_central]| {
                 Box::pin(async move {
                     let id = conversation_id();
                     alice_central
@@ -474,7 +474,7 @@ mod tests {
         #[apply(all_cred_cipher)]
         #[wasm_bindgen_test]
         pub async fn should_fail_when_conversation_not_found(case: TestCase) {
-            run_test_with_client_ids(case.clone(), ["alice"], move |[mut alice_central]| {
+            run_test_with_client_ids(case.clone(), ["alice"], move |[alice_central]| {
                 Box::pin(async move {
                     let id = conversation_id();
                     let clear = alice_central.context.clear_pending_commit(&id).await;
@@ -487,7 +487,7 @@ mod tests {
         #[apply(all_cred_cipher)]
         #[wasm_bindgen_test]
         pub async fn should_fail_when_pending_commit_absent(case: TestCase) {
-            run_test_with_client_ids(case.clone(), ["alice"], move |[mut alice_central]| {
+            run_test_with_client_ids(case.clone(), ["alice"], move |[alice_central]| {
                 Box::pin(async move {
                     let id = conversation_id();
                     alice_central
@@ -506,7 +506,7 @@ mod tests {
         #[apply(all_cred_cipher)]
         #[wasm_bindgen_test]
         pub async fn should_clean_associated_key_material(case: TestCase) {
-            run_test_with_client_ids(case.clone(), ["alice"], move |[mut cc]| {
+            run_test_with_client_ids(case.clone(), ["alice"], move |[cc]| {
                 Box::pin(async move {
                     let id = conversation_id();
                     cc.context

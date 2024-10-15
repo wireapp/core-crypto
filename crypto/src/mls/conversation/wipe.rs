@@ -58,7 +58,7 @@ mod tests {
     #[apply(all_cred_cipher)]
     #[wasm_bindgen_test]
     async fn can_wipe_group(case: TestCase) {
-        run_test_with_central(case.clone(), move |[mut central]| {
+        run_test_with_central(case.clone(), move |[central]| {
             Box::pin(async move {
                 let id = conversation_id();
                 central
@@ -78,7 +78,7 @@ mod tests {
     #[apply(all_cred_cipher)]
     #[wasm_bindgen_test]
     async fn cannot_wipe_group_non_existent(case: TestCase) {
-        run_test_with_central(case.clone(), move |[mut central]| {
+        run_test_with_central(case.clone(), move |[central]| {
             Box::pin(async move {
                 let id = conversation_id();
                 let err = central.context.wipe_conversation(&id).await.unwrap_err();
@@ -92,7 +92,7 @@ mod tests {
     #[apply(all_cred_cipher)]
     #[wasm_bindgen_test]
     async fn should_cascade_deletion(case: TestCase) {
-        run_test_with_client_ids(case.clone(), ["alice"], move |[mut cc]| {
+        run_test_with_client_ids(case.clone(), ["alice"], move |[cc]| {
             Box::pin(async move {
                 let id = conversation_id();
                 cc.context
