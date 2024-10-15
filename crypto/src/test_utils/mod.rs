@@ -415,7 +415,7 @@ pub async fn run_test_wo_clients(
             )
             .unwrap();
             let central = MlsCentral::try_new(configuration).await.unwrap();
-            central.callbacks(std::sync::Arc::<ValidationCallbacks>::default());
+            central.callbacks(std::sync::Arc::<ValidationCallbacks>::default()).await;
             let context = central.new_transaction().await.unwrap();
             test(ClientContext {
                 context: context.clone(),

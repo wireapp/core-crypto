@@ -34,7 +34,7 @@ mod tests {
         EntityBase, MlsCredential, MlsHpkePrivateKey, MlsKeyPackage, MlsPskBundle, MlsSignatureKeyPair,
         PersistedMlsGroup, PersistedMlsPendingGroup,
     };
-    use core_crypto_keystore::{Connection, MissingKeyErrorKind};
+    use core_crypto_keystore::MissingKeyErrorKind;
     use openmls::prelude::TlsSerializeTrait as _;
     use openmls_traits::OpenMlsCryptoProvider as _;
 
