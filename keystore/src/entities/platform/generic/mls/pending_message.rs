@@ -24,6 +24,12 @@ impl Entity for MlsPendingMessage {
     fn id_raw(&self) -> &[u8] {
         self.id.as_slice()
     }
+
+    fn merge_key(&self) -> Vec<u8> {
+        // Use this as a merge key because the `id` is not used as a primary key 
+        // but  as a foreign key: it's the ID of the PersistedMlsPendingGroup. 
+        self.message.clone()
+    }
 }
 
 #[cfg_attr(target_family = "wasm", async_trait::async_trait(?Send))]
