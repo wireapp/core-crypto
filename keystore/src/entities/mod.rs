@@ -41,7 +41,6 @@ mod platform {
 }
 
 pub use self::platform::*;
-use openmls_traits::key_store::MlsEntity;
 
 use crate::connection::DatabaseConnection;
 #[cfg(not(target_family = "wasm"))]

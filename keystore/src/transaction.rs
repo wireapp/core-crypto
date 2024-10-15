@@ -1,4 +1,4 @@
-use crate::entities::{EntityBase, EntityIdStringExt, ProteusIdentity, ProteusPrekey, ProteusSession, UniqueEntity};
+use crate::entities::{EntityBase, ProteusIdentity, ProteusPrekey, ProteusSession, UniqueEntity};
 use crate::{
     connection::{Connection, DatabaseConnection, FetchFromDatabase, KeystoreDatabaseConnection, TransactionWrapper},
     entities::{
