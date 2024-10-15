@@ -30,7 +30,7 @@ impl CentralContext {
         let keystore = self.keystore().await?;
 
         let pending_msg = MlsPendingMessage {
-            id: id.clone(),
+            foreign_id: id.clone(),
             message: message.as_ref().to_vec(),
         };
         keystore.save::<MlsPendingMessage>(pending_msg).await?;
@@ -96,7 +96,7 @@ impl MlsConversation {
                 .find_all::<MlsPendingMessage>(EntityFindParams::default())
                 .await?
                 .into_iter()
-                .filter(|pm| pm.id == group_id)
+                .filter(|pm| pm.foreign_id == group_id)
                 .try_fold(vec![], |mut acc, m| {
                     let msg = MlsMessageIn::tls_deserialize(&mut m.message.as_slice()).map_err(MlsError::from)?;
                     let ct = match msg.body_as_ref() {
