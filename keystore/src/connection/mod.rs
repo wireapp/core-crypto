@@ -183,6 +183,15 @@ impl Connection {
         Ok(())
     }
 
+    pub async fn rollback_transaction(&self) -> CryptoKeystoreResult<()> {
+        let mut transaction_guard = self.transaction.lock().await;
+        if transaction_guard.is_none() {
+            return Err(CryptoKeystoreError::MutatingOperationWithoutTransaction);
+        };
+        *transaction_guard = None;
+        Ok(())
+    }
+
     pub async fn child_groups<
         E: Entity<ConnectionType = KeystoreDatabaseConnection>
         + crate::entities::PersistedMlsGroupExt
