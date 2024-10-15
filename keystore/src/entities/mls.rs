@@ -87,7 +87,7 @@ pub struct PersistedMlsPendingGroup {
     derive(serde::Serialize, serde::Deserialize)
 )]
 pub struct MlsPendingMessage {
-    pub id: Vec<u8>,
+    pub foreign_id: Vec<u8>,
     pub message: Vec<u8>,
 }
 

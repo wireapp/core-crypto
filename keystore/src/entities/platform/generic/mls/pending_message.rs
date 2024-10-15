@@ -22,7 +22,7 @@ use crate::{
 
 impl Entity for MlsPendingMessage {
     fn id_raw(&self) -> &[u8] {
-        self.id.as_slice()
+        self.foreign_id.as_slice()
     }
 
     fn merge_key(&self) -> Vec<u8> {
@@ -81,7 +81,7 @@ impl EntityBase for MlsPendingMessage {
                 blob.read_to_end(&mut message)?;
                 blob.close()?;
 
-                Ok(Some(Self { id, message }))
+                Ok(Some(Self { foreign_id: id, message }))
             }
             None => Ok(None),
         }
@@ -117,7 +117,7 @@ impl EntityBase for MlsPendingMessage {
             blob.read_to_end(&mut message)?;
             blob.close()?;
 
-            acc.push(Self { id, message });
+            acc.push(Self { foreign_id: id, message });
             crate::CryptoKeystoreResult::Ok(acc)
         })?;
 
@@ -140,13 +140,13 @@ impl EntityBase for MlsPendingMessage {
 #[cfg_attr(not(target_family = "wasm"), async_trait::async_trait)]
 impl EntityTransactionExt for MlsPendingMessage {
     async fn save(&self, transaction: &TransactionWrapper<'_>) -> CryptoKeystoreResult<()> {
-        Self::ConnectionType::check_buffer_size(self.id.len())?;
+        Self::ConnectionType::check_buffer_size(self.foreign_id.len())?;
         Self::ConnectionType::check_buffer_size(self.message.len())?;
 
-        let zid = rusqlite::blob::ZeroBlob(self.id.len() as i32);
+        let zid = rusqlite::blob::ZeroBlob(self.foreign_id.len() as i32);
         let zmsg = rusqlite::blob::ZeroBlob(self.message.len() as i32);
 
-        let id_bytes = &self.id;
+        let id_bytes = &self.foreign_id;
 
         use rusqlite::ToSql as _;
         transaction.execute(

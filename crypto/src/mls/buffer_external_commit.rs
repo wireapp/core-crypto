@@ -25,7 +25,7 @@ impl CentralContext {
         };
 
         let pending_msg = MlsPendingMessage {
-            id: pending_group.id.clone(),
+            foreign_id: pending_group.id.clone(),
             message: message.as_ref().to_vec(),
         };
         keystore.save::<MlsPendingMessage>(pending_msg).await?;
