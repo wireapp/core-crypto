@@ -159,7 +159,7 @@ mod tests {
             run_test_with_client_ids(
                 case.clone(),
                 ["owner", "guest"],
-                move |[mut owner_central, mut guest_central]| {
+                move |[owner_central, guest_central]| {
                     Box::pin(async move {
                         let id = conversation_id();
                         owner_central

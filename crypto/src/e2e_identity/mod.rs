@@ -586,7 +586,7 @@ pub(crate) mod tests {
     use crate::{
         e2e_identity::{id::QualifiedE2eiClientId, tests::x509::X509TestChain},
         prelude::{
-            CertificateBundle, E2eIdentityError, E2eiConversationState, E2eiEnrollment, MlsCentral, MlsCredentialType,
+            CertificateBundle, E2eIdentityError, E2eiConversationState, E2eiEnrollment, MlsCredentialType,
             INITIAL_KEYING_MATERIAL_COUNT,
         },
         test_utils::{central::TEAM, *},

@@ -131,7 +131,7 @@ mod tests {
         #[apply(all_cred_cipher)]
         #[wasm_bindgen_test]
         pub async fn can_export_secret_key(case: TestCase) {
-            run_test_with_client_ids(case.clone(), ["alice"], move |[mut alice_central]| {
+            run_test_with_client_ids(case.clone(), ["alice"], move |[alice_central]| {
                 Box::pin(async move {
                     let id = conversation_id();
                     alice_central
@@ -152,7 +152,7 @@ mod tests {
         #[apply(all_cred_cipher)]
         #[wasm_bindgen_test]
         pub async fn cannot_export_secret_key_invalid_length(case: TestCase) {
-            run_test_with_client_ids(case.clone(), ["alice"], move |[mut alice_central]| {
+            run_test_with_client_ids(case.clone(), ["alice"], move |[alice_central]| {
                 Box::pin(async move {
                     let id = conversation_id();
                     alice_central
@@ -174,7 +174,7 @@ mod tests {
         #[apply(all_cred_cipher)]
         #[wasm_bindgen_test]
         pub async fn cannot_export_secret_key_not_found(case: TestCase) {
-            run_test_with_client_ids(case.clone(), ["alice"], move |[mut alice_central]| {
+            run_test_with_client_ids(case.clone(), ["alice"], move |[alice_central]| {
                 Box::pin(async move {
                     let id = conversation_id();
                     alice_central
@@ -201,7 +201,7 @@ mod tests {
             run_test_with_client_ids(
                 case.clone(),
                 ["alice", "bob"],
-                move |[mut alice_central, mut bob_central]| {
+                move |[alice_central, bob_central]| {
                     Box::pin(async move {
                         let id = conversation_id();
                         alice_central
@@ -226,7 +226,7 @@ mod tests {
         #[apply(all_cred_cipher)]
         #[wasm_bindgen_test]
         pub async fn cannot_get_client_ids_not_found(case: TestCase) {
-            run_test_with_client_ids(case.clone(), ["alice"], move |[mut alice_central]| {
+            run_test_with_client_ids(case.clone(), ["alice"], move |[alice_central]| {
                 Box::pin(async move {
                     let id = conversation_id();
                     alice_central
