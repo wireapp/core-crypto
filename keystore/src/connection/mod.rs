@@ -152,14 +152,20 @@ impl Connection {
     }
 
     pub async fn wipe(self) -> CryptoKeystoreResult<()> {
-        let conn: KeystoreDatabaseConnection = Arc::try_unwrap(self.conn).unwrap().into_inner();
+        if self.transaction.lock().await.is_some() {
+            return Err(CryptoKeystoreError::TransactionInProgress);
+        }
+        let conn: KeystoreDatabaseConnection = Arc::into_inner(self.conn).unwrap().into_inner();
 
         conn.wipe().await?;
         Ok(())
     }
 
     pub async fn close(self) -> CryptoKeystoreResult<()> {
-        let conn: KeystoreDatabaseConnection = Arc::try_unwrap(self.conn).unwrap().into_inner();
+        if self.transaction.lock().await.is_some() {
+            return Err(CryptoKeystoreError::TransactionInProgress);
+        }
+        let conn: KeystoreDatabaseConnection = Arc::into_inner(self.conn).unwrap().into_inner();
         conn.close().await?;
         Ok(())
     }
