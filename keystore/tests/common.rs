@@ -16,10 +16,12 @@
 
 #![allow(dead_code, unused_macros, unused_imports)]
 
+use std::sync::Arc;
 pub(crate) use core_crypto_keystore::Connection as CryptoKeystore;
 
 pub(crate) use rstest::*;
 pub(crate) use rstest_reuse::{self, *};
+use core_crypto_keystore::connection::{DatabaseConnection, KeystoreDatabaseConnection};
 
 pub(crate) const TEST_ENCRYPTION_KEY: &str = "test1234";
 
@@ -40,27 +42,51 @@ pub fn store_name() -> String {
 }
 
 #[fixture(name = store_name(), in_memory = false)]
-pub async fn setup(name: impl AsRef<str>, in_memory: bool) -> core_crypto_keystore::Connection {
-    if !in_memory {
+pub async fn setup(name: impl AsRef<str>, in_memory: bool) -> KeystoreTestContext {
+    let store = if !in_memory {
         core_crypto_keystore::Connection::open_with_key(name, TEST_ENCRYPTION_KEY).await
     } else {
         core_crypto_keystore::Connection::open_in_memory_with_key(name, TEST_ENCRYPTION_KEY).await
     }
-    .unwrap()
+    .expect("Could not open keystore");
+    store.new_transaction().await.expect("Could not create transaction");
+    KeystoreTestContext {
+        store: Some(store),
+    }
 }
+
+pub struct KeystoreTestContext {
+    store: Option<core_crypto_keystore::Connection>,
+}
+
+impl KeystoreTestContext {
+    pub fn store(&self) -> &core_crypto_keystore::Connection {
+        self.store.as_ref().expect("KeystoreTestFixture store is missing")
+    }
+    
+    pub fn store_mut(&mut self) -> &mut core_crypto_keystore::Connection {
+        self.store.as_mut().expect("KeystoreTestFixture store is missing")
+    }
+}
+
+impl Drop for KeystoreTestContext {
+    fn drop(&mut self) {
+        if let Some(store) = self.store.take() {
+            async_std::task::block_on(async {
+                store.commit_transaction().await.expect("Could not commit transaction");
+                store.wipe().await.expect("Could not wipe store");
+            });
+        }
+    }
+}
+
 
 #[template]
 #[rstest]
-#[case::persistent(setup(store_name(), false))]
-#[case::in_memory(setup(store_name(), true))]
+#[case::persistent(setup(store_name(), false).await)]
+#[case::in_memory(setup(store_name(), true).await)]
 pub async fn all_storage_types(
     #[case]
-    #[future]
-    store: core_crypto_keystore::Connection,
+    context: KeystoreTestContext,
 ) {
-}
-
-#[inline(always)]
-pub(crate) async fn teardown(store: core_crypto_keystore::Connection) {
-    store.wipe().await.unwrap();
 }
