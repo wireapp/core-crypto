@@ -18,7 +18,7 @@ use crate::{
     group_store::{GroupStore, GroupStoreValue},
     CoreCrypto, CryptoError, CryptoResult, ProteusError,
 };
-use core_crypto_keystore::{connection::FetchFromDatabase, entities::{ProteusIdentity, ProteusSession}, Connection as CryptoKeystore, CryptoKeystoreError, CryptoKeystoreResult};
+use core_crypto_keystore::{connection::FetchFromDatabase, entities::{ProteusIdentity, ProteusSession}, Connection as CryptoKeystore, CryptoKeystoreError};
 use proteus_wasm::{
     keys::{IdentityKeyPair, PreKeyBundle},
     message::Envelope,
@@ -999,7 +999,7 @@ mod tests {
             Some(INITIAL_KEYING_MATERIAL_COUNT),
         )
         .unwrap();
-        let mut cc: CoreCrypto = MlsCentral::try_new(cfg).await.unwrap().into();
+        let cc: CoreCrypto = MlsCentral::try_new(cfg).await.unwrap().into();
         assert!(cc.proteus_init().await.is_ok());
         let _context = cc.new_transaction().await.unwrap();
         assert!(cc.proteus_new_prekey(1).await.is_ok());
@@ -1024,7 +1024,7 @@ mod tests {
             Some(INITIAL_KEYING_MATERIAL_COUNT),
         )
         .unwrap();
-        let mut cc: CoreCrypto = MlsCentral::try_new(cfg).await.unwrap().into();
+        let cc: CoreCrypto = MlsCentral::try_new(cfg).await.unwrap().into();
         let transaction = cc.new_transaction().await.unwrap();
         let x509_test_chain = X509TestChain::init_empty(case.signature_scheme());
         x509_test_chain.register_with_central(&transaction).await;

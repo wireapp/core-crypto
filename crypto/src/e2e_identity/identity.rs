@@ -210,10 +210,7 @@ impl MlsConversation {
 mod tests {
     use wasm_bindgen_test::*;
 
-    use crate::{
-        mls::MlsCentral,
-        prelude::{ClientId, ConversationId, MlsCredentialType},
-    };
+    use crate::prelude::{ClientId, ConversationId, MlsCredentialType};
     use crate::{
         prelude::{DeviceStatus, E2eiConversationState},
         test_utils::*,
@@ -279,7 +276,7 @@ mod tests {
         run_test_with_client_ids(
             case.clone(),
             ["alice_android", "alice_ios"],
-            move |[mut alice_android_central, mut alice_ios_central]| {
+            move |[alice_android_central, alice_ios_central]| {
                 Box::pin(async move {
                     let id = conversation_id();
                     alice_android_central
@@ -459,7 +456,7 @@ mod tests {
         run_test_with_client_ids(
             case.clone(),
             ["alice_android", "alice_ios"],
-            move |[mut alice_android_central, mut alice_ios_central]| {
+            move |[alice_android_central, alice_ios_central]| {
                 Box::pin(async move {
                     let id = conversation_id();
                     alice_android_central
@@ -538,8 +535,8 @@ mod tests {
                 [bobt_android, "bob_zeta", "Bob Tables"],
             ],
             &[],
-            move |[mut alice_android_central, mut alice_ios_central, mut bob_android_central],
-                  [mut alicem_android_central, mut alicem_ios_central, mut bobt_android_central]| {
+            move |[alice_android_central, alice_ios_central, bob_android_central],
+                  [alicem_android_central, alicem_ios_central, bobt_android_central]| {
                 Box::pin(async move {
                     let id = conversation_id();
                     alice_android_central

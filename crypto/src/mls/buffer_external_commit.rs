@@ -47,7 +47,7 @@ mod tests {
         run_test_with_client_ids(
             case.clone(),
             ["alice", "bob", "charlie", "debbie"],
-            move |[mut alice_central, bob_central, mut charlie_central, mut debbie_central]| {
+            move |[alice_central, bob_central, charlie_central, debbie_central]| {
                 Box::pin(async move {
                     let id = conversation_id();
                     alice_central

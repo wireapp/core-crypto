@@ -158,7 +158,7 @@ mod tests {
             *,
         },
     };
-    use crate::mls::context::CentralContext;
+    
     use super::*;
 
     wasm_bindgen_test_configure!(run_in_browser);
@@ -346,7 +346,7 @@ mod tests {
             let (bob_identifier, _) = x509_test_chain.issue_simple_certificate_bundle("bob", None);
 
             // this should work since the certificate is not yet expired
-            let (mut alice_central, mut bob_central, id) =
+            let (alice_central, bob_central, id) =
                 try_talk(&case, Some(&x509_test_chain), alice_identifier, bob_identifier)
                     .await
                     .unwrap();
@@ -378,7 +378,7 @@ mod tests {
 
             let ciphersuites = vec![case.ciphersuite()];
 
-            let mut charlie_central = MlsCentral::try_new(
+            let charlie_central = MlsCentral::try_new(
                 MlsCentralConfiguration::try_new(
                     charlie_path.0,
                     "charlie".into(),
