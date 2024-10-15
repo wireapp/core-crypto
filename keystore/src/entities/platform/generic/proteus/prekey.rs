@@ -40,7 +40,7 @@ impl EntityBase for ProteusPrekey {
     }
 
     fn to_transaction_entity(self) -> crate::transaction::Entity {
-        unimplemented!("This has not yet been implemented for Proteus")
+        crate::transaction::Entity::ProteusPrekey(self)
     }
 
     async fn find_all(

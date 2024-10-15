@@ -42,7 +42,7 @@ impl EntityBase for ProteusIdentity {
     }
 
     fn to_transaction_entity(self) -> crate::transaction::Entity {
-        unimplemented!("This has not yet been implemented for Proteus")
+        crate::transaction::Entity::ProteusIdentity(self)
     }
 
     async fn find_all(
@@ -119,7 +119,7 @@ impl EntityTransactionExt for ProteusIdentity {
     async fn save(&self, transaction: &TransactionWrapper<'_>) -> crate::CryptoKeystoreResult<()> {
         use rusqlite::ToSql as _;
         transaction.execute(
-            "INSERT INTO proteus_identities (sk, pk) VALUES (?, ?) WHERE SELECT COUNT(*) FROM proteus_identities = 0",
+            "INSERT INTO proteus_identities (sk, pk) SELECT ?, ? WHERE (SELECT COUNT(*) FROM proteus_identities) = 0",
             [
                 rusqlite::blob::ZeroBlob(self.sk.len() as i32).to_sql()?,
                 rusqlite::blob::ZeroBlob(self.pk.len() as i32).to_sql()?,
