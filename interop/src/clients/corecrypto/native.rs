@@ -179,26 +179,40 @@ impl crate::clients::EmulatedProteusClient for CoreCryptoNativeClient {
     }
 
     async fn get_prekey(&mut self) -> Result<Vec<u8>> {
+        let transaction = self.cc.new_transaction().await?;
         self.prekey_last_id += 1;
-        Ok(self.cc.proteus_new_prekey(self.prekey_last_id).await?)
+        let result = transaction.proteus_new_prekey(self.prekey_last_id).await?;
+        transaction.finish().await?;
+        Ok(result)
     }
 
     async fn session_from_prekey(&mut self, session_id: &str, prekey: &[u8]) -> Result<()> {
-        let _ = self.cc.proteus_session_from_prekey(session_id, prekey).await?;
+        let transaction = self.cc.new_transaction().await?;
+        let _ = transaction.proteus_session_from_prekey(session_id, prekey).await?;
+        transaction.finish().await?;
         Ok(())
     }
 
     async fn session_from_message(&mut self, session_id: &str, message: &[u8]) -> Result<Vec<u8>> {
-        let (_, ret) = self.cc.proteus_session_from_message(session_id, message).await?;
+        let transaction = self.cc.new_transaction().await?;
+        let (_, ret) = transaction.proteus_session_from_message(session_id, message).await?;
+        transaction.finish().await?;
         Ok(ret)
     }
 
     async fn encrypt(&mut self, session_id: &str, plaintext: &[u8]) -> Result<Vec<u8>> {
-        Ok(self.cc.proteus_encrypt(session_id, plaintext).await?)
+        let transaction = self.cc.new_transaction().await?;
+        let result = transaction.proteus_encrypt(session_id, plaintext).await?;
+        transaction.finish().await?;
+        Ok(result)
+        
     }
 
     async fn decrypt(&mut self, session_id: &str, ciphertext: &[u8]) -> Result<Vec<u8>> {
-        Ok(self.cc.proteus_decrypt(session_id, ciphertext).await?)
+        let transaction = self.cc.new_transaction().await?;
+        let result = transaction.proteus_decrypt(session_id, ciphertext).await?;
+        transaction.finish().await?;
+        Ok(result)
     }
 
     async fn fingerprint(&self) -> Result<String> {
