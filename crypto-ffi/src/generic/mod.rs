@@ -1,3 +1,4 @@
+#![allow(deprecated)]
 // Wire
 // Copyright (C) 2022 Wire Swiss GmbH
 
@@ -942,15 +943,18 @@ impl CoreCrypto {
     }
 
     /// See [core_crypto::mls::MlsCentral::restore_from_disk]
+    #[deprecated = "Please create a transaction in Core Crypto and call this method from it."]
     pub async fn restore_from_disk(&self) -> CoreCryptoResult<()> {
         cfg_if::cfg_if! {
             if #[cfg(feature = "proteus")] {
-                self.central.proteus_reload_sessions().await.inspect_err(|e|{
+                let context = self.central.new_transaction().await?;
+                context.proteus_reload_sessions().await.inspect_err(|e|{
                     let errcode = e.proteus_error_code();
                     if errcode > 0 {
                         self.proteus_last_error_code.store(errcode, std::sync::atomic::Ordering::SeqCst);
                     }
                 })?;
+                context.finish().await?;
             }
         }
 
@@ -1453,47 +1457,58 @@ impl CoreCrypto {
     }
 
     /// See [core_crypto::proteus::ProteusCentral::session_from_prekey]
+    #[deprecated = "Please create a transaction in Core Crypto and call this method from it."]
     pub async fn proteus_session_from_prekey(&self, session_id: String, prekey: Vec<u8>) -> CoreCryptoResult<()> {
         proteus_impl! { self.proteus_last_error_code => {
-            let _ = self.central
+            let context = self.central.new_transaction().await?;
+            context
                 .proteus_session_from_prekey(&session_id, &prekey)
                 .await?;
+            context.finish().await?;
 
             CoreCryptoResult::Ok(())
         }}
     }
 
     /// See [core_crypto::proteus::ProteusCentral::session_from_message]
+    #[deprecated = "Please create a transaction in Core Crypto and call this method from it."]
     pub async fn proteus_session_from_message(
         &self,
         session_id: String,
         envelope: Vec<u8>,
     ) -> CoreCryptoResult<Vec<u8>> {
         proteus_impl! { self.proteus_last_error_code => {
-            let (_, payload) = self.central
+            let context = self.central.new_transaction().await?;
+            let (_, payload) = context
                 .proteus_session_from_message(&session_id, &envelope)
                 .await?;
-
+            context.finish().await?;
             CoreCryptoResult::Ok(payload)
         }}
     }
 
     /// See [core_crypto::proteus::ProteusCentral::session_save]
     /// **Note**: This isn't usually needed as persisting sessions happens automatically when decrypting/encrypting messages and initializing Sessions
+    #[deprecated = "Please create a transaction in Core Crypto and call this method from it."]
     pub async fn proteus_session_save(&self, session_id: String) -> CoreCryptoResult<()> {
         proteus_impl! { self.proteus_last_error_code => {
-            Ok(self.central
+            let context = self.central.new_transaction().await?;
+            context
                 .proteus_session_save(&session_id)
-                .await?)
+                .await?;
+            Ok(context.finish().await?)
         }}
     }
 
     /// See [core_crypto::proteus::ProteusCentral::session_delete]
+    #[deprecated = "Please create a transaction in Core Crypto and call this method from it."]
     pub async fn proteus_session_delete(&self, session_id: String) -> CoreCryptoResult<()> {
         proteus_impl! { self.proteus_last_error_code => {
-            Ok(self.central
+            let context = self.central.new_transaction().await?;
+            context
                 .proteus_session_delete(&session_id)
-                .await?)
+                .await?;
+            Ok(context.finish().await?)
         }}
     }
 
@@ -1507,62 +1522,84 @@ impl CoreCrypto {
     }
 
     /// See [core_crypto::proteus::ProteusCentral::decrypt]
+    #[deprecated = "Please create a transaction in Core Crypto and call this method from it."]
     pub async fn proteus_decrypt(&self, session_id: String, ciphertext: Vec<u8>) -> CoreCryptoResult<Vec<u8>> {
         proteus_impl! { self.proteus_last_error_code => {
-            Ok(self.central
+            let context = self.central.new_transaction().await?;
+            let result = context
                 .proteus_decrypt(&session_id, &ciphertext)
-                .await?)
+                .await?;
+            context.finish().await?;
+            Ok(result)
         }}
     }
 
     /// See [core_crypto::proteus::ProteusCentral::encrypt]
+    #[deprecated = "Please create a transaction in Core Crypto and call this method from it."]
     pub async fn proteus_encrypt(&self, session_id: String, plaintext: Vec<u8>) -> CoreCryptoResult<Vec<u8>> {
         proteus_impl! { self.proteus_last_error_code => {
-            Ok(self.central
+            let context = self.central.new_transaction().await?;
+            let result = context
                 .proteus_encrypt(&session_id, &plaintext)
-                .await?)
+                .await?;
+            context.finish().await?;
+            Ok(result)
         }}
     }
 
     /// See [core_crypto::proteus::ProteusCentral::encrypt_batched]
+    #[deprecated = "Please create a transaction in Core Crypto and call this method from it."]
     pub async fn proteus_encrypt_batched(
         &self,
         sessions: Vec<String>,
         plaintext: Vec<u8>,
     ) -> CoreCryptoResult<std::collections::HashMap<String, Vec<u8>>> {
         proteus_impl! { self.proteus_last_error_code => {
-            Ok(self.central
-                .proteus_encrypt_batched(sessions.as_slice(), &plaintext)
-                .await?)
+            let context = self.central.new_transaction().await?;
+            let result = context
+                .proteus_encrypt_batched(&sessions, &plaintext)
+                .await?;
+            context.finish().await?;
+            Ok(result)
         }}
     }
 
     /// See [core_crypto::proteus::ProteusCentral::new_prekey]
+    #[deprecated = "Please create a transaction in Core Crypto and call this method from it."]
     pub async fn proteus_new_prekey(&self, prekey_id: u16) -> CoreCryptoResult<Vec<u8>> {
         proteus_impl! { self.proteus_last_error_code => {
-            Ok(self.central
+            let context = self.central.new_transaction().await?;
+            let result = context
                 .proteus_new_prekey(prekey_id)
-                .await?)
+                .await?;
+            context.finish().await?;
+            Ok(result)
         }}
     }
 
     /// See [core_crypto::proteus::ProteusCentral::new_prekey_auto]
+    #[deprecated = "Please create a transaction in Core Crypto and call this method from it."]
     pub async fn proteus_new_prekey_auto(&self) -> CoreCryptoResult<ProteusAutoPrekeyBundle> {
         proteus_impl! { self.proteus_last_error_code => {
-            let (id, pkb) = self.central
+            let context = self.central.new_transaction().await?;
+            let (id, pkb) = context
                 .proteus_new_prekey_auto()
                 .await?;
-
-            CoreCryptoResult::Ok(ProteusAutoPrekeyBundle { id, pkb })
+            context.finish().await?;
+            Ok(ProteusAutoPrekeyBundle { id, pkb })
         }}
     }
 
     /// See [core_crypto::proteus::ProteusCentral::last_resort_prekey]
+    #[deprecated = "Please create a transaction in Core Crypto and call this method from it."]
     pub async fn proteus_last_resort_prekey(&self) -> CoreCryptoResult<Vec<u8>> {
         proteus_impl! { self.proteus_last_error_code => {
-            Ok(self.central
+            let context = self.central.new_transaction().await?;
+            let result = context
                 .proteus_last_resort_prekey()
-                .await?)
+                .await?;
+            context.finish().await?;
+            Ok(result)
         }}
     }
 
@@ -1604,11 +1641,14 @@ impl CoreCrypto {
     }
 
     /// See [core_crypto::proteus::ProteusCentral::cryptobox_migrate]
+    #[deprecated = "Please create a transaction in Core Crypto and call this method from it."]
     pub async fn proteus_cryptobox_migrate(&self, path: String) -> CoreCryptoResult<()> {
         proteus_impl! { self.proteus_last_error_code => {
-            Ok(self.central
+            let context = self.central.new_transaction().await?;
+            context
                 .proteus_cryptobox_migrate(&path)
-                .await?)
+                .await?;
+            Ok(context.finish().await?)
         }}
     }
 
