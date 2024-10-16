@@ -1,6 +1,6 @@
 //! Utility for clients to get the current state of E2EI when the app resumes
 
-use crate::mls::context::CentralContext;
+use crate::context::CentralContext;
 use crate::prelude::{Client, CryptoError, CryptoResult, MlsCentral, MlsCredentialType};
 use openmls_traits::types::SignatureScheme;
 

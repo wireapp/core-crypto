@@ -1,4 +1,4 @@
-use crate::mls::context::CentralContext;
+use crate::context::CentralContext;
 use crate::{e2e_identity::CrlRegistration, prelude::MlsCentral, CryptoError, CryptoResult};
 use core_crypto_keystore::connection::FetchFromDatabase;
 use core_crypto_keystore::entities::{E2eiAcmeCA, E2eiCrl, E2eiIntermediateCert};

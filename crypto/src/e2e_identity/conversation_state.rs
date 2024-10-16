@@ -8,7 +8,7 @@ use mls_crypto_provider::TransactionalCryptoProvider;
 use openmls_traits::OpenMlsCryptoProvider;
 use wire_e2e_identity::prelude::WireIdentityReader;
 
-use crate::mls::context::CentralContext;
+use crate::context::CentralContext;
 use crate::prelude::MlsCiphersuite;
 use openmls::{
     messages::group_info::VerifiableGroupInfo,

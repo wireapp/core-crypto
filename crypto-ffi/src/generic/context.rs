@@ -1,7 +1,6 @@
 use std::{ops::Deref, sync::Arc};
 
 use core_crypto::{
-    mls::context::CentralContext,
     prelude::{
         ClientIdentifier, ConversationId, KeyPackageIn, KeyPackageRef, MlsConversationConfiguration,
         VerifiableGroupInfo,
@@ -9,7 +8,7 @@ use core_crypto::{
     CryptoError, MlsError,
 };
 use tls_codec::{Deserialize, Serialize};
-
+use core_crypto::context::CentralContext;
 use super::{
     BufferedDecryptedMessage, Ciphersuite, Ciphersuites, ClientId, CommitBundle, ConversationConfiguration,
     ConversationInitBundle, CoreCrypto, CoreCryptoError, CoreCryptoResult, CustomConfiguration, DecryptedMessage,
@@ -55,7 +54,7 @@ impl CoreCrypto {
 
 #[uniffi::export]
 impl CoreCryptoContext {
-    /// See [core_crypto::mls::context::CentralContext::mls_init]
+    /// See [core_crypto::context::CentralContext::mls_init]
     pub async fn mls_init(
         &self,
         client_id: ClientId,
@@ -76,7 +75,7 @@ impl CoreCryptoContext {
         Ok(())
     }
 
-    /// See [core_crypto::mls::context::CentralContext::mls_generate_keypairs]
+    /// See [core_crypto::context::CentralContext::mls_generate_keypairs]
     pub async fn mls_generate_keypairs(&self, ciphersuites: Ciphersuites) -> CoreCryptoResult<Vec<ClientId>> {
         Ok(self
             .context
@@ -85,7 +84,7 @@ impl CoreCryptoContext {
             .map(|cids| cids.into_iter().map(ClientId).collect())?)
     }
 
-    /// See [core_crypto::mls::context::CentralContext::mls_init_with_client_id]
+    /// See [core_crypto::context::CentralContext::mls_init_with_client_id]
     pub async fn mls_init_with_client_id(
         &self,
         client_id: ClientId,
@@ -152,7 +151,7 @@ impl CoreCryptoContext {
         Ok(self.context.get_external_sender(&conversation_id).await?)
     }
 
-    /// See [core_crypto::mls::context::CentralContext::get_or_create_client_keypackages]
+    /// See [core_crypto::context::CentralContext::get_or_create_client_keypackages]
     pub async fn client_keypackages(
         &self,
         ciphersuite: Ciphersuite,
@@ -174,7 +173,7 @@ impl CoreCryptoContext {
             .collect::<CoreCryptoResult<Vec<Vec<u8>>>>()
     }
 
-    /// See [core_crypto::mls::context::CentralContext::client_valid_key_packages_count]
+    /// See [core_crypto::context::CentralContext::client_valid_key_packages_count]
     pub async fn client_valid_keypackages_count(
         &self,
         ciphersuite: Ciphersuite,
@@ -188,7 +187,7 @@ impl CoreCryptoContext {
         Ok(count.try_into().unwrap_or(0))
     }
 
-    /// See [core_crypto::mls::context::CentralContext::delete_keypackages]
+    /// See [core_crypto::context::CentralContext::delete_keypackages]
     pub async fn delete_keypackages(&self, refs: Vec<Vec<u8>>) -> CoreCryptoResult<()> {
         let refs = refs
             .into_iter()
@@ -199,7 +198,7 @@ impl CoreCryptoContext {
         Ok(())
     }
 
-    /// See [core_crypto::mls::context::CentralContext::new_conversation]
+    /// See [core_crypto::context::CentralContext::new_conversation]
     pub async fn create_conversation(
         &self,
         conversation_id: Vec<u8>,
@@ -222,7 +221,7 @@ impl CoreCryptoContext {
         Ok(())
     }
 
-    /// See [core_crypto::mls::context::CentralContext::process_raw_welcome_message]
+    /// See [core_crypto::context::CentralContext::process_raw_welcome_message]
     pub async fn process_welcome_message(
         &self,
         welcome_message: Vec<u8>,
@@ -236,7 +235,7 @@ impl CoreCryptoContext {
         Ok(result)
     }
 
-    /// See [core_crypto::mls::context::CentralContext::add_members_to_conversation]
+    /// See [core_crypto::context::CentralContext::add_members_to_conversation]
     pub async fn add_clients_to_conversation(
         &self,
         conversation_id: Vec<u8>,
@@ -259,7 +258,7 @@ impl CoreCryptoContext {
         Ok(result)
     }
 
-    /// See [core_crypto::mls::context::CentralContext::remove_members_from_conversation]
+    /// See [core_crypto::context::CentralContext::remove_members_from_conversation]
     pub async fn remove_clients_from_conversation(
         &self,
         conversation_id: Vec<u8>,
@@ -275,7 +274,7 @@ impl CoreCryptoContext {
         Ok(result)
     }
 
-    /// See [core_crypto::mls::context::CentralContext::mark_conversation_as_child_of]
+    /// See [core_crypto::context::CentralContext::mark_conversation_as_child_of]
     pub async fn mark_conversation_as_child_of(&self, child_id: Vec<u8>, parent_id: Vec<u8>) -> CoreCryptoResult<()> {
         self.context
             .mark_conversation_as_child_of(&child_id, &parent_id)
@@ -283,12 +282,12 @@ impl CoreCryptoContext {
         Ok(())
     }
 
-    /// See [core_crypto::mls::context::CentralContext::update_keying_material]
+    /// See [core_crypto::context::CentralContext::update_keying_material]
     pub async fn update_keying_material(&self, conversation_id: Vec<u8>) -> CoreCryptoResult<CommitBundle> {
         self.context.update_keying_material(&conversation_id).await?.try_into()
     }
 
-    /// See [core_crypto::mls::context::CentralContext::commit_pending_proposals]
+    /// See [core_crypto::context::CentralContext::commit_pending_proposals]
     pub async fn commit_pending_proposals(&self, conversation_id: Vec<u8>) -> CoreCryptoResult<Option<CommitBundle>> {
         self.context
             .commit_pending_proposals(&conversation_id)
@@ -298,13 +297,13 @@ impl CoreCryptoContext {
             .transpose()
     }
 
-    /// see [core_crypto::mls::context::CentralContext::wipe_conversation]
+    /// see [core_crypto::context::CentralContext::wipe_conversation]
     pub async fn wipe_conversation(&self, conversation_id: Vec<u8>) -> CoreCryptoResult<()> {
         self.context.wipe_conversation(&conversation_id).await?;
         Ok(())
     }
 
-    /// See [core_crypto::mls::context::CentralContext::decrypt_message]
+    /// See [core_crypto::context::CentralContext::decrypt_message]
     pub async fn decrypt_message(
         &self,
         conversation_id: Vec<u8>,
@@ -317,12 +316,12 @@ impl CoreCryptoContext {
         Ok(decrypted_message)
     }
 
-    /// See [core_crypto::mls::context::CentralContext::encrypt_message]
+    /// See [core_crypto::context::CentralContext::encrypt_message]
     pub async fn encrypt_message(&self, conversation_id: Vec<u8>, message: Vec<u8>) -> CoreCryptoResult<Vec<u8>> {
         Ok(self.context.encrypt_message(&conversation_id, message).await?)
     }
 
-    /// See [core_crypto::mls::context::CentralContext::new_add_proposal]
+    /// See [core_crypto::context::CentralContext::new_add_proposal]
     pub async fn new_add_proposal(
         &self,
         conversation_id: Vec<u8>,
@@ -337,12 +336,12 @@ impl CoreCryptoContext {
             .try_into()
     }
 
-    /// See [core_crypto::mls::context::CentralContext::new_update_proposal]
+    /// See [core_crypto::context::CentralContext::new_update_proposal]
     pub async fn new_update_proposal(&self, conversation_id: Vec<u8>) -> CoreCryptoResult<ProposalBundle> {
         self.context.new_update_proposal(&conversation_id).await?.try_into()
     }
 
-    /// See [core_crypto::mls::context::CentralContext::new_remove_proposal]
+    /// See [core_crypto::context::CentralContext::new_remove_proposal]
     pub async fn new_remove_proposal(
         &self,
         conversation_id: Vec<u8>,
@@ -354,7 +353,7 @@ impl CoreCryptoContext {
             .try_into()
     }
 
-    /// See [core_crypto::mls::context::CentralContext::new_external_add_proposal]
+    /// See [core_crypto::context::CentralContext::new_external_add_proposal]
     pub async fn new_external_add_proposal(
         &self,
         conversation_id: Vec<u8>,
@@ -376,7 +375,7 @@ impl CoreCryptoContext {
             .map_err(CryptoError::from)?)
     }
 
-    /// See [core_crypto::mls::context::CentralContext::join_by_external_commit]
+    /// See [core_crypto::context::CentralContext::join_by_external_commit]
     pub async fn join_by_external_commit(
         &self,
         group_info: Vec<u8>,
@@ -392,7 +391,7 @@ impl CoreCryptoContext {
             .try_into()
     }
 
-    /// See [core_crypto::mls::context::CentralContext::merge_pending_group_from_external_commit]
+    /// See [core_crypto::context::CentralContext::merge_pending_group_from_external_commit]
     pub async fn merge_pending_group_from_external_commit(
         &self,
         conversation_id: Vec<u8>,
@@ -412,7 +411,7 @@ impl CoreCryptoContext {
         Ok(None)
     }
 
-    /// See [core_crypto::mls::context::CentralContext::clear_pending_group_from_external_commit]
+    /// See [core_crypto::context::CentralContext::clear_pending_group_from_external_commit]
     pub async fn clear_pending_group_from_external_commit(&self, conversation_id: Vec<u8>) -> CoreCryptoResult<()> {
         self.context
             .clear_pending_group_from_external_commit(&conversation_id)
@@ -420,7 +419,7 @@ impl CoreCryptoContext {
         Ok(())
     }
 
-    /// See [core_crypto::mls::context::CentralContext::commit_accepted]
+    /// See [core_crypto::context::CentralContext::commit_accepted]
     pub async fn commit_accepted(
         &self,
         conversation_id: Vec<u8>,
@@ -436,7 +435,7 @@ impl CoreCryptoContext {
         Ok(None)
     }
 
-    /// See [core_crypto::mls::context::CentralContext::clear_pending_proposal]
+    /// See [core_crypto::context::CentralContext::clear_pending_proposal]
     pub async fn clear_pending_proposal(
         &self,
         conversation_id: Vec<u8>,
@@ -448,7 +447,7 @@ impl CoreCryptoContext {
         Ok(())
     }
 
-    /// See [core_crypto::mls::context::CentralContext::clear_pending_commit]
+    /// See [core_crypto::context::CentralContext::clear_pending_commit]
     pub async fn clear_pending_commit(&self, conversation_id: Vec<u8>) -> CoreCryptoResult<()> {
         self.context.clear_pending_commit(&conversation_id).await?;
         Ok(())
