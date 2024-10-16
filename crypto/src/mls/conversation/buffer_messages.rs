@@ -5,7 +5,6 @@
 
 use crate::{
     group_store::GroupStoreValue,
-    mls::context::CentralContext,
     prelude::{
         decrypt::MlsBufferedConversationDecryptMessage, Client, ConversationId, CoreCryptoCallbacks, CryptoError,
         CryptoResult, MlsConversation, MlsConversationDecryptMessage, MlsError,
@@ -19,6 +18,7 @@ use mls_crypto_provider::TransactionalCryptoProvider;
 use openmls::prelude::{MlsMessageIn, MlsMessageInBody};
 use tls_codec::Deserialize;
 use tracing::{error, span, trace, Instrument, Level};
+use crate::context::CentralContext;
 
 impl CentralContext {
     #[cfg_attr(not(test), tracing::instrument(err, skip(self, message), fields(id = base64::Engine::encode(&base64::prelude::BASE64_STANDARD, id))))]

@@ -28,7 +28,6 @@ use crate::{
     group_store::GroupStoreValue,
     mls::{
         client::Client,
-        context::CentralContext,
         conversation::renew::Renew,
         credential::{
             crl::{
@@ -41,6 +40,7 @@ use crate::{
     prelude::{E2eiConversationState, MlsProposalBundle, WireIdentity},
     CoreCryptoCallbacks, CryptoError, CryptoResult, MlsError,
 };
+use crate::context::CentralContext;
 
 /// Represents the potential items a consumer might require after passing us an encrypted message we
 /// have decrypted for him

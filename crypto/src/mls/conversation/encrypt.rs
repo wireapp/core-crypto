@@ -10,9 +10,9 @@
 use mls_crypto_provider::TransactionalCryptoProvider;
 use openmls::prelude::MlsMessageOutBody;
 
-use crate::{mls::context::CentralContext, prelude::Client};
+use crate::prelude::Client;
 use crate::{mls::ConversationId, CryptoError, CryptoResult, MlsError};
-
+use crate::context::CentralContext;
 use super::MlsConversation;
 
 /// Abstraction over a MLS group capable of encrypting a MLS message

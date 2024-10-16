@@ -1,10 +1,8 @@
-use crate::{
-    mls::context::CentralContext,
-    prelude::{ConversationId, CryptoResult, MlsConversation, MlsError},
-};
+use crate::prelude::{ConversationId, CryptoResult, MlsConversation, MlsError};
 use core_crypto_keystore::CryptoKeystoreMls;
 use mls_crypto_provider::TransactionalCryptoProvider;
 use openmls_traits::OpenMlsCryptoProvider;
+use crate::context::CentralContext;
 
 impl CentralContext {
     /// Destroys a group locally

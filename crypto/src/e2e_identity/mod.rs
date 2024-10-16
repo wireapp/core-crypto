@@ -29,7 +29,7 @@ pub(crate) mod rotate;
 pub(crate) mod stash;
 pub mod types;
 
-use crate::mls::context::CentralContext;
+use crate::context::CentralContext;
 pub use init_certificates::E2eiDumpedPkiEnv;
 
 type Json = Vec<u8>;
@@ -603,7 +603,7 @@ pub(crate) mod tests {
     use wasm_bindgen_test::*;
 
     use crate::e2e_identity::refresh_token::RefreshToken;
-    use crate::mls::context::CentralContext;
+    use crate::context::CentralContext;
     use crate::{
         e2e_identity::{id::QualifiedE2eiClientId, tests::x509::X509TestChain},
         prelude::{

@@ -6,7 +6,7 @@ use openmls_traits::OpenMlsCryptoProvider;
 use x509_cert::der::pem::LineEnding;
 
 use crate::e2e_identity::id::WireQualifiedClientId;
-use crate::mls::context::CentralContext;
+use crate::context::CentralContext;
 use crate::mls::credential::ext::CredentialExt;
 use crate::prelude::MlsCredentialType;
 use crate::{
@@ -216,7 +216,7 @@ mod tests {
         test_utils::*,
         CryptoError,
     };
-    use crate::mls::context::CentralContext;
+    use crate::context::CentralContext;
 
     wasm_bindgen_test_configure!(run_in_browser);
 

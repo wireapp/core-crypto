@@ -18,10 +18,11 @@ use openmls_traits::OpenMlsCryptoProvider;
 use mls_crypto_provider::TransactionalCryptoProvider;
 
 use crate::{
-    mls::{context::CentralContext, ConversationId, MlsConversation},
+    mls::{ConversationId, MlsConversation},
     prelude::{decrypt::MlsBufferedConversationDecryptMessage, MlsProposalRef},
     CryptoError, CryptoResult, MlsError,
 };
+use crate::context::CentralContext;
 
 /// Abstraction over a MLS group capable of merging a commit
 impl MlsConversation {

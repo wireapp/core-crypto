@@ -12,7 +12,7 @@ use crate::{
 };
 use tracing::{trace, warn, Instrument};
 
-use super::context::CentralContext;
+use crate::context::CentralContext;
 
 impl MlsConversation {
     /// Validates the proposal. If it is external and an `Add` proposal it will call the callback
