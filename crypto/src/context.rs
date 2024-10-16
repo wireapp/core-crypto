@@ -122,6 +122,13 @@ impl CentralContext {
             ContextState::Invalid => Err(CryptoError::InvalidContext),
         }
     }
+    
+    pub(crate) async fn proteus_central(&self) -> CryptoResult<Arc<Mutex<Option<ProteusCentral>>>> {
+        match self.state.read().await.deref() {
+            ContextState::Valid { proteus_central, .. } => Ok(proteus_central.clone()),
+            ContextState::Invalid => Err(CryptoError::InvalidContext),
+        }
+    }
 
     /// Commits the transaction, meaning it takes all the enqueued operations and persist them into
     /// the keystore. After that the internal state is switched to invalid, causing errors if
