@@ -325,12 +325,9 @@ mod tests {
     
     use wasm_bindgen_test::*;
 
-    use crate::{
-        prelude::{
-            ClientIdentifier, MlsCentralConfiguration, MlsConversationCreationMessage, INITIAL_KEYING_MATERIAL_COUNT,
-        },
-        test_utils::*,
-    };
+    use crate::{prelude::{
+        ClientIdentifier, MlsCentralConfiguration, MlsConversationCreationMessage, INITIAL_KEYING_MATERIAL_COUNT,
+    }, test_utils::*, CoreCrypto};
 
     use super::*;
 
@@ -474,7 +471,9 @@ mod tests {
                     )
                     .unwrap();
                     let central = MlsCentral::try_new(config).await.unwrap();
-                    let friend_context = central.new_transaction().await.unwrap();
+                    let cc = CoreCrypto::from(central);
+                    let friend_context = cc.new_transaction().await.unwrap();
+                    let central = cc.mls;
 
                     x509_test_chain.register_with_central(&friend_context).await;
 
