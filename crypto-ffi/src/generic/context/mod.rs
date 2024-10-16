@@ -1,5 +1,5 @@
 use std::{ops::Deref, sync::Arc};
-
+use std::sync::atomic::AtomicU32;
 use core_crypto::{
     prelude::{
         ClientIdentifier, ConversationId, KeyPackageIn, KeyPackageRef, MlsConversationConfiguration,
@@ -16,10 +16,12 @@ use super::{
 };
 
 pub mod e2ei;
+pub mod proteus;
 
 #[derive(uniffi::Object)]
 pub struct CoreCryptoContext {
     pub(super) context: Arc<CentralContext>,
+    proteus_last_error_code: AtomicU32,
 }
 
 impl Deref for CoreCryptoContext {
@@ -44,6 +46,7 @@ impl CoreCrypto {
     pub async fn transaction(&self, command: Arc<dyn CoreCryptoCommand>) -> CoreCryptoResult<()> {
         let context = Arc::new(CoreCryptoContext {
             context: Arc::new(self.central.new_transaction().await?),
+            proteus_last_error_code: AtomicU32::new(0),
         });
 
         let result = command.execute(context.clone()).await;
