@@ -1,7 +1,5 @@
-use crate::{
-    mls::context::CentralContext,
-    prelude::{ConversationId, CryptoError, CryptoResult, MlsCentral, MlsConversation},
-};
+use crate::prelude::{ConversationId, CryptoError, CryptoResult, MlsCentral, MlsConversation};
+use crate::context::CentralContext;
 
 impl MlsCentral {
     /// Returns the raw public key of the single external sender present in this group.
