@@ -11,16 +11,13 @@ use mls_crypto_provider::TransactionalCryptoProvider;
 
 use crate::{
     e2e_identity::init_certificates::NewCrlDistributionPoint,
-    mls::{
-        context::CentralContext,
-        credential::{
-            crl::{extract_crl_uris_from_credentials, get_new_crl_distribution_points},
-            CredentialBundle,
-        },
+    mls::credential::{
+        crl::{extract_crl_uris_from_credentials, get_new_crl_distribution_points},
+        CredentialBundle,
     },
     prelude::{Client, ClientId, ConversationId, CryptoError, CryptoResult, MlsError, MlsGroupInfoBundle},
 };
-
+use crate::context::CentralContext;
 use super::MlsConversation;
 
 impl CentralContext {

@@ -11,7 +11,7 @@ use core_crypto_keystore::{
     entities::{MlsPendingMessage, PersistedMlsPendingGroup},
 };
 
-use super::context::CentralContext;
+use crate::context::CentralContext;
 
 impl CentralContext {
     pub(crate) async fn handle_when_group_is_pending(

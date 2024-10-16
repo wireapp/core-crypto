@@ -11,12 +11,11 @@ use crate::prelude::{
     MlsConversationConfiguration, MlsCredentialType, MlsError,
 };
 
-use self::context::CentralContext;
+use crate::context::CentralContext;
 
 pub(crate) mod buffer_external_commit;
 pub(crate) mod ciphersuite;
 pub(crate) mod client;
-pub mod context;
 pub mod conversation;
 pub(crate) mod credential;
 pub(crate) mod external_commit;

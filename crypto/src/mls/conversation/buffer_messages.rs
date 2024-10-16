@@ -5,7 +5,6 @@
 
 use crate::{
     group_store::GroupStoreValue,
-    mls::context::CentralContext,
     prelude::{
         decrypt::MlsBufferedConversationDecryptMessage, Client, ConversationId, CoreCryptoCallbacks, CryptoError,
         CryptoResult, MlsConversation, MlsConversationDecryptMessage, MlsError,
@@ -19,6 +18,7 @@ use log::{error, info, trace};
 use mls_crypto_provider::TransactionalCryptoProvider;
 use openmls::prelude::{MlsMessageIn, MlsMessageInBody};
 use tls_codec::Deserialize;
+use crate::context::CentralContext;
 
 impl CentralContext {
     pub(crate) async fn handle_future_message(

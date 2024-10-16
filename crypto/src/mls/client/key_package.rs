@@ -27,11 +27,12 @@ use core_crypto_keystore::{
 use mls_crypto_provider::{CryptoKeystore, TransactionalCryptoProvider};
 
 use crate::{
-    mls::{context::CentralContext, credential::CredentialBundle},
+    mls::credential::CredentialBundle,
     prelude::{
         Client, CryptoError, CryptoResult, MlsCiphersuite, MlsConversationConfiguration, MlsCredentialType, MlsError,
     },
 };
+use crate::context::CentralContext;
 
 /// Default number of KeyPackages a client generates the first time it's created
 #[cfg(not(test))]

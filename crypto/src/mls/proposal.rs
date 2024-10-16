@@ -23,7 +23,7 @@ use crate::{
     prelude::{Client, CryptoError, CryptoResult, MlsProposalBundle},
 };
 
-use super::context::CentralContext;
+use crate::context::CentralContext;
 
 /// Abstraction over a [openmls::prelude::hash_ref::ProposalRef] to deal with conversions
 #[derive(Debug, Clone, Eq, PartialEq, derive_more::From, derive_more::Deref, derive_more::Display)]

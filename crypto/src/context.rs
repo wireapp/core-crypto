@@ -5,7 +5,7 @@ use std::{ops::Deref, sync::Arc};
 use async_lock::{Mutex, RwLock, RwLockReadGuardArc, RwLockWriteGuardArc};
 use mls_crypto_provider::{CryptoKeystore, TransactionalCryptoProvider};
 
-use super::MlsCentral;
+use crate::mls::MlsCentral;
 use crate::{group_store::GroupStore, prelude::{Client, MlsConversation}, CoreCrypto, CoreCryptoCallbacks, CryptoError, CryptoResult};
 use crate::proteus::ProteusCentral;
 

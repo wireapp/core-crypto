@@ -32,10 +32,8 @@ use serde::{Deserialize, Serialize};
 use wire_e2e_identity::prelude::parse_json_jwk;
 
 use crate::MlsError;
-use crate::{
-    mls::context::CentralContext,
-    prelude::{CryptoResult, E2eIdentityError, MlsCiphersuite},
-};
+use crate::prelude::{CryptoResult, E2eIdentityError, MlsCiphersuite};
+use crate::context::CentralContext;
 
 /// Sets the config in OpenMls for the oldest possible epoch(past current) that a message can be decrypted
 pub(crate) const MAX_PAST_EPOCHS: usize = 3;
