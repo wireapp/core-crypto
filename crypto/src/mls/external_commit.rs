@@ -383,7 +383,7 @@ mod tests {
                     );
 
                     // verify Bob's (sender) identity
-                    bob_central.verify_sender_identity(&case, &decrypted);
+                    bob_central.verify_sender_identity(&case, &decrypted).await;
 
                     // Let's say backend accepted our external commit.
                     // So Bob can merge the commit and update the local state

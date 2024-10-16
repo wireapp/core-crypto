@@ -549,7 +549,7 @@ mod tests {
                         assert!(decrypted.delay.is_none());
                         assert!(decrypted.app_msg.is_none());
 
-                        alice_central.verify_sender_identity(&case, &decrypted);
+                        alice_central.verify_sender_identity(&case, &decrypted).await;
                     })
                 },
             )
@@ -1213,7 +1213,7 @@ mod tests {
                         );
                         assert!(!decrypted.has_epoch_changed);
 
-                        alice_central.verify_sender_identity(&case, &decrypted);
+                        alice_central.verify_sender_identity(&case, &decrypted).await;
                     })
                 },
             )
@@ -1284,7 +1284,7 @@ mod tests {
                         let dec_msg = decrypted.app_msg.as_ref().unwrap().as_slice();
                         assert_eq!(dec_msg, &msg[..]);
                         assert!(!decrypted.has_epoch_changed);
-                        alice_central.verify_sender_identity(&case, &decrypted);
+                        alice_central.verify_sender_identity(&case, &decrypted).await;
 
                         let msg = b"Hello alice";
                         let encrypted = bob_central.context.encrypt_message(&id, msg).await.unwrap();
@@ -1293,7 +1293,7 @@ mod tests {
                         let dec_msg = decrypted.app_msg.as_ref().unwrap().as_slice();
                         assert_eq!(dec_msg, &msg[..]);
                         assert!(!decrypted.has_epoch_changed);
-                        bob_central.verify_sender_identity(&case, &decrypted);
+                        bob_central.verify_sender_identity(&case, &decrypted).await;
                     })
                 },
             )

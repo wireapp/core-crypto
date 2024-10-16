@@ -184,7 +184,7 @@ mod tests {
                     assert!(decrypt_self.proposals.is_empty());
 
                     // verify that we return the new identity
-                    alice_central.verify_sender_identity(&case, &decrypt_self);
+                    alice_central.verify_sender_identity(&case, &decrypt_self).await;
                     alice_central
                         .verify_local_credential_rotated(&id, new_handle, new_display_name)
                         .await;
