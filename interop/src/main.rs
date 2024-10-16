@@ -316,12 +316,13 @@ async fn run_proteus_test(chrome_driver_addr: &std::net::SocketAddr) -> Result<(
     let mut master_sessions = vec![];
     let mut messages = std::collections::HashMap::new();
     const PROTEUS_INITIAL_MESSAGE: &[u8] = b"Hello world!";
+    let transaction = CoreCrypto::from(master_client.clone()).new_transaction().await?;
     for (fingerprint, prekey) in prekeys {
         spinner.update(format!(
             "[Proteus] Step 2: Session master -> {fingerprint}@{}",
             client_type_mapping[&fingerprint]
         ));
-        let session_arc = master_client.proteus_session_from_prekey(&fingerprint, &prekey).await?;
+        let session_arc = transaction.proteus_session_from_prekey(&fingerprint, &prekey).await?;
         let mut session = session_arc.write().await;
         messages.insert(fingerprint, session.encrypt(PROTEUS_INITIAL_MESSAGE)?);
         master_sessions.push(session.identifier().to_string());
@@ -356,7 +357,7 @@ async fn run_proteus_test(chrome_driver_addr: &std::net::SocketAddr) -> Result<(
 
         prng.fill_bytes(&mut message);
 
-        let mut messages_to_decrypt = master_client
+        let mut messages_to_decrypt = transaction
             .proteus_encrypt_batched(&master_sessions, &message)
             .await?;
 
@@ -382,7 +383,7 @@ async fn run_proteus_test(chrome_driver_addr: &std::net::SocketAddr) -> Result<(
         }
 
         for (fingerprint, encrypted) in master_messages_to_decrypt.drain() {
-            let decrypted = master_client.proteus_decrypt(&fingerprint, &encrypted).await?;
+            let decrypted = transaction.proteus_decrypt(&fingerprint, &encrypted).await?;
             assert_eq!(decrypted, message);
         }
 
