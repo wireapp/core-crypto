@@ -106,10 +106,6 @@ impl EntityId {
             _ => Err(CryptoKeystoreError::NotImplemented),
         }
     }
-
-    fn matches_entity<E: crate::entities::Entity>(&self, e: &E) -> CryptoKeystoreResult<bool> {
-        Ok(EntityId::from_collection_name(E::COLLECTION_NAME, e.id_raw())? == *self)
-    }
 }
 
 async fn execute_save(tx: &TransactionWrapper<'_>, entity: &Entity) -> CryptoKeystoreResult<()> {
