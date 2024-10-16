@@ -36,7 +36,6 @@ use core_crypto::{
 use self::context::CoreCryptoContext;
 
 pub mod context;
-pub mod e2ei_context;
 
 #[allow(dead_code)]
 pub(crate) const VERSION: &str = env!("CARGO_PKG_VERSION");
@@ -854,7 +853,7 @@ impl CoreCrypto {
         )?;
 
         let central = MlsCentral::try_new(configuration).await?;
-        let central = core_crypto::CoreCrypto::from(central).into();
+        let central = core_crypto::CoreCrypto::from(central);
 
         Ok(CoreCrypto {
             central,

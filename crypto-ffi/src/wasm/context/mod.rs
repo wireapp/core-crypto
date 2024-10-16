@@ -18,6 +18,9 @@ use wasm_bindgen::prelude::wasm_bindgen;
 use wasm_bindgen::JsValue;
 use wasm_bindgen_futures::future_to_promise;
 
+pub mod e2ei;
+pub mod proteus;
+
 #[wasm_bindgen]
 #[derive(Clone)]
 pub struct CoreCryptoContext {
