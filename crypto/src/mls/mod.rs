@@ -5,7 +5,7 @@ use tracing::{trace, Instrument};
 
 use mls_crypto_provider::{EntropySeed, MlsCryptoProvider, MlsCryptoProviderConfiguration};
 use openmls_traits::OpenMlsCryptoProvider;
-
+use crate::CoreCrypto;
 use crate::prelude::{
     identifier::ClientIdentifier, key_package::INITIAL_KEYING_MATERIAL_COUNT, Client, ClientId, ConversationId,
     CoreCryptoCallbacks, CryptoError, CryptoResult, MlsCentralConfiguration, MlsCiphersuite, MlsConversation,
@@ -210,7 +210,9 @@ impl MlsCentral {
         keystore.commit_transaction().await?;
         drop(keystore);
 
-        let context = central.new_transaction().await?;
+        let cc = CoreCrypto::from(central);
+        let context = cc.new_transaction().await?;
+        let central = cc.mls;
 
         context.init_pki_env().in_current_span().await?;
         context.finish().await?;
@@ -255,9 +257,10 @@ impl MlsCentral {
             callbacks: Arc::new(None.into()),
             transaction_lock: Arc::new(Mutex::new(())),
         };
-
-        let context = central.new_transaction().await?;
-
+        
+        let cc = CoreCrypto::from(central);
+        let context = cc.new_transaction().await?;
+        let central = cc.mls;
         context.init_pki_env().in_current_span().await?;
         context.finish().await?;
 
@@ -541,10 +544,7 @@ mod tests {
     use wasm_bindgen_test::*;
 
     use crate::prelude::{CertificateBundle, ClientIdentifier, MlsCredentialType, INITIAL_KEYING_MATERIAL_COUNT};
-    use crate::{
-        mls::{CryptoError, MlsCentral, MlsCentralConfiguration},
-        test_utils::{x509::X509TestChain, *},
-    };
+    use crate::{mls::{CryptoError, MlsCentral, MlsCentralConfiguration}, test_utils::{x509::X509TestChain, *}, CoreCrypto};
 
     wasm_bindgen_test_configure!(run_in_browser);
 
@@ -764,7 +764,8 @@ mod tests {
                 .unwrap();
                 // phase 1: init without mls_client
                 let central = MlsCentral::try_new(configuration).await.unwrap();
-                let context = central.new_transaction().await.unwrap();
+                let cc = CoreCrypto::from(central);
+                let context = cc.new_transaction().await.unwrap();
                 x509_test_chain.register_with_central(&context).await;
 
                 assert!(context.mls_client().await.unwrap().is_none());
