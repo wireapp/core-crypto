@@ -3,7 +3,7 @@ use std::{collections::HashMap, ops::DerefMut};
 use core_crypto::{prelude::VerifiableGroupInfo, CryptoError, MlsError};
 use tls_codec::Deserialize;
 
-use super::{
+use crate::generic::{
     context::CoreCryptoContext, Ciphersuite, ClientId, CoreCryptoResult, CrlRegistration, E2eiConversationState,
     E2eiDumpedPkiEnv, E2eiEnrollment, MlsCredentialType, RotateBundle, WireIdentity,
 };
