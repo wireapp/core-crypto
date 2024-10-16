@@ -11,7 +11,7 @@ use core_crypto_keystore::{
     entities::{MlsPendingMessage, PersistedMlsPendingGroup},
 };
 
-use super::context::CentralContext;
+use crate::context::CentralContext;
 
 impl CentralContext {
     #[cfg_attr(not(test), tracing::instrument(err, skip(self, message), fields(id = base64::Engine::encode(&base64::prelude::BASE64_STANDARD, id))))]

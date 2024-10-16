@@ -48,6 +48,7 @@ pub mod e2e_identity;
 pub mod proteus;
 
 mod group_store;
+pub mod context;
 
 /// Common imports that should be useful for most uses of the crate
 pub mod prelude {

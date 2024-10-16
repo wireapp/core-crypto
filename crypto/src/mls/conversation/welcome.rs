@@ -3,10 +3,7 @@ use std::borrow::BorrowMut;
 use crate::{
     e2e_identity::init_certificates::NewCrlDistributionPoint,
     group_store::GroupStore,
-    mls::{
-        context::CentralContext,
-        credential::crl::{extract_crl_uris_from_group, get_new_crl_distribution_points},
-    },
+    mls::credential::crl::{extract_crl_uris_from_group, get_new_crl_distribution_points},
     prelude::{
         ConversationId, CryptoError, CryptoResult, MlsConversation, MlsConversationConfiguration,
         MlsCustomConfiguration, MlsError,
@@ -17,6 +14,7 @@ use mls_crypto_provider::TransactionalCryptoProvider;
 use openmls::prelude::{MlsGroup, MlsMessageIn, MlsMessageInBody, Welcome};
 use openmls_traits::OpenMlsCryptoProvider;
 use tls_codec::Deserialize;
+use crate::context::CentralContext;
 
 /// Contains everything client needs to know after decrypting an (encrypted) Welcome message
 #[derive(Debug)]

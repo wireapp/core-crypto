@@ -1,4 +1,5 @@
-use crate::mls::{context::CentralContext, ConversationId, MlsConversation};
+use crate::context::CentralContext;
+use crate::mls::{ConversationId, MlsConversation};
 
 impl MlsConversation {
     /// Replaces the MLS group in memory with the one from keystore.

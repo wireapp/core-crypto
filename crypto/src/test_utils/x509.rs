@@ -6,7 +6,7 @@ use crate::{
 };
 use std::{fmt::Display, time::Duration};
 
-use crate::mls::context::CentralContext;
+use crate::context::CentralContext;
 use mls_crypto_provider::{CertProfile, CertificateGenerationArgs, MlsCryptoProvider, PkiKeypair, RustCrypto};
 use openmls_traits::{crypto::OpenMlsCrypto, random::OpenMlsRand, types::SignatureScheme};
 use x509_cert::der::EncodePem;

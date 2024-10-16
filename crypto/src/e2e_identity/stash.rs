@@ -1,6 +1,6 @@
 use openmls_traits::{random::OpenMlsRand, OpenMlsCryptoProvider};
 
-use crate::mls::context::CentralContext;
+use crate::context::CentralContext;
 use crate::prelude::{CryptoError, CryptoResult, E2eiEnrollment};
 use core_crypto_keystore::CryptoKeystoreMls;
 use mls_crypto_provider::TransactionalCryptoProvider;

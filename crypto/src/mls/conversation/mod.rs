@@ -44,7 +44,7 @@ use crate::{
     prelude::{CryptoError, CryptoResult, MlsCiphersuite, MlsCredentialType, MlsError},
 };
 
-use super::context::CentralContext;
+use crate::context::CentralContext;
 
 mod buffer_messages;
 pub(crate) mod commit;

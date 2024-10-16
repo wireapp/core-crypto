@@ -39,7 +39,7 @@ use crate::{
     },
 };
 
-use super::context::CentralContext;
+use crate::context::CentralContext;
 
 /// Returned when a commit is created
 #[derive(Debug)]

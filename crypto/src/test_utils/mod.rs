@@ -19,7 +19,7 @@ pub use rstest::*;
 pub use rstest_reuse::{self, *};
 use std::collections::HashMap;
 use std::sync::Arc;
-use crate::{mls::context::CentralContext, prelude::{ClientId, ConversationId, MlsCentral, MlsCentralConfiguration}, test_utils::x509::{CertificateParams, X509TestChain, X509TestChainActorArg, X509TestChainArgs}, CoreCrypto, CoreCryptoCallbacks};
+use crate::{prelude::{ClientId, ConversationId, MlsCentral, MlsCentralConfiguration}, test_utils::x509::{CertificateParams, X509TestChain, X509TestChainActorArg, X509TestChainArgs}, CoreCrypto, CoreCryptoCallbacks};
 
 pub mod central;
 pub mod fixtures;
@@ -33,6 +33,7 @@ use crate::e2e_identity::id::{QualifiedE2eiClientId, WireQualifiedClientId};
 pub use crate::prelude::{ClientIdentifier, MlsCredentialType, INITIAL_KEYING_MATERIAL_COUNT};
 pub use fixtures::{TestCase, *};
 pub use message::*;
+use crate::context::CentralContext;
 use crate::prelude::Client;
 
 pub const GROUP_SAMPLE_SIZE: usize = 9;
