@@ -15,6 +15,8 @@ use super::{
     MemberAddedMessages, MlsCredentialType, ProposalBundle, WelcomeBundle,
 };
 
+pub mod e2ei;
+
 #[derive(uniffi::Object)]
 pub struct CoreCryptoContext {
     pub(super) context: Arc<CentralContext>,
