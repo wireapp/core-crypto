@@ -2,16 +2,12 @@
 //! [MlsCentral]. All mutating operations need to be done through a [CentralContext].
 
 use std::{ops::Deref, sync::Arc};
-
-use async_lock::{RwLock, RwLockReadGuardArc, RwLockWriteGuardArc};
+use async_lock::{Mutex, RwLock, RwLockReadGuardArc, RwLockWriteGuardArc};
 use mls_crypto_provider::{CryptoKeystore, TransactionalCryptoProvider};
 
 use super::MlsCentral;
-use crate::{
-    group_store::GroupStore,
-    prelude::{Client, MlsConversation},
-    CoreCryptoCallbacks, CryptoError, CryptoResult,
-};
+use crate::{group_store::GroupStore, prelude::{Client, MlsConversation}, CoreCrypto, CoreCryptoCallbacks, CryptoError, CryptoResult};
+use crate::proteus::ProteusCentral;
 
 /// This struct provides transactional support for Core Crypto.
 ///
@@ -34,32 +30,34 @@ enum ContextState {
         callbacks: Arc<RwLock<Option<std::sync::Arc<dyn CoreCryptoCallbacks + 'static>>>>,
         mls_client: Arc<RwLock<Option<Client>>>,
         mls_groups: Arc<RwLock<GroupStore<MlsConversation>>>,
+        proteus_central: Arc<Mutex<Option<ProteusCentral>>>,
     },
     Invalid,
 }
 
-impl MlsCentral {
-    /// Creates a new transaction within the MlsCentral. All operations that persist data will be
+impl CoreCrypto {
+    /// Creates a new transaction. All operations that persist data will be
     /// buffered in memory and when [CentralContext::finish] is called, the data will be persisted
     /// in a single database transaction.
     pub async fn new_transaction(&self) -> CryptoResult<CentralContext> {
-        CentralContext::new(self).await
+        CentralContext::new(&self.mls, self.proteus.clone()).await
     }
 }
 
 impl CentralContext {
-    async fn new(central: &MlsCentral) -> CryptoResult<Self> {
-        central.mls_backend.new_transaction().await?;
+    async fn new(mls_central: &MlsCentral, proteus_central: Arc<Mutex<Option<ProteusCentral>>>) -> CryptoResult<Self> {
+        mls_central.mls_backend.new_transaction().await?;
         let mls_groups = Arc::new(RwLock::new(Default::default()));
-        let callbacks = central.callbacks.clone();
-        let mls_client = central.mls_client.clone();
+        let callbacks = mls_central.callbacks.clone();
+        let mls_client = mls_central.mls_client.clone();
         Ok(Self {
             state: Arc::new(
                 ContextState::Valid {
                     mls_client,
                     callbacks,
-                    provider: central.mls_backend.clone(),
+                    provider: mls_central.mls_backend.clone(),
                     mls_groups,
+                    proteus_central
                 }
                 .into(),
             ),

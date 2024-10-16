@@ -148,7 +148,8 @@ async fn run_mls_test(chrome_driver_addr: &std::net::SocketAddr) -> Result<()> {
         ciphersuite: CIPHERSUITE_IN_USE.into(),
         ..Default::default()
     };
-    let transaction = master_client.new_transaction().await?;
+    let cc = CoreCrypto::from(master_client.clone());
+    let transaction = cc.new_transaction().await?;
     transaction
         .new_conversation(&conversation_id, MlsCredentialType::Basic, config)
         .await?;
