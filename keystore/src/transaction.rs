@@ -11,7 +11,6 @@ use crate::{
 };
 use async_lock::RwLock;
 use itertools::Itertools;
-use openmls_traits::key_store::MlsEntityId;
 use std::{ops::DerefMut, sync::Arc};
 
 #[derive(Debug)]
@@ -84,18 +83,6 @@ impl EntityId {
 }
 
 impl EntityId {
-    fn from_mls_entity_id(entity_id: MlsEntityId, id: &[u8]) -> Self {
-        match entity_id {
-            MlsEntityId::SignatureKeyPair => Self::SignatureKeyPair(id.into()),
-            MlsEntityId::HpkePrivateKey => Self::HpkePrivateKey(id.into()),
-            MlsEntityId::KeyPackage => Self::KeyPackage(id.into()),
-            MlsEntityId::PskBundle => Self::PskBundle(id.into()),
-            MlsEntityId::EncryptionKeyPair => Self::EncryptionKeyPair(id.into()),
-            MlsEntityId::EpochEncryptionKeyPair => Self::EpochEncryptionKeyPair(id.into()),
-            MlsEntityId::GroupState => Self::PersistedMlsGroup(id.into()),
-        }
-    }
-
     fn from_collection_name(entity_id: &'static str, id: &[u8]) -> CryptoKeystoreResult<Self> {
         match entity_id {
             MlsSignatureKeyPair::COLLECTION_NAME => Ok(Self::SignatureKeyPair(id.into())),
