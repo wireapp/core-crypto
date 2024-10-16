@@ -16,7 +16,6 @@
 
 #![allow(unused_variables, deprecated)]
 mod context;
-mod e2ei_context;
 mod utils;
 
 use std::collections::HashMap;

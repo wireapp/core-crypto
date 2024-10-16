@@ -39,7 +39,6 @@ use crate::UniffiCustomTypeConverter;
 use self::context::CoreCryptoContext;
 
 pub mod context;
-pub mod e2ei_context;
 
 #[allow(dead_code)]
 pub(crate) const VERSION: &str = env!("CARGO_PKG_VERSION");
