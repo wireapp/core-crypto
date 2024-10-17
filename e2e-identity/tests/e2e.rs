@@ -7,7 +7,7 @@ use rusty_acme::prelude::*;
 use rusty_jwt_tools::prelude::*;
 use utils::{
     cfg::{E2eTest, EnrollmentFlow, OidcProvider},
-    docker::{keycloak::KeycloakImage, stepca::CaCfg, wiremock::WiremockImage},
+    docker::{stepca::CaCfg, wiremock::WiremockImage},
     id_token::resign_id_token,
     rand_base64_str, rand_client_id,
     wire_server::OauthCfg,
@@ -44,7 +44,6 @@ async fn google_demo_should_succeed() {
     let client_secret = std::env::var("GOOGLE_E2EI_DEMO_CLIENT_SECRET")
         .expect("You have to set the client secret in the 'GOOGLE_E2EI_DEMO_CLIENT_SECRET' env variable");
     let audience = "338888153072-ktbh66pv3mr0ua0dn64sphgimeo0p7ss.apps.googleusercontent.com".to_string();
-    let jwks_uri = "https://www.googleapis.com/oauth2/v3/certs".to_string();
     let domain = "wire.com";
     let new_sub =
         ClientId::try_from_raw_parts(default.sub.user_id.as_ref(), default.sub.device_id, domain.as_bytes()).unwrap();
@@ -61,7 +60,6 @@ async fn google_demo_should_succeed() {
         ca_cfg: CaCfg {
             issuer,
             audience,
-            jwks_url: jwks_uri,
             ..default.ca_cfg
         },
         oidc_provider: OidcProvider::Google,
@@ -807,16 +805,12 @@ mod oidc_challenge {
     #[tokio::test]
     #[ignore] // FIXME: adapt with Keycloak
     async fn should_fail_when_invalid_handle() {
-        let mut test = E2eTest::new();
+        let test = E2eTest::new();
 
         // setup fake jwks_uri to be able to resign the id token
         let (jwks_stub, new_kp, kid) = test.new_jwks_uri_mock();
         let attacker_host = "attacker-keycloak";
         let _attacker_keycloak = WiremockImage::run(attacker_host, vec![jwks_stub]);
-        test.ca_cfg.jwks_url = format!(
-            "https://{attacker_host}/realms/{}/protocol/openid-connect/certs",
-            KeycloakImage::REALM
-        );
 
         let test = test.start().await;
 
@@ -852,13 +846,12 @@ mod oidc_challenge {
     #[tokio::test]
     #[ignore] // FIXME: adapt with Keycloak
     async fn should_fail_when_invalid_display_name() {
-        let mut test = E2eTest::new();
+        let test = E2eTest::new();
 
         // setup fake jwks_uri to be able to resign the id token
         let (jwks_stub, new_kp, kid) = test.new_jwks_uri_mock();
         let attacker_host = "attacker-dex";
         let _attacker_dex = WiremockImage::run(attacker_host, vec![jwks_stub]);
-        test.ca_cfg.jwks_url = format!("https://{attacker_host}/realms/master/protocol/openid-connect/certs");
 
         let test = test.start().await;
 

@@ -17,7 +17,8 @@ use crate::utils::{
         dex::{DexCfg, DexImage, DexServer},
         keycloak::{KeycloakCfg, KeycloakImage, KeycloakServer},
         ldap::{LdapCfg, LdapImage, LdapServer},
-        stepca::{AcmeServer, CaCfg, StepCaImage},
+        stepca,
+        stepca::{AcmeServer, CaCfg},
     },
     rand_base64_str, rand_str,
     wire_server::{oidc::OidcCfg, OauthCfg, WireServer},
@@ -77,21 +78,6 @@ impl E2eTest {
     const LDAP_HOST: &'static str = "ldap";
     const WIRE_HOST: &'static str = "wire.com";
 
-    pub fn default_template(org: &str) -> String {
-        // we use '{' to escape '{'. That's why we sometimes have 4: this uses handlebars template
-        format!(
-            r#"{{
-        	"subject": {{
-        	    "organization": "{org}",
-        	    "commonName": {{{{ toJson .Oidc.name }}}}
-        	}},
-        	"uris": [{{{{ toJson .Oidc.preferred_username }}}}, {{{{ toJson .Dpop.sub }}}}],
-        	"keyUsage": ["digitalSignature"],
-        	"extKeyUsage": ["clientAuth"]
-        }}"#
-        )
-    }
-
     pub fn new() -> Self {
         Self::new_internal(false, JwsAlgorithm::Ed25519, OidcProvider::Keycloak)
     }
@@ -126,29 +112,16 @@ impl E2eTest {
         let client_secret = rand_base64_str(24);
         let idp_host_port = portpicker::pick_unused_port().unwrap();
         let idp_base = format!("http://{idp_host}");
-        let (issuer, jwks_url, discovery_base_url) = match oidc_provider {
-            OidcProvider::Dex => {
-                // this will be called from Docker network so we don't want to use the host port
-                let docker_port = DexImage::PORT;
-                (
-                    format!("{idp_base}:{idp_host_port}/dex"),
-                    format!("{idp_base}:{docker_port}/dex/keys"),
-                    "TODO".to_string(),
-                )
-            }
+        let (issuer, discovery_base_url) = match oidc_provider {
+            OidcProvider::Dex => (format!("{idp_base}:{idp_host_port}/dex"), "TODO".to_string()),
             OidcProvider::Keycloak => {
                 let realm = KeycloakImage::REALM;
                 (
                     format!("{idp_base}:{idp_host_port}/realms/{realm}"),
-                    format!("{idp_base}:{idp_host_port}/realms/{realm}/protocol/openid-connect/certs",),
                     format!("{idp_base}:{idp_host_port}/realms/{realm}",),
                 )
             }
-            OidcProvider::Google => (
-                "https://accounts.google.com".to_string(),
-                "https://www.googleapis.com/oauth2/v3/certs".to_string(),
-                "TODO".to_string(),
-            ),
+            OidcProvider::Google => ("https://accounts.google.com".to_string(), "TODO".to_string()),
         };
 
         let (client_kp, sign_key, backend_kp, acme_kp, acme_jwk) = match alg {
@@ -204,7 +177,6 @@ impl E2eTest {
 
         let hash_alg = HashAlgorithm::SHA256;
         let display = TestDisplay::new(format!("{:?} - {:?}", alg, hash_alg), false);
-        let template = Self::default_template(&domain);
 
         Self {
             domain: domain.to_string(),
@@ -229,7 +201,7 @@ impl E2eTest {
                 issuer: issuer.to_string(),
                 client_id: audience.to_string(),
                 client_secret: client_secret.to_string(),
-                domain,
+                domain: domain.to_string(),
             },
             keycloak_cfg: KeycloakCfg {
                 oauth_client_id: audience.to_string(),
@@ -246,14 +218,9 @@ impl E2eTest {
                 sign_key,
                 issuer,
                 audience: audience.to_string(),
-                jwks_url,
                 discovery_base_url,
                 dpop_target_uri: None,
-                x509_template: serde_json::json!({ "template": template }),
-                oidc_template: serde_json::json!({
-                    "name": "{{ .name }}",
-                    "preferred_username": "wireapp://%40{{ .preferred_username }}"
-                }),
+                domain: domain.to_string(),
                 host: ca_host,
             },
             oauth_cfg: OauthCfg {
@@ -327,8 +294,7 @@ impl E2eTest {
         let template = r#"{{.DeviceID}}"#;
         let dpop_target_uri = format!("{wire_server_uri}/clients/{template}/access-token");
         self.ca_cfg.dpop_target_uri = Some(dpop_target_uri);
-        // Acme server
-        let acme_server = StepCaImage::run(self.ca_cfg.clone()).await;
+        let acme_server = stepca::start_acme_server(&self.ca_cfg).await;
 
         // configure http client custom dns resolution for this test
         // this helps having domain names in request URIs instead of 'localhost:{port}'

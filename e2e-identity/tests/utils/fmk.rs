@@ -24,7 +24,7 @@ use crate::utils::{
     cfg::{E2eTest, EnrollmentFlow, OidcProvider},
     ctx::*,
     display::Actor,
-    docker::stepca::StepCaImage,
+    docker::stepca,
     helpers::{AcmeAsserter, ClientHelper, RespHelper},
     rand_base64_str,
     wire_server::oidc::{scrap_grant, scrap_login},
@@ -112,7 +112,7 @@ impl E2eTest {
         self.display_chapter("Initial setup with ACME server");
         // see https://www.rfc-editor.org/rfc/rfc8555.html#section-7.1.1
         self.display_step("fetch acme directory for hyperlinks");
-        let directory_url = format!("{ca_url}/acme/{}/directory", StepCaImage::ACME_PROVISIONER);
+        let directory_url = format!("{ca_url}/acme/{}/directory", stepca::ACME_PROVISIONER);
         let req = self.client.get(&directory_url).build()?;
         self.display_req(
             Actor::WireClient,

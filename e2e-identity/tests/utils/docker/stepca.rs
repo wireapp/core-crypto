@@ -1,19 +1,17 @@
 use base64::prelude::*;
-use std::borrow::Cow;
 use std::net::SocketAddr;
-use std::{collections::HashMap, path::PathBuf};
+use std::path::Path;
 
 use serde_json::json;
-use testcontainers::core::{ContainerPort, Mount};
-use testcontainers::runners::AsyncRunner;
-use testcontainers::{core::WaitFor, ContainerAsync, Image, ImageExt};
+use testcontainers::core::{CmdWaitFor, ContainerPort, ExecCommand, Mount};
+use testcontainers::{runners::AsyncRunner, ContainerAsync, GenericImage, ImageExt};
 
 use crate::utils::docker::{rand_str, NETWORK, SHM};
 
 pub struct AcmeServer {
     pub uri: String,
     pub ca_cert: reqwest::Certificate,
-    pub node: ContainerAsync<StepCaImage>,
+    pub node: ContainerAsync<GenericImage>,
     pub socket: SocketAddr,
 }
 
@@ -22,222 +20,237 @@ pub struct CaCfg {
     pub sign_key: String,
     pub issuer: String,
     pub audience: String,
-    pub jwks_url: String,
     pub discovery_base_url: String,
     pub dpop_target_uri: Option<String>,
-    pub x509_template: serde_json::Value,
-    pub oidc_template: serde_json::Value,
+    pub domain: String,
     pub host: String,
 }
 
-impl CaCfg {
-    fn cfg(&self) -> serde_json::Value {
-        // see https://github.com/wireapp/smallstep-certificates/blob/b6019aeb7ffaae1c978c87760656980162e9b785/helm/values.yaml#L88-L100
-        let provisioner = StepCaImage::ACME_PROVISIONER;
-        let Self {
-            sign_key,
-            issuer,
-            audience,
-            // jwks_url,
-            discovery_base_url,
-            dpop_target_uri,
-            x509_template,
-            oidc_template,
-            ..
-        } = self;
-        let dpop_target_uri = dpop_target_uri.as_ref().unwrap();
-        let x509_template = x509_template.clone();
-        let b64_sign_key = BASE64_STANDARD.encode(sign_key);
-        let transform = serde_json::to_string(oidc_template).unwrap();
+/// Generates the 'authority' part of the Smallstep
+/// ACME server configuration (config/ca.json).
+fn generate_authority_config(cfg: &CaCfg) -> serde_json::Value {
+    // see https://github.com/wireapp/smallstep-certificates/blob/b6019aeb7ffaae1c978c87760656980162e9b785/helm/values.yaml#L88-L100
+    let CaCfg {
+        sign_key,
+        issuer,
+        audience,
+        discovery_base_url,
+        dpop_target_uri,
+        domain,
+        ..
+    } = cfg;
 
-        // TODO: remove RS256 when EcDSA & EdDSA are supported in Dex
-        json!({
-            "provisioners": [
-                {
-                    "type": "ACME",
-                    "name": provisioner,
-                    "forceCN": true,
-                    "challenges": ["wire-oidc-01", "wire-dpop-01"],
-                    "claims": {
-                        "disableRenewal": false,
-                        "allowRenewalAfterExpiry": false,
-                        "minTLSCertDuration": "60s",
-                        "maxTLSCertDuration": "87600h",
-                        "defaultTLSCertDuration": "87600h"
+    let x509_template = serde_json::json!({ "template": leaf_cert_template(&domain) });
+    let oidc_template = serde_json::json!({
+        "name": "{{ .name }}",
+        "preferred_username": "wireapp://%40{{ .preferred_username }}"
+    });
+
+    let dpop_target_uri = dpop_target_uri.as_ref().unwrap();
+    let b64_sign_key = BASE64_STANDARD.encode(sign_key);
+    let transform = serde_json::to_string(&oidc_template).unwrap();
+
+    // TODO: remove RS256 when EcDSA & EdDSA are supported in Dex
+    json!({
+        "provisioners": [
+        {
+            "type": "ACME",
+            "name": ACME_PROVISIONER,
+            "forceCN": true,
+            "challenges": ["wire-oidc-01", "wire-dpop-01"],
+            "claims": {
+                "disableRenewal": false,
+                "allowRenewalAfterExpiry": false,
+                "minTLSCertDuration": "60s",
+                "maxTLSCertDuration": "87600h",
+                "defaultTLSCertDuration": "87600h"
+            },
+            "options": {
+                "x509": x509_template,
+                "wire": {
+                    "oidc": {
+                        "provider": {
+                            "issuerUrl": issuer,
+                            "discoveryBaseUrl": discovery_base_url,
+                            "id_token_signing_alg_values_supported": [
+                                "RS256",
+                                "ES256",
+                                "ES384",
+                                "EdDSA"
+                            ]
+                        },
+                        "config": {
+                            "clientId": audience,
+                            "signatureAlgorithms": [
+                                "RS256",
+                                "ES256",
+                                "ES384",
+                                "EdDSA"
+                            ]
+                        },
+                        "transform": transform
                     },
-                    "options": {
-                        "x509": x509_template,
-                        "wire": {
-                            "oidc": {
-                                "provider": {
-                                    "issuerUrl": issuer,
-                                    "discoveryBaseUrl": discovery_base_url,
-                                    "id_token_signing_alg_values_supported": [
-                                        "RS256",
-                                        "ES256",
-                                        "ES384",
-                                        "EdDSA"
-                                    ]
-                                },
-                                "config": {
-                                    "clientId": audience,
-                                    "signatureAlgorithms": [
-                                        "RS256",
-                                        "ES256",
-                                        "ES384",
-                                        "EdDSA"
-                                    ]
-                                },
-                                "transform": transform
-                            },
-                            "dpop": {
-                                "key": b64_sign_key,
-                                "target": dpop_target_uri
-                            }
-                        }
+                    "dpop": {
+                        "key": b64_sign_key,
+                        "target": dpop_target_uri
                     }
                 }
-            ]
-        })
+            }
+        }
+        ]
+    })
+}
+
+const INTERMEDIATE_CERT_TEMPLATE: &str = r#"
+    {
+        "subject": "Wire Intermediate CA",
+        "keyUsage": ["certSign", "crlSign"],
+        "basicConstraints": {
+            "isCA": true,
+            "maxPathLen": 0
+        },
+        "nameConstraints": {
+            "critical": true,
+            "permittedDNSDomains": ["localhost", "stepca"],
+            "permittedURIDomains": ["wire.com"]
+        }
+    }
+"#;
+
+pub const ACME_PROVISIONER: &'static str = "wire";
+const PORT: ContainerPort = ContainerPort::Tcp(9000);
+
+/// This returns the Smallstep certificate template for leaf certificates, i.e. the ones
+/// issued by the intermediate CA.
+fn leaf_cert_template(org: &str) -> String {
+    // we use '{' to escape '{'. That's why we sometimes have 4: this uses handlebars template
+    format!(
+        r#"{{
+        "subject": {{
+            "organization": "{org}",
+            "commonName": {{{{ toJson .Oidc.name }}}}
+        }},
+        "uris": [{{{{ toJson .Oidc.preferred_username }}}}, {{{{ toJson .Dpop.sub }}}}],
+        "keyUsage": ["digitalSignature"],
+        "extKeyUsage": ["clientAuth"]
+    }}"#
+    )
+}
+
+async fn alter_configuration(host_volume: &Path, ca_cfg: &CaCfg) {
+    let cfg_file = host_volume.join("config").join("ca.json");
+    let cfg_content = std::fs::read_to_string(&cfg_file).unwrap();
+    let mut cfg = serde_json::from_str::<serde_json::Value>(&cfg_content).unwrap();
+    cfg.as_object_mut()
+        .unwrap()
+        .insert("authority".to_string(), generate_authority_config(ca_cfg));
+    std::fs::write(&cfg_file, serde_json::to_string_pretty(&cfg).unwrap()).unwrap();
+}
+
+async fn run_command(node: &ContainerAsync<GenericImage>, cmd: &str) {
+    let cmd = shlex::split(cmd).unwrap();
+
+    // Note the usage of CmdWaitFor::exit_code here. This is because we want to wait
+    // until the command finishes. Otherwise, it could happen that we submit the command
+    // to the container, immediately return from this function and start another command
+    // that requires the previous command to have completed.
+    let cmd = ExecCommand::new(cmd).with_cmd_ready_condition(CmdWaitFor::exit_code(0));
+    node.exec(cmd).await.unwrap();
+}
+
+pub async fn start_acme_server(ca_cfg: &CaCfg) -> AcmeServer {
+    let host_volume = std::env::temp_dir().join(rand_str());
+    std::fs::create_dir(&host_volume).unwrap();
+
+    // Prepare the container image. Note that instead of just starting the image as-is, we're
+    // overriding the command to be a long sleep, in order to be able to issue commands inside
+    // the container, to generate exactly the root & intermediate certificates we need. Otherwise,
+    // the CA server would start and automatically generate the PKI & CA configuration that would
+    // not suit us. Specifically, the intermediate certificate auto-generated by step-ca would not
+    // have the necessary x509 name constraints, which is why we have to use a custom certificate
+    // template that includes name constraints.
+    let image = GenericImage::new("smallstep/step-ca", "0.27.4")
+        .with_exposed_port(PORT)
+        .with_container_name(&ca_cfg.host)
+        .with_network(NETWORK)
+        .with_mount(Mount::bind_mount(host_volume.to_str().unwrap(), "/home/step"))
+        .with_shm_size(SHM)
+        .with_copy_to(
+            "/home/step/intermediate.template",
+            INTERMEDIATE_CERT_TEMPLATE.to_string().into_bytes(),
+        )
+        .with_cmd(["bash", "-c", "sleep 1h"]);
+
+    let node = image.start().await.expect("Error running Step CA image");
+
+    // Generate the root certificate.
+    run_command(&node, "bash -c 'dd if=/dev/random bs=1 count=20 | base64 > password'").await;
+    run_command(
+        &node,
+        "step certificate create 'Wire Root CA' root-ca.crt root-ca.key
+                            --profile root-ca --password-file password",
+    )
+    .await;
+
+    // Generate the intermediate certificate. Note that we have to use
+    // a template in order to specify name constraints that will apply to
+    // certificates issued by the intermediate CA.
+    run_command(
+        &node,
+        "step certificate create 'Wire Intermediate CA' intermediate-ca.crt intermediate-ca.key
+                            --template intermediate.template --password-file password
+                            --ca root-ca.crt --ca-key root-ca.key --ca-password-file password",
+    )
+    .await;
+
+    // Initialize the CA configuration. Note that we can specify an existing root certificate, but
+    // we cannot tell 'step ca' to use an existing intermediate certificate. Because of that, we
+    // will need to overwrite the intermediate certificate automatically generated by 'step ca'
+    // with the one we just created above.
+    let port = PORT.as_u16();
+    run_command(
+        &node,
+        &format!(
+            "step ca init --name=Wire --deployment-type=standalone
+                            --root root-ca.crt --key root-ca.key --key-password-file password
+                            --dns localhost,stepca --address :{port}
+                            --provisioner wire
+                            --provisioner-password-file password
+                            --password-file password"
+        ),
+    )
+    .await;
+
+    // Overwrite the generated intermediate certificate and key with our own.
+    run_command(&node, "mv intermediate-ca.crt certs/intermediate_ca.crt").await;
+    run_command(&node, "mv intermediate-ca.key secrets/intermediate_ca_key").await;
+
+    // Alter the CA configuration by substituting our provisioner.
+    alter_configuration(&host_volume, &ca_cfg).await;
+
+    // We're now ready to start.
+    run_command(&node, "bash -c 'step-ca --password-file password &'").await;
+
+    let port = node.get_host_port_ipv4(PORT).await.unwrap();
+    let uri = format!("https://{}:{}", &ca_cfg.host, port);
+    let ca_cert = ca_cert(&host_volume);
+    dbg!(&uri);
+    dbg!(&ca_cert);
+
+    let ip = std::net::IpAddr::V4("127.0.0.1".parse().unwrap());
+    let socket = SocketAddr::new(ip, port);
+
+    AcmeServer {
+        uri,
+        ca_cert,
+        socket,
+        node,
     }
 }
 
-#[derive(Debug)]
-pub struct StepCaImage {
-    pub is_builder: bool,
-    pub volumes: Vec<Mount>,
-    pub env_vars: HashMap<String, String>,
-    pub host_volume: PathBuf,
-    name: String,
-    tag: String,
-}
-
-impl StepCaImage {
-    const NAME: &'static str = "smallstep/step-ca";
-    const TAG: &'static str = "0.25.3-rc7";
-    const CA_NAME: &'static str = "wire";
-    pub const ACME_PROVISIONER: &'static str = "wire";
-    pub const PORT: ContainerPort = ContainerPort::Tcp(9000);
-    const PORTS: &'static [ContainerPort] = &[Self::PORT];
-
-    pub async fn run(ca_cfg: CaCfg) -> AcmeServer {
-        // We have to create an ACME provisioner at startup which is done in `exec_after_start`.
-        // Since step-ca does not support hot reload of the configuration and we cannot
-        // restart the process within the container with testcontainers cli, we will start a first
-        // container, do the initialization step, copy the generated configuration then use it to
-        // start a second, final one
-        let builder_image = Self::new(true, None);
-        let host_volume = builder_image.host_volume.clone();
-
-        let builder_image = builder_image
-            .with_container_name(format!("{}.builder", ca_cfg.host))
-            .with_privileged(true)
-            .with_shm_size(SHM);
-
-        let container = builder_image.start().await.expect("Error running Step CA builder");
-
-        // now the configuration should have been generated and mapped to our host volume.
-        // We can kill this container
-        drop(container);
-
-        let image = Self::new(false, Some(host_volume.clone()));
-
-        // Alter the configuration by adding an ACME provisioner manually, waaaaay simpler than using the cli
-        let cfg_file = host_volume.join("config").join("ca.json");
-        let cfg_content = std::fs::read_to_string(&cfg_file).unwrap();
-        let mut cfg = serde_json::from_str::<serde_json::Value>(&cfg_content).unwrap();
-        cfg.as_object_mut()
-            .unwrap()
-            .insert("authority".to_string(), ca_cfg.cfg());
-        std::fs::write(&cfg_file, serde_json::to_string_pretty(&cfg).unwrap()).unwrap();
-
-        let image = image
-            .with_container_name(&ca_cfg.host)
-            .with_network(NETWORK)
-            .with_privileged(true)
-            .with_shm_size(SHM);
-        let node = image.start().await.expect("Error running Step CA image");
-        let port = node.get_host_port_ipv4(Self::PORT).await.unwrap();
-        let uri = format!("https://{}:{}", &ca_cfg.host, port);
-        let ca_cert = Self::ca_cert(host_volume);
-
-        let ip = std::net::IpAddr::V4("127.0.0.1".parse().unwrap());
-        let socket = SocketAddr::new(ip, port);
-
-        AcmeServer {
-            uri,
-            ca_cert,
-            socket,
-            node,
-        }
-    }
-
-    pub fn ca_cert(host_volume: PathBuf) -> reqwest::Certificate {
-        // we need to call step-ca over https so we need to fetch its self-signed CA
-        let ca_cert = host_volume.join("certs").join("root_ca.crt");
-        let ca_pem = std::fs::read(ca_cert).unwrap();
-        reqwest::tls::Certificate::from_pem(ca_pem.as_slice()).expect("Smallstep issued an invalid certificate")
-    }
-}
-
-impl StepCaImage {
-    fn new(is_builder: bool, host_volume: Option<PathBuf>) -> Self {
-        let host_volume = host_volume.unwrap_or_else(|| std::env::temp_dir().join(rand_str()));
-        if !host_volume.exists() {
-            std::fs::create_dir(&host_volume).unwrap();
-        }
-        let host_volume_str = host_volume.as_os_str().to_str().unwrap();
-        let tag = std::env::var("STEPCA_VERSION").unwrap_or(Self::TAG.to_string());
-        let name = std::env::var("STEPCA_NAME").unwrap_or(Self::NAME.to_string());
-        Self {
-            is_builder,
-            volumes: vec![Mount::bind_mount(host_volume_str, "/home/step")],
-            env_vars: HashMap::from_iter(
-                vec![
-                    ("DOCKER_STEPCA_INIT_PROVISIONER_NAME", Self::CA_NAME),
-                    ("DOCKER_STEPCA_INIT_NAME", Self::CA_NAME),
-                    ("DOCKER_STEPCA_INIT_DNS_NAMES", "localhost,$(hostname -f)"),
-                    ("DOCKER_STEPCA_INIT_ACME", "true"),
-                    ("DOCKER_STEPCA_INIT_REMOTE_MANAGEMENT", "true"),
-                ]
-                .into_iter()
-                .map(|(k, v)| (k.to_string(), v.to_string())),
-            ),
-            host_volume,
-            tag,
-            name,
-        }
-    }
-}
-
-impl Image for StepCaImage {
-    fn name(&self) -> &str {
-        &self.name
-    }
-
-    fn tag(&self) -> &str {
-        &self.tag
-    }
-
-    fn ready_conditions(&self) -> Vec<WaitFor> {
-        if self.is_builder {
-            // This first waits for the message to appear on stderr, then for an additional second.
-            vec![WaitFor::message_on_stderr("Serving HTTPS on :"), WaitFor::seconds(1)]
-        } else {
-            // This waits for the healthcheck provided by the image to pass.
-            vec![WaitFor::healthcheck()]
-        }
-    }
-
-    fn env_vars(&self) -> impl IntoIterator<Item = (impl Into<Cow<'_, str>>, impl Into<Cow<'_, str>>)> {
-        &self.env_vars
-    }
-
-    fn mounts(&self) -> impl IntoIterator<Item = &Mount> {
-        &self.volumes
-    }
-
-    fn expose_ports(&self) -> &[ContainerPort] {
-        Self::PORTS
-    }
+fn ca_cert(host_volume: &Path) -> reqwest::Certificate {
+    // we need to call step-ca over https so we need to fetch its self-signed CA
+    let ca_cert = host_volume.join("certs").join("root_ca.crt");
+    let ca_pem = std::fs::read(ca_cert).unwrap();
+    reqwest::tls::Certificate::from_pem(ca_pem.as_slice()).expect("Smallstep issued an invalid certificate")
 }
