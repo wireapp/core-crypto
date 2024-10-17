@@ -81,10 +81,9 @@ class MLSTest {
         bob.createConversation(id)
 
         val aliceKp = alice.generateKeyPackages(1U).first()
-        val aliceMember = mapOf(aliceId.toClientId() to aliceKp)
-        val welcome = bob.addMember(id, aliceMember).welcome!!
+        val welcome = bob.addMember(id, listOf(aliceKp)).welcome!!
         bob.commitAccepted(id)
-        val groupId = alice.processWelcomeMessage(welcome)
+        val groupId = alice.processWelcomeMessage(welcome).id
 
         val commit = bob.updateKeyingMaterial(id).commit
 
@@ -102,12 +101,11 @@ class MLSTest {
         bob.createConversation(id)
 
         val aliceKp = alice.generateKeyPackages(1U).first()
-        val aliceMember = mapOf(aliceId.toClientId() to aliceKp)
-        val welcome = bob.addMember(id, aliceMember).welcome!!
+        val welcome = bob.addMember(id, listOf(aliceKp)).welcome!!
         val groupId = alice.processWelcomeMessage(welcome)
 
         // FIXME: simplify when https://youtrack.jetbrains.com/issue/KT-24874 fixed
-        assertThat(groupId.value).isEqualTo(id.value)
+        assertThat(groupId.id.toString()).isEqualTo(id.value.toHex())
     }
 
     @Test
@@ -117,8 +115,7 @@ class MLSTest {
         bob.createConversation(id)
 
         val alice1Kp = alice1.generateKeyPackages(1U).first()
-        val aliceMember = mapOf(aliceId.toClientId() to alice1Kp)
-        bob.addMember(id, aliceMember)
+        bob.addMember(id, listOf(alice1Kp))
         bob.commitAccepted(id)
 
         val proposal = alice2.joinConversation(id, 1UL, Ciphersuite.DEFAULT, CredentialType.DEFAULT)
@@ -128,7 +125,7 @@ class MLSTest {
         val groupId = alice2.processWelcomeMessage(welcome)
 
         // FIXME: simplify when https://youtrack.jetbrains.com/issue/KT-24874 fixed
-        assertThat(groupId.value).isEqualTo(id.value)
+        assertThat(groupId.id.toString()).isEqualTo(id.value.toHex())
     }
 
     @Test
@@ -138,10 +135,9 @@ class MLSTest {
         bob.createConversation(id)
 
         val aliceKp = alice.generateKeyPackages(1U).first()
-        val aliceMember = mapOf(aliceId.toClientId() to aliceKp)
-        val welcome = bob.addMember(id, aliceMember).welcome!!
+        val welcome = bob.addMember(id, listOf(aliceKp)).welcome!!
         bob.commitAccepted(id)
-        val groupId = alice.processWelcomeMessage(welcome)
+        val groupId = alice.processWelcomeMessage(welcome).id
 
         val msg = "Hello World !"
         val ciphertextMsg = alice.encryptMessage(groupId, msg.toPlaintextMessage())
@@ -157,15 +153,13 @@ class MLSTest {
 
         bob.createConversation(id)
         val aliceKp = alice.generateKeyPackages(1U).first()
-        val aliceMember = mapOf(aliceId.toClientId() to aliceKp)
-        val welcome = bob.addMember(id, aliceMember).welcome!!
+        val welcome = bob.addMember(id, listOf(aliceKp)).welcome!!
         bob.commitAccepted(id)
 
         alice.processWelcomeMessage(welcome)
 
         val carolKp = carol.generateKeyPackages(1U).first()
-        val carolMember = mapOf(carolId.toClientId() to carolKp)
-        val commit = bob.addMember(id, carolMember).commit
+        val commit = bob.addMember(id, listOf(carolKp)).commit
 
         val decrypted = alice.decryptMessage(id, commit)
         assertThat(decrypted.message).isNull()
@@ -180,13 +174,12 @@ class MLSTest {
         bob.createConversation(id)
 
         val aliceKp = alice.generateKeyPackages(1U).first()
-        val aliceMember = mapOf(aliceId.toClientId() to aliceKp)
-        val welcome = bob.addMember(id, aliceMember).welcome!!
+        val welcome = bob.addMember(id, listOf(aliceKp)).welcome!!
         bob.commitAccepted((id))
 
         val groupId = alice.processWelcomeMessage(welcome)
         // FIXME: simplify when https://youtrack.jetbrains.com/issue/KT-24874 fixed
-        assertThat(groupId.value).isEqualTo(id.value)
+        assertThat(groupId.id.toString()).isEqualTo(id.value.toHex())
     }
 
     @Test
@@ -197,10 +190,9 @@ class MLSTest {
 
         val aliceKp = alice.generateKeyPackages(1U).first()
         val carolKp = carol.generateKeyPackages(1U).first()
-        val aliceCarolMember = mapOf(aliceId.toClientId() to aliceKp, carolId.toClientId() to carolKp)
-        val welcome = bob.addMember(id, aliceCarolMember).welcome!!
+        val welcome = bob.addMember(id, listOf(aliceKp, carolKp)).welcome!!
         bob.commitAccepted(id)
-        val conversationId = alice.processWelcomeMessage(welcome)
+        val conversationId = alice.processWelcomeMessage(welcome).id
 
         val carolMember = listOf(carolId.toClientId())
         val commit = bob.removeMember(conversationId, carolMember).commit
