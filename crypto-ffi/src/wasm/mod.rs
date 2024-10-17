@@ -16,7 +16,6 @@
 
 #![allow(unused_variables, deprecated)]
 mod context;
-mod e2ei_context;
 mod utils;
 
 use std::collections::HashMap;
@@ -1367,7 +1366,7 @@ impl CoreCrypto {
         let central = self.inner.clone();
         future_to_promise(
             async move {
-                let context = central.new_transaction().await;
+                let context = central.new_transaction().await?;
                 let ciphersuites = lower_ciphersuites(&ciphersuites)?;
                 let nb_key_package = nb_key_package
                     .map(usize::try_from)
@@ -1398,7 +1397,7 @@ impl CoreCrypto {
         future_to_promise(
             async move {
                 let ciphersuites = lower_ciphersuites(&ciphersuites)?;
-                let context = central.new_transaction().await;
+                let context = central.new_transaction().await?;
                 let pks = context
                     .mls_generate_keypairs(ciphersuites)
                     .await
@@ -1436,7 +1435,7 @@ impl CoreCrypto {
                     .map(|c| ClientId::from(c.to_vec()))
                     .collect();
 
-                let context = central.new_transaction().await;
+                let context = central.new_transaction().await?;
                 context
                     .mls_init_with_client_id(client_id.into(), signature_public_keys, ciphersuites)
                     .await
@@ -1463,7 +1462,7 @@ impl CoreCrypto {
                 "There are other outstanding references to this CoreCrypto instance [refs = {}]",
                 Arc::strong_count(&self.inner)
             )
-                .as_str(),
+            .as_str(),
         );
         if self.has_outstanding_refs() {
             return Promise::reject(error_message);
@@ -1490,7 +1489,7 @@ impl CoreCrypto {
                 "There are other outstanding references to this CoreCrypto instance [refs = {}]",
                 Arc::strong_count(&self.inner)
             )
-                .as_str(),
+            .as_str(),
         );
         if self.has_outstanding_refs() {
             return Promise::reject(error_message);
@@ -1502,7 +1501,7 @@ impl CoreCrypto {
                     central.take().wipe().await.map_err(CoreCryptoError::from)?;
                     WasmCryptoResult::Ok(JsValue::UNDEFINED)
                 }
-                    .err_into(),
+                .err_into(),
             ),
             Err(_) => Promise::reject(error_message),
         }
@@ -1556,7 +1555,7 @@ impl CoreCrypto {
         let central = self.inner.clone();
         future_to_promise(
             async move {
-                let context = central.new_transaction().await;
+                let context = central.new_transaction().await?;
                 let kps = context
                     .get_or_create_client_keypackages(
                         ciphersuite.into(),
@@ -1597,7 +1596,7 @@ impl CoreCrypto {
         let central = self.inner.clone();
         future_to_promise(
             async move {
-                let context = central.new_transaction().await;
+                let context = central.new_transaction().await?;
                 let count = context
                     .client_valid_key_packages_count(ciphersuite.into(), credential_type.into())
                     .await
@@ -1625,7 +1624,7 @@ impl CoreCrypto {
         let central = self.inner.clone();
         future_to_promise(
             async move {
-                let context = central.new_transaction().await;
+                let context = central.new_transaction().await?;
                 context
                     .delete_keypackages(&refs[..])
                     .await
@@ -1661,7 +1660,7 @@ impl CoreCrypto {
                     lower_cfg.ciphersuite = mls_ciphersuite.into();
                 }
 
-                let context = central.new_transaction().await;
+                let context = central.new_transaction().await?;
                 context
                     .set_raw_external_senders(&mut lower_cfg, config.external_senders)
                     .await?;
@@ -1746,7 +1745,7 @@ impl CoreCrypto {
         let central = self.inner.clone();
         future_to_promise(
             async move {
-                let context = central.new_transaction().await;
+                let context = central.new_transaction().await?;
                 let bundle = context
                     .process_raw_welcome_message(welcome_message.into(), custom_configuration.into())
                     .await
@@ -1780,7 +1779,7 @@ impl CoreCrypto {
                     })
                     .collect::<CoreCryptoResult<Vec<_>>>()?;
 
-                let context = central.new_transaction().await;
+                let context = central.new_transaction().await?;
                 let commit = context
                     .add_members_to_conversation(&conversation_id, key_packages)
                     .await?;
@@ -1811,7 +1810,7 @@ impl CoreCrypto {
                     .map(|c| c.to_vec().into())
                     .collect::<Vec<ClientId>>();
 
-                let context = central.new_transaction().await;
+                let context = central.new_transaction().await?;
                 let commit = context
                     .remove_members_from_conversation(&conversation_id, &clients)
                     .await
@@ -1835,7 +1834,7 @@ impl CoreCrypto {
         let central = self.inner.clone();
         future_to_promise(
             async move {
-                let context = central.new_transaction().await;
+                let context = central.new_transaction().await?;
                 context
                     .mark_conversation_as_child_of(&child_id.into(), &parent_id.into())
                     .await
@@ -1857,7 +1856,7 @@ impl CoreCrypto {
         let central = self.inner.clone();
         future_to_promise(
             async move {
-                let context = central.new_transaction().await;
+                let context = central.new_transaction().await?;
                 let commit = context
                     .update_keying_material(&conversation_id)
                     .await
@@ -1878,7 +1877,7 @@ impl CoreCrypto {
         let central = self.inner.clone();
         future_to_promise(
             async move {
-                let context = central.new_transaction().await;
+                let context = central.new_transaction().await?;
                 let commit: Option<CommitBundle> = context
                     .commit_pending_proposals(&conversation_id)
                     .await?
@@ -1901,7 +1900,7 @@ impl CoreCrypto {
         let central = self.inner.clone();
         future_to_promise(
             async move {
-                let context = central.new_transaction().await;
+                let context = central.new_transaction().await?;
                 context
                     .wipe_conversation(&conversation_id)
                     .await
@@ -1922,7 +1921,7 @@ impl CoreCrypto {
         let central = self.inner.clone();
         future_to_promise(
             async move {
-                let context = central.new_transaction().await;
+                let context = central.new_transaction().await?;
                 let raw_decrypted_message = context
                     .decrypt_message(&conversation_id.to_vec(), payload)
                     .await
@@ -1946,7 +1945,7 @@ impl CoreCrypto {
         let central = self.inner.clone();
         future_to_promise(
             async move {
-                let context = central.new_transaction().await;
+                let context = central.new_transaction().await?;
                 let ciphertext = context
                     .encrypt_message(&conversation_id.to_vec(), message)
                     .await
@@ -1974,7 +1973,7 @@ impl CoreCrypto {
                     .map_err(CryptoError::from)
                     .map_err(CoreCryptoError::from)?;
 
-                let context = central.new_transaction().await;
+                let context = central.new_transaction().await?;
 
                 let proposal: ProposalBundle = context
                     .new_add_proposal(&conversation_id.to_vec(), kp.into())
@@ -1998,7 +1997,7 @@ impl CoreCrypto {
         let central = self.inner.clone();
         future_to_promise(
             async move {
-                let context = central.new_transaction().await;
+                let context = central.new_transaction().await?;
                 let proposal: ProposalBundle = context
                     .new_update_proposal(&conversation_id.to_vec())
                     .await?
@@ -2020,7 +2019,7 @@ impl CoreCrypto {
         let central = self.inner.clone();
         future_to_promise(
             async move {
-                let context = central.new_transaction().await;
+                let context = central.new_transaction().await?;
                 let proposal: ProposalBundle = context
                     .new_remove_proposal(&conversation_id.to_vec(), client_id.into())
                     .await
@@ -2050,7 +2049,7 @@ impl CoreCrypto {
         let central = self.inner.clone();
         future_to_promise(
             async move {
-                let context = central.new_transaction().await;
+                let context = central.new_transaction().await?;
                 let proposal_bytes = context
                     .new_external_add_proposal(
                         conversation_id.to_vec(),
@@ -2093,7 +2092,7 @@ impl CoreCrypto {
                     .map_err(CryptoError::from)
                     .map_err(CoreCryptoError::from)?;
 
-                let context = central.new_transaction().await;
+                let context = central.new_transaction().await?;
                 let result: ConversationInitBundle = context
                     .join_by_external_commit(group_info, custom_configuration.into(), credential_type.into())
                     .await
@@ -2116,7 +2115,7 @@ impl CoreCrypto {
         let central = self.inner.clone();
         future_to_promise(
             async move {
-                let context = central.new_transaction().await;
+                let context = central.new_transaction().await?;
                 if let Some(decrypted_messages) = context
                     .merge_pending_group_from_external_commit(&conversation_id)
                     .await
@@ -2146,7 +2145,7 @@ impl CoreCrypto {
         let central = self.inner.clone();
         future_to_promise(
             async move {
-                let context = central.new_transaction().await;
+                let context = central.new_transaction().await?;
                 context
                     .clear_pending_group_from_external_commit(&conversation_id)
                     .await
@@ -2449,7 +2448,7 @@ impl CoreCrypto {
                     WasmCryptoResult::Ok(Uint8Array::from(prekey_raw.as_slice()).into())
                 } or throw WasmCryptoResult<_> }
             }
-                .err_into(),
+            .err_into(),
         )
     }
 

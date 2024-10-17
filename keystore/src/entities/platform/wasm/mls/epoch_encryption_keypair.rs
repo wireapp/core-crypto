@@ -16,7 +16,7 @@
 
 use crate::{
     connection::{DatabaseConnection, KeystoreDatabaseConnection},
-    entities::{Entity, EntityBase, EntityFindParams, EntityMlsExt, MlsEpochEncryptionKeyPair, StringEntityId},
+    entities::{Entity, EntityBase, EntityFindParams, EntityTransactionExt, MlsEpochEncryptionKeyPair, StringEntityId},
     CryptoKeystoreResult, MissingKeyErrorKind,
 };
 
@@ -54,7 +54,7 @@ impl EntityBase for MlsEpochEncryptionKeyPair {
 
 #[cfg_attr(target_family = "wasm", async_trait::async_trait(?Send))]
 #[cfg_attr(not(target_family = "wasm"), async_trait::async_trait)]
-impl EntityMlsExt for MlsEpochEncryptionKeyPair {}
+impl EntityTransactionExt for MlsEpochEncryptionKeyPair {}
 
 impl Entity for MlsEpochEncryptionKeyPair {
     fn id_raw(&self) -> &[u8] {

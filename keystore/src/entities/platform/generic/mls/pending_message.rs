@@ -16,13 +16,19 @@
 
 use crate::{
     connection::{DatabaseConnection, KeystoreDatabaseConnection, TransactionWrapper},
-    entities::{Entity, EntityBase, EntityFindParams, EntityMlsExt, MlsPendingMessage, StringEntityId},
+    entities::{Entity, EntityBase, EntityFindParams, EntityTransactionExt, MlsPendingMessage, StringEntityId},
     CryptoKeystoreResult, MissingKeyErrorKind,
 };
 
 impl Entity for MlsPendingMessage {
     fn id_raw(&self) -> &[u8] {
-        self.id.as_slice()
+        self.foreign_id.as_slice()
+    }
+
+    fn merge_key(&self) -> Vec<u8> {
+        // Use this as a merge key because the `id` is not used as a primary key 
+        // but  as a foreign key: it's the ID of the PersistedMlsPendingGroup. 
+        self.message.clone()
     }
 }
 
@@ -75,7 +81,7 @@ impl EntityBase for MlsPendingMessage {
                 blob.read_to_end(&mut message)?;
                 blob.close()?;
 
-                Ok(Some(Self { id, message }))
+                Ok(Some(Self { foreign_id: id, message }))
             }
             None => Ok(None),
         }
@@ -111,7 +117,7 @@ impl EntityBase for MlsPendingMessage {
             blob.read_to_end(&mut message)?;
             blob.close()?;
 
-            acc.push(Self { id, message });
+            acc.push(Self { foreign_id: id, message });
             crate::CryptoKeystoreResult::Ok(acc)
         })?;
 
@@ -132,15 +138,15 @@ impl EntityBase for MlsPendingMessage {
 
 #[cfg_attr(target_family = "wasm", async_trait::async_trait(?Send))]
 #[cfg_attr(not(target_family = "wasm"), async_trait::async_trait)]
-impl EntityMlsExt for MlsPendingMessage {
-    async fn mls_save(&self, transaction: &TransactionWrapper<'_>) -> CryptoKeystoreResult<()> {
-        Self::ConnectionType::check_buffer_size(self.id.len())?;
+impl EntityTransactionExt for MlsPendingMessage {
+    async fn save(&self, transaction: &TransactionWrapper<'_>) -> CryptoKeystoreResult<()> {
+        Self::ConnectionType::check_buffer_size(self.foreign_id.len())?;
         Self::ConnectionType::check_buffer_size(self.message.len())?;
 
-        let zid = rusqlite::blob::ZeroBlob(self.id.len() as i32);
+        let zid = rusqlite::blob::ZeroBlob(self.foreign_id.len() as i32);
         let zmsg = rusqlite::blob::ZeroBlob(self.message.len() as i32);
 
-        let id_bytes = &self.id;
+        let id_bytes = &self.foreign_id;
 
         use rusqlite::ToSql as _;
         transaction.execute(
@@ -168,7 +174,7 @@ impl EntityMlsExt for MlsPendingMessage {
         Ok(())
     }
 
-    async fn mls_delete(transaction: &TransactionWrapper<'_>, id: StringEntityId<'_>) -> CryptoKeystoreResult<()> {
+    async fn delete_fail_on_missing_id(transaction: &TransactionWrapper<'_>, id: StringEntityId<'_>) -> CryptoKeystoreResult<()> {
         let updated = transaction.execute("DELETE FROM mls_pending_messages WHERE id = ?", [id.as_slice()])?;
 
         if updated > 0 {

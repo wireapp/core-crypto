@@ -1,4 +1,4 @@
-use crate::{mls::context::CentralContext, prelude::MlsCentral};
+use crate::prelude::MlsCentral;
 use core_crypto_keystore::{
     connection::FetchFromDatabase,
     entities::{
@@ -7,6 +7,7 @@ use core_crypto_keystore::{
         PersistedMlsPendingGroup,
     },
 };
+use crate::context::CentralContext;
 
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub struct EntitiesCount {
@@ -55,7 +56,7 @@ impl MlsCentral {
 
 impl CentralContext {
     pub async fn count_entities(&self) -> EntitiesCount {
-        let keystore = self.transaction().await.unwrap();
+        let keystore = self.keystore().await.unwrap();
         let credential = keystore.count::<MlsCredential>().await.unwrap();
         let encryption_keypair = keystore.count::<MlsEncryptionKeyPair>().await.unwrap();
         let epoch_encryption_keypair = keystore.count::<MlsEpochEncryptionKeyPair>().await.unwrap();

@@ -88,7 +88,7 @@ impl EmulatedClient for CoreCryptoNativeClient {
 #[async_trait::async_trait(?Send)]
 impl EmulatedMlsClient for CoreCryptoNativeClient {
     async fn get_keypackage(&mut self) -> Result<Vec<u8>> {
-        let transaction = self.cc.new_transaction().await;
+        let transaction = self.cc.new_transaction().await?;
         let start = std::time::Instant::now();
         let kp = transaction
             .get_or_create_client_keypackages(CIPHERSUITE_IN_USE.into(), MlsCredentialType::Basic, 1)
@@ -110,7 +110,7 @@ impl EmulatedMlsClient for CoreCryptoNativeClient {
 
     async fn add_client(&mut self, conversation_id: &[u8], kp: &[u8]) -> Result<Vec<u8>> {
         let conversation_id = conversation_id.to_vec();
-        let transaction = self.cc.new_transaction().await;
+        let transaction = self.cc.new_transaction().await?;
         if !transaction.conversation_exists(&conversation_id).await? {
             let config = MlsConversationConfiguration {
                 ciphersuite: CIPHERSUITE_IN_USE.into(),
@@ -133,7 +133,7 @@ impl EmulatedMlsClient for CoreCryptoNativeClient {
     }
 
     async fn kick_client(&mut self, conversation_id: &[u8], client_id: &[u8]) -> Result<Vec<u8>> {
-        let transaction = self.cc.new_transaction().await;
+        let transaction = self.cc.new_transaction().await?;
         let commit = transaction
             .remove_members_from_conversation(&conversation_id.to_vec(), &[client_id.to_vec().into()])
             .await?;
@@ -143,7 +143,7 @@ impl EmulatedMlsClient for CoreCryptoNativeClient {
     }
 
     async fn process_welcome(&mut self, welcome: &[u8]) -> Result<Vec<u8>> {
-        let transaction = self.cc.new_transaction().await;
+        let transaction = self.cc.new_transaction().await?;
 
         let result = transaction
             .process_raw_welcome_message(welcome.into(), MlsCustomConfiguration::default())
@@ -154,14 +154,14 @@ impl EmulatedMlsClient for CoreCryptoNativeClient {
     }
 
     async fn encrypt_message(&mut self, conversation_id: &[u8], message: &[u8]) -> Result<Vec<u8>> {
-        let transaction = self.cc.new_transaction().await;
+        let transaction = self.cc.new_transaction().await?;
         let result = transaction.encrypt_message(&conversation_id.to_vec(), message).await?;
         transaction.finish().await?;
         Ok(result)
     }
 
     async fn decrypt_message(&mut self, conversation_id: &[u8], message: &[u8]) -> Result<Option<Vec<u8>>> {
-        let transaction = self.cc.new_transaction().await;
+        let transaction = self.cc.new_transaction().await?;
         let result = transaction
             .decrypt_message(&conversation_id.to_vec(), message)
             .await?
@@ -179,26 +179,40 @@ impl crate::clients::EmulatedProteusClient for CoreCryptoNativeClient {
     }
 
     async fn get_prekey(&mut self) -> Result<Vec<u8>> {
+        let transaction = self.cc.new_transaction().await?;
         self.prekey_last_id += 1;
-        Ok(self.cc.proteus_new_prekey(self.prekey_last_id).await?)
+        let result = transaction.proteus_new_prekey(self.prekey_last_id).await?;
+        transaction.finish().await?;
+        Ok(result)
     }
 
     async fn session_from_prekey(&mut self, session_id: &str, prekey: &[u8]) -> Result<()> {
-        let _ = self.cc.proteus_session_from_prekey(session_id, prekey).await?;
+        let transaction = self.cc.new_transaction().await?;
+        let _ = transaction.proteus_session_from_prekey(session_id, prekey).await?;
+        transaction.finish().await?;
         Ok(())
     }
 
     async fn session_from_message(&mut self, session_id: &str, message: &[u8]) -> Result<Vec<u8>> {
-        let (_, ret) = self.cc.proteus_session_from_message(session_id, message).await?;
+        let transaction = self.cc.new_transaction().await?;
+        let (_, ret) = transaction.proteus_session_from_message(session_id, message).await?;
+        transaction.finish().await?;
         Ok(ret)
     }
 
     async fn encrypt(&mut self, session_id: &str, plaintext: &[u8]) -> Result<Vec<u8>> {
-        Ok(self.cc.proteus_encrypt(session_id, plaintext).await?)
+        let transaction = self.cc.new_transaction().await?;
+        let result = transaction.proteus_encrypt(session_id, plaintext).await?;
+        transaction.finish().await?;
+        Ok(result)
+        
     }
 
     async fn decrypt(&mut self, session_id: &str, ciphertext: &[u8]) -> Result<Vec<u8>> {
-        Ok(self.cc.proteus_decrypt(session_id, ciphertext).await?)
+        let transaction = self.cc.new_transaction().await?;
+        let result = transaction.proteus_decrypt(session_id, ciphertext).await?;
+        transaction.finish().await?;
+        Ok(result)
     }
 
     async fn fingerprint(&self) -> Result<String> {

@@ -18,6 +18,8 @@ use wasm_bindgen::prelude::wasm_bindgen;
 use wasm_bindgen::JsValue;
 use wasm_bindgen_futures::future_to_promise;
 
+mod e2ei;
+
 #[wasm_bindgen]
 #[derive(Clone)]
 pub struct CoreCryptoContext {
@@ -38,7 +40,7 @@ impl CoreCrypto {
     /// otherwise, every operation performed with the context will be discarded.
     pub async fn transaction(&self, command: CoreCryptoCommand) -> WasmCryptoResult<()> {
         let context = CoreCryptoContext {
-            inner: Arc::new(self.inner.new_transaction().await),
+            inner: Arc::new(self.inner.new_transaction().await?),
         };
 
         let result = command.execute(context.clone()).await;
@@ -71,7 +73,7 @@ impl CoreCryptoContext {
                     .map_err(CoreCryptoError::from)?;
                 WasmCryptoResult::Ok(JsValue::UNDEFINED)
             }
-                .err_into(),
+            .err_into(),
         )
     }
 
@@ -95,7 +97,7 @@ impl CoreCryptoContext {
                 );
                 WasmCryptoResult::Ok(js_pks.into())
             }
-                .err_into(),
+            .err_into(),
         )
     }
 
@@ -124,7 +126,7 @@ impl CoreCryptoContext {
 
                 WasmCryptoResult::Ok(JsValue::UNDEFINED)
             }
-                .err_into(),
+            .err_into(),
         )
     }
 
@@ -142,7 +144,7 @@ impl CoreCryptoContext {
                     .map_err(CoreCryptoError::from)?;
                 WasmCryptoResult::Ok(Uint8Array::from(pk.as_slice()).into())
             }
-                .err_into(),
+            .err_into(),
         )
     }
 
@@ -183,7 +185,7 @@ impl CoreCryptoContext {
                 );
                 WasmCryptoResult::Ok(js_kps.into())
             }
-                .err_into(),
+            .err_into(),
         )
     }
 
@@ -201,7 +203,7 @@ impl CoreCryptoContext {
                     .map_err(CoreCryptoError::from)?;
                 WasmCryptoResult::Ok(count.into())
             }
-                .err_into(),
+            .err_into(),
         )
     }
 
@@ -225,7 +227,7 @@ impl CoreCryptoContext {
                     .map_err(CoreCryptoError::from)?;
                 WasmCryptoResult::Ok(JsValue::UNDEFINED)
             }
-                .err_into(),
+            .err_into(),
         )
     }
 
@@ -261,7 +263,7 @@ impl CoreCryptoContext {
                     .map_err(CoreCryptoError::from)?;
                 WasmCryptoResult::Ok(JsValue::UNDEFINED)
             }
-                .err_into(),
+            .err_into(),
         )
     }
 
@@ -280,7 +282,7 @@ impl CoreCryptoContext {
                         .into(),
                 )
             }
-                .err_into(),
+            .err_into(),
         )
     }
 
@@ -298,10 +300,10 @@ impl CoreCryptoContext {
                             .await
                             .map_err(CoreCryptoError::from)?,
                     )
-                        .into(),
+                    .into(),
                 )
             }
-                .err_into(),
+            .err_into(),
         )
     }
 
@@ -318,7 +320,7 @@ impl CoreCryptoContext {
                     JsValue::FALSE
                 })
             }
-                .err_into(),
+            .err_into(),
         )
     }
 
@@ -340,7 +342,7 @@ impl CoreCryptoContext {
                 let bundle: WelcomeBundle = bundle.into();
                 WasmCryptoResult::Ok(serde_wasm_bindgen::to_value(&bundle)?)
             }
-                .err_into(),
+            .err_into(),
         )
     }
 
@@ -369,7 +371,7 @@ impl CoreCryptoContext {
                 let commit: MemberAddedMessages = commit.try_into()?;
                 WasmCryptoResult::Ok(serde_wasm_bindgen::to_value(&commit)?)
             }
-                .err_into(),
+            .err_into(),
         )
     }
 
@@ -399,7 +401,7 @@ impl CoreCryptoContext {
 
                 WasmCryptoResult::Ok(serde_wasm_bindgen::to_value(&commit)?)
             }
-                .err_into(),
+            .err_into(),
         )
     }
 
@@ -416,7 +418,7 @@ impl CoreCryptoContext {
                     .map_err(CoreCryptoError::from)?;
                 WasmCryptoResult::Ok(JsValue::UNDEFINED)
             }
-                .err_into(),
+            .err_into(),
         )
     }
 
@@ -435,7 +437,7 @@ impl CoreCryptoContext {
                 let commit: CommitBundle = commit.try_into()?;
                 WasmCryptoResult::Ok(serde_wasm_bindgen::to_value(&commit)?)
             }
-                .err_into(),
+            .err_into(),
         )
     }
 
@@ -451,7 +453,7 @@ impl CoreCryptoContext {
                     .transpose()?;
                 WasmCryptoResult::Ok(serde_wasm_bindgen::to_value(&commit)?)
             }
-                .err_into(),
+            .err_into(),
         )
     }
 
@@ -468,7 +470,7 @@ impl CoreCryptoContext {
                     .map_err(CoreCryptoError::from)?;
                 WasmCryptoResult::Ok(JsValue::UNDEFINED)
             }
-                .err_into(),
+            .err_into(),
         )
     }
 
@@ -487,7 +489,7 @@ impl CoreCryptoContext {
                 let decrypted_message = DecryptedMessage::try_from(raw_decrypted_message)?;
                 WasmCryptoResult::Ok(serde_wasm_bindgen::to_value(&decrypted_message)?)
             }
-                .err_into(),
+            .err_into(),
         )
     }
 
@@ -505,7 +507,7 @@ impl CoreCryptoContext {
                     .map_err(CoreCryptoError::from)?;
                 WasmCryptoResult::Ok(ciphertext.into())
             }
-                .err_into(),
+            .err_into(),
         )
     }
 
@@ -529,7 +531,7 @@ impl CoreCryptoContext {
 
                 WasmCryptoResult::Ok(serde_wasm_bindgen::to_value(&proposal)?)
             }
-                .err_into(),
+            .err_into(),
         )
     }
 
@@ -546,7 +548,7 @@ impl CoreCryptoContext {
                     .try_into()?;
                 WasmCryptoResult::Ok(serde_wasm_bindgen::to_value(&proposal)?)
             }
-                .err_into(),
+            .err_into(),
         )
     }
 
@@ -564,7 +566,7 @@ impl CoreCryptoContext {
                     .try_into()?;
                 WasmCryptoResult::Ok(serde_wasm_bindgen::to_value(&proposal)?)
             }
-                .err_into(),
+            .err_into(),
         )
     }
 
@@ -599,7 +601,7 @@ impl CoreCryptoContext {
 
                 WasmCryptoResult::Ok(proposal_bytes.into())
             }
-                .err_into(),
+            .err_into(),
         )
     }
 
@@ -629,7 +631,7 @@ impl CoreCryptoContext {
 
                 WasmCryptoResult::Ok(serde_wasm_bindgen::to_value(&result)?)
             }
-                .err_into(),
+            .err_into(),
         )
     }
 
@@ -655,7 +657,7 @@ impl CoreCryptoContext {
 
                 WasmCryptoResult::Ok(JsValue::UNDEFINED)
             }
-                .err_into(),
+            .err_into(),
         )
     }
 
@@ -673,7 +675,7 @@ impl CoreCryptoContext {
 
                 WasmCryptoResult::Ok(JsValue::UNDEFINED)
             }
-                .err_into(),
+            .err_into(),
         )
     }
 
@@ -696,7 +698,7 @@ impl CoreCryptoContext {
                 }
                 WasmCryptoResult::Ok(JsValue::UNDEFINED)
             }
-                .err_into(),
+            .err_into(),
         )
     }
 
@@ -711,7 +713,7 @@ impl CoreCryptoContext {
                     .map_err(CoreCryptoError::from)?;
                 WasmCryptoResult::Ok(JsValue::UNDEFINED)
             }
-                .err_into(),
+            .err_into(),
         )
     }
 
@@ -726,7 +728,7 @@ impl CoreCryptoContext {
                     .map_err(CoreCryptoError::from)?;
                 WasmCryptoResult::Ok(JsValue::UNDEFINED)
             }
-                .err_into(),
+            .err_into(),
         )
     }
 
@@ -740,7 +742,7 @@ impl CoreCryptoContext {
                 let bytes = context.random_bytes(len).map_err(CoreCryptoError::from).await?;
                 WasmCryptoResult::Ok(Uint8Array::from(bytes.as_slice()).into())
             }
-                .err_into(),
+            .err_into(),
         )
     }
 
@@ -757,7 +759,7 @@ impl CoreCryptoContext {
                     .map_err(CoreCryptoError::from)?;
                 WasmCryptoResult::Ok(Uint8Array::from(key.as_slice()).into())
             }
-                .err_into(),
+            .err_into(),
         )
     }
 
@@ -774,7 +776,7 @@ impl CoreCryptoContext {
                     .map_err(CoreCryptoError::from)?;
                 WasmCryptoResult::Ok(Uint8Array::from(ext_sender.as_slice()).into())
             }
-                .err_into(),
+            .err_into(),
         )
     }
 
@@ -797,7 +799,7 @@ impl CoreCryptoContext {
                 );
                 WasmCryptoResult::Ok(clients.into())
             }
-                .err_into(),
+            .err_into(),
         )
     }
 }

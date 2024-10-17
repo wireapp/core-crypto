@@ -5,19 +5,18 @@ use tracing::{trace, Instrument};
 
 use mls_crypto_provider::{EntropySeed, MlsCryptoProvider, MlsCryptoProviderConfiguration};
 use openmls_traits::OpenMlsCryptoProvider;
-
+use crate::CoreCrypto;
 use crate::prelude::{
     identifier::ClientIdentifier, key_package::INITIAL_KEYING_MATERIAL_COUNT, Client, ClientId, ConversationId,
     CoreCryptoCallbacks, CryptoError, CryptoResult, MlsCentralConfiguration, MlsCiphersuite, MlsConversation,
     MlsConversationConfiguration, MlsCredentialType, MlsError,
 };
 
-use self::context::CentralContext;
+use crate::context::CentralContext;
 
 pub(crate) mod buffer_external_commit;
 pub(crate) mod ciphersuite;
 pub(crate) mod client;
-pub mod context;
 pub mod conversation;
 pub(crate) mod credential;
 pub(crate) mod external_commit;
@@ -178,7 +177,8 @@ impl MlsCentral {
         })
         .in_current_span()
         .await?;
-        let transaction = mls_backend.new_transaction();
+        mls_backend.new_transaction().await?;
+        let keystore = mls_backend.keystore(); 
         let mls_client = if let Some(id) = configuration.client_id {
             // Init client identity (load or create)
             Arc::new(
@@ -186,7 +186,7 @@ impl MlsCentral {
                     Client::init(
                         ClientIdentifier::Basic(id),
                         configuration.ciphersuites.as_slice(),
-                        &transaction,
+                        &mls_backend,
                         configuration
                             .nb_init_key_packages
                             .unwrap_or(INITIAL_KEYING_MATERIAL_COUNT),
@@ -206,10 +206,12 @@ impl MlsCentral {
             transaction_lock: Arc::new(Mutex::new(())),
         };
 
-        transaction.transaction().commit().await?;
-        drop(transaction);
+        keystore.commit_transaction().await?;
+        drop(keystore);
 
-        let context = central.new_transaction().await;
+        let cc = CoreCrypto::from(central);
+        let context = cc.new_transaction().await?;
+        let central = cc.mls;
 
         context.init_pki_env().in_current_span().await?;
         context.finish().await?;
@@ -228,14 +230,14 @@ impl MlsCentral {
         })
         .in_current_span()
         .await?;
-        let transaction = mls_backend.new_transaction();
+        mls_backend.new_transaction().await?;
         let mls_client = if let Some(id) = configuration.client_id {
             Arc::new(
                 Some(
                     Client::init(
                         ClientIdentifier::Basic(id),
                         configuration.ciphersuites.as_slice(),
-                        &transaction,
+                        &mls_backend,
                         configuration
                             .nb_init_key_packages
                             .unwrap_or(INITIAL_KEYING_MATERIAL_COUNT),
@@ -247,17 +249,17 @@ impl MlsCentral {
         } else {
             Arc::new(None.into())
         };
+        mls_backend.keystore().commit_transaction().await?;
         let central = Self {
             mls_backend,
             mls_client,
             callbacks: Arc::new(None.into()),
             transaction_lock: Arc::new(Mutex::new(())),
         };
-        transaction.transaction().commit().await?;
-        drop(transaction);
-
-        let context = central.new_transaction().await;
-
+        
+        let cc = CoreCrypto::from(central);
+        let context = cc.new_transaction().await?;
+        let central = cc.mls;
         context.init_pki_env().in_current_span().await?;
         context.finish().await?;
 
@@ -286,7 +288,7 @@ impl MlsCentral {
         let client_guard = self.mls_client.read().await;
         let client = client_guard.as_ref().ok_or(CryptoError::MlsNotInitialized)?;
         let cb = client
-            .find_most_recent_credential_bundle(ciphersuite.signature_algorithm(), credential_type)
+            .find_most_recent_credential_bundle(ciphersuite.signature_algorithm(), credential_type).await
             .ok_or(CryptoError::ClientSignatureNotFound)?;
         Ok(cb.signature_key.to_public_vec())
     }
@@ -386,7 +388,7 @@ impl CentralContext {
         let nb_key_package = nb_init_key_packages.unwrap_or(INITIAL_KEYING_MATERIAL_COUNT);
         let mls_client = Client::init(identifier, &ciphersuites, &self.mls_provider().await?, nb_key_package).await?;
 
-        if mls_client.is_e2ei_capable() {
+        if mls_client.is_e2ei_capable().await {
             trace!(client_id = %mls_client.id(),"Initializing PKI environment");
             self.init_pki_env().in_current_span().await?;
         }
@@ -444,7 +446,7 @@ impl CentralContext {
         let client_guard = self.mls_client().await?;
         let client = client_guard.as_ref().ok_or(CryptoError::MlsNotInitialized)?;
         let cb = client
-            .find_most_recent_credential_bundle(ciphersuite.signature_algorithm(), credential_type)
+            .find_most_recent_credential_bundle(ciphersuite.signature_algorithm(), credential_type).await
             .ok_or(CryptoError::ClientSignatureNotFound)?;
         Ok(cb.signature_key.to_public_vec())
     }
@@ -480,7 +482,8 @@ impl CentralContext {
         if self.conversation_exists(id).await? || self.pending_group_exists(id).await? {
             return Err(CryptoError::ConversationAlreadyExists(id.clone()));
         }
-
+        // TODO(SimonThormeyer): Solve the following:
+        // This may cause a deadlock if the caller's scope already has a lock held on mls client.
         let mut client_guard = self.mls_client_mut().await?;
         let client = client_guard.as_mut().ok_or(CryptoError::MlsNotInitialized)?;
         let conversation = MlsConversation::create(
@@ -503,7 +506,7 @@ impl CentralContext {
         Ok(self
             .mls_groups()
             .await?
-            .get_fetch(id, &self.transaction().await?, None)
+            .get_fetch(id, &self.mls_provider().await?.keystore(), None)
             .await
             .ok()
             .flatten()
@@ -540,10 +543,7 @@ mod tests {
     use wasm_bindgen_test::*;
 
     use crate::prelude::{CertificateBundle, ClientIdentifier, MlsCredentialType, INITIAL_KEYING_MATERIAL_COUNT};
-    use crate::{
-        mls::{CryptoError, MlsCentral, MlsCentralConfiguration},
-        test_utils::{x509::X509TestChain, *},
-    };
+    use crate::{mls::{CryptoError, MlsCentral, MlsCentralConfiguration}, test_utils::{x509::X509TestChain, *}, CoreCrypto};
 
     wasm_bindgen_test_configure!(run_in_browser);
 
@@ -553,15 +553,15 @@ mod tests {
         #[apply(all_cred_cipher)]
         #[wasm_bindgen_test]
         async fn can_get_newly_created_conversation_epoch(case: TestCase) {
-            run_test_with_central(case.clone(), move |[mut central]| {
+            run_test_with_central(case.clone(), move |[central]| {
                 Box::pin(async move {
                     let id = conversation_id();
                     central
-                        .mls_central
+                        .context
                         .new_conversation(&id, case.credential_type, case.cfg.clone())
                         .await
                         .unwrap();
-                    let epoch = central.mls_central.conversation_epoch(&id).await.unwrap();
+                    let epoch = central.context.conversation_epoch(&id).await.unwrap();
                     assert_eq!(epoch, 0);
                 })
             })
@@ -574,20 +574,19 @@ mod tests {
             run_test_with_client_ids(
                 case.clone(),
                 ["alice", "bob"],
-                move |[mut alice_central, mut bob_central]| {
+                move |[alice_central, bob_central]| {
                     Box::pin(async move {
                         let id = conversation_id();
                         alice_central
-                            .mls_central
+                            .context
                             .new_conversation(&id, case.credential_type, case.cfg.clone())
                             .await
                             .unwrap();
                         alice_central
-                            .mls_central
-                            .invite_all(&case, &id, [&mut bob_central.mls_central])
+                            .invite_all(&case, &id, [&bob_central])
                             .await
                             .unwrap();
-                        let epoch = alice_central.mls_central.conversation_epoch(&id).await.unwrap();
+                        let epoch = alice_central.context.conversation_epoch(&id).await.unwrap();
                         assert_eq!(epoch, 1);
                     })
                 },
@@ -598,10 +597,10 @@ mod tests {
         #[apply(all_cred_cipher)]
         #[wasm_bindgen_test]
         async fn conversation_not_found(case: TestCase) {
-            run_test_with_central(case.clone(), move |[mut central]| {
+            run_test_with_central(case.clone(), move |[central]| {
                 Box::pin(async move {
                     let id = conversation_id();
-                    let err = central.mls_central.conversation_epoch(&id).await.unwrap_err();
+                    let err = central.context.conversation_epoch(&id).await.unwrap_err();
                     assert!(matches!(err, CryptoError::ConversationNotFound(conv_id) if conv_id == id));
                 })
             })
@@ -704,19 +703,19 @@ mod tests {
     #[apply(all_cred_cipher)]
     #[wasm_bindgen_test]
     async fn create_conversation_should_fail_when_already_exists(case: TestCase) {
-        run_test_with_client_ids(case.clone(), ["alice"], move |[mut alice_central]| {
+        run_test_with_client_ids(case.clone(), ["alice"], move |[alice_central]| {
             Box::pin(async move {
                 let id = conversation_id();
 
                 let create = alice_central
-                    .mls_central
+                    .context
                     .new_conversation(&id, case.credential_type, case.cfg.clone())
                     .await;
                 assert!(create.is_ok());
 
                 // creating a conversation should first verify that the conversation does not already exist ; only then create it
                 let repeat_create = alice_central
-                    .mls_central
+                    .context
                     .new_conversation(&id, case.credential_type, case.cfg.clone())
                     .await;
                 assert!(matches!(repeat_create.unwrap_err(), CryptoError::ConversationAlreadyExists(i) if i == id));
@@ -763,10 +762,12 @@ mod tests {
                 )
                 .unwrap();
                 // phase 1: init without mls_client
-                let mut central = MlsCentral::try_new(configuration).await.unwrap();
-                x509_test_chain.register_with_central(&central).await;
+                let central = MlsCentral::try_new(configuration).await.unwrap();
+                let cc = CoreCrypto::from(central);
+                let context = cc.new_transaction().await.unwrap();
+                x509_test_chain.register_with_central(&context).await;
 
-                assert!(central.mls_client.is_none());
+                assert!(context.mls_client().await.unwrap().is_none());
                 // phase 2: init mls_client
                 let client_id = "alice";
                 let identifier = match case.credential_type {
@@ -775,7 +776,7 @@ mod tests {
                         CertificateBundle::rand_identifier(client_id, &[x509_test_chain.find_local_intermediate_ca()])
                     }
                 };
-                central
+                context
                     .mls_init(
                         identifier,
                         vec![case.ciphersuite()],
@@ -783,10 +784,10 @@ mod tests {
                     )
                     .await
                     .unwrap();
-                assert!(central.mls_client.is_some());
+                assert!(context.mls_client().await.unwrap().is_some());
                 // expect mls_client to work
                 assert_eq!(
-                    central
+                    context
                         .get_or_create_client_keypackages(case.ciphersuite(), case.credential_type, 2)
                         .await
                         .unwrap()

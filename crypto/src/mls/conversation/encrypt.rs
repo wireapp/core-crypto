@@ -10,9 +10,9 @@
 use mls_crypto_provider::TransactionalCryptoProvider;
 use openmls::prelude::MlsMessageOutBody;
 
-use crate::{mls::context::CentralContext, prelude::Client};
+use crate::prelude::Client;
 use crate::{mls::ConversationId, CryptoError, CryptoResult, MlsError};
-
+use crate::context::CentralContext;
 use super::MlsConversation;
 
 /// Abstraction over a MLS group capable of encrypting a MLS message
@@ -28,7 +28,7 @@ impl MlsConversation {
         backend: &TransactionalCryptoProvider,
     ) -> CryptoResult<Vec<u8>> {
         let signer = &self
-            .find_current_credential_bundle(client)?
+            .find_current_credential_bundle(client).await?
             .ok_or(CryptoError::IdentityInitializationError)?
             .signature_key;
         let encrypted = self
@@ -41,7 +41,7 @@ impl MlsConversation {
 
         let encrypted = encrypted.to_bytes().map_err(MlsError::from)?;
 
-        self.persist_group_when_changed(&backend.transaction(), false).await?;
+        self.persist_group_when_changed(&backend.keystore(), false).await?;
         Ok(encrypted)
     }
 }
@@ -91,25 +91,24 @@ mod tests {
         run_test_with_client_ids(
             case.clone(),
             ["alice", "bob"],
-            move |[mut alice_central, mut bob_central]| {
+            move |[alice_central, bob_central]| {
                 Box::pin(async move {
                     let id = conversation_id();
                     alice_central
-                        .mls_central
+                        .context
                         .new_conversation(&id, case.credential_type, case.cfg.clone())
                         .await
                         .unwrap();
                     alice_central
-                        .mls_central
-                        .invite_all(&case, &id, [&mut bob_central.mls_central])
+                        .invite_all(&case, &id, [&bob_central])
                         .await
                         .unwrap();
 
                     let msg = b"Hello bob";
-                    let encrypted = alice_central.mls_central.encrypt_message(&id, msg).await.unwrap();
+                    let encrypted = alice_central.context.encrypt_message(&id, msg).await.unwrap();
                     assert_ne!(&msg[..], &encrypted[..]);
                     let decrypted = bob_central
-                        .mls_central
+                        .context
                         .decrypt_message(&id, encrypted)
                         .await
                         .unwrap()
@@ -129,25 +128,24 @@ mod tests {
         run_test_with_client_ids(
             case.clone(),
             ["alice", "bob"],
-            move |[mut alice_central, mut bob_central]| {
+            move |[alice_central, bob_central]| {
                 Box::pin(async move {
                     let id = conversation_id();
                     alice_central
-                        .mls_central
+                        .context
                         .new_conversation(&id, case.credential_type, case.cfg.clone())
                         .await
                         .unwrap();
                     alice_central
-                        .mls_central
-                        .invite_all(&case, &id, [&mut bob_central.mls_central])
+                        .invite_all(&case, &id, [&bob_central])
                         .await
                         .unwrap();
 
                     let msg = b"Hello bob";
-                    let encrypted = alice_central.mls_central.encrypt_message(&id, msg).await.unwrap();
+                    let encrypted = alice_central.context.encrypt_message(&id, msg).await.unwrap();
                     assert_ne!(&msg[..], &encrypted[..]);
                     let decrypted = bob_central
-                        .mls_central
+                        .context
                         .decrypt_message(&id, encrypted)
                         .await
                         .unwrap()
@@ -156,10 +154,10 @@ mod tests {
                     assert_eq!(&decrypted[..], &msg[..]);
 
                     let msg = b"Hello bob again";
-                    let encrypted = alice_central.mls_central.encrypt_message(&id, msg).await.unwrap();
+                    let encrypted = alice_central.context.encrypt_message(&id, msg).await.unwrap();
                     assert_ne!(&msg[..], &encrypted[..]);
                     let decrypted = bob_central
-                        .mls_central
+                        .context
                         .decrypt_message(&id, encrypted)
                         .await
                         .unwrap()
