@@ -5517,7 +5517,6 @@ dependencies = [
  "const_format",
  "dirs",
  "eyre",
- "fantoccini",
  "flate2",
  "futures-util",
  "hex",
