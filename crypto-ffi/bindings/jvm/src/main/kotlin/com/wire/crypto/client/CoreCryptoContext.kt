@@ -27,7 +27,7 @@ import kotlin.time.DurationUnit
 import kotlin.time.toDuration
 
 @Suppress("TooManyFunctions")
-class MlsContext(private val cc: CoreCryptoContext) {
+class CoreCryptoContext(private val cc: CoreCryptoContext) {
     internal fun lower() = cc
 
     companion object {
