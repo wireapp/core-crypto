@@ -19,6 +19,7 @@
 package com.wire.crypto.client
 
 import com.wire.crypto.CoreCryptoContext
+import com.wire.crypto.CoreCryptoException
 import com.wire.crypto.CrlRegistration
 import com.wire.crypto.E2eiDumpedPkiEnv
 import com.wire.crypto.client.CoreCryptoCentral.Companion.DEFAULT_NB_KEY_PACKAGE
@@ -668,5 +669,112 @@ class CoreCryptoContext(private val cc: CoreCryptoContext) {
      */
     suspend fun e2eiEnrollmentStashPop(handle: EnrollmentHandle): E2EIEnrollment {
         return E2EIEnrollment(cc.e2eiEnrollmentStashPop(handle))
+    }
+
+    // Proteus below
+
+    private fun toPreKey(id: UShort, data: ByteArray): PreKey =
+        PreKey(id, data)
+
+    @Suppress("TooGenericExceptionCaught")
+    private suspend fun <T> wrapException(b: suspend () -> T): T {
+        try {
+            return b()
+        } catch (e: CoreCryptoException) {
+            throw ProteusException(
+                e.message,
+                ProteusException.fromProteusCode(cc.proteusLastErrorCode().toInt()),
+                e.cause
+            )
+        } catch (e: Exception) {
+            throw ProteusException(e.message, ProteusException.Code.UNKNOWN_ERROR, e.cause)
+        }
+    }
+
+    suspend fun proteusGetLocalFingerprint(): ByteArray {
+        return wrapException { cc.proteusFingerprint().toByteArray() }
+    }
+
+    suspend fun proteusGetRemoteFingerprint(sessionId: SessionId): ByteArray {
+        return wrapException { cc.proteusFingerprintRemote(sessionId).toByteArray() }
+    }
+
+    suspend fun proteusNewPreKeys(from: Int, count: Int): ArrayList<PreKey> {
+        return wrapException {
+            from.until(from + count).map {
+                toPreKey(it.toUShort(), cc.proteusNewPrekey(it.toUShort()))
+            } as ArrayList<PreKey>
+        }
+    }
+
+    suspend fun proteusNewLastPreKey(): PreKey {
+        return wrapException {
+            toPreKey(
+                cc.proteusLastResortPrekeyId(),
+                cc.proteusLastResortPrekey()
+            )
+        }
+    }
+
+    suspend fun proteusDoesSessionExist(sessionId: SessionId): Boolean {
+        return wrapException {
+            cc.proteusSessionExists(sessionId)
+        }
+    }
+
+    suspend fun proteusCreateSession(preKeyCrypto: PreKey, sessionId: SessionId) {
+        wrapException { cc.proteusSessionFromPrekey(sessionId, preKeyCrypto.data) }
+    }
+
+    suspend fun proteusDeleteSession(sessionId: SessionId) {
+        wrapException {
+            cc.proteusSessionDelete(sessionId)
+        }
+    }
+
+    suspend fun proteusDecrypt(message: ByteArray, sessionId: SessionId): ByteArray {
+        val sessionExists = proteusDoesSessionExist(sessionId)
+
+        return wrapException {
+            if (sessionExists) {
+                val decryptedMessage = cc.proteusDecrypt(sessionId, message)
+                cc.proteusSessionSave(sessionId)
+                decryptedMessage
+            } else {
+                val decryptedMessage = cc.proteusSessionFromMessage(sessionId, message)
+                cc.proteusSessionSave(sessionId)
+                decryptedMessage
+            }
+        }
+    }
+
+    suspend fun proteusEncrypt(message: ByteArray, sessionId: SessionId): ByteArray {
+        return wrapException {
+            cc.proteusEncrypt(sessionId, message)
+        }
+    }
+
+    suspend fun proteusEncryptBatched(
+        sessionIds: List<SessionId>,
+        message: ByteArray
+    ): Map<SessionId, ByteArray> {
+        return wrapException {
+            cc.proteusEncryptBatched(sessionIds.map { it }, message).mapNotNull { entry ->
+                entry.key to entry.value
+            }
+        }.toMap()
+    }
+
+    suspend fun proteusEncryptWithPreKey(
+        message: ByteArray,
+        preKey: PreKey,
+        sessionId: SessionId
+    ): ByteArray {
+        return wrapException {
+            cc.proteusSessionFromPrekey(sessionId, preKey.data)
+            val encryptedMessage = cc.proteusEncrypt(sessionId, message)
+            cc.proteusSessionSave(sessionId)
+            encryptedMessage
+        }
     }
 }
