@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"fn":["build_wasm","find_wasm_file","spawn_http_server"]};
