@@ -232,6 +232,9 @@ impl KeystoreTransaction {
 
     pub(crate) async fn cred_delete_by_credential(&self, cred: Vec<u8>) -> CryptoKeystoreResult<()> {
         let mut conn = self.cache.borrow_conn().await?;
+        #[cfg(target_family = "wasm")]
+        let transaction = conn.new_transaction(&[MlsCredential::COLLECTION_NAME]).await?;
+        #[cfg(not(target_family = "wasm"))]
         let transaction = conn.new_transaction().await?;
         MlsCredential::delete_by_credential(&transaction, cred.clone()).await?;
         transaction.commit_tx().await?;

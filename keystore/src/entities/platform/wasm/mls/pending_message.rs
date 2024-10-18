@@ -50,11 +50,17 @@ impl EntityTransactionExt for MlsPendingMessage {}
 
 impl Entity for MlsPendingMessage {
     fn id_raw(&self) -> &[u8] {
-        self.id.as_slice()
+        self.foreign_id.as_slice()
     }
 
     fn id(&self) -> CryptoKeystoreResult<wasm_bindgen::JsValue> {
-        Ok(js_sys::Uint8Array::from(self.id.as_slice()).into())
+        Ok(js_sys::Uint8Array::from(self.foreign_id.as_slice()).into())
+    }
+
+    fn merge_key(&self) -> Vec<u8> {
+        // Use this as a merge key because the `id` is not used as a primary key 
+        // but  as a foreign key: it's the ID of the PersistedMlsPendingGroup. 
+        self.message.clone()
     }
 
     fn encrypt(&mut self, cipher: &aes_gcm::Aes256Gcm) -> CryptoKeystoreResult<()> {

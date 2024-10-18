@@ -51,18 +51,6 @@ impl EntityBase for E2eiRefreshToken {
     }
 }
 
-#[cfg_attr(target_family = "wasm", async_trait::async_trait(?Send))]
-#[cfg_attr(not(target_family = "wasm"), async_trait::async_trait)]
-impl EntityTransactionExt for E2eiRefreshToken {
-    async fn delete<'a>(_: &WasmStorageTransaction<'a>, _: StringEntityId<'a>) -> crate::CryptoKeystoreResult<()> {
-        return Err(CryptoKeystoreError::NotImplemented);
-    }
-
-    async fn save<'a>(&'a self, _: &WasmStorageTransaction<'a>) -> crate::CryptoKeystoreResult<()> {
-        return Err(CryptoKeystoreError::NotImplemented);
-    }
-}
-
 impl Entity for E2eiRefreshToken {
     fn id_raw(&self) -> &[u8] {
         &Self::ID

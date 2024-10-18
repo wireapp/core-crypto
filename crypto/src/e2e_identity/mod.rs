@@ -601,7 +601,8 @@ pub(crate) mod tests {
     use openmls_traits::OpenMlsCryptoProvider;
     use serde_json::json;
     use wasm_bindgen_test::*;
-
+    
+    #[cfg(not(target_family = "wasm"))]
     use crate::e2e_identity::refresh_token::RefreshToken;
     use crate::context::CentralContext;
     use crate::{

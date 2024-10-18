@@ -19,6 +19,7 @@ use crate::{
     entities::{Entity, EntityBase, EntityFindParams, ProteusSession, StringEntityId},
     CryptoKeystoreResult, MissingKeyErrorKind,
 };
+use crate::entities::{EntityTransactionExt, ProteusPrekey};
 
 #[cfg_attr(target_family = "wasm", async_trait::async_trait(?Send))]
 #[cfg_attr(not(target_family = "wasm"), async_trait::async_trait)]
@@ -32,17 +33,12 @@ impl EntityBase for ProteusSession {
     }
 
     fn to_transaction_entity(self) -> crate::transaction::Entity {
-        unimplemented!("This has not yet been implemented for Proteus")
+        crate::transaction::Entity::ProteusSession(self)
     }
 
     async fn find_all(conn: &mut Self::ConnectionType, params: EntityFindParams) -> CryptoKeystoreResult<Vec<Self>> {
         let storage = conn.storage();
         storage.get_all(Self::COLLECTION_NAME, Some(params)).await
-    }
-
-    async fn save(&self, conn: &mut Self::ConnectionType) -> crate::CryptoKeystoreResult<()> {
-        let storage = conn.storage_mut();
-        storage.save(Self::COLLECTION_NAME, &mut [self.clone()]).await
     }
 
     async fn find_one(
@@ -57,13 +53,10 @@ impl EntityBase for ProteusSession {
         let storage = conn.storage();
         storage.count(Self::COLLECTION_NAME).await
     }
-
-    async fn delete(conn: &mut Self::ConnectionType, id: StringEntityId<'_>) -> crate::CryptoKeystoreResult<()> {
-        let storage = conn.storage_mut();
-        let ids = vec![id.to_bytes()];
-        storage.delete(Self::COLLECTION_NAME, &ids).await
-    }
 }
+
+#[async_trait::async_trait(?Send)]
+impl EntityTransactionExt for ProteusSession {}
 
 impl Entity for ProteusSession {
     fn id_raw(&self) -> &[u8] {

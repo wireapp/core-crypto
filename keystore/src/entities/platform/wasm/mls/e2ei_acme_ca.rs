@@ -52,18 +52,6 @@ impl EntityBase for E2eiAcmeCA {
     }
 }
 
-#[cfg_attr(target_family = "wasm", async_trait::async_trait(?Send))]
-#[cfg_attr(not(target_family = "wasm"), async_trait::async_trait)]
-impl EntityTransactionExt for E2eiAcmeCA {
-    async fn delete<'a>(_: &WasmStorageTransaction<'a>, _: StringEntityId<'a>) -> crate::CryptoKeystoreResult<()> {
-        return Err(CryptoKeystoreError::NotImplemented);
-    }
-
-    async fn save<'a>(&'a self, _: &WasmStorageTransaction<'a>) -> crate::CryptoKeystoreResult<()> {
-        return Err(CryptoKeystoreError::NotImplemented);
-    }
-}
-
 impl Entity for E2eiAcmeCA {
     fn id_raw(&self) -> &[u8] {
         &Self::ID
