@@ -49,7 +49,7 @@ tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["json"] }
 uniffi = "0.28"
 url = "2.5"
-uuid = "1.10"
+uuid = "1.11"
 x509-cert = "0.2"
 zeroize = "1.8"
 
