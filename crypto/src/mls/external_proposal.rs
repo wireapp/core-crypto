@@ -12,7 +12,7 @@ use crate::{
 };
 use tracing::{trace, warn, Instrument};
 
-use super::context::CentralContext;
+use crate::context::CentralContext;
 
 impl MlsConversation {
     /// Validates the proposal. If it is external and an `Add` proposal it will call the callback
@@ -123,7 +123,7 @@ impl CentralContext {
 
         let mut client_guard = self.mls_client_mut().await?;
         let client = client_guard.as_mut().ok_or(CryptoError::MlsNotInitialized)?;
-        let cb = client.find_most_recent_credential_bundle(ciphersuite.signature_algorithm(), credential_type);
+        let cb = client.find_most_recent_credential_bundle(ciphersuite.signature_algorithm(), credential_type).await;
         let cb = match (cb, credential_type) {
             (Some(cb), _) => cb,
             (None, MlsCredentialType::Basic) => {
@@ -133,13 +133,13 @@ impl CentralContext {
                     .await?;
 
                 client
-                    .find_most_recent_credential_bundle(ciphersuite.signature_algorithm(), credential_type)
+                    .find_most_recent_credential_bundle(ciphersuite.signature_algorithm(), credential_type).await
                     .ok_or(CryptoError::CredentialNotFound(credential_type))?
             }
             (None, MlsCredentialType::X509) => return Err(CryptoError::E2eiEnrollmentNotDone),
         };
         let kp = client
-            .generate_one_keypackage_from_credential_bundle(&mls_provider, ciphersuite, cb)
+            .generate_one_keypackage_from_credential_bundle(&mls_provider, ciphersuite, &cb)
             .in_current_span()
             .await?;
 
@@ -164,16 +164,15 @@ mod tests {
             run_test_with_client_ids(
                 case.clone(),
                 ["owner", "guest"],
-                move |[mut owner_central, mut guest_central]| {
+                move |[owner_central, guest_central]| {
                     Box::pin(async move {
                         let id = conversation_id();
                         owner_central
-                            .mls_central
+                            .context
                             .new_conversation(&id, case.credential_type, case.cfg.clone())
                             .await
                             .unwrap();
                         let epoch = owner_central
-                            .mls_central
                             .get_conversation_unchecked(&id)
                             .await
                             .group
@@ -181,21 +180,20 @@ mod tests {
 
                         // Craft an external proposal from guest
                         let external_add = guest_central
-                            .mls_central
+                            .context
                             .new_external_add_proposal(id.clone(), epoch, case.ciphersuite(), case.credential_type)
                             .await
                             .unwrap();
 
                         // Owner receives external proposal message from server
                         let decrypted = owner_central
-                            .mls_central
+                            .context
                             .decrypt_message(&id, external_add.to_bytes().unwrap())
                             .await
                             .unwrap();
                         // just owner for now
                         assert_eq!(
                             owner_central
-                                .mls_central
                                 .get_conversation_unchecked(&id)
                                 .await
                                 .members()
@@ -204,20 +202,19 @@ mod tests {
                         );
 
                         // verify Guest's (sender) identity
-                        guest_central.mls_central.verify_sender_identity(&case, &decrypted);
+                        guest_central.verify_sender_identity(&case, &decrypted).await;
 
                         // simulate commit message reception from server
                         let MlsCommitBundle { welcome, .. } = owner_central
-                            .mls_central
+                            .context
                             .commit_pending_proposals(&id)
                             .await
                             .unwrap()
                             .unwrap();
-                        owner_central.mls_central.commit_accepted(&id).await.unwrap();
+                        owner_central.context.commit_accepted(&id).await.unwrap();
                         // guest joined the group
                         assert_eq!(
                             owner_central
-                                .mls_central
                                 .get_conversation_unchecked(&id)
                                 .await
                                 .members()
@@ -226,13 +223,12 @@ mod tests {
                         );
 
                         guest_central
-                            .mls_central
+                            .context
                             .process_welcome_message(welcome.unwrap().into(), case.custom_cfg())
                             .await
                             .unwrap();
                         assert_eq!(
                             guest_central
-                                .mls_central
                                 .get_conversation_unchecked(&id)
                                 .await
                                 .members()
@@ -241,8 +237,7 @@ mod tests {
                         );
                         // guest can send messages in the group
                         assert!(guest_central
-                            .mls_central
-                            .try_talk_to(&id, &mut owner_central.mls_central)
+                            .try_talk_to(&id, &owner_central)
                             .await
                             .is_ok());
                     })
@@ -263,44 +258,39 @@ mod tests {
         #[wasm_bindgen_test]
         async fn ds_should_remove_guest_from_conversation(case: TestCase) {
             run_test_with_client_ids(case.clone(), ["owner", "guest", "ds"], move |[owner, guest, ds]| {
-                let mut owner_central = owner.mls_central;
-                let mut guest_central = guest.mls_central;
-
                 Box::pin(async move {
+                    let owner_central = &owner.context;
+                    let guest_central = &guest.context;
                     let id = conversation_id();
 
-                    let ds_signature_key = ds.mls_central.client_signature_key(&case).as_slice().to_vec();
+                    let ds_signature_key = ds.client_signature_key(&case).await.as_slice().to_vec();
                     let mut cfg = case.cfg.clone();
                     owner_central
-                        .set_raw_external_senders(&mut cfg, vec![ds_signature_key])
+                        .set_raw_external_senders(&mut cfg, vec![ds_signature_key]).await
                         .unwrap();
                     owner_central
                         .new_conversation(&id, case.credential_type, cfg)
                         .await
                         .unwrap();
 
-                    owner_central
-                        .invite_all(&case, &id, [&mut guest_central])
+                    owner
+                        .invite_all(&case, &id, [&guest])
                         .await
                         .unwrap();
-                    assert_eq!(owner_central.get_conversation_unchecked(&id).await.members().len(), 2);
+                    assert_eq!(owner.get_conversation_unchecked(&id).await.members().len(), 2);
 
                     // now, as e.g. a Delivery Service, let's create an external remove proposal
                     // and kick guest out of the conversation
-                    let to_remove = owner_central.index_of(&id, guest_central.get_client_id()).await;
+                    let to_remove = owner.index_of(&id, guest.get_client_id().await).await;
                     let sender_index = SenderExtensionIndex::new(0);
 
                     let (sc, ct) = (case.signature_scheme(), case.credential_type);
                     let cb = ds
-                        .mls_central
-                        .mls_client
-                        .as_ref()
-                        .unwrap()
-                        .find_most_recent_credential_bundle(sc, ct)
+                        .find_most_recent_credential_bundle(sc, ct).await
                         .unwrap();
 
                     let group_id = GroupId::from_slice(&id[..]);
-                    let epoch = owner_central.get_conversation_unchecked(&id).await.group.epoch();
+                    let epoch = owner.get_conversation_unchecked(&id).await.group.epoch();
                     let proposal =
                         ExternalProposal::new_remove(to_remove, group_id, epoch, &cb.signature_key, sender_index)
                             .unwrap();
@@ -317,9 +307,9 @@ mod tests {
                         owner_central.commit_pending_proposals(&id).await.unwrap().unwrap();
 
                     // before merging, commit is not applied
-                    assert_eq!(owner_central.get_conversation_unchecked(&id).await.members().len(), 2);
+                    assert_eq!(owner.get_conversation_unchecked(&id).await.members().len(), 2);
                     owner_central.commit_accepted(&id).await.unwrap();
-                    assert_eq!(owner_central.get_conversation_unchecked(&id).await.members().len(), 1);
+                    assert_eq!(owner.get_conversation_unchecked(&id).await.members().len(), 1);
 
                     // guest can no longer participate
                     guest_central
@@ -327,7 +317,7 @@ mod tests {
                         .await
                         .unwrap();
                     assert!(guest_central.get_conversation(&id).await.is_err());
-                    assert!(guest_central.try_talk_to(&id, &mut owner_central).await.is_err());
+                    assert!(guest.try_talk_to(&id, &owner).await.is_err());
                 })
             })
             .await
@@ -340,47 +330,39 @@ mod tests {
                 case.clone(),
                 ["owner", "guest", "ds", "attacker"],
                 move |[owner, guest, ds, attacker]| {
-                    let mut owner_central = owner.mls_central;
-                    let mut guest_central = guest.mls_central;
-
                     Box::pin(async move {
                         let id = conversation_id();
                         // Delivery service key is used in the group..
-                        let ds_signature_key = ds.mls_central.client_signature_key(&case).as_slice().to_vec();
+                        let ds_signature_key = ds.client_signature_key(&case).await.as_slice().to_vec();
                         let mut cfg = case.cfg.clone();
-                        owner_central
-                            .set_raw_external_senders(&mut cfg, vec![ds_signature_key])
+                        owner.context
+                            .set_raw_external_senders(&mut cfg, vec![ds_signature_key]).await
                             .unwrap();
-                        owner_central
+                        owner.context
                             .new_conversation(&id, case.credential_type, cfg)
                             .await
                             .unwrap();
 
-                        owner_central
-                            .invite_all(&case, &id, [&mut guest_central])
-                            .await
+                        owner
+                            .invite_all(&case, &id, [&guest]).await
                             .unwrap();
-                        assert_eq!(owner_central.get_conversation_unchecked(&id).await.members().len(), 2);
+                        assert_eq!(owner.get_conversation_unchecked(&id).await.members().len(), 2);
 
                         // now, attacker will try to remove guest from the group, and should fail
-                        let to_remove = owner_central.index_of(&id, guest_central.get_client_id()).await;
+                        let to_remove = owner.index_of(&id, guest.get_client_id().await).await;
                         let sender_index = SenderExtensionIndex::new(1);
 
                         let (sc, ct) = (case.signature_scheme(), case.credential_type);
                         let cb = attacker
-                            .mls_central
-                            .mls_client
-                            .as_ref()
-                            .unwrap()
-                            .find_most_recent_credential_bundle(sc, ct)
+                            .find_most_recent_credential_bundle(sc, ct).await
                             .unwrap();
                         let group_id = GroupId::from_slice(&id[..]);
-                        let epoch = owner_central.get_conversation_unchecked(&id).await.group.epoch();
+                        let epoch = owner.get_conversation_unchecked(&id).await.group.epoch();
                         let proposal =
                             ExternalProposal::new_remove(to_remove, group_id, epoch, &cb.signature_key, sender_index)
                                 .unwrap();
 
-                        let owner_decrypt = owner_central.decrypt_message(&id, proposal.to_bytes().unwrap()).await;
+                        let owner_decrypt = owner.context.decrypt_message(&id, proposal.to_bytes().unwrap()).await;
 
                         assert!(matches!(
                             owner_decrypt.unwrap_err(),
@@ -389,7 +371,7 @@ mod tests {
                             )))
                         ));
 
-                        let guest_decrypt = guest_central.decrypt_message(&id, proposal.to_bytes().unwrap()).await;
+                        let guest_decrypt = owner.context.decrypt_message(&id, proposal.to_bytes().unwrap()).await;
                         assert!(matches!(
                             guest_decrypt.unwrap_err(),
                             CryptoError::MlsError(MlsError::MlsMessageError(ProcessMessageError::ValidationError(
@@ -406,56 +388,49 @@ mod tests {
         #[wasm_bindgen_test]
         async fn should_fail_when_wrong_signature_key(case: TestCase) {
             run_test_with_client_ids(case.clone(), ["owner", "guest", "ds"], move |[owner, guest, ds]| {
-                let mut owner_central = owner.mls_central;
-                let mut guest_central = guest.mls_central;
-
                 Box::pin(async move {
                     let id = conversation_id();
 
                     // Here we're going to add the Delivery Service's (DS) signature key to the
                     // external senders list. However, for the purpose of this test, we will
                     // intentionally _not_ use that key when generating the remove proposal below.
-                    let key = ds.mls_central.client_signature_key(&case).as_slice().to_vec();
+                    let key = ds.client_signature_key(&case).await.as_slice().to_vec();
                     let mut cfg = case.cfg.clone();
-                    owner_central
-                        .set_raw_external_senders(&mut cfg, vec![key.as_slice().to_vec()])
+                    owner.context
+                        .set_raw_external_senders(&mut cfg, vec![key.as_slice().to_vec()]).await
                         .unwrap();
-                    owner_central
+                    owner.context
                         .new_conversation(&id, case.credential_type, cfg)
                         .await
                         .unwrap();
 
-                    owner_central
-                        .invite_all(&case, &id, [&mut guest_central])
-                        .await
+                    owner
+                        .invite_all(&case, &id, [&guest]).await
                         .unwrap();
-                    assert_eq!(owner_central.get_conversation_unchecked(&id).await.members().len(), 2);
+                    assert_eq!(owner.get_conversation_unchecked(&id).await.members().len(), 2);
 
-                    let to_remove = owner_central.index_of(&id, guest_central.get_client_id()).await;
+                    let to_remove = owner.index_of(&id, guest.get_client_id().await).await;
                     let sender_index = SenderExtensionIndex::new(0);
 
                     let (sc, ct) = (case.signature_scheme(), case.credential_type);
                     // Intentionally use the guest's credential, and therefore the guest's signature
                     // key when generating the proposal so that the signature verification fails.
-                    let cb = guest_central
-                        .mls_client
-                        .as_ref()
-                        .unwrap()
-                        .find_most_recent_credential_bundle(sc, ct)
+                    let cb = guest
+                        .find_most_recent_credential_bundle(sc, ct).await
                         .unwrap();
                     let group_id = GroupId::from_slice(&id[..]);
-                    let epoch = owner_central.get_conversation_unchecked(&id).await.group.epoch();
+                    let epoch = owner.get_conversation_unchecked(&id).await.group.epoch();
                     let proposal =
                         ExternalProposal::new_remove(to_remove, group_id, epoch, &cb.signature_key, sender_index)
                             .unwrap();
 
-                    let owner_decrypt = owner_central.decrypt_message(&id, proposal.to_bytes().unwrap()).await;
+                    let owner_decrypt = owner.context.decrypt_message(&id, proposal.to_bytes().unwrap()).await;
                     assert!(matches!(
                         owner_decrypt.unwrap_err(),
                         CryptoError::MlsError(MlsError::MlsMessageError(ProcessMessageError::InvalidSignature))
                     ));
 
-                    let guest_decrypt = guest_central.decrypt_message(&id, proposal.to_bytes().unwrap()).await;
+                    let guest_decrypt = owner.context.decrypt_message(&id, proposal.to_bytes().unwrap()).await;
                     assert!(matches!(
                         guest_decrypt.unwrap_err(),
                         CryptoError::MlsError(MlsError::MlsMessageError(ProcessMessageError::InvalidSignature))
@@ -472,17 +447,16 @@ mod tests {
                 case.clone(),
                 ["alice", "bob", "charlie", "ds"],
                 move |[alice, bob, charlie, ds]| {
-                    let mut alice_central = alice.mls_central;
-                    let mut bob_central = bob.mls_central;
-                    let mut charlie_central = charlie.mls_central;
-
                     Box::pin(async move {
+                        let alice_central = &alice.context;
+                        let bob_central = &bob.context;
+                        let charlie_central = &charlie.context;
                         let id = conversation_id();
 
-                        let ds_signature_key = ds.mls_central.client_signature_key(&case).as_slice().to_vec();
+                        let ds_signature_key = ds.client_signature_key(&case).await.as_slice().to_vec();
                         let mut cfg = case.cfg.clone();
                         alice_central
-                            .set_raw_external_senders(&mut cfg, vec![ds_signature_key])
+                            .set_raw_external_senders(&mut cfg, vec![ds_signature_key]).await
                             .unwrap();
 
                         alice_central
@@ -490,14 +464,14 @@ mod tests {
                             .await
                             .unwrap();
 
-                        alice_central.invite_all(&case, &id, [&mut bob_central]).await.unwrap();
-                        assert_eq!(alice_central.get_conversation_unchecked(&id).await.members().len(), 2);
+                        alice.invite_all(&case, &id, [&bob]).await.unwrap();
+                        assert_eq!(alice.get_conversation_unchecked(&id).await.members().len(), 2);
 
                         // Charlie joins through a Welcome and should get external_senders from Welcome
                         // message and not from configuration
-                        let charlie = charlie_central.rand_key_package(&case).await;
+                        let charlie_kp = charlie.rand_key_package(&case).await;
                         let MlsConversationCreationMessage { welcome, commit, .. } = alice_central
-                            .add_members_to_conversation(&id, vec![charlie])
+                            .add_members_to_conversation(&id, vec![charlie_kp])
                             .await
                             .unwrap();
                         alice_central.commit_accepted(&id).await.unwrap();
@@ -510,24 +484,20 @@ mod tests {
                             .process_welcome_message(MlsMessageIn::from(welcome), case.custom_cfg())
                             .await
                             .unwrap();
-                        assert_eq!(charlie_central.get_conversation_unchecked(&id).await.members().len(), 3);
-                        assert!(charlie_central.try_talk_to(&id, &mut alice_central).await.is_ok());
-                        assert!(charlie_central.try_talk_to(&id, &mut bob_central).await.is_ok());
+                        assert_eq!(charlie.get_conversation_unchecked(&id).await.members().len(), 3);
+                        assert!(charlie.try_talk_to(&id, &alice).await.is_ok());
+                        assert!(charlie.try_talk_to(&id, &bob).await.is_ok());
 
                         // now, as e.g. a Delivery Service, let's create an external remove proposal
                         // and kick Bob out of the conversation
-                        let to_remove = alice_central.index_of(&id, bob_central.get_client_id()).await;
+                        let to_remove = alice.index_of(&id, bob.get_client_id().await).await;
                         let sender_index = SenderExtensionIndex::new(0);
                         let (sc, ct) = (case.signature_scheme(), case.credential_type);
                         let cb = ds
-                            .mls_central
-                            .mls_client
-                            .as_ref()
-                            .unwrap()
-                            .find_most_recent_credential_bundle(sc, ct)
+                            .find_most_recent_credential_bundle(sc, ct).await
                             .unwrap();
                         let group_id = GroupId::from_slice(&id[..]);
-                        let epoch = alice_central.get_conversation_unchecked(&id).await.group.epoch();
+                        let epoch = alice.get_conversation_unchecked(&id).await.group.epoch();
                         let proposal =
                             ExternalProposal::new_remove(to_remove, group_id, epoch, &cb.signature_key, sender_index)
                                 .unwrap();
@@ -554,19 +524,19 @@ mod tests {
                             .unwrap()
                             .commit;
                         charlie_central.commit_accepted(&id).await.unwrap();
-                        assert_eq!(charlie_central.get_conversation_unchecked(&id).await.members().len(), 2);
+                        assert_eq!(charlie.get_conversation_unchecked(&id).await.members().len(), 2);
 
                         alice_central
                             .decrypt_message(&id, commit.to_bytes().unwrap())
                             .await
                             .unwrap();
-                        assert_eq!(alice_central.get_conversation_unchecked(&id).await.members().len(), 2);
+                        assert_eq!(alice.get_conversation_unchecked(&id).await.members().len(), 2);
                         bob_central
                             .decrypt_message(&id, commit.to_bytes().unwrap())
                             .await
                             .unwrap();
-                        assert!(alice_central.try_talk_to(&id, &mut charlie_central).await.is_ok());
-                        assert!(alice_central.try_talk_to(&id, &mut bob_central).await.is_err());
+                        assert!(alice.try_talk_to(&id, &charlie).await.is_ok());
+                        assert!(alice.try_talk_to(&id, &bob).await.is_err());
                     })
                 },
             )
@@ -580,17 +550,16 @@ mod tests {
                 case.clone(),
                 ["alice", "bob", "charlie", "ds"],
                 move |[alice, bob, charlie, ds]| {
-                    let mut alice_central = alice.mls_central;
-                    let mut bob_central = bob.mls_central;
-                    let mut charlie_central = charlie.mls_central;
-
                     Box::pin(async move {
+                        let alice_central = &alice.context;
+                        let bob_central = &bob.context;
+                        let charlie_central = &charlie.context;
                         let id = conversation_id();
 
-                        let ds_signature_key = ds.mls_central.client_signature_key(&case).as_slice().to_vec();
+                        let ds_signature_key = ds.client_signature_key(&case).await.as_slice().to_vec();
                         let mut cfg = case.cfg.clone();
                         alice_central
-                            .set_raw_external_senders(&mut cfg, vec![ds_signature_key])
+                            .set_raw_external_senders(&mut cfg, vec![ds_signature_key]).await
                             .unwrap();
 
                         alice_central
@@ -598,12 +567,12 @@ mod tests {
                             .await
                             .unwrap();
 
-                        alice_central.invite_all(&case, &id, [&mut bob_central]).await.unwrap();
-                        assert_eq!(alice_central.get_conversation_unchecked(&id).await.members().len(), 2);
+                        alice.invite_all(&case, &id, [&bob]).await.unwrap();
+                        assert_eq!(alice.get_conversation_unchecked(&id).await.members().len(), 2);
 
                         // Charlie joins through an external commit and should get external_senders
                         // from PGS and not from configuration
-                        let public_group_state = alice_central.get_group_info(&id).await;
+                        let public_group_state = alice.get_group_info(&id).await;
                         let MlsConversationInitBundle { commit, .. } = charlie_central
                             .join_by_external_commit(public_group_state, case.custom_cfg(), case.credential_type)
                             .await
@@ -623,24 +592,20 @@ mod tests {
                             .await
                             .unwrap();
 
-                        assert_eq!(charlie_central.get_conversation_unchecked(&id).await.members().len(), 3);
-                        assert!(charlie_central.try_talk_to(&id, &mut alice_central).await.is_ok());
-                        assert!(charlie_central.try_talk_to(&id, &mut bob_central).await.is_ok());
+                        assert_eq!(charlie.get_conversation_unchecked(&id).await.members().len(), 3);
+                        assert!(charlie.try_talk_to(&id, &alice).await.is_ok());
+                        assert!(charlie.try_talk_to(&id, &bob).await.is_ok());
 
                         // now, as e.g. a Delivery Service, let's create an external remove proposal
                         // and kick Bob out of the conversation
-                        let to_remove = alice_central.index_of(&id, bob_central.get_client_id()).await;
+                        let to_remove = alice.index_of(&id, bob.get_client_id().await).await;
                         let sender_index = SenderExtensionIndex::new(0);
                         let (sc, ct) = (case.signature_scheme(), case.credential_type);
                         let cb = ds
-                            .mls_central
-                            .mls_client
-                            .as_ref()
-                            .unwrap()
-                            .find_most_recent_credential_bundle(sc, ct)
+                            .find_most_recent_credential_bundle(sc, ct).await
                             .unwrap();
                         let group_id = GroupId::from_slice(&id[..]);
-                        let epoch = alice_central.get_conversation_unchecked(&id).await.group.epoch();
+                        let epoch = alice.get_conversation_unchecked(&id).await.group.epoch();
                         let proposal =
                             ExternalProposal::new_remove(to_remove, group_id, epoch, &cb.signature_key, sender_index)
                                 .unwrap();
@@ -667,19 +632,19 @@ mod tests {
                             .unwrap()
                             .commit;
                         charlie_central.commit_accepted(&id).await.unwrap();
-                        assert_eq!(charlie_central.get_conversation_unchecked(&id).await.members().len(), 2);
+                        assert_eq!(charlie.get_conversation_unchecked(&id).await.members().len(), 2);
 
                         alice_central
                             .decrypt_message(&id, commit.to_bytes().unwrap())
                             .await
                             .unwrap();
-                        assert_eq!(alice_central.get_conversation_unchecked(&id).await.members().len(), 2);
+                        assert_eq!(alice.get_conversation_unchecked(&id).await.members().len(), 2);
                         bob_central
                             .decrypt_message(&id, commit.to_bytes().unwrap())
                             .await
                             .unwrap();
-                        assert!(alice_central.try_talk_to(&id, &mut charlie_central).await.is_ok());
-                        assert!(alice_central.try_talk_to(&id, &mut bob_central).await.is_err());
+                        assert!(alice.try_talk_to(&id, &charlie).await.is_ok());
+                        assert!(alice.try_talk_to(&id, &bob).await.is_err());
                     })
                 },
             )

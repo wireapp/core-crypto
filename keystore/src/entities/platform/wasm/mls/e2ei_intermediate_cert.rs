@@ -16,7 +16,7 @@
 
 use crate::{
     connection::{DatabaseConnection, KeystoreDatabaseConnection},
-    entities::{E2eiIntermediateCert, Entity, EntityBase, EntityFindParams, EntityMlsExt, StringEntityId},
+    entities::{E2eiIntermediateCert, Entity, EntityBase, EntityFindParams, EntityTransactionExt, StringEntityId},
     CryptoKeystoreResult, MissingKeyErrorKind,
 };
 
@@ -51,7 +51,7 @@ impl EntityBase for E2eiIntermediateCert {
 
 #[cfg_attr(target_family = "wasm", async_trait::async_trait(?Send))]
 #[cfg_attr(not(target_family = "wasm"), async_trait::async_trait)]
-impl EntityMlsExt for E2eiIntermediateCert {}
+impl EntityTransactionExt for E2eiIntermediateCert {}
 
 impl Entity for E2eiIntermediateCert {
     fn id_raw(&self) -> &[u8] {

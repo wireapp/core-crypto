@@ -1,7 +1,5 @@
-use crate::{
-    mls::context::CentralContext,
-    prelude::{ConversationId, CryptoError, CryptoResult, MlsCentral, MlsConversation},
-};
+use crate::prelude::{ConversationId, CryptoError, CryptoResult, MlsCentral, MlsConversation};
+use crate::context::CentralContext;
 
 impl MlsCentral {
     /// Returns the raw public key of the single external sender present in this group.
@@ -51,22 +49,22 @@ mod tests {
     #[apply(all_cred_cipher)]
     #[wasm_bindgen_test]
     pub async fn should_fetch_ext_sender(case: TestCase) {
-        run_test_with_client_ids(case.clone(), ["alice"], move |[mut alice_central]| {
+        run_test_with_client_ids(case.clone(), ["alice"], move |[alice_central]| {
             Box::pin(async move {
                 let id = conversation_id();
 
                 // by default in test no external sender is set. Let's add one
                 let mut cfg = case.cfg.clone();
-                let external_sender = alice_central.mls_central.rand_external_sender(&case);
+                let external_sender = alice_central.rand_external_sender(&case).await;
                 cfg.external_senders = vec![external_sender.clone()];
 
                 alice_central
-                    .mls_central
+                    .context
                     .new_conversation(&id, case.credential_type, cfg)
                     .await
                     .unwrap();
 
-                let alice_ext_sender = alice_central.mls_central.get_external_sender(&id).await.unwrap();
+                let alice_ext_sender = alice_central.context.get_external_sender(&id).await.unwrap();
                 assert!(!alice_ext_sender.is_empty());
                 assert_eq!(alice_ext_sender, external_sender.signature_key().as_slice().to_vec());
             })

@@ -33,8 +33,8 @@ use openmls::prelude::{CredentialWithKey, SignaturePublicKey};
 use openmls::{group::MlsGroup, prelude::Credential};
 use openmls_traits::types::SignatureScheme;
 
-use core_crypto_keystore::{CryptoKeystoreMls, KeystoreTransaction};
-use mls_crypto_provider::TransactionalCryptoProvider;
+use core_crypto_keystore::{Connection, CryptoKeystoreMls};
+use mls_crypto_provider::{CryptoKeystore, TransactionalCryptoProvider};
 
 use config::MlsConversationConfiguration;
 
@@ -44,7 +44,7 @@ use crate::{
     prelude::{CryptoError, CryptoResult, MlsCiphersuite, MlsCredentialType, MlsError},
 };
 
-use super::context::CentralContext;
+use crate::context::CentralContext;
 
 mod buffer_messages;
 pub(crate) mod commit;
@@ -128,7 +128,7 @@ impl MlsConversation {
         };
 
         conversation
-            .persist_group_when_changed(&backend.transaction(), true)
+            .persist_group_when_changed(&backend.keystore(), true)
             .await?;
 
         Ok(conversation)
@@ -151,7 +151,7 @@ impl MlsConversation {
         };
 
         conversation
-            .persist_group_when_changed(&backend.transaction(), true)
+            .persist_group_when_changed(&backend.keystore(), true)
             .await?;
 
         Ok(conversation)
@@ -207,12 +207,11 @@ impl MlsConversation {
 
     pub(crate) async fn persist_group_when_changed(
         &mut self,
-        backend: &KeystoreTransaction,
+        keystore: &CryptoKeystore,
         force: bool,
     ) -> CryptoResult<()> {
         if force || self.group.state_changed() == openmls::group::InnerState::Changed {
-            use core_crypto_keystore::CryptoKeystoreMls as _;
-            backend
+            keystore
                 .mls_group_persist(
                     &self.id,
                     &core_crypto_keystore::ser(&self.group)?,
@@ -228,15 +227,15 @@ impl MlsConversation {
 
     /// Marks this conversation as child of another.
     /// Prequisite: Being a member of this group and for it to be stored in the keystore
-    #[cfg_attr(not(test), tracing::instrument(err, skip(self, backend), fields(parent_id = base64::Engine::encode(&base64::prelude::BASE64_STANDARD, parent_id))))]
+    #[cfg_attr(not(test), tracing::instrument(err, skip(self, keystore), fields(parent_id = base64::Engine::encode(&base64::prelude::BASE64_STANDARD, parent_id))))]
     pub async fn mark_as_child_of(
         &mut self,
         parent_id: &ConversationId,
-        backend: &KeystoreTransaction,
+        keystore: &Connection,
     ) -> CryptoResult<()> {
-        if backend.mls_group_exists(parent_id).await {
+        if keystore.mls_group_exists(parent_id).await {
             self.parent_id = Some(parent_id.clone());
-            self.persist_group_when_changed(backend, true).await?;
+            self.persist_group_when_changed(keystore, true).await?;
             Ok(())
         } else {
             Err(CryptoError::ParentGroupNotFound)
@@ -270,7 +269,7 @@ impl MlsCentral {
 
 impl CentralContext {
     pub(crate) async fn get_conversation(&self, id: &ConversationId) -> CryptoResult<GroupStoreValue<MlsConversation>> {
-        let keystore = self.transaction().await?;
+        let keystore = self.mls_provider().await?.keystore();
         self.mls_groups()
             .await?
             .get_fetch(id, &keystore, None)
@@ -296,7 +295,7 @@ impl CentralContext {
     }
 
     pub(crate) async fn get_all_conversations(&self) -> CryptoResult<Vec<GroupStoreValue<MlsConversation>>> {
-        let keystore = self.transaction().await?;
+        let keystore = self.mls_provider().await?.keystore();
         self.mls_groups().await?.get_fetch_all(&keystore).await
     }
 
@@ -313,7 +312,7 @@ impl CentralContext {
         conversation
             .write()
             .await
-            .mark_as_child_of(parent_id, &self.transaction().await?)
+            .mark_as_child_of(parent_id, &self.keystore().await?)
             .await?;
 
         Ok(())
@@ -323,14 +322,12 @@ impl CentralContext {
 #[cfg(test)]
 mod tests {
     use crate::e2e_identity::rotate::tests::all::failsafe_ctx;
+    
     use wasm_bindgen_test::*;
 
-    use crate::{
-        prelude::{
-            ClientIdentifier, MlsCentralConfiguration, MlsConversationCreationMessage, INITIAL_KEYING_MATERIAL_COUNT,
-        },
-        test_utils::*,
-    };
+    use crate::{prelude::{
+        ClientIdentifier, MlsCentralConfiguration, MlsConversationCreationMessage, INITIAL_KEYING_MATERIAL_COUNT,
+    }, test_utils::*, CoreCrypto};
 
     use super::*;
 
@@ -339,18 +336,17 @@ mod tests {
     #[apply(all_cred_cipher)]
     #[wasm_bindgen_test]
     pub async fn create_self_conversation_should_succeed(case: TestCase) {
-        run_test_with_client_ids(case.clone(), ["alice"], move |[mut alice_central]| {
+        run_test_with_client_ids(case.clone(), ["alice"], move |[alice_central]| {
             Box::pin(async move {
                 let id = conversation_id();
                 alice_central
-                    .mls_central
+                    .context
                     .new_conversation(&id, case.credential_type, case.cfg.clone())
                     .await
                     .unwrap();
-                assert_eq!(alice_central.mls_central.get_conversation_unchecked(&id).await.id, id);
+                assert_eq!(alice_central.get_conversation_unchecked(&id).await.id, id);
                 assert_eq!(
                     alice_central
-                        .mls_central
                         .get_conversation_unchecked(&id)
                         .await
                         .group
@@ -360,14 +356,13 @@ mod tests {
                 );
                 assert_eq!(
                     alice_central
-                        .mls_central
                         .get_conversation_unchecked(&id)
                         .await
                         .members()
                         .len(),
                     1
                 );
-                let alice_can_send_message = alice_central.mls_central.encrypt_message(&id, b"me").await;
+                let alice_can_send_message = alice_central.context.encrypt_message(&id, b"me").await;
                 assert!(alice_can_send_message.is_ok());
             })
         })
@@ -380,38 +375,36 @@ mod tests {
         run_test_with_client_ids(
             case.clone(),
             ["alice", "bob"],
-            move |[mut alice_central, mut bob_central]| {
+            move |[alice_central, bob_central]| {
                 Box::pin(async move {
                     let id = conversation_id();
 
                     alice_central
-                        .mls_central
+                        .context
                         .new_conversation(&id, case.credential_type, case.cfg.clone())
                         .await
                         .unwrap();
 
-                    let bob = bob_central.mls_central.rand_key_package(&case).await;
+                    let bob = bob_central.rand_key_package(&case).await;
                     let MlsConversationCreationMessage { welcome, .. } = alice_central
-                        .mls_central
+                        .context
                         .add_members_to_conversation(&id, vec![bob])
                         .await
                         .unwrap();
                     // before merging, commit is not applied
                     assert_eq!(
                         alice_central
-                            .mls_central
                             .get_conversation_unchecked(&id)
                             .await
                             .members()
                             .len(),
                         1
                     );
-                    alice_central.mls_central.commit_accepted(&id).await.unwrap();
+                    alice_central.context.commit_accepted(&id).await.unwrap();
 
-                    assert_eq!(alice_central.mls_central.get_conversation_unchecked(&id).await.id, id);
+                    assert_eq!(alice_central.get_conversation_unchecked(&id).await.id, id);
                     assert_eq!(
                         alice_central
-                            .mls_central
                             .get_conversation_unchecked(&id)
                             .await
                             .group
@@ -421,7 +414,6 @@ mod tests {
                     );
                     assert_eq!(
                         alice_central
-                            .mls_central
                             .get_conversation_unchecked(&id)
                             .await
                             .members()
@@ -430,18 +422,17 @@ mod tests {
                     );
 
                     bob_central
-                        .mls_central
+                        .context
                         .process_welcome_message(welcome.into(), case.custom_cfg())
                         .await
                         .unwrap();
 
                     assert_eq!(
-                        bob_central.mls_central.get_conversation_unchecked(&id).await.id(),
-                        alice_central.mls_central.get_conversation_unchecked(&id).await.id()
+                        bob_central.get_conversation_unchecked(&id).await.id(),
+                        alice_central.get_conversation_unchecked(&id).await.id()
                     );
                     assert!(alice_central
-                        .mls_central
-                        .try_talk_to(&id, &mut bob_central.mls_central)
+                        .try_talk_to(&id, &bob_central)
                         .await
                         .is_ok());
                 })
@@ -460,12 +451,12 @@ mod tests {
 
                 let id = conversation_id();
                 alice_central
-                    .mls_central
+                    .context
                     .new_conversation(&id, case.credential_type, case.cfg.clone())
                     .await
                     .unwrap();
 
-                let mut bob_and_friends = Vec::with_capacity(GROUP_SAMPLE_SIZE);
+                let mut bob_and_friends: Vec<ClientContext> = Vec::with_capacity(GROUP_SAMPLE_SIZE);
                 for _ in 0..GROUP_SAMPLE_SIZE {
                     let uuid = uuid::Uuid::new_v4();
                     let name = uuid.hyphenated().to_string();
@@ -479,9 +470,12 @@ mod tests {
                         Some(INITIAL_KEYING_MATERIAL_COUNT),
                     )
                     .unwrap();
-                    let mut central = MlsCentral::try_new(config).await.unwrap();
+                    let central = MlsCentral::try_new(config).await.unwrap();
+                    let cc = CoreCrypto::from(central);
+                    let friend_context = cc.new_transaction().await.unwrap();
+                    let central = cc.mls;
 
-                    x509_test_chain.register_with_central(&central).await;
+                    x509_test_chain.register_with_central(&friend_context).await;
 
                     let client_id: crate::prelude::ClientId = name.as_str().into();
                     let identity = match case.credential_type {
@@ -499,7 +493,7 @@ mod tests {
                             ClientIdentifier::X509(HashMap::from([(case.cfg.ciphersuite.signature_algorithm(), cert)]))
                         }
                     };
-                    central
+                    friend_context
                         .mls_init(
                             identity,
                             vec![case.cfg.ciphersuite],
@@ -508,7 +502,12 @@ mod tests {
                         .await
                         .unwrap();
 
-                    bob_and_friends.push(central);
+                    let context = ClientContext {
+                        context: friend_context,
+                        central,
+                        x509_test_chain: x509_test_chain_arc.clone(),
+                    };
+                    bob_and_friends.push(context);
                 }
 
                 let number_of_friends = bob_and_friends.len();
@@ -519,26 +518,24 @@ mod tests {
                 }
 
                 let MlsConversationCreationMessage { welcome, .. } = alice_central
-                    .mls_central
+                    .context
                     .add_members_to_conversation(&id, bob_and_friends_kps)
                     .await
                     .unwrap();
                 // before merging, commit is not applied
                 assert_eq!(
                     alice_central
-                        .mls_central
                         .get_conversation_unchecked(&id)
                         .await
                         .members()
                         .len(),
                     1
                 );
-                alice_central.mls_central.commit_accepted(&id).await.unwrap();
+                alice_central.context.commit_accepted(&id).await.unwrap();
 
-                assert_eq!(alice_central.mls_central.get_conversation_unchecked(&id).await.id, id);
+                assert_eq!(alice_central.get_conversation_unchecked(&id).await.id, id);
                 assert_eq!(
                     alice_central
-                        .mls_central
                         .get_conversation_unchecked(&id)
                         .await
                         .group
@@ -548,7 +545,6 @@ mod tests {
                 );
                 assert_eq!(
                     alice_central
-                        .mls_central
                         .get_conversation_unchecked(&id)
                         .await
                         .members()
@@ -558,11 +554,11 @@ mod tests {
 
                 let mut bob_and_friends_groups = Vec::with_capacity(bob_and_friends.len());
                 // TODO: Do things in parallel, this is waaaaay too slow (takes around 5 minutes). Tracking issue: WPB-9624
-                for mut c in bob_and_friends {
-                    c.process_welcome_message(welcome.clone().into(), case.custom_cfg())
+                for c in bob_and_friends {
+                    c.context.process_welcome_message(welcome.clone().into(), case.custom_cfg())
                         .await
                         .unwrap();
-                    assert!(c.try_talk_to(&id, &mut alice_central.mls_central).await.is_ok());
+                    assert!(c.try_talk_to(&id, &alice_central).await.is_ok());
                     bob_and_friends_groups.push(c);
                 }
 

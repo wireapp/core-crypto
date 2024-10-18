@@ -1,6 +1,6 @@
 //! Utility for clients to get the current state of E2EI when the app resumes
 
-use crate::mls::context::CentralContext;
+use crate::context::CentralContext;
 use crate::prelude::{Client, CryptoError, CryptoResult, MlsCentral, MlsCredentialType};
 use openmls_traits::types::SignatureScheme;
 
@@ -26,10 +26,10 @@ impl MlsCentral {
 
 impl Client {
     async fn e2ei_is_enabled(&self, signature_scheme: SignatureScheme) -> CryptoResult<bool> {
-        let maybe_x509 = self.find_most_recent_credential_bundle(signature_scheme, MlsCredentialType::X509);
+        let maybe_x509 = self.find_most_recent_credential_bundle(signature_scheme, MlsCredentialType::X509).await;
         match maybe_x509 {
             None => {
-                self.find_most_recent_credential_bundle(signature_scheme, MlsCredentialType::Basic)
+                self.find_most_recent_credential_bundle(signature_scheme, MlsCredentialType::Basic).await
                     .ok_or(CryptoError::CredentialNotFound(MlsCredentialType::Basic))?;
                 Ok(false)
             }
@@ -51,7 +51,7 @@ mod tests {
     async fn should_be_false_when_basic_and_true_when_x509(case: TestCase) {
         run_test_with_client_ids(case.clone(), ["alice"], move |[cc]| {
             Box::pin(async move {
-                let e2ei_is_enabled = cc.mls_central.e2ei_is_enabled(case.signature_scheme()).unwrap();
+                let e2ei_is_enabled = cc.context.e2ei_is_enabled(case.signature_scheme()).await.unwrap();
                 match case.credential_type {
                     MlsCredentialType::Basic => assert!(!e2ei_is_enabled),
                     MlsCredentialType::X509 => assert!(e2ei_is_enabled),
@@ -67,7 +67,7 @@ mod tests {
         run_test_wo_clients(case.clone(), move |cc| {
             Box::pin(async move {
                 assert!(matches!(
-                    cc.mls_central.e2ei_is_enabled(case.signature_scheme()).unwrap_err(),
+                    cc.context.e2ei_is_enabled(case.signature_scheme()).await.unwrap_err(),
                     CryptoError::MlsNotInitialized
                 ));
             })
@@ -86,7 +86,7 @@ mod tests {
                     _ => SignatureScheme::ED25519,
                 };
                 assert!(matches!(
-                    cc.mls_central.e2ei_is_enabled(other_sc).unwrap_err(),
+                    cc.context.e2ei_is_enabled(other_sc).await.unwrap_err(),
                     CryptoError::CredentialNotFound(_)
                 ));
             })

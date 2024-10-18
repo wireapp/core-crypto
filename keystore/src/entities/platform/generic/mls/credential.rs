@@ -16,7 +16,7 @@
 
 use crate::{
     connection::TransactionWrapper,
-    entities::{EntityMlsExt, MlsCredentialExt},
+    entities::{EntityTransactionExt, MlsCredentialExt},
     CryptoKeystoreError,
 };
 use crate::{
@@ -32,6 +32,12 @@ use std::{
 impl Entity for MlsCredential {
     fn id_raw(&self) -> &[u8] {
         self.id.as_slice()
+    }
+
+    fn merge_key(&self) -> Vec<u8> {
+        let mut merge_key = self.id_raw().to_vec();
+        merge_key.extend(self.created_at.to_be_bytes().to_vec());
+        merge_key
     }
 }
 
@@ -140,8 +146,8 @@ impl EntityBase for MlsCredential {
 
 #[cfg_attr(target_family = "wasm", async_trait::async_trait(?Send))]
 #[cfg_attr(not(target_family = "wasm"), async_trait::async_trait)]
-impl EntityMlsExt for MlsCredential {
-    async fn mls_save(&self, transaction: &TransactionWrapper<'_>) -> crate::CryptoKeystoreResult<()> {
+impl EntityTransactionExt for MlsCredential {
+    async fn save(&self, transaction: &TransactionWrapper<'_>) -> crate::CryptoKeystoreResult<()> {
         Self::ConnectionType::check_buffer_size(self.id.len())?;
         Self::ConnectionType::check_buffer_size(self.credential.len())?;
 
@@ -151,7 +157,7 @@ impl EntityMlsExt for MlsCredential {
         use rusqlite::ToSql as _;
         let params: [rusqlite::types::ToSqlOutput; 3] = [zb_id.to_sql()?, zb_cred.to_sql()?, self.created_at.to_sql()?];
 
-        let sql = "INSERT INTO mls_credentials (id, credential, created_at) VALUES (?, ?, datetime(?, 'unixepoch')";
+        let sql = "INSERT INTO mls_credentials (id, credential, created_at) VALUES (?, ?, datetime(?, 'unixepoch'))";
         transaction.execute(sql, params)?;
         let row_id = transaction.last_insert_rowid();
 
@@ -184,7 +190,7 @@ impl EntityMlsExt for MlsCredential {
         Ok(created_at)
     }
 
-    async fn mls_delete(
+    async fn delete_fail_on_missing_id(
         transaction: &TransactionWrapper<'_>,
         id: StringEntityId<'_>,
     ) -> crate::CryptoKeystoreResult<()> {

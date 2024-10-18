@@ -20,9 +20,10 @@
 //! The goal is provide a easier and less verbose API to create, manage and interact with MLS
 //! groups.
 #![doc = include_str!("../../README.md")]
-#![deny(missing_docs)]
+#![cfg_attr(not(test), deny(missing_docs))]
 #![allow(clippy::single_component_path_imports)]
 
+use std::sync::Arc;
 use async_lock::Mutex;
 #[cfg(test)]
 pub use core_crypto_attributes::{dispotent, durable, idempotent};
@@ -47,6 +48,7 @@ pub mod e2e_identity;
 pub mod proteus;
 
 mod group_store;
+pub mod context;
 
 /// Common imports that should be useful for most uses of the crate
 pub mod prelude {
@@ -150,7 +152,7 @@ pub trait CoreCryptoCallbacks: std::fmt::Debug + Send + Sync {
 pub struct CoreCrypto {
     mls: mls::MlsCentral,
     #[cfg(feature = "proteus")]
-    proteus: Mutex<Option<proteus::ProteusCentral>>,
+    proteus: Arc<Mutex<Option<proteus::ProteusCentral>>>,
     #[cfg(not(feature = "proteus"))]
     #[allow(dead_code)]
     proteus: (),

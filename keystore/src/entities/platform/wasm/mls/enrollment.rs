@@ -16,7 +16,7 @@
 
 use crate::{
     connection::{DatabaseConnection, KeystoreDatabaseConnection},
-    entities::{E2eiEnrollment, Entity, EntityBase, EntityFindParams, EntityMlsExt, StringEntityId},
+    entities::{E2eiEnrollment, Entity, EntityBase, EntityFindParams, EntityTransactionExt, StringEntityId},
     CryptoKeystoreError, CryptoKeystoreResult, MissingKeyErrorKind,
 };
 
@@ -35,22 +35,22 @@ impl EntityBase for E2eiEnrollment {
         crate::transaction::Entity::E2eiEnrollment(self)
     }
 
-    async fn find_all(_conn: &mut Self::ConnectionType, _params: EntityFindParams) -> CryptoKeystoreResult<Vec<Self>> {
-        Err(CryptoKeystoreError::ImplementationError)
+    async fn find_all(conn: &mut Self::ConnectionType, params: EntityFindParams) -> CryptoKeystoreResult<Vec<Self>> {
+        conn.storage().get_all(Self::COLLECTION_NAME, Some(params)).await
     }
 
     async fn find_one(conn: &mut Self::ConnectionType, id: &StringEntityId) -> CryptoKeystoreResult<Option<Self>> {
         conn.storage().get(Self::COLLECTION_NAME, id.as_slice()).await
     }
 
-    async fn count(_conn: &mut Self::ConnectionType) -> CryptoKeystoreResult<usize> {
-        Err(CryptoKeystoreError::ImplementationError)
+    async fn count(conn: &mut Self::ConnectionType) -> CryptoKeystoreResult<usize> {
+        conn.storage().count(Self::COLLECTION_NAME).await
     }
 }
 
 #[cfg_attr(target_family = "wasm", async_trait::async_trait(?Send))]
 #[cfg_attr(not(target_family = "wasm"), async_trait::async_trait)]
-impl EntityMlsExt for E2eiEnrollment {}
+impl EntityTransactionExt for E2eiEnrollment {}
 
 impl Entity for E2eiEnrollment {
     fn id_raw(&self) -> &[u8] {

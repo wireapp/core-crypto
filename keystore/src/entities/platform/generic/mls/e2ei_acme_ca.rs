@@ -15,8 +15,8 @@
 // along with this program. If not, see http://www.gnu.org/licenses/.
 
 use crate::{
-    connection::{KeystoreDatabaseConnection, TransactionWrapper},
-    entities::{E2eiAcmeCA, Entity, EntityBase, EntityFindParams, EntityMlsExt, StringEntityId, UniqueEntity},
+    connection::KeystoreDatabaseConnection,
+    entities::{E2eiAcmeCA, Entity, EntityBase, EntityFindParams, StringEntityId, UniqueEntity},
     CryptoKeystoreError, CryptoKeystoreResult, MissingKeyErrorKind,
 };
 
@@ -53,26 +53,15 @@ impl EntityBase for E2eiAcmeCA {
         crate::transaction::Entity::E2eiAcmeCA(self)
     }
 
-    async fn find_all(_conn: &mut Self::ConnectionType, _params: EntityFindParams) -> CryptoKeystoreResult<Vec<Self>> {
-        return Err(CryptoKeystoreError::NotImplemented);
+    async fn find_all(conn: &mut Self::ConnectionType, params: EntityFindParams) -> CryptoKeystoreResult<Vec<Self>> {
+        <Self as UniqueEntity>::find_all(conn, params).await
     }
 
     async fn find_one(_conn: &mut Self::ConnectionType, _id: &StringEntityId) -> CryptoKeystoreResult<Option<Self>> {
-        return Err(CryptoKeystoreError::NotImplemented);
+        Err(CryptoKeystoreError::NotImplemented)
     }
 
     async fn count(_conn: &mut Self::ConnectionType) -> CryptoKeystoreResult<usize> {
-        return Err(CryptoKeystoreError::NotImplemented);
-    }
-}
-
-#[cfg_attr(target_family = "wasm", async_trait::async_trait(?Send))]
-#[cfg_attr(not(target_family = "wasm"), async_trait::async_trait)]
-impl EntityMlsExt for E2eiAcmeCA {
-    async fn mls_save(&self, _: &TransactionWrapper<'_>) -> CryptoKeystoreResult<()> {
-        return Err(CryptoKeystoreError::NotImplemented);
-    }
-    async fn mls_delete(_: &TransactionWrapper<'_>, _id: StringEntityId<'_>) -> CryptoKeystoreResult<()> {
-        return Err(CryptoKeystoreError::NotImplemented);
+        Err(CryptoKeystoreError::NotImplemented)
     }
 }

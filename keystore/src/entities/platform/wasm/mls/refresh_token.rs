@@ -16,7 +16,7 @@
 
 use crate::{
     connection::{storage::WasmStorageTransaction, DatabaseConnection, KeystoreDatabaseConnection},
-    entities::{E2eiRefreshToken, Entity, EntityBase, EntityFindParams, EntityMlsExt, StringEntityId, UniqueEntity},
+    entities::{E2eiRefreshToken, Entity, EntityBase, EntityFindParams, EntityTransactionExt, StringEntityId, UniqueEntity},
     CryptoKeystoreError, CryptoKeystoreResult, MissingKeyErrorKind,
 };
 
@@ -35,8 +35,8 @@ impl EntityBase for E2eiRefreshToken {
         crate::transaction::Entity::E2eiRefreshToken(self)
     }
 
-    async fn find_all(_conn: &mut Self::ConnectionType, _params: EntityFindParams) -> CryptoKeystoreResult<Vec<Self>> {
-        return Err(CryptoKeystoreError::NotImplemented);
+    async fn find_all(conn: &mut Self::ConnectionType, params: EntityFindParams) -> CryptoKeystoreResult<Vec<Self>> {
+        <Self as UniqueEntity>::find_all(conn, params).await
     }
 
     async fn find_one(
@@ -47,18 +47,6 @@ impl EntityBase for E2eiRefreshToken {
     }
 
     async fn count(_conn: &mut Self::ConnectionType) -> crate::CryptoKeystoreResult<usize> {
-        return Err(CryptoKeystoreError::NotImplemented);
-    }
-}
-
-#[cfg_attr(target_family = "wasm", async_trait::async_trait(?Send))]
-#[cfg_attr(not(target_family = "wasm"), async_trait::async_trait)]
-impl EntityMlsExt for E2eiRefreshToken {
-    async fn mls_delete<'a>(_: &WasmStorageTransaction<'a>, _: StringEntityId<'a>) -> crate::CryptoKeystoreResult<()> {
-        return Err(CryptoKeystoreError::NotImplemented);
-    }
-
-    async fn mls_save<'a>(&'a self, _: &WasmStorageTransaction<'a>) -> crate::CryptoKeystoreResult<()> {
         return Err(CryptoKeystoreError::NotImplemented);
     }
 }
