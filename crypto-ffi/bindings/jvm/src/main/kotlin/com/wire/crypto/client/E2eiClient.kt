@@ -1,7 +1,5 @@
 package com.wire.crypto.client
 
-import com.wire.crypto.CoreCrypto
-
 typealias JsonRawData = ByteArray
 
 data class AcmeDirectory(private val delegate: com.wire.crypto.AcmeDirectory) {
@@ -164,17 +162,17 @@ class E2EIEnrollment(private val delegate: com.wire.crypto.E2eiEnrollment) {
      * @param challenge HTTP response body
      * @see https://www.rfc-editor.org/rfc/rfc8555.html#section-7.5.1
      */
-    @Deprecated("Use contextOidcChallengeResponse() with the MlsContext object created from a CoreCryptoCentral.transaction call")
+    @Deprecated("Use contextOidcChallengeResponse() with the CoreCryptoContext object created from a CoreCryptoCentral.transaction call")
     suspend fun oidcChallengeResponse(cc: CoreCryptoCentral, challenge: JsonRawData) = delegate.newOidcChallengeResponse(cc.lower(), challenge)
 
     /**
-     * Parses the response from `POST /acme/{provisioner-name}/challenge/{challenge-id}` for OIDC challenge within a MlsContext.
+     * Parses the response from `POST /acme/{provisioner-name}/challenge/{challenge-id}` for OIDC challenge within a CoreCryptoContext.
      *
      * @param cc CoreCrypto instance
      * @param challenge HTTP response body
      * @see https://www.rfc-editor.org/rfc/rfc8555.html#section-7.5.1
      */
-    suspend fun contextOidcChallengeResponse(cc: MlsContext, challenge: JsonRawData) = delegate.contextNewOidcChallengeResponse(cc.lower(), challenge)
+    suspend fun contextOidcChallengeResponse(cc: CoreCryptoContext, challenge: JsonRawData) = delegate.contextNewOidcChallengeResponse(cc.lower(), challenge)
 
     /**
      * Verifies that the previous challenge has been completed.

@@ -28,15 +28,15 @@ private class Callbacks : CoreCryptoCallbacks {
  * Starts a transaction in Core Crypto. If the callback succeeds, it will be committed, otherwise, every operation
  * performed with the context will be discarded.
  *
- * @param block the function to be executed within the transaction context. A [MlsContext] will be given as parameter to this function
+ * @param block the function to be executed within the transaction context. A [CoreCryptoContext] will be given as parameter to this function
  *
  * @return the return of the function passed as parameter
  */
-suspend fun <R> CoreCryptoCentral.transaction(block: suspend (context: MlsContext) -> R): R? {
+suspend fun <R> CoreCryptoCentral.transaction(block: suspend (context: CoreCryptoContext) -> R): R? {
     var result: R? = null
     this.cc.transaction(object: CoreCryptoCommand{
         override suspend fun execute(context: com.wire.crypto.CoreCryptoContext) {
-            result = block(MlsContext(context))
+            result = block(CoreCryptoContext(context))
         }
     })
     return result
@@ -68,7 +68,7 @@ class CoreCryptoCentral private constructor(internal val cc: CoreCrypto, private
      * @param id client identifier
      * @param ciphersuites for which a Basic Credential has to be initialized
      */
-    @Deprecated("Use this method from the MlsContext object created from a CoreCryptoCentral.transaction call")
+    @Deprecated("Use this method from the CoreCryptoContext object created from a CoreCryptoCentral.transaction call")
     suspend fun mlsClient(id: ClientId, ciphersuites: Ciphersuites = Ciphersuites.DEFAULT): MLSClient {
         return MLSClient(cc).apply { mlsInit(id, ciphersuites) }
     }
@@ -81,7 +81,7 @@ class CoreCryptoCentral private constructor(internal val cc: CoreCrypto, private
      * @param ciphersuites for which a Basic Credential has to be initialized
      * @return a partially initialized [MLSClient] and a [ExternallyGeneratedHandle] to use in [MLSClient.mlsInitWithClientId]
      */
-    @Deprecated("Inside a transaction call MlsContext.mlsGenerateKeypairs() to get the handle. The MlsContext itself is a replacement for the MLSClient")
+    @Deprecated("Inside a transaction call CoreCryptoContext.mlsGenerateKeypairs() to get the handle. The CoreCryptoContext itself is a replacement for the MLSClient")
     suspend fun externallyGeneratedMlsClient(ciphersuites: Ciphersuites = Ciphersuites.DEFAULT): Pair<MLSClient, ExternallyGeneratedHandle> {
         val client = MLSClient(cc)
         val handle = client.mlsGenerateKeypairs(ciphersuites)
@@ -99,7 +99,7 @@ class CoreCryptoCentral private constructor(internal val cc: CoreCrypto, private
      * @param team name of the Wire team a user belongs to
      * @return The new [E2EIEnrollment] enrollment to use with [e2eiMlsInitOnly]
      */
-    @Deprecated("Use this method from the MlsContext object created from a CoreCryptoCentral.transaction call")
+    @Deprecated("Use this method from the CoreCryptoContext object created from a CoreCryptoCentral.transaction call")
     suspend fun e2eiNewEnrollment(
         clientId: String,
         displayName: String,
@@ -122,7 +122,7 @@ class CoreCryptoCentral private constructor(internal val cc: CoreCrypto, private
      * @param team name of the Wire team a user belongs to
      * @return The new [E2EIEnrollment] enrollment to use with [e2eiRotateAll]
      */
-    @Deprecated("Use this method from the MlsContext object created from a CoreCryptoCentral.transaction call")
+    @Deprecated("Use this method from the CoreCryptoContext object created from a CoreCryptoCentral.transaction call")
     suspend fun e2eiNewActivationEnrollment(
         displayName: String,
         handle: String,
@@ -153,7 +153,7 @@ class CoreCryptoCentral private constructor(internal val cc: CoreCrypto, private
      * @param team name of the Wire team a user belongs to
      * @return The new [E2EIEnrollment] enrollment to use with [e2eiRotateAll]
      */
-    @Deprecated("Use this method from the MlsContext object created from a CoreCryptoCentral.transaction call")
+    @Deprecated("Use this method from the CoreCryptoContext object created from a CoreCryptoCentral.transaction call")
     suspend fun e2eiNewRotateEnrollment(
         expirySec: UInt,
         ciphersuite: Ciphersuite,
@@ -181,7 +181,7 @@ class CoreCryptoCentral private constructor(internal val cc: CoreCrypto, private
      * @param nbKeyPackage number of initial KeyPackage to create when initializing the client
      * @return a [MLSClient] initialized with only a x509 credential
      */
-    @Deprecated("Use this method from the MlsContext object created from a CoreCryptoCentral.transaction call")
+    @Deprecated("Use this method from the CoreCryptoContext object created from a CoreCryptoCentral.transaction call")
     suspend fun e2eiMlsInitOnly(
         enrollment: E2EIEnrollment,
         certificateChain: String,
@@ -215,7 +215,7 @@ class CoreCryptoCentral private constructor(internal val cc: CoreCrypto, private
      *
      * @param trustAnchorPEM - PEM certificate to anchor as a Trust Root
      */
-    @Deprecated("Use this method from the MlsContext object created from a CoreCryptoCentral.transaction call")
+    @Deprecated("Use this method from the CoreCryptoContext object created from a CoreCryptoCentral.transaction call")
     suspend fun e2eiRegisterAcmeCA(trustAnchorPEM: String) {
         return cc.e2eiRegisterAcmeCa(trustAnchorPEM)
     }
@@ -228,7 +228,7 @@ class CoreCryptoCentral private constructor(internal val cc: CoreCrypto, private
      *
      * @param certPEM PEM certificate to register as an Intermediate CA
      */
-    @Deprecated("Use this method from the MlsContext object created from a CoreCryptoCentral.transaction call")
+    @Deprecated("Use this method from the CoreCryptoContext object created from a CoreCryptoCentral.transaction call")
     suspend fun e2eiRegisterIntermediateCA(certPEM: String): CrlDistributionPoints? {
         return cc.e2eiRegisterIntermediateCa(certPEM)?.toCrlDistributionPoint()
     }
@@ -243,7 +243,7 @@ class CoreCryptoCentral private constructor(internal val cc: CoreCrypto, private
      * @param crlDER DER representation of the CRL
      * @return A [CrlRegistration] with the dirty state of the new CRL (see struct) and its expiration timestamp
      */
-    @Deprecated("Use this method from the MlsContext object created from a CoreCryptoCentral.transaction call")
+    @Deprecated("Use this method from the CoreCryptoContext object created from a CoreCryptoCentral.transaction call")
     suspend fun e2eiRegisterCRL(crlDP: String, crlDER: ByteArray): CRLRegistration {
         return cc.e2eiRegisterCrl(crlDP, crlDER).lift()
     }
@@ -257,7 +257,7 @@ class CoreCryptoCentral private constructor(internal val cc: CoreCrypto, private
      * @param newKeyPackageCount number of KeyPackages with the new identity to create
      * @return a [RotateBundle] with commits to fan-out to other group members, KeyPackages to upload and old ones to delete
      */
-    @Deprecated("Use this method from the MlsContext object created from a CoreCryptoCentral.transaction call")
+    @Deprecated("Use this method from the CoreCryptoContext object created from a CoreCryptoCentral.transaction call")
     suspend fun e2eiRotateAll(
         enrollment: E2EIEnrollment,
         certificateChain: String,
@@ -273,7 +273,7 @@ class CoreCryptoCentral private constructor(internal val cc: CoreCrypto, private
      * @param enrollment the enrollment instance to persist
      * @return a handle to fetch the enrollment later with [e2eiEnrollmentStashPop]
      */
-    @Deprecated("Use this method from the MlsContext object created from a CoreCryptoCentral.transaction call")
+    @Deprecated("Use this method from the CoreCryptoContext object created from a CoreCryptoCentral.transaction call")
     suspend fun e2eiEnrollmentStash(enrollment: E2EIEnrollment): EnrollmentHandle {
         return cc.e2eiEnrollmentStash(enrollment.lower()).toUByteArray().asByteArray()
     }
@@ -284,7 +284,7 @@ class CoreCryptoCentral private constructor(internal val cc: CoreCrypto, private
      * @param handle returned by [e2eiEnrollmentStash]
      * @returns the persisted enrollment instance
      */
-    @Deprecated("Use this method from the MlsContext object created from a CoreCryptoCentral.transaction call")
+    @Deprecated("Use this method from the CoreCryptoContext object created from a CoreCryptoCentral.transaction call")
     suspend fun e2eiEnrollmentStashPop(handle: EnrollmentHandle): E2EIEnrollment {
         return E2EIEnrollment(cc.e2eiEnrollmentStashPop(handle))
     }
