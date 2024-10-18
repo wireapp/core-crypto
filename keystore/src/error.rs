@@ -73,8 +73,6 @@ pub enum CryptoKeystoreError {
     TryFromSliceError(#[from] std::array::TryFromSliceError),
     #[error("One of the Keystore locks has been poisoned")]
     LockPoisonError,
-    #[error("We have done something terribly wrong and it needs to be fixed")]
-    ImplementationError,
     #[error("The keystore has run out of keypackage bundles!")]
     OutOfKeyPackageBundles,
     #[error("Incorrect API usage: {0}")]
