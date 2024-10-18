@@ -52,6 +52,8 @@ impl From<MlsProposalRef> for Vec<u8> {
 }
 
 /// Internal representation of proposal to ease further additions
+// KeyPackage is large
+#[allow(clippy::large_enum_variant)]
 pub enum MlsProposal {
     /// Requests that a client with a specified KeyPackage be added to the group
     Add(KeyPackage),
