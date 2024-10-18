@@ -92,6 +92,7 @@ class ProteusClientImpl private constructor(private val coreCrypto: CoreCrypto):
         return wrapException { coreCrypto.proteusFingerprintRemote(sessionId).toByteArray() }
     }
 
+    @Deprecated("Use this method from the CoreCryptoContext object created from a CoreCryptoCentral.transaction call")
     override suspend fun newPreKeys(from: Int, count: Int): ArrayList<PreKey> {
         return wrapException {
             from.until(from + count).map {
@@ -100,6 +101,7 @@ class ProteusClientImpl private constructor(private val coreCrypto: CoreCrypto):
         }
     }
 
+    @Deprecated("Use this method from the CoreCryptoContext object created from a CoreCryptoCentral.transaction call")
     override suspend fun newLastPreKey(): PreKey {
         return wrapException { toPreKey(coreCrypto.proteusLastResortPrekeyId(), coreCrypto.proteusLastResortPrekey()) }
     }
@@ -110,16 +112,19 @@ class ProteusClientImpl private constructor(private val coreCrypto: CoreCrypto):
         }
     }
 
+    @Deprecated("Use this method from the CoreCryptoContext object created from a CoreCryptoCentral.transaction call")
     override suspend fun createSession(preKeyCrypto: PreKey, sessionId: SessionId) {
         wrapException { coreCrypto.proteusSessionFromPrekey(sessionId, preKeyCrypto.data) }
     }
 
+    @Deprecated("Use this method from the CoreCryptoContext object created from a CoreCryptoCentral.transaction call")
     override suspend fun deleteSession(sessionId: SessionId) {
         wrapException {
             coreCrypto.proteusSessionDelete(sessionId)
         }
     }
 
+    @Deprecated("Use this method from the CoreCryptoContext object created from a CoreCryptoCentral.transaction call")
     override suspend fun decrypt(message: ByteArray, sessionId: SessionId): ByteArray {
         val sessionExists = doesSessionExist(sessionId)
 
@@ -136,6 +141,7 @@ class ProteusClientImpl private constructor(private val coreCrypto: CoreCrypto):
         }
     }
 
+    @Deprecated("Use this method from the CoreCryptoContext object created from a CoreCryptoCentral.transaction call")
     override suspend fun encrypt(message: ByteArray, sessionId: SessionId): ByteArray {
         return wrapException {
             val encryptedMessage = coreCrypto.proteusEncrypt(sessionId, message)
@@ -144,6 +150,7 @@ class ProteusClientImpl private constructor(private val coreCrypto: CoreCrypto):
         }
     }
 
+    @Deprecated("Use this method from the CoreCryptoContext object created from a CoreCryptoCentral.transaction call")
     override suspend fun encryptBatched(message: ByteArray, sessionIds: List<SessionId>): Map<SessionId, ByteArray> {
         return wrapException {
             coreCrypto.proteusEncryptBatched(sessionIds.map { it }, message).mapNotNull { entry ->
@@ -152,6 +159,7 @@ class ProteusClientImpl private constructor(private val coreCrypto: CoreCrypto):
             }.toMap()
         }
 
+    @Deprecated("Use this method from the CoreCryptoContext object created from a CoreCryptoCentral.transaction call")
     override suspend fun encryptWithPreKey(
         message: ByteArray,
         preKey: PreKey,
