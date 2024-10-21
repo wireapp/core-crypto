@@ -9,7 +9,6 @@
 
 use mls_crypto_provider::MlsCryptoProvider;
 use openmls::prelude::MlsMessageOutBody;
-
 use crate::prelude::Client;
 use crate::{mls::ConversationId, mls::MlsCentral, CryptoError, CryptoResult, MlsError};
 
