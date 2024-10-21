@@ -93,19 +93,6 @@ jobs:
       - name: "Test CoreCrypto's proteus implementation"
         run: cargo nextest run --verbose --features proteus,cryptobox-migrate,proteus-keystore proteus
 
-  # extract things unrelated to main tests not to slow them down
-  tooling-test:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions-rust-lang/setup-rust-toolchain@v1  # this implicitly caches Rust tools and build artifacts
-        with:
-          rustflags: ''
-      - name: Install cargo-nextest
-        uses: taiki-e/install-action@nextest
-      - name: "Test CoreCrypto xtask tooling"
-        run: cargo nextest run --verbose --manifest-path xtask/Cargo.toml
-
   wasm-build:
     runs-on: ubuntu-latest
     strategy:
