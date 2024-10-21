@@ -3930,8 +3930,8 @@ checksum = "955d28af4278de8121b7ebeb796b6a45735dc01436d898801014aced2773a3d6"
 
 [[package]]
 name = "rusty-acme"
-version = "0.9.0"
-source = "git+https://github.com/wireapp/rusty-jwt-tools?rev=751f281ec75a6ae113584659b4b48940407c50f8#751f281ec75a6ae113584659b4b48940407c50f8"
+version = "0.11.0"
+source = "git+https://github.com/wireapp/rusty-jwt-tools?tag=v0.11.0#8e95b38867ef631925cb34aabee0b4e6a42f6ace"
 dependencies = [
  "base64 0.22.1",
  "const-oid",
@@ -3958,8 +3958,8 @@ dependencies = [
 
 [[package]]
 name = "rusty-jwt-tools"
-version = "0.9.0"
-source = "git+https://github.com/wireapp/rusty-jwt-tools?rev=751f281ec75a6ae113584659b4b48940407c50f8#751f281ec75a6ae113584659b4b48940407c50f8"
+version = "0.11.0"
+source = "git+https://github.com/wireapp/rusty-jwt-tools?tag=v0.11.0#8e95b38867ef631925cb34aabee0b4e6a42f6ace"
 dependencies = [
  "base64 0.22.1",
  "const_format",
@@ -3986,8 +3986,8 @@ dependencies = [
 
 [[package]]
 name = "rusty-x509-check"
-version = "0.9.0"
-source = "git+https://github.com/wireapp/rusty-jwt-tools?rev=751f281ec75a6ae113584659b4b48940407c50f8#751f281ec75a6ae113584659b4b48940407c50f8"
+version = "0.11.0"
+source = "git+https://github.com/wireapp/rusty-jwt-tools?tag=v0.11.0#8e95b38867ef631925cb34aabee0b4e6a42f6ace"
 dependencies = [
  "certval",
  "const-oid",
@@ -5926,8 +5926,8 @@ dependencies = [
 
 [[package]]
 name = "wire-e2e-identity"
-version = "0.9.0"
-source = "git+https://github.com/wireapp/rusty-jwt-tools?rev=751f281ec75a6ae113584659b4b48940407c50f8#751f281ec75a6ae113584659b4b48940407c50f8"
+version = "0.11.0"
+source = "git+https://github.com/wireapp/rusty-jwt-tools?tag=v0.11.0#8e95b38867ef631925cb34aabee0b4e6a42f6ace"
 dependencies = [
  "derive_more",
  "jwt-simple",
