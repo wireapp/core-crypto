@@ -26,10 +26,12 @@ import {
     ProposalBundle,
     ProposalRef,
     ProposalType,
+    ProteusAutoPrekeyBundle,
     RemoveProposalArgs,
     RotateBundle,
     WelcomeBundle,
     WireIdentity,
+    CoreCryptoContextFfi,
 } from "./CoreCrypto";
 
 import * as CoreCryptoFfiTypes from "./wasm/core-crypto-ffi.d.js";
@@ -837,6 +839,237 @@ export default class CoreCryptoContext {
         return await CoreCryptoError.asyncMapErr(
             this.#ctx.random_bytes(length)
         );
+    }
+
+    /**
+     * Create a Proteus session using a prekey
+     *
+     * @param sessionId - ID of the Proteus session
+     * @param prekey - CBOR-encoded Proteus prekey of the other client
+     */
+    async proteusSessionFromPrekey(
+        sessionId: string,
+        prekey: Uint8Array
+    ): Promise<void> {
+        return await CoreCryptoError.asyncMapErr(
+            this.#ctx.proteus_session_from_prekey(sessionId, prekey)
+        );
+    }
+
+    /**
+     * Create a Proteus session from a handshake message
+     *
+     * @param sessionId - ID of the Proteus session
+     * @param envelope - CBOR-encoded Proteus message
+     *
+     * @returns A `Uint8Array` containing the message that was sent along with the session handshake
+     */
+    async proteusSessionFromMessage(
+        sessionId: string,
+        envelope: Uint8Array
+    ): Promise<Uint8Array> {
+        return await CoreCryptoError.asyncMapErr(
+            this.#ctx.proteus_session_from_message(sessionId, envelope)
+        );
+    }
+
+    /**
+     * Locally persists a session to the keystore
+     *
+     * **Note**: This isn't usually needed as persisting sessions happens automatically when decrypting/encrypting messages and initializing Sessions
+     *
+     * @param sessionId - ID of the Proteus session
+     */
+    async proteusSessionSave(sessionId: string): Promise<void> {
+        return await CoreCryptoError.asyncMapErr(
+            this.#ctx.proteus_session_save(sessionId)
+        );
+    }
+
+    /**
+     * Deletes a session
+     * Note: this also deletes the persisted data within the keystore
+     *
+     * @param sessionId - ID of the Proteus session
+     */
+    async proteusSessionDelete(sessionId: string): Promise<void> {
+        return await CoreCryptoError.asyncMapErr(
+            this.#ctx.proteus_session_delete(sessionId)
+        );
+    }
+
+    /**
+     * Checks if a session exists
+     *
+     * @param sessionId - ID of the Proteus session
+     *
+     * @returns whether the session exists or not
+     */
+    async proteusSessionExists(sessionId: string): Promise<boolean> {
+        return await CoreCryptoError.asyncMapErr(
+            this.#ctx.proteus_session_exists(sessionId)
+        );
+    }
+
+    /**
+     * Decrypt an incoming message for an existing Proteus session
+     *
+     * @param sessionId - ID of the Proteus session
+     * @param ciphertext - CBOR encoded, encrypted proteus message
+     * @returns The decrypted payload contained within the message
+     */
+    async proteusDecrypt(
+        sessionId: string,
+        ciphertext: Uint8Array
+    ): Promise<Uint8Array> {
+        return await CoreCryptoError.asyncMapErr(
+            this.#ctx.proteus_decrypt(sessionId, ciphertext)
+        );
+    }
+
+    /**
+     * Encrypt a message for a given Proteus session
+     *
+     * @param sessionId - ID of the Proteus session
+     * @param plaintext - payload to encrypt
+     * @returns The CBOR-serialized encrypted message
+     */
+    async proteusEncrypt(
+        sessionId: string,
+        plaintext: Uint8Array
+    ): Promise<Uint8Array> {
+        return await CoreCryptoError.asyncMapErr(
+            this.#ctx.proteus_encrypt(sessionId, plaintext)
+        );
+    }
+
+    /**
+     * Batch encryption for proteus messages
+     * This is used to minimize FFI roundtrips when used in the context of a multi-client session (i.e. conversation)
+     *
+     * @param sessions - List of Proteus session IDs to encrypt the message for
+     * @param plaintext - payload to encrypt
+     * @returns A map indexed by each session ID and the corresponding CBOR-serialized encrypted message for this session
+     */
+    async proteusEncryptBatched(
+        sessions: string[],
+        plaintext: Uint8Array
+    ): Promise<Map<string, Uint8Array>> {
+        return await CoreCryptoError.asyncMapErr(
+            this.#ctx.proteus_encrypt_batched(sessions, plaintext)
+        );
+    }
+
+    /**
+     * Creates a new prekey with the requested ID.
+     *
+     * @param prekeyId - ID of the PreKey to generate. This cannot be bigger than a u16
+     * @returns: A CBOR-serialized version of the PreKeyBundle corresponding to the newly generated and stored PreKey
+     */
+    async proteusNewPrekey(prekeyId: number): Promise<Uint8Array> {
+        return await CoreCryptoError.asyncMapErr(
+            this.#ctx.proteus_new_prekey(prekeyId)
+        );
+    }
+
+    /**
+     * Creates a new prekey with an automatically generated ID..
+     *
+     * @returns A CBOR-serialized version of the PreKeyBundle corresponding to the newly generated and stored PreKey accompanied by its ID
+     */
+    async proteusNewPrekeyAuto(): Promise<ProteusAutoPrekeyBundle> {
+        return await CoreCryptoError.asyncMapErr(
+            this.#ctx.proteus_new_prekey_auto()
+        );
+    }
+
+    /**
+     * Proteus last resort prekey stuff
+     *
+     * @returns A CBOR-serialize version of the PreKeyBundle associated with the last resort PreKey (holding the last resort prekey id)
+     */
+    async proteusLastResortPrekey(): Promise<Uint8Array> {
+        return await CoreCryptoError.asyncMapErr(
+            this.#ctx.proteus_last_resort_prekey()
+        );
+    }
+
+    /**
+     * @returns The last resort PreKey id
+     */
+    static proteusLastResortPrekeyId(): number {
+        return CoreCryptoContextFfi.proteus_last_resort_prekey_id();
+    }
+
+    /**
+     * Proteus public key fingerprint
+     * It's basically the public key encoded as an hex string
+     *
+     * @returns Hex-encoded public key string
+     */
+    async proteusFingerprint(): Promise<string> {
+        return await CoreCryptoError.asyncMapErr(
+            this.#ctx.proteus_fingerprint()
+        );
+    }
+
+    /**
+     * Proteus session local fingerprint
+     *
+     * @param sessionId - ID of the Proteus session
+     * @returns Hex-encoded public key string
+     */
+    async proteusFingerprintLocal(sessionId: string): Promise<string> {
+        return await CoreCryptoError.asyncMapErr(
+            this.#ctx.proteus_fingerprint_local(sessionId)
+        );
+    }
+
+    /**
+     * Proteus session remote fingerprint
+     *
+     * @param sessionId - ID of the Proteus session
+     * @returns Hex-encoded public key string
+     */
+    async proteusFingerprintRemote(sessionId: string): Promise<string> {
+        return await CoreCryptoError.asyncMapErr(
+            this.#ctx.proteus_fingerprint_remote(sessionId)
+        );
+    }
+
+    /**
+     * Hex-encoded fingerprint of the given prekey
+     *
+     * @param prekey - the prekey bundle to get the fingerprint from
+     * @returns Hex-encoded public key string
+     **/
+    static proteusFingerprintPrekeybundle(prekey: Uint8Array): string {
+        try {
+            return CoreCryptoContextFfi.proteus_fingerprint_prekeybundle(
+                prekey
+            );
+        } catch (e) {
+            throw CoreCryptoError.fromStdError(e as Error);
+        }
+    }
+
+    /**
+     * Imports all the data stored by Cryptobox into the CoreCrypto keystore
+     *
+     * @param storeName - The name of the IndexedDB store where the data is stored
+     */
+    async proteusCryptoboxMigrate(storeName: string): Promise<void> {
+        return await CoreCryptoError.asyncMapErr(
+            this.#ctx.proteus_cryptobox_migrate(storeName)
+        );
+    }
+
+    /**
+     * Note: this call clears out the code and resets it to 0 (aka no error)
+     * @returns the last proteus error code that occured.
+     */
+    async proteusLastErrorCode(): Promise<number> {
+        return await this.#ctx.proteus_last_error_code();
     }
 
     /**

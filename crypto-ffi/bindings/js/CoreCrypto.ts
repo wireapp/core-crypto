@@ -19,6 +19,7 @@ import initWasm, {
     AcmeChallenge,
     ConversationConfiguration as ConversationConfigurationFfi,
     CoreCrypto as CoreCryptoFfi,
+    CoreCryptoContext as CoreCryptoContextFfi,
     CoreCryptoWasmCallbacks,
     CoreCryptoWasmLogger,
     CustomConfiguration as CustomConfigurationFfi,
@@ -37,6 +38,7 @@ export {
     E2eiDumpedPkiEnv,
     ConversationConfigurationFfi,
     CoreCryptoContext,
+    CoreCryptoContextFfi,
     CustomConfigurationFfi,
 };
 
@@ -990,7 +992,7 @@ export class CoreCrypto {
     }: CoreCryptoParams): Promise<CoreCrypto> {
         await this.#loadModule(wasmFilePath);
 
-        let cs = ciphersuites.map((cs) => cs.valueOf());
+        const cs = ciphersuites.map((cs) => cs.valueOf());
         const cc = await CoreCryptoError.asyncMapErr(
             CoreCryptoFfi._internal_new(
                 databaseName,
@@ -1060,7 +1062,7 @@ export class CoreCrypto {
         ciphersuites: Ciphersuite[],
         nbKeyPackage?: number
     ): Promise<void> {
-        let cs = ciphersuites.map((cs) => cs.valueOf());
+        const cs = ciphersuites.map((cs) => cs.valueOf());
         return await CoreCryptoError.asyncMapErr(
             this.#cc.mls_init(clientId, Uint16Array.of(...cs), nbKeyPackage)
         );
@@ -1075,7 +1077,7 @@ export class CoreCrypto {
     async mlsGenerateKeypair(
         ciphersuites: Ciphersuite[]
     ): Promise<Uint8Array[]> {
-        let cs = ciphersuites.map((cs) => cs.valueOf());
+        const cs = ciphersuites.map((cs) => cs.valueOf());
         return await CoreCryptoError.asyncMapErr(
             this.#cc.mls_generate_keypair(Uint16Array.of(...cs))
         );
@@ -1092,7 +1094,7 @@ export class CoreCrypto {
         signaturePublicKeys: Uint8Array[],
         ciphersuites: Ciphersuite[]
     ): Promise<void> {
-        let cs = ciphersuites.map((cs) => cs.valueOf());
+        const cs = ciphersuites.map((cs) => cs.valueOf());
         return await CoreCryptoError.asyncMapErr(
             this.#cc.mls_init_with_client_id(
                 clientId,
@@ -1630,7 +1632,7 @@ export class CoreCrypto {
     ): Promise<Uint8Array> {
         switch (externalProposalType) {
             case ExternalProposalType.Add: {
-                let addArgs = args as ExternalAddProposalArgs;
+                const addArgs = args as ExternalAddProposalArgs;
                 return await CoreCryptoError.asyncMapErr(
                     this.#cc.new_external_add_proposal(
                         args.conversationId,
@@ -1844,6 +1846,9 @@ export class CoreCrypto {
      *
      * @param sessionId - ID of the Proteus session
      * @param prekey - CBOR-encoded Proteus prekey of the other client
+     *
+     * @deprecated Create a transaction with {@link CoreCrypto.transaction}
+     * and use {@link CoreCryptoContext.proteusSessionFromPrekey} instead.
      */
     async proteusSessionFromPrekey(
         sessionId: string,
@@ -1861,6 +1866,9 @@ export class CoreCrypto {
      * @param envelope - CBOR-encoded Proteus message
      *
      * @returns A `Uint8Array` containing the message that was sent along with the session handshake
+     *
+     * @deprecated Create a transaction with {@link CoreCrypto.transaction}
+     * and use {@link CoreCryptoContext.proteusSessionFromMessage} instead.
      */
     async proteusSessionFromMessage(
         sessionId: string,
@@ -1877,6 +1885,9 @@ export class CoreCrypto {
      * **Note**: This isn't usually needed as persisting sessions happens automatically when decrypting/encrypting messages and initializing Sessions
      *
      * @param sessionId - ID of the Proteus session
+     *
+     * @deprecated Create a transaction with {@link CoreCrypto.transaction}
+     * and use {@link CoreCryptoContext.proteusSessionSave} instead.
      */
     async proteusSessionSave(sessionId: string): Promise<void> {
         return await CoreCryptoError.asyncMapErr(
@@ -1889,6 +1900,9 @@ export class CoreCrypto {
      * Note: this also deletes the persisted data within the keystore
      *
      * @param sessionId - ID of the Proteus session
+     *
+     * @deprecated Create a transaction with {@link CoreCrypto.transaction}
+     * and use {@link CoreCryptoContext.proteusSessionDelete} instead.
      */
     async proteusSessionDelete(sessionId: string): Promise<void> {
         return await CoreCryptoError.asyncMapErr(
@@ -1915,6 +1929,9 @@ export class CoreCrypto {
      * @param sessionId - ID of the Proteus session
      * @param ciphertext - CBOR encoded, encrypted proteus message
      * @returns The decrypted payload contained within the message
+     *
+     * @deprecated Create a transaction with {@link CoreCrypto.transaction}
+     * and use {@link CoreCryptoContext.proteusDecrypt} instead.
      */
     async proteusDecrypt(
         sessionId: string,
@@ -1931,6 +1948,9 @@ export class CoreCrypto {
      * @param sessionId - ID of the Proteus session
      * @param plaintext - payload to encrypt
      * @returns The CBOR-serialized encrypted message
+     *
+     * @deprecated Create a transaction with {@link CoreCrypto.transaction}
+     * and use {@link CoreCryptoContext.proteusEncrypt} instead.
      */
     async proteusEncrypt(
         sessionId: string,
@@ -1948,6 +1968,8 @@ export class CoreCrypto {
      * @param sessions - List of Proteus session IDs to encrypt the message for
      * @param plaintext - payload to encrypt
      * @returns A map indexed by each session ID and the corresponding CBOR-serialized encrypted message for this session
+     * @deprecated Create a transaction with {@link CoreCrypto.transaction}
+     * and use {@link CoreCryptoContext.proteusEncryptBatched} instead.
      */
     async proteusEncryptBatched(
         sessions: string[],
@@ -1963,6 +1985,9 @@ export class CoreCrypto {
      *
      * @param prekeyId - ID of the PreKey to generate. This cannot be bigger than a u16
      * @returns: A CBOR-serialized version of the PreKeyBundle corresponding to the newly generated and stored PreKey
+     *
+     * @deprecated Create a transaction with {@link CoreCrypto.transaction}
+     * and use {@link CoreCryptoContext.proteusNewPrekey} instead.
      */
     async proteusNewPrekey(prekeyId: number): Promise<Uint8Array> {
         return await CoreCryptoError.asyncMapErr(
@@ -1974,6 +1999,9 @@ export class CoreCrypto {
      * Creates a new prekey with an automatically generated ID..
      *
      * @returns A CBOR-serialized version of the PreKeyBundle corresponding to the newly generated and stored PreKey accompanied by its ID
+     *
+     * @deprecated Create a transaction with {@link CoreCrypto.transaction}
+     * and use {@link CoreCryptoContext.proteusNewPrekeyAuto} instead.
      */
     async proteusNewPrekeyAuto(): Promise<ProteusAutoPrekeyBundle> {
         return await CoreCryptoError.asyncMapErr(
@@ -1985,6 +2013,9 @@ export class CoreCrypto {
      * Proteus last resort prekey stuff
      *
      * @returns A CBOR-serialize version of the PreKeyBundle associated with the last resort PreKey (holding the last resort prekey id)
+     *
+     * @deprecated Create a transaction with {@link CoreCrypto.transaction}
+     * and use {@link CoreCryptoContext.proteusLastResortPrekey} instead.
      */
     async proteusLastResortPrekey(): Promise<Uint8Array> {
         return await CoreCryptoError.asyncMapErr(
@@ -2054,6 +2085,9 @@ export class CoreCrypto {
      * Imports all the data stored by Cryptobox into the CoreCrypto keystore
      *
      * @param storeName - The name of the IndexedDB store where the data is stored
+     *
+     * @deprecated Create a transaction with {@link CoreCrypto.transaction}
+     * and use {@link CoreCryptoContext.proteusCryptoboxMigrate} instead.
      */
     async proteusCryptoboxMigrate(storeName: string): Promise<void> {
         return await CoreCryptoError.asyncMapErr(
@@ -2280,7 +2314,7 @@ export class CoreCrypto {
     async e2eiConversationState(
         conversationId: ConversationId
     ): Promise<E2eiConversationState> {
-        let state = await CoreCryptoError.asyncMapErr(
+        const state = await CoreCryptoError.asyncMapErr(
             this.#cc.e2ei_conversation_state(conversationId)
         );
 
@@ -2357,7 +2391,7 @@ export class CoreCrypto {
         groupInfo: Uint8Array,
         credentialType: CredentialType = CredentialType.X509
     ): Promise<E2eiConversationState> {
-        let state = await CoreCryptoError.asyncMapErr(
+        const state = await CoreCryptoError.asyncMapErr(
             this.#cc.get_credential_in_use(groupInfo, credentialType)
         );
         return normalizeEnum(E2eiConversationState, state);
