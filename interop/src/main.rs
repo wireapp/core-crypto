@@ -316,7 +316,7 @@ async fn run_proteus_test(chrome_driver_addr: &std::net::SocketAddr) -> Result<(
     let mut master_sessions = vec![];
     let mut messages = std::collections::HashMap::new();
     const PROTEUS_INITIAL_MESSAGE: &[u8] = b"Hello world!";
-    let transaction = CoreCrypto::from(master_client.clone()).new_transaction().await?;
+    let transaction = master_client.new_transaction().await?;
     for (fingerprint, prekey) in prekeys {
         spinner.update(format!(
             "[Proteus] Step 2: Session master -> {fingerprint}@{}",
