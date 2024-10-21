@@ -223,12 +223,11 @@ The versioning scheme used is [SemVer AKA Semantic Versioning](https://semver.or
 ### Making a new release
 
 1. Make a branch based on `main` to prepare for release (`git checkout -b prepare-release/X.Y.Z`)
-1. Run `cargo xtask release bump [major|minor|patch|rc|pre] --dry-run`, check if it's the expected result
-1. If all seems fine, re-run the previous command without the `--dry-run` argument.
-   This will bump the versions of:
+1. Run `sh scripts/update-versions.sh X.Y.Z` to update the versions of
     - all workspace member crates
     - `package.json`
     - `crypto-ffi/bindings/gradle.properties`
+   Make sure the result of the script run is correct.
 1. Generate the relevant changelog section:
    ```bash
    git cliff --bump --unreleased
