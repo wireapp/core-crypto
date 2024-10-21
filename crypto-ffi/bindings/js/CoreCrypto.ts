@@ -888,6 +888,8 @@ export enum CoreCryptoLogLevel {
  * Initializes the global logger for Core Crypto and registers the callback. Can be called only once
  * @param logger - the interface to be called when something is going to be logged
  * @param level - the max level that should be logged
+ *
+ * NOTE: you must call this after `await CoreCrypto.init(params)` or `await CoreCrypto.deferredInit(params)`.
  **/
 export function initLogger(
     logger: CoreCryptoLogger,
@@ -895,10 +897,7 @@ export function initLogger(
     ctx: any = null
 ): void {
     const wasmLogger = new CoreCryptoWasmLogger(logger.log, ctx);
-    CoreCryptoFfiTypes.set_logger(
-        wasmLogger,
-        normalizeEnum(CoreCryptoLogLevel, level)
-    );
+    CoreCrypto.setLogger(wasmLogger, level);
 }
 
 /**
@@ -933,6 +932,11 @@ export class CoreCrypto {
                 wasmFilePath
             )) as unknown as typeof CoreCryptoFfiTypes;
         }
+    }
+
+    static setLogger(logger: CoreCryptoWasmLogger, level: CoreCryptoLogLevel) {
+        this.#assertModuleLoaded()
+        CoreCryptoFfi.set_logger(logger, level);
     }
 
     /**
