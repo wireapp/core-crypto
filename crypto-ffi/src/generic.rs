@@ -14,9 +14,9 @@
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see http://www.gnu.org/licenses/.
 
+use log::{Level, LevelFilter, Metadata, Record};
 use std::collections::HashMap;
 use std::ops::DerefMut;
-
 use tls_codec::{Deserialize, Serialize};
 
 use crate::UniffiCustomTypeConverter;
@@ -31,8 +31,6 @@ use core_crypto::{
     },
     MlsError,
 };
-use tracing::{level_filters::LevelFilter, Level};
-use tracing_subscriber::fmt::{self, MakeWriter};
 
 #[allow(dead_code)]
 pub(crate) const VERSION: &str = env!("CARGO_PKG_VERSION");
@@ -725,11 +723,9 @@ pub trait CoreCryptoCallbacks: std::fmt::Debug + Send + Sync {
 /// WARNING: This is a global setting. Calling it twice will cause errors.
 #[uniffi::export]
 pub fn set_logger(logger: std::sync::Arc<dyn CoreCryptoLogger>, level: CoreCryptoLogLevel) {
-    fmt::fmt()
-        .json()
-        .with_writer(CoreCryptoLoggerWrapper { logger, level })
-        .with_max_level(LevelFilter::from(level))
-        .init()
+    let logger = CoreCryptoLoggerWrapper { logger };
+    log::set_boxed_logger(Box::new(logger)).unwrap();
+    log::set_max_level(LevelFilter::from(level));
 }
 
 /// This trait is used to provide a callback mechanism to hook up the rerspective platform logging system
@@ -743,40 +739,19 @@ pub trait CoreCryptoLogger: std::fmt::Debug + Send + Sync {
 #[derive(Clone)]
 struct CoreCryptoLoggerWrapper {
     logger: std::sync::Arc<dyn CoreCryptoLogger>,
-    level: CoreCryptoLogLevel,
 }
 
-impl CoreCryptoLoggerWrapper {
-    fn clone_with_level(&self, level: &Level) -> Self {
-        Self {
-            logger: self.logger.clone(),
-            level: level.into(),
-        }
-    }
-}
-
-impl std::io::Write for CoreCryptoLoggerWrapper {
-    fn write(&mut self, buf: &[u8]) -> std::io::Result<usize> {
-        let message = String::from_utf8_lossy(buf);
-        self.logger.log(self.level, message.into_owned());
-        Ok(buf.len())
+impl log::Log for CoreCryptoLoggerWrapper {
+    fn enabled(&self, _metadata: &Metadata) -> bool {
+        true
     }
 
-    fn flush(&mut self) -> std::io::Result<()> {
-        Ok(())
-    }
-}
-
-impl MakeWriter<'_> for CoreCryptoLoggerWrapper {
-    type Writer = Self;
-
-    fn make_writer(&self) -> Self::Writer {
-        self.clone()
+    fn log(&self, record: &Record) {
+        let message = format!("{}", record.args());
+        self.logger.log(CoreCryptoLogLevel::from(&record.level()), message);
     }
 
-    fn make_writer_for(&'_ self, meta: &tracing::Metadata<'_>) -> Self::Writer {
-        self.clone_with_level(meta.level())
-    }
+    fn flush(&self) {}
 }
 
 /// Defines the log level for a CoreCrypto
@@ -793,12 +768,12 @@ pub enum CoreCryptoLogLevel {
 impl From<CoreCryptoLogLevel> for LevelFilter {
     fn from(value: CoreCryptoLogLevel) -> LevelFilter {
         match value {
-            CoreCryptoLogLevel::Off => LevelFilter::OFF,
-            CoreCryptoLogLevel::Trace => LevelFilter::TRACE,
-            CoreCryptoLogLevel::Debug => LevelFilter::DEBUG,
-            CoreCryptoLogLevel::Info => LevelFilter::INFO,
-            CoreCryptoLogLevel::Warn => LevelFilter::WARN,
-            CoreCryptoLogLevel::Error => LevelFilter::ERROR,
+            CoreCryptoLogLevel::Off => LevelFilter::Off,
+            CoreCryptoLogLevel::Trace => LevelFilter::Trace,
+            CoreCryptoLogLevel::Debug => LevelFilter::Debug,
+            CoreCryptoLogLevel::Info => LevelFilter::Info,
+            CoreCryptoLogLevel::Warn => LevelFilter::Warn,
+            CoreCryptoLogLevel::Error => LevelFilter::Error,
         }
     }
 }
@@ -806,11 +781,11 @@ impl From<CoreCryptoLogLevel> for LevelFilter {
 impl From<&Level> for CoreCryptoLogLevel {
     fn from(value: &Level) -> Self {
         match *value {
-            Level::WARN => CoreCryptoLogLevel::Warn,
-            Level::ERROR => CoreCryptoLogLevel::Error,
-            Level::INFO => CoreCryptoLogLevel::Info,
-            Level::DEBUG => CoreCryptoLogLevel::Debug,
-            Level::TRACE => CoreCryptoLogLevel::Trace,
+            Level::Warn => CoreCryptoLogLevel::Warn,
+            Level::Error => CoreCryptoLogLevel::Error,
+            Level::Info => CoreCryptoLogLevel::Info,
+            Level::Debug => CoreCryptoLogLevel::Debug,
+            Level::Trace => CoreCryptoLogLevel::Trace,
         }
     }
 }
