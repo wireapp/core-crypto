@@ -1148,3 +1148,75 @@ test("e2ei is conversation invalid", async () => {
     await page.close();
     await ctx.close();
 });
+
+test("logs are forwarded when logger is registered", async () => {
+    const [ctx, page] = await initBrowser();
+
+    let [logs] = await page.evaluate(async () => {
+        const { CoreCrypto, Ciphersuite, CredentialType, CoreCryptoLogLevel, initLogger } = await import("./corecrypto.js");
+
+        const ciphersuite = Ciphersuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519;
+        const credentialType = CredentialType.Basic;
+        const cc = await CoreCrypto.init({
+            databaseName: "is invalid",
+            key: "test",
+            ciphersuites: [ciphersuite],
+            clientId: "test",
+        });
+
+        const logs = [];
+        initLogger({
+            log: (level, json_msg) => {
+                logs.push(json_msg)
+            },
+        }, CoreCryptoLogLevel.Debug)
+
+        const encoder = new TextEncoder();
+        const conversationId = encoder.encode("invalidConversation");
+        await cc.createConversation(conversationId, credentialType);
+
+        await cc.wipe();
+        return [logs];
+    });
+
+    expect(logs.length).toBeGreaterThan(0)
+
+    await page.close();
+    await ctx.close();
+});
+
+test("logs are not forwarded when logger is registered, but log level is too high", async () => {
+    const [ctx, page] = await initBrowser();
+
+    let [logs] = await page.evaluate(async () => {
+        const { CoreCrypto, Ciphersuite, CredentialType, CoreCryptoLogLevel, initLogger } = await import("./corecrypto.js");
+
+        const ciphersuite = Ciphersuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519;
+        const credentialType = CredentialType.Basic;
+        const cc = await CoreCrypto.init({
+            databaseName: "is invalid",
+            key: "test",
+            ciphersuites: [ciphersuite],
+            clientId: "test",
+        });
+
+        const logs = [];
+        initLogger({
+            log: (level, json_msg) => {
+                logs.push(json_msg)
+            },
+        }, CoreCryptoLogLevel.Warn)
+
+        const encoder = new TextEncoder();
+        const conversationId = encoder.encode("invalidConversation");
+        await cc.createConversation(conversationId, credentialType);
+
+        await cc.wipe();
+        return [logs];
+    });
+
+    expect(logs).toHaveLength(0)
+
+    await page.close();
+    await ctx.close();
+});
