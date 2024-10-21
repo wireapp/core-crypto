@@ -9,7 +9,6 @@ members = [
     "interop"
 ]
 exclude = [
-    "xtask",
     "extras/webdriver-installation",
     "extras/keystore-regression-versions"
 ]

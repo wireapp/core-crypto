@@ -24,9 +24,6 @@ RANLIB_i686-linux-android = "llvm-ranlib"
 # TODO: Remove this once we target a crates.io version of ring. Probably never! Tracking issue: WPB-9580
 CFLAGS = "-Wno-error=inline"
 
-[alias]
-xtask = "run --manifest-path ./xtask/Cargo.toml --"
-
 # Android linkage
 [target.armv7-linux-androideabi]
 ar = "llvm-ar"
