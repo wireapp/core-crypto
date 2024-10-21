@@ -1345,26 +1345,9 @@ export class CoreCrypto {
         welcomeMessage: Uint8Array,
         configuration: CustomConfiguration = {}
     ): Promise<WelcomeBundle> {
-        try {
-            const { keyRotationSpan, wirePolicy } = configuration || {};
-            const config = new CustomConfigurationFfi(
-                keyRotationSpan,
-                wirePolicy
-            );
-            const ffiRet: CoreCryptoFfiTypes.WelcomeBundle =
-                await CoreCryptoError.asyncMapErr(
-                    this.#cc.process_welcome_message(welcomeMessage, config)
-                );
-
-            const ret: WelcomeBundle = {
-                id: ffiRet.id,
-                crlNewDistributionPoints: ffiRet.crl_new_distribution_points,
-            };
-
-            return ret;
-        } catch (e) {
-            throw CoreCryptoError.fromStdError(e as Error);
-        }
+        return await this.transaction((ctx) =>
+            ctx.processWelcomeMessage(welcomeMessage, configuration)
+        );
     }
 
     /**
@@ -1387,7 +1370,7 @@ export class CoreCrypto {
      * See {@link CoreCryptoContext.clientValidKeypackagesCount}.
      *
      * @deprecated Create a transaction with {@link CoreCrypto.transaction}
-     * and use {@link CoreCryptoContext.processWelcomeMessage} instead.
+     * and use {@link CoreCryptoContext.clientValidKeypackagesCount} instead.
      */
     async clientValidKeypackagesCount(
         ciphersuite: Ciphersuite,
