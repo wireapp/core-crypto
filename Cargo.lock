@@ -2299,9 +2299,9 @@ checksum = "25a2bc672d1148e28034f176e01fffebb08b35768468cc954630da77a1449005"
 
 [[package]]
 name = "idb"
-version = "0.6.3"
+version = "0.6.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2764bba4203538c2ef2d733d5bad8fdb4622b1ebc5560831279db7b3be1332e8"
+checksum = "3afe8830d5802f769dc0be20a87f9f116798c896650cb6266eb5c19a3c109eed"
 dependencies = [
  "js-sys",
  "num-traits",
