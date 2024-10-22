@@ -11,7 +11,6 @@ use openmls_traits::OpenMlsCryptoProvider;
 use std::collections::HashSet;
 use wire_e2e_identity::prelude::x509::extract_crl_uris;
 
-#[cfg_attr(not(test), tracing::instrument(err, skip_all))]
 pub(crate) fn extract_crl_uris_from_credentials<'a>(
     mut credentials: impl Iterator<Item = &'a MlsCredentialType>,
 ) -> CryptoResult<HashSet<String>> {
@@ -24,7 +23,6 @@ pub(crate) fn extract_crl_uris_from_credentials<'a>(
     })
 }
 
-#[cfg_attr(not(test), tracing::instrument(err, skip_all))]
 pub(crate) fn extract_crl_uris_from_proposals(proposals: &[Proposal]) -> CryptoResult<HashSet<String>> {
     extract_crl_uris_from_credentials(
         proposals
@@ -67,7 +65,6 @@ pub(crate) fn extract_dp(cert: &Certificate) -> CryptoResult<HashSet<String>> {
         .collect())
 }
 
-#[cfg_attr(not(test), tracing::instrument(err, skip_all))]
 pub(crate) async fn get_new_crl_distribution_points(
     backend: &MlsCryptoProvider,
     mut crl_dps: HashSet<String>,
@@ -86,7 +83,6 @@ pub(crate) async fn get_new_crl_distribution_points(
 impl MlsCentral {
     /// When x509 new credentials are registered this extracts the new CRL Distribution Point from the end entity certificate
     /// and all the intermediates
-    #[cfg_attr(not(test), tracing::instrument(err, skip_all))]
     pub(crate) async fn extract_dp_on_init(
         &mut self,
         certificate_chain: &[Vec<u8>],

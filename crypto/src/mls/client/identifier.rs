@@ -36,7 +36,6 @@ impl ClientIdentifier {
 
     /// Generate a new CredentialBundle (Credential + KeyPair) for each ciphersuite.
     /// This method does not persist them in the keystore !
-    #[cfg_attr(not(test), tracing::instrument(err, skip(self, backend)))]
     pub fn generate_credential_bundles(
         self,
         backend: &MlsCryptoProvider,

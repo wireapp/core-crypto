@@ -11,13 +11,12 @@ use crate::{
     },
 };
 use core_crypto_keystore::entities::{EntityFindParams, MlsPendingMessage};
+use log::{error, info, trace};
 use mls_crypto_provider::MlsCryptoProvider;
 use openmls::prelude::{MlsMessageIn, MlsMessageInBody};
 use tls_codec::Deserialize;
-use tracing::{error, span, trace, Instrument, Level};
 
 impl MlsCentral {
-    #[cfg_attr(not(test), tracing::instrument(err, skip(self, message), fields(id = base64::Engine::encode(&base64::prelude::BASE64_STANDARD, id))))]
     pub(crate) async fn handle_future_message(
         &mut self,
         id: &ConversationId,
@@ -33,7 +32,6 @@ impl MlsCentral {
         Err(CryptoError::BufferedFutureMessage)
     }
 
-    #[cfg_attr(not(test), tracing::instrument(err, skip(self, conversation)))]
     pub(crate) async fn restore_pending_messages(
         &mut self,
         conversation: &mut MlsConversation,
@@ -68,7 +66,7 @@ impl MlsConversation {
         is_rejoin: bool,
     ) -> CryptoResult<Option<Vec<MlsBufferedConversationDecryptMessage>>> {
         // using the macro produces a clippy warning
-        let span = span!(target:module_path!(), Level::INFO, "restore_pending_messages");
+        info!("restore_pending_messages");
         let result = async move {
             let keystore = backend.borrow_keystore();
 
@@ -114,7 +112,6 @@ impl MlsConversation {
                 let restore_pending = false; // to prevent infinite recursion
                 let decrypted = self
                     .decrypt_message(m, parent_conversation, client, backend, callbacks, restore_pending)
-                    .in_current_span()
                     .await?;
                 decrypted_messages.push(decrypted.into());
             }
@@ -123,12 +120,11 @@ impl MlsConversation {
 
             Ok(decrypted_messages)
         }
-        .instrument(span)
         .await;
         match result {
             Ok(r) => Ok(r),
             Err(e) => {
-                error!(target:module_path!(), error =  %e);
+                error!(error:% = e; "Error restoring pending messages");
                 Err(e)
             }
         }

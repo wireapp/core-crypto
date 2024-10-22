@@ -9,7 +9,6 @@ impl MlsCentral {
     /// # Errors
     /// KeyStore errors, such as IO
     #[cfg_attr(test, crate::dispotent)]
-    #[cfg_attr(not(test), tracing::instrument(err, skip(self), fields(id = base64::Engine::encode(&base64::prelude::BASE64_STANDARD, id))))]
     pub async fn wipe_conversation(&mut self, id: &ConversationId) -> CryptoResult<()> {
         self.get_conversation(id)
             .await?
@@ -24,7 +23,6 @@ impl MlsCentral {
 }
 
 impl MlsConversation {
-    #[cfg_attr(not(test), tracing::instrument(err, skip_all))]
     async fn wipe_associated_entities(&mut self, backend: &MlsCryptoProvider) -> CryptoResult<()> {
         // the own client may or may not have generated an epoch keypair in the previous epoch
         // Since it is a terminal operation, ignoring the error is fine here.

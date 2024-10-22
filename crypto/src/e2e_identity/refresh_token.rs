@@ -20,7 +20,6 @@ impl E2eiEnrollment {
     /// Lets clients retrieve the OIDC refresh token to try to renew the user's authorization.
     /// If it's expired, the user needs to reauthenticate and they will update the refresh token
     /// in [E2eiEnrollment::new_oidc_challenge_request]
-    #[cfg_attr(not(test), tracing::instrument(err, skip_all))]
     pub fn get_refresh_token(&self) -> E2eIdentityResult<&str> {
         self.refresh_token
             .as_ref()
@@ -30,7 +29,6 @@ impl E2eiEnrollment {
             ))
     }
 
-    #[cfg_attr(not(test), tracing::instrument(err, skip_all))]
     pub(crate) async fn replace_refresh_token(
         &self,
         backend: &MlsCryptoProvider,
@@ -43,7 +41,6 @@ impl E2eiEnrollment {
 }
 
 impl MlsCentral {
-    #[cfg_attr(not(test), tracing::instrument(err, skip_all))]
     pub(crate) async fn find_refresh_token(&self) -> CryptoResult<RefreshToken> {
         let mut conn = self.mls_backend.key_store().borrow_conn().await?;
         E2eiRefreshToken::find_unique(&mut conn).await?.try_into()

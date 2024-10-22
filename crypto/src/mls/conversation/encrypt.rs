@@ -7,10 +7,10 @@
 //! | 0 pend. Proposal  | ✅              | ❌              |
 //! | 1+ pend. Proposal | ❌              | ❌              |
 
-use mls_crypto_provider::MlsCryptoProvider;
-use openmls::prelude::MlsMessageOutBody;
 use crate::prelude::Client;
 use crate::{mls::ConversationId, mls::MlsCentral, CryptoError, CryptoResult, MlsError};
+use mls_crypto_provider::MlsCryptoProvider;
+use openmls::prelude::MlsMessageOutBody;
 
 use super::MlsConversation;
 
@@ -19,7 +19,6 @@ impl MlsConversation {
     /// see [MlsCentral::encrypt_message]
     /// It is durable because encrypting increments the message generation
     #[cfg_attr(test, crate::durable)]
-    #[cfg_attr(not(test), tracing::instrument(err, skip_all))]
     pub async fn encrypt_message(
         &mut self,
         client: &Client,
@@ -59,7 +58,6 @@ impl MlsCentral {
     /// If the conversation can't be found, an error will be returned. Other errors are originating
     /// from OpenMls and the KeyStore
     #[cfg_attr(test, crate::idempotent)]
-    #[cfg_attr(not(test), tracing::instrument(err, skip_all))]
     pub async fn encrypt_message(
         &mut self,
         conversation: &ConversationId,
