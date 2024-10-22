@@ -101,7 +101,6 @@ impl PartialOrd for CredentialBundle {
 }
 
 impl Client {
-    #[cfg_attr(not(test), cfg_attr(not(test), tracing::instrument(err, skip(backend), fields(id = %id))))]
     pub(crate) fn new_basic_credential_bundle(
         id: &ClientId,
         sc: SignatureScheme,

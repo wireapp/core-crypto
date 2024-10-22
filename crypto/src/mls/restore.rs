@@ -1,9 +1,9 @@
 use crate::prelude::{MlsCentral, MlsConversation};
 use crate::CryptoResult;
 use base64::{prelude::BASE64_STANDARD, Engine};
+use log::{error, info};
 use mls_crypto_provider::MlsCryptoProvider;
 use openmls_traits::OpenMlsCryptoProvider;
-use tracing::{error, info, Instrument};
 
 impl MlsCentral {
     /// [MlsCentral] is supposed to be a singleton. Knowing that, it does some optimizations by
@@ -12,16 +12,14 @@ impl MlsCentral {
     /// [MlsCentral] instance has to be used. This method has to be used to synchronize instances.
     /// It simply fetches the MLS group from keystore in memory.
     #[cfg_attr(test, crate::idempotent)]
-    #[cfg_attr(not(test), tracing::instrument(skip(self), err))]
     pub async fn restore_from_disk(&mut self) -> CryptoResult<()> {
         self.mls_groups = Self::restore_groups(&self.mls_backend).await?;
-        self.init_pki_env().in_current_span().await?;
+        self.init_pki_env().await?;
 
         Ok(())
     }
 
     /// Restore existing groups from the KeyStore.
-    #[cfg_attr(not(test), tracing::instrument(skip(backend), err))]
     pub(crate) async fn restore_groups(
         backend: &MlsCryptoProvider,
     ) -> CryptoResult<crate::group_store::GroupStore<MlsConversation>> {
@@ -38,9 +36,9 @@ impl MlsCentral {
         for (group_id, (parent_id, state)) in groups.into_iter() {
             let conversation = MlsConversation::from_serialized_state(state, parent_id)?;
             let encoded_id = BASE64_STANDARD.encode(&group_id);
-            info!(group_id = encoded_id, "Restored group");
+            info!(group_id:% = encoded_id; "Restored group");
             if group_store.try_insert(group_id, conversation).is_err() {
-                error!(group_id = encoded_id, "Failed to insert group into store");
+                error!(group_id:% = encoded_id; "Failed to insert group into store");
                 break;
             }
         }

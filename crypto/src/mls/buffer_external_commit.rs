@@ -9,7 +9,6 @@ use crate::prelude::{ConversationId, CryptoError, CryptoResult, MlsCentral, MlsC
 use core_crypto_keystore::entities::{MlsPendingMessage, PersistedMlsPendingGroup};
 
 impl MlsCentral {
-    #[cfg_attr(not(test), tracing::instrument(err, skip(self, message), fields(id = base64::Engine::encode(&base64::prelude::BASE64_STANDARD, id))))]
     pub(crate) async fn handle_when_group_is_pending(
         &mut self,
         id: &ConversationId,

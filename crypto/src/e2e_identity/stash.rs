@@ -10,7 +10,6 @@ use crate::prelude::{CryptoError, CryptoResult, E2eiEnrollment, MlsCentral};
 pub(crate) type EnrollmentHandle = Vec<u8>;
 
 impl E2eiEnrollment {
-    #[cfg_attr(not(test), tracing::instrument(err, skip_all))]
     pub(crate) async fn stash(self, backend: &MlsCryptoProvider) -> CryptoResult<EnrollmentHandle> {
         // should be enough to prevent collisions
         const HANDLE_SIZE: usize = 32;
@@ -25,7 +24,6 @@ impl E2eiEnrollment {
         Ok(handle)
     }
 
-    #[cfg_attr(not(test), tracing::instrument(err, skip_all))]
     pub(crate) async fn stash_pop(backend: &MlsCryptoProvider, handle: EnrollmentHandle) -> CryptoResult<Self> {
         let content = backend
             .key_store()
@@ -45,7 +43,6 @@ impl MlsCentral {
     ///
     /// # Returns
     /// A handle for retrieving the enrollment later on
-    #[cfg_attr(not(test), tracing::instrument(err, skip_all))]
     pub async fn e2ei_enrollment_stash(&self, enrollment: E2eiEnrollment) -> CryptoResult<EnrollmentHandle> {
         enrollment.stash(&self.mls_backend).await
     }
@@ -54,7 +51,6 @@ impl MlsCentral {
     ///
     /// # Arguments
     /// * `handle` - returned by [MlsCentral::e2ei_enrollment_stash]
-    #[cfg_attr(not(test), tracing::instrument(err, skip_all))]
     pub async fn e2ei_enrollment_stash_pop(&self, handle: EnrollmentHandle) -> CryptoResult<E2eiEnrollment> {
         E2eiEnrollment::stash_pop(&self.mls_backend, handle).await
     }

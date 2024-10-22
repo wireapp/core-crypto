@@ -51,7 +51,6 @@ impl MlsCentral {
     /// * `display_name` - human readable name displayed in the application e.g. `Smith, Alice M (QA)`
     /// * `handle` - user handle e.g. `alice.smith.qa@example.com`
     /// * `expiry_sec` - generated x509 certificate expiry in seconds
-    #[cfg_attr(not(test), tracing::instrument(err, skip_all))]
     pub fn e2ei_new_enrollment(
         &self,
         client_id: ClientId,
@@ -78,7 +77,6 @@ impl MlsCentral {
 
     /// Parses the ACME server response from the endpoint fetching x509 certificates and uses it
     /// to initialize the MLS client with a certificate
-    #[cfg_attr(not(test), tracing::instrument(err, skip_all))]
     pub async fn e2ei_mls_init_only(
         &mut self,
         enrollment: &mut E2eiEnrollment,
@@ -155,7 +153,6 @@ impl E2eiEnrollment {
     /// * `handle` - user handle e.g. `alice.smith.qa@example.com`
     /// * `expiry_sec` - generated x509 certificate expiry in seconds
     #[allow(clippy::too_many_arguments)]
-    #[cfg_attr(not(test), tracing::instrument(err, skip_all))]
     pub fn try_new(
         client_id: ClientId,
         display_name: String,
@@ -205,7 +202,6 @@ impl E2eiEnrollment {
     ///
     /// # Parameters
     /// * `directory` - http response body
-    #[cfg_attr(not(test), tracing::instrument(err, skip_all))]
     pub fn directory_response(&mut self, directory: Json) -> E2eIdentityResult<types::E2eiAcmeDirectory> {
         let directory = serde_json::from_slice(&directory[..])?;
         let directory: types::E2eiAcmeDirectory = self.acme_directory_response(directory)?.into();
@@ -221,7 +217,6 @@ impl E2eiEnrollment {
     /// # Parameters
     /// * `directory` - you got from [Self::directory_response]
     /// * `previous_nonce` - you got from calling `HEAD {directory.new_nonce}`
-    #[cfg_attr(not(test), tracing::instrument(err, skip_all))]
     pub fn new_account_request(&self, previous_nonce: String) -> E2eIdentityResult<Json> {
         let directory = self.directory.as_ref().ok_or(E2eIdentityError::OutOfOrderEnrollment(
             "You must first call 'directoryResponse()'",
@@ -237,7 +232,6 @@ impl E2eiEnrollment {
     ///
     /// # Parameters
     /// * `account` - http response body
-    #[cfg_attr(not(test), tracing::instrument(err, skip_all))]
     pub fn new_account_response(&mut self, account: Json) -> E2eIdentityResult<()> {
         let account = serde_json::from_slice(&account[..])?;
         let account = self.acme_new_account_response(account)?;
@@ -251,7 +245,6 @@ impl E2eiEnrollment {
     ///
     /// # Parameters
     /// * `previous_nonce` - `replay-nonce` response header from `POST /acme/{provisioner-name}/new-account`
-    #[cfg_attr(not(test), tracing::instrument(err, skip_all))]
     pub fn new_order_request(&self, previous_nonce: String) -> E2eIdentityResult<Json> {
         let directory = self.directory.as_ref().ok_or(E2eIdentityError::OutOfOrderEnrollment(
             "You must first call 'directoryResponse()'",
@@ -278,7 +271,6 @@ impl E2eiEnrollment {
     ///
     /// # Parameters
     /// * `new_order` - http response body
-    #[cfg_attr(not(test), tracing::instrument(err, skip_all))]
     pub fn new_order_response(&self, order: Json) -> E2eIdentityResult<types::E2eiNewAcmeOrder> {
         let order = serde_json::from_slice(&order[..])?;
         self.acme_new_order_response(order)?.try_into()
@@ -292,8 +284,7 @@ impl E2eiEnrollment {
     /// * `url` - one of the URL in new order's authorizations (from [Self::new_order_response])
     /// * `account` - you got from [Self::new_account_response]
     /// * `previous_nonce` - `replay-nonce` response header from `POST /acme/{provisioner-name}/new-order`
-    /// (or from the previous to this method if you are creating the second authorization)
-    #[cfg_attr(not(test), tracing::instrument(err, skip_all))]
+    ///   (or from the previous to this method if you are creating the second authorization)
     pub fn new_authz_request(&self, url: String, previous_nonce: String) -> E2eIdentityResult<Json> {
         let account = self.account.as_ref().ok_or(E2eIdentityError::OutOfOrderEnrollment(
             "You must first call 'newAccountResponse()'",
@@ -309,7 +300,6 @@ impl E2eiEnrollment {
     ///
     /// # Parameters
     /// * `new_authz` - http response body
-    #[cfg_attr(not(test), tracing::instrument(err, skip_all))]
     pub fn new_authz_response(&mut self, authz: Json) -> E2eIdentityResult<types::E2eiNewAcmeAuthz> {
         let authz = serde_json::from_slice(&authz[..])?;
         let authz = self.acme_new_authz_response(authz)?;
@@ -331,10 +321,9 @@ impl E2eiEnrollment {
     /// # Parameters
     /// * `expiry_secs` - of the client Dpop JWT. This should be equal to the grace period set in Team Management
     /// * `backend_nonce` - you get by calling `GET /clients/token/nonce` on wire-server.
-    /// See endpoint [definition](https://staging-nginz-https.zinfra.io/api/swagger-ui/#/default/get_clients__client__nonce)
+    ///   See endpoint [definition](https://staging-nginz-https.zinfra.io/api/swagger-ui/#/default/get_clients__client__nonce)
     /// * `expiry` - token expiry
     #[allow(clippy::too_many_arguments)]
-    #[cfg_attr(not(test), tracing::instrument(err, skip_all))]
     pub fn create_dpop_token(&self, expiry_secs: u32, backend_nonce: String) -> E2eIdentityResult<String> {
         let expiry = core::time::Duration::from_secs(expiry_secs as u64);
         let authz = self
@@ -367,7 +356,6 @@ impl E2eiEnrollment {
     /// * `dpop_challenge` - you found after [Self::new_authz_response]
     /// * `account` - you got from [Self::new_account_response]
     /// * `previous_nonce` - `replay-nonce` response header from `POST /acme/{provisioner-name}/authz/{authz-id}`
-    #[cfg_attr(not(test), tracing::instrument(err, skip_all))]
     pub fn new_dpop_challenge_request(&self, access_token: String, previous_nonce: String) -> E2eIdentityResult<Json> {
         let authz = self
             .device_authz
@@ -393,7 +381,6 @@ impl E2eiEnrollment {
     ///
     /// # Parameters
     /// * `challenge` - http response body
-    #[cfg_attr(not(test), tracing::instrument(err, skip_all))]
     pub fn new_dpop_challenge_response(&self, challenge: Json) -> E2eIdentityResult<()> {
         let challenge = serde_json::from_slice(&challenge[..])?;
         Ok(self.acme_new_challenge_response(challenge)?)
@@ -409,7 +396,6 @@ impl E2eiEnrollment {
     /// * `oidc_challenge` - you found after [Self::new_authz_response]
     /// * `account` - you got from [Self::new_account_response]
     /// * `previous_nonce` - `replay-nonce` response header from `POST /acme/{provisioner-name}/authz/{authz-id}`
-    #[cfg_attr(not(test), tracing::instrument(err, skip_all))]
     pub fn new_oidc_challenge_request(
         &mut self,
         id_token: String,
@@ -447,7 +433,6 @@ impl E2eiEnrollment {
     ///
     /// # Parameters
     /// * `challenge` - http response body
-    #[cfg_attr(not(test), tracing::instrument(err, skip_all))]
     pub async fn new_oidc_challenge_response(
         &mut self,
         #[cfg(not(target_family = "wasm"))] backend: &MlsCryptoProvider,
@@ -478,7 +463,6 @@ impl E2eiEnrollment {
     /// * `order_url` - `location` header from http response you got from [Self::new_order_response]
     /// * `account` - you got from [Self::new_account_response]
     /// * `previous_nonce` - `replay-nonce` response header from `POST /acme/{provisioner-name}/challenge/{challenge-id}`
-    #[cfg_attr(not(test), tracing::instrument(err, skip_all))]
     pub fn check_order_request(&self, order_url: String, previous_nonce: String) -> E2eIdentityResult<Json> {
         let account = self.account.as_ref().ok_or(E2eIdentityError::OutOfOrderEnrollment(
             "You must first call 'newAccountResponse()'",
@@ -497,7 +481,6 @@ impl E2eiEnrollment {
     ///
     /// # Returns
     /// The finalize url to use with [Self::finalize_request]
-    #[cfg_attr(not(test), tracing::instrument(err, skip_all))]
     pub fn check_order_response(&mut self, order: Json) -> E2eIdentityResult<String> {
         let order = serde_json::from_slice(&order[..])?;
         let valid_order = self.acme_check_order_response(order)?;
@@ -515,7 +498,6 @@ impl E2eiEnrollment {
     /// * `order` - you got from [Self::check_order_response]
     /// * `account` - you got from [Self::new_account_response]
     /// * `previous_nonce` - `replay-nonce` response header from `POST /acme/{provisioner-name}/order/{order-id}`
-    #[cfg_attr(not(test), tracing::instrument(err, skip_all))]
     pub fn finalize_request(&mut self, previous_nonce: String) -> E2eIdentityResult<Json> {
         let account = self.account.as_ref().ok_or(E2eIdentityError::OutOfOrderEnrollment(
             "You must first call 'newAccountResponse()'",
@@ -537,7 +519,6 @@ impl E2eiEnrollment {
     ///
     /// # Returns
     /// The certificate url to use with [Self::certificate_request]
-    #[cfg_attr(not(test), tracing::instrument(err, skip_all))]
     pub fn finalize_response(&mut self, finalize: Json) -> E2eIdentityResult<String> {
         let finalize = serde_json::from_slice(&finalize[..])?;
         let finalize = self.acme_finalize_response(finalize)?;
@@ -554,7 +535,6 @@ impl E2eiEnrollment {
     /// * `finalize` - you got from [Self::finalize_response]
     /// * `account` - you got from [Self::new_account_response]
     /// * `previous_nonce` - `replay-nonce` response header from `POST /acme/{provisioner-name}/order/{order-id}/finalize`
-    #[cfg_attr(not(test), tracing::instrument(err, skip_all))]
     pub fn certificate_request(&mut self, previous_nonce: String) -> E2eIdentityResult<Json> {
         let account = self.account.take().ok_or(E2eIdentityError::OutOfOrderEnrollment(
             "You must first call 'newAccountResponse()'",
@@ -567,7 +547,6 @@ impl E2eiEnrollment {
         Ok(certificate)
     }
 
-    #[cfg_attr(not(test), tracing::instrument(err, skip_all))]
     async fn certificate_response(
         &mut self,
         certificate_chain: String,
