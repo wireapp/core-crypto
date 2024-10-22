@@ -30,6 +30,12 @@ See [ARCHITECTURE.md](docs/ARCHITECTURE.md)
 - rust: [https://www.rust-lang.org/tools/install](https://www.rust-lang.org/tools/install)
 - cargo-make: [https://sagiegurari.github.io/cargo-make/](https://sagiegurari.github.io/cargo-make/)
 
+If you're using macOS, you'll also need to install GNU sed:
+```ignore
+brew install gnu-sed
+```
+and add an alias to your shell configuration file: `alias sed=gsed` (e.g. to `~/.zshenv` if you're using zsh).
+
 ### Android
 
 Install Android SDK and Build-Tools for API level 30+
