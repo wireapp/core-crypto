@@ -27,7 +27,6 @@ use crate::{
 impl MlsConversation {
     /// see [MlsCentral::commit_accepted]
     #[cfg_attr(test, crate::durable)]
-    #[cfg_attr(not(test), tracing::instrument(err, skip_all))]
     pub async fn commit_accepted(&mut self, backend: &MlsCryptoProvider) -> CryptoResult<()> {
         // openmls stores here all the encryption keypairs used for update proposals..
         let previous_own_leaf_nodes = self.group.own_leaf_nodes.clone();
@@ -46,7 +45,6 @@ impl MlsConversation {
 
     /// see [MlsCentral::clear_pending_proposal]
     #[cfg_attr(test, crate::durable)]
-    #[cfg_attr(not(test), tracing::instrument(err, skip_all))]
     pub async fn clear_pending_proposal(
         &mut self,
         proposal_ref: MlsProposalRef,
@@ -65,7 +63,6 @@ impl MlsConversation {
 
     /// see [MlsCentral::clear_pending_commit]
     #[cfg_attr(test, crate::durable)]
-    #[cfg_attr(not(test), tracing::instrument(err, skip_all))]
     pub async fn clear_pending_commit(&mut self, backend: &MlsCryptoProvider) -> CryptoResult<()> {
         if self.group.pending_commit().is_some() {
             self.group.clear_pending_commit();
@@ -94,7 +91,6 @@ impl MlsCentral {
     /// to be used for the new epoch.
     /// We can now safely "merge" it (effectively apply the commit to the group) and update it
     /// in the keystore. The previous can be discarded to respect Forward Secrecy.
-    #[cfg_attr(not(test), tracing::instrument(err, skip_all))]
     pub async fn commit_accepted(
         &mut self,
         id: &ConversationId,
@@ -118,13 +114,12 @@ impl MlsCentral {
     ///
     /// # Arguments
     /// * `conversation_id` - the group/conversation id
-    /// * `proposal_ref` - unique proposal identifier which is present in [crate::prelude::MlsProposalBundle] and
-    /// returned from all operation creating a proposal
+    /// * `proposal_ref` - unique proposal identifier which is present in [crate::prelude::MlsProposalBundle]
+    ///   and returned from all operation creating a proposal
     ///
     /// # Errors
     /// When the conversation is not found or the proposal reference does not identify a proposal
     /// in the local pending proposal store
-    #[cfg_attr(not(test), tracing::instrument(err, skip_all))]
     pub async fn clear_pending_proposal(
         &mut self,
         conversation_id: &ConversationId,
@@ -152,7 +147,6 @@ impl MlsCentral {
     /// # Errors
     /// When the conversation is not found or there is no pending commit
     #[cfg_attr(test, crate::idempotent)]
-    #[cfg_attr(not(test), tracing::instrument(err, skip_all))]
     pub async fn clear_pending_commit(&mut self, conversation_id: &ConversationId) -> CryptoResult<()> {
         self.get_conversation(conversation_id)
             .await?

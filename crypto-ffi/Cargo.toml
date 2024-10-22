@@ -27,8 +27,6 @@ futures-util.workspace = true
 async-trait.workspace = true
 tls_codec.workspace = true
 async-lock.workspace = true
-tracing.workspace = true
-tracing-subscriber.workspace = true
 log.workspace = true
 
 # see https://github.com/RustCrypto/hashes/issues/404

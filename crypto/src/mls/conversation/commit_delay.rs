@@ -1,8 +1,8 @@
+use log::{debug, trace};
 use openmls::prelude::LeafNodeIndex;
 
 use super::MlsConversation;
 use crate::MlsError;
-use tracing::{debug, trace};
 
 /// These constants intend to ramp up the delay and flatten the curve for later positions
 const DELAY_RAMP_UP_MULTIPLIER: f32 = 120.0;
@@ -16,7 +16,6 @@ impl MlsConversation {
     /// * `self_index` - ratchet tree index of self client
     /// * `epoch` - current group epoch
     /// * `nb_members` - number of clients in the group
-    #[cfg_attr(not(test), tracing::instrument(skip(self), ret))]
     pub fn compute_next_commit_delay(&self) -> Option<u64> {
         use openmls::messages::proposals::Proposal;
 
@@ -34,7 +33,7 @@ impl MlsConversation {
                 .collect::<Vec<LeafNodeIndex>>();
 
             let self_index = self.group.own_leaf_index();
-            debug!(removed_index = ?removed_index, self_index = ?self_index, "Indexes");
+            debug!(removed_index:? = removed_index, self_index:? = self_index; "Indexes");
             // Find a remove proposal that concerns us
             let is_self_removed = removed_index.iter().any(|&i| i == self_index);
 

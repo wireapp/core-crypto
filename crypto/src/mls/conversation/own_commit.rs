@@ -49,7 +49,6 @@ impl MlsConversation {
         }
     }
 
-    #[cfg_attr(not(test), tracing::instrument(skip_all, err))]
     pub(crate) async fn handle_own_commit<'a>(
         &mut self,
         backend: &MlsCryptoProvider,

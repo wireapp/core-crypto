@@ -20,7 +20,6 @@ use openmls::prelude::{
 };
 use openmls_traits::OpenMlsCryptoProvider;
 use tls_codec::Serialize;
-use tracing::Instrument;
 
 use core_crypto_keystore::{
     entities::{MlsPendingMessage, PersistedMlsPendingGroup},
@@ -76,13 +75,12 @@ impl MlsCentral {
     /// bad can happen if you forget to except some storage space wasted.
     ///
     /// # Arguments
-    /// * `group_info` - a GroupInfo wrapped in a MLS message. it can be obtained by deserializing a TLS
-    /// serialized `GroupInfo` object
+    /// * `group_info` - a GroupInfo wrapped in a MLS message. it can be obtained by deserializing a TLS serialized `GroupInfo` object
     /// * `custom_cfg` - configuration of the MLS conversation fetched from the Delivery Service
     /// * `credential_type` - kind of [openmls::prelude::Credential] to use for joining this group.
-    /// If [MlsCredentialType::Basic] is chosen and no Credential has been created yet for it,
-    /// a new one will be generated. When [MlsCredentialType::X509] is chosen, it fails when no
-    /// [openmls::prelude::Credential] has been created for the given Ciphersuite.
+    ///   If [MlsCredentialType::Basic] is chosen and no Credential has been created yet for it,
+    ///   a new one will be generated. When [MlsCredentialType::X509] is chosen, it fails when no
+    ///   [openmls::prelude::Credential] has been created for the given Ciphersuite.
     ///
     /// # Return type
     /// It will return a tuple with the group/conversation id and the message containing the
@@ -90,7 +88,6 @@ impl MlsCentral {
     ///
     /// # Errors
     /// Errors resulting from OpenMls, the KeyStore calls and serialization
-    #[cfg_attr(not(test), tracing::instrument(err, skip(self, group_info, custom_cfg)))]
     pub async fn join_by_external_commit(
         &mut self,
         group_info: VerifiableGroupInfo,
@@ -121,7 +118,6 @@ impl MlsCentral {
             &[],
             cb.to_mls_credential_with_key(),
         )
-        .in_current_span()
         .await
         .map_err(MlsError::from)?;
 
@@ -159,7 +155,6 @@ impl MlsCentral {
     /// # Errors
     /// Errors resulting from OpenMls, the KeyStore calls and deserialization
     #[cfg_attr(test, crate::dispotent)]
-    #[cfg_attr(not(test), tracing::instrument(err, skip_all))]
     pub async fn merge_pending_group_from_external_commit(
         &mut self,
         id: &ConversationId,
@@ -229,7 +224,6 @@ impl MlsCentral {
 }
 
 impl MlsConversation {
-    #[cfg_attr(not(test), tracing::instrument(err, skip_all))]
     pub(crate) async fn validate_external_commit(
         &self,
         commit: &StagedCommit,
@@ -267,7 +261,6 @@ impl MlsConversation {
                     existing_clients.clone(),
                     parent_clients,
                 )
-                .in_current_span()
                 .await
             {
                 return Err(CryptoError::UnauthorizedExternalCommit);
@@ -276,7 +269,6 @@ impl MlsConversation {
             // to perform such operation
             if !callbacks
                 .user_authorize(self.id.clone(), sender, existing_clients)
-                .in_current_span()
                 .await
             {
                 return Err(CryptoError::UnauthorizedExternalCommit);
