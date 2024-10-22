@@ -35,7 +35,7 @@ impl KeycloakImage {
     const NAME: &'static str = "wire-keycloak";
     const TAG: &'static str = "latest";
     // Keep keycloak versions in sync (search for this comment to find all places to update)
-    const VERSION: &'static str = "25.0.2";
+    const VERSION: &'static str = "26.0.1";
 
     pub const USER: &'static str = "admin";
     pub const PASSWORD: &'static str = "changeme";
