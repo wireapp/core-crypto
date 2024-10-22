@@ -261,6 +261,12 @@ cfg_if::cfg_if! {
 
         pub trait Entity: EntityBase {
             fn id_raw(&self) -> &[u8];
+            
+            /// The query results that are obtained during a transaction
+            /// from the transaction cache and the database are merged by this key.
+            fn merge_key(&self) -> Vec<u8> {
+                self.id_raw().into()
+            }
         }
 
         pub trait EntityIdStringExt: Entity {
