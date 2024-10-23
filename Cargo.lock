@@ -2407,6 +2407,7 @@ dependencies = [
  "color-eyre",
  "const_format",
  "core-crypto",
+ "core-crypto-ffi",
  "cryptobox",
  "dirs",
  "fantoccini",
