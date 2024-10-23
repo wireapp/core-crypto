@@ -16,7 +16,7 @@
 
 use crate::{
     connection::{DatabaseConnection, KeystoreDatabaseConnection, TransactionWrapper},
-    entities::{E2eiIntermediateCert, Entity, EntityBase, EntityFindParams, EntityMlsExt, StringEntityId},
+    entities::{E2eiIntermediateCert, Entity, EntityBase, EntityFindParams, EntityTransactionExt, StringEntityId},
     CryptoKeystoreResult, MissingKeyErrorKind,
 };
 
@@ -122,8 +122,8 @@ impl EntityBase for E2eiIntermediateCert {
 
 #[cfg_attr(target_family = "wasm", async_trait::async_trait(?Send))]
 #[cfg_attr(not(target_family = "wasm"), async_trait::async_trait)]
-impl EntityMlsExt for E2eiIntermediateCert {
-    async fn mls_save(&self, transaction: &TransactionWrapper<'_>) -> CryptoKeystoreResult<()> {
+impl EntityTransactionExt for E2eiIntermediateCert {
+    async fn save(&self, transaction: &TransactionWrapper<'_>) -> CryptoKeystoreResult<()> {
         use rusqlite::ToSql as _;
 
         Self::ConnectionType::check_buffer_size(self.content.len())?;
@@ -156,7 +156,7 @@ impl EntityMlsExt for E2eiIntermediateCert {
         Ok(())
     }
 
-    async fn mls_delete(transaction: &TransactionWrapper<'_>, id: StringEntityId<'_>) -> CryptoKeystoreResult<()> {
+    async fn delete(transaction: &TransactionWrapper<'_>, id: StringEntityId<'_>) -> CryptoKeystoreResult<()> {
         let updated = transaction.execute(
             "DELETE FROM e2ei_intermediate_certs WHERE ski_aki_pair = ?",
             [id.try_as_str()?],

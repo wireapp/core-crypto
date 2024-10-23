@@ -16,7 +16,7 @@
 
 use crate::{
     connection::TransactionWrapper,
-    entities::{EntityIdStringExt, EntityMlsExt},
+    entities::{EntityIdStringExt, EntityTransactionExt},
     CryptoKeystoreResult,
 };
 use crate::{
@@ -119,8 +119,8 @@ impl EntityBase for MlsPskBundle {
 
 #[cfg_attr(target_family = "wasm", async_trait::async_trait(?Send))]
 #[cfg_attr(not(target_family = "wasm"), async_trait::async_trait)]
-impl EntityMlsExt for MlsPskBundle {
-    async fn mls_save(&self, transaction: &TransactionWrapper<'_>) -> CryptoKeystoreResult<()> {
+impl EntityTransactionExt for MlsPskBundle {
+    async fn save(&self, transaction: &TransactionWrapper<'_>) -> CryptoKeystoreResult<()> {
         use rusqlite::ToSql as _;
         Self::ConnectionType::check_buffer_size(self.psk.len())?;
         Self::ConnectionType::check_buffer_size(self.psk_id.len())?;
@@ -153,7 +153,7 @@ impl EntityMlsExt for MlsPskBundle {
         Ok(())
     }
 
-    async fn mls_delete(transaction: &TransactionWrapper<'_>, id: StringEntityId<'_>) -> CryptoKeystoreResult<()> {
+    async fn delete(transaction: &TransactionWrapper<'_>, id: StringEntityId<'_>) -> CryptoKeystoreResult<()> {
         let updated = transaction.execute("DELETE FROM mls_psk_bundles WHERE id_sha256 = ?", [id.sha256()])?;
 
         if updated > 0 {

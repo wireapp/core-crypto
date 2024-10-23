@@ -17,7 +17,7 @@
 use crate::{
     connection::{DatabaseConnection, KeystoreDatabaseConnection},
     entities::{
-        Entity, EntityBase, EntityFindParams, EntityMlsExt, PersistedMlsGroup, PersistedMlsGroupExt,
+        Entity, EntityBase, EntityFindParams, EntityTransactionExt, PersistedMlsGroup, PersistedMlsGroupExt,
         PersistedMlsPendingGroup, StringEntityId,
     },
     CryptoKeystoreResult, MissingKeyErrorKind,
@@ -68,7 +68,7 @@ impl EntityBase for PersistedMlsGroup {
 
 #[cfg_attr(target_family = "wasm", async_trait::async_trait(?Send))]
 #[cfg_attr(not(target_family = "wasm"), async_trait::async_trait)]
-impl EntityMlsExt for PersistedMlsGroup {}
+impl EntityTransactionExt for PersistedMlsGroup {}
 
 impl Entity for PersistedMlsGroup {
     fn id_raw(&self) -> &[u8] {
@@ -139,7 +139,7 @@ impl EntityBase for PersistedMlsPendingGroup {
 
 #[cfg_attr(target_family = "wasm", async_trait::async_trait(?Send))]
 #[cfg_attr(not(target_family = "wasm"), async_trait::async_trait)]
-impl EntityMlsExt for PersistedMlsPendingGroup {}
+impl EntityTransactionExt for PersistedMlsPendingGroup {}
 
 impl Entity for PersistedMlsPendingGroup {
     fn id_raw(&self) -> &[u8] {

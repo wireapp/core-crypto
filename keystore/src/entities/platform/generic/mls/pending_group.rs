@@ -21,7 +21,7 @@ use crate::{
 };
 use crate::{
     connection::{DatabaseConnection, TransactionWrapper},
-    entities::EntityMlsExt,
+    entities::EntityTransactionExt,
     CryptoKeystoreResult,
 };
 
@@ -241,8 +241,8 @@ impl EntityBase for PersistedMlsPendingGroup {
 
 #[cfg_attr(target_family = "wasm", async_trait::async_trait(?Send))]
 #[cfg_attr(not(target_family = "wasm"), async_trait::async_trait)]
-impl EntityMlsExt for PersistedMlsPendingGroup {
-    async fn mls_save(&self, transaction: &TransactionWrapper<'_>) -> CryptoKeystoreResult<()> {
+impl EntityTransactionExt for PersistedMlsPendingGroup {
+    async fn save(&self, transaction: &TransactionWrapper<'_>) -> CryptoKeystoreResult<()> {
         let parent_id = self.parent_id.as_ref();
 
         use rusqlite::OptionalExtension as _;
@@ -320,7 +320,7 @@ impl EntityMlsExt for PersistedMlsPendingGroup {
         Ok(())
     }
 
-    async fn mls_delete(transaction: &TransactionWrapper<'_>, id: StringEntityId<'_>) -> CryptoKeystoreResult<()> {
+    async fn delete(transaction: &TransactionWrapper<'_>, id: StringEntityId<'_>) -> CryptoKeystoreResult<()> {
         let updated = transaction.execute("DELETE FROM mls_pending_groups WHERE id = ?", [id.as_slice()])?;
 
         if updated > 0 {

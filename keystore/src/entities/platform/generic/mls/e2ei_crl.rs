@@ -16,7 +16,7 @@
 
 use crate::{
     connection::{DatabaseConnection, KeystoreDatabaseConnection, TransactionWrapper},
-    entities::{E2eiCrl, Entity, EntityBase, EntityFindParams, EntityMlsExt, StringEntityId},
+    entities::{E2eiCrl, Entity, EntityBase, EntityFindParams, EntityTransactionExt, StringEntityId},
     CryptoKeystoreResult, MissingKeyErrorKind,
 };
 
@@ -111,8 +111,8 @@ impl EntityBase for E2eiCrl {
 
 #[cfg_attr(target_family = "wasm", async_trait::async_trait(?Send))]
 #[cfg_attr(not(target_family = "wasm"), async_trait::async_trait)]
-impl EntityMlsExt for E2eiCrl {
-    async fn mls_save(&self, transaction: &TransactionWrapper<'_>) -> CryptoKeystoreResult<()> {
+impl EntityTransactionExt for E2eiCrl {
+    async fn save(&self, transaction: &TransactionWrapper<'_>) -> CryptoKeystoreResult<()> {
         use rusqlite::ToSql as _;
 
         Self::ConnectionType::check_buffer_size(self.content.len())?;
@@ -140,7 +140,7 @@ impl EntityMlsExt for E2eiCrl {
         Ok(())
     }
 
-    async fn mls_delete(transaction: &TransactionWrapper<'_>, id: StringEntityId<'_>) -> CryptoKeystoreResult<()> {
+    async fn delete(transaction: &TransactionWrapper<'_>, id: StringEntityId<'_>) -> CryptoKeystoreResult<()> {
         let updated = transaction.execute("DELETE FROM e2ei_crls WHERE distribution_point = ?", [id.try_as_str()?])?;
 
         if updated > 0 {
