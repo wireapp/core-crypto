@@ -15,49 +15,39 @@
 // along with this program. If not, see http://www.gnu.org/licenses/.
 
 use color_eyre::eyre::Result;
-use core_crypto::prelude::MlsCiphersuite;
-use serde_json::json;
+use core_crypto_ffi::{ClientId, CoreCrypto, CustomConfiguration, MlsCredentialType, UniffiCustomTypeConverter};
+use std::sync::Arc;
 
-use core_crypto_ffi::{CiphersuiteName, CoreCrypto, CustomConfiguration, Invitee, MlsCredentialType};
-
-use crate::clients::{
-    EmulatedClient, EmulatedClientProtocol, EmulatedClientType, EmulatedMlsClient, CIPHERSUITE_IN_USE,
+use crate::{
+    clients::{EmulatedClient, EmulatedClientProtocol, EmulatedClientType, EmulatedMlsClient},
+    CIPHERSUITE_IN_USE,
 };
 
 #[derive(Debug)]
-pub(crate) struct CoreCryptoFfiClient<'a> {
-    cc: CoreCrypto<'a>,
+pub(crate) struct CoreCryptoFfiClient {
+    cc: CoreCrypto,
     client_id: Vec<u8>,
     #[cfg(feature = "proteus")]
     prekey_last_id: u16,
 }
 
-impl<'a> CoreCryptoFfiClient<'a> {
-    pub(crate) async fn new() -> Result<CoreCryptoFfiClient<'a>> {
+impl CoreCryptoFfiClient {
+    pub(crate) async fn new() -> Result<CoreCryptoFfiClient> {
         let client_id = uuid::Uuid::new_v4();
+        let client_id_bytes: Vec<u8> = client_id.as_hyphenated().to_string().as_bytes().into();
+        let client_id = ClientId::into_custom(client_id_bytes.clone()).unwrap();
         let ciphersuite = CIPHERSUITE_IN_USE.into();
         let cc = CoreCrypto::new(
-            "path",
-            "key",
-            &client_id.as_bytes().to_vec().into(),
-            vec![ciphersuite],
+            "path".into(),
+            "key".into(),
+            Some(client_id),
+            Some(vec![ciphersuite].into()),
             None,
-        )?;
+        )
+        .await?;
         Ok(Self {
             cc,
-            client_id: client_id.into_bytes().into(),
-            #[cfg(feature = "proteus")]
-            prekey_last_id: 0,
-        })
-    }
-
-    pub(crate) async fn new_deferred() -> Result<CoreCryptoFfiClient<'a>> {
-        let client_id = uuid::Uuid::new_v4();
-        let ciphersuite = CIPHERSUITE_IN_USE.into();
-        let cc = CoreCrypto::deferred_init("path", "key")?;
-        Ok(Self {
-            cc,
-            client_id: client_id.into_bytes().into(),
+            client_id: client_id_bytes,
             #[cfg(feature = "proteus")]
             prekey_last_id: 0,
         })
@@ -65,9 +55,9 @@ impl<'a> CoreCryptoFfiClient<'a> {
 }
 
 #[async_trait::async_trait(?Send)]
-impl<'a> EmulatedClient for CoreCryptoFfiClient<'a> {
+impl EmulatedClient for CoreCryptoFfiClient {
     fn client_name(&self) -> &str {
-        "CoreCrypto::native"
+        "CoreCrypto::ffi"
     }
 
     fn client_type(&self) -> EmulatedClientType {
@@ -83,12 +73,12 @@ impl<'a> EmulatedClient for CoreCryptoFfiClient<'a> {
     }
 
     async fn wipe(mut self) -> Result<()> {
-        Ok(self.cc.wipe()?)
+        Ok(Arc::new(self.cc).wipe().await?)
     }
 }
 
 #[async_trait::async_trait(?Send)]
-impl<'a> EmulatedMlsClient for CoreCryptoFfiClient<'a> {
+impl EmulatedMlsClient for CoreCryptoFfiClient {
     async fn get_keypackage(&mut self) -> Result<Vec<u8>> {
         let ciphersuite = CIPHERSUITE_IN_USE.into();
         let credential_type = MlsCredentialType::Basic;
@@ -101,34 +91,35 @@ impl<'a> EmulatedMlsClient for CoreCryptoFfiClient<'a> {
         Ok(kp)
     }
 
-    async fn add_client(&mut self, conversation_id: &[u8], client_id: &[u8], kp: &[u8]) -> Result<Vec<u8>> {
-        if !self.cc.conversation_exists(conversation_id.to_vec()) {
+    async fn add_client(&mut self, conversation_id: &[u8], kp: &[u8]) -> Result<Vec<u8>> {
+        if !self.cc.conversation_exists(conversation_id.to_vec()).await? {
             let cfg = core_crypto_ffi::ConversationConfiguration {
-                ciphersuite: Some(CIPHERSUITE_IN_USE.into()),
+                ciphersuite: CIPHERSUITE_IN_USE.into(),
                 external_senders: vec![],
                 custom: CustomConfiguration {
                     key_rotation_span: None,
                     wire_policy: None,
                 },
             };
-            self.cc.create_conversation(conversation_id.to_vec(), cfg)?;
+            self.cc
+                .create_conversation(conversation_id.to_vec(), MlsCredentialType::Basic, cfg)
+                .await?;
         }
 
-        let invitee = Invitee {
-            id: client_id.into(),
-            kp: kp.to_vec(),
-        };
         let welcome = self
             .cc
-            .add_clients_to_conversation(conversation_id.to_vec(), vec![invitee])?;
+            .add_clients_to_conversation(conversation_id.to_vec(), vec![kp.to_vec()])
+            .await?;
 
         Ok(welcome.welcome)
     }
 
     async fn kick_client(&mut self, conversation_id: &[u8], client_id: &[u8]) -> Result<Vec<u8>> {
+        let client_id = ClientId::into_custom(client_id.to_vec()).unwrap();
         let commit = self
             .cc
-            .remove_clients_from_conversation(conversation_id.to_vec(), vec![client_id.into()])?;
+            .remove_clients_from_conversation(conversation_id.to_vec(), vec![client_id])
+            .await?;
 
         Ok(commit.commit)
     }
@@ -138,48 +129,70 @@ impl<'a> EmulatedMlsClient for CoreCryptoFfiClient<'a> {
             key_rotation_span: None,
             wire_policy: None,
         };
-        Ok(self.cc.process_welcome_message(welcome, cfg)?.id)
+        Ok(self.cc.process_welcome_message(welcome.to_vec(), cfg).await?.id)
     }
 
     async fn encrypt_message(&mut self, conversation_id: &[u8], message: &[u8]) -> Result<Vec<u8>> {
-        Ok(self.cc.encrypt_message(conversation_id.to_vec(), message)?)
+        self.cc
+            .encrypt_message(conversation_id.to_vec(), message.to_vec())
+            .await
+            .map_err(Into::into)
     }
 
     async fn decrypt_message(&mut self, conversation_id: &[u8], message: &[u8]) -> Result<Option<Vec<u8>>> {
-        Ok(self.cc.decrypt_message(conversation_id.to_vec(), message)?.message)
+        Ok(self
+            .cc
+            .decrypt_message(conversation_id.to_vec(), message.to_vec())
+            .await?
+            .message)
     }
 }
 
 #[cfg(feature = "proteus")]
 #[async_trait::async_trait(?Send)]
-impl<'a> crate::clients::EmulatedProteusClient for CoreCryptoFfiClient<'a> {
+impl crate::clients::EmulatedProteusClient for CoreCryptoFfiClient {
     async fn init(&mut self) -> Result<()> {
-        Ok(self.cc.proteus_init()?)
+        self.cc.proteus_init().await.map_err(Into::into)
     }
 
     async fn get_prekey(&mut self) -> Result<Vec<u8>> {
         self.prekey_last_id += 1;
-        Ok(self.cc.proteus_new_prekey(self.prekey_last_id)?)
+        self.cc
+            .proteus_new_prekey(self.prekey_last_id)
+            .await
+            .map_err(Into::into)
     }
 
     async fn session_from_prekey(&mut self, session_id: &str, prekey: &[u8]) -> Result<()> {
-        let _ = self.cc.proteus_session_from_prekey(session_id, prekey)?;
+        let _ = self
+            .cc
+            .proteus_session_from_prekey(session_id.to_string(), prekey.to_vec())
+            .await?;
         Ok(())
     }
 
     async fn session_from_message(&mut self, session_id: &str, message: &[u8]) -> Result<Vec<u8>> {
-        Ok(self.cc.proteus_session_from_message(session_id, message)?)
+        self.cc
+            .proteus_session_from_message(session_id.to_string(), message.to_vec())
+            .await
+            .map_err(Into::into)
     }
 
     async fn encrypt(&mut self, session_id: &str, plaintext: &[u8]) -> Result<Vec<u8>> {
-        Ok(self.cc.proteus_encrypt(session_id, plaintext)?)
+        self.cc
+            .proteus_encrypt(session_id.to_string(), plaintext.to_vec())
+            .await
+            .map_err(Into::into)
     }
 
     async fn decrypt(&mut self, session_id: &str, ciphertext: &[u8]) -> Result<Vec<u8>> {
-        Ok(self.cc.proteus_decrypt(session_id, ciphertext)?)
+        self.cc
+            .proteus_decrypt(session_id.to_string(), ciphertext.to_vec())
+            .await
+            .map_err(Into::into)
     }
 
     async fn fingerprint(&self) -> Result<String> {
-        Ok(self.cc.proteus_fingerprint()?)
+        self.cc.proteus_fingerprint().await.map_err(Into::into)
     }
 }
