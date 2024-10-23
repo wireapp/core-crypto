@@ -1,21 +1,17 @@
-use std::{collections::VecDeque, ops::DerefMut, sync::Arc};
-
-use async_lock::RwLock;
-use openmls_basic_credential::SignatureKeyPair;
-use openmls_traits::key_store::OpenMlsKeyStore;
-use openmls_traits::key_store::{MlsEntity, MlsEntityId};
-
-use crate::entities::UniqueEntity;
+use crate::entities::{EntityBase, ProteusIdentity, ProteusPrekey, ProteusSession, UniqueEntity};
 use crate::{
     connection::{Connection, DatabaseConnection, FetchFromDatabase, KeystoreDatabaseConnection, TransactionWrapper},
     entities::{
-        E2eiAcmeCA, E2eiCrl, E2eiEnrollment, E2eiIntermediateCert, E2eiRefreshToken, EntityFindParams, EntityMlsExt,
-        MlsCredential, MlsCredentialExt, MlsEncryptionKeyPair, MlsEpochEncryptionKeyPair, MlsHpkePrivateKey,
-        MlsKeyPackage, MlsPendingMessage, MlsPskBundle, MlsSignatureKeyPair, PersistedMlsGroup,
+        E2eiAcmeCA, E2eiCrl, E2eiEnrollment, E2eiIntermediateCert, E2eiRefreshToken, EntityFindParams,
+        EntityTransactionExt, MlsCredential, MlsCredentialExt, MlsEncryptionKeyPair, MlsEpochEncryptionKeyPair,
+        MlsHpkePrivateKey, MlsKeyPackage, MlsPendingMessage, MlsPskBundle, MlsSignatureKeyPair, PersistedMlsGroup,
         PersistedMlsPendingGroup, StringEntityId,
     },
     CryptoKeystoreError, CryptoKeystoreResult,
 };
+use async_lock::RwLock;
+use itertools::Itertools;
+use std::{ops::DerefMut, sync::Arc};
 
 #[derive(Debug)]
 pub enum Entity {
@@ -34,9 +30,12 @@ pub enum Entity {
     E2eiAcmeCA(E2eiAcmeCA),
     E2eiIntermediateCert(E2eiIntermediateCert),
     E2eiCrl(E2eiCrl),
+    ProteusIdentity(ProteusIdentity),
+    ProteusPrekey(ProteusPrekey),
+    ProteusSession(ProteusSession),
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone, PartialEq)]
 enum EntityId {
     SignatureKeyPair(Vec<u8>),
     HpkePrivateKey(Vec<u8>),
@@ -53,13 +52,9 @@ enum EntityId {
     E2eiAcmeCA(Vec<u8>),
     E2eiIntermediateCert(Vec<u8>),
     E2eiCrl(Vec<u8>),
-}
-
-#[derive(Debug)]
-enum Operation {
-    Store(Entity),
-    Remove(EntityId),
-    RemoveCredential(Vec<u8>),
+    ProteusIdentity(Vec<u8>),
+    ProteusPrekey(Vec<u8>),
+    ProteusSession(Vec<u8>),
 }
 
 impl EntityId {
@@ -80,379 +75,400 @@ impl EntityId {
             EntityId::E2eiAcmeCA(vec) => vec.as_slice().into(),
             EntityId::E2eiIntermediateCert(vec) => vec.as_slice().into(),
             EntityId::E2eiCrl(vec) => vec.as_slice().into(),
-        }
-    }
-}
-
-impl From<Entity> for Operation {
-    fn from(value: Entity) -> Self {
-        Self::Store(value)
-    }
-}
-
-impl From<EntityId> for Operation {
-    fn from(value: EntityId) -> Self {
-        Self::Remove(value)
-    }
-}
-
-impl EntityId {
-    fn from_mls_entity_id(entity_id: MlsEntityId, id: &[u8]) -> Self {
-        match entity_id {
-            MlsEntityId::SignatureKeyPair => Self::SignatureKeyPair(id.into()),
-            MlsEntityId::HpkePrivateKey => Self::HpkePrivateKey(id.into()),
-            MlsEntityId::KeyPackage => Self::KeyPackage(id.into()),
-            MlsEntityId::PskBundle => Self::PskBundle(id.into()),
-            MlsEntityId::EncryptionKeyPair => Self::EncryptionKeyPair(id.into()),
-            MlsEntityId::EpochEncryptionKeyPair => Self::EpochEncryptionKeyPair(id.into()),
-            MlsEntityId::GroupState => Self::PersistedMlsGroup(id.into()),
+            EntityId::ProteusIdentity(vec) => vec.as_slice().into(),
+            EntityId::ProteusSession(id) => id.as_slice().into(),
+            EntityId::ProteusPrekey(vec) => vec.as_slice().into(),
         }
     }
 
     fn from_collection_name(entity_id: &'static str, id: &[u8]) -> CryptoKeystoreResult<Self> {
-        use crate::entities::EntityBase;
         match entity_id {
-            crate::entities::MlsSignatureKeyPair::COLLECTION_NAME => Ok(Self::SignatureKeyPair(id.into())),
-            crate::entities::MlsHpkePrivateKey::COLLECTION_NAME => Ok(Self::HpkePrivateKey(id.into())),
-            crate::entities::MlsKeyPackage::COLLECTION_NAME => Ok(Self::KeyPackage(id.into())),
-            crate::entities::MlsPskBundle::COLLECTION_NAME => Ok(Self::PskBundle(id.into())),
-            crate::entities::MlsEncryptionKeyPair::COLLECTION_NAME => Ok(Self::EncryptionKeyPair(id.into())),
-            crate::entities::MlsEpochEncryptionKeyPair::COLLECTION_NAME => Ok(Self::EpochEncryptionKeyPair(id.into())),
-            crate::entities::PersistedMlsGroup::COLLECTION_NAME => Ok(Self::PersistedMlsGroup(id.into())),
-            crate::entities::PersistedMlsPendingGroup::COLLECTION_NAME => Ok(Self::PersistedMlsPendingGroup(id.into())),
-            crate::entities::MlsCredential::COLLECTION_NAME => Ok(Self::MlsCredential(id.into())),
-            crate::entities::MlsPendingMessage::COLLECTION_NAME => Ok(Self::MlsPendingMessage(id.into())),
-            crate::entities::E2eiEnrollment::COLLECTION_NAME => Ok(Self::E2eiEnrollment(id.into())),
-            crate::entities::E2eiCrl::COLLECTION_NAME => Ok(Self::E2eiCrl(id.into())),
-            crate::entities::E2eiAcmeCA::COLLECTION_NAME => Ok(Self::E2eiAcmeCA(id.into())),
-            crate::entities::E2eiRefreshToken::COLLECTION_NAME => Ok(Self::E2eiRefreshToken(id.into())),
-            crate::entities::E2eiIntermediateCert::COLLECTION_NAME => Ok(Self::E2eiIntermediateCert(id.into())),
+            MlsSignatureKeyPair::COLLECTION_NAME => Ok(Self::SignatureKeyPair(id.into())),
+            MlsHpkePrivateKey::COLLECTION_NAME => Ok(Self::HpkePrivateKey(id.into())),
+            MlsKeyPackage::COLLECTION_NAME => Ok(Self::KeyPackage(id.into())),
+            MlsPskBundle::COLLECTION_NAME => Ok(Self::PskBundle(id.into())),
+            MlsEncryptionKeyPair::COLLECTION_NAME => Ok(Self::EncryptionKeyPair(id.into())),
+            MlsEpochEncryptionKeyPair::COLLECTION_NAME => Ok(Self::EpochEncryptionKeyPair(id.into())),
+            PersistedMlsGroup::COLLECTION_NAME => Ok(Self::PersistedMlsGroup(id.into())),
+            PersistedMlsPendingGroup::COLLECTION_NAME => Ok(Self::PersistedMlsPendingGroup(id.into())),
+            MlsCredential::COLLECTION_NAME => Ok(Self::MlsCredential(id.into())),
+            MlsPendingMessage::COLLECTION_NAME => Ok(Self::MlsPendingMessage(id.into())),
+            E2eiEnrollment::COLLECTION_NAME => Ok(Self::E2eiEnrollment(id.into())),
+            E2eiCrl::COLLECTION_NAME => Ok(Self::E2eiCrl(id.into())),
+            E2eiAcmeCA::COLLECTION_NAME => Ok(Self::E2eiAcmeCA(id.into())),
+            E2eiRefreshToken::COLLECTION_NAME => Ok(Self::E2eiRefreshToken(id.into())),
+            E2eiIntermediateCert::COLLECTION_NAME => Ok(Self::E2eiIntermediateCert(id.into())),
+            ProteusIdentity::COLLECTION_NAME => Ok(Self::ProteusIdentity(id.into())),
+            ProteusPrekey::COLLECTION_NAME => Ok(Self::ProteusPrekey(id.into())),
+            ProteusSession::COLLECTION_NAME => Ok(Self::ProteusSession(id.into())),
             _ => Err(CryptoKeystoreError::NotImplemented),
-        }
-    }
-}
-
-impl Operation {
-    async fn execute(self, tx: &TransactionWrapper<'_>) -> CryptoKeystoreResult<()> {
-        match self {
-            Operation::Store(entity) => Self::handle_entity(tx, &entity).await,
-            Operation::Remove(id) => Self::handle_entity_id(tx, &id).await,
-            Operation::RemoveCredential(cred) => MlsCredential::delete_by_credential(tx, cred).await,
-        }
-    }
-
-    async fn handle_entity(tx: &TransactionWrapper<'_>, entity: &Entity) -> CryptoKeystoreResult<()> {
-        match entity {
-            Entity::SignatureKeyPair(mls_signature_key_pair) => mls_signature_key_pair.mls_save(tx).await,
-            Entity::HpkePrivateKey(mls_hpke_private_key) => mls_hpke_private_key.mls_save(tx).await,
-            Entity::KeyPackage(mls_key_package) => mls_key_package.mls_save(tx).await,
-            Entity::PskBundle(mls_psk_bundle) => mls_psk_bundle.mls_save(tx).await,
-            Entity::EncryptionKeyPair(mls_encryption_key_pair) => mls_encryption_key_pair.mls_save(tx).await,
-            Entity::EpochEncryptionKeyPair(mls_epoch_encryption_key_pair) => {
-                mls_epoch_encryption_key_pair.mls_save(tx).await
-            }
-            Entity::MlsCredential(mls_credential) => mls_credential.mls_save(tx).await,
-            Entity::PersistedMlsGroup(persisted_mls_group) => persisted_mls_group.mls_save(tx).await,
-            Entity::PersistedMlsPendingGroup(persisted_mls_pending_group) => {
-                persisted_mls_pending_group.mls_save(tx).await
-            }
-            Entity::MlsPendingMessage(mls_pending_message) => mls_pending_message.mls_save(tx).await,
-            Entity::E2eiEnrollment(e2ei_enrollment) => e2ei_enrollment.mls_save(tx).await,
-            Entity::E2eiRefreshToken(e2ei_refresh_token) => e2ei_refresh_token.replace(tx).await,
-            Entity::E2eiAcmeCA(e2ei_acme_ca) => e2ei_acme_ca.replace(tx).await,
-            Entity::E2eiIntermediateCert(e2ei_intermediate_cert) => e2ei_intermediate_cert.mls_save(tx).await,
-            Entity::E2eiCrl(e2ei_crl) => e2ei_crl.mls_save(tx).await,
-        }
-    }
-
-    async fn handle_entity_id(tx: &TransactionWrapper<'_>, entity_id: &EntityId) -> CryptoKeystoreResult<()> {
-        use crate::entities::EntityMlsExt;
-        match entity_id {
-            id @ EntityId::SignatureKeyPair(_) => MlsSignatureKeyPair::mls_delete(tx, id.as_id()).await,
-            id @ EntityId::HpkePrivateKey(_) => MlsHpkePrivateKey::mls_delete(tx, id.as_id()).await,
-            id @ EntityId::KeyPackage(_) => MlsKeyPackage::mls_delete(tx, id.as_id()).await,
-            id @ EntityId::PskBundle(_) => MlsPskBundle::mls_delete(tx, id.as_id()).await,
-            id @ EntityId::EncryptionKeyPair(_) => MlsEncryptionKeyPair::mls_delete(tx, id.as_id()).await,
-            id @ EntityId::EpochEncryptionKeyPair(_) => MlsEpochEncryptionKeyPair::mls_delete(tx, id.as_id()).await,
-            id @ EntityId::MlsCredential(_) => MlsCredential::mls_delete(tx, id.as_id()).await,
-            id @ EntityId::PersistedMlsGroup(_) => PersistedMlsGroup::mls_delete(tx, id.as_id()).await,
-            id @ EntityId::PersistedMlsPendingGroup(_) => PersistedMlsPendingGroup::mls_delete(tx, id.as_id()).await,
-            id @ EntityId::MlsPendingMessage(_) => MlsPendingMessage::mls_delete(tx, id.as_id()).await,
-            id @ EntityId::E2eiEnrollment(_) => E2eiEnrollment::mls_delete(tx, id.as_id()).await,
-            id @ EntityId::E2eiRefreshToken(_) => E2eiRefreshToken::mls_delete(tx, id.as_id()).await,
-            id @ EntityId::E2eiAcmeCA(_) => E2eiAcmeCA::mls_delete(tx, id.as_id()).await,
-            id @ EntityId::E2eiIntermediateCert(_) => E2eiIntermediateCert::mls_delete(tx, id.as_id()).await,
-            id @ EntityId::E2eiCrl(_) => E2eiCrl::mls_delete(tx, id.as_id()).await,
         }
     }
 
     #[cfg(target_family = "wasm")]
-    fn scan_collection_name(&self) -> &'static str {
-        use crate::entities::EntityBase;
+    fn collection_name(&self) ->  &'static str {
         match self {
-            Operation::Store(Entity::SignatureKeyPair(_)) | Operation::Remove(EntityId::SignatureKeyPair(_)) => {
-                MlsSignatureKeyPair::COLLECTION_NAME
-            }
-            Operation::Store(Entity::HpkePrivateKey(_)) | Operation::Remove(EntityId::HpkePrivateKey(_)) => {
-                MlsHpkePrivateKey::COLLECTION_NAME
-            }
-            Operation::Store(Entity::KeyPackage(_)) | Operation::Remove(EntityId::KeyPackage(_)) => {
-                MlsKeyPackage::COLLECTION_NAME
-            }
-            Operation::Store(Entity::PskBundle(_)) | Operation::Remove(EntityId::PskBundle(_)) => {
-                MlsPskBundle::COLLECTION_NAME
-            }
-            Operation::Store(Entity::EncryptionKeyPair(_)) | Operation::Remove(EntityId::EncryptionKeyPair(_)) => {
-                MlsEncryptionKeyPair::COLLECTION_NAME
-            }
-            Operation::Store(Entity::EpochEncryptionKeyPair(_))
-            | Operation::Remove(EntityId::EpochEncryptionKeyPair(_)) => MlsEpochEncryptionKeyPair::COLLECTION_NAME,
-            Operation::Store(Entity::MlsCredential(_))
-            | Operation::Remove(EntityId::MlsCredential(_))
-            | Operation::RemoveCredential(_) => MlsCredential::COLLECTION_NAME,
-            Operation::Store(Entity::PersistedMlsGroup(_)) | Operation::Remove(EntityId::PersistedMlsGroup(_)) => {
-                PersistedMlsGroup::COLLECTION_NAME
-            }
-            Operation::Store(Entity::PersistedMlsPendingGroup(_))
-            | Operation::Remove(EntityId::PersistedMlsPendingGroup(_)) => PersistedMlsPendingGroup::COLLECTION_NAME,
-            Operation::Store(Entity::MlsPendingMessage(_)) | Operation::Remove(EntityId::MlsPendingMessage(_)) => {
-                MlsPendingMessage::COLLECTION_NAME
-            }
-            Operation::Store(Entity::E2eiEnrollment(_)) | Operation::Remove(EntityId::E2eiEnrollment(_)) => {
-                E2eiEnrollment::COLLECTION_NAME
-            }
-            Operation::Store(Entity::E2eiRefreshToken(_)) | Operation::Remove(EntityId::E2eiRefreshToken(_)) => {
-                E2eiRefreshToken::COLLECTION_NAME
-            }
-            Operation::Store(Entity::E2eiAcmeCA(_)) | Operation::Remove(EntityId::E2eiAcmeCA(_)) => {
-                E2eiAcmeCA::COLLECTION_NAME
-            }
-            Operation::Store(Entity::E2eiIntermediateCert(_))
-            | Operation::Remove(EntityId::E2eiIntermediateCert(_)) => E2eiIntermediateCert::COLLECTION_NAME,
-            Operation::Store(Entity::E2eiCrl(_)) | Operation::Remove(EntityId::E2eiCrl(_)) => E2eiCrl::COLLECTION_NAME,
+            EntityId::SignatureKeyPair(_) => MlsSignatureKeyPair::COLLECTION_NAME,
+            EntityId::KeyPackage(_) => MlsKeyPackage::COLLECTION_NAME,
+            EntityId::PskBundle(_) => MlsPskBundle::COLLECTION_NAME,
+            EntityId::EncryptionKeyPair(_) => MlsEncryptionKeyPair::COLLECTION_NAME,
+            EntityId::EpochEncryptionKeyPair(_) => MlsEpochEncryptionKeyPair::COLLECTION_NAME,
+            EntityId::MlsCredential(_) => MlsCredential::COLLECTION_NAME,
+            EntityId::PersistedMlsGroup(_) => PersistedMlsGroup::COLLECTION_NAME,
+            EntityId::PersistedMlsPendingGroup(_) => PersistedMlsPendingGroup::COLLECTION_NAME,
+            EntityId::MlsPendingMessage(_) => MlsPendingMessage::COLLECTION_NAME,
+            EntityId::E2eiEnrollment(_) => E2eiEnrollment::COLLECTION_NAME,
+            EntityId::E2eiRefreshToken(_) => E2eiRefreshToken::COLLECTION_NAME,
+            EntityId::E2eiAcmeCA(_) => E2eiAcmeCA::COLLECTION_NAME,
+            EntityId::E2eiIntermediateCert(_) => E2eiIntermediateCert::COLLECTION_NAME,
+            EntityId::E2eiCrl(_) => E2eiCrl::COLLECTION_NAME,
+            EntityId::ProteusIdentity(_) => ProteusIdentity::COLLECTION_NAME,
+            EntityId::ProteusPrekey(_) => ProteusPrekey::COLLECTION_NAME,
+            EntityId::ProteusSession(_) => ProteusSession::COLLECTION_NAME,
+            EntityId::HpkePrivateKey(_) => MlsHpkePrivateKey::COLLECTION_NAME,
         }
+    }
+}
+
+async fn execute_save(tx: &TransactionWrapper<'_>, entity: &Entity) -> CryptoKeystoreResult<()> {
+    match entity {
+        Entity::SignatureKeyPair(mls_signature_key_pair) => mls_signature_key_pair.save(tx).await,
+        Entity::HpkePrivateKey(mls_hpke_private_key) => mls_hpke_private_key.save(tx).await,
+        Entity::KeyPackage(mls_key_package) => mls_key_package.save(tx).await,
+        Entity::PskBundle(mls_psk_bundle) => mls_psk_bundle.save(tx).await,
+        Entity::EncryptionKeyPair(mls_encryption_key_pair) => mls_encryption_key_pair.save(tx).await,
+        Entity::EpochEncryptionKeyPair(mls_epoch_encryption_key_pair) => mls_epoch_encryption_key_pair.save(tx).await,
+        Entity::MlsCredential(mls_credential) => mls_credential.save(tx).await,
+        Entity::PersistedMlsGroup(persisted_mls_group) => persisted_mls_group.save(tx).await,
+        Entity::PersistedMlsPendingGroup(persisted_mls_pending_group) => persisted_mls_pending_group.save(tx).await,
+        Entity::MlsPendingMessage(mls_pending_message) => mls_pending_message.save(tx).await,
+        Entity::E2eiEnrollment(e2ei_enrollment) => e2ei_enrollment.save(tx).await,
+        Entity::E2eiRefreshToken(e2ei_refresh_token) => e2ei_refresh_token.replace(tx).await,
+        Entity::E2eiAcmeCA(e2ei_acme_ca) => e2ei_acme_ca.replace(tx).await,
+        Entity::E2eiIntermediateCert(e2ei_intermediate_cert) => e2ei_intermediate_cert.save(tx).await,
+        Entity::E2eiCrl(e2ei_crl) => e2ei_crl.save(tx).await,
+        Entity::ProteusSession(record) => record.save(tx).await,
+        Entity::ProteusIdentity(record) => record.save(tx).await,
+        Entity::ProteusPrekey(record) => record.save(tx).await,
+    }
+}
+
+async fn execute_delete(tx: &TransactionWrapper<'_>, entity_id: &EntityId) -> CryptoKeystoreResult<()> {
+    match entity_id {
+        id @ EntityId::SignatureKeyPair(_) => MlsSignatureKeyPair::delete(tx, id.as_id()).await,
+        id @ EntityId::HpkePrivateKey(_) => MlsHpkePrivateKey::delete(tx, id.as_id()).await,
+        id @ EntityId::KeyPackage(_) => MlsKeyPackage::delete(tx, id.as_id()).await,
+        id @ EntityId::PskBundle(_) => MlsPskBundle::delete(tx, id.as_id()).await,
+        id @ EntityId::EncryptionKeyPair(_) => MlsEncryptionKeyPair::delete(tx, id.as_id()).await,
+        id @ EntityId::EpochEncryptionKeyPair(_) => MlsEpochEncryptionKeyPair::delete(tx, id.as_id()).await,
+        id @ EntityId::MlsCredential(_) => MlsCredential::delete(tx, id.as_id()).await,
+        id @ EntityId::PersistedMlsGroup(_) => PersistedMlsGroup::delete(tx, id.as_id()).await,
+        id @ EntityId::PersistedMlsPendingGroup(_) => PersistedMlsPendingGroup::delete(tx, id.as_id()).await,
+        id @ EntityId::MlsPendingMessage(_) => MlsPendingMessage::delete(tx, id.as_id()).await,
+        id @ EntityId::E2eiEnrollment(_) => E2eiEnrollment::delete(tx, id.as_id()).await,
+        id @ EntityId::E2eiRefreshToken(_) => E2eiRefreshToken::delete(tx, id.as_id()).await,
+        id @ EntityId::E2eiAcmeCA(_) => E2eiAcmeCA::delete(tx, id.as_id()).await,
+        id @ EntityId::E2eiIntermediateCert(_) => E2eiIntermediateCert::delete(tx, id.as_id()).await,
+        id @ EntityId::E2eiCrl(_) => E2eiCrl::delete(tx, id.as_id()).await,
+        id @ EntityId::ProteusSession(_) => ProteusSession::delete(tx, id.as_id()).await,
+        id @ EntityId::ProteusIdentity(_) => ProteusIdentity::delete(tx, id.as_id()).await,
+        id @ EntityId::ProteusPrekey(_) => ProteusPrekey::delete(tx, id.as_id()).await,
     }
 }
 
 /// This represents a transaction, where all operations will be done in memory and committed at the
 /// end
 #[derive(Debug, Clone)]
-pub struct KeystoreTransaction {
-    /// Reference to the connection
-    conn: Connection,
-    // ideally we'd have boxed dyn `EntityMlsExt` here, but this trait cannot be used as object
-    // unfortunatelly we have to live with a lot of boilerplate code because of that
-    operations: Arc<RwLock<VecDeque<Operation>>>,
-}
-
-#[cfg_attr(target_family = "wasm", async_trait::async_trait(?Send))]
-#[cfg_attr(not(target_family = "wasm"), async_trait::async_trait)]
-impl FetchFromDatabase for KeystoreTransaction {
-    async fn find<E: crate::entities::Entity<ConnectionType = KeystoreDatabaseConnection>>(
-        &self,
-        id: &[u8],
-    ) -> CryptoKeystoreResult<Option<E>> {
-        self.conn.find(id).await
-    }
-
-    async fn find_unique<U: UniqueEntity<ConnectionType = KeystoreDatabaseConnection>>(
-        &self,
-    ) -> CryptoKeystoreResult<U> {
-        self.conn.find_unique().await
-    }
-
-    async fn find_all<E: crate::entities::Entity<ConnectionType = KeystoreDatabaseConnection>>(
-        &self,
-        params: EntityFindParams,
-    ) -> CryptoKeystoreResult<Vec<E>> {
-        self.conn.find_all(params).await
-    }
-
-    async fn find_many<E: crate::entities::Entity<ConnectionType = KeystoreDatabaseConnection>>(
-        &self,
-        ids: &[Vec<u8>],
-    ) -> CryptoKeystoreResult<Vec<E>> {
-        self.conn.find_many(ids).await
-    }
-
-    async fn count<E: crate::entities::Entity<ConnectionType = KeystoreDatabaseConnection>>(
-        &self,
-    ) -> CryptoKeystoreResult<usize> {
-        let mut conn = self.conn.borrow_conn().await?;
-        E::count(&mut conn).await
-    }
+pub(crate) struct KeystoreTransaction {
+    /// In-memory cache
+    cache: Connection,
+    deleted: Arc<RwLock<Vec<EntityId>>>,
+    deleted_credentials: Arc<RwLock<Vec<Vec<u8>>>>,
 }
 
 impl KeystoreTransaction {
-    pub fn new(conn: Connection) -> Self {
-        Self {
-            conn,
-            operations: Default::default(),
-        }
+    pub(crate) async fn new() -> CryptoKeystoreResult<Self> {
+        Ok(Self {
+            // We're not using a proper key because we're not using the DB for security (memory is unencrypted).
+            // We're using it for its API.
+            cache: Connection::open_in_memory_with_key("core_crypto_transaction_cache", "").await?,
+            deleted: Arc::new(Default::default()),
+            deleted_credentials: Arc::new(Default::default()),
+        })
     }
 
-    async fn add_operation(&self, op: Operation) {
-        self.operations.write().await.push_back(op);
-    }
-
-    pub async fn save<
-        E: crate::entities::Entity<ConnectionType = KeystoreDatabaseConnection> + crate::entities::EntityMlsExt,
-    >(
-        &self,
-        entity: E,
-    ) -> CryptoKeystoreResult<()> {
-        self.add_operation(entity.clone().to_transaction_entity().into()).await;
-        Ok(())
-    }
-
-    pub async fn save_mut<
-        E: crate::entities::Entity<ConnectionType = KeystoreDatabaseConnection> + crate::entities::EntityMlsExt,
+    pub(crate) async fn save_mut<
+        E: crate::entities::Entity<ConnectionType = KeystoreDatabaseConnection> + EntityTransactionExt + Sync,
     >(
         &self,
         mut entity: E,
     ) -> CryptoKeystoreResult<E> {
         entity.pre_save().await?;
-        self.add_operation(entity.clone().to_transaction_entity().into()).await;
+        let mut conn = self.cache.borrow_conn().await?;
+        #[cfg(target_family = "wasm")]
+        let transaction = conn.new_transaction(&[E::COLLECTION_NAME]).await?;
+        #[cfg(not(target_family = "wasm"))]
+        let transaction = conn.new_transaction().await?;
+        entity.save(&transaction).await?;
+        transaction.commit_tx().await?;
         Ok(entity)
     }
 
-    pub async fn remove<E: crate::entities::Entity<ConnectionType = KeystoreDatabaseConnection>, S: AsRef<[u8]>>(
+    pub(crate) async fn remove<
+        E: crate::entities::Entity<ConnectionType = KeystoreDatabaseConnection> + EntityTransactionExt,
+        S: AsRef<[u8]>,
+    >(
         &self,
         id: S,
     ) -> CryptoKeystoreResult<()> {
-        self.add_operation(EntityId::from_collection_name(E::COLLECTION_NAME, id.as_ref())?.into())
-            .await;
+        let mut conn = self.cache.borrow_conn().await?;
+        #[cfg(target_family = "wasm")]
+        let transaction = conn.new_transaction(&[E::COLLECTION_NAME]).await?;
+        #[cfg(not(target_family = "wasm"))]
+        let transaction = conn.new_transaction().await?;
+        E::delete(&transaction, id.as_ref().into()).await?;
+        transaction.commit_tx().await?;
+        let mut deleted_list = self.deleted.write().await;
+        deleted_list.push(EntityId::from_collection_name(E::COLLECTION_NAME, id.as_ref())?);
         Ok(())
     }
 
-    pub async fn child_groups<
+    pub(crate) async fn child_groups<
         E: crate::entities::Entity<ConnectionType = KeystoreDatabaseConnection>
             + crate::entities::PersistedMlsGroupExt
             + Sync,
     >(
         &self,
         entity: E,
+        persisted_records: Vec<E>,
     ) -> CryptoKeystoreResult<Vec<E>> {
-        let mut conn = self.conn.borrow_conn().await?;
-        entity.child_groups(conn.deref_mut()).await
+        let mut conn = self.cache.borrow_conn().await?;
+        let cached_records = entity.child_groups(conn.deref_mut()).await?;
+        Ok(self
+            .merge_records(cached_records, persisted_records, EntityFindParams::default())
+            .await)
     }
 
-    pub async fn cred_delete_by_credential(&self, cred: Vec<u8>) {
-        self.add_operation(Operation::RemoveCredential(cred)).await;
+    pub(crate) async fn cred_delete_by_credential(&self, cred: Vec<u8>) -> CryptoKeystoreResult<()> {
+        let mut conn = self.cache.borrow_conn().await?;
+        #[cfg(target_family = "wasm")]
+        let transaction = conn.new_transaction(&[MlsCredential::COLLECTION_NAME]).await?;
+        #[cfg(not(target_family = "wasm"))]
+        let transaction = conn.new_transaction().await?;
+        MlsCredential::delete_by_credential(&transaction, cred.clone()).await?;
+        transaction.commit_tx().await?;
+        let mut deleted_list = self.deleted_credentials.write().await;
+        deleted_list.push(cred);
+        Ok(())
     }
 
-    /// Persists all the operations in the database. It will effectively open a transaction
-    /// internally, perform all the buffered operations and commit.
+    /// The result of this function will have different contents for different scenarios:
+    /// * `Some(Some(E))` - the transaction cache contains the record
+    /// * `Some(None)` - the deletion of the record has been cached
+    /// * `None` - there is no information about the record in the cache
+    pub(crate) async fn find<E>(&self, id: &[u8]) -> CryptoKeystoreResult<Option<Option<E>>>
+    where
+        E: crate::entities::Entity<ConnectionType = KeystoreDatabaseConnection>,
+    {
+        let cache_result = self.cache.find(id).await?;
+        if let Some(cache_result) = cache_result {
+            Ok(Some(Some(cache_result)))
+        } else {
+            let deleted_list = self.deleted.read().await;
+            if deleted_list.contains(&EntityId::from_collection_name(E::COLLECTION_NAME, id)?) {
+                Ok(Some(None))
+            } else {
+                Ok(None)
+            }
+        }
+    }
+
+    pub(crate) async fn find_unique<U: UniqueEntity<ConnectionType = KeystoreDatabaseConnection>>(
+        &self,
+    ) -> CryptoKeystoreResult<Option<U>> {
+        let cache_result = self.cache.find_unique().await;
+        if let Ok(cache_result) = cache_result {
+            Ok(Some(cache_result))
+        } else {
+            // The deleted list doesn't have to be checked because unique entities don't implement
+            // deletion, just replace. So we can directly return None.
+            Ok(None)
+        }
+    }
+
+    pub(crate) async fn find_all<E: crate::entities::Entity<ConnectionType = KeystoreDatabaseConnection>>(
+        &self,
+        persisted_records: Vec<E>,
+        params: EntityFindParams,
+    ) -> CryptoKeystoreResult<Vec<E>> {
+        let cached_records: Vec<E> = self.cache.find_all(params.clone()).await?;
+        Ok(self.merge_records(cached_records, persisted_records, params).await)
+    }
+
+    pub(crate) async fn find_many<E: crate::entities::Entity<ConnectionType = KeystoreDatabaseConnection>>(
+        &self,
+        persisted_records: Vec<E>,
+        ids: &[Vec<u8>],
+    ) -> CryptoKeystoreResult<Vec<E>> {
+        let cached_records: Vec<E> = self.cache.find_many(ids).await?;
+        Ok(self
+            .merge_records(cached_records, persisted_records, EntityFindParams::default())
+            .await)
+    }
+
+    /// Build a single list of unique records from two potentially overlapping lists.
+    /// In case of overlap, records in `records_a` are prioritized.
+    /// Identity from the perspective of this function is determined by the output of [crate::entities::Entity::merge_key].
     ///
-    /// TODO: currently only MLS is supported. Implement for proteus. For that, remove the default
-    /// save, insert and delete functions in the `EntityBase` trait
-    /// FIXME: implement a transaction wrapper for the wasm platform to await on the transaction
-    pub async fn commit(&self) -> Result<(), CryptoKeystoreError> {
-        // we don't necessarily need the write lock here, but since we don't want additional
-        // operations being added to the queue, we get an exclusive lock
-        let mut operations = self.operations.write().await;
-        let mut conn = self.conn.borrow_conn().await?;
+    /// Further, the output list of records is built with respect to the provided [EntityFindParams]
+    /// and the deleted records cached in this [Self] instance.     
+    async fn merge_records<E: crate::entities::Entity<ConnectionType = KeystoreDatabaseConnection>>(
+        &self,
+        records_a: Vec<E>,
+        records_b: Vec<E>,
+        params: EntityFindParams,
+    ) -> Vec<E> {
+        let merged = records_a.into_iter().chain(records_b).unique_by(|e| e.merge_key());
+
+        // We are consuming the iterator here to keep types of the `if` and `else` block consistent.
+        // The alternative to giving up laziness here would be to use a dynamically
+        // typed iterator Box<dyn Iterator<Item = E>> assigned to `merged`. The below approach
+        // trades stack allocation instead of heap allocation for laziness.
+        //
+        // Also, we have to do this before filtering by deleted records since filter map does not
+        // return an iterator that is double ended.
+        let merged: Vec<E> = if params.reverse {
+            merged.rev().collect()
+        } else {
+            merged.collect()
+        };
+        
+        if merged.is_empty() {
+            return merged;
+        }
+
+        let deleted_records = self.deleted.read().await;
+        let deleted_credentials = self.deleted_credentials.read().await;
+        let merged = if deleted_records.is_empty() && deleted_credentials.is_empty() {
+            merged
+        } else {
+            merged
+                .into_iter()
+                .filter(|record| {
+                    !Self::record_is_in_deleted_list(record, &deleted_records)
+                        && !Self::credential_is_in_deleted_list(record, &deleted_credentials)
+                })
+                .collect()
+        };
+
+        merged
+            .into_iter()
+            .skip(params.offset.unwrap_or(0) as usize)
+            .take(params.limit.unwrap_or(u32::MAX) as usize)
+            .collect()
+    }
+
+    fn record_is_in_deleted_list<E: crate::entities::Entity<ConnectionType = KeystoreDatabaseConnection>>(
+        record: &E,
+        deleted_records: &[EntityId],
+    ) -> bool {
+        let id = EntityId::from_collection_name(E::COLLECTION_NAME, record.id_raw());
+        let Ok(id) = id else { return false };
+        deleted_records.contains(&id)
+    }
+    fn credential_is_in_deleted_list<E: crate::entities::Entity<ConnectionType = KeystoreDatabaseConnection>>(
+        maybe_credential: &E,
+        deleted_credentials: &[Vec<u8>],
+    ) -> bool {
+        let Some(credential) = maybe_credential.downcast::<MlsCredential>() else {
+            return false;
+        };
+        deleted_credentials.contains(&credential.credential)
+    }
+}
+
+macro_rules! commit_transaction {
+     ($keystore_transaction:expr, $db:expr, [ $( ($records:ident, $entity:ty) ),*]) => {
+        let cached_collections = ( $(
+        $keystore_transaction.cache.find_all::<$entity>(Default::default()).await?,
+            )* );
+
+         let ( $( $records, )* ) = cached_collections;
+
+        let mut conn = $db.borrow_conn().await?;
+        let deleted_ids = $keystore_transaction.deleted.read().await;
         cfg_if::cfg_if! {
             if #[cfg(target_family = "wasm")] {
-                use itertools::Itertools;
-                let tables = operations.iter().map(|op| op.scan_collection_name()).unique().collect::<Vec<_>>();
+                let mut tables = Vec::new();
+                $(
+                    if !$records.is_empty() {
+                        tables.push(<$entity>::COLLECTION_NAME);
+                    }
+                )*
+
+                for deleted_id in deleted_ids.iter() {
+                    tables.push(deleted_id.collection_name());
+                }
+
+                if tables.is_empty() {
+                    // If we didn't do this early return, creating the transaction would fail.
+                    // Once logging is available, we should log a warning here though. (WPB-11743)
+                    return Ok(());
+                }
                 let tx = conn.new_transaction(&tables).await?;
             } else {
                 let tx = conn.new_transaction().await?;
             }
         }
-        while let Some(op) = operations.pop_front() {
-            op.execute(&tx).await?;
+
+         $(
+            if !$records.is_empty() {
+                for record in $records {
+                    execute_save(&tx, &record.to_transaction_entity()).await?;
+                }
+            }
+         )*
+
+        for deleted_id in deleted_ids.iter() {
+            execute_delete(&tx, deleted_id).await?
         }
-        tx.commit_tx().await?;
-        Ok(())
-    }
+
+        for deleted_credential in $keystore_transaction.deleted_credentials.read().await.iter() {
+            MlsCredential::delete_by_credential(&tx, deleted_credential.to_owned()).await?;
+        }
+
+         tx.commit_tx().await?;
+     };
 }
 
-#[cfg_attr(target_family = "wasm", async_trait::async_trait(?Send))]
-#[cfg_attr(not(target_family = "wasm"), async_trait::async_trait)]
-impl OpenMlsKeyStore for KeystoreTransaction {
-    type Error = CryptoKeystoreError;
+impl KeystoreTransaction {
+    /// Persists all the operations in the database. It will effectively open a transaction
+    /// internally, perform all the buffered operations and commit.
+    pub(crate) async fn commit(&self, db: &Connection) -> Result<(), CryptoKeystoreError> {
+        commit_transaction!(
+            self, db,
+            [
+                (identifier_01, MlsCredential),
+                (identifier_02, MlsSignatureKeyPair),
+                (identifier_03, MlsHpkePrivateKey),
+                (identifier_04, MlsEncryptionKeyPair),
+                (identifier_05, MlsEpochEncryptionKeyPair),
+                (identifier_06, MlsPskBundle),
+                (identifier_07, MlsKeyPackage),
+                (identifier_08, PersistedMlsGroup),
+                (identifier_09, PersistedMlsPendingGroup),
+                (identifier_10, MlsPendingMessage),
+                (identifier_11, E2eiEnrollment),
+                (identifier_12, E2eiRefreshToken),
+                (identifier_13, E2eiAcmeCA),
+                (identifier_14, E2eiIntermediateCert),
+                (identifier_15, E2eiCrl),
+                (identifier_16, ProteusPrekey),
+                (identifier_17, ProteusIdentity),
+                (identifier_18, ProteusSession)
+            ]
+        );
 
-    async fn store<V: MlsEntity + Sync>(&self, k: &[u8], v: &V) -> Result<(), Self::Error>
-    where
-        Self: Sized,
-    {
-        if k.is_empty() {
-            return Err(CryptoKeystoreError::MlsKeyStoreError(
-                "The provided key is empty".into(),
-            ));
-        }
-
-        let data = crate::mls::ser(v)?;
-        let mut to_store = self.operations.write().await;
-
-        match V::ID {
-            MlsEntityId::GroupState => {
-                return Err(CryptoKeystoreError::IncorrectApiUsage(
-                    "Groups must not be saved using OpenMLS's APIs. You should use the keystore's provided methods",
-                ));
-            }
-            MlsEntityId::SignatureKeyPair => {
-                let concrete_signature_keypair: &SignatureKeyPair = v
-                    .downcast()
-                    .expect("There's an implementation issue in OpenMLS. This shouln't be happening.");
-
-                // Having an empty credential id seems tolerable, since the SignatureKeyPair type is retrieved from the key store via its public key.
-                let credential_id = vec![];
-                let kp = MlsSignatureKeyPair::new(
-                    concrete_signature_keypair.signature_scheme(),
-                    k.into(),
-                    data,
-                    credential_id,
-                );
-                to_store.push_back(Entity::SignatureKeyPair(kp).into());
-            }
-            MlsEntityId::KeyPackage => {
-                let kp = MlsKeyPackage {
-                    keypackage_ref: k.into(),
-                    keypackage: data,
-                };
-                to_store.push_back(Entity::KeyPackage(kp).into());
-            }
-            MlsEntityId::HpkePrivateKey => {
-                let kp = MlsHpkePrivateKey { pk: k.into(), sk: data };
-                to_store.push_back(Entity::HpkePrivateKey(kp).into());
-            }
-            MlsEntityId::PskBundle => {
-                let kp = MlsPskBundle {
-                    psk_id: k.into(),
-                    psk: data,
-                };
-                to_store.push_back(Entity::PskBundle(kp).into());
-            }
-            MlsEntityId::EncryptionKeyPair => {
-                let kp = MlsEncryptionKeyPair { pk: k.into(), sk: data };
-                to_store.push_back(Entity::EncryptionKeyPair(kp).into());
-            }
-            MlsEntityId::EpochEncryptionKeyPair => {
-                let kp = MlsEpochEncryptionKeyPair {
-                    id: k.into(),
-                    keypairs: data,
-                };
-                to_store.push_back(Entity::EpochEncryptionKeyPair(kp).into());
-            }
-        }
-        Ok(())
-    }
-
-    async fn read<V: MlsEntity>(&self, k: &[u8]) -> Option<V>
-    where
-        Self: Sized,
-    {
-        self.conn.read(k).await
-    }
-
-    async fn delete<V: MlsEntity>(&self, k: &[u8]) -> Result<(), Self::Error> {
-        self.operations
-            .write()
-            .await
-            .push_back(EntityId::from_mls_entity_id(V::ID, k).into());
         Ok(())
     }
 }
