@@ -16,7 +16,7 @@
 
 use crate::connection::DatabaseConnection;
 use crate::{
-    connection::{storage::WasmStorageTransaction, KeystoreDatabaseConnection},
+    connection::KeystoreDatabaseConnection,
     entities::{E2eiAcmeCA, Entity, EntityBase, EntityFindParams, StringEntityId, UniqueEntity},
     CryptoKeystoreError, CryptoKeystoreResult, MissingKeyErrorKind,
 };
@@ -48,18 +48,6 @@ impl EntityBase for E2eiAcmeCA {
     }
 
     async fn count(_conn: &mut Self::ConnectionType) -> crate::CryptoKeystoreResult<usize> {
-        return Err(CryptoKeystoreError::NotImplemented);
-    }
-}
-
-#[cfg_attr(target_family = "wasm", async_trait::async_trait(?Send))]
-#[cfg_attr(not(target_family = "wasm"), async_trait::async_trait)]
-impl EntityTransactionExt for E2eiAcmeCA {
-    async fn delete<'a>(_: &WasmStorageTransaction<'a>, _: StringEntityId<'a>) -> crate::CryptoKeystoreResult<()> {
-        return Err(CryptoKeystoreError::NotImplemented);
-    }
-
-    async fn save<'a>(&'a self, _: &WasmStorageTransaction<'a>) -> crate::CryptoKeystoreResult<()> {
         return Err(CryptoKeystoreError::NotImplemented);
     }
 }
