@@ -33,8 +33,8 @@ use openmls::prelude::{CredentialWithKey, SignaturePublicKey};
 use openmls::{group::MlsGroup, prelude::Credential};
 use openmls_traits::types::SignatureScheme;
 
-use core_crypto_keystore::{CryptoKeystoreMls, KeystoreTransaction};
-use mls_crypto_provider::TransactionalCryptoProvider;
+use core_crypto_keystore::{Connection, CryptoKeystoreMls};
+use mls_crypto_provider::{CryptoKeystore, TransactionalCryptoProvider};
 
 use config::MlsConversationConfiguration;
 
@@ -127,7 +127,7 @@ impl MlsConversation {
         };
 
         conversation
-            .persist_group_when_changed(&backend.transaction(), true)
+            .persist_group_when_changed(&backend.keystore(), true)
             .await?;
 
         Ok(conversation)
@@ -149,7 +149,7 @@ impl MlsConversation {
         };
 
         conversation
-            .persist_group_when_changed(&backend.transaction(), true)
+            .persist_group_when_changed(&backend.keystore(), true)
             .await?;
 
         Ok(conversation)
@@ -204,12 +204,11 @@ impl MlsConversation {
 
     pub(crate) async fn persist_group_when_changed(
         &mut self,
-        backend: &KeystoreTransaction,
+        keystore: &CryptoKeystore,
         force: bool,
     ) -> CryptoResult<()> {
         if force || self.group.state_changed() == openmls::group::InnerState::Changed {
-            use core_crypto_keystore::CryptoKeystoreMls as _;
-            backend
+            keystore
                 .mls_group_persist(
                     &self.id,
                     &core_crypto_keystore::ser(&self.group)?,
@@ -228,11 +227,11 @@ impl MlsConversation {
     pub async fn mark_as_child_of(
         &mut self,
         parent_id: &ConversationId,
-        backend: &KeystoreTransaction,
+        keystore: &Connection,
     ) -> CryptoResult<()> {
-        if backend.mls_group_exists(parent_id).await {
+        if keystore.mls_group_exists(parent_id).await {
             self.parent_id = Some(parent_id.clone());
-            self.persist_group_when_changed(backend, true).await?;
+            self.persist_group_when_changed(keystore, true).await?;
             Ok(())
         } else {
             Err(CryptoError::ParentGroupNotFound)
@@ -266,7 +265,7 @@ impl MlsCentral {
 
 impl CentralContext {
     pub(crate) async fn get_conversation(&self, id: &ConversationId) -> CryptoResult<GroupStoreValue<MlsConversation>> {
-        let keystore = self.transaction().await?;
+        let keystore = self.mls_provider().await?.keystore();
         self.mls_groups()
             .await?
             .get_fetch(id, &keystore, None)
@@ -291,7 +290,7 @@ impl CentralContext {
     }
 
     pub(crate) async fn get_all_conversations(&self) -> CryptoResult<Vec<GroupStoreValue<MlsConversation>>> {
-        let keystore = self.transaction().await?;
+        let keystore = self.mls_provider().await?.keystore();
         self.mls_groups().await?.get_fetch_all(&keystore).await
     }
 
@@ -307,7 +306,7 @@ impl CentralContext {
         conversation
             .write()
             .await
-            .mark_as_child_of(parent_id, &self.transaction().await?)
+            .mark_as_child_of(parent_id, &self.keystore().await?)
             .await?;
 
         Ok(())
@@ -316,8 +315,8 @@ impl CentralContext {
 
 #[cfg(test)]
 mod tests {
-    use futures_lite::{stream, StreamExt};
     use crate::e2e_identity::rotate::tests::all::failsafe_ctx;
+    use futures_lite::{stream, StreamExt};
     use wasm_bindgen_test::*;
 
     use crate::{

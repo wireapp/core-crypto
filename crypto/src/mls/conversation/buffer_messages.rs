@@ -26,7 +26,7 @@ impl CentralContext {
         id: &ConversationId,
         message: impl AsRef<[u8]>,
     ) -> CryptoResult<MlsConversationDecryptMessage> {
-        let keystore = self.transaction().await?;
+        let keystore = self.keystore().await?;
 
         let pending_msg = MlsPendingMessage {
             id: id.clone(),
@@ -76,7 +76,7 @@ impl MlsConversation {
         // using the macro produces a clippy warning
         info!("restore_pending_messages");
         let result = async move {
-            let keystore = backend.transaction();
+            let keystore = backend.keystore();
             let group_id = self.id().as_slice();
             if is_rejoin {
                 // This means the external commit is about rejoining the group.

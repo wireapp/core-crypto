@@ -716,8 +716,8 @@ pub(crate) mod tests {
         restore: impl Fn(E2eiEnrollment, &'a CentralContext) -> RestoreFnReturn<'a>,
     ) -> CryptoResult<(E2eiEnrollment, String)> {
         x509_test_chain.register_with_central(&ctx.context).await;
-
-        let transaction = ctx.context.transaction().await?;
+        let backend = ctx.context.mls_provider().await?;
+        let keystore = backend.key_store();
         #[cfg(not(target_family = "wasm"))]
         {
             if is_renewal {
@@ -725,7 +725,7 @@ pub(crate) mod tests {
                     crate::e2e_identity::refresh_token::RefreshToken::from("initial-refresh-token".to_string());
                 let initial_refresh_token =
                     core_crypto_keystore::entities::E2eiRefreshToken::from(initial_refresh_token);
-                transaction.save(initial_refresh_token).await?;
+                keystore.save(initial_refresh_token).await?;
             }
         }
 
@@ -736,13 +736,13 @@ pub(crate) mod tests {
         {
             if is_renewal {
                 assert!(enrollment.refresh_token.is_some());
-                assert!(RefreshToken::find(&transaction).await.is_ok());
+                assert!(RefreshToken::find(keystore).await.is_ok());
             } else {
                 assert!(matches!(
                     enrollment.get_refresh_token().unwrap_err(),
                     E2eIdentityError::OutOfOrderEnrollment(_)
                 ));
-                assert!(RefreshToken::find(&transaction).await.is_err());
+                assert!(RefreshToken::find(keystore).await.is_err());
             }
         }
 
@@ -905,7 +905,7 @@ pub(crate) mod tests {
                 .await?;
             // Now Refresh token is persisted in the keystore
             assert_eq!(
-                RefreshToken::find(&transaction).await?.as_str(),
+                RefreshToken::find(keystore).await?.as_str(),
                 new_refresh_token
             );
             // No reason at this point to have the refresh token in memory
