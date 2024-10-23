@@ -15,7 +15,7 @@
 // along with this program. If not, see http://www.gnu.org/licenses/.
 
 use crate::{
-    connection::{storage::WasmStorageTransaction, DatabaseConnection, KeystoreDatabaseConnection},
+    connection::{DatabaseConnection, KeystoreDatabaseConnection},
     entities::{E2eiRefreshToken, Entity, EntityBase, EntityFindParams, StringEntityId, UniqueEntity},
     CryptoKeystoreError, CryptoKeystoreResult, MissingKeyErrorKind,
 };
@@ -47,18 +47,6 @@ impl EntityBase for E2eiRefreshToken {
     }
 
     async fn count(_conn: &mut Self::ConnectionType) -> crate::CryptoKeystoreResult<usize> {
-        return Err(CryptoKeystoreError::NotImplemented);
-    }
-}
-
-#[cfg_attr(target_family = "wasm", async_trait::async_trait(?Send))]
-#[cfg_attr(not(target_family = "wasm"), async_trait::async_trait)]
-impl EntityTransactionExt for E2eiRefreshToken {
-    async fn delete<'a>(_: &WasmStorageTransaction<'a>, _: StringEntityId<'a>) -> crate::CryptoKeystoreResult<()> {
-        return Err(CryptoKeystoreError::NotImplemented);
-    }
-
-    async fn save<'a>(&'a self, _: &WasmStorageTransaction<'a>) -> crate::CryptoKeystoreResult<()> {
         return Err(CryptoKeystoreError::NotImplemented);
     }
 }
