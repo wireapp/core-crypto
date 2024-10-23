@@ -153,7 +153,7 @@ impl EntityTransactionExt for MlsPskBundle {
         Ok(())
     }
 
-    async fn delete(transaction: &TransactionWrapper<'_>, id: StringEntityId<'_>) -> CryptoKeystoreResult<()> {
+    async fn delete_fail_on_missing_id(transaction: &TransactionWrapper<'_>, id: StringEntityId<'_>) -> CryptoKeystoreResult<()> {
         let updated = transaction.execute("DELETE FROM mls_psk_bundles WHERE id_sha256 = ?", [id.sha256()])?;
 
         if updated > 0 {

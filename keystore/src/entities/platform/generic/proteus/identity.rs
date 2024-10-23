@@ -142,7 +142,7 @@ impl EntityTransactionExt for ProteusIdentity {
         Ok(())
     }
 
-    async fn delete(transaction: &TransactionWrapper<'_>, _id: StringEntityId<'_>) -> crate::CryptoKeystoreResult<()> {
+    async fn delete_fail_on_missing_id(transaction: &TransactionWrapper<'_>, _id: StringEntityId<'_>) -> crate::CryptoKeystoreResult<()> {
         let row_id = transaction.query_row(
             "SELECT rowid FROM proteus_identities ORDER BY rowid ASC LIMIT 1",
             [],

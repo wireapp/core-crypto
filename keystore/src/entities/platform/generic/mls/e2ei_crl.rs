@@ -140,7 +140,7 @@ impl EntityTransactionExt for E2eiCrl {
         Ok(())
     }
 
-    async fn delete(transaction: &TransactionWrapper<'_>, id: StringEntityId<'_>) -> CryptoKeystoreResult<()> {
+    async fn delete_fail_on_missing_id(transaction: &TransactionWrapper<'_>, id: StringEntityId<'_>) -> CryptoKeystoreResult<()> {
         let updated = transaction.execute("DELETE FROM e2ei_crls WHERE distribution_point = ?", [id.try_as_str()?])?;
 
         if updated > 0 {
