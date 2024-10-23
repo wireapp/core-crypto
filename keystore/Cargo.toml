@@ -51,6 +51,7 @@ openmls_x509_credential = { workspace = true, optional = true }
 serde = { workspace = true, features = ["derive"], optional = true }
 log = { workspace = true, optional = true }
 proteus-traits = { workspace = true, optional = true }
+itertools.workspace = true
 
 [target.'cfg(not(target_family = "wasm"))'.dependencies]
 async-fs = "2.1"
@@ -86,7 +87,6 @@ wasm-bindgen-futures = "0.4"
 # Crypto stuff
 aes-gcm = "0.10"
 rand.workspace = true
-itertools.workspace = true
 getrandom = { version = "0.2", features = ["js"] }
 fluvio-wasm-timer = "0.2"
 # Old keystore versions for idb migrations
