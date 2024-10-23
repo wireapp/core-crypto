@@ -223,6 +223,14 @@ impl Connection {
         transaction.remove::<E, S>(id).await
     }
 
+    pub async fn cred_delete_by_credential(&self, cred: Vec<u8>) -> CryptoKeystoreResult<()> {
+        let transaction_guard = self.transaction.lock().await;
+        let Some(transaction) = transaction_guard.as_ref() else {
+            return Err(CryptoKeystoreError::MutatingOperationWithoutTransaction);
+        };
+        transaction.cred_delete_by_credential(cred).await
+    }
+
 }
 
 #[cfg_attr(target_family = "wasm", async_trait::async_trait(?Send))]
