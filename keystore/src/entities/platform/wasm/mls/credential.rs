@@ -73,6 +73,13 @@ impl Entity for MlsCredential {
         self.id.as_slice()
     }
 
+    fn merge_key(&self) -> Vec<u8> {
+        let mut merge_key = self.id_raw().to_vec();
+        // Credentials are unique by id and type, the type is contained in these bytes.
+        merge_key.extend(self.credential.to_vec());
+        merge_key
+    }
+
     fn encrypt(&mut self, cipher: &aes_gcm::Aes256Gcm) -> CryptoKeystoreResult<()> {
         self.credential = self.encrypt_data(cipher, self.credential.as_slice())?;
         Self::ConnectionType::check_buffer_size(self.credential.len())?;
