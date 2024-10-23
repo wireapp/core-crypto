@@ -55,7 +55,7 @@ impl MlsCentral {
 
 impl CentralContext {
     pub async fn count_entities(&self) -> EntitiesCount {
-        let keystore = self.transaction().await.unwrap();
+        let keystore = self.keystore().await.unwrap();
         let credential = keystore.count::<MlsCredential>().await.unwrap();
         let encryption_keypair = keystore.count::<MlsEncryptionKeyPair>().await.unwrap();
         let epoch_encryption_keypair = keystore.count::<MlsEpochEncryptionKeyPair>().await.unwrap();

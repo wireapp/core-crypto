@@ -1,15 +1,15 @@
 use crate::{
     e2e_identity::id::QualifiedE2eiClientId,
-    mls::{client::identifier::ClientIdentifier, MlsCentral},
+    mls::client::identifier::ClientIdentifier,
     prelude::E2eIdentityError,
     CryptoError,
 };
 use std::{fmt::Display, time::Duration};
 
+use crate::mls::context::CentralContext;
 use mls_crypto_provider::{CertProfile, CertificateGenerationArgs, MlsCryptoProvider, PkiKeypair, RustCrypto};
 use openmls_traits::{crypto::OpenMlsCrypto, random::OpenMlsRand, types::SignatureScheme};
 use x509_cert::der::EncodePem;
-use crate::mls::context::CentralContext;
 
 const DEFAULT_CRL_DOMAIN: &str = "localhost";
 
