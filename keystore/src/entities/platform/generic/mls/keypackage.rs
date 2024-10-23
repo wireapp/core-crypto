@@ -16,7 +16,7 @@
 
 use crate::{
     connection::TransactionWrapper,
-    entities::{EntityIdStringExt, EntityMlsExt},
+    entities::{EntityIdStringExt, EntityTransactionExt},
     CryptoKeystoreResult,
 };
 use crate::{
@@ -140,8 +140,8 @@ impl EntityBase for MlsKeyPackage {
 
 #[cfg_attr(target_family = "wasm", async_trait::async_trait(?Send))]
 #[cfg_attr(not(target_family = "wasm"), async_trait::async_trait)]
-impl EntityMlsExt for MlsKeyPackage {
-    async fn mls_save(&self, transaction: &TransactionWrapper<'_>) -> CryptoKeystoreResult<()> {
+impl EntityTransactionExt for MlsKeyPackage {
+    async fn save(&self, transaction: &TransactionWrapper<'_>) -> CryptoKeystoreResult<()> {
         Self::ConnectionType::check_buffer_size(self.keypackage.len())?;
 
         // Create zero blobs for keypackage and keypackage_ref
@@ -169,7 +169,7 @@ impl EntityMlsExt for MlsKeyPackage {
         Ok(())
     }
 
-    async fn mls_delete(transaction: &TransactionWrapper<'_>, id: StringEntityId<'_>) -> CryptoKeystoreResult<()> {
+    async fn delete(transaction: &TransactionWrapper<'_>, id: StringEntityId<'_>) -> CryptoKeystoreResult<()> {
         let updated = transaction.execute(
             "DELETE FROM mls_keypackages WHERE keypackage_ref_hex = ?",
             [id.as_hex_string()],

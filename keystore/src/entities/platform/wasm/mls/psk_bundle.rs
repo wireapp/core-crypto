@@ -16,7 +16,7 @@
 
 use crate::{
     connection::{DatabaseConnection, KeystoreDatabaseConnection},
-    entities::{Entity, EntityBase, EntityFindParams, EntityMlsExt, MlsPskBundle, StringEntityId},
+    entities::{Entity, EntityBase, EntityFindParams, EntityTransactionExt, MlsPskBundle, StringEntityId},
     CryptoKeystoreResult, MissingKeyErrorKind,
 };
 
@@ -54,7 +54,7 @@ impl EntityBase for MlsPskBundle {
 
 #[cfg_attr(target_family = "wasm", async_trait::async_trait(?Send))]
 #[cfg_attr(not(target_family = "wasm"), async_trait::async_trait)]
-impl EntityMlsExt for MlsPskBundle {}
+impl EntityTransactionExt for MlsPskBundle {}
 
 impl Entity for MlsPskBundle {
     fn id_raw(&self) -> &[u8] {

@@ -16,8 +16,7 @@
 
 use crate::{
     connection::{DatabaseConnection, KeystoreDatabaseConnection},
-    entities::{E2eiEnrollment, Entity, EntityBase, EntityFindParams, EntityMlsExt, StringEntityId},
-    CryptoKeystoreError, CryptoKeystoreResult, MissingKeyErrorKind,
+    entities::{E2eiEnrollment, Entity, EntityBase, EntityFindParams, EntityTransactionExt, StringEntityId}, CryptoKeystoreResult, MissingKeyErrorKind,
 };
 
 #[cfg_attr(target_family = "wasm", async_trait::async_trait(?Send))]
@@ -50,7 +49,7 @@ impl EntityBase for E2eiEnrollment {
 
 #[cfg_attr(target_family = "wasm", async_trait::async_trait(?Send))]
 #[cfg_attr(not(target_family = "wasm"), async_trait::async_trait)]
-impl EntityMlsExt for E2eiEnrollment {}
+impl EntityTransactionExt for E2eiEnrollment {}
 
 impl Entity for E2eiEnrollment {
     fn id_raw(&self) -> &[u8] {
