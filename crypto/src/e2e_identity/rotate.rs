@@ -22,7 +22,6 @@ impl MlsCentral {
     /// ClientId which should remain the same as the Basic one.
     /// Once the enrollment is finished, use the instance in [MlsCentral::e2ei_rotate_all] to do
     /// the rotation.
-    #[cfg_attr(not(test), tracing::instrument(err, skip_all))]
     pub fn e2ei_new_activation_enrollment(
         &self,
         display_name: String,
@@ -60,7 +59,6 @@ impl MlsCentral {
     /// has been revoked. As a consequence, this method does not support changing neither ClientId which
     /// should remain the same as the previous one. It lets you change the DisplayName or the handle
     /// if you need to. Once the enrollment is finished, use the instance in [MlsCentral::e2ei_rotate_all] to do the rotation.
-    #[cfg_attr(not(test), tracing::instrument(err, skip_all))]
     pub async fn e2ei_new_rotate_enrollment(
         &self,
         display_name: Option<String>,
@@ -103,7 +101,6 @@ impl MlsCentral {
     /// Creates a commit in all local conversations for changing the credential. Requires first
     /// having enrolled a new X509 certificate with either [MlsCentral::e2ei_new_activation_enrollment]
     /// or [MlsCentral::e2ei_new_rotate_enrollment]
-    #[cfg_attr(not(test), tracing::instrument(err, skip_all))]
     pub async fn e2ei_rotate_all(
         &mut self,
         enrollment: &mut E2eiEnrollment,
@@ -160,7 +157,6 @@ impl MlsCentral {
         })
     }
 
-    #[cfg_attr(not(test), tracing::instrument(err, skip_all))]
     async fn find_key_packages_to_remove(&self, cb: &CredentialBundle) -> CryptoResult<Vec<KeyPackageRef>> {
         let nb_kp = self.mls_backend.key_store().count::<MlsKeyPackage>().await?;
         let kps: Vec<KeyPackage> = self.mls_backend.key_store().mls_fetch_keypackages(nb_kp as u32).await?;
@@ -189,7 +185,6 @@ impl MlsCentral {
         Ok(kp_refs)
     }
 
-    #[cfg_attr(not(test), tracing::instrument(err, skip_all))]
     async fn e2ei_update_all(
         &mut self,
         cb: &CredentialBundle,
@@ -211,7 +206,6 @@ impl MlsCentral {
     /// Creates a commit in a conversation for changing the credential. Requires first
     /// having enrolled a new X509 certificate with either [MlsCentral::e2ei_new_activation_enrollment]
     /// or [MlsCentral::e2ei_new_rotate_enrollment]
-    #[cfg_attr(not(test), tracing::instrument(err, skip_all))]
     pub async fn e2ei_rotate(
         &mut self,
         id: &crate::prelude::ConversationId,
@@ -228,7 +222,6 @@ impl MlsCentral {
 
 impl MlsConversation {
     #[cfg_attr(test, crate::durable)]
-    #[cfg_attr(not(test), tracing::instrument(err, skip_all))]
     pub(crate) async fn e2ei_rotate(
         &mut self,
         backend: &MlsCryptoProvider,

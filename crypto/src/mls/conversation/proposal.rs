@@ -22,7 +22,6 @@ use crate::{
 impl MlsConversation {
     /// see [openmls::group::MlsGroup::propose_add_member]
     #[cfg_attr(test, crate::durable)]
-    #[cfg_attr(not(test), tracing::instrument(err, skip_all))]
     pub async fn propose_add_member(
         &mut self,
         client: &Client,
@@ -56,7 +55,6 @@ impl MlsConversation {
 
     /// see [openmls::group::MlsGroup::propose_remove_member]
     #[cfg_attr(test, crate::durable)]
-    #[cfg_attr(not(test), tracing::instrument(err, skip_all))]
     pub async fn propose_remove_member(
         &mut self,
         client: &Client,
@@ -79,7 +77,6 @@ impl MlsConversation {
 
     /// see [openmls::group::MlsGroup::propose_self_update]
     #[cfg_attr(test, crate::durable)]
-    #[cfg_attr(not(test), tracing::instrument(err, skip_all))]
     pub async fn propose_self_update(
         &mut self,
         client: &Client,
@@ -90,7 +87,6 @@ impl MlsConversation {
 
     /// see [openmls::group::MlsGroup::propose_self_update]
     #[cfg_attr(test, crate::durable)]
-    #[cfg_attr(not(test), tracing::instrument(err, skip_all))]
     pub async fn propose_explicit_self_update(
         &mut self,
         client: &Client,

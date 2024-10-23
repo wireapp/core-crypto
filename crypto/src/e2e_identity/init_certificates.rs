@@ -37,7 +37,6 @@ impl MlsCentral {
     }
 
     /// Dumps the PKI environment as PEM
-    #[cfg_attr(not(test), tracing::instrument(err, skip_all))]
     pub async fn e2ei_dump_pki_env(&self) -> CryptoResult<Option<E2eiDumpedPkiEnv>> {
         if !self.e2ei_is_pki_env_setup().await {
             return Ok(None);
@@ -106,7 +105,6 @@ impl MlsCentral {
     ///
     /// # Parameters
     /// * `trust_anchor_pem` - PEM certificate to anchor as a Trust Root
-    #[cfg_attr(not(test), tracing::instrument(err, skip_all))]
     pub async fn e2ei_register_acme_ca(&self, trust_anchor_pem: String) -> CryptoResult<()> {
         {
             let mut conn = self.mls_backend.key_store().borrow_conn().await?;
@@ -154,14 +152,12 @@ impl MlsCentral {
     ///
     /// # Parameters
     /// * `cert_pem` - PEM certificate to register as an Intermediate CA
-    #[cfg_attr(not(test), tracing::instrument(err, skip_all))]
     pub async fn e2ei_register_intermediate_ca_pem(&self, cert_pem: String) -> CryptoResult<NewCrlDistributionPoint> {
         // Parse/decode PEM cert
         let inter_ca = PkiEnvironment::decode_pem_cert(cert_pem).map_err(|e| CryptoError::E2eiError(e.into()))?;
         self.e2ei_register_intermediate_ca(inter_ca).await
     }
 
-    #[cfg_attr(not(test), tracing::instrument(err, skip_all))]
     pub(crate) async fn e2ei_register_intermediate_ca_der(
         &self,
         cert_der: &[u8],
@@ -170,7 +166,6 @@ impl MlsCentral {
         self.e2ei_register_intermediate_ca(inter_ca).await
     }
 
-    #[cfg_attr(not(test), tracing::instrument(err, skip_all))]
     async fn e2ei_register_intermediate_ca(
         &self,
         inter_ca: x509_cert::Certificate,
@@ -230,7 +225,6 @@ impl MlsCentral {
     ///
     /// # Returns
     /// A [CrlRegistration] with the dirty state of the new CRL (see struct) and its expiration timestamp
-    #[cfg_attr(not(test), tracing::instrument(err, skip_all))]
     pub async fn e2ei_register_crl(&self, crl_dp: String, crl_der: Vec<u8>) -> CryptoResult<CrlRegistration> {
         // Parse & Validate CRL
         let crl = {
@@ -269,7 +263,6 @@ impl MlsCentral {
         Ok(CrlRegistration { expiration, dirty })
     }
 
-    #[cfg_attr(not(test), tracing::instrument(err, skip_all))]
     pub(crate) async fn init_pki_env(&self) -> CryptoResult<()> {
         if let Some(pki_env) = Self::restore_pki_env(&self.mls_backend).await? {
             self.mls_backend.update_pki_env(pki_env).await?;
@@ -278,7 +271,6 @@ impl MlsCentral {
         Ok(())
     }
 
-    #[cfg_attr(not(test), tracing::instrument(err, skip_all))]
     pub(crate) async fn restore_pki_env(backend: &MlsCryptoProvider) -> CryptoResult<Option<PkiEnvironment>> {
         let keystore = backend.key_store();
         let mut conn = keystore.borrow_conn().await?;

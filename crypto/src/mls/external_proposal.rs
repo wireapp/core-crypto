@@ -1,21 +1,19 @@
-use std::collections::HashSet;
-
+use log::{trace, warn};
 use openmls::{
     group::QueuedProposal,
     prelude::{GroupEpoch, GroupId, JoinProposal, LeafNodeIndex, MlsMessageOut, Proposal, Sender},
 };
+use std::collections::HashSet;
 
 use crate::{
     group_store::GroupStoreValue,
     mls::{credential::typ::MlsCredentialType, ClientId, ConversationId, MlsCentral},
     prelude::{CoreCryptoCallbacks, CryptoError, CryptoResult, MlsCiphersuite, MlsConversation, MlsError},
 };
-use tracing::{trace, warn, Instrument};
 
 impl MlsConversation {
     /// Validates the proposal. If it is external and an `Add` proposal it will call the callback
     /// interface to validate the proposal, otherwise it will succeed.
-    #[cfg_attr(not(test), tracing::instrument(err, skip_all))]
     pub(crate) async fn validate_external_proposal(
         &self,
         proposal: &QueuedProposal,
@@ -60,7 +58,6 @@ impl MlsConversation {
     }
 
     /// Get actual group members and subtract pending remove proposals
-    #[cfg_attr(not(test), tracing::instrument(skip(self)))]
     pub fn members_in_next_epoch(&self) -> Vec<ClientId> {
         let pending_removals = self.pending_removals();
         let existing_clients = self
@@ -70,7 +67,7 @@ impl MlsConversation {
                 if !pending_removals.contains(&kp.index) {
                     Some(kp.credential.identity().into())
                 } else {
-                    trace!(client_index = %kp.index, "Client is pending removal");
+                    trace!(client_index:% = kp.index; "Client is pending removal");
                     None
                 }
             })
@@ -108,7 +105,6 @@ impl MlsCentral {
     /// Fails when `credential_type` is [MlsCredentialType::X509] and no Credential has been created
     /// for it beforehand with [MlsCentral::e2ei_mls_init_only] or variants.
     #[cfg_attr(test, crate::dispotent)]
-    #[cfg_attr(not(test), tracing::instrument(err, skip(self)))]
     pub async fn new_external_add_proposal(
         &mut self,
         conversation_id: ConversationId,
@@ -140,7 +136,6 @@ impl MlsCentral {
         let kp = self
             .mls_client()?
             .generate_one_keypackage_from_credential_bundle(&self.mls_backend, ciphersuite, cb)
-            .in_current_span()
             .await?;
 
         Ok(JoinProposal::new(kp, group_id, epoch, &cb.signature_key).map_err(MlsError::from)?)

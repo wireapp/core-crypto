@@ -132,7 +132,6 @@ impl MlsCentral {
     /// # Errors
     /// If the conversation is not found, an error will be returned. Errors from OpenMls can be
     /// returned as well, when for example there's a commit pending to be merged
-    #[cfg_attr(not(test), tracing::instrument(err, skip(self, proposal), fields(id = base64::Engine::encode(&base64::prelude::BASE64_STANDARD, id))))]
     async fn new_proposal(&mut self, id: &ConversationId, proposal: MlsProposal) -> CryptoResult<MlsProposalBundle> {
         let conversation = self.get_conversation(id).await?;
         let client = self.mls_client()?;
