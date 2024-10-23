@@ -428,7 +428,7 @@ mod tests {
                         // Needed because 'e2ei_rotate' does not do it directly and it's required for 'get_group_info'
                         alice_client
                             .save_new_x509_credential_bundle(
-                                &alice_provider.transaction(),
+                                &alice_provider.keystore(),
                                 case.signature_scheme(),
                                 cert,
                             )
@@ -501,7 +501,7 @@ mod tests {
                     // Needed because 'e2ei_rotate' does not do it directly and it's required for 'get_group_info'
                     alice_client
                         .save_new_x509_credential_bundle(
-                            &alice_provider.transaction(),
+                            &alice_provider.keystore(),
                             case.signature_scheme(),
                             alice_cert.certificate.clone().into(),
                         )

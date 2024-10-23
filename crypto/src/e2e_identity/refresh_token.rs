@@ -21,9 +21,9 @@ impl RefreshToken {
 
     #[cfg_attr(not(test), tracing::instrument(err, skip_all))]
     pub(crate) async fn replace(self, backend: &TransactionalCryptoProvider) -> CryptoKeystoreResult<()> {
-        let transaction = backend.transaction();
+        let keystore = backend.keystore();
         let rt = E2eiRefreshToken::from(self);
-        transaction.save(rt).await?;
+        keystore.save(rt).await?;
         Ok(())
     }
 }

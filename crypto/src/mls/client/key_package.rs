@@ -23,9 +23,8 @@ use tls_codec::{Deserialize, Serialize};
 use core_crypto_keystore::{
     connection::FetchFromDatabase,
     entities::{EntityFindParams, MlsEncryptionKeyPair, MlsHpkePrivateKey, MlsKeyPackage},
-    KeystoreTransaction,
 };
-use mls_crypto_provider::TransactionalCryptoProvider;
+use mls_crypto_provider::{CryptoKeystore, TransactionalCryptoProvider};
 
 use crate::{
     mls::{context::CentralContext, credential::CredentialBundle},
@@ -199,7 +198,7 @@ impl Client {
         backend: &TransactionalCryptoProvider,
         refs: &[KeyPackageRef],
     ) -> CryptoResult<()> {
-        let keystore = backend.transaction();
+        let keystore = backend.keystore();
         let kps = self.find_all_keypackages(&keystore).await?;
         let _ = self._prune_keypackages(&kps, &keystore, refs).await?;
         Ok(())
@@ -236,9 +235,9 @@ impl Client {
             if all_to_delete {
                 // then delete this Credential
                 backend
-                    .transaction()
+                    .keystore()
                     .cred_delete_by_credential(credential.clone())
-                    .await;
+                    .await?;
                 let credential = Credential::tls_deserialize(&mut credential.as_slice()).map_err(MlsError::from)?;
                 self.identities.remove(&credential)?;
             }
@@ -255,7 +254,7 @@ impl Client {
     async fn _prune_keypackages<'a>(
         &self,
         kps: &'a [(MlsKeyPackage, KeyPackage)],
-        tx: &KeystoreTransaction,
+        keystore: &CryptoKeystore,
         refs: &[KeyPackageRef],
     ) -> Result<Vec<&'a [u8]>, CryptoError> {
         let kp_to_delete: Vec<_> = kps
@@ -275,10 +274,10 @@ impl Client {
 
         for (kp, kp_ref) in &kp_to_delete {
             // TODO: maybe rewrite this to optimize it. But honestly it's called so rarely and on a so tiny amount of data. Tacking issue: WPB-9600
-            tx.remove::<MlsKeyPackage, &[u8]>(kp_ref.as_slice()).await?;
-            tx.remove::<MlsHpkePrivateKey, &[u8]>(kp.hpke_init_key().as_slice())
+            keystore.remove::<MlsKeyPackage, &[u8]>(kp_ref.as_slice()).await?;
+            keystore.remove::<MlsHpkePrivateKey, &[u8]>(kp.hpke_init_key().as_slice())
                 .await?;
-            tx.remove::<MlsEncryptionKeyPair, &[u8]>(kp.leaf_node().encryption_key().as_slice())
+            keystore.remove::<MlsEncryptionKeyPair, &[u8]>(kp.leaf_node().encryption_key().as_slice())
                 .await?;
         }
 
@@ -290,8 +289,8 @@ impl Client {
         Ok(kp_to_delete)
     }
 
-    async fn find_all_keypackages(&self, tx: &KeystoreTransaction) -> CryptoResult<Vec<(MlsKeyPackage, KeyPackage)>> {
-        let kps: Vec<MlsKeyPackage> = tx.find_all(EntityFindParams::default()).await?;
+    async fn find_all_keypackages(&self, keystore: &CryptoKeystore) -> CryptoResult<Vec<(MlsKeyPackage, KeyPackage)>> {
+        let kps: Vec<MlsKeyPackage> = keystore.find_all(EntityFindParams::default()).await?;
 
         let kps = kps.into_iter().try_fold(vec![], |mut acc, raw_kp| {
             let kp = core_crypto_keystore::deser::<KeyPackage>(&raw_kp.keypackage)?;
@@ -405,7 +404,7 @@ mod tests {
             None
         };
 
-        let backend = backend.new_transaction().await.unwrap();
+        backend.new_transaction().await.unwrap();
         let mut client = Client::random_generate(
             &case,
             &backend,
@@ -488,7 +487,7 @@ mod tests {
     #[apply(all_cred_cipher)]
     #[wasm_bindgen_test]
     async fn generates_correct_number_of_kpbs(case: TestCase) {
-        run_test_with_client_ids(case.clone(), ["alice"], move |[mut cc]| {
+        run_test_with_client_ids(case.clone(), ["alice"], move |[cc]| {
             Box::pin(async move {
                 const N: usize = 2;
                 const COUNT: usize = 109;
@@ -580,10 +579,10 @@ mod tests {
         } else {
             None
         };
-        let transaction = backend.new_transaction().await.unwrap();
+        backend.new_transaction().await.unwrap();
         let mut client = Client::random_generate(
             &case,
-            &transaction,
+            &backend,
             x509_test_chain.as_ref().map(|chain| chain.find_local_intermediate_ca()),
             false,
         )
@@ -592,11 +591,11 @@ mod tests {
 
         // Generate `UNEXPIRED_COUNT` kpbs that are with default 3 months expiration. We *should* keep them for the duration of the test
         let unexpired_kpbs = client
-            .request_key_packages(UNEXPIRED_COUNT, case.ciphersuite(), case.credential_type, &transaction)
+            .request_key_packages(UNEXPIRED_COUNT, case.ciphersuite(), case.credential_type, &backend)
             .await
             .unwrap();
         let len = client
-            .valid_keypackages_count(&transaction, case.ciphersuite(), case.credential_type)
+            .valid_keypackages_count(&backend, case.ciphersuite(), case.credential_type)
             .await
             .unwrap();
         assert_eq!(len, unexpired_kpbs.len());
@@ -607,7 +606,7 @@ mod tests {
 
         // Generate new keypackages that are normally partially expired 2s after they're requested
         let partially_expired_kpbs = client
-            .request_key_packages(EXPIRED_COUNT, case.ciphersuite(), case.credential_type, &transaction)
+            .request_key_packages(EXPIRED_COUNT, case.ciphersuite(), case.credential_type, &backend)
             .await
             .unwrap();
         assert_eq!(partially_expired_kpbs.len(), EXPIRED_COUNT);
@@ -618,11 +617,11 @@ mod tests {
         // Request the same number of keypackages. The automatic lifetime-based expiration should take
         // place and remove old expired keypackages and generate fresh ones instead
         let fresh_kpbs = client
-            .request_key_packages(EXPIRED_COUNT, case.ciphersuite(), case.credential_type, &transaction)
+            .request_key_packages(EXPIRED_COUNT, case.ciphersuite(), case.credential_type, &backend)
             .await
             .unwrap();
         let len = client
-            .valid_keypackages_count(&transaction, case.ciphersuite(), case.credential_type)
+            .valid_keypackages_count(&backend, case.ciphersuite(), case.credential_type)
             .await
             .unwrap();
         assert_eq!(len, fresh_kpbs.len());

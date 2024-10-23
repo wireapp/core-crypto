@@ -190,7 +190,7 @@ impl MlsConversation {
         let gi = gi.ok_or(CryptoError::ImplementationError)?;
         let group_info = MlsGroupInfoBundle::try_new_full_plaintext(gi)?;
 
-        self.persist_group_when_changed(&backend.transaction(), false).await?;
+        self.persist_group_when_changed(&backend.keystore(), false).await?;
 
         Ok(MlsConversationCreationMessage {
             welcome,
@@ -239,7 +239,7 @@ impl MlsConversation {
         let gi = gi.ok_or(CryptoError::ImplementationError)?;
         let group_info = MlsGroupInfoBundle::try_new_full_plaintext(gi)?;
 
-        self.persist_group_when_changed(&backend.transaction(), false).await?;
+        self.persist_group_when_changed(&backend.keystore(), false).await?;
 
         Ok(MlsCommitBundle {
             commit,
@@ -272,7 +272,7 @@ impl MlsConversation {
         let group_info = group_info.ok_or(CryptoError::ImplementationError)?;
         let group_info = MlsGroupInfoBundle::try_new_full_plaintext(group_info)?;
 
-        self.persist_group_when_changed(&backend.transaction(), false).await?;
+        self.persist_group_when_changed(&backend.keystore(), false).await?;
 
         Ok(MlsCommitBundle {
             welcome,
@@ -303,7 +303,7 @@ impl MlsConversation {
                 .map_err(MlsError::from)?;
             let group_info = MlsGroupInfoBundle::try_new_full_plaintext(gi.unwrap())?;
 
-            self.persist_group_when_changed(&backend.transaction(), false).await?;
+            self.persist_group_when_changed(&backend.keystore(), false).await?;
 
             Ok(Some(MlsCommitBundle {
                 welcome,

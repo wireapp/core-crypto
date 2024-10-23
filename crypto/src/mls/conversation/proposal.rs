@@ -50,7 +50,7 @@ impl MlsConversation {
             proposal_ref: proposal_ref.into(),
             crl_new_distribution_points,
         };
-        self.persist_group_when_changed(&backend.transaction(), false).await?;
+        self.persist_group_when_changed(&backend.keystore(), false).await?;
         Ok(proposal)
     }
 
@@ -73,7 +73,7 @@ impl MlsConversation {
             .map_err(MlsError::from)
             .map_err(CryptoError::from)
             .map(MlsProposalBundle::from)?;
-        self.persist_group_when_changed(&backend.transaction(), false).await?;
+        self.persist_group_when_changed(&backend.keystore(), false).await?;
         Ok(proposal)
     }
 
@@ -117,7 +117,7 @@ impl MlsConversation {
         .map_err(MlsError::from)
         .map(MlsProposalBundle::from)?;
 
-        self.persist_group_when_changed(&backend.transaction(), false).await?;
+        self.persist_group_when_changed(&backend.keystore(), false).await?;
         Ok(proposal)
     }
 }

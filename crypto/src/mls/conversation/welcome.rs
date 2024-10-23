@@ -130,7 +130,7 @@ impl MlsConversation {
         };
 
         let id = ConversationId::from(group.group_id().as_slice());
-        let existing_conversation = mls_groups.get_fetch(&id[..], &backend.transaction(), None).await;
+        let existing_conversation = mls_groups.get_fetch(&id[..], &backend.keystore(), None).await;
         let conversation_exists = existing_conversation.ok().flatten().is_some();
 
         let pending_group = backend.key_store().find::<PersistedMlsPendingGroup>(&id[..]).await;
