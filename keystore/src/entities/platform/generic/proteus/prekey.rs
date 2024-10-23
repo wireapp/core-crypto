@@ -134,7 +134,7 @@ impl EntityTransactionExt for ProteusPrekey {
         Ok(())
     }
 
-    async fn delete(transaction: &TransactionWrapper<'_>, id: StringEntityId<'_>) -> crate::CryptoKeystoreResult<()> {
+    async fn delete_fail_on_missing_id(transaction: &TransactionWrapper<'_>, id: StringEntityId<'_>) -> crate::CryptoKeystoreResult<()> {
         let id = ProteusPrekey::id_from_slice(id.as_slice());
         let updated = transaction.execute("DELETE FROM proteus_prekeys WHERE id = ?", [id])?;
         if updated > 0 {
