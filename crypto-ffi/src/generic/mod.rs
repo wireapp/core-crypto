@@ -38,6 +38,8 @@ use crate::UniffiCustomTypeConverter;
 
 use self::context::CoreCryptoContext;
 
+use crate::proteus_impl;
+
 pub mod context;
 
 #[allow(dead_code)]
