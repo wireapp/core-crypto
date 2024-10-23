@@ -16,7 +16,7 @@
 
 use crate::{
     connection::{DatabaseConnection, KeystoreDatabaseConnection, TransactionWrapper},
-    entities::{Entity, EntityBase, EntityFindParams, EntityMlsExt, MlsSignatureKeyPair, StringEntityId},
+    entities::{Entity, EntityBase, EntityFindParams, EntityTransactionExt, MlsSignatureKeyPair, StringEntityId},
     CryptoKeystoreResult, MissingKeyErrorKind,
 };
 use std::io::{Read, Write};
@@ -176,8 +176,8 @@ impl EntityBase for MlsSignatureKeyPair {
 
 #[cfg_attr(target_family = "wasm", async_trait::async_trait(?Send))]
 #[cfg_attr(not(target_family = "wasm"), async_trait::async_trait)]
-impl EntityMlsExt for MlsSignatureKeyPair {
-    async fn mls_save(&self, transaction: &TransactionWrapper<'_>) -> CryptoKeystoreResult<()> {
+impl EntityTransactionExt for MlsSignatureKeyPair {
+    async fn save(&self, transaction: &TransactionWrapper<'_>) -> CryptoKeystoreResult<()> {
         Self::ConnectionType::check_buffer_size(self.keypair.len())?;
         Self::ConnectionType::check_buffer_size(self.pk.len())?;
         Self::ConnectionType::check_buffer_size(self.credential_id.len())?;
@@ -235,7 +235,7 @@ impl EntityMlsExt for MlsSignatureKeyPair {
         Ok(())
     }
 
-    async fn mls_delete(transaction: &TransactionWrapper<'_>, id: StringEntityId<'_>) -> CryptoKeystoreResult<()> {
+    async fn delete(transaction: &TransactionWrapper<'_>, id: StringEntityId<'_>) -> CryptoKeystoreResult<()> {
         let updated = transaction.execute("DELETE FROM mls_signature_keypairs WHERE pk = ?", [id.as_slice()])?;
 
         if updated > 0 {

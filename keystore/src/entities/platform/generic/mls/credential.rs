@@ -16,7 +16,7 @@
 
 use crate::{
     connection::TransactionWrapper,
-    entities::{EntityMlsExt, MlsCredentialExt},
+    entities::{EntityTransactionExt, MlsCredentialExt},
     CryptoKeystoreError,
 };
 use crate::{
@@ -140,8 +140,8 @@ impl EntityBase for MlsCredential {
 
 #[cfg_attr(target_family = "wasm", async_trait::async_trait(?Send))]
 #[cfg_attr(not(target_family = "wasm"), async_trait::async_trait)]
-impl EntityMlsExt for MlsCredential {
-    async fn mls_save(&self, transaction: &TransactionWrapper<'_>) -> crate::CryptoKeystoreResult<()> {
+impl EntityTransactionExt for MlsCredential {
+    async fn save(&self, transaction: &TransactionWrapper<'_>) -> crate::CryptoKeystoreResult<()> {
         Self::ConnectionType::check_buffer_size(self.id.len())?;
         Self::ConnectionType::check_buffer_size(self.credential.len())?;
 
@@ -184,7 +184,7 @@ impl EntityMlsExt for MlsCredential {
         Ok(created_at)
     }
 
-    async fn mls_delete(
+    async fn delete(
         transaction: &TransactionWrapper<'_>,
         id: StringEntityId<'_>,
     ) -> crate::CryptoKeystoreResult<()> {

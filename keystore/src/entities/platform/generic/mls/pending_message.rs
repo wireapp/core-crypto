@@ -16,7 +16,7 @@
 
 use crate::{
     connection::{DatabaseConnection, KeystoreDatabaseConnection, TransactionWrapper},
-    entities::{Entity, EntityBase, EntityFindParams, EntityMlsExt, MlsPendingMessage, StringEntityId},
+    entities::{Entity, EntityBase, EntityFindParams, EntityTransactionExt, MlsPendingMessage, StringEntityId},
     CryptoKeystoreResult, MissingKeyErrorKind,
 };
 
@@ -132,8 +132,8 @@ impl EntityBase for MlsPendingMessage {
 
 #[cfg_attr(target_family = "wasm", async_trait::async_trait(?Send))]
 #[cfg_attr(not(target_family = "wasm"), async_trait::async_trait)]
-impl EntityMlsExt for MlsPendingMessage {
-    async fn mls_save(&self, transaction: &TransactionWrapper<'_>) -> CryptoKeystoreResult<()> {
+impl EntityTransactionExt for MlsPendingMessage {
+    async fn save(&self, transaction: &TransactionWrapper<'_>) -> CryptoKeystoreResult<()> {
         Self::ConnectionType::check_buffer_size(self.id.len())?;
         Self::ConnectionType::check_buffer_size(self.message.len())?;
 
@@ -168,7 +168,7 @@ impl EntityMlsExt for MlsPendingMessage {
         Ok(())
     }
 
-    async fn mls_delete(transaction: &TransactionWrapper<'_>, id: StringEntityId<'_>) -> CryptoKeystoreResult<()> {
+    async fn delete(transaction: &TransactionWrapper<'_>, id: StringEntityId<'_>) -> CryptoKeystoreResult<()> {
         let updated = transaction.execute("DELETE FROM mls_pending_messages WHERE id = ?", [id.as_slice()])?;
 
         if updated > 0 {

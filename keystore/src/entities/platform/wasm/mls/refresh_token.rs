@@ -16,7 +16,7 @@
 
 use crate::{
     connection::{storage::WasmStorageTransaction, DatabaseConnection, KeystoreDatabaseConnection},
-    entities::{E2eiRefreshToken, Entity, EntityBase, EntityFindParams, EntityMlsExt, StringEntityId, UniqueEntity},
+    entities::{E2eiRefreshToken, Entity, EntityBase, EntityFindParams, StringEntityId, UniqueEntity},
     CryptoKeystoreError, CryptoKeystoreResult, MissingKeyErrorKind,
 };
 
@@ -53,12 +53,12 @@ impl EntityBase for E2eiRefreshToken {
 
 #[cfg_attr(target_family = "wasm", async_trait::async_trait(?Send))]
 #[cfg_attr(not(target_family = "wasm"), async_trait::async_trait)]
-impl EntityMlsExt for E2eiRefreshToken {
-    async fn mls_delete<'a>(_: &WasmStorageTransaction<'a>, _: StringEntityId<'a>) -> crate::CryptoKeystoreResult<()> {
+impl EntityTransactionExt for E2eiRefreshToken {
+    async fn delete<'a>(_: &WasmStorageTransaction<'a>, _: StringEntityId<'a>) -> crate::CryptoKeystoreResult<()> {
         return Err(CryptoKeystoreError::NotImplemented);
     }
 
-    async fn mls_save<'a>(&'a self, _: &WasmStorageTransaction<'a>) -> crate::CryptoKeystoreResult<()> {
+    async fn save<'a>(&'a self, _: &WasmStorageTransaction<'a>) -> crate::CryptoKeystoreResult<()> {
         return Err(CryptoKeystoreError::NotImplemented);
     }
 }
