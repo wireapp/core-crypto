@@ -42,7 +42,6 @@ cfg_if::cfg_if! {
 pub use connection::Connection;
 #[cfg(not(target_family = "wasm"))]
 use sha2::{Digest, Sha256};
-pub use transaction::KeystoreTransaction;
 
 #[cfg(feature = "dummy-entity")]
 pub mod dummy_entity {

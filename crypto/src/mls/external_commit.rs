@@ -215,12 +215,12 @@ impl CentralContext {
     /// Errors resulting from the KeyStore calls
     #[cfg_attr(test, crate::dispotent)]
     pub async fn clear_pending_group_from_external_commit(&self, id: &ConversationId) -> CryptoResult<()> {
-        Ok(self.transaction().await?.mls_pending_groups_delete(id).await?)
+        Ok(self.keystore().await?.mls_pending_groups_delete(id).await?)
     }
 
     pub(crate) async fn pending_group_exists(&self, id: &ConversationId) -> CryptoResult<bool> {
         Ok(self
-            .transaction()
+            .keystore()
             .await?
             .find::<PersistedMlsPendingGroup>(id.as_slice())
             .await
@@ -406,7 +406,7 @@ mod tests {
                     // Pending group removed from keystore
                     let error = alice_central
                         .context
-                        .transaction().await.unwrap()
+                        .keystore().await.unwrap()
                         .mls_pending_groups_load(&id)
                         .await;
                     assert!(matches!(

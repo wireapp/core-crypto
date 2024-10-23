@@ -9,7 +9,7 @@ impl MlsConversation {
 
         let group_id = self.group.group_id();
         let (parent_id, group) = backend
-            .transaction()
+            .keystore()
             .mls_groups_restore()
             .await
             .map(|mut groups| groups.remove(group_id.as_slice()).unwrap())
@@ -26,7 +26,7 @@ impl CentralContext {
         use core_crypto_keystore::CryptoKeystoreMls as _;
 
         let (parent_id, group) = self
-            .transaction()
+            .keystore()
             .await
             .unwrap()
             .mls_groups_restore()

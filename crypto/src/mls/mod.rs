@@ -174,7 +174,8 @@ impl MlsCentral {
             entropy_seed: configuration.external_entropy,
         })
         .await?;
-        let transaction = mls_backend.new_transaction().await?;
+        mls_backend.new_transaction().await?;
+        let keystore = mls_backend.keystore(); 
         let mls_client = if let Some(id) = configuration.client_id {
             // Init client identity (load or create)
             Arc::new(
@@ -182,7 +183,7 @@ impl MlsCentral {
                     Client::init(
                         ClientIdentifier::Basic(id),
                         configuration.ciphersuites.as_slice(),
-                        &transaction,
+                        &mls_backend,
                         configuration
                             .nb_init_key_packages
                             .unwrap_or(INITIAL_KEYING_MATERIAL_COUNT),
@@ -202,8 +203,8 @@ impl MlsCentral {
             transaction_lock: Arc::new(Mutex::new(())),
         };
 
-        transaction.transaction().commit().await?;
-        drop(transaction);
+        keystore.commit_transaction().await?;
+        drop(keystore);
 
         let context = central.new_transaction().await?;
 
@@ -222,14 +223,14 @@ impl MlsCentral {
             entropy_seed: configuration.external_entropy,
         })
         .await?;
-        let transaction = mls_backend.new_transaction().await?;
+        mls_backend.new_transaction().await?;
         let mls_client = if let Some(id) = configuration.client_id {
             Arc::new(
                 Some(
                     Client::init(
                         ClientIdentifier::Basic(id),
                         configuration.ciphersuites.as_slice(),
-                        &transaction,
+                        &mls_backend,
                         configuration
                             .nb_init_key_packages
                             .unwrap_or(INITIAL_KEYING_MATERIAL_COUNT),
@@ -241,14 +242,13 @@ impl MlsCentral {
         } else {
             Arc::new(None.into())
         };
+        mls_backend.keystore().commit_transaction().await?;
         let central = Self {
             mls_backend,
             mls_client,
             callbacks: Arc::new(None.into()),
             transaction_lock: Arc::new(Mutex::new(())),
         };
-        transaction.transaction().commit().await?;
-        drop(transaction);
 
         let context = central.new_transaction().await?;
 
@@ -493,7 +493,7 @@ impl CentralContext {
         Ok(self
             .mls_groups()
             .await?
-            .get_fetch(id, &self.transaction().await?, None)
+            .get_fetch(id, &self.mls_provider().await?.keystore(), None)
             .await
             .ok()
             .flatten()

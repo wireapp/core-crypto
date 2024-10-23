@@ -130,8 +130,8 @@ mod tests {
                             // this restore recreates a partial enrollment
                             let backend = MlsCryptoProvider::try_new_in_memory("new")
                                 .await
-                                .unwrap()
-                                .new_transaction().await.unwrap();
+                                .unwrap();
+                                backend.new_transaction().await.unwrap();
                             let client_id = e.client_id.parse::<WireQualifiedClientId>().unwrap();
                             E2eiEnrollment::try_new(
                                 client_id.into(),

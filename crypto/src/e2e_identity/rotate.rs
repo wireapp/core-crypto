@@ -100,7 +100,7 @@ impl CentralContext {
             ciphersuite,
             sign_keypair,
             #[cfg(not(target_family = "wasm"))]
-            Some(RefreshToken::find(&mls_provider.transaction()).await?), // Since we are renewing an e2ei certificate we MUST have already generated one hence we MUST already have done an OIDC authn and gotten a refresh token from it we also MUST have stored in CoreCrypto
+            Some(RefreshToken::find(&mls_provider.keystore()).await?), // Since we are renewing an e2ei certificate we MUST have already generated one hence we MUST already have done an OIDC authn and gotten a refresh token from it we also MUST have stored in CoreCrypto
         )
     }
 
@@ -143,7 +143,7 @@ impl CentralContext {
         let mut client_guard = self.mls_client_mut().await?;
         let client = client_guard.as_mut().ok_or(CryptoError::MlsNotInitialized)?;
         let new_cb = client
-            .save_new_x509_credential_bundle(&self.transaction().await?, cs.signature_algorithm(), cert_bundle)
+            .save_new_x509_credential_bundle(&self.mls_provider().await?.keystore(), cs.signature_algorithm(), cert_bundle)
             .await?;
 
         let commits = self.e2ei_update_all(&new_cb).await?;
@@ -178,7 +178,7 @@ impl CentralContext {
     }
 
     async fn find_key_packages_to_remove(&self, cb: &CredentialBundle) -> CryptoResult<Vec<KeyPackageRef>> {
-        let transaction = self.transaction().await?;
+        let transaction = self.keystore().await?;
         let nb_kp = transaction.count::<MlsKeyPackage>().await?;
         let kps: Vec<KeyPackage> = transaction.mls_fetch_keypackages(nb_kp as u32).await?;
 
@@ -671,7 +671,7 @@ pub(crate) mod tests {
                     let scs = HashSet::from([case.signature_scheme()]);
                     let all_credentials = alice_central
                         .context
-                        .transaction().await.unwrap()
+                        .keystore().await.unwrap()
                         .find_all::<MlsCredential>(EntityFindParams::default())
                         .await
                         .unwrap()

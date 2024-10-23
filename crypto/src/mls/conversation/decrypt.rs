@@ -270,7 +270,7 @@ impl MlsConversation {
             }
         };
 
-        self.persist_group_when_changed(&backend.transaction(), false).await?;
+        self.persist_group_when_changed(&backend.keystore(), false).await?;
 
         Ok(decrypted)
     }
@@ -443,7 +443,7 @@ mod tests {
             run_test_with_client_ids(
                 case.clone(),
                 ["alice", "bob"],
-                move |[mut alice_central, mut bob_central]| {
+                move |[alice_central, mut bob_central]| {
                     Box::pin(async move {
                         let id = conversation_id();
                         alice_central
@@ -623,7 +623,7 @@ mod tests {
             run_test_with_client_ids(
                 case.clone(),
                 ["alice", "bob", "charlie"],
-                move |[mut alice_central, mut bob_central, mut charlie_central]| {
+                move |[mut alice_central, mut bob_central, charlie_central]| {
                     Box::pin(async move {
                         let id = conversation_id();
                         alice_central

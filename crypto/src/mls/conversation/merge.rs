@@ -32,7 +32,7 @@ impl MlsConversation {
         let previous_own_leaf_nodes = self.group.own_leaf_nodes.clone();
 
         self.group.merge_pending_commit(backend).await.map_err(MlsError::from)?;
-        self.persist_group_when_changed(&backend.transaction(), false).await?;
+        self.persist_group_when_changed(&backend.keystore(), false).await?;
 
         // ..so if there's any, we clear them after the commit is merged
         for oln in &previous_own_leaf_nodes {
@@ -57,7 +57,7 @@ impl MlsConversation {
                 MlsGroupStateError::PendingProposalNotFound => CryptoError::PendingProposalNotFound(proposal_ref),
                 _ => CryptoError::from(MlsError::from(e)),
             })?;
-        self.persist_group_when_changed(&backend.transaction(), true).await?;
+        self.persist_group_when_changed(&backend.keystore(), true).await?;
         Ok(())
     }
 
@@ -66,7 +66,7 @@ impl MlsConversation {
     pub async fn clear_pending_commit(&mut self, backend: &TransactionalCryptoProvider) -> CryptoResult<()> {
         if self.group.pending_commit().is_some() {
             self.group.clear_pending_commit();
-            self.persist_group_when_changed(&backend.transaction(), true).await?;
+            self.persist_group_when_changed(&backend.keystore(), true).await?;
             Ok(())
         } else {
             Err(CryptoError::PendingCommitNotFound)
@@ -101,7 +101,7 @@ impl CentralContext {
 
         let pending_messages = self.restore_pending_messages(&mut conv, false).await?;
         if pending_messages.is_some() {
-            self.transaction().await?.remove::<MlsPendingMessage, _>(id).await?;
+            self.keystore().await?.remove::<MlsPendingMessage, _>(id).await?;
         }
         Ok(pending_messages)
     }
