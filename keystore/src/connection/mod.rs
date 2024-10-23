@@ -192,8 +192,8 @@ impl Connection {
         Ok(())
     }
 
-    pub fn new_transaction(&self) -> KeystoreTransaction {
-        KeystoreTransaction::new(self.clone())
+    pub async fn new_transaction(&self) -> CryptoKeystoreResult<KeystoreTransaction> {
+        KeystoreTransaction::new(self.clone()).await
     }
 }
 
