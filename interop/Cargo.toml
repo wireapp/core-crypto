@@ -21,6 +21,7 @@ log = "0.4"
 femme = "2.2"
 dirs = "5.0"
 core-crypto = { path = "../crypto" }
+core-crypto-ffi = { path = "../crypto-ffi" }
 tls_codec.workspace = true
 
 # Utils
