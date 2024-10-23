@@ -14,12 +14,12 @@
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see http://www.gnu.org/licenses/.
 
+use crate::entities::EntityTransactionExt;
 use crate::{
     connection::{DatabaseConnection, KeystoreDatabaseConnection},
     entities::{Entity, EntityBase, EntityFindParams, ProteusIdentity, StringEntityId},
     CryptoKeystoreResult, MissingKeyErrorKind,
 };
-use crate::entities::EntityTransactionExt;
 
 #[cfg_attr(target_family = "wasm", async_trait::async_trait(?Send))]
 #[cfg_attr(not(target_family = "wasm"), async_trait::async_trait)]
@@ -60,7 +60,7 @@ impl EntityBase for ProteusIdentity {
 }
 
 #[async_trait::async_trait(?Send)]
-impl EntityTransactionExt for ProteusIdentity { }
+impl EntityTransactionExt for ProteusIdentity {}
 
 impl Entity for ProteusIdentity {
     fn id_raw(&self) -> &[u8] {

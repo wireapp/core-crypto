@@ -2,11 +2,11 @@ use crate::{
     mls::credential::{typ::MlsCredentialType, CredentialBundle},
     prelude::{Client, CryptoError, CryptoResult, MlsConversation},
 };
+use async_lock::Mutex;
 use openmls::prelude::{Credential, SignaturePublicKey};
 use openmls_traits::types::SignatureScheme;
 use std::collections::HashMap;
 use std::sync::Arc;
-use async_lock::Mutex;
 
 /// In memory Map of a Client's identities: one per SignatureScheme.
 /// We need `indexmap::IndexSet` because each `CredentialBundle` has to be unique and insertion
@@ -27,11 +27,14 @@ impl ClientIdentities {
     ) -> Option<CredentialBundle> {
         let credential_bundles_by_signature_schemes = self.0.lock().await;
         let credential_bundles = credential_bundles_by_signature_schemes.get(&sc)?;
-        credential_bundles.iter().find(|c| {
-            let ct_match = ct == c.credential.credential_type().into();
-            let pk_match = c.signature_key.public() == pk.as_slice();
-            ct_match && pk_match
-        }).cloned()
+        credential_bundles
+            .iter()
+            .find(|c| {
+                let ct_match = ct == c.credential.credential_type().into();
+                let pk_match = c.signature_key.public() == pk.as_slice();
+                ct_match && pk_match
+            })
+            .cloned()
     }
 
     pub(crate) async fn find_most_recent_credential_bundle(
@@ -43,12 +46,17 @@ impl ClientIdentities {
         let credential_bundles = credential_bundles_by_signature_schemes.get(&sc)?;
         credential_bundles
             .iter()
-            .rfind(|c| ct == c.credential.credential_type().into()).cloned()
+            .rfind(|c| ct == c.credential.credential_type().into())
+            .cloned()
     }
 
     /// Having `cb` requiring ownership kinda forces the caller to first persist it in the keystore and
     /// only then store it in this in-memory map
-    pub(crate) async fn push_credential_bundle(&mut self, sc: SignatureScheme, cb: CredentialBundle) -> CryptoResult<()> {
+    pub(crate) async fn push_credential_bundle(
+        &mut self,
+        sc: SignatureScheme,
+        cb: CredentialBundle,
+    ) -> CryptoResult<()> {
         // this would mean we have messed something up and that we do no init this CredentialBundle from a keypair just inserted in the keystore
         debug_assert_ne!(cb.created_at, 0);
         let mut credential_bundles_by_signature_schemes = self.0.lock().await;
@@ -77,12 +85,10 @@ impl ClientIdentities {
 
     pub(crate) async fn as_vec(&self) -> Vec<(SignatureScheme, CredentialBundle)> {
         let credential_bundles_by_signature_schemes = self.0.lock().await;
-        
+
         credential_bundles_by_signature_schemes
             .iter()
-            .flat_map(|(sig_scheme, bundles)| {
-                bundles.iter().cloned().map(move |bundle| (*sig_scheme, bundle))
-            })
+            .flat_map(|(sig_scheme, bundles)| bundles.iter().cloned().map(move |bundle| (*sig_scheme, bundle)))
             .collect()
     }
 }
@@ -98,7 +104,8 @@ impl MlsConversation {
 
         Ok(client
             .identities
-            .find_credential_bundle_by_public_key(sc, ct, own_leaf.signature_key()).await)
+            .find_credential_bundle_by_public_key(sc, ct, own_leaf.signature_key())
+            .await)
     }
 
     pub(crate) async fn find_most_recent_credential_bundle(
@@ -140,22 +147,12 @@ mod tests {
             run_test_with_client_ids(case.clone(), ["alice"], move |[mut central]| {
                 Box::pin(async move {
                     let cert = central.get_intermediate_ca().cloned();
-                    let old = central
-                        .new_credential_bundle(
-                            &case,
-                            cert.as_ref()
-                        )
-                        .await;
+                    let old = central.new_credential_bundle(&case, cert.as_ref()).await;
 
                     // wait to make sure we're not in the same second
                     async_std::task::sleep(core::time::Duration::from_secs(1)).await;
 
-                    let new = central
-                        .new_credential_bundle(
-                            &case,
-                            cert.as_ref()
-                        )
-                        .await;
+                    let new = central.new_credential_bundle(&case, cert.as_ref()).await;
                     assert_ne!(old, new);
 
                     let found = central
@@ -179,12 +176,7 @@ mod tests {
                     let mut to_search = None;
                     for i in 0..N {
                         let cert = central.get_intermediate_ca().cloned();
-                        let cb = central
-                            .new_credential_bundle(
-                                &case,
-                                cert.as_ref(),
-                            )
-                            .await;
+                        let cb = central.new_credential_bundle(&case, cert.as_ref()).await;
                         if i == r {
                             to_search = Some(cb.clone());
                         }
@@ -214,24 +206,11 @@ mod tests {
             run_test_with_client_ids(case.clone(), ["alice"], move |[mut central]| {
                 Box::pin(async move {
                     let client = central.client().await;
-                    let prev_count = client
-                        .identities
-                        .as_vec()
-                        .await
-                        .len();
+                    let prev_count = client.identities.as_vec().await.len();
                     let cert = central.get_intermediate_ca().cloned();
                     // this calls 'push_credential_bundle' under the hood
-                    central
-                        .new_credential_bundle(
-                            &case,
-                           cert.as_ref(),
-                        )
-                        .await;
-                    let next_count = client
-                        .identities
-                        .as_vec()
-                        .await
-                        .len();
+                    central.new_credential_bundle(&case, cert.as_ref()).await;
+                    let next_count = client.identities.as_vec().await.len();
                     assert_eq!(next_count, prev_count + 1);
                 })
             })
@@ -244,15 +223,13 @@ mod tests {
             run_test_with_client_ids(case.clone(), ["alice"], move |[mut central]| {
                 Box::pin(async move {
                     let cert = central.get_intermediate_ca().cloned();
-                    let cb = central
-                        .new_credential_bundle(
-                            &case,
-                            cert.as_ref(),
-                        )
-                        .await;
+                    let cb = central.new_credential_bundle(&case, cert.as_ref()).await;
                     let mut client = central.context.mls_client_mut().await.unwrap();
                     let client = client.as_mut().unwrap();
-                    let push = client.identities.push_credential_bundle(case.signature_scheme(), cb).await;
+                    let push = client
+                        .identities
+                        .push_credential_bundle(case.signature_scheme(), cb)
+                        .await;
                     assert!(matches!(
                         push.unwrap_err(),
                         crate::CryptoError::CredentialBundleConflict

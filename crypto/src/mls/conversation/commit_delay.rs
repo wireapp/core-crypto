@@ -189,23 +189,9 @@ mod tests {
                         .add_members_to_conversation(&id, vec![bob])
                         .await
                         .unwrap();
-                    assert_eq!(
-                        alice_central
-                            .get_conversation_unchecked(&id)
-                            .await
-                            .members()
-                            .len(),
-                        1
-                    );
+                    assert_eq!(alice_central.get_conversation_unchecked(&id).await.members().len(), 1);
                     alice_central.context.commit_accepted(&id).await.unwrap();
-                    assert_eq!(
-                        alice_central
-                            .get_conversation_unchecked(&id)
-                            .await
-                            .members()
-                            .len(),
-                        2
-                    );
+                    assert_eq!(alice_central.get_conversation_unchecked(&id).await.members().len(), 2);
 
                     bob_central
                         .context
@@ -223,23 +209,9 @@ mod tests {
                         .add_members_to_conversation(&id, vec![charlie])
                         .await
                         .unwrap();
-                    assert_eq!(
-                        alice_central
-                            .get_conversation_unchecked(&id)
-                            .await
-                            .members()
-                            .len(),
-                        2
-                    );
+                    assert_eq!(alice_central.get_conversation_unchecked(&id).await.members().len(), 2);
                     alice_central.context.commit_accepted(&id).await.unwrap();
-                    assert_eq!(
-                        alice_central
-                            .get_conversation_unchecked(&id)
-                            .await
-                            .members()
-                            .len(),
-                        3
-                    );
+                    assert_eq!(alice_central.get_conversation_unchecked(&id).await.members().len(), 3);
 
                     let _ = bob_central
                         .context

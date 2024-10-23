@@ -1,13 +1,13 @@
+use crate::proteus_impl;
+use crate::wasm::context::CoreCryptoContext;
+use crate::wasm::CoreCryptoError;
+use crate::WasmError;
+use crate::{ProteusAutoPrekeyBundle, WasmCryptoResult};
 use futures_util::TryFutureExt;
 use js_sys::{Promise, Uint8Array};
-use wasm_bindgen::JsValue;
 use wasm_bindgen::prelude::wasm_bindgen;
+use wasm_bindgen::JsValue;
 use wasm_bindgen_futures::future_to_promise;
-use crate::wasm::context::CoreCryptoContext;
-use crate::{ProteusAutoPrekeyBundle, WasmCryptoResult};
-use crate::WasmError;
-use crate::proteus_impl;
-use crate::wasm::CoreCryptoError;
 
 #[wasm_bindgen]
 impl CoreCryptoContext {
@@ -25,10 +25,10 @@ impl CoreCryptoContext {
                     WasmCryptoResult::Ok(JsValue::UNDEFINED)
                 } or throw WasmCryptoResult<_> }
             }
-                .err_into(),
+            .err_into(),
         )
     }
-    
+
     /// Returns: [`WasmCryptoResult<Vec<u8>>`]
     ///
     /// See [core_crypto::context::CentralContext::proteus_session_from_message]
@@ -43,14 +43,14 @@ impl CoreCryptoContext {
                     WasmCryptoResult::Ok(Uint8Array::from(payload.as_slice()).into())
                 } or throw WasmCryptoResult<_> }
             }
-                .err_into(),
+            .err_into(),
         )
     }
-    
+
     /// Returns: [`WasmCryptoResult<()>`]
-    /// 
+    ///
     /// /// **Note**: This isn't usually needed as persisting sessions happens automatically when decrypting/encrypting messages and initializing Sessions
-    /// 
+    ///
     /// See [core_crypto::context::CentralContext::proteus_session_save]
     pub fn proteus_session_save(&self, session_id: String) -> Promise {
         let errcode_dest = self.proteus_last_error_code.clone();
@@ -63,10 +63,10 @@ impl CoreCryptoContext {
                     WasmCryptoResult::Ok(JsValue::UNDEFINED)
                 } or throw WasmCryptoResult<_> }
             }
-                .err_into(),
+            .err_into(),
         )
     }
-    
+
     /// Returns: [`WasmCryptoResult<()>`]
     ///
     /// See [core_crypto::context::CentralContext::proteus_session_delete]
@@ -81,10 +81,10 @@ impl CoreCryptoContext {
                     WasmCryptoResult::Ok(JsValue::UNDEFINED)
                 } or throw WasmCryptoResult<_> }
             }
-                .err_into(),
+            .err_into(),
         )
     }
-    
+
     /// Returns: [`WasmCryptoResult<bool>`]
     ///
     /// See [core_crypto::context::CentralContext::proteus_session_exists]
@@ -99,12 +99,12 @@ impl CoreCryptoContext {
                     WasmCryptoResult::Ok(JsValue::from_bool(exists))
                 } or throw WasmCryptoResult<_> }
             }
-                .err_into(),
+            .err_into(),
         )
     }
 
     /// Returns: [`WasmCryptoResult<Vec<u8>>`]
-    /// 
+    ///
     /// See [core_crypto::context::CentralContext::proteus_decrypt]
     pub fn proteus_decrypt(&self, session_id: String, ciphertext: Box<[u8]>) -> Promise {
         let errcode_dest = self.proteus_last_error_code.clone();
@@ -166,7 +166,7 @@ impl CoreCryptoContext {
     pub fn proteus_new_prekey(&self, prekey_id: u16) -> Promise {
         let errcode_dest = self.proteus_last_error_code.clone();
         let context = self.inner.clone();
-        
+
         future_to_promise(
             async move {
                 proteus_impl! { errcode_dest => {
@@ -174,12 +174,12 @@ impl CoreCryptoContext {
                     WasmCryptoResult::Ok(Uint8Array::from(prekey_raw.as_slice()).into())
                 } or throw WasmCryptoResult<_> }
             }
-                .err_into(),
+            .err_into(),
         )
     }
 
     /// Returns: [`WasmCryptoResult<ProteusAutoPrekeyBundle>`]
-    /// 
+    ///
     /// See [core_crypto::context::CentralContext::proteus_new_prekey_auto]
     pub fn proteus_new_prekey_auto(&self) -> Promise {
         let errcode_dest = self.proteus_last_error_code.clone();
@@ -191,12 +191,12 @@ impl CoreCryptoContext {
                     WasmCryptoResult::Ok(ProteusAutoPrekeyBundle { id, pkb }.into())
                 } or throw WasmCryptoResult<_> }
             }
-                .err_into(),
+            .err_into(),
         )
     }
 
     /// Returns [`WasmCryptoResult<Uint8Array>`]
-    /// 
+    ///
     /// See [core_crypto::context::CentralContext::proteus_last_resort_prekey]
     pub fn proteus_last_resort_prekey(&self) -> Promise {
         let errcode_dest = self.proteus_last_error_code.clone();
@@ -283,12 +283,12 @@ impl CoreCryptoContext {
                     WasmCryptoResult::Ok(JsValue::UNDEFINED)
                 } or throw WasmCryptoResult<_> }
             }
-                .err_into(),
+            .err_into(),
         )
     }
 
     /// Returns: [`WasmCryptoResult<u32>`]
-    /// 
+    ///
     /// NOTE: This will clear the last error code.
     pub fn proteus_last_error_code(&self) -> Promise {
         let errcode = self.proteus_last_error_code.clone();
@@ -302,7 +302,7 @@ impl CoreCryptoContext {
                     WasmCryptoResult::Ok(prev_value.into())
                 } or throw WasmCryptoResult<_> }
             }
-                .err_into(),
+            .err_into(),
         )
     }
 }

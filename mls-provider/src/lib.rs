@@ -95,7 +95,7 @@ pub struct MlsCryptoProvider {
     key_store: CryptoKeystore,
     pki_env: PkiEnvironmentProvider,
 }
-pub type  TransactionalCryptoProvider = MlsCryptoProvider;
+pub type TransactionalCryptoProvider = MlsCryptoProvider;
 
 impl MlsCryptoProvider {
     /// Initialize a CryptoProvider with a backend following the provided `config` (see: [MlsCryptoProviderConfiguration])

@@ -62,7 +62,14 @@ impl CentralContext {
     #[cfg_attr(not(test), tracing::instrument(err, skip_all))]
     pub async fn e2ei_register_acme_ca(&self, trust_anchor_pem: String) -> CryptoResult<()> {
         {
-            if self.mls_provider().await?.keystore().find_unique::<E2eiAcmeCA>().await.is_ok() {
+            if self
+                .mls_provider()
+                .await?
+                .keystore()
+                .find_unique::<E2eiAcmeCA>()
+                .await
+                .is_ok()
+            {
                 return Err(CryptoError::E2eiError(
                     super::E2eIdentityError::TrustAnchorAlreadyRegistered,
                 ));
@@ -387,23 +394,22 @@ mod tests {
             return;
         }
         run_test_with_client_ids(case.clone(), ["alice"], move |[alice_ctx]| {
-                Box::pin(async move {
-                    let ClientContext {
-                        context,
-                        x509_test_chain,
-                        ..
-                    } = alice_ctx;
+            Box::pin(async move {
+                let ClientContext {
+                    context,
+                    x509_test_chain,
+                    ..
+                } = alice_ctx;
 
-                    assert!(x509_test_chain.is_none());
-                    assert!(!context.e2ei_is_pki_env_setup().await.unwrap());
+                assert!(x509_test_chain.is_none());
+                assert!(!context.e2ei_is_pki_env_setup().await.unwrap());
 
-                    // mls_central.restore_from_disk().await.unwrap();
+                // mls_central.restore_from_disk().await.unwrap();
 
-                    assert!(x509_test_chain.is_none());
-                    // assert!(!mls_central.mls_backend.is_pki_env_setup().await);
-                })
+                assert!(x509_test_chain.is_none());
+                // assert!(!mls_central.mls_backend.is_pki_env_setup().await);
             })
-            .await;
-        
+        })
+        .await;
     }
 }

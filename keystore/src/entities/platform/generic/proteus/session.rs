@@ -14,6 +14,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see http://www.gnu.org/licenses/.
 
+use crate::connection::TransactionWrapper;
 use crate::entities::{EntityFindParams, EntityTransactionExt, ProteusSession, StringEntityId};
 use crate::CryptoKeystoreError;
 use crate::{
@@ -21,7 +22,6 @@ use crate::{
     entities::{Entity, EntityBase},
     MissingKeyErrorKind,
 };
-use crate::connection::TransactionWrapper;
 
 impl Entity for ProteusSession {
     fn id_raw(&self) -> &[u8] {
@@ -177,7 +177,10 @@ impl EntityTransactionExt for ProteusSession {
         Ok(())
     }
 
-    async fn delete_fail_on_missing_id(transaction: &TransactionWrapper<'_>, id: StringEntityId<'_>) -> crate::CryptoKeystoreResult<()> {
+    async fn delete_fail_on_missing_id(
+        transaction: &TransactionWrapper<'_>,
+        id: StringEntityId<'_>,
+    ) -> crate::CryptoKeystoreResult<()> {
         let id_string: String = (&id).try_into()?;
         let updated = transaction.execute("DELETE FROM proteus_sessions WHERE id = ?", [id_string])?;
 

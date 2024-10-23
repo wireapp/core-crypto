@@ -205,7 +205,6 @@ impl crate::clients::EmulatedProteusClient for CoreCryptoNativeClient {
         let result = transaction.proteus_encrypt(session_id, plaintext).await?;
         transaction.finish().await?;
         Ok(result)
-        
     }
 
     async fn decrypt(&mut self, session_id: &str, ciphertext: &[u8]) -> Result<Vec<u8>> {

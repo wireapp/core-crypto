@@ -16,7 +16,8 @@
 
 use crate::{
     connection::{DatabaseConnection, KeystoreDatabaseConnection},
-    entities::{E2eiEnrollment, Entity, EntityBase, EntityFindParams, EntityTransactionExt, StringEntityId}, CryptoKeystoreResult, MissingKeyErrorKind,
+    entities::{E2eiEnrollment, Entity, EntityBase, EntityFindParams, EntityTransactionExt, StringEntityId},
+    CryptoKeystoreResult, MissingKeyErrorKind,
 };
 
 #[cfg_attr(target_family = "wasm", async_trait::async_trait(?Send))]

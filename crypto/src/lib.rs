@@ -23,10 +23,10 @@
 #![cfg_attr(not(test), deny(missing_docs))]
 #![allow(clippy::single_component_path_imports)]
 
-use std::sync::Arc;
 use async_lock::Mutex;
 #[cfg(test)]
 pub use core_crypto_attributes::{dispotent, durable, idempotent};
+use std::sync::Arc;
 
 pub use self::error::*;
 
@@ -47,8 +47,8 @@ pub mod e2e_identity;
 /// Proteus Abstraction
 pub mod proteus;
 
-mod group_store;
 pub mod context;
+mod group_store;
 
 /// Common imports that should be useful for most uses of the crate
 pub mod prelude {

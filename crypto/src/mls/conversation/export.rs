@@ -18,8 +18,7 @@
 
 use crate::context::CentralContext;
 use crate::mls::{
-    client::id::ClientId, ConversationId, CryptoError, CryptoResult, MlsCentral,
-    MlsConversation, MlsError,
+    client::id::ClientId, ConversationId, CryptoError, CryptoResult, MlsCentral, MlsConversation, MlsError,
 };
 
 impl MlsConversation {
@@ -199,28 +198,21 @@ mod tests {
         #[apply(all_cred_cipher)]
         #[wasm_bindgen_test]
         pub async fn can_get_client_ids(case: TestCase) {
-            run_test_with_client_ids(
-                case.clone(),
-                ["alice", "bob"],
-                move |[alice_central, bob_central]| {
-                    Box::pin(async move {
-                        let id = conversation_id();
-                        alice_central
-                            .context
-                            .new_conversation(&id, case.credential_type, case.cfg.clone())
-                            .await
-                            .unwrap();
+            run_test_with_client_ids(case.clone(), ["alice", "bob"], move |[alice_central, bob_central]| {
+                Box::pin(async move {
+                    let id = conversation_id();
+                    alice_central
+                        .context
+                        .new_conversation(&id, case.credential_type, case.cfg.clone())
+                        .await
+                        .unwrap();
 
-                        assert_eq!(alice_central.context.get_client_ids(&id).await.unwrap().len(), 1);
+                    assert_eq!(alice_central.context.get_client_ids(&id).await.unwrap().len(), 1);
 
-                        alice_central
-                            .invite_all(&case, &id, [&bob_central])
-                            .await
-                            .unwrap();
-                        assert_eq!(alice_central.context.get_client_ids(&id).await.unwrap().len(), 2);
-                    })
-                },
-            )
+                    alice_central.invite_all(&case, &id, [&bob_central]).await.unwrap();
+                    assert_eq!(alice_central.context.get_client_ids(&id).await.unwrap().len(), 2);
+                })
+            })
             .await
         }
 

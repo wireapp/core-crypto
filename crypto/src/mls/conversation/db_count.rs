@@ -1,3 +1,4 @@
+use crate::context::CentralContext;
 use crate::prelude::MlsCentral;
 use core_crypto_keystore::{
     connection::FetchFromDatabase,
@@ -7,7 +8,6 @@ use core_crypto_keystore::{
         PersistedMlsPendingGroup,
     },
 };
-use crate::context::CentralContext;
 
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub struct EntitiesCount {

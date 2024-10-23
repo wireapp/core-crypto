@@ -14,6 +14,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see http://www.gnu.org/licenses/.
 
+use crate::connection::TransactionWrapper;
 use crate::entities::{EntityFindParams, EntityTransactionExt, ProteusIdentity, StringEntityId};
 use crate::CryptoKeystoreError;
 use crate::{
@@ -22,7 +23,6 @@ use crate::{
     MissingKeyErrorKind,
 };
 use rusqlite::OptionalExtension;
-use crate::connection::TransactionWrapper;
 
 impl Entity for ProteusIdentity {
     fn id_raw(&self) -> &[u8] {
@@ -142,7 +142,10 @@ impl EntityTransactionExt for ProteusIdentity {
         Ok(())
     }
 
-    async fn delete_fail_on_missing_id(transaction: &TransactionWrapper<'_>, _id: StringEntityId<'_>) -> crate::CryptoKeystoreResult<()> {
+    async fn delete_fail_on_missing_id(
+        transaction: &TransactionWrapper<'_>,
+        _id: StringEntityId<'_>,
+    ) -> crate::CryptoKeystoreResult<()> {
         let row_id = transaction.query_row(
             "SELECT rowid FROM proteus_identities ORDER BY rowid ASC LIMIT 1",
             [],
@@ -153,5 +156,4 @@ impl EntityTransactionExt for ProteusIdentity {
 
         Ok(())
     }
-    
 }
