@@ -156,7 +156,7 @@ impl EntityTransactionExt for E2eiIntermediateCert {
         Ok(())
     }
 
-    async fn delete(transaction: &TransactionWrapper<'_>, id: StringEntityId<'_>) -> CryptoKeystoreResult<()> {
+    async fn delete_fail_on_missing_id(transaction: &TransactionWrapper<'_>, id: StringEntityId<'_>) -> CryptoKeystoreResult<()> {
         let updated = transaction.execute(
             "DELETE FROM e2ei_intermediate_certs WHERE ski_aki_pair = ?",
             [id.try_as_str()?],

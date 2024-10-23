@@ -161,7 +161,7 @@ impl EntityTransactionExt for MlsEpochEncryptionKeyPair {
 
         Ok(())
     }
-    async fn delete(transaction: &TransactionWrapper<'_>, id: StringEntityId<'_>) -> CryptoKeystoreResult<()> {
+    async fn delete_fail_on_missing_id(transaction: &TransactionWrapper<'_>, id: StringEntityId<'_>) -> CryptoKeystoreResult<()> {
         let updated = transaction.execute(
             "DELETE FROM mls_epoch_encryption_keypairs WHERE id_hex = ?",
             [id.as_hex_string()],

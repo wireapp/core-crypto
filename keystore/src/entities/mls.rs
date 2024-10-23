@@ -303,7 +303,7 @@ impl <T: UniqueEntity + Send + Sync> EntityTransactionExt for T {
     async fn save(&self, tx: &TransactionWrapper<'_>) -> CryptoKeystoreResult<()> {
         self.replace(tx).await
     }
-    async fn delete(_: &TransactionWrapper<'_>, _id: StringEntityId<'_>) -> CryptoKeystoreResult<()> {
+    async fn delete_fail_on_missing_id(_: &TransactionWrapper<'_>, _id: StringEntityId<'_>) -> CryptoKeystoreResult<()> {
         Err(CryptoKeystoreError::NotImplemented)
     }
 }
