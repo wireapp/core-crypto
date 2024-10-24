@@ -1458,26 +1458,20 @@ impl CoreCrypto {
     ///
     /// see [core_crypto::mls::MlsCentral::close]
     pub fn close(self) -> Promise {
-        let error_message = &js_sys::JsString::from(
-            format!(
-                "There are other outstanding references to this CoreCrypto instance [refs = {}]",
-                Arc::strong_count(&self.inner)
-            )
-            .as_str(),
-        );
-        if self.has_outstanding_refs() {
-            return Promise::reject(error_message);
-        }
-        let central = self.inner.clone();
-        match Arc::try_unwrap(self.inner) {
-            Ok(central) => future_to_promise(
+        let error_message: &JsValue = &format!(
+            "There are other outstanding references to this CoreCrypto instance [strong refs = {}]",
+            Arc::strong_count(&self.inner),
+        )
+        .into();
+        match Arc::into_inner(self.inner) {
+            Some(central) => future_to_promise(
                 async move {
                     central.take().close().await.map_err(CoreCryptoError::from)?;
                     WasmCryptoResult::Ok(JsValue::UNDEFINED)
                 }
                 .err_into(),
             ),
-            Err(_) => Promise::reject(error_message),
+            None => Promise::reject(error_message),
         }
     }
 
@@ -1485,26 +1479,20 @@ impl CoreCrypto {
     ///
     /// see [core_crypto::mls::MlsCentral::wipe]
     pub fn wipe(self) -> Promise {
-        let error_message = &js_sys::JsString::from(
-            format!(
-                "There are other outstanding references to this CoreCrypto instance [refs = {}]",
-                Arc::strong_count(&self.inner)
-            )
-            .as_str(),
-        );
-        if self.has_outstanding_refs() {
-            return Promise::reject(error_message);
-        }
-        let central = self.inner.clone();
-        match Arc::try_unwrap(self.inner) {
-            Ok(central) => future_to_promise(
+        let error_message: &JsValue = &format!(
+            "There are other outstanding references to this CoreCrypto instance [strong refs = {}]",
+            Arc::strong_count(&self.inner)
+        )
+        .into();
+        match Arc::into_inner(self.inner) {
+            Some(central) => future_to_promise(
                 async move {
                     central.take().wipe().await.map_err(CoreCryptoError::from)?;
                     WasmCryptoResult::Ok(JsValue::UNDEFINED)
                 }
                 .err_into(),
             ),
-            Err(_) => Promise::reject(error_message),
+            None => Promise::reject(error_message),
         }
     }
 
