@@ -634,6 +634,20 @@ class CoreCryptoContext(private val cc: CoreCryptoContext) {
     }
 
     /**
+     * Creates an update commit which replaces your leaf containing basic credentials with a leaf node containing x509 credentials in the conversation.
+     *
+     * NOTE: you can only call this after you've completed the enrollment for an end-to-end identity, calling this without
+     * a valid end-to-end identity will result in an error.
+     *
+     * **CAUTION**: [commitAccepted] **HAS TO** be called afterward **ONLY IF** the Delivery Service responds'200 OK' to the [CommitBundle] upload.
+     * It will "merge" the commit locally i.e. increment the local group epoch, use new encryption secrets etc...
+     *
+     * @param id conversation identifier
+     * @return a [CommitBundle] to upload to the backend and if it succeeds call [commitAccepted]
+     */
+    suspend fun e2eiRotate(id: MLSGroupId) = cc.e2eiRotate(id.lower()).lift()
+
+    /**
      * Creates a commit in all local conversations for changing the credential. Requires first having enrolled a new X509
      * certificate with either [e2eiNewActivationEnrollment] or []e2eiNewRotateEnrollment]
      *

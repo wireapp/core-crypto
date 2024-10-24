@@ -1249,6 +1249,43 @@ export default class CoreCryptoContext {
     }
 
     /**
+     * Creates an update commit which replaces your leaf containing basic credentials with a leaf node containing x509 credentials in the conversation.
+     *
+     * NOTE: you can only call this after you've completed the enrollment for an end-to-end identity, calling this without
+     * a valid end-to-end identity will result in an error.
+     *
+     * **CAUTION**: {@link CoreCrypto.commitAccepted} **HAS TO** be called afterward **ONLY IF** the Delivery Service responds
+     * '200 OK' to the {@link CommitBundle} upload. It will "merge" the commit locally i.e. increment the local group
+     * epoch, use new encryption secrets etc...
+     *
+     * @param conversationId - The ID of the conversation
+     *
+     * @returns A {@link CommitBundle}
+     */
+    async e2eiRotate(conversationId: ConversationId): Promise<CommitBundle> {
+        try {
+            const ffiRet: CoreCryptoFfiTypes.CommitBundle =
+                await CoreCryptoError.asyncMapErr(
+                    this.#ctx.e2ei_rotate(conversationId)
+                );
+
+            const gi = ffiRet.group_info;
+
+            return {
+                welcome: ffiRet.welcome,
+                commit: ffiRet.commit,
+                groupInfo: {
+                    encryptionType: gi.encryption_type,
+                    ratchetTreeType: gi.ratchet_tree_type,
+                    payload: gi.payload,
+                },
+            };
+        } catch (e) {
+            throw CoreCryptoError.fromStdError(e as Error);
+        }
+    }
+
+    /**
      * Creates a commit in all local conversations for changing the credential. Requires first
      * having enrolled a new X509 certificate with either {@link CoreCryptoContext.e2eiNewActivationEnrollment}
      * or {@link CoreCryptoContext.e2eiNewRotateEnrollment}

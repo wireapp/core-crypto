@@ -337,6 +337,7 @@ class MLSClient(private val cc: com.wire.crypto.CoreCrypto) {
      * @param id conversation identifier
      * @return a [CommitBundle] to upload to the backend and if it succeeds call [commitAccepted]
      */
+    @Deprecated("Use this method from the CoreCryptoContext object created from a CoreCryptoCentral.transaction call")
     suspend fun e2eiRotate(id: MLSGroupId) = cc.e2eiRotate(id.lower()).lift()
 
     /**

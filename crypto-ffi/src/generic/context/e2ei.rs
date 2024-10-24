@@ -1,12 +1,12 @@
 use std::{collections::HashMap, ops::DerefMut};
 
-use core_crypto::{prelude::VerifiableGroupInfo, CryptoError, MlsError};
-use tls_codec::Deserialize;
-
 use crate::generic::{
     context::CoreCryptoContext, Ciphersuite, ClientId, CoreCryptoResult, CrlRegistration, E2eiConversationState,
     E2eiDumpedPkiEnv, E2eiEnrollment, MlsCredentialType, RotateBundle, WireIdentity,
 };
+use crate::CommitBundle;
+use core_crypto::{prelude::VerifiableGroupInfo, CryptoError, MlsError};
+use tls_codec::Deserialize;
 
 #[uniffi::export]
 impl CoreCryptoContext {
@@ -113,6 +113,11 @@ impl CoreCryptoContext {
             )
             .await
             .map(Into::into)?)
+    }
+
+    /// See [core_crypto::context::CentralContext::e2ei_rotate]
+    pub async fn e2ei_rotate(&self, conversation_id: Vec<u8>) -> CoreCryptoResult<CommitBundle> {
+        self.context.e2ei_rotate(&conversation_id, None).await?.try_into()
     }
 
     /// See [core_crypto::context::CentralContext::e2ei_rotate_all]
