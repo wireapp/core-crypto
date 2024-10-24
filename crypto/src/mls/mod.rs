@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use async_lock::{Mutex, RwLock};
+use async_lock::RwLock;
 use log::trace;
 
 use crate::prelude::{
@@ -146,7 +146,6 @@ pub struct MlsCentral {
     pub(crate) mls_backend: MlsCryptoProvider,
     // this should be moved to the context
     pub(crate) callbacks: Arc<RwLock<Option<std::sync::Arc<dyn CoreCryptoCallbacks + 'static>>>>,
-    pub(crate) transaction_lock: Arc<Mutex<()>>,
 }
 
 impl MlsCentral {
@@ -200,7 +199,6 @@ impl MlsCentral {
             mls_backend,
             mls_client,
             callbacks: Arc::new(None.into()),
-            transaction_lock: Arc::new(Mutex::new(())),
         };
 
         keystore.commit_transaction().await?;
@@ -249,7 +247,6 @@ impl MlsCentral {
             mls_backend,
             mls_client,
             callbacks: Arc::new(None.into()),
-            transaction_lock: Arc::new(Mutex::new(())),
         };
 
         let cc = CoreCrypto::from(central);
@@ -342,7 +339,6 @@ impl MlsCentral {
     /// # Errors
     /// KeyStore errors, such as IO
     pub async fn close(self) -> CryptoResult<()> {
-        self.transaction_lock.lock().await;
         self.mls_backend.close().await?;
         Ok(())
     }
@@ -352,14 +348,12 @@ impl MlsCentral {
     /// # Errors
     /// KeyStore errors, such as IO
     pub async fn wipe(self) -> CryptoResult<()> {
-        self.transaction_lock.lock().await;
         self.mls_backend.destroy_and_reset().await?;
         Ok(())
     }
 
     /// see [mls_crypto_provider::MlsCryptoProvider::reseed]
     pub async fn reseed(&self, seed: Option<EntropySeed>) -> CryptoResult<()> {
-        self.transaction_lock.lock().await;
         self.mls_backend.reseed(seed)?;
         Ok(())
     }
