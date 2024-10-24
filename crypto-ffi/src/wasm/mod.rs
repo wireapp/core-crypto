@@ -2140,7 +2140,7 @@ impl CoreCrypto {
                         .into_iter()
                         .map(TryInto::try_into)
                         .collect::<WasmCryptoResult<Vec<BufferedDecryptedMessage>>>()?;
-
+                    context.finish().await?;
                     return WasmCryptoResult::Ok(serde_wasm_bindgen::to_value(&messages)?);
                 }
 

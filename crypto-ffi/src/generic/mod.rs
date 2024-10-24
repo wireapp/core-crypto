@@ -1347,6 +1347,7 @@ impl CoreCrypto {
             context.finish().await?;
             return Ok(Some(result));
         }
+        context.finish().await?;
 
         Ok(None)
     }
