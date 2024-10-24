@@ -1545,6 +1545,9 @@ export class CoreCrypto {
      * @param conversationId - The ID of the conversation
      *
      * @returns A {@link CommitBundle}
+     *
+     * @deprecated Create a transaction with {@link CoreCrypto.transaction}
+     * and use {@link CoreCryptoContext.e2eiRotate} instead.
      */
     async e2eiRotate(conversationId: ConversationId): Promise<CommitBundle> {
         try {

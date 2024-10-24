@@ -1773,13 +1773,12 @@ impl CoreCrypto {
     }
 
     /// See [core_crypto::mls::MlsCentral::e2ei_rotate]
+    #[deprecated = "Please create a transaction in Core Crypto and call this method from it."]
     pub async fn e2ei_rotate(&self, conversation_id: Vec<u8>) -> CoreCryptoResult<CommitBundle> {
-        self.central
-            .lock()
-            .await
-            .e2ei_rotate(&conversation_id, None)
-            .await?
-            .try_into()
+        let context = self.central.new_transaction().await?;
+        let commit = context.e2ei_rotate(&conversation_id, None).await?.try_into();
+        context.finish().await?;
+        commit
     }
 
     /// See [core_crypto::mls::MlsCentral::e2ei_rotate_all]

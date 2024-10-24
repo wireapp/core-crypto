@@ -2911,21 +2911,20 @@ impl CoreCrypto {
             .err_into(),
         )
     }
+
     /// Returns: [`WasmCryptoResult<CommitBundle>`]
     ///
     /// see [core_crypto::mls::MlsCentral::e2ei_rotate_all]
+    /// @deprecated Please create a transaction in Core Crypto and call this method from it.
+    #[deprecated = "Please create a transaction in Core Crypto and call this method from it."]
     pub fn e2ei_rotate(&self, conversation_id: ConversationId) -> Promise {
-        let this = self.inner.clone();
+        let central = self.inner.clone();
         future_to_promise(
             async move {
-                let mut central = this.write().await;
-                let commit = central
-                    .e2ei_rotate(&conversation_id, None)
-                    .await
-                    .map_err(CoreCryptoError::from)?;
-
+                let context = central.new_transaction().await?;
+                let commit = context.e2ei_rotate(&conversation_id, None).await?;
                 let commit: CommitBundle = commit.try_into()?;
-
+                context.finish().await?;
                 WasmCryptoResult::Ok(serde_wasm_bindgen::to_value(&commit)?)
             }
             .err_into(),
