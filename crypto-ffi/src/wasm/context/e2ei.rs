@@ -1,8 +1,8 @@
 use crate::wasm::context::CoreCryptoContext;
 use crate::wasm::E2eiConversationState;
 use crate::{
-    Ciphersuite, CoreCryptoError, CredentialType, CrlRegistration, E2eiDumpedPkiEnv, E2eiEnrollment, RotateBundle,
-    WasmCryptoResult, WireIdentity,
+    Ciphersuite, CommitBundle, CoreCryptoError, CredentialType, CrlRegistration, E2eiDumpedPkiEnv, E2eiEnrollment,
+    RotateBundle, WasmCryptoResult, WireIdentity,
 };
 use core_crypto::prelude::{CiphersuiteName, ClientId, ConversationId, MlsCiphersuite, VerifiableGroupInfo};
 use core_crypto::{CryptoError, MlsError};
@@ -199,6 +199,21 @@ impl CoreCryptoContext {
                     js_sys::Array::new()
                 };
                 WasmCryptoResult::Ok(crls.into())
+            }
+            .err_into(),
+        )
+    }
+
+    /// Returns: [`WasmCryptoResult<CommitBundle>`]
+
+    /// see [core_crypto::context::CentralContext::e2ei_rotate]
+    pub fn e2ei_rotate(&self, conversation_id: ConversationId) -> Promise {
+        let context = self.inner.clone();
+        future_to_promise(
+            async move {
+                let commit = context.e2ei_rotate(&conversation_id, None).await?;
+                let commit: CommitBundle = commit.try_into()?;
+                WasmCryptoResult::Ok(serde_wasm_bindgen::to_value(&commit)?)
             }
             .err_into(),
         )
