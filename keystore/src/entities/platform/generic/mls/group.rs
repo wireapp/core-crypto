@@ -14,7 +14,10 @@
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see http://www.gnu.org/licenses/.
 
-use crate::entities::EntityIdStringExt;
+use crate::{
+    connection::TransactionWrapper,
+    entities::{EntityIdStringExt, EntityTransactionExt},
+};
 use crate::{
     connection::{DatabaseConnection, KeystoreDatabaseConnection},
     entities::{Entity, EntityBase, EntityFindParams, PersistedMlsGroup, PersistedMlsGroupExt, StringEntityId},
@@ -36,6 +39,10 @@ impl EntityBase for PersistedMlsGroup {
 
     fn to_missing_key_err_kind() -> MissingKeyErrorKind {
         MissingKeyErrorKind::MlsGroup
+    }
+
+    fn to_transaction_entity(self) -> crate::transaction::Entity {
+        crate::transaction::Entity::PersistedMlsGroup(self)
     }
 
     async fn find_all(
@@ -79,48 +86,6 @@ impl EntityBase for PersistedMlsGroup {
         })?;
 
         Ok(entities)
-    }
-
-    async fn save(&self, conn: &mut Self::ConnectionType) -> crate::CryptoKeystoreResult<()> {
-        use rusqlite::ToSql as _;
-
-        let state = &self.state;
-        let parent_id = self.parent_id.as_ref();
-
-        let transaction = conn.transaction()?;
-
-        Self::ConnectionType::check_buffer_size(state.len())?;
-        Self::ConnectionType::check_buffer_size(parent_id.map(Vec::len).unwrap_or_default())?;
-
-        let zbs = rusqlite::blob::ZeroBlob(state.len() as i32);
-        let zbpid = rusqlite::blob::ZeroBlob(parent_id.map(Vec::len).unwrap_or_default() as i32);
-
-        // Use UPSERT (ON CONFLICT DO UPDATE)
-        let sql = "
-        INSERT INTO mls_groups (id_hex, state, parent_id) 
-        VALUES (?, ?, ?) 
-        ON CONFLICT(id_hex) DO UPDATE SET state = excluded.state, parent_id = excluded.parent_id
-        RETURNING rowid";
-
-        let rowid: i64 =
-            transaction.query_row(sql, [&self.id_hex().to_sql()?, &zbs.to_sql()?, &zbpid.to_sql()?], |r| {
-                r.get(0)
-            })?;
-
-        let mut blob = transaction.blob_open(rusqlite::DatabaseName::Main, "mls_groups", "state", rowid, false)?;
-        use std::io::Write as _;
-        blob.write_all(state)?;
-        blob.close()?;
-
-        let mut blob = transaction.blob_open(rusqlite::DatabaseName::Main, "mls_groups", "parent_id", rowid, false)?;
-        if let Some(parent_id) = parent_id {
-            blob.write_all(parent_id)?;
-        }
-        blob.close()?;
-
-        transaction.commit()?;
-
-        Ok(())
     }
 
     async fn find_one(
@@ -175,20 +140,58 @@ impl EntityBase for PersistedMlsGroup {
     async fn count(conn: &mut Self::ConnectionType) -> crate::CryptoKeystoreResult<usize> {
         Ok(conn.query_row("SELECT COUNT(*) FROM mls_groups", [], |r| r.get(0))?)
     }
+}
 
-    async fn delete(conn: &mut Self::ConnectionType, ids: &[StringEntityId]) -> crate::CryptoKeystoreResult<()> {
-        let transaction = conn.transaction()?;
-        let len = ids.len();
-        let mut updated = 0;
-        for id in ids {
-            updated += transaction.execute("DELETE FROM mls_groups WHERE id_hex = ?", [id.as_hex_string()])?;
+#[cfg_attr(target_family = "wasm", async_trait::async_trait(?Send))]
+#[cfg_attr(not(target_family = "wasm"), async_trait::async_trait)]
+impl EntityTransactionExt for PersistedMlsGroup {
+    async fn save(&self, transaction: &TransactionWrapper<'_>) -> CryptoKeystoreResult<()> {
+        use rusqlite::ToSql as _;
+
+        let state = &self.state;
+        let parent_id = self.parent_id.as_ref();
+
+        Self::ConnectionType::check_buffer_size(state.len())?;
+        Self::ConnectionType::check_buffer_size(parent_id.map(Vec::len).unwrap_or_default())?;
+
+        let zbs = rusqlite::blob::ZeroBlob(state.len() as i32);
+        let zbpid = rusqlite::blob::ZeroBlob(parent_id.map(Vec::len).unwrap_or_default() as i32);
+
+        // Use UPSERT (ON CONFLICT DO UPDATE)
+        let sql = "
+        INSERT INTO mls_groups (id_hex, state, parent_id)
+        VALUES (?, ?, ?)
+        ON CONFLICT(id_hex) DO UPDATE SET state = excluded.state, parent_id = excluded.parent_id
+        RETURNING rowid";
+
+        let rowid: i64 =
+            transaction.query_row(sql, [&self.id_hex().to_sql()?, &zbs.to_sql()?, &zbpid.to_sql()?], |r| {
+                r.get(0)
+            })?;
+
+        let mut blob = transaction.blob_open(rusqlite::DatabaseName::Main, "mls_groups", "state", rowid, false)?;
+        use std::io::Write as _;
+        blob.write_all(state)?;
+        blob.close()?;
+
+        let mut blob = transaction.blob_open(rusqlite::DatabaseName::Main, "mls_groups", "parent_id", rowid, false)?;
+        if let Some(parent_id) = parent_id {
+            blob.write_all(parent_id)?;
         }
+        blob.close()?;
 
-        if updated == len {
-            transaction.commit()?;
+        Ok(())
+    }
+
+    async fn delete_fail_on_missing_id(
+        transaction: &TransactionWrapper<'_>,
+        id: StringEntityId<'_>,
+    ) -> CryptoKeystoreResult<()> {
+        let updated = transaction.execute("DELETE FROM mls_groups WHERE id_hex = ?", [id.as_hex_string()])?;
+
+        if updated > 0 {
             Ok(())
         } else {
-            transaction.rollback()?;
             Err(Self::to_missing_key_err_kind().into())
         }
     }

@@ -14,7 +14,11 @@
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see http://www.gnu.org/licenses/.
 
-use crate::entities::EntityIdStringExt;
+use crate::{
+    connection::TransactionWrapper,
+    entities::{EntityIdStringExt, EntityTransactionExt},
+    CryptoKeystoreResult,
+};
 use crate::{
     connection::{DatabaseConnection, KeystoreDatabaseConnection},
     entities::{Entity, EntityBase, EntityFindParams, MlsPskBundle, StringEntityId},
@@ -37,6 +41,10 @@ impl EntityBase for MlsPskBundle {
 
     fn to_missing_key_err_kind() -> MissingKeyErrorKind {
         MissingKeyErrorKind::MlsPskBundle
+    }
+
+    fn to_transaction_entity(self) -> crate::transaction::Entity {
+        crate::transaction::Entity::PskBundle(self)
     }
 
     async fn find_all(
@@ -74,43 +82,6 @@ impl EntityBase for MlsPskBundle {
         Ok(entities)
     }
 
-    async fn save(&self, conn: &mut Self::ConnectionType) -> crate::CryptoKeystoreResult<()> {
-        use rusqlite::ToSql as _;
-        Self::ConnectionType::check_buffer_size(self.psk.len())?;
-        Self::ConnectionType::check_buffer_size(self.psk_id.len())?;
-
-        let zb_psk_id = rusqlite::blob::ZeroBlob(self.psk_id.len() as i32);
-        let zb_psk = rusqlite::blob::ZeroBlob(self.psk.len() as i32);
-
-        let transaction = conn.transaction()?;
-
-        // Use UPSERT (ON CONFLICT DO UPDATE)
-        let sql = "
-        INSERT INTO mls_psk_bundles (id_sha256, psk_id, psk) 
-        VALUES (?, ?, ?) 
-        ON CONFLICT(id_sha256) DO UPDATE SET psk_id = excluded.psk_id, psk = excluded.psk
-        RETURNING rowid";
-
-        let row_id: i64 = transaction.query_row(
-            sql,
-            [&self.id_sha256().to_sql()?, &zb_psk_id.to_sql()?, &zb_psk.to_sql()?],
-            |r| r.get(0),
-        )?;
-
-        let mut blob =
-            transaction.blob_open(rusqlite::DatabaseName::Main, "mls_psk_bundles", "psk_id", row_id, false)?;
-        blob.write_all(&self.psk_id)?;
-        blob.close()?;
-
-        let mut blob = transaction.blob_open(rusqlite::DatabaseName::Main, "mls_psk_bundles", "psk", row_id, false)?;
-        blob.write_all(&self.psk)?;
-        blob.close()?;
-
-        transaction.commit()?;
-
-        Ok(())
-    }
-
     async fn find_one(
         conn: &mut Self::ConnectionType,
         id: &StringEntityId,
@@ -144,20 +115,53 @@ impl EntityBase for MlsPskBundle {
     async fn count(conn: &mut Self::ConnectionType) -> crate::CryptoKeystoreResult<usize> {
         Ok(conn.query_row("SELECT COUNT(*) FROM mls_psk_bundles", [], |r| r.get(0))?)
     }
+}
 
-    async fn delete(conn: &mut Self::ConnectionType, ids: &[StringEntityId]) -> crate::CryptoKeystoreResult<()> {
-        let transaction = conn.transaction()?;
-        let len = ids.len();
-        let mut updated = 0;
-        for id in ids {
-            updated += transaction.execute("DELETE FROM mls_psk_bundles WHERE id_sha256 = ?", [id.sha256()])?;
-        }
+#[cfg_attr(target_family = "wasm", async_trait::async_trait(?Send))]
+#[cfg_attr(not(target_family = "wasm"), async_trait::async_trait)]
+impl EntityTransactionExt for MlsPskBundle {
+    async fn save(&self, transaction: &TransactionWrapper<'_>) -> CryptoKeystoreResult<()> {
+        use rusqlite::ToSql as _;
+        Self::ConnectionType::check_buffer_size(self.psk.len())?;
+        Self::ConnectionType::check_buffer_size(self.psk_id.len())?;
 
-        if updated == len {
-            transaction.commit()?;
+        let zb_psk_id = rusqlite::blob::ZeroBlob(self.psk_id.len() as i32);
+        let zb_psk = rusqlite::blob::ZeroBlob(self.psk.len() as i32);
+
+        // Use UPSERT (ON CONFLICT DO UPDATE)
+        let sql = "
+        INSERT INTO mls_psk_bundles (id_sha256, psk_id, psk)
+        VALUES (?, ?, ?)
+        ON CONFLICT(id_sha256) DO UPDATE SET psk_id = excluded.psk_id, psk = excluded.psk
+        RETURNING rowid";
+
+        let row_id: i64 = transaction.query_row(
+            sql,
+            [&self.id_sha256().to_sql()?, &zb_psk_id.to_sql()?, &zb_psk.to_sql()?],
+            |r| r.get(0),
+        )?;
+
+        let mut blob =
+            transaction.blob_open(rusqlite::DatabaseName::Main, "mls_psk_bundles", "psk_id", row_id, false)?;
+        blob.write_all(&self.psk_id)?;
+        blob.close()?;
+
+        let mut blob = transaction.blob_open(rusqlite::DatabaseName::Main, "mls_psk_bundles", "psk", row_id, false)?;
+        blob.write_all(&self.psk)?;
+        blob.close()?;
+
+        Ok(())
+    }
+
+    async fn delete_fail_on_missing_id(
+        transaction: &TransactionWrapper<'_>,
+        id: StringEntityId<'_>,
+    ) -> CryptoKeystoreResult<()> {
+        let updated = transaction.execute("DELETE FROM mls_psk_bundles WHERE id_sha256 = ?", [id.sha256()])?;
+
+        if updated > 0 {
             Ok(())
         } else {
-            transaction.rollback()?;
             Err(Self::to_missing_key_err_kind().into())
         }
     }

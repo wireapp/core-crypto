@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see http://www.gnu.org/licenses/.
 
-use crate::entities::EntityBase;
+use crate::connection::FetchFromDatabase;
 use crate::entities::MlsEpochEncryptionKeyPair;
 use crate::{
     entities::{
@@ -134,45 +134,31 @@ pub trait CryptoKeystoreMls: Sized {
 
 #[cfg_attr(target_family = "wasm", async_trait::async_trait(?Send))]
 #[cfg_attr(not(target_family = "wasm"), async_trait::async_trait)]
-impl CryptoKeystoreMls for crate::connection::Connection {
-    #[cfg(target_family = "wasm")]
+impl CryptoKeystoreMls for crate::Connection {
     async fn mls_fetch_keypackages<V: MlsEntity>(&self, count: u32) -> CryptoKeystoreResult<Vec<V>> {
-        let mut db_connection = self.conn.lock().await;
-        let keypackages = MlsKeyPackage::find_all(
-            &mut db_connection,
-            EntityFindParams {
+        cfg_if::cfg_if! {
+            if #[cfg(not(target_family = "wasm"))] {
+                let reverse = true;
+            } else {
+                let reverse = false;
+            }
+        }
+        let keypackages = self
+            .find_all::<MlsKeyPackage>(EntityFindParams {
                 limit: Some(count),
                 offset: None,
-                // Don't invert the cursor direction
-                reverse: false,
-            },
-        )
-        .await?;
-
-        Ok(keypackages
-            .into_iter()
-            .filter_map(|kpb| deser(&kpb.keypackage).ok())
-            .collect())
-    }
-
-    #[cfg(not(target_family = "wasm"))]
-    async fn mls_fetch_keypackages<V: MlsEntity>(&self, count: u32) -> CryptoKeystoreResult<Vec<V>> {
-        let mut db_connection = self.conn.lock().await;
-
-        let keypackages = MlsKeyPackage::find_all(
-            &mut db_connection,
-            EntityFindParams {
-                limit: Some(count),
-                offset: None,
-                reverse: true,
-            },
-        )
-        .await?;
+                reverse,
+            })
+            .await?;
 
         Ok(keypackages
             .into_iter()
             .filter_map(|kpb| postcard::from_bytes(&kpb.keypackage).ok())
             .collect())
+    }
+
+    async fn mls_group_exists(&self, group_id: &[u8]) -> bool {
+        matches!(self.find::<PersistedMlsGroup>(group_id).await, Ok(Some(_)))
     }
 
     async fn mls_group_persist(
@@ -191,16 +177,6 @@ impl CryptoKeystoreMls for crate::connection::Connection {
         Ok(())
     }
 
-    async fn mls_group_exists(&self, group_id: &[u8]) -> bool {
-        matches!(self.find::<PersistedMlsGroup>(group_id).await, Ok(Some(_)))
-    }
-
-    async fn mls_group_delete(&self, group_id: &[u8]) -> CryptoKeystoreResult<()> {
-        self.remove::<PersistedMlsGroup, _>(group_id).await?;
-
-        Ok(())
-    }
-
     async fn mls_groups_restore(
         &self,
     ) -> CryptoKeystoreResult<std::collections::HashMap<Vec<u8>, (Option<Vec<u8>>, Vec<u8>)>> {
@@ -209,6 +185,12 @@ impl CryptoKeystoreMls for crate::connection::Connection {
             .into_iter()
             .map(|group: PersistedMlsGroup| (group.id.clone(), (group.parent_id.clone(), group.state.clone())))
             .collect())
+    }
+
+    async fn mls_group_delete(&self, group_id: &[u8]) -> CryptoKeystoreResult<()> {
+        self.remove::<PersistedMlsGroup, _>(group_id).await?;
+
+        Ok(())
     }
 
     async fn mls_pending_groups_save(
@@ -386,10 +368,6 @@ impl openmls_traits::key_store::OpenMlsKeyStore for crate::connection::Connectio
     }
 
     async fn delete<V: MlsEntity>(&self, k: &[u8]) -> Result<(), Self::Error> {
-        if k.is_empty() {
-            return Ok(());
-        }
-
         match V::ID {
             MlsEntityId::GroupState => self.remove::<PersistedMlsGroup, _>(k).await?,
             MlsEntityId::SignatureKeyPair => self.remove::<MlsSignatureKeyPair, _>(k).await?,

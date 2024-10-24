@@ -16,7 +16,7 @@
 
 use crate::{
     connection::{DatabaseConnection, KeystoreDatabaseConnection},
-    entities::{Entity, EntityBase, EntityFindParams, MlsPskBundle, StringEntityId},
+    entities::{Entity, EntityBase, EntityFindParams, EntityTransactionExt, MlsPskBundle, StringEntityId},
     CryptoKeystoreResult, MissingKeyErrorKind,
 };
 
@@ -31,16 +31,13 @@ impl EntityBase for MlsPskBundle {
         MissingKeyErrorKind::MlsPskBundle
     }
 
+    fn to_transaction_entity(self) -> crate::transaction::Entity {
+        crate::transaction::Entity::PskBundle(self)
+    }
+
     async fn find_all(conn: &mut Self::ConnectionType, params: EntityFindParams) -> CryptoKeystoreResult<Vec<Self>> {
         let storage = conn.storage();
         storage.get_all(Self::COLLECTION_NAME, Some(params)).await
-    }
-
-    async fn save(&self, conn: &mut Self::ConnectionType) -> crate::CryptoKeystoreResult<()> {
-        let storage = conn.storage_mut();
-        storage.save(Self::COLLECTION_NAME, &mut [self.clone()]).await?;
-
-        Ok(())
     }
 
     async fn find_one(
@@ -53,13 +50,11 @@ impl EntityBase for MlsPskBundle {
     async fn count(conn: &mut Self::ConnectionType) -> crate::CryptoKeystoreResult<usize> {
         conn.storage().count(Self::COLLECTION_NAME).await
     }
-
-    async fn delete(conn: &mut Self::ConnectionType, ids: &[StringEntityId]) -> crate::CryptoKeystoreResult<()> {
-        let storage = conn.storage_mut();
-        let ids: Vec<Vec<u8>> = ids.iter().map(StringEntityId::to_bytes).collect();
-        storage.delete(Self::COLLECTION_NAME, &ids).await
-    }
 }
+
+#[cfg_attr(target_family = "wasm", async_trait::async_trait(?Send))]
+#[cfg_attr(not(target_family = "wasm"), async_trait::async_trait)]
+impl EntityTransactionExt for MlsPskBundle {}
 
 impl Entity for MlsPskBundle {
     fn id_raw(&self) -> &[u8] {

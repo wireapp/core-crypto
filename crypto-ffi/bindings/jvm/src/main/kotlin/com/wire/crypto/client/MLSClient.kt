@@ -37,6 +37,7 @@ class MLSClient(private val cc: com.wire.crypto.CoreCrypto) {
     /**
      * This is your entrypoint to initialize [com.wire.crypto.client.MLSClient] with a Basic Credential
      */
+    @Deprecated("Use this method from the CoreCryptoContext object created from a CoreCryptoCentral.transaction call")
     suspend fun mlsInit(
         id: ClientId,
         ciphersuites: Ciphersuites = Ciphersuites.DEFAULT,
@@ -52,6 +53,7 @@ class MLSClient(private val cc: com.wire.crypto.CoreCrypto) {
      * @param ciphersuites - All the ciphersuites supported by this MLS client
      * @return a list of random ClientId to use in [mlsInitWithClientId]
      */
+    @Deprecated("Use this method from the CoreCryptoContext object created from a CoreCryptoCentral.transaction call")
     suspend fun mlsGenerateKeypairs(ciphersuites: Ciphersuites = Ciphersuites.DEFAULT): ExternallyGeneratedHandle {
         return cc.mlsGenerateKeypairs(ciphersuites.lower()).toExternallyGeneratedHandle()
     }
@@ -65,6 +67,7 @@ class MLSClient(private val cc: com.wire.crypto.CoreCrypto) {
      * @param tmpClientIds - The random clientId you obtained in [mlsGenerateKeypairs], for authentication purposes
      * @param ciphersuites - All the ciphersuites supported by this MLS client
      */
+    @Deprecated("Use this method from the CoreCryptoContext object created from a CoreCryptoCentral.transaction call")
     suspend fun mlsInitWithClientId(
         clientId: ClientId,
         tmpClientIds: ExternallyGeneratedHandle,
@@ -93,6 +96,7 @@ class MLSClient(private val cc: com.wire.crypto.CoreCrypto) {
      * @param ciphersuite of the KeyPackage to create
      * @param credentialType of the KeyPackage to create
      */
+    @Deprecated("Use this method from the CoreCryptoContext object created from a CoreCryptoCentral.transaction call")
     suspend fun generateKeyPackages(
         amount: UInt,
         ciphersuite: Ciphersuite = Ciphersuite.DEFAULT,
@@ -107,6 +111,7 @@ class MLSClient(private val cc: com.wire.crypto.CoreCrypto) {
      * @param ciphersuite of the KeyPackage to count
      * @param credentialType of the KeyPackage to count
      */
+    @Deprecated("Use this method from the CoreCryptoContext object created from a CoreCryptoCentral.transaction call")
     suspend fun validKeyPackageCount(
         ciphersuite: Ciphersuite = Ciphersuite.DEFAULT,
         credentialType: CredentialType = CredentialType.DEFAULT
@@ -120,6 +125,7 @@ class MLSClient(private val cc: com.wire.crypto.CoreCrypto) {
      *
      * @param refs KeyPackage references from the [RotateBundle]
      */
+    @Deprecated("Use this method from the CoreCryptoContext object created from a CoreCryptoCentral.transaction call")
     suspend fun deleteKeyPackages(refs: List<MLSKeyPackageRef>) {
         // cannot be tested with the current API & helpers
         return cc.deleteKeypackages(refs.map { it.lower() })
@@ -147,6 +153,7 @@ class MLSClient(private val cc: com.wire.crypto.CoreCrypto) {
      * @param ciphersuite of the conversation to join
      * @param ciphersuite to join the conversation with
      */
+    @Deprecated("Use this method from the CoreCryptoContext object created from a CoreCryptoCentral.transaction call")
     suspend fun joinConversation(
         id: MLSGroupId,
         epoch: ULong,
@@ -168,6 +175,7 @@ class MLSClient(private val cc: com.wire.crypto.CoreCrypto) {
      * @param groupInfo a TLS encoded GroupInfo fetched from the Delivery Service
      * @param credentialType to join the group with
      */
+    @Deprecated("Use this method from the CoreCryptoContext object created from a CoreCryptoCentral.transaction call")
     suspend fun joinByExternalCommit(
         groupInfo: GroupInfo,
         credentialType: CredentialType = CredentialType.DEFAULT,
@@ -185,6 +193,7 @@ class MLSClient(private val cc: com.wire.crypto.CoreCrypto) {
      * @param id conversation identifier
      * @return eventually decrypted buffered messages if any
      */
+    @Deprecated("Use this method from the CoreCryptoContext object created from a CoreCryptoCentral.transaction call")
     suspend fun mergePendingGroupFromExternalCommit(id: MLSGroupId): List<BufferedDecryptedMessage>? {
         return cc.mergePendingGroupFromExternalCommit(id.lower())?.map { it.lift() }
     }
@@ -196,6 +205,7 @@ class MLSClient(private val cc: com.wire.crypto.CoreCrypto) {
      *
      * @param id conversation identifier
      */
+    @Deprecated("Use this method from the CoreCryptoContext object created from a CoreCryptoCentral.transaction call")
     suspend fun clearPendingGroupFromExternalCommit(id: MLSGroupId) = cc.clearPendingGroupFromExternalCommit(id.lower())
 
     /**
@@ -207,6 +217,7 @@ class MLSClient(private val cc: com.wire.crypto.CoreCrypto) {
      * @param creatorCredentialType kind of credential the creator wants to create the group with
      * @param externalSenders keys fetched from backend for validating external remove proposals
      */
+    @Deprecated("Use this method from the CoreCryptoContext object created from a CoreCryptoCentral.transaction call")
     suspend fun createConversation(
         id: MLSGroupId,
         ciphersuite: Ciphersuite = Ciphersuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519,
@@ -227,6 +238,7 @@ class MLSClient(private val cc: com.wire.crypto.CoreCrypto) {
      *
      * @param id conversation identifier
      */
+    @Deprecated("Use this method from the CoreCryptoContext object created from a CoreCryptoCentral.transaction call")
     suspend fun wipeConversation(id: MLSGroupId) = cc.wipeConversation(id.lower())
 
     /**
@@ -238,6 +250,7 @@ class MLSClient(private val cc: com.wire.crypto.CoreCrypto) {
      * @param configuration - configuration of the MLS group
      * @return The conversation ID of the newly joined group. You can use the same ID to decrypt/encrypt messages
      */
+    @Deprecated("Use this method from the CoreCryptoContext object created from a CoreCryptoCentral.transaction call")
     suspend fun processWelcomeMessage(
         welcome: Welcome,
         configuration: com.wire.crypto.CustomConfiguration = defaultGroupConfiguration
@@ -252,6 +265,7 @@ class MLSClient(private val cc: com.wire.crypto.CoreCrypto) {
      * @param message - The plaintext message to encrypt
      * @return the encrypted payload for the given group. This needs to be fanned out to the other members of the group.
      */
+    @Deprecated("Use this method from the CoreCryptoContext object created from a CoreCryptoCentral.transaction call")
     suspend fun encryptMessage(id: MLSGroupId, message: PlaintextMessage): MlsMessage {
         return cc.encryptMessage(id.lower(), message.lower()).toMlsMessage()
     }
@@ -262,6 +276,7 @@ class MLSClient(private val cc: com.wire.crypto.CoreCrypto) {
      * @param id conversation identifier
      * @param message [MlsMessage] (either Application or Handshake message) from the DS
      */
+    @Deprecated("Use this method from the CoreCryptoContext object created from a CoreCryptoCentral.transaction call")
     suspend fun decryptMessage(id: MLSGroupId, message: MlsMessage): DecryptedMessage {
         return cc.decryptMessage(id.lower(), message.lower()).lift()
     }
@@ -276,6 +291,7 @@ class MLSClient(private val cc: com.wire.crypto.CoreCrypto) {
      * @param KeyPackages of the new clients to add
      * @return a [CommitBundle] to upload to the backend and if it succeeds call [commitAccepted]
      */
+    @Deprecated("Use this method from the CoreCryptoContext object created from a CoreCryptoCentral.transaction call")
     suspend fun addMember(id: MLSGroupId, keyPackages: List<MLSKeyPackage>): CommitBundle {
         return cc.addClientsToConversation(id.lower(), keyPackages.map { it.lower() }).lift()
     }
@@ -291,6 +307,7 @@ class MLSClient(private val cc: com.wire.crypto.CoreCrypto) {
      * @param members client identifier to delete
      * @return a [CommitBundle] to upload to the backend and if it succeeds call [commitAccepted]
      */
+    @Deprecated("Use this method from the CoreCryptoContext object created from a CoreCryptoCentral.transaction call")
     suspend fun removeMember(id: MLSGroupId, members: List<ClientId>): CommitBundle {
         val clientIds = members.map { it.lower() }
         return cc.removeClientsFromConversation(id.lower(), clientIds).lift()
@@ -305,6 +322,7 @@ class MLSClient(private val cc: com.wire.crypto.CoreCrypto) {
      * @param id conversation identifier
      * @return a [CommitBundle] to upload to the backend and if it succeeds call [commitAccepted]
      */
+    @Deprecated("Use this method from the CoreCryptoContext object created from a CoreCryptoCentral.transaction call")
     suspend fun updateKeyingMaterial(id: MLSGroupId) = cc.updateKeyingMaterial(id.lower()).lift()
 
     /**
@@ -319,6 +337,7 @@ class MLSClient(private val cc: com.wire.crypto.CoreCrypto) {
      * @param id conversation identifier
      * @return a [CommitBundle] to upload to the backend and if it succeeds call [commitAccepted]
      */
+    @Deprecated("Use this method from the CoreCryptoContext object created from a CoreCryptoCentral.transaction call")
     suspend fun e2eiRotate(id: MLSGroupId) = cc.e2eiRotate(id.lower()).lift()
 
     /**
@@ -330,6 +349,7 @@ class MLSClient(private val cc: com.wire.crypto.CoreCrypto) {
      * @param id conversation identifier
      * @return a [CommitBundle] to upload to the backend and if it succeeds call [commitAccepted]
      */
+    @Deprecated("Use this method from the CoreCryptoContext object created from a CoreCryptoCentral.transaction call")
     suspend fun commitPendingProposals(id: MLSGroupId): CommitBundle? {
         return cc.commitPendingProposals(id.lower())?.lift()
     }
@@ -341,6 +361,7 @@ class MLSClient(private val cc: com.wire.crypto.CoreCrypto) {
      * @param keyPackage (TLS serialized) fetched from the DS
      * @return a [ProposalBundle] which allows to roll back this proposal with [clearPendingProposal] in case the DS rejects it
      */
+    @Deprecated("Use this method from the CoreCryptoContext object created from a CoreCryptoCentral.transaction call")
     suspend fun newAddProposal(id: MLSGroupId, keyPackage: MLSKeyPackage): ProposalBundle {
         return cc.newAddProposal(id.lower(), keyPackage.lower()).lift()
     }
@@ -352,6 +373,7 @@ class MLSClient(private val cc: com.wire.crypto.CoreCrypto) {
      * @param clientId of the client to remove
      * @return a [ProposalBundle] which allows to roll back this proposal with [clearPendingProposal] in case the DS rejects it
      */
+    @Deprecated("Use this method from the CoreCryptoContext object created from a CoreCryptoCentral.transaction call")
     suspend fun newRemoveProposal(id: MLSGroupId, clientId: ClientId): ProposalBundle {
         return cc.newRemoveProposal(id.lower(), clientId.lower()).lift()
     }
@@ -362,6 +384,7 @@ class MLSClient(private val cc: com.wire.crypto.CoreCrypto) {
      * @param id conversation identifier
      * @return a [ProposalBundle] which allows to roll back this proposal with [clearPendingProposal] in case the DS rejects it
      */
+    @Deprecated("Use this method from the CoreCryptoContext object created from a CoreCryptoCentral.transaction call")
     suspend fun newUpdateProposal(id: MLSGroupId): ProposalBundle {
         return cc.newUpdateProposal(id.lower()).lift()
     }
@@ -371,6 +394,7 @@ class MLSClient(private val cc: com.wire.crypto.CoreCrypto) {
      *
      * @param id conversation identifier
      */
+    @Deprecated("Use this method from the CoreCryptoContext object created from a CoreCryptoCentral.transaction call")
     suspend fun commitAccepted(id: MLSGroupId): List<BufferedDecryptedMessage>? {
         return cc.commitAccepted(id.lower())?.map { it.lift() }
     }
@@ -384,6 +408,7 @@ class MLSClient(private val cc: com.wire.crypto.CoreCrypto) {
      * @param id conversation identifier
      * @param proposalRef you get from a [ProposalBundle]
      */
+    @Deprecated("Use this method from the CoreCryptoContext object created from a CoreCryptoCentral.transaction call")
     suspend fun clearPendingProposal(id: MLSGroupId, proposalRef: ProposalRef) {
         cc.clearPendingProposal(id.lower(), proposalRef.lower())
     }
@@ -397,6 +422,7 @@ class MLSClient(private val cc: com.wire.crypto.CoreCrypto) {
      *
      * @param id conversation identifier
      */
+    @Deprecated("Use this method from the CoreCryptoContext object created from a CoreCryptoCentral.transaction call")
     suspend fun clearPendingCommit(id: MLSGroupId) {
         cc.clearPendingCommit(id.lower())
     }
@@ -439,6 +465,7 @@ class MLSClient(private val cc: com.wire.crypto.CoreCrypto) {
      * @param id conversation identifier
      * @return the conversation state given current members
      */
+    @Deprecated("Use this method from the CoreCryptoContext object created from a CoreCryptoCentral.transaction call")
     suspend fun e2eiConversationState(id: MLSGroupId): com.wire.crypto.E2eiConversationState {
         return cc.e2eiConversationState(id.lower())
     }

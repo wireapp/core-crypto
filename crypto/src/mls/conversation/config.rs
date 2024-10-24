@@ -19,7 +19,7 @@
 //! Either use [MlsConversationConfiguration] when creating a conversation or [MlsCustomConfiguration]
 //! when joining one by Welcome or external commit
 
-use mls_crypto_provider::MlsCryptoProvider;
+use mls_crypto_provider::TransactionalCryptoProvider;
 use openmls::prelude::{
     Capabilities, Credential, CredentialType, ExternalSender, OpenMlsSignaturePublicKey, ProtocolVersion,
     RequiredCapabilitiesExtension, SenderRatchetConfiguration, WireFormatPolicy, PURE_CIPHERTEXT_WIRE_FORMAT_POLICY,
@@ -31,7 +31,8 @@ use openmls_traits::OpenMlsCryptoProvider;
 use serde::{Deserialize, Serialize};
 use wire_e2e_identity::prelude::parse_json_jwk;
 
-use crate::prelude::{CryptoResult, E2eIdentityError, MlsCentral, MlsCiphersuite};
+use crate::context::CentralContext;
+use crate::prelude::{CryptoResult, E2eIdentityError, MlsCiphersuite};
 use crate::MlsError;
 
 /// Sets the config in OpenMls for the oldest possible epoch(past current) that a message can be decrypted
@@ -44,13 +45,14 @@ pub(crate) const OUT_OF_ORDER_TOLERANCE: u32 = 2;
 /// How many application messages can be skipped. Use this when the Delivery Service can drop application messages
 pub(crate) const MAXIMUM_FORWARD_DISTANCE: u32 = 1000;
 
-impl MlsCentral {
+impl CentralContext {
     /// Parses supplied key from Delivery Service in order to build back an [ExternalSender]
-    pub fn set_raw_external_senders(
+    pub async fn set_raw_external_senders(
         &self,
         cfg: &mut MlsConversationConfiguration,
         external_senders: Vec<Vec<u8>>,
     ) -> CryptoResult<()> {
+        let mls_provider = self.mls_provider().await?;
         cfg.external_senders = external_senders
             .into_iter()
             .map(|key| {
@@ -58,7 +60,7 @@ impl MlsCentral {
                     MlsConversationConfiguration::legacy_external_sender(
                         key,
                         cfg.ciphersuite.signature_algorithm(),
-                        &self.mls_backend,
+                        &mls_provider,
                     )
                 })
             })
@@ -158,7 +160,7 @@ impl MlsConversationConfiguration {
     fn legacy_external_sender(
         key: Vec<u8>,
         signature_scheme: SignatureScheme,
-        backend: &MlsCryptoProvider,
+        backend: &TransactionalCryptoProvider,
     ) -> CryptoResult<ExternalSender> {
         backend
             .crypto()
@@ -239,14 +241,14 @@ mod tests {
     #[wasm_bindgen_test]
     pub async fn group_should_have_required_capabilities() {
         let case = TestCase::default();
-        run_test_with_client_ids(case.clone(), ["alice"], move |[mut cc]| {
+        run_test_with_client_ids(case.clone(), ["alice"], move |[cc]| {
             Box::pin(async move {
                 let id = conversation_id();
-                cc.mls_central
+                cc.context
                     .new_conversation(&id, case.credential_type, case.cfg.clone())
                     .await
                     .unwrap();
-                let conv = cc.mls_central.get_conversation(&id).await.unwrap();
+                let conv = cc.context.get_conversation(&id).await.unwrap();
                 let group = conv.read().await;
 
                 let capabilities = group.group.group_context_extensions().required_capabilities().unwrap();
@@ -266,14 +268,14 @@ mod tests {
     #[apply(all_cred_cipher)]
     #[wasm_bindgen_test]
     pub async fn creator_leaf_node_should_have_default_capabilities(case: TestCase) {
-        run_test_with_client_ids(case.clone(), ["alice"], move |[mut cc]| {
+        run_test_with_client_ids(case.clone(), ["alice"], move |[cc]| {
             Box::pin(async move {
                 let id = conversation_id();
-                cc.mls_central
+                cc.context
                     .new_conversation(&id, case.credential_type, case.cfg.clone())
                     .await
                     .unwrap();
-                let conv = cc.mls_central.get_conversation(&id).await.unwrap();
+                let conv = cc.context.get_conversation(&id).await.unwrap();
                 let group = conv.read().await;
 
                 // verifying https://www.rfc-editor.org/rfc/rfc9420.html#section-7.2
@@ -314,15 +316,18 @@ mod tests {
         run_test_with_client_ids(case.clone(), ["alice"], move |[cc]| {
             Box::pin(async move {
                 let (_sk, pk) = cc
-                    .mls_central
-                    .mls_backend
+                    .context
+                    .mls_provider()
+                    .await
+                    .unwrap()
                     .crypto()
                     .signature_key_gen(case.signature_scheme())
                     .unwrap();
 
                 assert!(cc
-                    .mls_central
+                    .context
                     .set_raw_external_senders(&mut case.cfg.clone(), vec![pk])
+                    .await
                     .is_ok());
             })
         })
@@ -346,8 +351,9 @@ mod tests {
 
                 let jwk = wire_e2e_identity::prelude::generate_jwk(alg);
                 let _ = cc
-                    .mls_central
+                    .context
                     .set_raw_external_senders(&mut case.cfg.clone(), vec![jwk])
+                    .await
                     .unwrap();
             })
         })

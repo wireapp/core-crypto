@@ -27,6 +27,7 @@ pub fn durable(_args: TokenStream, item: TokenStream) -> TokenStream {
 }
 
 /// !!! Not literally idempotent !!!
+///
 /// Marker for methods on 'MlsCentral' which leave the number of entities in the keystore even.
 /// They can create/destroy some but always compensate.
 /// So they are not idempotent, they cannot be safely replayed and they might leave the keystore in

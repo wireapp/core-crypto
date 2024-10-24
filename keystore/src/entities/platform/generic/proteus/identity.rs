@@ -14,7 +14,8 @@
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see http://www.gnu.org/licenses/.
 
-use crate::entities::{EntityFindParams, ProteusIdentity, StringEntityId};
+use crate::connection::TransactionWrapper;
+use crate::entities::{EntityFindParams, EntityTransactionExt, ProteusIdentity, StringEntityId};
 use crate::CryptoKeystoreError;
 use crate::{
     connection::KeystoreDatabaseConnection,
@@ -38,6 +39,10 @@ impl EntityBase for ProteusIdentity {
 
     fn to_missing_key_err_kind() -> MissingKeyErrorKind {
         MissingKeyErrorKind::ProteusIdentity
+    }
+
+    fn to_transaction_entity(self) -> crate::transaction::Entity {
+        crate::transaction::Entity::ProteusIdentity(self)
     }
 
     async fn find_all(
@@ -106,17 +111,15 @@ impl EntityBase for ProteusIdentity {
         debug_assert!(count <= 1);
         Ok(count)
     }
+}
 
-    async fn save(&self, conn: &mut Self::ConnectionType) -> crate::CryptoKeystoreResult<()> {
-        if Self::count(conn).await? == 1 {
-            return Ok(());
-        }
-
-        let transaction = conn.transaction()?;
-
+#[cfg_attr(target_family = "wasm", async_trait::async_trait(?Send))]
+#[cfg_attr(not(target_family = "wasm"), async_trait::async_trait)]
+impl EntityTransactionExt for ProteusIdentity {
+    async fn save(&self, transaction: &TransactionWrapper<'_>) -> crate::CryptoKeystoreResult<()> {
         use rusqlite::ToSql as _;
         transaction.execute(
-            "INSERT INTO proteus_identities (sk, pk) VALUES (?, ?)",
+            "INSERT INTO proteus_identities (sk, pk) SELECT ?, ? WHERE (SELECT COUNT(*) FROM proteus_identities) = 0",
             [
                 rusqlite::blob::ZeroBlob(self.sk.len() as i32).to_sql()?,
                 rusqlite::blob::ZeroBlob(self.pk.len() as i32).to_sql()?,
@@ -136,16 +139,13 @@ impl EntityBase for ProteusIdentity {
         blob.write_all(&self.pk)?;
         blob.close()?;
 
-        transaction.commit()?;
-
         Ok(())
     }
 
-    async fn delete(
-        conn: &mut Self::ConnectionType,
-        _ids: &[crate::entities::StringEntityId],
+    async fn delete_fail_on_missing_id(
+        transaction: &TransactionWrapper<'_>,
+        _id: StringEntityId<'_>,
     ) -> crate::CryptoKeystoreResult<()> {
-        let transaction = conn.transaction()?;
         let row_id = transaction.query_row(
             "SELECT rowid FROM proteus_identities ORDER BY rowid ASC LIMIT 1",
             [],
@@ -153,8 +153,6 @@ impl EntityBase for ProteusIdentity {
         )?;
         use rusqlite::ToSql as _;
         transaction.execute("DELETE FROM proteus_identities WHERE rowid = ?", [row_id.to_sql()?])?;
-
-        transaction.commit()?;
 
         Ok(())
     }

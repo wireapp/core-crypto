@@ -15,9 +15,9 @@
 // along with this program. If not, see http://www.gnu.org/licenses/.
 
 use crate::{
-    connection::{DatabaseConnection, KeystoreDatabaseConnection},
-    entities::{E2eiCrl, Entity, EntityBase, EntityFindParams, StringEntityId},
-    MissingKeyErrorKind,
+    connection::{DatabaseConnection, KeystoreDatabaseConnection, TransactionWrapper},
+    entities::{E2eiCrl, Entity, EntityBase, EntityFindParams, EntityTransactionExt, StringEntityId},
+    CryptoKeystoreResult, MissingKeyErrorKind,
 };
 
 impl Entity for E2eiCrl {
@@ -35,6 +35,10 @@ impl EntityBase for E2eiCrl {
 
     fn to_missing_key_err_kind() -> MissingKeyErrorKind {
         MissingKeyErrorKind::E2eiCrl
+    }
+
+    fn to_transaction_entity(self) -> crate::transaction::Entity {
+        crate::transaction::Entity::E2eiCrl(self)
     }
 
     async fn find_all(
@@ -65,38 +69,6 @@ impl EntityBase for E2eiCrl {
         })?;
 
         Ok(entities)
-    }
-
-    async fn save(&self, conn: &mut Self::ConnectionType) -> crate::CryptoKeystoreResult<()> {
-        use rusqlite::ToSql as _;
-
-        Self::ConnectionType::check_buffer_size(self.content.len())?;
-
-        let transaction = conn.transaction()?;
-
-        let zb = rusqlite::blob::ZeroBlob(self.content.len() as i32);
-
-        // Use UPSERT (ON CONFLICT DO UPDATE)
-        let sql = "
-        INSERT INTO e2ei_crls (distribution_point, content) 
-        VALUES (?, ?) 
-        ON CONFLICT(distribution_point) DO UPDATE SET content = excluded.content
-        RETURNING rowid";
-
-        // Execute the UPSERT and get the row_id of the affected row
-        let row_id: i64 =
-            transaction.query_row(sql, [self.distribution_point.to_sql()?, zb.to_sql()?], |r| r.get(0))?;
-
-        // Open a blob to write the content data
-        let mut blob = transaction.blob_open(rusqlite::DatabaseName::Main, "e2ei_crls", "content", row_id, false)?;
-
-        use std::io::Write as _;
-        blob.write_all(&self.content)?;
-        blob.close()?;
-
-        transaction.commit()?;
-
-        Ok(())
     }
 
     async fn find_one(
@@ -135,20 +107,48 @@ impl EntityBase for E2eiCrl {
     async fn count(conn: &mut Self::ConnectionType) -> crate::CryptoKeystoreResult<usize> {
         Ok(conn.query_row("SELECT COUNT(*) FROM e2ei_crls", [], |r| r.get(0))?)
     }
+}
 
-    async fn delete(conn: &mut Self::ConnectionType, ids: &[StringEntityId]) -> crate::CryptoKeystoreResult<()> {
-        let transaction = conn.transaction()?;
-        let len = ids.len();
-        let mut updated = 0;
-        for id in ids {
-            updated += transaction.execute("DELETE FROM e2ei_crls WHERE distribution_point = ?", [id.try_as_str()?])?;
-        }
+#[cfg_attr(target_family = "wasm", async_trait::async_trait(?Send))]
+#[cfg_attr(not(target_family = "wasm"), async_trait::async_trait)]
+impl EntityTransactionExt for E2eiCrl {
+    async fn save(&self, transaction: &TransactionWrapper<'_>) -> CryptoKeystoreResult<()> {
+        use rusqlite::ToSql as _;
 
-        if updated == len {
-            transaction.commit()?;
+        Self::ConnectionType::check_buffer_size(self.content.len())?;
+
+        let zb = rusqlite::blob::ZeroBlob(self.content.len() as i32);
+
+        // Use UPSERT (ON CONFLICT DO UPDATE)
+        let sql = "
+        INSERT INTO e2ei_crls (distribution_point, content)
+        VALUES (?, ?)
+        ON CONFLICT(distribution_point) DO UPDATE SET content = excluded.content
+        RETURNING rowid";
+
+        // Execute the UPSERT and get the row_id of the affected row
+        let row_id: i64 =
+            transaction.query_row(sql, [self.distribution_point.to_sql()?, zb.to_sql()?], |r| r.get(0))?;
+
+        // Open a blob to write the content data
+        let mut blob = transaction.blob_open(rusqlite::DatabaseName::Main, "e2ei_crls", "content", row_id, false)?;
+
+        use std::io::Write as _;
+        blob.write_all(&self.content)?;
+        blob.close()?;
+
+        Ok(())
+    }
+
+    async fn delete_fail_on_missing_id(
+        transaction: &TransactionWrapper<'_>,
+        id: StringEntityId<'_>,
+    ) -> CryptoKeystoreResult<()> {
+        let updated = transaction.execute("DELETE FROM e2ei_crls WHERE distribution_point = ?", [id.try_as_str()?])?;
+
+        if updated > 0 {
             Ok(())
         } else {
-            transaction.rollback()?;
             Err(Self::to_missing_key_err_kind().into())
         }
     }

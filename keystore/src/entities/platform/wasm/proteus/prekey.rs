@@ -14,6 +14,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see http://www.gnu.org/licenses/.
 
+use crate::entities::EntityTransactionExt;
 use crate::{
     connection::{DatabaseConnection, KeystoreDatabaseConnection},
     entities::{Entity, EntityBase, EntityFindParams, ProteusPrekey, StringEntityId},
@@ -31,14 +32,13 @@ impl EntityBase for ProteusPrekey {
         MissingKeyErrorKind::ProteusPrekey
     }
 
+    fn to_transaction_entity(self) -> crate::transaction::Entity {
+        crate::transaction::Entity::ProteusPrekey(self)
+    }
+
     async fn find_all(conn: &mut Self::ConnectionType, params: EntityFindParams) -> CryptoKeystoreResult<Vec<Self>> {
         let storage = conn.storage();
         storage.get_all(Self::COLLECTION_NAME, Some(params)).await
-    }
-
-    async fn save(&self, conn: &mut Self::ConnectionType) -> crate::CryptoKeystoreResult<()> {
-        let storage = conn.storage_mut();
-        storage.save(Self::COLLECTION_NAME, &mut [self.clone()]).await
     }
 
     async fn find_one(
@@ -53,13 +53,10 @@ impl EntityBase for ProteusPrekey {
         let storage = conn.storage();
         storage.count(Self::COLLECTION_NAME).await
     }
-
-    async fn delete(conn: &mut Self::ConnectionType, ids: &[StringEntityId]) -> crate::CryptoKeystoreResult<()> {
-        let storage = conn.storage_mut();
-        let ids: Vec<Vec<u8>> = ids.iter().map(StringEntityId::to_bytes).collect();
-        storage.delete(Self::COLLECTION_NAME, &ids).await
-    }
 }
+
+#[async_trait::async_trait(?Send)]
+impl EntityTransactionExt for ProteusPrekey {}
 
 impl Entity for ProteusPrekey {
     fn id_raw(&self) -> &[u8] {

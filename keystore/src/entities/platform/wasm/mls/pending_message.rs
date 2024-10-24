@@ -1,6 +1,6 @@
 use crate::{
     connection::KeystoreDatabaseConnection,
-    entities::{Entity, EntityBase, EntityFindParams, MlsPendingMessage, StringEntityId},
+    entities::{Entity, EntityBase, EntityFindParams, EntityTransactionExt, MlsPendingMessage, StringEntityId},
     CryptoKeystoreResult, MissingKeyErrorKind,
 };
 
@@ -15,17 +15,13 @@ impl EntityBase for MlsPendingMessage {
         MissingKeyErrorKind::MlsPendingMessages
     }
 
+    fn to_transaction_entity(self) -> crate::transaction::Entity {
+        crate::transaction::Entity::MlsPendingMessage(self)
+    }
+
     async fn find_all(conn: &mut Self::ConnectionType, params: EntityFindParams) -> CryptoKeystoreResult<Vec<Self>> {
         let storage = conn.storage();
         storage.get_all(Self::COLLECTION_NAME, Some(params)).await
-    }
-
-    async fn save(&self, conn: &mut Self::ConnectionType) -> crate::CryptoKeystoreResult<()> {
-        let storage = conn.storage_mut();
-
-        storage.save(Self::COLLECTION_NAME, &mut [self.clone()]).await?;
-
-        Ok(())
     }
 
     async fn find_one(
@@ -46,21 +42,25 @@ impl EntityBase for MlsPendingMessage {
     async fn count(conn: &mut Self::ConnectionType) -> crate::CryptoKeystoreResult<usize> {
         conn.storage().count(Self::COLLECTION_NAME).await
     }
-
-    async fn delete(conn: &mut Self::ConnectionType, ids: &[StringEntityId]) -> crate::CryptoKeystoreResult<()> {
-        let ids: Vec<Vec<u8>> = ids.iter().map(StringEntityId::to_bytes).collect();
-        let _ = conn.storage_mut().delete(Self::COLLECTION_NAME, &ids).await?;
-        Ok(())
-    }
 }
+
+#[cfg_attr(target_family = "wasm", async_trait::async_trait(?Send))]
+#[cfg_attr(not(target_family = "wasm"), async_trait::async_trait)]
+impl EntityTransactionExt for MlsPendingMessage {}
 
 impl Entity for MlsPendingMessage {
     fn id_raw(&self) -> &[u8] {
-        self.id.as_slice()
+        self.foreign_id.as_slice()
     }
 
     fn id(&self) -> CryptoKeystoreResult<wasm_bindgen::JsValue> {
-        Ok(js_sys::Uint8Array::from(self.id.as_slice()).into())
+        Ok(js_sys::Uint8Array::from(self.foreign_id.as_slice()).into())
+    }
+
+    fn merge_key(&self) -> Vec<u8> {
+        // Use this as a merge key because the `id` is not used as a primary key
+        // but  as a foreign key: it's the ID of the PersistedMlsPendingGroup.
+        self.message.clone()
     }
 
     fn encrypt(&mut self, cipher: &aes_gcm::Aes256Gcm) -> CryptoKeystoreResult<()> {

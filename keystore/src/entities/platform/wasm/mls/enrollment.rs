@@ -16,8 +16,8 @@
 
 use crate::{
     connection::{DatabaseConnection, KeystoreDatabaseConnection},
-    entities::{E2eiEnrollment, Entity, EntityBase, EntityFindParams, StringEntityId},
-    CryptoKeystoreError, CryptoKeystoreResult, MissingKeyErrorKind,
+    entities::{E2eiEnrollment, Entity, EntityBase, EntityFindParams, EntityTransactionExt, StringEntityId},
+    CryptoKeystoreResult, MissingKeyErrorKind,
 };
 
 #[cfg_attr(target_family = "wasm", async_trait::async_trait(?Send))]
@@ -31,30 +31,26 @@ impl EntityBase for E2eiEnrollment {
         MissingKeyErrorKind::E2eiEnrollment
     }
 
-    async fn find_all(_conn: &mut Self::ConnectionType, _params: EntityFindParams) -> CryptoKeystoreResult<Vec<Self>> {
-        Err(CryptoKeystoreError::ImplementationError)
+    fn to_transaction_entity(self) -> crate::transaction::Entity {
+        crate::transaction::Entity::E2eiEnrollment(self)
     }
 
-    async fn save(&self, conn: &mut Self::ConnectionType) -> CryptoKeystoreResult<()> {
-        let storage = conn.storage_mut();
-        storage.save(Self::COLLECTION_NAME, &mut [self.clone()]).await?;
-        Ok(())
+    async fn find_all(conn: &mut Self::ConnectionType, params: EntityFindParams) -> CryptoKeystoreResult<Vec<Self>> {
+        conn.storage().get_all(Self::COLLECTION_NAME, Some(params)).await
     }
 
     async fn find_one(conn: &mut Self::ConnectionType, id: &StringEntityId) -> CryptoKeystoreResult<Option<Self>> {
         conn.storage().get(Self::COLLECTION_NAME, id.as_slice()).await
     }
 
-    async fn count(_conn: &mut Self::ConnectionType) -> CryptoKeystoreResult<usize> {
-        Err(CryptoKeystoreError::ImplementationError)
-    }
-
-    async fn delete(conn: &mut Self::ConnectionType, ids: &[StringEntityId]) -> CryptoKeystoreResult<()> {
-        let storage = conn.storage_mut();
-        let ids = ids.iter().map(StringEntityId::as_slice).collect::<Vec<_>>();
-        storage.delete(Self::COLLECTION_NAME, &ids).await
+    async fn count(conn: &mut Self::ConnectionType) -> CryptoKeystoreResult<usize> {
+        conn.storage().count(Self::COLLECTION_NAME).await
     }
 }
+
+#[cfg_attr(target_family = "wasm", async_trait::async_trait(?Send))]
+#[cfg_attr(not(target_family = "wasm"), async_trait::async_trait)]
+impl EntityTransactionExt for E2eiEnrollment {}
 
 impl Entity for E2eiEnrollment {
     fn id_raw(&self) -> &[u8] {

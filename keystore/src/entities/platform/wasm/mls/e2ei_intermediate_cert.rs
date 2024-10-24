@@ -16,7 +16,7 @@
 
 use crate::{
     connection::{DatabaseConnection, KeystoreDatabaseConnection},
-    entities::{E2eiIntermediateCert, Entity, EntityBase, EntityFindParams, StringEntityId},
+    entities::{E2eiIntermediateCert, Entity, EntityBase, EntityFindParams, EntityTransactionExt, StringEntityId},
     CryptoKeystoreResult, MissingKeyErrorKind,
 };
 
@@ -31,14 +31,13 @@ impl EntityBase for E2eiIntermediateCert {
         MissingKeyErrorKind::E2eiIntermediateCert
     }
 
+    fn to_transaction_entity(self) -> crate::transaction::Entity {
+        crate::transaction::Entity::E2eiIntermediateCert(self)
+    }
+
     async fn find_all(conn: &mut Self::ConnectionType, params: EntityFindParams) -> CryptoKeystoreResult<Vec<Self>> {
         let storage = conn.storage();
         storage.get_all(Self::COLLECTION_NAME, Some(params)).await
-    }
-
-    async fn save(&self, conn: &mut Self::ConnectionType) -> CryptoKeystoreResult<()> {
-        let storage = conn.storage_mut();
-        storage.save(Self::COLLECTION_NAME, &mut [self.clone()]).await
     }
 
     async fn find_one(conn: &mut Self::ConnectionType, id: &StringEntityId) -> CryptoKeystoreResult<Option<Self>> {
@@ -48,13 +47,11 @@ impl EntityBase for E2eiIntermediateCert {
     async fn count(conn: &mut Self::ConnectionType) -> CryptoKeystoreResult<usize> {
         conn.storage().count(Self::COLLECTION_NAME).await
     }
-
-    async fn delete(conn: &mut Self::ConnectionType, ids: &[StringEntityId]) -> CryptoKeystoreResult<()> {
-        let storage = conn.storage_mut();
-        let ids = ids.iter().map(StringEntityId::as_slice).collect::<Vec<_>>();
-        storage.delete(Self::COLLECTION_NAME, &ids).await
-    }
 }
+
+#[cfg_attr(target_family = "wasm", async_trait::async_trait(?Send))]
+#[cfg_attr(not(target_family = "wasm"), async_trait::async_trait)]
+impl EntityTransactionExt for E2eiIntermediateCert {}
 
 impl Entity for E2eiIntermediateCert {
     fn id_raw(&self) -> &[u8] {

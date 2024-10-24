@@ -7,13 +7,13 @@
 //! | 0 pend. Proposal  | ✅              | ❌              |
 //! | 1+ pend. Proposal | ❌              | ❌              |
 
-use mls_crypto_provider::MlsCryptoProvider;
+use mls_crypto_provider::TransactionalCryptoProvider;
 use openmls::prelude::MlsMessageOutBody;
 
-use crate::prelude::Client;
-use crate::{mls::ConversationId, mls::MlsCentral, CryptoError, CryptoResult, MlsError};
-
 use super::MlsConversation;
+use crate::context::CentralContext;
+use crate::prelude::Client;
+use crate::{mls::ConversationId, CryptoError, CryptoResult, MlsError};
 
 /// Abstraction over a MLS group capable of encrypting a MLS message
 impl MlsConversation {
@@ -25,10 +25,11 @@ impl MlsConversation {
         &mut self,
         client: &Client,
         message: impl AsRef<[u8]>,
-        backend: &MlsCryptoProvider,
+        backend: &TransactionalCryptoProvider,
     ) -> CryptoResult<Vec<u8>> {
         let signer = &self
-            .find_current_credential_bundle(client)?
+            .find_current_credential_bundle(client)
+            .await?
             .ok_or(CryptoError::IdentityInitializationError)?
             .signature_key;
         let encrypted = self
@@ -41,12 +42,12 @@ impl MlsConversation {
 
         let encrypted = encrypted.to_bytes().map_err(MlsError::from)?;
 
-        self.persist_group_when_changed(backend, false).await?;
+        self.persist_group_when_changed(&backend.keystore(), false).await?;
         Ok(encrypted)
     }
 }
 
-impl MlsCentral {
+impl CentralContext {
     /// Encrypts a raw payload then serializes it to the TLS wire format
     ///
     /// # Arguments
@@ -62,15 +63,17 @@ impl MlsCentral {
     #[cfg_attr(test, crate::idempotent)]
     #[cfg_attr(not(test), tracing::instrument(err, skip_all))]
     pub async fn encrypt_message(
-        &mut self,
+        &self,
         conversation: &ConversationId,
         message: impl AsRef<[u8]>,
     ) -> CryptoResult<Vec<u8>> {
+        let client_guard = self.mls_client().await?;
+        let client = client_guard.as_ref().ok_or(CryptoError::MlsNotInitialized)?;
         self.get_conversation(conversation)
             .await?
             .write()
             .await
-            .encrypt_message(self.mls_client()?, message, &self.mls_backend)
+            .encrypt_message(client, message, &self.mls_provider().await?)
             .await
     }
 }
@@ -86,37 +89,29 @@ mod tests {
     #[apply(all_cred_cipher)]
     #[wasm_bindgen_test]
     async fn can_encrypt_app_message(case: TestCase) {
-        run_test_with_client_ids(
-            case.clone(),
-            ["alice", "bob"],
-            move |[mut alice_central, mut bob_central]| {
-                Box::pin(async move {
-                    let id = conversation_id();
-                    alice_central
-                        .mls_central
-                        .new_conversation(&id, case.credential_type, case.cfg.clone())
-                        .await
-                        .unwrap();
-                    alice_central
-                        .mls_central
-                        .invite_all(&case, &id, [&mut bob_central.mls_central])
-                        .await
-                        .unwrap();
+        run_test_with_client_ids(case.clone(), ["alice", "bob"], move |[alice_central, bob_central]| {
+            Box::pin(async move {
+                let id = conversation_id();
+                alice_central
+                    .context
+                    .new_conversation(&id, case.credential_type, case.cfg.clone())
+                    .await
+                    .unwrap();
+                alice_central.invite_all(&case, &id, [&bob_central]).await.unwrap();
 
-                    let msg = b"Hello bob";
-                    let encrypted = alice_central.mls_central.encrypt_message(&id, msg).await.unwrap();
-                    assert_ne!(&msg[..], &encrypted[..]);
-                    let decrypted = bob_central
-                        .mls_central
-                        .decrypt_message(&id, encrypted)
-                        .await
-                        .unwrap()
-                        .app_msg
-                        .unwrap();
-                    assert_eq!(&decrypted[..], &msg[..]);
-                })
-            },
-        )
+                let msg = b"Hello bob";
+                let encrypted = alice_central.context.encrypt_message(&id, msg).await.unwrap();
+                assert_ne!(&msg[..], &encrypted[..]);
+                let decrypted = bob_central
+                    .context
+                    .decrypt_message(&id, encrypted)
+                    .await
+                    .unwrap()
+                    .app_msg
+                    .unwrap();
+                assert_eq!(&decrypted[..], &msg[..]);
+            })
+        })
         .await
     }
 
@@ -124,49 +119,41 @@ mod tests {
     #[apply(all_cred_cipher)]
     #[wasm_bindgen_test]
     async fn can_encrypt_consecutive_messages(case: TestCase) {
-        run_test_with_client_ids(
-            case.clone(),
-            ["alice", "bob"],
-            move |[mut alice_central, mut bob_central]| {
-                Box::pin(async move {
-                    let id = conversation_id();
-                    alice_central
-                        .mls_central
-                        .new_conversation(&id, case.credential_type, case.cfg.clone())
-                        .await
-                        .unwrap();
-                    alice_central
-                        .mls_central
-                        .invite_all(&case, &id, [&mut bob_central.mls_central])
-                        .await
-                        .unwrap();
+        run_test_with_client_ids(case.clone(), ["alice", "bob"], move |[alice_central, bob_central]| {
+            Box::pin(async move {
+                let id = conversation_id();
+                alice_central
+                    .context
+                    .new_conversation(&id, case.credential_type, case.cfg.clone())
+                    .await
+                    .unwrap();
+                alice_central.invite_all(&case, &id, [&bob_central]).await.unwrap();
 
-                    let msg = b"Hello bob";
-                    let encrypted = alice_central.mls_central.encrypt_message(&id, msg).await.unwrap();
-                    assert_ne!(&msg[..], &encrypted[..]);
-                    let decrypted = bob_central
-                        .mls_central
-                        .decrypt_message(&id, encrypted)
-                        .await
-                        .unwrap()
-                        .app_msg
-                        .unwrap();
-                    assert_eq!(&decrypted[..], &msg[..]);
+                let msg = b"Hello bob";
+                let encrypted = alice_central.context.encrypt_message(&id, msg).await.unwrap();
+                assert_ne!(&msg[..], &encrypted[..]);
+                let decrypted = bob_central
+                    .context
+                    .decrypt_message(&id, encrypted)
+                    .await
+                    .unwrap()
+                    .app_msg
+                    .unwrap();
+                assert_eq!(&decrypted[..], &msg[..]);
 
-                    let msg = b"Hello bob again";
-                    let encrypted = alice_central.mls_central.encrypt_message(&id, msg).await.unwrap();
-                    assert_ne!(&msg[..], &encrypted[..]);
-                    let decrypted = bob_central
-                        .mls_central
-                        .decrypt_message(&id, encrypted)
-                        .await
-                        .unwrap()
-                        .app_msg
-                        .unwrap();
-                    assert_eq!(&decrypted[..], &msg[..]);
-                })
-            },
-        )
+                let msg = b"Hello bob again";
+                let encrypted = alice_central.context.encrypt_message(&id, msg).await.unwrap();
+                assert_ne!(&msg[..], &encrypted[..]);
+                let decrypted = bob_central
+                    .context
+                    .decrypt_message(&id, encrypted)
+                    .await
+                    .unwrap()
+                    .app_msg
+                    .unwrap();
+                assert_eq!(&decrypted[..], &msg[..]);
+            })
+        })
         .await
     }
 }

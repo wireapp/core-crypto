@@ -127,7 +127,7 @@ async fn run_mls_test(chrome_driver_addr: &std::net::SocketAddr) -> Result<()> {
     clients.push(Box::new(
         clients::corecrypto::native::CoreCryptoNativeClient::new().await?,
     ));
-    // clients.push(Box::new(clients::corecrypto::ffi::CoreCryptoFfiClient::new().await?));
+    clients.push(Box::new(clients::corecrypto::ffi::CoreCryptoFfiClient::new().await?));
     clients.push(Box::new(
         clients::corecrypto::web::CoreCryptoWebClient::new(chrome_driver_addr).await?,
     ));
@@ -141,14 +141,16 @@ async fn run_mls_test(chrome_driver_addr: &std::net::SocketAddr) -> Result<()> {
         None,
         Some(100),
     )?;
-    let mut master_client = MlsCentral::try_new_in_memory(configuration).await?;
+    let master_client = MlsCentral::try_new_in_memory(configuration).await?;
 
     let conversation_id = MLS_CONVERSATION_ID.to_vec();
     let config = MlsConversationConfiguration {
         ciphersuite: CIPHERSUITE_IN_USE.into(),
         ..Default::default()
     };
-    master_client
+    let cc = CoreCrypto::from(master_client.clone());
+    let transaction = cc.new_transaction().await?;
+    transaction
         .new_conversation(&conversation_id, MlsCredentialType::Basic, config)
         .await?;
 
@@ -168,11 +170,11 @@ async fn run_mls_test(chrome_driver_addr: &std::net::SocketAddr) -> Result<()> {
 
     let spinner = util::RunningProcess::new("[MLS] Step 2: Adding clients to conversation...", true);
 
-    let conversation_add_msg = master_client
+    let conversation_add_msg = transaction
         .add_members_to_conversation(&conversation_id, key_packages)
         .await?;
 
-    master_client.commit_accepted(&conversation_id).await?;
+    transaction.commit_accepted(&conversation_id).await?;
 
     let welcome_raw = conversation_add_msg.welcome.tls_serialize_detached()?;
 
@@ -195,11 +197,11 @@ async fn run_mls_test(chrome_driver_addr: &std::net::SocketAddr) -> Result<()> {
 
         log::info!(
             "Master client [{}] >>> {}",
-            hex::encode(master_client.client_id()?.as_slice()),
+            hex::encode(master_client.client_id().await?.as_slice()),
             message
         );
 
-        let mut message_to_decrypt = master_client.encrypt_message(&conversation_id, &message).await?;
+        let mut message_to_decrypt = transaction.encrypt_message(&conversation_id, &message).await?;
 
         for c in clients.iter_mut() {
             let decrypted_message_raw = c
@@ -233,7 +235,7 @@ async fn run_mls_test(chrome_driver_addr: &std::net::SocketAddr) -> Result<()> {
                 .await?;
         }
 
-        let decrypted_master_raw = master_client
+        let decrypted_master_raw = transaction
             .decrypt_message(&conversation_id, message_to_decrypt)
             .await?
             .app_msg
@@ -265,7 +267,7 @@ async fn run_proteus_test(chrome_driver_addr: &std::net::SocketAddr) -> Result<(
     clients.push(Box::new(
         clients::corecrypto::native::CoreCryptoNativeClient::new().await?,
     ));
-    // clients.push(Box::new(clients::corecrypto::ffi::CoreCryptoFfiClient::new().await?));
+    clients.push(Box::new(clients::corecrypto::ffi::CoreCryptoFfiClient::new().await?));
     clients.push(Box::new(
         clients::corecrypto::web::CoreCryptoWebClient::new(chrome_driver_addr).await?,
     ));
@@ -286,10 +288,10 @@ async fn run_proteus_test(chrome_driver_addr: &std::net::SocketAddr) -> Result<(
         None,
         Some(100),
     )?;
-    let mut master_client = CoreCrypto::from(MlsCentral::try_new_in_memory(configuration).await?);
+    let master_client = CoreCrypto::from(MlsCentral::try_new_in_memory(configuration).await?);
     master_client.proteus_init().await?;
 
-    let master_fingerprint = master_client.proteus_fingerprint()?;
+    let master_fingerprint = master_client.proteus_fingerprint().await?;
 
     spinner.success("[Proteus] Step 0: Initializing clients [OK]");
 
@@ -314,12 +316,13 @@ async fn run_proteus_test(chrome_driver_addr: &std::net::SocketAddr) -> Result<(
     let mut master_sessions = vec![];
     let mut messages = std::collections::HashMap::new();
     const PROTEUS_INITIAL_MESSAGE: &[u8] = b"Hello world!";
+    let transaction = master_client.new_transaction().await?;
     for (fingerprint, prekey) in prekeys {
         spinner.update(format!(
             "[Proteus] Step 2: Session master -> {fingerprint}@{}",
             client_type_mapping[&fingerprint]
         ));
-        let session_arc = master_client.proteus_session_from_prekey(&fingerprint, &prekey).await?;
+        let session_arc = transaction.proteus_session_from_prekey(&fingerprint, &prekey).await?;
         let mut session = session_arc.write().await;
         messages.insert(fingerprint, session.encrypt(PROTEUS_INITIAL_MESSAGE)?);
         master_sessions.push(session.identifier().to_string());
@@ -354,9 +357,7 @@ async fn run_proteus_test(chrome_driver_addr: &std::net::SocketAddr) -> Result<(
 
         prng.fill_bytes(&mut message);
 
-        let mut messages_to_decrypt = master_client
-            .proteus_encrypt_batched(&master_sessions, &message)
-            .await?;
+        let mut messages_to_decrypt = transaction.proteus_encrypt_batched(&master_sessions, &message).await?;
 
         for c in clients.iter_mut() {
             let fingerprint = c.fingerprint().await?;
@@ -380,7 +381,7 @@ async fn run_proteus_test(chrome_driver_addr: &std::net::SocketAddr) -> Result<(
         }
 
         for (fingerprint, encrypted) in master_messages_to_decrypt.drain() {
-            let decrypted = master_client.proteus_decrypt(&fingerprint, &encrypted).await?;
+            let decrypted = transaction.proteus_decrypt(&fingerprint, &encrypted).await?;
             assert_eq!(decrypted, message);
         }
 

@@ -31,12 +31,12 @@ impl EntityBase for E2eiRefreshToken {
         MissingKeyErrorKind::E2eiRefreshToken
     }
 
-    async fn find_all(_conn: &mut Self::ConnectionType, _params: EntityFindParams) -> CryptoKeystoreResult<Vec<Self>> {
-        return Err(CryptoKeystoreError::NotImplemented);
+    fn to_transaction_entity(self) -> crate::transaction::Entity {
+        crate::transaction::Entity::E2eiRefreshToken(self)
     }
 
-    async fn save(&self, _conn: &mut Self::ConnectionType) -> crate::CryptoKeystoreResult<()> {
-        return Err(CryptoKeystoreError::NotImplemented);
+    async fn find_all(conn: &mut Self::ConnectionType, params: EntityFindParams) -> CryptoKeystoreResult<Vec<Self>> {
+        <Self as UniqueEntity>::find_all(conn, params).await
     }
 
     async fn find_one(
@@ -47,10 +47,6 @@ impl EntityBase for E2eiRefreshToken {
     }
 
     async fn count(_conn: &mut Self::ConnectionType) -> crate::CryptoKeystoreResult<usize> {
-        return Err(CryptoKeystoreError::NotImplemented);
-    }
-
-    async fn delete(_conn: &mut Self::ConnectionType, _ids: &[StringEntityId]) -> crate::CryptoKeystoreResult<()> {
         return Err(CryptoKeystoreError::NotImplemented);
     }
 }
@@ -74,18 +70,4 @@ impl Entity for E2eiRefreshToken {
 
 #[cfg_attr(target_family = "wasm", async_trait::async_trait(?Send))]
 #[cfg_attr(not(target_family = "wasm"), async_trait::async_trait)]
-impl UniqueEntity for E2eiRefreshToken {
-    async fn find_unique(conn: &mut Self::ConnectionType) -> CryptoKeystoreResult<Self> {
-        Ok(conn
-            .storage()
-            .get(Self::COLLECTION_NAME, &Self::ID)
-            .await?
-            .ok_or(CryptoKeystoreError::NotFound("refresh token", "".to_string()))?)
-    }
-
-    async fn replace(&self, conn: &mut Self::ConnectionType) -> CryptoKeystoreResult<()> {
-        let storage = conn.storage_mut();
-        storage.save(Self::COLLECTION_NAME, &mut [self.clone()]).await?;
-        Ok(())
-    }
-}
+impl UniqueEntity for E2eiRefreshToken {}

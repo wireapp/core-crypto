@@ -14,7 +14,8 @@
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see http://www.gnu.org/licenses/.
 
-use crate::entities::{EntityFindParams, ProteusPrekey, StringEntityId};
+use crate::connection::TransactionWrapper;
+use crate::entities::{EntityFindParams, EntityTransactionExt, ProteusPrekey, StringEntityId};
 use crate::{
     connection::KeystoreDatabaseConnection,
     entities::{Entity, EntityBase},
@@ -36,6 +37,10 @@ impl EntityBase for ProteusPrekey {
 
     fn to_missing_key_err_kind() -> MissingKeyErrorKind {
         MissingKeyErrorKind::ProteusPrekey
+    }
+
+    fn to_transaction_entity(self) -> crate::transaction::Entity {
+        crate::transaction::Entity::ProteusPrekey(self)
     }
 
     async fn find_all(
@@ -98,16 +103,18 @@ impl EntityBase for ProteusPrekey {
     async fn count(conn: &mut Self::ConnectionType) -> crate::CryptoKeystoreResult<usize> {
         Ok(conn.query_row("SELECT COUNT(*) FROM proteus_prekeys", [], |r| r.get(0))?)
     }
+}
 
-    async fn save(&self, conn: &mut Self::ConnectionType) -> crate::CryptoKeystoreResult<()> {
+#[cfg_attr(target_family = "wasm", async_trait::async_trait(?Send))]
+#[cfg_attr(not(target_family = "wasm"), async_trait::async_trait)]
+impl EntityTransactionExt for ProteusPrekey {
+    async fn save(&self, transaction: &TransactionWrapper<'_>) -> crate::CryptoKeystoreResult<()> {
         use rusqlite::ToSql as _;
-
-        let transaction = conn.transaction()?;
 
         // Use UPSERT (ON CONFLICT DO UPDATE)
         let sql = "
-        INSERT INTO proteus_prekeys (id, key) 
-        VALUES (?, ?) 
+        INSERT INTO proteus_prekeys (id, key)
+        VALUES (?, ?)
         ON CONFLICT(id) DO UPDATE SET key = excluded.key
         RETURNING rowid";
 
@@ -124,29 +131,18 @@ impl EntityBase for ProteusPrekey {
         blob.write_all(&self.prekey)?;
         blob.close()?;
 
-        transaction.commit()?;
-
         Ok(())
     }
 
-    async fn delete(
-        conn: &mut Self::ConnectionType,
-        ids: &[crate::entities::StringEntityId],
+    async fn delete_fail_on_missing_id(
+        transaction: &TransactionWrapper<'_>,
+        id: StringEntityId<'_>,
     ) -> crate::CryptoKeystoreResult<()> {
-        let transaction = conn.transaction()?;
-        let len = ids.len();
-
-        let mut updated = 0;
-        for id in ids {
-            let id = ProteusPrekey::id_from_slice(id.as_slice());
-            updated += transaction.execute("DELETE FROM proteus_prekeys WHERE id = ?", [id])?;
-        }
-
-        if updated == len {
-            transaction.commit()?;
+        let id = ProteusPrekey::id_from_slice(id.as_slice());
+        let updated = transaction.execute("DELETE FROM proteus_prekeys WHERE id = ?", [id])?;
+        if updated > 0 {
             Ok(())
         } else {
-            transaction.rollback()?;
             Err(Self::to_missing_key_err_kind().into())
         }
     }

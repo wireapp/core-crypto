@@ -51,6 +51,7 @@ openmls_x509_credential = { workspace = true, optional = true }
 serde = { workspace = true, features = ["derive"], optional = true }
 log = { workspace = true, optional = true }
 proteus-traits = { workspace = true, optional = true }
+itertools.workspace = true
 
 [target.'cfg(not(target_family = "wasm"))'.dependencies]
 async-fs = "2.1"

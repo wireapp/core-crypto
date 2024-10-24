@@ -13,7 +13,7 @@ use openmls_basic_credential::SignatureKeyPair;
 use openmls_traits::types::SignatureScheme;
 use openmls_x509_credential::CertificateKeyPair;
 
-use mls_crypto_provider::MlsCryptoProvider;
+use mls_crypto_provider::TransactionalCryptoProvider;
 
 use crate::prelude::{CertificateBundle, Client, ClientId, CryptoResult, MlsError};
 
@@ -105,7 +105,7 @@ impl Client {
     pub(crate) fn new_basic_credential_bundle(
         id: &ClientId,
         sc: SignatureScheme,
-        backend: &MlsCryptoProvider,
+        backend: &TransactionalCryptoProvider,
     ) -> CryptoResult<CredentialBundle> {
         let (sk, pk) = backend.crypto().signature_key_gen(sc).map_err(MlsError::from)?;
 
@@ -144,6 +144,7 @@ impl Client {
 mod tests {
     use mls_crypto_provider::PkiKeypair;
     use std::collections::HashMap;
+    use std::sync::Arc;
     use wasm_bindgen_test::*;
 
     use crate::{
@@ -156,6 +157,7 @@ mod tests {
             x509::{CertificateParams, X509TestChain},
             *,
         },
+        CoreCrypto,
     };
 
     use super::*;
@@ -307,13 +309,13 @@ mod tests {
             let (bob_identifier, _) = x509_test_chain.issue_simple_certificate_bundle("bob", Some(expiration_time));
 
             // this should work since the certificate is not yet expired
-            let (mut alice_central, mut bob_central, id) =
+            let (alice_central, bob_central, id) =
                 try_talk(&case, Some(&x509_test_chain), alice_identifier, bob_identifier)
                     .await
                     .unwrap();
 
             assert_eq!(
-                alice_central.e2ei_conversation_state(&id).await.unwrap(),
+                alice_central.context.e2ei_conversation_state(&id).await.unwrap(),
                 E2eiConversationState::Verified
             );
 
@@ -323,9 +325,9 @@ mod tests {
                 async_std::task::sleep(expiration_time - elapsed + core::time::Duration::from_secs(2)).await;
             }
 
-            alice_central.try_talk_to(&id, &mut bob_central).await.unwrap();
+            alice_central.try_talk_to(&id, &bob_central).await.unwrap();
             assert_eq!(
-                alice_central.e2ei_conversation_state(&id).await.unwrap(),
+                alice_central.context.e2ei_conversation_state(&id).await.unwrap(),
                 E2eiConversationState::NotVerified
             );
         })
@@ -345,29 +347,29 @@ mod tests {
             let (bob_identifier, _) = x509_test_chain.issue_simple_certificate_bundle("bob", None);
 
             // this should work since the certificate is not yet expired
-            let (mut alice_central, mut bob_central, id) =
+            let (alice_central, bob_central, id) =
                 try_talk(&case, Some(&x509_test_chain), alice_identifier, bob_identifier)
                     .await
                     .unwrap();
 
             assert_eq!(
-                alice_central.e2ei_conversation_state(&id).await.unwrap(),
+                alice_central.context.e2ei_conversation_state(&id).await.unwrap(),
                 E2eiConversationState::Verified
             );
 
             assert_eq!(
-                bob_central.e2ei_conversation_state(&id).await.unwrap(),
+                bob_central.context.e2ei_conversation_state(&id).await.unwrap(),
                 E2eiConversationState::Verified
             );
 
-            alice_central.try_talk_to(&id, &mut bob_central).await.unwrap();
+            alice_central.try_talk_to(&id, &bob_central).await.unwrap();
             assert_eq!(
-                alice_central.e2ei_conversation_state(&id).await.unwrap(),
+                alice_central.context.e2ei_conversation_state(&id).await.unwrap(),
                 E2eiConversationState::Verified
             );
 
             assert_eq!(
-                bob_central.e2ei_conversation_state(&id).await.unwrap(),
+                bob_central.context.e2ei_conversation_state(&id).await.unwrap(),
                 E2eiConversationState::Verified
             );
 
@@ -377,7 +379,7 @@ mod tests {
 
             let ciphersuites = vec![case.ciphersuite()];
 
-            let mut charlie_central = MlsCentral::try_new(
+            let charlie_central = MlsCentral::try_new(
                 MlsCentralConfiguration::try_new(
                     charlie_path.0,
                     "charlie".into(),
@@ -390,7 +392,10 @@ mod tests {
             )
             .await
             .unwrap();
-            charlie_central
+            let cc = CoreCrypto::from(charlie_central);
+            let charlie_transaction = cc.new_transaction().await.unwrap();
+            let charlie_central = cc.mls;
+            charlie_transaction
                 .mls_init(
                     charlie_identifier,
                     ciphersuites.clone(),
@@ -399,24 +404,30 @@ mod tests {
                 .await
                 .unwrap();
 
-            let charlie_kp = charlie_central
+            let charlie_context = ClientContext {
+                context: charlie_transaction,
+                central: charlie_central,
+                x509_test_chain: Arc::new(Some(x509_test_chain)),
+            };
+
+            let charlie_kp = charlie_context
                 .rand_key_package_of_type(&case, MlsCredentialType::Basic)
                 .await;
 
             alice_central
-                .invite_all_members(&case, &id, [(&mut charlie_central, charlie_kp)])
+                .invite_all_members(&case, &id, [(&charlie_context, charlie_kp)])
                 .await
                 .unwrap();
 
             assert_eq!(
-                alice_central.e2ei_conversation_state(&id).await.unwrap(),
+                alice_central.context.e2ei_conversation_state(&id).await.unwrap(),
                 E2eiConversationState::NotVerified
             );
 
-            alice_central.try_talk_to(&id, &mut charlie_central).await.unwrap();
+            alice_central.try_talk_to(&id, &charlie_context).await.unwrap();
 
             assert_eq!(
-                alice_central.e2ei_conversation_state(&id).await.unwrap(),
+                alice_central.context.e2ei_conversation_state(&id).await.unwrap(),
                 E2eiConversationState::NotVerified
             );
         })
@@ -478,7 +489,7 @@ mod tests {
         x509_test_chain: Option<&X509TestChain>,
         creator_identifier: ClientIdentifier,
         guest_identifier: ClientIdentifier,
-    ) -> CryptoResult<(MlsCentral, MlsCentral, ConversationId)> {
+    ) -> CryptoResult<(ClientContext, ClientContext, ConversationId)> {
         let id = conversation_id();
         let ciphersuites = vec![case.ciphersuite()];
 
@@ -502,11 +513,21 @@ mod tests {
             Some(INITIAL_KEYING_MATERIAL_COUNT),
         )?;
 
-        let mut creator_central = MlsCentral::try_new(creator_cfg).await?;
+        let creator_central = MlsCentral::try_new(creator_cfg).await?;
+        let cc = CoreCrypto::from(creator_central);
+        let creator_transaction = cc.new_transaction().await?;
+        let creator_central = cc.mls;
+
         if let Some(x509_test_chain) = &x509_test_chain {
-            x509_test_chain.register_with_central(&creator_central).await;
+            x509_test_chain.register_with_central(&creator_transaction).await;
         }
-        creator_central
+        let creator_client_context = ClientContext {
+            context: creator_transaction.clone(),
+            central: creator_central,
+            x509_test_chain: Arc::new(x509_test_chain.cloned()),
+        };
+
+        creator_transaction
             .mls_init(
                 creator_identifier,
                 ciphersuites.clone(),
@@ -524,11 +545,14 @@ mod tests {
             Some(INITIAL_KEYING_MATERIAL_COUNT),
         )?;
 
-        let mut guest_central = MlsCentral::try_new(guest_cfg).await?;
+        let guest_central = MlsCentral::try_new(guest_cfg).await?;
+        let cc = CoreCrypto::from(guest_central);
+        let guest_transaction = cc.new_transaction().await?;
+        let guest_central = cc.mls;
         if let Some(x509_test_chain) = &x509_test_chain {
-            x509_test_chain.register_with_central(&guest_central).await;
+            x509_test_chain.register_with_central(&guest_transaction).await;
         }
-        guest_central
+        guest_transaction
             .mls_init(
                 guest_identifier,
                 ciphersuites.clone(),
@@ -536,16 +560,22 @@ mod tests {
             )
             .await?;
 
-        creator_central
+        creator_transaction
             .new_conversation(&id, creator_ct, case.cfg.clone())
             .await?;
 
-        let guest = guest_central.rand_key_package_of_type(case, guest_ct).await;
-        creator_central
-            .invite_all_members(case, &id, [(&mut guest_central, guest)])
+        let guest_client_context = ClientContext {
+            context: guest_transaction.clone(),
+            central: guest_central,
+            x509_test_chain: Arc::new(x509_test_chain.cloned()),
+        };
+
+        let guest = guest_client_context.rand_key_package_of_type(case, guest_ct).await;
+        creator_client_context
+            .invite_all_members(case, &id, [(&guest_client_context, guest)])
             .await?;
 
-        creator_central.try_talk_to(&id, &mut guest_central).await?;
-        Ok((creator_central, guest_central, id))
+        creator_client_context.try_talk_to(&id, &guest_client_context).await?;
+        Ok((creator_client_context, guest_client_context, id))
     }
 }

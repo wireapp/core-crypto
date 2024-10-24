@@ -20,11 +20,13 @@
 //! The goal is provide a easier and less verbose API to create, manage and interact with MLS
 //! groups.
 #![doc = include_str!("../../README.md")]
-#![deny(missing_docs)]
+#![cfg_attr(not(test), deny(missing_docs))]
 #![allow(clippy::single_component_path_imports)]
 
+use async_lock::Mutex;
 #[cfg(test)]
 pub use core_crypto_attributes::{dispotent, durable, idempotent};
+use std::sync::Arc;
 
 pub use self::error::*;
 
@@ -45,6 +47,7 @@ pub mod e2e_identity;
 /// Proteus Abstraction
 pub mod proteus;
 
+pub mod context;
 mod group_store;
 
 /// Common imports that should be useful for most uses of the crate
@@ -95,6 +98,8 @@ pub mod prelude {
     };
 }
 
+/// Client callbacks in order to Core Crypto to verify user authorization
+///
 /// This trait is used to provide callback mechanisms for the MlsCentral struct, for example for
 /// operations like adding or removing memebers that can be authorized through a caller provided
 /// authorization method.
@@ -142,11 +147,12 @@ pub trait CoreCryptoCallbacks: std::fmt::Debug + Send + Sync {
 
 #[derive(Debug)]
 /// Wrapper superstruct for both [mls::MlsCentral] and [proteus::ProteusCentral]
+///
 /// As [std::ops::Deref] is implemented, this struct is automatically dereferred to [mls::MlsCentral] apart from `proteus_*` calls
 pub struct CoreCrypto {
     mls: mls::MlsCentral,
     #[cfg(feature = "proteus")]
-    proteus: Option<proteus::ProteusCentral>,
+    proteus: Arc<Mutex<Option<proteus::ProteusCentral>>>,
     #[cfg(not(feature = "proteus"))]
     #[allow(dead_code)]
     proteus: (),

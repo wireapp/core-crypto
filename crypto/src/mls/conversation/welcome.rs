@@ -1,14 +1,17 @@
+use std::borrow::BorrowMut;
+
+use crate::context::CentralContext;
 use crate::{
     e2e_identity::init_certificates::NewCrlDistributionPoint,
     group_store::GroupStore,
     mls::credential::crl::{extract_crl_uris_from_group, get_new_crl_distribution_points},
     prelude::{
-        ConversationId, CryptoError, CryptoResult, MlsCentral, MlsConversation, MlsConversationConfiguration,
+        ConversationId, CryptoError, CryptoResult, MlsConversation, MlsConversationConfiguration,
         MlsCustomConfiguration, MlsError,
     },
 };
-use core_crypto_keystore::entities::PersistedMlsPendingGroup;
-use mls_crypto_provider::MlsCryptoProvider;
+use core_crypto_keystore::{connection::FetchFromDatabase, entities::PersistedMlsPendingGroup};
+use mls_crypto_provider::TransactionalCryptoProvider;
 use openmls::prelude::{MlsGroup, MlsMessageIn, MlsMessageInBody, Welcome};
 use openmls_traits::OpenMlsCryptoProvider;
 use tls_codec::Deserialize;
@@ -22,7 +25,7 @@ pub struct WelcomeBundle {
     pub crl_new_distribution_points: NewCrlDistributionPoint,
 }
 
-impl MlsCentral {
+impl CentralContext {
     /// Create a conversation from a TLS serialized MLS Welcome message. The `MlsConversationConfiguration` used in this function will be the default implementation.
     ///
     /// # Arguments
@@ -37,7 +40,7 @@ impl MlsCentral {
     #[cfg_attr(test, crate::dispotent)]
     #[cfg_attr(not(test), tracing::instrument(err, skip_all))]
     pub async fn process_raw_welcome_message(
-        &mut self,
+        &self,
         welcome: Vec<u8>,
         custom_cfg: MlsCustomConfiguration,
     ) -> CryptoResult<WelcomeBundle> {
@@ -62,7 +65,7 @@ impl MlsCentral {
     #[cfg_attr(test, crate::dispotent)]
     #[cfg_attr(not(test), tracing::instrument(err, skip_all))]
     pub async fn process_welcome_message(
-        &mut self,
+        &self,
         welcome: MlsMessageIn,
         custom_cfg: MlsCustomConfiguration,
     ) -> CryptoResult<WelcomeBundle> {
@@ -76,17 +79,18 @@ impl MlsCentral {
             custom: custom_cfg,
             ..Default::default()
         };
+        let mls_provider = self.mls_provider().await?;
+        let mut mls_groups = self.mls_groups().await?;
         let conversation =
-            MlsConversation::from_welcome_message(welcome, configuration, &mut self.mls_backend, &mut self.mls_groups)
+            MlsConversation::from_welcome_message(welcome, configuration, &mls_provider, mls_groups.borrow_mut())
                 .await?;
 
         // We wait for the group to be created then we iterate through all members
         let crl_new_distribution_points =
-            get_new_crl_distribution_points(&self.mls_backend, extract_crl_uris_from_group(&conversation.group)?)
-                .await?;
+            get_new_crl_distribution_points(&mls_provider, extract_crl_uris_from_group(&conversation.group)?).await?;
 
         let id = conversation.id.clone();
-        self.mls_groups.insert(id.clone(), conversation);
+        mls_groups.insert(id.clone(), conversation);
 
         Ok(WelcomeBundle {
             id,
@@ -110,7 +114,7 @@ impl MlsConversation {
     async fn from_welcome_message(
         welcome: Welcome,
         configuration: MlsConversationConfiguration,
-        backend: &mut MlsCryptoProvider,
+        backend: &TransactionalCryptoProvider,
         mls_groups: &mut GroupStore<MlsConversation>,
     ) -> CryptoResult<Self> {
         let mls_group_config = configuration.as_openmls_default_configuration()?;
@@ -124,7 +128,7 @@ impl MlsConversation {
         };
 
         let id = ConversationId::from(group.group_id().as_slice());
-        let existing_conversation = mls_groups.get_fetch(&id[..], backend.borrow_keystore_mut(), None).await;
+        let existing_conversation = mls_groups.get_fetch(&id[..], &backend.keystore(), None).await;
         let conversation_exists = existing_conversation.ok().flatten().is_some();
 
         let pending_group = backend.key_store().find::<PersistedMlsPendingGroup>(&id[..]).await;
@@ -151,84 +155,76 @@ mod tests {
     #[apply(all_cred_cipher)]
     #[wasm_bindgen_test]
     async fn joining_from_welcome_should_prune_local_key_material(case: TestCase) {
-        run_test_with_client_ids(
-            case.clone(),
-            ["alice", "bob"],
-            move |[mut alice_central, mut bob_central]| {
-                Box::pin(async move {
-                    let id = conversation_id();
-                    // has to be before the original key_package count because it creates one
-                    let bob = bob_central.mls_central.rand_key_package(&case).await;
-                    // Keep track of the whatever amount was initially generated
-                    let prev_count = bob_central.mls_central.count_entities().await;
+        run_test_with_client_ids(case.clone(), ["alice", "bob"], move |[alice_central, bob_central]| {
+            Box::pin(async move {
+                let id = conversation_id();
+                // has to be before the original key_package count because it creates one
+                let bob = bob_central.rand_key_package(&case).await;
+                // Keep track of the whatever amount was initially generated
+                let prev_count = bob_central.context.count_entities().await;
 
-                    // Create a conversation from alice, where she invites bob
-                    alice_central
-                        .mls_central
-                        .new_conversation(&id, case.credential_type, case.cfg.clone())
-                        .await
-                        .unwrap();
+                // Create a conversation from alice, where she invites bob
+                alice_central
+                    .context
+                    .new_conversation(&id, case.credential_type, case.cfg.clone())
+                    .await
+                    .unwrap();
 
-                    let MlsConversationCreationMessage { welcome, .. } = alice_central
-                        .mls_central
-                        .add_members_to_conversation(&id, vec![bob])
-                        .await
-                        .unwrap();
+                let MlsConversationCreationMessage { welcome, .. } = alice_central
+                    .context
+                    .add_members_to_conversation(&id, vec![bob])
+                    .await
+                    .unwrap();
 
-                    // Bob accepts the welcome message, and as such, it should prune the used keypackage from the store
-                    bob_central
-                        .mls_central
-                        .process_welcome_message(welcome.into(), case.custom_cfg())
-                        .await
-                        .unwrap();
+                // Bob accepts the welcome message, and as such, it should prune the used keypackage from the store
+                bob_central
+                    .context
+                    .process_welcome_message(welcome.into(), case.custom_cfg())
+                    .await
+                    .unwrap();
 
-                    // Ensure we're left with 1 less keypackage bundle in the store, because it was consumed with the OpenMLS Welcome message
-                    let next_count = bob_central.mls_central.count_entities().await;
-                    assert_eq!(next_count.key_package, prev_count.key_package - 1);
-                    assert_eq!(next_count.hpke_private_key, prev_count.hpke_private_key - 1);
-                    assert_eq!(next_count.encryption_keypair, prev_count.encryption_keypair - 1);
-                })
-            },
-        )
+                // Ensure we're left with 1 less keypackage bundle in the store, because it was consumed with the OpenMLS Welcome message
+                let next_count = bob_central.context.count_entities().await;
+                assert_eq!(next_count.key_package, prev_count.key_package - 1);
+                assert_eq!(next_count.hpke_private_key, prev_count.hpke_private_key - 1);
+                assert_eq!(next_count.encryption_keypair, prev_count.encryption_keypair - 1);
+            })
+        })
         .await;
     }
 
     #[apply(all_cred_cipher)]
     #[wasm_bindgen_test]
     async fn process_welcome_should_fail_when_already_exists(case: TestCase) {
-        run_test_with_client_ids(
-            case.clone(),
-            ["alice", "bob"],
-            move |[mut alice_central, mut bob_central]| {
-                Box::pin(async move {
-                    let id = conversation_id();
-                    alice_central
-                        .mls_central
-                        .new_conversation(&id, case.credential_type, case.cfg.clone())
-                        .await
-                        .unwrap();
-                    let bob = bob_central.mls_central.rand_key_package(&case).await;
-                    let welcome = alice_central
-                        .mls_central
-                        .add_members_to_conversation(&id, vec![bob])
-                        .await
-                        .unwrap()
-                        .welcome;
+        run_test_with_client_ids(case.clone(), ["alice", "bob"], move |[alice_central, bob_central]| {
+            Box::pin(async move {
+                let id = conversation_id();
+                alice_central
+                    .context
+                    .new_conversation(&id, case.credential_type, case.cfg.clone())
+                    .await
+                    .unwrap();
+                let bob = bob_central.rand_key_package(&case).await;
+                let welcome = alice_central
+                    .context
+                    .add_members_to_conversation(&id, vec![bob])
+                    .await
+                    .unwrap()
+                    .welcome;
 
-                    // Meanwhile Bob creates a conversation with the exact same id as the one he's trying to join
-                    bob_central
-                        .mls_central
-                        .new_conversation(&id, case.credential_type, case.cfg.clone())
-                        .await
-                        .unwrap();
-                    let join_welcome = bob_central
-                        .mls_central
-                        .process_welcome_message(welcome.into(), case.custom_cfg())
-                        .await;
-                    assert!(matches!(join_welcome.unwrap_err(), CryptoError::ConversationAlreadyExists(i) if i == id));
-                })
-            },
-        )
+                // Meanwhile Bob creates a conversation with the exact same id as the one he's trying to join
+                bob_central
+                    .context
+                    .new_conversation(&id, case.credential_type, case.cfg.clone())
+                    .await
+                    .unwrap();
+                let join_welcome = bob_central
+                    .context
+                    .process_welcome_message(welcome.into(), case.custom_cfg())
+                    .await;
+                assert!(matches!(join_welcome.unwrap_err(), CryptoError::ConversationAlreadyExists(i) if i == id));
+            })
+        })
         .await;
     }
 }

@@ -1,11 +1,10 @@
 use crate::{
-    e2e_identity::id::QualifiedE2eiClientId,
-    mls::{client::identifier::ClientIdentifier, MlsCentral},
-    prelude::E2eIdentityError,
+    e2e_identity::id::QualifiedE2eiClientId, mls::client::identifier::ClientIdentifier, prelude::E2eIdentityError,
     CryptoError,
 };
 use std::{fmt::Display, time::Duration};
 
+use crate::context::CentralContext;
 use mls_crypto_provider::{CertProfile, CertificateGenerationArgs, MlsCryptoProvider, PkiKeypair, RustCrypto};
 use openmls_traits::{crypto::OpenMlsCrypto, random::OpenMlsRand, types::SignatureScheme};
 use x509_cert::der::EncodePem;
@@ -326,10 +325,9 @@ impl X509TestChain {
         other_chain.actors.extend(self_actors);
     }
 
-    pub async fn register_with_central(&self, central: &MlsCentral) {
+    pub async fn register_with_central(&self, context: &CentralContext) {
         use x509_cert::der::{Encode as _, EncodePem as _};
-
-        match central
+        match context
             .e2ei_register_acme_ca(
                 self.trust_anchor
                     .certificate
@@ -343,7 +341,7 @@ impl X509TestChain {
         }
 
         for intermediate in &self.intermediates {
-            central
+            context
                 .e2ei_register_intermediate_ca_pem(
                     intermediate
                         .certificate
@@ -355,7 +353,7 @@ impl X509TestChain {
         }
 
         for (crl_dp, crl) in &self.crls {
-            central
+            context
                 .e2ei_register_crl(crl_dp.clone(), crl.to_der().unwrap())
                 .await
                 .unwrap();

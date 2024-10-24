@@ -1,31 +1,33 @@
-use crate::prelude::{ConversationId, CryptoResult, MlsCentral, MlsConversation, MlsError};
+use crate::context::CentralContext;
+use crate::prelude::{ConversationId, CryptoResult, MlsConversation, MlsError};
 use core_crypto_keystore::CryptoKeystoreMls;
-use mls_crypto_provider::MlsCryptoProvider;
+use mls_crypto_provider::TransactionalCryptoProvider;
 use openmls_traits::OpenMlsCryptoProvider;
 
-impl MlsCentral {
+impl CentralContext {
     /// Destroys a group locally
     ///
     /// # Errors
     /// KeyStore errors, such as IO
     #[cfg_attr(test, crate::dispotent)]
     #[cfg_attr(not(test), tracing::instrument(err, skip(self), fields(id = base64::Engine::encode(&base64::prelude::BASE64_STANDARD, id))))]
-    pub async fn wipe_conversation(&mut self, id: &ConversationId) -> CryptoResult<()> {
+    pub async fn wipe_conversation(&self, id: &ConversationId) -> CryptoResult<()> {
+        let provider = self.mls_provider().await?;
         self.get_conversation(id)
             .await?
             .write()
             .await
-            .wipe_associated_entities(&self.mls_backend)
+            .wipe_associated_entities(&provider)
             .await?;
-        self.mls_backend.key_store().mls_group_delete(id).await?;
-        let _ = self.mls_groups.remove(id);
+        provider.key_store().mls_group_delete(id).await?;
+        let _ = self.mls_groups().await?.remove(id);
         Ok(())
     }
 }
 
 impl MlsConversation {
     #[cfg_attr(not(test), tracing::instrument(err, skip_all))]
-    async fn wipe_associated_entities(&mut self, backend: &MlsCryptoProvider) -> CryptoResult<()> {
+    async fn wipe_associated_entities(&mut self, backend: &TransactionalCryptoProvider) -> CryptoResult<()> {
         // the own client may or may not have generated an epoch keypair in the previous epoch
         // Since it is a terminal operation, ignoring the error is fine here.
         let _ = self.group.delete_previous_epoch_keypairs(backend).await;
@@ -54,23 +56,18 @@ mod tests {
     #[apply(all_cred_cipher)]
     #[wasm_bindgen_test]
     async fn can_wipe_group(case: TestCase) {
-        run_test_with_central(case.clone(), move |[mut central]| {
+        run_test_with_central(case.clone(), move |[central]| {
             Box::pin(async move {
                 let id = conversation_id();
                 central
-                    .mls_central
+                    .context
                     .new_conversation(&id, case.credential_type, case.cfg.clone())
                     .await
                     .unwrap();
-                assert!(central
-                    .mls_central
-                    .get_conversation_unchecked(&id)
-                    .await
-                    .group
-                    .is_active());
+                assert!(central.get_conversation_unchecked(&id).await.group.is_active());
 
-                central.mls_central.wipe_conversation(&id).await.unwrap();
-                assert!(!central.mls_central.conversation_exists(&id).await);
+                central.context.wipe_conversation(&id).await.unwrap();
+                assert!(!central.context.conversation_exists(&id).await.unwrap());
             })
         })
         .await;
@@ -79,10 +76,10 @@ mod tests {
     #[apply(all_cred_cipher)]
     #[wasm_bindgen_test]
     async fn cannot_wipe_group_non_existent(case: TestCase) {
-        run_test_with_central(case.clone(), move |[mut central]| {
+        run_test_with_central(case.clone(), move |[central]| {
             Box::pin(async move {
                 let id = conversation_id();
-                let err = central.mls_central.wipe_conversation(&id).await.unwrap_err();
+                let err = central.context.wipe_conversation(&id).await.unwrap_err();
                 assert!(matches!(err, CryptoError::ConversationNotFound(conv_id) if conv_id == id));
             })
         })
@@ -93,25 +90,25 @@ mod tests {
     #[apply(all_cred_cipher)]
     #[wasm_bindgen_test]
     async fn should_cascade_deletion(case: TestCase) {
-        run_test_with_client_ids(case.clone(), ["alice"], move |[mut cc]| {
+        run_test_with_client_ids(case.clone(), ["alice"], move |[cc]| {
             Box::pin(async move {
                 let id = conversation_id();
-                cc.mls_central
+                cc.context
                     .new_conversation(&id, case.credential_type, case.cfg.clone())
                     .await
                     .unwrap();
-                let initial_count = cc.mls_central.count_entities().await;
+                let initial_count = cc.context.count_entities().await;
 
-                cc.mls_central.new_update_proposal(&id).await.unwrap();
-                let post_proposal_count = cc.mls_central.count_entities().await;
+                cc.context.new_update_proposal(&id).await.unwrap();
+                let post_proposal_count = cc.context.count_entities().await;
                 assert_eq!(
                     post_proposal_count.encryption_keypair,
                     initial_count.encryption_keypair + 1
                 );
 
-                cc.mls_central.wipe_conversation(&id).await.unwrap();
+                cc.context.wipe_conversation(&id).await.unwrap();
 
-                let final_count = cc.mls_central.count_entities().await;
+                let final_count = cc.context.count_entities().await;
                 assert_eq!(final_count.group, 0);
                 assert_eq!(final_count.encryption_keypair, final_count.key_package);
                 assert_eq!(final_count.epoch_encryption_keypair, 0);

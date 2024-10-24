@@ -22,6 +22,7 @@ pub use error::*;
 
 pub mod connection;
 pub mod entities;
+pub mod transaction;
 
 cfg_if::cfg_if! {
     if #[cfg(feature = "mls-keystore")] {
@@ -62,8 +63,8 @@ pub mod dummy_entity {
             MissingKeyErrorKind::MlsGroup
         }
 
-        async fn save(&self, _conn: &mut Self::ConnectionType) -> CryptoKeystoreResult<()> {
-            Ok(())
+        fn to_transaction_entity(self) -> crate::transaction::Entity {
+            unimplemented!("Not implemented")
         }
         async fn find_all(
             _conn: &mut Self::ConnectionType,
@@ -90,9 +91,6 @@ pub mod dummy_entity {
         }
         async fn count(_conn: &mut Self::ConnectionType) -> CryptoKeystoreResult<usize> {
             Ok(0)
-        }
-        async fn delete(_conn: &mut Self::ConnectionType, _id: &[StringEntityId]) -> CryptoKeystoreResult<()> {
-            Ok(())
         }
     }
 

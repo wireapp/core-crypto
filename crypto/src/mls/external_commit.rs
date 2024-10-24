@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see http://www.gnu.org/licenses/.
 
-use mls_crypto_provider::MlsCryptoProvider;
+use mls_crypto_provider::TransactionalCryptoProvider;
 use openmls::prelude::{
     group_info::VerifiableGroupInfo, CredentialType, MlsGroup, MlsMessageOut, Proposal, Sender, StagedCommit,
 };
@@ -23,6 +23,7 @@ use tls_codec::Serialize;
 use tracing::Instrument;
 
 use core_crypto_keystore::{
+    connection::FetchFromDatabase,
     entities::{MlsPendingMessage, PersistedMlsPendingGroup},
     CryptoKeystoreMls,
 };
@@ -33,10 +34,12 @@ use crate::{
     mls::credential::crl::{extract_crl_uris_from_group, get_new_crl_distribution_points},
     prelude::{
         decrypt::MlsBufferedConversationDecryptMessage, id::ClientId, ConversationId, CoreCryptoCallbacks, CryptoError,
-        CryptoResult, E2eiConversationState, MlsCentral, MlsCiphersuite, MlsConversation, MlsConversationConfiguration,
+        CryptoResult, E2eiConversationState, MlsCiphersuite, MlsConversation, MlsConversationConfiguration,
         MlsCredentialType, MlsCustomConfiguration, MlsError, MlsGroupInfoBundle,
     },
 };
+
+use crate::context::CentralContext;
 
 /// Returned when a commit is created
 #[derive(Debug)]
@@ -62,7 +65,7 @@ impl MlsConversationInitBundle {
     }
 }
 
-impl MlsCentral {
+impl CentralContext {
     /// Issues an external commit and stores the group in a temporary table. This method is
     /// intended for example when a new client wants to join the user's existing groups.
     /// On success this function will return the group id and a message to be fanned out to other
@@ -92,16 +95,18 @@ impl MlsCentral {
     /// Errors resulting from OpenMls, the KeyStore calls and serialization
     #[cfg_attr(not(test), tracing::instrument(err, skip(self, group_info, custom_cfg)))]
     pub async fn join_by_external_commit(
-        &mut self,
+        &self,
         group_info: VerifiableGroupInfo,
         custom_cfg: MlsCustomConfiguration,
         credential_type: MlsCredentialType,
     ) -> CryptoResult<MlsConversationInitBundle> {
-        let mls_client = self.mls_client.as_mut().ok_or(CryptoError::MlsNotInitialized)?;
+        let mut client_guard = self.mls_client_mut().await?;
+        let client = client_guard.as_mut().ok_or(CryptoError::MlsNotInitialized)?;
 
         let cs: MlsCiphersuite = group_info.ciphersuite().into();
-        let cb = mls_client
-            .get_most_recent_or_create_credential_bundle(&self.mls_backend, cs.signature_algorithm(), credential_type)
+        let mls_provider = self.mls_provider().await?;
+        let cb = client
+            .get_most_recent_or_create_credential_bundle(&mls_provider, cs.signature_algorithm(), credential_type)
             .await?;
 
         let serialized_cfg = serde_json::to_vec(&custom_cfg).map_err(MlsError::MlsKeystoreSerializationError)?;
@@ -113,7 +118,7 @@ impl MlsCentral {
         };
 
         let (group, commit, group_info) = MlsGroup::join_by_external_commit(
-            &self.mls_backend,
+            &mls_provider,
             &cb.signature_key,
             None,
             group_info,
@@ -130,9 +135,9 @@ impl MlsCentral {
         let group_info = MlsGroupInfoBundle::try_new_full_plaintext(group_info)?;
 
         let crl_new_distribution_points =
-            get_new_crl_distribution_points(&self.mls_backend, extract_crl_uris_from_group(&group)?).await?;
+            get_new_crl_distribution_points(&mls_provider, extract_crl_uris_from_group(&group)?).await?;
 
-        self.mls_backend
+        mls_provider
             .key_store()
             .mls_pending_groups_save(
                 group.group_id().as_slice(),
@@ -161,17 +166,18 @@ impl MlsCentral {
     #[cfg_attr(test, crate::dispotent)]
     #[cfg_attr(not(test), tracing::instrument(err, skip_all))]
     pub async fn merge_pending_group_from_external_commit(
-        &mut self,
+        &self,
         id: &ConversationId,
     ) -> CryptoResult<Option<Vec<MlsBufferedConversationDecryptMessage>>> {
         // Retrieve the pending MLS group from the keystore
-        let (group, cfg) = self.mls_backend.key_store().mls_pending_groups_load(id).await?;
+        let mls_provider = self.mls_provider().await?;
+        let (group, cfg) = mls_provider.key_store().mls_pending_groups_load(id).await?;
 
         let mut mls_group = core_crypto_keystore::deser::<MlsGroup>(&group)?;
 
         // Merge it aka bring the MLS group to life and make it usable
         mls_group
-            .merge_pending_commit(&self.mls_backend)
+            .merge_pending_commit(&mls_provider)
             .await
             .map_err(MlsError::from)?;
 
@@ -183,21 +189,21 @@ impl MlsCentral {
             ..Default::default()
         };
 
-        let is_rejoin = self.mls_backend.key_store().mls_group_exists(id.as_slice()).await;
+        let is_rejoin = mls_provider.key_store().mls_group_exists(id.as_slice()).await;
 
         // Persist the now usable MLS group in the keystore
         // TODO: find a way to make the insertion of the MlsGroup and deletion of the pending group transactional. Tracking issue: WPB-9595
-        let mut conversation = MlsConversation::from_mls_group(mls_group, configuration, &self.mls_backend).await?;
+        let mut conversation = MlsConversation::from_mls_group(mls_group, configuration, &mls_provider).await?;
 
         let pending_messages = self.restore_pending_messages(&mut conversation, is_rejoin).await?;
 
-        self.mls_groups.insert(id.clone(), conversation);
+        self.mls_groups().await?.insert(id.clone(), conversation);
 
         // cleanup the pending group we no longer need
-        self.mls_backend.key_store().mls_pending_groups_delete(id).await?;
+        mls_provider.key_store().mls_pending_groups_delete(id).await?;
 
         if pending_messages.is_some() {
-            self.mls_backend.key_store().remove::<MlsPendingMessage, _>(id).await?;
+            mls_provider.key_store().remove::<MlsPendingMessage, _>(id).await?;
         }
 
         Ok(pending_messages)
@@ -213,18 +219,19 @@ impl MlsCentral {
     /// # Errors
     /// Errors resulting from the KeyStore calls
     #[cfg_attr(test, crate::dispotent)]
-    pub async fn clear_pending_group_from_external_commit(&mut self, id: &ConversationId) -> CryptoResult<()> {
-        Ok(self.mls_backend.key_store().mls_pending_groups_delete(id).await?)
+    pub async fn clear_pending_group_from_external_commit(&self, id: &ConversationId) -> CryptoResult<()> {
+        Ok(self.keystore().await?.mls_pending_groups_delete(id).await?)
     }
 
-    pub(crate) async fn pending_group_exists(&self, id: &ConversationId) -> bool {
-        self.mls_backend
-            .borrow_keystore()
+    pub(crate) async fn pending_group_exists(&self, id: &ConversationId) -> CryptoResult<bool> {
+        Ok(self
+            .keystore()
+            .await?
             .find::<PersistedMlsPendingGroup>(id.as_slice())
             .await
             .ok()
             .flatten()
-            .is_some()
+            .is_some())
     }
 }
 
@@ -235,7 +242,7 @@ impl MlsConversation {
         commit: &StagedCommit,
         sender: ClientId,
         parent_conversation: Option<&GroupStoreValue<MlsConversation>>,
-        backend: &MlsCryptoProvider,
+        backend: &TransactionalCryptoProvider,
         callbacks: Option<&dyn CoreCryptoCallbacks>,
     ) -> CryptoResult<()> {
         // i.e. has this commit been created by [MlsCentral::join_by_external_commit] ?
@@ -312,6 +319,7 @@ impl MlsConversation {
 #[cfg(test)]
 mod tests {
     use openmls::prelude::*;
+    use std::sync::Arc;
     use wasm_bindgen_test::*;
 
     use core_crypto_keystore::{CryptoKeystoreError, CryptoKeystoreMls, MissingKeyErrorKind};
@@ -327,17 +335,17 @@ mod tests {
         run_test_with_client_ids(
             case.clone(),
             ["alice", "bob"],
-            move |[mut alice_central, mut bob_central]| {
+            move |[alice_central, mut bob_central]| {
                 Box::pin(async move {
                     let id = conversation_id();
                     alice_central
-                        .mls_central
+                        .context
                         .new_conversation(&id, case.credential_type, case.cfg.clone())
                         .await
                         .unwrap();
 
                     // export Alice group info
-                    let group_info = alice_central.mls_central.get_group_info(&id).await;
+                    let group_info = alice_central.get_group_info(&id).await;
 
                     // Bob tries to join Alice's group
                     let MlsConversationInitBundle {
@@ -345,69 +353,42 @@ mod tests {
                         commit: external_commit,
                         ..
                     } = bob_central
-                        .mls_central
+                        .context
                         .join_by_external_commit(group_info, case.custom_cfg(), case.credential_type)
                         .await
                         .unwrap();
                     assert_eq!(group_id.as_slice(), &id);
 
                     // Alice acks the request and adds the new member
-                    assert_eq!(
-                        alice_central
-                            .mls_central
-                            .get_conversation_unchecked(&id)
-                            .await
-                            .members()
-                            .len(),
-                        1
-                    );
+                    assert_eq!(alice_central.get_conversation_unchecked(&id).await.members().len(), 1);
                     let decrypted = alice_central
-                        .mls_central
+                        .context
                         .decrypt_message(&id, &external_commit.to_bytes().unwrap())
                         .await
                         .unwrap();
-                    assert_eq!(
-                        alice_central
-                            .mls_central
-                            .get_conversation_unchecked(&id)
-                            .await
-                            .members()
-                            .len(),
-                        2
-                    );
+                    assert_eq!(alice_central.get_conversation_unchecked(&id).await.members().len(), 2);
 
                     // verify Bob's (sender) identity
-                    bob_central.mls_central.verify_sender_identity(&case, &decrypted);
+                    bob_central.verify_sender_identity(&case, &decrypted).await;
 
                     // Let's say backend accepted our external commit.
                     // So Bob can merge the commit and update the local state
-                    assert!(bob_central.mls_central.get_conversation(&id).await.is_err());
+                    assert!(bob_central.context.get_conversation(&id).await.is_err());
                     bob_central
-                        .mls_central
+                        .context
                         .merge_pending_group_from_external_commit(&id)
                         .await
                         .unwrap();
-                    assert!(bob_central.mls_central.get_conversation(&id).await.is_ok());
-                    assert_eq!(
-                        bob_central
-                            .mls_central
-                            .get_conversation_unchecked(&id)
-                            .await
-                            .members()
-                            .len(),
-                        2
-                    );
-                    assert!(alice_central
-                        .mls_central
-                        .try_talk_to(&id, &mut bob_central.mls_central)
-                        .await
-                        .is_ok());
+                    assert!(bob_central.context.get_conversation(&id).await.is_ok());
+                    assert_eq!(bob_central.get_conversation_unchecked(&id).await.members().len(), 2);
+                    assert!(alice_central.try_talk_to(&id, &bob_central).await.is_ok());
 
                     // Pending group removed from keystore
                     let error = alice_central
-                        .mls_central
-                        .mls_backend
-                        .key_store()
+                        .context
+                        .keystore()
+                        .await
+                        .unwrap()
                         .mls_pending_groups_load(&id)
                         .await;
                     assert!(matches!(
@@ -416,12 +397,8 @@ mod tests {
                     ));
 
                     // Ensure it's durable i.e. MLS group has been persisted
-                    bob_central.mls_central.drop_and_restore(&group_id).await;
-                    assert!(bob_central
-                        .mls_central
-                        .try_talk_to(&id, &mut alice_central.mls_central)
-                        .await
-                        .is_ok());
+                    bob_central.context.drop_and_restore(&group_id).await;
+                    assert!(bob_central.try_talk_to(&id, &alice_central).await.is_ok());
                 })
             },
         )
@@ -431,182 +408,138 @@ mod tests {
     #[apply(all_cred_cipher)]
     #[wasm_bindgen_test]
     async fn join_by_external_commit_should_be_retriable(case: TestCase) {
-        run_test_with_client_ids(
-            case.clone(),
-            ["alice", "bob"],
-            move |[mut alice_central, mut bob_central]| {
-                Box::pin(async move {
-                    let id = conversation_id();
-                    alice_central
-                        .mls_central
-                        .new_conversation(&id, case.credential_type, case.cfg.clone())
-                        .await
-                        .unwrap();
+        run_test_with_client_ids(case.clone(), ["alice", "bob"], move |[alice_central, bob_central]| {
+            Box::pin(async move {
+                let id = conversation_id();
+                alice_central
+                    .context
+                    .new_conversation(&id, case.credential_type, case.cfg.clone())
+                    .await
+                    .unwrap();
 
-                    // export Alice group info
-                    let group_info = alice_central.mls_central.get_group_info(&id).await;
+                // export Alice group info
+                let group_info = alice_central.get_group_info(&id).await;
 
-                    // Bob tries to join Alice's group
-                    bob_central
-                        .mls_central
-                        .join_by_external_commit(group_info.clone(), case.custom_cfg(), case.credential_type)
-                        .await
-                        .unwrap();
-                    // BUT for some reason the Delivery Service will reject this external commit
-                    // e.g. another commit arrived meanwhile and the [GroupInfo] is no longer valid
+                // Bob tries to join Alice's group
+                bob_central
+                    .context
+                    .join_by_external_commit(group_info.clone(), case.custom_cfg(), case.credential_type)
+                    .await
+                    .unwrap();
+                // BUT for some reason the Delivery Service will reject this external commit
+                // e.g. another commit arrived meanwhile and the [GroupInfo] is no longer valid
 
-                    // Retrying
-                    let MlsConversationInitBundle {
-                        conversation_id,
-                        commit: external_commit,
-                        ..
-                    } = bob_central
-                        .mls_central
-                        .join_by_external_commit(group_info, case.custom_cfg(), case.credential_type)
-                        .await
-                        .unwrap();
-                    assert_eq!(conversation_id.as_slice(), &id);
+                // Retrying
+                let MlsConversationInitBundle {
+                    conversation_id,
+                    commit: external_commit,
+                    ..
+                } = bob_central
+                    .context
+                    .join_by_external_commit(group_info, case.custom_cfg(), case.credential_type)
+                    .await
+                    .unwrap();
+                assert_eq!(conversation_id.as_slice(), &id);
 
-                    // Alice decrypts the external commit and adds Bob
-                    assert_eq!(
-                        alice_central
-                            .mls_central
-                            .get_conversation_unchecked(&id)
-                            .await
-                            .members()
-                            .len(),
-                        1
-                    );
-                    alice_central
-                        .mls_central
-                        .decrypt_message(&id, &external_commit.to_bytes().unwrap())
-                        .await
-                        .unwrap();
-                    assert_eq!(
-                        alice_central
-                            .mls_central
-                            .get_conversation_unchecked(&id)
-                            .await
-                            .members()
-                            .len(),
-                        2
-                    );
+                // Alice decrypts the external commit and adds Bob
+                assert_eq!(alice_central.get_conversation_unchecked(&id).await.members().len(), 1);
+                alice_central
+                    .context
+                    .decrypt_message(&id, &external_commit.to_bytes().unwrap())
+                    .await
+                    .unwrap();
+                assert_eq!(alice_central.get_conversation_unchecked(&id).await.members().len(), 2);
 
-                    // And Bob can merge its external commit
-                    bob_central
-                        .mls_central
-                        .merge_pending_group_from_external_commit(&id)
-                        .await
-                        .unwrap();
-                    assert!(bob_central.mls_central.get_conversation(&id).await.is_ok());
-                    assert_eq!(
-                        bob_central
-                            .mls_central
-                            .get_conversation_unchecked(&id)
-                            .await
-                            .members()
-                            .len(),
-                        2
-                    );
-                    assert!(alice_central
-                        .mls_central
-                        .try_talk_to(&id, &mut bob_central.mls_central)
-                        .await
-                        .is_ok());
-                })
-            },
-        )
+                // And Bob can merge its external commit
+                bob_central
+                    .context
+                    .merge_pending_group_from_external_commit(&id)
+                    .await
+                    .unwrap();
+                assert!(bob_central.context.get_conversation(&id).await.is_ok());
+                assert_eq!(bob_central.get_conversation_unchecked(&id).await.members().len(), 2);
+                assert!(alice_central.try_talk_to(&id, &bob_central).await.is_ok());
+            })
+        })
         .await
     }
 
     #[apply(all_cred_cipher)]
     #[wasm_bindgen_test]
     async fn should_fail_when_bad_epoch(case: TestCase) {
-        run_test_with_client_ids(
-            case.clone(),
-            ["alice", "bob"],
-            move |[mut alice_central, mut bob_central]| {
-                Box::pin(async move {
-                    let id = conversation_id();
-                    alice_central
-                        .mls_central
-                        .new_conversation(&id, case.credential_type, case.cfg.clone())
-                        .await
-                        .unwrap();
+        run_test_with_client_ids(case.clone(), ["alice", "bob"], move |[alice_central, bob_central]| {
+            Box::pin(async move {
+                let id = conversation_id();
+                alice_central
+                    .context
+                    .new_conversation(&id, case.credential_type, case.cfg.clone())
+                    .await
+                    .unwrap();
 
-                    let group_info = alice_central.mls_central.get_group_info(&id).await;
-                    // try to make an external join into Alice's group
-                    let MlsConversationInitBundle {
-                        commit: external_commit,
-                        ..
-                    } = bob_central
-                        .mls_central
-                        .join_by_external_commit(group_info, case.custom_cfg(), case.credential_type)
-                        .await
-                        .unwrap();
+                let group_info = alice_central.get_group_info(&id).await;
+                // try to make an external join into Alice's group
+                let MlsConversationInitBundle {
+                    commit: external_commit,
+                    ..
+                } = bob_central
+                    .context
+                    .join_by_external_commit(group_info, case.custom_cfg(), case.credential_type)
+                    .await
+                    .unwrap();
 
-                    // Alice creates a new commit before receiving the external join
-                    alice_central.mls_central.update_keying_material(&id).await.unwrap();
-                    alice_central.mls_central.commit_accepted(&id).await.unwrap();
+                // Alice creates a new commit before receiving the external join
+                alice_central.context.update_keying_material(&id).await.unwrap();
+                alice_central.context.commit_accepted(&id).await.unwrap();
 
-                    // receiving the external join with outdated epoch should fail because of
-                    // the wrong epoch
-                    let result = alice_central
-                        .mls_central
-                        .decrypt_message(&id, &external_commit.to_bytes().unwrap())
-                        .await;
-                    assert!(matches!(result.unwrap_err(), crate::CryptoError::StaleCommit));
-                })
-            },
-        )
+                // receiving the external join with outdated epoch should fail because of
+                // the wrong epoch
+                let result = alice_central
+                    .context
+                    .decrypt_message(&id, &external_commit.to_bytes().unwrap())
+                    .await;
+                assert!(matches!(result.unwrap_err(), crate::CryptoError::StaleCommit));
+            })
+        })
         .await
     }
 
     #[apply(all_cred_cipher)]
     #[wasm_bindgen_test]
     async fn existing_clients_can_join(case: TestCase) {
-        run_test_with_client_ids(
-            case.clone(),
-            ["alice", "bob"],
-            move |[mut alice_central, mut bob_central]| {
-                Box::pin(async move {
-                    let id = conversation_id();
-                    alice_central
-                        .mls_central
-                        .new_conversation(&id, case.credential_type, case.cfg.clone())
-                        .await
-                        .unwrap();
-                    alice_central
-                        .mls_central
-                        .invite_all(&case, &id, [&mut bob_central.mls_central])
-                        .await
-                        .unwrap();
-                    let group_info = alice_central.mls_central.get_group_info(&id).await;
-                    // Alice can rejoin by external commit
-                    alice_central
-                        .mls_central
-                        .join_by_external_commit(group_info.clone(), case.custom_cfg(), case.credential_type)
-                        .await
-                        .unwrap();
-                    alice_central
-                        .mls_central
-                        .merge_pending_group_from_external_commit(&id)
-                        .await
-                        .unwrap();
-                })
-            },
-        )
+        run_test_with_client_ids(case.clone(), ["alice", "bob"], move |[alice_central, bob_central]| {
+            Box::pin(async move {
+                let id = conversation_id();
+                alice_central
+                    .context
+                    .new_conversation(&id, case.credential_type, case.cfg.clone())
+                    .await
+                    .unwrap();
+                alice_central.invite_all(&case, &id, [&bob_central]).await.unwrap();
+                let group_info = alice_central.get_group_info(&id).await;
+                // Alice can rejoin by external commit
+                alice_central
+                    .context
+                    .join_by_external_commit(group_info.clone(), case.custom_cfg(), case.credential_type)
+                    .await
+                    .unwrap();
+                alice_central
+                    .context
+                    .merge_pending_group_from_external_commit(&id)
+                    .await
+                    .unwrap();
+            })
+        })
         .await
     }
 
     #[apply(all_cred_cipher)]
     #[wasm_bindgen_test]
     async fn should_fail_when_no_pending_external_commit(case: TestCase) {
-        run_test_with_central(case.clone(), move |[mut central]| {
+        run_test_with_central(case.clone(), move |[central]| {
             Box::pin(async move {
                 let id = conversation_id();
                 // try to merge an inexisting pending group
-                let merge_unknown = central.mls_central.merge_pending_group_from_external_commit(&id).await;
+                let merge_unknown = central.context.merge_pending_group_from_external_commit(&id).await;
 
                 assert!(matches!(
                     merge_unknown.unwrap_err(),
@@ -625,17 +558,17 @@ mod tests {
         run_test_with_client_ids(
             case.clone(),
             ["alice", "bob", "charlie"],
-            move |[mut alice_central, mut bob_central, mut charlie_central]| {
+            move |[alice_central, bob_central, charlie_central]| {
                 Box::pin(async move {
                     let id = conversation_id();
                     alice_central
-                        .mls_central
+                        .context
                         .new_conversation(&id, case.credential_type, case.cfg.clone())
                         .await
                         .unwrap();
 
                     // export Alice group info
-                    let group_info = alice_central.mls_central.get_group_info(&id).await;
+                    let group_info = alice_central.get_group_info(&id).await;
 
                     // Bob tries to join Alice's group
                     let MlsConversationInitBundle {
@@ -643,48 +576,28 @@ mod tests {
                         group_info,
                         ..
                     } = bob_central
-                        .mls_central
+                        .context
                         .join_by_external_commit(group_info, case.custom_cfg(), case.credential_type)
                         .await
                         .unwrap();
 
                     // Alice decrypts the commit, Bob's in !
                     alice_central
-                        .mls_central
+                        .context
                         .decrypt_message(&id, &bob_external_commit.to_bytes().unwrap())
                         .await
                         .unwrap();
-                    assert_eq!(
-                        alice_central
-                            .mls_central
-                            .get_conversation_unchecked(&id)
-                            .await
-                            .members()
-                            .len(),
-                        2
-                    );
+                    assert_eq!(alice_central.get_conversation_unchecked(&id).await.members().len(), 2);
 
                     // Bob merges the commit, he's also in !
                     bob_central
-                        .mls_central
+                        .context
                         .merge_pending_group_from_external_commit(&id)
                         .await
                         .unwrap();
-                    assert!(bob_central.mls_central.get_conversation(&id).await.is_ok());
-                    assert_eq!(
-                        bob_central
-                            .mls_central
-                            .get_conversation_unchecked(&id)
-                            .await
-                            .members()
-                            .len(),
-                        2
-                    );
-                    assert!(alice_central
-                        .mls_central
-                        .try_talk_to(&id, &mut bob_central.mls_central)
-                        .await
-                        .is_ok());
+                    assert!(bob_central.context.get_conversation(&id).await.is_ok());
+                    assert_eq!(bob_central.get_conversation_unchecked(&id).await.members().len(), 2);
+                    assert!(alice_central.try_talk_to(&id, &bob_central).await.is_ok());
 
                     // Now charlie wants to join with the [GroupInfo] from Bob's external commit
                     let bob_gi = group_info.get_group_info();
@@ -692,67 +605,35 @@ mod tests {
                         commit: charlie_external_commit,
                         ..
                     } = charlie_central
-                        .mls_central
+                        .context
                         .join_by_external_commit(bob_gi, case.custom_cfg(), case.credential_type)
                         .await
                         .unwrap();
 
                     // Both Alice & Bob decrypt the commit
                     alice_central
-                        .mls_central
+                        .context
                         .decrypt_message(&id, charlie_external_commit.to_bytes().unwrap())
                         .await
                         .unwrap();
                     bob_central
-                        .mls_central
+                        .context
                         .decrypt_message(&id, charlie_external_commit.to_bytes().unwrap())
                         .await
                         .unwrap();
-                    assert_eq!(
-                        alice_central
-                            .mls_central
-                            .get_conversation_unchecked(&id)
-                            .await
-                            .members()
-                            .len(),
-                        3
-                    );
-                    assert_eq!(
-                        bob_central
-                            .mls_central
-                            .get_conversation_unchecked(&id)
-                            .await
-                            .members()
-                            .len(),
-                        3
-                    );
+                    assert_eq!(alice_central.get_conversation_unchecked(&id).await.members().len(), 3);
+                    assert_eq!(bob_central.get_conversation_unchecked(&id).await.members().len(), 3);
 
                     // Charlie merges the commit, he's also in !
                     charlie_central
-                        .mls_central
+                        .context
                         .merge_pending_group_from_external_commit(&id)
                         .await
                         .unwrap();
-                    assert!(charlie_central.mls_central.get_conversation(&id).await.is_ok());
-                    assert_eq!(
-                        charlie_central
-                            .mls_central
-                            .get_conversation_unchecked(&id)
-                            .await
-                            .members()
-                            .len(),
-                        3
-                    );
-                    assert!(charlie_central
-                        .mls_central
-                        .try_talk_to(&id, &mut alice_central.mls_central)
-                        .await
-                        .is_ok());
-                    assert!(charlie_central
-                        .mls_central
-                        .try_talk_to(&id, &mut bob_central.mls_central)
-                        .await
-                        .is_ok());
+                    assert!(charlie_central.context.get_conversation(&id).await.is_ok());
+                    assert_eq!(charlie_central.get_conversation_unchecked(&id).await.members().len(), 3);
+                    assert!(charlie_central.try_talk_to(&id, &alice_central).await.is_ok());
+                    assert!(charlie_central.try_talk_to(&id, &bob_central).await.is_ok());
                 })
             },
         )
@@ -762,228 +643,207 @@ mod tests {
     #[apply(all_cred_cipher)]
     #[wasm_bindgen_test]
     async fn should_fail_when_sender_user_not_in_group(case: TestCase) {
-        run_test_with_client_ids(
-            case.clone(),
-            ["alice", "bob"],
-            move |[mut alice_central, mut bob_central]| {
-                Box::pin(async move {
-                    let id = conversation_id();
+        run_test_with_client_ids(case.clone(), ["alice", "bob"], move |[alice_central, bob_central]| {
+            Box::pin(async move {
+                let id = conversation_id();
 
-                    alice_central
-                        .mls_central
-                        .callbacks(std::sync::Arc::new(ValidationCallbacks {
-                            client_is_existing_group_user: false,
-                            ..Default::default()
-                        }));
+                alice_central
+                    .context
+                    .set_callbacks(Some(Arc::new(ValidationCallbacks {
+                        client_is_existing_group_user: false,
+                        ..Default::default()
+                    })))
+                    .await
+                    .unwrap();
 
-                    alice_central
-                        .mls_central
-                        .new_conversation(&id, case.credential_type, case.cfg.clone())
-                        .await
-                        .unwrap();
+                alice_central
+                    .context
+                    .new_conversation(&id, case.credential_type, case.cfg.clone())
+                    .await
+                    .unwrap();
 
-                    // export Alice group info
-                    let group_info = alice_central.mls_central.get_group_info(&id).await;
+                // export Alice group info
+                let group_info = alice_central.get_group_info(&id).await;
 
-                    // Bob tries to join Alice's group
-                    let MlsConversationInitBundle { commit, .. } = bob_central
-                        .mls_central
-                        .join_by_external_commit(group_info, case.custom_cfg(), case.credential_type)
-                        .await
-                        .unwrap();
-                    let alice_accepts_ext_commit = alice_central
-                        .mls_central
-                        .decrypt_message(&id, &commit.to_bytes().unwrap())
-                        .await;
-                    assert!(matches!(
-                        alice_accepts_ext_commit.unwrap_err(),
-                        CryptoError::UnauthorizedExternalCommit
-                    ))
-                })
-            },
-        )
+                // Bob tries to join Alice's group
+                let MlsConversationInitBundle { commit, .. } = bob_central
+                    .context
+                    .join_by_external_commit(group_info, case.custom_cfg(), case.credential_type)
+                    .await
+                    .unwrap();
+                let alice_accepts_ext_commit = alice_central
+                    .context
+                    .decrypt_message(&id, &commit.to_bytes().unwrap())
+                    .await;
+                assert!(matches!(
+                    alice_accepts_ext_commit.unwrap_err(),
+                    CryptoError::UnauthorizedExternalCommit
+                ))
+            })
+        })
         .await
     }
 
     #[apply(all_cred_cipher)]
     #[wasm_bindgen_test]
     async fn should_fail_when_sender_lacks_role(case: TestCase) {
-        run_test_with_client_ids(
-            case.clone(),
-            ["alice", "bob"],
-            move |[mut alice_central, mut bob_central]| {
-                Box::pin(async move {
-                    let id = conversation_id();
+        run_test_with_client_ids(case.clone(), ["alice", "bob"], move |[alice_central, bob_central]| {
+            Box::pin(async move {
+                let id = conversation_id();
 
-                    alice_central
-                        .mls_central
-                        .callbacks(std::sync::Arc::new(ValidationCallbacks {
-                            user_authorize: false,
-                            ..Default::default()
-                        }));
+                alice_central
+                    .context
+                    .set_callbacks(Some(Arc::new(ValidationCallbacks {
+                        user_authorize: false,
+                        ..Default::default()
+                    })))
+                    .await
+                    .unwrap();
 
-                    alice_central
-                        .mls_central
-                        .new_conversation(&id, case.credential_type, case.cfg.clone())
-                        .await
-                        .unwrap();
+                alice_central
+                    .context
+                    .new_conversation(&id, case.credential_type, case.cfg.clone())
+                    .await
+                    .unwrap();
 
-                    // export Alice group info
-                    let group_info = alice_central.mls_central.get_group_info(&id).await;
+                // export Alice group info
+                let group_info = alice_central.get_group_info(&id).await;
 
-                    // Bob tries to join Alice's group
-                    let MlsConversationInitBundle { commit, .. } = bob_central
-                        .mls_central
-                        .join_by_external_commit(group_info, case.custom_cfg(), case.credential_type)
-                        .await
-                        .unwrap();
-                    let alice_accepts_ext_commit = alice_central
-                        .mls_central
-                        .decrypt_message(&id, &commit.to_bytes().unwrap())
-                        .await;
-                    assert!(matches!(
-                        alice_accepts_ext_commit.unwrap_err(),
-                        CryptoError::UnauthorizedExternalCommit
-                    ))
-                })
-            },
-        )
+                // Bob tries to join Alice's group
+                let MlsConversationInitBundle { commit, .. } = bob_central
+                    .context
+                    .join_by_external_commit(group_info, case.custom_cfg(), case.credential_type)
+                    .await
+                    .unwrap();
+                let alice_accepts_ext_commit = alice_central
+                    .context
+                    .decrypt_message(&id, &commit.to_bytes().unwrap())
+                    .await;
+                assert!(matches!(
+                    alice_accepts_ext_commit.unwrap_err(),
+                    CryptoError::UnauthorizedExternalCommit
+                ))
+            })
+        })
         .await
     }
 
     #[apply(all_cred_cipher)]
     #[wasm_bindgen_test]
     async fn clear_pending_group_should_succeed(case: TestCase) {
-        run_test_with_client_ids(
-            case.clone(),
-            ["alice", "bob"],
-            move |[mut alice_central, mut bob_central]| {
-                Box::pin(async move {
-                    let id = conversation_id();
-                    alice_central
-                        .mls_central
-                        .new_conversation(&id, case.credential_type, case.cfg.clone())
-                        .await
-                        .unwrap();
+        run_test_with_client_ids(case.clone(), ["alice", "bob"], move |[alice_central, bob_central]| {
+            Box::pin(async move {
+                let id = conversation_id();
+                alice_central
+                    .context
+                    .new_conversation(&id, case.credential_type, case.cfg.clone())
+                    .await
+                    .unwrap();
 
-                    let initial_count = alice_central.mls_central.count_entities().await;
+                let initial_count = alice_central.context.count_entities().await;
 
-                    // export Alice group info
-                    let group_info = alice_central.mls_central.get_group_info(&id).await;
+                // export Alice group info
+                let group_info = alice_central.get_group_info(&id).await;
 
-                    // Bob tries to join Alice's group
-                    bob_central
-                        .mls_central
-                        .join_by_external_commit(group_info, case.custom_cfg(), case.credential_type)
-                        .await
-                        .unwrap();
+                // Bob tries to join Alice's group
+                bob_central
+                    .context
+                    .join_by_external_commit(group_info, case.custom_cfg(), case.credential_type)
+                    .await
+                    .unwrap();
 
-                    // But for some reason, Bob wants to abort joining the group
-                    bob_central
-                        .mls_central
-                        .clear_pending_group_from_external_commit(&id)
-                        .await
-                        .unwrap();
+                // But for some reason, Bob wants to abort joining the group
+                bob_central
+                    .context
+                    .clear_pending_group_from_external_commit(&id)
+                    .await
+                    .unwrap();
 
-                    let final_count = alice_central.mls_central.count_entities().await;
-                    assert_eq!(initial_count, final_count);
+                let final_count = alice_central.context.count_entities().await;
+                assert_eq!(initial_count, final_count);
 
-                    // Hence trying to merge the pending should fail
-                    let result = bob_central
-                        .mls_central
-                        .merge_pending_group_from_external_commit(&id)
-                        .await;
-                    assert!(matches!(
-                        result.unwrap_err(),
-                        CryptoError::KeyStoreError(CryptoKeystoreError::MissingKeyInStore(
-                            MissingKeyErrorKind::MlsPendingGroup
-                        ))
+                // Hence trying to merge the pending should fail
+                let result = bob_central.context.merge_pending_group_from_external_commit(&id).await;
+                assert!(matches!(
+                    result.unwrap_err(),
+                    CryptoError::KeyStoreError(CryptoKeystoreError::MissingKeyInStore(
+                        MissingKeyErrorKind::MlsPendingGroup
                     ))
-                })
-            },
-        )
+                ))
+            })
+        })
         .await
     }
 
     #[apply(all_cred_cipher)]
     #[wasm_bindgen_test]
     async fn new_with_inflight_join_should_fail_when_already_exists(case: TestCase) {
-        run_test_with_client_ids(
-            case.clone(),
-            ["alice", "bob"],
-            move |[mut alice_central, mut bob_central]| {
-                Box::pin(async move {
-                    let id = conversation_id();
-                    alice_central
-                        .mls_central
-                        .new_conversation(&id, case.credential_type, case.cfg.clone())
-                        .await
-                        .unwrap();
-                    let gi = alice_central.mls_central.get_group_info(&id).await;
+        run_test_with_client_ids(case.clone(), ["alice", "bob"], move |[alice_central, bob_central]| {
+            Box::pin(async move {
+                let id = conversation_id();
+                alice_central
+                    .context
+                    .new_conversation(&id, case.credential_type, case.cfg.clone())
+                    .await
+                    .unwrap();
+                let gi = alice_central.get_group_info(&id).await;
 
-                    // Bob to join a conversation but while the server processes its request he
-                    // creates a conversation with the id of the conversation he's trying to join
-                    bob_central
-                        .mls_central
-                        .join_by_external_commit(gi, case.custom_cfg(), case.credential_type)
-                        .await
-                        .unwrap();
-                    // erroneous call
-                    let conflict_join = bob_central
-                        .mls_central
-                        .new_conversation(&id, case.credential_type, case.cfg.clone())
-                        .await;
-                    assert!(matches!(conflict_join.unwrap_err(), CryptoError::ConversationAlreadyExists(i) if i == id));
-                })
-            },
-        )
+                // Bob to join a conversation but while the server processes its request he
+                // creates a conversation with the id of the conversation he's trying to join
+                bob_central
+                    .context
+                    .join_by_external_commit(gi, case.custom_cfg(), case.credential_type)
+                    .await
+                    .unwrap();
+                // erroneous call
+                let conflict_join = bob_central
+                    .context
+                    .new_conversation(&id, case.credential_type, case.cfg.clone())
+                    .await;
+                assert!(matches!(conflict_join.unwrap_err(), CryptoError::ConversationAlreadyExists(i) if i == id));
+            })
+        })
         .await
     }
 
     #[apply(all_cred_cipher)]
     #[wasm_bindgen_test]
     async fn new_with_inflight_welcome_should_fail_when_already_exists(case: TestCase) {
-        run_test_with_client_ids(
-            case.clone(),
-            ["alice", "bob"],
-            move |[mut alice_central, mut bob_central]| {
-                Box::pin(async move {
-                    let id = conversation_id();
-                    alice_central
-                        .mls_central
-                        .new_conversation(&id, case.credential_type, case.cfg.clone())
-                        .await
-                        .unwrap();
-                    let gi = alice_central.mls_central.get_group_info(&id).await;
+        run_test_with_client_ids(case.clone(), ["alice", "bob"], move |[alice_central, bob_central]| {
+            Box::pin(async move {
+                let id = conversation_id();
+                alice_central
+                    .context
+                    .new_conversation(&id, case.credential_type, case.cfg.clone())
+                    .await
+                    .unwrap();
+                let gi = alice_central.get_group_info(&id).await;
 
-                    // While Bob tries to join a conversation via external commit he's also invited
-                    // to a conversation with the same id through a Welcome message
-                    bob_central
-                        .mls_central
-                        .join_by_external_commit(gi, case.custom_cfg(), case.credential_type)
-                        .await
-                        .unwrap();
+                // While Bob tries to join a conversation via external commit he's also invited
+                // to a conversation with the same id through a Welcome message
+                bob_central
+                    .context
+                    .join_by_external_commit(gi, case.custom_cfg(), case.credential_type)
+                    .await
+                    .unwrap();
 
-                    let bob = bob_central.mls_central.rand_key_package(&case).await;
-                    let welcome = alice_central
-                        .mls_central
-                        .add_members_to_conversation(&id, vec![bob])
-                        .await
-                        .unwrap()
-                        .welcome;
+                let bob = bob_central.rand_key_package(&case).await;
+                let welcome = alice_central
+                    .context
+                    .add_members_to_conversation(&id, vec![bob])
+                    .await
+                    .unwrap()
+                    .welcome;
 
-                    // erroneous call
-                    let conflict_welcome = bob_central
-                        .mls_central
-                        .process_welcome_message(welcome.into(), case.custom_cfg())
-                        .await;
+                // erroneous call
+                let conflict_welcome = bob_central
+                    .context
+                    .process_welcome_message(welcome.into(), case.custom_cfg())
+                    .await;
 
-                    assert!(
-                        matches!(conflict_welcome.unwrap_err(), CryptoError::ConversationAlreadyExists(i) if i == id)
-                    );
-                })
-            },
-        )
+                assert!(matches!(conflict_welcome.unwrap_err(), CryptoError::ConversationAlreadyExists(i) if i == id));
+            })
+        })
         .await
     }
 
@@ -993,27 +853,24 @@ mod tests {
         run_test_with_client_ids(
             case.clone(),
             ["alice", "bob", "guest"],
-            move |[mut alice_central, bob_central, mut guest_central]| {
+            move |[alice_central, bob_central, guest_central]| {
                 Box::pin(async move {
                     let expiration_time = 14;
                     let start = fluvio_wasm_timer::Instant::now();
                     let id = conversation_id();
                     alice_central
-                        .mls_central
+                        .context
                         .new_conversation(&id, case.credential_type, case.cfg.clone())
                         .await
                         .unwrap();
 
-                    let invalid_kp = bob_central
-                        .mls_central
-                        .new_keypackage(&case, Lifetime::new(expiration_time))
-                        .await;
+                    let invalid_kp = bob_central.new_keypackage(&case, Lifetime::new(expiration_time)).await;
                     alice_central
-                        .mls_central
+                        .context
                         .add_members_to_conversation(&id, vec![invalid_kp.into()])
                         .await
                         .unwrap();
-                    alice_central.mls_central.commit_accepted(&id).await.unwrap();
+                    alice_central.context.commit_accepted(&id).await.unwrap();
 
                     let elapsed = start.elapsed();
                     // Give time to the certificate to expire
@@ -1022,10 +879,10 @@ mod tests {
                         async_std::task::sleep(expiration_time - elapsed + core::time::Duration::from_secs(1)).await;
                     }
 
-                    let group_info = alice_central.mls_central.get_group_info(&id).await;
+                    let group_info = alice_central.get_group_info(&id).await;
 
                     let join_ext_commit = guest_central
-                        .mls_central
+                        .context
                         .join_by_external_commit(group_info, case.custom_cfg(), case.credential_type)
                         .await;
 
@@ -1048,43 +905,39 @@ mod tests {
     #[apply(all_cred_cipher)]
     #[wasm_bindgen_test]
     async fn group_should_have_right_config(case: TestCase) {
-        run_test_with_client_ids(
-            case.clone(),
-            ["alice", "bob"],
-            move |[mut alice_central, mut bob_central]| {
-                Box::pin(async move {
-                    let id = conversation_id();
-                    alice_central
-                        .mls_central
-                        .new_conversation(&id, case.credential_type, case.cfg.clone())
-                        .await
-                        .unwrap();
+        run_test_with_client_ids(case.clone(), ["alice", "bob"], move |[alice_central, bob_central]| {
+            Box::pin(async move {
+                let id = conversation_id();
+                alice_central
+                    .context
+                    .new_conversation(&id, case.credential_type, case.cfg.clone())
+                    .await
+                    .unwrap();
 
-                    let gi = alice_central.mls_central.get_group_info(&id).await;
-                    bob_central
-                        .mls_central
-                        .join_by_external_commit(gi, case.custom_cfg(), case.credential_type)
-                        .await
-                        .unwrap();
-                    bob_central
-                        .mls_central
-                        .merge_pending_group_from_external_commit(&id)
-                        .await
-                        .unwrap();
-                    let group = bob_central.mls_central.get_conversation_unchecked(&id).await;
+                let gi = alice_central.get_group_info(&id).await;
+                bob_central
+                    .context
+                    .join_by_external_commit(gi, case.custom_cfg(), case.credential_type)
+                    .await
+                    .unwrap();
+                bob_central
+                    .context
+                    .merge_pending_group_from_external_commit(&id)
+                    .await
+                    .unwrap();
+                let group = bob_central.get_conversation_unchecked(&id).await;
 
-                    let capabilities = group.group.group_context_extensions().required_capabilities().unwrap();
+                let capabilities = group.group.group_context_extensions().required_capabilities().unwrap();
 
-                    // see https://www.rfc-editor.org/rfc/rfc9420.html#section-11.1
-                    assert!(capabilities.extension_types().is_empty());
-                    assert!(capabilities.proposal_types().is_empty());
-                    assert_eq!(
-                        capabilities.credential_types(),
-                        MlsConversationConfiguration::DEFAULT_SUPPORTED_CREDENTIALS
-                    );
-                })
-            },
-        )
+                // see https://www.rfc-editor.org/rfc/rfc9420.html#section-11.1
+                assert!(capabilities.extension_types().is_empty());
+                assert!(capabilities.proposal_types().is_empty());
+                assert_eq!(
+                    capabilities.credential_types(),
+                    MlsConversationConfiguration::DEFAULT_SUPPORTED_CREDENTIALS
+                );
+            })
+        })
         .await
     }
 }

@@ -21,19 +21,16 @@ use openmls_traits::OpenMlsCryptoProvider;
 use tls_codec::{Deserialize, Serialize};
 
 use core_crypto_keystore::{
-    connection::KeystoreDatabaseConnection,
-    entities::{
-        EntityBase, EntityFindParams, MlsCredential, MlsCredentialExt, MlsEncryptionKeyPair, MlsHpkePrivateKey,
-        MlsKeyPackage,
-    },
+    connection::FetchFromDatabase,
+    entities::{EntityFindParams, MlsEncryptionKeyPair, MlsHpkePrivateKey, MlsKeyPackage},
 };
-use mls_crypto_provider::MlsCryptoProvider;
+use mls_crypto_provider::{CryptoKeystore, TransactionalCryptoProvider};
 
+use crate::context::CentralContext;
 use crate::{
     mls::credential::CredentialBundle,
     prelude::{
-        Client, CryptoError, CryptoResult, MlsCentral, MlsCiphersuite, MlsConversationConfiguration, MlsCredentialType,
-        MlsError,
+        Client, CryptoError, CryptoResult, MlsCiphersuite, MlsConversationConfiguration, MlsCredentialType, MlsError,
     },
 };
 
@@ -58,7 +55,7 @@ impl Client {
     #[cfg_attr(not(test), tracing::instrument(err, skip_all))]
     pub async fn generate_one_keypackage_from_credential_bundle(
         &self,
-        backend: &MlsCryptoProvider,
+        backend: &TransactionalCryptoProvider,
         cs: MlsCiphersuite,
         cb: &CredentialBundle,
     ) -> CryptoResult<KeyPackage> {
@@ -99,7 +96,7 @@ impl Client {
         count: usize,
         ciphersuite: MlsCiphersuite,
         credential_type: MlsCredentialType,
-        backend: &MlsCryptoProvider,
+        backend: &TransactionalCryptoProvider,
     ) -> CryptoResult<Vec<KeyPackage>> {
         // Auto-prune expired keypackages on request
         self.prune_keypackages(backend, &[]).await?;
@@ -120,8 +117,9 @@ impl Client {
             let to_generate = count - kpb_count;
             let cb = self
                 .find_most_recent_credential_bundle(ciphersuite.signature_algorithm(), credential_type)
+                .await
                 .ok_or(CryptoError::MlsNotInitialized)?;
-            self.generate_new_keypackages(backend, ciphersuite, cb, to_generate)
+            self.generate_new_keypackages(backend, ciphersuite, &cb, to_generate)
                 .await?
         } else {
             vec![]
@@ -136,7 +134,7 @@ impl Client {
     #[cfg_attr(not(test), tracing::instrument(err, skip_all))]
     pub(crate) async fn generate_new_keypackages(
         &self,
-        backend: &MlsCryptoProvider,
+        backend: &TransactionalCryptoProvider,
         ciphersuite: MlsCiphersuite,
         cb: &CredentialBundle,
         count: usize,
@@ -157,15 +155,11 @@ impl Client {
     #[cfg_attr(not(test), tracing::instrument(err, skip_all))]
     pub async fn valid_keypackages_count(
         &self,
-        backend: &MlsCryptoProvider,
+        backend: &TransactionalCryptoProvider,
         ciphersuite: MlsCiphersuite,
         credential_type: MlsCredentialType,
     ) -> CryptoResult<usize> {
-        use core_crypto_keystore::entities::EntityBase as _;
-        let keystore = backend.key_store();
-
-        let mut conn = keystore.borrow_conn().await?;
-        let kps = MlsKeyPackage::find_all(&mut conn, EntityFindParams::default()).await?;
+        let kps: Vec<MlsKeyPackage> = backend.key_store().find_all(EntityFindParams::default()).await?;
 
         let valid_count = kps
             .into_iter()
@@ -201,22 +195,26 @@ impl Client {
     /// Warning: Despite this API being public, the caller should know what they're doing.
     /// Provided KeypackageRefs **will** be purged regardless of their expiration state, so please be wary of what you are doing if you directly call this API.
     /// This could result in still valid, uploaded keypackages being pruned from the system and thus being impossible to find when referenced in a future Welcome message.
-    pub async fn prune_keypackages(&self, backend: &MlsCryptoProvider, refs: &[KeyPackageRef]) -> CryptoResult<()> {
-        let mut conn = backend.key_store().borrow_conn().await?;
-        let kps = self.find_all_keypackages(&mut conn).await?;
-        let _ = self._prune_keypackages(&kps, &mut conn, refs).await?;
+    pub async fn prune_keypackages(
+        &self,
+        backend: &TransactionalCryptoProvider,
+        refs: &[KeyPackageRef],
+    ) -> CryptoResult<()> {
+        let keystore = backend.keystore();
+        let kps = self.find_all_keypackages(&keystore).await?;
+        let _ = self._prune_keypackages(&kps, &keystore, refs).await?;
         Ok(())
     }
 
     #[cfg_attr(not(test), tracing::instrument(err, skip_all))]
     pub(crate) async fn prune_keypackages_and_credential(
         &mut self,
-        backend: &MlsCryptoProvider,
+        backend: &TransactionalCryptoProvider,
         refs: &[KeyPackageRef],
     ) -> CryptoResult<()> {
-        let mut conn = backend.key_store().borrow_conn().await?;
-        let kps = self.find_all_keypackages(&mut conn).await?;
-        let kp_to_delete = self._prune_keypackages(&kps, &mut conn, refs).await?;
+        let keystore = backend.key_store();
+        let kps = self.find_all_keypackages(keystore).await?;
+        let kp_to_delete = self._prune_keypackages(&kps, keystore, refs).await?;
 
         // Let's group KeyPackages by Credential
         let mut grouped_kps = HashMap::<Vec<u8>, Vec<KeyPackageRef>>::new();
@@ -238,9 +236,9 @@ impl Client {
             let all_to_delete = kps.iter().all(|kpr| kp_to_delete.contains(&kpr.as_slice()));
             if all_to_delete {
                 // then delete this Credential
-                MlsCredential::delete_by_credential(&mut conn, credential.clone()).await?;
+                backend.keystore().cred_delete_by_credential(credential.clone()).await?;
                 let credential = Credential::tls_deserialize(&mut credential.as_slice()).map_err(MlsError::from)?;
-                self.identities.remove(&credential)?;
+                self.identities.remove(&credential).await?;
             }
         }
 
@@ -255,11 +253,9 @@ impl Client {
     async fn _prune_keypackages<'a>(
         &self,
         kps: &'a [(MlsKeyPackage, KeyPackage)],
-        conn: &mut KeystoreDatabaseConnection,
+        keystore: &CryptoKeystore,
         refs: &[KeyPackageRef],
     ) -> Result<Vec<&'a [u8]>, CryptoError> {
-        use core_crypto_keystore::entities::EntityBase as _;
-
         let kp_to_delete: Vec<_> = kps
             .iter()
             .filter_map(|(store_kp, kp)| {
@@ -277,9 +273,13 @@ impl Client {
 
         for (kp, kp_ref) in &kp_to_delete {
             // TODO: maybe rewrite this to optimize it. But honestly it's called so rarely and on a so tiny amount of data. Tacking issue: WPB-9600
-            MlsKeyPackage::delete(conn, &[kp_ref.as_slice().into()]).await?;
-            MlsHpkePrivateKey::delete(conn, &[kp.hpke_init_key().as_slice().into()]).await?;
-            MlsEncryptionKeyPair::delete(conn, &[kp.leaf_node().encryption_key().as_slice().into()]).await?;
+            keystore.remove::<MlsKeyPackage, &[u8]>(kp_ref.as_slice()).await?;
+            keystore
+                .remove::<MlsHpkePrivateKey, &[u8]>(kp.hpke_init_key().as_slice())
+                .await?;
+            keystore
+                .remove::<MlsEncryptionKeyPair, &[u8]>(kp.leaf_node().encryption_key().as_slice())
+                .await?;
         }
 
         let kp_to_delete = kp_to_delete
@@ -290,11 +290,8 @@ impl Client {
         Ok(kp_to_delete)
     }
 
-    async fn find_all_keypackages(
-        &self,
-        conn: &mut KeystoreDatabaseConnection,
-    ) -> CryptoResult<Vec<(MlsKeyPackage, KeyPackage)>> {
-        let kps = MlsKeyPackage::find_all(conn, EntityFindParams::default()).await?;
+    async fn find_all_keypackages(&self, keystore: &CryptoKeystore) -> CryptoResult<Vec<(MlsKeyPackage, KeyPackage)>> {
+        let kps: Vec<MlsKeyPackage> = keystore.find_all(EntityFindParams::default()).await?;
 
         let kps = kps.into_iter().try_fold(vec![], |mut acc, raw_kp| {
             let kp = core_crypto_keystore::deser::<KeyPackage>(&raw_kp.keypackage)?;
@@ -313,7 +310,7 @@ impl Client {
     }
 }
 
-impl MlsCentral {
+impl CentralContext {
     /// Returns `amount_requested` OpenMLS [openmls::key_packages::KeyPackage]s.
     /// Will always return the requested amount as it will generate the necessary (lacking) amount on-the-fly
     ///
@@ -334,8 +331,15 @@ impl MlsCentral {
         credential_type: MlsCredentialType,
         amount_requested: usize,
     ) -> CryptoResult<Vec<KeyPackage>> {
-        self.mls_client()?
-            .request_key_packages(amount_requested, ciphersuite, credential_type, &self.mls_backend)
+        let client_guard = self.mls_client().await?;
+        let client = client_guard.as_ref().ok_or(CryptoError::MlsNotInitialized)?;
+        client
+            .request_key_packages(
+                amount_requested,
+                ciphersuite,
+                credential_type,
+                &self.mls_provider().await?,
+            )
             .await
     }
 
@@ -347,8 +351,10 @@ impl MlsCentral {
         ciphersuite: MlsCiphersuite,
         credential_type: MlsCredentialType,
     ) -> CryptoResult<usize> {
-        self.mls_client()?
-            .valid_keypackages_count(&self.mls_backend, ciphersuite, credential_type)
+        let client_guard = self.mls_client().await?;
+        let client = client_guard.as_ref().ok_or(CryptoError::MlsNotInitialized)?;
+        client
+            .valid_keypackages_count(&self.mls_provider().await?, ciphersuite, credential_type)
             .await
     }
 
@@ -356,12 +362,15 @@ impl MlsCentral {
     /// You should only use this after [MlsCentral::e2ei_rotate_all]
     #[cfg_attr(test, crate::dispotent)]
     #[cfg_attr(not(test), tracing::instrument(err, skip_all))]
-    pub async fn delete_keypackages(&mut self, refs: &[KeyPackageRef]) -> CryptoResult<()> {
+    pub async fn delete_keypackages(&self, refs: &[KeyPackageRef]) -> CryptoResult<()> {
         if refs.is_empty() {
             return Err(CryptoError::ConsumerError);
         }
-        let client = self.mls_client.as_mut().ok_or(CryptoError::MlsNotInitialized)?;
-        client.prune_keypackages_and_credential(&self.mls_backend, refs).await
+        let mut client_guard = self.mls_client_mut().await?;
+        let client = client_guard.as_mut().ok_or(CryptoError::MlsNotInitialized)?;
+        client
+            .prune_keypackages_and_credential(&self.mls_provider().await?, refs)
+            .await
     }
 }
 
@@ -396,6 +405,7 @@ mod tests {
             None
         };
 
+        backend.new_transaction().await.unwrap();
         let mut client = Client::random_generate(
             &case,
             &backend,
@@ -431,7 +441,7 @@ mod tests {
 
                 // Generate 5 Basic key packages first
                 let _basic_key_packages = client_context
-                    .mls_central
+                    .context
                     .get_or_create_client_keypackages(cipher_suite, MlsCredentialType::Basic, 5)
                     .await
                     .unwrap();
@@ -452,17 +462,17 @@ mod tests {
                 .unwrap();
 
                 let _rotate_bundle = client_context
-                    .mls_central
+                    .context
                     .e2ei_rotate_all(&mut enrollment, cert_chain, 5)
                     .await
                     .unwrap();
 
                 // E2E identity has been set up correctly
-                assert!(client_context.mls_central.e2ei_is_enabled(signature_scheme).unwrap());
+                assert!(client_context.context.e2ei_is_enabled(signature_scheme).await.unwrap());
 
                 // Request X509 key packages
                 let x509_key_packages = client_context
-                    .mls_central
+                    .context
                     .get_or_create_client_keypackages(cipher_suite, MlsCredentialType::X509, 5)
                     .await
                     .unwrap();
@@ -478,12 +488,12 @@ mod tests {
     #[apply(all_cred_cipher)]
     #[wasm_bindgen_test]
     async fn generates_correct_number_of_kpbs(case: TestCase) {
-        run_test_with_client_ids(case.clone(), ["alice"], move |[mut cc]| {
+        run_test_with_client_ids(case.clone(), ["alice"], move |[cc]| {
             Box::pin(async move {
                 const N: usize = 2;
                 const COUNT: usize = 109;
 
-                let init = cc.mls_central.count_entities().await;
+                let init = cc.context.count_entities().await;
                 assert_eq!(init.key_package, INITIAL_KEYING_MATERIAL_COUNT);
                 assert_eq!(init.encryption_keypair, INITIAL_KEYING_MATERIAL_COUNT);
                 assert_eq!(init.hpke_private_key, INITIAL_KEYING_MATERIAL_COUNT);
@@ -492,12 +502,14 @@ mod tests {
 
                 // since 'delete_keypackages' will evict all Credentials unlinked to a KeyPackage, each iteration
                 // generates 1 extra KeyPackage in order for this Credential no to be evicted and next iteration sto succeed.
+                let transactional_provider = cc.context.mls_provider().await.unwrap();
+                let crypto_provider = transactional_provider.crypto();
                 let mut pinned_kp = None;
 
                 let mut prev_kps: Option<Vec<KeyPackage>> = None;
                 for _ in 0..N {
                     let mut kps = cc
-                        .mls_central
+                        .context
                         .get_or_create_client_keypackages(case.ciphersuite(), case.credential_type, COUNT + 1)
                         .await
                         .unwrap();
@@ -506,7 +518,7 @@ mod tests {
                     pinned_kp = Some(kps.pop().unwrap());
 
                     assert_eq!(kps.len(), COUNT);
-                    let after_creation = cc.mls_central.count_entities().await;
+                    let after_creation = cc.context.count_entities().await;
                     assert_eq!(after_creation.key_package, COUNT + 1);
                     assert_eq!(after_creation.encryption_keypair, COUNT + 1);
                     assert_eq!(after_creation.hpke_private_key, COUNT + 1);
@@ -514,41 +526,38 @@ mod tests {
 
                     let kpbs_refs = kps
                         .iter()
-                        .map(|kp| kp.hash_ref(cc.mls_central.mls_backend.crypto()).unwrap())
+                        .map(|kp| kp.hash_ref(crypto_provider).unwrap())
                         .collect::<Vec<KeyPackageRef>>();
 
                     if let Some(pkpbs) = prev_kps.replace(kps) {
                         let pkpbs_refs = pkpbs
                             .into_iter()
-                            .map(|kpb| kpb.hash_ref(cc.mls_central.mls_backend.crypto()).unwrap())
+                            .map(|kpb| kpb.hash_ref(crypto_provider).unwrap())
                             .collect::<Vec<KeyPackageRef>>();
 
                         let has_duplicates = kpbs_refs.iter().any(|href| pkpbs_refs.contains(href));
                         // Make sure we have no previous keypackages found (that were pruned) in our new batch of KPs
                         assert!(!has_duplicates);
                     }
-                    cc.mls_central.delete_keypackages(&kpbs_refs).await.unwrap();
+                    cc.context.delete_keypackages(&kpbs_refs).await.unwrap();
                 }
 
                 let count = cc
-                    .mls_central
+                    .context
                     .client_valid_key_packages_count(case.ciphersuite(), case.credential_type)
                     .await
                     .unwrap();
                 assert_eq!(count, 1);
 
-                let pinned_kpr = pinned_kp
-                    .unwrap()
-                    .hash_ref(cc.mls_central.mls_backend.crypto())
-                    .unwrap();
-                cc.mls_central.delete_keypackages(&[pinned_kpr]).await.unwrap();
+                let pinned_kpr = pinned_kp.unwrap().hash_ref(crypto_provider).unwrap();
+                cc.context.delete_keypackages(&[pinned_kpr]).await.unwrap();
                 let count = cc
-                    .mls_central
+                    .context
                     .client_valid_key_packages_count(case.ciphersuite(), case.credential_type)
                     .await
                     .unwrap();
                 assert_eq!(count, 0);
-                let after_delete = cc.mls_central.count_entities().await;
+                let after_delete = cc.context.count_entities().await;
                 assert_eq!(after_delete.key_package, 0);
                 assert_eq!(after_delete.encryption_keypair, 0);
                 assert_eq!(after_delete.hpke_private_key, 0);
@@ -571,6 +580,7 @@ mod tests {
         } else {
             None
         };
+        backend.new_transaction().await.unwrap();
         let mut client = Client::random_generate(
             &case,
             &backend,
@@ -643,7 +653,7 @@ mod tests {
         run_test_with_client_ids(case.clone(), ["alice"], move |[cc]| {
             Box::pin(async move {
                 let kps = cc
-                    .mls_central
+                    .context
                     .get_or_create_client_keypackages(case.ciphersuite(), case.credential_type, 1)
                     .await
                     .unwrap();
@@ -651,7 +661,7 @@ mod tests {
 
                 // make sure it's valid
                 let _ = KeyPackageIn::from(kp.clone())
-                    .standalone_validate(&cc.mls_central.mls_backend, ProtocolVersion::Mls10, true)
+                    .standalone_validate(&cc.context.mls_provider().await.unwrap(), ProtocolVersion::Mls10, true)
                     .await
                     .unwrap();
 

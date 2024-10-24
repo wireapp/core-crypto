@@ -17,8 +17,8 @@
 use crate::{
     connection::{DatabaseConnection, KeystoreDatabaseConnection},
     entities::{
-        Entity, EntityBase, EntityFindParams, PersistedMlsGroup, PersistedMlsGroupExt, PersistedMlsPendingGroup,
-        StringEntityId,
+        Entity, EntityBase, EntityFindParams, EntityTransactionExt, PersistedMlsGroup, PersistedMlsGroupExt,
+        PersistedMlsPendingGroup, StringEntityId,
     },
     CryptoKeystoreResult, MissingKeyErrorKind,
 };
@@ -34,14 +34,13 @@ impl EntityBase for PersistedMlsGroup {
         MissingKeyErrorKind::MlsGroup
     }
 
+    fn to_transaction_entity(self) -> crate::transaction::Entity {
+        crate::transaction::Entity::PersistedMlsGroup(self)
+    }
+
     async fn find_all(conn: &mut Self::ConnectionType, params: EntityFindParams) -> CryptoKeystoreResult<Vec<Self>> {
         let storage = conn.storage();
         storage.get_all(Self::COLLECTION_NAME, Some(params)).await
-    }
-
-    async fn save(&self, conn: &mut Self::ConnectionType) -> crate::CryptoKeystoreResult<()> {
-        let storage = conn.storage_mut();
-        storage.save(Self::COLLECTION_NAME, &mut [self.clone()]).await
     }
 
     async fn find_one(
@@ -65,14 +64,11 @@ impl EntityBase for PersistedMlsGroup {
         let storage = conn.storage();
         storage.count(Self::COLLECTION_NAME).await
     }
-
-    async fn delete(conn: &mut Self::ConnectionType, ids: &[StringEntityId]) -> crate::CryptoKeystoreResult<()> {
-        let storage = conn.storage_mut();
-        let ids: Vec<Vec<u8>> = ids.iter().map(StringEntityId::to_bytes).collect();
-        let _ = storage.delete(Self::COLLECTION_NAME, &ids).await?;
-        Ok(())
-    }
 }
+
+#[cfg_attr(target_family = "wasm", async_trait::async_trait(?Send))]
+#[cfg_attr(not(target_family = "wasm"), async_trait::async_trait)]
+impl EntityTransactionExt for PersistedMlsGroup {}
 
 impl Entity for PersistedMlsGroup {
     fn id_raw(&self) -> &[u8] {
@@ -112,17 +108,13 @@ impl EntityBase for PersistedMlsPendingGroup {
         MissingKeyErrorKind::MlsPendingGroup
     }
 
+    fn to_transaction_entity(self) -> crate::transaction::Entity {
+        crate::transaction::Entity::PersistedMlsPendingGroup(self)
+    }
+
     async fn find_all(conn: &mut Self::ConnectionType, params: EntityFindParams) -> CryptoKeystoreResult<Vec<Self>> {
         let storage = conn.storage();
         storage.get_all(Self::COLLECTION_NAME, Some(params)).await
-    }
-
-    async fn save(&self, conn: &mut Self::ConnectionType) -> crate::CryptoKeystoreResult<()> {
-        let storage = conn.storage_mut();
-
-        storage.save(Self::COLLECTION_NAME, &mut [self.clone()]).await?;
-
-        Ok(())
     }
 
     async fn find_one(
@@ -143,13 +135,11 @@ impl EntityBase for PersistedMlsPendingGroup {
     async fn count(conn: &mut Self::ConnectionType) -> crate::CryptoKeystoreResult<usize> {
         conn.storage().count(Self::COLLECTION_NAME).await
     }
-
-    async fn delete(conn: &mut Self::ConnectionType, ids: &[StringEntityId]) -> crate::CryptoKeystoreResult<()> {
-        let ids: Vec<Vec<u8>> = ids.iter().map(StringEntityId::to_bytes).collect();
-        let _ = conn.storage_mut().delete(Self::COLLECTION_NAME, &ids).await?;
-        Ok(())
-    }
 }
+
+#[cfg_attr(target_family = "wasm", async_trait::async_trait(?Send))]
+#[cfg_attr(not(target_family = "wasm"), async_trait::async_trait)]
+impl EntityTransactionExt for PersistedMlsPendingGroup {}
 
 impl Entity for PersistedMlsPendingGroup {
     fn id_raw(&self) -> &[u8] {

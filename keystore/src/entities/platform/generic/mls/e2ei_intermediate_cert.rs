@@ -15,9 +15,9 @@
 // along with this program. If not, see http://www.gnu.org/licenses/.
 
 use crate::{
-    connection::{DatabaseConnection, KeystoreDatabaseConnection},
-    entities::{E2eiIntermediateCert, Entity, EntityBase, EntityFindParams, StringEntityId},
-    MissingKeyErrorKind,
+    connection::{DatabaseConnection, KeystoreDatabaseConnection, TransactionWrapper},
+    entities::{E2eiIntermediateCert, Entity, EntityBase, EntityFindParams, EntityTransactionExt, StringEntityId},
+    CryptoKeystoreResult, MissingKeyErrorKind,
 };
 
 impl Entity for E2eiIntermediateCert {
@@ -34,6 +34,10 @@ impl EntityBase for E2eiIntermediateCert {
     const COLLECTION_NAME: &'static str = "e2ei_intermediate_certs";
     fn to_missing_key_err_kind() -> MissingKeyErrorKind {
         MissingKeyErrorKind::E2eiIntermediateCert
+    }
+
+    fn to_transaction_entity(self) -> crate::transaction::Entity {
+        crate::transaction::Entity::E2eiIntermediateCert(self)
     }
 
     async fn find_all(
@@ -70,43 +74,6 @@ impl EntityBase for E2eiIntermediateCert {
         })?;
 
         Ok(entities)
-    }
-
-    async fn save(&self, conn: &mut Self::ConnectionType) -> crate::CryptoKeystoreResult<()> {
-        use rusqlite::ToSql as _;
-
-        Self::ConnectionType::check_buffer_size(self.content.len())?;
-
-        let transaction = conn.transaction()?;
-
-        let zb = rusqlite::blob::ZeroBlob(self.content.len() as i32);
-
-        // UPSERT (ON CONFLICT DO UPDATE) with RETURNING to get the rowid
-        let sql = "
-        INSERT INTO e2ei_intermediate_certs (ski_aki_pair, content)
-        VALUES (?, ?)
-        ON CONFLICT(ski_aki_pair) DO UPDATE SET content = excluded.content
-        RETURNING rowid";
-
-        // Execute the UPSERT and get the row_id of the affected row
-        let row_id: i64 = transaction.query_row(sql, [self.ski_aki_pair.to_sql()?, zb.to_sql()?], |r| r.get(0))?;
-
-        // Open a blob to write the content data
-        let mut blob = transaction.blob_open(
-            rusqlite::DatabaseName::Main,
-            "e2ei_intermediate_certs",
-            "content",
-            row_id,
-            false,
-        )?;
-
-        use std::io::Write as _;
-        blob.write_all(&self.content)?;
-        blob.close()?;
-
-        transaction.commit()?;
-
-        Ok(())
     }
 
     async fn find_one(
@@ -151,23 +118,56 @@ impl EntityBase for E2eiIntermediateCert {
     async fn count(conn: &mut Self::ConnectionType) -> crate::CryptoKeystoreResult<usize> {
         Ok(conn.query_row("SELECT COUNT(*) FROM e2ei_intermediate_certs", [], |r| r.get(0))?)
     }
+}
 
-    async fn delete(conn: &mut Self::ConnectionType, ids: &[StringEntityId]) -> crate::CryptoKeystoreResult<()> {
-        let transaction = conn.transaction()?;
-        let len = ids.len();
-        let mut updated = 0;
-        for id in ids {
-            updated += transaction.execute(
-                "DELETE FROM e2ei_intermediate_certs WHERE ski_aki_pair = ?",
-                [id.try_as_str()?],
-            )?;
-        }
+#[cfg_attr(target_family = "wasm", async_trait::async_trait(?Send))]
+#[cfg_attr(not(target_family = "wasm"), async_trait::async_trait)]
+impl EntityTransactionExt for E2eiIntermediateCert {
+    async fn save(&self, transaction: &TransactionWrapper<'_>) -> CryptoKeystoreResult<()> {
+        use rusqlite::ToSql as _;
 
-        if updated == len {
-            transaction.commit()?;
+        Self::ConnectionType::check_buffer_size(self.content.len())?;
+
+        let zb = rusqlite::blob::ZeroBlob(self.content.len() as i32);
+
+        // UPSERT (ON CONFLICT DO UPDATE) with RETURNING to get the rowid
+        let sql = "
+        INSERT INTO e2ei_intermediate_certs (ski_aki_pair, content)
+        VALUES (?, ?)
+        ON CONFLICT(ski_aki_pair) DO UPDATE SET content = excluded.content
+        RETURNING rowid";
+
+        // Execute the UPSERT and get the row_id of the affected row
+        let row_id: i64 = transaction.query_row(sql, [self.ski_aki_pair.to_sql()?, zb.to_sql()?], |r| r.get(0))?;
+
+        // Open a blob to write the content data
+        let mut blob = transaction.blob_open(
+            rusqlite::DatabaseName::Main,
+            "e2ei_intermediate_certs",
+            "content",
+            row_id,
+            false,
+        )?;
+
+        use std::io::Write as _;
+        blob.write_all(&self.content)?;
+        blob.close()?;
+
+        Ok(())
+    }
+
+    async fn delete_fail_on_missing_id(
+        transaction: &TransactionWrapper<'_>,
+        id: StringEntityId<'_>,
+    ) -> CryptoKeystoreResult<()> {
+        let updated = transaction.execute(
+            "DELETE FROM e2ei_intermediate_certs WHERE ski_aki_pair = ?",
+            [id.try_as_str()?],
+        )?;
+
+        if updated > 0 {
             Ok(())
         } else {
-            transaction.rollback()?;
             Err(Self::to_missing_key_err_kind().into())
         }
     }
