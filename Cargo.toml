@@ -7,7 +7,7 @@ members = [
     "keystore-dump",
     "mls-provider",
     "interop"
-]
+, "decode"]
 exclude = [
     "extras/webdriver-installation",
     "extras/keystore-regression-versions"
