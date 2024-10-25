@@ -42,8 +42,8 @@ impl EntityBase for PersistedMlsPendingGroup {
         MissingKeyErrorKind::MlsPendingGroup
     }
 
-    fn to_transaction_entity(self) -> crate::transaction::Entity {
-        crate::transaction::Entity::PersistedMlsPendingGroup(self)
+    fn to_transaction_entity(self) -> crate::transaction::dynamic_dispatch::Entity {
+        crate::transaction::dynamic_dispatch::Entity::PersistedMlsPendingGroup(self)
     }
 
     async fn find_one(

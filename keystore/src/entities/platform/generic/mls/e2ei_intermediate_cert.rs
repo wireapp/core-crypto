@@ -36,8 +36,8 @@ impl EntityBase for E2eiIntermediateCert {
         MissingKeyErrorKind::E2eiIntermediateCert
     }
 
-    fn to_transaction_entity(self) -> crate::transaction::Entity {
-        crate::transaction::Entity::E2eiIntermediateCert(self)
+    fn to_transaction_entity(self) -> crate::transaction::dynamic_dispatch::Entity {
+        crate::transaction::dynamic_dispatch::Entity::E2eiIntermediateCert(self)
     }
 
     async fn find_all(

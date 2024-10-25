@@ -35,8 +35,8 @@ impl EntityBase for MlsCredential {
         MissingKeyErrorKind::MlsCredential
     }
 
-    fn to_transaction_entity(self) -> crate::transaction::Entity {
-        crate::transaction::Entity::MlsCredential(self)
+    fn to_transaction_entity(self) -> crate::transaction::dynamic_dispatch::Entity {
+        crate::transaction::dynamic_dispatch::Entity::MlsCredential(self)
     }
 
     async fn find_all(conn: &mut Self::ConnectionType, params: EntityFindParams) -> CryptoKeystoreResult<Vec<Self>> {

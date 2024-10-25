@@ -37,8 +37,8 @@ impl EntityBase for E2eiEnrollment {
         MissingKeyErrorKind::E2eiEnrollment
     }
 
-    fn to_transaction_entity(self) -> crate::transaction::Entity {
-        crate::transaction::Entity::E2eiEnrollment(self)
+    fn to_transaction_entity(self) -> crate::transaction::dynamic_dispatch::Entity {
+        crate::transaction::dynamic_dispatch::Entity::E2eiEnrollment(self)
     }
 
     async fn find_all(

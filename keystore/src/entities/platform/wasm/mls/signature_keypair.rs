@@ -31,8 +31,8 @@ impl EntityBase for MlsSignatureKeyPair {
         MissingKeyErrorKind::MlsSignatureKeyPair
     }
 
-    fn to_transaction_entity(self) -> crate::transaction::Entity {
-        crate::transaction::Entity::SignatureKeyPair(self)
+    fn to_transaction_entity(self) -> crate::transaction::dynamic_dispatch::Entity {
+        crate::transaction::dynamic_dispatch::Entity::SignatureKeyPair(self)
     }
 
     async fn find_all(conn: &mut Self::ConnectionType, params: EntityFindParams) -> CryptoKeystoreResult<Vec<Self>> {

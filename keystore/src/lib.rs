@@ -63,7 +63,7 @@ pub mod dummy_entity {
             MissingKeyErrorKind::MlsGroup
         }
 
-        fn to_transaction_entity(self) -> crate::transaction::Entity {
+        fn to_transaction_entity(self) -> crate::transaction::dynamic_dispatch::Entity {
             unimplemented!("Not implemented")
         }
         async fn find_all(

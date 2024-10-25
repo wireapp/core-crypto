@@ -34,8 +34,8 @@ impl EntityBase for PersistedMlsGroup {
         MissingKeyErrorKind::MlsGroup
     }
 
-    fn to_transaction_entity(self) -> crate::transaction::Entity {
-        crate::transaction::Entity::PersistedMlsGroup(self)
+    fn to_transaction_entity(self) -> crate::transaction::dynamic_dispatch::Entity {
+        crate::transaction::dynamic_dispatch::Entity::PersistedMlsGroup(self)
     }
 
     async fn find_all(conn: &mut Self::ConnectionType, params: EntityFindParams) -> CryptoKeystoreResult<Vec<Self>> {
@@ -108,8 +108,8 @@ impl EntityBase for PersistedMlsPendingGroup {
         MissingKeyErrorKind::MlsPendingGroup
     }
 
-    fn to_transaction_entity(self) -> crate::transaction::Entity {
-        crate::transaction::Entity::PersistedMlsPendingGroup(self)
+    fn to_transaction_entity(self) -> crate::transaction::dynamic_dispatch::Entity {
+        crate::transaction::dynamic_dispatch::Entity::PersistedMlsPendingGroup(self)
     }
 
     async fn find_all(conn: &mut Self::ConnectionType, params: EntityFindParams) -> CryptoKeystoreResult<Vec<Self>> {

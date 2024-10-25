@@ -40,8 +40,8 @@ impl EntityBase for ProteusSession {
         MissingKeyErrorKind::ProteusSession
     }
 
-    fn to_transaction_entity(self) -> crate::transaction::Entity {
-        crate::transaction::Entity::ProteusSession(self)
+    fn to_transaction_entity(self) -> crate::transaction::dynamic_dispatch::Entity {
+        crate::transaction::dynamic_dispatch::Entity::ProteusSession(self)
     }
 
     async fn find_all(
