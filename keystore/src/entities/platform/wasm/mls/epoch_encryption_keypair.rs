@@ -31,8 +31,8 @@ impl EntityBase for MlsEpochEncryptionKeyPair {
         MissingKeyErrorKind::MlsEpochEncryptionKeyPair
     }
 
-    fn to_transaction_entity(self) -> crate::transaction::Entity {
-        crate::transaction::Entity::EpochEncryptionKeyPair(self)
+    fn to_transaction_entity(self) -> crate::transaction::dynamic_dispatch::Entity {
+        crate::transaction::dynamic_dispatch::Entity::EpochEncryptionKeyPair(self)
     }
 
     async fn find_all(conn: &mut Self::ConnectionType, params: EntityFindParams) -> CryptoKeystoreResult<Vec<Self>> {

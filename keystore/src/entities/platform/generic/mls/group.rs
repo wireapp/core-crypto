@@ -41,8 +41,8 @@ impl EntityBase for PersistedMlsGroup {
         MissingKeyErrorKind::MlsGroup
     }
 
-    fn to_transaction_entity(self) -> crate::transaction::Entity {
-        crate::transaction::Entity::PersistedMlsGroup(self)
+    fn to_transaction_entity(self) -> crate::transaction::dynamic_dispatch::Entity {
+        crate::transaction::dynamic_dispatch::Entity::PersistedMlsGroup(self)
     }
 
     async fn find_all(

@@ -44,8 +44,8 @@ impl EntityBase for MlsHpkePrivateKey {
         MissingKeyErrorKind::MlsHpkePrivateKey
     }
 
-    fn to_transaction_entity(self) -> crate::transaction::Entity {
-        crate::transaction::Entity::HpkePrivateKey(self)
+    fn to_transaction_entity(self) -> crate::transaction::dynamic_dispatch::Entity {
+        crate::transaction::dynamic_dispatch::Entity::HpkePrivateKey(self)
     }
 
     async fn find_all(
