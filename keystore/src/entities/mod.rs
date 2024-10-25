@@ -16,14 +16,14 @@
 
 cfg_if::cfg_if! {
     if #[cfg(feature = "mls-keystore")] {
-        mod mls;
+        pub(crate) mod mls;
         pub use self::mls::*;
     }
 }
 
 cfg_if::cfg_if! {
     if #[cfg(feature = "proteus-keystore")] {
-        mod proteus;
+        pub(crate) mod proteus;
         pub use self::proteus::*;
     }
 }
@@ -149,7 +149,7 @@ pub trait EntityBase: Send + Sized + Clone + PartialEq + Eq + std::fmt::Debug {
         }
     }
 
-    fn to_transaction_entity(self) -> crate::transaction::Entity;
+    fn to_transaction_entity(self) -> crate::transaction::dynamic_dispatch::Entity;
 
     async fn find_all(conn: &mut Self::ConnectionType, params: EntityFindParams) -> CryptoKeystoreResult<Vec<Self>>;
     async fn find_one(conn: &mut Self::ConnectionType, id: &StringEntityId) -> CryptoKeystoreResult<Option<Self>>;

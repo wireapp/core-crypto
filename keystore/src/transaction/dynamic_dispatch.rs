@@ -1,13 +1,15 @@
 //! This module exists merely because the `Entity` trait is not object safe.
-//! See https://doc.rust-lang.org/reference/items/traits.html#object-safety.
+//! See <https://doc.rust-lang.org/reference/items/traits.html#object-safety.>.
 
 use crate::connection::TransactionWrapper;
 use crate::entities::{
     E2eiAcmeCA, E2eiCrl, E2eiEnrollment, E2eiIntermediateCert, E2eiRefreshToken, EntityBase, EntityTransactionExt,
     MlsCredential, MlsEncryptionKeyPair, MlsEpochEncryptionKeyPair, MlsHpkePrivateKey, MlsKeyPackage,
-    MlsPendingMessage, MlsPskBundle, MlsSignatureKeyPair, PersistedMlsGroup, PersistedMlsPendingGroup, ProteusIdentity,
-    ProteusPrekey, ProteusSession, StringEntityId, UniqueEntity,
+    MlsPendingMessage, MlsPskBundle, MlsSignatureKeyPair, PersistedMlsGroup, PersistedMlsPendingGroup, StringEntityId,
+    UniqueEntity,
 };
+#[cfg(feature = "proteus-keystore")]
+use crate::entities::{ProteusIdentity, ProteusPrekey, ProteusSession};
 use crate::{CryptoKeystoreError, CryptoKeystoreResult};
 
 #[derive(Debug)]
@@ -27,8 +29,11 @@ pub enum Entity {
     E2eiAcmeCA(E2eiAcmeCA),
     E2eiIntermediateCert(E2eiIntermediateCert),
     E2eiCrl(E2eiCrl),
+    #[cfg(feature = "proteus-keystore")]
     ProteusIdentity(ProteusIdentity),
+    #[cfg(feature = "proteus-keystore")]
     ProteusPrekey(ProteusPrekey),
+    #[cfg(feature = "proteus-keystore")]
     ProteusSession(ProteusSession),
 }
 
@@ -49,8 +54,11 @@ pub enum EntityId {
     E2eiAcmeCA(Vec<u8>),
     E2eiIntermediateCert(Vec<u8>),
     E2eiCrl(Vec<u8>),
+    #[cfg(feature = "proteus-keystore")]
     ProteusIdentity(Vec<u8>),
+    #[cfg(feature = "proteus-keystore")]
     ProteusPrekey(Vec<u8>),
+    #[cfg(feature = "proteus-keystore")]
     ProteusSession(Vec<u8>),
 }
 
@@ -72,13 +80,16 @@ impl EntityId {
             EntityId::E2eiAcmeCA(vec) => vec.as_slice().into(),
             EntityId::E2eiIntermediateCert(vec) => vec.as_slice().into(),
             EntityId::E2eiCrl(vec) => vec.as_slice().into(),
+            #[cfg(feature = "proteus-keystore")]
             EntityId::ProteusIdentity(vec) => vec.as_slice().into(),
+            #[cfg(feature = "proteus-keystore")]
             EntityId::ProteusSession(id) => id.as_slice().into(),
+            #[cfg(feature = "proteus-keystore")]
             EntityId::ProteusPrekey(vec) => vec.as_slice().into(),
         }
     }
 
-    pub(super) fn from_collection_name(entity_id: &'static str, id: &[u8]) -> CryptoKeystoreResult<Self> {
+    pub(crate) fn from_collection_name(entity_id: &'static str, id: &[u8]) -> CryptoKeystoreResult<Self> {
         match entity_id {
             MlsSignatureKeyPair::COLLECTION_NAME => Ok(Self::SignatureKeyPair(id.into())),
             MlsHpkePrivateKey::COLLECTION_NAME => Ok(Self::HpkePrivateKey(id.into())),
@@ -95,14 +106,16 @@ impl EntityId {
             E2eiAcmeCA::COLLECTION_NAME => Ok(Self::E2eiAcmeCA(id.into())),
             E2eiRefreshToken::COLLECTION_NAME => Ok(Self::E2eiRefreshToken(id.into())),
             E2eiIntermediateCert::COLLECTION_NAME => Ok(Self::E2eiIntermediateCert(id.into())),
+            #[cfg(feature = "proteus-keystore")]
             ProteusIdentity::COLLECTION_NAME => Ok(Self::ProteusIdentity(id.into())),
+            #[cfg(feature = "proteus-keystore")]
             ProteusPrekey::COLLECTION_NAME => Ok(Self::ProteusPrekey(id.into())),
+            #[cfg(feature = "proteus-keystore")]
             ProteusSession::COLLECTION_NAME => Ok(Self::ProteusSession(id.into())),
             _ => Err(CryptoKeystoreError::NotImplemented),
         }
     }
 
-    #[cfg(all(feature = "mls-keystore", feature = "proteus-keystore"))]
     #[cfg(target_family = "wasm")]
     pub(crate) fn collection_name(&self) -> &'static str {
         match self {
@@ -120,8 +133,11 @@ impl EntityId {
             EntityId::E2eiAcmeCA(_) => E2eiAcmeCA::COLLECTION_NAME,
             EntityId::E2eiIntermediateCert(_) => E2eiIntermediateCert::COLLECTION_NAME,
             EntityId::E2eiCrl(_) => E2eiCrl::COLLECTION_NAME,
+            #[cfg(feature = "proteus-keystore")]
             EntityId::ProteusIdentity(_) => ProteusIdentity::COLLECTION_NAME,
+            #[cfg(feature = "proteus-keystore")]
             EntityId::ProteusPrekey(_) => ProteusPrekey::COLLECTION_NAME,
+            #[cfg(feature = "proteus-keystore")]
             EntityId::ProteusSession(_) => ProteusSession::COLLECTION_NAME,
             EntityId::HpkePrivateKey(_) => MlsHpkePrivateKey::COLLECTION_NAME,
         }
@@ -145,8 +161,11 @@ pub async fn execute_save(tx: &TransactionWrapper<'_>, entity: &Entity) -> Crypt
         Entity::E2eiAcmeCA(e2ei_acme_ca) => e2ei_acme_ca.replace(tx).await,
         Entity::E2eiIntermediateCert(e2ei_intermediate_cert) => e2ei_intermediate_cert.save(tx).await,
         Entity::E2eiCrl(e2ei_crl) => e2ei_crl.save(tx).await,
+        #[cfg(feature = "proteus-keystore")]
         Entity::ProteusSession(record) => record.save(tx).await,
+        #[cfg(feature = "proteus-keystore")]
         Entity::ProteusIdentity(record) => record.save(tx).await,
+        #[cfg(feature = "proteus-keystore")]
         Entity::ProteusPrekey(record) => record.save(tx).await,
     }
 }
@@ -168,8 +187,11 @@ pub async fn execute_delete(tx: &TransactionWrapper<'_>, entity_id: &EntityId) -
         id @ EntityId::E2eiAcmeCA(_) => E2eiAcmeCA::delete(tx, id.as_id()).await,
         id @ EntityId::E2eiIntermediateCert(_) => E2eiIntermediateCert::delete(tx, id.as_id()).await,
         id @ EntityId::E2eiCrl(_) => E2eiCrl::delete(tx, id.as_id()).await,
+        #[cfg(feature = "proteus-keystore")]
         id @ EntityId::ProteusSession(_) => ProteusSession::delete(tx, id.as_id()).await,
+        #[cfg(feature = "proteus-keystore")]
         id @ EntityId::ProteusIdentity(_) => ProteusIdentity::delete(tx, id.as_id()).await,
+        #[cfg(feature = "proteus-keystore")]
         id @ EntityId::ProteusPrekey(_) => ProteusPrekey::delete(tx, id.as_id()).await,
     }
 }
