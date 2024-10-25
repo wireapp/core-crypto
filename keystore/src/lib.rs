@@ -26,7 +26,7 @@ pub mod transaction;
 
 cfg_if::cfg_if! {
     if #[cfg(feature = "mls-keystore")] {
-        mod mls;
+        pub(crate) mod mls;
         pub use self::mls::CryptoKeystoreMls;
         pub use self::mls::{ser, deser};
     }
@@ -34,7 +34,7 @@ cfg_if::cfg_if! {
 
 cfg_if::cfg_if! {
     if #[cfg(feature = "proteus-keystore")] {
-        mod proteus;
+        pub(crate) mod proteus;
         pub use self::proteus::CryptoKeystoreProteus;
     }
 }

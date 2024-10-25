@@ -1,18 +1,16 @@
-use crate::entities::{EntityBase, ProteusIdentity, ProteusPrekey, ProteusSession, UniqueEntity};
-pub(crate) mod dynamic_dispatch;
+pub mod dynamic_dispatch;
 
+#[cfg(feature = "mls-keystore")]
+use crate::entities::mls::*;
+#[cfg(feature = "proteus-keystore")]
+use crate::entities::proteus::*;
+use crate::entities::{EntityBase, EntityFindParams, EntityTransactionExt, UniqueEntity};
+use crate::transaction::dynamic_dispatch::EntityId;
 use crate::{
-    connection::{Connection, DatabaseConnection, FetchFromDatabase, KeystoreDatabaseConnection, TransactionWrapper},
-    entities::{
-        E2eiAcmeCA, E2eiCrl, E2eiEnrollment, E2eiIntermediateCert, E2eiRefreshToken, EntityFindParams,
-        EntityTransactionExt, MlsCredential, MlsCredentialExt, MlsEncryptionKeyPair, MlsEpochEncryptionKeyPair,
-        MlsHpkePrivateKey, MlsKeyPackage, MlsPendingMessage, MlsPskBundle, MlsSignatureKeyPair, PersistedMlsGroup,
-        PersistedMlsPendingGroup, StringEntityId,
-    },
+    connection::{Connection, DatabaseConnection, FetchFromDatabase, KeystoreDatabaseConnection},
     CryptoKeystoreError, CryptoKeystoreResult,
 };
 use async_lock::RwLock;
-use dynamic_dispatch::EntityId;
 use itertools::Itertools;
 use std::{ops::DerefMut, sync::Arc};
 
