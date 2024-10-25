@@ -9,8 +9,9 @@ use core_crypto::{
         ClientIdentifier, ConversationId, KeyPackageIn, KeyPackageRef, MlsConversationConfiguration,
         VerifiableGroupInfo,
     },
-    CryptoError, MlsError,
+    CryptoError, CryptoResult, MlsError,
 };
+use std::future::Future;
 use std::sync::atomic::AtomicU32;
 use std::{ops::Deref, sync::Arc};
 use tls_codec::{Deserialize, Serialize};
@@ -50,10 +51,37 @@ impl CoreCrypto {
         });
 
         let result = command.execute(context.clone()).await;
-        if result.is_ok() {
-            context.context.finish().await?;
+        match result {
+            Ok(result) => {
+                context.context.finish().await?;
+                Ok(result)
+            }
+            Err(err) => {
+                context.context.abort().await?;
+                Err(err)
+            }
         }
-        Ok(())
+    }
+}
+impl CoreCrypto {
+    /// For internal use in deprecated functions.
+    pub(crate) async fn deprecated_transaction<F, Fut, R>(&self, callback: F) -> CoreCryptoResult<R>
+    where
+        F: FnOnce(CentralContext) -> Fut,
+        Fut: Future<Output = CryptoResult<R>>,
+    {
+        let context = self.central.new_transaction().await?;
+        let result = callback(context.clone()).await;
+        match result {
+            Ok(result) => {
+                context.finish().await?;
+                Ok(result)
+            }
+            Err(err) => {
+                context.abort().await?;
+                Err(err.into())
+            }
+        }
     }
 }
 

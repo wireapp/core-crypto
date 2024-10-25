@@ -40,17 +40,29 @@ extern "C" {
 impl CoreCrypto {
     /// Starts a new transaction in Core Crypto. If the callback succeeds, it will be committed,
     /// otherwise, every operation performed with the context will be discarded.
-    pub async fn transaction(&self, command: CoreCryptoCommand) -> WasmCryptoResult<()> {
-        let context = CoreCryptoContext {
-            inner: Arc::new(self.inner.new_transaction().await?),
-            proteus_last_error_code: async_lock::RwLock::new(0).into(),
-        };
+    pub async fn transaction(&self, command: CoreCryptoCommand) -> Promise {
+        let context = self.inner.clone();
+        future_to_promise(
+            async move {
+                let context = CoreCryptoContext {
+                    inner: Arc::new(context.new_transaction().await?),
+                    proteus_last_error_code: async_lock::RwLock::new(0).into(),
+                };
 
-        let result = command.execute(context.clone()).await;
-        if result.is_ok() {
-            context.inner.finish().await?;
-        }
-        Ok(())
+                let result = command.execute(context.clone()).await;
+                match result {
+                    Ok(_) => {
+                        context.inner.finish().await?;
+                        WasmCryptoResult::Ok(JsValue::UNDEFINED)
+                    }
+                    Err(uncaught_error) => {
+                        context.inner.abort().await?;
+                        Err(WasmError::TransactionFailed { uncaught_error }.into())
+                    }
+                }
+            }
+            .err_into(),
+        )
     }
 }
 
