@@ -57,6 +57,8 @@ pub(crate) enum WasmError {
     SerializationError(#[from] serde_wasm_bindgen::Error),
     #[error("Failed lifting an enum")]
     EnumError,
+    #[error("Transaction rolled back due to uncaught JsError: {uncaught_error:?}")]
+    TransactionFailed { uncaught_error: JsValue },
 }
 
 #[derive(Debug, Clone, serde::Serialize)]
@@ -76,6 +78,7 @@ impl<'a> From<&'a CoreCryptoError> for CoreCryptoJsRichError {
                 WasmError::E2eError(_) => "E2eError",
                 WasmError::SerializationError(_) => "SerializationError",
                 WasmError::EnumError => "EnumError",
+                WasmError::TransactionFailed { .. } => "TransactionFailed",
             }
             .to_string(),
             message: e.0.to_string(),

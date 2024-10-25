@@ -151,13 +151,24 @@ impl CentralContext {
     /// something is called from this object.
     pub async fn finish(&self) -> CryptoResult<()> {
         let mut guard = self.state.write().await;
-        match guard.deref() {
-            ContextState::Valid { provider, .. } => {
-                provider.keystore().commit_transaction().await?;
-            }
+        let commit_result = match guard.deref() {
+            ContextState::Valid { provider, .. } => provider.keystore().commit_transaction().await,
             ContextState::Invalid => return Err(CryptoError::InvalidContext),
-        }
+        };
         *guard = ContextState::Invalid;
-        Ok(())
+        commit_result.map_err(Into::into)
+    }
+
+    /// Aborts the transaction, meaning it discards all the enqueued operations.
+    /// After that the internal state is switched to invalid, causing errors if
+    /// something is called from this object.
+    pub async fn abort(&self) -> CryptoResult<()> {
+        let mut guard = self.state.write().await;
+        let rollback_result = match guard.deref() {
+            ContextState::Valid { provider, .. } => provider.keystore().rollback_transaction().await,
+            ContextState::Invalid => return Err(CryptoError::InvalidContext),
+        };
+        *guard = ContextState::Invalid;
+        rollback_result.map_err(Into::into)
     }
 }
