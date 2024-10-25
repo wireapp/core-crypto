@@ -6,6 +6,7 @@ use mls_crypto_provider::{CryptoKeystore, TransactionalCryptoProvider};
 use std::{ops::Deref, sync::Arc};
 
 use crate::mls::MlsCentral;
+#[cfg(feature = "proteus")]
 use crate::proteus::ProteusCentral;
 use crate::{
     group_store::GroupStore,
@@ -34,7 +35,7 @@ enum ContextState {
         callbacks: Arc<RwLock<Option<std::sync::Arc<dyn CoreCryptoCallbacks + 'static>>>>,
         mls_client: Arc<RwLock<Option<Client>>>,
         mls_groups: Arc<RwLock<GroupStore<MlsConversation>>>,
-        proteus_central: Arc<Mutex<Option<ProteusCentral>>>,
+        #[cfg(feature = "proteus")] proteus_central: Arc<Mutex<Option<ProteusCentral>>>,
     },
     Invalid,
 }
@@ -44,12 +45,12 @@ impl CoreCrypto {
     /// buffered in memory and when [CentralContext::finish] is called, the data will be persisted
     /// in a single database transaction.
     pub async fn new_transaction(&self) -> CryptoResult<CentralContext> {
-        CentralContext::new(&self.mls, self.proteus.clone()).await
+        CentralContext::new(&self.mls, #[cfg(feature = "proteus")] self.proteus.clone()).await
     }
 }
 
 impl CentralContext {
-    async fn new(mls_central: &MlsCentral, proteus_central: Arc<Mutex<Option<ProteusCentral>>>) -> CryptoResult<Self> {
+    async fn new(mls_central: &MlsCentral, #[cfg(feature = "proteus")] proteus_central: Arc<Mutex<Option<ProteusCentral>>>) -> CryptoResult<Self> {
         mls_central.mls_backend.new_transaction().await?;
         let mls_groups = Arc::new(RwLock::new(Default::default()));
         let callbacks = mls_central.callbacks.clone();
@@ -61,7 +62,7 @@ impl CentralContext {
                     callbacks,
                     provider: mls_central.mls_backend.clone(),
                     mls_groups,
-                    proteus_central,
+                    #[cfg(feature = "proteus")] proteus_central,
                 }
                 .into(),
             ),
@@ -127,6 +128,7 @@ impl CentralContext {
         }
     }
 
+    #[cfg(feature = "proteus")]
     pub(crate) async fn proteus_central(&self) -> CryptoResult<Arc<Mutex<Option<ProteusCentral>>>> {
         match self.state.read().await.deref() {
             ContextState::Valid { proteus_central, .. } => Ok(proteus_central.clone()),
