@@ -55,8 +55,11 @@ pub(crate) enum WasmError {
     SerializationError(#[from] serde_wasm_bindgen::Error),
     #[error("Failed lifting an enum")]
     EnumError,
-    #[error("Transaction rolled back due to uncaught JsError: {uncaught_error:?}")]
-    TransactionFailed { uncaught_error: JsValue },
+    #[error("Transaction rolled back. Last proteus error code: {proteus_error_code:?}. Uncaught JsError: {uncaught_error:?}")]
+    TransactionFailed {
+        uncaught_error: JsValue,
+        proteus_error_code: u32,
+    },
 }
 
 #[derive(Debug, Clone, serde::Serialize)]
@@ -81,7 +84,10 @@ impl<'a> From<&'a CoreCryptoError> for CoreCryptoJsRichError {
             .to_string(),
             message: e.0.to_string(),
             rust_stack_trace: format!("{:?}", e.0),
-            proteus_error_code: e.proteus_error_code(),
+            proteus_error_code: match e.0 {
+                WasmError::TransactionFailed { proteus_error_code, .. } => proteus_error_code,
+                _ => e.proteus_error_code(),
+            },
         }
     }
 }
