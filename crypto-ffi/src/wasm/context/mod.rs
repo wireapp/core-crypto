@@ -42,14 +42,19 @@ impl CoreCrypto {
     /// otherwise, every operation performed with the context will be discarded.
     pub async fn transaction(&self, command: CoreCryptoCommand) -> Promise {
         let context = self.inner.clone();
+        let last_error_code = self.proteus_last_error_code.clone();
         future_to_promise(
             async move {
                 let context = CoreCryptoContext {
                     inner: Arc::new(context.new_transaction().await?),
                     proteus_last_error_code: async_lock::RwLock::new(0).into(),
                 };
-
                 let result = command.execute(context.clone()).await;
+                let proteus_error_code = *context.proteus_last_error_code.read().await;
+                if proteus_error_code != 0 {
+                    let mut error_code_write = last_error_code.write().await;
+                    *error_code_write = proteus_error_code;
+                }
                 match result {
                     Ok(_) => {
                         context.inner.finish().await?;
@@ -57,7 +62,11 @@ impl CoreCrypto {
                     }
                     Err(uncaught_error) => {
                         context.inner.abort().await?;
-                        Err(WasmError::TransactionFailed { uncaught_error }.into())
+                        Err(WasmError::TransactionFailed {
+                            uncaught_error,
+                            proteus_error_code,
+                        }
+                        .into())
                     }
                 }
             }
