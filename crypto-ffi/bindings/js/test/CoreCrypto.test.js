@@ -1220,3 +1220,50 @@ test("logs are not forwarded when logger is registered, but log level is too hig
     await page.close();
     await ctx.close();
 });
+
+test("errors thrown by logger are reported as errors", async () => {
+    const [ctx, page] = await initBrowser();
+
+    const consoleErrors = [];
+    page.on("console", msg => {
+        if (msg.type() == "error") {
+            consoleErrors.push(msg)
+        }
+    });
+
+    await page.evaluate(async () => {
+        const { CoreCrypto, Ciphersuite, CredentialType, CoreCryptoLogLevel, initLogger } = await import("./corecrypto.js");
+
+        const ciphersuite = Ciphersuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519;
+        const credentialType = CredentialType.Basic;
+        const cc = await CoreCrypto.init({
+            databaseName: "is invalid",
+            key: "test",
+            ciphersuites: [ciphersuite],
+            clientId: "test",
+        });
+
+        initLogger({
+            log: (level, json_msg) => {
+                throw Error("test error");
+            },
+        }, CoreCryptoLogLevel.Debug)
+
+        const encoder = new TextEncoder();
+        const conversationId = encoder.encode("invalidConversation");
+        await cc.createConversation(conversationId, credentialType);
+        await cc.wipe();
+    });
+
+    expect(consoleErrors.length).toBeGreaterThan(0)
+
+    // find any console error with a remote object, we expect this to be the error we have thrown.
+    const consoleError = consoleErrors.find((element) => element.args().length > 0);
+    const remoteObject = consoleError.args()[0].remoteObject()
+    expect(remoteObject.className).toBe("Error");
+    expect(remoteObject.description).toEqual(expect.stringContaining("test error"))
+
+    await page.close();
+    await ctx.close();
+});
+
