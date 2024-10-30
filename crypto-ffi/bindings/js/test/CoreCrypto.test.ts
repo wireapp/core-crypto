@@ -1795,3 +1795,110 @@ test("logger can be replaced", async () => {
     await page.close();
     await ctx.close();
 });
+
+test("logs with context key/value pairs are forwarded", async () => {
+    const [ctx, page] = await initBrowser();
+
+    const logs = await page.evaluate(async () => {
+        const {
+            CoreCrypto,
+            Ciphersuite,
+            CredentialType,
+            initLogger,
+            CoreCryptoLogLevel,
+        } = await import("./corecrypto.js");
+
+        const ciphersuite =
+            Ciphersuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519;
+        const credentialType = CredentialType.Basic;
+        const alice = await CoreCrypto.deferredInit({
+            databaseName: "extgen alice test",
+            key: "test",
+        });
+
+        const signaturePks = await alice.mlsGenerateKeypair([ciphersuite]);
+
+        const shinyClientId = "alice";
+        const encoder = new TextEncoder();
+        const clientId = encoder.encode(shinyClientId);
+
+        await alice.mlsInitWithClientId(clientId, signaturePks, [ciphersuite]);
+
+        const bob = await CoreCrypto.init({
+            databaseName: "extgen bob test",
+            key: "test",
+            ciphersuites: [ciphersuite],
+            clientId: "bob",
+        });
+
+        const [bobKp] = await bob.clientKeypackages(
+            ciphersuite,
+            credentialType,
+            1
+        );
+
+        const conversationId = encoder.encode("testConversation");
+
+        await alice.createConversation(conversationId, credentialType);
+
+        const memberAdded = await alice.addClientsToConversation(
+            conversationId,
+            [bobKp]
+        );
+
+        if (!memberAdded) {
+            throw new Error("no welcome message was generated");
+        }
+
+        await alice.commitAccepted(conversationId);
+
+        const welcome = await bob.processWelcomeMessage(memberAdded.welcome);
+        const welcomeConversationId = welcome.id;
+
+        if (
+            !conversationId.every((val, i) => val === welcomeConversationId[i])
+        ) {
+            throw new Error(
+                `conversationId mismatch, got ${welcomeConversationId}, expected ${conversationId}`
+            );
+        }
+
+        const logs = [];
+        initLogger(
+            {
+                log: (level, message, context) => {
+                    logs.push({
+                        level: level,
+                        message: message,
+                        context: context,
+                    });
+                },
+            },
+            CoreCryptoLogLevel.Debug
+        );
+
+        const messageText = "Hello world!";
+        const messageBuffer = encoder.encode(messageText);
+
+        const encryptedMessage = await alice.encryptMessage(
+            conversationId,
+            messageBuffer
+        );
+
+        await bob.decryptMessage(welcomeConversationId, encryptedMessage);
+
+        return logs;
+    });
+
+    const proteusErrorLog = logs.find(
+        (element) => element.message === "Application message"
+    );
+    expect(JSON.parse(proteusErrorLog.context)).toContainAllKeys([
+        "group_id",
+        "sender_client_id",
+        "epoch",
+    ]);
+
+    await page.close();
+    await ctx.close();
+});
