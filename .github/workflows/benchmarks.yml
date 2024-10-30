@@ -27,6 +27,7 @@ jobs:
           --branch '${{ github.head_ref }}' \
           --branch-start-point '${{ github.base_ref }}' \
           --branch-start-point-hash '${{ github.event.pull_request.base.sha }}' \
+          --start-point-clone-thresholds \
           --testbed ubuntu-latest \
           --err \
           --github-actions '${{ secrets.GITHUB_TOKEN }}' \
