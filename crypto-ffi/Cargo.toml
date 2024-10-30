@@ -29,6 +29,7 @@ tls_codec.workspace = true
 async-lock.workspace = true
 log.workspace = true
 log-reload.workspace = true
+serde_json.workspace = true
 
 # see https://github.com/RustCrypto/hashes/issues/404
 [target.'cfg(not(any(target_arch = "aarch64", target_arch = "x86_64", target_arch = "x86")))'.dependencies]

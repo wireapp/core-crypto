@@ -17,7 +17,7 @@
 pub mod context;
 mod utils;
 
-use std::collections::HashMap;
+use std::collections::{BTreeMap, HashMap};
 use std::ops::Deref;
 
 use crate::proteus_impl;
@@ -25,7 +25,8 @@ use core_crypto::prelude::*;
 use core_crypto::CryptoError;
 use futures_util::future::TryFutureExt;
 use js_sys::{Promise, Uint8Array};
-use log::{Level, LevelFilter, Metadata, Record};
+use log::kv::{Key, Value, Visitor};
+use log::{kv, Level, LevelFilter, Metadata, Record};
 use log_reload::ReloadLog;
 use std::sync::Arc;
 use std::sync::{LazyLock, Once};
@@ -1122,6 +1123,16 @@ impl From<Level> for CoreCryptoLogLevel {
     }
 }
 
+struct KeyValueVisitor<'kvs>(BTreeMap<Key<'kvs>, Value<'kvs>>);
+
+impl<'kvs> Visitor<'kvs> for KeyValueVisitor<'kvs> {
+    #[inline]
+    fn visit_pair(&mut self, key: Key<'kvs>, value: Value<'kvs>) -> Result<(), kv::Error> {
+        self.0.insert(key, value);
+        Ok(())
+    }
+}
+
 #[wasm_bindgen]
 impl CoreCryptoWasmLogger {
     #[wasm_bindgen(constructor)]
@@ -1136,12 +1147,20 @@ impl log::Log for CoreCryptoWasmLogger {
     }
 
     fn log(&self, record: &Record) {
+        let kvs = record.key_values();
+        let mut visitor = KeyValueVisitor(BTreeMap::new());
+        let _ = kvs.visit(&mut visitor);
+
         let message = format!("{}", record.args());
         let level: CoreCryptoLogLevel = CoreCryptoLogLevel::from(record.level());
-        if let Err(e) = self
-            .logger
-            .call2(&self.ctx, &JsValue::from(level), &JsValue::from(message))
-        {
+        let context = serde_json::to_string(&visitor.0).ok();
+
+        if let Err(e) = self.logger.call3(
+            &self.ctx,
+            &JsValue::from(level),
+            &JsValue::from(message),
+            &JsValue::from(context),
+        ) {
             web_sys::console::error_1(&e);
         }
     }

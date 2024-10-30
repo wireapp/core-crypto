@@ -15,9 +15,10 @@
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see http://www.gnu.org/licenses/.
 
-use log::{Level, LevelFilter, Metadata, Record};
+use log::kv::{Key, Value, Visitor};
+use log::{kv, Level, LevelFilter, Metadata, Record};
 use log_reload::ReloadLog;
-use std::collections::HashMap;
+use std::collections::{BTreeMap, HashMap};
 use std::ops::{Deref, DerefMut};
 use std::sync::{Arc, LazyLock, Once};
 use tls_codec::{Deserialize, Serialize};
@@ -775,14 +776,24 @@ pub fn set_max_log_level(level: CoreCryptoLogLevel) {
 pub trait CoreCryptoLogger: std::fmt::Debug + Send + Sync {
     /// Function to setup a hook for the logging messages. Core Crypto will call this method
     /// whenever it needs to log a message.
-    fn log(&self, level: CoreCryptoLogLevel, json_msg: String);
+    fn log(&self, level: CoreCryptoLogLevel, message: String, context: Option<String>);
+}
+
+struct KeyValueVisitor<'kvs>(BTreeMap<Key<'kvs>, Value<'kvs>>);
+
+impl<'kvs> Visitor<'kvs> for KeyValueVisitor<'kvs> {
+    #[inline]
+    fn visit_pair(&mut self, key: Key<'kvs>, value: Value<'kvs>) -> Result<(), kv::Error> {
+        self.0.insert(key, value);
+        Ok(())
+    }
 }
 #[derive(Debug)]
 struct DummyLogger {}
 
 impl CoreCryptoLogger for DummyLogger {
     #[allow(unused_variables)]
-    fn log(&self, level: CoreCryptoLogLevel, json_msg: String) {}
+    fn log(&self, level: CoreCryptoLogLevel, json_msg: String, context: Option<String>) {}
 }
 
 #[derive(Clone)]
@@ -796,8 +807,14 @@ impl log::Log for CoreCryptoLoggerWrapper {
     }
 
     fn log(&self, record: &Record) {
+        let kvs = record.key_values();
+        let mut visitor = KeyValueVisitor(BTreeMap::new());
+        let _ = kvs.visit(&mut visitor);
+
         let message = format!("{}", record.args());
-        self.logger.log(CoreCryptoLogLevel::from(&record.level()), message);
+        let context = serde_json::to_string(&visitor.0).ok();
+        self.logger
+            .log(CoreCryptoLogLevel::from(&record.level()), message, context);
     }
 
     fn flush(&self) {}
