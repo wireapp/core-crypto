@@ -3,6 +3,12 @@ use std::fmt::{Display, Formatter};
 
 use criterion::BenchmarkId;
 
+use core_crypto::prelude::{
+    CertificateBundle, ClientId, ConversationId, MlsCentral, MlsCentralConfiguration, MlsCiphersuite,
+    MlsConversationConfiguration, MlsCredentialType, MlsCustomConfiguration,
+};
+use core_crypto::CoreCrypto;
+use mls_crypto_provider::MlsCryptoProvider;
 use openmls::{
     framing::MlsMessageInBody,
     prelude::{
@@ -12,12 +18,6 @@ use openmls::{
 use openmls_basic_credential::SignatureKeyPair;
 use openmls_traits::{random::OpenMlsRand, types::Ciphersuite, OpenMlsCryptoProvider};
 use tls_codec::Deserialize;
-
-use core_crypto::prelude::{
-    CertificateBundle, ClientId, ConversationId, MlsCentral, MlsCentralConfiguration, MlsCiphersuite,
-    MlsConversationConfiguration, MlsCredentialType, MlsCustomConfiguration,
-};
-use mls_crypto_provider::MlsCryptoProvider;
 
 #[derive(Copy, Clone, Eq, PartialEq)]
 #[allow(non_camel_case_types)]
@@ -121,9 +121,10 @@ pub(crate) async fn setup_mls(
     ciphersuite: MlsCiphersuite,
     credential: Option<&CertificateBundle>,
     in_memory: bool,
-) -> (MlsCentral, ConversationId) {
+) -> (CoreCrypto, ConversationId) {
     let (central, _) = new_central(ciphersuite, credential, in_memory).await;
-    let context = central.new_transaction().await?;
+    let core_crypto = CoreCrypto::from(central);
+    let context = core_crypto.new_transaction().await.unwrap();
     let id = conversation_id();
     context
         .new_conversation(
@@ -138,7 +139,7 @@ pub(crate) async fn setup_mls(
         .unwrap();
 
     context.finish().await.unwrap();
-    (central, id)
+    (core_crypto, id)
 }
 
 pub(crate) async fn new_central(
@@ -146,7 +147,7 @@ pub(crate) async fn new_central(
     // TODO: always None for the moment. Need to update the benches with some realistic certificates. Tracking issue: WPB-9589
     _credential: Option<&CertificateBundle>,
     in_memory: bool,
-) -> (MlsCentral, tempfile::TempDir) {
+) -> (CoreCrypto, tempfile::TempDir) {
     let (path, tmp_file) = tmp_db_file();
     let client_id = Alphanumeric.sample_string(&mut rand::thread_rng(), 10);
     let secret = Alphanumeric.sample_string(&mut rand::thread_rng(), 10);
@@ -165,7 +166,7 @@ pub(crate) async fn new_central(
     } else {
         MlsCentral::try_new(cfg).await.unwrap()
     };
-    (central, tmp_file)
+    (CoreCrypto::from(central), tmp_file)
 }
 
 pub(crate) fn tmp_db_file() -> (String, tempfile::TempDir) {
@@ -196,7 +197,8 @@ pub(crate) async fn add_clients(
         key_packages.push(kp.into())
     }
 
-    let context = central.new_transaction().await?;
+    let core_crypto = CoreCrypto::from(central.clone());
+    let context = core_crypto.new_transaction().await.unwrap();
     let commit_bundle = context.add_members_to_conversation(id, key_packages).await.unwrap();
 
     let group_info = commit_bundle.group_info.payload.bytes();
@@ -231,11 +233,13 @@ pub(crate) async fn rand_key_package(ciphersuite: MlsCiphersuite) -> (KeyPackage
     };
 
     let cfg = CryptoConfig::with_default_version(cs);
+    backend.key_store().new_transaction().await.unwrap();
     let kp = KeyPackage::builder()
         .leaf_node_capabilities(MlsConversationConfiguration::default_leaf_capabilities())
         .build(cfg, &backend, &signer, credential)
         .await
         .unwrap();
+    backend.key_store().commit_transaction().await.unwrap();
     (kp, client_id.into())
 }
 
@@ -245,8 +249,10 @@ pub(crate) async fn invite(
     id: &ConversationId,
     ciphersuite: MlsCiphersuite,
 ) {
-    let from_context = from.new_transaction().await?;
-    let other_context = other.new_transaction().await?;
+    let core_crypto = CoreCrypto::from(from.clone());
+    let from_context = core_crypto.new_transaction().await.unwrap();
+    let core_crypto = CoreCrypto::from(other.clone());
+    let other_context = core_crypto.new_transaction().await.unwrap();
     let other_kps = other_context
         .get_or_create_client_keypackages(ciphersuite, MlsCredentialType::Basic, 1)
         .await

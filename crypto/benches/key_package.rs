@@ -21,7 +21,7 @@ fn generate_key_package_bench(c: &mut Criterion) {
                 b.to_async(FuturesExecutor).iter_batched(
                     || async_std::task::block_on(setup_mls(ciphersuite, credential.as_ref(), in_memory)),
                     |(central, _)| async move {
-                        let context = central.new_transaction().await?;
+                        let context = central.new_transaction().await.unwrap();
                         black_box(
                             context
                                 .get_or_create_client_keypackages(ciphersuite, credential_type, *i)
@@ -52,7 +52,7 @@ fn count_key_packages_bench(c: &mut Criterion) {
                         async_std::task::block_on(async {
                             let (central, ..) = setup_mls(ciphersuite, credential.as_ref(), in_memory).await;
 
-                            let context = central.new_transaction().await?;
+                            let context = central.new_transaction().await.unwrap();
                             context
                                 .get_or_create_client_keypackages(ciphersuite, credential_type, *i)
                                 .await
@@ -62,7 +62,7 @@ fn count_key_packages_bench(c: &mut Criterion) {
                         })
                     },
                     |central| async move {
-                        let context = central.new_transaction().await?;
+                        let context = central.new_transaction().await.unwrap();
                         black_box(
                             context
                                 .client_valid_key_packages_count(ciphersuite, credential_type)
