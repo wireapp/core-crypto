@@ -53,7 +53,7 @@ fn encrypt_message_bench(c: &mut Criterion) {
                         })
                     },
                     |(central, id, text)| async move {
-                        let context = central.new_transaction().await?;
+                        let context = central.new_transaction().await.unwrap();
                         black_box(context.encrypt_message(&id, text).await.unwrap());
                         context.finish().await.unwrap();
                     },
@@ -67,26 +67,25 @@ fn encrypt_message_bench(c: &mut Criterion) {
                 b.to_async(FuturesExecutor).iter_batched(
                     || {
                         async_std::task::block_on(async {
-                            let (mut central, keystore) = setup_proteus(in_memory).await;
+                            let central = setup_proteus(in_memory).await;
+                            let context = central.new_transaction().await.unwrap();
                             let session_material = (0..*i)
                                 .map(|_| (session_id(), new_prekey().serialise().unwrap()))
                                 .collect::<Vec<(String, Vec<u8>)>>();
                             for (session_id, key) in &session_material {
-                                central.session_from_prekey(session_id, key).await.unwrap();
+                                context.proteus_session_from_prekey(session_id, key).await.unwrap();
                             }
                             let text = Alphanumeric.sample_string(&mut rand::thread_rng(), MSG_MAX);
-                            (central, keystore, session_material, text)
+                            context.finish().await.unwrap();
+                            (central, session_material, text)
                         })
                     },
-                    |(mut central, mut keystore, session_material, text)| async move {
+                    |(central, session_material, text)| async move {
+                        let context = central.new_transaction().await.unwrap();
                         for (session_id, _) in session_material {
-                            black_box(
-                                central
-                                    .encrypt(&mut keystore, &session_id, text.as_bytes())
-                                    .await
-                                    .unwrap(),
-                            );
+                            black_box(context.proteus_encrypt(&session_id, text.as_bytes()).await.unwrap());
                         }
+                        context.finish().await.unwrap();
                     },
                     BatchSize::SmallInput,
                 )
@@ -112,7 +111,7 @@ fn add_client_bench(c: &mut Criterion) {
                         })
                     },
                     |(central, id, kps)| async move {
-                        let context = central.new_transaction().await?;
+                        let context = central.new_transaction().await.unwrap();
                         black_box(context.add_members_to_conversation(&id, kps).await.unwrap());
                         context.commit_accepted(&id).await.unwrap();
                         context.finish().await.unwrap();
@@ -130,17 +129,19 @@ fn add_client_bench(c: &mut Criterion) {
                 b.to_async(FuturesExecutor).iter_batched(
                     || {
                         async_std::task::block_on(async {
-                            let (central, keystore) = setup_proteus(in_memory).await;
+                            let central = setup_proteus(in_memory).await;
                             let session_material = (0..*i)
                                 .map(|_| (session_id(), new_prekey().serialise().unwrap()))
                                 .collect::<Vec<(String, Vec<u8>)>>();
-                            (central, keystore, session_material)
+                            (central, session_material)
                         })
                     },
-                    |(mut central, _keystore, session_material)| async move {
+                    |(central, session_material)| async move {
+                        let context = central.new_transaction().await.unwrap();
                         for (session_id, key) in session_material {
-                            black_box(central.session_from_prekey(&session_id, &key).await.unwrap());
+                            black_box(context.proteus_session_from_prekey(&session_id, &key).await.unwrap());
                         }
+                        context.finish().await.unwrap();
                     },
                     BatchSize::SmallInput,
                 )
@@ -166,7 +167,7 @@ fn remove_client_bench(c: &mut Criterion) {
                         })
                     },
                     |(central, id, client_ids)| async move {
-                        let context = central.new_transaction().await?;
+                        let context = central.new_transaction().await.unwrap();
                         black_box(
                             context
                                 .remove_members_from_conversation(&id, client_ids.as_slice())
@@ -189,21 +190,25 @@ fn remove_client_bench(c: &mut Criterion) {
                 b.to_async(FuturesExecutor).iter_batched(
                     || {
                         async_std::task::block_on(async {
-                            let (mut central, keystore) = setup_proteus(in_memory).await;
+                            let central = setup_proteus(in_memory).await;
                             let session_material = (0..*i)
                                 .map(|_| (session_id(), new_prekey().serialise().unwrap()))
                                 .collect::<Vec<(String, Vec<u8>)>>();
+                            let context = central.new_transaction().await.unwrap();
                             for (session_id, key) in &session_material {
-                                central.session_from_prekey(session_id, key).await.unwrap();
+                                context.proteus_session_from_prekey(session_id, key).await.unwrap();
                             }
-                            (central, keystore, session_material)
+                            context.finish().await.unwrap();
+                            (central, session_material)
                         })
                     },
-                    |(mut central, keystore, session_material)| async move {
+                    |(central, session_material)| async move {
+                        let context = central.new_transaction().await.unwrap();
                         for (session_id, _) in session_material {
-                            central.session_delete(&keystore, &session_id).await.unwrap();
+                            context.proteus_session_delete(&session_id).await.unwrap();
                             black_box(());
                         }
+                        context.finish().await.unwrap();
                     },
                     BatchSize::SmallInput,
                 )
@@ -228,7 +233,7 @@ fn update_client_bench(c: &mut Criterion) {
                         })
                     },
                     |(central, id)| async move {
-                        let context = central.new_transaction().await?;
+                        let context = central.new_transaction().await.unwrap();
                         black_box(context.update_keying_material(&id).await.unwrap());
                         context.commit_accepted(&id).await.unwrap();
                         context.finish().await.unwrap();
@@ -246,29 +251,38 @@ fn update_client_bench(c: &mut Criterion) {
                 b.to_async(FuturesExecutor).iter_batched(
                     || {
                         async_std::task::block_on(async {
-                            let (mut central, keystore) = setup_proteus(in_memory).await;
+                            let central = setup_proteus(in_memory).await;
                             let session_material = (0..*i)
                                 .map(|_| (session_id(), new_prekey().serialise().unwrap()))
                                 .collect::<Vec<(String, Vec<u8>)>>();
+                            let context = central.new_transaction().await.unwrap();
                             for (session_id, key) in &session_material {
-                                central.session_from_prekey(session_id, key).await.unwrap();
+                                context.proteus_session_from_prekey(session_id, key).await.unwrap();
                             }
+                            context.finish().await.unwrap();
                             let new_pkb = PreKeyBundle::new(
                                 keys::IdentityKeyPair::new().public_key,
                                 &PreKey::new(keys::PreKeyId::new(2)),
                             )
                             .serialise()
                             .unwrap();
-                            (central, keystore, new_pkb, session_material)
+                            (central, new_pkb, session_material)
                         })
                     },
-                    |(mut central, keystore, new_pkb, session_material)| async move {
+                    |(central, new_pkb, session_material)| async move {
+                        let context = central.new_transaction().await.unwrap();
                         for (session_id, _) in session_material {
                             // replace existing session
-                            central.session_delete(&keystore, &session_id).await.unwrap();
+                            context.proteus_session_delete(&session_id).await.unwrap();
                             black_box(());
-                            black_box(central.session_from_prekey(&session_id, &new_pkb).await.unwrap());
+                            black_box(
+                                context
+                                    .proteus_session_from_prekey(&session_id, &new_pkb)
+                                    .await
+                                    .unwrap(),
+                            );
                         }
+                        context.finish().await.unwrap();
                     },
                     BatchSize::SmallInput,
                 )

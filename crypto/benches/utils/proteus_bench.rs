@@ -1,22 +1,15 @@
-use crate::utils::tmp_db_file;
-use core_crypto::proteus::ProteusCentral;
-use core_crypto_keystore::Connection;
+use crate::utils::setup_mls;
 
-use mls_crypto_provider::CryptoKeystore;
+use core_crypto::CoreCrypto;
 use proteus_wasm::{
     keys,
     keys::{PreKey, PreKeyBundle},
 };
 
-pub(crate) async fn setup_proteus(in_memory: bool) -> (ProteusCentral, CryptoKeystore) {
-    let (path, file) = tmp_db_file();
-    assert!(file.path().exists());
-    let keystore = if in_memory {
-        Connection::open_in_memory_with_key(&path, "test").await.unwrap()
-    } else {
-        Connection::open_with_key(&path, "test").await.unwrap()
-    };
-    (ProteusCentral::try_new(&keystore).await.unwrap(), keystore)
+pub(crate) async fn setup_proteus(in_memory: bool) -> CoreCrypto {
+    let (core_crypto, _) = setup_mls(Default::default(), Default::default(), in_memory).await;
+    core_crypto.proteus_init().await.unwrap();
+    core_crypto
 }
 
 pub(crate) fn new_prekeys(size: usize) -> Vec<PreKeyBundle> {
