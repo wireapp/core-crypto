@@ -880,9 +880,10 @@ export interface CoreCryptoLogger {
     /**
      * This method will be called by Core Crypto to log messages. It is up to the implementer to decide how to handle the message and where to actually log it.
      * @param level - the level of the logged message. it will also be present in the json message
-     * @param json_msg - message to log in json format
+     * @param message - log message
+     * @param context - additional context captured when the log was made.
      **/
-    log: (level: CoreCryptoLogLevel, json_msg: string) => void;
+    log: (level: CoreCryptoLogLevel, message: string, context: string) => void;
 }
 
 /**
