@@ -131,6 +131,10 @@ harness = false
 name = "mls_proteus"
 harness = false
 
+[[bench]]
+name = "transaction"
+harness = false
+
 [build-dependencies]
 anyhow = "1.0.93"
 # this is appropriate if we always and only build in environments where `git`
