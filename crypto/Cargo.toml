@@ -59,7 +59,7 @@ proteus-traits = { workspace = true, optional = true }
 [target.'cfg(not(target_family = "wasm"))'.dependencies]
 sysinfo = { version = "0.32", default-features = false, features = ["apple-app-store", "system"] }
 async-fs = { version = "2.1", optional = true }
-futures-lite = { version = "2.3", optional = true }
+futures-lite = { version = "2.4", optional = true }
 
 [target.'cfg(target_family = "wasm")'.dependencies]
 serde-wasm-bindgen = "0.6"
