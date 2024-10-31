@@ -34,11 +34,25 @@ private class Callbacks : CoreCryptoCallbacks {
  */
 suspend fun <R> CoreCryptoCentral.transaction(block: suspend (context: CoreCryptoContext) -> R): R? {
     var result: R? = null
-    this.cc.transaction(object: CoreCryptoCommand{
-        override suspend fun execute(context: com.wire.crypto.CoreCryptoContext) {
-            result = block(CoreCryptoContext(context))
-        }
-    })
+    var error: Throwable? = null
+    try {
+        this.cc.transaction(object : CoreCryptoCommand {
+            override suspend fun execute(context: com.wire.crypto.CoreCryptoContext) {
+                try {
+                    result = block(CoreCryptoContext(context))
+                } catch (e: Throwable) {
+                    // We want to catch the error before it gets wrapped by core crypto.
+                    error = e
+                    // This is to tell core crypto that there was an error inside the transaction.
+                    throw e
+                }
+            }
+        })
+    // Catch the wrapped error, which we don't need, because we caught the original error above.
+    } catch (_: Throwable) {}
+    if (error != null) {
+        throw error as Throwable
+    }
     return result
 }
 
