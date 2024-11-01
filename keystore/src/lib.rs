@@ -21,16 +21,13 @@ mod error;
 pub use error::*;
 
 pub mod connection;
+pub use connection::Connection;
 pub mod entities;
 pub mod transaction;
 
-cfg_if::cfg_if! {
-    if #[cfg(feature = "mls-keystore")] {
-        pub(crate) mod mls;
-        pub use self::mls::CryptoKeystoreMls;
-        pub use self::mls::{ser, deser};
-    }
-}
+pub(crate) mod mls;
+pub use self::mls::CryptoKeystoreMls;
+pub use self::mls::{deser, ser};
 
 cfg_if::cfg_if! {
     if #[cfg(feature = "proteus-keystore")] {
@@ -39,7 +36,6 @@ cfg_if::cfg_if! {
     }
 }
 
-pub use connection::Connection;
 #[cfg(not(target_family = "wasm"))]
 use sha2::{Digest, Sha256};
 

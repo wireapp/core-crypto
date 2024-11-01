@@ -241,41 +241,37 @@ mod tests {
 
     use core_crypto_keystore::entities::*;
 
-    cfg_if::cfg_if! {
-        if #[cfg(feature = "mls-keystore")] {
-            test_for_entity!(test_persisted_mls_group, PersistedMlsGroup);
-            test_for_entity!(test_persisted_mls_pending_group, PersistedMlsPendingGroup);
-            test_for_entity!(test_mls_pending_message, MlsPendingMessage ignore_update:true ignore_find_many:true);
-            test_for_entity!(test_mls_credential, MlsCredential ignore_update:true);
-            test_for_entity!(test_mls_keypackage, MlsKeyPackage);
-            test_for_entity!(test_mls_signature_keypair, MlsSignatureKeyPair ignore_update:true);
-            test_for_entity!(test_mls_psk_bundle, MlsPskBundle);
-            test_for_entity!(test_mls_encryption_keypair, MlsEncryptionKeyPair);
-            test_for_entity!(test_mls_epoch_encryption_keypair, MlsEpochEncryptionKeyPair);
-            test_for_entity!(test_mls_hpke_private_key, MlsHpkePrivateKey);
-            test_for_entity!(test_e2ei_intermediate_cert, E2eiIntermediateCert);
-            test_for_entity!(test_e2ei_crl, E2eiCrl);
-            test_for_entity!(test_e2ei_enrollment, E2eiEnrollment ignore_update:true);
+    test_for_entity!(test_persisted_mls_group, PersistedMlsGroup);
+    test_for_entity!(test_persisted_mls_pending_group, PersistedMlsPendingGroup);
+    test_for_entity!(test_mls_pending_message, MlsPendingMessage ignore_update:true ignore_find_many:true);
+    test_for_entity!(test_mls_credential, MlsCredential ignore_update:true);
+    test_for_entity!(test_mls_keypackage, MlsKeyPackage);
+    test_for_entity!(test_mls_signature_keypair, MlsSignatureKeyPair ignore_update:true);
+    test_for_entity!(test_mls_psk_bundle, MlsPskBundle);
+    test_for_entity!(test_mls_encryption_keypair, MlsEncryptionKeyPair);
+    test_for_entity!(test_mls_epoch_encryption_keypair, MlsEpochEncryptionKeyPair);
+    test_for_entity!(test_mls_hpke_private_key, MlsHpkePrivateKey);
+    test_for_entity!(test_e2ei_intermediate_cert, E2eiIntermediateCert);
+    test_for_entity!(test_e2ei_crl, E2eiCrl);
+    test_for_entity!(test_e2ei_enrollment, E2eiEnrollment ignore_update:true);
 
-            cfg_if::cfg_if! {
-                if #[cfg(target_family = "wasm")] {
-                    test_migration_to_db_v1_for_entity!(test_mls_group_migration, PersistedMlsGroup, PersistedMlsGroupV1_0_0);
-                    test_migration_to_db_v1_for_entity!(test_mls_pending_group_migration, PersistedMlsPendingGroup, PersistedMlsPendingGroupV1_0_0);
-                    test_migration_to_db_v1_for_entity!(test_mls_pending_message_migration, MlsPendingMessage, MlsPendingMessageV1_0_0);
-                    test_migration_to_db_v1_for_entity!(test_mls_credential_migration, MlsCredential, MlsCredentialV1_0_0);
-                    test_migration_to_db_v1_for_entity!(test_mls_keypackage_migration, MlsKeyPackage, MlsKeyPackageV1_0_0);
-                    test_migration_to_db_v1_for_entity!(test_mls_signature_keypair_migration, MlsSignatureKeyPair, MlsSignatureKeyPairV1_0_0);
-                    test_migration_to_db_v1_for_entity!(test_mls_psk_bundle_migration, MlsPskBundle, MlsPskBundleV1_0_0);
-                    test_migration_to_db_v1_for_entity!(test_mls_encryption_keypair_migration, MlsEncryptionKeyPair, MlsEncryptionKeyPairV1_0_0);
-                    test_migration_to_db_v1_for_entity!(test_mls_epoch_encryption_keypair_migration, MlsEpochEncryptionKeyPair, MlsEpochEncryptionKeyPairV1_0_0);
-                    test_migration_to_db_v1_for_entity!(test_mls_hpke_private_key_migration, MlsHpkePrivateKey, MlsHpkePrivateKeyV1_0_0);
-                    test_migration_to_db_v1_for_entity!(test_e2ei_intermediate_cert_migration, E2eiIntermediateCert, E2eiIntermediateCertV1_0_0);
-                    test_migration_to_db_v1_for_entity!(test_e2ei_crl_migration, E2eiCrl, E2eiCrlV1_0_0);
-                    test_migration_to_db_v1_for_entity!(test_e2ei_enrollment_migration, E2eiEnrollment, E2eiEnrollmentV1_0_0);
-                    test_migration_to_db_v1_for_entity!(test_e2ei_ca_migration, E2eiAcmeCA, E2eiAcmeCAV1_0_0, unique_entity:true);
-                    test_migration_to_db_v1_for_entity!(test_e2ei_token_migration, E2eiRefreshToken, E2eiRefreshTokenV1_0_0, unique_entity:true);
-                }
-            }
+    cfg_if::cfg_if! {
+        if #[cfg(target_family = "wasm")] {
+            test_migration_to_db_v1_for_entity!(test_mls_group_migration, PersistedMlsGroup, PersistedMlsGroupV1_0_0);
+            test_migration_to_db_v1_for_entity!(test_mls_pending_group_migration, PersistedMlsPendingGroup, PersistedMlsPendingGroupV1_0_0);
+            test_migration_to_db_v1_for_entity!(test_mls_pending_message_migration, MlsPendingMessage, MlsPendingMessageV1_0_0);
+            test_migration_to_db_v1_for_entity!(test_mls_credential_migration, MlsCredential, MlsCredentialV1_0_0);
+            test_migration_to_db_v1_for_entity!(test_mls_keypackage_migration, MlsKeyPackage, MlsKeyPackageV1_0_0);
+            test_migration_to_db_v1_for_entity!(test_mls_signature_keypair_migration, MlsSignatureKeyPair, MlsSignatureKeyPairV1_0_0);
+            test_migration_to_db_v1_for_entity!(test_mls_psk_bundle_migration, MlsPskBundle, MlsPskBundleV1_0_0);
+            test_migration_to_db_v1_for_entity!(test_mls_encryption_keypair_migration, MlsEncryptionKeyPair, MlsEncryptionKeyPairV1_0_0);
+            test_migration_to_db_v1_for_entity!(test_mls_epoch_encryption_keypair_migration, MlsEpochEncryptionKeyPair, MlsEpochEncryptionKeyPairV1_0_0);
+            test_migration_to_db_v1_for_entity!(test_mls_hpke_private_key_migration, MlsHpkePrivateKey, MlsHpkePrivateKeyV1_0_0);
+            test_migration_to_db_v1_for_entity!(test_e2ei_intermediate_cert_migration, E2eiIntermediateCert, E2eiIntermediateCertV1_0_0);
+            test_migration_to_db_v1_for_entity!(test_e2ei_crl_migration, E2eiCrl, E2eiCrlV1_0_0);
+            test_migration_to_db_v1_for_entity!(test_e2ei_enrollment_migration, E2eiEnrollment, E2eiEnrollmentV1_0_0);
+            test_migration_to_db_v1_for_entity!(test_e2ei_ca_migration, E2eiAcmeCA, E2eiAcmeCAV1_0_0, unique_entity:true);
+            test_migration_to_db_v1_for_entity!(test_e2ei_token_migration, E2eiRefreshToken, E2eiRefreshTokenV1_0_0, unique_entity:true);
         }
     }
     cfg_if::cfg_if! {
@@ -421,97 +417,90 @@ pub mod utils {
                 };
             }
 
+    impl_entity_random_update_ext!(MlsKeyPackage, blob_fields=[keypackage,], additional_fields=[(keypackage_ref: uuid::Uuid::new_v4().hyphenated().to_string().into()),]);
+    impl_entity_random_update_ext!(MlsCredential, blob_fields=[credential,], additional_fields=[(id: uuid::Uuid::new_v4().hyphenated().to_string().into()),(created_at: 0; auto-generated:true),]);
+    impl_entity_random_update_ext!(MlsSignatureKeyPair, blob_fields=[pk,keypair,credential_id,], additional_fields=[(signature_scheme: rand::random()),]);
+    impl_entity_random_update_ext!(MlsHpkePrivateKey, blob_fields=[pk id_like:true,sk,]);
+    impl_entity_random_update_ext!(MlsEncryptionKeyPair, blob_fields=[pk id_like:true,sk,]);
+    impl_entity_random_update_ext!(MlsPskBundle, blob_fields=[psk,psk_id id_like:true,]);
+    impl_entity_random_update_ext!(PersistedMlsGroup, id_field=id, blob_fields=[state,], additional_fields=[(parent_id: None),]);
+    impl_entity_random_update_ext!(PersistedMlsPendingGroup, id_field=id, blob_fields=[state,custom_configuration,], additional_fields=[(parent_id: None),]);
+    impl_entity_random_update_ext!(MlsPendingMessage, id_field = foreign_id, blob_fields = [message,]);
+    impl_entity_random_update_ext!(E2eiEnrollment, id_field = id, blob_fields = [content,]);
+    impl_entity_random_update_ext!(MlsEpochEncryptionKeyPair, id_field = id, blob_fields = [keypairs,]);
     cfg_if::cfg_if! {
-        if #[cfg(feature = "mls-keystore")] {
-            impl_entity_random_update_ext!(MlsKeyPackage, blob_fields=[keypackage,], additional_fields=[(keypackage_ref: uuid::Uuid::new_v4().hyphenated().to_string().into()),]);
-            impl_entity_random_update_ext!(MlsCredential, blob_fields=[credential,], additional_fields=[(id: uuid::Uuid::new_v4().hyphenated().to_string().into()),(created_at: 0; auto-generated:true),]);
-            impl_entity_random_update_ext!(MlsSignatureKeyPair, blob_fields=[pk,keypair,credential_id,], additional_fields=[(signature_scheme: rand::random()),]);
-            impl_entity_random_update_ext!(MlsHpkePrivateKey, blob_fields=[pk id_like:true,sk,]);
-            impl_entity_random_update_ext!(MlsEncryptionKeyPair, blob_fields=[pk id_like:true,sk,]);
-            impl_entity_random_update_ext!(MlsPskBundle, blob_fields=[psk,psk_id id_like:true,]);
-            impl_entity_random_update_ext!(PersistedMlsGroup, id_field=id, blob_fields=[state,], additional_fields=[(parent_id: None),]);
-            impl_entity_random_update_ext!(PersistedMlsPendingGroup, id_field=id, blob_fields=[state,custom_configuration,], additional_fields=[(parent_id: None),]);
-            impl_entity_random_update_ext!(MlsPendingMessage, id_field=foreign_id, blob_fields=[message,]);
-            impl_entity_random_update_ext!(E2eiEnrollment, id_field=id, blob_fields=[content,]);
-            impl_entity_random_update_ext!(MlsEpochEncryptionKeyPair, id_field=id, blob_fields=[keypairs,]);
-            cfg_if::cfg_if! {
-                if #[cfg(target_family = "wasm")] {
-                    impl_entity_random_ext!(MlsKeyPackageV1_0_0, blob_fields=[keypackage,], additional_fields=[(keypackage_ref: uuid::Uuid::new_v4().hyphenated().to_string().into()),]);
-                    impl_entity_random_ext!(MlsCredentialV1_0_0, id_field=id, blob_fields=[credential,], additional_fields=[(created_at: 0),]);
-                    impl_entity_random_ext!(MlsSignatureKeyPairV1_0_0, blob_fields=[pk,keypair,credential_id,], additional_fields=[(signature_scheme: rand::random()),]);
-                    impl_entity_random_ext!(MlsHpkePrivateKeyV1_0_0, blob_fields=[pk,sk,]);
-                    impl_entity_random_ext!(MlsEncryptionKeyPairV1_0_0, blob_fields=[pk,sk,]);
-                    impl_entity_random_ext!(MlsPskBundleV1_0_0, blob_fields=[psk,psk_id,]);
-                    impl_entity_random_ext!(PersistedMlsGroupV1_0_0, id_field=id, blob_fields=[state,], additional_fields=[(parent_id: None),]);
-                    impl_entity_random_ext!(PersistedMlsPendingGroupV1_0_0, id_field=id, blob_fields=[state,custom_configuration,], additional_fields=[(parent_id: None),]);
-                    impl_entity_random_ext!(MlsPendingMessageV1_0_0, id_field=id, blob_fields=[message,]);
-                    impl_entity_random_ext!(E2eiCrlV1_0_0, blob_fields=[content,], additional_fields=[(distribution_point: "some-distribution-point".into()),]);
-                    impl_entity_random_ext!(E2eiIntermediateCertV1_0_0, blob_fields=[content,], additional_fields=[(ski_aki_pair: "some-key-pair".into()),]);
-                    impl_entity_random_ext!(E2eiAcmeCAV1_0_0, blob_fields=[content,]);
-                    impl_entity_random_ext!(E2eiRefreshTokenV1_0_0, blob_fields=[content,]);
-                    impl_entity_random_ext!(E2eiEnrollmentV1_0_0, id_field=id, blob_fields=[content,]);
-                    impl_entity_random_ext!(MlsEpochEncryptionKeyPairV1_0_0, id_field=id, blob_fields=[keypairs,]);
-                }
+        if #[cfg(target_family = "wasm")] {
+            impl_entity_random_ext!(MlsKeyPackageV1_0_0, blob_fields=[keypackage,], additional_fields=[(keypackage_ref: uuid::Uuid::new_v4().hyphenated().to_string().into()),]);
+            impl_entity_random_ext!(MlsCredentialV1_0_0, id_field=id, blob_fields=[credential,], additional_fields=[(created_at: 0),]);
+            impl_entity_random_ext!(MlsSignatureKeyPairV1_0_0, blob_fields=[pk,keypair,credential_id,], additional_fields=[(signature_scheme: rand::random()),]);
+            impl_entity_random_ext!(MlsHpkePrivateKeyV1_0_0, blob_fields=[pk,sk,]);
+            impl_entity_random_ext!(MlsEncryptionKeyPairV1_0_0, blob_fields=[pk,sk,]);
+            impl_entity_random_ext!(MlsPskBundleV1_0_0, blob_fields=[psk,psk_id,]);
+            impl_entity_random_ext!(PersistedMlsGroupV1_0_0, id_field=id, blob_fields=[state,], additional_fields=[(parent_id: None),]);
+            impl_entity_random_ext!(PersistedMlsPendingGroupV1_0_0, id_field=id, blob_fields=[state,custom_configuration,], additional_fields=[(parent_id: None),]);
+            impl_entity_random_ext!(MlsPendingMessageV1_0_0, id_field=id, blob_fields=[message,]);
+            impl_entity_random_ext!(E2eiCrlV1_0_0, blob_fields=[content,], additional_fields=[(distribution_point: "some-distribution-point".into()),]);
+            impl_entity_random_ext!(E2eiIntermediateCertV1_0_0, blob_fields=[content,], additional_fields=[(ski_aki_pair: "some-key-pair".into()),]);
+            impl_entity_random_ext!(E2eiAcmeCAV1_0_0, blob_fields=[content,]);
+            impl_entity_random_ext!(E2eiRefreshTokenV1_0_0, blob_fields=[content,]);
+            impl_entity_random_ext!(E2eiEnrollmentV1_0_0, id_field=id, blob_fields=[content,]);
+            impl_entity_random_ext!(MlsEpochEncryptionKeyPairV1_0_0, id_field=id, blob_fields=[keypairs,]);
+        }
+    }
+
+    impl EntityRandomExt for core_crypto_keystore::entities::E2eiIntermediateCert {
+        fn random() -> Self {
+            let mut rng = rand::thread_rng();
+
+            let ski_aki_pair = rng
+                .clone()
+                .sample_iter(rand::distributions::Alphanumeric)
+                .take(rng.gen_range(MAX_BLOB_SIZE))
+                .map(char::from)
+                .collect::<String>();
+
+            let mut content = vec![0; rng.gen_range(MAX_BLOB_SIZE)];
+            rng.fill(&mut content[..]);
+
+            Self { ski_aki_pair, content }
+        }
+    }
+
+    impl EntityRandomUpdateExt for core_crypto_keystore::entities::E2eiIntermediateCert {
+        fn random_update(&mut self) {
+            let mut rng = rand::thread_rng();
+            self.content = vec![0; rng.gen_range(MAX_BLOB_SIZE)];
+            rng.fill(&mut self.content[..]);
+        }
+    }
+
+    impl EntityRandomExt for core_crypto_keystore::entities::E2eiCrl {
+        fn random() -> Self {
+            let mut rng = rand::thread_rng();
+
+            let host = rng
+                .clone()
+                .sample_iter(rand::distributions::Alphanumeric)
+                .take(rng.gen_range(10..20))
+                .map(char::from)
+                .collect::<String>();
+            let distribution_point = format!("https://{host}.com");
+
+            let mut content = vec![0; rng.gen_range(MAX_BLOB_SIZE)];
+            rng.fill(&mut content[..]);
+
+            Self {
+                distribution_point,
+                content,
             }
+        }
+    }
 
-
-            impl EntityRandomExt for core_crypto_keystore::entities::E2eiIntermediateCert {
-                fn random() -> Self {
-                    let mut rng = rand::thread_rng();
-
-                    let ski_aki_pair = rng.clone()
-                        .sample_iter(rand::distributions::Alphanumeric)
-                        .take(rng.gen_range(MAX_BLOB_SIZE))
-                        .map(char::from)
-                        .collect::<String>();
-
-                    let mut content = vec![0; rng.gen_range(MAX_BLOB_SIZE)];
-                    rng.fill(&mut content[..]);
-
-                    Self {
-                        ski_aki_pair,
-                        content,
-                    }
-                }
-            }
-
-
-            impl EntityRandomUpdateExt for core_crypto_keystore::entities::E2eiIntermediateCert {
-                fn random_update(&mut self) {
-                    let mut rng = rand::thread_rng();
-                    self.content = vec![0; rng.gen_range(MAX_BLOB_SIZE)];
-                    rng.fill(&mut self.content[..]);
-                }
-            }
-
-            impl EntityRandomExt for core_crypto_keystore::entities::E2eiCrl {
-                fn random() -> Self {
-                    let mut rng = rand::thread_rng();
-
-                    let host = rng.clone()
-                        .sample_iter(rand::distributions::Alphanumeric)
-                        .take(rng.gen_range(10..20))
-                        .map(char::from)
-                        .collect::<String>();
-                    let distribution_point = format!("https://{host}.com");
-
-                    let mut content = vec![0; rng.gen_range(MAX_BLOB_SIZE)];
-                    rng.fill(&mut content[..]);
-
-                    Self {
-                        distribution_point,
-                        content,
-                    }
-                }
-            }
-
-            impl EntityRandomUpdateExt for core_crypto_keystore::entities::E2eiCrl {
-                fn random_update(&mut self) {
-                    let mut rng = rand::thread_rng();
-                    self.content = vec![0; rng.gen_range(MAX_BLOB_SIZE)];
-                    rng.fill(&mut self.content[..]);
-                }
-            }
+    impl EntityRandomUpdateExt for core_crypto_keystore::entities::E2eiCrl {
+        fn random_update(&mut self) {
+            let mut rng = rand::thread_rng();
+            self.content = vec![0; rng.gen_range(MAX_BLOB_SIZE)];
+            rng.fill(&mut self.content[..]);
         }
     }
 

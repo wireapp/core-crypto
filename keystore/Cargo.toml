@@ -20,8 +20,7 @@ name = "write"
 harness = false
 
 [features]
-default = ["mls-keystore", "proteus-keystore"]
-mls-keystore = ["dep:openmls_traits", "dep:openmls_basic_credential", "dep:openmls_x509_credential"]
+default = ["proteus-keystore"]
 proteus-keystore = ["dep:proteus-traits"]
 ios-wal-compat = ["dep:security-framework", "dep:security-framework-sys", "dep:core-foundation"]
 idb-regression-test = []
@@ -45,9 +44,9 @@ security-framework = { version = "3.0", optional = true }
 security-framework-sys = { version = "2.11", optional = true }
 core-foundation = { version = "0.10", optional = true }
 
-openmls_traits = { workspace = true, optional = true }
-openmls_basic_credential = { workspace = true, optional = true }
-openmls_x509_credential = { workspace = true, optional = true }
+openmls_traits = { workspace = true }
+openmls_basic_credential = { workspace = true }
+openmls_x509_credential = { workspace = true }
 serde = { workspace = true, features = ["derive"], optional = true }
 log = { workspace = true, optional = true }
 proteus-traits = { workspace = true, optional = true }

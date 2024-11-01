@@ -1,6 +1,5 @@
 pub mod dynamic_dispatch;
 
-#[cfg(feature = "mls-keystore")]
 use crate::entities::mls::*;
 #[cfg(feature = "proteus-keystore")]
 use crate::entities::proteus::*;
@@ -225,47 +224,89 @@ impl KeystoreTransaction {
     }
 }
 
+/// Persist all records cached in `$keystore_transaction` (first argument),
+/// using a transaction on `$db` (second argument).
+/// Use the provided types to read from the cache and write to the `$db`.
+///
+/// # Examples
+/// ```rust,ignore
+/// let transaction = KeystoreTransaction::new();
+/// let db = Connection::new();
+///
+/// // Commit records of all provided types
+/// commit_transaction!(
+///     transaction, db,
+///     [
+///         (identifier_01, MlsCredential),
+///         (identifier_02, MlsSignatureKeyPair),
+///     ],
+/// );
+///
+/// // Commit records of provided types in the first list. Commit records of types in the second
+/// // list only if the "proteus-keystore" cargo feature is enabled.
+/// commit_transaction!(
+///     transaction, db,
+///     [
+///         (identifier_01, MlsCredential),
+///         (identifier_02, MlsSignatureKeyPair),
+///     ],
+///     proteus_types: [  
+///         (identifier_03, ProteusPrekey),
+///         (identifier_04, ProteusIdentity),
+///         (identifier_05, ProteusSession)
+///     ]
+/// );
+///```
 macro_rules! commit_transaction {
-     ($keystore_transaction:expr, $db:expr, [ $( ($records:ident, $entity:ty) ),*]) => {
-        let cached_collections = ( $(
-        $keystore_transaction.cache.find_all::<$entity>(Default::default()).await?,
-            )* );
+    ($keystore_transaction:expr, $db:expr, [ $( ($records:ident, $entity:ty) ),*], proteus_types: [ $( ($conditional_records:ident, $conditional_entity:ty) ),*]) => {
+        #[cfg(feature = "proteus-keystore")]
+        commit_transaction!($keystore_transaction, $db, [ $( ($records, $entity) ),*], [ $( ($conditional_records, $conditional_entity) ),*]);
 
-         let ( $( $records, )* ) = cached_collections;
+        #[cfg(not(feature = "proteus-keystore"))]
+        commit_transaction!($keystore_transaction, $db, [ $( ($records, $entity) ),*]);
+    };
+     ($keystore_transaction:expr, $db:expr, $([ $( ($records:ident, $entity:ty) ),*]),*) => {
+            let cached_collections = ( $( $(
+            $keystore_transaction.cache.find_all::<$entity>(Default::default()).await?,
+                )* )* );
 
-        let mut conn = $db.borrow_conn().await?;
-        let deleted_ids = $keystore_transaction.deleted.read().await;
-        cfg_if::cfg_if! {
-            if #[cfg(target_family = "wasm")] {
-                let mut tables = Vec::new();
-                $(
-                    if !$records.is_empty() {
-                        tables.push(<$entity>::COLLECTION_NAME);
+             let ( $( $( $records, )* )* ) = cached_collections;
+
+            let mut conn = $db.borrow_conn().await?;
+            let deleted_ids = $keystore_transaction.deleted.read().await;
+            cfg_if::cfg_if! {
+                if #[cfg(target_family = "wasm")] {
+                    let mut tables = Vec::new();
+                    $( $(
+                        if !$records.is_empty() {
+                            tables.push(<$entity>::COLLECTION_NAME);
+                        }
+                    )* )*
+
+                    for deleted_id in deleted_ids.iter() {
+                        tables.push(deleted_id.collection_name());
                     }
-                )*
 
-                for deleted_id in deleted_ids.iter() {
-                    tables.push(deleted_id.collection_name());
-                }
-
-                if tables.is_empty() {
-                    // If we didn't do this early return, creating the transaction would fail.
-                    // Once logging is available, we should log a warning here though. (WPB-11743)
-                    return Ok(());
-                }
-                let tx = conn.new_transaction(&tables).await?;
-            } else {
-                let tx = conn.new_transaction().await?;
-            }
-        }
-
-         $(
-            if !$records.is_empty() {
-                for record in $records {
-                    dynamic_dispatch::execute_save(&tx, &record.to_transaction_entity()).await?;
+                    if tables.is_empty() {
+                        // If we didn't do this early return, creating the transaction would fail.
+                        // Once logging is available, we should log a warning here though. (WPB-11743)
+                        return Ok(());
+                    }
+                    let tx = conn.new_transaction(&tables).await?;
+                } else {
+                    let tx = conn.new_transaction().await?;
                 }
             }
-         )*
+
+
+             $( $(
+                if !$records.is_empty() {
+                    for record in $records {
+                        dynamic_dispatch::execute_save(&tx, &record.to_transaction_entity()).await?;
+                    }
+                }
+             )* )*
+
 
         for deleted_id in deleted_ids.iter() {
             dynamic_dispatch::execute_delete(&tx, deleted_id).await?
@@ -300,7 +341,9 @@ impl KeystoreTransaction {
                 (identifier_12, E2eiRefreshToken),
                 (identifier_13, E2eiAcmeCA),
                 (identifier_14, E2eiIntermediateCert),
-                (identifier_15, E2eiCrl),
+                (identifier_15, E2eiCrl)
+            ],
+            proteus_types: [
                 (identifier_16, ProteusPrekey),
                 (identifier_17, ProteusIdentity),
                 (identifier_18, ProteusSession)
