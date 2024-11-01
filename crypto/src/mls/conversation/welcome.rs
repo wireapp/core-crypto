@@ -36,7 +36,7 @@ impl CentralContext {
     /// This function will return the conversation/group id
     ///
     /// # Errors
-    /// see [MlsCentral::process_welcome_message]
+    /// see [CentralContext::process_welcome_message]
     #[cfg_attr(test, crate::dispotent)]
     pub async fn process_raw_welcome_message(
         &self,

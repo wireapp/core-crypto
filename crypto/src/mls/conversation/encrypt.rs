@@ -17,7 +17,7 @@ use crate::{mls::ConversationId, CryptoError, CryptoResult, MlsError};
 
 /// Abstraction over a MLS group capable of encrypting a MLS message
 impl MlsConversation {
-    /// see [MlsCentral::encrypt_message]
+    /// see [CentralContext::encrypt_message]
     /// It is durable because encrypting increments the message generation
     #[cfg_attr(test, crate::durable)]
     pub async fn encrypt_message(

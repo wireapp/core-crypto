@@ -26,7 +26,7 @@ use crate::{
 
 /// Abstraction over a MLS group capable of merging a commit
 impl MlsConversation {
-    /// see [MlsCentral::commit_accepted]
+    /// see [CentralContext::commit_accepted]
     #[cfg_attr(test, crate::durable)]
     pub async fn commit_accepted(&mut self, backend: &MlsCryptoProvider) -> CryptoResult<()> {
         // openmls stores here all the encryption keypairs used for update proposals..
@@ -44,7 +44,7 @@ impl MlsConversation {
         Ok(())
     }
 
-    /// see [MlsCentral::clear_pending_proposal]
+    /// see [CentralContext::clear_pending_proposal]
     #[cfg_attr(test, crate::durable)]
     pub async fn clear_pending_proposal(
         &mut self,
@@ -62,7 +62,7 @@ impl MlsConversation {
         Ok(())
     }
 
-    /// see [MlsCentral::clear_pending_commit]
+    /// see [CentralContext::clear_pending_commit]
     #[cfg_attr(test, crate::durable)]
     pub async fn clear_pending_commit(&mut self, backend: &MlsCryptoProvider) -> CryptoResult<()> {
         if self.group.pending_commit().is_some() {
@@ -84,8 +84,8 @@ impl MlsConversation {
 /// * Create a commit
 /// * Send the commit to the Delivery Service
 /// * When Delivery Service responds
-///     * 200 OK --> use [MlsCentral::commit_accepted] to merge the commit
-///     * 409 CONFLICT --> do nothing. [MlsCentral::decrypt_message] will restore the proposals not committed
+///     * 200 OK --> use [CentralContext::commit_accepted] to merge the commit
+///     * 409 CONFLICT --> do nothing. [CentralContext::decrypt_message] will restore the proposals not committed
 ///     * 5xx --> retry
 impl CentralContext {
     /// The commit we created has been accepted by the Delivery Service. Hence it is guaranteed
@@ -140,7 +140,7 @@ impl CentralContext {
     /// **CAUTION**: only use this when you had an explicit response from the Delivery Service
     /// e.g. 403. Do not use otherwise e.g. 5xx responses, timeout etc..
     /// **DO NOT** use when Delivery Service responds 409, pending state will be renewed
-    /// in [MlsCentral::decrypt_message]
+    /// in [CentralContext::decrypt_message]
     ///
     /// # Arguments
     /// * `conversation_id` - the group/conversation id
