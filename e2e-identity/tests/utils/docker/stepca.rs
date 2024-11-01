@@ -198,7 +198,7 @@ pub async fn start_acme_server(ca_cfg: &CaCfg) -> AcmeServer {
     run_command(
         &node,
         "step certificate create 'Wire Intermediate CA' intermediate-ca.crt intermediate-ca.key
-                            --template intermediate.template --password-file password
+                            --template intermediate.template --password-file password --not-after 87600h
                             --ca root-ca.crt --ca-key root-ca.key --ca-password-file password",
     )
     .await;
