@@ -83,7 +83,6 @@ pub enum CryptoKeystoreError {
     AlreadyExists,
     #[error("The provided buffer is too big to be persisted in the store")]
     BlobTooBig,
-    #[cfg(feature = "mls-keystore")]
     #[error(transparent)]
     KeyStoreValueTransformError(#[from] postcard::Error),
     #[error(transparent)]
@@ -203,7 +202,6 @@ impl proteus_traits::ProteusErrorCode for CryptoKeystoreError {
             CryptoKeystoreError::TryFromSliceError(_) => ProteusErrorKind::DecodeError,
             CryptoKeystoreError::LockPoisonError => ProteusErrorKind::OtherSystemError,
             CryptoKeystoreError::BlobTooBig => ProteusErrorKind::IoError,
-            #[cfg(feature = "mls-keystore")]
             CryptoKeystoreError::KeyStoreValueTransformError(_) => ProteusErrorKind::DecodeError,
             CryptoKeystoreError::IoError(_) => ProteusErrorKind::IoError,
             #[cfg(not(target_family = "wasm"))]
