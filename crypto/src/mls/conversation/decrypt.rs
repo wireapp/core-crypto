@@ -110,7 +110,7 @@ impl From<MlsConversationDecryptMessage> for MlsBufferedConversationDecryptMessa
 
 /// Abstraction over a MLS group capable of decrypting a MLS message
 impl MlsConversation {
-    /// see [MlsCentral::decrypt_message]
+    /// see [CentralContext::decrypt_message]
     #[allow(clippy::too_many_arguments)]
     #[cfg_attr(test, crate::durable)]
     // FIXME: this might be causing stack overflow. Retry when this is solved: https://github.com/tokio-rs/tracing/issues/1147. Tracking issue: WPB-9654

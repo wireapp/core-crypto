@@ -24,7 +24,7 @@ impl CentralContext {
     /// Generates an E2EI enrollment instance for a "regular" client (with a Basic credential)
     /// willing to migrate to E2EI. As a consequence, this method does not support changing the
     /// ClientId which should remain the same as the Basic one.
-    /// Once the enrollment is finished, use the instance in [MlsCentral::e2ei_rotate_all] to do
+    /// Once the enrollment is finished, use the instance in [CentralContext::e2ei_rotate_all] to do
     /// the rotation.
     pub async fn e2ei_new_activation_enrollment(
         &self,
@@ -64,7 +64,7 @@ impl CentralContext {
     /// having to change/rotate their credential, either because the former one is expired or it
     /// has been revoked. As a consequence, this method does not support changing neither ClientId which
     /// should remain the same as the previous one. It lets you change the DisplayName or the handle
-    /// if you need to. Once the enrollment is finished, use the instance in [MlsCentral::e2ei_rotate_all] to do the rotation.
+    /// if you need to. Once the enrollment is finished, use the instance in [CentralContext::e2ei_rotate_all] to do the rotation.
     pub async fn e2ei_new_rotate_enrollment(
         &self,
         display_name: Option<String>,
@@ -107,8 +107,8 @@ impl CentralContext {
     }
 
     /// Creates a commit in all local conversations for changing the credential. Requires first
-    /// having enrolled a new X509 certificate with either [MlsCentral::e2ei_new_activation_enrollment]
-    /// or [MlsCentral::e2ei_new_rotate_enrollment]
+    /// having enrolled a new X509 certificate with either [CentralContext::e2ei_new_activation_enrollment]
+    /// or [CentralContext::e2ei_new_rotate_enrollment]
     pub async fn e2ei_rotate_all(
         &self,
         enrollment: &mut E2eiEnrollment,
@@ -215,8 +215,8 @@ impl CentralContext {
     }
 
     /// Creates a commit in a conversation for changing the credential. Requires first
-    /// having enrolled a new X509 certificate with either [MlsCentral::e2ei_new_activation_enrollment]
-    /// or [MlsCentral::e2ei_new_rotate_enrollment]
+    /// having enrolled a new X509 certificate with either [CentralContext::e2ei_new_activation_enrollment]
+    /// or [CentralContext::e2ei_new_rotate_enrollment]
     pub async fn e2ei_rotate(
         &self,
         id: &crate::prelude::ConversationId,
@@ -262,7 +262,7 @@ pub struct MlsRotateBundle {
     pub commits: HashMap<ConversationId, MlsCommitBundle>,
     /// Fresh KeyPackages with the new Credential
     pub new_key_packages: Vec<KeyPackage>,
-    /// All the now deprecated KeyPackages. Once deleted remotely, delete them locally with [MlsCentral::delete_keypackages]
+    /// All the now deprecated KeyPackages. Once deleted remotely, delete them locally with [CentralContext::delete_keypackages]
     pub key_package_refs_to_remove: Vec<KeyPackageRef>,
     /// New CRL distribution points that appeared by the introduction of a new credential
     pub crl_new_distribution_points: NewCrlDistributionPoint,

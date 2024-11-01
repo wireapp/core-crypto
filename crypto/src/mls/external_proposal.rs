@@ -105,7 +105,7 @@ impl CentralContext {
     /// # Errors
     /// Errors resulting from the creation of the proposal within OpenMls.
     /// Fails when `credential_type` is [MlsCredentialType::X509] and no Credential has been created
-    /// for it beforehand with [MlsCentral::e2ei_mls_init_only] or variants.
+    /// for it beforehand with [CentralContext::e2ei_mls_init_only] or variants.
     #[cfg_attr(test, crate::dispotent)]
     pub async fn new_external_add_proposal(
         &self,

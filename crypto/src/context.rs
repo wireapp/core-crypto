@@ -18,7 +18,7 @@ use crate::{
 ///
 /// This is struct provides mutable access to the internals of Core Crypto. Every operation that
 /// causes data to be persisted needs to be done through this struct. This struct will buffer all
-/// operations in memory and when [CentraContext::finish] is called, it will persist the data into
+/// operations in memory and when [CentralContext::finish] is called, it will persist the data into
 /// the keystore.
 #[derive(Debug, Clone)]
 pub struct CentralContext {

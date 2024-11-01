@@ -863,7 +863,7 @@ impl CoreCrypto {
         })
     }
 
-    /// See [core_crypto::mls::MlsCentral::mls_init]
+    /// See [core_crypto::context::CentralContext::mls_init]
     #[deprecated = "Please create a transaction in Core Crypto and call this method from it."]
     pub async fn mls_init(
         &self,
@@ -887,7 +887,7 @@ impl CoreCrypto {
         .await
     }
 
-    /// See [core_crypto::mls::MlsCentral::mls_generate_keypairs]
+    /// See [core_crypto::context::CentralContext::mls_generate_keypairs]
     #[deprecated = "Please create a transaction in Core Crypto and call this method from it."]
     pub async fn mls_generate_keypairs(&self, ciphersuites: Ciphersuites) -> CoreCryptoResult<Vec<ClientId>> {
         self.deprecated_transaction(|context| async move {
@@ -899,7 +899,7 @@ impl CoreCrypto {
         .await
     }
 
-    /// See [core_crypto::mls::MlsCentral::mls_init_with_client_id]
+    /// See [core_crypto::context::CentralContext::mls_init_with_client_id]
     #[deprecated = "Please create a transaction in Core Crypto and call this method from it."]
     pub async fn mls_init_with_client_id(
         &self,
@@ -919,7 +919,7 @@ impl CoreCrypto {
         .await
     }
 
-    /// See [core_crypto::mls::MlsCentral::restore_from_disk]
+    /// See [core_crypto::context::CentralContext::proteus_reload_sessions]
     #[deprecated = "Please create a transaction in Core Crypto and call this method from it."]
     pub async fn restore_from_disk(&self) -> CoreCryptoResult<()> {
         cfg_if::cfg_if! {
@@ -978,7 +978,7 @@ impl CoreCrypto {
             .await?)
     }
 
-    /// See [core_crypto::mls::MlsCentral::get_or_create_client_keypackages]
+    /// See [core_crypto::context::CentralContext::get_or_create_client_keypackages]
     #[deprecated = "Please create a transaction in Core Crypto and call this method from it."]
     pub async fn client_keypackages(
         &self,
@@ -1001,7 +1001,7 @@ impl CoreCrypto {
         .await
     }
 
-    /// See [core_crypto::mls::MlsCentral::client_valid_key_packages_count]
+    /// See [core_crypto::context::CentralContext::client_valid_key_packages_count]
     #[deprecated = "Please create a transaction in Core Crypto and call this method from it."]
     pub async fn client_valid_keypackages_count(
         &self,
@@ -1017,7 +1017,7 @@ impl CoreCrypto {
         .await
     }
 
-    /// See [core_crypto::mls::MlsCentral::delete_keypackages]
+    /// See [core_crypto::context::CentralContext::delete_keypackages]
     #[deprecated = "Please create a transaction in Core Crypto and call this method from it."]
     pub async fn delete_keypackages(&self, refs: Vec<Vec<u8>>) -> CoreCryptoResult<()> {
         let refs = refs
@@ -1029,7 +1029,7 @@ impl CoreCrypto {
             .await
     }
 
-    /// See [core_crypto::mls::MlsCentral::new_conversation]
+    /// See [core_crypto::context::CentralContext::new_conversation]
     #[deprecated = "Please create a transaction in Core Crypto and call this method from it."]
     pub async fn create_conversation(
         &self,
@@ -1065,7 +1065,7 @@ impl CoreCrypto {
         Ok(Ciphersuite::from(core_crypto::prelude::CiphersuiteName::from(cs)))
     }
 
-    /// See [core_crypto::mls::MlsCentral::process_raw_welcome_message]
+    /// See [core_crypto::context::CentralContext::process_raw_welcome_message]
     #[deprecated = "Please create a transaction in Core Crypto and call this method from it."]
     pub async fn process_welcome_message(
         &self,
@@ -1081,7 +1081,7 @@ impl CoreCrypto {
         .await
     }
 
-    /// See [core_crypto::mls::MlsCentral::add_members_to_conversation]
+    /// See [core_crypto::context::CentralContext::add_members_to_conversation]
     #[deprecated = "Please create a transaction in Core Crypto and call this method from it."]
     pub async fn add_clients_to_conversation(
         &self,
@@ -1106,7 +1106,7 @@ impl CoreCrypto {
         .try_into()
     }
 
-    /// See [core_crypto::mls::MlsCentral::remove_members_from_conversation]
+    /// See [core_crypto::context::CentralContext::remove_members_from_conversation]
     #[deprecated = "Please create a transaction in Core Crypto and call this method from it."]
     pub async fn remove_clients_from_conversation(
         &self,
@@ -1123,7 +1123,7 @@ impl CoreCrypto {
         .try_into()
     }
 
-    /// See [core_crypto::mls::MlsCentral::mark_conversation_as_child_of]
+    /// See [core_crypto::context::CentralContext::mark_conversation_as_child_of]
     #[deprecated = "Please create a transaction in Core Crypto and call this method from it."]
     pub async fn mark_conversation_as_child_of(&self, child_id: Vec<u8>, parent_id: Vec<u8>) -> CoreCryptoResult<()> {
         self.deprecated_transaction(|context| async move {
@@ -1132,7 +1132,7 @@ impl CoreCrypto {
         .await
     }
 
-    /// See [core_crypto::mls::MlsCentral::update_keying_material]
+    /// See [core_crypto::context::CentralContext::update_keying_material]
     #[deprecated = "Please create a transaction in Core Crypto and call this method from it."]
     pub async fn update_keying_material(&self, conversation_id: Vec<u8>) -> CoreCryptoResult<CommitBundle> {
         self.deprecated_transaction(|context| async move { context.update_keying_material(&conversation_id).await })
@@ -1140,7 +1140,7 @@ impl CoreCrypto {
             .try_into()
     }
 
-    /// See [core_crypto::mls::MlsCentral::commit_pending_proposals]
+    /// See [core_crypto::context::CentralContext::commit_pending_proposals]
     #[deprecated = "Please create a transaction in Core Crypto and call this method from it."]
     pub async fn commit_pending_proposals(&self, conversation_id: Vec<u8>) -> CoreCryptoResult<Option<CommitBundle>> {
         self.deprecated_transaction(|context| async move { context.commit_pending_proposals(&conversation_id).await })
@@ -1150,14 +1150,14 @@ impl CoreCrypto {
             .transpose()
     }
 
-    /// see [core_crypto::mls::MlsCentral::wipe_conversation]
+    /// see [core_crypto::context::CentralContext::wipe_conversation]
     #[deprecated = "Please create a transaction in Core Crypto and call this method from it."]
     pub async fn wipe_conversation(&self, conversation_id: Vec<u8>) -> CoreCryptoResult<()> {
         self.deprecated_transaction(|context| async move { context.wipe_conversation(&conversation_id).await })
             .await
     }
 
-    /// See [core_crypto::mls::MlsCentral::decrypt_message]
+    /// See [core_crypto::context::CentralContext::decrypt_message]
     #[deprecated = "Please create a transaction in Core Crypto and call this method from it."]
     pub async fn decrypt_message(
         &self,
@@ -1169,7 +1169,7 @@ impl CoreCrypto {
             .try_into()
     }
 
-    /// See [core_crypto::mls::MlsCentral::encrypt_message]
+    /// See [core_crypto::context::CentralContext::encrypt_message]
     #[deprecated = "Please create a transaction in Core Crypto and call this method from it."]
     pub async fn encrypt_message(&self, conversation_id: Vec<u8>, message: Vec<u8>) -> CoreCryptoResult<Vec<u8>> {
         self.deprecated_transaction(|context| async move { context.encrypt_message(&conversation_id, message).await })
@@ -1181,7 +1181,7 @@ impl CoreCrypto {
         Ok(self.central.conversation_exists(&conversation_id).await?)
     }
 
-    /// See [core_crypto::mls::MlsCentral::new_add_proposal]
+    /// See [core_crypto::context::CentralContext::new_add_proposal]
     #[deprecated = "Please create a transaction in Core Crypto and call this method from it."]
     pub async fn new_add_proposal(
         &self,
@@ -1198,7 +1198,7 @@ impl CoreCrypto {
         .try_into()
     }
 
-    /// See [core_crypto::mls::MlsCentral::new_update_proposal]
+    /// See [core_crypto::context::CentralContext::new_update_proposal]
     #[deprecated = "Please create a transaction in Core Crypto and call this method from it."]
     pub async fn new_update_proposal(&self, conversation_id: Vec<u8>) -> CoreCryptoResult<ProposalBundle> {
         self.deprecated_transaction(|context| async move { context.new_update_proposal(&conversation_id).await })
@@ -1206,7 +1206,7 @@ impl CoreCrypto {
             .try_into()
     }
 
-    /// See [core_crypto::mls::MlsCentral::new_remove_proposal]
+    /// See [core_crypto::context::CentralContext::new_remove_proposal]
     #[deprecated = "Please create a transaction in Core Crypto and call this method from it."]
     pub async fn new_remove_proposal(
         &self,
@@ -1220,7 +1220,7 @@ impl CoreCrypto {
         .try_into()
     }
 
-    /// See [core_crypto::mls::MlsCentral::new_external_add_proposal]
+    /// See [core_crypto::context::CentralContext::new_external_add_proposal]
     #[deprecated = "Please create a transaction in Core Crypto and call this method from it."]
     pub async fn new_external_add_proposal(
         &self,
@@ -1245,7 +1245,7 @@ impl CoreCrypto {
         .await
     }
 
-    /// See [core_crypto::mls::MlsCentral::join_by_external_commit]
+    /// See [core_crypto::context::CentralContext::join_by_external_commit]
     #[deprecated = "Please create a transaction in Core Crypto and call this method from it."]
     pub async fn join_by_external_commit(
         &self,
@@ -1265,7 +1265,7 @@ impl CoreCrypto {
         .try_into()
     }
 
-    /// See [core_crypto::mls::MlsCentral::merge_pending_group_from_external_commit]
+    /// See [core_crypto::context::CentralContext::merge_pending_group_from_external_commit]
     #[deprecated = "Please create a transaction in Core Crypto and call this method from it."]
     pub async fn merge_pending_group_from_external_commit(
         &self,
@@ -1287,7 +1287,7 @@ impl CoreCrypto {
         ))
     }
 
-    /// See [core_crypto::mls::MlsCentral::clear_pending_group_from_external_commit]
+    /// See [core_crypto::context::CentralContext::clear_pending_group_from_external_commit]
     #[deprecated = "Please create a transaction in Core Crypto and call this method from it."]
     pub async fn clear_pending_group_from_external_commit(&self, conversation_id: Vec<u8>) -> CoreCryptoResult<()> {
         self.deprecated_transaction(|context| async move {
@@ -1309,7 +1309,7 @@ impl CoreCrypto {
         Ok(())
     }
 
-    /// See [core_crypto::mls::MlsCentral::commit_accepted]
+    /// See [core_crypto::context::CentralContext::commit_accepted]
     #[deprecated = "Please create a transaction in Core Crypto and call this method from it."]
     pub async fn commit_accepted(
         &self,
@@ -1329,7 +1329,7 @@ impl CoreCrypto {
         ))
     }
 
-    /// See [core_crypto::mls::MlsCentral::clear_pending_proposal]
+    /// See [core_crypto::context::CentralContext::clear_pending_proposal]
     #[deprecated = "Please create a transaction in Core Crypto and call this method from it."]
     pub async fn clear_pending_proposal(
         &self,
@@ -1344,7 +1344,7 @@ impl CoreCrypto {
         .await
     }
 
-    /// See [core_crypto::mls::MlsCentral::clear_pending_commit]
+    /// See [core_crypto::context::CentralContext::clear_pending_commit]
     #[deprecated = "Please create a transaction in Core Crypto and call this method from it."]
     pub async fn clear_pending_commit(&self, conversation_id: Vec<u8>) -> CoreCryptoResult<()> {
         self.deprecated_transaction(|context| async move { context.clear_pending_commit(&conversation_id).await })
@@ -1592,7 +1592,7 @@ impl CoreCrypto {
 #[allow(dead_code, unused_variables)]
 #[uniffi::export]
 impl CoreCrypto {
-    /// See [core_crypto::mls::MlsCentral::e2ei_new_enrollment]
+    /// See [core_crypto::context::CentralContext::e2ei_new_enrollment]
     #[deprecated = "Please create a transaction in Core Crypto and call this method from it."]
     pub async fn e2ei_new_enrollment(
         &self,
@@ -1621,7 +1621,7 @@ impl CoreCrypto {
         .await
     }
 
-    /// See [core_crypto::mls::MlsCentral::e2ei_new_activation_enrollment]
+    /// See [core_crypto::context::CentralContext::e2ei_new_activation_enrollment]
     #[deprecated = "Please create a transaction in Core Crypto and call this method from it."]
     pub async fn e2ei_new_activation_enrollment(
         &self,
@@ -1642,7 +1642,7 @@ impl CoreCrypto {
         .await
     }
 
-    /// See [core_crypto::mls::MlsCentral::e2ei_new_rotate_enrollment]
+    /// See [core_crypto::context::CentralContext::e2ei_new_rotate_enrollment]
     #[deprecated = "Please create a transaction in Core Crypto and call this method from it."]
     pub async fn e2ei_new_rotate_enrollment(
         &self,
@@ -1672,14 +1672,14 @@ impl CoreCrypto {
         self.central.e2ei_is_pki_env_setup().await
     }
 
-    /// See [core_crypto::mls::MlsCentral::e2ei_register_acme_ca]
+    /// See [core_crypto::context::CentralContext::e2ei_register_acme_ca]
     #[deprecated = "Please create a transaction in Core Crypto and call this method from it."]
     pub async fn e2ei_register_acme_ca(&self, trust_anchor_pem: String) -> CoreCryptoResult<()> {
         self.deprecated_transaction(|context| async move { context.e2ei_register_acme_ca(trust_anchor_pem).await })
             .await
     }
 
-    /// See [core_crypto::mls::MlsCentral::e2ei_register_intermediate_ca_pem]
+    /// See [core_crypto::context::CentralContext::e2ei_register_intermediate_ca_pem]
     #[deprecated = "Please create a transaction in Core Crypto and call this method from it."]
     pub async fn e2ei_register_intermediate_ca(&self, cert_pem: String) -> CoreCryptoResult<Option<Vec<String>>> {
         self.deprecated_transaction(|context| async move {
@@ -1688,7 +1688,7 @@ impl CoreCrypto {
         .await
     }
 
-    /// See [core_crypto::mls::MlsCentral::e2ei_register_crl]
+    /// See [core_crypto::context::CentralContext::e2ei_register_crl]
     #[deprecated = "Please create a transaction in Core Crypto and call this method from it."]
     pub async fn e2ei_register_crl(&self, crl_dp: String, crl_der: Vec<u8>) -> CoreCryptoResult<CrlRegistration> {
         self.deprecated_transaction(
@@ -1697,7 +1697,7 @@ impl CoreCrypto {
         .await
     }
 
-    /// See [core_crypto::mls::MlsCentral::e2ei_mls_init_only]
+    /// See [core_crypto::context::CentralContext::e2ei_mls_init_only]
     #[deprecated = "Please create a transaction in Core Crypto and call this method from it."]
     pub async fn e2ei_mls_init_only(
         &self,
@@ -1723,7 +1723,7 @@ impl CoreCrypto {
         .await
     }
 
-    /// See [core_crypto::mls::MlsCentral::e2ei_rotate]
+    /// See [core_crypto::context::CentralContext::e2ei_rotate]
     #[deprecated = "Please create a transaction in Core Crypto and call this method from it."]
     pub async fn e2ei_rotate(&self, conversation_id: Vec<u8>) -> CoreCryptoResult<CommitBundle> {
         self.deprecated_transaction(|context| async move { context.e2ei_rotate(&conversation_id, None).await })
@@ -1731,7 +1731,7 @@ impl CoreCrypto {
             .try_into()
     }
 
-    /// See [core_crypto::mls::MlsCentral::e2ei_rotate_all]
+    /// See [core_crypto::context::CentralContext::e2ei_rotate_all]
     #[deprecated = "Please create a transaction in Core Crypto and call this method from it."]
     pub async fn e2ei_rotate_all(
         &self,
@@ -1752,7 +1752,7 @@ impl CoreCrypto {
         .try_into()
     }
 
-    /// See [core_crypto::mls::MlsCentral::e2ei_enrollment_stash]
+    /// See [core_crypto::context::CentralContext::e2ei_enrollment_stash]
     #[deprecated = "Please create a transaction in Core Crypto and call this method from it."]
     pub async fn e2ei_enrollment_stash(&self, enrollment: std::sync::Arc<E2eiEnrollment>) -> CoreCryptoResult<Vec<u8>> {
         let enrollment = std::sync::Arc::into_inner(enrollment).ok_or_else(|| CryptoError::LockPoisonError)?;
@@ -1764,7 +1764,7 @@ impl CoreCrypto {
             .await
     }
 
-    /// See [core_crypto::mls::MlsCentral::e2ei_enrollment_stash_pop]
+    /// See [core_crypto::context::CentralContext::e2ei_enrollment_stash_pop]
     #[deprecated = "Please create a transaction in Core Crypto and call this method from it."]
     pub async fn e2ei_enrollment_stash_pop(&self, handle: Vec<u8>) -> CoreCryptoResult<E2eiEnrollment> {
         self.deprecated_transaction(|context| async move {
@@ -1778,7 +1778,7 @@ impl CoreCrypto {
         .await
     }
 
-    /// See [core_crypto::mls::MlsCentral::e2ei_conversation_state]
+    /// See [core_crypto::context::CentralContext::e2ei_conversation_state]
     #[deprecated = "Please create a transaction in Core Crypto and call this method from it."]
     pub async fn e2ei_conversation_state(&self, conversation_id: Vec<u8>) -> CoreCryptoResult<E2eiConversationState> {
         self.deprecated_transaction(|context| async move {

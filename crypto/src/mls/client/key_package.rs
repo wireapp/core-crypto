@@ -347,7 +347,7 @@ impl CentralContext {
     }
 
     /// Prunes local KeyPackages after making sure they also have been deleted on the backend side
-    /// You should only use this after [MlsCentral::e2ei_rotate_all]
+    /// You should only use this after [CentralContext::e2ei_rotate_all]
     #[cfg_attr(test, crate::dispotent)]
     pub async fn delete_keypackages(&self, refs: &[KeyPackageRef]) -> CryptoResult<()> {
         if refs.is_empty() {
