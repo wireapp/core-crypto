@@ -53,9 +53,9 @@ export class CoreCryptoError extends Error {
     private constructor(
         msg: string,
         richError: CoreCryptoRichError,
-        ...params: any[]
+        ...params: unknown[]
     ) {
-        // @ts-ignore
+        // @ts-expect-error TS2556: A spread argument must either have a tuple type or be passed to a rest parameter.
         super(msg, ...params);
         Object.setPrototypeOf(this, new.target.prototype);
 
@@ -64,15 +64,15 @@ export class CoreCryptoError extends Error {
         this.proteusErrorCode = richError.proteusErrorCode;
     }
 
-    private static fallback(msg: string, ...params: any[]): Error {
+    private static fallback(msg: string, ...params: unknown[]): Error {
         console.warn(
             `Cannot build CoreCryptoError, falling back to standard Error! ctx: ${msg}`
         );
-        // @ts-ignore
+        // @ts-expect-error TS2556: A spread argument must either have a tuple type or be passed to a rest parameter.
         return new Error(msg, ...params);
     }
 
-    static build(msg: string, ...params: any[]): CoreCryptoError | Error {
+    static build(msg: string, ...params: unknown[]): CoreCryptoError | Error {
         const parts = msg.split("\n\n");
         if (parts.length < 2) {
             const cause = new Error(
@@ -92,7 +92,7 @@ export class CoreCryptoError extends Error {
 
     static fromStdError(e: Error): CoreCryptoError | Error {
         const opts = {
-            // @ts-ignore
+            // @ts-expect-error TS2550: Property 'cause' does not exist on type 'Error'. Try changing the 'lib' compiler option to 'es2022' or later.
             cause: e.cause || undefined,
             stack: e.stack || undefined,
         };
@@ -894,7 +894,7 @@ export enum CoreCryptoLogLevel {
 export function initLogger(
     logger: CoreCryptoLogger,
     level: CoreCryptoLogLevel,
-    ctx: any = null
+    ctx: unknown = null
 ): void {
     const wasmLogger = new CoreCryptoWasmLogger(logger.log, ctx);
     CoreCrypto.setLogger(wasmLogger, level);
@@ -935,7 +935,7 @@ export class CoreCrypto {
     }
 
     static setLogger(logger: CoreCryptoWasmLogger, level: CoreCryptoLogLevel) {
-        this.#assertModuleLoaded()
+        this.#assertModuleLoaded();
         CoreCryptoFfi.set_logger(logger, level);
     }
 
@@ -983,7 +983,7 @@ export class CoreCrypto {
     }: CoreCryptoParams): Promise<CoreCrypto> {
         await this.#loadModule(wasmFilePath);
 
-        let cs = ciphersuites.map((cs) => cs.valueOf());
+        const cs = ciphersuites.map((cs) => cs.valueOf());
         const cc = await CoreCryptoError.asyncMapErr(
             CoreCryptoFfi._internal_new(
                 databaseName,
@@ -1030,7 +1030,7 @@ export class CoreCrypto {
         ciphersuites: Ciphersuite[],
         nbKeyPackage?: number
     ): Promise<void> {
-        let cs = ciphersuites.map((cs) => cs.valueOf());
+        const cs = ciphersuites.map((cs) => cs.valueOf());
         return await CoreCryptoError.asyncMapErr(
             this.#cc.mls_init(clientId, Uint16Array.of(...cs), nbKeyPackage)
         );
@@ -1046,7 +1046,7 @@ export class CoreCrypto {
     async mlsGenerateKeypair(
         ciphersuites: Ciphersuite[]
     ): Promise<Uint8Array[]> {
-        let cs = ciphersuites.map((cs) => cs.valueOf());
+        const cs = ciphersuites.map((cs) => cs.valueOf());
         return await CoreCryptoError.asyncMapErr(
             this.#cc.mls_generate_keypair(Uint16Array.of(...cs))
         );
@@ -1066,7 +1066,7 @@ export class CoreCrypto {
         signaturePublicKeys: Uint8Array[],
         ciphersuites: Ciphersuite[]
     ): Promise<void> {
-        let cs = ciphersuites.map((cs) => cs.valueOf());
+        const cs = ciphersuites.map((cs) => cs.valueOf());
         return await CoreCryptoError.asyncMapErr(
             this.#cc.mls_init_with_client_id(
                 clientId,
@@ -1116,7 +1116,7 @@ export class CoreCrypto {
      */
     async registerCallbacks(
         callbacks: CoreCryptoCallbacks,
-        ctx: any = null
+        ctx: unknown = null
     ): Promise<void> {
         try {
             const wasmCallbacks = new CoreCryptoWasmCallbacks(
@@ -1566,9 +1566,7 @@ export class CoreCrypto {
      *
      * @returns A {@link CommitBundle}
      */
-    async e2eiRotate(
-        conversationId: ConversationId
-    ): Promise<CommitBundle> {
+    async e2eiRotate(conversationId: ConversationId): Promise<CommitBundle> {
         try {
             const ffiRet: CoreCryptoFfiTypes.CommitBundle =
                 await CoreCryptoError.asyncMapErr(
@@ -1689,7 +1687,7 @@ export class CoreCrypto {
     ): Promise<Uint8Array> {
         switch (externalProposalType) {
             case ExternalProposalType.Add: {
-                let addArgs = args as ExternalAddProposalArgs;
+                const addArgs = args as ExternalAddProposalArgs;
                 return await CoreCryptoError.asyncMapErr(
                     this.#cc.new_external_add_proposal(
                         args.conversationId,
@@ -2392,7 +2390,7 @@ export class CoreCrypto {
     async e2eiConversationState(
         conversationId: ConversationId
     ): Promise<E2eiConversationState> {
-        let state = await CoreCryptoError.asyncMapErr(
+        const state = await CoreCryptoError.asyncMapErr(
             this.#cc.e2ei_conversation_state(conversationId)
         );
 
@@ -2473,7 +2471,7 @@ export class CoreCrypto {
         groupInfo: Uint8Array,
         credentialType: CredentialType = CredentialType.X509
     ): Promise<E2eiConversationState> {
-        let state = await CoreCryptoError.asyncMapErr(
+        const state = await CoreCryptoError.asyncMapErr(
             this.#cc.get_credential_in_use(groupInfo, credentialType)
         );
         return normalizeEnum(E2eiConversationState, state);
