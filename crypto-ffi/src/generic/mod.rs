@@ -16,8 +16,10 @@
 // along with this program. If not, see http://www.gnu.org/licenses/.
 
 use log::{Level, LevelFilter, Metadata, Record};
+use log_reload::ReloadLog;
 use std::collections::HashMap;
-use std::ops::DerefMut;
+use std::ops::{Deref, DerefMut};
+use std::sync::{Arc, LazyLock, Once};
 use tls_codec::{Deserialize, Serialize};
 
 use crate::UniffiCustomTypeConverter;
@@ -734,13 +736,38 @@ pub trait CoreCryptoCallbacks: std::fmt::Debug + Send + Sync {
     ) -> bool;
 }
 
+static INIT_LOGGER: Once = Once::new();
+static LOGGER: LazyLock<ReloadLog<CoreCryptoLoggerWrapper>> = LazyLock::new(|| {
+    ReloadLog::new(CoreCryptoLoggerWrapper {
+        logger: Arc::new(DummyLogger {}),
+    })
+});
+
 /// Initializes the logger
-/// WARNING: This is a global setting. Calling it twice will cause errors.
+///
+/// NOTE: in a future  release we will remove `level` argument.
 #[uniffi::export]
-pub fn set_logger(logger: std::sync::Arc<dyn CoreCryptoLogger>, level: CoreCryptoLogLevel) {
-    let logger = CoreCryptoLoggerWrapper { logger };
-    log::set_boxed_logger(Box::new(logger)).unwrap();
-    log::set_max_level(LevelFilter::from(level));
+pub fn set_logger(logger: Arc<dyn CoreCryptoLogger>, level: CoreCryptoLogLevel) {
+    set_logger_only(logger);
+    set_max_log_level(level);
+}
+
+/// Initializes the logger
+#[uniffi::export]
+pub fn set_logger_only(logger: Arc<dyn CoreCryptoLogger>) {
+    // unwrapping poisoned lock error which shouldn't happen since we don't panic while replacing the logger
+    LOGGER.handle().replace(CoreCryptoLoggerWrapper { logger }).unwrap();
+
+    INIT_LOGGER.call_once(|| {
+        log::set_logger(LOGGER.deref()).unwrap();
+        log::set_max_level(LevelFilter::Warn);
+    });
+}
+
+/// Set maximum log level forwarded to the logger
+#[uniffi::export]
+pub fn set_max_log_level(level: CoreCryptoLogLevel) {
+    log::set_max_level(level.into());
 }
 
 /// This trait is used to provide a callback mechanism to hook up the rerspective platform logging system
@@ -749,6 +776,13 @@ pub trait CoreCryptoLogger: std::fmt::Debug + Send + Sync {
     /// Function to setup a hook for the logging messages. Core Crypto will call this method
     /// whenever it needs to log a message.
     fn log(&self, level: CoreCryptoLogLevel, json_msg: String);
+}
+#[derive(Debug)]
+struct DummyLogger {}
+
+impl CoreCryptoLogger for DummyLogger {
+    #[allow(unused_variables)]
+    fn log(&self, level: CoreCryptoLogLevel, json_msg: String) {}
 }
 
 #[derive(Clone)]

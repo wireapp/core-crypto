@@ -969,6 +969,7 @@ dependencies = [
  "futures-util",
  "js-sys",
  "log",
+ "log-reload",
  "serde",
  "serde-wasm-bindgen",
  "serde_json",
@@ -2668,6 +2669,16 @@ checksum = "a7a70ba024b9dc04c27ea2f0c0548feb474ec5c54bba33a7f72f873a39d07b24"
 dependencies = [
  "serde",
  "value-bag",
+]
+
+[[package]]
+name = "log-reload"
+version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e99df759bfe829042ac9ad2d576ad0b3ffb3bad3c1f124dc0094b54441e89999"
+dependencies = [
+ "log",
+ "thiserror",
 ]
 
 [[package]]

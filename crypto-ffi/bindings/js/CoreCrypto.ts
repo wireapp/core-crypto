@@ -898,11 +898,14 @@ export enum CoreCryptoLogLevel {
 }
 
 /**
- * Initializes the global logger for Core Crypto and registers the callback. Can be called only once
+ * Initializes the global logger for Core Crypto and registers the callback.
+ *
+ * **NOTE:** you must call this after `await CoreCrypto.init(params)` or `await CoreCrypto.deferredInit(params)`.
+ *
+ * @deprecated use {@link CoreCrypto.setLogger} instead.
+ *
  * @param logger - the interface to be called when something is going to be logged
  * @param level - the max level that should be logged
- *
- * NOTE: you must call this after `await CoreCrypto.init(params)` or `await CoreCrypto.deferredInit(params)`.
  **/
 export function initLogger(
     logger: CoreCryptoLogger,
@@ -910,7 +913,29 @@ export function initLogger(
     ctx: unknown = null
 ): void {
     const wasmLogger = new CoreCryptoWasmLogger(logger.log, ctx);
-    CoreCrypto.setLogger(wasmLogger, level);
+    CoreCrypto.setLogger(wasmLogger);
+    CoreCrypto.setMaxLogLevel(level);
+}
+
+/**
+ * Initializes the global logger for Core Crypto and registers the callback.
+ *
+ * **NOTE:** you must call this after `await CoreCrypto.init(params)` or `await CoreCrypto.deferredInit(params)`.
+ *
+ * @param logger - the interface to be called when something is going to be logged
+ **/
+export function setLogger(logger: CoreCryptoLogger, ctx: unknown = null): void {
+    const wasmLogger = new CoreCryptoWasmLogger(logger.log, ctx);
+    CoreCrypto.setLogger(wasmLogger);
+}
+
+/**
+ * Sets maximum log level for logs forwarded to the logger, defaults to `Warn`.
+ *
+ * @param level - the max level that should be logged
+ */
+export function setMaxLogLevel(level: CoreCryptoLogLevel): void {
+    CoreCrypto.setMaxLogLevel(level);
 }
 
 /**
@@ -947,9 +972,14 @@ export class CoreCrypto {
         }
     }
 
-    static setLogger(logger: CoreCryptoWasmLogger, level: CoreCryptoLogLevel) {
+    static setLogger(logger: CoreCryptoWasmLogger) {
         this.#assertModuleLoaded();
-        CoreCryptoFfi.set_logger(logger, level);
+        CoreCryptoFfi.set_logger(logger);
+    }
+
+    static setMaxLogLevel(level: CoreCryptoLogLevel) {
+        this.#assertModuleLoaded();
+        CoreCryptoFfi.set_max_log_level(level);
     }
 
     /**

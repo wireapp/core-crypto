@@ -58,13 +58,32 @@ suspend fun <R> CoreCryptoCentral.transaction(block: suspend (context: CoreCrypt
 
 /**
  * Initializes the logging inside Core Crypto. Not required to be called and by default there will be no logging.
- * Can only be called once, otherwise errors will be thrown.
  *
  * @param logger a callback to implement the platform specific logging. It will receive the string with the log text from Core Crypto
- * @param  level the max level that should be logged. By default it will be OFF
+ * @param  level the max level that should be logged
  **/
-fun initLogger(logger: CoreCryptoLogger, level: CoreCryptoLogLevel = CoreCryptoLogLevel.OFF) {
-    setLogger(logger, level)
+@Deprecated("Use setLogger and setMaxLogLevel instead")
+fun initLogger(logger: CoreCryptoLogger, level: CoreCryptoLogLevel) {
+    com.wire.crypto.setLoggerOnly(logger)
+    com.wire.crypto.setMaxLogLevel(level)
+}
+
+/**
+ * Initializes the logging inside Core Crypto. Not required to be called and by default there will be no logging.
+ *
+ * @param logger a callback to implement the platform specific logging. It will receive the string with the log text from Core Crypto
+ **/
+fun setLogger(logger: CoreCryptoLogger) {
+    com.wire.crypto.setLoggerOnly(logger)
+}
+
+/**
+ * Set maximum log level of logs which are forwarded to the [CoreCryptoLogger].
+ *
+ * @param  level the max level that should be logged, by default it will be WARN
+ */
+fun setMaxLogLevel(level: CoreCryptoLogLevel) {
+    com.wire.crypto.setMaxLogLevel(level)
 }
 
 
