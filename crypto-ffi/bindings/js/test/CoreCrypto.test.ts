@@ -1721,3 +1721,53 @@ test("errors thrown by logger are reported as errors", async () => {
     await page.close();
     await ctx.close();
 });
+
+test("logger can be replaced", async () => {
+    const [ctx, page] = await initBrowser();
+
+    const logs = await page.evaluate(async () => {
+        const {
+            CoreCrypto,
+            Ciphersuite,
+            CredentialType,
+            CoreCryptoLogLevel,
+            setLogger,
+            setMaxLogLevel,
+        } = await import("./corecrypto.js");
+
+        const ciphersuite =
+            Ciphersuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519;
+        const credentialType = CredentialType.Basic;
+        const cc = await CoreCrypto.init({
+            databaseName: "is invalid",
+            key: "test",
+            ciphersuites: [ciphersuite],
+            clientId: "test",
+        });
+
+        const logs = [];
+        setLogger({
+            log: () => {
+                throw Error("Initial logger should not be active");
+            },
+        });
+        setLogger({
+            log: (level, json_msg) => {
+                logs.push(json_msg);
+            },
+        });
+        setMaxLogLevel(CoreCryptoLogLevel.Debug);
+
+        const encoder = new TextEncoder();
+        const conversationId = encoder.encode("invalidConversation");
+        await cc.createConversation(conversationId, credentialType);
+
+        await cc.wipe();
+        return logs;
+    });
+
+    expect(logs.length).toBeGreaterThan(0);
+
+    await page.close();
+    await ctx.close();
+});
