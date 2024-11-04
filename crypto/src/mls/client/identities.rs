@@ -1,22 +1,25 @@
+use crate::mls::client::ClientInner;
 use crate::{
     mls::credential::{typ::MlsCredentialType, CredentialBundle},
     prelude::{Client, CryptoError, CryptoResult, MlsConversation},
 };
-use async_lock::Mutex;
 use openmls::prelude::{Credential, SignaturePublicKey};
 use openmls_traits::types::SignatureScheme;
 use std::collections::HashMap;
+use std::ops::Deref;
 use std::sync::Arc;
 
 /// In memory Map of a Client's identities: one per SignatureScheme.
 /// We need `indexmap::IndexSet` because each `CredentialBundle` has to be unique and insertion
 /// order matters in order to keep values sorted by time `created_at` so that we can identify most recent ones.
+///
+/// We keep each credential bundle inside an arc to avoid cloning them, as X509 credentials can get quite large.
 #[derive(Debug, Clone)]
-pub(crate) struct ClientIdentities(Arc<Mutex<HashMap<SignatureScheme, indexmap::IndexSet<CredentialBundle>>>>);
+pub(crate) struct ClientIdentities(HashMap<SignatureScheme, indexmap::IndexSet<Arc<CredentialBundle>>>);
 
 impl ClientIdentities {
     pub(crate) fn new(capacity: usize) -> Self {
-        Self(Arc::new(Mutex::new(HashMap::with_capacity(capacity))))
+        Self(HashMap::with_capacity(capacity))
     }
 
     pub(crate) async fn find_credential_bundle_by_public_key(
@@ -24,10 +27,9 @@ impl ClientIdentities {
         sc: SignatureScheme,
         ct: MlsCredentialType,
         pk: &SignaturePublicKey,
-    ) -> Option<CredentialBundle> {
-        let credential_bundles_by_signature_schemes = self.0.lock().await;
-        let credential_bundles = credential_bundles_by_signature_schemes.get(&sc)?;
-        credential_bundles
+    ) -> Option<Arc<CredentialBundle>> {
+        self.0
+            .get(&sc)?
             .iter()
             .find(|c| {
                 let ct_match = ct == c.credential.credential_type().into();
@@ -41,10 +43,9 @@ impl ClientIdentities {
         &self,
         sc: SignatureScheme,
         ct: MlsCredentialType,
-    ) -> Option<CredentialBundle> {
-        let credential_bundles_by_signature_schemes = self.0.lock().await;
-        let credential_bundles = credential_bundles_by_signature_schemes.get(&sc)?;
-        credential_bundles
+    ) -> Option<Arc<CredentialBundle>> {
+        self.0
+            .get(&sc)?
             .iter()
             .rfind(|c| ct == c.credential.credential_type().into())
             .cloned()
@@ -59,63 +60,52 @@ impl ClientIdentities {
     ) -> CryptoResult<()> {
         // this would mean we have messed something up and that we do no init this CredentialBundle from a keypair just inserted in the keystore
         debug_assert_ne!(cb.created_at, 0);
-        let mut credential_bundles_by_signature_schemes = self.0.lock().await;
 
-        match credential_bundles_by_signature_schemes.get_mut(&sc) {
+        match self.0.get_mut(&sc) {
             Some(cbs) => {
-                let already_exists = !cbs.insert(cb);
+                let already_exists = !cbs.insert(Arc::new(cb));
                 if already_exists {
                     return Err(CryptoError::CredentialBundleConflict);
                 }
             }
             None => {
-                credential_bundles_by_signature_schemes.insert(sc, indexmap::IndexSet::from([cb]));
+                self.0.insert(sc, indexmap::IndexSet::from([Arc::new(cb)]));
             }
         }
         Ok(())
     }
 
     pub(crate) async fn remove(&mut self, credential: &Credential) -> CryptoResult<()> {
-        let mut credential_bundles_by_signature_schemes = self.0.lock().await;
-        credential_bundles_by_signature_schemes.iter_mut().for_each(|(_, cbs)| {
+        self.0.iter_mut().for_each(|(_, cbs)| {
             cbs.retain(|c| c.credential() != credential);
         });
         Ok(())
     }
 
-    pub(crate) async fn as_vec(&self) -> Vec<(SignatureScheme, CredentialBundle)> {
-        let credential_bundles_by_signature_schemes = self.0.lock().await;
-
-        credential_bundles_by_signature_schemes
-            .iter()
-            .flat_map(|(sig_scheme, bundles)| bundles.iter().cloned().map(move |bundle| (*sig_scheme, bundle)))
-            .collect()
+    pub(crate) fn iter(&self) -> impl Iterator<Item = (SignatureScheme, Arc<CredentialBundle>)> + '_ {
+        self.0.iter().flat_map(|(sc, cb)| cb.iter().map(|c| (*sc, c.clone())))
     }
 }
 
 impl MlsConversation {
-    pub(crate) async fn find_current_credential_bundle(
-        &self,
-        client: &Client,
-    ) -> CryptoResult<Option<CredentialBundle>> {
+    pub(crate) async fn find_current_credential_bundle(&self, client: &Client) -> CryptoResult<Arc<CredentialBundle>> {
         let own_leaf = self.group.own_leaf().ok_or(CryptoError::InternalMlsError)?;
         let sc = self.ciphersuite().signature_algorithm();
         let ct = self.own_credential_type()?;
 
-        Ok(client
-            .identities
+        client
             .find_credential_bundle_by_public_key(sc, ct, own_leaf.signature_key())
-            .await)
+            .await
     }
 
     pub(crate) async fn find_most_recent_credential_bundle(
         &self,
         client: &Client,
-    ) -> CryptoResult<Option<CredentialBundle>> {
+    ) -> CryptoResult<Arc<CredentialBundle>> {
         let sc = self.ciphersuite().signature_algorithm();
         let ct = self.own_credential_type()?;
 
-        Ok(client.identities.find_most_recent_credential_bundle(sc, ct).await)
+        client.find_most_recent_credential_bundle(sc, ct).await
     }
 }
 
@@ -124,8 +114,37 @@ impl Client {
         &self,
         sc: SignatureScheme,
         ct: MlsCredentialType,
-    ) -> Option<CredentialBundle> {
-        self.identities.find_most_recent_credential_bundle(sc, ct).await
+    ) -> CryptoResult<Arc<CredentialBundle>> {
+        match self.state.read().await.deref() {
+            None => Err(CryptoError::MlsNotInitialized),
+            Some(ClientInner { identities, .. }) => identities
+                .find_most_recent_credential_bundle(sc, ct)
+                .await
+                .ok_or(CryptoError::CredentialNotFound(ct)),
+        }
+    }
+
+    pub(crate) async fn find_credential_bundle_by_public_key(
+        &self,
+        sc: SignatureScheme,
+        ct: MlsCredentialType,
+        pk: &SignaturePublicKey,
+    ) -> CryptoResult<Arc<CredentialBundle>> {
+        match self.state.read().await.deref() {
+            None => Err(CryptoError::MlsNotInitialized),
+            Some(ClientInner { identities, .. }) => identities
+                .find_credential_bundle_by_public_key(sc, ct, pk)
+                .await
+                .ok_or(CryptoError::CredentialNotFound(ct)),
+        }
+    }
+
+    #[cfg(test)]
+    pub(crate) async fn identities_count(&self) -> CryptoResult<usize> {
+        match self.state.read().await.deref() {
+            None => Err(CryptoError::MlsNotInitialized),
+            Some(ClientInner { identities, .. }) => Ok(identities.iter().count()),
+        }
     }
 }
 
@@ -159,7 +178,7 @@ mod tests {
                         .find_most_recent_credential_bundle(case.signature_scheme(), case.credential_type)
                         .await
                         .unwrap();
-                    assert_eq!(found, new);
+                    assert_eq!(found.as_ref(), &new);
                 })
             })
             .await
@@ -183,14 +202,12 @@ mod tests {
                     }
                     let to_search = to_search.unwrap();
                     let pk = SignaturePublicKey::from(to_search.signature_key.public());
-                    let mut client = central.context.mls_client_mut().await.unwrap();
-                    let client = client.as_mut().unwrap();
+                    let client = central.context.mls_client().await.unwrap();
                     let found = client
-                        .identities
                         .find_credential_bundle_by_public_key(case.signature_scheme(), case.credential_type, &pk)
                         .await
                         .unwrap();
-                    assert_eq!(to_search, found);
+                    assert_eq!(&to_search, found.as_ref());
                 })
             })
             .await
@@ -206,11 +223,11 @@ mod tests {
             run_test_with_client_ids(case.clone(), ["alice"], move |[mut central]| {
                 Box::pin(async move {
                     let client = central.client().await;
-                    let prev_count = client.identities.as_vec().await.len();
+                    let prev_count = client.identities_count().await.unwrap();
                     let cert = central.get_intermediate_ca().cloned();
                     // this calls 'push_credential_bundle' under the hood
                     central.new_credential_bundle(&case, cert.as_ref()).await;
-                    let next_count = client.identities.as_vec().await.len();
+                    let next_count = client.identities_count().await.unwrap();
                     assert_eq!(next_count, prev_count + 1);
                 })
             })
@@ -224,11 +241,14 @@ mod tests {
                 Box::pin(async move {
                     let cert = central.get_intermediate_ca().cloned();
                     let cb = central.new_credential_bundle(&case, cert.as_ref()).await;
-                    let mut client = central.context.mls_client_mut().await.unwrap();
-                    let client = client.as_mut().unwrap();
+                    let client = central.context.mls_client().await.unwrap();
                     let push = client
-                        .identities
-                        .push_credential_bundle(case.signature_scheme(), cb)
+                        .save_identity(
+                            &central.context.keystore().await.unwrap(),
+                            None,
+                            case.signature_scheme(),
+                            cb,
+                        )
                         .await;
                     assert!(matches!(
                         push.unwrap_err(),
