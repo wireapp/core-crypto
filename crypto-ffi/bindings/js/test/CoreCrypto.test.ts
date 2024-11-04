@@ -1582,7 +1582,8 @@ test("logs are forwarded when logger is registered", async () => {
             Ciphersuite,
             CredentialType,
             CoreCryptoLogLevel,
-            initLogger,
+            setLogger,
+            setMaxLogLevel,
         } = await import("./corecrypto.js");
 
         const ciphersuite =
@@ -1596,14 +1597,12 @@ test("logs are forwarded when logger is registered", async () => {
         });
 
         const logs = [];
-        initLogger(
-            {
-                log: (level, json_msg) => {
-                    logs.push(json_msg);
-                },
+        setLogger({
+            log: (level, json_msg) => {
+                logs.push(json_msg);
             },
-            CoreCryptoLogLevel.Debug
-        );
+        });
+        setMaxLogLevel(CoreCryptoLogLevel.Debug);
 
         const encoder = new TextEncoder();
         const conversationId = encoder.encode("invalidConversation");
@@ -1628,7 +1627,8 @@ test("logs are not forwarded when logger is registered, but log level is too hig
             Ciphersuite,
             CredentialType,
             CoreCryptoLogLevel,
-            initLogger,
+            setLogger,
+            setMaxLogLevel,
         } = await import("./corecrypto.js");
 
         const ciphersuite =
@@ -1642,14 +1642,12 @@ test("logs are not forwarded when logger is registered, but log level is too hig
         });
 
         const logs = [];
-        initLogger(
-            {
-                log: (level, json_msg) => {
-                    logs.push(json_msg);
-                },
+        setLogger({
+            log: (level, json_msg) => {
+                logs.push(json_msg);
             },
-            CoreCryptoLogLevel.Warn
-        );
+        });
+        setMaxLogLevel(CoreCryptoLogLevel.Warn);
 
         const encoder = new TextEncoder();
         const conversationId = encoder.encode("invalidConversation");
@@ -1681,7 +1679,8 @@ test("errors thrown by logger are reported as errors", async () => {
             Ciphersuite,
             CredentialType,
             CoreCryptoLogLevel,
-            initLogger,
+            setLogger,
+            setMaxLogLevel,
         } = await import("./corecrypto.js");
 
         const ciphersuite =
@@ -1694,14 +1693,12 @@ test("errors thrown by logger are reported as errors", async () => {
             clientId: "test",
         });
 
-        initLogger(
-            {
-                log: () => {
-                    throw Error("test error");
-                },
+        setLogger({
+            log: () => {
+                throw Error("test error");
             },
-            CoreCryptoLogLevel.Debug
-        );
+        });
+        setMaxLogLevel(CoreCryptoLogLevel.Debug);
 
         const encoder = new TextEncoder();
         const conversationId = encoder.encode("invalidConversation");
