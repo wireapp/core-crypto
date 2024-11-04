@@ -18,12 +18,16 @@
 
 package com.wire.crypto.client
 
+import com.wire.crypto.CoreCryptoException
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
 import org.assertj.core.api.AssertionsForInterfaceTypes.assertThat
 import org.assertj.core.api.AssertionsForInterfaceTypes.assertThatNoException
+import uniffi.core_crypto.CryptoError
 import java.nio.file.Files
 import kotlin.test.Test
+import kotlin.test.assertFailsWith
+import kotlin.test.assertIs
 
 class MLSTest {
 
@@ -39,6 +43,22 @@ class MLSTest {
     fun externally_generated_ClientId_should_init_the_MLS_client() = runTest {
         val (alice, handle) = initCc().externallyGeneratedMlsClient()
         alice.mlsInitWithClientId(aliceId.toClientId(), handle)
+    }
+
+    @Test
+    fun interaction_with_invalid_context_throws_error() = runTest {
+        val cc = initCc()
+        var context: CoreCryptoContext? = null
+
+        cc.transaction { ctx ->
+            context = ctx
+        }
+
+        val expectedException = assertFailsWith<CoreCryptoException.CryptoException> {
+            context!!.mlsInit(aliceId.toClientId())
+        }
+
+        assertIs<CryptoError.InvalidContext>(expectedException.error)
     }
 
     @Test

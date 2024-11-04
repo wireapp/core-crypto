@@ -225,6 +225,52 @@ test("can use groupInfo enums", async () => {
     await ctx.close();
 });
 
+test("Using invalid context throws error", async () => {
+    const [ctx, page] = await initBrowser();
+
+    const error = await page.evaluate(async () => {
+        const { CoreCrypto, Ciphersuite, CredentialType } = await import(
+            "./corecrypto.js"
+        );
+        const ciphersuite =
+            Ciphersuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519;
+
+        const client2Config = {
+            databaseName: "test",
+            key: "test",
+            ciphersuites: [ciphersuite],
+            clientId: "test",
+        };
+
+        const cc = await CoreCrypto.init(client2Config);
+
+        let context;
+        await cc.transaction((ctx) => {
+            context = ctx;
+        });
+
+        let error;
+
+        try {
+            // Attempt to perform an operation on an invalid context
+            await context.clientKeypackages(
+                ciphersuite,
+                CredentialType.Basic,
+                1
+            );
+        } catch (e) {
+            error = e;
+        }
+
+        return error;
+    });
+
+    expect(error.rustStackTrace).toBe("CryptoError(InvalidContext)");
+
+    await page.close();
+    await ctx.close();
+});
+
 test("can import ciphersuite enum", async () => {
     const [ctx, page] = await initBrowser();
 
