@@ -26,7 +26,9 @@ use core_crypto::CryptoError;
 use futures_util::future::TryFutureExt;
 use js_sys::{Promise, Uint8Array};
 use log::{Level, LevelFilter, Metadata, Record};
+use log_reload::ReloadLog;
 use std::sync::Arc;
+use std::sync::{LazyLock, Once};
 use tls_codec::Deserialize;
 use utils::*;
 use wasm_bindgen::prelude::*;
@@ -1068,6 +1070,14 @@ impl From<WirePolicy> for MlsWirePolicy {
     }
 }
 
+static INIT_LOGGER: Once = Once::new();
+static LOGGER: LazyLock<ReloadLog<CoreCryptoWasmLogger>> = LazyLock::new(|| {
+    ReloadLog::new(CoreCryptoWasmLogger {
+        logger: Default::default(),
+        ctx: Default::default(),
+    })
+});
+
 #[wasm_bindgen]
 #[derive(Debug, Clone)]
 pub struct CoreCryptoWasmLogger {
@@ -1384,10 +1394,18 @@ impl CoreCrypto {
         }
     }
 
-    pub fn set_logger(logger: CoreCryptoWasmLogger, level: CoreCryptoLogLevel) {
-        log::set_boxed_logger(Box::new(logger))
-            .map(|()| log::set_max_level(level.into()))
-            .unwrap();
+    pub fn set_logger(logger: CoreCryptoWasmLogger) {
+        // unwrapping poisoned lock error which shouldn't happen since we don't panic while replacing the logger
+        LOGGER.handle().replace(logger).unwrap();
+
+        INIT_LOGGER.call_once(|| {
+            log::set_logger(LOGGER.deref()).unwrap();
+            log::set_max_level(LevelFilter::Warn);
+        });
+    }
+
+    pub fn set_max_log_level(level: CoreCryptoLogLevel) {
+        log::set_max_level(level.into());
     }
 
     /// Returns: [`WasmCryptoResult<()>`]
