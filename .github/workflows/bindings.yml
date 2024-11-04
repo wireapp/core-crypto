@@ -128,3 +128,5 @@ jobs:
           bun install
           cargo make wasm
           bun test --bail
+          cd bindings/js
+          bun eslint . --max-warnings=0
