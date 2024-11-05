@@ -28,8 +28,8 @@ impl MlsConversation {
     ) -> CryptoResult<Vec<u8>> {
         let signer = &self
             .find_current_credential_bundle(client)
-            .await?
-            .ok_or(CryptoError::IdentityInitializationError)?
+            .await
+            .map_err(|_| CryptoError::IdentityInitializationError)?
             .signature_key;
         let encrypted = self
             .group
