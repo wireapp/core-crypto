@@ -99,7 +99,7 @@ impl MlsConversation {
     /// Errors can happen from OpenMls or from the KeyStore
     pub async fn create(
         id: ConversationId,
-        author_client: &mut Client,
+        author_client: &Client,
         creator_credential_type: MlsCredentialType,
         configuration: MlsConversationConfiguration,
         backend: &MlsCryptoProvider,

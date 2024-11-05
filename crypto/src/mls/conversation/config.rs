@@ -350,8 +350,7 @@ mod tests {
                 };
 
                 let jwk = wire_e2e_identity::prelude::generate_jwk(alg);
-                let _ = cc
-                    .context
+                cc.context
                     .set_raw_external_senders(&mut case.cfg.clone(), vec![jwk])
                     .await
                     .unwrap();
