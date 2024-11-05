@@ -14,10 +14,10 @@
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see http://www.gnu.org/licenses/.
 
-use std::collections::HashMap;
-
 use openmls::prelude::{Credential, CredentialWithKey, CryptoConfig, KeyPackage, KeyPackageRef, Lifetime};
 use openmls_traits::OpenMlsCryptoProvider;
+use std::collections::HashMap;
+use std::ops::{Deref, DerefMut};
 use tls_codec::{Deserialize, Serialize};
 
 use core_crypto_keystore::{
@@ -27,6 +27,7 @@ use core_crypto_keystore::{
 use mls_crypto_provider::{CryptoKeystore, MlsCryptoProvider};
 
 use crate::context::CentralContext;
+use crate::mls::client::ClientInner;
 use crate::{
     mls::credential::CredentialBundle,
     prelude::{
@@ -58,25 +59,32 @@ impl Client {
         cs: MlsCiphersuite,
         cb: &CredentialBundle,
     ) -> CryptoResult<KeyPackage> {
-        let keypackage = KeyPackage::builder()
-            .leaf_node_capabilities(MlsConversationConfiguration::default_leaf_capabilities())
-            .key_package_lifetime(Lifetime::new(self.keypackage_lifetime.as_secs()))
-            .build(
-                CryptoConfig {
-                    ciphersuite: cs.into(),
-                    version: openmls::versions::ProtocolVersion::default(),
-                },
-                backend,
-                &cb.signature_key,
-                CredentialWithKey {
-                    credential: cb.credential.clone(),
-                    signature_key: cb.signature_key.public().into(),
-                },
-            )
-            .await
-            .map_err(MlsError::from)?;
+        match self.state.read().await.deref() {
+            None => Err(CryptoError::MlsNotInitialized),
+            Some(ClientInner {
+                keypackage_lifetime, ..
+            }) => {
+                let keypackage = KeyPackage::builder()
+                    .leaf_node_capabilities(MlsConversationConfiguration::default_leaf_capabilities())
+                    .key_package_lifetime(Lifetime::new(keypackage_lifetime.as_secs()))
+                    .build(
+                        CryptoConfig {
+                            ciphersuite: cs.into(),
+                            version: openmls::versions::ProtocolVersion::default(),
+                        },
+                        backend,
+                        &cb.signature_key,
+                        CredentialWithKey {
+                            credential: cb.credential.clone(),
+                            signature_key: cb.signature_key.public().into(),
+                        },
+                    )
+                    .await
+                    .map_err(MlsError::from)?;
 
-        Ok(keypackage)
+                Ok(keypackage)
+            }
+        }
     }
 
     /// Requests `count` keying material to be present and returns
@@ -115,8 +123,7 @@ impl Client {
             let to_generate = count - kpb_count;
             let cb = self
                 .find_most_recent_credential_bundle(ciphersuite.signature_algorithm(), credential_type)
-                .await
-                .ok_or(CryptoError::MlsNotInitialized)?;
+                .await?;
             self.generate_new_keypackages(backend, ciphersuite, &cb, to_generate)
                 .await?
         } else {
@@ -203,37 +210,42 @@ impl Client {
         backend: &MlsCryptoProvider,
         refs: &[KeyPackageRef],
     ) -> CryptoResult<()> {
-        let keystore = backend.key_store();
-        let kps = self.find_all_keypackages(keystore).await?;
-        let kp_to_delete = self._prune_keypackages(&kps, keystore, refs).await?;
+        match self.state.write().await.deref_mut() {
+            None => Err(CryptoError::MlsNotInitialized),
+            Some(ClientInner { identities, .. }) => {
+                let keystore = backend.key_store();
+                let kps = self.find_all_keypackages(keystore).await?;
+                let kp_to_delete = self._prune_keypackages(&kps, keystore, refs).await?;
 
-        // Let's group KeyPackages by Credential
-        let mut grouped_kps = HashMap::<Vec<u8>, Vec<KeyPackageRef>>::new();
-        for (_, kp) in &kps {
-            let cred = kp
-                .leaf_node()
-                .credential()
-                .tls_serialize_detached()
-                .map_err(MlsError::from)?;
-            let kp_ref = kp.hash_ref(backend.crypto()).map_err(MlsError::from)?;
-            grouped_kps
-                .entry(cred)
-                .and_modify(|kprfs| kprfs.push(kp_ref.clone()))
-                .or_insert(vec![kp_ref]);
-        }
+                // Let's group KeyPackages by Credential
+                let mut grouped_kps = HashMap::<Vec<u8>, Vec<KeyPackageRef>>::new();
+                for (_, kp) in &kps {
+                    let cred = kp
+                        .leaf_node()
+                        .credential()
+                        .tls_serialize_detached()
+                        .map_err(MlsError::from)?;
+                    let kp_ref = kp.hash_ref(backend.crypto()).map_err(MlsError::from)?;
+                    grouped_kps
+                        .entry(cred)
+                        .and_modify(|kprfs| kprfs.push(kp_ref.clone()))
+                        .or_insert(vec![kp_ref]);
+                }
 
-        for (credential, kps) in &grouped_kps {
-            // If all KeyPackages are to be deleted for this given Credential
-            let all_to_delete = kps.iter().all(|kpr| kp_to_delete.contains(&kpr.as_slice()));
-            if all_to_delete {
-                // then delete this Credential
-                backend.keystore().cred_delete_by_credential(credential.clone()).await?;
-                let credential = Credential::tls_deserialize(&mut credential.as_slice()).map_err(MlsError::from)?;
-                self.identities.remove(&credential).await?;
+                for (credential, kps) in &grouped_kps {
+                    // If all KeyPackages are to be deleted for this given Credential
+                    let all_to_delete = kps.iter().all(|kpr| kp_to_delete.contains(&kpr.as_slice()));
+                    if all_to_delete {
+                        // then delete this Credential
+                        backend.keystore().cred_delete_by_credential(credential.clone()).await?;
+                        let credential =
+                            Credential::tls_deserialize(&mut credential.as_slice()).map_err(MlsError::from)?;
+                        identities.remove(&credential).await?;
+                    }
+                }
+                Ok(())
             }
         }
-
-        Ok(())
     }
 
     /// Deletes all expired KeyPackages plus the ones in `refs`. It also deletes all associated:
@@ -295,8 +307,18 @@ impl Client {
     /// Allows to set the current default keypackage lifetime extension duration.
     /// It will be embedded in the [openmls::key_packages::KeyPackage]'s [openmls::extensions::LifetimeExtension]
     #[cfg(test)]
-    pub fn set_keypackage_lifetime(&mut self, duration: std::time::Duration) {
-        self.keypackage_lifetime = duration;
+    pub async fn set_keypackage_lifetime(&self, duration: std::time::Duration) -> CryptoResult<()> {
+        use std::ops::DerefMut;
+        match self.state.write().await.deref_mut() {
+            None => Err(CryptoError::MlsNotInitialized),
+            Some(ClientInner {
+                ref mut keypackage_lifetime,
+                ..
+            }) => {
+                *keypackage_lifetime = duration;
+                Ok(())
+            }
+        }
     }
 }
 
@@ -320,8 +342,7 @@ impl CentralContext {
         credential_type: MlsCredentialType,
         amount_requested: usize,
     ) -> CryptoResult<Vec<KeyPackage>> {
-        let client_guard = self.mls_client().await?;
-        let client = client_guard.as_ref().ok_or(CryptoError::MlsNotInitialized)?;
+        let client = self.mls_client().await?;
         client
             .request_key_packages(
                 amount_requested,
@@ -339,8 +360,7 @@ impl CentralContext {
         ciphersuite: MlsCiphersuite,
         credential_type: MlsCredentialType,
     ) -> CryptoResult<usize> {
-        let client_guard = self.mls_client().await?;
-        let client = client_guard.as_ref().ok_or(CryptoError::MlsNotInitialized)?;
+        let client = self.mls_client().await?;
         client
             .valid_keypackages_count(&self.mls_provider().await?, ciphersuite, credential_type)
             .await
@@ -353,8 +373,7 @@ impl CentralContext {
         if refs.is_empty() {
             return Err(CryptoError::ConsumerError);
         }
-        let mut client_guard = self.mls_client_mut().await?;
-        let client = client_guard.as_mut().ok_or(CryptoError::MlsNotInitialized)?;
+        let mut client = self.mls_client().await?;
         client
             .prune_keypackages_and_credential(&self.mls_provider().await?, refs)
             .await
@@ -393,7 +412,7 @@ mod tests {
         };
 
         backend.new_transaction().await.unwrap();
-        let mut client = Client::random_generate(
+        let client = Client::random_generate(
             &case,
             &backend,
             x509_test_chain.as_ref().map(|chain| chain.find_local_intermediate_ca()),
@@ -407,7 +426,10 @@ mod tests {
         assert!(!Client::is_mls_keypackage_expired(&kp_std_exp));
 
         // 1-second expiration
-        client.set_keypackage_lifetime(std::time::Duration::from_secs(1));
+        client
+            .set_keypackage_lifetime(std::time::Duration::from_secs(1))
+            .await
+            .unwrap();
         let kp_1s_exp = client.generate_one_keypackage(&backend, cs, ct).await.unwrap();
         // Sleep 2 seconds to make sure we make the kp expire
         async_std::task::sleep(std::time::Duration::from_secs(2)).await;
@@ -568,7 +590,7 @@ mod tests {
             None
         };
         backend.new_transaction().await.unwrap();
-        let mut client = Client::random_generate(
+        let client = Client::random_generate(
             &case,
             &backend,
             x509_test_chain.as_ref().map(|chain| chain.find_local_intermediate_ca()),
@@ -590,7 +612,10 @@ mod tests {
         assert_eq!(len, UNEXPIRED_COUNT);
 
         // Set the keypackage expiration to be in 2 seconds
-        client.set_keypackage_lifetime(std::time::Duration::from_secs(10));
+        client
+            .set_keypackage_lifetime(std::time::Duration::from_secs(10))
+            .await
+            .unwrap();
 
         // Generate new keypackages that are normally partially expired 2s after they're requested
         let partially_expired_kpbs = client
