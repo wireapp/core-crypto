@@ -142,7 +142,7 @@ pub(crate) mod config {
 /// and manage groups, make proposals and commits.
 #[derive(Debug, Clone)]
 pub struct MlsCentral {
-    pub(crate) mls_client: Arc<RwLock<Option<Client>>>,
+    pub(crate) mls_client: Client,
     pub(crate) mls_backend: MlsCryptoProvider,
     // this should be moved to the context
     pub(crate) callbacks: Arc<RwLock<Option<std::sync::Arc<dyn CoreCryptoCallbacks + 'static>>>>,
@@ -170,48 +170,10 @@ impl MlsCentral {
             db_path: &configuration.store_path,
             identity_key: &configuration.identity_key,
             in_memory: false,
-            entropy_seed: configuration.external_entropy,
+            entropy_seed: configuration.external_entropy.clone(),
         })
         .await?;
-        mls_backend.new_transaction().await?;
-        let keystore = mls_backend.keystore();
-        let mls_client = if let Some(id) = configuration.client_id {
-            // Init client identity (load or create)
-            Arc::new(
-                Some(
-                    Client::init(
-                        ClientIdentifier::Basic(id),
-                        configuration.ciphersuites.as_slice(),
-                        &mls_backend,
-                        configuration
-                            .nb_init_key_packages
-                            .unwrap_or(INITIAL_KEYING_MATERIAL_COUNT),
-                    )
-                    .await?,
-                )
-                .into(),
-            )
-        } else {
-            Arc::new(None.into())
-        };
-
-        let central = Self {
-            mls_backend,
-            mls_client,
-            callbacks: Arc::new(None.into()),
-        };
-
-        keystore.commit_transaction().await?;
-        drop(keystore);
-
-        let cc = CoreCrypto::from(central);
-        let context = cc.new_transaction().await?;
-        let central = cc.mls;
-
-        context.init_pki_env().await?;
-        context.finish().await?;
-
-        Ok(central)
+        Self::new_with_backend(mls_backend, configuration).await
     }
 
     /// Same as the [MlsCentral::try_new] but instead, it uses an in memory KeyStore. Although required, the `store_path` parameter from the `MlsCentralConfiguration` won't be used here.
@@ -220,41 +182,44 @@ impl MlsCentral {
             db_path: &configuration.store_path,
             identity_key: &configuration.identity_key,
             in_memory: true,
-            entropy_seed: configuration.external_entropy,
+            entropy_seed: configuration.external_entropy.clone(),
         })
         .await?;
-        mls_backend.new_transaction().await?;
-        let mls_client = if let Some(id) = configuration.client_id {
-            Arc::new(
-                Some(
-                    Client::init(
-                        ClientIdentifier::Basic(id),
-                        configuration.ciphersuites.as_slice(),
-                        &mls_backend,
-                        configuration
-                            .nb_init_key_packages
-                            .unwrap_or(INITIAL_KEYING_MATERIAL_COUNT),
-                    )
-                    .await?,
-                )
-                .into(),
-            )
-        } else {
-            Arc::new(None.into())
-        };
-        mls_backend.keystore().commit_transaction().await?;
+        Self::new_with_backend(mls_backend, configuration).await
+    }
+
+    async fn new_with_backend(
+        mls_backend: MlsCryptoProvider,
+        configuration: MlsCentralConfiguration,
+    ) -> CryptoResult<Self> {
+        let mls_client = Client::default();
+
+        // We create the core crypto instance first to enable creating a transaction from it and
+        // doing all subsequent actions inside a single transaction, though it forces us to clone
+        // a few Arcs and locks.
         let central = Self {
-            mls_backend,
-            mls_client,
+            mls_backend: mls_backend.clone(),
+            mls_client: mls_client.clone(),
             callbacks: Arc::new(None.into()),
         };
 
         let cc = CoreCrypto::from(central);
         let context = cc.new_transaction().await?;
+        if let Some(id) = configuration.client_id {
+            mls_client
+                .init(
+                    ClientIdentifier::Basic(id),
+                    configuration.ciphersuites.as_slice(),
+                    &mls_backend,
+                    configuration
+                        .nb_init_key_packages
+                        .unwrap_or(INITIAL_KEYING_MATERIAL_COUNT),
+                )
+                .await?
+        }
         let central = cc.mls;
         context.init_pki_env().await?;
         context.finish().await?;
-
         Ok(central)
     }
 
@@ -277,22 +242,17 @@ impl MlsCentral {
         ciphersuite: MlsCiphersuite,
         credential_type: MlsCredentialType,
     ) -> CryptoResult<Vec<u8>> {
-        let client_guard = self.mls_client.read().await;
-        let client = client_guard.as_ref().ok_or(CryptoError::MlsNotInitialized)?;
-        let cb = client
+        let cb = self
+            .mls_client
             .find_most_recent_credential_bundle(ciphersuite.signature_algorithm(), credential_type)
-            .await
+            .await?
             .ok_or(CryptoError::ClientSignatureNotFound)?;
         Ok(cb.signature_key.to_public_vec())
     }
 
     /// Returns the client's id as a buffer
     pub async fn client_id(&self) -> CryptoResult<ClientId> {
-        let client_guard = self.mls_client.read().await;
-        client_guard
-            .as_ref()
-            .map(|c| c.id().clone())
-            .ok_or(CryptoError::MlsNotInitialized)
+        self.mls_client.id().await
     }
 
     /// Checks if a given conversation id exists locally
@@ -751,7 +711,7 @@ mod tests {
                 let context = cc.new_transaction().await.unwrap();
                 x509_test_chain.register_with_central(&context).await;
 
-                assert!(context.mls_client().await.unwrap().is_none());
+                assert!(!context.mls_client().await.unwrap().is_ready().await);
                 // phase 2: init mls_client
                 let client_id = "alice";
                 let identifier = match case.credential_type {
