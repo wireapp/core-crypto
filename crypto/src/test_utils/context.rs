@@ -25,6 +25,7 @@ use openmls::prelude::{
 };
 use openmls_traits::crypto::OpenMlsCrypto;
 use openmls_traits::{types::SignatureScheme, OpenMlsCryptoProvider};
+use std::sync::Arc;
 use tls_codec::{Deserialize, Serialize};
 use wire_e2e_identity::prelude::WireIdentityReader;
 use x509_cert::der::Encode;
@@ -108,8 +109,6 @@ impl ClientContext {
     pub async fn rand_key_package_of_type(&self, case: &TestCase, ct: MlsCredentialType) -> KeyPackageIn {
         let client = self.context.mls_client().await.unwrap();
         client
-            .as_ref()
-            .unwrap()
             .generate_one_keypackage(&self.context.mls_provider().await.unwrap(), case.ciphersuite(), ct)
             .await
             .unwrap()
@@ -201,7 +200,7 @@ impl ClientContext {
                 other.get_conversation_unchecked(id).await.members().len(),
                 size_before + N
             );
-            self.try_talk_to(id, &other).await?;
+            self.try_talk_to(id, other).await?;
         }
 
         Ok(())
@@ -231,7 +230,7 @@ impl ClientContext {
         for other in others {
             let commit = commit.tls_serialize_detached().map_err(MlsError::from)?;
             other.context.decrypt_message(id, commit).await.unwrap();
-            self.try_talk_to(id, &other).await?;
+            self.try_talk_to(id, other).await?;
         }
         Ok(())
     }
@@ -245,7 +244,7 @@ impl ClientContext {
     ) -> CryptoResult<()> {
         self.context.process_welcome_message(welcome, custom_cfg).await?;
         for other in others {
-            self.try_talk_to(id, &other).await?;
+            self.try_talk_to(id, other).await?;
         }
         Ok(())
     }
@@ -353,18 +352,19 @@ impl ClientContext {
     ) -> CredentialBundle {
         let backend = &self.context.mls_provider().await.unwrap();
         let transaction = &self.context.keystore().await.unwrap();
-        let mut client = self.client().await;
+        let client = self.client().await;
+        let client_id = client.id().await.unwrap();
 
         match case.credential_type {
             MlsCredentialType::Basic => {
-                let cb = Client::new_basic_credential_bundle(client.id(), case.signature_scheme(), backend).unwrap();
+                let cb = Client::new_basic_credential_bundle(&client_id, case.signature_scheme(), backend).unwrap();
                 client
                     .save_identity(&backend.keystore(), None, case.signature_scheme(), cb)
                     .await
                     .unwrap()
             }
             MlsCredentialType::X509 => {
-                let cert_bundle = CertificateBundle::rand(client.id(), signer.unwrap());
+                let cert_bundle = CertificateBundle::rand(&client_id, signer.unwrap());
                 client
                     .save_new_x509_credential_bundle(transaction, case.signature_scheme(), cert_bundle)
                     .await
@@ -376,7 +376,7 @@ impl ClientContext {
     pub async fn find_most_recent_credential_bundle_for_conversation(
         &self,
         id: &ConversationId,
-    ) -> Option<CredentialBundle> {
+    ) -> Option<Arc<CredentialBundle>> {
         self.context
             .get_conversation(id)
             .await
@@ -385,20 +385,19 @@ impl ClientContext {
             .await
             .find_most_recent_credential_bundle(&self.client().await)
             .await
-            .unwrap()
-            .map(|cb| cb.clone())
+            .ok()
     }
 
     pub async fn find_most_recent_credential_bundle(
         &self,
         sc: SignatureScheme,
         ct: MlsCredentialType,
-    ) -> Option<CredentialBundle> {
+    ) -> Option<Arc<CredentialBundle>> {
         self.client()
             .await
             .find_most_recent_credential_bundle(sc, ct)
             .await
-            .map(|cb| cb.clone())
+            .ok()
     }
 
     pub async fn find_credential_bundle(
@@ -406,13 +405,12 @@ impl ClientContext {
         sc: SignatureScheme,
         ct: MlsCredentialType,
         pk: &SignaturePublicKey,
-    ) -> Option<CredentialBundle> {
+    ) -> Option<Arc<CredentialBundle>> {
         self.client()
             .await
-            .identities
             .find_credential_bundle_by_public_key(sc, ct, pk)
             .await
-            .map(|cb| cb.clone())
+            .ok()
     }
 
     pub async fn find_signature_keypair_from_keystore(&self, id: &[u8]) -> Option<MlsSignatureKeyPair> {
@@ -494,7 +492,7 @@ impl ClientContext {
             Some(existing_cert.pki_keypair.clone()),
             signer,
         );
-        let mut client = self.client().await;
+        let client = self.client().await;
         client
             .save_new_x509_credential_bundle(
                 &self.context.keystore().await.unwrap(),
@@ -672,20 +670,18 @@ impl MlsConversation {
 
 impl Client {
     pub(crate) async fn init_x509_credential_bundle_if_missing(
-        &mut self,
+        &self,
         backend: &MlsCryptoProvider,
         sc: SignatureScheme,
         cb: CertificateBundle,
     ) -> CryptoResult<()> {
         let existing_cb = self
-            .identities
             .find_most_recent_credential_bundle(sc, MlsCredentialType::X509)
             .await
-            .is_none();
+            .is_err();
         if existing_cb {
             self.save_new_x509_credential_bundle(&backend.keystore(), sc, cb)
-                .await
-                .unwrap();
+                .await?;
         }
         Ok(())
     }
@@ -698,8 +694,7 @@ impl Client {
     ) -> CryptoResult<KeyPackage> {
         let cb = self
             .find_most_recent_credential_bundle(cs.signature_algorithm(), ct)
-            .await
-            .ok_or(CryptoError::MlsNotInitialized)?;
+            .await?;
         self.generate_one_keypackage_from_credential_bundle(backend, cs, &cb)
             .await
     }
