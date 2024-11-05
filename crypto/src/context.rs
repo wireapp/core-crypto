@@ -33,7 +33,7 @@ enum ContextState {
     Valid {
         provider: MlsCryptoProvider,
         callbacks: Arc<RwLock<Option<std::sync::Arc<dyn CoreCryptoCallbacks + 'static>>>>,
-        mls_client: Arc<RwLock<Option<Client>>>,
+        mls_client: Client,
         mls_groups: Arc<RwLock<GroupStore<MlsConversation>>>,
         #[cfg(feature = "proteus")]
         proteus_central: Arc<Mutex<Option<ProteusCentral>>>,
@@ -79,16 +79,9 @@ impl CentralContext {
         })
     }
 
-    pub(crate) async fn mls_client(&self) -> CryptoResult<RwLockReadGuardArc<Option<Client>>> {
+    pub(crate) async fn mls_client(&self) -> CryptoResult<Client> {
         match self.state.read().await.deref() {
-            ContextState::Valid { mls_client, .. } => Ok(mls_client.read_arc().await),
-            ContextState::Invalid => Err(CryptoError::InvalidContext),
-        }
-    }
-
-    pub(crate) async fn mls_client_mut(&self) -> CryptoResult<RwLockWriteGuardArc<Option<Client>>> {
-        match self.state.read().await.deref() {
-            ContextState::Valid { mls_client, .. } => Ok(mls_client.write_arc().await),
+            ContextState::Valid { mls_client, .. } => Ok(mls_client.clone()),
             ContextState::Invalid => Err(CryptoError::InvalidContext),
         }
     }
