@@ -329,20 +329,16 @@ impl CentralContext {
         ciphersuites: Vec<MlsCiphersuite>,
         nb_init_key_packages: Option<usize>,
     ) -> CryptoResult<()> {
-        let mut client = self.mls_client_mut().await?;
-        if client.is_some() {
-            // prevents wrong usage of the method instead of silently hiding the mistake
-            return Err(CryptoError::ConsumerError);
-        }
         let nb_key_package = nb_init_key_packages.unwrap_or(INITIAL_KEYING_MATERIAL_COUNT);
-        let mls_client = Client::init(identifier, &ciphersuites, &self.mls_provider().await?, nb_key_package).await?;
+        let mls_client = self.mls_client().await?;
+        mls_client
+            .init(identifier, &ciphersuites, &self.mls_provider().await?, nb_key_package)
+            .await?;
 
         if mls_client.is_e2ei_capable().await {
-            trace!(client_id:% = mls_client.id(); "Initializing PKI environment");
+            trace!(client_id:% = mls_client.id().await?; "Initializing PKI environment");
             self.init_pki_env().await?;
         }
-
-        client.replace(mls_client);
 
         Ok(())
     }
@@ -353,12 +349,10 @@ impl CentralContext {
     /// This returns the TLS-serialized identity keys (i.e. the signature keypair's public key)
     #[cfg_attr(test, crate::dispotent)]
     pub async fn mls_generate_keypairs(&self, ciphersuites: Vec<MlsCiphersuite>) -> CryptoResult<Vec<ClientId>> {
-        if self.mls_client().await?.is_some() {
-            // prevents wrong usage of the method instead of silently hiding the mistake
-            return Err(CryptoError::ConsumerError);
-        }
-
-        Client::generate_raw_keypairs(&ciphersuites, &self.mls_provider().await?).await
+        self.mls_client()
+            .await?
+            .generate_raw_keypairs(&ciphersuites, &self.mls_provider().await?)
+            .await
     }
 
     /// Updates the current temporary Client ID with the newly provided one. This is the second step in the externally-generated clients process
@@ -371,18 +365,10 @@ impl CentralContext {
         tmp_client_ids: Vec<ClientId>,
         ciphersuites: Vec<MlsCiphersuite>,
     ) -> CryptoResult<()> {
-        let mut client = self.mls_client_mut().await?;
-        if client.is_some() {
-            // prevents wrong usage of the method instead of silently hiding the mistake
-            return Err(CryptoError::ConsumerError);
-        }
-
-        let mls_client =
-            Client::init_with_external_client_id(client_id, tmp_client_ids, &ciphersuites, &self.mls_provider().await?)
-                .await?;
-
-        client.replace(mls_client);
-        Ok(())
+        self.mls_client()
+            .await?
+            .init_with_external_client_id(client_id, tmp_client_ids, &ciphersuites, &self.mls_provider().await?)
+            .await
     }
 
     /// see [MlsCentral::client_public_key]
@@ -391,22 +377,18 @@ impl CentralContext {
         ciphersuite: MlsCiphersuite,
         credential_type: MlsCredentialType,
     ) -> CryptoResult<Vec<u8>> {
-        let client_guard = self.mls_client().await?;
-        let client = client_guard.as_ref().ok_or(CryptoError::MlsNotInitialized)?;
-        let cb = client
+        let cb = self
+            .mls_client()
+            .await?
             .find_most_recent_credential_bundle(ciphersuite.signature_algorithm(), credential_type)
-            .await
+            .await?
             .ok_or(CryptoError::ClientSignatureNotFound)?;
         Ok(cb.signature_key.to_public_vec())
     }
 
     /// see [MlsCentral::client_id]
     pub async fn client_id(&self) -> CryptoResult<ClientId> {
-        let client_guard = self.mls_client().await?;
-        client_guard
-            .as_ref()
-            .map(|c| c.id().clone())
-            .ok_or(CryptoError::MlsNotInitialized)
+        self.mls_client().await?.id().await
     }
 
     /// Create a new empty conversation
@@ -430,13 +412,9 @@ impl CentralContext {
         if self.conversation_exists(id).await? || self.pending_group_exists(id).await? {
             return Err(CryptoError::ConversationAlreadyExists(id.clone()));
         }
-        // TODO(SimonThormeyer): Solve the following:
-        // This may cause a deadlock if the caller's scope already has a lock held on mls client.
-        let mut client_guard = self.mls_client_mut().await?;
-        let client = client_guard.as_mut().ok_or(CryptoError::MlsNotInitialized)?;
         let conversation = MlsConversation::create(
             id.clone(),
-            client,
+            &self.mls_client().await?,
             creator_credential_type,
             config,
             &self.mls_provider().await?,
@@ -728,7 +706,7 @@ mod tests {
                     )
                     .await
                     .unwrap();
-                assert!(context.mls_client().await.unwrap().is_some());
+                assert!(context.mls_client().await.unwrap().is_ready().await);
                 // expect mls_client to work
                 assert_eq!(
                     context
