@@ -123,7 +123,7 @@ pub(crate) async fn setup_mls(
     in_memory: bool,
 ) -> (CoreCrypto, ConversationId) {
     let (central, _) = new_central(ciphersuite, credential, in_memory).await;
-    let core_crypto = CoreCrypto::from(central);
+    let core_crypto = central;
     let context = core_crypto.new_transaction().await.unwrap();
     let id = conversation_id();
     context

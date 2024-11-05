@@ -25,7 +25,7 @@ pub use rstest_reuse::{self, *};
 use std::collections::HashMap;
 use std::sync::Arc;
 
-pub mod central;
+pub mod context;
 pub mod fixtures;
 pub mod message;
 pub mod x509;
@@ -62,12 +62,11 @@ impl ClientContext {
     }
 
     pub async fn client(&self) -> Client {
-        let client_guard = self.context.mls_client().await.unwrap();
-        client_guard.as_ref().unwrap().clone()
+        self.context.mls_client().await.unwrap()
     }
 
     pub async fn get_client_id(&self) -> ClientId {
-        self.client().await.id().clone()
+        self.client().await.id().await.unwrap()
     }
 }
 
