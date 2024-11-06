@@ -34,7 +34,7 @@ use openmls::{group::MlsGroup, prelude::Credential};
 use openmls_traits::types::SignatureScheme;
 
 use core_crypto_keystore::{Connection, CryptoKeystoreMls};
-use mls_crypto_provider::{CryptoKeystore, TransactionalCryptoProvider};
+use mls_crypto_provider::{CryptoKeystore, MlsCryptoProvider};
 
 use config::MlsConversationConfiguration;
 
@@ -102,7 +102,7 @@ impl MlsConversation {
         author_client: &mut Client,
         creator_credential_type: MlsCredentialType,
         configuration: MlsConversationConfiguration,
-        backend: &TransactionalCryptoProvider,
+        backend: &MlsCryptoProvider,
     ) -> CryptoResult<Self> {
         let (cs, ct) = (configuration.ciphersuite, creator_credential_type);
         let cb = author_client
@@ -137,7 +137,7 @@ impl MlsConversation {
     pub(crate) async fn from_mls_group(
         group: MlsGroup,
         configuration: MlsConversationConfiguration,
-        backend: &TransactionalCryptoProvider,
+        backend: &MlsCryptoProvider,
     ) -> CryptoResult<Self> {
         let id = ConversationId::from(group.group_id().as_slice());
 

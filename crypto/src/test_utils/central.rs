@@ -18,7 +18,7 @@ use core_crypto_keystore::connection::FetchFromDatabase;
 use core_crypto_keystore::entities::{
     EntityFindParams, MlsCredential, MlsEncryptionKeyPair, MlsHpkePrivateKey, MlsKeyPackage, MlsSignatureKeyPair,
 };
-use mls_crypto_provider::TransactionalCryptoProvider;
+use mls_crypto_provider::MlsCryptoProvider;
 use openmls::prelude::{
     group_info::VerifiableGroupInfo, Credential, CredentialWithKey, CryptoConfig, ExternalSender, HpkePublicKey,
     KeyPackage, KeyPackageIn, LeafNodeIndex, Lifetime, MlsMessageIn, QueuedProposal, SignaturePublicKey, StagedCommit,
@@ -673,7 +673,7 @@ impl MlsConversation {
 impl Client {
     pub(crate) async fn init_x509_credential_bundle_if_missing(
         &mut self,
-        backend: &TransactionalCryptoProvider,
+        backend: &MlsCryptoProvider,
         sc: SignatureScheme,
         cb: CertificateBundle,
     ) -> CryptoResult<()> {
@@ -692,7 +692,7 @@ impl Client {
 
     pub(crate) async fn generate_one_keypackage(
         &self,
-        backend: &TransactionalCryptoProvider,
+        backend: &MlsCryptoProvider,
         cs: MlsCiphersuite,
         ct: MlsCredentialType,
     ) -> CryptoResult<KeyPackage> {

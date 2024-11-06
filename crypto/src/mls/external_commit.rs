@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see http://www.gnu.org/licenses/.
 
-use mls_crypto_provider::TransactionalCryptoProvider;
+use mls_crypto_provider::MlsCryptoProvider;
 use openmls::prelude::{
     group_info::VerifiableGroupInfo, CredentialType, MlsGroup, MlsMessageOut, Proposal, Sender, StagedCommit,
 };
@@ -236,7 +236,7 @@ impl MlsConversation {
         commit: &StagedCommit,
         sender: ClientId,
         parent_conversation: Option<&GroupStoreValue<MlsConversation>>,
-        backend: &TransactionalCryptoProvider,
+        backend: &MlsCryptoProvider,
         callbacks: Option<&dyn CoreCryptoCallbacks>,
     ) -> CryptoResult<()> {
         // i.e. has this commit been created by [MlsCentral::join_by_external_commit] ?

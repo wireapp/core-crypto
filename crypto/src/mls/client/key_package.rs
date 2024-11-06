@@ -24,7 +24,7 @@ use core_crypto_keystore::{
     connection::FetchFromDatabase,
     entities::{EntityFindParams, MlsEncryptionKeyPair, MlsHpkePrivateKey, MlsKeyPackage},
 };
-use mls_crypto_provider::{CryptoKeystore, TransactionalCryptoProvider};
+use mls_crypto_provider::{CryptoKeystore, MlsCryptoProvider};
 
 use crate::context::CentralContext;
 use crate::{
@@ -54,7 +54,7 @@ impl Client {
     /// KeyStore and OpenMls errors
     pub async fn generate_one_keypackage_from_credential_bundle(
         &self,
-        backend: &TransactionalCryptoProvider,
+        backend: &MlsCryptoProvider,
         cs: MlsCiphersuite,
         cb: &CredentialBundle,
     ) -> CryptoResult<KeyPackage> {
@@ -94,7 +94,7 @@ impl Client {
         count: usize,
         ciphersuite: MlsCiphersuite,
         credential_type: MlsCredentialType,
-        backend: &TransactionalCryptoProvider,
+        backend: &MlsCryptoProvider,
     ) -> CryptoResult<Vec<KeyPackage>> {
         // Auto-prune expired keypackages on request
         self.prune_keypackages(backend, &[]).await?;
@@ -131,7 +131,7 @@ impl Client {
 
     pub(crate) async fn generate_new_keypackages(
         &self,
-        backend: &TransactionalCryptoProvider,
+        backend: &MlsCryptoProvider,
         ciphersuite: MlsCiphersuite,
         cb: &CredentialBundle,
         count: usize,
@@ -151,7 +151,7 @@ impl Client {
     /// Returns the count of valid, non-expired, unclaimed keypackages in store
     pub async fn valid_keypackages_count(
         &self,
-        backend: &TransactionalCryptoProvider,
+        backend: &MlsCryptoProvider,
         ciphersuite: MlsCiphersuite,
         credential_type: MlsCredentialType,
     ) -> CryptoResult<usize> {
@@ -191,11 +191,7 @@ impl Client {
     /// Warning: Despite this API being public, the caller should know what they're doing.
     /// Provided KeypackageRefs **will** be purged regardless of their expiration state, so please be wary of what you are doing if you directly call this API.
     /// This could result in still valid, uploaded keypackages being pruned from the system and thus being impossible to find when referenced in a future Welcome message.
-    pub async fn prune_keypackages(
-        &self,
-        backend: &TransactionalCryptoProvider,
-        refs: &[KeyPackageRef],
-    ) -> CryptoResult<()> {
+    pub async fn prune_keypackages(&self, backend: &MlsCryptoProvider, refs: &[KeyPackageRef]) -> CryptoResult<()> {
         let keystore = backend.keystore();
         let kps = self.find_all_keypackages(&keystore).await?;
         let _ = self._prune_keypackages(&kps, &keystore, refs).await?;
@@ -204,7 +200,7 @@ impl Client {
 
     pub(crate) async fn prune_keypackages_and_credential(
         &mut self,
-        backend: &TransactionalCryptoProvider,
+        backend: &MlsCryptoProvider,
         refs: &[KeyPackageRef],
     ) -> CryptoResult<()> {
         let keystore = backend.key_store();

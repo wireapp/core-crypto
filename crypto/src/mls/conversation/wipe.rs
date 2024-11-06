@@ -1,7 +1,7 @@
 use crate::context::CentralContext;
 use crate::prelude::{ConversationId, CryptoResult, MlsConversation, MlsError};
 use core_crypto_keystore::CryptoKeystoreMls;
-use mls_crypto_provider::TransactionalCryptoProvider;
+use mls_crypto_provider::MlsCryptoProvider;
 use openmls_traits::OpenMlsCryptoProvider;
 
 impl CentralContext {
@@ -25,7 +25,7 @@ impl CentralContext {
 }
 
 impl MlsConversation {
-    async fn wipe_associated_entities(&mut self, backend: &TransactionalCryptoProvider) -> CryptoResult<()> {
+    async fn wipe_associated_entities(&mut self, backend: &MlsCryptoProvider) -> CryptoResult<()> {
         // the own client may or may not have generated an epoch keypair in the previous epoch
         // Since it is a terminal operation, ignoring the error is fine here.
         let _ = self.group.delete_previous_epoch_keypairs(backend).await;

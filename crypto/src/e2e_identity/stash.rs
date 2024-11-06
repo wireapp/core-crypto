@@ -3,14 +3,14 @@ use openmls_traits::{random::OpenMlsRand, OpenMlsCryptoProvider};
 use crate::context::CentralContext;
 use crate::prelude::{CryptoError, CryptoResult, E2eiEnrollment};
 use core_crypto_keystore::CryptoKeystoreMls;
-use mls_crypto_provider::TransactionalCryptoProvider;
+use mls_crypto_provider::MlsCryptoProvider;
 
 /// A unique identifier for an enrollment a consumer can use to fetch it from the keystore when he
 /// wants to resume the process
 pub(crate) type EnrollmentHandle = Vec<u8>;
 
 impl E2eiEnrollment {
-    pub(crate) async fn stash(self, backend: &TransactionalCryptoProvider) -> CryptoResult<EnrollmentHandle> {
+    pub(crate) async fn stash(self, backend: &MlsCryptoProvider) -> CryptoResult<EnrollmentHandle> {
         // should be enough to prevent collisions
         const HANDLE_SIZE: usize = 32;
 
@@ -24,10 +24,7 @@ impl E2eiEnrollment {
         Ok(handle)
     }
 
-    pub(crate) async fn stash_pop(
-        backend: &TransactionalCryptoProvider,
-        handle: EnrollmentHandle,
-    ) -> CryptoResult<Self> {
+    pub(crate) async fn stash_pop(backend: &MlsCryptoProvider, handle: EnrollmentHandle) -> CryptoResult<Self> {
         let content = backend
             .key_store()
             .pop_e2ei_enrollment(&handle)

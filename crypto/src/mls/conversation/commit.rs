@@ -7,7 +7,7 @@
 
 use openmls::prelude::{KeyPackageIn, LeafNode, LeafNodeIndex, MlsMessageOut};
 
-use mls_crypto_provider::TransactionalCryptoProvider;
+use mls_crypto_provider::MlsCryptoProvider;
 
 use super::MlsConversation;
 use crate::context::CentralContext;
@@ -149,7 +149,7 @@ impl MlsConversation {
         &mut self,
         client: &Client,
         key_packages: Vec<KeyPackageIn>,
-        backend: &TransactionalCryptoProvider,
+        backend: &MlsCryptoProvider,
     ) -> CryptoResult<MlsConversationCreationMessage> {
         let signer = &self
             .find_most_recent_credential_bundle(client)
@@ -198,7 +198,7 @@ impl MlsConversation {
         &mut self,
         client: &Client,
         clients: &[ClientId],
-        backend: &TransactionalCryptoProvider,
+        backend: &MlsCryptoProvider,
     ) -> CryptoResult<MlsCommitBundle> {
         let member_kps = self
             .group
@@ -243,7 +243,7 @@ impl MlsConversation {
     pub(crate) async fn update_keying_material(
         &mut self,
         client: &Client,
-        backend: &TransactionalCryptoProvider,
+        backend: &MlsCryptoProvider,
         cb: Option<&CredentialBundle>,
         leaf_node: Option<LeafNode>,
     ) -> CryptoResult<MlsCommitBundle> {
@@ -280,7 +280,7 @@ impl MlsConversation {
     pub(crate) async fn commit_pending_proposals(
         &mut self,
         client: &Client,
-        backend: &TransactionalCryptoProvider,
+        backend: &MlsCryptoProvider,
     ) -> CryptoResult<Option<MlsCommitBundle>> {
         if self.group.pending_proposals().count() > 0 {
             let signer = &self

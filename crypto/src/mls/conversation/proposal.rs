@@ -7,7 +7,7 @@
 
 use openmls::{binary_tree::LeafNodeIndex, framing::MlsMessageOut, key_packages::KeyPackageIn, prelude::LeafNode};
 
-use mls_crypto_provider::TransactionalCryptoProvider;
+use mls_crypto_provider::MlsCryptoProvider;
 
 use crate::{
     e2e_identity::init_certificates::NewCrlDistributionPoint, mls::credential::crl::get_new_crl_distribution_points,
@@ -25,7 +25,7 @@ impl MlsConversation {
     pub async fn propose_add_member(
         &mut self,
         client: &Client,
-        backend: &TransactionalCryptoProvider,
+        backend: &MlsCryptoProvider,
         key_package: KeyPackageIn,
     ) -> CryptoResult<MlsProposalBundle> {
         let signer = &self
@@ -59,7 +59,7 @@ impl MlsConversation {
     pub async fn propose_remove_member(
         &mut self,
         client: &Client,
-        backend: &TransactionalCryptoProvider,
+        backend: &MlsCryptoProvider,
         member: LeafNodeIndex,
     ) -> CryptoResult<MlsProposalBundle> {
         let signer = &self
@@ -82,7 +82,7 @@ impl MlsConversation {
     pub async fn propose_self_update(
         &mut self,
         client: &Client,
-        backend: &TransactionalCryptoProvider,
+        backend: &MlsCryptoProvider,
     ) -> CryptoResult<MlsProposalBundle> {
         self.propose_explicit_self_update(client, backend, None).await
     }
@@ -92,7 +92,7 @@ impl MlsConversation {
     pub async fn propose_explicit_self_update(
         &mut self,
         client: &Client,
-        backend: &TransactionalCryptoProvider,
+        backend: &MlsCryptoProvider,
         leaf_node: Option<LeafNode>,
     ) -> CryptoResult<MlsProposalBundle> {
         let msg_signer = &self

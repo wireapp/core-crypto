@@ -5,7 +5,7 @@ use wire_e2e_identity::prelude::{E2eiAcmeAuthorization, RustyE2eIdentity};
 use zeroize::Zeroize;
 
 use error::*;
-use mls_crypto_provider::TransactionalCryptoProvider;
+use mls_crypto_provider::MlsCryptoProvider;
 
 use crate::e2e_identity::init_certificates::NewCrlDistributionPoint;
 use crate::{
@@ -161,7 +161,7 @@ impl E2eiEnrollment {
         handle: String,
         team: Option<String>,
         expiry_sec: u32,
-        backend: &TransactionalCryptoProvider,
+        backend: &MlsCryptoProvider,
         ciphersuite: MlsCiphersuite,
         sign_keypair: Option<E2eiSignatureKeypair>,
         #[cfg(not(target_family = "wasm"))] refresh_token: Option<refresh_token::RefreshToken>,
@@ -437,7 +437,7 @@ impl E2eiEnrollment {
     /// * `challenge` - http response body
     pub async fn new_oidc_challenge_response(
         &mut self,
-        #[cfg(not(target_family = "wasm"))] backend: &TransactionalCryptoProvider,
+        #[cfg(not(target_family = "wasm"))] backend: &MlsCryptoProvider,
         challenge: Json,
     ) -> E2eIdentityResult<()> {
         let challenge = serde_json::from_slice(&challenge[..])?;

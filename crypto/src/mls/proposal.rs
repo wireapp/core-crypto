@@ -16,7 +16,7 @@
 
 use openmls::prelude::{hash_ref::ProposalRef, KeyPackage};
 
-use mls_crypto_provider::TransactionalCryptoProvider;
+use mls_crypto_provider::MlsCryptoProvider;
 
 use crate::{
     mls::{ClientId, ConversationId, MlsConversation},
@@ -73,7 +73,7 @@ impl MlsProposal {
     async fn create(
         self,
         client: &Client,
-        backend: &TransactionalCryptoProvider,
+        backend: &MlsCryptoProvider,
         mut conversation: impl std::ops::DerefMut<Target = MlsConversation>,
     ) -> CryptoResult<MlsProposalBundle> {
         let proposal = match self {

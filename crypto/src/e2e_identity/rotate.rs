@@ -5,7 +5,7 @@ use openmls_traits::OpenMlsCryptoProvider;
 
 use core_crypto_keystore::connection::FetchFromDatabase;
 use core_crypto_keystore::{entities::MlsKeyPackage, CryptoKeystoreMls};
-use mls_crypto_provider::TransactionalCryptoProvider;
+use mls_crypto_provider::MlsCryptoProvider;
 
 use crate::context::CentralContext;
 use crate::e2e_identity::init_certificates::NewCrlDistributionPoint;
@@ -237,7 +237,7 @@ impl MlsConversation {
     #[cfg_attr(test, crate::durable)]
     pub(crate) async fn e2ei_rotate(
         &mut self,
-        backend: &TransactionalCryptoProvider,
+        backend: &MlsCryptoProvider,
         client: &Client,
         cb: Option<&CredentialBundle>,
     ) -> CryptoResult<MlsCommitBundle> {
