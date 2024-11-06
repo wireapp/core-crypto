@@ -141,11 +141,11 @@ macro_rules! test_migration_to_db_v1_for_entity {
 mod tests_impl {
     use super::common::*;
     use crate::{utils::EntityRandomUpdateExt, ENTITY_COUNT};
+    use core_crypto_keystore::entities::EntityTransactionExt;
     use core_crypto_keystore::{
         connection::{FetchFromDatabase, KeystoreDatabaseConnection},
         entities::{Entity, EntityFindParams},
     };
-    use core_crypto_keystore::entities::EntityTransactionExt;
 
     pub(crate) async fn can_save_entity<
         R: EntityRandomUpdateExt + Entity<ConnectionType = KeystoreDatabaseConnection> + EntityTransactionExt + Sync,

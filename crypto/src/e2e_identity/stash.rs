@@ -61,7 +61,7 @@ impl CentralContext {
 
 #[cfg(test)]
 mod tests {
-    
+
     use mls_crypto_provider::MlsCryptoProvider;
     use wasm_bindgen_test::*;
 
@@ -128,10 +128,8 @@ mod tests {
                     move |e, _cc| {
                         Box::pin(async move {
                             // this restore recreates a partial enrollment
-                            let backend = MlsCryptoProvider::try_new_in_memory("new")
-                                .await
-                                .unwrap();
-                                backend.new_transaction().await.unwrap();
+                            let backend = MlsCryptoProvider::try_new_in_memory("new").await.unwrap();
+                            backend.new_transaction().await.unwrap();
                             let client_id = e.client_id.parse::<WireQualifiedClientId>().unwrap();
                             E2eiEnrollment::try_new(
                                 client_id.into(),

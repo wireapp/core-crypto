@@ -23,6 +23,7 @@ use tls_codec::Deserialize;
 use core_crypto_keystore::entities::MlsPendingMessage;
 use mls_crypto_provider::TransactionalCryptoProvider;
 
+use crate::context::CentralContext;
 use crate::{
     e2e_identity::{conversation_state::compute_state, init_certificates::NewCrlDistributionPoint},
     group_store::GroupStoreValue,
@@ -40,7 +41,6 @@ use crate::{
     prelude::{E2eiConversationState, MlsProposalBundle, WireIdentity},
     CoreCryptoCallbacks, CryptoError, CryptoResult, MlsError,
 };
-use crate::context::CentralContext;
 
 /// Represents the potential items a consumer might require after passing us an encrypted message we
 /// have decrypted for him
@@ -440,69 +440,54 @@ mod tests {
         #[apply(all_cred_cipher)]
         #[wasm_bindgen_test]
         pub async fn decrypting_a_regular_commit_should_leave_conversation_active(case: TestCase) {
-            run_test_with_client_ids(
-                case.clone(),
-                ["alice", "bob"],
-                move |[alice_central, bob_central]| {
-                    Box::pin(async move {
-                        let id = conversation_id();
-                        alice_central
-                            .context
-                            .new_conversation(&id, case.credential_type, case.cfg.clone())
-                            .await
-                            .unwrap();
-                        alice_central
-                            .invite_all(&case, &id, [&bob_central])
-                            .await
-                            .unwrap();
+            run_test_with_client_ids(case.clone(), ["alice", "bob"], move |[alice_central, bob_central]| {
+                Box::pin(async move {
+                    let id = conversation_id();
+                    alice_central
+                        .context
+                        .new_conversation(&id, case.credential_type, case.cfg.clone())
+                        .await
+                        .unwrap();
+                    alice_central.invite_all(&case, &id, [&bob_central]).await.unwrap();
 
-                        let MlsCommitBundle { commit, .. } =
-                            bob_central.context.update_keying_material(&id).await.unwrap();
-                        let MlsConversationDecryptMessage { is_active, .. } = alice_central
-                            .context
-                            .decrypt_message(&id, commit.to_bytes().unwrap())
-                            .await
-                            .unwrap();
-                        assert!(is_active)
-                    })
-                },
-            )
+                    let MlsCommitBundle { commit, .. } = bob_central.context.update_keying_material(&id).await.unwrap();
+                    let MlsConversationDecryptMessage { is_active, .. } = alice_central
+                        .context
+                        .decrypt_message(&id, commit.to_bytes().unwrap())
+                        .await
+                        .unwrap();
+                    assert!(is_active)
+                })
+            })
             .await
         }
 
         #[apply(all_cred_cipher)]
         #[wasm_bindgen_test]
         pub async fn decrypting_a_commit_removing_self_should_set_conversation_inactive(case: TestCase) {
-            run_test_with_client_ids(
-                case.clone(),
-                ["alice", "bob"],
-                move |[alice_central, bob_central]| {
-                    Box::pin(async move {
-                        let id = conversation_id();
-                        alice_central
-                            .context
-                            .new_conversation(&id, case.credential_type, case.cfg.clone())
-                            .await
-                            .unwrap();
-                        alice_central
-                            .invite_all(&case, &id, [&bob_central])
-                            .await
-                            .unwrap();
+            run_test_with_client_ids(case.clone(), ["alice", "bob"], move |[alice_central, bob_central]| {
+                Box::pin(async move {
+                    let id = conversation_id();
+                    alice_central
+                        .context
+                        .new_conversation(&id, case.credential_type, case.cfg.clone())
+                        .await
+                        .unwrap();
+                    alice_central.invite_all(&case, &id, [&bob_central]).await.unwrap();
 
-                        let MlsCommitBundle { commit, .. } = bob_central
-                            .context
-                            .remove_members_from_conversation(&id, &[alice_central.get_client_id().await])
-                            .await
-                            .unwrap();
-                        let MlsConversationDecryptMessage { is_active, .. } = alice_central
-                            .context
-                            .decrypt_message(&id, commit.to_bytes().unwrap())
-                            .await
-                            .unwrap();
-                        assert!(!is_active)
-                    })
-                },
-            )
+                    let MlsCommitBundle { commit, .. } = bob_central
+                        .context
+                        .remove_members_from_conversation(&id, &[alice_central.get_client_id().await])
+                        .await
+                        .unwrap();
+                    let MlsConversationDecryptMessage { is_active, .. } = alice_central
+                        .context
+                        .decrypt_message(&id, commit.to_bytes().unwrap())
+                        .await
+                        .unwrap();
+                    assert!(!is_active)
+                })
+            })
             .await
         }
     }
@@ -513,43 +498,36 @@ mod tests {
         #[apply(all_cred_cipher)]
         #[wasm_bindgen_test]
         pub async fn decrypting_a_commit_should_succeed(case: TestCase) {
-            run_test_with_client_ids(
-                case.clone(),
-                ["alice", "bob"],
-                move |[alice_central, bob_central]| {
-                    Box::pin(async move {
-                        let id = conversation_id();
-                        alice_central
-                            .context
-                            .new_conversation(&id, case.credential_type, case.cfg.clone())
-                            .await
-                            .unwrap();
-                        alice_central
-                            .invite_all(&case, &id, [&bob_central])
-                            .await
-                            .unwrap();
+            run_test_with_client_ids(case.clone(), ["alice", "bob"], move |[alice_central, bob_central]| {
+                Box::pin(async move {
+                    let id = conversation_id();
+                    alice_central
+                        .context
+                        .new_conversation(&id, case.credential_type, case.cfg.clone())
+                        .await
+                        .unwrap();
+                    alice_central.invite_all(&case, &id, [&bob_central]).await.unwrap();
 
-                        let epoch_before = alice_central.context.conversation_epoch(&id).await.unwrap();
+                    let epoch_before = alice_central.context.conversation_epoch(&id).await.unwrap();
 
-                        let MlsCommitBundle { commit, .. } =
-                            alice_central.context.update_keying_material(&id).await.unwrap();
-                        alice_central.context.commit_accepted(&id).await.unwrap();
+                    let MlsCommitBundle { commit, .. } =
+                        alice_central.context.update_keying_material(&id).await.unwrap();
+                    alice_central.context.commit_accepted(&id).await.unwrap();
 
-                        let decrypted = bob_central
-                            .context
-                            .decrypt_message(&id, commit.to_bytes().unwrap())
-                            .await
-                            .unwrap();
-                        let epoch_after = bob_central.context.conversation_epoch(&id).await.unwrap();
-                        assert_eq!(epoch_after, epoch_before + 1);
-                        assert!(decrypted.has_epoch_changed);
-                        assert!(decrypted.delay.is_none());
-                        assert!(decrypted.app_msg.is_none());
+                    let decrypted = bob_central
+                        .context
+                        .decrypt_message(&id, commit.to_bytes().unwrap())
+                        .await
+                        .unwrap();
+                    let epoch_after = bob_central.context.conversation_epoch(&id).await.unwrap();
+                    assert_eq!(epoch_after, epoch_before + 1);
+                    assert!(decrypted.has_epoch_changed);
+                    assert!(decrypted.delay.is_none());
+                    assert!(decrypted.app_msg.is_none());
 
-                        alice_central.verify_sender_identity(&case, &decrypted).await;
-                    })
-                },
-            )
+                    alice_central.verify_sender_identity(&case, &decrypted).await;
+                })
+            })
             .await
         }
 
@@ -567,10 +545,7 @@ mod tests {
                             .new_conversation(&id, case.credential_type, case.cfg.clone())
                             .await
                             .unwrap();
-                        alice_central
-                            .invite_all(&case, &id, [&bob_central])
-                            .await
-                            .unwrap();
+                        alice_central.invite_all(&case, &id, [&bob_central]).await.unwrap();
 
                         // Alice creates a commit which will be superseded by Bob's one
                         let charlie = charlie_central.rand_key_package(&case).await;
@@ -627,10 +602,7 @@ mod tests {
                             .new_conversation(&id, case.credential_type, case.cfg.clone())
                             .await
                             .unwrap();
-                        alice_central
-                            .invite_all(&case, &id, [&bob_central])
-                            .await
-                            .unwrap();
+                        alice_central.invite_all(&case, &id, [&bob_central]).await.unwrap();
 
                         // Alice will create a commit to add Charlie
                         // Bob will create a commit which will be accepted first by DS so Alice will decrypt it
@@ -719,10 +691,7 @@ mod tests {
                             .await
                             .unwrap()
                             .id;
-                        assert!(charlie_central
-                            .try_talk_to(&id, &alice_central)
-                            .await
-                            .is_ok());
+                        assert!(charlie_central.try_talk_to(&id, &alice_central).await.is_ok());
                     })
                 },
             )
@@ -743,10 +712,7 @@ mod tests {
                             .new_conversation(&id, case.credential_type, case.cfg.clone())
                             .await
                             .unwrap();
-                        alice_central
-                            .invite_all(&case, &id, [&bob_central])
-                            .await
-                            .unwrap();
+                        alice_central.invite_all(&case, &id, [&bob_central]).await.unwrap();
 
                         // Bob will create a proposal to add Charlie
                         // Alice will decrypt this proposal
@@ -798,10 +764,7 @@ mod tests {
                             .new_conversation(&id, case.credential_type, case.cfg.clone())
                             .await
                             .unwrap();
-                        alice_central
-                            .invite_all(&case, &id, [&bob_central])
-                            .await
-                            .unwrap();
+                        alice_central.invite_all(&case, &id, [&bob_central]).await.unwrap();
 
                         // Alice will create a proposal to add Charlie
                         // Bob will create a commit which Alice will decrypt
@@ -895,10 +858,7 @@ mod tests {
                             .new_conversation(&id, case.credential_type, case.cfg.clone())
                             .await
                             .unwrap();
-                        alice_central
-                            .invite_all(&case, &id, [&bob_central])
-                            .await
-                            .unwrap();
+                        alice_central.invite_all(&case, &id, [&bob_central]).await.unwrap();
 
                         // DS will create an external proposal to add Charlie
                         // But meanwhile Bob, before receiving the external proposal,
@@ -908,11 +868,7 @@ mod tests {
                             .context
                             .new_external_add_proposal(
                                 id.clone(),
-                                alice_central
-                                    .get_conversation_unchecked(&id)
-                                    .await
-                                    .group
-                                    .epoch(),
+                                alice_central.get_conversation_unchecked(&id).await.group.epoch(),
                                 case.ciphersuite(),
                                 case.credential_type,
                             )
@@ -945,41 +901,34 @@ mod tests {
         #[apply(all_cred_cipher)]
         #[wasm_bindgen_test]
         async fn should_not_return_sender_client_id(case: TestCase) {
-            run_test_with_client_ids(
-                case.clone(),
-                ["alice", "bob"],
-                move |[alice_central, bob_central]| {
-                    Box::pin(async move {
-                        let id = conversation_id();
-                        alice_central
-                            .context
-                            .new_conversation(&id, case.credential_type, case.cfg.clone())
-                            .await
-                            .unwrap();
-                        alice_central
-                            .invite_all(&case, &id, [&bob_central])
-                            .await
-                            .unwrap();
+            run_test_with_client_ids(case.clone(), ["alice", "bob"], move |[alice_central, bob_central]| {
+                Box::pin(async move {
+                    let id = conversation_id();
+                    alice_central
+                        .context
+                        .new_conversation(&id, case.credential_type, case.cfg.clone())
+                        .await
+                        .unwrap();
+                    alice_central.invite_all(&case, &id, [&bob_central]).await.unwrap();
 
-                        let commit = alice_central.context.update_keying_material(&id).await.unwrap().commit;
+                    let commit = alice_central.context.update_keying_material(&id).await.unwrap().commit;
 
-                        let sender_client_id = bob_central
-                            .context
-                            .decrypt_message(&id, commit.to_bytes().unwrap())
-                            .await
-                            .unwrap()
-                            .sender_client_id;
-                        assert!(sender_client_id.is_none());
-                    })
-                },
-            )
+                    let sender_client_id = bob_central
+                        .context
+                        .decrypt_message(&id, commit.to_bytes().unwrap())
+                        .await
+                        .unwrap()
+                        .sender_client_id;
+                    assert!(sender_client_id.is_none());
+                })
+            })
             .await
         }
     }
 
     mod external_proposal {
-        use std::sync::Arc;
         use super::*;
+        use std::sync::Arc;
 
         #[apply(all_cred_cipher)]
         #[wasm_bindgen_test]
@@ -995,16 +944,9 @@ mod tests {
                             .new_conversation(&id, case.credential_type, case.cfg.clone())
                             .await
                             .unwrap();
-                        alice_central
-                            .invite_all(&case, &id, [&bob_central])
-                            .await
-                            .unwrap();
+                        alice_central.invite_all(&case, &id, [&bob_central]).await.unwrap();
 
-                        let epoch = alice_central
-                            .get_conversation_unchecked(&id)
-                            .await
-                            .group
-                            .epoch();
+                        let epoch = alice_central.get_conversation_unchecked(&id).await.group.epoch();
                         let ext_proposal = alice2_central
                             .context
                             .new_external_add_proposal(id.clone(), epoch, case.ciphersuite(), case.credential_type)
@@ -1048,16 +990,9 @@ mod tests {
                             .new_conversation(&id, case.credential_type, case.cfg.clone())
                             .await
                             .unwrap();
-                        alice_central
-                            .invite_all(&case, &id, [&bob_central])
-                            .await
-                            .unwrap();
+                        alice_central.invite_all(&case, &id, [&bob_central]).await.unwrap();
 
-                        let epoch = alice_central
-                            .get_conversation_unchecked(&id)
-                            .await
-                            .group
-                            .epoch();
+                        let epoch = alice_central.get_conversation_unchecked(&id).await.group.epoch();
                         let message = alice2_central
                             .context
                             .new_external_add_proposal(id.clone(), epoch, case.ciphersuite(), case.credential_type)
@@ -1101,23 +1036,18 @@ mod tests {
                             .set_callbacks(Some(Arc::new(ValidationCallbacks {
                                 client_is_existing_group_user: false,
                                 ..Default::default()
-                            }))).await.unwrap();
+                            })))
+                            .await
+                            .unwrap();
 
                         alice_central
                             .context
                             .new_conversation(&id, case.credential_type, case.cfg.clone())
                             .await
                             .unwrap();
-                        alice_central
-                            .invite_all(&case, &id, [&bob_central])
-                            .await
-                            .unwrap();
+                        alice_central.invite_all(&case, &id, [&bob_central]).await.unwrap();
 
-                        let epoch = alice_central
-                            .get_conversation_unchecked(&id)
-                            .await
-                            .group
-                            .epoch();
+                        let epoch = alice_central.get_conversation_unchecked(&id).await.group.epoch();
                         let external_proposal = alice2_central
                             .context
                             .new_external_add_proposal(id.clone(), epoch, case.ciphersuite(), case.credential_type)
@@ -1132,7 +1062,7 @@ mod tests {
 
                         assert!(matches!(error, CryptoError::UnauthorizedExternalAddProposal));
 
-                      bob_central.context.set_callbacks(None).await.unwrap();
+                        bob_central.context.set_callbacks(None).await.unwrap();
                         let error = bob_central
                             .context
                             .decrypt_message(&id, &external_proposal.to_bytes().unwrap())
@@ -1165,10 +1095,7 @@ mod tests {
                             .new_conversation(&id, case.credential_type, case.cfg.clone())
                             .await
                             .unwrap();
-                        alice_central
-                            .invite_all(&case, &id, [&bob_central])
-                            .await
-                            .unwrap();
+                        alice_central.invite_all(&case, &id, [&bob_central]).await.unwrap();
 
                         let charlie_kp = charlie_central.get_one_key_package(&case).await;
                         let proposal = alice_central
@@ -1184,14 +1111,7 @@ mod tests {
                             .await
                             .unwrap();
 
-                        assert_eq!(
-                            bob_central
-                                .get_conversation_unchecked(&id)
-                                .await
-                                .members()
-                                .len(),
-                            2
-                        );
+                        assert_eq!(bob_central.get_conversation_unchecked(&id).await.members().len(), 2);
                         // if 'decrypt_message' is not durable the commit won't contain the add proposal
                         bob_central
                             .context
@@ -1200,14 +1120,7 @@ mod tests {
                             .unwrap()
                             .unwrap();
                         bob_central.context.commit_accepted(&id).await.unwrap();
-                        assert_eq!(
-                            bob_central
-                                .get_conversation_unchecked(&id)
-                                .await
-                                .members()
-                                .len(),
-                            3
-                        );
+                        assert_eq!(bob_central.get_conversation_unchecked(&id).await.members().len(), 3);
                         assert!(!decrypted.has_epoch_changed);
 
                         alice_central.verify_sender_identity(&case, &decrypted).await;
@@ -1220,34 +1133,27 @@ mod tests {
         #[apply(all_cred_cipher)]
         #[wasm_bindgen_test]
         async fn should_not_return_sender_client_id(case: TestCase) {
-            run_test_with_client_ids(
-                case.clone(),
-                ["alice", "bob"],
-                move |[alice_central, bob_central]| {
-                    Box::pin(async move {
-                        let id = conversation_id();
-                        alice_central
-                            .context
-                            .new_conversation(&id, case.credential_type, case.cfg.clone())
-                            .await
-                            .unwrap();
-                        alice_central
-                            .invite_all(&case, &id, [&bob_central])
-                            .await
-                            .unwrap();
+            run_test_with_client_ids(case.clone(), ["alice", "bob"], move |[alice_central, bob_central]| {
+                Box::pin(async move {
+                    let id = conversation_id();
+                    alice_central
+                        .context
+                        .new_conversation(&id, case.credential_type, case.cfg.clone())
+                        .await
+                        .unwrap();
+                    alice_central.invite_all(&case, &id, [&bob_central]).await.unwrap();
 
-                        let proposal = alice_central.context.new_update_proposal(&id).await.unwrap().proposal;
+                    let proposal = alice_central.context.new_update_proposal(&id).await.unwrap().proposal;
 
-                        let sender_client_id = bob_central
-                            .context
-                            .decrypt_message(&id, proposal.to_bytes().unwrap())
-                            .await
-                            .unwrap()
-                            .sender_client_id;
-                        assert!(sender_client_id.is_none());
-                    })
-                },
-            )
+                    let sender_client_id = bob_central
+                        .context
+                        .decrypt_message(&id, proposal.to_bytes().unwrap())
+                        .await
+                        .unwrap()
+                        .sender_client_id;
+                    assert!(sender_client_id.is_none());
+                })
+            })
             .await
         }
     }
@@ -1258,133 +1164,112 @@ mod tests {
         #[apply(all_cred_cipher)]
         #[wasm_bindgen_test]
         async fn can_decrypt_app_message(case: TestCase) {
-            run_test_with_client_ids(
-                case.clone(),
-                ["alice", "bob"],
-                move |[alice_central, bob_central]| {
-                    Box::pin(async move {
-                        let id = conversation_id();
-                        alice_central
-                            .context
-                            .new_conversation(&id, case.credential_type, case.cfg.clone())
-                            .await
-                            .unwrap();
-                        alice_central
-                            .invite_all(&case, &id, [&bob_central])
-                            .await
-                            .unwrap();
+            run_test_with_client_ids(case.clone(), ["alice", "bob"], move |[alice_central, bob_central]| {
+                Box::pin(async move {
+                    let id = conversation_id();
+                    alice_central
+                        .context
+                        .new_conversation(&id, case.credential_type, case.cfg.clone())
+                        .await
+                        .unwrap();
+                    alice_central.invite_all(&case, &id, [&bob_central]).await.unwrap();
 
-                        let msg = b"Hello bob";
-                        let encrypted = alice_central.context.encrypt_message(&id, msg).await.unwrap();
-                        assert_ne!(&msg[..], &encrypted[..]);
-                        let decrypted = bob_central.context.decrypt_message(&id, encrypted).await.unwrap();
-                        let dec_msg = decrypted.app_msg.as_ref().unwrap().as_slice();
-                        assert_eq!(dec_msg, &msg[..]);
-                        assert!(!decrypted.has_epoch_changed);
-                        alice_central.verify_sender_identity(&case, &decrypted).await;
+                    let msg = b"Hello bob";
+                    let encrypted = alice_central.context.encrypt_message(&id, msg).await.unwrap();
+                    assert_ne!(&msg[..], &encrypted[..]);
+                    let decrypted = bob_central.context.decrypt_message(&id, encrypted).await.unwrap();
+                    let dec_msg = decrypted.app_msg.as_ref().unwrap().as_slice();
+                    assert_eq!(dec_msg, &msg[..]);
+                    assert!(!decrypted.has_epoch_changed);
+                    alice_central.verify_sender_identity(&case, &decrypted).await;
 
-                        let msg = b"Hello alice";
-                        let encrypted = bob_central.context.encrypt_message(&id, msg).await.unwrap();
-                        assert_ne!(&msg[..], &encrypted[..]);
-                        let decrypted = alice_central.context.decrypt_message(&id, encrypted).await.unwrap();
-                        let dec_msg = decrypted.app_msg.as_ref().unwrap().as_slice();
-                        assert_eq!(dec_msg, &msg[..]);
-                        assert!(!decrypted.has_epoch_changed);
-                        bob_central.verify_sender_identity(&case, &decrypted).await;
-                    })
-                },
-            )
+                    let msg = b"Hello alice";
+                    let encrypted = bob_central.context.encrypt_message(&id, msg).await.unwrap();
+                    assert_ne!(&msg[..], &encrypted[..]);
+                    let decrypted = alice_central.context.decrypt_message(&id, encrypted).await.unwrap();
+                    let dec_msg = decrypted.app_msg.as_ref().unwrap().as_slice();
+                    assert_eq!(dec_msg, &msg[..]);
+                    assert!(!decrypted.has_epoch_changed);
+                    bob_central.verify_sender_identity(&case, &decrypted).await;
+                })
+            })
             .await
         }
 
         #[apply(all_cred_cipher)]
         #[wasm_bindgen_test]
         async fn cannot_decrypt_app_message_after_rejoining(case: TestCase) {
-            run_test_with_client_ids(
-                case.clone(),
-                ["alice", "bob"],
-                move |[alice_central, bob_central]| {
-                    Box::pin(async move {
-                        let id = conversation_id();
-                        alice_central
-                            .context
-                            .new_conversation(&id, case.credential_type, case.cfg.clone())
-                            .await
-                            .unwrap();
-                        alice_central
-                            .invite_all(&case, &id, [&bob_central])
-                            .await
-                            .unwrap();
+            run_test_with_client_ids(case.clone(), ["alice", "bob"], move |[alice_central, bob_central]| {
+                Box::pin(async move {
+                    let id = conversation_id();
+                    alice_central
+                        .context
+                        .new_conversation(&id, case.credential_type, case.cfg.clone())
+                        .await
+                        .unwrap();
+                    alice_central.invite_all(&case, &id, [&bob_central]).await.unwrap();
 
-                        // encrypt a message in epoch 1
-                        let msg = b"Hello bob";
-                        let encrypted = alice_central.context.encrypt_message(&id, msg).await.unwrap();
+                    // encrypt a message in epoch 1
+                    let msg = b"Hello bob";
+                    let encrypted = alice_central.context.encrypt_message(&id, msg).await.unwrap();
 
-                        // Now Bob will rejoin the group and try to decrypt Alice's message
-                        // in epoch 2 which should fail
-                        let gi = alice_central.get_group_info(&id).await;
-                        bob_central
-                            .context
-                            .join_by_external_commit(gi, case.custom_cfg(), case.credential_type)
-                            .await
-                            .unwrap();
-                        bob_central
-                            .context
-                            .merge_pending_group_from_external_commit(&id)
-                            .await
-                            .unwrap();
+                    // Now Bob will rejoin the group and try to decrypt Alice's message
+                    // in epoch 2 which should fail
+                    let gi = alice_central.get_group_info(&id).await;
+                    bob_central
+                        .context
+                        .join_by_external_commit(gi, case.custom_cfg(), case.credential_type)
+                        .await
+                        .unwrap();
+                    bob_central
+                        .context
+                        .merge_pending_group_from_external_commit(&id)
+                        .await
+                        .unwrap();
 
-                        // fails because of Forward Secrecy
-                        let decrypt = bob_central.context.decrypt_message(&id, &encrypted).await;
-                        assert!(matches!(decrypt.unwrap_err(), CryptoError::DecryptionError));
-                    })
-                },
-            )
+                    // fails because of Forward Secrecy
+                    let decrypt = bob_central.context.decrypt_message(&id, &encrypted).await;
+                    assert!(matches!(decrypt.unwrap_err(), CryptoError::DecryptionError));
+                })
+            })
             .await
         }
 
         #[apply(all_cred_cipher)]
         #[wasm_bindgen_test]
         async fn cannot_decrypt_app_message_from_future_epoch(case: TestCase) {
-            run_test_with_client_ids(
-                case.clone(),
-                ["alice", "bob"],
-                move |[alice_central, bob_central]| {
-                    Box::pin(async move {
-                        let id = conversation_id();
-                        alice_central
-                            .context
-                            .new_conversation(&id, case.credential_type, case.cfg.clone())
-                            .await
-                            .unwrap();
-                        alice_central
-                            .invite_all(&case, &id, [&bob_central])
-                            .await
-                            .unwrap();
+            run_test_with_client_ids(case.clone(), ["alice", "bob"], move |[alice_central, bob_central]| {
+                Box::pin(async move {
+                    let id = conversation_id();
+                    alice_central
+                        .context
+                        .new_conversation(&id, case.credential_type, case.cfg.clone())
+                        .await
+                        .unwrap();
+                    alice_central.invite_all(&case, &id, [&bob_central]).await.unwrap();
 
-                        // only Alice will change epoch without notifying Bob
-                        let commit = alice_central.context.update_keying_material(&id).await.unwrap().commit;
-                        alice_central.context.commit_accepted(&id).await.unwrap();
+                    // only Alice will change epoch without notifying Bob
+                    let commit = alice_central.context.update_keying_material(&id).await.unwrap().commit;
+                    alice_central.context.commit_accepted(&id).await.unwrap();
 
-                        // Now in epoch 2 Alice will encrypt a message
-                        let msg = b"Hello bob";
-                        let encrypted = alice_central.context.encrypt_message(&id, msg).await.unwrap();
+                    // Now in epoch 2 Alice will encrypt a message
+                    let msg = b"Hello bob";
+                    let encrypted = alice_central.context.encrypt_message(&id, msg).await.unwrap();
 
-                        // which Bob cannot decrypt because of Post CompromiseSecurity
-                        let decrypt = bob_central.context.decrypt_message(&id, &encrypted).await;
-                        assert!(matches!(decrypt.unwrap_err(), CryptoError::BufferedFutureMessage));
+                    // which Bob cannot decrypt because of Post CompromiseSecurity
+                    let decrypt = bob_central.context.decrypt_message(&id, &encrypted).await;
+                    assert!(matches!(decrypt.unwrap_err(), CryptoError::BufferedFutureMessage));
 
-                        let decrypted_commit = bob_central
-                            .context
-                            .decrypt_message(&id, commit.to_bytes().unwrap())
-                            .await
-                            .unwrap();
-                        let buffered_msg = decrypted_commit.buffered_messages.unwrap();
-                        let decrypted_msg = buffered_msg.first().unwrap().app_msg.clone().unwrap();
-                        assert_eq!(&decrypted_msg, msg);
-                    })
-                },
-            )
+                    let decrypted_commit = bob_central
+                        .context
+                        .decrypt_message(&id, commit.to_bytes().unwrap())
+                        .await
+                        .unwrap();
+                    let buffered_msg = decrypted_commit.buffered_messages.unwrap();
+                    let decrypted_msg = buffered_msg.first().unwrap().app_msg.clone().unwrap();
+                    assert_eq!(&decrypted_msg, msg);
+                })
+            })
             .await
         }
 
@@ -1394,84 +1279,70 @@ mod tests {
             // otherwise the test would fail because we decrypt messages in reverse order which is
             // kinda dropping them
             case.cfg.custom.maximum_forward_distance = 0;
-            run_test_with_client_ids(
-                case.clone(),
-                ["alice", "bob"],
-                move |[alice_central, bob_central]| {
-                    Box::pin(async move {
-                        let id = conversation_id();
-                        alice_central
-                            .context
-                            .new_conversation(&id, case.credential_type, case.cfg.clone())
-                            .await
-                            .unwrap();
-                        alice_central
-                            .invite_all(&case, &id, [&bob_central])
-                            .await
-                            .unwrap();
+            run_test_with_client_ids(case.clone(), ["alice", "bob"], move |[alice_central, bob_central]| {
+                Box::pin(async move {
+                    let id = conversation_id();
+                    alice_central
+                        .context
+                        .new_conversation(&id, case.credential_type, case.cfg.clone())
+                        .await
+                        .unwrap();
+                    alice_central.invite_all(&case, &id, [&bob_central]).await.unwrap();
 
-                        let out_of_order_tolerance = case.custom_cfg().out_of_order_tolerance;
-                        let nb_messages = out_of_order_tolerance * 2;
-                        let mut messages = vec![];
+                    let out_of_order_tolerance = case.custom_cfg().out_of_order_tolerance;
+                    let nb_messages = out_of_order_tolerance * 2;
+                    let mut messages = vec![];
 
-                        // stack up encrypted messages..
-                        for i in 0..nb_messages {
-                            let msg = format!("Hello {i}");
-                            let encrypted = alice_central.context.encrypt_message(&id, &msg).await.unwrap();
-                            messages.push((msg, encrypted));
+                    // stack up encrypted messages..
+                    for i in 0..nb_messages {
+                        let msg = format!("Hello {i}");
+                        let encrypted = alice_central.context.encrypt_message(&id, &msg).await.unwrap();
+                        messages.push((msg, encrypted));
+                    }
+
+                    // ..then unstack them to see out_of_order_tolerance come into play
+                    messages.reverse();
+                    for (i, (original, encrypted)) in messages.iter().enumerate() {
+                        let decrypt = bob_central.context.decrypt_message(&id, encrypted).await;
+                        if i > out_of_order_tolerance as usize {
+                            let decrypted = decrypt.unwrap().app_msg.unwrap();
+                            assert_eq!(decrypted, original.as_bytes());
+                        } else {
+                            assert!(matches!(decrypt.unwrap_err(), CryptoError::DuplicateMessage))
                         }
-
-                        // ..then unstack them to see out_of_order_tolerance come into play
-                        messages.reverse();
-                        for (i, (original, encrypted)) in messages.iter().enumerate() {
-                            let decrypt = bob_central.context.decrypt_message(&id, encrypted).await;
-                            if i > out_of_order_tolerance as usize {
-                                let decrypted = decrypt.unwrap().app_msg.unwrap();
-                                assert_eq!(decrypted, original.as_bytes());
-                            } else {
-                                assert!(matches!(decrypt.unwrap_err(), CryptoError::DuplicateMessage))
-                            }
-                        }
-                    })
-                },
-            )
+                    }
+                })
+            })
             .await
         }
 
         #[apply(all_cred_cipher)]
         #[wasm_bindgen_test]
         async fn returns_sender_client_id(case: TestCase) {
-            run_test_with_client_ids(
-                case.clone(),
-                ["alice", "bob"],
-                move |[alice_central, bob_central]| {
-                    Box::pin(async move {
-                        let id = conversation_id();
-                        alice_central
-                            .context
-                            .new_conversation(&id, case.credential_type, case.cfg.clone())
-                            .await
-                            .unwrap();
-                        alice_central
-                            .invite_all(&case, &id, [&bob_central])
-                            .await
-                            .unwrap();
+            run_test_with_client_ids(case.clone(), ["alice", "bob"], move |[alice_central, bob_central]| {
+                Box::pin(async move {
+                    let id = conversation_id();
+                    alice_central
+                        .context
+                        .new_conversation(&id, case.credential_type, case.cfg.clone())
+                        .await
+                        .unwrap();
+                    alice_central.invite_all(&case, &id, [&bob_central]).await.unwrap();
 
-                        let msg = b"Hello bob";
-                        let encrypted = alice_central.context.encrypt_message(&id, msg).await.unwrap();
-                        assert_ne!(&msg[..], &encrypted[..]);
+                    let msg = b"Hello bob";
+                    let encrypted = alice_central.context.encrypt_message(&id, msg).await.unwrap();
+                    assert_ne!(&msg[..], &encrypted[..]);
 
-                        let sender_client_id = bob_central
-                            .context
-                            .decrypt_message(&id, encrypted)
-                            .await
-                            .unwrap()
-                            .sender_client_id
-                            .unwrap();
-                        assert_eq!(sender_client_id, alice_central.get_client_id().await);
-                    })
-                },
-            )
+                    let sender_client_id = bob_central
+                        .context
+                        .decrypt_message(&id, encrypted)
+                        .await
+                        .unwrap()
+                        .sender_client_id
+                        .unwrap();
+                    assert_eq!(sender_client_id, alice_central.get_client_id().await);
+                })
+            })
             .await
         }
     }
@@ -1483,45 +1354,26 @@ mod tests {
         #[wasm_bindgen_test]
         async fn should_throw_specialized_error_when_epoch_too_old(mut case: TestCase) {
             case.cfg.custom.out_of_order_tolerance = 0;
-            run_test_with_client_ids(
-                case.clone(),
-                ["alice", "bob"],
-                move |[alice_central, bob_central]| {
-                    Box::pin(async move {
-                        let id = conversation_id();
-                        alice_central
-                            .context
-                            .new_conversation(&id, case.credential_type, case.cfg.clone())
-                            .await
-                            .unwrap();
-                        alice_central
-                            .invite_all(&case, &id, [&bob_central])
-                            .await
-                            .unwrap();
+            run_test_with_client_ids(case.clone(), ["alice", "bob"], move |[alice_central, bob_central]| {
+                Box::pin(async move {
+                    let id = conversation_id();
+                    alice_central
+                        .context
+                        .new_conversation(&id, case.credential_type, case.cfg.clone())
+                        .await
+                        .unwrap();
+                    alice_central.invite_all(&case, &id, [&bob_central]).await.unwrap();
 
-                        // Alice encrypts a message to Bob
-                        let bob_message1 = alice_central.context.encrypt_message(&id, b"Hello Bob").await.unwrap();
-                        let bob_message2 = alice_central
-                            .context
-                            .encrypt_message(&id, b"Hello again Bob")
-                            .await
-                            .unwrap();
+                    // Alice encrypts a message to Bob
+                    let bob_message1 = alice_central.context.encrypt_message(&id, b"Hello Bob").await.unwrap();
+                    let bob_message2 = alice_central
+                        .context
+                        .encrypt_message(&id, b"Hello again Bob")
+                        .await
+                        .unwrap();
 
-                        // Move group's epoch forward by self updating
-                        for _ in 0..MAX_PAST_EPOCHS {
-                            let commit = alice_central.context.update_keying_material(&id).await.unwrap().commit;
-                            alice_central.context.commit_accepted(&id).await.unwrap();
-                            bob_central
-                                .context
-                                .decrypt_message(&id, commit.to_bytes().unwrap())
-                                .await
-                                .unwrap();
-                        }
-                        // Decrypt should work
-                        let decrypt = bob_central.context.decrypt_message(&id, &bob_message1).await.unwrap();
-                        assert_eq!(decrypt.app_msg.unwrap(), b"Hello Bob");
-
-                        // Moving the epochs once more should cause an error
+                    // Move group's epoch forward by self updating
+                    for _ in 0..MAX_PAST_EPOCHS {
                         let commit = alice_central.context.update_keying_material(&id).await.unwrap().commit;
                         alice_central.context.commit_accepted(&id).await.unwrap();
                         bob_central
@@ -1529,12 +1381,24 @@ mod tests {
                             .decrypt_message(&id, commit.to_bytes().unwrap())
                             .await
                             .unwrap();
+                    }
+                    // Decrypt should work
+                    let decrypt = bob_central.context.decrypt_message(&id, &bob_message1).await.unwrap();
+                    assert_eq!(decrypt.app_msg.unwrap(), b"Hello Bob");
 
-                        let decrypt = bob_central.context.decrypt_message(&id, &bob_message2).await;
-                        assert!(matches!(decrypt.unwrap_err(), CryptoError::MessageEpochTooOld));
-                    })
-                },
-            )
+                    // Moving the epochs once more should cause an error
+                    let commit = alice_central.context.update_keying_material(&id).await.unwrap().commit;
+                    alice_central.context.commit_accepted(&id).await.unwrap();
+                    bob_central
+                        .context
+                        .decrypt_message(&id, commit.to_bytes().unwrap())
+                        .await
+                        .unwrap();
+
+                    let decrypt = bob_central.context.decrypt_message(&id, &bob_message2).await;
+                    assert!(matches!(decrypt.unwrap_err(), CryptoError::MessageEpochTooOld));
+                })
+            })
             .await
         }
 
@@ -1542,70 +1406,63 @@ mod tests {
         #[wasm_bindgen_test]
         async fn should_throw_specialized_error_when_epoch_desynchronized(mut case: TestCase) {
             case.cfg.custom.out_of_order_tolerance = 0;
-            run_test_with_client_ids(
-                case.clone(),
-                ["alice", "bob"],
-                move |[alice_central, bob_central]| {
-                    Box::pin(async move {
-                        let id = conversation_id();
-                        alice_central
-                            .context
-                            .new_conversation(&id, case.credential_type, case.cfg.clone())
-                            .await
-                            .unwrap();
-                        alice_central
-                            .invite_all(&case, &id, [&bob_central])
-                            .await
-                            .unwrap();
+            run_test_with_client_ids(case.clone(), ["alice", "bob"], move |[alice_central, bob_central]| {
+                Box::pin(async move {
+                    let id = conversation_id();
+                    alice_central
+                        .context
+                        .new_conversation(&id, case.credential_type, case.cfg.clone())
+                        .await
+                        .unwrap();
+                    alice_central.invite_all(&case, &id, [&bob_central]).await.unwrap();
 
-                        // Alice generates a bunch of soon to be outdated messages
-                        let old_proposal = alice_central
-                            .context
-                            .new_update_proposal(&id)
-                            .await
-                            .unwrap()
-                            .proposal
-                            .to_bytes()
-                            .unwrap();
-                        alice_central
-                            .get_conversation_unchecked(&id)
-                            .await
-                            .group
-                            .clear_pending_proposals();
-                        let old_commit = alice_central
-                            .context
-                            .update_keying_material(&id)
-                            .await
-                            .unwrap()
-                            .commit
-                            .to_bytes()
-                            .unwrap();
-                        alice_central.context.clear_pending_commit(&id).await.unwrap();
+                    // Alice generates a bunch of soon to be outdated messages
+                    let old_proposal = alice_central
+                        .context
+                        .new_update_proposal(&id)
+                        .await
+                        .unwrap()
+                        .proposal
+                        .to_bytes()
+                        .unwrap();
+                    alice_central
+                        .get_conversation_unchecked(&id)
+                        .await
+                        .group
+                        .clear_pending_proposals();
+                    let old_commit = alice_central
+                        .context
+                        .update_keying_material(&id)
+                        .await
+                        .unwrap()
+                        .commit
+                        .to_bytes()
+                        .unwrap();
+                    alice_central.context.clear_pending_commit(&id).await.unwrap();
 
-                        // Now let's jump to next epoch
-                        let commit = alice_central.context.update_keying_material(&id).await.unwrap().commit;
-                        alice_central.context.commit_accepted(&id).await.unwrap();
-                        bob_central
-                            .context
-                            .decrypt_message(&id, commit.to_bytes().unwrap())
-                            .await
-                            .unwrap();
+                    // Now let's jump to next epoch
+                    let commit = alice_central.context.update_keying_material(&id).await.unwrap().commit;
+                    alice_central.context.commit_accepted(&id).await.unwrap();
+                    bob_central
+                        .context
+                        .decrypt_message(&id, commit.to_bytes().unwrap())
+                        .await
+                        .unwrap();
 
-                        // trying to consume outdated messages should fail with a dedicated error
-                        let decrypt_err = bob_central
-                            .context
-                            .decrypt_message(&id, &old_proposal)
-                            .await
-                            .unwrap_err();
+                    // trying to consume outdated messages should fail with a dedicated error
+                    let decrypt_err = bob_central
+                        .context
+                        .decrypt_message(&id, &old_proposal)
+                        .await
+                        .unwrap_err();
 
-                        assert!(matches!(decrypt_err, CryptoError::StaleProposal));
+                    assert!(matches!(decrypt_err, CryptoError::StaleProposal));
 
-                        let decrypt_err = bob_central.context.decrypt_message(&id, &old_commit).await.unwrap_err();
+                    let decrypt_err = bob_central.context.decrypt_message(&id, &old_commit).await.unwrap_err();
 
-                        assert!(matches!(decrypt_err, CryptoError::StaleCommit));
-                    })
-                },
-            )
+                    assert!(matches!(decrypt_err, CryptoError::StaleCommit));
+                })
+            })
             .await
         }
     }

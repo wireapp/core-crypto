@@ -26,13 +26,13 @@ use core_crypto_keystore::{
 };
 use mls_crypto_provider::{CryptoKeystore, TransactionalCryptoProvider};
 
+use crate::context::CentralContext;
 use crate::{
     mls::credential::CredentialBundle,
     prelude::{
         Client, CryptoError, CryptoResult, MlsCiphersuite, MlsConversationConfiguration, MlsCredentialType, MlsError,
     },
 };
-use crate::context::CentralContext;
 
 /// Default number of KeyPackages a client generates the first time it's created
 #[cfg(not(test))]
@@ -114,7 +114,8 @@ impl Client {
         let mut kps = if count > kpb_count {
             let to_generate = count - kpb_count;
             let cb = self
-                .find_most_recent_credential_bundle(ciphersuite.signature_algorithm(), credential_type).await
+                .find_most_recent_credential_bundle(ciphersuite.signature_algorithm(), credential_type)
+                .await
                 .ok_or(CryptoError::MlsNotInitialized)?;
             self.generate_new_keypackages(backend, ciphersuite, &cb, to_generate)
                 .await?
@@ -230,10 +231,7 @@ impl Client {
             let all_to_delete = kps.iter().all(|kpr| kp_to_delete.contains(&kpr.as_slice()));
             if all_to_delete {
                 // then delete this Credential
-                backend
-                    .keystore()
-                    .cred_delete_by_credential(credential.clone())
-                    .await?;
+                backend.keystore().cred_delete_by_credential(credential.clone()).await?;
                 let credential = Credential::tls_deserialize(&mut credential.as_slice()).map_err(MlsError::from)?;
                 self.identities.remove(&credential).await?;
             }
@@ -270,9 +268,11 @@ impl Client {
         for (kp, kp_ref) in &kp_to_delete {
             // TODO: maybe rewrite this to optimize it. But honestly it's called so rarely and on a so tiny amount of data. Tacking issue: WPB-9600
             keystore.remove::<MlsKeyPackage, &[u8]>(kp_ref.as_slice()).await?;
-            keystore.remove::<MlsHpkePrivateKey, &[u8]>(kp.hpke_init_key().as_slice())
+            keystore
+                .remove::<MlsHpkePrivateKey, &[u8]>(kp.hpke_init_key().as_slice())
                 .await?;
-            keystore.remove::<MlsEncryptionKeyPair, &[u8]>(kp.leaf_node().encryption_key().as_slice())
+            keystore
+                .remove::<MlsEncryptionKeyPair, &[u8]>(kp.leaf_node().encryption_key().as_slice())
                 .await?;
         }
 

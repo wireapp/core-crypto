@@ -5,8 +5,8 @@ use itertools::Itertools;
 use openmls_traits::OpenMlsCryptoProvider;
 use x509_cert::der::pem::LineEnding;
 
-use crate::e2e_identity::id::WireQualifiedClientId;
 use crate::context::CentralContext;
+use crate::e2e_identity::id::WireQualifiedClientId;
 use crate::mls::credential::ext::CredentialExt;
 use crate::prelude::MlsCredentialType;
 use crate::{
@@ -204,13 +204,13 @@ impl MlsConversation {
 mod tests {
     use wasm_bindgen_test::*;
 
+    use crate::context::CentralContext;
     use crate::prelude::{ClientId, ConversationId, MlsCredentialType};
     use crate::{
         prelude::{DeviceStatus, E2eiConversationState},
         test_utils::*,
         CryptoError,
     };
-    use crate::context::CentralContext;
 
     wasm_bindgen_test_configure!(run_in_browser);
 
@@ -353,16 +353,7 @@ mod tests {
                         .await
                         .unwrap();
                     alice
-                        .invite_all(
-                            &case,
-                            &id,
-                            [
-                                &bob,
-                                &rupert,
-                                &dilbert,
-                                &john,
-                            ],
-                        )
+                        .invite_all(&case, &id, [&bob, &rupert, &dilbert, &john])
                         .await
                         .unwrap();
 
@@ -413,10 +404,7 @@ mod tests {
                         .new_conversation(&id, case.credential_type, case.cfg.clone())
                         .await
                         .unwrap();
-                    alice
-                        .invite_all(&case, &id, [&bob, &rupert])
-                        .await
-                        .unwrap();
+                    alice.invite_all(&case, &id, [&bob, &rupert]).await.unwrap();
 
                     let (alice_id, bob_id, rupert_id) = (
                         alice.get_client_id().await,
@@ -633,11 +621,7 @@ mod tests {
                         .await
                         .unwrap();
                     alice_android_central
-                        .invite_all(
-                            &case,
-                            &id,
-                            [&alice_ios_central, &bob_android_central],
-                        )
+                        .invite_all(&case, &id, [&alice_ios_central, &bob_android_central])
                         .await
                         .unwrap();
 
@@ -748,7 +732,10 @@ mod tests {
                         .len();
                     assert_eq!(nb_members, 6);
 
-                    assert_eq!(alicem_android_central.get_user_id().await, alicem_ios_central.get_user_id().await);
+                    assert_eq!(
+                        alicem_android_central.get_user_id().await,
+                        alicem_ios_central.get_user_id().await
+                    );
 
                     // cross server communication
                     bobt_android_central

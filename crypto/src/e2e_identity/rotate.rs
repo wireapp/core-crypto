@@ -7,10 +7,10 @@ use core_crypto_keystore::connection::FetchFromDatabase;
 use core_crypto_keystore::{entities::MlsKeyPackage, CryptoKeystoreMls};
 use mls_crypto_provider::TransactionalCryptoProvider;
 
+use crate::context::CentralContext;
 use crate::e2e_identity::init_certificates::NewCrlDistributionPoint;
 #[cfg(not(target_family = "wasm"))]
 use crate::e2e_identity::refresh_token::RefreshToken;
-use crate::context::CentralContext;
 use crate::{
     mls::credential::{ext::CredentialExt, x509::CertificatePrivateKey, CredentialBundle},
     prelude::{
@@ -39,7 +39,8 @@ impl CentralContext {
         let mls_provider = self.mls_provider().await?;
         // look for existing credential of type basic. If there isn't, then this method has been misused
         let cb = client
-            .find_most_recent_credential_bundle(ciphersuite.signature_algorithm(), MlsCredentialType::Basic).await
+            .find_most_recent_credential_bundle(ciphersuite.signature_algorithm(), MlsCredentialType::Basic)
+            .await
             .ok_or(E2eIdentityError::MissingExistingClient(MlsCredentialType::Basic))?;
         let client_id = cb.credential().identity().into();
 
@@ -77,7 +78,8 @@ impl CentralContext {
         let mls_provider = self.mls_provider().await?;
         // look for existing credential of type x509. If there isn't, then this method has been misused
         let cb = client
-            .find_most_recent_credential_bundle(ciphersuite.signature_algorithm(), MlsCredentialType::X509).await
+            .find_most_recent_credential_bundle(ciphersuite.signature_algorithm(), MlsCredentialType::X509)
+            .await
             .ok_or(E2eIdentityError::MissingExistingClient(MlsCredentialType::X509))?;
         let client_id = cb.credential().identity().into();
         let sign_keypair = Some((&cb.signature_key).try_into()?);
@@ -143,7 +145,11 @@ impl CentralContext {
         let mut client_guard = self.mls_client_mut().await?;
         let client = client_guard.as_mut().ok_or(CryptoError::MlsNotInitialized)?;
         let new_cb = client
-            .save_new_x509_credential_bundle(&self.mls_provider().await?.keystore(), cs.signature_algorithm(), cert_bundle)
+            .save_new_x509_credential_bundle(
+                &self.mls_provider().await?.keystore(),
+                cs.signature_algorithm(),
+                cert_bundle,
+            )
             .await?;
 
         let commits = self.e2ei_update_all(client, &new_cb).await?;
@@ -162,7 +168,11 @@ impl CentralContext {
         })
     }
 
-    async fn e2ei_update_all(&self, client: &mut Client, cb: &CredentialBundle) -> CryptoResult<HashMap<ConversationId, MlsCommitBundle>> {
+    async fn e2ei_update_all(
+        &self,
+        client: &mut Client,
+        cb: &CredentialBundle,
+    ) -> CryptoResult<HashMap<ConversationId, MlsCommitBundle>> {
         let all_conversations = self.get_all_conversations().await?;
 
         let mut commits = HashMap::with_capacity(all_conversations.len());
@@ -408,10 +418,7 @@ pub(crate) mod tests {
                                 .new_conversation(&id, case.credential_type, case.cfg.clone())
                                 .await
                                 .unwrap();
-                            alice_central
-                                .invite_all(&case, &id, [&bob_central])
-                                .await
-                                .unwrap();
+                            alice_central.invite_all(&case, &id, [&bob_central]).await.unwrap();
                             ids.push(id)
                         }
 
@@ -646,24 +653,24 @@ pub(crate) mod tests {
                     assert_eq!(old_cb, old_cb_found);
                     let (cid, all_credentials, scs, old_nb_identities) = {
                         let alice_client = alice_central.client().await;
-                        let old_nb_identities = alice_client
-                            .identities
-                            .as_vec().await
-                            .len();
+                        let old_nb_identities = alice_client.identities.as_vec().await.len();
 
                         // Let's simulate an app crash, client gets deleted and restored from keystore
                         let cid = alice_client.id().clone();
                         let scs = HashSet::from([case.signature_scheme()]);
                         let all_credentials = alice_central
                             .context
-                            .keystore().await.unwrap()
+                            .keystore()
+                            .await
+                            .unwrap()
                             .find_all::<MlsCredential>(EntityFindParams::default())
                             .await
                             .unwrap()
                             .into_iter()
                             .map(|c| {
                                 let credential =
-                                    openmls::prelude::Credential::tls_deserialize(&mut c.credential.as_slice()).unwrap();
+                                    openmls::prelude::Credential::tls_deserialize(&mut c.credential.as_slice())
+                                        .unwrap();
                                 (credential, c.created_at)
                             })
                             .collect::<Vec<_>>();
@@ -674,9 +681,7 @@ pub(crate) mod tests {
                     backend.keystore().commit_transaction().await.unwrap();
                     backend.keystore().new_transaction().await.unwrap();
 
-                    let client = Client::load(backend, &cid, all_credentials, scs)
-                        .await
-                        .unwrap();
+                    let client = Client::load(backend, &cid, all_credentials, scs).await.unwrap();
                     let mut alice_client_guard = alice_central.context.mls_client_mut().await.unwrap();
                     *alice_client_guard = Some(client);
                     drop(alice_client_guard);
@@ -699,10 +704,7 @@ pub(crate) mod tests {
                         format!("wireapp://%40{NEW_HANDLE}@world.com")
                     );
 
-                    assert_eq!(
-                        alice_client.identities.as_vec().await.len(),
-                        old_nb_identities
-                    );
+                    assert_eq!(alice_client.identities.as_vec().await.len(), old_nb_identities);
                 })
             })
             .await
@@ -728,10 +730,7 @@ pub(crate) mod tests {
                             .await
                             .unwrap();
 
-                        alice_central
-                            .invite_all(&case, &id, [&bob_central])
-                            .await
-                            .unwrap();
+                        alice_central.invite_all(&case, &id, [&bob_central]).await.unwrap();
                         // Alice's turn
                         const ALICE_NEW_HANDLE: &str = "new_alice_wire";
                         const ALICE_NEW_DISPLAY_NAME: &str = "New Alice Smith";
@@ -741,13 +740,16 @@ pub(crate) mod tests {
                                 let E2eiInitWrapper { context: cc, case } = wrapper;
                                 let cs = case.ciphersuite();
                                 match case.credential_type {
-                                    MlsCredentialType::Basic => cc.e2ei_new_activation_enrollment(
-                                        ALICE_NEW_DISPLAY_NAME.to_string(),
-                                        ALICE_NEW_HANDLE.to_string(),
-                                        Some(TEAM.to_string()),
-                                        E2EI_EXPIRY,
-                                        cs,
-                                    ).await,
+                                    MlsCredentialType::Basic => {
+                                        cc.e2ei_new_activation_enrollment(
+                                            ALICE_NEW_DISPLAY_NAME.to_string(),
+                                            ALICE_NEW_HANDLE.to_string(),
+                                            Some(TEAM.to_string()),
+                                            E2EI_EXPIRY,
+                                            cs,
+                                        )
+                                        .await
+                                    }
                                     MlsCredentialType::X509 => {
                                         cc.e2ei_new_rotate_enrollment(
                                             Some(ALICE_NEW_DISPLAY_NAME.to_string()),
@@ -755,7 +757,8 @@ pub(crate) mod tests {
                                             Some(TEAM.to_string()),
                                             E2EI_EXPIRY,
                                             cs,
-                                        ).await
+                                        )
+                                        .await
                                     }
                                 }
                             })
@@ -804,13 +807,16 @@ pub(crate) mod tests {
                                 let E2eiInitWrapper { context: cc, case } = wrapper;
                                 let cs = case.ciphersuite();
                                 match case.credential_type {
-                                    MlsCredentialType::Basic => cc.e2ei_new_activation_enrollment(
-                                        BOB_NEW_DISPLAY_NAME.to_string(),
-                                        BOB_NEW_HANDLE.to_string(),
-                                        Some(TEAM.to_string()),
-                                        E2EI_EXPIRY,
-                                        cs,
-                                    ).await,
+                                    MlsCredentialType::Basic => {
+                                        cc.e2ei_new_activation_enrollment(
+                                            BOB_NEW_DISPLAY_NAME.to_string(),
+                                            BOB_NEW_HANDLE.to_string(),
+                                            Some(TEAM.to_string()),
+                                            E2EI_EXPIRY,
+                                            cs,
+                                        )
+                                        .await
+                                    }
                                     MlsCredentialType::X509 => {
                                         cc.e2ei_new_rotate_enrollment(
                                             Some(BOB_NEW_DISPLAY_NAME.to_string()),
@@ -818,7 +824,8 @@ pub(crate) mod tests {
                                             Some(TEAM.to_string()),
                                             E2EI_EXPIRY,
                                             cs,
-                                        ).await
+                                        )
+                                        .await
                                     }
                                 }
                             })
@@ -882,10 +889,7 @@ pub(crate) mod tests {
                                 .await
                                 .unwrap();
 
-                            alice_central
-                                .invite_all(&case, &id, [&bob_central])
-                                .await
-                                .unwrap();
+                            alice_central.invite_all(&case, &id, [&bob_central]).await.unwrap();
 
                             let init_count = alice_central.context.count_entities().await;
                             let x509_test_chain = alice_central.x509_test_chain.as_ref().as_ref().unwrap();
@@ -969,10 +973,7 @@ pub(crate) mod tests {
                                 .await
                                 .unwrap();
 
-                            alice_central
-                                .invite_all(&case, &id, [&bob_central])
-                                .await
-                                .unwrap();
+                            alice_central.invite_all(&case, &id, [&bob_central]).await.unwrap();
 
                             let init_count = alice_central.context.count_entities().await;
 

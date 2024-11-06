@@ -16,12 +16,12 @@
 
 #![allow(dead_code, unused_macros, unused_imports)]
 
-use std::sync::Arc;
 pub(crate) use core_crypto_keystore::Connection as CryptoKeystore;
+use std::sync::Arc;
 
+use core_crypto_keystore::connection::{DatabaseConnection, KeystoreDatabaseConnection};
 pub(crate) use rstest::*;
 pub(crate) use rstest_reuse::{self, *};
-use core_crypto_keystore::connection::{DatabaseConnection, KeystoreDatabaseConnection};
 
 pub(crate) const TEST_ENCRYPTION_KEY: &str = "test1234";
 
@@ -50,9 +50,7 @@ pub async fn setup(name: impl AsRef<str>, in_memory: bool) -> KeystoreTestContex
     }
     .expect("Could not open keystore");
     store.new_transaction().await.expect("Could not create transaction");
-    KeystoreTestContext {
-        store: Some(store),
-    }
+    KeystoreTestContext { store: Some(store) }
 }
 
 pub struct KeystoreTestContext {
@@ -63,7 +61,7 @@ impl KeystoreTestContext {
     pub fn store(&self) -> &core_crypto_keystore::Connection {
         self.store.as_ref().expect("KeystoreTestFixture store is missing")
     }
-    
+
     pub fn store_mut(&mut self) -> &mut core_crypto_keystore::Connection {
         self.store.as_mut().expect("KeystoreTestFixture store is missing")
     }
@@ -80,13 +78,8 @@ impl Drop for KeystoreTestContext {
     }
 }
 
-
 #[template]
 #[rstest]
 #[case::persistent(setup(store_name(), false).await)]
 #[case::in_memory(setup(store_name(), true).await)]
-pub async fn all_storage_types(
-    #[case]
-    context: KeystoreTestContext,
-) {
-}
+pub async fn all_storage_types(#[case] context: KeystoreTestContext) {}

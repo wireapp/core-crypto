@@ -21,6 +21,7 @@ mod utils;
 use std::collections::HashMap;
 use std::ops::Deref;
 
+use crate::proteus_impl;
 use core_crypto::prelude::*;
 use core_crypto::CryptoError;
 use futures_util::future::TryFutureExt;
@@ -33,7 +34,6 @@ use utils::*;
 use wasm_bindgen::prelude::*;
 use wasm_bindgen::JsCast;
 use wasm_bindgen_futures::future_to_promise;
-use crate::proteus_impl;
 
 #[allow(dead_code)]
 pub(super) const VERSION: &str = env!("CARGO_PKG_VERSION");

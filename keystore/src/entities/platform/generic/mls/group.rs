@@ -183,7 +183,10 @@ impl EntityTransactionExt for PersistedMlsGroup {
         Ok(())
     }
 
-    async fn delete_fail_on_missing_id(transaction: &TransactionWrapper<'_>, id: StringEntityId<'_>) -> CryptoKeystoreResult<()> {
+    async fn delete_fail_on_missing_id(
+        transaction: &TransactionWrapper<'_>,
+        id: StringEntityId<'_>,
+    ) -> CryptoKeystoreResult<()> {
         let updated = transaction.execute("DELETE FROM mls_groups WHERE id_hex = ?", [id.as_hex_string()])?;
 
         if updated > 0 {

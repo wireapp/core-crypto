@@ -90,7 +90,7 @@ impl CoreCrypto {
         let mut new_transaction_is_needed = true;
         match keystore.new_transaction().await {
             Ok(_) => {}
-            Err(CryptoKeystoreError::TransactionInProgress{..}) => {
+            Err(CryptoKeystoreError::TransactionInProgress { .. }) => {
                 // Just attach operations to running transaction if there is one
                 new_transaction_is_needed = false;
             }

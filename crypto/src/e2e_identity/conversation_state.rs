@@ -240,58 +240,51 @@ mod tests {
     #[apply(all_cred_cipher)]
     #[wasm_bindgen_test]
     async fn uniform_conversation_should_be_not_verified_when_basic(case: TestCase) {
-        run_test_with_client_ids(
-            case.clone(),
-            ["alice", "bob"],
-            move |[alice_central, bob_central]| {
-                Box::pin(async move {
-                    let id = conversation_id();
+        run_test_with_client_ids(case.clone(), ["alice", "bob"], move |[alice_central, bob_central]| {
+            Box::pin(async move {
+                let id = conversation_id();
 
-                    // That way the conversation creator (Alice) will have the same credential type as Bob
-                    let creator_ct = case.credential_type;
-                    alice_central
-                        .context
-                        .new_conversation(&id, creator_ct, case.cfg.clone())
-                        .await
-                        .unwrap();
-                    alice_central
-                        .invite_all(&case, &id, [&bob_central])
-                        .await
-                        .unwrap();
+                // That way the conversation creator (Alice) will have the same credential type as Bob
+                let creator_ct = case.credential_type;
+                alice_central
+                    .context
+                    .new_conversation(&id, creator_ct, case.cfg.clone())
+                    .await
+                    .unwrap();
+                alice_central.invite_all(&case, &id, [&bob_central]).await.unwrap();
 
-                    match case.credential_type {
-                        MlsCredentialType::Basic => {
-                            let alice_state = alice_central.context.e2ei_conversation_state(&id).await.unwrap();
-                            let bob_state = bob_central.context.e2ei_conversation_state(&id).await.unwrap();
-                            assert_eq!(alice_state, E2eiConversationState::NotEnabled);
-                            assert_eq!(bob_state, E2eiConversationState::NotEnabled);
+                match case.credential_type {
+                    MlsCredentialType::Basic => {
+                        let alice_state = alice_central.context.e2ei_conversation_state(&id).await.unwrap();
+                        let bob_state = bob_central.context.e2ei_conversation_state(&id).await.unwrap();
+                        assert_eq!(alice_state, E2eiConversationState::NotEnabled);
+                        assert_eq!(bob_state, E2eiConversationState::NotEnabled);
 
-                            let gi = alice_central.get_group_info(&id).await;
-                            let state = alice_central
-                                .context
-                                .get_credential_in_use(gi, MlsCredentialType::X509)
-                                .await
-                                .unwrap();
-                            assert_eq!(state, E2eiConversationState::NotEnabled);
-                        }
-                        MlsCredentialType::X509 => {
-                            let alice_state = alice_central.context.e2ei_conversation_state(&id).await.unwrap();
-                            let bob_state = bob_central.context.e2ei_conversation_state(&id).await.unwrap();
-                            assert_eq!(alice_state, E2eiConversationState::Verified);
-                            assert_eq!(bob_state, E2eiConversationState::Verified);
-
-                            let gi = alice_central.get_group_info(&id).await;
-                            let state = alice_central
-                                .context
-                                .get_credential_in_use(gi, MlsCredentialType::X509)
-                                .await
-                                .unwrap();
-                            assert_eq!(state, E2eiConversationState::Verified);
-                        }
+                        let gi = alice_central.get_group_info(&id).await;
+                        let state = alice_central
+                            .context
+                            .get_credential_in_use(gi, MlsCredentialType::X509)
+                            .await
+                            .unwrap();
+                        assert_eq!(state, E2eiConversationState::NotEnabled);
                     }
-                })
-            },
-        )
+                    MlsCredentialType::X509 => {
+                        let alice_state = alice_central.context.e2ei_conversation_state(&id).await.unwrap();
+                        let bob_state = bob_central.context.e2ei_conversation_state(&id).await.unwrap();
+                        assert_eq!(alice_state, E2eiConversationState::Verified);
+                        assert_eq!(bob_state, E2eiConversationState::Verified);
+
+                        let gi = alice_central.get_group_info(&id).await;
+                        let state = alice_central
+                            .context
+                            .get_credential_in_use(gi, MlsCredentialType::X509)
+                            .await
+                            .unwrap();
+                        assert_eq!(state, E2eiConversationState::Verified);
+                    }
+                }
+            })
+        })
         .await
     }
 
@@ -343,10 +336,7 @@ mod tests {
                         .new_conversation(&id, creator_ct, case.cfg.clone())
                         .await
                         .unwrap();
-                    alice_central
-                        .invite_all(&case, &id, [&bob_central])
-                        .await
-                        .unwrap();
+                    alice_central.invite_all(&case, &id, [&bob_central]).await.unwrap();
 
                     // since in that case both have a different credential type the conversation is always not verified
                     let alice_state = alice_central.context.e2ei_conversation_state(&id).await.unwrap();
@@ -373,77 +363,70 @@ mod tests {
         if !case.is_x509() {
             return;
         }
-        run_test_with_client_ids(
-            case.clone(),
-            ["alice", "bob"],
-            move |[alice_central, bob_central]| {
-                Box::pin(async move {
-                    let id = conversation_id();
+        run_test_with_client_ids(case.clone(), ["alice", "bob"], move |[alice_central, bob_central]| {
+            Box::pin(async move {
+                let id = conversation_id();
 
+                alice_central
+                    .context
+                    .new_conversation(&id, case.credential_type, case.cfg.clone())
+                    .await
+                    .unwrap();
+                alice_central.invite_all(&case, &id, [&bob_central]).await.unwrap();
+
+                let expiration_time = core::time::Duration::from_secs(14);
+                let start = fluvio_wasm_timer::Instant::now();
+
+                let cert = CertificateBundle::new_with_default_values(
                     alice_central
-                        .context
-                        .new_conversation(&id, case.credential_type, case.cfg.clone())
-                        .await
-                        .unwrap();
-                    alice_central
-                        .invite_all(&case, &id, [&bob_central])
-                        .await
-                        .unwrap();
+                        .x509_test_chain
+                        .as_ref()
+                        .as_ref()
+                        .expect("No x509 test chain")
+                        .find_local_intermediate_ca(),
+                    Some(expiration_time),
+                );
+                let cb = Client::new_x509_credential_bundle(cert.clone()).unwrap();
+                let commit = alice_central.context.e2ei_rotate(&id, Some(&cb)).await.unwrap().commit;
+                alice_central.context.commit_accepted(&id).await.unwrap();
+                bob_central
+                    .context
+                    .decrypt_message(&id, commit.to_bytes().unwrap())
+                    .await
+                    .unwrap();
 
-                    let expiration_time = core::time::Duration::from_secs(14);
-                    let start = fluvio_wasm_timer::Instant::now();
+                let mut alice_client_guard = alice_central.context.mls_client_mut().await.unwrap();
+                let alice_client = alice_client_guard.as_mut().unwrap();
+                let alice_provider = alice_central.context.mls_provider().await.unwrap();
+                // Needed because 'e2ei_rotate' does not do it directly and it's required for 'get_group_info'
+                alice_client
+                    .save_new_x509_credential_bundle(&alice_provider.keystore(), case.signature_scheme(), cert)
+                    .await
+                    .unwrap();
 
-                    let cert = CertificateBundle::new_with_default_values(
-                        alice_central
-                            .x509_test_chain
-                            .as_ref()
-                            .as_ref()
-                            .expect("No x509 test chain")
-                            .find_local_intermediate_ca(),
-                        Some(expiration_time),
-                    );
-                    let cb = Client::new_x509_credential_bundle(cert.clone()).unwrap();
-                    let commit = alice_central.context.e2ei_rotate(&id, Some(&cb)).await.unwrap().commit;
-                    alice_central.context.commit_accepted(&id).await.unwrap();
-                    bob_central
-                        .context
-                        .decrypt_message(&id, commit.to_bytes().unwrap())
-                        .await
-                        .unwrap();
+                drop(alice_client_guard);
+                // Need to fetch it before it becomes invalid & expires
+                let gi = alice_central.get_group_info(&id).await;
 
-                    let mut alice_client_guard = alice_central.context.mls_client_mut().await.unwrap();
-                    let alice_client = alice_client_guard.as_mut().unwrap();
-                    let alice_provider = alice_central.context.mls_provider().await.unwrap();
-                    // Needed because 'e2ei_rotate' does not do it directly and it's required for 'get_group_info'
-                    alice_client
-                        .save_new_x509_credential_bundle(&alice_provider.keystore(), case.signature_scheme(), cert)
-                        .await
-                        .unwrap();
+                let elapsed = start.elapsed();
+                // Give time to the certificate to expire
+                if expiration_time > elapsed {
+                    async_std::task::sleep(expiration_time - elapsed + core::time::Duration::from_secs(1)).await;
+                }
 
-                    drop(alice_client_guard);
-                    // Need to fetch it before it becomes invalid & expires
-                    let gi = alice_central.get_group_info(&id).await;
+                let alice_state = alice_central.context.e2ei_conversation_state(&id).await.unwrap();
+                let bob_state = bob_central.context.e2ei_conversation_state(&id).await.unwrap();
+                assert_eq!(alice_state, E2eiConversationState::NotVerified);
+                assert_eq!(bob_state, E2eiConversationState::NotVerified);
 
-                    let elapsed = start.elapsed();
-                    // Give time to the certificate to expire
-                    if expiration_time > elapsed {
-                        async_std::task::sleep(expiration_time - elapsed + core::time::Duration::from_secs(1)).await;
-                    }
-
-                    let alice_state = alice_central.context.e2ei_conversation_state(&id).await.unwrap();
-                    let bob_state = bob_central.context.e2ei_conversation_state(&id).await.unwrap();
-                    assert_eq!(alice_state, E2eiConversationState::NotVerified);
-                    assert_eq!(bob_state, E2eiConversationState::NotVerified);
-
-                    let state = alice_central
-                        .context
-                        .get_credential_in_use(gi, MlsCredentialType::X509)
-                        .await
-                        .unwrap();
-                    assert_eq!(state, E2eiConversationState::NotVerified);
-                })
-            },
-        )
+                let state = alice_central
+                    .context
+                    .get_credential_in_use(gi, MlsCredentialType::X509)
+                    .await
+                    .unwrap();
+                assert_eq!(state, E2eiConversationState::NotVerified);
+            })
+        })
         .await
     }
 

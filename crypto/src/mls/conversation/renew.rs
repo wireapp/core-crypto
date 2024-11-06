@@ -147,7 +147,8 @@ impl MlsConversation {
         let sc = self.signature_scheme();
         let ct = self.own_credential_type()?;
         let cb = client
-            .find_most_recent_credential_bundle(sc, ct).await
+            .find_most_recent_credential_bundle(sc, ct)
+            .await
             .ok_or(CryptoError::MlsNotInitialized)?;
 
         leaf_node.set_credential_with_key(cb.to_mls_credential_with_key());
@@ -186,10 +187,7 @@ mod tests {
                             .new_conversation(&id, case.credential_type, case.cfg.clone())
                             .await
                             .unwrap();
-                        alice_central
-                            .invite_all(&case, &id, [&bob_central])
-                            .await
-                            .unwrap();
+                        alice_central.invite_all(&case, &id, [&bob_central]).await.unwrap();
 
                         assert!(alice_central.pending_proposals(&id).await.is_empty());
                         alice_central.context.new_update_proposal(&id).await.unwrap();
@@ -207,10 +205,7 @@ mod tests {
                             .proposals;
                         // Alice should renew the proposal because its hers
                         assert_eq!(alice_central.pending_proposals(&id).await.len(), 1);
-                        assert_eq!(
-                            proposals.len(),
-                            alice_central.pending_proposals(&id).await.len()
-                        );
+                        assert_eq!(proposals.len(), alice_central.pending_proposals(&id).await.len());
 
                         // It should also renew the proposal when in pending_commit
                         alice_central.context.commit_pending_proposals(&id).await.unwrap();
@@ -225,10 +220,7 @@ mod tests {
                         // Alice should renew the proposal because its hers
                         // It should also replace existing one
                         assert_eq!(alice_central.pending_proposals(&id).await.len(), 1);
-                        assert_eq!(
-                            proposals.len(),
-                            alice_central.pending_proposals(&id).await.len()
-                        );
+                        assert_eq!(proposals.len(), alice_central.pending_proposals(&id).await.len());
                     })
                 },
             )
@@ -249,10 +241,7 @@ mod tests {
                             .new_conversation(&id, case.credential_type, case.cfg.clone())
                             .await
                             .unwrap();
-                        alice_central
-                            .invite_all(&case, &id, [&bob_central])
-                            .await
-                            .unwrap();
+                        alice_central.invite_all(&case, &id, [&bob_central]).await.unwrap();
 
                         alice_central.context.update_keying_material(&id).await.unwrap();
                         assert!(alice_central.pending_commit(&id).await.is_some());
@@ -268,10 +257,7 @@ mod tests {
                             .proposals;
                         // Alice should renew the proposal because its her's
                         assert_eq!(alice_central.pending_proposals(&id).await.len(), 1);
-                        assert_eq!(
-                            proposals.len(),
-                            alice_central.pending_proposals(&id).await.len()
-                        );
+                        assert_eq!(proposals.len(), alice_central.pending_proposals(&id).await.len());
                     })
                 },
             )
@@ -292,10 +278,7 @@ mod tests {
                             .new_conversation(&id, case.credential_type, case.cfg.clone())
                             .await
                             .unwrap();
-                        alice_central
-                            .invite_all(&case, &id, [&bob_central])
-                            .await
-                            .unwrap();
+                        alice_central.invite_all(&case, &id, [&bob_central]).await.unwrap();
 
                         assert!(alice_central.pending_proposals(&id).await.is_empty());
                         let proposal = alice_central.context.new_update_proposal(&id).await.unwrap().proposal;
@@ -320,10 +303,7 @@ mod tests {
                             .proposals;
                         // Alice proposal should not be renew as it was in valid commit
                         assert!(alice_central.pending_proposals(&id).await.is_empty());
-                        assert_eq!(
-                            proposals.len(),
-                            alice_central.pending_proposals(&id).await.len()
-                        );
+                        assert_eq!(proposals.len(), alice_central.pending_proposals(&id).await.len());
 
                         // Same if proposal is also in pending commit
                         let proposal = alice_central.context.new_update_proposal(&id).await.unwrap().proposal;
@@ -344,10 +324,7 @@ mod tests {
                             .proposals;
                         // Alice should not be renew as it was in valid commit
                         assert!(alice_central.pending_proposals(&id).await.is_empty());
-                        assert_eq!(
-                            proposals.len(),
-                            alice_central.pending_proposals(&id).await.len()
-                        );
+                        assert_eq!(proposals.len(), alice_central.pending_proposals(&id).await.len());
                     })
                 },
             )
@@ -397,10 +374,7 @@ mod tests {
                             .proposals;
                         // Alice should not renew Bob's update proposal
                         assert!(alice_central.pending_proposals(&id).await.is_empty());
-                        assert_eq!(
-                            proposals.len(),
-                            alice_central.pending_proposals(&id).await.len()
-                        );
+                        assert_eq!(proposals.len(), alice_central.pending_proposals(&id).await.len());
                     })
                 },
             )
@@ -425,10 +399,7 @@ mod tests {
                             .new_conversation(&id, case.credential_type, case.cfg.clone())
                             .await
                             .unwrap();
-                        alice_central
-                            .invite_all(&case, &id, [&bob_central])
-                            .await
-                            .unwrap();
+                        alice_central.invite_all(&case, &id, [&bob_central]).await.unwrap();
 
                         let charlie_kp = charlie_central.get_one_key_package(&case).await;
                         assert!(alice_central.pending_proposals(&id).await.is_empty());
@@ -450,10 +421,7 @@ mod tests {
                             .proposals;
                         // Alice proposal is not renewed since she also wanted to add Charlie
                         assert!(alice_central.pending_proposals(&id).await.is_empty());
-                        assert_eq!(
-                            proposals.len(),
-                            alice_central.pending_proposals(&id).await.len()
-                        );
+                        assert_eq!(proposals.len(), alice_central.pending_proposals(&id).await.len());
                     })
                 },
             )
@@ -474,10 +442,7 @@ mod tests {
                             .new_conversation(&id, case.credential_type, case.cfg.clone())
                             .await
                             .unwrap();
-                        alice_central
-                            .invite_all(&case, &id, [&bob_central])
-                            .await
-                            .unwrap();
+                        alice_central.invite_all(&case, &id, [&bob_central]).await.unwrap();
 
                         let charlie_kp = charlie_central.get_one_key_package(&case).await;
                         assert!(alice_central.pending_proposals(&id).await.is_empty());
@@ -503,10 +468,7 @@ mod tests {
                             .proposals;
                         // Alice proposal is not renewed since she also wanted to add Charlie
                         assert!(alice_central.pending_proposals(&id).await.is_empty());
-                        assert_eq!(
-                            proposals.len(),
-                            alice_central.pending_proposals(&id).await.len()
-                        );
+                        assert_eq!(proposals.len(), alice_central.pending_proposals(&id).await.len());
                     })
                 },
             )
@@ -562,10 +524,7 @@ mod tests {
                             .proposals;
                         // which Alice should not renew since it's not hers
                         assert!(alice_central.pending_proposals(&id).await.is_empty());
-                        assert_eq!(
-                            proposals.len(),
-                            alice_central.pending_proposals(&id).await.len()
-                        );
+                        assert_eq!(proposals.len(), alice_central.pending_proposals(&id).await.len());
                     })
                 },
             )
@@ -586,10 +545,7 @@ mod tests {
                             .new_conversation(&id, case.credential_type, case.cfg.clone())
                             .await
                             .unwrap();
-                        alice_central
-                            .invite_all(&case, &id, [&bob_central])
-                            .await
-                            .unwrap();
+                        alice_central.invite_all(&case, &id, [&bob_central]).await.unwrap();
 
                         // Alice proposes adding Charlie
                         let charlie_kp = charlie_central.get_one_key_package(&case).await;
@@ -608,10 +564,7 @@ mod tests {
                             .proposals;
                         // So Alice proposal should be renewed
                         assert_eq!(alice_central.pending_proposals(&id).await.len(), 1);
-                        assert_eq!(
-                            proposals.len(),
-                            alice_central.pending_proposals(&id).await.len()
-                        );
+                        assert_eq!(proposals.len(), alice_central.pending_proposals(&id).await.len());
 
                         // And same should happen when proposal is in pending commit
                         alice_central.context.commit_pending_proposals(&id).await.unwrap();
@@ -626,10 +579,7 @@ mod tests {
                         // So Alice proposal should also be renewed
                         // It should also replace existing one
                         assert_eq!(alice_central.pending_proposals(&id).await.len(), 1);
-                        assert_eq!(
-                            proposals.len(),
-                            alice_central.pending_proposals(&id).await.len()
-                        );
+                        assert_eq!(proposals.len(), alice_central.pending_proposals(&id).await.len());
                     })
                 },
             )
@@ -650,10 +600,7 @@ mod tests {
                             .new_conversation(&id, case.credential_type, case.cfg.clone())
                             .await
                             .unwrap();
-                        alice_central
-                            .invite_all(&case, &id, [&bob_central])
-                            .await
-                            .unwrap();
+                        alice_central.invite_all(&case, &id, [&bob_central]).await.unwrap();
 
                         // Alice commits adding Charlie
                         let charlie = charlie_central.rand_key_package(&case).await;
@@ -674,10 +621,7 @@ mod tests {
                             .proposals;
                         // So Alice proposal should be renewed
                         assert_eq!(alice_central.pending_proposals(&id).await.len(), 1);
-                        assert_eq!(
-                            proposals.len(),
-                            alice_central.pending_proposals(&id).await.len()
-                        );
+                        assert_eq!(proposals.len(), alice_central.pending_proposals(&id).await.len());
                     })
                 },
             )
@@ -729,10 +673,7 @@ mod tests {
                             .proposals;
                         // Remove proposal is not renewed since commit does same
                         assert!(alice_central.pending_proposals(&id).await.is_empty());
-                        assert_eq!(
-                            proposals.len(),
-                            alice_central.pending_proposals(&id).await.len()
-                        );
+                        assert_eq!(proposals.len(), alice_central.pending_proposals(&id).await.len());
                     })
                 },
             )
@@ -786,10 +727,7 @@ mod tests {
                             .proposals;
                         // Remove proposal is not renewed since by ref
                         assert!(alice_central.pending_proposals(&id).await.is_empty());
-                        assert_eq!(
-                            proposals.len(),
-                            alice_central.pending_proposals(&id).await.len()
-                        );
+                        assert_eq!(proposals.len(), alice_central.pending_proposals(&id).await.len());
                     })
                 },
             )
@@ -811,15 +749,7 @@ mod tests {
                             .await
                             .unwrap();
                         alice_central
-                            .invite_all(
-                                &case,
-                                &id,
-                                [
-                                    &bob_central,
-                                    &charlie_central,
-                                    &debbie_central,
-                                ],
-                            )
+                            .invite_all(&case, &id, [&bob_central, &charlie_central, &debbie_central])
                             .await
                             .unwrap();
 
@@ -847,10 +777,7 @@ mod tests {
                             .proposals;
                         // Remove is renewed since valid commit removes another
                         assert_eq!(alice_central.pending_proposals(&id).await.len(), 1);
-                        assert_eq!(
-                            proposals.len(),
-                            alice_central.pending_proposals(&id).await.len()
-                        );
+                        assert_eq!(proposals.len(), alice_central.pending_proposals(&id).await.len());
                     })
                 },
             )
@@ -872,15 +799,7 @@ mod tests {
                             .await
                             .unwrap();
                         alice_central
-                            .invite_all(
-                                &case,
-                                &id,
-                                [
-                                    &bob_central,
-                                    &charlie_central,
-                                    &debbie_central,
-                                ],
-                            )
+                            .invite_all(&case, &id, [&bob_central, &charlie_central, &debbie_central])
                             .await
                             .unwrap();
 
@@ -907,10 +826,7 @@ mod tests {
                             .proposals;
                         // Remove is renewed since valid commit removes another
                         assert_eq!(alice_central.pending_proposals(&id).await.len(), 1);
-                        assert_eq!(
-                            proposals.len(),
-                            alice_central.pending_proposals(&id).await.len()
-                        );
+                        assert_eq!(proposals.len(), alice_central.pending_proposals(&id).await.len());
                     })
                 },
             )
@@ -932,15 +848,7 @@ mod tests {
                             .await
                             .unwrap();
                         alice_central
-                            .invite_all(
-                                &case,
-                                &id,
-                                [
-                                    &bob_central,
-                                    &charlie_central,
-                                    &debbie_central,
-                                ],
-                            )
+                            .invite_all(&case, &id, [&bob_central, &charlie_central, &debbie_central])
                             .await
                             .unwrap();
 
@@ -969,10 +877,7 @@ mod tests {
                             .proposals;
                         // Remove is renewed since valid commit removes another
                         assert_eq!(alice_central.pending_proposals(&id).await.len(), 1);
-                        assert_eq!(
-                            proposals.len(),
-                            alice_central.pending_proposals(&id).await.len()
-                        );
+                        assert_eq!(proposals.len(), alice_central.pending_proposals(&id).await.len());
                     })
                 },
             )

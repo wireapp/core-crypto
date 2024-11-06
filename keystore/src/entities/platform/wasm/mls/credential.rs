@@ -16,7 +16,9 @@
 
 use crate::{
     connection::{storage::WasmStorageTransaction, DatabaseConnection, KeystoreDatabaseConnection},
-    entities::{Entity, EntityBase, EntityFindParams, EntityTransactionExt, MlsCredential, MlsCredentialExt, StringEntityId},
+    entities::{
+        Entity, EntityBase, EntityFindParams, EntityTransactionExt, MlsCredential, MlsCredentialExt, StringEntityId,
+    },
     CryptoKeystoreError, CryptoKeystoreResult, MissingKeyErrorKind,
 };
 use fluvio_wasm_timer::SystemTime;

@@ -153,20 +153,11 @@ mod tests {
                         }
                     }
                     // because external commit got merged
-                    assert!(bob_central
-                        .try_talk_to(&id, &alice_central)
-                        .await
-                        .is_ok());
+                    assert!(bob_central.try_talk_to(&id, &alice_central).await.is_ok());
                     // because Alice's commit got merged
-                    assert!(bob_central
-                        .try_talk_to(&id, &charlie_central)
-                        .await
-                        .is_ok());
+                    assert!(bob_central.try_talk_to(&id, &charlie_central).await.is_ok());
                     // because Debbie's external proposal got merged through the commit
-                    assert!(bob_central
-                        .try_talk_to(&id, &debbie_central)
-                        .await
-                        .is_ok());
+                    assert!(bob_central.try_talk_to(&id, &debbie_central).await.is_ok());
 
                     // After merging we should erase all those pending messages
                     assert_eq!(bob_central.context.count_entities().await.pending_messages, 0);
@@ -190,10 +181,7 @@ mod tests {
                         .new_conversation(&id, case.credential_type, case.cfg.clone())
                         .await
                         .unwrap();
-                    alice_central
-                        .invite_all(&case, &id, [&mut bob_central])
-                        .await
-                        .unwrap();
+                    alice_central.invite_all(&case, &id, [&mut bob_central]).await.unwrap();
 
                     // Alice will never see this commit
                     bob_central.context.update_keying_material(&id).await.unwrap();

@@ -16,45 +16,41 @@ mod tests {
     #[apply(all_cred_cipher)]
     #[wasm_bindgen_test]
     pub async fn orphan_welcome_should_generate_external_commit(case: TestCase) {
-        run_test_with_client_ids(
-            case.clone(),
-            ["alice", "bob"],
-            move |[alice_central, bob_central]| {
-                Box::pin(async move {
-                    let id = conversation_id();
+        run_test_with_client_ids(case.clone(), ["alice", "bob"], move |[alice_central, bob_central]| {
+            Box::pin(async move {
+                let id = conversation_id();
 
-                    alice_central
-                        .context
-                        .new_conversation(&id, case.credential_type, case.cfg.clone())
-                        .await
-                        .unwrap();
+                alice_central
+                    .context
+                    .new_conversation(&id, case.credential_type, case.cfg.clone())
+                    .await
+                    .unwrap();
 
-                    let bob = bob_central.rand_key_package(&case).await;
-                    let bob_kp_ref = KeyPackage::from(bob.clone())
-                        .hash_ref(bob_central.context.mls_provider().await.unwrap().crypto())
-                        .unwrap();
+                let bob = bob_central.rand_key_package(&case).await;
+                let bob_kp_ref = KeyPackage::from(bob.clone())
+                    .hash_ref(bob_central.context.mls_provider().await.unwrap().crypto())
+                    .unwrap();
 
-                    // Alice invites Bob with a KeyPackage...
-                    let welcome = alice_central
-                        .context
-                        .add_members_to_conversation(&id, vec![bob])
-                        .await
-                        .unwrap()
-                        .welcome;
+                // Alice invites Bob with a KeyPackage...
+                let welcome = alice_central
+                    .context
+                    .add_members_to_conversation(&id, vec![bob])
+                    .await
+                    .unwrap()
+                    .welcome;
 
-                    // ...Bob deletes locally (with the associated private key) before processing the Welcome
-                    bob_central.context.delete_keypackages(&[bob_kp_ref]).await.unwrap();
+                // ...Bob deletes locally (with the associated private key) before processing the Welcome
+                bob_central.context.delete_keypackages(&[bob_kp_ref]).await.unwrap();
 
-                    // in that case a dedicated error is thrown for clients to identify this case
-                    // and rejoin with an external commit
-                    let process_welcome = bob_central
-                        .context
-                        .process_welcome_message(welcome.into(), case.custom_cfg())
-                        .await;
-                    assert!(matches!(process_welcome.unwrap_err(), CryptoError::OrphanWelcome));
-                })
-            },
-        )
+                // in that case a dedicated error is thrown for clients to identify this case
+                // and rejoin with an external commit
+                let process_welcome = bob_central
+                    .context
+                    .process_welcome_message(welcome.into(), case.custom_cfg())
+                    .await;
+                assert!(matches!(process_welcome.unwrap_err(), CryptoError::OrphanWelcome));
+            })
+        })
         .await;
     }
 }

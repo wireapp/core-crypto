@@ -581,10 +581,10 @@ pub(crate) mod tests {
     use openmls_traits::OpenMlsCryptoProvider;
     use serde_json::json;
     use wasm_bindgen_test::*;
-    
+
+    use crate::context::CentralContext;
     #[cfg(not(target_family = "wasm"))]
     use crate::e2e_identity::refresh_token::RefreshToken;
-    use crate::context::CentralContext;
     use crate::{
         e2e_identity::{id::QualifiedE2eiClientId, tests::x509::X509TestChain},
         prelude::*,

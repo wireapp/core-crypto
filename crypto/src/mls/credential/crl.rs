@@ -1,3 +1,4 @@
+use crate::context::CentralContext;
 use crate::e2e_identity::init_certificates::NewCrlDistributionPoint;
 use crate::{CryptoError, CryptoResult};
 use core_crypto_keystore::{connection::FetchFromDatabase, entities::E2eiCrl};
@@ -9,7 +10,6 @@ use openmls::{
 use openmls_traits::OpenMlsCryptoProvider;
 use std::collections::HashSet;
 use wire_e2e_identity::prelude::x509::extract_crl_uris;
-use crate::context::CentralContext;
 
 pub(crate) fn extract_crl_uris_from_credentials<'a>(
     mut credentials: impl Iterator<Item = &'a MlsCredentialType>,

@@ -34,9 +34,7 @@ mod tests {
                             .unwrap();
 
                         // should fail when creating Add proposal
-                        let invalid_kp = bob_central
-                            .new_keypackage(&case, Lifetime::new(expiration_time))
-                            .await;
+                        let invalid_kp = bob_central.new_keypackage(&case, Lifetime::new(expiration_time)).await;
 
                         // Give time to the KeyPackage to expire
                         let expiration_time = core::time::Duration::from_secs(expiration_time);
@@ -59,9 +57,7 @@ mod tests {
                         let expiration_time = 14;
                         let start = fluvio_wasm_timer::Instant::now();
 
-                        let invalid_kp = bob_central
-                            .new_keypackage(&case, Lifetime::new(expiration_time))
-                            .await;
+                        let invalid_kp = bob_central.new_keypackage(&case, Lifetime::new(expiration_time)).await;
 
                         // Give time to the KeyPackage to expire
                         let expiration_time = core::time::Duration::from_secs(expiration_time);
@@ -108,10 +104,7 @@ mod tests {
                             .new_conversation(&id, case.credential_type, case.cfg.clone())
                             .await
                             .unwrap();
-                        alice_central
-                            .invite_all(&case, &id, [&bob_central])
-                            .await
-                            .unwrap();
+                        alice_central.invite_all(&case, &id, [&bob_central]).await.unwrap();
 
                         let invalid_kp = charlie_central
                             .new_keypackage(&case, Lifetime::new(expiration_time))
@@ -164,10 +157,7 @@ mod tests {
                             .new_conversation(&id, case.credential_type, case.cfg.clone())
                             .await
                             .unwrap();
-                        alice_central
-                            .invite_all(&case, &id, [&bob_central])
-                            .await
-                            .unwrap();
+                        alice_central.invite_all(&case, &id, [&bob_central]).await.unwrap();
 
                         // should fail when receiving Add commit
                         let invalid_kp = charlie_central
@@ -210,58 +200,51 @@ mod tests {
         #[apply(all_cred_cipher)]
         #[wasm_bindgen_test]
         async fn should_validate_leaf_node_when_receiving_welcome(case: TestCase) {
-            run_test_with_client_ids(
-                case.clone(),
-                ["alice", "bob"],
-                move |[alice_central, bob_central]| {
-                    Box::pin(async move {
-                        let expiration_time = 14;
-                        let start = fluvio_wasm_timer::Instant::now();
-                        let id = conversation_id();
-                        alice_central
-                            .context
-                            .new_conversation(&id, case.credential_type, case.cfg.clone())
-                            .await
-                            .unwrap();
+            run_test_with_client_ids(case.clone(), ["alice", "bob"], move |[alice_central, bob_central]| {
+                Box::pin(async move {
+                    let expiration_time = 14;
+                    let start = fluvio_wasm_timer::Instant::now();
+                    let id = conversation_id();
+                    alice_central
+                        .context
+                        .new_conversation(&id, case.credential_type, case.cfg.clone())
+                        .await
+                        .unwrap();
 
-                        let invalid_kp = bob_central
-                            .new_keypackage(&case, Lifetime::new(expiration_time))
-                            .await;
-                        let commit = alice_central
-                            .context
-                            .add_members_to_conversation(&id, vec![invalid_kp.into()])
-                            .await
-                            .unwrap();
-                        alice_central.context.commit_accepted(&id).await.unwrap();
+                    let invalid_kp = bob_central.new_keypackage(&case, Lifetime::new(expiration_time)).await;
+                    let commit = alice_central
+                        .context
+                        .add_members_to_conversation(&id, vec![invalid_kp.into()])
+                        .await
+                        .unwrap();
+                    alice_central.context.commit_accepted(&id).await.unwrap();
 
-                        let elapsed = start.elapsed();
-                        // Give time to the certificate to expire
-                        let expiration_time = core::time::Duration::from_secs(expiration_time);
-                        if expiration_time > elapsed {
-                            async_std::task::sleep(expiration_time - elapsed + core::time::Duration::from_secs(1))
-                                .await;
-                        }
+                    let elapsed = start.elapsed();
+                    // Give time to the certificate to expire
+                    let expiration_time = core::time::Duration::from_secs(expiration_time);
+                    if expiration_time > elapsed {
+                        async_std::task::sleep(expiration_time - elapsed + core::time::Duration::from_secs(1)).await;
+                    }
 
-                        let process_welcome = bob_central
-                            .context
-                            .process_welcome_message(commit.welcome.into(), case.custom_cfg())
-                            .await;
+                    let process_welcome = bob_central
+                        .context
+                        .process_welcome_message(commit.welcome.into(), case.custom_cfg())
+                        .await;
 
-                        // TODO: currently succeeds as we don't anymore validate KeyPackage lifetime upon reception: find another way to craft an invalid KeyPackage. Tracking issue number: WPB-9623
-                        process_welcome.unwrap();
-                        /*assert!(matches!(
-                            process_welcome.unwrap_err(),
-                            CryptoError::MlsError(MlsError::MlsWelcomeError(WelcomeError::PublicGroupError(
-                                CreationFromExternalError::TreeSyncError(
-                                    TreeSyncFromNodesError::LeafNodeValidationError(LeafNodeValidationError::Lifetime(
-                                        _
-                                    ))
-                                )
-                            )))
-                        ));*/
-                    })
-                },
-            )
+                    // TODO: currently succeeds as we don't anymore validate KeyPackage lifetime upon reception: find another way to craft an invalid KeyPackage. Tracking issue number: WPB-9623
+                    process_welcome.unwrap();
+                    /*assert!(matches!(
+                        process_welcome.unwrap_err(),
+                        CryptoError::MlsError(MlsError::MlsWelcomeError(WelcomeError::PublicGroupError(
+                            CreationFromExternalError::TreeSyncError(
+                                TreeSyncFromNodesError::LeafNodeValidationError(LeafNodeValidationError::Lifetime(
+                                    _
+                                ))
+                            )
+                        )))
+                    ));*/
+                })
+            })
             .await
         }
     }

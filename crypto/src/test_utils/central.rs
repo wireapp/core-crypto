@@ -30,6 +30,7 @@ use wire_e2e_identity::prelude::WireIdentityReader;
 use x509_cert::der::Encode;
 
 use crate::group_store::GroupStore;
+use crate::test_utils::ClientContext;
 use crate::{
     e2e_identity::{
         device_status::DeviceStatus,
@@ -43,15 +44,15 @@ use crate::{
     },
     test_utils::{x509::X509Certificate, MessageExt, TestCase},
 };
-use crate::test_utils::ClientContext;
 
 #[allow(clippy::redundant_static_lifetimes)]
 pub const TEAM: &'static str = "world";
 
 impl ClientContext {
     pub async fn get_one_key_package(&self, case: &TestCase) -> KeyPackage {
-        let kps = self.
-            context.get_or_create_client_keypackages(case.ciphersuite(), case.credential_type, 1)
+        let kps = self
+            .context
+            .get_or_create_client_keypackages(case.ciphersuite(), case.credential_type, 1)
             .await
             .unwrap();
         kps.first().unwrap().clone()
@@ -82,7 +83,8 @@ impl ClientContext {
     }
 
     pub async fn count_key_package(&self, cs: MlsCiphersuite, ct: Option<MlsCredentialType>) -> usize {
-        self.context.mls_provider()
+        self.context
+            .mls_provider()
             .await
             .unwrap()
             .key_store()
@@ -134,7 +136,8 @@ impl ClientContext {
     pub async fn try_talk_to(&self, id: &ConversationId, other: &Self) -> CryptoResult<()> {
         let msg = b"Hello other";
         let encrypted = self.context.encrypt_message(id, msg).await?;
-        let decrypted = other.context
+        let decrypted = other
+            .context
             .decrypt_message(id, encrypted)
             .await?
             .app_msg
@@ -143,7 +146,8 @@ impl ClientContext {
         // other --> self
         let msg = b"Hello self";
         let encrypted = other.context.encrypt_message(id, msg).await?;
-        let decrypted = self.context
+        let decrypted = self
+            .context
             .decrypt_message(id, encrypted)
             .await?
             .app_msg
@@ -181,7 +185,8 @@ impl ClientContext {
 
         for (other, ..) in &others {
             other
-                .context.process_welcome_message(welcome.clone().into(), case.custom_cfg())
+                .context
+                .process_welcome_message(welcome.clone().into(), case.custom_cfg())
                 .await?;
         }
 
@@ -216,9 +221,12 @@ impl ClientContext {
             commit,
             ..
         } = self
-            .context.join_by_external_commit(group_info, case.custom_cfg(), case.credential_type)
+            .context
+            .join_by_external_commit(group_info, case.custom_cfg(), case.credential_type)
             .await?;
-        self.context.merge_pending_group_from_external_commit(&conversation_id).await?;
+        self.context
+            .merge_pending_group_from_external_commit(&conversation_id)
+            .await?;
         assert_eq!(conversation_id.as_slice(), id.as_slice());
         for other in others {
             let commit = commit.tls_serialize_detached().map_err(MlsError::from)?;
@@ -250,7 +258,8 @@ impl ClientContext {
         let cs = group.ciphersuite();
         let client = self.client().await;
         let cb = client
-            .find_most_recent_credential_bundle(cs.into(), ct.into()).await
+            .find_most_recent_credential_bundle(cs.into(), ct.into())
+            .await
             .unwrap();
 
         let gi = group
@@ -261,7 +270,8 @@ impl ClientContext {
 
     /// Finds the [SignaturePublicKey] of a [Client] within a [MlsGroup]
     pub async fn signature_key_of(&self, conv_id: &ConversationId, client_id: ClientId) -> SignaturePublicKey {
-        let sign_key = self.context
+        let sign_key = self
+            .context
             .mls_groups()
             .await
             .unwrap()
@@ -282,7 +292,8 @@ impl ClientContext {
 
     /// Finds the HPKE Public key of a [Client] within a [MlsGroup]
     pub async fn encryption_key_of(&self, conv_id: &ConversationId, client_id: ClientId) -> Vec<u8> {
-        self.context.mls_groups()
+        self.context
+            .mls_groups()
             .await
             .unwrap()
             .get_fetch(conv_id, &self.context.keystore().await.unwrap(), None)
@@ -300,7 +311,8 @@ impl ClientContext {
 
     /// Finds the [LeafNodeIndex] of a [Client] within a [MlsGroup]
     pub async fn index_of(&self, conv_id: &ConversationId, client_id: ClientId) -> LeafNodeIndex {
-        self.context.mls_groups()
+        self.context
+            .mls_groups()
             .await
             .unwrap()
             .get_fetch(conv_id, &self.context.keystore().await.unwrap(), None)
@@ -319,9 +331,7 @@ impl ClientContext {
     pub async fn client_signature_key(&self, case: &TestCase) -> SignaturePublicKey {
         let (sc, ct) = (case.signature_scheme(), case.credential_type);
         let client = self.client().await;
-        let cb = client
-            .find_most_recent_credential_bundle(sc, ct).await
-            .unwrap();
+        let cb = client.find_most_recent_credential_bundle(sc, ct).await.unwrap();
         SignaturePublicKey::from(cb.signature_key.public())
     }
 
@@ -367,12 +377,14 @@ impl ClientContext {
         &self,
         id: &ConversationId,
     ) -> Option<CredentialBundle> {
-        self.context.get_conversation(id)
+        self.context
+            .get_conversation(id)
             .await
             .unwrap()
             .read()
             .await
-            .find_most_recent_credential_bundle(&self.client().await).await
+            .find_most_recent_credential_bundle(&self.client().await)
+            .await
             .unwrap()
             .map(|cb| cb.clone())
     }
@@ -382,8 +394,10 @@ impl ClientContext {
         sc: SignatureScheme,
         ct: MlsCredentialType,
     ) -> Option<CredentialBundle> {
-        self.client().await
-            .find_most_recent_credential_bundle(sc, ct).await
+        self.client()
+            .await
+            .find_most_recent_credential_bundle(sc, ct)
+            .await
             .map(|cb| cb.clone())
     }
 
@@ -393,14 +407,17 @@ impl ClientContext {
         ct: MlsCredentialType,
         pk: &SignaturePublicKey,
     ) -> Option<CredentialBundle> {
-        self.client().await
+        self.client()
+            .await
             .identities
-            .find_credential_bundle_by_public_key(sc, ct, pk).await
+            .find_credential_bundle_by_public_key(sc, ct, pk)
+            .await
             .map(|cb| cb.clone())
     }
 
     pub async fn find_signature_keypair_from_keystore(&self, id: &[u8]) -> Option<MlsSignatureKeyPair> {
-        self.context.keystore()
+        self.context
+            .keystore()
             .await
             .unwrap()
             .find::<MlsSignatureKeyPair>(id)
@@ -409,7 +426,8 @@ impl ClientContext {
     }
 
     pub async fn find_hpke_private_key_from_keystore(&self, skp: &HpkePublicKey) -> Option<MlsHpkePrivateKey> {
-        self.context.keystore()
+        self.context
+            .keystore()
             .await
             .unwrap()
             .find::<MlsHpkePrivateKey>(&skp.tls_serialize_detached().unwrap())
@@ -419,7 +437,8 @@ impl ClientContext {
 
     pub async fn find_credential_from_keystore(&self, cb: &CredentialBundle) -> Option<MlsCredential> {
         let credential = cb.credential.tls_serialize_detached().unwrap();
-        self.context.keystore()
+        self.context
+            .keystore()
             .await
             .unwrap()
             .find_all::<MlsCredential>(EntityFindParams::default())
@@ -430,7 +449,8 @@ impl ClientContext {
     }
 
     pub async fn count_hpke_private_key(&self) -> usize {
-        self.context.keystore()
+        self.context
+            .keystore()
             .await
             .unwrap()
             .count::<MlsHpkePrivateKey>()
@@ -439,7 +459,8 @@ impl ClientContext {
     }
 
     pub async fn count_encryption_keypairs(&self) -> usize {
-        self.context.keystore()
+        self.context
+            .keystore()
             .await
             .unwrap()
             .count::<MlsEncryptionKeyPair>()
@@ -448,7 +469,8 @@ impl ClientContext {
     }
 
     pub async fn count_credentials_in_keystore(&self) -> usize {
-        self.context.keystore()
+        self.context
+            .keystore()
             .await
             .unwrap()
             .count::<MlsCredential>()
@@ -474,7 +496,11 @@ impl ClientContext {
         );
         let mut client = self.client().await;
         client
-            .save_new_x509_credential_bundle(&self.context.keystore().await.unwrap(), case.signature_scheme(), new_cert)
+            .save_new_x509_credential_bundle(
+                &self.context.keystore().await.unwrap(),
+                case.signature_scheme(),
+                new_cert,
+            )
             .await
             .unwrap()
     }
@@ -485,21 +511,15 @@ impl ClientContext {
         let cid: String = cid.parse::<QualifiedE2eiClientId>().unwrap().try_into().unwrap();
         wire_e2e_identity::prelude::E2eiClientId::try_from_qualified(&cid).unwrap()
     }
-    
+
     pub fn get_intermediate_ca(&self) -> Option<&X509Certificate> {
-        self
-            .x509_test_chain
+        self.x509_test_chain
             .as_ref()
             .as_ref()
             .map(|chain| chain.find_local_intermediate_ca())
     }
 
-    pub async fn verify_local_credential_rotated(
-        &self,
-        id: &ConversationId,
-        new_handle: &str,
-        new_display_name: &str,
-    ) {
+    pub async fn verify_local_credential_rotated(&self, id: &ConversationId, new_handle: &str, new_display_name: &str) {
         let new_handle = format!("wireapp://%40{new_handle}@world.com");
         // verify the identity in..
         // the MLS group
@@ -659,7 +679,8 @@ impl Client {
     ) -> CryptoResult<()> {
         let existing_cb = self
             .identities
-            .find_most_recent_credential_bundle(sc, MlsCredentialType::X509).await
+            .find_most_recent_credential_bundle(sc, MlsCredentialType::X509)
+            .await
             .is_none();
         if existing_cb {
             self.save_new_x509_credential_bundle(&backend.keystore(), sc, cb)
@@ -676,7 +697,8 @@ impl Client {
         ct: MlsCredentialType,
     ) -> CryptoResult<KeyPackage> {
         let cb = self
-            .find_most_recent_credential_bundle(cs.signature_algorithm(), ct).await
+            .find_most_recent_credential_bundle(cs.signature_algorithm(), ct)
+            .await
             .ok_or(CryptoError::MlsNotInitialized)?;
         self.generate_one_keypackage_from_credential_bundle(backend, cs, &cb)
             .await

@@ -224,11 +224,7 @@ impl MlsConversation {
 
     /// Marks this conversation as child of another.
     /// Prequisite: Being a member of this group and for it to be stored in the keystore
-    pub async fn mark_as_child_of(
-        &mut self,
-        parent_id: &ConversationId,
-        keystore: &Connection,
-    ) -> CryptoResult<()> {
+    pub async fn mark_as_child_of(&mut self, parent_id: &ConversationId, keystore: &Connection) -> CryptoResult<()> {
         if keystore.mls_group_exists(parent_id).await {
             self.parent_id = Some(parent_id.clone());
             self.persist_group_when_changed(keystore, true).await?;
@@ -316,12 +312,16 @@ impl CentralContext {
 #[cfg(test)]
 mod tests {
     use crate::e2e_identity::rotate::tests::all::failsafe_ctx;
-    
+
     use wasm_bindgen_test::*;
 
-    use crate::{prelude::{
-        ClientIdentifier, MlsCentralConfiguration, MlsConversationCreationMessage, INITIAL_KEYING_MATERIAL_COUNT,
-    }, test_utils::*, CoreCrypto};
+    use crate::{
+        prelude::{
+            ClientIdentifier, MlsCentralConfiguration, MlsConversationCreationMessage, INITIAL_KEYING_MATERIAL_COUNT,
+        },
+        test_utils::*,
+        CoreCrypto,
+    };
 
     use super::*;
 
@@ -348,14 +348,7 @@ mod tests {
                         .as_slice(),
                     id
                 );
-                assert_eq!(
-                    alice_central
-                        .get_conversation_unchecked(&id)
-                        .await
-                        .members()
-                        .len(),
-                    1
-                );
+                assert_eq!(alice_central.get_conversation_unchecked(&id).await.members().len(), 1);
                 let alice_can_send_message = alice_central.context.encrypt_message(&id, b"me").await;
                 assert!(alice_can_send_message.is_ok());
             })
@@ -366,72 +359,51 @@ mod tests {
     #[apply(all_cred_cipher)]
     #[wasm_bindgen_test]
     pub async fn create_1_1_conversation_should_succeed(case: TestCase) {
-        run_test_with_client_ids(
-            case.clone(),
-            ["alice", "bob"],
-            move |[alice_central, bob_central]| {
-                Box::pin(async move {
-                    let id = conversation_id();
+        run_test_with_client_ids(case.clone(), ["alice", "bob"], move |[alice_central, bob_central]| {
+            Box::pin(async move {
+                let id = conversation_id();
 
+                alice_central
+                    .context
+                    .new_conversation(&id, case.credential_type, case.cfg.clone())
+                    .await
+                    .unwrap();
+
+                let bob = bob_central.rand_key_package(&case).await;
+                let MlsConversationCreationMessage { welcome, .. } = alice_central
+                    .context
+                    .add_members_to_conversation(&id, vec![bob])
+                    .await
+                    .unwrap();
+                // before merging, commit is not applied
+                assert_eq!(alice_central.get_conversation_unchecked(&id).await.members().len(), 1);
+                alice_central.context.commit_accepted(&id).await.unwrap();
+
+                assert_eq!(alice_central.get_conversation_unchecked(&id).await.id, id);
+                assert_eq!(
                     alice_central
-                        .context
-                        .new_conversation(&id, case.credential_type, case.cfg.clone())
+                        .get_conversation_unchecked(&id)
                         .await
-                        .unwrap();
+                        .group
+                        .group_id()
+                        .as_slice(),
+                    id
+                );
+                assert_eq!(alice_central.get_conversation_unchecked(&id).await.members().len(), 2);
 
-                    let bob = bob_central.rand_key_package(&case).await;
-                    let MlsConversationCreationMessage { welcome, .. } = alice_central
-                        .context
-                        .add_members_to_conversation(&id, vec![bob])
-                        .await
-                        .unwrap();
-                    // before merging, commit is not applied
-                    assert_eq!(
-                        alice_central
-                            .get_conversation_unchecked(&id)
-                            .await
-                            .members()
-                            .len(),
-                        1
-                    );
-                    alice_central.context.commit_accepted(&id).await.unwrap();
+                bob_central
+                    .context
+                    .process_welcome_message(welcome.into(), case.custom_cfg())
+                    .await
+                    .unwrap();
 
-                    assert_eq!(alice_central.get_conversation_unchecked(&id).await.id, id);
-                    assert_eq!(
-                        alice_central
-                            .get_conversation_unchecked(&id)
-                            .await
-                            .group
-                            .group_id()
-                            .as_slice(),
-                        id
-                    );
-                    assert_eq!(
-                        alice_central
-                            .get_conversation_unchecked(&id)
-                            .await
-                            .members()
-                            .len(),
-                        2
-                    );
-
-                    bob_central
-                        .context
-                        .process_welcome_message(welcome.into(), case.custom_cfg())
-                        .await
-                        .unwrap();
-
-                    assert_eq!(
-                        bob_central.get_conversation_unchecked(&id).await.id(),
-                        alice_central.get_conversation_unchecked(&id).await.id()
-                    );
-                    assert!(alice_central
-                        .try_talk_to(&id, &bob_central)
-                        .await
-                        .is_ok());
-                })
-            },
-        )
+                assert_eq!(
+                    bob_central.get_conversation_unchecked(&id).await.id(),
+                    alice_central.get_conversation_unchecked(&id).await.id()
+                );
+                assert!(alice_central.try_talk_to(&id, &bob_central).await.is_ok());
+            })
+        })
         .await;
     }
 
@@ -517,14 +489,7 @@ mod tests {
                     .await
                     .unwrap();
                 // before merging, commit is not applied
-                assert_eq!(
-                    alice_central
-                        .get_conversation_unchecked(&id)
-                        .await
-                        .members()
-                        .len(),
-                    1
-                );
+                assert_eq!(alice_central.get_conversation_unchecked(&id).await.members().len(), 1);
                 alice_central.context.commit_accepted(&id).await.unwrap();
 
                 assert_eq!(alice_central.get_conversation_unchecked(&id).await.id, id);
@@ -538,18 +503,15 @@ mod tests {
                     id
                 );
                 assert_eq!(
-                    alice_central
-                        .get_conversation_unchecked(&id)
-                        .await
-                        .members()
-                        .len(),
+                    alice_central.get_conversation_unchecked(&id).await.members().len(),
                     1 + number_of_friends
                 );
 
                 let mut bob_and_friends_groups = Vec::with_capacity(bob_and_friends.len());
                 // TODO: Do things in parallel, this is waaaaay too slow (takes around 5 minutes). Tracking issue: WPB-9624
                 for c in bob_and_friends {
-                    c.context.process_welcome_message(welcome.clone().into(), case.custom_cfg())
+                    c.context
+                        .process_welcome_message(welcome.clone().into(), case.custom_cfg())
                         .await
                         .unwrap();
                     assert!(c.try_talk_to(&id, &alice_central).await.is_ok());

@@ -1,5 +1,6 @@
 use std::borrow::BorrowMut;
 
+use crate::context::CentralContext;
 use crate::{
     e2e_identity::init_certificates::NewCrlDistributionPoint,
     group_store::GroupStore,
@@ -14,7 +15,6 @@ use mls_crypto_provider::TransactionalCryptoProvider;
 use openmls::prelude::{MlsGroup, MlsMessageIn, MlsMessageInBody, Welcome};
 use openmls_traits::OpenMlsCryptoProvider;
 use tls_codec::Deserialize;
-use crate::context::CentralContext;
 
 /// Contains everything client needs to know after decrypting an (encrypted) Welcome message
 #[derive(Debug)]
@@ -152,84 +152,76 @@ mod tests {
     #[apply(all_cred_cipher)]
     #[wasm_bindgen_test]
     async fn joining_from_welcome_should_prune_local_key_material(case: TestCase) {
-        run_test_with_client_ids(
-            case.clone(),
-            ["alice", "bob"],
-            move |[alice_central, bob_central]| {
-                Box::pin(async move {
-                    let id = conversation_id();
-                    // has to be before the original key_package count because it creates one
-                    let bob = bob_central.rand_key_package(&case).await;
-                    // Keep track of the whatever amount was initially generated
-                    let prev_count = bob_central.context.count_entities().await;
+        run_test_with_client_ids(case.clone(), ["alice", "bob"], move |[alice_central, bob_central]| {
+            Box::pin(async move {
+                let id = conversation_id();
+                // has to be before the original key_package count because it creates one
+                let bob = bob_central.rand_key_package(&case).await;
+                // Keep track of the whatever amount was initially generated
+                let prev_count = bob_central.context.count_entities().await;
 
-                    // Create a conversation from alice, where she invites bob
-                    alice_central
-                        .context
-                        .new_conversation(&id, case.credential_type, case.cfg.clone())
-                        .await
-                        .unwrap();
+                // Create a conversation from alice, where she invites bob
+                alice_central
+                    .context
+                    .new_conversation(&id, case.credential_type, case.cfg.clone())
+                    .await
+                    .unwrap();
 
-                    let MlsConversationCreationMessage { welcome, .. } = alice_central
-                        .context
-                        .add_members_to_conversation(&id, vec![bob])
-                        .await
-                        .unwrap();
+                let MlsConversationCreationMessage { welcome, .. } = alice_central
+                    .context
+                    .add_members_to_conversation(&id, vec![bob])
+                    .await
+                    .unwrap();
 
-                    // Bob accepts the welcome message, and as such, it should prune the used keypackage from the store
-                    bob_central
-                        .context
-                        .process_welcome_message(welcome.into(), case.custom_cfg())
-                        .await
-                        .unwrap();
+                // Bob accepts the welcome message, and as such, it should prune the used keypackage from the store
+                bob_central
+                    .context
+                    .process_welcome_message(welcome.into(), case.custom_cfg())
+                    .await
+                    .unwrap();
 
-                    // Ensure we're left with 1 less keypackage bundle in the store, because it was consumed with the OpenMLS Welcome message
-                    let next_count = bob_central.context.count_entities().await;
-                    assert_eq!(next_count.key_package, prev_count.key_package - 1);
-                    assert_eq!(next_count.hpke_private_key, prev_count.hpke_private_key - 1);
-                    assert_eq!(next_count.encryption_keypair, prev_count.encryption_keypair - 1);
-                })
-            },
-        )
+                // Ensure we're left with 1 less keypackage bundle in the store, because it was consumed with the OpenMLS Welcome message
+                let next_count = bob_central.context.count_entities().await;
+                assert_eq!(next_count.key_package, prev_count.key_package - 1);
+                assert_eq!(next_count.hpke_private_key, prev_count.hpke_private_key - 1);
+                assert_eq!(next_count.encryption_keypair, prev_count.encryption_keypair - 1);
+            })
+        })
         .await;
     }
 
     #[apply(all_cred_cipher)]
     #[wasm_bindgen_test]
     async fn process_welcome_should_fail_when_already_exists(case: TestCase) {
-        run_test_with_client_ids(
-            case.clone(),
-            ["alice", "bob"],
-            move |[alice_central, bob_central]| {
-                Box::pin(async move {
-                    let id = conversation_id();
-                    alice_central
-                        .context
-                        .new_conversation(&id, case.credential_type, case.cfg.clone())
-                        .await
-                        .unwrap();
-                    let bob = bob_central.rand_key_package(&case).await;
-                    let welcome = alice_central
-                        .context
-                        .add_members_to_conversation(&id, vec![bob])
-                        .await
-                        .unwrap()
-                        .welcome;
+        run_test_with_client_ids(case.clone(), ["alice", "bob"], move |[alice_central, bob_central]| {
+            Box::pin(async move {
+                let id = conversation_id();
+                alice_central
+                    .context
+                    .new_conversation(&id, case.credential_type, case.cfg.clone())
+                    .await
+                    .unwrap();
+                let bob = bob_central.rand_key_package(&case).await;
+                let welcome = alice_central
+                    .context
+                    .add_members_to_conversation(&id, vec![bob])
+                    .await
+                    .unwrap()
+                    .welcome;
 
-                    // Meanwhile Bob creates a conversation with the exact same id as the one he's trying to join
-                    bob_central
-                        .context
-                        .new_conversation(&id, case.credential_type, case.cfg.clone())
-                        .await
-                        .unwrap();
-                    let join_welcome = bob_central
-                        .context
-                        .process_welcome_message(welcome.into(), case.custom_cfg())
-                        .await;
-                    assert!(matches!(join_welcome.unwrap_err(), CryptoError::ConversationAlreadyExists(i) if i == id));
-                })
-            },
-        )
+                // Meanwhile Bob creates a conversation with the exact same id as the one he's trying to join
+                bob_central
+                    .context
+                    .new_conversation(&id, case.credential_type, case.cfg.clone())
+                    .await
+                    .unwrap();
+                let join_welcome = bob_central
+                    .context
+                    .process_welcome_message(welcome.into(), case.custom_cfg())
+                    .await;
+                assert!(matches!(join_welcome.unwrap_err(), CryptoError::ConversationAlreadyExists(i) if i == id));
+            })
+        })
         .await;
     }
 }

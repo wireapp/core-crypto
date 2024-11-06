@@ -17,12 +17,12 @@ use openmls_traits::OpenMlsCryptoProvider;
 
 use mls_crypto_provider::TransactionalCryptoProvider;
 
+use crate::context::CentralContext;
 use crate::{
     mls::{ConversationId, MlsConversation},
     prelude::{decrypt::MlsBufferedConversationDecryptMessage, MlsProposalRef},
     CryptoError, CryptoResult, MlsError,
 };
-use crate::context::CentralContext;
 
 /// Abstraction over a MLS group capable of merging a commit
 impl MlsConversation {
@@ -175,54 +175,26 @@ mod tests {
         #[apply(all_cred_cipher)]
         #[wasm_bindgen_test]
         async fn should_apply_pending_commit(case: TestCase) {
-            run_test_with_client_ids(
-                case.clone(),
-                ["alice", "bob"],
-                move |[alice_central, bob_central]| {
-                    Box::pin(async move {
-                        let id = conversation_id();
-                        alice_central
-                            .context
-                            .new_conversation(&id, case.credential_type, case.cfg.clone())
-                            .await
-                            .unwrap();
-                        alice_central
-                            .invite_all(&case, &id, [&bob_central])
-                            .await
-                            .unwrap();
-                        assert_eq!(
-                            alice_central
-                                .get_conversation_unchecked(&id)
-                                .await
-                                .members()
-                                .len(),
-                            2
-                        );
-                        alice_central
-                            .context
-                            .remove_members_from_conversation(&id, &[bob_central.get_client_id().await])
-                            .await
-                            .unwrap();
-                        assert_eq!(
-                            alice_central
-                                .get_conversation_unchecked(&id)
-                                .await
-                                .members()
-                                .len(),
-                            2
-                        );
-                        alice_central.context.commit_accepted(&id).await.unwrap();
-                        assert_eq!(
-                            alice_central
-                                .get_conversation_unchecked(&id)
-                                .await
-                                .members()
-                                .len(),
-                            1
-                        );
-                    })
-                },
-            )
+            run_test_with_client_ids(case.clone(), ["alice", "bob"], move |[alice_central, bob_central]| {
+                Box::pin(async move {
+                    let id = conversation_id();
+                    alice_central
+                        .context
+                        .new_conversation(&id, case.credential_type, case.cfg.clone())
+                        .await
+                        .unwrap();
+                    alice_central.invite_all(&case, &id, [&bob_central]).await.unwrap();
+                    assert_eq!(alice_central.get_conversation_unchecked(&id).await.members().len(), 2);
+                    alice_central
+                        .context
+                        .remove_members_from_conversation(&id, &[bob_central.get_client_id().await])
+                        .await
+                        .unwrap();
+                    assert_eq!(alice_central.get_conversation_unchecked(&id).await.members().len(), 2);
+                    alice_central.context.commit_accepted(&id).await.unwrap();
+                    assert_eq!(alice_central.get_conversation_unchecked(&id).await.members().len(), 1);
+                })
+            })
             .await
         }
 
@@ -307,10 +279,7 @@ mod tests {
                             .new_conversation(&id, case.credential_type, case.cfg.clone())
                             .await
                             .unwrap();
-                        alice_central
-                            .invite_all(&case, &id, [&bob_central])
-                            .await
-                            .unwrap();
+                        alice_central.invite_all(&case, &id, [&bob_central]).await.unwrap();
                         assert!(alice_central.pending_proposals(&id).await.is_empty());
 
                         let charlie_kp = charlie_central.get_one_key_package(&case).await;
