@@ -7,7 +7,7 @@
 //! | 0 pend. Proposal  | ✅              | ❌              |
 //! | 1+ pend. Proposal | ❌              | ❌              |
 
-use mls_crypto_provider::TransactionalCryptoProvider;
+use mls_crypto_provider::MlsCryptoProvider;
 use openmls::prelude::MlsMessageOutBody;
 
 use super::MlsConversation;
@@ -24,7 +24,7 @@ impl MlsConversation {
         &mut self,
         client: &Client,
         message: impl AsRef<[u8]>,
-        backend: &TransactionalCryptoProvider,
+        backend: &MlsCryptoProvider,
     ) -> CryptoResult<Vec<u8>> {
         let signer = &self
             .find_current_credential_bundle(client)

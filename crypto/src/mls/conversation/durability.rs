@@ -5,7 +5,7 @@ impl MlsConversation {
     /// Replaces the MLS group in memory with the one from keystore.
     /// see [crate::durable]
     #[cfg_attr(not(test), tracing::instrument(skip_all))]
-    pub async fn drop_and_restore(&mut self, backend: &mls_crypto_provider::TransactionalCryptoProvider) {
+    pub async fn drop_and_restore(&mut self, backend: &mls_crypto_provider::MlsCryptoProvider) {
         use core_crypto_keystore::CryptoKeystoreMls as _;
 
         let group_id = self.group.group_id();

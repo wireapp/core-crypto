@@ -21,7 +21,7 @@ use openmls_traits::OpenMlsCryptoProvider;
 use tls_codec::Deserialize;
 
 use core_crypto_keystore::entities::MlsPendingMessage;
-use mls_crypto_provider::TransactionalCryptoProvider;
+use mls_crypto_provider::MlsCryptoProvider;
 
 use crate::context::CentralContext;
 use crate::{
@@ -120,7 +120,7 @@ impl MlsConversation {
         message: MlsMessageIn,
         parent_conv: Option<&GroupStoreValue<MlsConversation>>,
         client: &Client,
-        backend: &TransactionalCryptoProvider,
+        backend: &MlsCryptoProvider,
         callbacks: Option<&dyn CoreCryptoCallbacks>,
         restore_pending: bool,
     ) -> CryptoResult<MlsConversationDecryptMessage> {
@@ -277,7 +277,7 @@ impl MlsConversation {
 
     async fn parse_message(
         &mut self,
-        backend: &TransactionalCryptoProvider,
+        backend: &MlsCryptoProvider,
         msg_in: MlsMessageIn,
     ) -> CryptoResult<ProcessedMessage> {
         let mut is_duplicate = false;
@@ -338,7 +338,7 @@ impl MlsConversation {
         Ok(processed_msg)
     }
 
-    async fn validate_commit(&self, commit: &StagedCommit, backend: &TransactionalCryptoProvider) -> CryptoResult<()> {
+    async fn validate_commit(&self, commit: &StagedCommit, backend: &MlsCryptoProvider) -> CryptoResult<()> {
         if backend.authentication_service().is_env_setup().await {
             let credentials: Vec<_> = commit
                 .add_proposals()

@@ -2,7 +2,7 @@
 //! [MlsCentral]. All mutating operations need to be done through a [CentralContext].
 
 use async_lock::{Mutex, RwLock, RwLockReadGuardArc, RwLockWriteGuardArc};
-use mls_crypto_provider::{CryptoKeystore, TransactionalCryptoProvider};
+use mls_crypto_provider::{CryptoKeystore, MlsCryptoProvider};
 use std::{ops::Deref, sync::Arc};
 
 use crate::mls::MlsCentral;
@@ -31,7 +31,7 @@ pub struct CentralContext {
 #[derive(Debug, Clone)]
 enum ContextState {
     Valid {
-        provider: TransactionalCryptoProvider,
+        provider: MlsCryptoProvider,
         callbacks: Arc<RwLock<Option<std::sync::Arc<dyn CoreCryptoCallbacks + 'static>>>>,
         mls_client: Arc<RwLock<Option<Client>>>,
         mls_groups: Arc<RwLock<GroupStore<MlsConversation>>>,
@@ -116,8 +116,8 @@ impl CentralContext {
         }
     }
 
-    /// Clones all references that the [MlsCryptoProvider] comprises. 
-    pub async fn mls_provider(&self) -> CryptoResult<TransactionalCryptoProvider> {
+    /// Clones all references that the [MlsCryptoProvider] comprises.
+    pub async fn mls_provider(&self) -> CryptoResult<MlsCryptoProvider> {
         match self.state.read().await.deref() {
             ContextState::Valid { provider, .. } => Ok(provider.clone()),
             ContextState::Invalid => Err(CryptoError::InvalidContext),

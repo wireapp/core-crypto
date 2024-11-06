@@ -11,7 +11,7 @@ use crate::{
     },
 };
 use core_crypto_keystore::{connection::FetchFromDatabase, entities::PersistedMlsPendingGroup};
-use mls_crypto_provider::TransactionalCryptoProvider;
+use mls_crypto_provider::MlsCryptoProvider;
 use openmls::prelude::{MlsGroup, MlsMessageIn, MlsMessageInBody, Welcome};
 use openmls_traits::OpenMlsCryptoProvider;
 use tls_codec::Deserialize;
@@ -111,7 +111,7 @@ impl MlsConversation {
     async fn from_welcome_message(
         welcome: Welcome,
         configuration: MlsConversationConfiguration,
-        backend: &TransactionalCryptoProvider,
+        backend: &MlsCryptoProvider,
         mls_groups: &mut GroupStore<MlsConversation>,
     ) -> CryptoResult<Self> {
         let mls_group_config = configuration.as_openmls_default_configuration()?;

@@ -19,7 +19,7 @@
 //! Either use [MlsConversationConfiguration] when creating a conversation or [MlsCustomConfiguration]
 //! when joining one by Welcome or external commit
 
-use mls_crypto_provider::TransactionalCryptoProvider;
+use mls_crypto_provider::MlsCryptoProvider;
 use openmls::prelude::{
     Capabilities, Credential, CredentialType, ExternalSender, OpenMlsSignaturePublicKey, ProtocolVersion,
     RequiredCapabilitiesExtension, SenderRatchetConfiguration, WireFormatPolicy, PURE_CIPHERTEXT_WIRE_FORMAT_POLICY,
@@ -160,7 +160,7 @@ impl MlsConversationConfiguration {
     fn legacy_external_sender(
         key: Vec<u8>,
         signature_scheme: SignatureScheme,
-        backend: &TransactionalCryptoProvider,
+        backend: &MlsCryptoProvider,
     ) -> CryptoResult<ExternalSender> {
         backend
             .crypto()

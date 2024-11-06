@@ -16,7 +16,7 @@ use core_crypto_keystore::{
     entities::{EntityFindParams, MlsPendingMessage},
 };
 use log::{error, info, trace};
-use mls_crypto_provider::TransactionalCryptoProvider;
+use mls_crypto_provider::MlsCryptoProvider;
 use openmls::prelude::{MlsMessageIn, MlsMessageInBody};
 use tls_codec::Deserialize;
 
@@ -68,7 +68,7 @@ impl MlsConversation {
     pub(crate) async fn restore_pending_messages<'a>(
         &'a mut self,
         client: &'a Client,
-        backend: &'a TransactionalCryptoProvider,
+        backend: &'a MlsCryptoProvider,
         callbacks: Option<&'a dyn CoreCryptoCallbacks>,
         parent_conversation: Option<&'a GroupStoreValue<Self>>,
         is_rejoin: bool,

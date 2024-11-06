@@ -38,7 +38,7 @@ use tls_codec::{Deserialize, Serialize};
 
 use core_crypto_keystore::entities::{EntityFindParams, MlsCredential, MlsSignatureKeyPair};
 use identities::ClientIdentities;
-use mls_crypto_provider::TransactionalCryptoProvider;
+use mls_crypto_provider::MlsCryptoProvider;
 
 impl MlsCentral {
     pub(crate) async fn mls_client(&self) -> RwLockReadGuard<'_, Option<Client>> {
@@ -73,7 +73,7 @@ impl Client {
     pub async fn init(
         identifier: ClientIdentifier,
         ciphersuites: &[MlsCiphersuite],
-        backend: &TransactionalCryptoProvider,
+        backend: &MlsCryptoProvider,
         nb_key_package: usize,
     ) -> CryptoResult<Self> {
         let id = identifier.get_id()?;
@@ -124,7 +124,7 @@ impl Client {
     /// KeyStore and OpenMls errors can happen
     pub async fn generate_raw_keypairs(
         ciphersuites: &[MlsCiphersuite],
-        backend: &TransactionalCryptoProvider,
+        backend: &MlsCryptoProvider,
     ) -> CryptoResult<Vec<ClientId>> {
         const TEMP_KEY_SIZE: usize = 16;
 
@@ -168,7 +168,7 @@ impl Client {
         client_id: ClientId,
         tmp_ids: Vec<ClientId>,
         ciphersuites: &[MlsCiphersuite],
-        backend: &TransactionalCryptoProvider,
+        backend: &MlsCryptoProvider,
     ) -> CryptoResult<Self> {
         // Find all the keypairs, get the ones that exist (or bail), then insert new ones + delete the provisional ones
         let stored_skp = backend
@@ -240,7 +240,7 @@ impl Client {
     /// Generates a brand new client from scratch
     pub(crate) async fn generate(
         identifier: ClientIdentifier,
-        backend: &TransactionalCryptoProvider,
+        backend: &MlsCryptoProvider,
         ciphersuites: &[MlsCiphersuite],
         nb_key_package: usize,
     ) -> CryptoResult<Self> {
@@ -279,7 +279,7 @@ impl Client {
 
     /// Loads the client from the keystore.
     pub(crate) async fn load(
-        backend: &TransactionalCryptoProvider,
+        backend: &MlsCryptoProvider,
         id: &ClientId,
         mut credentials: Vec<(Credential, u64)>,
         signature_schemes: HashSet<SignatureScheme>,
@@ -338,7 +338,7 @@ impl Client {
         })
     }
 
-    async fn find_all_basic_credentials(backend: &TransactionalCryptoProvider) -> CryptoResult<Vec<Credential>> {
+    async fn find_all_basic_credentials(backend: &MlsCryptoProvider) -> CryptoResult<Vec<Credential>> {
         let store_credentials = backend
             .key_store()
             .find_all::<MlsCredential>(EntityFindParams::default())
@@ -408,7 +408,7 @@ impl Client {
 
     pub(crate) async fn get_most_recent_or_create_credential_bundle(
         &mut self,
-        backend: &TransactionalCryptoProvider,
+        backend: &MlsCryptoProvider,
         sc: SignatureScheme,
         ct: MlsCredentialType,
     ) -> CryptoResult<CredentialBundle> {
@@ -428,7 +428,7 @@ impl Client {
 
     pub(crate) async fn init_basic_credential_bundle_if_missing(
         &mut self,
-        backend: &TransactionalCryptoProvider,
+        backend: &MlsCryptoProvider,
         sc: SignatureScheme,
     ) -> CryptoResult<()> {
         let existing_cb = self
@@ -466,7 +466,7 @@ impl Eq for Client {}
 impl Client {
     pub async fn random_generate(
         case: &crate::test_utils::TestCase,
-        backend: &TransactionalCryptoProvider,
+        backend: &MlsCryptoProvider,
         signer: Option<&crate::test_utils::x509::X509Certificate>,
         provision: bool,
     ) -> CryptoResult<Self> {
@@ -490,7 +490,7 @@ impl Client {
 
     pub async fn find_keypackages(
         &self,
-        backend: &TransactionalCryptoProvider,
+        backend: &MlsCryptoProvider,
     ) -> CryptoResult<Vec<openmls::prelude::KeyPackage>> {
         use core_crypto_keystore::CryptoKeystoreMls as _;
         let kps = backend

@@ -4,7 +4,7 @@ use crate::{
     MlsError,
 };
 
-use mls_crypto_provider::TransactionalCryptoProvider;
+use mls_crypto_provider::MlsCryptoProvider;
 use openmls_traits::OpenMlsCryptoProvider;
 use wire_e2e_identity::prelude::WireIdentityReader;
 
@@ -149,10 +149,7 @@ impl MlsCentral {
 }
 
 impl MlsConversation {
-    async fn e2ei_conversation_state(
-        &self,
-        backend: &TransactionalCryptoProvider,
-    ) -> CryptoResult<E2eiConversationState> {
+    async fn e2ei_conversation_state(&self, backend: &MlsCryptoProvider) -> CryptoResult<E2eiConversationState> {
         backend.authentication_service().refresh_time_of_interest().await;
         Ok(compute_state(
             self.ciphersuite(),

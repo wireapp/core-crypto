@@ -5,7 +5,7 @@ use crate::{
 };
 use core_crypto_keystore::connection::FetchFromDatabase;
 use core_crypto_keystore::{entities::E2eiRefreshToken, CryptoKeystoreResult};
-use mls_crypto_provider::TransactionalCryptoProvider;
+use mls_crypto_provider::MlsCryptoProvider;
 use zeroize::Zeroize;
 
 /// An OIDC refresh token managed by CoreCrypto to benefit from encryption-at-rest
@@ -18,7 +18,7 @@ impl RefreshToken {
         key_store.find_unique::<E2eiRefreshToken>().await?.try_into()
     }
 
-    pub(crate) async fn replace(self, backend: &TransactionalCryptoProvider) -> CryptoKeystoreResult<()> {
+    pub(crate) async fn replace(self, backend: &MlsCryptoProvider) -> CryptoKeystoreResult<()> {
         let keystore = backend.keystore();
         let rt = E2eiRefreshToken::from(self);
         keystore.save(rt).await?;

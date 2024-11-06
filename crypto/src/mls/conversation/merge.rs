@@ -15,7 +15,7 @@ use core_crypto_keystore::entities::{MlsEncryptionKeyPair, MlsPendingMessage};
 use openmls::prelude::MlsGroupStateError;
 use openmls_traits::OpenMlsCryptoProvider;
 
-use mls_crypto_provider::TransactionalCryptoProvider;
+use mls_crypto_provider::MlsCryptoProvider;
 
 use crate::context::CentralContext;
 use crate::{
@@ -28,7 +28,7 @@ use crate::{
 impl MlsConversation {
     /// see [MlsCentral::commit_accepted]
     #[cfg_attr(test, crate::durable)]
-    pub async fn commit_accepted(&mut self, backend: &TransactionalCryptoProvider) -> CryptoResult<()> {
+    pub async fn commit_accepted(&mut self, backend: &MlsCryptoProvider) -> CryptoResult<()> {
         // openmls stores here all the encryption keypairs used for update proposals..
         let previous_own_leaf_nodes = self.group.own_leaf_nodes.clone();
 
@@ -49,7 +49,7 @@ impl MlsConversation {
     pub async fn clear_pending_proposal(
         &mut self,
         proposal_ref: MlsProposalRef,
-        backend: &TransactionalCryptoProvider,
+        backend: &MlsCryptoProvider,
     ) -> CryptoResult<()> {
         self.group
             .remove_pending_proposal(backend.key_store(), &proposal_ref)
@@ -64,7 +64,7 @@ impl MlsConversation {
 
     /// see [MlsCentral::clear_pending_commit]
     #[cfg_attr(test, crate::durable)]
-    pub async fn clear_pending_commit(&mut self, backend: &TransactionalCryptoProvider) -> CryptoResult<()> {
+    pub async fn clear_pending_commit(&mut self, backend: &MlsCryptoProvider) -> CryptoResult<()> {
         if self.group.pending_commit().is_some() {
             self.group.clear_pending_commit();
             self.persist_group_when_changed(&backend.keystore(), true).await?;
