@@ -4,6 +4,7 @@ use crate::{
     CoreCryptoError, CoreCryptoResult, CredentialType, CustomConfiguration, DecryptedMessage, FfiClientId,
     MemberAddedMessages, ProposalBundle, WasmCryptoResult, WelcomeBundle,
 };
+use core_crypto::context::CentralContext;
 use core_crypto::prelude::{
     CiphersuiteName, ClientId, ClientIdentifier, ConversationId, KeyPackageIn, KeyPackageRef,
     MlsConversationConfiguration, VerifiableGroupInfo,
@@ -16,7 +17,6 @@ use tls_codec::{Deserialize, Serialize};
 use wasm_bindgen::prelude::wasm_bindgen;
 use wasm_bindgen::JsValue;
 use wasm_bindgen_futures::future_to_promise;
-use core_crypto::context::CentralContext;
 
 pub mod e2ei;
 pub mod proteus;
@@ -25,7 +25,7 @@ pub mod proteus;
 #[derive(Clone)]
 pub struct CoreCryptoContext {
     pub(crate) inner: Arc<CentralContext>,
-    pub(crate) proteus_last_error_code: Arc<async_lock::RwLock<u32>>
+    pub(crate) proteus_last_error_code: Arc<async_lock::RwLock<u32>>,
 }
 
 #[wasm_bindgen]

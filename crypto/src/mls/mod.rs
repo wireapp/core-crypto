@@ -2,14 +2,15 @@ use std::sync::Arc;
 
 use async_lock::{Mutex, RwLock};
 use log::trace;
-use mls_crypto_provider::{EntropySeed, MlsCryptoProvider, MlsCryptoProviderConfiguration};
-use openmls_traits::OpenMlsCryptoProvider;
-use crate::CoreCrypto;
+
 use crate::prelude::{
     identifier::ClientIdentifier, key_package::INITIAL_KEYING_MATERIAL_COUNT, Client, ClientId, ConversationId,
     CoreCryptoCallbacks, CryptoError, CryptoResult, MlsCentralConfiguration, MlsCiphersuite, MlsConversation,
     MlsConversationConfiguration, MlsCredentialType, MlsError,
 };
+use crate::CoreCrypto;
+use mls_crypto_provider::{EntropySeed, MlsCryptoProvider, MlsCryptoProviderConfiguration};
+use openmls_traits::OpenMlsCryptoProvider;
 
 use crate::context::CentralContext;
 
@@ -174,7 +175,7 @@ impl MlsCentral {
         })
         .await?;
         mls_backend.new_transaction().await?;
-        let keystore = mls_backend.keystore(); 
+        let keystore = mls_backend.keystore();
         let mls_client = if let Some(id) = configuration.client_id {
             // Init client identity (load or create)
             Arc::new(
@@ -282,7 +283,8 @@ impl MlsCentral {
         let client_guard = self.mls_client.read().await;
         let client = client_guard.as_ref().ok_or(CryptoError::MlsNotInitialized)?;
         let cb = client
-            .find_most_recent_credential_bundle(ciphersuite.signature_algorithm(), credential_type).await
+            .find_most_recent_credential_bundle(ciphersuite.signature_algorithm(), credential_type)
+            .await
             .ok_or(CryptoError::ClientSignatureNotFound)?;
         Ok(cb.signature_key.to_public_vec())
     }
@@ -438,7 +440,8 @@ impl CentralContext {
         let client_guard = self.mls_client().await?;
         let client = client_guard.as_ref().ok_or(CryptoError::MlsNotInitialized)?;
         let cb = client
-            .find_most_recent_credential_bundle(ciphersuite.signature_algorithm(), credential_type).await
+            .find_most_recent_credential_bundle(ciphersuite.signature_algorithm(), credential_type)
+            .await
             .ok_or(CryptoError::ClientSignatureNotFound)?;
         Ok(cb.signature_key.to_public_vec())
     }
@@ -533,7 +536,11 @@ mod tests {
     use wasm_bindgen_test::*;
 
     use crate::prelude::{CertificateBundle, ClientIdentifier, MlsCredentialType, INITIAL_KEYING_MATERIAL_COUNT};
-    use crate::{mls::{CryptoError, MlsCentral, MlsCentralConfiguration}, test_utils::{x509::X509TestChain, *}, CoreCrypto};
+    use crate::{
+        mls::{CryptoError, MlsCentral, MlsCentralConfiguration},
+        test_utils::{x509::X509TestChain, *},
+        CoreCrypto,
+    };
 
     wasm_bindgen_test_configure!(run_in_browser);
 
@@ -561,26 +568,19 @@ mod tests {
         #[apply(all_cred_cipher)]
         #[wasm_bindgen_test]
         async fn can_get_conversation_epoch(case: TestCase) {
-            run_test_with_client_ids(
-                case.clone(),
-                ["alice", "bob"],
-                move |[alice_central, bob_central]| {
-                    Box::pin(async move {
-                        let id = conversation_id();
-                        alice_central
-                            .context
-                            .new_conversation(&id, case.credential_type, case.cfg.clone())
-                            .await
-                            .unwrap();
-                        alice_central
-                            .invite_all(&case, &id, [&bob_central])
-                            .await
-                            .unwrap();
-                        let epoch = alice_central.context.conversation_epoch(&id).await.unwrap();
-                        assert_eq!(epoch, 1);
-                    })
-                },
-            )
+            run_test_with_client_ids(case.clone(), ["alice", "bob"], move |[alice_central, bob_central]| {
+                Box::pin(async move {
+                    let id = conversation_id();
+                    alice_central
+                        .context
+                        .new_conversation(&id, case.credential_type, case.cfg.clone())
+                        .await
+                        .unwrap();
+                    alice_central.invite_all(&case, &id, [&bob_central]).await.unwrap();
+                    let epoch = alice_central.context.conversation_epoch(&id).await.unwrap();
+                    assert_eq!(epoch, 1);
+                })
+            })
             .await;
         }
 

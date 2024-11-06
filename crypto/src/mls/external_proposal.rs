@@ -119,7 +119,9 @@ impl CentralContext {
 
         let mut client_guard = self.mls_client_mut().await?;
         let client = client_guard.as_mut().ok_or(CryptoError::MlsNotInitialized)?;
-        let cb = client.find_most_recent_credential_bundle(ciphersuite.signature_algorithm(), credential_type).await;
+        let cb = client
+            .find_most_recent_credential_bundle(ciphersuite.signature_algorithm(), credential_type)
+            .await;
         let cb = match (cb, credential_type) {
             (Some(cb), _) => cb,
             (None, MlsCredentialType::Basic) => {
@@ -129,7 +131,8 @@ impl CentralContext {
                     .await?;
 
                 client
-                    .find_most_recent_credential_bundle(ciphersuite.signature_algorithm(), credential_type).await
+                    .find_most_recent_credential_bundle(ciphersuite.signature_algorithm(), credential_type)
+                    .await
                     .ok_or(CryptoError::CredentialNotFound(credential_type))?
             }
             (None, MlsCredentialType::X509) => return Err(CryptoError::E2eiEnrollmentNotDone),
@@ -167,11 +170,7 @@ mod tests {
                             .new_conversation(&id, case.credential_type, case.cfg.clone())
                             .await
                             .unwrap();
-                        let epoch = owner_central
-                            .get_conversation_unchecked(&id)
-                            .await
-                            .group
-                            .epoch();
+                        let epoch = owner_central.get_conversation_unchecked(&id).await.group.epoch();
 
                         // Craft an external proposal from guest
                         let external_add = guest_central
@@ -187,14 +186,7 @@ mod tests {
                             .await
                             .unwrap();
                         // just owner for now
-                        assert_eq!(
-                            owner_central
-                                .get_conversation_unchecked(&id)
-                                .await
-                                .members()
-                                .len(),
-                            1
-                        );
+                        assert_eq!(owner_central.get_conversation_unchecked(&id).await.members().len(), 1);
 
                         // verify Guest's (sender) identity
                         guest_central.verify_sender_identity(&case, &decrypted).await;
@@ -208,33 +200,16 @@ mod tests {
                             .unwrap();
                         owner_central.context.commit_accepted(&id).await.unwrap();
                         // guest joined the group
-                        assert_eq!(
-                            owner_central
-                                .get_conversation_unchecked(&id)
-                                .await
-                                .members()
-                                .len(),
-                            2
-                        );
+                        assert_eq!(owner_central.get_conversation_unchecked(&id).await.members().len(), 2);
 
                         guest_central
                             .context
                             .process_welcome_message(welcome.unwrap().into(), case.custom_cfg())
                             .await
                             .unwrap();
-                        assert_eq!(
-                            guest_central
-                                .get_conversation_unchecked(&id)
-                                .await
-                                .members()
-                                .len(),
-                            2
-                        );
+                        assert_eq!(guest_central.get_conversation_unchecked(&id).await.members().len(), 2);
                         // guest can send messages in the group
-                        assert!(guest_central
-                            .try_talk_to(&id, &owner_central)
-                            .await
-                            .is_ok());
+                        assert!(guest_central.try_talk_to(&id, &owner_central).await.is_ok());
                     })
                 },
             )
@@ -261,17 +236,15 @@ mod tests {
                     let ds_signature_key = ds.client_signature_key(&case).await.as_slice().to_vec();
                     let mut cfg = case.cfg.clone();
                     owner_central
-                        .set_raw_external_senders(&mut cfg, vec![ds_signature_key]).await
+                        .set_raw_external_senders(&mut cfg, vec![ds_signature_key])
+                        .await
                         .unwrap();
                     owner_central
                         .new_conversation(&id, case.credential_type, cfg)
                         .await
                         .unwrap();
 
-                    owner
-                        .invite_all(&case, &id, [&guest])
-                        .await
-                        .unwrap();
+                    owner.invite_all(&case, &id, [&guest]).await.unwrap();
                     assert_eq!(owner.get_conversation_unchecked(&id).await.members().len(), 2);
 
                     // now, as e.g. a Delivery Service, let's create an external remove proposal
@@ -280,9 +253,7 @@ mod tests {
                     let sender_index = SenderExtensionIndex::new(0);
 
                     let (sc, ct) = (case.signature_scheme(), case.credential_type);
-                    let cb = ds
-                        .find_most_recent_credential_bundle(sc, ct).await
-                        .unwrap();
+                    let cb = ds.find_most_recent_credential_bundle(sc, ct).await.unwrap();
 
                     let group_id = GroupId::from_slice(&id[..]);
                     let epoch = owner.get_conversation_unchecked(&id).await.group.epoch();
@@ -330,17 +301,18 @@ mod tests {
                         // Delivery service key is used in the group..
                         let ds_signature_key = ds.client_signature_key(&case).await.as_slice().to_vec();
                         let mut cfg = case.cfg.clone();
-                        owner.context
-                            .set_raw_external_senders(&mut cfg, vec![ds_signature_key]).await
+                        owner
+                            .context
+                            .set_raw_external_senders(&mut cfg, vec![ds_signature_key])
+                            .await
                             .unwrap();
-                        owner.context
+                        owner
+                            .context
                             .new_conversation(&id, case.credential_type, cfg)
                             .await
                             .unwrap();
 
-                        owner
-                            .invite_all(&case, &id, [&guest]).await
-                            .unwrap();
+                        owner.invite_all(&case, &id, [&guest]).await.unwrap();
                         assert_eq!(owner.get_conversation_unchecked(&id).await.members().len(), 2);
 
                         // now, attacker will try to remove guest from the group, and should fail
@@ -348,9 +320,7 @@ mod tests {
                         let sender_index = SenderExtensionIndex::new(1);
 
                         let (sc, ct) = (case.signature_scheme(), case.credential_type);
-                        let cb = attacker
-                            .find_most_recent_credential_bundle(sc, ct).await
-                            .unwrap();
+                        let cb = attacker.find_most_recent_credential_bundle(sc, ct).await.unwrap();
                         let group_id = GroupId::from_slice(&id[..]);
                         let epoch = owner.get_conversation_unchecked(&id).await.group.epoch();
                         let proposal =
@@ -391,17 +361,18 @@ mod tests {
                     // intentionally _not_ use that key when generating the remove proposal below.
                     let key = ds.client_signature_key(&case).await.as_slice().to_vec();
                     let mut cfg = case.cfg.clone();
-                    owner.context
-                        .set_raw_external_senders(&mut cfg, vec![key.as_slice().to_vec()]).await
+                    owner
+                        .context
+                        .set_raw_external_senders(&mut cfg, vec![key.as_slice().to_vec()])
+                        .await
                         .unwrap();
-                    owner.context
+                    owner
+                        .context
                         .new_conversation(&id, case.credential_type, cfg)
                         .await
                         .unwrap();
 
-                    owner
-                        .invite_all(&case, &id, [&guest]).await
-                        .unwrap();
+                    owner.invite_all(&case, &id, [&guest]).await.unwrap();
                     assert_eq!(owner.get_conversation_unchecked(&id).await.members().len(), 2);
 
                     let to_remove = owner.index_of(&id, guest.get_client_id().await).await;
@@ -410,9 +381,7 @@ mod tests {
                     let (sc, ct) = (case.signature_scheme(), case.credential_type);
                     // Intentionally use the guest's credential, and therefore the guest's signature
                     // key when generating the proposal so that the signature verification fails.
-                    let cb = guest
-                        .find_most_recent_credential_bundle(sc, ct).await
-                        .unwrap();
+                    let cb = guest.find_most_recent_credential_bundle(sc, ct).await.unwrap();
                     let group_id = GroupId::from_slice(&id[..]);
                     let epoch = owner.get_conversation_unchecked(&id).await.group.epoch();
                     let proposal =
@@ -451,7 +420,8 @@ mod tests {
                         let ds_signature_key = ds.client_signature_key(&case).await.as_slice().to_vec();
                         let mut cfg = case.cfg.clone();
                         alice_central
-                            .set_raw_external_senders(&mut cfg, vec![ds_signature_key]).await
+                            .set_raw_external_senders(&mut cfg, vec![ds_signature_key])
+                            .await
                             .unwrap();
 
                         alice_central
@@ -488,9 +458,7 @@ mod tests {
                         let to_remove = alice.index_of(&id, bob.get_client_id().await).await;
                         let sender_index = SenderExtensionIndex::new(0);
                         let (sc, ct) = (case.signature_scheme(), case.credential_type);
-                        let cb = ds
-                            .find_most_recent_credential_bundle(sc, ct).await
-                            .unwrap();
+                        let cb = ds.find_most_recent_credential_bundle(sc, ct).await.unwrap();
                         let group_id = GroupId::from_slice(&id[..]);
                         let epoch = alice.get_conversation_unchecked(&id).await.group.epoch();
                         let proposal =
@@ -554,7 +522,8 @@ mod tests {
                         let ds_signature_key = ds.client_signature_key(&case).await.as_slice().to_vec();
                         let mut cfg = case.cfg.clone();
                         alice_central
-                            .set_raw_external_senders(&mut cfg, vec![ds_signature_key]).await
+                            .set_raw_external_senders(&mut cfg, vec![ds_signature_key])
+                            .await
                             .unwrap();
 
                         alice_central
@@ -596,9 +565,7 @@ mod tests {
                         let to_remove = alice.index_of(&id, bob.get_client_id().await).await;
                         let sender_index = SenderExtensionIndex::new(0);
                         let (sc, ct) = (case.signature_scheme(), case.credential_type);
-                        let cb = ds
-                            .find_most_recent_credential_bundle(sc, ct).await
-                            .unwrap();
+                        let cb = ds.find_most_recent_credential_bundle(sc, ct).await.unwrap();
                         let group_id = GroupId::from_slice(&id[..]);
                         let epoch = alice.get_conversation_unchecked(&id).await.group.epoch();
                         let proposal =

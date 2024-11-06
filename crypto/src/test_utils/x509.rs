@@ -1,7 +1,5 @@
 use crate::{
-    e2e_identity::id::QualifiedE2eiClientId,
-    mls::client::identifier::ClientIdentifier,
-    prelude::E2eIdentityError,
+    e2e_identity::id::QualifiedE2eiClientId, mls::client::identifier::ClientIdentifier, prelude::E2eIdentityError,
     CryptoError,
 };
 use std::{fmt::Display, time::Duration};

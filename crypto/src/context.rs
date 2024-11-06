@@ -1,13 +1,17 @@
 //! This module contains the primitives to enable transactional support on a higher level within the
 //! [MlsCentral]. All mutating operations need to be done through a [CentralContext].
 
-use std::{ops::Deref, sync::Arc};
 use async_lock::{Mutex, RwLock, RwLockReadGuardArc, RwLockWriteGuardArc};
 use mls_crypto_provider::{CryptoKeystore, TransactionalCryptoProvider};
+use std::{ops::Deref, sync::Arc};
 
 use crate::mls::MlsCentral;
-use crate::{group_store::GroupStore, prelude::{Client, MlsConversation}, CoreCrypto, CoreCryptoCallbacks, CryptoError, CryptoResult};
 use crate::proteus::ProteusCentral;
+use crate::{
+    group_store::GroupStore,
+    prelude::{Client, MlsConversation},
+    CoreCrypto, CoreCryptoCallbacks, CryptoError, CryptoResult,
+};
 
 /// This struct provides transactional support for Core Crypto.
 ///
@@ -57,7 +61,7 @@ impl CentralContext {
                     callbacks,
                     provider: mls_central.mls_backend.clone(),
                     mls_groups,
-                    proteus_central
+                    proteus_central,
                 }
                 .into(),
             ),
@@ -122,7 +126,7 @@ impl CentralContext {
             ContextState::Invalid => Err(CryptoError::InvalidContext),
         }
     }
-    
+
     pub(crate) async fn proteus_central(&self) -> CryptoResult<Arc<Mutex<Option<ProteusCentral>>>> {
         match self.state.read().await.deref() {
             ContextState::Valid { proteus_central, .. } => Ok(proteus_central.clone()),

@@ -221,9 +221,7 @@ where
 
     async fn find_all(conn: &mut Self::ConnectionType, _params: EntityFindParams) -> CryptoKeystoreResult<Vec<Self>> {
         match Self::find_unique(conn).await {
-            Ok(record) => {
-                Ok(vec![record])
-            }
+            Ok(record) => Ok(vec![record]),
             Err(CryptoKeystoreError::NotFound(_, _)) => Ok(vec![]),
             Err(err) => Err(err),
         }
@@ -260,12 +258,10 @@ pub trait UniqueEntity: Entity<ConnectionType = crate::connection::KeystoreDatab
             Err(CryptoKeystoreError::NotFound(Self::COLLECTION_NAME, "".to_string()))
         }
     }
-    
+
     async fn find_all(conn: &mut Self::ConnectionType, _params: EntityFindParams) -> CryptoKeystoreResult<Vec<Self>> {
         match Self::find_unique(conn).await {
-            Ok(record) => {
-                Ok(vec![record])
-            }
+            Ok(record) => Ok(vec![record]),
             Err(CryptoKeystoreError::NotFound(_, _)) => Ok(vec![]),
             Err(err) => Err(err),
         }
@@ -307,8 +303,7 @@ pub trait UniqueEntity: Entity<ConnectionType = crate::connection::KeystoreDatab
 
 #[cfg_attr(target_family = "wasm", async_trait::async_trait(?Send))]
 #[cfg_attr(not(target_family = "wasm"), async_trait::async_trait)]
-impl <T: UniqueEntity + Send + Sync> EntityTransactionExt for T {
-    
+impl<T: UniqueEntity + Send + Sync> EntityTransactionExt for T {
     #[cfg(not(target_family = "wasm"))]
     async fn save(&self, tx: &TransactionWrapper<'_>) -> CryptoKeystoreResult<()> {
         self.replace(tx).await
@@ -320,12 +315,18 @@ impl <T: UniqueEntity + Send + Sync> EntityTransactionExt for T {
     }
 
     #[cfg(not(target_family = "wasm"))]
-    async fn delete_fail_on_missing_id(_: &TransactionWrapper<'_>, _id: StringEntityId<'_>) -> CryptoKeystoreResult<()> {
+    async fn delete_fail_on_missing_id(
+        _: &TransactionWrapper<'_>,
+        _id: StringEntityId<'_>,
+    ) -> CryptoKeystoreResult<()> {
         Err(CryptoKeystoreError::NotImplemented)
     }
-    
+
     #[cfg(target_family = "wasm")]
-    async fn delete_fail_on_missing_id<'a>(_: &TransactionWrapper<'a>, _id: StringEntityId<'a>) -> CryptoKeystoreResult<()> {
+    async fn delete_fail_on_missing_id<'a>(
+        _: &TransactionWrapper<'a>,
+        _id: StringEntityId<'a>,
+    ) -> CryptoKeystoreResult<()> {
         Err(CryptoKeystoreError::NotImplemented)
     }
 }

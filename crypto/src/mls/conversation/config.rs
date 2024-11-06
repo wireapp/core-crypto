@@ -31,9 +31,9 @@ use openmls_traits::OpenMlsCryptoProvider;
 use serde::{Deserialize, Serialize};
 use wire_e2e_identity::prelude::parse_json_jwk;
 
-use crate::MlsError;
-use crate::prelude::{CryptoResult, E2eIdentityError, MlsCiphersuite};
 use crate::context::CentralContext;
+use crate::prelude::{CryptoResult, E2eIdentityError, MlsCiphersuite};
+use crate::MlsError;
 
 /// Sets the config in OpenMls for the oldest possible epoch(past current) that a message can be decrypted
 pub(crate) const MAX_PAST_EPOCHS: usize = 3;
@@ -317,14 +317,17 @@ mod tests {
             Box::pin(async move {
                 let (_sk, pk) = cc
                     .context
-                    .mls_provider().await.unwrap()
+                    .mls_provider()
+                    .await
+                    .unwrap()
                     .crypto()
                     .signature_key_gen(case.signature_scheme())
                     .unwrap();
 
                 assert!(cc
                     .context
-                    .set_raw_external_senders(&mut case.cfg.clone(), vec![pk]).await
+                    .set_raw_external_senders(&mut case.cfg.clone(), vec![pk])
+                    .await
                     .is_ok());
             })
         })
@@ -349,7 +352,8 @@ mod tests {
                 let jwk = wire_e2e_identity::prelude::generate_jwk(alg);
                 let _ = cc
                     .context
-                    .set_raw_external_senders(&mut case.cfg.clone(), vec![jwk]).await
+                    .set_raw_external_senders(&mut case.cfg.clone(), vec![jwk])
+                    .await
                     .unwrap();
             })
         })

@@ -14,12 +14,16 @@
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see http://www.gnu.org/licenses/.
 
+use crate::{
+    prelude::{ClientId, ConversationId, MlsCentral, MlsCentralConfiguration},
+    test_utils::x509::{CertificateParams, X509TestChain, X509TestChainActorArg, X509TestChainArgs},
+    CoreCrypto, CoreCryptoCallbacks,
+};
 pub use openmls_traits::types::SignatureScheme;
 pub use rstest::*;
 pub use rstest_reuse::{self, *};
 use std::collections::HashMap;
 use std::sync::Arc;
-use crate::{prelude::{ClientId, ConversationId, MlsCentral, MlsCentralConfiguration}, test_utils::x509::{CertificateParams, X509TestChain, X509TestChainActorArg, X509TestChainArgs}, CoreCrypto, CoreCryptoCallbacks};
 
 pub mod central;
 pub mod fixtures;
@@ -29,12 +33,12 @@ pub mod x509;
 #[cfg(feature = "proteus")]
 pub mod proteus_utils;
 
+use crate::context::CentralContext;
 use crate::e2e_identity::id::{QualifiedE2eiClientId, WireQualifiedClientId};
+use crate::prelude::Client;
 pub use crate::prelude::{ClientIdentifier, MlsCredentialType, INITIAL_KEYING_MATERIAL_COUNT};
 pub use fixtures::{TestCase, *};
 pub use message::*;
-use crate::context::CentralContext;
-use crate::prelude::Client;
 
 pub const GROUP_SAMPLE_SIZE: usize = 9;
 
@@ -56,12 +60,12 @@ impl ClientContext {
     pub fn replace_x509_chain(&mut self, new_chain: std::sync::Arc<Option<X509TestChain>>) {
         self.x509_test_chain = new_chain;
     }
-    
+
     pub async fn client(&self) -> Client {
         let client_guard = self.context.mls_client().await.unwrap();
         client_guard.as_ref().unwrap().clone()
     }
-    
+
     pub async fn get_client_id(&self) -> ClientId {
         self.client().await.id().clone()
     }
@@ -215,7 +219,7 @@ pub async fn run_cross_signed_tests_with_client_ids<const N: usize, const F: usi
                 let cc = CoreCrypto::from(central);
                 let context = cc.new_transaction().await.unwrap();
                 let central = cc.mls;
-                contexts1.push(ClientContext{
+                contexts1.push(ClientContext {
                     context,
                     central,
                     x509_test_chain: Arc::new(None),
@@ -227,7 +231,7 @@ pub async fn run_cross_signed_tests_with_client_ids<const N: usize, const F: usi
                 let cc = CoreCrypto::from(central);
                 let context = cc.new_transaction().await.unwrap();
                 let central = cc.mls;
-                contexts2.push(ClientContext{
+                contexts2.push(ClientContext {
                     context,
                     central,
                     x509_test_chain: Arc::new(None),
@@ -307,7 +311,9 @@ async fn create_centrals<const N: usize>(
                 .await
                 .unwrap();
             context.finish().await.unwrap();
-            central.callbacks(std::sync::Arc::<ValidationCallbacks>::default()).await;
+            central
+                .callbacks(std::sync::Arc::<ValidationCallbacks>::default())
+                .await;
             central
         }
     });
@@ -364,7 +370,7 @@ pub async fn run_test_with_deterministic_client_ids_and_revocation<const N: usiz
             let centrals = create_centrals(&case, paths1, chain1.as_ref()).await;
             let mut centrals1 = Vec::new();
             for (index, mls_central) in centrals.into_iter().enumerate() {
-                let cc =  CoreCrypto::from(mls_central);
+                let cc = CoreCrypto::from(mls_central);
                 let context = ClientContext {
                     context: cc.new_transaction().await.unwrap(),
                     central: cc.mls,
@@ -375,7 +381,7 @@ pub async fn run_test_with_deterministic_client_ids_and_revocation<const N: usiz
             let centrals = create_centrals(&case, paths2, chain2.as_ref()).await;
             let mut centrals2 = Vec::new();
             for (index, mls_central) in centrals.into_iter().enumerate() {
-                let cc =  CoreCrypto::from(mls_central);
+                let cc = CoreCrypto::from(mls_central);
                 let context = ClientContext {
                     context: cc.new_transaction().await.unwrap(),
                     central: cc.mls,
@@ -421,7 +427,9 @@ pub async fn run_test_wo_clients(
             )
             .unwrap();
             let central = MlsCentral::try_new(configuration).await.unwrap();
-            central.callbacks(std::sync::Arc::<ValidationCallbacks>::default()).await;
+            central
+                .callbacks(std::sync::Arc::<ValidationCallbacks>::default())
+                .await;
             let cc = CoreCrypto::from(central);
             let context = cc.new_transaction().await.unwrap();
             test(ClientContext {

@@ -160,48 +160,34 @@ mod tests {
         #[apply(all_cred_cipher)]
         #[wasm_bindgen_test]
         pub async fn should_add_member(case: TestCase) {
-            run_test_with_client_ids(
-                case.clone(),
-                ["alice", "bob"],
-                move |[alice_central, bob_central]| {
-                    Box::pin(async move {
-                        let id = conversation_id();
-                        alice_central
-                            .context
-                            .new_conversation(&id, case.credential_type, case.cfg.clone())
-                            .await
-                            .unwrap();
-                        let bob_kp = bob_central.get_one_key_package(&case).await;
-                        alice_central.context.new_add_proposal(&id, bob_kp).await.unwrap();
-                        let MlsCommitBundle { welcome, .. } = alice_central
-                            .context
-                            .commit_pending_proposals(&id)
-                            .await
-                            .unwrap()
-                            .unwrap();
-                        alice_central.context.commit_accepted(&id).await.unwrap();
-                        assert_eq!(
-                            alice_central
-                                .get_conversation_unchecked(&id)
-                                .await
-                                .members()
-                                .len(),
-                            2
-                        );
-                        let new_id = bob_central
-                            .context
-                            .process_welcome_message(welcome.unwrap().into(), case.custom_cfg())
-                            .await
-                            .unwrap()
-                            .id;
-                        assert_eq!(id, new_id);
-                        assert!(bob_central
-                            .try_talk_to(&id, &alice_central)
-                            .await
-                            .is_ok());
-                    })
-                },
-            )
+            run_test_with_client_ids(case.clone(), ["alice", "bob"], move |[alice_central, bob_central]| {
+                Box::pin(async move {
+                    let id = conversation_id();
+                    alice_central
+                        .context
+                        .new_conversation(&id, case.credential_type, case.cfg.clone())
+                        .await
+                        .unwrap();
+                    let bob_kp = bob_central.get_one_key_package(&case).await;
+                    alice_central.context.new_add_proposal(&id, bob_kp).await.unwrap();
+                    let MlsCommitBundle { welcome, .. } = alice_central
+                        .context
+                        .commit_pending_proposals(&id)
+                        .await
+                        .unwrap()
+                        .unwrap();
+                    alice_central.context.commit_accepted(&id).await.unwrap();
+                    assert_eq!(alice_central.get_conversation_unchecked(&id).await.members().len(), 2);
+                    let new_id = bob_central
+                        .context
+                        .process_welcome_message(welcome.unwrap().into(), case.custom_cfg())
+                        .await
+                        .unwrap()
+                        .id;
+                    assert_eq!(id, new_id);
+                    assert!(bob_central.try_talk_to(&id, &alice_central).await.is_ok());
+                })
+            })
             .await
         }
     }
@@ -257,26 +243,9 @@ mod tests {
                         .new_conversation(&id, case.credential_type, case.cfg.clone())
                         .await
                         .unwrap();
-                    alice_central
-                        .invite_all(&case, &id, [&bob_central])
-                        .await
-                        .unwrap();
-                    assert_eq!(
-                        alice_central
-                            .get_conversation_unchecked(&id)
-                            .await
-                            .members()
-                            .len(),
-                        2
-                    );
-                    assert_eq!(
-                        bob_central
-                            .get_conversation_unchecked(&id)
-                            .await
-                            .members()
-                            .len(),
-                        2
-                    );
+                    alice_central.invite_all(&case, &id, [&bob_central]).await.unwrap();
+                    assert_eq!(alice_central.get_conversation_unchecked(&id).await.members().len(), 2);
+                    assert_eq!(bob_central.get_conversation_unchecked(&id).await.members().len(), 2);
 
                     let remove_proposal = alice_central
                         .context
@@ -295,14 +264,7 @@ mod tests {
                         .unwrap()
                         .unwrap();
                     alice_central.context.commit_accepted(&id).await.unwrap();
-                    assert_eq!(
-                        alice_central
-                            .get_conversation_unchecked(&id)
-                            .await
-                            .members()
-                            .len(),
-                        1
-                    );
+                    assert_eq!(alice_central.get_conversation_unchecked(&id).await.members().len(), 1);
 
                     bob_central
                         .context

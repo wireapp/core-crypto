@@ -24,10 +24,13 @@ impl MlsCentral {
 
 impl Client {
     async fn e2ei_is_enabled(&self, signature_scheme: SignatureScheme) -> CryptoResult<bool> {
-        let maybe_x509 = self.find_most_recent_credential_bundle(signature_scheme, MlsCredentialType::X509).await;
+        let maybe_x509 = self
+            .find_most_recent_credential_bundle(signature_scheme, MlsCredentialType::X509)
+            .await;
         match maybe_x509 {
             None => {
-                self.find_most_recent_credential_bundle(signature_scheme, MlsCredentialType::Basic).await
+                self.find_most_recent_credential_bundle(signature_scheme, MlsCredentialType::Basic)
+                    .await
                     .ok_or(CryptoError::CredentialNotFound(MlsCredentialType::Basic))?;
                 Ok(false)
             }

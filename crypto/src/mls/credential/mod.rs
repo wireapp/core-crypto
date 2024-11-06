@@ -146,14 +146,19 @@ mod tests {
     use std::sync::Arc;
     use wasm_bindgen_test::*;
 
-    use crate::{mls::credential::x509::CertificatePrivateKey, prelude::{
-        ClientIdentifier, ConversationId, CryptoError, E2eiConversationState, MlsCentral, MlsCentralConfiguration,
-        MlsCredentialType, INITIAL_KEYING_MATERIAL_COUNT,
-    }, test_utils::{
-        x509::{CertificateParams, X509TestChain},
-        *,
-    }, CoreCrypto};
-    
+    use crate::{
+        mls::credential::x509::CertificatePrivateKey,
+        prelude::{
+            ClientIdentifier, ConversationId, CryptoError, E2eiConversationState, MlsCentral, MlsCentralConfiguration,
+            MlsCredentialType, INITIAL_KEYING_MATERIAL_COUNT,
+        },
+        test_utils::{
+            x509::{CertificateParams, X509TestChain},
+            *,
+        },
+        CoreCrypto,
+    };
+
     use super::*;
 
     wasm_bindgen_test_configure!(run_in_browser);
@@ -397,7 +402,7 @@ mod tests {
                 )
                 .await
                 .unwrap();
-            
+
             let charlie_context = ClientContext {
                 context: charlie_transaction,
                 central: charlie_central,
@@ -511,16 +516,16 @@ mod tests {
         let cc = CoreCrypto::from(creator_central);
         let creator_transaction = cc.new_transaction().await?;
         let creator_central = cc.mls;
-        
+
         if let Some(x509_test_chain) = &x509_test_chain {
             x509_test_chain.register_with_central(&creator_transaction).await;
         }
-        let creator_client_context = ClientContext{
+        let creator_client_context = ClientContext {
             context: creator_transaction.clone(),
             central: creator_central,
             x509_test_chain: Arc::new(x509_test_chain.cloned()),
         };
-        
+
         creator_transaction
             .mls_init(
                 creator_identifier,
@@ -557,8 +562,8 @@ mod tests {
         creator_transaction
             .new_conversation(&id, creator_ct, case.cfg.clone())
             .await?;
-        
-        let guest_client_context = ClientContext{
+
+        let guest_client_context = ClientContext {
             context: guest_transaction.clone(),
             central: guest_central,
             x509_test_chain: Arc::new(x509_test_chain.cloned()),

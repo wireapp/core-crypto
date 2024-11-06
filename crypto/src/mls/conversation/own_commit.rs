@@ -168,12 +168,7 @@ mod tests {
                         .await;
 
                     // create a commit. This will also store it in the store
-                    let commit = alice_central
-                        .context
-                        .e2ei_rotate(&id, Some(&cb))
-                        .await
-                        .unwrap()
-                        .commit;
+                    let commit = alice_central.context.e2ei_rotate(&id, Some(&cb)).await.unwrap().commit;
                     assert!(alice_central.pending_commit(&id).await.is_some());
 
                     // since the pending commit is the same as the incoming one, it should succeed
@@ -293,66 +288,62 @@ mod tests {
         if case.is_pure_ciphertext() {
             return;
         };
-        run_test_with_client_ids(
-            case.clone(),
-            ["alice", "bob"],
-            move |[alice_central, bob_central]| {
-                Box::pin(async move {
-                    let conversation_id = conversation_id();
-                    alice_central
-                        .context
-                        .new_conversation(&conversation_id, case.credential_type, case.cfg.clone())
-                        .await
-                        .unwrap();
+        run_test_with_client_ids(case.clone(), ["alice", "bob"], move |[alice_central, bob_central]| {
+            Box::pin(async move {
+                let conversation_id = conversation_id();
+                alice_central
+                    .context
+                    .new_conversation(&conversation_id, case.credential_type, case.cfg.clone())
+                    .await
+                    .unwrap();
 
-                    // No pending commit yet.
-                    assert!(alice_central.pending_commit(&conversation_id).await.is_none());
+                // No pending commit yet.
+                assert!(alice_central.pending_commit(&conversation_id).await.is_none());
 
-                    let bob_key_package = bob_central.rand_key_package(&case).await;
+                let bob_key_package = bob_central.rand_key_package(&case).await;
 
-                    // Create the commit that we're going to tamper with.
-                    let add_bob_message = alice_central
-                        .context
-                        .add_members_to_conversation(&conversation_id, vec![bob_key_package])
-                        .await
-                        .unwrap();
+                // Create the commit that we're going to tamper with.
+                let add_bob_message = alice_central
+                    .context
+                    .add_members_to_conversation(&conversation_id, vec![bob_key_package])
+                    .await
+                    .unwrap();
 
-                    // Now there is a pending commit.
-                    assert!(alice_central.pending_commit(&conversation_id).await.is_some());
+                // Now there is a pending commit.
+                assert!(alice_central.pending_commit(&conversation_id).await.is_some());
 
-                    let commit_serialized = &mut add_bob_message.commit.to_bytes().unwrap();
+                let commit_serialized = &mut add_bob_message.commit.to_bytes().unwrap();
 
-                    // Tamper with the commit; this is the signature region, however,
-                    // the membership tag covers the signature, so this will result in an
-                    // invalid membership tag error emitted by openmls.
-                    commit_serialized[355] = commit_serialized[355].wrapping_add(1);
+                // Tamper with the commit; this is the signature region, however,
+                // the membership tag covers the signature, so this will result in an
+                // invalid membership tag error emitted by openmls.
+                commit_serialized[355] = commit_serialized[355].wrapping_add(1);
 
-                    let decryption_result = alice_central
-                        .context
-                        .decrypt_message(&conversation_id, commit_serialized)
-                        .await;
-                    assert!(matches!(
-                        decryption_result.unwrap_err(),
-                        CryptoError::MlsError(MlsError::MlsMessageError(ProcessMessageError::ValidationError(
-                            ValidationError::InvalidMembershipTag
-                        )))
-                    ));
+                let decryption_result = alice_central
+                    .context
+                    .decrypt_message(&conversation_id, commit_serialized)
+                    .await;
+                assert!(matches!(
+                    decryption_result.unwrap_err(),
+                    CryptoError::MlsError(MlsError::MlsMessageError(ProcessMessageError::ValidationError(
+                        ValidationError::InvalidMembershipTag
+                    )))
+                ));
 
-                    // There is still a pending commit.
-                    assert!(alice_central.pending_commit(&conversation_id).await.is_some());
+                // There is still a pending commit.
+                assert!(alice_central.pending_commit(&conversation_id).await.is_some());
 
-                    // Positive case: Alice decrypts the commit...
-                    assert!(alice_central
-                        .context
-                        .decrypt_message(&conversation_id, &add_bob_message.commit.to_bytes().unwrap())
-                        .await
-                        .is_ok());
+                // Positive case: Alice decrypts the commit...
+                assert!(alice_central
+                    .context
+                    .decrypt_message(&conversation_id, &add_bob_message.commit.to_bytes().unwrap())
+                    .await
+                    .is_ok());
 
-                    // ...and has cleared the pending commit.
-                    assert!(alice_central.pending_commit(&conversation_id).await.is_none());
-                })
-            },
-        )
+                // ...and has cleared the pending commit.
+                assert!(alice_central.pending_commit(&conversation_id).await.is_none());
+            })
+        })
         .await
     }
 }

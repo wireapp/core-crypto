@@ -29,17 +29,15 @@ pub mod platform {
     }
 }
 
-use std::ops::DerefMut;
 pub use self::platform::*;
-use crate::{
-    entities::{Entity, EntityFindParams, StringEntityId},
-};
+use crate::entities::{Entity, EntityFindParams, StringEntityId};
+use std::ops::DerefMut;
 
 use crate::entities::{EntityTransactionExt, UniqueEntity};
+use crate::transaction::KeystoreTransaction;
 use crate::{CryptoKeystoreError, CryptoKeystoreResult};
 use async_lock::{Mutex, MutexGuard};
 use std::sync::Arc;
-use crate::transaction::KeystoreTransaction;
 
 /// Limit on the length of a blob to be stored in the database.
 ///
@@ -135,7 +133,10 @@ impl Connection {
             .into();
         #[allow(clippy::arc_with_non_send_sync)] // see https://github.com/rustwasm/wasm-bindgen/pull/955
         let conn = Arc::new(conn);
-        Ok(Self { conn, transaction: Default::default() })
+        Ok(Self {
+            conn,
+            transaction: Default::default(),
+        })
     }
 
     pub async fn open_in_memory_with_key(name: impl AsRef<str>, key: impl AsRef<str>) -> CryptoKeystoreResult<Self> {
@@ -144,7 +145,10 @@ impl Connection {
             .into();
         #[allow(clippy::arc_with_non_send_sync)] // see https://github.com/rustwasm/wasm-bindgen/pull/955
         let conn = Arc::new(conn);
-        Ok(Self { conn, transaction: Default::default() })
+        Ok(Self {
+            conn,
+            transaction: Default::default(),
+        })
     }
 
     pub async fn borrow_conn(&self) -> CryptoKeystoreResult<MutexGuard<'_, KeystoreDatabaseConnection>> {
@@ -153,7 +157,9 @@ impl Connection {
 
     pub async fn wipe(self) -> CryptoKeystoreResult<()> {
         if self.transaction.lock().await.is_some() {
-            return Err(CryptoKeystoreError::TransactionInProgress{attempted_operation: "wipe()".to_string()});
+            return Err(CryptoKeystoreError::TransactionInProgress {
+                attempted_operation: "wipe()".to_string(),
+            });
         }
         let conn: KeystoreDatabaseConnection = Arc::into_inner(self.conn).unwrap().into_inner();
 
@@ -163,7 +169,9 @@ impl Connection {
 
     pub async fn close(self) -> CryptoKeystoreResult<()> {
         if self.transaction.lock().await.is_some() {
-            return Err(CryptoKeystoreError::TransactionInProgress{attempted_operation: "close()".to_string()});
+            return Err(CryptoKeystoreError::TransactionInProgress {
+                attempted_operation: "close()".to_string(),
+            });
         }
         let conn: KeystoreDatabaseConnection = Arc::into_inner(self.conn).unwrap().into_inner();
         conn.close().await?;
@@ -173,12 +181,14 @@ impl Connection {
     pub async fn new_transaction(&self) -> CryptoKeystoreResult<()> {
         let mut transaction = self.transaction.lock().await;
         if transaction.is_some() {
-            return Err(CryptoKeystoreError::TransactionInProgress{attempted_operation: "new_transaction()".to_string()});
+            return Err(CryptoKeystoreError::TransactionInProgress {
+                attempted_operation: "new_transaction()".to_string(),
+            });
         }
         *transaction = Some(KeystoreTransaction::new().await?);
         Ok(())
     }
-    
+
     pub async fn commit_transaction(&self) -> CryptoKeystoreResult<()> {
         let mut transaction_guard = self.transaction.lock().await;
         let Some(transaction) = transaction_guard.as_ref() else {
@@ -199,9 +209,7 @@ impl Connection {
     }
 
     pub async fn child_groups<
-        E: Entity<ConnectionType = KeystoreDatabaseConnection>
-        + crate::entities::PersistedMlsGroupExt
-        + Sync,
+        E: Entity<ConnectionType = KeystoreDatabaseConnection> + crate::entities::PersistedMlsGroupExt + Sync,
     >(
         &self,
         entity: E,
@@ -215,7 +223,7 @@ impl Connection {
         };
         transaction.child_groups(entity, persisted_records).await
     }
-    
+
     pub async fn save<E: Entity<ConnectionType = KeystoreDatabaseConnection> + Sync + EntityTransactionExt>(
         &self,
         entity: E,
@@ -226,8 +234,11 @@ impl Connection {
         };
         transaction.save_mut(entity).await
     }
-    
-    pub async fn remove<E: Entity<ConnectionType = KeystoreDatabaseConnection> + EntityTransactionExt, S: AsRef<[u8]>>(
+
+    pub async fn remove<
+        E: Entity<ConnectionType = KeystoreDatabaseConnection> + EntityTransactionExt,
+        S: AsRef<[u8]>,
+    >(
         &self,
         id: S,
     ) -> CryptoKeystoreResult<()> {
@@ -245,7 +256,6 @@ impl Connection {
         };
         transaction.cred_delete_by_credential(cred).await
     }
-
 }
 
 #[cfg_attr(target_family = "wasm", async_trait::async_trait(?Send))]
@@ -255,24 +265,24 @@ impl FetchFromDatabase for Connection {
         &self,
         id: &[u8],
     ) -> CryptoKeystoreResult<Option<E>> {
-        // If a transaction is in progress... 
+        // If a transaction is in progress...
         if let Some(transaction) = self.transaction.lock().await.as_ref() {
-            //... and it has information about this entity, ... 
+            //... and it has information about this entity, ...
             if let Some(result) = transaction.find::<E>(id).await? {
                 // ... return that result
                 return Ok(result);
             }
         }
-        
+
         // Otherwise get it from the database
         let mut conn = self.conn.lock().await;
         E::find_one(&mut conn, &id.into()).await
     }
 
     async fn find_unique<U: UniqueEntity>(&self) -> CryptoKeystoreResult<U> {
-        // If a transaction is in progress... 
+        // If a transaction is in progress...
         if let Some(transaction) = self.transaction.lock().await.as_ref() {
-            //... and it has information about this entity, ... 
+            //... and it has information about this entity, ...
             if let Some(result) = transaction.find_unique::<U>().await? {
                 // ... return that result
                 return Ok(result);
@@ -289,7 +299,7 @@ impl FetchFromDatabase for Connection {
     ) -> CryptoKeystoreResult<Vec<E>> {
         let mut conn = self.conn.lock().await;
         let persisted_records = E::find_all(&mut conn, params.clone()).await?;
-        
+
         let transaction_guard = self.transaction.lock().await;
         let Some(transaction) = transaction_guard.as_ref() else {
             return Ok(persisted_records);
@@ -314,7 +324,7 @@ impl FetchFromDatabase for Connection {
 
     async fn count<E: Entity<ConnectionType = KeystoreDatabaseConnection>>(&self) -> CryptoKeystoreResult<usize> {
         if self.transaction.lock().await.is_some() {
-            // Unfortunately, we have to do this because of possible record id overlap 
+            // Unfortunately, we have to do this because of possible record id overlap
             // between cache and db.
             return Ok(self.find_all::<E>(Default::default()).await?.len());
         };

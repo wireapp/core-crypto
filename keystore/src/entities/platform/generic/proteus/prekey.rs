@@ -14,13 +14,13 @@
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see http://www.gnu.org/licenses/.
 
+use crate::connection::TransactionWrapper;
 use crate::entities::{EntityFindParams, EntityTransactionExt, ProteusPrekey, StringEntityId};
 use crate::{
     connection::KeystoreDatabaseConnection,
     entities::{Entity, EntityBase},
     MissingKeyErrorKind,
 };
-use crate::connection::TransactionWrapper;
 
 impl Entity for ProteusPrekey {
     fn id_raw(&self) -> &[u8] {
@@ -134,7 +134,10 @@ impl EntityTransactionExt for ProteusPrekey {
         Ok(())
     }
 
-    async fn delete_fail_on_missing_id(transaction: &TransactionWrapper<'_>, id: StringEntityId<'_>) -> crate::CryptoKeystoreResult<()> {
+    async fn delete_fail_on_missing_id(
+        transaction: &TransactionWrapper<'_>,
+        id: StringEntityId<'_>,
+    ) -> crate::CryptoKeystoreResult<()> {
         let id = ProteusPrekey::id_from_slice(id.as_slice());
         let updated = transaction.execute("DELETE FROM proteus_prekeys WHERE id = ?", [id])?;
         if updated > 0 {

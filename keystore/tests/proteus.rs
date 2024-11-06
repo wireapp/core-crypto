@@ -23,7 +23,8 @@ mod common;
 mod tests {
     use crate::common::*;
     use core_crypto_keystore::{
-        entities::{EntityBase, ProteusPrekey}, MissingKeyErrorKind,
+        entities::{EntityBase, ProteusPrekey},
+        MissingKeyErrorKind,
     };
     use proteus_wasm::keys::{PreKey, PreKeyId};
     use wasm_bindgen_test::*;

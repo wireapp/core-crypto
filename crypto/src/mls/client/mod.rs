@@ -415,11 +415,13 @@ impl Client {
         match ct {
             MlsCredentialType::Basic => {
                 self.init_basic_credential_bundle_if_missing(backend, sc).await?;
-                self.find_most_recent_credential_bundle(sc, ct).await
+                self.find_most_recent_credential_bundle(sc, ct)
+                    .await
                     .ok_or(CryptoError::CredentialNotFound(ct))
             }
             MlsCredentialType::X509 => self
-                .find_most_recent_credential_bundle(sc, ct).await
+                .find_most_recent_credential_bundle(sc, ct)
+                .await
                 .ok_or(CryptoError::E2eiEnrollmentNotDone),
         }
     }
@@ -429,7 +431,9 @@ impl Client {
         backend: &TransactionalCryptoProvider,
         sc: SignatureScheme,
     ) -> CryptoResult<()> {
-        let existing_cb = self.find_most_recent_credential_bundle(sc, MlsCredentialType::Basic).await;
+        let existing_cb = self
+            .find_most_recent_credential_bundle(sc, MlsCredentialType::Basic)
+            .await;
         if existing_cb.is_none() {
             debug!(id:% = self.id(); "Initializing basic credential bundle");
             let cb = Self::new_basic_credential_bundle(self.id(), sc, backend)?;
@@ -499,12 +503,12 @@ impl Client {
 
 #[cfg(test)]
 mod tests {
-    use core_crypto_keystore::entities::{EntityFindParams, MlsSignatureKeyPair};
-    use wasm_bindgen_test::*;
-    use core_crypto_keystore::connection::FetchFromDatabase;
     use crate::prelude::ClientId;
     use crate::test_utils::*;
+    use core_crypto_keystore::connection::FetchFromDatabase;
+    use core_crypto_keystore::entities::{EntityFindParams, MlsSignatureKeyPair};
     use mls_crypto_provider::MlsCryptoProvider;
+    use wasm_bindgen_test::*;
 
     use super::Client;
 
@@ -575,7 +579,8 @@ mod tests {
                     // Make sure both client id and PK are intact
                     assert_eq!(alice.id(), &client_id);
                     let cb = alice
-                        .find_most_recent_credential_bundle(case.signature_scheme(), case.credential_type).await
+                        .find_most_recent_credential_bundle(case.signature_scheme(), case.credential_type)
+                        .await
                         .unwrap();
                     let client_id: ClientId = cb.credential().identity().into();
                     assert_eq!(&client_id, handles.first().unwrap());
