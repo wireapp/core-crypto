@@ -97,8 +97,7 @@ impl CentralContext {
         custom_cfg: MlsCustomConfiguration,
         credential_type: MlsCredentialType,
     ) -> CryptoResult<MlsConversationInitBundle> {
-        let mut client_guard = self.mls_client_mut().await?;
-        let client = client_guard.as_mut().ok_or(CryptoError::MlsNotInitialized)?;
+        let client = &self.mls_client().await?;
 
         let cs: MlsCiphersuite = group_info.ciphersuite().into();
         let mls_provider = self.mls_provider().await?;

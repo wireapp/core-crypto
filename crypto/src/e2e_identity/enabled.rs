@@ -7,8 +7,7 @@ use openmls_traits::types::SignatureScheme;
 impl CentralContext {
     /// See [MlsCentral::e2ei_is_enabled]
     pub async fn e2ei_is_enabled(&self, signature_scheme: SignatureScheme) -> CryptoResult<bool> {
-        let client_guard = self.mls_client().await?;
-        let client = client_guard.as_ref().ok_or(CryptoError::MlsNotInitialized)?;
+        let client = self.mls_client().await?;
         client.e2ei_is_enabled(signature_scheme).await
     }
 }
@@ -16,25 +15,23 @@ impl CentralContext {
 impl MlsCentral {
     /// Returns true when end-to-end-identity is enabled for the given SignatureScheme
     pub async fn e2ei_is_enabled(&self, signature_scheme: SignatureScheme) -> CryptoResult<bool> {
-        let client_guard = self.mls_client().await;
-        let client = client_guard.as_ref().ok_or(CryptoError::MlsNotInitialized)?;
-        client.e2ei_is_enabled(signature_scheme).await
+        self.mls_client.e2ei_is_enabled(signature_scheme).await
     }
 }
 
 impl Client {
     async fn e2ei_is_enabled(&self, signature_scheme: SignatureScheme) -> CryptoResult<bool> {
-        let maybe_x509 = self
+        let x509_result = self
             .find_most_recent_credential_bundle(signature_scheme, MlsCredentialType::X509)
             .await;
-        match maybe_x509 {
-            None => {
+        match x509_result {
+            Err(CryptoError::CredentialNotFound(MlsCredentialType::X509)) => {
                 self.find_most_recent_credential_bundle(signature_scheme, MlsCredentialType::Basic)
-                    .await
-                    .ok_or(CryptoError::CredentialNotFound(MlsCredentialType::Basic))?;
+                    .await?;
                 Ok(false)
             }
-            Some(_) => Ok(true),
+            Err(e) => Err(e),
+            Ok(_) => Ok(true),
         }
     }
 }

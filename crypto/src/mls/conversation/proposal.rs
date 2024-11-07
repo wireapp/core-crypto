@@ -102,11 +102,7 @@ impl MlsConversation {
             .signature_key;
 
         let proposal = if let Some(leaf_node) = leaf_node {
-            let leaf_node_signer = &self
-                .find_most_recent_credential_bundle(client)
-                .await?
-                .ok_or(CryptoError::IdentityInitializationError)?
-                .signature_key;
+            let leaf_node_signer = &self.find_most_recent_credential_bundle(client).await?.signature_key;
 
             self.group
                 .propose_explicit_self_update(backend, msg_signer, leaf_node, leaf_node_signer)

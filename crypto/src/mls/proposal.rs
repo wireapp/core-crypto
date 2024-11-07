@@ -138,8 +138,7 @@ impl CentralContext {
     /// returned as well, when for example there's a commit pending to be merged
     async fn new_proposal(&self, id: &ConversationId, proposal: MlsProposal) -> CryptoResult<MlsProposalBundle> {
         let conversation = self.get_conversation(id).await?;
-        let client_guard = self.mls_client().await?;
-        let client = client_guard.as_ref().ok_or(CryptoError::MlsNotInitialized)?;
+        let client = &self.mls_client().await?;
         proposal
             .create(client, &self.mls_provider().await?, conversation.write().await)
             .await

@@ -47,8 +47,7 @@ impl CentralContext {
         };
         let guard = self.callbacks().await?;
         let callbacks = guard.as_ref().map(|boxed| boxed.as_ref());
-        let client_guard = self.mls_client().await?;
-        let client = client_guard.as_ref().ok_or(CryptoError::MlsNotInitialized)?;
+        let client = &self.mls_client().await?;
         let mls_provider = self.mls_provider().await?;
         conversation
             .restore_pending_messages(
