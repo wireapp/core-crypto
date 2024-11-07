@@ -26,6 +26,7 @@ import org.assertj.core.api.AssertionsForInterfaceTypes.assertThatNoException
 import uniffi.core_crypto.CryptoError
 import java.nio.file.Files
 import kotlin.test.Test
+import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertIs
 
@@ -59,6 +60,20 @@ class MLSTest {
         }
 
         assertIs<CryptoError.InvalidContext>(expectedException.error)
+    }
+
+    @Test
+    fun error_is_propagated_by_transaction() = runTest {
+        val cc = initCc()
+        val expectedException = RuntimeException("Expected Exception")
+
+        val actualException = assertFailsWith<RuntimeException> {
+            cc.transaction<Unit> {
+                throw expectedException
+            }
+        }
+
+        assertEquals(expectedException, actualException)
     }
 
     @Test

@@ -271,6 +271,51 @@ test("Using invalid context throws error", async () => {
     await ctx.close();
 });
 
+test("JS Error is propagated by transaction", async () => {
+    const [ctx, page] = await initBrowser();
+    await page.evaluate(async () => {
+        const { CoreCrypto, Ciphersuite } = await import("./corecrypto.js");
+        const ciphersuite =
+            Ciphersuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519;
+
+        const client2Config = {
+            databaseName: "test",
+            key: "test",
+            ciphersuites: [ciphersuite],
+            clientId: "test",
+        };
+
+        const cc = await CoreCrypto.init(client2Config);
+
+        const expectedError = new Error("Message of expected error", {
+            cause: "This is expected!",
+        });
+        let thrownError;
+        try {
+            await cc.transaction(() => {
+                throw expectedError;
+            });
+        } catch (e) {
+            thrownError = e;
+        }
+
+        if (!(thrownError instanceof Error)) {
+            throw new Error("Error wasn't thrown");
+        }
+        if (
+            !thrownError.message ||
+            thrownError.message !== expectedError.message
+        ) {
+            throw new Error(
+                "Error message is not equal to expected error message"
+            );
+        }
+    });
+
+    await page.close();
+    await ctx.close();
+});
+
 test("can import ciphersuite enum", async () => {
     const [ctx, page] = await initBrowser();
 
