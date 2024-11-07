@@ -117,14 +117,13 @@ impl CentralContext {
         let group_id = GroupId::from_slice(&conversation_id[..]);
         let mls_provider = self.mls_provider().await?;
 
-        let mut client_guard = self.mls_client_mut().await?;
-        let client = client_guard.as_mut().ok_or(CryptoError::MlsNotInitialized)?;
+        let client = self.mls_client().await?;
         let cb = client
             .find_most_recent_credential_bundle(ciphersuite.signature_algorithm(), credential_type)
             .await;
         let cb = match (cb, credential_type) {
-            (Some(cb), _) => cb,
-            (None, MlsCredentialType::Basic) => {
+            (Ok(cb), _) => cb,
+            (Err(CryptoError::CredentialNotFound(_)), MlsCredentialType::Basic) => {
                 // If a Basic CredentialBundle does not exist, just create one instead of failing
                 client
                     .init_basic_credential_bundle_if_missing(&mls_provider, ciphersuite.signature_algorithm())
@@ -132,10 +131,12 @@ impl CentralContext {
 
                 client
                     .find_most_recent_credential_bundle(ciphersuite.signature_algorithm(), credential_type)
-                    .await
-                    .ok_or(CryptoError::CredentialNotFound(credential_type))?
+                    .await?
             }
-            (None, MlsCredentialType::X509) => return Err(CryptoError::E2eiEnrollmentNotDone),
+            (Err(CryptoError::CredentialNotFound(_)), MlsCredentialType::X509) => {
+                return Err(CryptoError::E2eiEnrollmentNotDone)
+            }
+            (Err(e), _) => return Err(e),
         };
         let kp = client
             .generate_one_keypackage_from_credential_bundle(&mls_provider, ciphersuite, &cb)

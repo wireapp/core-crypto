@@ -392,8 +392,7 @@ impl CentralContext {
         let parent_conversation = self.get_parent_conversation(&conversation).await?;
         let guard = self.callbacks().await?;
         let callbacks = guard.as_ref().map(|boxed| boxed.as_ref());
-        let client_guard = self.mls_client().await?;
-        let client = client_guard.as_ref().ok_or(CryptoError::MlsNotInitialized)?;
+        let client = &self.mls_client().await?;
         let decrypt_message = conversation
             .write()
             .await

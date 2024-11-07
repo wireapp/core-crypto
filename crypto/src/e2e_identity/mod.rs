@@ -588,7 +588,7 @@ pub(crate) mod tests {
     use crate::{
         e2e_identity::{id::QualifiedE2eiClientId, tests::x509::X509TestChain},
         prelude::*,
-        test_utils::{central::TEAM, *},
+        test_utils::{context::TEAM, *},
         CryptoResult,
     };
 

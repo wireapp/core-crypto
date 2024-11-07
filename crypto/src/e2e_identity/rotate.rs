@@ -34,14 +34,14 @@ impl CentralContext {
         expiry_sec: u32,
         ciphersuite: MlsCiphersuite,
     ) -> CryptoResult<E2eiEnrollment> {
-        let client_guard = self.mls_client().await?;
-        let client = client_guard.as_ref().ok_or(CryptoError::MlsNotInitialized)?;
         let mls_provider = self.mls_provider().await?;
         // look for existing credential of type basic. If there isn't, then this method has been misused
-        let cb = client
+        let cb = self
+            .mls_client()
+            .await?
             .find_most_recent_credential_bundle(ciphersuite.signature_algorithm(), MlsCredentialType::Basic)
             .await
-            .ok_or(E2eIdentityError::MissingExistingClient(MlsCredentialType::Basic))?;
+            .map_err(|_| E2eIdentityError::MissingExistingClient(MlsCredentialType::Basic))?;
         let client_id = cb.credential().identity().into();
 
         let sign_keypair = Some((&cb.signature_key).try_into()?);
@@ -73,14 +73,14 @@ impl CentralContext {
         expiry_sec: u32,
         ciphersuite: MlsCiphersuite,
     ) -> CryptoResult<E2eiEnrollment> {
-        let client_guard = self.mls_client().await?;
-        let client = client_guard.as_ref().ok_or(CryptoError::MlsNotInitialized)?;
         let mls_provider = self.mls_provider().await?;
         // look for existing credential of type x509. If there isn't, then this method has been misused
-        let cb = client
+        let cb = self
+            .mls_client()
+            .await?
             .find_most_recent_credential_bundle(ciphersuite.signature_algorithm(), MlsCredentialType::X509)
             .await
-            .ok_or(E2eIdentityError::MissingExistingClient(MlsCredentialType::X509))?;
+            .map_err(|_| E2eIdentityError::MissingExistingClient(MlsCredentialType::X509))?;
         let client_id = cb.credential().identity().into();
         let sign_keypair = Some((&cb.signature_key).try_into()?);
         let existing_identity = cb
@@ -141,9 +141,8 @@ impl CentralContext {
             certificate_chain,
             private_key,
         };
+        let client = &self.mls_client().await?;
 
-        let mut client_guard = self.mls_client_mut().await?;
-        let client = client_guard.as_mut().ok_or(CryptoError::MlsNotInitialized)?;
         let new_cb = client
             .save_new_x509_credential_bundle(
                 &self.mls_provider().await?.keystore(),
@@ -222,8 +221,7 @@ impl CentralContext {
         id: &crate::prelude::ConversationId,
         cb: Option<&CredentialBundle>,
     ) -> CryptoResult<MlsCommitBundle> {
-        let client_guard = self.mls_client().await?;
-        let client = client_guard.as_ref().ok_or(CryptoError::MlsNotInitialized)?;
+        let client = &self.mls_client().await?;
         self.get_conversation(id)
             .await?
             .write()
@@ -246,7 +244,7 @@ impl MlsConversation {
             None => &client
                 .find_most_recent_credential_bundle(self.ciphersuite().signature_algorithm(), MlsCredentialType::X509)
                 .await
-                .ok_or(E2eIdentityError::MissingExistingClient(MlsCredentialType::X509))?,
+                .map_err(|_| E2eIdentityError::MissingExistingClient(MlsCredentialType::X509))?,
         };
         let mut leaf_node = self.group.own_leaf().ok_or(CryptoError::InternalMlsError)?.clone();
         leaf_node.set_credential_with_key(cb.to_mls_credential_with_key());
@@ -340,7 +338,7 @@ pub(crate) mod tests {
     pub(crate) mod all {
         use openmls_traits::types::SignatureScheme;
 
-        use crate::test_utils::central::TEAM;
+        use crate::test_utils::context::TEAM;
 
         use super::*;
 
@@ -637,10 +635,10 @@ pub(crate) mod tests {
                     assert_eq!(old_cb, old_cb_found);
                     let (cid, all_credentials, scs, old_nb_identities) = {
                         let alice_client = alice_central.client().await;
-                        let old_nb_identities = alice_client.identities.as_vec().await.len();
+                        let old_nb_identities = alice_client.identities_count().await.unwrap();
 
                         // Let's simulate an app crash, client gets deleted and restored from keystore
-                        let cid = alice_client.id().clone();
+                        let cid = alice_client.id().await.unwrap();
                         let scs = HashSet::from([case.signature_scheme()]);
                         let all_credentials = alice_central
                             .context
@@ -665,15 +663,12 @@ pub(crate) mod tests {
                     backend.keystore().commit_transaction().await.unwrap();
                     backend.keystore().new_transaction().await.unwrap();
 
-                    let client = Client::load(backend, &cid, all_credentials, scs).await.unwrap();
-                    let mut alice_client_guard = alice_central.context.mls_client_mut().await.unwrap();
-                    *alice_client_guard = Some(client);
-                    drop(alice_client_guard);
+                    let new_client = Client::default();
 
-                    let alice_client = alice_central.client().await;
+                    new_client.load(backend, &cid, all_credentials, scs).await.unwrap();
 
                     // Verify that Alice has the same credentials
-                    let cb = alice_central
+                    let cb = new_client
                         .find_most_recent_credential_bundle(case.signature_scheme(), MlsCredentialType::X509)
                         .await
                         .unwrap();
@@ -681,14 +676,14 @@ pub(crate) mod tests {
                         .to_mls_credential_with_key()
                         .extract_identity(case.ciphersuite(), None)
                         .unwrap();
-                    // backend.keystore().commit_transaction().await.unwrap();
+
                     assert_eq!(identity.x509_identity.as_ref().unwrap().display_name, NEW_DISPLAY_NAME);
                     assert_eq!(
                         identity.x509_identity.as_ref().unwrap().handle,
                         format!("wireapp://%40{NEW_HANDLE}@world.com")
                     );
 
-                    assert_eq!(alice_client.identities.as_vec().await.len(), old_nb_identities);
+                    assert_eq!(new_client.identities_count().await.unwrap(), old_nb_identities);
                 })
             })
             .await

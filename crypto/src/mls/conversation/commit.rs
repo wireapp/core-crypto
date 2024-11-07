@@ -41,10 +41,9 @@ impl CentralContext {
         id: &ConversationId,
         key_packages: Vec<KeyPackageIn>,
     ) -> CryptoResult<MlsConversationCreationMessage> {
-        let client_guard = self.mls_client().await?;
-        let client = client_guard.as_ref().ok_or(CryptoError::MlsNotInitialized)?;
+        let client = self.mls_client().await?;
         if let Some(callbacks) = self.callbacks().await?.as_ref() {
-            let client_id = client.id().clone();
+            let client_id = client.id().await?;
             if !callbacks.authorize(id.clone(), client_id).await {
                 return Err(CryptoError::Unauthorized);
             }
@@ -53,7 +52,7 @@ impl CentralContext {
             .await?
             .write()
             .await
-            .add_members(client, key_packages, &self.mls_provider().await?)
+            .add_members(&client, key_packages, &self.mls_provider().await?)
             .await
     }
 
@@ -76,10 +75,9 @@ impl CentralContext {
         id: &ConversationId,
         clients: &[ClientId],
     ) -> CryptoResult<MlsCommitBundle> {
-        let client_guard = self.mls_client().await?;
-        let client = client_guard.as_ref().ok_or(CryptoError::MlsNotInitialized)?;
+        let client = self.mls_client().await?;
         if let Some(callbacks) = self.callbacks().await?.as_ref() {
-            let client_id = client.id().clone();
+            let client_id = client.id().await?;
             if !callbacks.authorize(id.clone(), client_id).await {
                 return Err(CryptoError::Unauthorized);
             }
@@ -88,7 +86,7 @@ impl CentralContext {
             .await?
             .write()
             .await
-            .remove_members(client, clients, &self.mls_provider().await?)
+            .remove_members(&client, clients, &self.mls_provider().await?)
             .await
     }
 
@@ -107,13 +105,12 @@ impl CentralContext {
     /// from OpenMls and the KeyStore
     #[cfg_attr(test, crate::idempotent)]
     pub async fn update_keying_material(&self, id: &ConversationId) -> CryptoResult<MlsCommitBundle> {
-        let client_guard = self.mls_client().await?;
-        let client = client_guard.as_ref().ok_or(CryptoError::MlsNotInitialized)?;
+        let client = self.mls_client().await?;
         self.get_conversation(id)
             .await?
             .write()
             .await
-            .update_keying_material(client, &self.mls_provider().await?, None, None)
+            .update_keying_material(&client, &self.mls_provider().await?, None, None)
             .await
     }
 
@@ -129,13 +126,12 @@ impl CentralContext {
     /// Errors can be originating from the KeyStore and OpenMls
     #[cfg_attr(test, crate::idempotent)]
     pub async fn commit_pending_proposals(&self, id: &ConversationId) -> CryptoResult<Option<MlsCommitBundle>> {
-        let client_guard = self.mls_client().await?;
-        let client = client_guard.as_ref().ok_or(CryptoError::MlsNotInitialized)?;
+        let client = self.mls_client().await?;
         self.get_conversation(id)
             .await?
             .write()
             .await
-            .commit_pending_proposals(client, &self.mls_provider().await?)
+            .commit_pending_proposals(&client, &self.mls_provider().await?)
             .await
     }
 }
@@ -151,11 +147,7 @@ impl MlsConversation {
         key_packages: Vec<KeyPackageIn>,
         backend: &MlsCryptoProvider,
     ) -> CryptoResult<MlsConversationCreationMessage> {
-        let signer = &self
-            .find_most_recent_credential_bundle(client)
-            .await?
-            .ok_or(CryptoError::IdentityInitializationError)?
-            .signature_key;
+        let signer = &self.find_most_recent_credential_bundle(client).await?.signature_key;
 
         // No need to also check pending proposals since they should already have been scanned while decrypting the proposal message
         let crl_new_distribution_points = get_new_crl_distribution_points(
@@ -213,11 +205,7 @@ impl MlsConversation {
                 Ok(acc)
             })?;
 
-        let signer = &self
-            .find_most_recent_credential_bundle(client)
-            .await?
-            .ok_or(CryptoError::IdentityInitializationError)?
-            .signature_key;
+        let signer = &self.find_most_recent_credential_bundle(client).await?.signature_key;
 
         let (commit, welcome, gi) = self
             .group
@@ -248,12 +236,7 @@ impl MlsConversation {
         leaf_node: Option<LeafNode>,
     ) -> CryptoResult<MlsCommitBundle> {
         let cb = match cb {
-            None => &self
-                .find_most_recent_credential_bundle(client)
-                .await
-                .ok()
-                .flatten()
-                .ok_or(CryptoError::IdentityInitializationError)?,
+            None => &self.find_most_recent_credential_bundle(client).await?,
             Some(cb) => cb,
         };
         let (commit, welcome, group_info) = self
@@ -283,11 +266,7 @@ impl MlsConversation {
         backend: &MlsCryptoProvider,
     ) -> CryptoResult<Option<MlsCommitBundle>> {
         if self.group.pending_proposals().count() > 0 {
-            let signer = &self
-                .find_most_recent_credential_bundle(client)
-                .await?
-                .ok_or(CryptoError::IdentityInitializationError)?
-                .signature_key;
+            let signer = &self.find_most_recent_credential_bundle(client).await?.signature_key;
 
             let (commit, welcome, gi) = self
                 .group
