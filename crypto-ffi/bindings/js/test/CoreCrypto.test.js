@@ -316,6 +316,59 @@ test("JS Error is propagated by transaction", async () => {
     await ctx.close();
 });
 
+test("Transaction is rolled back after error", async () => {
+    const [ctx, page] = await initBrowser();
+
+    await page.evaluate(async () => {
+        const { CoreCrypto, Ciphersuite, CredentialType } = await import(
+            "./corecrypto.js"
+        );
+
+        const ciphersuite =
+            Ciphersuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519;
+        const credentialType = CredentialType.Basic;
+        const alice = await CoreCrypto.deferredInit({
+            databaseName: "alice test",
+            key: "test",
+        });
+
+        const signaturePks = await alice.mlsGenerateKeypair([ciphersuite]);
+
+        const shinyClientId = "my:shiny:client@wire.com";
+        const encoder = new TextEncoder();
+        const clientId = encoder.encode(shinyClientId);
+
+        await alice.mlsInitWithClientId(clientId, signaturePks, [ciphersuite]);
+
+        const conversationId = encoder.encode("testConversation");
+
+        const expectedError = new Error("Message of expected error", {
+            cause: "This is expected!",
+        });
+        let thrownError;
+
+        try {
+            await alice.transaction(async (ctx) => {
+                await ctx.createConversation(conversationId, credentialType);
+                throw expectedError;
+            });
+        } catch (e) {
+            thrownError = e;
+        }
+        if (!(thrownError instanceof Error)) {
+            throw new Error("Error wasn't thrown");
+        }
+
+        // This would fail with a "Conversation already exists" error, if the above transaction hadn't been rolled back.
+        await alice.transaction(async (ctx) => {
+            await ctx.createConversation(conversationId, credentialType);
+        });
+    });
+
+    await page.close();
+    await ctx.close();
+});
+
 test("can import ciphersuite enum", async () => {
     const [ctx, page] = await initBrowser();
 

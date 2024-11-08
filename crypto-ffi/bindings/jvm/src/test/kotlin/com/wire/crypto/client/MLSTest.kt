@@ -77,6 +77,31 @@ class MLSTest {
     }
 
     @Test
+    fun transaction_rolls_back_on_error() = runTest {
+        val cc = initCc()
+        cc.transaction { ctx ->
+            ctx.mlsInit(aliceId.toClientId())
+        }
+
+        val expectedException = RuntimeException("Expected Exception")
+
+        val actualException = assertFailsWith<RuntimeException> {
+            cc.transaction<Unit> { ctx ->
+                ctx.createConversation(id)
+                throw expectedException
+            }
+        }
+
+        assertEquals(expectedException, actualException)
+
+        // This would fail with a "Conversation already exists" exception, if the above
+        // transaction hadn't been rolled back.
+        cc.transaction { ctx ->
+            ctx.createConversation(id)
+        }
+    }
+
+    @Test
     fun getPublicKey_should_return_non_empty_result() = runTest {
         val (alice) = newClients(aliceId)
         assertThat(alice.getPublicKey(Ciphersuite.DEFAULT).value).isNotEmpty()
