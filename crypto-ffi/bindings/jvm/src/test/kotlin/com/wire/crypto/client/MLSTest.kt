@@ -36,19 +36,19 @@ class MLSTest {
     }
 
     @Test
-    fun `externally generated ClientId should init the MLS client`() = runTest {
+    fun externally_generated_ClientId_should_init_the_MLS_client() = runTest {
         val (alice, handle) = initCc().externallyGeneratedMlsClient()
         alice.mlsInitWithClientId(aliceId.toClientId(), handle)
     }
 
     @Test
-    fun `getPublicKey should return non empty result`() = runTest {
+    fun getPublicKey_should_return_non_empty_result() = runTest {
         val (alice) = newClients(aliceId)
         assertThat(alice.getPublicKey(Ciphersuite.DEFAULT).value).isNotEmpty()
     }
 
     @Test
-    fun `conversationExists should return true`() = runTest {
+    fun conversationExists_should_return_true() = runTest {
         val (alice) = newClients(aliceId)
         assertThat(alice.conversationExists(id)).isFalse()
         alice.createConversation(id)
@@ -56,7 +56,7 @@ class MLSTest {
     }
 
     @Test
-    fun `calling generateKeyPackages should return expected number`() = runTest {
+    fun calling_generateKeyPackages_should_return_expected_number() = runTest {
         val (alice) = newClients(aliceId)
 
         // by default
@@ -68,14 +68,14 @@ class MLSTest {
     }
 
     @Test
-    fun `given new conversation when calling conversationEpoch should return epoch 0`() = runTest {
+    fun given_new_conversation_when_calling_conversationEpoch_should_return_epoch_0() = runTest {
         val (alice) = newClients(aliceId)
         alice.createConversation(id)
         assertThat(alice.conversationEpoch(id)).isEqualTo(0UL)
     }
 
     @Test
-    fun `updateKeyingMaterial should process the commit message`() = runTest {
+    fun updateKeyingMaterial_should_process_the_commit_message() = runTest {
         val (alice, bob) = newClients(aliceId, bobId)
 
         bob.createConversation(id)
@@ -95,7 +95,7 @@ class MLSTest {
     }
 
     @Test
-    fun `addMember should allow joining a conversation with a Welcome`() = runTest {
+    fun addMember_should_allow_joining_a_conversation_with_a_Welcome() = runTest {
         val (alice, bob) = newClients(aliceId, bobId)
 
         bob.createConversation(id)
@@ -109,7 +109,7 @@ class MLSTest {
     }
 
     @Test
-    fun `joinConversation should generate an Add proposal`() = runTest {
+    fun joinConversation_should_generate_an_Add_proposal() = runTest {
         val (alice1, alice2, bob) = newClients(aliceId, aliceId2, bobId)
 
         bob.createConversation(id)
@@ -129,7 +129,7 @@ class MLSTest {
     }
 
     @Test
-    fun `encryptMessage should encrypt then receiver should decrypt`() = runTest {
+    fun encryptMessage_should_encrypt_then_receiver_should_decrypt() = runTest {
         val (alice, bob) = newClients(aliceId, bobId)
 
         bob.createConversation(id)
@@ -148,7 +148,7 @@ class MLSTest {
     }
 
     @Test
-    fun `addMember should add members to the MLS group`() = runTest {
+    fun addMember_should_add_members_to_the_MLS_group() = runTest {
         val (alice, bob, carol) = newClients(aliceId, bobId, carolId)
 
         bob.createConversation(id)
@@ -168,7 +168,7 @@ class MLSTest {
     }
 
     @Test
-    fun `addMember should return a valid Welcome message`() = runTest {
+    fun addMember_should_return_a_valid_Welcome_message() = runTest {
         val (alice, bob) = newClients(aliceId, bobId)
 
         bob.createConversation(id)
@@ -183,7 +183,7 @@ class MLSTest {
     }
 
     @Test
-    fun `removeMember should remove members from the MLS group`() = runTest {
+    fun removeMember_should_remove_members_from_the_MLS_group() = runTest {
         val (alice, bob, carol) = newClients(aliceId, bobId, carolId)
 
         bob.createConversation(id)
@@ -202,7 +202,7 @@ class MLSTest {
     }
 
     @Test
-    fun `creating proposals and removing them`() = runTest {
+    fun creating_proposals_and_removing_them() = runTest {
         val (alice, bob, carol) = newClients(aliceId, bobId, carolId)
 
         alice.createConversation(id)
@@ -231,7 +231,7 @@ class MLSTest {
     }
 
     @Test
-    fun `clearPendingCommit should clear the pending commit`() = runTest {
+    fun clearPendingCommit_should_clear_the_pending_commit() = runTest {
         val (alice) = newClients(aliceId)
 
         alice.createConversation(id)
@@ -243,7 +243,7 @@ class MLSTest {
     }
 
     @Test
-    fun `wipeConversation should delete the conversation from the keystore`() = runTest {
+    fun wipeConversation_should_delete_the_conversation_from_the_keystore() = runTest {
         val (alice) = newClients(aliceId)
         alice.createConversation(id)
         assertThatNoException().isThrownBy {
@@ -252,7 +252,7 @@ class MLSTest {
     }
 
     @Test
-    fun `deriveAvsSecret should generate a secret with the right length`() = runTest {
+    fun deriveAvsSecret_should_generate_a_secret_with_the_right_length() = runTest {
         val (alice) = newClients(aliceId)
         alice.createConversation(id)
 

@@ -30,7 +30,7 @@ import kotlin.test.Test
 internal class E2EITest {
 
     @Test
-    fun `sample e2ei enrollment should succeed`() = runTest {
+    fun sample_e2ei_enrollment_should_succeed() = runTest {
         val root = Files.createTempDirectory("mls").toFile()
         val keyStore = root.resolve("keystore-$aliceId")
         val cc = CoreCryptoCentral(keyStore.absolutePath, "secret")
@@ -197,7 +197,7 @@ internal class E2EITest {
     }
 
     @Test
-    fun `conversation should be not verified when at least 1 of the members uses a Basic credential`() = runTest {
+    fun conversation_should_be_not_verified_when_at_least_1_of_the_members_uses_a_Basic_credential() = runTest {
         val (alice, bob) = newClients(aliceId, bobId)
 
         bob.createConversation(id)
@@ -212,7 +212,7 @@ internal class E2EITest {
     }
 
     @Test
-    fun `e2ei should not be enabled for a Basic Credential`() = runTest {
+    fun e2ei_should_not_be_enabled_for_a_Basic_Credential() = runTest {
         val (alice) = newClients(aliceId)
         assertThat(alice.e2eiIsEnabled()).isFalse()
     }
