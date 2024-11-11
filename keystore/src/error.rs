@@ -17,6 +17,8 @@
 /// Error to represent when a key is not present in the KeyStore
 #[derive(Debug, Clone, PartialEq, Eq, thiserror::Error)]
 pub enum MissingKeyErrorKind {
+    #[error("Consumer Data")]
+    ConsumerData,
     #[error("MLS KeyPackageBundle")]
     MlsKeyPackageBundle,
     #[error("MLS SignatureKeyPair")]

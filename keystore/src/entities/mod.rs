@@ -14,7 +14,10 @@
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see http://www.gnu.org/licenses/.
 
+pub(crate) mod general;
 pub(crate) mod mls;
+
+pub use self::general::*;
 pub use self::mls::*;
 
 cfg_if::cfg_if! {

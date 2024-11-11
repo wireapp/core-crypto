@@ -3,10 +3,10 @@
 
 use crate::connection::TransactionWrapper;
 use crate::entities::{
-    E2eiAcmeCA, E2eiCrl, E2eiEnrollment, E2eiIntermediateCert, E2eiRefreshToken, EntityBase, EntityTransactionExt,
-    MlsCredential, MlsEncryptionKeyPair, MlsEpochEncryptionKeyPair, MlsHpkePrivateKey, MlsKeyPackage,
-    MlsPendingMessage, MlsPskBundle, MlsSignatureKeyPair, PersistedMlsGroup, PersistedMlsPendingGroup, StringEntityId,
-    UniqueEntity,
+    ConsumerData, E2eiAcmeCA, E2eiCrl, E2eiEnrollment, E2eiIntermediateCert, E2eiRefreshToken, EntityBase,
+    EntityTransactionExt, MlsCredential, MlsEncryptionKeyPair, MlsEpochEncryptionKeyPair, MlsHpkePrivateKey,
+    MlsKeyPackage, MlsPendingMessage, MlsPskBundle, MlsSignatureKeyPair, PersistedMlsGroup, PersistedMlsPendingGroup,
+    StringEntityId, UniqueEntity,
 };
 #[cfg(feature = "proteus-keystore")]
 use crate::entities::{ProteusIdentity, ProteusPrekey, ProteusSession};
@@ -14,6 +14,7 @@ use crate::{CryptoKeystoreError, CryptoKeystoreResult};
 
 #[derive(Debug)]
 pub enum Entity {
+    ConsumerData(ConsumerData),
     SignatureKeyPair(MlsSignatureKeyPair),
     HpkePrivateKey(MlsHpkePrivateKey),
     KeyPackage(MlsKeyPackage),
@@ -146,6 +147,7 @@ impl EntityId {
 
 pub async fn execute_save(tx: &TransactionWrapper<'_>, entity: &Entity) -> CryptoKeystoreResult<()> {
     match entity {
+        Entity::ConsumerData(consumer_data) => consumer_data.replace(tx).await,
         Entity::SignatureKeyPair(mls_signature_key_pair) => mls_signature_key_pair.save(tx).await,
         Entity::HpkePrivateKey(mls_hpke_private_key) => mls_hpke_private_key.save(tx).await,
         Entity::KeyPackage(mls_key_package) => mls_key_package.save(tx).await,

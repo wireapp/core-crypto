@@ -3,7 +3,7 @@ pub mod dynamic_dispatch;
 use crate::entities::mls::*;
 #[cfg(feature = "proteus-keystore")]
 use crate::entities::proteus::*;
-use crate::entities::{EntityBase, EntityFindParams, EntityTransactionExt, UniqueEntity};
+use crate::entities::{ConsumerData, EntityBase, EntityFindParams, EntityTransactionExt, UniqueEntity};
 use crate::transaction::dynamic_dispatch::EntityId;
 use crate::{
     connection::{Connection, DatabaseConnection, FetchFromDatabase, KeystoreDatabaseConnection},
@@ -341,12 +341,13 @@ impl KeystoreTransaction {
                 (identifier_12, E2eiRefreshToken),
                 (identifier_13, E2eiAcmeCA),
                 (identifier_14, E2eiIntermediateCert),
-                (identifier_15, E2eiCrl)
+                (identifier_15, E2eiCrl),
+                (identifier_16, ConsumerData)
             ],
             proteus_types: [
-                (identifier_16, ProteusPrekey),
-                (identifier_17, ProteusIdentity),
-                (identifier_18, ProteusSession)
+                (identifier_17, ProteusPrekey),
+                (identifier_18, ProteusIdentity),
+                (identifier_19, ProteusSession)
             ]
         );
 
