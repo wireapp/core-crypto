@@ -53,6 +53,23 @@ export default class CoreCryptoContext {
     }
 
     /**
+     * Set arbitrary data to be retrieved by {@link getData}.
+     * This is meant to be used as a check point at the end of a transaction.
+     * The data should be limited to a reasonable size.
+     */
+    async setData(data: Uint8Array): Promise<void> {
+        return await CoreCryptoError.asyncMapErr(this.#ctx.set_data(data));
+    }
+
+    /**
+     * Get data if it has previously been set by {@link setData}, or `undefined` otherwise.
+     * This is meant to be used as a check point at the end of a transaction.
+     */
+    async getData(): Promise<Uint8Array | undefined> {
+        return await CoreCryptoError.asyncMapErr(this.#ctx.get_data());
+    }
+
+    /**
      * Use this after {@link CoreCrypto.deferredInit} when you have a clientId. It initializes MLS.
      *
      * @param clientId - {@link CoreCryptoParams#clientId} but required
