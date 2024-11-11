@@ -227,6 +227,18 @@ where
         }
     }
 
+    async fn find_one(conn: &mut Self::ConnectionType) -> CryptoKeystoreResult<Option<Self>> {
+        match Self::find_unique(conn).await {
+            Ok(record) => Ok(Some(record)),
+            Err(CryptoKeystoreError::NotFound(_, _)) => Ok(None),
+            Err(err) => Err(err),
+        }
+    }
+
+    async fn count(conn: &mut Self::ConnectionType) -> CryptoKeystoreResult<usize> {
+        conn.storage().count(Self::COLLECTION_NAME).await
+    }
+
     async fn replace<'a>(&'a self, transaction: &TransactionWrapper<'a>) -> CryptoKeystoreResult<()> {
         transaction.save(self.clone()).await?;
         Ok(())
@@ -265,6 +277,22 @@ pub trait UniqueEntity: Entity<ConnectionType = crate::connection::KeystoreDatab
             Err(CryptoKeystoreError::NotFound(_, _)) => Ok(vec![]),
             Err(err) => Err(err),
         }
+    }
+
+    async fn find_one(conn: &mut Self::ConnectionType) -> CryptoKeystoreResult<Option<Self>> {
+        match Self::find_unique(conn).await {
+            Ok(record) => Ok(Some(record)),
+            Err(CryptoKeystoreError::NotFound(_, _)) => Ok(None),
+            Err(err) => Err(err),
+        }
+    }
+
+    async fn count(conn: &mut Self::ConnectionType) -> CryptoKeystoreResult<usize> {
+        Ok(
+            conn.query_row(&format!("SELECT COUNT(*) FROM {}", Self::COLLECTION_NAME), [], |r| {
+                r.get(0)
+            })?,
+        )
     }
 
     fn content(&self) -> &[u8];
