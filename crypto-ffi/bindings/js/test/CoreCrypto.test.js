@@ -225,6 +225,54 @@ test("can use groupInfo enums", async () => {
     await ctx.close();
 });
 
+test("Setting data persists to DB", async () => {
+    const [ctx, page] = await initBrowser();
+
+    const [firstResult, expectedSecondResult, secondResult] =
+        await page.evaluate(async () => {
+            const { CoreCrypto, Ciphersuite } = await import("./corecrypto.js");
+            const ciphersuite =
+                Ciphersuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519;
+
+            const client2Config = {
+                databaseName: "test",
+                key: "test",
+                ciphersuites: [ciphersuite],
+                clientId: "test",
+            };
+
+            const cc = await CoreCrypto.init(client2Config);
+
+            const text = "my message processing checkpoint";
+            const encoder = new TextEncoder();
+            const expectedSecondResult = encoder.encode(text);
+
+            let firstResult;
+            await cc.transaction(async (ctx) => {
+                firstResult = await ctx.getData();
+                await ctx.setData(expectedSecondResult);
+            });
+
+            let secondResult;
+            await cc.transaction(async (ctx) => {
+                secondResult = await ctx.getData();
+            });
+
+            // To be sure we're not obscuring the case in which firstResult would be null, as when it gets
+            // passed out of this closure, undefined becomes null.
+            firstResult = firstResult === null ? "null" : firstResult;
+
+            return [firstResult, expectedSecondResult, secondResult];
+        });
+
+    // Undefined becomes null.
+    expect(firstResult).toBe(null);
+    expect(secondResult).toEqual(expectedSecondResult);
+
+    await page.close();
+    await ctx.close();
+});
+
 test("Using invalid context throws error", async () => {
     const [ctx, page] = await initBrowser();
 
