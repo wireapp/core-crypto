@@ -1,10 +1,6 @@
 //! This module contains the primitives to enable transactional support on a higher level within the
 //! [MlsCentral]. All mutating operations need to be done through a [CentralContext].
 
-use async_lock::{Mutex, RwLock, RwLockReadGuardArc, RwLockWriteGuardArc};
-use mls_crypto_provider::{CryptoKeystore, MlsCryptoProvider};
-use std::{ops::Deref, sync::Arc};
-
 use crate::mls::MlsCentral;
 #[cfg(feature = "proteus")]
 use crate::proteus::ProteusCentral;
@@ -13,6 +9,12 @@ use crate::{
     prelude::{Client, MlsConversation},
     CoreCrypto, CoreCryptoCallbacks, CryptoError, CryptoResult,
 };
+use async_lock::{Mutex, RwLock, RwLockReadGuardArc, RwLockWriteGuardArc};
+use core_crypto_keystore::connection::FetchFromDatabase;
+use core_crypto_keystore::entities::ConsumerData;
+use core_crypto_keystore::CryptoKeystoreError;
+use mls_crypto_provider::{CryptoKeystore, MlsCryptoProvider};
+use std::{ops::Deref, sync::Arc};
 
 /// This struct provides transactional support for Core Crypto.
 ///
@@ -163,5 +165,23 @@ impl CentralContext {
         };
         *guard = ContextState::Invalid;
         rollback_result.map_err(Into::into)
+    }
+
+    /// Set arbitrary data to be retrieved by [CentralContext::get_data].
+    /// This is meant to be used as a check point at the end of a transaction.
+    /// The data should be limited to a reasonable size.
+    pub async fn set_data(&self, data: Vec<u8>) -> CryptoResult<()> {
+        self.keystore().await?.save(ConsumerData::from(data)).await?;
+        Ok(())
+    }
+
+    /// Get the data that has previously been set by [CentralContext::set_data].
+    /// This is meant to be used as a check point at the end of a transaction.
+    pub async fn get_data(&self) -> CryptoResult<Option<Vec<u8>>> {
+        match self.keystore().await?.find_unique::<ConsumerData>().await {
+            Ok(data) => Ok(Some(data.into())),
+            Err(CryptoKeystoreError::NotFound(..)) => Ok(None),
+            Err(err) => Err(err.into()),
+        }
     }
 }
