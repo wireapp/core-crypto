@@ -1,10 +1,10 @@
 use crate::connection::storage::{WasmEncryptedStorage, WasmStorageWrapper};
 use crate::connection::KeystoreDatabaseConnection;
 use crate::entities::{
-    E2eiAcmeCA, E2eiCrl, E2eiEnrollment, E2eiIntermediateCert, E2eiRefreshToken, Entity, EntityBase, MlsCredential,
-    MlsEncryptionKeyPair, MlsEpochEncryptionKeyPair, MlsHpkePrivateKey, MlsKeyPackage, MlsPendingMessage, MlsPskBundle,
-    MlsSignatureKeyPair, PersistedMlsGroup, PersistedMlsPendingGroup, ProteusIdentity, ProteusPrekey, ProteusSession,
-    UniqueEntity,
+    ConsumerData, E2eiAcmeCA, E2eiCrl, E2eiEnrollment, E2eiIntermediateCert, E2eiRefreshToken, Entity, EntityBase,
+    MlsCredential, MlsEncryptionKeyPair, MlsEpochEncryptionKeyPair, MlsHpkePrivateKey, MlsKeyPackage,
+    MlsPendingMessage, MlsPskBundle, MlsSignatureKeyPair, PersistedMlsGroup, PersistedMlsPendingGroup, ProteusIdentity,
+    ProteusPrekey, ProteusSession, UniqueEntity,
 };
 use crate::{CryptoKeystoreError, CryptoKeystoreResult};
 use idb::builder::{DatabaseBuilder, IndexBuilder, ObjectStoreBuilder};
@@ -33,11 +33,13 @@ const fn db_version_number(counter: u32) -> u32 {
 }
 
 const DB_VERSION_0: u32 = db_version_number(0);
+const DB_VERSION_1: u32 = db_version_number(1);
+const DB_VERSION_2: u32 = db_version_number(2);
 
 /// Open an existing idb database with the given name and key, and migrate it if needed.
 pub(crate) async fn open_and_migrate(name: &str, key: &str) -> CryptoKeystoreResult<Database> {
     /// Increment when adding a new migration.
-    const TARGET_VERSION: u32 = db_version_number(1);
+    const TARGET_VERSION: u32 = DB_VERSION_2;
     let factory = Factory::new()?;
 
     let open_existing = factory.open(name, None)?;
@@ -74,8 +76,26 @@ async fn do_migration_step(from: u32, name: &str, key: &str) -> CryptoKeystoreRe
         // The version that results from the latest migration must match TARGET_VERSION
         //      to ensure convergence of the while loop this is called from.
         0..=DB_VERSION_0 => migrate_to_version_1(name, key).await,
+        DB_VERSION_1 => migrate_to_version_2(name).await,
         _ => Err(CryptoKeystoreError::MigrationNotSupported(from)),
     }
+}
+
+/// Open IDB once with the new builder and close it, this will add the new object store.
+async fn migrate_to_version_2(name: &str) -> CryptoKeystoreResult<u32> {
+    let migrated_idb = get_builder_v2(name).build().await?;
+    migrated_idb.close();
+    Ok(DB_VERSION_2)
+}
+
+/// Add a new object store for the ConsumerData struct.
+fn get_builder_v2(name: &str) -> DatabaseBuilder {
+    let previous_builder = get_builder_v0(name);
+    previous_builder.version(DB_VERSION_2).add_object_store(
+        ObjectStoreBuilder::new(ConsumerData::COLLECTION_NAME)
+            .auto_increment(false)
+            .add_index(IndexBuilder::new("id".into(), KeyPath::new_single("id")).unique(true)),
+    )
 }
 
 /// With the current feature set of stable rust macros, we're not aware how to construct an
@@ -137,13 +157,12 @@ macro_rules! migrate_entities_to_version_1 {
             }
 
             // The migration is complete and the version counter can be incremented.
-            const MIGRATING_TO: u32 = db_version_number(1);
             let factory = Factory::new()?;
-            let open_request = factory.open($name, Some(MIGRATING_TO))?;
+            let open_request = factory.open($name, Some(DB_VERSION_1))?;
             let idb = open_request.await?;
             idb.close();
 
-            Ok(MIGRATING_TO)
+            Ok(DB_VERSION_1)
         }
     };
 }
