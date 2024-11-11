@@ -41,6 +41,23 @@ class MLSTest {
     }
 
     @Test
+    fun set_client_data_persists() = runTest {
+        val cc = initCc()
+
+        val data = "my message processing checkpoint".toByteArray()
+
+        cc.transaction { ctx ->
+            assertThat(ctx.getData()).isNull()
+            ctx.setData(data)
+        }
+
+        cc.transaction { ctx ->
+            assertThat(ctx.getData()).isEqualTo(data)
+        }
+
+    }
+
+    @Test
     fun externally_generated_ClientId_should_init_the_MLS_client() = runTest {
         val (alice, handle) = initCc().externallyGeneratedMlsClient()
         alice.mlsInitWithClientId(aliceId.toClientId(), handle)
