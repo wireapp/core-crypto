@@ -40,6 +40,23 @@ class CoreCryptoContext(private val cc: CoreCryptoContext) {
     }
 
     /**
+     * Set arbitrary data to be retrieved by [getData].
+     * This is meant to be used as a check point at the end of a transaction.
+     * The data should be limited to a reasonable size.
+     */
+    suspend fun setData(data: ByteArray) {
+        cc.setData(data)
+    }
+
+    /**
+    * Get the data that has previously been set by [setData], or null if no data has been set.
+    * This is meant to be used as a check point at the end of a transaction.
+    */
+    suspend fun getData(): ByteArray? {
+        return cc.getData()
+    }
+
+    /**
      * This is your entrypoint to initialize [com.wire.crypto.client.MLSClient] with a Basic Credential
      */
     suspend fun mlsInit(
