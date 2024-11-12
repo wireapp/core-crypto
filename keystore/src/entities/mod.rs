@@ -45,6 +45,8 @@ use crate::connection::DatabaseConnection;
 #[cfg(not(target_family = "wasm"))]
 use crate::sha256;
 use crate::{CryptoKeystoreError, CryptoKeystoreResult, MissingKeyErrorKind};
+#[cfg(target_family = "wasm")]
+use aes_gcm::Aes256Gcm;
 
 #[derive(Debug, Clone, PartialEq, Eq, Default)]
 #[cfg_attr(
@@ -149,21 +151,6 @@ pub trait EntityBase: Send + Sized + Clone + PartialEq + Eq + std::fmt::Debug {
     }
 
     fn to_transaction_entity(self) -> crate::transaction::dynamic_dispatch::Entity;
-
-    async fn find_all(conn: &mut Self::ConnectionType, params: EntityFindParams) -> CryptoKeystoreResult<Vec<Self>>;
-    async fn find_one(conn: &mut Self::ConnectionType, id: &StringEntityId) -> CryptoKeystoreResult<Option<Self>>;
-    async fn find_many(conn: &mut Self::ConnectionType, ids: &[StringEntityId]) -> CryptoKeystoreResult<Vec<Self>> {
-        // Default, inefficient & naive method
-        let mut ret = Vec::with_capacity(ids.len());
-        for id in ids {
-            if let Some(entity) = Self::find_one(conn, id).await? {
-                ret.push(entity);
-            }
-        }
-
-        Ok(ret)
-    }
-    async fn count(conn: &mut Self::ConnectionType) -> CryptoKeystoreResult<usize>;
 }
 
 cfg_if::cfg_if! {
@@ -197,6 +184,7 @@ cfg_if::cfg_if! {
             }
         }
 
+        #[async_trait::async_trait(?Send)]
         pub trait Entity: EntityBase + serde::Serialize + serde::de::DeserializeOwned {
             fn id(&self) -> CryptoKeystoreResult<wasm_bindgen::JsValue> {
                 Ok(js_sys::Uint8Array::from(self.id_raw()).into())
@@ -217,6 +205,21 @@ cfg_if::cfg_if! {
                 };
                 serde_json::to_vec(&aad).map_err(Into::into)
             }
+
+            async fn find_all(conn: &mut Self::ConnectionType, params: EntityFindParams) -> CryptoKeystoreResult<Vec<Self>>;
+            async fn find_one(conn: &mut Self::ConnectionType, id: &StringEntityId) -> CryptoKeystoreResult<Option<Self>>;
+            async fn find_many(conn: &mut Self::ConnectionType, ids: &[StringEntityId]) -> CryptoKeystoreResult<Vec<Self>> {
+                // Default, inefficient & naive method
+                let mut ret = Vec::with_capacity(ids.len());
+                for id in ids {
+                    if let Some(entity) = Self::find_one(conn, id).await? {
+                        ret.push(entity);
+                    }
+                }
+                Ok(ret)
+            }
+            async fn count(conn: &mut Self::ConnectionType) -> CryptoKeystoreResult<usize>;
+
             // About WASM Encryption:
             // The store key (i.e. passphrase) is hashed using SHA256 to obtain 32 bytes
             // The AES256-GCM cipher is then initialized and is used to encrypt individual values
@@ -269,6 +272,37 @@ cfg_if::cfg_if! {
                 Ok(cleartext)
             }
         }
+
+        #[async_trait::async_trait(?Send)]
+        impl<T: UniqueEntity + serde::Serialize + serde::de::DeserializeOwned> Entity for T {
+            fn id_raw(&self) -> &[u8] {
+                &Self::ID
+            }
+
+            async fn find_all(conn: &mut Self::ConnectionType, params: EntityFindParams) -> CryptoKeystoreResult<Vec<Self>> {
+                    <Self as UniqueEntity>::find_all(conn, params).await
+                }
+
+            async fn find_one(conn: &mut Self::ConnectionType, _id: &StringEntityId) -> CryptoKeystoreResult<Option<Self>> {
+                    <Self as UniqueEntity>::find_one(conn).await
+                }
+
+            async fn count(conn: &mut Self::ConnectionType) -> CryptoKeystoreResult<usize> {
+                    <Self as UniqueEntity>::count(conn).await
+                }
+
+            fn encrypt(&mut self, cipher: &Aes256Gcm) -> CryptoKeystoreResult<()> {
+                self.set_content(self.encrypt_data(cipher, self.content())?);
+                Self::ConnectionType::check_buffer_size(self.content().len())?;
+                Ok(())
+            }
+
+            fn decrypt(&mut self, cipher: &Aes256Gcm) -> CryptoKeystoreResult<()> {
+                self.set_content(self.decrypt_data(cipher, self.content())?);
+                Self::ConnectionType::check_buffer_size(self.content().len())?;
+                Ok(())
+            }
+        }
     } else {
         #[async_trait::async_trait]
         pub trait EntityTransactionExt: Entity {
@@ -293,6 +327,7 @@ cfg_if::cfg_if! {
             }
         }
 
+        #[async_trait::async_trait]
         pub trait Entity: EntityBase {
             fn id_raw(&self) -> &[u8];
 
@@ -300,6 +335,39 @@ cfg_if::cfg_if! {
             /// from the transaction cache and the database are merged by this key.
             fn merge_key(&self) -> Vec<u8> {
                 self.id_raw().into()
+            }
+
+            async fn find_all(conn: &mut Self::ConnectionType, params: EntityFindParams) -> CryptoKeystoreResult<Vec<Self>>;
+            async fn find_one(conn: &mut Self::ConnectionType, id: &StringEntityId) -> CryptoKeystoreResult<Option<Self>>;
+            async fn find_many(conn: &mut Self::ConnectionType, ids: &[StringEntityId]) -> CryptoKeystoreResult<Vec<Self>> {
+                // Default, inefficient & naive method
+                let mut ret = Vec::with_capacity(ids.len());
+                for id in ids {
+                    if let Some(entity) = Self::find_one(conn, id).await? {
+                        ret.push(entity);
+                    }
+                }
+                Ok(ret)
+            }
+            async fn count(conn: &mut Self::ConnectionType) -> CryptoKeystoreResult<usize>;
+        }
+
+        #[async_trait::async_trait]
+        impl<T: UniqueEntity> Entity for T {
+            fn id_raw(&self) -> &[u8] {
+                &[Self::ID as u8]
+            }
+
+            async fn find_all(conn: &mut Self::ConnectionType, params: EntityFindParams) -> CryptoKeystoreResult<Vec<Self>> {
+                <Self as UniqueEntity>::find_all(conn, params).await
+            }
+
+            async fn find_one(conn: &mut Self::ConnectionType, _id: &StringEntityId) -> CryptoKeystoreResult<Option<Self>> {
+                <Self as UniqueEntity>::find_one(conn).await
+            }
+
+            async fn count(conn: &mut Self::ConnectionType) -> CryptoKeystoreResult<usize> {
+               <Self as UniqueEntity>::count(conn).await
             }
         }
 

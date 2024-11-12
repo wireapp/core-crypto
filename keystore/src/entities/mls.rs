@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see http://www.gnu.org/licenses/.
 
-use super::{Entity, EntityFindParams, EntityTransactionExt, StringEntityId};
+use super::{Entity, EntityBase, EntityFindParams, EntityTransactionExt, StringEntityId};
 use crate::{connection::TransactionWrapper, CryptoKeystoreError, CryptoKeystoreResult};
 use openmls_traits::types::SignatureScheme;
 use zeroize::Zeroize;
@@ -45,14 +45,14 @@ pub trait PersistedMlsGroupExt: Entity {
             return Ok(None);
         };
 
-        <Self as super::EntityBase>::find_one(conn, &parent_id.into()).await
+        <Self as super::Entity>::find_one(conn, &parent_id.into()).await
     }
 
     async fn child_groups(
         &self,
         conn: &mut <Self as super::EntityBase>::ConnectionType,
     ) -> CryptoKeystoreResult<Vec<Self>> {
-        let entities = <Self as super::EntityBase>::find_all(conn, super::EntityFindParams::default()).await?;
+        let entities = <Self as super::Entity>::find_all(conn, super::EntityFindParams::default()).await?;
 
         let id = self.id_raw();
 
@@ -205,11 +205,18 @@ pub struct E2eiEnrollment {
 
 #[cfg(target_family = "wasm")]
 #[async_trait::async_trait(?Send)]
-pub trait UniqueEntity: Entity<ConnectionType = crate::connection::KeystoreDatabaseConnection>
+pub trait UniqueEntity:
+    EntityBase<ConnectionType = crate::connection::KeystoreDatabaseConnection>
+    + serde::Serialize
+    + serde::de::DeserializeOwned
 where
     Self: 'static,
 {
     const ID: [u8; 1] = [0];
+
+    fn content(&self) -> &[u8];
+
+    fn set_content(&mut self, content: Vec<u8>);
 
     async fn find_unique(conn: &mut Self::ConnectionType) -> CryptoKeystoreResult<Self> {
         Ok(conn
@@ -247,7 +254,7 @@ where
 
 #[cfg(not(target_family = "wasm"))]
 #[async_trait::async_trait]
-pub trait UniqueEntity: Entity<ConnectionType = crate::connection::KeystoreDatabaseConnection> {
+pub trait UniqueEntity: EntityBase<ConnectionType = crate::connection::KeystoreDatabaseConnection> {
     const ID: usize = 0;
 
     fn new(content: Vec<u8>) -> Self;
