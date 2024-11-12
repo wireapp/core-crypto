@@ -62,6 +62,15 @@ pub mod dummy_entity {
         fn to_transaction_entity(self) -> crate::transaction::dynamic_dispatch::Entity {
             unimplemented!("Not implemented")
         }
+    }
+
+    #[cfg_attr(target_family = "wasm", async_trait::async_trait(?Send))]
+    #[cfg_attr(not(target_family = "wasm"), async_trait::async_trait)]
+    impl Entity for DummyStoreValue {
+        fn id_raw(&self) -> &[u8] {
+            b""
+        }
+
         async fn find_all(
             _conn: &mut Self::ConnectionType,
             _params: EntityFindParams,
@@ -87,12 +96,6 @@ pub mod dummy_entity {
         }
         async fn count(_conn: &mut Self::ConnectionType) -> CryptoKeystoreResult<usize> {
             Ok(0)
-        }
-    }
-
-    impl Entity for DummyStoreValue {
-        fn id_raw(&self) -> &[u8] {
-            b""
         }
 
         #[cfg(target_family = "wasm")]

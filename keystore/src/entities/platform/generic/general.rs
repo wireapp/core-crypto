@@ -1,14 +1,8 @@
 use crate::{
     connection::KeystoreDatabaseConnection,
-    entities::{ConsumerData, Entity, EntityBase, EntityFindParams, StringEntityId, UniqueEntity},
-    CryptoKeystoreResult, MissingKeyErrorKind,
+    entities::{ConsumerData, EntityBase, UniqueEntity},
+    MissingKeyErrorKind,
 };
-
-impl Entity for ConsumerData {
-    fn id_raw(&self) -> &[u8] {
-        &[Self::ID as u8]
-    }
-}
 
 #[async_trait::async_trait]
 impl UniqueEntity for ConsumerData {
@@ -33,17 +27,5 @@ impl EntityBase for ConsumerData {
 
     fn to_transaction_entity(self) -> crate::transaction::dynamic_dispatch::Entity {
         crate::transaction::dynamic_dispatch::Entity::ConsumerData(self)
-    }
-
-    async fn find_all(conn: &mut Self::ConnectionType, params: EntityFindParams) -> CryptoKeystoreResult<Vec<Self>> {
-        <Self as UniqueEntity>::find_all(conn, params).await
-    }
-
-    async fn find_one(conn: &mut Self::ConnectionType, _id: &StringEntityId) -> CryptoKeystoreResult<Option<Self>> {
-        <Self as UniqueEntity>::find_one(conn).await
-    }
-
-    async fn count(conn: &mut Self::ConnectionType) -> CryptoKeystoreResult<usize> {
-        <Self as UniqueEntity>::count(conn).await
     }
 }
