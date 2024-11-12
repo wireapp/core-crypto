@@ -35,15 +35,36 @@ impl Deref for CoreCryptoContext {
 
 #[uniffi::export(with_foreign)]
 #[async_trait::async_trait]
-pub trait CoreCryptoCommand: std::fmt::Debug + Send + Sync {
+pub trait CoreCryptoCommand: Send + Sync {
     /// Will be called inside a transaction in CoreCrypto
     async fn execute(&self, context: Arc<CoreCryptoContext>) -> CoreCryptoResult<()>;
+}
+
+#[async_trait::async_trait]
+impl<F, Fut> CoreCryptoCommand for F
+where
+    F: Fn(Arc<CoreCryptoContext>) -> Fut + Send + Sync,
+    Fut: Future<Output = CoreCryptoResult<()>> + Send,
+{
+    async fn execute(&self, context: Arc<CoreCryptoContext>) -> CoreCryptoResult<()> {
+        self(context).await
+    }
 }
 
 #[uniffi::export]
 impl CoreCrypto {
     /// Starts a new transaction in Core Crypto. If the callback succeeds, it will be committed,
     /// otherwise, every operation performed with the context will be discarded.
+    /// 
+    /// When calling this function from within Rust, async functions accepting a context 
+    /// implement `CoreCryptoCommand`, so operations can be defined inline as follows:
+    /// 
+    /// ```ignore
+    /// core_crypto.transaction(Arc::new(|context| async {
+    ///     // your implementation here
+    ///     Ok(())
+    /// }))?;
+    /// ```
     pub async fn transaction(&self, command: Arc<dyn CoreCryptoCommand>) -> CoreCryptoResult<()> {
         let context = Arc::new(CoreCryptoContext {
             context: Arc::new(self.central.new_transaction().await?),
