@@ -30,7 +30,7 @@ use core_crypto::{
         MlsConversationInitBundle, MlsCustomConfiguration, MlsGroupInfoBundle, MlsProposalBundle, MlsRotateBundle,
         VerifiableGroupInfo,
     },
-    CryptoResult, MlsError,
+    proteus, MlsError,
 };
 
 use self::context::CoreCryptoContext;
@@ -47,12 +47,19 @@ pub fn version() -> String {
     VERSION.to_string()
 }
 
+type ProteusError = proteus::ProteusError;
+
 #[derive(Debug, thiserror::Error, uniffi::Error)]
 pub enum CoreCryptoError {
     #[error(transparent)]
     CryptoError {
         #[from]
         error: CryptoError,
+    },
+    #[error(transparent)]
+    ProteusError {
+        #[from]
+        error: ProteusError,
     },
     #[error(transparent)]
     E2eIdentityError {
@@ -875,7 +882,8 @@ impl CoreCrypto {
             let nb_key_package = nb_key_package
                 .map(usize::try_from)
                 .transpose()
-                .map_err(CryptoError::from)?;
+                .map_err(CryptoError::from)
+                .map_err(CoreCryptoError::from)?;
             context
                 .mls_init(
                     ClientIdentifier::Basic(client_id.0),
@@ -883,6 +891,7 @@ impl CoreCrypto {
                     nb_key_package,
                 )
                 .await
+                .map_err(CoreCryptoError::from)
         })
         .await
     }
@@ -895,6 +904,7 @@ impl CoreCrypto {
                 .mls_generate_keypairs((&ciphersuites).into())
                 .await
                 .map(|cids| cids.into_iter().map(ClientId).collect())
+                .map_err(CoreCryptoError::from)
         })
         .await
     }
@@ -915,6 +925,7 @@ impl CoreCrypto {
                     (&ciphersuites).into(),
                 )
                 .await
+                .map_err(CoreCryptoError::from)
         })
         .await
     }
@@ -926,7 +937,7 @@ impl CoreCrypto {
             if #[cfg(feature = "proteus")] {
                 self.deprecated_transaction(|context| async move {
                 context.proteus_reload_sessions().await.inspect_err(|e|{
-                    let errcode = e.proteus_error_code();
+                    let errcode = e.error_code();
                     if errcode > 0 {
                             self.proteus_last_error_code.store(errcode, std::sync::atomic::Ordering::SeqCst);
                         }
@@ -995,8 +1006,9 @@ impl CoreCrypto {
                     kp.tls_serialize_detached()
                         .map_err(MlsError::from)
                         .map_err(CryptoError::from)
+                        .map_err(CoreCryptoError::from)
                 })
-                .collect::<CryptoResult<Vec<Vec<u8>>>>()
+                .collect::<CoreCryptoResult<Vec<Vec<u8>>>>()
         })
         .await
     }
@@ -1011,7 +1023,8 @@ impl CoreCrypto {
         self.deprecated_transaction(|context| async move {
             let count = context
                 .client_valid_key_packages_count(ciphersuite.into(), credential_type.into())
-                .await?;
+                .await
+                .map_err(CoreCryptoError::from)?;
             Ok(count.try_into().unwrap_or(0))
         })
         .await
@@ -1025,8 +1038,13 @@ impl CoreCrypto {
             .map(|r| KeyPackageRef::from_slice(&r))
             .collect::<Vec<_>>();
 
-        self.deprecated_transaction(|context| async move { context.delete_keypackages(&refs[..]).await })
-            .await
+        self.deprecated_transaction(|context| async move {
+            context
+                .delete_keypackages(&refs[..])
+                .await
+                .map_err(CoreCryptoError::from)
+        })
+        .await
     }
 
     /// See [core_crypto::context::CentralContext::new_conversation]
@@ -1046,10 +1064,12 @@ impl CoreCrypto {
         self.deprecated_transaction(|context| async move {
             context
                 .set_raw_external_senders(&mut lower_cfg, config.external_senders)
-                .await?;
+                .await
+                .map_err(CoreCryptoError::from)?;
             context
                 .new_conversation(&conversation_id, creator_credential_type.into(), lower_cfg)
                 .await
+                .map_err(CoreCryptoError::from)
         })
         .await
     }
@@ -1101,6 +1121,7 @@ impl CoreCrypto {
             context
                 .add_members_to_conversation(&conversation_id, key_packages)
                 .await
+                .map_err(CoreCryptoError::from)
         })
         .await?
         .try_into()
@@ -1118,6 +1139,7 @@ impl CoreCrypto {
             context
                 .remove_members_from_conversation(&conversation_id, &clients)
                 .await
+                .map_err(CoreCryptoError::from)
         })
         .await?
         .try_into()
@@ -1127,7 +1149,10 @@ impl CoreCrypto {
     #[deprecated = "Please create a transaction in Core Crypto and call this method from it."]
     pub async fn mark_conversation_as_child_of(&self, child_id: Vec<u8>, parent_id: Vec<u8>) -> CoreCryptoResult<()> {
         self.deprecated_transaction(|context| async move {
-            context.mark_conversation_as_child_of(&child_id, &parent_id).await
+            context
+                .mark_conversation_as_child_of(&child_id, &parent_id)
+                .await
+                .map_err(CoreCryptoError::from)
         })
         .await
     }
@@ -1135,26 +1160,41 @@ impl CoreCrypto {
     /// See [core_crypto::context::CentralContext::update_keying_material]
     #[deprecated = "Please create a transaction in Core Crypto and call this method from it."]
     pub async fn update_keying_material(&self, conversation_id: Vec<u8>) -> CoreCryptoResult<CommitBundle> {
-        self.deprecated_transaction(|context| async move { context.update_keying_material(&conversation_id).await })
-            .await?
-            .try_into()
+        self.deprecated_transaction(|context| async move {
+            context
+                .update_keying_material(&conversation_id)
+                .await
+                .map_err(CoreCryptoError::from)
+        })
+        .await?
+        .try_into()
     }
 
     /// See [core_crypto::context::CentralContext::commit_pending_proposals]
     #[deprecated = "Please create a transaction in Core Crypto and call this method from it."]
     pub async fn commit_pending_proposals(&self, conversation_id: Vec<u8>) -> CoreCryptoResult<Option<CommitBundle>> {
-        self.deprecated_transaction(|context| async move { context.commit_pending_proposals(&conversation_id).await })
-            .await
-            .transpose()
-            .map(|r| r?.try_into())
-            .transpose()
+        self.deprecated_transaction(|context| async move {
+            context
+                .commit_pending_proposals(&conversation_id)
+                .await
+                .map_err(CoreCryptoError::from)
+        })
+        .await
+        .transpose()
+        .map(|r| r?.try_into())
+        .transpose()
     }
 
     /// see [core_crypto::context::CentralContext::wipe_conversation]
     #[deprecated = "Please create a transaction in Core Crypto and call this method from it."]
     pub async fn wipe_conversation(&self, conversation_id: Vec<u8>) -> CoreCryptoResult<()> {
-        self.deprecated_transaction(|context| async move { context.wipe_conversation(&conversation_id).await })
-            .await
+        self.deprecated_transaction(|context| async move {
+            context
+                .wipe_conversation(&conversation_id)
+                .await
+                .map_err(CoreCryptoError::from)
+        })
+        .await
     }
 
     /// See [core_crypto::context::CentralContext::decrypt_message]
@@ -1164,16 +1204,26 @@ impl CoreCrypto {
         conversation_id: Vec<u8>,
         payload: Vec<u8>,
     ) -> CoreCryptoResult<DecryptedMessage> {
-        self.deprecated_transaction(|context| async move { context.decrypt_message(&conversation_id, payload).await })
-            .await?
-            .try_into()
+        self.deprecated_transaction(|context| async move {
+            context
+                .decrypt_message(&conversation_id, payload)
+                .await
+                .map_err(CoreCryptoError::from)
+        })
+        .await?
+        .try_into()
     }
 
     /// See [core_crypto::context::CentralContext::encrypt_message]
     #[deprecated = "Please create a transaction in Core Crypto and call this method from it."]
     pub async fn encrypt_message(&self, conversation_id: Vec<u8>, message: Vec<u8>) -> CoreCryptoResult<Vec<u8>> {
-        self.deprecated_transaction(|context| async move { context.encrypt_message(&conversation_id, message).await })
-            .await
+        self.deprecated_transaction(|context| async move {
+            context
+                .encrypt_message(&conversation_id, message)
+                .await
+                .map_err(CoreCryptoError::from)
+        })
+        .await
     }
 
     /// See [core_crypto::mls::MlsCentral::conversation_exists]
@@ -1191,9 +1241,12 @@ impl CoreCrypto {
         let kp = KeyPackageIn::tls_deserialize(&mut keypackage.as_slice())
             .map_err(MlsError::from)
             .map_err(CryptoError::from)?;
-        self.deprecated_transaction(
-            |context| async move { context.new_add_proposal(&conversation_id, kp.into()).await },
-        )
+        self.deprecated_transaction(|context| async move {
+            context
+                .new_add_proposal(&conversation_id, kp.into())
+                .await
+                .map_err(CoreCryptoError::from)
+        })
         .await?
         .try_into()
     }
@@ -1201,9 +1254,14 @@ impl CoreCrypto {
     /// See [core_crypto::context::CentralContext::new_update_proposal]
     #[deprecated = "Please create a transaction in Core Crypto and call this method from it."]
     pub async fn new_update_proposal(&self, conversation_id: Vec<u8>) -> CoreCryptoResult<ProposalBundle> {
-        self.deprecated_transaction(|context| async move { context.new_update_proposal(&conversation_id).await })
-            .await?
-            .try_into()
+        self.deprecated_transaction(|context| async move {
+            context
+                .new_update_proposal(&conversation_id)
+                .await
+                .map_err(CoreCryptoError::from)
+        })
+        .await?
+        .try_into()
     }
 
     /// See [core_crypto::context::CentralContext::new_remove_proposal]
@@ -1214,7 +1272,10 @@ impl CoreCrypto {
         client_id: ClientId,
     ) -> CoreCryptoResult<ProposalBundle> {
         self.deprecated_transaction(|context| async move {
-            context.new_remove_proposal(&conversation_id, client_id.0).await
+            context
+                .new_remove_proposal(&conversation_id, client_id.0)
+                .await
+                .map_err(CoreCryptoError::from)
         })
         .await?
         .try_into()
@@ -1241,6 +1302,7 @@ impl CoreCrypto {
                 .to_bytes()
                 .map_err(MlsError::from)
                 .map_err(CryptoError::from)
+                .map_err(CoreCryptoError::from)
         })
         .await
     }
@@ -1260,6 +1322,7 @@ impl CoreCrypto {
             context
                 .join_by_external_commit(group_info, custom_configuration.into(), credential_type.into())
                 .await
+                .map_err(CoreCryptoError::from)
         })
         .await?
         .try_into()
@@ -1273,7 +1336,10 @@ impl CoreCrypto {
     ) -> CoreCryptoResult<Option<Vec<BufferedDecryptedMessage>>> {
         let maybe_buffered_messages = self
             .deprecated_transaction(|context| async move {
-                context.merge_pending_group_from_external_commit(&conversation_id).await
+                context
+                    .merge_pending_group_from_external_commit(&conversation_id)
+                    .await
+                    .map_err(CoreCryptoError::from)
             })
             .await?;
         let Some(buffered_messages) = maybe_buffered_messages else {
@@ -1291,7 +1357,10 @@ impl CoreCrypto {
     #[deprecated = "Please create a transaction in Core Crypto and call this method from it."]
     pub async fn clear_pending_group_from_external_commit(&self, conversation_id: Vec<u8>) -> CoreCryptoResult<()> {
         self.deprecated_transaction(|context| async move {
-            context.clear_pending_group_from_external_commit(&conversation_id).await
+            context
+                .clear_pending_group_from_external_commit(&conversation_id)
+                .await
+                .map_err(CoreCryptoError::from)
         })
         .await
     }
@@ -1316,7 +1385,12 @@ impl CoreCrypto {
         conversation_id: Vec<u8>,
     ) -> CoreCryptoResult<Option<Vec<BufferedDecryptedMessage>>> {
         let maybe_buffered_messages = self
-            .deprecated_transaction(|context| async move { context.commit_accepted(&conversation_id).await })
+            .deprecated_transaction(|context| async move {
+                context
+                    .commit_accepted(&conversation_id)
+                    .await
+                    .map_err(CoreCryptoError::from)
+            })
             .await?;
         let Some(buffered_messages) = maybe_buffered_messages else {
             return Ok(None);
@@ -1340,6 +1414,7 @@ impl CoreCrypto {
             context
                 .clear_pending_proposal(&conversation_id, proposal_ref.into())
                 .await
+                .map_err(CoreCryptoError::from)
         })
         .await
     }
@@ -1347,8 +1422,13 @@ impl CoreCrypto {
     /// See [core_crypto::context::CentralContext::clear_pending_commit]
     #[deprecated = "Please create a transaction in Core Crypto and call this method from it."]
     pub async fn clear_pending_commit(&self, conversation_id: Vec<u8>) -> CoreCryptoResult<()> {
-        self.deprecated_transaction(|context| async move { context.clear_pending_commit(&conversation_id).await })
-            .await
+        self.deprecated_transaction(|context| async move {
+            context
+                .clear_pending_commit(&conversation_id)
+                .await
+                .map_err(CoreCryptoError::from)
+        })
+        .await
     }
 
     /// See [core_crypto::mls::MlsCentral::get_client_ids]
@@ -1442,7 +1522,7 @@ impl CoreCrypto {
     pub async fn proteus_session_save(&self, session_id: String) -> CoreCryptoResult<()> {
         proteus_impl! { self.proteus_last_error_code => {
             self.deprecated_transaction(|context| async move {
-                context.proteus_session_save(&session_id).await
+                context.proteus_session_save(&session_id).await.map_err(CoreCryptoError::from)
             }).await
         }}
     }
@@ -1452,7 +1532,7 @@ impl CoreCrypto {
     pub async fn proteus_session_delete(&self, session_id: String) -> CoreCryptoResult<()> {
         proteus_impl! { self.proteus_last_error_code => {
             self.deprecated_transaction(|context| async move {
-                context.proteus_session_delete(&session_id).await
+                context.proteus_session_delete(&session_id).await.map_err(CoreCryptoError::from)
             }).await
         }}
     }
@@ -1471,7 +1551,7 @@ impl CoreCrypto {
     pub async fn proteus_decrypt(&self, session_id: String, ciphertext: Vec<u8>) -> CoreCryptoResult<Vec<u8>> {
         proteus_impl! { self.proteus_last_error_code => {
             self.deprecated_transaction(|context| async move {
-                context.proteus_decrypt(&session_id, &ciphertext).await
+                context.proteus_decrypt(&session_id, &ciphertext).await.map_err(CoreCryptoError::from)
             }).await
         }}
     }
@@ -1481,7 +1561,7 @@ impl CoreCrypto {
     pub async fn proteus_encrypt(&self, session_id: String, plaintext: Vec<u8>) -> CoreCryptoResult<Vec<u8>> {
         proteus_impl! { self.proteus_last_error_code => {
             self.deprecated_transaction(|context| async move {
-                context.proteus_encrypt(&session_id, &plaintext).await
+                context.proteus_encrypt(&session_id, &plaintext).await.map_err(CoreCryptoError::from)
             }).await
         }}
     }
@@ -1495,7 +1575,7 @@ impl CoreCrypto {
     ) -> CoreCryptoResult<std::collections::HashMap<String, Vec<u8>>> {
         proteus_impl! { self.proteus_last_error_code => {
             self.deprecated_transaction(|context| async move {
-                context.proteus_encrypt_batched(&sessions, &plaintext).await
+                context.proteus_encrypt_batched(&sessions, &plaintext).await.map_err(CoreCryptoError::from)
             }).await
         }}
     }
@@ -1505,7 +1585,7 @@ impl CoreCrypto {
     pub async fn proteus_new_prekey(&self, prekey_id: u16) -> CoreCryptoResult<Vec<u8>> {
         proteus_impl! { self.proteus_last_error_code => {
             self.deprecated_transaction(|context| async move {
-                context.proteus_new_prekey(prekey_id).await
+                context.proteus_new_prekey(prekey_id).await.map_err(CoreCryptoError::from)
             }).await
         }}
     }
@@ -1517,7 +1597,8 @@ impl CoreCrypto {
             self.deprecated_transaction(|context| async move {
             let (id, pkb) = context
                 .proteus_new_prekey_auto()
-                .await?;
+                .await
+                .map_err(CoreCryptoError::from)?;
             Ok(ProteusAutoPrekeyBundle { id, pkb })
             }).await
         }}
@@ -1528,7 +1609,8 @@ impl CoreCrypto {
     pub async fn proteus_last_resort_prekey(&self) -> CoreCryptoResult<Vec<u8>> {
         proteus_impl! { self.proteus_last_error_code => {
             self.deprecated_transaction(|context| async move {
-                context.proteus_last_resort_prekey().await}).await
+                context.proteus_last_resort_prekey().await.map_err(CoreCryptoError::from)
+            }).await
         }}
     }
 
@@ -1574,7 +1656,7 @@ impl CoreCrypto {
     pub async fn proteus_cryptobox_migrate(&self, path: String) -> CoreCryptoResult<()> {
         proteus_impl! { self.proteus_last_error_code => {
             self.deprecated_transaction(|context| async move {
-            context.proteus_cryptobox_migrate(&path).await
+            context.proteus_cryptobox_migrate(&path).await.map_err(CoreCryptoError::from)
             }).await
         }}
     }
@@ -1617,6 +1699,7 @@ impl CoreCrypto {
                 .map(async_lock::RwLock::new)
                 .map(std::sync::Arc::new)
                 .map(E2eiEnrollment)
+                .map_err(CoreCryptoError::from)
         })
         .await
     }
@@ -1638,6 +1721,7 @@ impl CoreCrypto {
                 .map(async_lock::RwLock::new)
                 .map(std::sync::Arc::new)
                 .map(E2eiEnrollment)
+                .map_err(CoreCryptoError::from)
         })
         .await
     }
@@ -1659,6 +1743,7 @@ impl CoreCrypto {
                 .map(async_lock::RwLock::new)
                 .map(std::sync::Arc::new)
                 .map(E2eiEnrollment)
+                .map_err(CoreCryptoError::from)
         })
         .await
     }
@@ -1675,8 +1760,13 @@ impl CoreCrypto {
     /// See [core_crypto::context::CentralContext::e2ei_register_acme_ca]
     #[deprecated = "Please create a transaction in Core Crypto and call this method from it."]
     pub async fn e2ei_register_acme_ca(&self, trust_anchor_pem: String) -> CoreCryptoResult<()> {
-        self.deprecated_transaction(|context| async move { context.e2ei_register_acme_ca(trust_anchor_pem).await })
-            .await
+        self.deprecated_transaction(|context| async move {
+            context
+                .e2ei_register_acme_ca(trust_anchor_pem)
+                .await
+                .map_err(CoreCryptoError::from)
+        })
+        .await
     }
 
     /// See [core_crypto::context::CentralContext::e2ei_register_intermediate_ca_pem]
@@ -1726,9 +1816,14 @@ impl CoreCrypto {
     /// See [core_crypto::context::CentralContext::e2ei_rotate]
     #[deprecated = "Please create a transaction in Core Crypto and call this method from it."]
     pub async fn e2ei_rotate(&self, conversation_id: Vec<u8>) -> CoreCryptoResult<CommitBundle> {
-        self.deprecated_transaction(|context| async move { context.e2ei_rotate(&conversation_id, None).await })
-            .await?
-            .try_into()
+        self.deprecated_transaction(|context| async move {
+            context
+                .e2ei_rotate(&conversation_id, None)
+                .await
+                .map_err(CoreCryptoError::from)
+        })
+        .await?
+        .try_into()
     }
 
     /// See [core_crypto::context::CentralContext::e2ei_rotate_all]
@@ -1747,6 +1842,7 @@ impl CoreCrypto {
                     new_key_packages_count as usize,
                 )
                 .await
+                .map_err(CoreCryptoError::from)
         })
         .await?
         .try_into()
@@ -1760,8 +1856,13 @@ impl CoreCrypto {
             .ok_or_else(|| CryptoError::LockPoisonError)?
             .into_inner();
 
-        self.deprecated_transaction(|context| async move { context.e2ei_enrollment_stash(enrollment).await })
-            .await
+        self.deprecated_transaction(|context| async move {
+            context
+                .e2ei_enrollment_stash(enrollment)
+                .await
+                .map_err(CoreCryptoError::from)
+        })
+        .await
     }
 
     /// See [core_crypto::context::CentralContext::e2ei_enrollment_stash_pop]
@@ -1774,6 +1875,7 @@ impl CoreCrypto {
                 .map(async_lock::RwLock::new)
                 .map(std::sync::Arc::new)
                 .map(E2eiEnrollment)
+                .map_err(CoreCryptoError::from)
         })
         .await
     }
@@ -1782,7 +1884,11 @@ impl CoreCrypto {
     #[deprecated = "Please create a transaction in Core Crypto and call this method from it."]
     pub async fn e2ei_conversation_state(&self, conversation_id: Vec<u8>) -> CoreCryptoResult<E2eiConversationState> {
         self.deprecated_transaction(|context| async move {
-            context.e2ei_conversation_state(&conversation_id).await.map(Into::into)
+            context
+                .e2ei_conversation_state(&conversation_id)
+                .await
+                .map_err(CoreCryptoError::from)
+                .map(Into::into)
         })
         .await
     }
@@ -1938,9 +2044,10 @@ impl E2eiEnrollment {
             self.0
                 .write()
                 .await
-                .new_oidc_challenge_response(&context.mls_provider().await?, challenge)
+                .new_oidc_challenge_response(&context.mls_provider().await.map_err(CryptoError::from).map_err(CoreCryptoError::from)?, challenge)
                 .await
-                .map_err(Into::into)
+                // .map_err(Into::into)
+                .map_err(CoreCryptoError::from)
         })
         .await
     }
@@ -1951,10 +2058,16 @@ impl E2eiEnrollment {
         cc: std::sync::Arc<CoreCryptoContext>,
         challenge: Vec<u8>,
     ) -> CoreCryptoResult<()> {
+        let backend = &cc
+            .context
+            .mls_provider()
+            .await
+            .map_err(CryptoError::from)
+            .map_err(CoreCryptoError::from)?;
         self.0
             .write()
             .await
-            .new_oidc_challenge_response(&cc.context.mls_provider().await?, challenge)
+            .new_oidc_challenge_response(backend, challenge)
             .await?;
         Ok(())
     }

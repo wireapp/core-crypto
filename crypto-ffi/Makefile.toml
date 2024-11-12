@@ -162,6 +162,7 @@ script = '''
     perl -i \
         -pe 's/\bCryptoException\b/CryptoError/g;' \
         -pe 's/\bE2eIdentityException\b/E2eIdentityError/g;' \
+        -pe 's/\bProteusException\b/ProteusError/g;' \
         ./bindings/android/src/main/kotlin/uniffi/core_crypto/core_crypto.kt
 '''
 
@@ -187,6 +188,7 @@ script = '''
     perl -i \
         -pe 's/\bCryptoException\b/CryptoError/g;' \
         -pe 's/\bE2eIdentityException\b/E2eIdentityError/g;' \
+        -pe 's/\bProteusException\b/ProteusError/g;' \
         ./bindings/jvm/src/main/kotlin/uniffi/core_crypto/core_crypto.kt
 '''
 

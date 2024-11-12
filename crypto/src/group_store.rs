@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see http://www.gnu.org/licenses/.
 
-use crate::prelude::{CryptoResult, MlsConversation};
+use crate::prelude::{CryptoError, MlsConversation};
 use core_crypto_keystore::{connection::FetchFromDatabase, entities::EntityFindParams};
 
 #[cfg_attr(target_family = "wasm", async_trait::async_trait(?Send))]
@@ -22,6 +22,7 @@ use core_crypto_keystore::{connection::FetchFromDatabase, entities::EntityFindPa
 pub(crate) trait GroupStoreEntity: std::fmt::Debug {
     type RawStoreValue: core_crypto_keystore::entities::Entity;
     type IdentityType;
+    type ErrorType;
 
     fn id(&self) -> &[u8];
 
@@ -29,11 +30,11 @@ pub(crate) trait GroupStoreEntity: std::fmt::Debug {
         id: &[u8],
         identity: Option<Self::IdentityType>,
         keystore: &impl FetchFromDatabase,
-    ) -> CryptoResult<Option<Self>>
+    ) -> Result<Option<Self>, Self::ErrorType>
     where
         Self: Sized;
 
-    async fn fetch_all(keystore: &impl FetchFromDatabase) -> CryptoResult<Vec<Self>>
+    async fn fetch_all(keystore: &impl FetchFromDatabase) -> Result<Vec<Self>, Self::ErrorType>
     where
         Self: Sized;
 }
@@ -43,6 +44,7 @@ pub(crate) trait GroupStoreEntity: std::fmt::Debug {
 impl GroupStoreEntity for MlsConversation {
     type RawStoreValue = core_crypto_keystore::entities::PersistedMlsGroup;
     type IdentityType = ();
+    type ErrorType = CryptoError;
 
     fn id(&self) -> &[u8] {
         self.id().as_slice()
@@ -52,7 +54,7 @@ impl GroupStoreEntity for MlsConversation {
         id: &[u8],
         _: Option<Self::IdentityType>,
         keystore: &impl FetchFromDatabase,
-    ) -> crate::CryptoResult<Option<Self>> {
+    ) -> Result<Option<Self>, Self::ErrorType> {
         let result = keystore.find::<Self::RawStoreValue>(id).await?;
         let Some(store_value) = result else {
             return Ok(None);
@@ -67,7 +69,7 @@ impl GroupStoreEntity for MlsConversation {
         })
     }
 
-    async fn fetch_all(keystore: &impl FetchFromDatabase) -> CryptoResult<Vec<Self>> {
+    async fn fetch_all(keystore: &impl FetchFromDatabase) -> Result<Vec<Self>, Self::ErrorType> {
         let all_conversations = keystore
             .find_all::<Self::RawStoreValue>(EntityFindParams::default())
             .await?;
@@ -87,6 +89,7 @@ impl GroupStoreEntity for MlsConversation {
 impl GroupStoreEntity for crate::proteus::ProteusConversationSession {
     type RawStoreValue = core_crypto_keystore::entities::ProteusSession;
     type IdentityType = std::sync::Arc<proteus_wasm::keys::IdentityKeyPair>;
+    type ErrorType = crate::proteus::ProteusError;
 
     fn id(&self) -> &[u8] {
         unreachable!()
@@ -96,18 +99,18 @@ impl GroupStoreEntity for crate::proteus::ProteusConversationSession {
         id: &[u8],
         identity: Option<Self::IdentityType>,
         keystore: &impl FetchFromDatabase,
-    ) -> crate::CryptoResult<Option<Self>> {
+    ) -> Result<Option<Self>, Self::ErrorType> {
         let result = keystore.find::<Self::RawStoreValue>(id).await?;
         let Some(store_value) = result else {
             return Ok(None);
         };
 
         let Some(identity) = identity else {
-            return Err(crate::CryptoError::ProteusNotInitialized);
+            return Err(crate::proteus::ProteusError::ProteusNotInitialized);
         };
 
         let session = proteus_wasm::session::Session::deserialise(identity, &store_value.session)
-            .map_err(crate::ProteusError::from)?;
+            .map_err(crate::proteus::ProteusError::from)?;
 
         Ok(Some(Self {
             identifier: store_value.id.clone(),
@@ -115,7 +118,7 @@ impl GroupStoreEntity for crate::proteus::ProteusConversationSession {
         }))
     }
 
-    async fn fetch_all(_keystore: &impl FetchFromDatabase) -> CryptoResult<Vec<Self>>
+    async fn fetch_all(_keystore: &impl FetchFromDatabase) -> Result<Vec<Self>, Self::ErrorType>
     where
         Self: Sized,
     {
@@ -197,7 +200,7 @@ impl<V: GroupStoreEntity> GroupStore<V> {
         k: &[u8],
         keystore: &impl FetchFromDatabase,
         identity: Option<V::IdentityType>,
-    ) -> crate::CryptoResult<Option<GroupStoreValue<V>>> {
+    ) -> Result<Option<GroupStoreValue<V>>, V::ErrorType> {
         // Optimistic cache lookup
         if let Some(value) = self.0.get(k) {
             return Ok(Some(value.clone()));
@@ -222,14 +225,14 @@ impl<V: GroupStoreEntity> GroupStore<V> {
         k: &[u8],
         keystore: &impl FetchFromDatabase,
         identity: Option<V::IdentityType>,
-    ) -> crate::CryptoResult<Option<V>> {
+    ) -> Result<Option<V>, V::ErrorType> {
         V::fetch_from_id(k, identity, keystore).await
     }
 
     pub(crate) async fn get_fetch_all(
         &mut self,
         keystore: &impl FetchFromDatabase,
-    ) -> CryptoResult<Vec<GroupStoreValue<V>>> {
+    ) -> Result<Vec<GroupStoreValue<V>>, V::ErrorType> {
         let all = V::fetch_all(keystore)
             .await?
             .into_iter()
@@ -347,6 +350,7 @@ impl<K, V> schnellru::Limiter<K, V> for HybridMemoryLimiter {
 #[cfg(test)]
 mod tests {
     use core_crypto_keystore::dummy_entity::{DummyStoreValue, DummyValue};
+    use std::str::Utf8Error;
     use wasm_bindgen_test::*;
 
     use super::*;
@@ -360,6 +364,8 @@ mod tests {
 
         type IdentityType = ();
 
+        type ErrorType = Utf8Error;
+
         fn id(&self) -> &[u8] {
             unreachable!()
         }
@@ -368,12 +374,12 @@ mod tests {
             id: &[u8],
             _identity: Option<Self::IdentityType>,
             _keystore: &impl FetchFromDatabase,
-        ) -> crate::CryptoResult<Option<Self>> {
+        ) -> Result<Option<Self>, Self::ErrorType> {
             let id = std::str::from_utf8(id)?;
             Ok(Some(id.into()))
         }
 
-        async fn fetch_all(_keystore: &impl FetchFromDatabase) -> CryptoResult<Vec<Self>> {
+        async fn fetch_all(_keystore: &impl FetchFromDatabase) -> Result<Vec<Self>, Self::ErrorType> {
             unreachable!()
         }
     }

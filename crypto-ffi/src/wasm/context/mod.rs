@@ -46,7 +46,12 @@ impl CoreCrypto {
         future_to_promise(
             async move {
                 let context = CoreCryptoContext {
-                    inner: Arc::new(context.new_transaction().await?),
+                    inner: Arc::new(
+                        context
+                            .new_transaction()
+                            .await
+                            .map_err(CryptoError::ContextError)?,
+                    ),
                     proteus_last_error_code: async_lock::RwLock::new(0).into(),
                 };
                 let result = command.execute(context.clone()).await;
@@ -57,11 +62,19 @@ impl CoreCrypto {
                 }
                 match result {
                     Ok(_) => {
-                        context.inner.finish().await?;
+                        context
+                            .inner
+                            .finish()
+                            .await
+                            .map_err(CryptoError::ContextError)?;
                         WasmCryptoResult::Ok(JsValue::UNDEFINED)
                     }
                     Err(uncaught_error) => {
-                        context.inner.abort().await?;
+                        context
+                            .inner
+                            .abort()
+                            .await
+                            .map_err(CryptoError::ContextError)?;
                         Err(WasmError::TransactionFailed {
                             uncaught_error,
                             proteus_error_code,

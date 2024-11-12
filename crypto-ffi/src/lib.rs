@@ -24,8 +24,8 @@ macro_rules! proteus_impl {
 
                 cfg_if::cfg_if! {
                     if #[cfg(target_family = "wasm")] {
-                        if let Err(CoreCryptoError(WasmError::CryptoError(e))) = &result {
-                            let errcode = e.proteus_error_code();
+                        if let Err(CoreCryptoError(WasmError::ProteusError(e))) = &result {
+                            let errcode = e.error_code();
                             if errcode > 0 {
                                 let mut ec = $errcode_dest.write().await;
                                 *ec = errcode;
@@ -34,8 +34,8 @@ macro_rules! proteus_impl {
 
                         result
                     } else {
-                        if let Err(CoreCryptoError::CryptoError { error: e }) = &result {
-                            let errcode = e.proteus_error_code();
+                        if let Err(CoreCryptoError::ProteusError { error: e }) = &result {
+                            let errcode = e.error_code();
                             if errcode > 0 {
                                 $errcode_dest.store(errcode, std::sync::atomic::Ordering::SeqCst);
                             }

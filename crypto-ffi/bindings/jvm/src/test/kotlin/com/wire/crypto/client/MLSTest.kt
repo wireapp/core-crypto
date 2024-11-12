@@ -76,7 +76,7 @@ class MLSTest {
             context!!.mlsInit(aliceId.toClientId())
         }
 
-        assertIs<CryptoError.InvalidContext>(expectedException.error)
+        assertIs<CryptoError.ContextException>(expectedException.error)
     }
 
     @Test

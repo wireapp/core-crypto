@@ -10,7 +10,7 @@ use core_crypto::{
         ClientIdentifier, ConversationId, KeyPackageIn, KeyPackageRef, MlsConversationConfiguration,
         VerifiableGroupInfo,
     },
-    CryptoError, CryptoResult, MlsError,
+    CryptoError, MlsError,
 };
 use std::future::Future;
 use std::sync::atomic::AtomicU32;
@@ -175,18 +175,23 @@ impl CoreCrypto {
     /// ```
     pub async fn transaction(&self, command: Arc<dyn CoreCryptoCommand>) -> CoreCryptoResult<()> {
         let context = Arc::new(CoreCryptoContext {
-            context: Arc::new(self.central.new_transaction().await?),
+            context: Arc::new(
+                self.central
+                    .new_transaction()
+                    .await
+                    .map_err(CryptoError::ContextError)?,
+            ),
             proteus_last_error_code: AtomicU32::new(0),
         });
 
         let result = command.execute(context.clone()).await;
         match result {
             Ok(result) => {
-                context.context.finish().await?;
+                context.context.finish().await.map_err(CryptoError::ContextError)?;
                 Ok(result)
             }
             Err(err) => {
-                context.context.abort().await?;
+                context.context.abort().await.map_err(CryptoError::ContextError)?;
                 Err(err)
             }
         }
@@ -197,18 +202,22 @@ impl CoreCrypto {
     pub(crate) async fn deprecated_transaction<F, Fut, R>(&self, callback: F) -> CoreCryptoResult<R>
     where
         F: FnOnce(CentralContext) -> Fut,
-        Fut: Future<Output = CryptoResult<R>>,
+        Fut: Future<Output = CoreCryptoResult<R>>,
     {
-        let context = self.central.new_transaction().await?;
+        let context = self
+            .central
+            .new_transaction()
+            .await
+            .map_err(CryptoError::ContextError)?;
         let result = callback(context.clone()).await;
         match result {
             Ok(result) => {
-                context.finish().await?;
+                context.finish().await.map_err(CryptoError::ContextError)?;
                 Ok(result)
             }
             Err(err) => {
-                context.abort().await?;
-                Err(err.into())
+                context.abort().await.map_err(CryptoError::ContextError)?;
+                Err(err)
             }
         }
     }

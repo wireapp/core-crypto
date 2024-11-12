@@ -313,7 +313,9 @@ test("Using invalid context throws error", async () => {
         return error;
     });
 
-    expect(error.rustStackTrace).toBe("CryptoError(InvalidContext)");
+    expect(error.rustStackTrace).toBe(
+        "CryptoError(ContextError(InvalidContext))"
+    );
 
     await page.close();
     await ctx.close();

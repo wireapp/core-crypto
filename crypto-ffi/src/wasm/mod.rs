@@ -22,6 +22,7 @@ use std::ops::Deref;
 
 use crate::proteus_impl;
 use core_crypto::prelude::*;
+use core_crypto::proteus::ProteusError;
 use core_crypto::CryptoError;
 use futures_util::future::TryFutureExt;
 use js_sys::{Promise, Uint8Array};
@@ -50,6 +51,8 @@ pub(crate) enum WasmError {
     #[error(transparent)]
     CryptoError(#[from] CryptoError),
     #[error(transparent)]
+    ProteusError(#[from] ProteusError),
+    #[error(transparent)]
     E2eError(#[from] E2eIdentityError),
     #[error(transparent)]
     SerializationError(#[from] serde_wasm_bindgen::Error),
@@ -76,6 +79,7 @@ impl<'a> From<&'a CoreCryptoError> for CoreCryptoJsRichError {
         Self {
             error_name: match e.0 {
                 WasmError::CryptoError(_) => "CryptoError",
+                WasmError::ProteusError(_) => "ProteusError",
                 WasmError::E2eError(_) => "E2eError",
                 WasmError::SerializationError(_) => "SerializationError",
                 WasmError::EnumError => "EnumError",
@@ -97,11 +101,11 @@ pub struct CoreCryptoError(#[from] WasmError);
 
 impl CoreCryptoError {
     fn proteus_error_code(&self) -> u32 {
-        let WasmError::CryptoError(e) = &self.0 else {
+        let WasmError::ProteusError(e) = &self.0 else {
             return 0;
         };
 
-        e.proteus_error_code()
+        e.error_code()
     }
 }
 
@@ -115,6 +119,12 @@ impl std::fmt::Display for CoreCryptoError {
 
 impl From<CryptoError> for CoreCryptoError {
     fn from(e: CryptoError) -> Self {
+        Self(e.into())
+    }
+}
+
+impl From<ProteusError> for CoreCryptoError {
+    fn from(e: ProteusError) -> Self {
         Self(e.into())
     }
 }
