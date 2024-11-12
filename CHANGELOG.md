@@ -1,5 +1,49 @@
 # Changelog
 
+## v1.1.0 - 2024-11-12
+
+### Highlights
+
+- Transactions are now exposed on `CoreCrypto`, opening the door to substantially improve performance by batching operations.
+
+### Features
+
+- implement set_data() and get_data() on context [WPB-10919] (7e88695)
+- implement in-memory cache on transaction (427e0e0)
+- create a keystore transaction struct to be used in the context (4c3f487)
+- add decode cli tool (6f83796)
+- decouple idb version from crate version (06312fe)
+- implement idb migration for all remaining entities [WPB-10144] (545b376)
+- implement idb migration for one entity [WPB-10144] (32fd279)
+- change aad format [WPB-10108] (8e0b7e5)
+
+### Bug Fixes
+
+- avoid spaces in kotlin test names (1e53e64)
+- EntityFindParams SQL clause ordering (a768db4)
+
+### Documentation
+
+- README.md: add a note regarding sed on macOS (b8f2f55)
+- README.md: replace xtask usage with the update-versions.sh script (59f2530)
+- README.md: update release instructions (b63f17d)
+- regenerate CHANGELOG.md with plain git-cliff (e02621f)
+- remove CHANGELOG.tpl (8a47ba5)
+- update README.md (3eba7b3)
+
+### Testing
+
+- add js binding test verifying that we log errors thrown by the logger (1b959e2)
+- add js bindning wrapper test for logger (0005d1d)
+- fix jvm tests [WPB-11668] (98ce97e)
+- add test for upgrading from basic to x509 credentials (9da3b88)
+- test migrations for all entities (48ea746)
+- factor out random method into its own trait (8fd49b0)
+- interop: make sure that there exists platforms/web/index.html (d9fe1c9)
+- crypto-ffi: move index.html contents into a separate file (2dab8bf)
+- include E2eiEnrollment and MlsEpochEncryptionKeyPair in tests (0e5a466)
+
+
 ## v1.0.2 - 2024-08-16
 
 ### Bug Fixes
