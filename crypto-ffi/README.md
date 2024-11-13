@@ -10,6 +10,6 @@ Targets:
 
 ## Tests
 
-- for WASM are [here](bindings/js/test/CoreCrypto.test.js)
+- for WASM are [here](bindings/js/test/CoreCrypto.test.ts)
 - for Kotlin are [here](bindings/jvm/src/test) but are not executed by the CI
 - there are no Swift tests

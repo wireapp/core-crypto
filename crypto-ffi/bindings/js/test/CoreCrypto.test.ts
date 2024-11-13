@@ -818,7 +818,7 @@ test("roundtrip message", async () => {
 
     kp = Uint8Array.from(Object.values(kp));
 
-    let [welcome, message] = await page.evaluate(
+    const [welcome, message] = await page.evaluate(
         async (kp, messageText, conversationId) => {
             const { CoreCrypto, Ciphersuite, CredentialType } = await import(
                 "./corecrypto.js"
@@ -870,7 +870,7 @@ test("roundtrip message", async () => {
     welcome.commit = Uint8Array.from(welcome.commit);
     welcome.groupInfo = Uint8Array.from(welcome.groupInfo);
 
-    message = Uint8Array.from(Object.values(message));
+    const messageBytes = Uint8Array.from(Object.values(message));
 
     const isMessageIdentical = await page2.evaluate(
         async (welcome, message, messageText, conversationId, clientId) => {
@@ -920,7 +920,7 @@ test("roundtrip message", async () => {
             );
         },
         welcome.welcome,
-        message,
+        messageBytes,
         messageText,
         conversationId,
         clientId2
@@ -1456,7 +1456,7 @@ test("end-to-end-identity", async () => {
         );
 
         // simulate the OAuth redirect
-        let storeHandle = await cc.e2eiEnrollmentStash(enrollment);
+        const storeHandle = await cc.e2eiEnrollmentStash(enrollment);
         enrollment = await cc.e2eiEnrollmentStashPop(storeHandle);
 
         const idToken =
@@ -1539,7 +1539,7 @@ test("end-to-end-identity", async () => {
 test("e2ei is conversation invalid", async () => {
     const [ctx, page] = await initBrowser();
 
-    let [state, E2eiConversationState] = await page.evaluate(async () => {
+    const [state, E2eiConversationState] = await page.evaluate(async () => {
         const {
             CoreCrypto,
             Ciphersuite,
@@ -1576,7 +1576,7 @@ test("e2ei is conversation invalid", async () => {
 test("logs are forwarded when logger is registered", async () => {
     const [ctx, page] = await initBrowser();
 
-    let [logs] = await page.evaluate(async () => {
+    const [logs] = await page.evaluate(async () => {
         const {
             CoreCrypto,
             Ciphersuite,
@@ -1622,7 +1622,7 @@ test("logs are forwarded when logger is registered", async () => {
 test("logs are not forwarded when logger is registered, but log level is too high", async () => {
     const [ctx, page] = await initBrowser();
 
-    let [logs] = await page.evaluate(async () => {
+    const [logs] = await page.evaluate(async () => {
         const {
             CoreCrypto,
             Ciphersuite,
