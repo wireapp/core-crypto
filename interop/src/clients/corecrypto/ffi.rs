@@ -129,13 +129,16 @@ impl EmulatedMlsClient for CoreCryptoFfiClient {
         Ok(welcome.welcome)
     }
 
-    #[allow(deprecated)]
     async fn kick_client(&mut self, conversation_id: &[u8], client_id: &[u8]) -> Result<Vec<u8>> {
         let client_id = ClientId::into_custom(client_id.to_vec()).unwrap();
-        let commit = self
-            .cc
-            .remove_clients_from_conversation(conversation_id.to_vec(), vec![client_id])
-            .await?;
+        let conversation_id = conversation_id.to_vec();
+        let extractor = TransactionDataExtractor::new(move |context| async move {
+            context
+                .remove_clients_from_conversation(conversation_id, vec![client_id])
+                .await
+        });
+        self.cc.transaction(extractor.clone()).await?;
+        let commit = extractor.into_return_value();
 
         Ok(commit.commit)
     }
