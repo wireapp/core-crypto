@@ -15,7 +15,10 @@
 // along with this program. If not, see http://www.gnu.org/licenses/.
 
 use color_eyre::eyre::Result;
-use core_crypto_ffi::{ClientId, CoreCrypto, CustomConfiguration, MlsCredentialType, UniffiCustomTypeConverter};
+use core_crypto_ffi::{
+    context::TransactionDataExtractor, ClientId, CoreCrypto, CustomConfiguration, MlsCredentialType,
+    UniffiCustomTypeConverter,
+};
 use std::sync::Arc;
 
 use crate::{
@@ -79,16 +82,18 @@ impl EmulatedClient for CoreCryptoFfiClient {
 
 #[async_trait::async_trait(?Send)]
 impl EmulatedMlsClient for CoreCryptoFfiClient {
-    #[allow(deprecated)]
     async fn get_keypackage(&mut self) -> Result<Vec<u8>> {
         let ciphersuite = CIPHERSUITE_IN_USE.into();
         let credential_type = MlsCredentialType::Basic;
-        let kp = self
-            .cc
-            .client_keypackages(ciphersuite, credential_type, 1)
-            .await?
-            .pop()
-            .unwrap();
+        let extractor = TransactionDataExtractor::new(move |context| async move {
+            Ok(context
+                .client_keypackages(ciphersuite, credential_type, 1)
+                .await?
+                .pop()
+                .unwrap())
+        });
+        self.cc.transaction(extractor.clone()).await?;
+        let kp = extractor.into_return_value();
         Ok(kp)
     }
 
