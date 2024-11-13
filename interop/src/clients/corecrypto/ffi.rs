@@ -227,12 +227,14 @@ impl crate::clients::EmulatedProteusClient for CoreCryptoFfiClient {
         Ok(extractor.into_return_value())
     }
 
-    #[allow(deprecated)]
     async fn decrypt(&mut self, session_id: &str, ciphertext: &[u8]) -> Result<Vec<u8>> {
-        self.cc
-            .proteus_decrypt(session_id.to_string(), ciphertext.to_vec())
-            .await
-            .map_err(Into::into)
+        let session_id = session_id.to_string();
+        let ciphertext = ciphertext.to_vec();
+        let extractor = TransactionDataExtractor::new(move |context| async move {
+            context.proteus_decrypt(session_id, ciphertext).await
+        });
+        self.cc.transaction(extractor.clone()).await?;
+        Ok(extractor.into_return_value())
     }
 
     async fn fingerprint(&self) -> Result<String> {
