@@ -52,7 +52,12 @@ where
     }
 }
 
-/// Helper to extract data from within a transaction.
+/// Helper for working with the new transasction interface.
+///
+/// This helper serves two purposes: to present a `FnOnce` interface for transactions,
+/// and to allow the extraction of data from within transactions.
+///
+/// ## Extracting Data
 ///
 /// The `CoreCryptoCommand` interface requires some kind of interior mutability to extract
 /// any data: it takes an immutable reference to the implementing item, and returns the unit struct
@@ -66,21 +71,23 @@ where
 ///
 /// ```ignore
 /// // an extractor is always `Arc`-wrapped
-/// let extractor: Arc<_> = TransactionDataExtractor::new(move |context| async move {
+/// let extractor: Arc<_> = TransactionHelper::new(move |context| async move {
 ///     // return whatever you need from the transaction here
 /// });
 /// core_crypto.transaction(extractor.clone()).await?;
 /// let return_value = extractor.into_return_value();
 /// ```
 ///
-/// Note that `TransactionDataExtractor` is a one-shot item. Attempting to use the
+/// ## Panics
+///
+/// `TransactionHelper` is a one-shot item. Attempting to use the
 /// same extractor in two different transactions will cause a panic.
-pub struct TransactionDataExtractor<T, F> {
+pub struct TransactionHelper<T, F> {
     func: Mutex<Option<F>>,
     return_value: OnceCell<T>,
 }
 
-impl<T, F, Fut> TransactionDataExtractor<T, F>
+impl<T, F, Fut> TransactionHelper<T, F>
 where
     F: FnOnce(Arc<CoreCryptoContext>) -> Fut + Send + Sync,
     Fut: Future<Output = CoreCryptoResult<T>> + Send,
@@ -127,7 +134,7 @@ where
 }
 
 #[async_trait::async_trait]
-impl<T, F, Fut> CoreCryptoCommand for TransactionDataExtractor<T, F>
+impl<T, F, Fut> CoreCryptoCommand for TransactionHelper<T, F>
 where
     F: FnOnce(Arc<CoreCryptoContext>) -> Fut + Send + Sync,
     Fut: Future<Output = CoreCryptoResult<T>> + Send,

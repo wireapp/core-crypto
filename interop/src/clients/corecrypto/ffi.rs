@@ -16,8 +16,7 @@
 
 use color_eyre::eyre::Result;
 use core_crypto_ffi::{
-    context::TransactionDataExtractor, ClientId, CoreCrypto, CustomConfiguration, MlsCredentialType,
-    UniffiCustomTypeConverter,
+    context::TransactionHelper, ClientId, CoreCrypto, CustomConfiguration, MlsCredentialType, UniffiCustomTypeConverter,
 };
 use std::sync::Arc;
 
@@ -85,7 +84,7 @@ impl EmulatedMlsClient for CoreCryptoFfiClient {
     async fn get_keypackage(&mut self) -> Result<Vec<u8>> {
         let ciphersuite = CIPHERSUITE_IN_USE.into();
         let credential_type = MlsCredentialType::Basic;
-        let extractor = TransactionDataExtractor::new(move |context| async move {
+        let extractor = TransactionHelper::new(move |context| async move {
             Ok(context
                 .client_keypackages(ciphersuite, credential_type, 1)
                 .await?
@@ -109,7 +108,7 @@ impl EmulatedMlsClient for CoreCryptoFfiClient {
             };
             let conversation_id = conversation_id.to_vec();
             self.cc
-                .transaction(TransactionDataExtractor::new(move |context| async move {
+                .transaction(TransactionHelper::new(move |context| async move {
                     context
                         .create_conversation(conversation_id, MlsCredentialType::Basic, cfg)
                         .await?;
@@ -120,7 +119,7 @@ impl EmulatedMlsClient for CoreCryptoFfiClient {
 
         let conversation_id = conversation_id.to_vec();
         let key_packages = vec![kp.to_vec()];
-        let extractor = TransactionDataExtractor::new(move |context| async move {
+        let extractor = TransactionHelper::new(move |context| async move {
             context.add_clients_to_conversation(conversation_id, key_packages).await
         });
         self.cc.transaction(extractor.clone()).await?;
@@ -132,7 +131,7 @@ impl EmulatedMlsClient for CoreCryptoFfiClient {
     async fn kick_client(&mut self, conversation_id: &[u8], client_id: &[u8]) -> Result<Vec<u8>> {
         let client_id = ClientId::into_custom(client_id.to_vec()).unwrap();
         let conversation_id = conversation_id.to_vec();
-        let extractor = TransactionDataExtractor::new(move |context| async move {
+        let extractor = TransactionHelper::new(move |context| async move {
             context
                 .remove_clients_from_conversation(conversation_id, vec![client_id])
                 .await
@@ -150,9 +149,7 @@ impl EmulatedMlsClient for CoreCryptoFfiClient {
         };
         let welcome = welcome.to_vec();
         let extractor =
-            TransactionDataExtractor::new(
-                move |context| async move { context.process_welcome_message(welcome, cfg).await },
-            );
+            TransactionHelper::new(move |context| async move { context.process_welcome_message(welcome, cfg).await });
         self.cc.transaction(extractor.clone()).await?;
         Ok(extractor.into_return_value().id)
     }
@@ -160,9 +157,10 @@ impl EmulatedMlsClient for CoreCryptoFfiClient {
     async fn encrypt_message(&mut self, conversation_id: &[u8], message: &[u8]) -> Result<Vec<u8>> {
         let conversation_id = conversation_id.to_vec();
         let message = message.to_vec();
-        let extractor = TransactionDataExtractor::new(move |context| async move {
-            context.encrypt_message(conversation_id, message).await
-        });
+        let extractor =
+            TransactionHelper::new(
+                move |context| async move { context.encrypt_message(conversation_id, message).await },
+            );
         self.cc.transaction(extractor.clone()).await?;
         Ok(extractor.into_return_value())
     }
@@ -170,9 +168,10 @@ impl EmulatedMlsClient for CoreCryptoFfiClient {
     async fn decrypt_message(&mut self, conversation_id: &[u8], message: &[u8]) -> Result<Option<Vec<u8>>> {
         let conversation_id = conversation_id.to_vec();
         let message = message.to_vec();
-        let extractor = TransactionDataExtractor::new(move |context| async move {
-            context.decrypt_message(conversation_id, message).await
-        });
+        let extractor =
+            TransactionHelper::new(
+                move |context| async move { context.decrypt_message(conversation_id, message).await },
+            );
         self.cc.transaction(extractor.clone()).await?;
         Ok(extractor.into_return_value().message)
     }
@@ -189,9 +188,7 @@ impl crate::clients::EmulatedProteusClient for CoreCryptoFfiClient {
         self.prekey_last_id += 1;
         let prekey_last_id = self.prekey_last_id;
         let extractor =
-            TransactionDataExtractor::new(
-                move |context| async move { context.proteus_new_prekey(prekey_last_id).await },
-            );
+            TransactionHelper::new(move |context| async move { context.proteus_new_prekey(prekey_last_id).await });
         self.cc.transaction(extractor.clone()).await?;
         Ok(extractor.into_return_value())
     }
@@ -200,7 +197,7 @@ impl crate::clients::EmulatedProteusClient for CoreCryptoFfiClient {
         let session_id = session_id.to_string();
         let prekey = prekey.to_vec();
         self.cc
-            .transaction(TransactionDataExtractor::new(move |context| async move {
+            .transaction(TransactionHelper::new(move |context| async move {
                 context.proteus_session_from_prekey(session_id, prekey).await
             }))
             .await?;
@@ -210,7 +207,7 @@ impl crate::clients::EmulatedProteusClient for CoreCryptoFfiClient {
     async fn session_from_message(&mut self, session_id: &str, message: &[u8]) -> Result<Vec<u8>> {
         let session_id = session_id.to_string();
         let message = message.to_vec();
-        let extractor = TransactionDataExtractor::new(move |context| async move {
+        let extractor = TransactionHelper::new(move |context| async move {
             context.proteus_session_from_message(session_id, message).await
         });
         self.cc.transaction(extractor.clone()).await?;
@@ -220,9 +217,8 @@ impl crate::clients::EmulatedProteusClient for CoreCryptoFfiClient {
     async fn encrypt(&mut self, session_id: &str, plaintext: &[u8]) -> Result<Vec<u8>> {
         let session_id = session_id.to_string();
         let plaintext = plaintext.to_vec();
-        let extractor = TransactionDataExtractor::new(move |context| async move {
-            context.proteus_encrypt(session_id, plaintext).await
-        });
+        let extractor =
+            TransactionHelper::new(move |context| async move { context.proteus_encrypt(session_id, plaintext).await });
         self.cc.transaction(extractor.clone()).await?;
         Ok(extractor.into_return_value())
     }
@@ -230,9 +226,8 @@ impl crate::clients::EmulatedProteusClient for CoreCryptoFfiClient {
     async fn decrypt(&mut self, session_id: &str, ciphertext: &[u8]) -> Result<Vec<u8>> {
         let session_id = session_id.to_string();
         let ciphertext = ciphertext.to_vec();
-        let extractor = TransactionDataExtractor::new(move |context| async move {
-            context.proteus_decrypt(session_id, ciphertext).await
-        });
+        let extractor =
+            TransactionHelper::new(move |context| async move { context.proteus_decrypt(session_id, ciphertext).await });
         self.cc.transaction(extractor.clone()).await?;
         Ok(extractor.into_return_value())
     }
