@@ -185,13 +185,15 @@ impl crate::clients::EmulatedProteusClient for CoreCryptoFfiClient {
         self.cc.proteus_init().await.map_err(Into::into)
     }
 
-    #[allow(deprecated)]
     async fn get_prekey(&mut self) -> Result<Vec<u8>> {
         self.prekey_last_id += 1;
-        self.cc
-            .proteus_new_prekey(self.prekey_last_id)
-            .await
-            .map_err(Into::into)
+        let prekey_last_id = self.prekey_last_id;
+        let extractor =
+            TransactionDataExtractor::new(
+                move |context| async move { context.proteus_new_prekey(prekey_last_id).await },
+            );
+        self.cc.transaction(extractor.clone()).await?;
+        Ok(extractor.into_return_value())
     }
 
     #[allow(deprecated)]
