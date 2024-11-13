@@ -36,6 +36,13 @@ brew install gnu-sed
 ```
 and add an alias to your shell configuration file: `alias sed=gsed` (e.g. to `~/.zshenv` if you're using zsh).
 
+### Development Requirements
+
+#### Pre-commit
+
+- Install the [`pre-commit` framework](https://pre-commit.com/)
+- Run `pre-commit install` to initialize the pre-commit hooks
+
 ### Android
 
 Install Android SDK and Build-Tools for API level 30+
