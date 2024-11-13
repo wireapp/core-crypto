@@ -97,7 +97,6 @@ impl EmulatedMlsClient for CoreCryptoFfiClient {
         Ok(kp)
     }
 
-    #[allow(deprecated)]
     async fn add_client(&mut self, conversation_id: &[u8], kp: &[u8]) -> Result<Vec<u8>> {
         if !self.cc.conversation_exists(conversation_id.to_vec()).await? {
             let cfg = core_crypto_ffi::ConversationConfiguration {
@@ -108,15 +107,24 @@ impl EmulatedMlsClient for CoreCryptoFfiClient {
                     wire_policy: None,
                 },
             };
+            let conversation_id = conversation_id.to_vec();
             self.cc
-                .create_conversation(conversation_id.to_vec(), MlsCredentialType::Basic, cfg)
+                .transaction(TransactionDataExtractor::new(move |context| async move {
+                    context
+                        .create_conversation(conversation_id, MlsCredentialType::Basic, cfg)
+                        .await?;
+                    Ok(())
+                }))
                 .await?;
         }
 
-        let welcome = self
-            .cc
-            .add_clients_to_conversation(conversation_id.to_vec(), vec![kp.to_vec()])
-            .await?;
+        let conversation_id = conversation_id.to_vec();
+        let key_packages = vec![kp.to_vec()];
+        let extractor = TransactionDataExtractor::new(move |context| async move {
+            context.add_clients_to_conversation(conversation_id, key_packages).await
+        });
+        self.cc.transaction(extractor.clone()).await?;
+        let welcome = extractor.into_return_value();
 
         Ok(welcome.welcome)
     }
