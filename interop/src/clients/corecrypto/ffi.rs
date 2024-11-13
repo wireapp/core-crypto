@@ -157,12 +157,14 @@ impl EmulatedMlsClient for CoreCryptoFfiClient {
         Ok(extractor.into_return_value().id)
     }
 
-    #[allow(deprecated)]
     async fn encrypt_message(&mut self, conversation_id: &[u8], message: &[u8]) -> Result<Vec<u8>> {
-        self.cc
-            .encrypt_message(conversation_id.to_vec(), message.to_vec())
-            .await
-            .map_err(Into::into)
+        let conversation_id = conversation_id.to_vec();
+        let message = message.to_vec();
+        let extractor = TransactionDataExtractor::new(move |context| async move {
+            context.encrypt_message(conversation_id, message).await
+        });
+        self.cc.transaction(extractor.clone()).await?;
+        Ok(extractor.into_return_value())
     }
 
     #[allow(deprecated)]
