@@ -196,11 +196,13 @@ impl crate::clients::EmulatedProteusClient for CoreCryptoFfiClient {
         Ok(extractor.into_return_value())
     }
 
-    #[allow(deprecated)]
     async fn session_from_prekey(&mut self, session_id: &str, prekey: &[u8]) -> Result<()> {
-        let _ = self
-            .cc
-            .proteus_session_from_prekey(session_id.to_string(), prekey.to_vec())
+        let session_id = session_id.to_string();
+        let prekey = prekey.to_vec();
+        self.cc
+            .transaction(TransactionDataExtractor::new(move |context| async move {
+                context.proteus_session_from_prekey(session_id, prekey).await
+            }))
             .await?;
         Ok(())
     }
