@@ -52,5 +52,5 @@
     - TypeScript/Web: `crypto-ffi/bindings/js/CoreCrypto.ts`
     (Swift/iOS are automatically generated)
 1. Add documentation for the new API in the bindings.
-1. Add a test for the bindings. This is easily done by extending the existing test suite in `crypto-ffi/bindings/js/test/CoreCrypto.test.js`.
+1. Add a test for the bindings. This is easily done by extending the existing test suite in `crypto-ffi/bindings/js/test/CoreCrypto.test.ts`.
    For example, see [this commit](https://github.com/wireapp/core-crypto/commit/5e9ecf7328b33730f31dfc25aeb168e090a7b1e5).
