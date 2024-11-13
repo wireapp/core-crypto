@@ -143,13 +143,18 @@ impl EmulatedMlsClient for CoreCryptoFfiClient {
         Ok(commit.commit)
     }
 
-    #[allow(deprecated)]
     async fn process_welcome(&mut self, welcome: &[u8]) -> Result<Vec<u8>> {
         let cfg = CustomConfiguration {
             key_rotation_span: None,
             wire_policy: None,
         };
-        Ok(self.cc.process_welcome_message(welcome.to_vec(), cfg).await?.id)
+        let welcome = welcome.to_vec();
+        let extractor =
+            TransactionDataExtractor::new(
+                move |context| async move { context.process_welcome_message(welcome, cfg).await },
+            );
+        self.cc.transaction(extractor.clone()).await?;
+        Ok(extractor.into_return_value().id)
     }
 
     #[allow(deprecated)]
