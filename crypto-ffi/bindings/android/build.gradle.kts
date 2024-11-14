@@ -72,7 +72,6 @@ fun registerCopyJvmBinaryTask(target: String, jniTarget: String, include: String
 val copyBinariesTasks = listOf(
     registerCopyJvmBinaryTask("aarch64-linux-android", "arm64-v8a"),
     registerCopyJvmBinaryTask("armv7-linux-androideabi", "armeabi-v7a"),
-    registerCopyJvmBinaryTask("i686-linux-android", "x86"),
     registerCopyJvmBinaryTask("x86_64-linux-android", "x86_64")
 )
 

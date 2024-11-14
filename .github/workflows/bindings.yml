@@ -34,7 +34,7 @@ jobs:
         uses: actions-rust-lang/setup-rust-toolchain@v1  # this implicitly caches Rust tools and build artifacts
         with:
           rustflags: ''
-          target: "armv7-linux-androideabi,aarch64-linux-android,x86_64-linux-android,i686-linux-android"
+          target: "armv7-linux-androideabi,aarch64-linux-android,x86_64-linux-android"
       - name: Setup cargo-make
         uses: davidB/rust-cargo-make@v1
       - name: Setup Android SDK

@@ -298,24 +298,8 @@ args = [
 ]
 dependencies = ["ffi-kotlin-android", "android-env"]
 
-[tasks.android-i686]
-command = "cargo"
-args = [
-    "rustc",
-    "--locked",
-    "--target", "i686-linux-android",
-    "--crate-type=cdylib",
-    "--crate-type=staticlib",
-    "--release",
-    "--",
-    "-C", "strip=symbols",
-    "-l", "static=clang_rt.builtins-i686-android",
-    "-L", "${CLANG_RT_DIR}"
-]
-dependencies = ["ffi-kotlin-android", "android-env"]
-
 [tasks.android]
-dependencies = ["android-armv7", "android-armv8", "android-x86", "android-i686"]
+dependencies = ["android-armv7", "android-armv8", "android-x86"]
 
 ####################################  JVM  ####################################
 
