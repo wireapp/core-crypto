@@ -13,10 +13,6 @@ CC_x86_64-linux-android = "x86_64-linux-android24-clang"
 CXX_x86_64-linux-android = "x86_64-linux-android24-clang++"
 AR_x86_64-linux-android = "llvm-ar"
 RANLIB_x86_64-linux-android = "llvm-ranlib"
-CC_i686-linux-android = "i686-linux-android24-clang"
-CXX_i686-linux-android = "i686-linux-android24-clang++"
-AR_i686-linux-android = "llvm-ar"
-RANLIB_i686-linux-android = "llvm-ranlib"
 # ? Ring treats warnings as errors during local development by detecting
 # ? the presence of a `.git` folder
 # ? With us having a git dependency to ring, this triggers this local development behavior, preventing
@@ -43,13 +39,6 @@ rustflags = [
 [target.x86_64-linux-android]
 ar = "llvm-ar"
 linker = "x86_64-linux-android24-clang"
-rustflags = [
-    "-C", "link-args=-latomic"
-]
-
-[target.i686-linux-android]
-ar = "llvm-ar"
-linker = "i686-linux-android24-clang"
 rustflags = [
     "-C", "link-args=-latomic"
 ]
