@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
-use async_lock::RwLock;
 use log::trace;
+use tokio::sync::RwLock;
 
 use crate::prelude::{
     identifier::ClientIdentifier, key_package::INITIAL_KEYING_MATERIAL_COUNT, Client, ClientId, ConversationId,

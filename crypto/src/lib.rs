@@ -23,10 +23,10 @@
 #![deny(missing_docs)]
 #![allow(clippy::single_component_path_imports)]
 
-use async_lock::Mutex;
 #[cfg(test)]
 pub use core_crypto_attributes::{dispotent, durable, idempotent};
 use std::sync::Arc;
+use tokio::sync::Mutex;
 
 pub use self::error::*;
 
