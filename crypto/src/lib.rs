@@ -50,6 +50,9 @@ pub mod proteus;
 pub mod context;
 mod group_store;
 
+mod build_metadata;
+pub use build_metadata::{BuildMetadata, BUILD_METADATA};
+
 /// Common imports that should be useful for most uses of the crate
 pub mod prelude {
     pub use openmls::{

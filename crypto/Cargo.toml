@@ -128,3 +128,10 @@ harness = false
 [[bench]]
 name = "mls_proteus"
 harness = false
+
+[build-dependencies]
+anyhow = "1.0.93"
+# this is appropriate if we always and only build in environments where `git`
+# is available on the command line. If not, we should replace this with
+# `vergen-gix` or `vergen-git2`.
+vergen-gitcl = { version = "1.0.1", features = ["build", "cargo"] }

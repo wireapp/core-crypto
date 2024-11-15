@@ -49,6 +49,44 @@ pub fn version() -> String {
     VERSION.to_string()
 }
 
+#[derive(uniffi::Record)]
+/// Metadata describing the conditions of the build of this software.
+pub struct BuildMetadata {
+    /// Build Timestamp
+    pub timestamp: String,
+    /// Whether this build was in Debug mode (true) or Release mode (false)
+    pub cargo_debug: String,
+    /// Features enabled for this build
+    pub cargo_features: String,
+    /// Optimization level
+    pub opt_level: String,
+    /// Build target triple
+    pub target_triple: String,
+    /// Git branch
+    pub git_branch: String,
+    /// Output of `git describe`
+    pub git_describe: String,
+    /// Hash of current git commit
+    pub git_sha: String,
+    /// `true` when the source code differed from the commit at the most recent git hash
+    pub git_dirty: String,
+}
+
+#[uniffi::export]
+pub fn build_metadata() -> BuildMetadata {
+    BuildMetadata {
+        timestamp: core_crypto::BUILD_METADATA.timestamp.to_string(),
+        cargo_debug: core_crypto::BUILD_METADATA.cargo_debug.to_string(),
+        cargo_features: core_crypto::BUILD_METADATA.cargo_features.to_string(),
+        opt_level: core_crypto::BUILD_METADATA.opt_level.to_string(),
+        target_triple: core_crypto::BUILD_METADATA.target_triple.to_string(),
+        git_branch: core_crypto::BUILD_METADATA.git_branch.to_string(),
+        git_describe: core_crypto::BUILD_METADATA.git_describe.to_string(),
+        git_sha: core_crypto::BUILD_METADATA.git_sha.to_string(),
+        git_dirty: core_crypto::BUILD_METADATA.git_dirty.to_string(),
+    }
+}
+
 #[derive(Debug, thiserror::Error, uniffi::Error)]
 pub enum CoreCryptoError {
     #[error(transparent)]
