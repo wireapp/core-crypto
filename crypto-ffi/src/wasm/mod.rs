@@ -38,6 +38,38 @@ use wasm_bindgen_futures::future_to_promise;
 #[allow(dead_code)]
 pub(super) const VERSION: &str = env!("CARGO_PKG_VERSION");
 
+/// Metadata describing the conditions of the build of this software.
+#[wasm_bindgen(inspectable)]
+pub struct BuildMetadata {
+    /// Build Timestamp
+    #[wasm_bindgen(readonly)]
+    pub timestamp: &'static str,
+    /// Whether this build was in Debug mode (true) or Release mode (false)
+    #[wasm_bindgen(readonly)]
+    pub cargo_debug: &'static str,
+    /// Features enabled for this build
+    #[wasm_bindgen(readonly)]
+    pub cargo_features: &'static str,
+    /// Optimization level
+    #[wasm_bindgen(readonly)]
+    pub opt_level: &'static str,
+    /// Build target triple
+    #[wasm_bindgen(readonly)]
+    pub target_triple: &'static str,
+    /// Git branch
+    #[wasm_bindgen(readonly)]
+    pub git_branch: &'static str,
+    /// Output of `git describe`
+    #[wasm_bindgen(readonly)]
+    pub git_describe: &'static str,
+    /// Hash of current git commit
+    #[wasm_bindgen(readonly)]
+    pub git_sha: &'static str,
+    /// `true` when the source code differed from the commit at the most recent git hash
+    #[wasm_bindgen(readonly)]
+    pub git_dirty: &'static str,
+}
+
 // This is intended to hotfix this import:
 // ❯ wasmer inspect bindings/js/wasm/core-crypto-ffi_bg.wasm | grep env
 //    "env"."__stack_chk_fail": [] -> []
@@ -1291,6 +1323,21 @@ impl CoreCrypto {
     /// Returns the current version of CoreCrypto
     pub fn version() -> String {
         crate::VERSION.into()
+    }
+
+    /// Returs build data for CoreCrypto
+    pub fn build_metadata() -> BuildMetadata {
+        BuildMetadata {
+            timestamp: core_crypto::BUILD_METADATA.timestamp,
+            cargo_debug: core_crypto::BUILD_METADATA.cargo_debug,
+            cargo_features: core_crypto::BUILD_METADATA.cargo_features,
+            opt_level: core_crypto::BUILD_METADATA.opt_level,
+            target_triple: core_crypto::BUILD_METADATA.target_triple,
+            git_branch: core_crypto::BUILD_METADATA.git_branch,
+            git_describe: core_crypto::BUILD_METADATA.git_describe,
+            git_sha: core_crypto::BUILD_METADATA.git_sha,
+            git_dirty: core_crypto::BUILD_METADATA.git_dirty,
+        }
     }
 
     /// see [core_crypto::mls::MlsCentral::try_new]
