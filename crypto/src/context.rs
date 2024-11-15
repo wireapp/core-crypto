@@ -9,12 +9,12 @@ use crate::{
     prelude::{Client, MlsConversation},
     CoreCrypto, CoreCryptoCallbacks, CryptoError, CryptoResult,
 };
-use async_lock::{Mutex, RwLock, RwLockReadGuardArc, RwLockWriteGuardArc};
 use core_crypto_keystore::connection::FetchFromDatabase;
 use core_crypto_keystore::entities::ConsumerData;
 use core_crypto_keystore::CryptoKeystoreError;
 use mls_crypto_provider::{CryptoKeystore, MlsCryptoProvider};
 use std::{ops::Deref, sync::Arc};
+use tokio::sync::{Mutex, OwnedRwLockReadGuard, OwnedRwLockWriteGuard, RwLock};
 
 /// This struct provides transactional support for Core Crypto.
 ///
@@ -90,9 +90,9 @@ impl CentralContext {
 
     pub(crate) async fn callbacks(
         &self,
-    ) -> CryptoResult<RwLockReadGuardArc<Option<Arc<dyn CoreCryptoCallbacks + 'static>>>> {
+    ) -> CryptoResult<OwnedRwLockReadGuard<Option<Arc<dyn CoreCryptoCallbacks + 'static>>>> {
         match self.state.read().await.deref() {
-            ContextState::Valid { callbacks, .. } => Ok(callbacks.read_arc().await),
+            ContextState::Valid { callbacks, .. } => Ok(callbacks.clone().read_owned().await),
             ContextState::Invalid => Err(CryptoError::InvalidContext),
         }
     }
@@ -104,7 +104,7 @@ impl CentralContext {
     ) -> CryptoResult<()> {
         match self.state.read().await.deref() {
             ContextState::Valid { callbacks: cbs, .. } => {
-                *cbs.write_arc().await = callbacks;
+                *cbs.clone().write_owned().await = callbacks;
                 Ok(())
             }
             ContextState::Invalid => Err(CryptoError::InvalidContext),
@@ -126,9 +126,9 @@ impl CentralContext {
         }
     }
 
-    pub(crate) async fn mls_groups(&self) -> CryptoResult<RwLockWriteGuardArc<GroupStore<MlsConversation>>> {
+    pub(crate) async fn mls_groups(&self) -> CryptoResult<OwnedRwLockWriteGuard<GroupStore<MlsConversation>>> {
         match self.state.read().await.deref() {
-            ContextState::Valid { mls_groups, .. } => Ok(mls_groups.write_arc().await),
+            ContextState::Valid { mls_groups, .. } => Ok(mls_groups.clone().write_owned().await),
             ContextState::Invalid => Err(CryptoError::InvalidContext),
         }
     }

@@ -27,7 +27,6 @@ use crate::{
         CryptoError, CryptoResult, MlsCiphersuite, MlsCredentialType, MlsError,
     },
 };
-use async_lock::RwLock;
 use core_crypto_keystore::{connection::FetchFromDatabase, Connection, CryptoKeystoreError};
 use log::debug;
 use openmls::prelude::{Credential, CredentialType};
@@ -37,6 +36,7 @@ use std::collections::HashSet;
 use std::ops::{Deref, DerefMut};
 use std::sync::Arc;
 use tls_codec::{Deserialize, Serialize};
+use tokio::sync::RwLock;
 
 use core_crypto_keystore::entities::{EntityFindParams, MlsCredential, MlsSignatureKeyPair};
 use identities::ClientIdentities;

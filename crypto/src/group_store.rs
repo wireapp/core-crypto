@@ -123,7 +123,7 @@ impl GroupStoreEntity for crate::proteus::ProteusConversationSession {
     }
 }
 
-pub(crate) type GroupStoreValue<V> = std::sync::Arc<async_lock::RwLock<V>>;
+pub(crate) type GroupStoreValue<V> = std::sync::Arc<tokio::sync::RwLock<V>>;
 
 pub(crate) type LruMap<V> = schnellru::LruMap<Vec<u8>, GroupStoreValue<V>, HybridMemoryLimiter>;
 
@@ -206,7 +206,7 @@ impl<V: GroupStoreEntity> GroupStore<V> {
         // Not in store, fetch the thing in the keystore
         let mut value = V::fetch_from_id(k, identity, keystore).await?;
         if let Some(value) = value.take() {
-            let value_to_insert = std::sync::Arc::new(async_lock::RwLock::new(value));
+            let value_to_insert = std::sync::Arc::new(tokio::sync::RwLock::new(value));
             self.insert_prepped(k.to_vec(), value_to_insert.clone());
 
             Ok(Some(value_to_insert))
@@ -235,7 +235,7 @@ impl<V: GroupStoreEntity> GroupStore<V> {
             .into_iter()
             .map(|g| {
                 let id = g.id().to_vec();
-                let to_insert = std::sync::Arc::new(async_lock::RwLock::new(g));
+                let to_insert = std::sync::Arc::new(tokio::sync::RwLock::new(g));
                 self.insert_prepped(id, to_insert.clone());
                 to_insert
             })
@@ -248,12 +248,12 @@ impl<V: GroupStoreEntity> GroupStore<V> {
     }
 
     pub(crate) fn insert(&mut self, k: Vec<u8>, entity: V) {
-        let value_to_insert = std::sync::Arc::new(async_lock::RwLock::new(entity));
+        let value_to_insert = std::sync::Arc::new(tokio::sync::RwLock::new(entity));
         self.insert_prepped(k, value_to_insert)
     }
 
     pub(crate) fn try_insert(&mut self, k: Vec<u8>, entity: V) -> Result<(), V> {
-        let value_to_insert = std::sync::Arc::new(async_lock::RwLock::new(entity));
+        let value_to_insert = std::sync::Arc::new(tokio::sync::RwLock::new(entity));
 
         if self.0.insert(k, value_to_insert.clone()) {
             Ok(())

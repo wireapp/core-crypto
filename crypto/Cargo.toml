@@ -40,7 +40,6 @@ serde.workspace = true
 serde_json.workspace = true
 url.workspace = true
 async-trait.workspace = true
-async-lock.workspace = true
 schnellru.workspace = true
 zeroize.workspace = true
 wire-e2e-identity.workspace = true
@@ -55,6 +54,7 @@ base64.workspace = true
 log.workspace = true
 proteus-wasm = { workspace = true, features = ["hazmat"], optional = true }
 proteus-traits = { workspace = true, optional = true }
+tokio.workspace = true
 
 [target.'cfg(not(target_family = "wasm"))'.dependencies]
 sysinfo = { version = "0.32", default-features = false, features = ["apple-app-store", "system"] }
