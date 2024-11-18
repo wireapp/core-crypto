@@ -49,6 +49,7 @@ pub mod proteus;
 
 pub mod context;
 mod group_store;
+mod obfuscate;
 
 /// Common imports that should be useful for most uses of the crate
 pub mod prelude {

@@ -7,6 +7,8 @@
 //! |-------------------|----------------|----------------|
 //! | 0 pend. Proposal  | ✅              | ✅              |
 //! | 1+ pend. Proposal | ✅              | ✅              |
+
+use log::debug;
 use openmls::prelude::StageCommitError;
 use openmls::{
     framing::errors::{MessageDecryptionError, SecretTreeError},
@@ -17,13 +19,14 @@ use openmls::{
     },
 };
 use openmls_traits::OpenMlsCryptoProvider;
-
+use std::fmt::Debug;
 use tls_codec::Deserialize;
 
 use core_crypto_keystore::entities::MlsPendingMessage;
 use mls_crypto_provider::MlsCryptoProvider;
 
 use crate::context::CentralContext;
+use crate::obfuscate::Obfuscated;
 use crate::{
     e2e_identity::{conversation_state::compute_state, init_certificates::NewCrlDistributionPoint},
     group_store::GroupStoreValue,
@@ -137,29 +140,46 @@ impl MlsConversation {
         }?;
 
         let credential = message.credential();
+        let epoch = message.epoch();
 
         let identity = credential.extract_identity(
             self.ciphersuite(),
             backend.authentication_service().borrow().await.as_ref(),
         )?;
 
-        let sender_client_id = credential.credential.identity().into();
+        let sender_client_id: ClientId = credential.credential.identity().into();
 
         let decrypted = match message.into_content() {
-            ProcessedMessageContent::ApplicationMessage(app_msg) => MlsConversationDecryptMessage {
-                app_msg: Some(app_msg.into_bytes()),
-                proposals: vec![],
-                is_active: true,
-                delay: None,
-                sender_client_id: Some(sender_client_id),
-                has_epoch_changed: false,
-                identity,
-                buffered_messages: None,
-                crl_new_distribution_points: None.into(),
-            },
+            ProcessedMessageContent::ApplicationMessage(app_msg) => {
+                debug!(
+                    group_id = Obfuscated::from(&self.id),
+                    epoch = epoch.as_u64(),
+                    sender_client_id = Obfuscated::from(&sender_client_id);
+                    "Application message"
+                );
+
+                MlsConversationDecryptMessage {
+                    app_msg: Some(app_msg.into_bytes()),
+                    proposals: vec![],
+                    is_active: true,
+                    delay: None,
+                    sender_client_id: Some(sender_client_id),
+                    has_epoch_changed: false,
+                    identity,
+                    buffered_messages: None,
+                    crl_new_distribution_points: None.into(),
+                }
+            }
             ProcessedMessageContent::ProposalMessage(proposal) => {
                 let crl_dps = extract_crl_uris_from_proposals(&[proposal.proposal().clone()])?;
                 let crl_new_distribution_points = get_new_crl_distribution_points(backend, crl_dps).await?;
+
+                debug!(
+                    group_id = Obfuscated::from(&self.id),
+                    sender = Obfuscated::from(proposal.sender()),
+                    proposals = Obfuscated::from(&proposal.proposal);
+                    "Received proposal"
+                );
 
                 self.group.store_pending_proposal(*proposal);
 
@@ -237,6 +257,13 @@ impl MlsConversation {
                     None
                 };
 
+                debug!(
+                    group_id = Obfuscated::from(&self.id),
+                    epoch = staged_commit.staged_context().epoch().as_u64(),
+                    proposals:? = staged_commit.queued_proposals().map(Obfuscated::from).collect::<Vec<_>>();
+                    "Epoch advanced"
+                );
+
                 MlsConversationDecryptMessage {
                     app_msg: None,
                     proposals,
@@ -252,6 +279,13 @@ impl MlsConversation {
             ProcessedMessageContent::ExternalJoinProposalMessage(proposal) => {
                 self.validate_external_proposal(&proposal, parent_conv, callbacks)
                     .await?;
+
+                debug!(
+                    group_id = Obfuscated::from(&self.id),
+                    sender = Obfuscated::from(proposal.sender());
+                    "Received external join proposal"
+                );
+
                 let crl_dps = extract_crl_uris_from_proposals(&[proposal.proposal().clone()])?;
                 let crl_new_distribution_points = get_new_crl_distribution_points(backend, crl_dps).await?;
                 self.group.store_pending_proposal(*proposal);
