@@ -133,6 +133,30 @@ test("init", async () => {
     await ctx.close();
 }, 10000);
 
+test("can get build data", async () => {
+    const [ctx, page] = await initBrowser();
+
+    const buildMetadata = await page.evaluate(async () => {
+        const { CoreCrypto, Ciphersuite } = await import("./corecrypto.js");
+
+        const ciphersuite =
+            Ciphersuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519;
+        await CoreCrypto.init({
+            databaseName: "test init",
+            key: "test",
+            ciphersuites: [ciphersuite],
+            clientId: "test",
+        });
+
+        return CoreCrypto.buildMetadata();
+    });
+
+    expect(buildMetadata).toEqual(expect.anything());
+
+    await page.close();
+    await ctx.close();
+}, 10000);
+
 test("can use groupInfo enums", async () => {
     const [ctx, page] = await initBrowser();
 

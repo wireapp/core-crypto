@@ -2265,6 +2265,16 @@ export class CoreCrypto {
         this.#assertModuleLoaded();
         return CoreCryptoFfi.version();
     }
+
+    /**
+     * Returns build metadata for the {@link CoreCrypto} libary.
+     *
+     * @returns varous build metadata for `core-crypto`.
+     */
+    static buildMetadata(): CoreCryptoFfiTypes.BuildMetadata {
+        this.#assertModuleLoaded();
+        return CoreCryptoFfi.build_metadata();
+    }
 }
 
 type JsonRawData = Uint8Array;
