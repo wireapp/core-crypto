@@ -49,6 +49,7 @@ pub mod proteus;
 
 pub mod context;
 mod group_store;
+mod obfuscate;
 
 mod build_metadata;
 pub use build_metadata::{BuildMetadata, BUILD_METADATA};
