@@ -104,7 +104,6 @@ export class CoreCryptoError extends Error {
 
     static fromStdError(e: Error): CoreCryptoError | Error {
         const opts = {
-            // @ts-expect-error TS2550: Property 'cause' does not exist on type 'Error'. Try changing the 'lib' compiler option to 'es2022' or later.
             cause: e.cause || undefined,
             stack: e.stack || undefined,
         };
