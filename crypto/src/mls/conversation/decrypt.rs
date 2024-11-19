@@ -316,7 +316,7 @@ impl MlsConversation {
                         CryptoError::BufferedFutureMessage
                     } else if msg_epoch < group_epoch {
                         match content_type {
-                            ContentType::Application => CryptoError::WrongEpoch,
+                            ContentType::Application => CryptoError::StaleMessage,
                             ContentType::Commit => CryptoError::StaleCommit,
                             ContentType::Proposal => CryptoError::StaleProposal,
                         }

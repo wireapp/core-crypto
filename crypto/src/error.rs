@@ -128,8 +128,11 @@ pub enum CryptoError {
     /// Tried to decrypt a message in the wrong epoch
     #[error("Decrypted an application message from the wrong epoch")]
     DecryptionError,
-    /// Incoming message is for the wrong epoch
-    #[error("Incoming message is for the wrong epoch")]
+    /// Incoming message is from a prior epoch
+    #[error("Incoming message is from a prior epoch")]
+    StaleMessage,
+    /// Incoming message is from an epoch too far in the future to buffer.
+    #[error("Incoming message is from an epoch too far in the future to buffer.")]
     WrongEpoch,
     /// Incoming message is for a future epoch. We will buffer it until the commit for that epoch arrives
     #[error("Incoming message is for a future epoch. We will buffer it until the commit for that epoch arrives")]
