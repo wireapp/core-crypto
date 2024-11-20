@@ -18,7 +18,7 @@ required-features = ["uniffi/cli"]
 
 [features]
 default = ["proteus"]
-proteus = ["core-crypto/proteus", "core-crypto/cryptobox-migrate"]
+proteus = ["core-crypto/proteus", "core-crypto/cryptobox-migrate", "dep:proteus-wasm", "dep:core-crypto-keystore"]
 
 [dependencies]
 thiserror.workspace = true
@@ -30,6 +30,8 @@ async-lock.workspace = true
 log.workspace = true
 log-reload.workspace = true
 serde_json.workspace = true
+proteus-wasm = { workspace = true, optional = true }
+core-crypto-keystore = { workspace = true, optional = true}
 
 # see https://github.com/RustCrypto/hashes/issues/404
 [target.'cfg(not(any(target_arch = "aarch64", target_arch = "x86_64", target_arch = "x86")))'.dependencies]

@@ -79,96 +79,223 @@ pub extern "C" fn __stack_chk_fail() {
     panic!("Stack overflow detected");
 }
 
-#[derive(Debug, thiserror::Error)]
-#[allow(clippy::enum_variant_names)]
-pub(crate) enum WasmError {
-    #[error(transparent)]
-    CryptoError(#[from] CryptoError),
-    #[error(transparent)]
-    E2eError(#[from] E2eIdentityError),
-    #[error(transparent)]
-    SerializationError(#[from] serde_wasm_bindgen::Error),
-    #[error("Failed lifting an enum")]
-    EnumError,
-    #[error("Transaction rolled back. Last proteus error code: {proteus_error_code:?}. Uncaught JsError: {uncaught_error:?}")]
-    TransactionFailed {
-        uncaught_error: JsValue,
-        proteus_error_code: u32,
-    },
+#[derive(Debug, thiserror::Error, strum::AsRefStr)]
+pub enum MlsError {
+    #[error("Conversation already exists")]
+    ConversationAlreadyExists(core_crypto::prelude::ConversationId),
+    #[error("We already decrypted this message once")]
+    DuplicateMessage,
+    #[error("Incoming message is for a future epoch. We will buffer it until the commit for that epoch arrives")]
+    BufferedFutureMessage,
+    #[error("Incoming message is from an epoch too far in the future to buffer.")]
+    WrongEpoch,
+    #[error("The epoch in which message was encrypted is older than allowed")]
+    MessageEpochTooOld,
+    #[error("Tried to decrypt a commit created by self which is likely to have been replayed by the DS")]
+    SelfCommitIgnored,
+    #[error(
+        "You tried to join with an external commit but did not merge it yet. We will reapply this message for you when you merge your external commit"
+    )]
+    UnmergedPendingGroup,
+    #[error("The received proposal is deemed stale and is from an older epoch.")]
+    StaleProposal,
+    #[error("The received commit is deemed stale and is from an older epoch.")]
+    StaleCommit,
+    #[error("Another MLS error occurred but the details are probably irrelevant to clients")]
+    Other,
 }
 
-#[derive(Debug, Clone, serde::Serialize)]
-#[serde(rename_all = "camelCase")]
-struct CoreCryptoJsRichError {
-    error_name: String,
-    message: String,
-    rust_stack_trace: String,
-    proteus_error_code: u32,
+impl From<core_crypto::MlsError> for MlsError {
+    #[inline]
+    fn from(_: core_crypto::MlsError) -> Self {
+        Self::Other
+    }
 }
 
-impl<'a> From<&'a CoreCryptoError> for CoreCryptoJsRichError {
-    fn from(e: &'a CoreCryptoError) -> Self {
-        Self {
-            error_name: match e.0 {
-                WasmError::CryptoError(_) => "CryptoError",
-                WasmError::E2eError(_) => "E2eError",
-                WasmError::SerializationError(_) => "SerializationError",
-                WasmError::EnumError => "EnumError",
-                WasmError::TransactionFailed { .. } => "TransactionFailed",
-            }
-            .to_string(),
-            message: e.0.to_string(),
-            rust_stack_trace: format!("{:?}", e.0),
-            proteus_error_code: match e.0 {
-                WasmError::TransactionFailed { proteus_error_code, .. } => proteus_error_code,
-                _ => e.proteus_error_code(),
-            },
+#[cfg(feature = "proteus")]
+#[derive(Debug, thiserror::Error, strum::AsRefStr)]
+pub enum ProteusError {
+    #[error("The requested session was not found")]
+    SessionNotFound,
+    #[error("We already decrypted this message once")]
+    DuplicateMessage,
+    #[error("The remote identity has changed")]
+    RemoteIdentityChanged,
+    #[error("Another Proteus error occurred but the details are probably irrelevant to clients ({})", .0.unwrap_or_default())]
+    Other(Option<u16>),
+}
+
+impl ProteusError {
+    pub fn from_error_code(code: impl Into<Option<u16>>) -> Option<Self> {
+        let code = code.into()?;
+        if code == 0 {
+            return None;
+        }
+
+        match code {
+            102 => Self::SessionNotFound,
+            204 => Self::RemoteIdentityChanged,
+            209 => Self::DuplicateMessage,
+            _ => Self::Other(Some(code)),
+        }
+        .into()
+    }
+
+    pub fn error_code(&self) -> Option<u16> {
+        match self {
+            ProteusError::SessionNotFound => Some(102),
+            ProteusError::RemoteIdentityChanged => Some(204),
+            ProteusError::DuplicateMessage => Some(209),
+            ProteusError::Other(code) => *code,
         }
     }
 }
 
-#[derive(Debug, thiserror::Error)]
-pub struct CoreCryptoError(#[from] WasmError);
-
-impl CoreCryptoError {
-    fn proteus_error_code(&self) -> u32 {
-        let WasmError::CryptoError(e) = &self.0 else {
-            return 0;
-        };
-
-        e.proteus_error_code()
+#[cfg(feature = "proteus")]
+impl From<core_crypto::ProteusError> for ProteusError {
+    fn from(value: core_crypto::ProteusError) -> Self {
+        type SessionError = proteus_wasm::session::Error<core_crypto_keystore::CryptoKeystoreError>;
+        match value {
+            core_crypto::ProteusError::ProteusSessionError(SessionError::InternalError(
+                proteus_wasm::internal::types::InternalError::NoSessionForTag,
+            )) => Self::SessionNotFound,
+            core_crypto::ProteusError::ProteusSessionError(SessionError::DuplicateMessage) => Self::DuplicateMessage,
+            core_crypto::ProteusError::ProteusSessionError(SessionError::RemoteIdentityChanged) => {
+                Self::RemoteIdentityChanged
+            }
+            _ => Self::Other(value.error_code()),
+        }
     }
 }
+
+#[derive(Debug, thiserror::Error, strum::AsRefStr)]
+pub(crate) enum InternalError {
+    #[error(transparent)]
+    MlsError(#[from] MlsError),
+    #[cfg(feature = "proteus")]
+    #[error(transparent)]
+    ProteusError(#[from] ProteusError),
+    #[error("End to end identity error")]
+    E2eiError,
+    #[error(transparent)]
+    SerializationError(#[from] serde_wasm_bindgen::Error),
+    #[error("Unknown ciphersuite identifier")]
+    UnknownCiphersuite,
+    #[error("Transaction rolled back. Last proteus error code: {proteus_error_code:?}. Uncaught JsError: {uncaught_error:?}")]
+    TransactionFailed {
+        uncaught_error: JsValue,
+        proteus_error_code: Option<u16>,
+    },
+}
+
+// This implementation is intended to be temporary; we're going to be completely restructuring the way we handle
+// errors in `core-crypto` soon. We can replace this with better error patterns when we do.
+//
+// Certain error mappings could apply to both MLS and Proteus. In all such cases, we map them to the MLS variant.
+// When we redesign the errors in `core-crypto`, these ambiguities should disappear anyway.
+impl From<CryptoError> for InternalError {
+    fn from(value: CryptoError) -> Self {
+        #[cfg(feature = "proteus")]
+        if let Some(error_code) = value.proteus_error_code() {
+            if let Some(err) = ProteusError::from_error_code(error_code) {
+                return err.into();
+            }
+        }
+
+        match value {
+            CryptoError::ConversationAlreadyExists(id) => MlsError::ConversationAlreadyExists(id).into(),
+            CryptoError::DuplicateMessage => MlsError::DuplicateMessage.into(),
+            CryptoError::BufferedFutureMessage => MlsError::BufferedFutureMessage.into(),
+            CryptoError::WrongEpoch => MlsError::WrongEpoch.into(),
+            CryptoError::MessageEpochTooOld => MlsError::MessageEpochTooOld.into(),
+            CryptoError::SelfCommitIgnored => MlsError::SelfCommitIgnored.into(),
+            CryptoError::UnmergedPendingGroup => MlsError::UnmergedPendingGroup.into(),
+            CryptoError::StaleProposal => MlsError::StaleProposal.into(),
+            CryptoError::StaleCommit => MlsError::StaleCommit.into(),
+            CryptoError::E2eiError(_) => Self::E2eiError,
+            _ => MlsError::Other.into(),
+        }
+    }
+}
+
+impl From<E2eIdentityError> for InternalError {
+    fn from(_: E2eIdentityError) -> Self {
+        Self::E2eiError
+    }
+}
+
+impl InternalError {
+    fn variant_name(&self) -> String {
+        let mut out = self.as_ref().to_string();
+        match self {
+            Self::MlsError(mls) => out += mls.as_ref(),
+            Self::ProteusError(proteus) => out += proteus.as_ref(),
+            _ => {}
+        }
+        out
+    }
+
+    fn stack(&self) -> Vec<String> {
+        let mut stack = Vec::new();
+        let mut err: &dyn std::error::Error = self;
+        stack.push(err.to_string());
+
+        while let Some(source) = err.source() {
+            stack.push(source.to_string());
+            err = source;
+        }
+
+        stack
+    }
+}
+
+#[derive(Debug, thiserror::Error)]
+pub struct CoreCryptoError(#[source] InternalError);
 
 impl std::fmt::Display for CoreCryptoError {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        let rich_error = CoreCryptoJsRichError::from(self);
-        let rich_error_json = serde_json::to_string(&rich_error).map_err(|_| std::fmt::Error)?;
-        write!(f, "{}\n\n{rich_error_json}", self.0)
+        let proteus_error_code = match &self.0 {
+            InternalError::ProteusError(ProteusError::Other(code)) => *code,
+            InternalError::TransactionFailed { proteus_error_code, .. } => *proteus_error_code,
+            _ => None,
+        };
+
+        let json = serde_json::to_string(&serde_json::json!({
+            "message": self.0.to_string(),
+            "error_name": self.0.variant_name(),
+            "error_stack": self.0.stack(),
+            "proteus_error_code": proteus_error_code,
+        }))
+        .map_err(|_| std::fmt::Error)?;
+
+        write!(f, "{json}")
     }
 }
 
-impl From<CryptoError> for CoreCryptoError {
-    fn from(e: CryptoError) -> Self {
-        Self(e.into())
-    }
-}
-
-impl From<E2eIdentityError> for CoreCryptoError {
-    fn from(e: E2eIdentityError) -> Self {
-        Self(e.into())
-    }
-}
-
-impl From<serde_wasm_bindgen::Error> for CoreCryptoError {
-    fn from(e: serde_wasm_bindgen::Error) -> Self {
-        Self(e.into())
+impl<T> From<T> for CoreCryptoError
+where
+    T: Into<InternalError>,
+{
+    fn from(value: T) -> Self {
+        Self(value.into())
     }
 }
 
 impl From<CoreCryptoError> for wasm_bindgen::JsValue {
     fn from(val: CoreCryptoError) -> Self {
-        js_sys::Error::new(&val.to_string()).into()
+        fn construct_error_stack(err: &dyn std::error::Error) -> js_sys::Error {
+            let out = js_sys::Error::new(&err.to_string());
+            if let Some(source) = err.source() {
+                let source_value = construct_error_stack(source);
+                out.set_cause(&source_value);
+            }
+            out
+        }
+
+        let stacked_error = construct_error_stack(&val);
+        stacked_error.set_name(&val.0.variant_name());
+
+        stacked_error.into()
     }
 }
 
@@ -256,7 +383,7 @@ fn lower_ciphersuites(ciphersuites: &[u16]) -> WasmCryptoResult<Vec<MlsCiphersui
     ciphersuites.iter().try_fold(
         Vec::with_capacity(ciphersuites.len()),
         |mut acc, &cs| -> WasmCryptoResult<_> {
-            let cs = Ciphersuite::from_repr(cs).ok_or(WasmError::EnumError)?;
+            let cs = Ciphersuite::from_repr(cs).ok_or(InternalError::UnknownCiphersuite)?;
             let cs: MlsCiphersuite = cs.into();
             acc.push(cs);
             Ok(acc)
@@ -1868,8 +1995,7 @@ impl CoreCrypto {
         future_to_promise(
             async move {
                 let group_info = VerifiableGroupInfo::tls_deserialize(&mut group_info.as_ref())
-                    .map_err(MlsError::from)
-                    .map_err(CryptoError::from)
+                    .map_err(|_| MlsError::Other)
                     .map_err(CoreCryptoError::from)?;
 
                 let state: E2eiConversationState = central
