@@ -1,7 +1,6 @@
 use crate::proteus_impl;
 use crate::wasm::context::CoreCryptoContext;
 use crate::wasm::CoreCryptoError;
-use crate::WasmError;
 use crate::{ProteusAutoPrekeyBundle, WasmCryptoResult};
 use futures_util::TryFutureExt;
 use js_sys::{Promise, Uint8Array};

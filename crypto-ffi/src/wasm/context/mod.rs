@@ -1,4 +1,4 @@
-use crate::wasm::{lower_ciphersuites, WasmError};
+use crate::wasm::{lower_ciphersuites, InternalError};
 use crate::{
     BufferedDecryptedMessage, Ciphersuite, CommitBundle, ConversationConfiguration, ConversationInitBundle, CoreCrypto,
     CoreCryptoError, CoreCryptoResult, CredentialType, CustomConfiguration, DecryptedMessage, FfiClientId,
@@ -62,7 +62,7 @@ impl CoreCrypto {
                     }
                     Err(uncaught_error) => {
                         context.inner.abort().await?;
-                        Err(WasmError::TransactionFailed {
+                        Err(InternalError::TransactionFailed {
                             uncaught_error,
                             proteus_error_code,
                         }
@@ -418,7 +418,7 @@ impl CoreCryptoContext {
                     .iter()
                     .map(|kp| {
                         KeyPackageIn::tls_deserialize(&mut kp.to_vec().as_slice())
-                            .map_err(|e| CoreCryptoError::from(WasmError::CryptoError(CryptoError::MlsError(e.into()))))
+                            .map_err(|e| CoreCryptoError::from(crate::MlsError::Other))
                     })
                     .collect::<CoreCryptoResult<Vec<_>>>()?;
 

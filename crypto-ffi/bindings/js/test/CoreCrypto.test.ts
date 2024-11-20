@@ -385,7 +385,9 @@ describe("proteus", () => {
         ).rejects.toThrowError(
             // wdio wraps the error and prepends the original message with
             // the error type as prefix
-            new Error("CryptoError: PreKeyStoreNotFound: 10")
+            new Error(
+                "ProteusErrorOther: Another Proteus error occurred but the details are probably irrelevant to clients (101)"
+            )
         );
 
         const lastErrorCode = await browser.execute(async (clientName) => {
