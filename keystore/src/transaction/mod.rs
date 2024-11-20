@@ -158,7 +158,7 @@ impl KeystoreTransaction {
     /// Identity from the perspective of this function is determined by the output of [crate::entities::Entity::merge_key].
     ///
     /// Further, the output list of records is built with respect to the provided [EntityFindParams]
-    /// and the deleted records cached in this [Self] instance.     
+    /// and the deleted records cached in this [Self] instance.
     async fn merge_records<E: crate::entities::Entity<ConnectionType = KeystoreDatabaseConnection>>(
         &self,
         records_a: Vec<E>,
@@ -250,7 +250,7 @@ impl KeystoreTransaction {
 ///         (identifier_01, MlsCredential),
 ///         (identifier_02, MlsSignatureKeyPair),
 ///     ],
-///     proteus_types: [  
+///     proteus_types: [
 ///         (identifier_03, ProteusPrekey),
 ///         (identifier_04, ProteusIdentity),
 ///         (identifier_05, ProteusSession)
@@ -288,8 +288,7 @@ macro_rules! commit_transaction {
                     }
 
                     if tables.is_empty() {
-                        // If we didn't do this early return, creating the transaction would fail.
-                        // Once logging is available, we should log a warning here though. (WPB-11743)
+                        log::warn!("Empty transaction was committed, this could be an indication of a programming error");
                         return Ok(());
                     }
                     let tx = conn.new_transaction(&tables).await?;
