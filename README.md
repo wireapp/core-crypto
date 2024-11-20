@@ -188,11 +188,12 @@ cd crypto-ffi/bindings
 
 ### WASM/Web
 
-* Take the steps to compile for WASM/Web
+* Take the steps to compile for WASM/Web (only necessary if the rust wasm code changed, building the wrapper is 
+* included in below step).
 * Then:
 ```ignore
 cd crypto-ffi
-bun test
+bun run wdio
 ```
 
 ## Benchmarks
