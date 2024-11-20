@@ -373,15 +373,13 @@ mod tests {
                 let expiration_time = core::time::Duration::from_secs(14);
                 let start = fluvio_wasm_timer::Instant::now();
 
-                let cert = CertificateBundle::new_with_default_values(
-                    alice_central
-                        .x509_test_chain
-                        .as_ref()
-                        .as_ref()
-                        .expect("No x509 test chain")
-                        .find_local_intermediate_ca(),
-                    Some(expiration_time),
-                );
+                let intermediate_ca = alice_central
+                    .x509_test_chain
+                    .as_ref()
+                    .as_ref()
+                    .expect("No x509 test chain")
+                    .find_local_intermediate_ca();
+                let cert = CertificateBundle::new_with_default_values(&intermediate_ca, Some(expiration_time));
                 let cb = Client::new_x509_credential_bundle(cert.clone()).unwrap();
                 let commit = alice_central.context.e2ei_rotate(&id, Some(&cb)).await.unwrap().commit;
                 alice_central.context.commit_accepted(&id).await.unwrap();
@@ -451,7 +449,9 @@ mod tests {
                         .clone();
                     alice_intermediate_ca.update_end_identity(&mut alice_cert.certificate, Some(expiration_time));
 
-                    let cb = Client::new_x509_credential_bundle(alice_cert.certificate.clone().into()).unwrap();
+                    let cert_bundle =
+                        CertificateBundle::from_certificate_and_issuer(&alice_cert.certificate, &alice_intermediate_ca);
+                    let cb = Client::new_x509_credential_bundle(cert_bundle.clone()).unwrap();
                     alice_central.context.e2ei_rotate(&id, Some(&cb)).await.unwrap();
                     alice_central.context.commit_accepted(&id).await.unwrap();
 
@@ -463,7 +463,7 @@ mod tests {
                         .save_new_x509_credential_bundle(
                             &alice_provider.keystore(),
                             case.signature_scheme(),
-                            alice_cert.certificate.clone().into(),
+                            cert_bundle,
                         )
                         .await
                         .unwrap();

@@ -250,7 +250,8 @@ mod tests {
                 .unwrap();
             let mut alice_cert = alice_cert.clone();
             alice_cert.certificate = new_cert;
-            let alice_identifier = ClientIdentifier::X509([(case.signature_scheme(), alice_cert.into())].into());
+            let cb = CertificateBundle::from_self_signed_certificate(&alice_cert);
+            let alice_identifier = ClientIdentifier::X509([(case.signature_scheme(), cb)].into());
 
             let (bob_identifier, _) = x509_test_chain.issue_simple_certificate_bundle("bob", None);
             assert!(matches!(
@@ -457,7 +458,7 @@ mod tests {
                     ..Default::default()
                 })
             };
-            let cb = alice_cert.into();
+            let cb = CertificateBundle::from_certificate_and_issuer(&alice_cert, &local_ca);
             let alice_identifier = ClientIdentifier::X509(HashMap::from([(case.signature_scheme(), cb)]));
 
             let (bob_identifier, _) = x509_test_chain.issue_simple_certificate_bundle("bob", None);

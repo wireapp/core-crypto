@@ -1,6 +1,6 @@
 use crate::{
-    e2e_identity::id::QualifiedE2eiClientId, mls::client::identifier::ClientIdentifier, prelude::E2eIdentityError,
-    CryptoError,
+    e2e_identity::id::QualifiedE2eiClientId, mls::client::identifier::ClientIdentifier, prelude::CertificateBundle,
+    prelude::E2eIdentityError, CryptoError,
 };
 use std::{fmt::Display, time::Duration};
 
@@ -420,6 +420,7 @@ impl X509TestChain {
         let certificate = intermediate.create_and_sign_end_identity(cert_params);
 
         let sc = intermediate.signature_scheme;
+        let cert_bundle = CertificateBundle::from_certificate_and_issuer(&certificate, &intermediate);
 
         self.actors.push(X509TestChainActor {
             name: common_name,
@@ -431,7 +432,7 @@ impl X509TestChain {
 
         let cert = &self.actors.last().unwrap().certificate;
 
-        (ClientIdentifier::X509([(sc, cert.into())].into()), cert)
+        (ClientIdentifier::X509([(sc, cert_bundle)].into()), cert)
     }
 }
 
