@@ -403,7 +403,7 @@ impl X509TestChain {
 
         let common_name = format!("{name} Smith");
         let handle = format!("{}_wire", name.to_lowercase());
-        let client_id: String = QualifiedE2eiClientId::generate_with_domain("wire.com")
+        let client_id: String = QualifiedE2eiClientId::generate_with_domain("world.com")
             .try_into()
             .unwrap();
         let mut cert_params = CertificateParams {
