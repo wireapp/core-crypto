@@ -1,5 +1,10 @@
 #[cfg(test)]
+use crate::test_utils::x509::X509Certificate;
+#[cfg(test)]
 use mls_crypto_provider::PkiKeypair;
+#[cfg(test)]
+use x509_cert::der::Encode;
+
 use openmls_traits::types::SignatureScheme;
 use wire_e2e_identity::prelude::{HashAlgorithm, WireIdentityReader};
 use zeroize::Zeroize;
@@ -57,36 +62,6 @@ impl CertificateBundle {
     pub fn get_created_at(&self) -> CryptoResult<u64> {
         let leaf = self.certificate_chain.first().ok_or(CryptoError::InvalidIdentity)?;
         leaf.extract_created_at().map_err(|_| CryptoError::InvalidIdentity)
-    }
-}
-
-#[cfg(test)]
-impl From<crate::test_utils::x509::X509Certificate> for CertificateBundle {
-    fn from(cert: crate::test_utils::x509::X509Certificate) -> Self {
-        use x509_cert::der::Encode as _;
-
-        Self {
-            certificate_chain: vec![cert.certificate.to_der().unwrap()],
-            private_key: CertificatePrivateKey {
-                value: cert.pki_keypair.signing_key_bytes(),
-                signature_scheme: cert.signature_scheme,
-            },
-        }
-    }
-}
-
-#[cfg(test)]
-impl From<&crate::test_utils::x509::X509Certificate> for CertificateBundle {
-    fn from(cert: &crate::test_utils::x509::X509Certificate) -> Self {
-        use x509_cert::der::Encode as _;
-
-        Self {
-            certificate_chain: vec![cert.certificate.to_der().unwrap()],
-            private_key: CertificatePrivateKey {
-                value: cert.pki_keypair.signing_key_bytes(),
-                signature_scheme: cert.signature_scheme,
-            },
-        }
     }
 }
 
@@ -159,7 +134,8 @@ impl CertificateBundle {
             cert_params.expiration = expiration;
         }
 
-        signer.create_and_sign_end_identity(cert_params).into()
+        let cert = signer.create_and_sign_end_identity(cert_params);
+        Self::from_certificate_and_issuer(&cert, signer)
     }
 
     pub fn new_with_default_values(
@@ -167,6 +143,20 @@ impl CertificateBundle {
         expiration: Option<std::time::Duration>,
     ) -> Self {
         Self::new_with_expiration("alice_wire@world.com", "Alice Smith", None, None, signer, expiration)
+    }
+
+    pub fn from_self_signed_certificate(cert: &X509Certificate) -> Self {
+        Self::from_certificate_and_issuer(cert, cert)
+    }
+
+    pub fn from_certificate_and_issuer(cert: &X509Certificate, issuer: &X509Certificate) -> Self {
+        Self {
+            certificate_chain: vec![cert.certificate.to_der().unwrap(), issuer.certificate.to_der().unwrap()],
+            private_key: CertificatePrivateKey {
+                value: cert.pki_keypair.signing_key_bytes(),
+                signature_scheme: cert.signature_scheme,
+            },
+        }
     }
 
     pub fn rand_identifier(
