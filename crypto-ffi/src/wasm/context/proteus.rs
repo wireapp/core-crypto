@@ -295,9 +295,9 @@ impl CoreCryptoContext {
         future_to_promise(
             async move {
                 proteus_impl! {{
-                    let prev_value: u32 = *(errcode.read().await);
+                    let prev_value = *errcode.read().await;
                     let mut errcode_val = errcode.write().await;
-                    *errcode_val = 0;
+                    *errcode_val = None;
 
                     WasmCryptoResult::Ok(prev_value.into())
                 } or throw WasmCryptoResult<_> }

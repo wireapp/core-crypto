@@ -25,7 +25,7 @@ pub mod proteus;
 #[derive(Clone)]
 pub struct CoreCryptoContext {
     pub(crate) inner: Arc<CentralContext>,
-    pub(crate) proteus_last_error_code: Arc<async_lock::RwLock<u32>>,
+    pub(crate) proteus_last_error_code: Arc<async_lock::RwLock<Option<u16>>>,
 }
 
 #[wasm_bindgen]
@@ -47,11 +47,11 @@ impl CoreCrypto {
             async move {
                 let context = CoreCryptoContext {
                     inner: Arc::new(context.new_transaction().await?),
-                    proteus_last_error_code: async_lock::RwLock::new(0).into(),
+                    proteus_last_error_code: async_lock::RwLock::new(None).into(),
                 };
                 let result = command.execute(context.clone()).await;
                 let proteus_error_code = *context.proteus_last_error_code.read().await;
-                if proteus_error_code != 0 {
+                if proteus_error_code.is_some() {
                     let mut error_code_write = last_error_code.write().await;
                     *error_code_write = proteus_error_code;
                 }
