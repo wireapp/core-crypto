@@ -1334,7 +1334,7 @@ impl CoreCryptoCallbacks for CoreCryptoWasmCallbacks {
 #[wasm_bindgen]
 pub struct CoreCrypto {
     inner: Arc<core_crypto::CoreCrypto>,
-    proteus_last_error_code: std::sync::Arc<async_lock::RwLock<u32>>,
+    proteus_last_error_code: std::sync::Arc<async_lock::RwLock<Option<u16>>>,
 }
 
 #[wasm_bindgen]
@@ -1389,7 +1389,7 @@ impl CoreCrypto {
             .map_err(CoreCryptoError::from)?;
         Ok(CoreCrypto {
             inner: Arc::new(central.into()),
-            proteus_last_error_code: async_lock::RwLock::new(0).into(),
+            proteus_last_error_code: async_lock::RwLock::new(None).into(),
         })
     }
 
@@ -1409,7 +1409,7 @@ impl CoreCrypto {
 
         Ok(CoreCrypto {
             inner: Arc::new(central.into()),
-            proteus_last_error_code: async_lock::RwLock::new(0).into(),
+            proteus_last_error_code: async_lock::RwLock::new(None).into(),
         })
     }
 
@@ -1707,9 +1707,9 @@ impl CoreCrypto {
         future_to_promise(
             async move {
                 proteus_impl! {{
-                    let prev_value: u32 = *(errcode.read().await);
+                    let prev_value = *errcode.read().await;
                     let mut errcode_val = errcode.write().await;
-                    *errcode_val = 0;
+                    *errcode_val = None;
 
                     WasmCryptoResult::Ok(prev_value.into())
                 } or throw WasmCryptoResult<_> }

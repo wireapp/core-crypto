@@ -279,11 +279,12 @@ pub type CryptoResult<T> = Result<T, CryptoError>;
 
 impl CryptoError {
     /// Returns the proteus error code
-    pub fn proteus_error_code(&self) -> u32 {
-        let Self::ProteusError(e) = self else {
-            return 0;
-        };
-        e.error_code()
+    pub fn proteus_error_code(&self) -> Option<u16> {
+        if let Self::ProteusError(e) = self {
+            e.error_code()
+        } else {
+            None
+        }
     }
 }
 
@@ -423,18 +424,22 @@ pub enum ProteusError {
 
 impl ProteusError {
     /// Returns the proteus error code
-    pub fn error_code(&self) -> u32 {
+    pub fn error_code(&self) -> Option<u16> {
         cfg_if::cfg_if! {
             if #[cfg(feature = "proteus")] {
-                use proteus_traits::ProteusErrorCode as _;
-                match self {
-                    ProteusError::ProteusDecodeError(e) => e.code() as u32,
-                    ProteusError::ProteusEncodeError(e) => e.code() as u32,
-                    ProteusError::ProteusSessionError(e) => e.code() as u32,
-                    ProteusError::ProteusInternalError(e) => e.code() as u32,
+                use proteus_traits::{ProteusErrorCode as _, ProteusErrorKind};
+                let kind = match self {
+                    ProteusError::ProteusDecodeError(e) => e.code(),
+                    ProteusError::ProteusEncodeError(e) => e.code(),
+                    ProteusError::ProteusSessionError(e) => e.code(),
+                    ProteusError::ProteusInternalError(e) => e.code(),
+                };
+                match kind {
+                    ProteusErrorKind::None => None,
+                    _ => Some(kind as u16)
                 }
             } else {
-                0
+                None
             }
         }
     }

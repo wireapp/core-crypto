@@ -24,12 +24,9 @@ macro_rules! proteus_impl {
 
                 cfg_if::cfg_if! {
                     if #[cfg(target_family = "wasm")] {
-                        if let Err(CoreCryptoError(WasmError::CryptoError(e))) = &result {
-                            let errcode = e.proteus_error_code();
-                            if errcode > 0 {
-                                let mut ec = $errcode_dest.write().await;
-                                *ec = errcode;
-                            }
+                        if let Err(CoreCryptoError($crate::InternalError::ProteusError($crate::ProteusError::Other(errcode)))) = &result {
+                            let mut ec = $errcode_dest.write().await;
+                            *ec = *errcode;
                         }
 
                         result
