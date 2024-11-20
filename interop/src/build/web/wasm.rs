@@ -128,12 +128,11 @@ pub(crate) async fn build_wasm() -> Result<()> {
         .args(&cargo_args)
         .current_dir(cwd.join("crypto-ffi"))
         .stdout(std::process::Stdio::null())
-        .stderr(std::process::Stdio::null())
         .status()
         .await?;
 
     Command::new("bun")
-        .args(["test"])
+        .args(["run", "wdio"])
         .envs(npm_env.clone())
         .stdout(std::process::Stdio::null())
         .stderr(std::process::Stdio::null())
