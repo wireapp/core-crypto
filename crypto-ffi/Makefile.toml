@@ -113,8 +113,10 @@ script = "cargo make wasm-build --dev"
 
 [tasks.wasm]
 dependencies = ["wasm-build"]
-command = "bun"
-args = ["run", "build_ts.ts"]
+script = [
+    "bun install",
+    "bun run build_ts.ts"
+]
 
 ##################################### FFI #####################################
 
