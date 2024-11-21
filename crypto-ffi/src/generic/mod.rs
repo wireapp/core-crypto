@@ -897,7 +897,7 @@ impl From<&Level> for CoreCryptoLogLevel {
 #[derive(Debug, uniffi::Object)]
 pub struct CoreCrypto {
     central: core_crypto::CoreCrypto,
-    proteus_last_error_code: std::sync::atomic::AtomicU32,
+    proteus_last_error_code: std::sync::atomic::AtomicU16,
 }
 
 #[uniffi::export]
@@ -948,7 +948,7 @@ impl CoreCrypto {
 
         Ok(CoreCrypto {
             central,
-            proteus_last_error_code: std::sync::atomic::AtomicU32::new(0),
+            proteus_last_error_code: std::sync::atomic::AtomicU16::new(0),
         })
     }
 
@@ -1016,8 +1016,8 @@ impl CoreCrypto {
                 self.deprecated_transaction(|context| async move {
                 context.proteus_reload_sessions().await.inspect_err(|e|{
                     let errcode = e.proteus_error_code();
-                    if errcode > 0 {
-                            self.proteus_last_error_code.store(errcode, std::sync::atomic::Ordering::SeqCst);
+                    if errcode.is_some() {
+                            self.proteus_last_error_code.store(errcode.unwrap_or_default(), std::sync::atomic::Ordering::SeqCst);
                         }
                     })?;
                     Ok(())
@@ -1671,9 +1671,11 @@ impl CoreCrypto {
     /// Returns the latest proteus error code. If 0, no error has occured
     ///
     /// NOTE: This will clear the last error code.
-    pub fn proteus_last_error_code(&self) -> u32 {
-        self.proteus_last_error_code
-            .swap(0, std::sync::atomic::Ordering::SeqCst)
+    pub fn proteus_last_error_code(&self) -> Option<u16> {
+        let raw_error_code = self
+            .proteus_last_error_code
+            .swap(0, std::sync::atomic::Ordering::SeqCst);
+        (raw_error_code != 0).then_some(raw_error_code)
     }
 }
 

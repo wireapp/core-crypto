@@ -167,8 +167,10 @@ impl CoreCryptoContext {
     /// Returns the latest proteus error code. If 0, no error has occured
     ///
     /// NOTE: This will clear the last error code.
-    pub fn proteus_last_error_code(&self) -> u32 {
-        self.proteus_last_error_code
-            .swap(0, std::sync::atomic::Ordering::SeqCst)
+    pub fn proteus_last_error_code(&self) -> Option<u16> {
+        let raw_error_code = self
+            .proteus_last_error_code
+            .swap(0, std::sync::atomic::Ordering::SeqCst);
+        (raw_error_code != 0).then_some(raw_error_code)
     }
 }
