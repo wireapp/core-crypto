@@ -1,4 +1,4 @@
-package com.wire.crypto.client
+package com.wire.crypto
 
 fun String.toByteArray() = encodeToByteArray()
 

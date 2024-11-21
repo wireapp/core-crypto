@@ -16,29 +16,29 @@
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
 
-package com.wire.crypto.client
+package com.wire.crypto
 
-import com.wire.crypto.buildMetadata
-import com.wire.crypto.version
-import kotlin.test.Test
-import kotlinx.coroutines.test.runTest
-import org.assertj.core.api.AssertionsForInterfaceTypes.assertThat
+typealias SessionId = String
 
-class GeneralTest {
-    @Test
-    fun get_version() = runTest {
-        val version = version()
+data class PreKey(
+    val id: UShort,
+    val data: ByteArray
+) {
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (javaClass != other?.javaClass) return false
 
-        assertThat(version).isNotNull()
-        assertThat(version).isNotEmpty()
+        other as PreKey
+
+        if (id != other.id) return false
+        if (!data.contentEquals(other.data)) return false
+
+        return true
     }
 
-    @Test
-    fun get_build_metadata() = runTest {
-        val build_metadata = buildMetadata()
-
-        assertThat(build_metadata).isNotNull()
-        assertThat(build_metadata.gitDescribe).isNotNull()
-        assertThat(build_metadata.gitDescribe).isNotEmpty()
+    override fun hashCode(): Int {
+        var result = id.hashCode()
+        result = 31 * result + data.contentHashCode()
+        return result
     }
 }
