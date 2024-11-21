@@ -284,4 +284,4 @@ cd crypto-ffi/bindings/android
 Publishing JS / WASM bindings happens automatically by a github workflow when a release tag is pushed.
 
 If you would like to publish to `@wireapp/core-crypto` manually, log into NPM and
-just run `npm publish`.
+just run `bun publish`.

@@ -52,7 +52,7 @@ pub(crate) async fn build_wasm() -> Result<()> {
     if cfg!(feature = "proteus") {
         let spinner = RunningProcess::new("Building Cryptobox ESM bundle...", false);
 
-        Command::new("npm")
+        Command::new("bun")
             .args(["install"])
             .current_dir(cwd.join("interop/src/build/web/cryptobox-esm"))
             .stdout(std::process::Stdio::null())
@@ -60,7 +60,7 @@ pub(crate) async fn build_wasm() -> Result<()> {
             .status()
             .await?;
 
-        Command::new("npm")
+        Command::new("bun")
             .args(["run", "build"])
             .current_dir(cwd.join("interop/src/build/web/cryptobox-esm"))
             .stdout(std::process::Stdio::null())
@@ -113,15 +113,15 @@ pub(crate) async fn build_wasm() -> Result<()> {
     }
 
     let mut cargo_args = vec!["make", "wasm"];
-    let mut npm_env = vec![];
+    let mut bun_env = vec![];
 
     if cfg!(feature = "proteus") {
         spinner.update(
-            "`proteus` feature enabled. Building `core-crypto` with proteus support & enabling npm env BUILD_PROTEUS=1; Also building ESM bundle for Cryptobox",
+            "`proteus` feature enabled. Building `core-crypto` with proteus support & enabling bun env BUILD_PROTEUS=1; Also building ESM bundle for Cryptobox",
         );
         cargo_args.push("--features");
         cargo_args.push("proteus");
-        npm_env.push(("BUILD_PROTEUS", "1"));
+        bun_env.push(("BUILD_PROTEUS", "1"));
     }
 
     Command::new("cargo")
@@ -133,7 +133,7 @@ pub(crate) async fn build_wasm() -> Result<()> {
 
     Command::new("bun")
         .args(["run", "wdio"])
-        .envs(npm_env.clone())
+        .envs(bun_env.clone())
         .stdout(std::process::Stdio::null())
         .stderr(std::process::Stdio::null())
         .status()

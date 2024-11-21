@@ -77,15 +77,15 @@ args = [
 command = "cargo"
 args = ["doc", "--no-deps", "--target=wasm32-unknown-unknown"]
 
-[tasks.npm-deps]
-command = "npm"
+[tasks.bun-deps]
+command = "bun"
 args = ["install"]
 
 [tasks.docs-ts]
-dependencies = ["npm-deps"]
-command = "npx"
+dependencies = ["bun-deps"]
+command = "bunx"
 args = [
-    "-y", "typedoc",
+    "typedoc",
     "--basePath", "./bindings/js",
     "--entryPoints", "./bindings/js/CoreCrypto.ts",
     "--tsconfig", "./bindings/js/tsconfig.json",
