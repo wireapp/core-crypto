@@ -416,9 +416,8 @@ impl CoreCryptoContext {
         let key_packages = key_packages
             .into_iter()
             .map(|kp| {
-                KeyPackageIn::tls_deserialize(&mut kp.as_slice()).map_err(|e| CoreCryptoError::CryptoError {
-                    error: CryptoError::MlsError(e.into()),
-                })
+                KeyPackageIn::tls_deserialize(&mut kp.as_slice())
+                    .map_err(|e| CoreCryptoError::from(CryptoError::MlsError(e.into())))
             })
             .collect::<CoreCryptoResult<Vec<_>>>()?;
 
