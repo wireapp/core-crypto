@@ -41,7 +41,12 @@ jobs:
     - name: Build Rust documentation
       run: cargo doc --all --no-deps
 
-    - name: Build TypeScript docs
+    - name: Setup bun
+      uses: oven-sh/setup-bun@v2
+      with:
+        bun-version: latest
+
+    - name: Build TypeScript and Kotlin docs
       run: |
         cd crypto-ffi
         cargo make wasm-build
