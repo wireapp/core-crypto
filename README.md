@@ -144,11 +144,11 @@ cargo install cargo-nextest
 cargo nextest run
 ```
 
-#### Run core crypto tests on WASM target
+### Run core crypto internal tests on WASM target
 
 If you haven't already, install the target and wasm-pack:
 
-```ignore
+```sh
 rustup target add wasm32-unknown-unknown
 cargo install wasm-pack
 ```
@@ -171,29 +171,63 @@ wasm-pack test --headless --chrome ./<crate-folder-to-test>
 cargo nextest run --features test-all-cipher
 ```
 
-### Platform-specific testing
+### Platform-specific tests for Kotlin/JVM
 
-### Kotlin/Android
+Build the JVM target every timee the Rust code changes:
 
-* Take the steps to compile for Kotlin/Android
-* Then:
-```ignore
-cd crypto-ffi/bindings
-./gradlew test
+```sh
+# substitute with `jvm-darwin` on OSX
+core-crypto/crypto-ffi$ cargo make jvm-linux
+```
+
+Then run the tests each time the wrapper or wrapper tests change
+
+```sh
+core-crypto/crypto-ffi/bindings$ ./gradlew jvm:build -x lint -x lintRelease
+```
+
+### Platform-specific tests for Android
+
+Build the Android target every timee the Rust code changes:
+
+```sh
+core-crypto/crypto-ffi$ cargo make android
+```
+
+Then run the tests each time the wrapper or wrapper tests change
+
+```sh
+core-crypto/crypto-ffi/bindings$ ./gradlew android:build -x lint -x lintRelease
 ```
 
 ### Swift/iOS
 
 *No E2E testing is available as of now on Swift.*
 
-### WASM/Web
+### Platform-spcecific tests for WASM/Web
 
-* Take the steps to compile for WASM/Web (only necessary if the rust wasm code changed, building the wrapper is 
-* included in below step).
-* Then:
-```ignore
-cd crypto-ffi
-bun run wdio
+Install TS dependencies on first go, and each time they change:
+
+```sh
+bun install
+```
+
+Build the WASM target every timee the Rust code changes:
+
+```sh
+core-crypto/crypto-ffi$ cargo make wasm
+```
+
+Then run the tests each time the wrapper or wrapper tests change
+
+```sh
+core-crypto/crypto-ffi$ bun run wdio
+```
+
+Note that CI will fail if it doesn't like your formatting. This can typically be automtically adjusted with
+
+```sh
+core-crypto/crypto-ffi$ bun eslinst bindings/js --max-warnings=0 --fix
 ```
 
 ## Benchmarks
