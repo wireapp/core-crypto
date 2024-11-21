@@ -62,7 +62,11 @@ script = '''
 '''
 
 [tasks.docs-kotlin]
-dependencies = ["docs-kotlin-install-deps"]
+dependencies = [
+    "docs-kotlin-install-deps",
+    { name = "jvm-darwin", condition = { platforms = ["mac"] } },
+    { name = "jvm-linux", condition = { platforms = ["linux"] } }
+]
 command = "java"
 args = [
     "-jar", "../target/_kotlin_docs_tmp/dokka-cli-${DOKKA_VERSION}.jar",
@@ -82,7 +86,7 @@ command = "bun"
 args = ["install"]
 
 [tasks.docs-ts]
-dependencies = ["bun-deps"]
+dependencies = ["wasm", "bun-deps"]
 command = "bunx"
 args = [
     "typedoc",
@@ -112,11 +116,9 @@ args = [
 script = "cargo make wasm-build --dev"
 
 [tasks.wasm]
-dependencies = ["wasm-build"]
-script = [
-    "bun install",
-    "bun run build_ts.ts"
-]
+dependencies = ["wasm-build", "bun-deps"]
+command = "bun"
+args = ["run", "build_ts.ts"]
 
 ##################################### FFI #####################################
 
