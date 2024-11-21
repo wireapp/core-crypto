@@ -33,7 +33,7 @@ use core_crypto::{
         MlsConversationInitBundle, MlsCustomConfiguration, MlsGroupInfoBundle, MlsProposalBundle, MlsRotateBundle,
         VerifiableGroupInfo,
     },
-    CryptoResult, MlsError,
+    CryptoResult,
 };
 
 use self::context::CoreCryptoContext;
@@ -89,19 +89,140 @@ pub fn build_metadata() -> BuildMetadata {
 }
 
 #[derive(Debug, thiserror::Error, uniffi::Error)]
+pub enum MlsError {
+    #[error("Conversation already exists")]
+    ConversationAlreadyExists(core_crypto::prelude::ConversationId),
+    #[error("We already decrypted this message once")]
+    DuplicateMessage,
+    #[error("Incoming message is for a future epoch. We will buffer it until the commit for that epoch arrives")]
+    BufferedFutureMessage,
+    #[error("Incoming message is from an epoch too far in the future to buffer.")]
+    WrongEpoch,
+    #[error("The epoch in which message was encrypted is older than allowed")]
+    MessageEpochTooOld,
+    #[error("Tried to decrypt a commit created by self which is likely to have been replayed by the DS")]
+    SelfCommitIgnored,
+    #[error(
+        "You tried to join with an external commit but did not merge it yet. We will reapply this message for you when you merge your external commit"
+    )]
+    UnmergedPendingGroup,
+    #[error("The received proposal is deemed stale and is from an older epoch.")]
+    StaleProposal,
+    #[error("The received commit is deemed stale and is from an older epoch.")]
+    StaleCommit,
+    #[error("Another MLS error occurred but the details are probably irrelevant to clients")]
+    Other,
+}
+
+impl From<core_crypto::MlsError> for MlsError {
+    #[inline]
+    fn from(_: core_crypto::MlsError) -> Self {
+        Self::Other
+    }
+}
+
+#[cfg(feature = "proteus")]
+#[derive(Debug, thiserror::Error, uniffi::Error)]
+pub enum ProteusError {
+    #[error("The requested session was not found")]
+    SessionNotFound,
+    #[error("We already decrypted this message once")]
+    DuplicateMessage,
+    #[error("The remote identity has changed")]
+    RemoteIdentityChanged,
+    #[error("Another Proteus error occurred but the details are probably irrelevant to clients")]
+    Other(Option<u16>),
+}
+
+impl ProteusError {
+    pub fn from_error_code(code: impl Into<Option<u16>>) -> Option<Self> {
+        let code = code.into()?;
+        if code == 0 {
+            return None;
+        }
+
+        match code {
+            102 => Self::SessionNotFound,
+            204 => Self::RemoteIdentityChanged,
+            209 => Self::DuplicateMessage,
+            _ => Self::Other(Some(code)),
+        }
+    }
+
+    pub fn error_code(&self) -> Option<u16> {
+        match self {
+            ProteusError::SessionNotFound => Some(102),
+            ProteusError::RemoteIdentityChanged => Some(204),
+            ProteusError::DuplicateMessage => Some(209),
+            ProteusError::Other(code) => *code,
+        }
+    }
+}
+
+#[cfg(feature = "proteus")]
+impl From<core_crypto::ProteusError> for ProteusError {
+    fn from(value: core_crypto::ProteusError) -> Self {
+        type SessionError = proteus_wasm::session::Error<core_crypto_keystore::CryptoKeystoreError>;
+        match value {
+            core_crypto::ProteusError::ProteusSessionError(SessionError::InternalError(
+                proteus_wasm::internal::types::InternalError::NoSessionForTag,
+            )) => Self::SessionNotFound,
+            core_crypto::ProteusError::ProteusSessionError(SessionError::DuplicateMessage) => Self::DuplicateMessage,
+            core_crypto::ProteusError::ProteusSessionError(SessionError::RemoteIdentityChanged) => {
+                Self::RemoteIdentityChanged
+            }
+            _ => Self::Other(value.error_code()),
+        }
+    }
+}
+
+#[derive(Debug, thiserror::Error, uniffi::Error)]
 pub enum CoreCryptoError {
     #[error(transparent)]
-    CryptoError {
-        #[from]
-        error: CryptoError,
-    },
+    MlsError(#[from] MlsError),
+    #[cfg(feature = "proteus")]
     #[error(transparent)]
-    E2eIdentityError {
-        #[from]
-        error: E2eIdentityError,
-    },
-    #[error("Client thrown error {0}")]
+    ProteusError(#[from] ProteusError),
+    #[error("End to end identity error")]
+    E2eiError,
+    #[error("error from client: {0}")]
     ClientException(String),
+}
+
+// This implementation is intended to be temporary; we're going to be completely restructuring the way we handle
+// errors in `core-crypto` soon. We can replace this with better error patterns when we do.
+//
+// Certain error mappings could apply to both MLS and Proteus. In all such cases, we map them to the MLS variant.
+// When we redesign the errors in `core-crypto`, these ambiguities should disappear anyway.
+impl From<CryptoError> for CoreCryptoError {
+    fn from(value: CryptoError) -> Self {
+        #[cfg(feature = "proteus")]
+        if let Some(error_code) = value.proteus_error_code() {
+            if let Some(err) = ProteusError::from_error_code(error_code) {
+                return err.into();
+            }
+        }
+
+        match value {
+            CryptoError::ConversationAlreadyExists(id) => MlsError::ConversationAlreadyExists(id).into(),
+            CryptoError::DuplicateMessage => MlsError::DuplicateMessage.into(),
+            CryptoError::BufferedFutureMessage => MlsError::BufferedFutureMessage.into(),
+            CryptoError::WrongEpoch => MlsError::WrongEpoch.into(),
+            CryptoError::MessageEpochTooOld => MlsError::MessageEpochTooOld.into(),
+            CryptoError::SelfCommitIgnored => MlsError::SelfCommitIgnored.into(),
+            CryptoError::UnmergedPendingGroup => MlsError::UnmergedPendingGroup.into(),
+            CryptoError::StaleProposal => MlsError::StaleProposal.into(),
+            CryptoError::StaleCommit => MlsError::StaleCommit.into(),
+            CryptoError::E2eiError(_) => Self::E2eiError,
+            _ => MlsError::Other.into(),
+        }
+    }
+}
+
+impl From<E2eIdentityError> for CoreCryptoError {
+    fn from(_: E2eIdentityError) -> Self {
+        Self::E2eiError
+    }
 }
 
 impl From<uniffi::UnexpectedUniFFICallbackError> for CoreCryptoError {
@@ -1082,7 +1203,7 @@ impl CoreCrypto {
             kps.into_iter()
                 .map(|kp| {
                     kp.tls_serialize_detached()
-                        .map_err(MlsError::from)
+                        .map_err(core_crypto::MlsError::from)
                         .map_err(CryptoError::from)
                 })
                 .collect::<CryptoResult<Vec<Vec<u8>>>>()
@@ -1180,9 +1301,8 @@ impl CoreCrypto {
         let key_packages = key_packages
             .into_iter()
             .map(|kp| {
-                KeyPackageIn::tls_deserialize(&mut kp.as_slice()).map_err(|e| CoreCryptoError::CryptoError {
-                    error: CryptoError::MlsError(e.into()),
-                })
+                KeyPackageIn::tls_deserialize(&mut kp.as_slice())
+                    .map_err(|e| CoreCryptoError::from(CryptoError::MlsError(e.into())))
             })
             .collect::<CoreCryptoResult<Vec<_>>>()?;
 
@@ -1278,7 +1398,7 @@ impl CoreCrypto {
         keypackage: Vec<u8>,
     ) -> CoreCryptoResult<ProposalBundle> {
         let kp = KeyPackageIn::tls_deserialize(&mut keypackage.as_slice())
-            .map_err(MlsError::from)
+            .map_err(core_crypto::MlsError::from)
             .map_err(CryptoError::from)?;
         self.deprecated_transaction(
             |context| async move { context.new_add_proposal(&conversation_id, kp.into()).await },
@@ -1328,7 +1448,7 @@ impl CoreCrypto {
                 )
                 .await?
                 .to_bytes()
-                .map_err(MlsError::from)
+                .map_err(core_crypto::MlsError::from)
                 .map_err(CryptoError::from)
         })
         .await
@@ -1343,7 +1463,7 @@ impl CoreCrypto {
         credential_type: MlsCredentialType,
     ) -> CoreCryptoResult<ConversationInitBundle> {
         let group_info = VerifiableGroupInfo::tls_deserialize(&mut group_info.as_slice())
-            .map_err(MlsError::from)
+            .map_err(core_crypto::MlsError::from)
             .map_err(CryptoError::from)?;
         self.deprecated_transaction(|context| async move {
             context
@@ -1923,7 +2043,7 @@ impl CoreCrypto {
         credential_type: MlsCredentialType,
     ) -> CoreCryptoResult<E2eiConversationState> {
         let group_info = VerifiableGroupInfo::tls_deserialize(&mut group_info.as_slice())
-            .map_err(MlsError::from)
+            .map_err(core_crypto::MlsError::from)
             .map_err(CryptoError::from)?;
         Ok(self
             .central
