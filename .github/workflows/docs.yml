@@ -28,7 +28,9 @@ jobs:
     - uses: actions-rust-lang/setup-rust-toolchain@v1  # this implicitly caches Rust tools and build artifacts
       with:
         rustflags: ''
-        target: wasm32-unknown-unknown
+        target: |
+          wasm32-unknown-unknown
+          x86_64-unknown-linux-gnu
 
     - name: Setup cargo-make
       uses: davidB/rust-cargo-make@v1
@@ -49,7 +51,6 @@ jobs:
     - name: Build TypeScript and Kotlin docs
       run: |
         cd crypto-ffi
-        cargo make wasm-build
         cargo make docs-ts
         cargo make docs-kotlin
 
