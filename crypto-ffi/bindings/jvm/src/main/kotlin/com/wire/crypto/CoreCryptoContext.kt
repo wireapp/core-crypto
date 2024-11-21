@@ -16,28 +16,23 @@
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
 
-package com.wire.crypto.client
+package com.wire.crypto
 
-import com.wire.crypto.CoreCryptoContext
-import com.wire.crypto.CoreCryptoException
-import com.wire.crypto.CrlRegistration
-import com.wire.crypto.E2eiDumpedPkiEnv
-import com.wire.crypto.client.CoreCryptoCentral.Companion.DEFAULT_NB_KEY_PACKAGE
+import com.wire.crypto.CoreCrypto.Companion.DEFAULT_NB_KEY_PACKAGE
 import kotlin.time.Duration
 import kotlin.time.DurationUnit
 import kotlin.time.toDuration
 
 @Suppress("TooManyFunctions")
-class CoreCryptoContext(private val cc: CoreCryptoContext) {
+class CoreCryptoContext(private val cc: com.wire.crypto.uniffi.CoreCryptoContext) {
     internal fun lower() = cc
 
     companion object {
         private val keyRotationDuration: Duration = 30.toDuration(DurationUnit.DAYS)
-        private val defaultGroupConfiguration =
-            com.wire.crypto.CustomConfiguration(
-                java.time.Duration.ofDays(keyRotationDuration.inWholeDays),
-                com.wire.crypto.MlsWirePolicy.PLAINTEXT,
-            )
+        private val defaultGroupConfiguration = CustomConfiguration(
+            java.time.Duration.ofDays(keyRotationDuration.inWholeDays),
+            MlsWirePolicy.PLAINTEXT
+        )
     }
 
     /**
@@ -45,7 +40,7 @@ class CoreCryptoContext(private val cc: CoreCryptoContext) {
      * the end of a transaction. The data should be limited to a reasonable size.
      */
     suspend fun setData(data: ByteArray) {
-        cc.setData(data)
+        wrapException { cc.setData(data) }
     }
 
     /**
@@ -53,19 +48,18 @@ class CoreCryptoContext(private val cc: CoreCryptoContext) {
      * is meant to be used as a check point at the end of a transaction.
      */
     suspend fun getData(): ByteArray? {
-        return cc.getData()
+        return wrapException { cc.getData() }
     }
 
     /**
-     * This is your entrypoint to initialize [com.wire.crypto.client.MLSClient] with a Basic
-     * Credential
+     * This is your entrypoint to initialize [CoreCrypto] with a Basic Credential
      */
     suspend fun mlsInit(
         id: ClientId,
         ciphersuites: Ciphersuites = Ciphersuites.DEFAULT,
         nbKeyPackage: UInt? = DEFAULT_NB_KEY_PACKAGE,
     ) {
-        cc.mlsInit(id.lower(), ciphersuites.lower(), nbKeyPackage)
+       wrapException { cc.mlsInit(id.lower(), ciphersuites.lower(), nbKeyPackage) }
     }
 
     /**
@@ -79,7 +73,7 @@ class CoreCryptoContext(private val cc: CoreCryptoContext) {
     suspend fun mlsGenerateKeypairs(
         ciphersuites: Ciphersuites = Ciphersuites.DEFAULT
     ): ExternallyGeneratedHandle {
-        return cc.mlsGenerateKeypairs(ciphersuites.lower()).toExternallyGeneratedHandle()
+        return wrapException { cc.mlsGenerateKeypairs(ciphersuites.lower()).toExternallyGeneratedHandle() }
     }
 
     /**
@@ -98,7 +92,7 @@ class CoreCryptoContext(private val cc: CoreCryptoContext) {
         tmpClientIds: ExternallyGeneratedHandle,
         ciphersuites: Ciphersuites = Ciphersuites.DEFAULT,
     ) {
-        cc.mlsInitWithClientId(clientId.lower(), tmpClientIds.lower(), ciphersuites.lower())
+        wrapException { cc.mlsInitWithClientId(clientId.lower(), tmpClientIds.lower(), ciphersuites.lower()) }
     }
 
     /**
@@ -112,8 +106,9 @@ class CoreCryptoContext(private val cc: CoreCryptoContext) {
         ciphersuite: Ciphersuite = Ciphersuite.DEFAULT,
         credentialType: CredentialType = CredentialType.DEFAULT,
     ): SignaturePublicKey {
-        return cc.clientPublicKey(ciphersuite.lower(), credentialType.lower())
-            .toSignaturePublicKey()
+        return wrapException {
+            cc.clientPublicKey(ciphersuite.lower(), credentialType.lower()).toSignaturePublicKey()
+        }
     }
 
     /**
@@ -131,8 +126,10 @@ class CoreCryptoContext(private val cc: CoreCryptoContext) {
         ciphersuite: Ciphersuite = Ciphersuite.DEFAULT,
         credentialType: CredentialType = CredentialType.DEFAULT,
     ): List<MLSKeyPackage> {
-        return cc.clientKeypackages(ciphersuite.lower(), credentialType.lower(), amount).map {
-            it.toMLSKeyPackage()
+        return wrapException {
+            cc.clientKeypackages(ciphersuite.lower(), credentialType.lower(), amount).map {
+                it.toMLSKeyPackage()
+            }
         }
     }
 
@@ -146,7 +143,7 @@ class CoreCryptoContext(private val cc: CoreCryptoContext) {
         ciphersuite: Ciphersuite = Ciphersuite.DEFAULT,
         credentialType: CredentialType = CredentialType.DEFAULT,
     ): ULong {
-        return cc.clientValidKeypackagesCount(ciphersuite.lower(), credentialType.lower())
+        return wrapException { cc.clientValidKeypackagesCount(ciphersuite.lower(), credentialType.lower()) }
     }
 
     /**
@@ -157,7 +154,7 @@ class CoreCryptoContext(private val cc: CoreCryptoContext) {
      */
     suspend fun deleteKeyPackages(refs: List<MLSKeyPackageRef>) {
         // cannot be tested with the current API & helpers
-        return cc.deleteKeypackages(refs.map { it.lower() })
+        return wrapException { cc.deleteKeypackages(refs.map { it.lower() }) }
     }
 
     /**
@@ -165,14 +162,14 @@ class CoreCryptoContext(private val cc: CoreCryptoContext) {
      *
      * @param id conversation identifier
      */
-    suspend fun conversationExists(id: MLSGroupId): Boolean = cc.conversationExists(id.lower())
+    suspend fun conversationExists(id: MLSGroupId): Boolean = wrapException { cc.conversationExists(id.lower()) }
 
     /**
      * Returns the current epoch of a conversation
      *
      * @param id conversation identifier
      */
-    suspend fun conversationEpoch(id: MLSGroupId): ULong = cc.conversationEpoch(id.lower())
+    suspend fun conversationEpoch(id: MLSGroupId): ULong = wrapException { cc.conversationEpoch(id.lower()) }
 
     /**
      * Creates a new external Add proposal for self client to join a conversation.
@@ -188,13 +185,15 @@ class CoreCryptoContext(private val cc: CoreCryptoContext) {
         ciphersuite: Ciphersuite = Ciphersuite.DEFAULT,
         credentialType: CredentialType = CredentialType.DEFAULT,
     ): MlsMessage {
-        return cc.newExternalAddProposal(
+        return wrapException {
+            cc.newExternalAddProposal(
                 id.lower(),
                 epoch,
                 ciphersuite.lower(),
                 credentialType.lower(),
             )
-            .toMlsMessage()
+                .toMlsMessage()
+        }
     }
 
     /**
@@ -214,13 +213,12 @@ class CoreCryptoContext(private val cc: CoreCryptoContext) {
     suspend fun joinByExternalCommit(
         groupInfo: GroupInfo,
         credentialType: CredentialType = CredentialType.DEFAULT,
-        configuration: com.wire.crypto.CustomConfiguration = defaultGroupConfiguration,
+        configuration: CustomConfiguration = defaultGroupConfiguration,
     ): CommitBundle {
         // cannot be tested since the groupInfo required is not wrapped in a MlsMessage whereas the
         // one returned
         // in Commit Bundles is... because that's the API the backend imposed
-        return cc.joinByExternalCommit(groupInfo.lower(), configuration, credentialType.lower())
-            .lift()
+        return wrapException { cc.joinByExternalCommit(groupInfo.lower(), configuration.lower(), credentialType.lower()).lift() }
     }
 
     /**
@@ -234,7 +232,7 @@ class CoreCryptoContext(private val cc: CoreCryptoContext) {
     suspend fun mergePendingGroupFromExternalCommit(
         id: MLSGroupId
     ): List<BufferedDecryptedMessage>? {
-        return cc.mergePendingGroupFromExternalCommit(id.lower())?.map { it.lift() }
+        return wrapException { cc.mergePendingGroupFromExternalCommit(id.lower())?.map { it.lift() } }
     }
 
     /**
@@ -245,7 +243,7 @@ class CoreCryptoContext(private val cc: CoreCryptoContext) {
      * @param id conversation identifier
      */
     suspend fun clearPendingGroupFromExternalCommit(id: MLSGroupId) =
-        cc.clearPendingGroupFromExternalCommit(id.lower())
+        wrapException { cc.clearPendingGroupFromExternalCommit(id.lower()) }
 
     /**
      * Creates a new conversation with the current client being the sole member. You will want to
@@ -263,14 +261,13 @@ class CoreCryptoContext(private val cc: CoreCryptoContext) {
         creatorCredentialType: CredentialType = CredentialType.Basic,
         externalSenders: List<ExternalSenderKey> = emptyList(),
     ) {
-        val cfg =
-            com.wire.crypto.ConversationConfiguration(
-                ciphersuite.lower(),
-                externalSenders.map { it.lower() },
-                defaultGroupConfiguration,
-            )
+        val cfg = com.wire.crypto.uniffi.ConversationConfiguration(
+            ciphersuite.lower(),
+            externalSenders.map { it.lower() },
+            defaultGroupConfiguration.lower(),
+        )
 
-        cc.createConversation(id.lower(), creatorCredentialType.lower(), cfg)
+        wrapException { cc.createConversation(id.lower(), creatorCredentialType.lower(), cfg) }
     }
 
     /**
@@ -278,7 +275,7 @@ class CoreCryptoContext(private val cc: CoreCryptoContext) {
      *
      * @param id conversation identifier
      */
-    suspend fun wipeConversation(id: MLSGroupId) = cc.wipeConversation(id.lower())
+    suspend fun wipeConversation(id: MLSGroupId) = wrapException { cc.wipeConversation(id.lower()) }
 
     /**
      * Ingest a TLS-serialized MLS welcome message to join an existing MLS group.
@@ -293,9 +290,9 @@ class CoreCryptoContext(private val cc: CoreCryptoContext) {
      */
     suspend fun processWelcomeMessage(
         welcome: Welcome,
-        configuration: com.wire.crypto.CustomConfiguration = defaultGroupConfiguration,
+        configuration: CustomConfiguration = defaultGroupConfiguration,
     ): WelcomeBundle {
-        return cc.processWelcomeMessage(welcome.lower(), configuration).lift()
+        return wrapException { cc.processWelcomeMessage(welcome.lower(), configuration.lower()).lift() }
     }
 
     /**
@@ -307,7 +304,7 @@ class CoreCryptoContext(private val cc: CoreCryptoContext) {
      *   members of the group.
      */
     suspend fun encryptMessage(id: MLSGroupId, message: PlaintextMessage): MlsMessage {
-        return cc.encryptMessage(id.lower(), message.lower()).toMlsMessage()
+        return wrapException { cc.encryptMessage(id.lower(), message.lower()).toMlsMessage() }
     }
 
     /**
@@ -317,7 +314,7 @@ class CoreCryptoContext(private val cc: CoreCryptoContext) {
      * @param message [MlsMessage] (either Application or Handshake message) from the DS
      */
     suspend fun decryptMessage(id: MLSGroupId, message: MlsMessage): DecryptedMessage {
-        return cc.decryptMessage(id.lower(), message.lower()).lift()
+        return wrapException { cc.decryptMessage(id.lower(), message.lower()).lift() }
     }
 
     /**
@@ -333,7 +330,7 @@ class CoreCryptoContext(private val cc: CoreCryptoContext) {
      * @return a [CommitBundle] to upload to the backend and if it succeeds call [commitAccepted]
      */
     suspend fun addMember(id: MLSGroupId, keyPackages: List<MLSKeyPackage>): CommitBundle {
-        return cc.addClientsToConversation(id.lower(), keyPackages.map { it.lower() }).lift()
+        return wrapException { cc.addClientsToConversation(id.lower(), keyPackages.map { it.lower() }).lift() }
     }
 
     /**
@@ -349,8 +346,10 @@ class CoreCryptoContext(private val cc: CoreCryptoContext) {
      * @return a [CommitBundle] to upload to the backend and if it succeeds call [commitAccepted]
      */
     suspend fun removeMember(id: MLSGroupId, members: List<ClientId>): CommitBundle {
-        val clientIds = members.map { it.lower() }
-        return cc.removeClientsFromConversation(id.lower(), clientIds).lift()
+        return wrapException {
+            val clientIds = members.map { it.lower() }
+            cc.removeClientsFromConversation(id.lower(), clientIds).lift()
+        }
     }
 
     /**
@@ -364,7 +363,7 @@ class CoreCryptoContext(private val cc: CoreCryptoContext) {
      * @param id conversation identifier
      * @return a [CommitBundle] to upload to the backend and if it succeeds call [commitAccepted]
      */
-    suspend fun updateKeyingMaterial(id: MLSGroupId) = cc.updateKeyingMaterial(id.lower()).lift()
+    suspend fun updateKeyingMaterial(id: MLSGroupId) = wrapException { cc.updateKeyingMaterial(id.lower()).lift() }
 
     /**
      * Commits the local pending proposals and returns the {@link CommitBundle} object containing
@@ -378,7 +377,7 @@ class CoreCryptoContext(private val cc: CoreCryptoContext) {
      * @return a [CommitBundle] to upload to the backend and if it succeeds call [commitAccepted]
      */
     suspend fun commitPendingProposals(id: MLSGroupId): CommitBundle? {
-        return cc.commitPendingProposals(id.lower())?.lift()
+        return wrapException { cc.commitPendingProposals(id.lower())?.lift() }
     }
 
     /**
@@ -390,7 +389,7 @@ class CoreCryptoContext(private val cc: CoreCryptoContext) {
      *   [clearPendingProposal] in case the DS rejects it
      */
     suspend fun newAddProposal(id: MLSGroupId, keyPackage: MLSKeyPackage): ProposalBundle {
-        return cc.newAddProposal(id.lower(), keyPackage.lower()).lift()
+        return wrapException { cc.newAddProposal(id.lower(), keyPackage.lower()).lift() }
     }
 
     /**
@@ -402,7 +401,7 @@ class CoreCryptoContext(private val cc: CoreCryptoContext) {
      *   [clearPendingProposal] in case the DS rejects it
      */
     suspend fun newRemoveProposal(id: MLSGroupId, clientId: ClientId): ProposalBundle {
-        return cc.newRemoveProposal(id.lower(), clientId.lower()).lift()
+        return wrapException { cc.newRemoveProposal(id.lower(), clientId.lower()).lift() }
     }
 
     /**
@@ -414,7 +413,7 @@ class CoreCryptoContext(private val cc: CoreCryptoContext) {
      *   [clearPendingProposal] in case the DS rejects it
      */
     suspend fun newUpdateProposal(id: MLSGroupId): ProposalBundle {
-        return cc.newUpdateProposal(id.lower()).lift()
+        return wrapException { cc.newUpdateProposal(id.lower()).lift() }
     }
 
     /**
@@ -424,7 +423,7 @@ class CoreCryptoContext(private val cc: CoreCryptoContext) {
      * @param id conversation identifier
      */
     suspend fun commitAccepted(id: MLSGroupId): List<BufferedDecryptedMessage>? {
-        return cc.commitAccepted(id.lower())?.map { it.lift() }
+        return wrapException { cc.commitAccepted(id.lower())?.map { it.lift() } }
     }
 
     /**
@@ -438,7 +437,7 @@ class CoreCryptoContext(private val cc: CoreCryptoContext) {
      * @param proposalRef you get from a [ProposalBundle]
      */
     suspend fun clearPendingProposal(id: MLSGroupId, proposalRef: ProposalRef) {
-        cc.clearPendingProposal(id.lower(), proposalRef.lower())
+        wrapException { cc.clearPendingProposal(id.lower(), proposalRef.lower()) }
     }
 
     /**
@@ -452,7 +451,7 @@ class CoreCryptoContext(private val cc: CoreCryptoContext) {
      * @param id conversation identifier
      */
     suspend fun clearPendingCommit(id: MLSGroupId) {
-        cc.clearPendingCommit(id.lower())
+        wrapException { cc.clearPendingCommit(id.lower()) }
     }
 
     /**
@@ -462,7 +461,7 @@ class CoreCryptoContext(private val cc: CoreCryptoContext) {
      * @return All the clients from the members of the group
      */
     suspend fun members(id: MLSGroupId): List<ClientId> {
-        return cc.getClientIds(id.lower()).map { it.toClientId() }
+        return wrapException { cc.getClientIds(id.lower()).map { it.toClientId() } }
     }
 
     /**
@@ -473,7 +472,7 @@ class CoreCryptoContext(private val cc: CoreCryptoContext) {
      *   of `u16` or the context hash * 255, an error will be returned
      */
     suspend fun deriveAvsSecret(id: MLSGroupId, keyLength: UInt): AvsSecret {
-        return cc.exportSecretKey(id.lower(), keyLength).toAvsSecret()
+        return wrapException { cc.exportSecretKey(id.lower(), keyLength).toAvsSecret() }
     }
 
     /**
@@ -485,7 +484,7 @@ class CoreCryptoContext(private val cc: CoreCryptoContext) {
      *   of `u16` or the context hash * 255, an error will be returned
      */
     suspend fun getExternalSender(id: MLSGroupId): ExternalSenderKey {
-        return cc.getExternalSender(id.lower()).toExternalSenderKey()
+        return wrapException { cc.getExternalSender(id.lower()).toExternalSenderKey() }
     }
 
     /**
@@ -495,8 +494,8 @@ class CoreCryptoContext(private val cc: CoreCryptoContext) {
      * @param id conversation identifier
      * @return the conversation state given current members
      */
-    suspend fun e2eiConversationState(id: MLSGroupId): com.wire.crypto.E2eiConversationState {
-        return cc.e2eiConversationState(id.lower())
+    suspend fun e2eiConversationState(id: MLSGroupId): E2eiConversationState {
+        return wrapException { cc.e2eiConversationState(id.lower()).lift() }
     }
 
     /**
@@ -506,7 +505,7 @@ class CoreCryptoContext(private val cc: CoreCryptoContext) {
      * @returns true if end-to-end identity is enabled for the given ciphersuite
      */
     suspend fun e2eiIsEnabled(ciphersuite: Ciphersuite = Ciphersuite.DEFAULT): Boolean {
-        return cc.e2eiIsEnabled(ciphersuite.lower())
+        return wrapException { cc.e2eiIsEnabled(ciphersuite.lower()) }
     }
 
     /**
@@ -518,7 +517,7 @@ class CoreCryptoContext(private val cc: CoreCryptoContext) {
      * @returns identities or if no member has a x509 certificate, it will return an empty List
      */
     suspend fun getDeviceIdentities(id: MLSGroupId, deviceIds: List<ClientId>): List<WireIdentity> {
-        return cc.getDeviceIdentities(id.lower(), deviceIds.map { it.lower() }).map { it.lift() }
+        return wrapException { cc.getDeviceIdentities(id.lower(), deviceIds.map { it.lower() }).map { it.lift() } }
     }
 
     /**
@@ -535,7 +534,7 @@ class CoreCryptoContext(private val cc: CoreCryptoContext) {
         id: MLSGroupId,
         userIds: List<String>,
     ): Map<String, List<WireIdentity>> {
-        return cc.getUserIdentities(id.lower(), userIds).mapValues { (_, v) -> v.map { it.lift() } }
+        return wrapException { cc.getUserIdentities(id.lower(), userIds).mapValues { (_, v) -> v.map { it.lift() } } }
     }
 
     /**
@@ -546,11 +545,8 @@ class CoreCryptoContext(private val cc: CoreCryptoContext) {
      * @param credentialType kind of Credential to check usage of. Defaults to X509 for now as no
      *   other value will give any result.
      */
-    suspend fun getCredentialInUse(
-        groupInfo: GroupInfo,
-        credentialType: CredentialType = CredentialType.X509,
-    ): com.wire.crypto.E2eiConversationState {
-        return cc.getCredentialInUse(groupInfo.lower(), credentialType.lower())
+    suspend fun getCredentialInUse(groupInfo: GroupInfo, credentialType: CredentialType = CredentialType.X509): E2eiConversationState {
+        return wrapException { cc.getCredentialInUse(groupInfo.lower(), credentialType.lower()).lift() }
     }
 
     /**
@@ -575,16 +571,18 @@ class CoreCryptoContext(private val cc: CoreCryptoContext) {
         ciphersuite: Ciphersuite,
         team: String? = null,
     ): E2EIEnrollment {
-        return E2EIEnrollment(
-            cc.e2eiNewEnrollment(
-                clientId,
-                displayName,
-                handle,
-                team,
-                expirySec,
-                ciphersuite.lower(),
+        return wrapException {
+            E2EIEnrollment(
+                cc.e2eiNewEnrollment(
+                    clientId,
+                    displayName,
+                    handle,
+                    team,
+                    expirySec,
+                    ciphersuite.lower(),
+                )
             )
-        )
+        }
     }
 
     /**
@@ -607,15 +605,17 @@ class CoreCryptoContext(private val cc: CoreCryptoContext) {
         ciphersuite: Ciphersuite,
         team: String? = null,
     ): E2EIEnrollment {
-        return E2EIEnrollment(
-            cc.e2eiNewActivationEnrollment(
-                displayName,
-                handle,
-                team,
-                expirySec,
-                ciphersuite.lower(),
+        return wrapException {
+            E2EIEnrollment(
+                cc.e2eiNewActivationEnrollment(
+                    displayName,
+                    handle,
+                    team,
+                    expirySec,
+                    ciphersuite.lower(),
+                )
             )
-        )
+        }
     }
 
     /**
@@ -639,9 +639,9 @@ class CoreCryptoContext(private val cc: CoreCryptoContext) {
         handle: String? = null,
         team: String? = null,
     ): E2EIEnrollment {
-        return E2EIEnrollment(
-            cc.e2eiNewRotateEnrollment(displayName, handle, team, expirySec, ciphersuite.lower())
-        )
+        return wrapException {
+            E2EIEnrollment(cc.e2eiNewRotateEnrollment(displayName, handle, team, expirySec, ciphersuite.lower()))
+        }
     }
 
     /**
@@ -658,8 +658,10 @@ class CoreCryptoContext(private val cc: CoreCryptoContext) {
         certificateChain: String,
         nbKeyPackage: UInt? = DEFAULT_NB_KEY_PACKAGE,
     ): CrlDistributionPoints? {
-        val crlsDps = cc.e2eiMlsInitOnly(enrollment.lower(), certificateChain, nbKeyPackage)
-        return crlsDps?.toCrlDistributionPoint()
+        return wrapException {
+            val crlsDps = cc.e2eiMlsInitOnly(enrollment.lower(), certificateChain, nbKeyPackage)
+            crlsDps?.toCrlDistributionPoint()
+        }
     }
 
     /**
@@ -668,12 +670,12 @@ class CoreCryptoContext(private val cc: CoreCryptoContext) {
      * @return a struct with different fields representing the PKI environment as PEM strings
      */
     suspend fun e2eiDumpPKIEnv(): E2eiDumpedPkiEnv? {
-        return cc.e2eiDumpPkiEnv()
+        return wrapException { cc.e2eiDumpPkiEnv()?.lift() }
     }
 
     /** Returns whether the E2EI PKI environment is setup (i.e. Root CA, Intermediates, CRLs) */
     suspend fun e2eiIsPKIEnvSetup(): Boolean {
-        return cc.e2eiIsPkiEnvSetup()
+        return wrapException { cc.e2eiIsPkiEnvSetup() }
     }
 
     /**
@@ -685,7 +687,7 @@ class CoreCryptoContext(private val cc: CoreCryptoContext) {
      * @param trustAnchorPEM - PEM certificate to anchor as a Trust Root
      */
     suspend fun e2eiRegisterAcmeCA(trustAnchorPEM: String) {
-        return cc.e2eiRegisterAcmeCa(trustAnchorPEM)
+        return wrapException { cc.e2eiRegisterAcmeCa(trustAnchorPEM) }
     }
 
     /**
@@ -697,7 +699,7 @@ class CoreCryptoContext(private val cc: CoreCryptoContext) {
      * @param certPEM PEM certificate to register as an Intermediate CA
      */
     suspend fun e2eiRegisterIntermediateCA(certPEM: String): CrlDistributionPoints? {
-        return cc.e2eiRegisterIntermediateCa(certPEM)?.toCrlDistributionPoint()
+        return wrapException { cc.e2eiRegisterIntermediateCa(certPEM)?.toCrlDistributionPoint() }
     }
 
     /**
@@ -712,7 +714,7 @@ class CoreCryptoContext(private val cc: CoreCryptoContext) {
      *   expiration timestamp
      */
     suspend fun e2eiRegisterCRL(crlDP: String, crlDER: ByteArray): CRLRegistration {
-        return cc.e2eiRegisterCrl(crlDP, crlDER).lift()
+        return wrapException { cc.e2eiRegisterCrl(crlDP, crlDER).lift() }
     }
 
     /**
@@ -729,7 +731,7 @@ class CoreCryptoContext(private val cc: CoreCryptoContext) {
      * @param id conversation identifier
      * @return a [CommitBundle] to upload to the backend and if it succeeds call [commitAccepted]
      */
-    suspend fun e2eiRotate(id: MLSGroupId) = cc.e2eiRotate(id.lower()).lift()
+    suspend fun e2eiRotate(id: MLSGroupId) = wrapException { cc.e2eiRotate(id.lower()).lift() }
 
     /**
      * Creates a commit in all local conversations for changing the credential. Requires first
@@ -747,8 +749,9 @@ class CoreCryptoContext(private val cc: CoreCryptoContext) {
         certificateChain: String,
         newKeyPackageCount: UInt,
     ): RotateBundle {
-        return cc.e2eiRotateAll(enrollment.lower(), certificateChain, newKeyPackageCount)
-            .toRotateBundle()
+        return wrapException {
+            cc.e2eiRotateAll(enrollment.lower(), certificateChain, newKeyPackageCount).toRotateBundle()
+        }
     }
 
     /**
@@ -759,7 +762,7 @@ class CoreCryptoContext(private val cc: CoreCryptoContext) {
      * @return a handle to fetch the enrollment later with [e2eiEnrollmentStashPop]
      */
     suspend fun e2eiEnrollmentStash(enrollment: E2EIEnrollment): EnrollmentHandle {
-        return cc.e2eiEnrollmentStash(enrollment.lower()).toUByteArray().asByteArray()
+        return wrapException { cc.e2eiEnrollmentStash(enrollment.lower()).toUByteArray().asByteArray() }
     }
 
     /**
@@ -769,23 +772,12 @@ class CoreCryptoContext(private val cc: CoreCryptoContext) {
      * @returns the persisted enrollment instance
      */
     suspend fun e2eiEnrollmentStashPop(handle: EnrollmentHandle): E2EIEnrollment {
-        return E2EIEnrollment(cc.e2eiEnrollmentStashPop(handle))
+        return wrapException { E2EIEnrollment(cc.e2eiEnrollmentStashPop(handle)) }
     }
 
     // Proteus below
 
     private fun toPreKey(id: UShort, data: ByteArray): PreKey = PreKey(id, data)
-
-    @Suppress("TooGenericExceptionCaught")
-    private suspend fun <T> wrapException(b: suspend () -> T): T {
-        try {
-            return b()
-        } catch (e: CoreCryptoException) {
-            throw ProteusException.fromCoreCryptoException(cc.proteusLastErrorCode(), e)
-        } catch (e: Exception) {
-            throw ProteusException(e.message, ProteusException.Code.UNKNOWN_ERROR, e.cause)
-        }
-    }
 
     suspend fun proteusGetLocalFingerprint(): ByteArray {
         return wrapException { cc.proteusFingerprint().toByteArray() }

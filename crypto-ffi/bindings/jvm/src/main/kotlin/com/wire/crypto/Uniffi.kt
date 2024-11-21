@@ -1,4 +1,4 @@
-package com.wire.crypto.client
+package com.wire.crypto
 
 interface FfiType<K, R> {
     val value: K

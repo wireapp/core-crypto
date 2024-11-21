@@ -1,7 +1,4 @@
-package com.wire.crypto.client
-
-import com.wire.crypto.MlsGroupInfoEncryptionType
-import com.wire.crypto.MlsRatchetTreeType
+package com.wire.crypto
 
 @JvmInline
 value class Ciphersuites(private val value: Set<Ciphersuite>) {
@@ -53,15 +50,15 @@ enum class CredentialType {
 
     fun lower() =
         when (this) {
-            Basic -> com.wire.crypto.MlsCredentialType.BASIC
-            X509 -> com.wire.crypto.MlsCredentialType.X509
+            Basic -> com.wire.crypto.uniffi.MlsCredentialType.BASIC
+            X509 -> com.wire.crypto.uniffi.MlsCredentialType.X509
         }
 }
 
-fun com.wire.crypto.MlsCredentialType.lift() =
+fun com.wire.crypto.uniffi.MlsCredentialType.lift() =
     when (this) {
-        com.wire.crypto.MlsCredentialType.BASIC -> CredentialType.Basic
-        com.wire.crypto.MlsCredentialType.X509 -> CredentialType.X509
+        com.wire.crypto.uniffi.MlsCredentialType.BASIC -> CredentialType.Basic
+        com.wire.crypto.uniffi.MlsCredentialType.X509 -> CredentialType.X509
     }
 
 @JvmInline
@@ -74,13 +71,13 @@ fun ByteArray.toGroupId() = MLSGroupId(this)
 fun String.toGroupId() = MLSGroupId(toByteArray())
 
 @JvmInline
-value class ClientId(override val value: String) : FfiType<String, com.wire.crypto.ClientId> {
+value class ClientId(override val value: String) : FfiType<String, com.wire.crypto.uniffi.ClientId> {
 
     override fun lower() = value.toByteArray()
 }
 
 @OptIn(ExperimentalUnsignedTypes::class)
-fun com.wire.crypto.ClientId.toClientId() = ClientId(String(toUByteArray().asByteArray()))
+fun com.wire.crypto.uniffi.ClientId.toClientId() = ClientId(String(toUByteArray().asByteArray()))
 
 fun String.toClientId() = ClientId(this)
 
@@ -173,14 +170,54 @@ value class GroupInfo(override val value: ByteArray) : Uniffi {
 
 fun ByteArray.toGroupInfo() = GroupInfo(this)
 
+enum class MlsGroupInfoEncryptionType {
+    /**
+     * Unencrypted `GroupInfo`
+     */
+    PLAINTEXT,
+
+    /**
+     * `GroupInfo` encrypted in a JWE
+     */
+    JWE_ENCRYPTED;
+}
+
+fun com.wire.crypto.uniffi.MlsGroupInfoEncryptionType.lift() =
+    when (this) {
+        com.wire.crypto.uniffi.MlsGroupInfoEncryptionType.PLAINTEXT -> MlsGroupInfoEncryptionType.PLAINTEXT
+        com.wire.crypto.uniffi.MlsGroupInfoEncryptionType.JWE_ENCRYPTED -> MlsGroupInfoEncryptionType.JWE_ENCRYPTED
+    }
+
+enum class MlsRatchetTreeType {
+    /**
+     * Plain old and complete `GroupInfo`
+     */
+    FULL,
+
+    /**
+     * Contains `GroupInfo` changes since previous epoch (not yet implemented)
+     * (see [draft](https://github.com/rohan-wire/ietf-drafts/blob/main/mahy-mls-ratchet-tree-delta/draft-mahy-mls-ratchet-tree-delta.md))
+     */
+    DELTA,
+
+    BY_REF;
+}
+
+fun com.wire.crypto.uniffi.MlsRatchetTreeType.lift() =
+    when (this) {
+        com.wire.crypto.uniffi.MlsRatchetTreeType.FULL -> com.wire.crypto.MlsRatchetTreeType.FULL
+        com.wire.crypto.uniffi.MlsRatchetTreeType.DELTA -> com.wire.crypto.MlsRatchetTreeType.DELTA
+        com.wire.crypto.uniffi.MlsRatchetTreeType.BY_REF -> com.wire.crypto.MlsRatchetTreeType.BY_REF
+    }
+
 data class GroupInfoBundle(
     val encryptionType: MlsGroupInfoEncryptionType,
     val ratchetTreeType: MlsRatchetTreeType,
     val payload: GroupInfo,
 )
 
-fun com.wire.crypto.GroupInfoBundle.lift() =
-    GroupInfoBundle(encryptionType, ratchetTreeType, payload.toGroupInfo())
+fun com.wire.crypto.uniffi.GroupInfoBundle.lift() =
+    GroupInfoBundle(encryptionType.lift(), ratchetTreeType.lift(), payload.toGroupInfo())
 
 data class CommitBundle(
     /** TLS serialized commit wrapped in a MLS message */
@@ -193,10 +230,10 @@ data class CommitBundle(
     val crlNewDistributionPoints: CrlDistributionPoints?,
 )
 
-fun com.wire.crypto.CommitBundle.lift() =
+fun com.wire.crypto.uniffi.CommitBundle.lift() =
     CommitBundle(commit.toMlsMessage(), welcome?.toWelcome(), groupInfo.lift(), null)
 
-fun com.wire.crypto.ConversationInitBundle.lift() =
+fun com.wire.crypto.uniffi.ConversationInitBundle.lift() =
     CommitBundle(
         commit.toMlsMessage(),
         null,
@@ -204,7 +241,7 @@ fun com.wire.crypto.ConversationInitBundle.lift() =
         crlNewDistributionPoints?.toCrlDistributionPoint(),
     )
 
-fun com.wire.crypto.MemberAddedMessages.lift() =
+fun com.wire.crypto.uniffi.MemberAddedMessages.lift() =
     CommitBundle(
         commit.toMlsMessage(),
         welcome.toWelcome(),
@@ -225,7 +262,7 @@ data class ProposalBundle(
     val crlNewDistributionPoints: CrlDistributionPoints?,
 )
 
-fun com.wire.crypto.ProposalBundle.lift() =
+fun com.wire.crypto.uniffi.ProposalBundle.lift() =
     ProposalBundle(
         proposal.toMlsMessage(),
         proposalRef.toProposalRef(),
@@ -258,7 +295,7 @@ data class WelcomeBundle(
     }
 }
 
-fun com.wire.crypto.WelcomeBundle.lift() =
+fun com.wire.crypto.uniffi.WelcomeBundle.lift() =
     WelcomeBundle(id.toGroupId(), crlNewDistributionPoints?.toCrlDistributionPoint())
 
 /**
@@ -337,7 +374,7 @@ data class DecryptedMessage(
     }
 }
 
-fun com.wire.crypto.DecryptedMessage.lift() =
+fun com.wire.crypto.uniffi.DecryptedMessage.lift() =
     DecryptedMessage(
         message,
         proposals.asSequence().map { it.lift() }.toSet(),
@@ -404,7 +441,7 @@ data class BufferedDecryptedMessage(
     }
 }
 
-fun com.wire.crypto.BufferedDecryptedMessage.lift() =
+fun com.wire.crypto.uniffi.BufferedDecryptedMessage.lift() =
     BufferedDecryptedMessage(
         message,
         proposals.asSequence().map { it.lift() }.toSet(),
@@ -430,7 +467,7 @@ data class WireIdentity(
     val x509Identity: X509Identity?,
 )
 
-fun com.wire.crypto.WireIdentity.lift() =
+fun com.wire.crypto.uniffi.WireIdentity.lift() =
     WireIdentity(clientId, status.lift(), thumbprint, credentialType.lift(), x509Identity?.lift())
 
 /**
@@ -454,7 +491,7 @@ data class X509Identity(
     val notAfter: java.time.Instant,
 )
 
-fun com.wire.crypto.X509Identity.lift() =
+fun com.wire.crypto.uniffi.X509Identity.lift() =
     X509Identity(
         handle,
         displayName,
@@ -480,9 +517,66 @@ enum class DeviceStatus {
     Revoked,
 }
 
-fun com.wire.crypto.DeviceStatus.lift(): DeviceStatus =
+fun com.wire.crypto.uniffi.DeviceStatus.lift(): DeviceStatus =
     when (this) {
-        com.wire.crypto.DeviceStatus.VALID -> DeviceStatus.Valid
-        com.wire.crypto.DeviceStatus.EXPIRED -> DeviceStatus.Expired
-        com.wire.crypto.DeviceStatus.REVOKED -> DeviceStatus.Revoked
+        com.wire.crypto.uniffi.DeviceStatus.VALID -> DeviceStatus.Valid
+        com.wire.crypto.uniffi.DeviceStatus.EXPIRED -> DeviceStatus.Expired
+        com.wire.crypto.uniffi.DeviceStatus.REVOKED -> DeviceStatus.Revoked
+    }
+
+enum class E2eiConversationState {
+    /**
+     * All clients have a valid E2EI certificate
+     */
+    Verified,
+    /**
+     * Some clients are either still Basic or their certificate is expired
+     */
+    NotVerified,
+    /**
+     * All clients are still Basic. If all client have expired certificates, [E2eiConversationState::NotVerified] is returned.
+     */
+    NotEnabled;
+}
+
+internal fun com.wire.crypto.uniffi.E2eiConversationState.lift() =
+    when (this) {
+        com.wire.crypto.uniffi.E2eiConversationState.VERIFIED -> E2eiConversationState.Verified
+        com.wire.crypto.uniffi.E2eiConversationState.NOT_VERIFIED -> E2eiConversationState.NotVerified
+        com.wire.crypto.uniffi.E2eiConversationState.NOT_ENABLED -> E2eiConversationState.NotEnabled
+    }
+
+/**
+ * Configuration of MLS group
+ */
+data class CustomConfiguration (
+    var keyRotationSpan: java.time.Duration?,
+    var wirePolicy: MlsWirePolicy?
+)
+
+fun CustomConfiguration.lower() =
+    com.wire.crypto.uniffi.CustomConfiguration(
+        keyRotationSpan = keyRotationSpan,
+        wirePolicy = wirePolicy?.lower()
+    )
+
+/**
+ * Encrypting policy in MLS group
+ */
+enum class MlsWirePolicy {
+
+    /**
+     * Handshake messages are never encrypted
+     */
+    PLAINTEXT,
+    /**
+     * Handshake messages are always encrypted
+     */
+    CIPHERTEXT
+}
+
+fun MlsWirePolicy.lower() =
+    when (this) {
+        MlsWirePolicy.PLAINTEXT -> com.wire.crypto.uniffi.MlsWirePolicy.PLAINTEXT
+        MlsWirePolicy.CIPHERTEXT -> com.wire.crypto.uniffi.MlsWirePolicy.CIPHERTEXT
     }

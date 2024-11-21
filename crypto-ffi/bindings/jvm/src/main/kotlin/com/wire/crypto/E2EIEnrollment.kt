@@ -1,8 +1,71 @@
-package com.wire.crypto.client
+package com.wire.crypto
 
 typealias JsonRawData = ByteArray
 
-data class AcmeDirectory(private val delegate: com.wire.crypto.AcmeDirectory) {
+data class E2eiDumpedPkiEnv (
+    var rootCa: String,
+    var intermediates: List<String>,
+    var crls: List<String>
+)
+
+fun com.wire.crypto.uniffi.E2eiDumpedPkiEnv.lift() =
+    E2eiDumpedPkiEnv(
+        rootCa = rootCa,
+        intermediates = intermediates,
+        crls = crls
+    )
+
+@JvmInline
+value class RotateBundle(private val value: com.wire.crypto.uniffi.RotateBundle) {
+    val commits: Map<ClientId, CommitBundle>
+        get() =
+            value.commits
+                .asSequence()
+                .map { (clientId, commit) -> clientId.toClientId() to commit.lift() }
+                .toMap()
+
+    val newKeyPackages: List<MLSKeyPackage>
+        get() = value.newKeyPackages.map { MLSKeyPackage(it) }
+
+    val keyPackageRefsToRemove: List<MLSKeyPackageRef>
+        get() = value.keyPackageRefsToRemove.map { MLSKeyPackageRef(it) }
+
+    /** New CRL distribution points that appeared by the introduction of a new credential */
+    val crlNewDistributionPoints: CrlDistributionPoints?
+        get() = value.crlNewDistributionPoints?.toCrlDistributionPoint()
+}
+
+fun com.wire.crypto.uniffi.RotateBundle.toRotateBundle() = RotateBundle(this)
+
+/** Supporting struct for CRL registration result */
+data class CRLRegistration(
+    /** Whether this CRL modifies the old CRL (i.e. has a different revocated cert list) */
+    val dirty: Boolean,
+    /** Optional expiration timestamp */
+    val expiration: Long?,
+) {
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (javaClass != other?.javaClass) return false
+
+        other as CRLRegistration
+
+        if (dirty != other.dirty) return false
+        if (expiration != other.expiration) return false
+
+        return true
+    }
+
+    override fun hashCode(): Int {
+        var result = dirty.hashCode()
+        result = 31 * result + (expiration?.hashCode() ?: 0)
+        return result
+    }
+}
+
+fun com.wire.crypto.uniffi.CrlRegistration.lift() = CRLRegistration(dirty, expiration?.toLong())
+
+data class AcmeDirectory(private val delegate: com.wire.crypto.uniffi.AcmeDirectory) {
     val newNonce: String
         get() = delegate.newNonce
 
@@ -18,10 +81,10 @@ data class AcmeDirectory(private val delegate: com.wire.crypto.AcmeDirectory) {
     fun lower() = delegate
 }
 
-fun com.wire.crypto.AcmeDirectory.toAcmeDirectory() = AcmeDirectory(this)
+fun com.wire.crypto.uniffi.AcmeDirectory.toAcmeDirectory() = AcmeDirectory(this)
 
 @OptIn(ExperimentalUnsignedTypes::class)
-data class NewAcmeOrder(private val delegate: com.wire.crypto.NewAcmeOrder) {
+data class NewAcmeOrder(private val delegate: com.wire.crypto.uniffi.NewAcmeOrder) {
     val authorizations: List<String>
         get() = delegate.authorizations
 
@@ -31,10 +94,10 @@ data class NewAcmeOrder(private val delegate: com.wire.crypto.NewAcmeOrder) {
     fun lower() = delegate
 }
 
-fun com.wire.crypto.NewAcmeOrder.toNewAcmeOrder() = NewAcmeOrder(this)
+fun com.wire.crypto.uniffi.NewAcmeOrder.toNewAcmeOrder() = NewAcmeOrder(this)
 
 @OptIn(ExperimentalUnsignedTypes::class)
-data class AcmeChallenge(private val delegate: com.wire.crypto.AcmeChallenge) {
+data class AcmeChallenge(private val delegate: com.wire.crypto.uniffi.AcmeChallenge) {
     val url: String
         get() = delegate.url
 
@@ -44,9 +107,9 @@ data class AcmeChallenge(private val delegate: com.wire.crypto.AcmeChallenge) {
     fun lower() = delegate
 }
 
-fun com.wire.crypto.AcmeChallenge.toAcmeChallenge() = AcmeChallenge(this)
+fun com.wire.crypto.uniffi.AcmeChallenge.toAcmeChallenge() = AcmeChallenge(this)
 
-data class NewAcmeAuthz(private val delegate: com.wire.crypto.NewAcmeAuthz) {
+data class NewAcmeAuthz(private val delegate: com.wire.crypto.uniffi.NewAcmeAuthz) {
     val identifier: String
         get() = delegate.identifier
 
@@ -59,10 +122,10 @@ data class NewAcmeAuthz(private val delegate: com.wire.crypto.NewAcmeAuthz) {
     fun lower() = delegate
 }
 
-fun com.wire.crypto.NewAcmeAuthz.toNewAcmeAuthz() = NewAcmeAuthz(this)
+fun com.wire.crypto.uniffi.NewAcmeAuthz.toNewAcmeAuthz() = NewAcmeAuthz(this)
 
 @Suppress("TooManyFunctions")
-class E2EIEnrollment(private val delegate: com.wire.crypto.E2eiEnrollment) {
+class E2EIEnrollment(private val delegate: com.wire.crypto.uniffi.E2eiEnrollment) {
 
     internal fun lower() = delegate
 
@@ -199,7 +262,7 @@ class E2EIEnrollment(private val delegate: com.wire.crypto.E2eiEnrollment) {
     @Deprecated(
         "Use contextOidcChallengeResponse() with the CoreCryptoContext object created from a CoreCryptoCentral.transaction call"
     )
-    suspend fun oidcChallengeResponse(cc: CoreCryptoCentral, challenge: JsonRawData) =
+    suspend fun oidcChallengeResponse(cc: CoreCrypto, challenge: JsonRawData) =
         delegate.newOidcChallengeResponse(cc.lower(), challenge)
 
     /**

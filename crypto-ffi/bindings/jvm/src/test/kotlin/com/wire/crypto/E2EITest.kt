@@ -16,16 +16,15 @@
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
 
-package com.wire.crypto.client
+package com.wire.crypto
 
-import com.wire.crypto.E2eiConversationState
-import com.wire.crypto.client.MLSTest.Companion.aliceId
-import com.wire.crypto.client.MLSTest.Companion.bobId
-import com.wire.crypto.client.MLSTest.Companion.id
-import java.nio.file.Files
-import kotlin.test.Test
+import com.wire.crypto.MLSTest.Companion.aliceId
+import com.wire.crypto.MLSTest.Companion.bobId
+import com.wire.crypto.MLSTest.Companion.id
 import kotlinx.coroutines.test.runTest
 import org.assertj.core.api.AssertionsForInterfaceTypes.assertThat
+import java.nio.file.Files
+import kotlin.test.Test
 
 internal class E2EITest {
 
@@ -33,17 +32,15 @@ internal class E2EITest {
     fun sample_e2ei_enrollment_should_succeed() = runTest {
         val root = Files.createTempDirectory("mls").toFile()
         val keyStore = root.resolve("keystore-$aliceId")
-        val cc = CoreCryptoCentral(keyStore.absolutePath, "secret")
-        val enrollment =
-            cc.e2eiNewEnrollment(
-                clientId = "b7ac11a4-8f01-4527-af88-1c30885a7931:6c1866f567616f31@wire.com",
-                displayName = "Alice Smith",
-                handle = "alice_wire",
-                expirySec = (90 * 24 * 3600).toUInt(),
-                ciphersuite = Ciphersuite.DEFAULT,
-            )
-        val directoryResponse =
-            """{
+        val cc = CoreCrypto(keyStore.absolutePath, "secret")
+        val enrollment = cc.transaction { it.e2eiNewEnrollment(
+            clientId = "b7ac11a4-8f01-4527-af88-1c30885a7931:6c1866f567616f31@wire.com",
+            displayName = "Alice Smith",
+            handle = "alice_wire",
+            expirySec = (90 * 24 * 3600).toUInt(),
+            ciphersuite = Ciphersuite.DEFAULT
+        )}
+        val directoryResponse = """{
             "newNonce": "https://example.com/acme/new-nonce",
             "newAccount": "https://example.com/acme/new-account",
             "newOrder": "https://example.com/acme/new-order",
@@ -223,23 +220,20 @@ internal class E2EITest {
         runTest {
             val (alice, bob) = newClients(aliceId, bobId)
 
-            bob.createConversation(id)
+        bob.transaction { it.createConversation(id) }
 
-            val aliceKp =
-                alice.generateKeyPackages(1U, Ciphersuite.DEFAULT, CredentialType.DEFAULT).first()
-            val welcome = bob.addMember(id, listOf(aliceKp)).welcome!!
-            bob.commitAccepted(id)
-            val groupId = alice.processWelcomeMessage(welcome).id
+        val aliceKp = alice.transaction { it.generateKeyPackages(1U, Ciphersuite.DEFAULT, CredentialType.DEFAULT).first() }
+        val welcome = bob.transaction { it.addMember(id, listOf(aliceKp)).welcome!! }
+        bob.transaction { it.commitAccepted(id) }
+        val groupId = alice.transaction { it.processWelcomeMessage(welcome).id }
 
-            assertThat(alice.e2eiConversationState(groupId))
-                .isEqualTo(E2eiConversationState.NOT_ENABLED)
-            assertThat(bob.e2eiConversationState(groupId))
-                .isEqualTo(E2eiConversationState.NOT_ENABLED)
-        }
+        assertThat(alice.transaction { it.e2eiConversationState(groupId) }).isEqualTo(E2eiConversationState.NotEnabled)
+        assertThat(bob.transaction { it.e2eiConversationState(groupId) }).isEqualTo(E2eiConversationState.NotEnabled)
+    }
 
     @Test
     fun e2ei_should_not_be_enabled_for_a_Basic_Credential() = runTest {
         val (alice) = newClients(aliceId)
-        assertThat(alice.e2eiIsEnabled()).isFalse()
+        assertThat(alice.transaction { it.e2eiIsEnabled()}).isFalse()
     }
 }
