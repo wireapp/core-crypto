@@ -134,6 +134,7 @@ pub enum ProteusError {
     Other(Option<u16>),
 }
 
+#[cfg(feature = "proteus")]
 impl ProteusError {
     pub fn from_error_code(code: impl Into<Option<u16>>) -> Option<Self> {
         let code = code.into()?;
