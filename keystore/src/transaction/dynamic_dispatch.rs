@@ -117,7 +117,6 @@ impl EntityId {
         }
     }
 
-    #[cfg(target_family = "wasm")]
     pub(crate) fn collection_name(&self) -> &'static str {
         match self {
             EntityId::SignatureKeyPair(_) => MlsSignatureKeyPair::COLLECTION_NAME,

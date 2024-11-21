@@ -274,29 +274,27 @@ macro_rules! commit_transaction {
 
             let mut conn = $db.borrow_conn().await?;
             let deleted_ids = $keystore_transaction.deleted.read().await;
-            cfg_if::cfg_if! {
-                if #[cfg(target_family = "wasm")] {
-                    let mut tables = Vec::new();
-                    $( $(
-                        if !$records.is_empty() {
-                            tables.push(<$entity>::COLLECTION_NAME);
-                        }
-                    )* )*
 
-                    for deleted_id in deleted_ids.iter() {
-                        tables.push(deleted_id.collection_name());
-                    }
-
-                    if tables.is_empty() {
-                        log::warn!("Empty transaction was committed, this could be an indication of a programming error");
-                        return Ok(());
-                    }
-                    let tx = conn.new_transaction(&tables).await?;
-                } else {
-                    let tx = conn.new_transaction().await?;
+            let mut tables = Vec::new();
+            $( $(
+                if !$records.is_empty() {
+                    tables.push(<$entity>::COLLECTION_NAME);
                 }
+            )* )*
+
+            for deleted_id in deleted_ids.iter() {
+                tables.push(deleted_id.collection_name());
             }
 
+            if tables.is_empty() {
+                log::warn!("Empty transaction was committed, this could be an indication of a programming error");
+                return Ok(());
+            }
+
+            #[cfg(target_family = "wasm")]
+            let tx = conn.new_transaction(&tables).await?;
+            #[cfg(not(target_family = "wasm"))]
+            let tx = conn.new_transaction().await?;
 
              $( $(
                 if !$records.is_empty() {
