@@ -42,11 +42,11 @@ export {
     CustomConfigurationFfi,
 };
 
-interface CoreCryptoRichError {
-    errorName: string;
+export interface CoreCryptoRichError {
     message: string;
-    rustStackTrace: string;
-    proteusErrorCode: number;
+    error_name?: string;
+    error_stack?: string[];
+    proteus_error_code?: number;
 }
 
 /**
@@ -59,21 +59,27 @@ interface CoreCryptoRichError {
  * Please note that in this case the extra properties will not be available.
  */
 export class CoreCryptoError extends Error {
-    rustStackTrace: string;
-    proteusErrorCode: number;
+    errorStack: string[];
+    proteusErrorCode: number | null;
 
-    private constructor(
-        msg: string,
-        richError: CoreCryptoRichError,
-        ...params: unknown[]
-    ) {
+    private constructor(richError: CoreCryptoRichError, ...params: unknown[]) {
         // @ts-expect-error TS2556: A spread argument must either have a tuple type or be passed to a rest parameter.
-        super(msg, ...params);
+        super(richError.message, ...params);
         Object.setPrototypeOf(this, new.target.prototype);
 
-        this.name = richError.errorName;
-        this.rustStackTrace = richError.rustStackTrace;
-        this.proteusErrorCode = richError.proteusErrorCode;
+        if (richError.error_name) {
+            this.name = richError.error_name;
+        }
+        if (richError.error_stack) {
+            this.errorStack = richError.error_stack;
+        } else {
+            this.errorStack = [];
+        }
+        if (richError.proteus_error_code) {
+            this.proteusErrorCode = richError.proteus_error_code;
+        } else {
+            this.proteusErrorCode = null;
+        }
     }
 
     private static fallback(msg: string, ...params: unknown[]): Error {
@@ -85,20 +91,11 @@ export class CoreCryptoError extends Error {
     }
 
     static build(msg: string, ...params: unknown[]): CoreCryptoError | Error {
-        const parts = msg.split("\n\n");
-        if (parts.length < 2) {
-            const cause = new Error(
-                "CoreCrypto WASM FFI Error doesn't have enough elements to build a rich error"
-            );
-            return this.fallback(msg, { cause }, ...params);
-        }
-
-        const [errMsg, richErrorJSON] = parts;
         try {
-            const richError: CoreCryptoRichError = JSON.parse(richErrorJSON);
-            return new this(errMsg, richError, ...params);
+            const richError: CoreCryptoRichError = JSON.parse(msg);
+            return new this(richError, ...params);
         } catch (cause) {
-            return this.fallback(msg, { cause }, ...params);
+            return this.fallback(msg, ...params);
         }
     }
 
