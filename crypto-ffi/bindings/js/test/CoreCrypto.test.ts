@@ -13,6 +13,7 @@ import {
 import { afterEach, beforeEach, describe } from "mocha";
 import {
     CoreCryptoError,
+    CoreCryptoRichError,
     E2eiConversationState,
     GroupInfoEncryptionType,
     RatchetTreeType,
@@ -143,11 +144,12 @@ describe("transaction context", () => {
                 );
             } catch (err) {
                 const error = err as CoreCryptoError;
-                return { rustStackTrace: error.rustStackTrace };
+                return { name: error.name, message: error.message };
             }
             return null;
         }, ALICE_ID);
-        expect(error?.rustStackTrace).toBe("CryptoError(InvalidContext)");
+        expect(error).not.toBeNull();
+        expect(error?.name).toEqual("MlsErrorOther");
     });
 
     it("should roll back transaction after error", async () => {
@@ -194,11 +196,11 @@ describe("transaction context", () => {
                 });
             } catch (err) {
                 const error = err as CoreCryptoError;
-                return { message: error.message };
+                return { name: error.name, message: error.message };
             }
             throw new Error("Expected 'Conversation already exists' error");
         }, ALICE_ID);
-        expect(error?.message).toBe("Conversation already exists");
+        expect(error.message).toBe("Conversation already exists");
     });
 });
 
@@ -287,14 +289,14 @@ describe("core crypto errors", () => {
         await ccInit(ALICE_ID);
         const result = await browser.execute(async () => {
             const CoreCryptoError = window.ccModule.CoreCryptoError;
-            const richErrorJSON = {
-                errorName: "ErrorTest",
+            const richErrorJSON: CoreCryptoRichError = {
+                error_name: "ErrorTest",
                 message: "Hello world",
-                rustStackTrace: "test",
-                proteusErrorCode: 22,
+                error_stack: ["test"],
+                proteus_error_code: 22,
             };
 
-            const testStr = `${richErrorJSON.message}\n\n${JSON.stringify(richErrorJSON)}`;
+            const testStr = JSON.stringify(richErrorJSON);
 
             const e = new Error(testStr);
             const ccErrMaybe = CoreCryptoError.fromStdError(e);
@@ -306,7 +308,7 @@ describe("core crypto errors", () => {
                 errorNamesAreIdentical:
                     ccErr.name === ccErr2.name && ccErr.name === "ErrorTest",
                 proteusErrorCodeIsCorrect: ccErr.proteusErrorCode === 22,
-                isCorrectInstance: isCorrectInstance,
+                isCorrectInstance,
             };
         });
         expect(result.errorNamesAreIdentical).toBe(true);
