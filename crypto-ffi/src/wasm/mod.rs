@@ -46,28 +46,28 @@ pub struct BuildMetadata {
     #[wasm_bindgen(readonly)]
     pub timestamp: &'static str,
     /// Whether this build was in Debug mode (true) or Release mode (false)
-    #[wasm_bindgen(readonly)]
+    #[wasm_bindgen(readonly, js_name = "cargoDebug")]
     pub cargo_debug: &'static str,
     /// Features enabled for this build
-    #[wasm_bindgen(readonly)]
+    #[wasm_bindgen(readonly, js_name = "cargoFeatures")]
     pub cargo_features: &'static str,
     /// Optimization level
-    #[wasm_bindgen(readonly)]
+    #[wasm_bindgen(readonly, js_name = "optLevel")]
     pub opt_level: &'static str,
     /// Build target triple
-    #[wasm_bindgen(readonly)]
+    #[wasm_bindgen(readonly, js_name = "targetTriple")]
     pub target_triple: &'static str,
     /// Git branch
-    #[wasm_bindgen(readonly)]
+    #[wasm_bindgen(readonly, js_name = "gitBranch")]
     pub git_branch: &'static str,
     /// Output of `git describe`
-    #[wasm_bindgen(readonly)]
+    #[wasm_bindgen(readonly, js_name = "gitDescribe")]
     pub git_describe: &'static str,
     /// Hash of current git commit
-    #[wasm_bindgen(readonly)]
+    #[wasm_bindgen(readonly, js_name = "gitSha")]
     pub git_sha: &'static str,
     /// `true` when the source code differed from the commit at the most recent git hash
-    #[wasm_bindgen(readonly)]
+    #[wasm_bindgen(readonly, js_name = "gitDirty")]
     pub git_dirty: &'static str,
 }
 
