@@ -875,6 +875,6 @@ describe("build", () => {
             browser.execute(async () =>
                 window.ccModule.CoreCrypto.buildMetadata().toJSON()
             )
-        ).resolves.toMatchObject({ cargo_features: expect.anything() });
+        ).resolves.toMatchObject({ gitDescribe: expect.anything() });
     });
 });
