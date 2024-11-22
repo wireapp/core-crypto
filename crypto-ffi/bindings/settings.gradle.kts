@@ -7,4 +7,4 @@ pluginManagement {
     }
 }
 
-include("jvm", "android")
+include("jvm", "android", "uniffi-jvm", "uniffi-android")

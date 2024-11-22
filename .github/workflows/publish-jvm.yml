@@ -111,6 +111,7 @@ jobs:
       - name: Publish package
         run: |
           cd crypto-ffi/bindings
+          ./gradlew :uniffi-jvm:publishAllPublicationsToMavenCentral --no-configuration-cache
           ./gradlew :jvm:publishAllPublicationsToMavenCentral --no-configuration-cache
         env:
           ORG_GRADLE_PROJECT_mavenCentralPassword: ${{ secrets.SONATYPE_PASSWORD }}

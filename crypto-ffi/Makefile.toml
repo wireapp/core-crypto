@@ -154,19 +154,17 @@ args = [
     "generate",
     "--config", "uniffi-android.toml",
     "--language", "kotlin",
-    "--out-dir", "./bindings/android/src/main/kotlin/",
+    "--out-dir", "./bindings/uniffi-android/src/main/kotlin/",
     "--library", "../target/release/libcore_crypto_ffi.${LIBRARY_EXTENSION}"
 ]
 
 [tasks.ffi-kotlin-android]
 dependencies = ["compile-ffi-kotlin-android"]
 script = '''
-    mv ./bindings/android/src/main/kotlin/com/wire/crypto/core_crypto_ffi.kt ./bindings/android/src/main/kotlin/com/wire/crypto/CoreCrypto.kt
-
     perl -i \
         -pe 's/\bCryptoException\b/CryptoError/g;' \
         -pe 's/\bE2eIdentityException\b/E2eIdentityError/g;' \
-        ./bindings/android/src/main/kotlin/uniffi/core_crypto/core_crypto.kt
+        ./bindings/uniffi-android/src/main/kotlin/uniffi/core_crypto/core_crypto.kt
 '''
 
 [tasks.compile-ffi-kotlin-jvm]
@@ -179,19 +177,17 @@ args = [
     "--bin", "uniffi-bindgen",
     "generate",
     "--language", "kotlin",
-    "--out-dir", "./bindings/jvm/src/main/kotlin/",
+    "--out-dir", "./bindings/uniffi-jvm/src/main/kotlin/",
     "--library", "../target/release/libcore_crypto_ffi.${LIBRARY_EXTENSION}"
 ]
 
 [tasks.ffi-kotlin-jvm]
 dependencies = ["compile-ffi-kotlin-jvm"]
 script = '''
-    mv ./bindings/jvm/src/main/kotlin/com/wire/crypto/core_crypto_ffi.kt ./bindings/jvm/src/main/kotlin/com/wire/crypto/CoreCrypto.kt
-
     perl -i \
         -pe 's/\bCryptoException\b/CryptoError/g;' \
         -pe 's/\bE2eIdentityException\b/E2eIdentityError/g;' \
-        ./bindings/jvm/src/main/kotlin/uniffi/core_crypto/core_crypto.kt
+        ./bindings/uniffi-jvm/src/main/kotlin/uniffi/core_crypto/core_crypto.kt
 '''
 
 [tasks.ffi]
