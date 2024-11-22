@@ -126,6 +126,6 @@ jobs:
           cd crypto-ffi
           bun install
           cargo make wasm
-          bun run wdio
+          bun run test
           cd bindings/js
           bun eslint . --max-warnings=0

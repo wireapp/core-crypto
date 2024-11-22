@@ -221,7 +221,7 @@ core-crypto/crypto-ffi$ cargo make wasm
 Then run the tests each time the wrapper or wrapper tests change
 
 ```sh
-core-crypto/crypto-ffi$ bun run wdio
+core-crypto/crypto-ffi$ bun run test
 ```
 
 Note that CI will fail if it doesn't like your formatting. This can typically be automtically adjusted with
