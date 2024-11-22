@@ -1,28 +1,14 @@
-import org.gradle.api.tasks.testing.logging.TestExceptionFormat
-import org.gradle.api.tasks.testing.logging.TestLogEvent
-import org.gradle.jvm.tasks.Jar
-
 plugins {
     id("com.android.library")
     kotlin("android")
     id("com.vanniktech.maven.publish")
 }
 
-val kotlinSources = projectDir.resolve("../jvm/src")
-val generatedDir = buildDir.resolve("generated").resolve("uniffi")
-
-val copyBindings by tasks.register<Copy>("copyBindings") {
-    group = "uniffi"
-    from(kotlinSources)
-    include("**/*")
-    into(generatedDir)
-}
-
 dependencies {
-    implementation(project(":uniffi-android"))
     implementation(platform(kotlin("bom")))
     implementation(platform(libs.coroutines.bom))
     implementation(kotlin("stdlib-jdk7"))
+    implementation("${libs.jna.get()}@aar")
     implementation(libs.appCompat)
     implementation(libs.ktx.core)
     implementation(libs.coroutines.core)
@@ -37,7 +23,6 @@ dependencies {
 
 android {
     namespace = "com.wire.crypto"
-
     compileSdk = libs.versions.sdk.compile.get().toInt()
     defaultConfig {
         minSdk = libs.versions.sdk.min.get().toInt()
@@ -58,20 +43,33 @@ android {
     }
 }
 
-tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile> {
-    dependsOn(copyBindings)
+val processedResourcesDir = buildDir.resolve("processedResources")
+
+fun registerCopyJvmBinaryTask(target: String, jniTarget: String, include: String = "*.so"): TaskProvider<Copy> =
+    tasks.register<Copy>("copy-${target}") {
+        group = "uniffi"
+        from(projectDir.resolve("../../../target/${target}/release"))
+        include(include)
+        into(processedResourcesDir.resolve(jniTarget))
+    }
+
+val copyBinariesTasks = listOf(
+    registerCopyJvmBinaryTask("aarch64-linux-android", "arm64-v8a"),
+    registerCopyJvmBinaryTask("armv7-linux-androideabi", "armeabi-v7a"),
+    registerCopyJvmBinaryTask("x86_64-linux-android", "x86_64")
+)
+
+project.afterEvaluate {
+    tasks.getByName("mergeReleaseJniLibFolders") { dependsOn(copyBinariesTasks) }
+    tasks.getByName("mergeDebugJniLibFolders") { dependsOn(copyBinariesTasks) }
 }
 
-tasks.withType<Jar> {
-    dependsOn(copyBindings)
+tasks.withType<ProcessResources> {
+    dependsOn(copyBinariesTasks)
 }
 
-kotlin.sourceSets.getByName("main").apply {
-    kotlin.srcDir(generatedDir.resolve("main"))
-}
-
-kotlin.sourceSets.getByName("androidTest").apply {
-    kotlin.srcDir(generatedDir.resolve("test"))
+android.sourceSets.getByName("main").apply {
+    jniLibs.srcDir(processedResourcesDir)
 }
 
 // Allows skipping signing jars published to 'MavenLocal' repository
