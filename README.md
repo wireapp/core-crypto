@@ -193,7 +193,7 @@ cd crypto-ffi/bindings
 * Then:
 ```ignore
 cd crypto-ffi
-bun run wdio
+bun run test
 ```
 
 ## Benchmarks
