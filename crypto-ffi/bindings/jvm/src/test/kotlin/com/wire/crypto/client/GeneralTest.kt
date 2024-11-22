@@ -18,19 +18,11 @@
 
 package com.wire.crypto.client
 
-import com.wire.crypto.CoreCryptoException
-import kotlinx.coroutines.runBlocking
+import com.wire.crypto.buildMetadata
+import com.wire.crypto.version
+import kotlin.test.Test
 import kotlinx.coroutines.test.runTest
 import org.assertj.core.api.AssertionsForInterfaceTypes.assertThat
-import org.assertj.core.api.AssertionsForInterfaceTypes.assertThatNoException
-import uniffi.core_crypto.CryptoError
-import java.nio.file.Files
-import kotlin.test.Test
-import kotlin.test.assertEquals
-import kotlin.test.assertFailsWith
-import kotlin.test.assertIs
-import com.wire.crypto.version
-import com.wire.crypto.buildMetadata
 
 class GeneralTest {
     @Test
@@ -43,7 +35,7 @@ class GeneralTest {
 
     @Test
     fun get_build_metadata() = runTest {
-        val build_metadata = buildMetadata();
+        val build_metadata = buildMetadata()
 
         assertThat(build_metadata).isNotNull()
         assertThat(build_metadata.gitDescribe).isNotNull()

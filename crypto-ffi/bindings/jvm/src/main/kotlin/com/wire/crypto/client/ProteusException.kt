@@ -18,100 +18,91 @@
 
 package com.wire.crypto.client
 
-class ProteusException(message: String?, val code: Code, cause: Throwable? = null) : Exception(message, cause) {
+import com.wire.crypto.CoreCryptoException
 
-    constructor(message: String?, code: Int, cause: Throwable? = null) : this(message, fromNativeCode(code), cause)
+class ProteusException(message: String?, val code: Code, cause: Throwable? = null) :
+    Exception(message, cause) {
+
+    constructor(
+        message: String?,
+        code: Int,
+        cause: Throwable? = null,
+    ) : this(message, fromNativeCode(code), cause)
 
     enum class Code {
-        /**
-         * A requested session was not found.
-         */
+        /** A requested session was not found. */
         SESSION_NOT_FOUND,
 
         /**
          * The remote identity of a session changed.
          *
-         *
-         * Usually the user should be informed and the session reinitialised.
-         * If the remote fingerprint was previously verified, it will need to be
-         * verified anew in order to exclude any potential MITM.
+         * Usually the user should be informed and the session reinitialised. If the remote
+         * fingerprint was previously verified, it will need to be verified anew in order to exclude
+         * any potential MITM.
          */
         REMOTE_IDENTITY_CHANGED,
 
         /**
          * The signature of a decrypted message is invalid.
          *
-         *
-         * The message being decrypted is incomplete or has otherwise been
-         * tampered with.
+         * The message being decrypted is incomplete or has otherwise been tampered with.
          */
         INVALID_SIGNATURE,
 
         /**
          * A message is invalid.
          *
-         *
-         * The message is well-formed but cannot be decrypted, e.g.
-         * because the message is used to initialise a session but does not
-         * contain a [PreKey] or the used session does not contain the
-         * appropriate key material for decrypting the message. The problem
-         * should be reported to the user, as it might be necessary for both
-         * peers to re-initialise their sessions.
+         * The message is well-formed but cannot be decrypted, e.g. because the message is used to
+         * initialise a session but does not contain a [PreKey] or the used session does not contain
+         * the appropriate key material for decrypting the message. The problem should be reported
+         * to the user, as it might be necessary for both peers to re-initialise their sessions.
          */
         INVALID_MESSAGE,
 
         /**
          * A message is a duplicate.
          *
-         *
-         * The message being decrypted is a duplicate of a message that has
-         * previously been decrypted with the same session. The message can
-         * be safely discarded.
+         * The message being decrypted is a duplicate of a message that has previously been
+         * decrypted with the same session. The message can be safely discarded.
          */
         DUPLICATE_MESSAGE,
 
         /**
          * A message is too recent.
          *
-         *
-         * There is an unreasonably large gap between the last decrypted
-         * message and the message being decrypted, i.e. there are too many
-         * intermediate messages missing. The message should be dropped.
+         * There is an unreasonably large gap between the last decrypted message and the message
+         * being decrypted, i.e. there are too many intermediate messages missing. The message
+         * should be dropped.
          */
         TOO_DISTANT_FUTURE,
 
         /**
          * A message is too old.
          *
-         *
-         * The message being decrypted is unreasonably old and cannot
-         * be decrypted any longer due to the key material no longer being available.
-         * The message should be dropped.
+         * The message being decrypted is unreasonably old and cannot be decrypted any longer due to
+         * the key material no longer being available. The message should be dropped.
          */
         OUTDATED_MESSAGE,
 
         /**
          * A message or key could not be decoded.
          *
-         *
-         * The message or key being decoded is either malformed or
-         * otherwise encoded in a way such it cannot be understood.
+         * The message or key being decoded is either malformed or otherwise encoded in a way such
+         * it cannot be understood.
          */
         DECODE_ERROR,
 
         /**
          * An internal storage error occurred.
          *
-         *
-         * An error occurred while loading or persisting key material.
-         * The operation may be retried a limited number of times.
+         * An error occurred while loading or persisting key material. The operation may be retried
+         * a limited number of times.
          */
         STORAGE_ERROR,
 
         /**
-         * A CBox has been opened with an incomplete or mismatching identity
-         * using [CryptoBox.openWith].
-         *
+         * A CBox has been opened with an incomplete or mismatching identity using
+         * [CryptoBox.openWith].
          *
          * This is typically a programmer error.
          */
@@ -124,28 +115,22 @@ class ProteusException(message: String?, val code: Code, cause: Throwable? = nul
         PREKEY_NOT_FOUND,
 
         /**
-         * A panic occurred. This is a last resort error raised form native code to
-         * signal a severe problem, like a violation of a critical invariant, that
-         * would otherwise have caused a crash. Client code can choose to handle
-         * these errors more gracefully, preventing the application from crashing.
+         * A panic occurred. This is a last resort error raised form native code to signal a severe
+         * problem, like a violation of a critical invariant, that would otherwise have caused a
+         * crash. Client code can choose to handle these errors more gracefully, preventing the
+         * application from crashing.
          *
-         *
-         * Note that any [CryptoSession]s which might have been involved in a
-         * computation leading to a panic must no longer be used as their in-memory
-         * state may be corrupt. Such sessions should be closed and may be subsequently
-         * reloaded to retry the operation(s).
+         * Note that any [CryptoSession]s which might have been involved in a computation leading to
+         * a panic must no longer be used as their in-memory state may be corrupt. Such sessions
+         * should be closed and may be subsequently reloaded to retry the operation(s).
          */
         PANIC,
 
-        /**
-         * An unspecified error occurred.
-         */
+        /** An unspecified error occurred. */
         UNKNOWN_ERROR,
 
-        /**
-         * Local files were not found.
-         */
-        LOCAL_FILES_NOT_FOUND;
+        /** Local files were not found. */
+        LOCAL_FILES_NOT_FOUND,
     }
 
     companion object {
@@ -171,23 +156,42 @@ class ProteusException(message: String?, val code: Code, cause: Throwable? = nul
         // Mapping source:
         // https://github.com/wireapp/proteus/blob/2.x/crates/proteus-traits/src/lib.rs
         // https://github.com/wireapp/wire-web-core/blob/7383e108f5e9d15d0b82c41ed504964667463cfc/packages/proteus/README.md
-        fun fromProteusCode(code: Int): Code {
+        fun fromProteusCode(code: UShort): Code {
             @Suppress("MagicNumber")
-            return when (code) {
+            return when (code.toInt()) {
                 501 -> Code.STORAGE_ERROR
                 102 -> Code.SESSION_NOT_FOUND
-                3, 301, 302, 303 -> Code.DECODE_ERROR
+                3,
+                301,
+                302,
+                303 -> Code.DECODE_ERROR
                 204 -> Code.REMOTE_IDENTITY_CHANGED
-                206, 207, 210 -> Code.INVALID_SIGNATURE
-                200, 201, 202, 205, 213 -> Code.INVALID_MESSAGE
+                206,
+                207,
+                210 -> Code.INVALID_SIGNATURE
+                200,
+                201,
+                202,
+                205,
+                213 -> Code.INVALID_MESSAGE
                 209 -> Code.DUPLICATE_MESSAGE
-                211, 212 -> Code.TOO_DISTANT_FUTURE
+                211,
+                212 -> Code.TOO_DISTANT_FUTURE
                 208 -> Code.OUTDATED_MESSAGE
                 300 -> Code.IDENTITY_ERROR
                 101 -> Code.PREKEY_NOT_FOUND
                 5 -> Code.PANIC
                 else -> Code.UNKNOWN_ERROR
             }
+        }
+
+        fun fromCoreCryptoException(proteusLastErrorCode: UShort?, err: CoreCryptoException): ProteusException {
+            var code = ProteusException.Code.UNKNOWN_ERROR
+            if (proteusLastErrorCode != null) {
+                code = ProteusException.fromProteusCode(proteusLastErrorCode)
+            }
+
+            return ProteusException(err.message, code, err.cause)
         }
     }
 }

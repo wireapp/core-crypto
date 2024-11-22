@@ -33,83 +33,94 @@ class CoreCryptoContext(private val cc: CoreCryptoContext) {
 
     companion object {
         private val keyRotationDuration: Duration = 30.toDuration(DurationUnit.DAYS)
-        private val defaultGroupConfiguration = com.wire.crypto.CustomConfiguration(
-            java.time.Duration.ofDays(keyRotationDuration.inWholeDays),
-            com.wire.crypto.MlsWirePolicy.PLAINTEXT
-        )
+        private val defaultGroupConfiguration =
+            com.wire.crypto.CustomConfiguration(
+                java.time.Duration.ofDays(keyRotationDuration.inWholeDays),
+                com.wire.crypto.MlsWirePolicy.PLAINTEXT,
+            )
     }
 
     /**
-     * Set arbitrary data to be retrieved by [getData].
-     * This is meant to be used as a check point at the end of a transaction.
-     * The data should be limited to a reasonable size.
+     * Set arbitrary data to be retrieved by [getData]. This is meant to be used as a check point at
+     * the end of a transaction. The data should be limited to a reasonable size.
      */
     suspend fun setData(data: ByteArray) {
         cc.setData(data)
     }
 
     /**
-    * Get the data that has previously been set by [setData], or null if no data has been set.
-    * This is meant to be used as a check point at the end of a transaction.
-    */
+     * Get the data that has previously been set by [setData], or null if no data has been set. This
+     * is meant to be used as a check point at the end of a transaction.
+     */
     suspend fun getData(): ByteArray? {
         return cc.getData()
     }
 
     /**
-     * This is your entrypoint to initialize [com.wire.crypto.client.MLSClient] with a Basic Credential
+     * This is your entrypoint to initialize [com.wire.crypto.client.MLSClient] with a Basic
+     * Credential
      */
     suspend fun mlsInit(
         id: ClientId,
         ciphersuites: Ciphersuites = Ciphersuites.DEFAULT,
-        nbKeyPackage: UInt? = DEFAULT_NB_KEY_PACKAGE
+        nbKeyPackage: UInt? = DEFAULT_NB_KEY_PACKAGE,
     ) {
         cc.mlsInit(id.lower(), ciphersuites.lower(), nbKeyPackage)
     }
 
     /**
-     * Generates a MLS KeyPair/CredentialBundle with a temporary, random client ID.
-     * This method is designed to be used in conjunction with [mlsInitWithClientId] and represents the first step in this process
+     * Generates a MLS KeyPair/CredentialBundle with a temporary, random client ID. This method is
+     * designed to be used in conjunction with [mlsInitWithClientId] and represents the first step
+     * in this process
      *
      * @param ciphersuites - All the ciphersuites supported by this MLS client
      * @return a list of random ClientId to use in [mlsInitWithClientId]
      */
-    suspend fun mlsGenerateKeypairs(ciphersuites: Ciphersuites = Ciphersuites.DEFAULT): ExternallyGeneratedHandle {
+    suspend fun mlsGenerateKeypairs(
+        ciphersuites: Ciphersuites = Ciphersuites.DEFAULT
+    ): ExternallyGeneratedHandle {
         return cc.mlsGenerateKeypairs(ciphersuites.lower()).toExternallyGeneratedHandle()
     }
 
     /**
-     * Updates the current temporary Client ID with the newly provided one. This is the second step in the externally-generated clients process.
+     * Updates the current temporary Client ID with the newly provided one. This is the second step
+     * in the externally-generated clients process.
      *
      * **Important:** This is designed to be called after [mlsGenerateKeypairs]
      *
      * @param clientId - The newly allocated Client ID from the MLS Authentication Service
-     * @param tmpClientIds - The random clientId you obtained in [mlsGenerateKeypairs], for authentication purposes
+     * @param tmpClientIds - The random clientId you obtained in [mlsGenerateKeypairs], for
+     *   authentication purposes
      * @param ciphersuites - All the ciphersuites supported by this MLS client
      */
     suspend fun mlsInitWithClientId(
         clientId: ClientId,
         tmpClientIds: ExternallyGeneratedHandle,
-        ciphersuites: Ciphersuites = Ciphersuites.DEFAULT
+        ciphersuites: Ciphersuites = Ciphersuites.DEFAULT,
     ) {
         cc.mlsInitWithClientId(clientId.lower(), tmpClientIds.lower(), ciphersuites.lower())
     }
 
     /**
-     * Get the client's public signature key. To upload to the DS for further backend side validation
+     * Get the client's public signature key. To upload to the DS for further backend side
+     * validation
      *
      * @param ciphersuite of the signature key to get
      * @return the client's public signature key
      */
-    suspend fun getPublicKey(ciphersuite: Ciphersuite = Ciphersuite.DEFAULT, credentialType: CredentialType = CredentialType.DEFAULT,): SignaturePublicKey {
-        return cc.clientPublicKey(ciphersuite.lower(), credentialType.lower()).toSignaturePublicKey()
+    suspend fun getPublicKey(
+        ciphersuite: Ciphersuite = Ciphersuite.DEFAULT,
+        credentialType: CredentialType = CredentialType.DEFAULT,
+    ): SignaturePublicKey {
+        return cc.clientPublicKey(ciphersuite.lower(), credentialType.lower())
+            .toSignaturePublicKey()
     }
 
     /**
-     * Generates the requested number of KeyPackages ON TOP of the existing ones e.g. if you already have created 100
-     * KeyPackages (default value), requesting 10 will return the 10 oldest. Otherwise, if you request 200, 100 new will
-     * be generated.
-     * Unless explicitly deleted, KeyPackages are deleted upon [processWelcomeMessage]
+     * Generates the requested number of KeyPackages ON TOP of the existing ones e.g. if you already
+     * have created 100 KeyPackages (default value), requesting 10 will return the 10 oldest.
+     * Otherwise, if you request 200, 100 new will be generated. Unless explicitly deleted,
+     * KeyPackages are deleted upon [processWelcomeMessage]
      *
      * @param amount required amount
      * @param ciphersuite of the KeyPackage to create
@@ -120,7 +131,9 @@ class CoreCryptoContext(private val cc: CoreCryptoContext) {
         ciphersuite: Ciphersuite = Ciphersuite.DEFAULT,
         credentialType: CredentialType = CredentialType.DEFAULT,
     ): List<MLSKeyPackage> {
-        return cc.clientKeypackages(ciphersuite.lower(), credentialType.lower(), amount).map { it.toMLSKeyPackage() }
+        return cc.clientKeypackages(ciphersuite.lower(), credentialType.lower(), amount).map {
+            it.toMLSKeyPackage()
+        }
     }
 
     /**
@@ -131,7 +144,7 @@ class CoreCryptoContext(private val cc: CoreCryptoContext) {
      */
     suspend fun validKeyPackageCount(
         ciphersuite: Ciphersuite = Ciphersuite.DEFAULT,
-        credentialType: CredentialType = CredentialType.DEFAULT
+        credentialType: CredentialType = CredentialType.DEFAULT,
     ): ULong {
         return cc.clientValidKeypackagesCount(ciphersuite.lower(), credentialType.lower())
     }
@@ -175,17 +188,25 @@ class CoreCryptoContext(private val cc: CoreCryptoContext) {
         ciphersuite: Ciphersuite = Ciphersuite.DEFAULT,
         credentialType: CredentialType = CredentialType.DEFAULT,
     ): MlsMessage {
-        return cc.newExternalAddProposal(id.lower(), epoch, ciphersuite.lower(), credentialType.lower()).toMlsMessage()
+        return cc.newExternalAddProposal(
+                id.lower(),
+                epoch,
+                ciphersuite.lower(),
+                credentialType.lower(),
+            )
+            .toMlsMessage()
     }
 
     /**
      * Allows to create an external commit to "apply" to join a group through its GroupInfo.
      *
-     * If the DS accepts the external commit, you have to [mergePendingGroupFromExternalCommit] in order to get back
-     * a functional MLS group. On the opposite, if it rejects it, you can either retry by just calling again
-     * [joinByExternalCommit], no need to [clearPendingGroupFromExternalCommit]. If you want to abort the operation
-     * (too many retries or the user decided to abort), you can use [clearPendingGroupFromExternalCommit] in order not
-     * to bloat the user's storage but nothing bad can happen if you forget to except some storage space wasted.
+     * If the DS accepts the external commit, you have to [mergePendingGroupFromExternalCommit] in
+     * order to get back a functional MLS group. On the opposite, if it rejects it, you can either
+     * retry by just calling again [joinByExternalCommit], no need to
+     * [clearPendingGroupFromExternalCommit]. If you want to abort the operation (too many retries
+     * or the user decided to abort), you can use [clearPendingGroupFromExternalCommit] in order not
+     * to bloat the user's storage but nothing bad can happen if you forget to except some storage
+     * space wasted.
      *
      * @param groupInfo a TLS encoded GroupInfo fetched from the Delivery Service
      * @param credentialType to join the group with
@@ -195,37 +216,44 @@ class CoreCryptoContext(private val cc: CoreCryptoContext) {
         credentialType: CredentialType = CredentialType.DEFAULT,
         configuration: com.wire.crypto.CustomConfiguration = defaultGroupConfiguration,
     ): CommitBundle {
-        // cannot be tested since the groupInfo required is not wrapped in a MlsMessage whereas the one returned
+        // cannot be tested since the groupInfo required is not wrapped in a MlsMessage whereas the
+        // one returned
         // in Commit Bundles is... because that's the API the backend imposed
-        return cc.joinByExternalCommit(groupInfo.lower(), configuration, credentialType.lower()).lift()
+        return cc.joinByExternalCommit(groupInfo.lower(), configuration, credentialType.lower())
+            .lift()
     }
 
     /**
      * This merges the commit generated by [joinByExternalCommit], persists the group permanently
-     * and deletes the temporary one. This step makes the group operational and ready to encrypt/decrypt message.
+     * and deletes the temporary one. This step makes the group operational and ready to
+     * encrypt/decrypt message.
      *
      * @param id conversation identifier
      * @return eventually decrypted buffered messages if any
      */
-    suspend fun mergePendingGroupFromExternalCommit(id: MLSGroupId): List<BufferedDecryptedMessage>? {
+    suspend fun mergePendingGroupFromExternalCommit(
+        id: MLSGroupId
+    ): List<BufferedDecryptedMessage>? {
         return cc.mergePendingGroupFromExternalCommit(id.lower())?.map { it.lift() }
     }
 
     /**
-     * In case the external commit generated by [joinByExternalCommit] is rejected by the Delivery Service, and we
-     * want to abort this external commit once for all, we can wipe out the pending group from the keystore in order
-     * not to waste space.
+     * In case the external commit generated by [joinByExternalCommit] is rejected by the Delivery
+     * Service, and we want to abort this external commit once for all, we can wipe out the pending
+     * group from the keystore in order not to waste space.
      *
      * @param id conversation identifier
      */
-    suspend fun clearPendingGroupFromExternalCommit(id: MLSGroupId) = cc.clearPendingGroupFromExternalCommit(id.lower())
+    suspend fun clearPendingGroupFromExternalCommit(id: MLSGroupId) =
+        cc.clearPendingGroupFromExternalCommit(id.lower())
 
     /**
-     * Creates a new conversation with the current client being the sole member.
-     * You will want to use [addMember] afterward to add clients to this conversation.
+     * Creates a new conversation with the current client being the sole member. You will want to
+     * use [addMember] afterward to add clients to this conversation.
      *
      * @param id conversation identifier
-     * @param ciphersuite of the conversation. A credential for the given ciphersuite must already have been created
+     * @param ciphersuite of the conversation. A credential for the given ciphersuite must already
+     *   have been created
      * @param creatorCredentialType kind of credential the creator wants to create the group with
      * @param externalSenders keys fetched from backend for validating external remove proposals
      */
@@ -235,11 +263,12 @@ class CoreCryptoContext(private val cc: CoreCryptoContext) {
         creatorCredentialType: CredentialType = CredentialType.Basic,
         externalSenders: List<ExternalSenderKey> = emptyList(),
     ) {
-        val cfg = com.wire.crypto.ConversationConfiguration(
-            ciphersuite.lower(),
-            externalSenders.map { it.lower() },
-            defaultGroupConfiguration,
-        )
+        val cfg =
+            com.wire.crypto.ConversationConfiguration(
+                ciphersuite.lower(),
+                externalSenders.map { it.lower() },
+                defaultGroupConfiguration,
+            )
 
         cc.createConversation(id.lower(), creatorCredentialType.lower(), cfg)
     }
@@ -254,15 +283,17 @@ class CoreCryptoContext(private val cc: CoreCryptoContext) {
     /**
      * Ingest a TLS-serialized MLS welcome message to join an existing MLS group.
      *
-     * Important: you have to catch the error `OrphanWelcome`, ignore it and then try to join this group with an external commit.
+     * Important: you have to catch the error `OrphanWelcome`, ignore it and then try to join this
+     * group with an external commit.
      *
      * @param welcome - TLS-serialized MLS Welcome message
      * @param configuration - configuration of the MLS group
-     * @return The conversation ID of the newly joined group. You can use the same ID to decrypt/encrypt messages
+     * @return The conversation ID of the newly joined group. You can use the same ID to
+     *   decrypt/encrypt messages
      */
     suspend fun processWelcomeMessage(
         welcome: Welcome,
-        configuration: com.wire.crypto.CustomConfiguration = defaultGroupConfiguration
+        configuration: com.wire.crypto.CustomConfiguration = defaultGroupConfiguration,
     ): WelcomeBundle {
         return cc.processWelcomeMessage(welcome.lower(), configuration).lift()
     }
@@ -272,7 +303,8 @@ class CoreCryptoContext(private val cc: CoreCryptoContext) {
      *
      * @param id conversation identifier
      * @param message - The plaintext message to encrypt
-     * @return the encrypted payload for the given group. This needs to be fanned out to the other members of the group.
+     * @return the encrypted payload for the given group. This needs to be fanned out to the other
+     *   members of the group.
      */
     suspend fun encryptMessage(id: MLSGroupId, message: PlaintextMessage): MlsMessage {
         return cc.encryptMessage(id.lower(), message.lower()).toMlsMessage()
@@ -289,10 +321,12 @@ class CoreCryptoContext(private val cc: CoreCryptoContext) {
     }
 
     /**
-     * Adds new clients to a conversation, assuming the current client has the right to add new clients to the conversation.
+     * Adds new clients to a conversation, assuming the current client has the right to add new
+     * clients to the conversation.
      *
-     * **CAUTION**: [commitAccepted] **HAS TO** be called afterward **ONLY IF** the Delivery Service responds'200 OK' to the [CommitBundle] upload.
-     * It will "merge" the commit locally i.e. increment the local group epoch, use new encryption secrets etc...
+     * **CAUTION**: [commitAccepted] **HAS TO** be called afterward **ONLY IF** the Delivery Service
+     * responds'200 OK' to the [CommitBundle] upload. It will "merge" the commit locally i.e.
+     * increment the local group epoch, use new encryption secrets etc...
      *
      * @param id conversation identifier
      * @param KeyPackages of the new clients to add
@@ -303,11 +337,12 @@ class CoreCryptoContext(private val cc: CoreCryptoContext) {
     }
 
     /**
-     * Removes the provided clients from a conversation; Assuming those clients exist and the current client is allowed
-     * to do so, otherwise this operation does nothing.
+     * Removes the provided clients from a conversation; Assuming those clients exist and the
+     * current client is allowed to do so, otherwise this operation does nothing.
      *
-     * **CAUTION**: [commitAccepted] **HAS TO** be called afterward **ONLY IF** the Delivery Service responds'200 OK' to the [CommitBundle] upload.
-     * It will "merge" the commit locally i.e. increment the local group epoch, use new encryption secrets etc...
+     * **CAUTION**: [commitAccepted] **HAS TO** be called afterward **ONLY IF** the Delivery Service
+     * responds'200 OK' to the [CommitBundle] upload. It will "merge" the commit locally i.e.
+     * increment the local group epoch, use new encryption secrets etc...
      *
      * @param id conversation identifier
      * @param members client identifier to delete
@@ -319,10 +354,12 @@ class CoreCryptoContext(private val cc: CoreCryptoContext) {
     }
 
     /**
-     * Creates an update commit which forces every client to update their LeafNode in the conversation.
+     * Creates an update commit which forces every client to update their LeafNode in the
+     * conversation.
      *
-     * **CAUTION**: [commitAccepted] **HAS TO** be called afterward **ONLY IF** the Delivery Service responds'200 OK' to the [CommitBundle] upload.
-     * It will "merge" the commit locally i.e. increment the local group epoch, use new encryption secrets etc...
+     * **CAUTION**: [commitAccepted] **HAS TO** be called afterward **ONLY IF** the Delivery Service
+     * responds'200 OK' to the [CommitBundle] upload. It will "merge" the commit locally i.e.
+     * increment the local group epoch, use new encryption secrets etc...
      *
      * @param id conversation identifier
      * @return a [CommitBundle] to upload to the backend and if it succeeds call [commitAccepted]
@@ -330,10 +367,12 @@ class CoreCryptoContext(private val cc: CoreCryptoContext) {
     suspend fun updateKeyingMaterial(id: MLSGroupId) = cc.updateKeyingMaterial(id.lower()).lift()
 
     /**
-     * Commits the local pending proposals and returns the {@link CommitBundle} object containing what can result from this operation.
+     * Commits the local pending proposals and returns the {@link CommitBundle} object containing
+     * what can result from this operation.
      *
-     * *CAUTION**: [commitAccepted] **HAS TO** be called afterward **ONLY IF** the Delivery Service responds'200 OK' to the [CommitBundle] upload.
-     * It will "merge" the commit locally i.e. increment the local group epoch, use new encryption secrets etc...
+     * *CAUTION**: [commitAccepted] **HAS TO** be called afterward **ONLY IF** the Delivery Service
+     * responds'200 OK' to the [CommitBundle] upload. It will "merge" the commit locally i.e.
+     * increment the local group epoch, use new encryption secrets etc...
      *
      * @param id conversation identifier
      * @return a [CommitBundle] to upload to the backend and if it succeeds call [commitAccepted]
@@ -347,7 +386,8 @@ class CoreCryptoContext(private val cc: CoreCryptoContext) {
      *
      * @param id conversation identifier
      * @param keyPackage (TLS serialized) fetched from the DS
-     * @return a [ProposalBundle] which allows to roll back this proposal with [clearPendingProposal] in case the DS rejects it
+     * @return a [ProposalBundle] which allows to roll back this proposal with
+     *   [clearPendingProposal] in case the DS rejects it
      */
     suspend fun newAddProposal(id: MLSGroupId, keyPackage: MLSKeyPackage): ProposalBundle {
         return cc.newAddProposal(id.lower(), keyPackage.lower()).lift()
@@ -358,24 +398,28 @@ class CoreCryptoContext(private val cc: CoreCryptoContext) {
      *
      * @param id conversation identifier
      * @param clientId of the client to remove
-     * @return a [ProposalBundle] which allows to roll back this proposal with [clearPendingProposal] in case the DS rejects it
+     * @return a [ProposalBundle] which allows to roll back this proposal with
+     *   [clearPendingProposal] in case the DS rejects it
      */
     suspend fun newRemoveProposal(id: MLSGroupId, clientId: ClientId): ProposalBundle {
         return cc.newRemoveProposal(id.lower(), clientId.lower()).lift()
     }
 
     /**
-     * Creates a new proposal to update the current client LeafNode key material within the MLS group
+     * Creates a new proposal to update the current client LeafNode key material within the MLS
+     * group
      *
      * @param id conversation identifier
-     * @return a [ProposalBundle] which allows to roll back this proposal with [clearPendingProposal] in case the DS rejects it
+     * @return a [ProposalBundle] which allows to roll back this proposal with
+     *   [clearPendingProposal] in case the DS rejects it
      */
     suspend fun newUpdateProposal(id: MLSGroupId): ProposalBundle {
         return cc.newUpdateProposal(id.lower()).lift()
     }
 
     /**
-     * Allows to mark the latest commit produced as "accepted" and be able to safely merge it into the local group state
+     * Allows to mark the latest commit produced as "accepted" and be able to safely merge it into
+     * the local group state
      *
      * @param id conversation identifier
      */
@@ -384,10 +428,11 @@ class CoreCryptoContext(private val cc: CoreCryptoContext) {
     }
 
     /**
-     * Allows to remove a pending proposal (rollback). Use this when backend rejects the proposal you just sent e.g. if permissions have changed meanwhile.
+     * Allows to remove a pending proposal (rollback). Use this when backend rejects the proposal
+     * you just sent e.g. if permissions have changed meanwhile.
      *
-     * **CAUTION**: only use this when you had an explicit response from the Delivery Service
-     * e.g. 403 or 409. Do not use otherwise e.g. 5xx responses, timeout etc…
+     * **CAUTION**: only use this when you had an explicit response from the Delivery Service e.g.
+     * 403 or 409. Do not use otherwise e.g. 5xx responses, timeout etc…
      *
      * @param id conversation identifier
      * @param proposalRef you get from a [ProposalBundle]
@@ -397,11 +442,12 @@ class CoreCryptoContext(private val cc: CoreCryptoContext) {
     }
 
     /**
-     * Allows to remove a pending commit (rollback). Use this when backend rejects the commit you just sent e.g. if permissions have changed meanwhile.
+     * Allows to remove a pending commit (rollback). Use this when backend rejects the commit you
+     * just sent e.g. if permissions have changed meanwhile.
      *
      * **CAUTION**: only use this when you had an explicit response from the Delivery Service
-     * e.g. 403. Do not use otherwise e.g. 5xx responses, timeout etc...
-     * **DO NOT** use when Delivery Service responds 409, pending state will be renewed in [decryptMessage]
+     * e.g. 403. Do not use otherwise e.g. 5xx responses, timeout etc... **DO NOT** use when
+     * Delivery Service responds 409, pending state will be renewed in [decryptMessage]
      *
      * @param id conversation identifier
      */
@@ -423,26 +469,28 @@ class CoreCryptoContext(private val cc: CoreCryptoContext) {
      * Derives a new key from the group to use with AVS
      *
      * @param id conversation identifier
-     * @param keyLength the length of the key to be derived. If the value is higher than the bounds of `u16` or the context hash * 255, an error will be returned
+     * @param keyLength the length of the key to be derived. If the value is higher than the bounds
+     *   of `u16` or the context hash * 255, an error will be returned
      */
     suspend fun deriveAvsSecret(id: MLSGroupId, keyLength: UInt): AvsSecret {
         return cc.exportSecretKey(id.lower(), keyLength).toAvsSecret()
     }
 
     /**
-     * Returns the raw public key of the single external sender present in this group.
-     * This should be used to initialize a subconversation
+     * Returns the raw public key of the single external sender present in this group. This should
+     * be used to initialize a subconversation
      *
      * @param id conversation identifier
-     * @param keyLength the length of the key to be derived. If the value is higher than the bounds of `u16` or the context hash * 255, an error will be returned
+     * @param keyLength the length of the key to be derived. If the value is higher than the bounds
+     *   of `u16` or the context hash * 255, an error will be returned
      */
     suspend fun getExternalSender(id: MLSGroupId): ExternalSenderKey {
         return cc.getExternalSender(id.lower()).toExternalSenderKey()
     }
 
     /**
-     * Indicates when to mark a conversation as not verified i.e. when not all its members have a X509.
-     * Credential generated by Wire's end-to-end identity enrollment
+     * Indicates when to mark a conversation as not verified i.e. when not all its members have a
+     * X509. Credential generated by Wire's end-to-end identity enrollment
      *
      * @param id conversation identifier
      * @return the conversation state given current members
@@ -462,8 +510,8 @@ class CoreCryptoContext(private val cc: CoreCryptoContext) {
     }
 
     /**
-     * From a given conversation, get the identity of the members supplied. Identity is only present for members with a
-     * Certificate Credential (after turning on end-to-end identity).
+     * From a given conversation, get the identity of the members supplied. Identity is only present
+     * for members with a Certificate Credential (after turning on end-to-end identity).
      *
      * @param id conversation identifier
      * @param deviceIds identifiers of the devices
@@ -474,15 +522,19 @@ class CoreCryptoContext(private val cc: CoreCryptoContext) {
     }
 
     /**
-     * From a given conversation, get the identity of the users (device holders) supplied.
-     * Identity is only present for devices with a Certificate Credential (after turning on end-to-end identity).
-     * If no member has a x509 certificate, it will return an empty Vec.
+     * From a given conversation, get the identity of the users (device holders) supplied. Identity
+     * is only present for devices with a Certificate Credential (after turning on end-to-end
+     * identity). If no member has a x509 certificate, it will return an empty Vec.
      *
      * @param id conversation identifier
      * @param userIds user identifiers hyphenated UUIDv4 e.g. 'bd4c7053-1c5a-4020-9559-cd7bf7961954'
-     * @returns a Map with all the identities for a given users. Consumers are then recommended to reduce those identities to determine the actual status of a user.
+     * @returns a Map with all the identities for a given users. Consumers are then recommended to
+     *   reduce those identities to determine the actual status of a user.
      */
-    suspend fun getUserIdentities(id: MLSGroupId, userIds: List<String>): Map<String, List<WireIdentity>> {
+    suspend fun getUserIdentities(
+        id: MLSGroupId,
+        userIds: List<String>,
+    ): Map<String, List<WireIdentity>> {
         return cc.getUserIdentities(id.lower(), userIds).mapValues { (_, v) -> v.map { it.lift() } }
     }
 
@@ -491,17 +543,24 @@ class CoreCryptoContext(private val cc: CoreCryptoContext) {
      * turned on or not before joining it.
      *
      * @param groupInfo a TLS encoded GroupInfo fetched from the Delivery Service
-     * @param credentialType kind of Credential to check usage of. Defaults to X509 for now as no other value will give any result.
+     * @param credentialType kind of Credential to check usage of. Defaults to X509 for now as no
+     *   other value will give any result.
      */
-    suspend fun getCredentialInUse(groupInfo: GroupInfo, credentialType: CredentialType = CredentialType.X509): com.wire.crypto.E2eiConversationState {
+    suspend fun getCredentialInUse(
+        groupInfo: GroupInfo,
+        credentialType: CredentialType = CredentialType.X509,
+    ): com.wire.crypto.E2eiConversationState {
         return cc.getCredentialInUse(groupInfo.lower(), credentialType.lower())
     }
 
     /**
-     * Creates an enrollment instance with private key material you can use in order to fetch a new x509 certificate from the acme server.
+     * Creates an enrollment instance with private key material you can use in order to fetch a new
+     * x509 certificate from the acme server.
      *
-     * @param clientId client identifier e.g. `b7ac11a4-8f01-4527-af88-1c30885a7931:6add501bacd1d90e@example.com`
-     * @param displayName human-readable name displayed in the application e.g. `Smith, Alice M (QA)`
+     * @param clientId client identifier e.g.
+     *   `b7ac11a4-8f01-4527-af88-1c30885a7931:6add501bacd1d90e@example.com`
+     * @param displayName human-readable name displayed in the application e.g. `Smith, Alice M
+     *   (QA)`
      * @param handle user handle e.g. `alice.smith.qa@example.com`
      * @param expirySec generated x509 certificate expiry
      * @param ciphersuite for generating signing key material
@@ -516,14 +575,25 @@ class CoreCryptoContext(private val cc: CoreCryptoContext) {
         ciphersuite: Ciphersuite,
         team: String? = null,
     ): E2EIEnrollment {
-        return E2EIEnrollment(cc.e2eiNewEnrollment(clientId, displayName, handle, team, expirySec, ciphersuite.lower()))
+        return E2EIEnrollment(
+            cc.e2eiNewEnrollment(
+                clientId,
+                displayName,
+                handle,
+                team,
+                expirySec,
+                ciphersuite.lower(),
+            )
+        )
     }
 
     /**
-     * Generates an E2EI enrollment instance for a "regular" client (with a Basic credential) willing to migrate to E2EI.
-     * Once the enrollment is finished, use the instance in [e2eiRotateAll] to do the rotation.
+     * Generates an E2EI enrollment instance for a "regular" client (with a Basic credential)
+     * willing to migrate to E2EI. Once the enrollment is finished, use the instance in
+     * [e2eiRotateAll] to do the rotation.
      *
-     * @param displayName human-readable name displayed in the application e.g. `Smith, Alice M (QA)`
+     * @param displayName human-readable name displayed in the application e.g. `Smith, Alice M
+     *   (QA)`
      * @param handle user handle e.g. `alice.smith.qa@example.com`
      * @param expirySec generated x509 certificate expiry
      * @param ciphersuite for generating signing key material
@@ -543,19 +613,21 @@ class CoreCryptoContext(private val cc: CoreCryptoContext) {
                 handle,
                 team,
                 expirySec,
-                ciphersuite.lower()
+                ciphersuite.lower(),
             )
         )
     }
 
     /**
-     * Generates an E2EI enrollment instance for a E2EI client (with a X509 certificate credential) having to change/rotate
-     * their credential, either because the former one is expired or it has been revoked. It lets you change the DisplayName
-     * or the handle if you need to. Once the enrollment is finished, use the instance in [e2eiRotateAll] to do the rotation.
+     * Generates an E2EI enrollment instance for a E2EI client (with a X509 certificate credential)
+     * having to change/rotate their credential, either because the former one is expired or it has
+     * been revoked. It lets you change the DisplayName or the handle if you need to. Once the
+     * enrollment is finished, use the instance in [e2eiRotateAll] to do the rotation.
      *
      * @param expirySec generated x509 certificate expiry
      * @param ciphersuite for generating signing key material
-     * @param displayName human-readable name displayed in the application e.g. `Smith, Alice M (QA)`
+     * @param displayName human-readable name displayed in the application e.g. `Smith, Alice M
+     *   (QA)`
      * @param handle user handle e.g. `alice.smith.qa@example.com`
      * @param team name of the Wire team a user belongs to
      * @return The new [E2EIEnrollment] enrollment to use with [e2eiRotateAll]
@@ -568,19 +640,13 @@ class CoreCryptoContext(private val cc: CoreCryptoContext) {
         team: String? = null,
     ): E2EIEnrollment {
         return E2EIEnrollment(
-            cc.e2eiNewRotateEnrollment(
-                displayName,
-                handle,
-                team,
-                expirySec,
-                ciphersuite.lower()
-            )
+            cc.e2eiNewRotateEnrollment(displayName, handle, team, expirySec, ciphersuite.lower())
         )
     }
 
     /**
-     * Use this method to initialize end-to-end identity when a client signs up and the grace period is already expired ;
-     * that means he cannot initialize with a Basic credential
+     * Use this method to initialize end-to-end identity when a client signs up and the grace period
+     * is already expired ; that means he cannot initialize with a Basic credential
      *
      * @param enrollment the enrollment instance used to fetch the certificates
      * @param certificateChain the raw response from ACME server
@@ -590,7 +656,7 @@ class CoreCryptoContext(private val cc: CoreCryptoContext) {
     suspend fun e2eiMlsInitOnly(
         enrollment: E2EIEnrollment,
         certificateChain: String,
-        nbKeyPackage: UInt? = DEFAULT_NB_KEY_PACKAGE
+        nbKeyPackage: UInt? = DEFAULT_NB_KEY_PACKAGE,
     ): CrlDistributionPoints? {
         val crlsDps = cc.e2eiMlsInitOnly(enrollment.lower(), certificateChain, nbKeyPackage)
         return crlsDps?.toCrlDistributionPoint()
@@ -605,9 +671,7 @@ class CoreCryptoContext(private val cc: CoreCryptoContext) {
         return cc.e2eiDumpPkiEnv()
     }
 
-    /**
-     * Returns whether the E2EI PKI environment is setup (i.e. Root CA, Intermediates, CRLs)
-     */
+    /** Returns whether the E2EI PKI environment is setup (i.e. Root CA, Intermediates, CRLs) */
     suspend fun e2eiIsPKIEnvSetup(): Boolean {
         return cc.e2eiIsPkiEnvSetup()
     }
@@ -615,8 +679,8 @@ class CoreCryptoContext(private val cc: CoreCryptoContext) {
     /**
      * Registers a Root Trust Anchor CA for the use in E2EI processing.
      *
-     * Please note that without a Root Trust Anchor, all validations *will* fail;
-     * So this is the first step to perform after initializing your E2EI client
+     * Please note that without a Root Trust Anchor, all validations *will* fail; So this is the
+     * first step to perform after initializing your E2EI client
      *
      * @param trustAnchorPEM - PEM certificate to anchor as a Trust Root
      */
@@ -627,8 +691,8 @@ class CoreCryptoContext(private val cc: CoreCryptoContext) {
     /**
      * Registers an Intermediate CA for the use in E2EI processing.
      *
-     * Please note that a Root Trust Anchor CA is needed to validate Intermediate CAs;
-     * You **need** to have a Root CA registered before calling this
+     * Please note that a Root Trust Anchor CA is needed to validate Intermediate CAs; You **need**
+     * to have a Root CA registered before calling this
      *
      * @param certPEM PEM certificate to register as an Intermediate CA
      */
@@ -639,25 +703,28 @@ class CoreCryptoContext(private val cc: CoreCryptoContext) {
     /**
      * Registers a CRL for the use in E2EI processing.
      *
-     * Please note that a Root Trust Anchor CA is needed to validate CRLs;
-     * You **need** to have a Root CA registered before calling this
+     * Please note that a Root Trust Anchor CA is needed to validate CRLs; You **need** to have a
+     * Root CA registered before calling this
      *
      * @param crlDP CRL Distribution Point; Basically the URL you fetched it from
      * @param crlDER DER representation of the CRL
-     * @return A [CrlRegistration] with the dirty state of the new CRL (see struct) and its expiration timestamp
+     * @return A [CrlRegistration] with the dirty state of the new CRL (see struct) and its
+     *   expiration timestamp
      */
     suspend fun e2eiRegisterCRL(crlDP: String, crlDER: ByteArray): CRLRegistration {
         return cc.e2eiRegisterCrl(crlDP, crlDER).lift()
     }
 
     /**
-     * Creates an update commit which replaces your leaf containing basic credentials with a leaf node containing x509 credentials in the conversation.
+     * Creates an update commit which replaces your leaf containing basic credentials with a leaf
+     * node containing x509 credentials in the conversation.
      *
-     * NOTE: you can only call this after you've completed the enrollment for an end-to-end identity, calling this without
-     * a valid end-to-end identity will result in an error.
+     * NOTE: you can only call this after you've completed the enrollment for an end-to-end
+     * identity, calling this without a valid end-to-end identity will result in an error.
      *
-     * **CAUTION**: [commitAccepted] **HAS TO** be called afterward **ONLY IF** the Delivery Service responds'200 OK' to the [CommitBundle] upload.
-     * It will "merge" the commit locally i.e. increment the local group epoch, use new encryption secrets etc...
+     * **CAUTION**: [commitAccepted] **HAS TO** be called afterward **ONLY IF** the Delivery Service
+     * responds'200 OK' to the [CommitBundle] upload. It will "merge" the commit locally i.e.
+     * increment the local group epoch, use new encryption secrets etc...
      *
      * @param id conversation identifier
      * @return a [CommitBundle] to upload to the backend and if it succeeds call [commitAccepted]
@@ -665,25 +732,28 @@ class CoreCryptoContext(private val cc: CoreCryptoContext) {
     suspend fun e2eiRotate(id: MLSGroupId) = cc.e2eiRotate(id.lower()).lift()
 
     /**
-     * Creates a commit in all local conversations for changing the credential. Requires first having enrolled a new X509
-     * certificate with either [e2eiNewActivationEnrollment] or []e2eiNewRotateEnrollment]
+     * Creates a commit in all local conversations for changing the credential. Requires first
+     * having enrolled a new X509 certificate with either [e2eiNewActivationEnrollment] or
+     * []e2eiNewRotateEnrollment]
      *
      * @param enrollment the enrollment instance used to fetch the certificates
      * @param certificateChain the raw response from ACME server
      * @param newKeyPackageCount number of KeyPackages with the new identity to create
-     * @return a [RotateBundle] with commits to fan-out to other group members, KeyPackages to upload and old ones to delete
+     * @return a [RotateBundle] with commits to fan-out to other group members, KeyPackages to
+     *   upload and old ones to delete
      */
     suspend fun e2eiRotateAll(
         enrollment: E2EIEnrollment,
         certificateChain: String,
-        newKeyPackageCount: UInt
+        newKeyPackageCount: UInt,
     ): RotateBundle {
-        return cc.e2eiRotateAll(enrollment.lower(), certificateChain, newKeyPackageCount).toRotateBundle()
+        return cc.e2eiRotateAll(enrollment.lower(), certificateChain, newKeyPackageCount)
+            .toRotateBundle()
     }
 
     /**
-     * Allows persisting an active enrollment (for example while redirecting the user during OAuth) in order to resume
-     * it later with [e2eiEnrollmentStashPop]
+     * Allows persisting an active enrollment (for example while redirecting the user during OAuth)
+     * in order to resume it later with [e2eiEnrollmentStashPop]
      *
      * @param enrollment the enrollment instance to persist
      * @return a handle to fetch the enrollment later with [e2eiEnrollmentStashPop]
@@ -704,19 +774,14 @@ class CoreCryptoContext(private val cc: CoreCryptoContext) {
 
     // Proteus below
 
-    private fun toPreKey(id: UShort, data: ByteArray): PreKey =
-        PreKey(id, data)
+    private fun toPreKey(id: UShort, data: ByteArray): PreKey = PreKey(id, data)
 
     @Suppress("TooGenericExceptionCaught")
     private suspend fun <T> wrapException(b: suspend () -> T): T {
         try {
             return b()
         } catch (e: CoreCryptoException) {
-            throw ProteusException(
-                e.message,
-                ProteusException.fromProteusCode(cc.proteusLastErrorCode().toInt()),
-                e.cause
-            )
+            throw ProteusException.fromCoreCryptoException(cc.proteusLastErrorCode(), e)
         } catch (e: Exception) {
             throw ProteusException(e.message, ProteusException.Code.UNKNOWN_ERROR, e.cause)
         }
@@ -740,17 +805,12 @@ class CoreCryptoContext(private val cc: CoreCryptoContext) {
 
     suspend fun proteusNewLastPreKey(): PreKey {
         return wrapException {
-            toPreKey(
-                cc.proteusLastResortPrekeyId(),
-                cc.proteusLastResortPrekey()
-            )
+            toPreKey(cc.proteusLastResortPrekeyId(), cc.proteusLastResortPrekey())
         }
     }
 
     suspend fun proteusDoesSessionExist(sessionId: SessionId): Boolean {
-        return wrapException {
-            cc.proteusSessionExists(sessionId)
-        }
+        return wrapException { cc.proteusSessionExists(sessionId) }
     }
 
     suspend fun proteusCreateSession(preKeyCrypto: PreKey, sessionId: SessionId) {
@@ -758,9 +818,7 @@ class CoreCryptoContext(private val cc: CoreCryptoContext) {
     }
 
     suspend fun proteusDeleteSession(sessionId: SessionId) {
-        wrapException {
-            cc.proteusSessionDelete(sessionId)
-        }
+        wrapException { cc.proteusSessionDelete(sessionId) }
     }
 
     suspend fun proteusDecrypt(message: ByteArray, sessionId: SessionId): ByteArray {
@@ -780,26 +838,25 @@ class CoreCryptoContext(private val cc: CoreCryptoContext) {
     }
 
     suspend fun proteusEncrypt(message: ByteArray, sessionId: SessionId): ByteArray {
-        return wrapException {
-            cc.proteusEncrypt(sessionId, message)
-        }
+        return wrapException { cc.proteusEncrypt(sessionId, message) }
     }
 
     suspend fun proteusEncryptBatched(
         sessionIds: List<SessionId>,
-        message: ByteArray
+        message: ByteArray,
     ): Map<SessionId, ByteArray> {
         return wrapException {
-            cc.proteusEncryptBatched(sessionIds.map { it }, message).mapNotNull { entry ->
-                entry.key to entry.value
+                cc.proteusEncryptBatched(sessionIds.map { it }, message).mapNotNull { entry ->
+                    entry.key to entry.value
+                }
             }
-        }.toMap()
+            .toMap()
     }
 
     suspend fun proteusEncryptWithPreKey(
         message: ByteArray,
         preKey: PreKey,
-        sessionId: SessionId
+        sessionId: SessionId,
     ): ByteArray {
         return wrapException {
             cc.proteusSessionFromPrekey(sessionId, preKey.data)

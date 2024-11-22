@@ -17,11 +17,11 @@
  */
 
 import com.wire.crypto.client.*
+import java.nio.file.Files
+import kotlin.test.*
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
-import java.nio.file.Files
-import kotlin.test.*
 
 @OptIn(ExperimentalCoroutinesApi::class)
 internal class ProteusClientTest {
@@ -60,7 +60,8 @@ internal class ProteusClientTest {
 
         val message = "Hi Alice!"
         val aliceKey = aliceClient.newPreKeys(0, 10).first()
-        val encryptedMessage = bobClient.encryptWithPreKey(message.encodeToByteArray(), aliceKey, aliceSessionId)
+        val encryptedMessage =
+            bobClient.encryptWithPreKey(message.encodeToByteArray(), aliceKey, aliceSessionId)
         val decryptedMessage = aliceClient.decrypt(encryptedMessage, bobSessionId)
         assertEquals(message, decryptedMessage.decodeToString())
     }
@@ -71,7 +72,8 @@ internal class ProteusClientTest {
         val bobClient = newProteusClient(bob)
         val aliceKey = aliceClient.newPreKeys(0, 10).first()
         val message1 = "Hi Alice!"
-        val encryptedMessage1 = bobClient.encryptWithPreKey(message1.encodeToByteArray(), aliceKey, aliceSessionId)
+        val encryptedMessage1 =
+            bobClient.encryptWithPreKey(message1.encodeToByteArray(), aliceKey, aliceSessionId)
         aliceClient.decrypt(encryptedMessage1, bobSessionId)
 
         val message2 = "Hi again Alice!"
@@ -87,7 +89,8 @@ internal class ProteusClientTest {
         val bobClient = newProteusClient(bob)
         val aliceKey = aliceClient.newPreKeys(0, 10).first()
         val message1 = "Hi Alice!"
-        val encryptedMessage1 = bobClient.encryptWithPreKey(message1.encodeToByteArray(), aliceKey, aliceSessionId)
+        val encryptedMessage1 =
+            bobClient.encryptWithPreKey(message1.encodeToByteArray(), aliceKey, aliceSessionId)
         aliceClient.decrypt(encryptedMessage1, bobSessionId)
 
         val exception: ProteusException = assertFailsWith {
@@ -106,7 +109,10 @@ internal class ProteusClientTest {
 
         val missingAliceSessionId = "missing_session"
         val encryptedMessages =
-            bobClient.encryptBatched(message1.encodeToByteArray(), listOf(aliceSessionId, missingAliceSessionId))
+            bobClient.encryptBatched(
+                message1.encodeToByteArray(),
+                listOf(aliceSessionId, missingAliceSessionId),
+            )
 
         assertEquals(1, encryptedMessages.size)
         assertTrue(encryptedMessages.containsKey(aliceSessionId))

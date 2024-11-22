@@ -2,6 +2,7 @@ package com.wire.crypto.client
 
 interface FfiType<K, R> {
     val value: K
+
     fun lower(): R
 }
 

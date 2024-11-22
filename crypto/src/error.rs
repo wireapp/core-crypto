@@ -434,10 +434,7 @@ impl ProteusError {
                     ProteusError::ProteusSessionError(e) => e.code(),
                     ProteusError::ProteusInternalError(e) => e.code(),
                 };
-                match kind {
-                    ProteusErrorKind::None => None,
-                    _ => Some(kind as u16)
-                }
+                (kind != ProteusErrorKind::None).then_some(kind as u16)
             } else {
                 None
             }

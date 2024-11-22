@@ -32,9 +32,9 @@ macro_rules! proteus_impl {
 
                         result
                     } else {
-                        if let Err(CoreCryptoError::ProteusError(err)) = &result {
+                        if let Err(CoreCryptoError::Proteus(err)) = &result {
                             let err_code = err.error_code();
-                            $errcode_dest.store(err_code.unwrap_or_default(), std::sync::atomic::Ordering::SeqCst);
+                            $errcode_dest.store(err_code, std::sync::atomic::Ordering::SeqCst);
                         }
 
                         result
