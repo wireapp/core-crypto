@@ -131,31 +131,26 @@ pub enum ProteusError {
     #[error("The remote identity has changed")]
     RemoteIdentityChanged,
     #[error("Another Proteus error occurred but the details are probably irrelevant to clients")]
-    Other(Option<u16>),
+    Other(u16),
 }
 
 #[cfg(feature = "proteus")]
 impl ProteusError {
-    pub fn from_error_code(code: impl Into<Option<u16>>) -> Option<Self> {
-        let code = code.into()?;
-        if code == 0 {
-            return None;
-        }
-
+    pub fn from_error_code(code: u16) -> Self {
         match code {
             102 => Self::SessionNotFound,
             204 => Self::RemoteIdentityChanged,
             209 => Self::DuplicateMessage,
-            _ => Self::Other(Some(code)),
+            _ => Self::Other(code),
         }
     }
 
-    pub fn error_code(&self) -> Option<u16> {
+    pub fn error_code(&self) -> u16 {
         match self {
-            ProteusError::SessionNotFound => Some(102),
-            ProteusError::RemoteIdentityChanged => Some(204),
-            ProteusError::DuplicateMessage => Some(209),
-            ProteusError::Other(code) => *code,
+            Self::SessionNotFound => 102,
+            Self::RemoteIdentityChanged => 204,
+            Self::DuplicateMessage => 209,
+            Self::Other(code) => *code,
         }
     }
 }
@@ -172,7 +167,7 @@ impl From<core_crypto::ProteusError> for ProteusError {
             core_crypto::ProteusError::ProteusSessionError(SessionError::RemoteIdentityChanged) => {
                 Self::RemoteIdentityChanged
             }
-            _ => Self::Other(value.error_code()),
+            _ => Self::Other(value.error_code().unwrap_or_default()),
         }
     }
 }
@@ -180,14 +175,14 @@ impl From<core_crypto::ProteusError> for ProteusError {
 #[derive(Debug, thiserror::Error, uniffi::Error)]
 pub enum CoreCryptoError {
     #[error(transparent)]
-    MlsError(#[from] MlsError),
+    Mls(#[from] MlsError),
     #[cfg(feature = "proteus")]
     #[error(transparent)]
-    ProteusError(#[from] ProteusError),
+    Proteus(#[from] ProteusError),
     #[error("End to end identity error")]
     E2eiError,
     #[error("error from client: {0}")]
-    ClientException(String),
+    ClientError(String),
 }
 
 // This implementation is intended to be temporary; we're going to be completely restructuring the way we handle
@@ -199,8 +194,9 @@ impl From<CryptoError> for CoreCryptoError {
     fn from(value: CryptoError) -> Self {
         #[cfg(feature = "proteus")]
         if let Some(error_code) = value.proteus_error_code() {
-            if let Some(err) = ProteusError::from_error_code(error_code) {
-                return err.into();
+            if error_code != 0 {
+                // that check _should_ be redundant, but just in case
+                return ProteusError::from_error_code(error_code).into();
             }
         }
 
@@ -228,7 +224,7 @@ impl From<E2eIdentityError> for CoreCryptoError {
 
 impl From<uniffi::UnexpectedUniFFICallbackError> for CoreCryptoError {
     fn from(value: uniffi::UnexpectedUniFFICallbackError) -> Self {
-        Self::ClientException(value.reason)
+        Self::ClientError(value.reason)
     }
 }
 

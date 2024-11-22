@@ -51,16 +51,18 @@ enum class CredentialType {
         val DEFAULT = Basic
     }
 
-    fun lower() = when (this) {
-        Basic -> com.wire.crypto.MlsCredentialType.BASIC
-        X509 -> com.wire.crypto.MlsCredentialType.X509
-    }
+    fun lower() =
+        when (this) {
+            Basic -> com.wire.crypto.MlsCredentialType.BASIC
+            X509 -> com.wire.crypto.MlsCredentialType.X509
+        }
 }
 
-fun com.wire.crypto.MlsCredentialType.lift() = when (this) {
-    com.wire.crypto.MlsCredentialType.BASIC -> CredentialType.Basic
-    com.wire.crypto.MlsCredentialType.X509 -> CredentialType.X509
-}
+fun com.wire.crypto.MlsCredentialType.lift() =
+    when (this) {
+        com.wire.crypto.MlsCredentialType.BASIC -> CredentialType.Basic
+        com.wire.crypto.MlsCredentialType.X509 -> CredentialType.X509
+    }
 
 @JvmInline
 value class MLSGroupId(override val value: ByteArray) : Uniffi {
@@ -68,6 +70,7 @@ value class MLSGroupId(override val value: ByteArray) : Uniffi {
 }
 
 fun ByteArray.toGroupId() = MLSGroupId(this)
+
 fun String.toGroupId() = MLSGroupId(toByteArray())
 
 @JvmInline
@@ -78,6 +81,7 @@ value class ClientId(override val value: String) : FfiType<String, com.wire.cryp
 
 @OptIn(ExperimentalUnsignedTypes::class)
 fun com.wire.crypto.ClientId.toClientId() = ClientId(String(toUByteArray().asByteArray()))
+
 fun String.toClientId() = ClientId(this)
 
 @JvmInline
@@ -159,8 +163,8 @@ value class CrlDistributionPoints(override val value: Set<java.net.URI>) :
     override fun toString() = value.joinToString(", ") { it.toString() }
 }
 
-fun List<String>.toCrlDistributionPoint() = CrlDistributionPoints(asSequence().map { java.net.URI(it) }.toSet())
-
+fun List<String>.toCrlDistributionPoint() =
+    CrlDistributionPoints(asSequence().map { java.net.URI(it) }.toSet())
 
 @JvmInline
 value class GroupInfo(override val value: ByteArray) : Uniffi {
@@ -179,21 +183,13 @@ fun com.wire.crypto.GroupInfoBundle.lift() =
     GroupInfoBundle(encryptionType, ratchetTreeType, payload.toGroupInfo())
 
 data class CommitBundle(
-    /**
-     * TLS serialized commit wrapped in a MLS message
-     */
+    /** TLS serialized commit wrapped in a MLS message */
     val commit: MlsMessage,
-    /**
-     * TLS serialized welcome NOT wrapped in a MLS message
-     */
+    /** TLS serialized welcome NOT wrapped in a MLS message */
     val welcome: Welcome?,
-    /**
-     * TLS serialized GroupInfo NOT wrapped in a MLS message
-     */
+    /** TLS serialized GroupInfo NOT wrapped in a MLS message */
     val groupInfoBundle: GroupInfoBundle,
-    /**
-     * New CRL distribution points that appeared by the introduction of a new credential
-     */
+    /** New CRL distribution points that appeared by the introduction of a new credential */
     val crlNewDistributionPoints: CrlDistributionPoints?,
 )
 
@@ -201,31 +197,31 @@ fun com.wire.crypto.CommitBundle.lift() =
     CommitBundle(commit.toMlsMessage(), welcome?.toWelcome(), groupInfo.lift(), null)
 
 fun com.wire.crypto.ConversationInitBundle.lift() =
-    CommitBundle(commit.toMlsMessage(), null, groupInfo.lift(), crlNewDistributionPoints?.toCrlDistributionPoint())
+    CommitBundle(
+        commit.toMlsMessage(),
+        null,
+        groupInfo.lift(),
+        crlNewDistributionPoints?.toCrlDistributionPoint(),
+    )
 
 fun com.wire.crypto.MemberAddedMessages.lift() =
     CommitBundle(
         commit.toMlsMessage(),
         welcome.toWelcome(),
         groupInfo.lift(),
-        crlNewDistributionPoints?.toCrlDistributionPoint()
+        crlNewDistributionPoints?.toCrlDistributionPoint(),
     )
 
-/**
- * Returned when a Proposal is created. Helps roll backing a local proposal
- */
+/** Returned when a Proposal is created. Helps roll backing a local proposal */
 data class ProposalBundle(
-    /**
-     * The proposal message to send to the DS
-     */
+    /** The proposal message to send to the DS */
     val proposal: MlsMessage,
     /**
-     * A unique identifier of the proposal to rollback it later if required with [MlsClient.clearPendingProposal]
+     * A unique identifier of the proposal to rollback it later if required with
+     * [MlsClient.clearPendingProposal]
      */
     val proposalRef: ProposalRef,
-    /**
-     * New CRL distribution points that appeared by the introduction of a new credential
-     */
+    /** New CRL distribution points that appeared by the introduction of a new credential */
     val crlNewDistributionPoints: CrlDistributionPoints?,
 )
 
@@ -233,20 +229,14 @@ fun com.wire.crypto.ProposalBundle.lift() =
     ProposalBundle(
         proposal.toMlsMessage(),
         proposalRef.toProposalRef(),
-        crlNewDistributionPoints?.toCrlDistributionPoint()
+        crlNewDistributionPoints?.toCrlDistributionPoint(),
     )
 
-/**
- * Contains everything client needs to know after decrypting an (encrypted) Welcome message
- */
+/** Contains everything client needs to know after decrypting an (encrypted) Welcome message */
 data class WelcomeBundle(
-    /**
-     * MLS Group Id
-     */
+    /** MLS Group Id */
     val id: MLSGroupId,
-    /**
-     * New CRL distribution points that appeared by the introduction of a new credential
-     */
+    /** New CRL distribution points that appeared by the introduction of a new credential */
     val crlNewDistributionPoints: CrlDistributionPoints?,
 ) {
     override fun equals(other: Any?): Boolean {
@@ -272,51 +262,44 @@ fun com.wire.crypto.WelcomeBundle.lift() =
     WelcomeBundle(id.toGroupId(), crlNewDistributionPoints?.toCrlDistributionPoint())
 
 /**
- * Represents the potential items a consumer might require after passing us an encrypted message we have decrypted for him
+ * Represents the potential items a consumer might require after passing us an encrypted message we
+ * have decrypted for him
  */
 data class DecryptedMessage(
-    /**
-     * Decrypted text message
-     */
+    /** Decrypted text message */
     val message: ByteArray?,
     /**
-     * Only when decrypted message is a commit, CoreCrypto will renew local proposal which could not make it in the commit.
-     * This will contain either:
-     *   - local pending proposal not in the accepted commit
-     *   - If there is a pending commit, its proposals which are not in the accepted commit
+     * Only when decrypted message is a commit, CoreCrypto will renew local proposal which could not
+     * make it in the commit. This will contain either:
+     * - local pending proposal not in the accepted commit
+     * - If there is a pending commit, its proposals which are not in the accepted commit
      */
     val proposals: Set<ProposalBundle>,
     /**
-     * Is the conversation still active after receiving this commit aka has the user been removed from the group
+     * Is the conversation still active after receiving this commit aka has the user been removed
+     * from the group
      */
     val isActive: Boolean,
-    /**
-     * Delay time in seconds to feed caller timer for committing
-     */
+    /** Delay time in seconds to feed caller timer for committing */
     val commitDelay: Long?,
     /**
-     * [ClientId] of the sender of the message being decrypted. Only present for application messages.
+     * [ClientId] of the sender of the message being decrypted. Only present for application
+     * messages.
      */
     val senderClientId: ClientId?,
-    /**
-     * Is the epoch changed after decrypting this message
-     */
+    /** Is the epoch changed after decrypting this message */
     val hasEpochChanged: Boolean,
     /**
-     * Identity claims present in the sender credential
-     * Only present when the credential is a x509 certificate
-     * Present for all messages
+     * Identity claims present in the sender credential Only present when the credential is a x509
+     * certificate Present for all messages
      */
     val identity: WireIdentity,
     /**
-     * Identity claims present in the sender credential
-     * Only present when the credential is a x509 certificate
-     * Present for all messages
+     * Identity claims present in the sender credential Only present when the credential is a x509
+     * certificate Present for all messages
      */
     val bufferedMessages: List<BufferedDecryptedMessage>?,
-    /**
-     * New CRL distribution points that appeared by the introduction of a new credential
-     */
+    /** New CRL distribution points that appeared by the introduction of a new credential */
     val crlNewDistributionPoints: CrlDistributionPoints?,
 ) {
 
@@ -354,21 +337,20 @@ data class DecryptedMessage(
     }
 }
 
-fun com.wire.crypto.DecryptedMessage.lift() = DecryptedMessage(
-    message,
-    proposals.asSequence().map { it.lift() }.toSet(),
-    isActive,
-    commitDelay?.toLong(),
-    senderClientId?.toClientId(),
-    hasEpochChanged,
-    identity.lift(),
-    bufferedMessages?.map { it.lift() },
-    crlNewDistributionPoints?.toCrlDistributionPoint()
-)
+fun com.wire.crypto.DecryptedMessage.lift() =
+    DecryptedMessage(
+        message,
+        proposals.asSequence().map { it.lift() }.toSet(),
+        isActive,
+        commitDelay?.toLong(),
+        senderClientId?.toClientId(),
+        hasEpochChanged,
+        identity.lift(),
+        bufferedMessages?.map { it.lift() },
+        crlNewDistributionPoints?.toCrlDistributionPoint(),
+    )
 
-/**
- * Type safe recursion of [DecryptedMessage]
- */
+/** Type safe recursion of [DecryptedMessage] */
 data class BufferedDecryptedMessage(
     /** @see DecryptedMessage.message */
     val message: ByteArray?,
@@ -422,40 +404,29 @@ data class BufferedDecryptedMessage(
     }
 }
 
-fun com.wire.crypto.BufferedDecryptedMessage.lift() = BufferedDecryptedMessage(
-    message,
-    proposals.asSequence().map { it.lift() }.toSet(),
-    isActive,
-    commitDelay?.toLong(),
-    senderClientId?.toClientId(),
-    hasEpochChanged,
-    identity.lift(),
-    crlNewDistributionPoints?.toCrlDistributionPoint()
-)
+fun com.wire.crypto.BufferedDecryptedMessage.lift() =
+    BufferedDecryptedMessage(
+        message,
+        proposals.asSequence().map { it.lift() }.toSet(),
+        isActive,
+        commitDelay?.toLong(),
+        senderClientId?.toClientId(),
+        hasEpochChanged,
+        identity.lift(),
+        crlNewDistributionPoints?.toCrlDistributionPoint(),
+    )
 
-/**
- * Represents a client using Wire's end-to-end identity solution
- */
+/** Represents a client using Wire's end-to-end identity solution */
 data class WireIdentity(
-    /**
-     * Unique client identifier e.g. `T4Coy4vdRzianwfOgXpn6A:6add501bacd1d90e@whitehouse.gov`
-     */
+    /** Unique client identifier e.g. `T4Coy4vdRzianwfOgXpn6A:6add501bacd1d90e@whitehouse.gov` */
     val clientId: String,
-    /**
-     * Status of the Credential at the moment T when this object is created
-     */
+    /** Status of the Credential at the moment T when this object is created */
     val status: DeviceStatus,
-    /**
-     * MLS thumbprint
-     */
+    /** MLS thumbprint */
     val thumbprint: String,
-    /**
-     * Indicates whether the credential is Basic or X509
-     */
+    /** Indicates whether the credential is Basic or X509 */
     val credentialType: CredentialType,
-    /**
-     * In case [credentialType] is [CredentialType.X509] this is populated
-     */
+    /** In case [credentialType] is [CredentialType.X509] this is populated */
     val x509Identity: X509Identity?,
 )
 
@@ -463,36 +434,23 @@ fun com.wire.crypto.WireIdentity.lift() =
     WireIdentity(clientId, status.lift(), thumbprint, credentialType.lift(), x509Identity?.lift())
 
 /**
- * Represents the parts of WireIdentity that are specific to a X509 certificate (and not a Basic one).
+ * Represents the parts of WireIdentity that are specific to a X509 certificate (and not a Basic
+ * one).
  */
 data class X509Identity(
-    /**
-     * user handle e.g. `john_wire`
-     */
+    /** user handle e.g. `john_wire` */
     val handle: String,
-    /**
-     * Name as displayed in the messaging application e.g. `John Fitzgerald Kennedy`
-     */
+    /** Name as displayed in the messaging application e.g. `John Fitzgerald Kennedy` */
     val displayName: String,
-    /**
-     * DNS domain for which this identity proof was generated e.g. `whitehouse.gov`
-     */
+    /** DNS domain for which this identity proof was generated e.g. `whitehouse.gov` */
     val domain: String,
-    /**
-     * X509 certificate identifying this client in the MLS group ; PEM encoded
-     */
+    /** X509 certificate identifying this client in the MLS group ; PEM encoded */
     val certificate: String,
-    /**
-     * X509 certificate serial number
-     */
+    /** X509 certificate serial number */
     val serialNumber: String,
-    /**
-     * X509 certificate not before as Unix timestamp
-     */
+    /** X509 certificate not before as Unix timestamp */
     val notBefore: java.time.Instant,
-    /**
-     * X509 certificate not after as Unix timestamp
-     */
+    /** X509 certificate not after as Unix timestamp */
     val notAfter: java.time.Instant,
 )
 
@@ -504,32 +462,27 @@ fun com.wire.crypto.X509Identity.lift() =
         certificate,
         serialNumber,
         java.time.Instant.ofEpochSecond(notBefore.toLong()),
-        java.time.Instant.ofEpochSecond(notAfter.toLong())
+        java.time.Instant.ofEpochSecond(notAfter.toLong()),
     )
 
 /**
- * Indicates the standalone status of a device Credential in a MLS group at a moment T. This does not represent the
- * states where a device is not using MLS or is not using end-to-end identity
+ * Indicates the standalone status of a device Credential in a MLS group at a moment T. This does
+ * not represent the states where a device is not using MLS or is not using end-to-end identity
  */
 enum class DeviceStatus {
-    /**
-     * All is fine
-     */
+    /** All is fine */
     Valid,
 
-    /**
-     * The Credential's certificate is expired
-     */
+    /** The Credential's certificate is expired */
     Expired,
 
-    /**
-     * The Credential's certificate is revoked (not implemented yet)
-     */
+    /** The Credential's certificate is revoked (not implemented yet) */
     Revoked,
 }
 
-fun com.wire.crypto.DeviceStatus.lift(): DeviceStatus = when (this) {
-    com.wire.crypto.DeviceStatus.VALID -> DeviceStatus.Valid
-    com.wire.crypto.DeviceStatus.EXPIRED -> DeviceStatus.Expired
-    com.wire.crypto.DeviceStatus.REVOKED -> DeviceStatus.Revoked
-}
+fun com.wire.crypto.DeviceStatus.lift(): DeviceStatus =
+    when (this) {
+        com.wire.crypto.DeviceStatus.VALID -> DeviceStatus.Valid
+        com.wire.crypto.DeviceStatus.EXPIRED -> DeviceStatus.Expired
+        com.wire.crypto.DeviceStatus.REVOKED -> DeviceStatus.Revoked
+    }

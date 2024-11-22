@@ -19,16 +19,16 @@
 package com.wire.crypto.client
 
 import com.wire.crypto.CoreCryptoException
-import kotlinx.coroutines.runBlocking
-import kotlinx.coroutines.test.runTest
-import org.assertj.core.api.AssertionsForInterfaceTypes.assertThat
-import org.assertj.core.api.AssertionsForInterfaceTypes.assertThatNoException
-import uniffi.core_crypto.CryptoError
 import java.nio.file.Files
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertIs
+import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.test.runTest
+import org.assertj.core.api.AssertionsForInterfaceTypes.assertThat
+import org.assertj.core.api.AssertionsForInterfaceTypes.assertThatNoException
+import uniffi.core_crypto.CryptoError
 
 class MLSTest {
 
@@ -51,10 +51,7 @@ class MLSTest {
             ctx.setData(data)
         }
 
-        cc.transaction { ctx ->
-            assertThat(ctx.getData()).isEqualTo(data)
-        }
-
+        cc.transaction { ctx -> assertThat(ctx.getData()).isEqualTo(data) }
     }
 
     @Test
@@ -68,13 +65,12 @@ class MLSTest {
         val cc = initCc()
         var context: CoreCryptoContext? = null
 
-        cc.transaction { ctx ->
-            context = ctx
-        }
+        cc.transaction { ctx -> context = ctx }
 
-        val expectedException = assertFailsWith<CoreCryptoException.CryptoException> {
-            context!!.mlsInit(aliceId.toClientId())
-        }
+        val expectedException =
+            assertFailsWith<CoreCryptoException.CryptoException> {
+                context!!.mlsInit(aliceId.toClientId())
+            }
 
         assertIs<CryptoError.InvalidContext>(expectedException.error)
     }
@@ -84,11 +80,8 @@ class MLSTest {
         val cc = initCc()
         val expectedException = RuntimeException("Expected Exception")
 
-        val actualException = assertFailsWith<RuntimeException> {
-            cc.transaction<Unit> {
-                throw expectedException
-            }
-        }
+        val actualException =
+            assertFailsWith<RuntimeException> { cc.transaction<Unit> { throw expectedException } }
 
         assertEquals(expectedException, actualException)
     }
@@ -96,26 +89,23 @@ class MLSTest {
     @Test
     fun transaction_rolls_back_on_error() = runTest {
         val cc = initCc()
-        cc.transaction { ctx ->
-            ctx.mlsInit(aliceId.toClientId())
-        }
+        cc.transaction { ctx -> ctx.mlsInit(aliceId.toClientId()) }
 
         val expectedException = RuntimeException("Expected Exception")
 
-        val actualException = assertFailsWith<RuntimeException> {
-            cc.transaction<Unit> { ctx ->
-                ctx.createConversation(id)
-                throw expectedException
+        val actualException =
+            assertFailsWith<RuntimeException> {
+                cc.transaction<Unit> { ctx ->
+                    ctx.createConversation(id)
+                    throw expectedException
+                }
             }
-        }
 
         assertEquals(expectedException, actualException)
 
         // This would fail with a "Conversation already exists" exception, if the above
         // transaction hadn't been rolled back.
-        cc.transaction { ctx ->
-            ctx.createConversation(id)
-        }
+        cc.transaction { ctx -> ctx.createConversation(id) }
     }
 
     @Test
@@ -241,7 +231,9 @@ class MLSTest {
         val decrypted = alice.decryptMessage(id, commit)
         assertThat(decrypted.message).isNull()
 
-        assertThat(alice.members(id).containsAll(listOf(aliceId, bobId, carolId).map { it.toClientId() }))
+        assertThat(
+            alice.members(id).containsAll(listOf(aliceId, bobId, carolId).map { it.toClientId() })
+        )
     }
 
     @Test
@@ -300,9 +292,7 @@ class MLSTest {
         val updateProposal = alice.newUpdateProposal(id)
 
         val proposals = listOf(addProposal, removeProposal, updateProposal)
-        proposals.forEach {
-            alice.clearPendingProposal(id, it.proposalRef)
-        }
+        proposals.forEach { alice.clearPendingProposal(id, it.proposalRef) }
         // should be null since we cleared all proposals
         assertThat(alice.commitPendingProposals(id)).isNull()
     }
@@ -323,9 +313,7 @@ class MLSTest {
     fun wipeConversation_should_delete_the_conversation_from_the_keystore() = runTest {
         val (alice) = newClients(aliceId)
         alice.createConversation(id)
-        assertThatNoException().isThrownBy {
-            runBlocking { alice.wipeConversation(id) }
-        }
+        assertThatNoException().isThrownBy { runBlocking { alice.wipeConversation(id) } }
     }
 
     @Test
@@ -334,11 +322,14 @@ class MLSTest {
         alice.createConversation(id)
 
         val n = 50
-        val secrets = (0 until n).map {
-            val secret = alice.deriveAvsSecret(id, 32U)
-            assertThat(secret.value).hasSize(32)
-            secret
-        }.toSet()
+        val secrets =
+            (0 until n)
+                .map {
+                    val secret = alice.deriveAvsSecret(id, 32U)
+                    assertThat(secret.value).hasSize(32)
+                    secret
+                }
+                .toSet()
         assertThat(secrets).hasSize(n)
     }
 }
