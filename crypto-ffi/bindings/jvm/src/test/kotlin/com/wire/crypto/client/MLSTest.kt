@@ -19,6 +19,7 @@
 package com.wire.crypto.client
 
 import com.wire.crypto.CoreCryptoException
+import com.wire.crypto.MlsException
 import java.nio.file.Files
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -68,11 +69,11 @@ class MLSTest {
         cc.transaction { ctx -> context = ctx }
 
         val expectedException =
-            assertFailsWith<CoreCryptoException.CryptoException> {
+            assertFailsWith<CoreCryptoException.Mls> {
                 context!!.mlsInit(aliceId.toClientId())
             }
 
-        assertIs<CryptoError.InvalidContext>(expectedException.error)
+        assertIs<MlsException.Other>(expectedException.v1)
     }
 
     @Test
