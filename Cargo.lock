@@ -925,6 +925,7 @@ dependencies = [
  "futures-lite",
  "futures-util",
  "hex",
+ "idb",
  "indexmap 2.6.0",
  "itertools 0.13.0",
  "js-sys",
