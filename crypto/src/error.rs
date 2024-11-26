@@ -17,6 +17,9 @@
 use crate::mls::conversation::config::MAX_PAST_EPOCHS;
 use crate::prelude::{E2eIdentityError, MlsCredentialType};
 
+#[cfg(all(feature = "cryptobox-migrate", target_family = "wasm"))]
+use rexie;
+
 /// CoreCrypto errors
 #[derive(Debug, thiserror::Error, strum::IntoStaticStr)]
 #[cfg_attr(feature = "uniffi", derive(uniffi::Error))]
@@ -442,8 +445,12 @@ impl ProteusError {
 pub enum CryptoboxMigrationError {
     #[cfg(all(feature = "cryptobox-migrate", target_family = "wasm"))]
     #[error(transparent)]
+    /// Rexie Error
+    RexieError(rexie::Error),
+    #[cfg(all(feature = "cryptobox-migrate", target_family = "wasm"))]
+    #[error(transparent)]
     /// IndexedDB Error
-    RexieError(#[from] rexie::Error),
+    IdbError(idb::Error),
     #[cfg(all(feature = "cryptobox-migrate", target_family = "wasm"))]
     #[error(transparent)]
     /// Error when parsing/serializing JSON payloads from the WASM boundary
@@ -468,4 +475,14 @@ pub enum CryptoboxMigrationError {
     #[error("The Cryptobox identity at path [{0}] could not be found.")]
     /// Error when inspecting a Cryptobox store that doesn't contain an Identity
     IdentityNotFound(String),
+}
+
+#[cfg(all(feature = "cryptobox-migrate", target_family = "wasm"))]
+impl From<rexie::Error> for CryptoboxMigrationError {
+    fn from(e: rexie::Error) -> Self {
+        match e {
+            rexie::Error::IdbError(e) => Self::IdbError(e),
+            _ => Self::RexieError(e),
+        }
+    }
 }
