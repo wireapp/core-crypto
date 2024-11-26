@@ -34,7 +34,7 @@ export const config: WebdriverIO.Config = {
     // The path of the spec files will be resolved relative from the directory of
     //  the config file unless it's absolute.
     //
-    specs: ["./test/**/*.test.ts"],
+    specs: ["./test/**/*.test.ts", "./benches/**/*.bench.ts"],
     // Patterns to exclude.
     exclude: [
         // 'path/to/excluded/files'
@@ -152,7 +152,14 @@ export const config: WebdriverIO.Config = {
     // Test reporter for stdout.
     // The only one supported by default is 'dot'
     // see also: https://webdriver.io/docs/dot-reporter
-    reporters: ["spec"],
+    reporters: [
+        [
+            "spec",
+            {
+                addConsoleLogs: true,
+            },
+        ],
+    ],
 
     // Options to be passed to Mocha.
     // See the full list at http://mochajs.org/

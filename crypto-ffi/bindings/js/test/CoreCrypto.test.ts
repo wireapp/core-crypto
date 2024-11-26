@@ -1,12 +1,16 @@
 import { browser, expect } from "@wdio/globals";
 import {
+    ALICE_ID,
+    BOB_ID,
     ccInit,
+    CONV_ID,
     createConversation,
     invite,
     newProteusSessionFromMessage,
     newProteusSessionFromPrekey,
     proteusInit,
     roundTripMessage,
+    SESSION_ID,
     setup,
     teardown,
 } from "./utils";
@@ -19,11 +23,6 @@ import {
     RatchetTreeType,
 } from "../CoreCrypto";
 import CoreCryptoContext from "../CoreCryptoContext";
-
-const ALICE_ID = "alice";
-const BOB_ID = "bob";
-const CONV_ID = "convId";
-const SESSION_ID = "proteusSessionId";
 
 beforeEach(async () => {
     await setup();

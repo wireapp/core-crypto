@@ -3,6 +3,11 @@ import { Ciphersuite, CoreCrypto, GroupInfoBundle } from "../CoreCrypto";
 
 type ccModuleType = typeof import("../CoreCrypto");
 
+export const ALICE_ID = "alice";
+export const BOB_ID = "bob";
+export const CONV_ID = "convId";
+export const SESSION_ID = "proteusSessionId";
+
 declare global {
     interface Window {
         ccModule: ccModuleType;
