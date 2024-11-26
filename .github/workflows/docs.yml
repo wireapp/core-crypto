@@ -21,7 +21,7 @@ jobs:
     if: github.repository == 'wireapp/core-crypto'
     runs-on: ubuntu-latest
 
-    steps: 
+    steps:
     - name: Checkout repository
       uses: actions/checkout@v4
 
@@ -34,9 +34,9 @@ jobs:
       uses: davidB/rust-cargo-make@v1
 
     - name: Install wasm-pack
-      uses: jetli/wasm-pack-action@v0.4.0
+      uses: taiki-e/install-action@v2
       with:
-        version: 'latest'
+        tool: wasm-pack
 
     - name: Build Rust documentation
       run: cargo doc --all --no-deps
