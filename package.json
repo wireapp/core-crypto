@@ -40,8 +40,6 @@
     "@typescript-eslint/parser": "^7.0.2",
     "@wdio/browser-runner": "^9.2.12",
     "@wdio/cli": "^9.2.12",
-    "@wdio/concise-reporter": "^9.2.14",
-    "@wdio/dot-reporter": "^9.2.14",
     "@wdio/logger": "^9.1.3",
     "@wdio/mocha-framework": "^9.2.8",
     "@wdio/spec-reporter": "^9.2.14",
