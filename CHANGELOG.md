@@ -1,5 +1,12 @@
 # Changelog
 
+## v1.1.1 - 2024-11-26
+
+### Bug Fixes
+
+- Improve errors when hitting an indexdb error during cryptobox migration (3266550)
+
+
 ## v1.1.0 - 2024-11-12
 
 ### Highlights

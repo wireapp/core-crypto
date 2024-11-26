@@ -892,7 +892,7 @@ dependencies = [
 
 [[package]]
 name = "core-crypto"
-version = "1.1.0"
+version = "1.1.1"
 dependencies = [
  "async-fs",
  "async-lock",
@@ -902,7 +902,7 @@ dependencies = [
  "base64 0.22.1",
  "cfg-if",
  "core-crypto-attributes",
- "core-crypto-keystore 1.1.0",
+ "core-crypto-keystore 1.1.1",
  "criterion",
  "cryptobox",
  "derive_more",
@@ -952,7 +952,7 @@ dependencies = [
 
 [[package]]
 name = "core-crypto-attributes"
-version = "1.1.0"
+version = "1.1.1"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -961,7 +961,7 @@ dependencies = [
 
 [[package]]
 name = "core-crypto-ffi"
-version = "1.1.0"
+version = "1.1.1"
 dependencies = [
  "async-lock",
  "async-trait",
@@ -1021,7 +1021,7 @@ dependencies = [
 
 [[package]]
 name = "core-crypto-keystore"
-version = "1.1.0"
+version = "1.1.1"
 dependencies = [
  "aes-gcm",
  "async-fs",
@@ -1031,7 +1031,7 @@ dependencies = [
  "blocking",
  "cfg-if",
  "core-crypto-keystore 1.0.0",
- "core-crypto-keystore 1.1.0",
+ "core-crypto-keystore 1.1.1",
  "core-foundation 0.10.0",
  "criterion",
  "fluvio-wasm-timer",
@@ -2400,7 +2400,7 @@ dependencies = [
 
 [[package]]
 name = "interop"
-version = "1.1.0"
+version = "1.1.1"
 dependencies = [
  "async-trait",
  "base64 0.22.1",
@@ -2559,13 +2559,13 @@ dependencies = [
 
 [[package]]
 name = "keystore-dump"
-version = "1.1.0"
+version = "1.1.1"
 dependencies = [
  "chrono",
  "clap",
  "color-eyre",
  "core-crypto",
- "core-crypto-keystore 1.1.0",
+ "core-crypto-keystore 1.1.1",
  "hex",
  "openmls",
  "openmls_basic_credential",
@@ -2742,7 +2742,7 @@ dependencies = [
 
 [[package]]
 name = "mls-crypto-provider"
-version = "1.1.0"
+version = "1.1.1"
 dependencies = [
  "aes-gcm",
  "async-lock",
@@ -2750,7 +2750,7 @@ dependencies = [
  "async-trait",
  "cfg-if",
  "chacha20poly1305",
- "core-crypto-keystore 1.1.0",
+ "core-crypto-keystore 1.1.1",
  "ecdsa",
  "ed25519-dalek",
  "fluvio-wasm-timer",
