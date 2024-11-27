@@ -95,8 +95,9 @@ pub enum CryptoKeystoreError {
     #[error("The task has been canceled")]
     WasmExecutorError,
     #[cfg(target_family = "wasm")]
-    #[error("{0}")]
-    RexieError(String),
+    #[error(transparent)]
+    /// Rexie Error
+    RexieError(#[from] rexie::Error),
     #[cfg(target_family = "wasm")]
     #[error("An IndexedDB timeout has occured")]
     RexieTimeoutError,
@@ -173,13 +174,6 @@ impl Into<wasm_bindgen::JsValue> for CryptoKeystoreError {
 impl From<serde_wasm_bindgen::Error> for CryptoKeystoreError {
     fn from(jsv: serde_wasm_bindgen::Error) -> Self {
         Self::SerdeWasmBindgenError(jsv.to_string())
-    }
-}
-
-#[cfg(target_family = "wasm")]
-impl From<rexie::Error> for CryptoKeystoreError {
-    fn from(rexie_err: rexie::Error) -> Self {
-        Self::RexieError(rexie_err.to_string())
     }
 }
 
