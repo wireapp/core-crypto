@@ -1,3 +1,5 @@
+pub mod keystore_v_1_0_0;
+
 use crate::connection::storage::{WasmEncryptedStorage, WasmStorageWrapper};
 use crate::connection::KeystoreDatabaseConnection;
 use crate::entities::{
