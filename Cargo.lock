@@ -917,7 +917,7 @@ dependencies = [
  "base64 0.22.1",
  "cfg-if",
  "core-crypto-attributes",
- "core-crypto-keystore 1.1.0",
+ "core-crypto-keystore",
  "criterion",
  "cryptobox",
  "derive_more",
@@ -938,7 +938,7 @@ dependencies = [
  "pem",
  "pretty_env_logger",
  "proteus",
- "proteus-traits 2.1.0 (git+https://github.com/wireapp/proteus?tag=v2.1.1)",
+ "proteus-traits",
  "proteus-wasm",
  "rand",
  "rexie",
@@ -984,7 +984,7 @@ dependencies = [
  "async-trait",
  "cfg-if",
  "core-crypto",
- "core-crypto-keystore 1.1.0",
+ "core-crypto-keystore",
  "futures-util",
  "js-sys",
  "log",
@@ -1006,41 +1006,6 @@ dependencies = [
 
 [[package]]
 name = "core-crypto-keystore"
-version = "1.0.0"
-source = "git+https://github.com/wireapp/core-crypto?tag=v1.0.0#bf1af6d1c56557dd723dd83d0b6dca4b652396b9"
-dependencies = [
- "aes-gcm",
- "async-fs",
- "async-lock",
- "async-trait",
- "blocking",
- "cfg-if",
- "fluvio-wasm-timer",
- "getrandom",
- "hex",
- "js-sys",
- "openmls_basic_credential",
- "openmls_traits",
- "openmls_x509_credential",
- "postcard",
- "proteus-traits 2.1.0 (git+https://github.com/wireapp/proteus?branch=2.x)",
- "rand",
- "refinery",
- "rexie",
- "rusqlite",
- "serde",
- "serde-big-array",
- "serde-wasm-bindgen",
- "sha2",
- "thiserror",
- "wasm-bindgen",
- "wasm-bindgen-futures",
- "web-sys",
- "zeroize",
-]
-
-[[package]]
-name = "core-crypto-keystore"
 version = "1.1.0"
 dependencies = [
  "aes-gcm",
@@ -1050,8 +1015,7 @@ dependencies = [
  "async-trait",
  "blocking",
  "cfg-if",
- "core-crypto-keystore 1.0.0",
- "core-crypto-keystore 1.1.0",
+ "core-crypto-keystore",
  "core-foundation 0.10.0",
  "criterion",
  "fluvio-wasm-timer",
@@ -1069,10 +1033,11 @@ dependencies = [
  "openmls_x509_credential",
  "postcard",
  "pretty_env_logger",
- "proteus-traits 2.1.0 (git+https://github.com/wireapp/proteus?tag=v2.1.1)",
+ "proteus-traits",
  "proteus-wasm",
  "rand",
  "refinery",
+ "rexie",
  "rstest",
  "rstest_reuse",
  "rusqlite",
@@ -2651,7 +2616,7 @@ dependencies = [
  "clap",
  "color-eyre",
  "core-crypto",
- "core-crypto-keystore 1.1.0",
+ "core-crypto-keystore",
  "hex",
  "openmls",
  "openmls_basic_credential",
@@ -2846,7 +2811,7 @@ dependencies = [
  "async-trait",
  "cfg-if",
  "chacha20poly1305",
- "core-crypto-keystore 1.1.0",
+ "core-crypto-keystore",
  "ecdsa",
  "ed25519-dalek",
  "fluvio-wasm-timer",
@@ -3551,14 +3516,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "proteus-traits"
-version = "2.1.0"
-source = "git+https://github.com/wireapp/proteus?branch=2.x#fca3639a0a0c1fc7b5c5ff499c26a25e3572073e"
-dependencies = [
- "async-trait",
-]
-
-[[package]]
 name = "proteus-wasm"
 version = "2.1.0"
 source = "git+https://github.com/wireapp/proteus?tag=v2.1.1#b92dbc2d0c77105cae3911a7388acba05450a06d"
@@ -3573,7 +3530,7 @@ dependencies = [
  "hex",
  "hkdf 0.12.4",
  "hmac",
- "proteus-traits 2.1.0 (git+https://github.com/wireapp/proteus?tag=v2.1.1)",
+ "proteus-traits",
  "rand",
  "rand_chacha",
  "rand_core",
