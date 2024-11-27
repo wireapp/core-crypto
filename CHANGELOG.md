@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.1.2 - 2024-11-27
+
+### Bug Fixes
+
+- improve errors when hitting an idb error during IndexedDB migration (8512391)
+- don't obfuscate rexie error in keystore v1.0.0 (3896bab)
+
+
 ## v1.1.1 - 2024-11-26
 
 ### Bug Fixes
