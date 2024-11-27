@@ -1,4 +1,4 @@
-use crate::{CryptoError, CryptoResult};
+use super::error::{Error, Result};
 
 /// Unique identifier of a User (human person holding some devices).
 /// This contradicts the initial design requirements of this project since it was supposed to be
@@ -15,33 +15,33 @@ impl UserId<'_> {
 }
 
 impl<'a> TryFrom<&'a str> for UserId<'a> {
-    type Error = CryptoError;
+    type Error = Error;
 
-    fn try_from(client_id: &'a str) -> CryptoResult<Self> {
+    fn try_from(client_id: &'a str) -> Result<Self> {
         client_id.as_bytes().try_into()
     }
 }
 
 impl<'a> TryFrom<&'a [u8]> for UserId<'a> {
-    type Error = CryptoError;
+    type Error = Error;
 
-    fn try_from(id: &'a [u8]) -> CryptoResult<Self> {
+    fn try_from(id: &'a [u8]) -> Result<Self> {
         let found = id
             .splitn(2, |&b| b == Self::USER_ID_DELIMITER)
             .next()
-            .ok_or(CryptoError::InvalidClientId)?;
+            .ok_or(Error::InvalidUserId)?;
         if found.len() == id.len() {
-            return Err(CryptoError::InvalidClientId);
+            return Err(Error::InvalidUserId);
         }
         Ok(Self(found))
     }
 }
 
 impl TryFrom<UserId<'_>> for String {
-    type Error = CryptoError;
+    type Error = Error;
 
-    fn try_from(uid: UserId<'_>) -> CryptoResult<Self> {
-        Ok(std::str::from_utf8(&uid)?.to_string())
+    fn try_from(uid: UserId<'_>) -> Result<Self> {
+        Ok(std::str::from_utf8(&uid).map_err(|_| Error::InvalidUserId)?.to_string())
     }
 }
 
@@ -65,6 +65,6 @@ mod tests {
     async fn should_fail_when_invalid() {
         let user_id = "LcksJb74Tm6N12cDjFy7lQ/8e6424430d3b28be@world.com";
         let user_id = UserId::try_from(user_id);
-        assert!(matches!(user_id.unwrap_err(), CryptoError::InvalidClientId));
+        assert!(matches!(user_id.unwrap_err(), Error::InvalidUserId));
     }
 }

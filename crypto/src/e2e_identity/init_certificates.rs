@@ -1,5 +1,6 @@
+use super::error::{Error, Result};
 use crate::context::CentralContext;
-use crate::{e2e_identity::CrlRegistration, prelude::MlsCentral, CryptoError, CryptoResult};
+use crate::{e2e_identity::CrlRegistration, prelude::MlsCentral, CryptoError};
 use core_crypto_keystore::connection::FetchFromDatabase;
 use core_crypto_keystore::entities::{E2eiAcmeCA, E2eiCrl, E2eiIntermediateCert};
 use openmls_traits::OpenMlsCryptoProvider;
@@ -35,12 +36,12 @@ pub struct E2eiDumpedPkiEnv {
 impl CentralContext {
     /// See [MlsCentral::e2ei_is_pki_env_setup].
     /// Unlike [MlsCentral::e2ei_is_pki_env_setup], this function returns a result.
-    pub async fn e2ei_is_pki_env_setup(&self) -> CryptoResult<bool> {
+    pub async fn e2ei_is_pki_env_setup(&self) -> Result<bool> {
         Ok(self.mls_provider().await?.authentication_service().is_env_setup().await)
     }
 
     /// See [MlsCentral::e2ei_dump_pki_env].
-    pub async fn e2ei_dump_pki_env(&self) -> CryptoResult<Option<E2eiDumpedPkiEnv>> {
+    pub async fn e2ei_dump_pki_env(&self) -> Result<Option<E2eiDumpedPkiEnv>> {
         if !self.e2ei_is_pki_env_setup().await? {
             return Ok(None);
         }
@@ -58,7 +59,7 @@ impl CentralContext {
     ///
     /// # Parameters
     /// * `trust_anchor_pem` - PEM certificate to anchor as a Trust Root
-    pub async fn e2ei_register_acme_ca(&self, trust_anchor_pem: String) -> CryptoResult<()> {
+    pub async fn e2ei_register_acme_ca(&self, trust_anchor_pem: String) -> Result<()> {
         {
             if self
                 .mls_provider()
@@ -68,9 +69,7 @@ impl CentralContext {
                 .await
                 .is_ok()
             {
-                return Err(CryptoError::E2eiError(
-                    super::E2eIdentityError::TrustAnchorAlreadyRegistered,
-                ));
+                return Err(Error::TrustAnchorAlreadyRegistered);
             }
         }
 
@@ -102,7 +101,7 @@ impl CentralContext {
         Ok(())
     }
 
-    pub(crate) async fn init_pki_env(&self) -> CryptoResult<()> {
+    pub(crate) async fn init_pki_env(&self) -> Result<()> {
         if let Some(pki_env) = restore_pki_env(&self.mls_provider().await?.keystore()).await? {
             let provider = self.mls_provider().await?;
             provider.authentication_service().update_env(pki_env).await?;
@@ -118,24 +117,18 @@ impl CentralContext {
     ///
     /// # Parameters
     /// * `cert_pem` - PEM certificate to register as an Intermediate CA
-    pub async fn e2ei_register_intermediate_ca_pem(&self, cert_pem: String) -> CryptoResult<NewCrlDistributionPoint> {
+    pub async fn e2ei_register_intermediate_ca_pem(&self, cert_pem: String) -> Result<NewCrlDistributionPoint> {
         // Parse/decode PEM cert
         let inter_ca = PkiEnvironment::decode_pem_cert(cert_pem).map_err(|e| CryptoError::E2eiError(e.into()))?;
         self.e2ei_register_intermediate_ca(inter_ca).await
     }
 
-    pub(crate) async fn e2ei_register_intermediate_ca_der(
-        &self,
-        cert_der: &[u8],
-    ) -> CryptoResult<NewCrlDistributionPoint> {
+    pub(crate) async fn e2ei_register_intermediate_ca_der(&self, cert_der: &[u8]) -> Result<NewCrlDistributionPoint> {
         let inter_ca = x509_cert::Certificate::from_der(cert_der)?;
         self.e2ei_register_intermediate_ca(inter_ca).await
     }
 
-    async fn e2ei_register_intermediate_ca(
-        &self,
-        inter_ca: x509_cert::Certificate,
-    ) -> CryptoResult<NewCrlDistributionPoint> {
+    async fn e2ei_register_intermediate_ca(&self, inter_ca: x509_cert::Certificate) -> Result<NewCrlDistributionPoint> {
         // TrustAnchor must have been registered at this point
         let keystore = self.keystore().await?;
         let trust_anchor = keystore.find_unique::<E2eiAcmeCA>().await?;
@@ -161,11 +154,9 @@ impl CentralContext {
             let provider = self.mls_provider().await?;
             let auth_service_arc = provider.authentication_service().borrow().await;
             let Some(pki_env) = auth_service_arc.as_ref() else {
-                return Err(CryptoError::ConsumerError);
+                return Err(Error::PkiEnvironmentUnset);
             };
-            pki_env
-                .validate_cert_and_revocation(&inter_ca)
-                .map_err(|e| CryptoError::E2eiError(e.into()))?;
+            pki_env.validate_cert_and_revocation(&inter_ca)?;
         }
 
         // Save DER repr in keystore
@@ -192,13 +183,13 @@ impl CentralContext {
     ///
     /// # Returns
     /// A [CrlRegistration] with the dirty state of the new CRL (see struct) and its expiration timestamp
-    pub async fn e2ei_register_crl(&self, crl_dp: String, crl_der: Vec<u8>) -> CryptoResult<CrlRegistration> {
+    pub async fn e2ei_register_crl(&self, crl_dp: String, crl_der: Vec<u8>) -> Result<CrlRegistration> {
         // Parse & Validate CRL
         let crl = {
             let provider = self.mls_provider().await?;
             let auth_service_arc = provider.authentication_service().borrow().await;
             let Some(pki_env) = auth_service_arc.as_ref() else {
-                return Err(CryptoError::ConsumerError);
+                return Err(Error::PkiEnvironmentUnset);
             };
             pki_env
                 .validate_crl_with_raw(&crl_der)
@@ -238,7 +229,7 @@ impl MlsCentral {
     }
 
     /// Dumps the PKI environment as PEM
-    pub async fn e2ei_dump_pki_env(&self) -> CryptoResult<Option<E2eiDumpedPkiEnv>> {
+    pub async fn e2ei_dump_pki_env(&self) -> Result<Option<E2eiDumpedPkiEnv>> {
         if !self.e2ei_is_pki_env_setup().await {
             return Ok(None);
         }
@@ -251,7 +242,7 @@ impl MlsCentral {
 }
 
 impl E2eiDumpedPkiEnv {
-    async fn from_pki_env(pki_env: &PkiEnvironment) -> CryptoResult<Option<E2eiDumpedPkiEnv>> {
+    async fn from_pki_env(pki_env: &PkiEnvironment) -> Result<Option<E2eiDumpedPkiEnv>> {
         let Some(root) = pki_env
             .get_trust_anchors()
             .map_err(|e| CryptoError::E2eiError(RustyX509CheckError::from(e).into()))?
@@ -301,7 +292,7 @@ impl E2eiDumpedPkiEnv {
     }
 }
 
-pub(crate) async fn restore_pki_env(data_provider: &impl FetchFromDatabase) -> CryptoResult<Option<PkiEnvironment>> {
+pub(crate) async fn restore_pki_env(data_provider: &impl FetchFromDatabase) -> Result<Option<PkiEnvironment>> {
     let mut trust_roots = vec![];
     let Ok(ta_raw) = data_provider.find_unique::<E2eiAcmeCA>().await else {
         return Ok(None);
@@ -315,19 +306,15 @@ pub(crate) async fn restore_pki_env(data_provider: &impl FetchFromDatabase) -> C
         .find_all::<E2eiIntermediateCert>(Default::default())
         .await?
         .into_iter()
-        .try_fold(vec![], |mut acc, inter| {
-            acc.push(x509_cert::Certificate::from_der(&inter.content)?);
-            CryptoResult::Ok(acc)
-        })?;
+        .map(|inter| x509_cert::Certificate::from_der(&inter.content))
+        .collect::<Result<Vec<_>, _>>()?;
 
     let crls = data_provider
         .find_all::<E2eiCrl>(Default::default())
         .await?
         .into_iter()
-        .try_fold(vec![], |mut acc, crl| {
-            acc.push(x509_cert::crl::CertificateList::from_der(&crl.content)?);
-            CryptoResult::Ok(acc)
-        })?;
+        .map(|crl| x509_cert::crl::CertificateList::from_der(&crl.content))
+        .collect::<Result<Vec<_>, _>>()?;
 
     let params = PkiEnvironmentParams {
         trust_roots: &trust_roots,
@@ -343,14 +330,13 @@ pub(crate) async fn restore_pki_env(data_provider: &impl FetchFromDatabase) -> C
 
 #[cfg(test)]
 mod tests {
-    use crate::prelude::E2eIdentityError;
     use wasm_bindgen_test::*;
     use x509_cert::der::pem::LineEnding;
     use x509_cert::der::EncodePem;
 
     use crate::test_utils::*;
 
-    use super::*;
+    use super::super::Error;
 
     wasm_bindgen_test_configure!(run_in_browser);
 
@@ -371,7 +357,7 @@ mod tests {
 
                 assert!(matches!(
                     alice_central.context.e2ei_register_acme_ca(alice_ta).await.unwrap_err(),
-                    CryptoError::E2eiError(E2eIdentityError::TrustAnchorAlreadyRegistered)
+                    Error::TrustAnchorAlreadyRegistered
                 ));
             })
         })
