@@ -7,6 +7,7 @@ use core_crypto_keystore::connection::FetchFromDatabase;
 use core_crypto_keystore::{entities::MlsKeyPackage, CryptoKeystoreMls};
 use mls_crypto_provider::MlsCryptoProvider;
 
+use super::error::{Error, Result};
 use crate::context::CentralContext;
 use crate::e2e_identity::init_certificates::NewCrlDistributionPoint;
 #[cfg(not(target_family = "wasm"))]
@@ -14,10 +15,9 @@ use crate::e2e_identity::refresh_token::RefreshToken;
 use crate::{
     mls::credential::{ext::CredentialExt, x509::CertificatePrivateKey, CredentialBundle},
     prelude::{
-        CertificateBundle, Client, ConversationId, CryptoError, CryptoResult, E2eIdentityError, E2eiEnrollment,
-        MlsCiphersuite, MlsCommitBundle, MlsConversation, MlsCredentialType,
+        CertificateBundle, Client, ConversationId, CryptoError, E2eiEnrollment, MlsCiphersuite, MlsCommitBundle,
+        MlsConversation, MlsCredentialType,
     },
-    MlsError,
 };
 
 impl CentralContext {
@@ -33,7 +33,7 @@ impl CentralContext {
         team: Option<String>,
         expiry_sec: u32,
         ciphersuite: MlsCiphersuite,
-    ) -> CryptoResult<E2eiEnrollment> {
+    ) -> Result<E2eiEnrollment> {
         let mls_provider = self.mls_provider().await?;
         // look for existing credential of type basic. If there isn't, then this method has been misused
         let cb = self
@@ -41,7 +41,7 @@ impl CentralContext {
             .await?
             .find_most_recent_credential_bundle(ciphersuite.signature_algorithm(), MlsCredentialType::Basic)
             .await
-            .map_err(|_| E2eIdentityError::MissingExistingClient(MlsCredentialType::Basic))?;
+            .map_err(|_| Error::MissingExistingClient(MlsCredentialType::Basic))?;
         let client_id = cb.credential().identity().into();
 
         let sign_keypair = Some((&cb.signature_key).try_into()?);
@@ -72,7 +72,7 @@ impl CentralContext {
         team: Option<String>,
         expiry_sec: u32,
         ciphersuite: MlsCiphersuite,
-    ) -> CryptoResult<E2eiEnrollment> {
+    ) -> Result<E2eiEnrollment> {
         let mls_provider = self.mls_provider().await?;
         // look for existing credential of type x509. If there isn't, then this method has been misused
         let cb = self
@@ -80,14 +80,14 @@ impl CentralContext {
             .await?
             .find_most_recent_credential_bundle(ciphersuite.signature_algorithm(), MlsCredentialType::X509)
             .await
-            .map_err(|_| E2eIdentityError::MissingExistingClient(MlsCredentialType::X509))?;
+            .map_err(|_| Error::MissingExistingClient(MlsCredentialType::X509))?;
         let client_id = cb.credential().identity().into();
         let sign_keypair = Some((&cb.signature_key).try_into()?);
         let existing_identity = cb
             .to_mls_credential_with_key()
             .extract_identity(ciphersuite, None)?
             .x509_identity
-            .ok_or(E2eIdentityError::ImplementationError)?;
+            .ok_or(Error::ImplementationError)?;
 
         let display_name = display_name.unwrap_or(existing_identity.display_name);
         let handle = handle.unwrap_or(existing_identity.handle);
@@ -114,7 +114,7 @@ impl CentralContext {
         enrollment: &mut E2eiEnrollment,
         certificate_chain: String,
         new_key_packages_count: usize,
-    ) -> CryptoResult<MlsRotateBundle> {
+    ) -> Result<MlsRotateBundle> {
         let sk = enrollment.get_sign_key_for_mls()?;
         let cs = enrollment.ciphersuite;
         let certificate_chain = enrollment
@@ -167,7 +167,7 @@ impl CentralContext {
         })
     }
 
-    async fn find_key_packages_to_remove(&self, cb: &CredentialBundle) -> CryptoResult<Vec<KeyPackageRef>> {
+    async fn find_key_packages_to_remove(&self, cb: &CredentialBundle) -> Result<Vec<KeyPackageRef>> {
         let transaction = self.keystore().await?;
         let nb_kp = transaction.count::<MlsKeyPackage>().await?;
         let kps: Vec<KeyPackage> = transaction.mls_fetch_keypackages(nb_kp as u32).await?;
@@ -178,14 +178,14 @@ impl CentralContext {
         for kp in kps {
             let kp_cred = kp.leaf_node().credential().mls_credential();
             let local_cred = cb.credential().mls_credential();
-            let mut push_kpr = || {
-                let kpr = kp.hash_ref(provider.crypto()).map_err(MlsError::from)?;
+            let mut push_kpr = || -> Result<()> {
+                let kpr = kp.hash_ref(provider.crypto())?;
                 kp_refs.push(kpr);
-                CryptoResult::Ok(())
+                Ok(())
             };
 
             match (kp_cred, local_cred) {
-                (_, OpenMlsCredential::Basic(_)) => return Err(CryptoError::ImplementationError),
+                (_, OpenMlsCredential::Basic(_)) => return Err(Error::ImplementationError),
                 (OpenMlsCredential::X509(kp_cert), OpenMlsCredential::X509(local_cert)) if kp_cert != local_cert => {
                     push_kpr()?
                 }
@@ -200,7 +200,7 @@ impl CentralContext {
         &self,
         client: &Client,
         cb: &CredentialBundle,
-    ) -> CryptoResult<HashMap<ConversationId, MlsCommitBundle>> {
+    ) -> Result<HashMap<ConversationId, MlsCommitBundle>> {
         let all_conversations = self.get_all_conversations().await?;
 
         let mut commits = HashMap::with_capacity(all_conversations.len());
@@ -220,7 +220,7 @@ impl CentralContext {
         &self,
         id: &crate::prelude::ConversationId,
         cb: Option<&CredentialBundle>,
-    ) -> CryptoResult<MlsCommitBundle> {
+    ) -> Result<MlsCommitBundle> {
         let client = &self.mls_client().await?;
         self.get_conversation(id)
             .await?
@@ -238,18 +238,19 @@ impl MlsConversation {
         backend: &MlsCryptoProvider,
         client: &Client,
         cb: Option<&CredentialBundle>,
-    ) -> CryptoResult<MlsCommitBundle> {
+    ) -> Result<MlsCommitBundle> {
         let cb = match cb {
             Some(cb) => cb,
             None => &client
                 .find_most_recent_credential_bundle(self.ciphersuite().signature_algorithm(), MlsCredentialType::X509)
                 .await
-                .map_err(|_| E2eIdentityError::MissingExistingClient(MlsCredentialType::X509))?,
+                .map_err(|_| Error::MissingExistingClient(MlsCredentialType::X509))?,
         };
         let mut leaf_node = self.group.own_leaf().ok_or(CryptoError::InternalMlsError)?.clone();
         leaf_node.set_credential_with_key(cb.to_mls_credential_with_key());
         self.update_keying_material(client, backend, Some(cb), Some(leaf_node))
             .await
+            .map_err(Into::into)
     }
 }
 
@@ -271,7 +272,7 @@ impl MlsRotateBundle {
     #[allow(clippy::type_complexity)]
     pub fn to_bytes(
         self,
-    ) -> CryptoResult<(
+    ) -> Result<(
         HashMap<String, MlsCommitBundle>,
         Vec<Vec<u8>>,
         Vec<Vec<u8>>,
@@ -280,24 +281,24 @@ impl MlsRotateBundle {
         use openmls::prelude::TlsSerializeTrait as _;
 
         let commits_size = self.commits.len();
-        let commits = self
-            .commits
-            .into_iter()
-            .try_fold(HashMap::with_capacity(commits_size), |mut acc, (id, c)| {
+        let commits = self.commits.into_iter().try_fold(
+            HashMap::with_capacity(commits_size),
+            |mut acc, (id, c)| -> Result<HashMap<String, MlsCommitBundle>> {
                 // because uniffi ONLY supports HashMap<String, T>
                 let id = hex::encode(id);
                 let _ = acc.insert(id, c);
-                CryptoResult::Ok(acc)
-            })?;
+                Ok(acc)
+            },
+        )?;
 
         let kp_size = self.new_key_packages.len();
-        let new_key_packages =
-            self.new_key_packages
-                .into_iter()
-                .try_fold(Vec::with_capacity(kp_size), |mut acc, kp| {
-                    acc.push(kp.tls_serialize_detached().map_err(MlsError::from)?);
-                    CryptoResult::Ok(acc)
-                })?;
+        let new_key_packages = self.new_key_packages.into_iter().try_fold(
+            Vec::with_capacity(kp_size),
+            |mut acc, kp| -> Result<Vec<Vec<u8>>> {
+                acc.push(kp.tls_serialize_detached()?);
+                Ok(acc)
+            },
+        )?;
         let key_package_refs_to_remove = self
             .key_package_refs_to_remove
             .into_iter()
