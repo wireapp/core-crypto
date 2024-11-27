@@ -1,7 +1,6 @@
-use super::E2eiEnrollment;
-use crate::{
-    prelude::{E2eIdentityError, E2eIdentityResult},
-    CryptoError, CryptoResult,
+use super::{
+    error::{Error, Result},
+    E2eiEnrollment,
 };
 use core_crypto_keystore::connection::FetchFromDatabase;
 use core_crypto_keystore::{entities::E2eiRefreshToken, CryptoKeystoreResult};
@@ -14,7 +13,7 @@ use zeroize::Zeroize;
 pub struct RefreshToken(String);
 
 impl RefreshToken {
-    pub(crate) async fn find(key_store: &impl FetchFromDatabase) -> CryptoResult<RefreshToken> {
+    pub(crate) async fn find(key_store: &impl FetchFromDatabase) -> Result<RefreshToken> {
         key_store.find_unique::<E2eiRefreshToken>().await?.try_into()
     }
 
@@ -30,22 +29,23 @@ impl E2eiEnrollment {
     /// Lets clients retrieve the OIDC refresh token to try to renew the user's authorization.
     /// If it's expired, the user needs to reauthenticate and they will update the refresh token
     /// in [E2eiEnrollment::new_oidc_challenge_request]
-    pub fn get_refresh_token(&self) -> E2eIdentityResult<&str> {
+    pub fn get_refresh_token(&self) -> Result<&str> {
         self.refresh_token
             .as_ref()
             .map(|rt| rt.as_str())
-            .ok_or(E2eIdentityError::OutOfOrderEnrollment(
+            .ok_or(Error::OutOfOrderEnrollment(
                 "No OIDC refresh token registered yet or it has been persisted",
             ))
     }
 }
 
 impl TryFrom<E2eiRefreshToken> for RefreshToken {
-    type Error = CryptoError;
+    type Error = Error;
 
-    fn try_from(mut entity: E2eiRefreshToken) -> CryptoResult<Self> {
+    fn try_from(mut entity: E2eiRefreshToken) -> Result<Self> {
         let content = std::mem::take(&mut entity.content);
-        Ok(Self(String::from_utf8(content)?))
+        let content = String::from_utf8(content).map_err(|_| Error::InvalidRefreshToken)?;
+        Ok(Self(content))
     }
 }
 

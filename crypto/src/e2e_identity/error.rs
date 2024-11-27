@@ -3,14 +3,12 @@
 use crate::prelude::MlsCredentialType;
 use core_crypto_keystore::CryptoKeystoreError;
 
-/// Wrapper over a [Result] of an end to end identity error
-pub type E2eIdentityResult<T> = Result<T, E2eIdentityError>;
+/// Wrapper over a [Result][core::result::Result] of an end to end identity error
+pub type Result<T, E = Error> = core::result::Result<T, E>;
 
 /// End to end identity errors
 #[derive(Debug, thiserror::Error)]
-#[cfg_attr(feature = "uniffi", derive(uniffi::Error))]
-#[cfg_attr(feature = "uniffi", uniffi(flat_error))]
-pub enum E2eIdentityError {
+pub enum Error {
     /// Client misused this library
     #[error("Incorrect usage of this API")]
     ImplementationError,
@@ -44,4 +42,49 @@ pub enum E2eIdentityError {
     /// We already have an ACME Root Trust Anchor registered. Cannot proceed but this is usually indicative of double registration and can be ignored
     #[error("We already have an ACME Root Trust Anchor registered. Cannot proceed but this is usually indicative of double registration and can be ignored")]
     TrustAnchorAlreadyRegistered,
+    /// Getting MLS ratchet tree
+    #[error("Getting MLS ratchet tree")]
+    MlsRatchetTree(#[from] openmls::messages::group_info::GroupInfoError),
+    /// Generating signature key
+    #[error("Generating signature key")]
+    SignatureKeyGen(#[source] openmls_traits::types::CryptoError),
+    #[error("Normalizing ed25519 key")]
+    /// Normalizing ed25519 key
+    NormalizingEd25519Key(#[source] openmls_traits::types::CryptoError),
+    #[error("Generating new PKI keypair")]
+    /// Generating new PKi keypair
+    GeneratePkiKeypair(#[from] mls_crypto_provider::MlsProviderError),
+    /// The encountered ClientId does not match Wire's definition
+    #[error("The encountered ClientId does not match Wire's definition")]
+    InvalidClientId,
+    /// see [`x509_cert::der::Error`]
+    #[error(transparent)]
+    X509CertDerError(#[from] x509_cert::der::Error),
+    /// This function accepts a list of IDs as a parameter, but that list was empty
+    #[error("This function accepts a list of IDs as a parameter, but that list was empty")]
+    EmptyInputIdList,
+    /// Getting user identities
+    #[error("Getting user identities")]
+    GetUserIdentities(#[source] crate::mls::client::error::Error),
+    /// PKI environment must ben set before calling this function
+    #[error("PKI Environment must be set before calling this function")]
+    PkiEnvironmentUnset,
+    /// Computing key package hash ref
+    #[error("Computing key package hash ref")]
+    KeyPackageHashRef(#[from] openmls::error::LibraryError),
+    /// Serializing key package for TLS
+    #[error("Serializing key package for TLS")]
+    TlsSerializingKeyPackage(#[from] tls_codec::Error),
+    /// Compatibility wrapper
+    ///
+    /// This should be removed before merging this branch, but it allows an easier migration path to module-specific errors.
+    #[deprecated]
+    #[error(transparent)]
+    CryptoError(Box<crate::CryptoError>),
+}
+
+impl From<crate::CryptoError> for Error {
+    fn from(value: crate::CryptoError) -> Self {
+        Self::CryptoError(Box::new(value))
+    }
 }

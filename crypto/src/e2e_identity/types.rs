@@ -1,6 +1,6 @@
 //! We only expose byte arrays through the FFI so we do all the conversions here
 
-use super::error::{E2eIdentityError, E2eIdentityResult};
+use super::error::{Error, Result};
 
 /// See [RFC 8555 Section 7.1.1](https://www.rfc-editor.org/rfc/rfc8555.html#section-7.1.1)
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
@@ -28,9 +28,9 @@ impl From<wire_e2e_identity::prelude::AcmeDirectory> for E2eiAcmeDirectory {
 }
 
 impl TryFrom<&E2eiAcmeDirectory> for wire_e2e_identity::prelude::AcmeDirectory {
-    type Error = E2eIdentityError;
+    type Error = Error;
 
-    fn try_from(directory: &E2eiAcmeDirectory) -> E2eIdentityResult<Self> {
+    fn try_from(directory: &E2eiAcmeDirectory) -> Result<Self> {
         Ok(Self {
             new_nonce: directory.new_nonce.parse()?,
             new_account: directory.new_account.parse()?,
@@ -52,9 +52,9 @@ pub struct E2eiNewAcmeOrder {
 }
 
 impl TryFrom<wire_e2e_identity::prelude::E2eiNewAcmeOrder> for E2eiNewAcmeOrder {
-    type Error = E2eIdentityError;
+    type Error = Error;
 
-    fn try_from(new_order: wire_e2e_identity::prelude::E2eiNewAcmeOrder) -> E2eIdentityResult<Self> {
+    fn try_from(new_order: wire_e2e_identity::prelude::E2eiNewAcmeOrder) -> Result<Self> {
         Ok(Self {
             authorizations: new_order.authorizations.iter().map(url::Url::to_string).collect(),
             delegate: serde_json::to_vec(&new_order.delegate)?,
@@ -63,16 +63,16 @@ impl TryFrom<wire_e2e_identity::prelude::E2eiNewAcmeOrder> for E2eiNewAcmeOrder 
 }
 
 impl TryFrom<E2eiNewAcmeOrder> for wire_e2e_identity::prelude::E2eiNewAcmeOrder {
-    type Error = E2eIdentityError;
+    type Error = Error;
 
-    fn try_from(new_order: E2eiNewAcmeOrder) -> E2eIdentityResult<Self> {
+    fn try_from(new_order: E2eiNewAcmeOrder) -> Result<Self> {
         let authorizations = new_order
             .authorizations
             .iter()
             .map(|a| a.parse())
             .collect::<Result<Vec<url::Url>, url::ParseError>>()?
             .try_into()
-            .map_err(|_| E2eIdentityError::ImplementationError)?;
+            .map_err(|_| Error::ImplementationError)?;
 
         Ok(Self {
             authorizations,
@@ -95,9 +95,9 @@ pub struct E2eiNewAcmeAuthz {
 }
 
 impl TryFrom<wire_e2e_identity::prelude::E2eiAcmeAuthorization> for E2eiNewAcmeAuthz {
-    type Error = E2eIdentityError;
+    type Error = Error;
 
-    fn try_from(authz: wire_e2e_identity::prelude::E2eiAcmeAuthorization) -> E2eIdentityResult<Self> {
+    fn try_from(authz: wire_e2e_identity::prelude::E2eiAcmeAuthorization) -> Result<Self> {
         Ok(match authz {
             wire_e2e_identity::prelude::E2eiAcmeAuthorization::User {
                 identifier,
@@ -118,9 +118,9 @@ impl TryFrom<wire_e2e_identity::prelude::E2eiAcmeAuthorization> for E2eiNewAcmeA
 }
 
 impl TryFrom<&E2eiNewAcmeAuthz> for wire_e2e_identity::prelude::E2eiAcmeAuthorization {
-    type Error = E2eIdentityError;
+    type Error = Error;
 
-    fn try_from(authz: &E2eiNewAcmeAuthz) -> E2eIdentityResult<Self> {
+    fn try_from(authz: &E2eiNewAcmeAuthz) -> Result<Self> {
         Ok(match &authz.keyauth {
             None => Self::Device {
                 identifier: authz.identifier.clone(),
@@ -151,9 +151,9 @@ pub struct E2eiAcmeChallenge {
 }
 
 impl TryFrom<wire_e2e_identity::prelude::E2eiAcmeChallenge> for E2eiAcmeChallenge {
-    type Error = E2eIdentityError;
+    type Error = Error;
 
-    fn try_from(chall: wire_e2e_identity::prelude::E2eiAcmeChallenge) -> E2eIdentityResult<Self> {
+    fn try_from(chall: wire_e2e_identity::prelude::E2eiAcmeChallenge) -> Result<Self> {
         Ok(Self {
             delegate: serde_json::to_vec(&chall.delegate)?,
             url: chall.url.to_string(),
@@ -163,9 +163,9 @@ impl TryFrom<wire_e2e_identity::prelude::E2eiAcmeChallenge> for E2eiAcmeChalleng
 }
 
 impl TryFrom<&E2eiAcmeChallenge> for wire_e2e_identity::prelude::E2eiAcmeChallenge {
-    type Error = E2eIdentityError;
+    type Error = Error;
 
-    fn try_from(chall: &E2eiAcmeChallenge) -> E2eIdentityResult<Self> {
+    fn try_from(chall: &E2eiAcmeChallenge) -> Result<Self> {
         Ok(Self {
             delegate: serde_json::from_slice(&chall.delegate[..])?,
             url: chall.url.parse()?,

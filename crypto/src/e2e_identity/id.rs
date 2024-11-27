@@ -1,4 +1,5 @@
-use crate::{prelude::ClientId, CryptoError, CryptoResult};
+use super::error::{Error, Result};
+use crate::prelude::ClientId;
 use base64::Engine;
 
 #[cfg(test)]
@@ -27,24 +28,24 @@ impl WireQualifiedClientId {
 
 /// e.g. from 'vUxwUxxaQCCVWc1795YZVA:4959bc6ab12f2846@wire.com'
 impl<'a> TryFrom<&'a [u8]> for WireQualifiedClientId {
-    type Error = CryptoError;
+    type Error = Error;
 
-    fn try_from(bytes: &'a [u8]) -> CryptoResult<Self> {
+    fn try_from(bytes: &'a [u8]) -> Result<Self> {
         const COLON: u8 = 58;
         let mut split = bytes.split(|b| b == &COLON);
-        let user_id = split.next().ok_or(CryptoError::InvalidClientId)?;
+        let user_id = split.next().ok_or(Error::InvalidClientId)?;
 
         let user_id = base64::prelude::BASE64_URL_SAFE_NO_PAD
             .decode(user_id)
-            .map_err(|_| CryptoError::InvalidClientId)?;
+            .map_err(|_| Error::InvalidClientId)?;
 
-        let user_id = uuid::Uuid::from_slice(&user_id).map_err(|_| CryptoError::InvalidClientId)?;
+        let user_id = uuid::Uuid::from_slice(&user_id).map_err(|_| Error::InvalidClientId)?;
         let mut buf = [0; uuid::fmt::Hyphenated::LENGTH];
         let user_id = user_id.hyphenated().encode_lower(&mut buf);
 
-        let rest = split.next().ok_or(CryptoError::InvalidClientId)?;
+        let rest = split.next().ok_or(Error::InvalidClientId)?;
         if split.next().is_some() {
-            return Err(CryptoError::InvalidClientId);
+            return Err(Error::InvalidClientId);
         }
 
         let client_id = [user_id.as_bytes(), &[COLON], rest].concat();
@@ -53,18 +54,18 @@ impl<'a> TryFrom<&'a [u8]> for WireQualifiedClientId {
 }
 
 impl std::str::FromStr for WireQualifiedClientId {
-    type Err = CryptoError;
+    type Err = Error;
 
-    fn from_str(s: &str) -> CryptoResult<Self> {
+    fn from_str(s: &str) -> Result<Self> {
         s.as_bytes().try_into()
     }
 }
 
 impl TryFrom<WireQualifiedClientId> for String {
-    type Error = CryptoError;
+    type Error = Error;
 
-    fn try_from(id: WireQualifiedClientId) -> CryptoResult<Self> {
-        Ok(String::from_utf8(id.to_vec())?)
+    fn try_from(id: WireQualifiedClientId) -> Result<Self> {
+        Ok(String::from_utf8(id.to_vec()).map_err(|_| Error::InvalidClientId)?)
     }
 }
 
@@ -103,21 +104,22 @@ impl QualifiedE2eiClientId {
 
 /// e.g. from 'bd4c7053-1c5a-4020-9559-cd7bf7961954:4959bc6ab12f2846@wire.com'
 impl<'a> TryFrom<&'a [u8]> for QualifiedE2eiClientId {
-    type Error = CryptoError;
+    type Error = Error;
 
-    fn try_from(bytes: &'a [u8]) -> CryptoResult<Self> {
+    fn try_from(bytes: &'a [u8]) -> Result<Self> {
         let mut split = bytes.split(|b| b == &COLON);
-        let user_id = split.next().ok_or(CryptoError::InvalidClientId)?;
+        let user_id = split.next().ok_or(Error::InvalidClientId)?;
 
-        let user_id = std::str::from_utf8(user_id)?
+        let user_id = std::str::from_utf8(user_id)
+            .map_err(|_| Error::InvalidClientId)?
             .parse::<uuid::Uuid>()
-            .map_err(|_| CryptoError::InvalidClientId)?;
+            .map_err(|_| Error::InvalidClientId)?;
 
         let user_id = base64::prelude::BASE64_URL_SAFE_NO_PAD.encode(user_id.as_bytes());
 
-        let rest = split.next().ok_or(CryptoError::InvalidClientId)?;
+        let rest = split.next().ok_or(Error::InvalidClientId)?;
         if split.next().is_some() {
-            return Err(CryptoError::InvalidClientId);
+            return Err(Error::InvalidClientId);
         }
 
         let client_id = [user_id.as_bytes(), &[COLON], rest].concat();
@@ -127,17 +129,17 @@ impl<'a> TryFrom<&'a [u8]> for QualifiedE2eiClientId {
 
 #[cfg(test)]
 impl std::str::FromStr for QualifiedE2eiClientId {
-    type Err = CryptoError;
+    type Err = Error;
 
-    fn from_str(s: &str) -> CryptoResult<Self> {
+    fn from_str(s: &str) -> Result<Self> {
         s.as_bytes().try_into()
     }
 }
 
 impl TryFrom<QualifiedE2eiClientId> for String {
-    type Error = CryptoError;
+    type Error = Error;
 
-    fn try_from(id: QualifiedE2eiClientId) -> CryptoResult<Self> {
-        Ok(String::from_utf8(id.to_vec())?)
+    fn try_from(id: QualifiedE2eiClientId) -> Result<Self> {
+        Ok(String::from_utf8(id.to_vec()).map_err(|_| Error::InvalidClientId)?)
     }
 }

@@ -32,7 +32,7 @@ use serde::{Deserialize, Serialize};
 use wire_e2e_identity::prelude::parse_json_jwk;
 
 use crate::context::CentralContext;
-use crate::prelude::{CryptoResult, E2eIdentityError, MlsCiphersuite};
+use crate::prelude::{CryptoResult, MlsCiphersuite};
 use crate::MlsError;
 
 /// Sets the config in OpenMls for the oldest possible epoch(past current) that a message can be decrypted
@@ -147,7 +147,7 @@ impl MlsConversationConfiguration {
     fn parse_external_sender(jwk: &[u8]) -> CryptoResult<ExternalSender> {
         let pk = parse_json_jwk(jwk)
             .map_err(wire_e2e_identity::prelude::E2eIdentityError::from)
-            .map_err(E2eIdentityError::from)?;
+            .map_err(crate::e2e_identity::error::Error::from)?;
         Ok(ExternalSender::new(
             pk.into(),
             Credential::new_basic(Self::WIRE_SERVER_IDENTITY.into()),
