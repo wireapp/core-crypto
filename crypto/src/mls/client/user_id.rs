@@ -11,7 +11,7 @@ use crate::{CryptoError, CryptoResult};
 pub struct UserId<'a>(&'a [u8]);
 
 impl UserId<'_> {
-    const USER_ID_DELIMITER: u8 = 58; // the char ':'
+    const USER_ID_DELIMITER: u8 = b':';
 }
 
 impl<'a> TryFrom<&'a str> for UserId<'a> {
