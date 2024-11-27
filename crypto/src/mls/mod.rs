@@ -256,7 +256,8 @@ impl MlsCentral {
 
     /// Checks if a given conversation id exists locally
     pub async fn conversation_exists(&self, id: &ConversationId) -> CryptoResult<bool> {
-        Ok(self.get_conversation(id).await?.is_some())
+        let result = self.get_conversation(id).await;
+        Ok(!matches!(result, Err(CryptoError::ConversationNotFound(_))))
     }
 
     /// Returns the epoch of a given conversation
@@ -265,13 +266,7 @@ impl MlsCentral {
     /// If the conversation can't be found
     #[cfg_attr(test, crate::idempotent)]
     pub async fn conversation_epoch(&self, id: &ConversationId) -> CryptoResult<u64> {
-        Ok(self
-            .get_conversation(id)
-            .await?
-            .ok_or_else(|| CryptoError::ConversationNotFound(id.clone()))?
-            .group
-            .epoch()
-            .as_u64())
+        Ok(self.get_conversation(id).await?.group.epoch().as_u64())
     }
 
     /// Returns the ciphersuite of a given conversation
@@ -280,11 +275,7 @@ impl MlsCentral {
     /// If the conversation can't be found
     #[cfg_attr(test, crate::idempotent)]
     pub async fn conversation_ciphersuite(&self, id: &ConversationId) -> CryptoResult<MlsCiphersuite> {
-        Ok(self
-            .get_conversation(id)
-            .await?
-            .ok_or_else(|| CryptoError::ConversationNotFound(id.clone()))?
-            .ciphersuite())
+        Ok(self.get_conversation(id).await?.ciphersuite())
     }
 
     /// Generates a random byte array of the specified size
