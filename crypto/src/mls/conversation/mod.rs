@@ -254,8 +254,10 @@ impl MlsConversation {
 }
 
 impl MlsCentral {
-    pub(crate) async fn get_conversation(&self, id: &ConversationId) -> CryptoResult<Option<MlsConversation>> {
-        GroupStore::fetch_from_keystore(id, &self.mls_backend.keystore(), None).await
+    pub(crate) async fn get_conversation(&self, id: &ConversationId) -> CryptoResult<MlsConversation> {
+        GroupStore::fetch_from_keystore(id, &self.mls_backend.keystore(), None)
+            .await?
+            .ok_or_else(|| CryptoError::ConversationNotFound(id.clone()))
     }
 }
 

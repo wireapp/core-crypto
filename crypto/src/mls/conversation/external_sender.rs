@@ -5,11 +5,7 @@ impl MlsCentral {
     /// Returns the raw public key of the single external sender present in this group.
     /// This should be used to initialize a subconversation
     pub async fn get_external_sender(&self, id: &ConversationId) -> CryptoResult<Vec<u8>> {
-        self.get_conversation(id)
-            .await?
-            .ok_or_else(|| CryptoError::ConversationNotFound(id.clone()))?
-            .get_external_sender()
-            .await
+        self.get_conversation(id).await?.get_external_sender().await
     }
 }
 
