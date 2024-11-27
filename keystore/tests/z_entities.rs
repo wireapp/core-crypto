@@ -15,7 +15,7 @@
 // along with this program. If not, see http://www.gnu.org/licenses/.
 
 #[cfg(target_family = "wasm")]
-use keystore_v_1_0_0::entities::{
+use core_crypto_keystore::keystore_v_1_0_0::entities::{
     E2eiAcmeCA as E2eiAcmeCAV1_0_0, E2eiCrl as E2eiCrlV1_0_0, E2eiEnrollment as E2eiEnrollmentV1_0_0,
     E2eiIntermediateCert as E2eiIntermediateCertV1_0_0, E2eiRefreshToken as E2eiRefreshTokenV1_0_0,
     Entity as EntityV1_0_0, MlsCredential as MlsCredentialV1_0_0, MlsEncryptionKeyPair as MlsEncryptionKeyPairV1_0_0,
@@ -90,7 +90,7 @@ macro_rules! test_migration_to_db_v1_for_entity {
             let _ = pretty_env_logger::try_init();
             let name = store_name();
 
-            let old_storage = keystore_v_1_0_0::Connection::open_with_key(&name, TEST_ENCRYPTION_KEY)
+            let old_storage = core_crypto_keystore::keystore_v_1_0_0::Connection::open_with_key(&name, TEST_ENCRYPTION_KEY)
                 .await
                 .unwrap();
             let old_record = <$old_entity>::random();

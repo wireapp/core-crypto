@@ -89,7 +89,8 @@ rand.workspace = true
 getrandom = { version = "0.2", features = ["js"] }
 fluvio-wasm-timer = "0.2"
 # Old keystore versions for idb migrations
-keystore-v-1-0-0 = { git = "https://github.com/wireapp/core-crypto", tag = "v1.0.0", package = "core-crypto-keystore" }
+rexie.workspace = true
+
 
 [dev-dependencies]
 serde = { version = "1.0", features = ["derive"] }
