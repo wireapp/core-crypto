@@ -27,7 +27,7 @@ use crate::UniffiCustomTypeConverter;
 pub use core_crypto::prelude::ConversationId;
 use core_crypto::{
     prelude::{
-        ClientIdentifier, CryptoError, E2eIdentityError, EntropySeed, KeyPackageIn, KeyPackageRef,
+        ClientIdentifier, CryptoError, EntropySeed, Error, KeyPackageIn, KeyPackageRef,
         MlsBufferedConversationDecryptMessage, MlsCentral, MlsCentralConfiguration, MlsCiphersuite, MlsCommitBundle,
         MlsConversationConfiguration, MlsConversationCreationMessage, MlsConversationDecryptMessage,
         MlsConversationInitBundle, MlsCustomConfiguration, MlsGroupInfoBundle, MlsProposalBundle, MlsRotateBundle,
@@ -223,8 +223,8 @@ impl From<CryptoError> for CoreCryptoError {
     }
 }
 
-impl From<E2eIdentityError> for CoreCryptoError {
-    fn from(e: E2eIdentityError) -> Self {
+impl From<Error> for CoreCryptoError {
+    fn from(e: Error) -> Self {
         Self::E2eiError(e.to_string())
     }
 }

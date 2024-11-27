@@ -1,7 +1,8 @@
 use openmls_traits::{random::OpenMlsRand, OpenMlsCryptoProvider};
 
+use super::error::Result;
 use crate::context::CentralContext;
-use crate::prelude::{CryptoError, CryptoResult, E2eiEnrollment};
+use crate::prelude::{CryptoError, E2eiEnrollment};
 use core_crypto_keystore::CryptoKeystoreMls;
 use mls_crypto_provider::MlsCryptoProvider;
 
@@ -10,7 +11,7 @@ use mls_crypto_provider::MlsCryptoProvider;
 pub(crate) type EnrollmentHandle = Vec<u8>;
 
 impl E2eiEnrollment {
-    pub(crate) async fn stash(self, backend: &MlsCryptoProvider) -> CryptoResult<EnrollmentHandle> {
+    pub(crate) async fn stash(self, backend: &MlsCryptoProvider) -> Result<EnrollmentHandle> {
         // should be enough to prevent collisions
         const HANDLE_SIZE: usize = 32;
 
@@ -24,7 +25,7 @@ impl E2eiEnrollment {
         Ok(handle)
     }
 
-    pub(crate) async fn stash_pop(backend: &MlsCryptoProvider, handle: EnrollmentHandle) -> CryptoResult<Self> {
+    pub(crate) async fn stash_pop(backend: &MlsCryptoProvider, handle: EnrollmentHandle) -> Result<Self> {
         let content = backend
             .key_store()
             .pop_e2ei_enrollment(&handle)
@@ -43,7 +44,7 @@ impl CentralContext {
     ///
     /// # Returns
     /// A handle for retrieving the enrollment later on
-    pub async fn e2ei_enrollment_stash(&self, enrollment: E2eiEnrollment) -> CryptoResult<EnrollmentHandle> {
+    pub async fn e2ei_enrollment_stash(&self, enrollment: E2eiEnrollment) -> Result<EnrollmentHandle> {
         enrollment.stash(&self.mls_provider().await?).await
     }
 
@@ -51,7 +52,7 @@ impl CentralContext {
     ///
     /// # Arguments
     /// * `handle` - returned by [CentralContext::e2ei_enrollment_stash]
-    pub async fn e2ei_enrollment_stash_pop(&self, handle: EnrollmentHandle) -> CryptoResult<E2eiEnrollment> {
+    pub async fn e2ei_enrollment_stash_pop(&self, handle: EnrollmentHandle) -> Result<E2eiEnrollment> {
         E2eiEnrollment::stash_pop(&self.mls_provider().await?, handle).await
     }
 }
