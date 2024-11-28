@@ -1,8 +1,9 @@
 //! Utility for clients to get the current state of E2EI when the app resumes
 
-use super::error::Result;
+use super::error::{Error, Result};
 use crate::context::CentralContext;
-use crate::prelude::{Client, CryptoError, MlsCentral, MlsCredentialType};
+use crate::mls;
+use crate::prelude::{Client, MlsCentral, MlsCredentialType};
 use openmls_traits::types::SignatureScheme;
 
 impl CentralContext {
@@ -26,12 +27,15 @@ impl Client {
             .find_most_recent_credential_bundle(signature_scheme, MlsCredentialType::X509)
             .await;
         match x509_result {
-            Err(CryptoError::CredentialNotFound(MlsCredentialType::X509)) => {
+            Err(mls::client::error::Error::CredentialNotFound(MlsCredentialType::X509)) => {
                 self.find_most_recent_credential_bundle(signature_scheme, MlsCredentialType::Basic)
-                    .await?;
+                    .await
+                    .map_err(Error::mls_client(
+                        "finding most recent basic credential bundle after searching for x509",
+                    ))?;
                 Ok(false)
             }
-            Err(e) => Err(e.into()),
+            Err(e) => Err(Error::mls_client("finding most recent x509 credential bundle")(e)),
             Ok(_) => Ok(true),
         }
     }

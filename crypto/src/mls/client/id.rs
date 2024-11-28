@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see http://www.gnu.org/licenses/.
 
-use crate::CryptoError;
+use super::error::Error;
 
 /// A Client identifier
 ///
@@ -69,7 +69,7 @@ impl std::fmt::Display for ClientId {
 }
 
 impl std::str::FromStr for ClientId {
-    type Err = CryptoError;
+    type Err = Error;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         Ok(Self(

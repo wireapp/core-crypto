@@ -251,7 +251,7 @@ impl MlsCentral {
 
     /// Returns the client's id as a buffer
     pub async fn client_id(&self) -> CryptoResult<ClientId> {
-        self.mls_client.id().await
+        self.mls_client.id().await.map_err(Into::into)
     }
 
     /// Checks if a given conversation id exists locally
@@ -344,6 +344,7 @@ impl CentralContext {
             .await?
             .generate_raw_keypairs(&ciphersuites, &self.mls_provider().await?)
             .await
+            .map_err(Into::into)
     }
 
     /// Updates the current temporary Client ID with the newly provided one. This is the second step in the externally-generated clients process
@@ -360,6 +361,7 @@ impl CentralContext {
             .await?
             .init_with_external_client_id(client_id, tmp_client_ids, &ciphersuites, &self.mls_provider().await?)
             .await
+            .map_err(Into::into)
     }
 
     /// see [MlsCentral::client_public_key]
@@ -378,7 +380,7 @@ impl CentralContext {
 
     /// see [MlsCentral::client_id]
     pub async fn client_id(&self) -> CryptoResult<ClientId> {
-        self.mls_client().await?.id().await
+        self.mls_client().await?.id().await.map_err(Into::into)
     }
 
     /// Create a new empty conversation
