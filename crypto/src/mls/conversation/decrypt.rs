@@ -8,7 +8,7 @@
 //! | 0 pend. Proposal  | ✅              | ✅              |
 //! | 1+ pend. Proposal | ✅              | ✅              |
 
-use log::debug;
+use log::{debug, info};
 use openmls::prelude::StageCommitError;
 use openmls::{
     framing::errors::{MessageDecryptionError, SecretTreeError},
@@ -174,7 +174,7 @@ impl MlsConversation {
                 let crl_dps = extract_crl_uris_from_proposals(&[proposal.proposal().clone()])?;
                 let crl_new_distribution_points = get_new_crl_distribution_points(backend, crl_dps).await?;
 
-                debug!(
+                info!(
                     group_id = Obfuscated::from(&self.id),
                     sender = Obfuscated::from(proposal.sender()),
                     proposals = Obfuscated::from(&proposal.proposal);
@@ -257,7 +257,7 @@ impl MlsConversation {
                     None
                 };
 
-                debug!(
+                info!(
                     group_id = Obfuscated::from(&self.id),
                     epoch = staged_commit.staged_context().epoch().as_u64(),
                     proposals:? = staged_commit.queued_proposals().map(Obfuscated::from).collect::<Vec<_>>();
@@ -280,7 +280,7 @@ impl MlsConversation {
                 self.validate_external_proposal(&proposal, parent_conv, callbacks)
                     .await?;
 
-                debug!(
+                info!(
                     group_id = Obfuscated::from(&self.id),
                     sender = Obfuscated::from(proposal.sender());
                     "Received external join proposal"
