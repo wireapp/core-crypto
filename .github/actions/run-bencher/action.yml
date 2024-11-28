@@ -1,0 +1,72 @@
+name: 'Run Bencher'
+description: 'Run Bencher'
+inputs:
+  bencher-project:
+    description: 'Bencher project'
+    required: false
+    default: 'core-crypto-mmbtki3h'
+  bencher-api-token:
+    description: 'Bencher API token'
+    required: true
+  github-token:
+    description: 'GitHub token'
+    required: true
+  directory:
+    description: 'Directory'
+    required: false
+  adapter:
+    description: 'Bencher adapter'
+    required: true
+  bench-command:
+    description: 'Bench command'
+    required: false
+  bench-results-file-name:
+    description: 'Bench results file name'
+    required: false
+    default: ''
+permissions:
+  pull-requests: write
+runs:
+  using: "composite"
+  steps:
+    - name: Set file command
+      run: |
+        if [ "${{ inputs.bench-results-file-name }}" != "" ]; then
+            echo "FILE_COMMAND=--file ${{ inputs.bench-results-file-name }}" >> $GITHUB_ENV
+        fi
+      shell: bash
+    - name: Install bencher
+      uses: bencherdev/bencher@main
+    - name: Run benchmarks on PR
+      if: github.event.pull_request.head.repo.full_name == github.repository && github.event_name == 'pull_request'
+      run: |
+        bencher run \
+        --token ${{ inputs.bencher-api-token }} \
+        --project ${{ inputs.bencher-project }} \
+        --branch '${{ github.head_ref }}' \
+        --branch-start-point '${{ github.base_ref }}' \
+        --branch-start-point-hash '${{ github.event.pull_request.base.sha }}' \
+        --start-point-clone-thresholds \
+        --testbed ubuntu-latest \
+        --err \
+        ${FILE_COMMAND:+$FILE_COMMAND} \
+        --github-actions '${{ inputs.github-token }}' \
+        --ci-id ${{ github.event.number }} \
+        --adapter ${{ inputs.adapter }} \
+        ${{ inputs.bench-command }}
+      shell: bash
+      working-directory: ${{ inputs.directory || github.workspace }}
+    - name: Run benchmarks on base branch
+      if: github.event_name == 'push' && github.ref_name == 'main'
+      run: |
+        bencher run \
+        --token ${{ inputs.bencher-api-token }} \
+        --project ${{ inputs.bencher-project }} \
+        --branch main \
+        --testbed ubuntu-latest \
+        --err \
+        ${FILE_COMMAND:+$FILE_COMMAND} \
+        --adapter ${{ inputs.adapter }} \
+        ${{ inputs.bench-command }}
+      shell: bash
+      working-directory: ${{ inputs.directory || github.workspace }}
