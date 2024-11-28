@@ -697,5 +697,6 @@ impl Client {
             .await?;
         self.generate_one_keypackage_from_credential_bundle(backend, cs, &cb)
             .await
+            .map_err(Into::into)
     }
 }

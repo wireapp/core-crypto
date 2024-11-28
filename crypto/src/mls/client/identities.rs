@@ -1,7 +1,10 @@
-use crate::mls::client::ClientInner;
+use crate::mls::client::{
+    error::{Error, Result},
+    ClientInner,
+};
 use crate::{
     mls::credential::{typ::MlsCredentialType, CredentialBundle},
-    prelude::{Client, CryptoError, CryptoResult, MlsConversation},
+    prelude::{Client, CryptoError, MlsConversation},
 };
 use openmls::prelude::{Credential, SignaturePublicKey};
 use openmls_traits::types::SignatureScheme;
@@ -53,11 +56,7 @@ impl ClientIdentities {
 
     /// Having `cb` requiring ownership kinda forces the caller to first persist it in the keystore and
     /// only then store it in this in-memory map
-    pub(crate) async fn push_credential_bundle(
-        &mut self,
-        sc: SignatureScheme,
-        cb: CredentialBundle,
-    ) -> CryptoResult<()> {
+    pub(crate) async fn push_credential_bundle(&mut self, sc: SignatureScheme, cb: CredentialBundle) -> Result<()> {
         // this would mean we have messed something up and that we do no init this CredentialBundle from a keypair just inserted in the keystore
         debug_assert_ne!(cb.created_at, 0);
 
@@ -65,7 +64,7 @@ impl ClientIdentities {
             Some(cbs) => {
                 let already_exists = !cbs.insert(Arc::new(cb));
                 if already_exists {
-                    return Err(CryptoError::CredentialBundleConflict);
+                    return Err(Error::CredentialBundleConflict);
                 }
             }
             None => {
@@ -75,7 +74,7 @@ impl ClientIdentities {
         Ok(())
     }
 
-    pub(crate) async fn remove(&mut self, credential: &Credential) -> CryptoResult<()> {
+    pub(crate) async fn remove(&mut self, credential: &Credential) -> Result<()> {
         self.0.iter_mut().for_each(|(_, cbs)| {
             cbs.retain(|c| c.credential() != credential);
         });
@@ -88,7 +87,7 @@ impl ClientIdentities {
 }
 
 impl MlsConversation {
-    pub(crate) async fn find_current_credential_bundle(&self, client: &Client) -> CryptoResult<Arc<CredentialBundle>> {
+    pub(crate) async fn find_current_credential_bundle(&self, client: &Client) -> Result<Arc<CredentialBundle>> {
         let own_leaf = self.group.own_leaf().ok_or(CryptoError::InternalMlsError)?;
         let sc = self.ciphersuite().signature_algorithm();
         let ct = self.own_credential_type()?;
@@ -98,10 +97,7 @@ impl MlsConversation {
             .await
     }
 
-    pub(crate) async fn find_most_recent_credential_bundle(
-        &self,
-        client: &Client,
-    ) -> CryptoResult<Arc<CredentialBundle>> {
+    pub(crate) async fn find_most_recent_credential_bundle(&self, client: &Client) -> Result<Arc<CredentialBundle>> {
         let sc = self.ciphersuite().signature_algorithm();
         let ct = self.own_credential_type()?;
 
@@ -114,13 +110,13 @@ impl Client {
         &self,
         sc: SignatureScheme,
         ct: MlsCredentialType,
-    ) -> CryptoResult<Arc<CredentialBundle>> {
+    ) -> Result<Arc<CredentialBundle>> {
         match self.state.read().await.deref() {
-            None => Err(CryptoError::MlsNotInitialized),
+            None => Err(Error::MlsNotInitialized),
             Some(ClientInner { identities, .. }) => identities
                 .find_most_recent_credential_bundle(sc, ct)
                 .await
-                .ok_or(CryptoError::CredentialNotFound(ct)),
+                .ok_or(Error::CredentialNotFound(ct)),
         }
     }
 
@@ -129,20 +125,20 @@ impl Client {
         sc: SignatureScheme,
         ct: MlsCredentialType,
         pk: &SignaturePublicKey,
-    ) -> CryptoResult<Arc<CredentialBundle>> {
+    ) -> Result<Arc<CredentialBundle>> {
         match self.state.read().await.deref() {
-            None => Err(CryptoError::MlsNotInitialized),
+            None => Err(Error::MlsNotInitialized),
             Some(ClientInner { identities, .. }) => identities
                 .find_credential_bundle_by_public_key(sc, ct, pk)
                 .await
-                .ok_or(CryptoError::CredentialNotFound(ct)),
+                .ok_or(Error::CredentialNotFound(ct)),
         }
     }
 
     #[cfg(test)]
-    pub(crate) async fn identities_count(&self) -> CryptoResult<usize> {
+    pub(crate) async fn identities_count(&self) -> Result<usize> {
         match self.state.read().await.deref() {
-            None => Err(CryptoError::MlsNotInitialized),
+            None => Err(Error::MlsNotInitialized),
             Some(ClientInner { identities, .. }) => Ok(identities.iter().count()),
         }
     }
@@ -237,6 +233,9 @@ mod tests {
         #[apply(all_cred_cipher)]
         #[wasm_bindgen_test]
         async fn pushing_duplicates_should_fail(case: TestCase) {
+            use crate::mls::client::error::Error;
+            use crate::CryptoError;
+
             run_test_with_client_ids(case.clone(), ["alice"], move |[mut central]| {
                 Box::pin(async move {
                     let cert = central.get_intermediate_ca().cloned();
@@ -250,10 +249,7 @@ mod tests {
                             cb,
                         )
                         .await;
-                    assert!(matches!(
-                        push.unwrap_err(),
-                        crate::CryptoError::CredentialBundleConflict
-                    ));
+                    assert!(matches!(push.unwrap_err(), Error::CryptoError(boxed) if matches!(*boxed, CryptoError::CredentialBundleConflict)));
                 })
             })
             .await

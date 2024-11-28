@@ -27,12 +27,13 @@ use core_crypto_keystore::{
 use mls_crypto_provider::{CryptoKeystore, MlsCryptoProvider};
 
 use crate::context::CentralContext;
-use crate::mls::client::ClientInner;
+use crate::mls::client::{
+    error::{Error, Result},
+    ClientInner,
+};
 use crate::{
     mls::credential::CredentialBundle,
-    prelude::{
-        Client, CryptoError, CryptoResult, MlsCiphersuite, MlsConversationConfiguration, MlsCredentialType, MlsError,
-    },
+    prelude::{Client, MlsCiphersuite, MlsConversationConfiguration, MlsCredentialType},
 };
 
 /// Default number of KeyPackages a client generates the first time it's created
@@ -58,9 +59,9 @@ impl Client {
         backend: &MlsCryptoProvider,
         cs: MlsCiphersuite,
         cb: &CredentialBundle,
-    ) -> CryptoResult<KeyPackage> {
+    ) -> Result<KeyPackage> {
         match self.state.read().await.deref() {
-            None => Err(CryptoError::MlsNotInitialized),
+            None => Err(Error::MlsNotInitialized),
             Some(ClientInner {
                 keypackage_lifetime, ..
             }) => {
@@ -80,7 +81,7 @@ impl Client {
                         },
                     )
                     .await
-                    .map_err(MlsError::from)?;
+                    .map_err(Error::keystore("building keypackage"))?;
 
                 Ok(keypackage)
             }
@@ -103,7 +104,7 @@ impl Client {
         ciphersuite: MlsCiphersuite,
         credential_type: MlsCredentialType,
         backend: &MlsCryptoProvider,
-    ) -> CryptoResult<Vec<KeyPackage>> {
+    ) -> Result<Vec<KeyPackage>> {
         // Auto-prune expired keypackages on request
         self.prune_keypackages(backend, &[]).await?;
         use core_crypto_keystore::CryptoKeystoreMls as _;
@@ -111,7 +112,7 @@ impl Client {
         let mut existing_kps = backend
             .key_store()
             .mls_fetch_keypackages::<KeyPackage>(count as u32)
-            .await?
+            .await.map_err(Error::keystore("fetching mls keypackages"))?
             .into_iter()
             // TODO: do this filtering in SQL when the schema is updated. Tracking issue: WPB-9599
             .filter(|kp|
@@ -142,7 +143,7 @@ impl Client {
         ciphersuite: MlsCiphersuite,
         cb: &CredentialBundle,
         count: usize,
-    ) -> CryptoResult<Vec<KeyPackage>> {
+    ) -> Result<Vec<KeyPackage>> {
         let mut kps = Vec::with_capacity(count);
 
         for _ in 0..count {
@@ -161,10 +162,15 @@ impl Client {
         backend: &MlsCryptoProvider,
         ciphersuite: MlsCiphersuite,
         credential_type: MlsCredentialType,
-    ) -> CryptoResult<usize> {
-        let kps: Vec<MlsKeyPackage> = backend.key_store().find_all(EntityFindParams::default()).await?;
+    ) -> Result<usize> {
+        let kps: Vec<MlsKeyPackage> = backend
+            .key_store()
+            .find_all(EntityFindParams::default())
+            .await
+            .map_err(Error::keystore("finding all key stores"))?;
 
-        let valid_count = kps
+        let mut valid_count = 0;
+        for kp in kps
             .into_iter()
             .map(|kp| core_crypto_keystore::deser::<KeyPackage>(&kp.keypackage))
             // TODO: do this filtering in SQL when the schema is updated. Tracking issue: WPB-9599
@@ -173,12 +179,12 @@ impl Client {
                     .map(|b| b.ciphersuite() == ciphersuite.0 && MlsCredentialType::from(b.leaf_node().credential().credential_type()) == credential_type)
                     .unwrap_or_default()
             })
-            .try_fold(0usize, |mut valid_count, kp| {
-                if !Self::is_mls_keypackage_expired(&kp?) {
-                    valid_count += 1;
-                }
-                CryptoResult::Ok(valid_count)
-            })?;
+        {
+            let kp = kp.map_err(Error::keystore("counting valid keypackages"))?;
+            if !Self::is_mls_keypackage_expired(&kp) {
+                valid_count += 1;
+            }
+        }
 
         Ok(valid_count)
     }
@@ -198,7 +204,7 @@ impl Client {
     /// Warning: Despite this API being public, the caller should know what they're doing.
     /// Provided KeypackageRefs **will** be purged regardless of their expiration state, so please be wary of what you are doing if you directly call this API.
     /// This could result in still valid, uploaded keypackages being pruned from the system and thus being impossible to find when referenced in a future Welcome message.
-    pub async fn prune_keypackages(&self, backend: &MlsCryptoProvider, refs: &[KeyPackageRef]) -> CryptoResult<()> {
+    pub async fn prune_keypackages(&self, backend: &MlsCryptoProvider, refs: &[KeyPackageRef]) -> Result<()> {
         let keystore = backend.keystore();
         let kps = self.find_all_keypackages(&keystore).await?;
         let _ = self._prune_keypackages(&kps, &keystore, refs).await?;
@@ -209,9 +215,9 @@ impl Client {
         &mut self,
         backend: &MlsCryptoProvider,
         refs: &[KeyPackageRef],
-    ) -> CryptoResult<()> {
+    ) -> Result<()> {
         match self.state.write().await.deref_mut() {
-            None => Err(CryptoError::MlsNotInitialized),
+            None => Err(Error::MlsNotInitialized),
             Some(ClientInner { identities, .. }) => {
                 let keystore = backend.key_store();
                 let kps = self.find_all_keypackages(keystore).await?;
@@ -224,8 +230,8 @@ impl Client {
                         .leaf_node()
                         .credential()
                         .tls_serialize_detached()
-                        .map_err(MlsError::from)?;
-                    let kp_ref = kp.hash_ref(backend.crypto()).map_err(MlsError::from)?;
+                        .map_err(Error::tls_serialize("keypackage"))?;
+                    let kp_ref = kp.hash_ref(backend.crypto()).map_err(Error::ComputeKeypackageHashref)?;
                     grouped_kps
                         .entry(cred)
                         .and_modify(|kprfs| kprfs.push(kp_ref.clone()))
@@ -237,9 +243,13 @@ impl Client {
                     let all_to_delete = kps.iter().all(|kpr| kp_to_delete.contains(&kpr.as_slice()));
                     if all_to_delete {
                         // then delete this Credential
-                        backend.keystore().cred_delete_by_credential(credential.clone()).await?;
-                        let credential =
-                            Credential::tls_deserialize(&mut credential.as_slice()).map_err(MlsError::from)?;
+                        backend
+                            .keystore()
+                            .cred_delete_by_credential(credential.clone())
+                            .await
+                            .map_err(Error::keystore("deleting credential"))?;
+                        let credential = Credential::tls_deserialize(&mut credential.as_slice())
+                            .map_err(Error::tls_deserialize("credential"))?;
                         identities.remove(&credential).await?;
                     }
                 }
@@ -257,7 +267,7 @@ impl Client {
         kps: &'a [(MlsKeyPackage, KeyPackage)],
         keystore: &CryptoKeystore,
         refs: &[KeyPackageRef],
-    ) -> Result<Vec<&'a [u8]>, CryptoError> {
+    ) -> Result<Vec<&'a [u8]>, Error> {
         let kp_to_delete: Vec<_> = kps
             .iter()
             .filter_map(|(store_kp, kp)| {
@@ -275,13 +285,18 @@ impl Client {
 
         for (kp, kp_ref) in &kp_to_delete {
             // TODO: maybe rewrite this to optimize it. But honestly it's called so rarely and on a so tiny amount of data. Tacking issue: WPB-9600
-            keystore.remove::<MlsKeyPackage, &[u8]>(kp_ref.as_slice()).await?;
+            keystore
+                .remove::<MlsKeyPackage, &[u8]>(kp_ref.as_slice())
+                .await
+                .map_err(Error::keystore("removing key package from keystore"))?;
             keystore
                 .remove::<MlsHpkePrivateKey, &[u8]>(kp.hpke_init_key().as_slice())
-                .await?;
+                .await
+                .map_err(Error::keystore("removing private key from keystore"))?;
             keystore
                 .remove::<MlsEncryptionKeyPair, &[u8]>(kp.leaf_node().encryption_key().as_slice())
-                .await?;
+                .await
+                .map_err(Error::keystore("removing encryption keypair from keystore"))?;
         }
 
         let kp_to_delete = kp_to_delete
@@ -292,14 +307,20 @@ impl Client {
         Ok(kp_to_delete)
     }
 
-    async fn find_all_keypackages(&self, keystore: &CryptoKeystore) -> CryptoResult<Vec<(MlsKeyPackage, KeyPackage)>> {
-        let kps: Vec<MlsKeyPackage> = keystore.find_all(EntityFindParams::default()).await?;
+    async fn find_all_keypackages(&self, keystore: &CryptoKeystore) -> Result<Vec<(MlsKeyPackage, KeyPackage)>> {
+        let kps: Vec<MlsKeyPackage> = keystore
+            .find_all(EntityFindParams::default())
+            .await
+            .map_err(Error::keystore("finding all keypackages"))?;
 
-        let kps = kps.into_iter().try_fold(vec![], |mut acc, raw_kp| {
-            let kp = core_crypto_keystore::deser::<KeyPackage>(&raw_kp.keypackage)?;
-            acc.push((raw_kp, kp));
-            CryptoResult::Ok(acc)
-        })?;
+        let kps = kps
+            .into_iter()
+            .map(|raw_kp| -> Result<_> {
+                let kp = core_crypto_keystore::deser::<KeyPackage>(&raw_kp.keypackage)
+                    .map_err(Error::keystore("deserializing keypackage"))?;
+                Ok((raw_kp, kp))
+            })
+            .collect::<Result<Vec<_>, _>>()?;
 
         Ok(kps)
     }
@@ -307,10 +328,10 @@ impl Client {
     /// Allows to set the current default keypackage lifetime extension duration.
     /// It will be embedded in the [openmls::key_packages::KeyPackage]'s [openmls::extensions::LifetimeExtension]
     #[cfg(test)]
-    pub async fn set_keypackage_lifetime(&self, duration: std::time::Duration) -> CryptoResult<()> {
+    pub async fn set_keypackage_lifetime(&self, duration: std::time::Duration) -> Result<()> {
         use std::ops::DerefMut;
         match self.state.write().await.deref_mut() {
-            None => Err(CryptoError::MlsNotInitialized),
+            None => Err(Error::MlsNotInitialized),
             Some(ClientInner {
                 ref mut keypackage_lifetime,
                 ..
@@ -341,7 +362,7 @@ impl CentralContext {
         ciphersuite: MlsCiphersuite,
         credential_type: MlsCredentialType,
         amount_requested: usize,
-    ) -> CryptoResult<Vec<KeyPackage>> {
+    ) -> Result<Vec<KeyPackage>> {
         let client = self.mls_client().await?;
         client
             .request_key_packages(
@@ -359,7 +380,7 @@ impl CentralContext {
         &self,
         ciphersuite: MlsCiphersuite,
         credential_type: MlsCredentialType,
-    ) -> CryptoResult<usize> {
+    ) -> Result<usize> {
         let client = self.mls_client().await?;
         client
             .valid_keypackages_count(&self.mls_provider().await?, ciphersuite, credential_type)
@@ -369,9 +390,9 @@ impl CentralContext {
     /// Prunes local KeyPackages after making sure they also have been deleted on the backend side
     /// You should only use this after [CentralContext::e2ei_rotate_all]
     #[cfg_attr(test, crate::dispotent)]
-    pub async fn delete_keypackages(&self, refs: &[KeyPackageRef]) -> CryptoResult<()> {
+    pub async fn delete_keypackages(&self, refs: &[KeyPackageRef]) -> Result<()> {
         if refs.is_empty() {
-            return Err(CryptoError::ConsumerError);
+            return Err(Error::EmptyKeypackageList);
         }
         let mut client = self.mls_client().await?;
         client
