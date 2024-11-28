@@ -1142,26 +1142,6 @@ impl CoreCrypto {
         Ok(())
     }
 
-    /// See [core_crypto::mls::MlsCentral::close]
-    pub async fn unload(self: std::sync::Arc<Self>) -> CoreCryptoResult<()> {
-        if let Some(cc) = std::sync::Arc::into_inner(self) {
-            cc.central.take().close().await?;
-            Ok(())
-        } else {
-            Err(CryptoError::LockPoisonError.into())
-        }
-    }
-
-    /// See [core_crypto::mls::MlsCentral::wipe]
-    pub async fn wipe(self: std::sync::Arc<Self>) -> CoreCryptoResult<()> {
-        if let Some(cc) = std::sync::Arc::into_inner(self) {
-            cc.central.take().wipe().await?;
-            Ok(())
-        } else {
-            Err(CryptoError::LockPoisonError.into())
-        }
-    }
-
     /// See [core_crypto::mls::MlsCentral::provide_transport]
     pub async fn provide_transport(&self, callbacks: Arc<dyn MlsTransport>) -> CoreCryptoResult<()> {
         self.central

@@ -126,14 +126,6 @@ class CoreCrypto(private val cc: com.wire.crypto.uniffi.CoreCrypto) {
         cc.close()
     }
 
-    /**
-     * Wipes all in-memory and persisted data associated with this [CoreCrypto] instance.
-     *
-     * * **CAUTION**: This {@link CoreCrypto} instance won't be usable after a call to this method, but there's no way to express this requirement in Kotlin, so you'll get errors instead!
-     */
-    suspend fun wipe() {
-        cc.wipe()
-    }
 }
 
 
