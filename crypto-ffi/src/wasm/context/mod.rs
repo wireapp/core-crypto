@@ -418,7 +418,7 @@ impl CoreCryptoContext {
                     .iter()
                     .map(|kp| {
                         KeyPackageIn::tls_deserialize(&mut kp.to_vec().as_slice())
-                            .map_err(|e| CoreCryptoError::from(crate::MlsError::Other))
+                            .map_err(|e| CoreCryptoError::from(crate::MlsError::Other(e.to_string())))
                     })
                     .collect::<CoreCryptoResult<Vec<_>>>()?;
 
