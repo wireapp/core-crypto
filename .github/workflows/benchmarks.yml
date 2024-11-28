@@ -6,39 +6,61 @@ on:
   pull_request:
 
 jobs:
-  benchmark_with_bencher:
-    name: Benchmark with Bencher
+  benchmarks_with_bencher:
+    name: Rust Benchmarks with Bencher
     permissions:
       pull-requests: write
     runs-on: ubuntu-latest
-    env:
-      BENCHER_PROJECT: core-crypto-mmbtki3h
-      BENCHER_API_TOKEN: ${{ secrets.BENCHER_API_TOKEN }}
-      BENCH_PARAMS: "--bench commit --bench encryption --bench key_package --bench create_group --bench mls_proteus -- --quick"
+    strategy:
+      matrix:
+        rust_bench: [ "commit", "encryption", "key_package", "create_group", "mls_proteus", "transaction" ]
     steps:
       - uses: actions/checkout@v4
       - uses: actions-rust-lang/setup-rust-toolchain@v1  # this implicitly caches Rust tools and build artifacts
-      - name: Install bencher
-        uses: bencherdev/bencher@main
-      - name: Run benchmarks on PR
-        if: github.event.pull_request.head.repo.full_name == github.repository && github.event_name == 'pull_request'
+      - uses: actions/checkout@v1
+      - name: Run bencher CLI
+        uses: ./.github/actions/run-bencher
+        with:
+          bencher-api-token: ${{ secrets.BENCHER_API_TOKEN }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          adapter: rust_criterion
+          bench-command: cargo bench --bench ${{ matrix.rust_bench }} -- --quick
+
+  web_benchmarks_with_bencher:
+    name: Web Benchmarks with Bencher
+    permissions:
+      pull-requests: write
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions-rust-lang/setup-rust-toolchain@v1  # this implicitly caches Rust tools and build artifacts
+      - name: Setup bun (web)
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+      - name: Install wasm-pack (web)
+        uses: taiki-e/install-action@v2
+        with:
+          tool: wasm-pack
+      - name: Setup cargo-make (web)
+        uses: davidB/rust-cargo-make@v1
+      - name: Build & test WASM / JS package (web)
         run: |
-          bencher run \
-          --branch '${{ github.head_ref }}' \
-          --branch-start-point '${{ github.base_ref }}' \
-          --branch-start-point-hash '${{ github.event.pull_request.base.sha }}' \
-          --start-point-clone-thresholds \
-          --testbed ubuntu-latest \
-          --err \
-          --github-actions '${{ secrets.GITHUB_TOKEN }}' \
-          --adapter rust_criterion \
-          "cargo bench ${{ env.BENCH_PARAMS }}"
-      - name: Run benchmarks on base branch
-        if: github.event_name == 'push' && github.ref_name == 'main'
-        run: |
-          bencher run \
-          --branch main \
-          --testbed ubuntu-latest \
-          --err \
-          --adapter rust_criterion \
-          "cargo bench ${{ env.BENCH_PARAMS }}"
+          cd crypto-ffi
+          bun install
+          cargo make wasm
+          bun run bench
+      - uses: actions/checkout@v1
+        with:
+          # Keep result file
+          clean: 'false'
+      - name: Run bencher CLI
+        uses: ./.github/actions/run-bencher
+        with:
+          bencher-api-token: ${{ secrets.BENCHER_API_TOKEN }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          directory: ${{ github.workspace }}/crypto-ffi
+          adapter: json
+          # No bench command, as we run the bench before calling bencher CLI.
+          bench-command:
+          bench-results-file-name: web_benchmark_results.json
