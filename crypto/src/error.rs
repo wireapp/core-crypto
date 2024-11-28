@@ -246,6 +246,9 @@ pub enum CryptoError {
     /// Invalid Context. This context has been finished and can no longer be used.
     #[error("This context has already been finished and can no longer be used.")]
     InvalidContext,
+    /// Something happened in the MLS client code
+    #[error(transparent)]
+    MlsClient(#[from] crate::mls::client::error::Error),
 }
 
 impl From<MlsError> for CryptoError {

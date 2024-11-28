@@ -149,7 +149,8 @@ impl CentralContext {
                 cs.signature_algorithm(),
                 cert_bundle,
             )
-            .await?;
+            .await
+            .map_err(Error::mls_client("saving new x509 credential bundle"))?;
 
         let commits = self.e2ei_update_all(client, &new_cb).await?;
 
@@ -157,7 +158,8 @@ impl CentralContext {
 
         let new_key_packages = client
             .generate_new_keypackages(&self.mls_provider().await?, cs, &new_cb, new_key_packages_count)
-            .await?;
+            .await
+            .map_err(Error::mls_client("generating new keypackages"))?;
 
         Ok(MlsRotateBundle {
             commits,

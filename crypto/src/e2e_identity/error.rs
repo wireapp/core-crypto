@@ -75,6 +75,15 @@ pub enum Error {
     /// Serializing key package for TLS
     #[error("Serializing key package for TLS")]
     TlsSerializingKeyPackage(#[from] tls_codec::Error),
+    /// Something in the MLS client went wrong
+    #[error("{context}")]
+    MlsClient {
+        /// What was happening when the error was thrown
+        context: &'static str,
+        /// The inner error which was produced
+        #[source]
+        source: crate::mls::client::error::Error,
+    },
     /// Compatibility wrapper
     ///
     /// This should be removed before merging this branch, but it allows an easier migration path to module-specific errors.
@@ -86,5 +95,11 @@ pub enum Error {
 impl From<crate::CryptoError> for Error {
     fn from(value: crate::CryptoError) -> Self {
         Self::CryptoError(Box::new(value))
+    }
+}
+
+impl Error {
+    pub(crate) fn mls_client(context: &'static str) -> impl FnOnce(crate::mls::client::error::Error) -> Self {
+        move |source| Self::MlsClient { context, source }
     }
 }
