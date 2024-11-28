@@ -3,7 +3,7 @@ use openmls::prelude::{GroupEpoch, GroupId, JoinProposal, LeafNodeIndex, MlsMess
 use std::collections::HashSet;
 
 use crate::{
-    mls::{credential::typ::MlsCredentialType, ClientId, ConversationId},
+    mls::{self, credential::typ::MlsCredentialType, ClientId, ConversationId},
     prelude::{CryptoError, CryptoResult, MlsCiphersuite, MlsConversation, MlsError},
 };
 
@@ -65,7 +65,7 @@ impl CentralContext {
         ciphersuite: MlsCiphersuite,
         credential_type: MlsCredentialType,
     ) -> CryptoResult<MlsMessageOut> {
-        let group_id = GroupId::from_slice(&conversation_id[..]);
+        let group_id = GroupId::from_slice(conversation_id.as_slice());
         let mls_provider = self.mls_provider().await?;
 
         let client = self.mls_client().await?;
@@ -74,7 +74,7 @@ impl CentralContext {
             .await;
         let cb = match (cb, credential_type) {
             (Ok(cb), _) => cb,
-            (Err(CryptoError::CredentialNotFound(_)), MlsCredentialType::Basic) => {
+            (Err(mls::client::error::Error::CredentialNotFound(_)), MlsCredentialType::Basic) => {
                 // If a Basic CredentialBundle does not exist, just create one instead of failing
                 client
                     .init_basic_credential_bundle_if_missing(&mls_provider, ciphersuite.signature_algorithm())
@@ -84,10 +84,10 @@ impl CentralContext {
                     .find_most_recent_credential_bundle(ciphersuite.signature_algorithm(), credential_type)
                     .await?
             }
-            (Err(CryptoError::CredentialNotFound(_)), MlsCredentialType::X509) => {
+            (Err(mls::client::error::Error::CredentialNotFound(_)), MlsCredentialType::X509) => {
                 return Err(CryptoError::E2eiEnrollmentNotDone)
             }
-            (Err(e), _) => return Err(e),
+            (Err(e), _) => return Err(e.into()),
         };
         let kp = client
             .generate_one_keypackage_from_credential_bundle(&mls_provider, ciphersuite, &cb)

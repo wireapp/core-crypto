@@ -1,6 +1,8 @@
 use crate::{
-    e2e_identity::id::QualifiedE2eiClientId, mls::client::identifier::ClientIdentifier, prelude::CertificateBundle,
-    prelude::Error, CryptoError,
+    e2e_identity::id::QualifiedE2eiClientId,
+    mls::{self, client::identifier::ClientIdentifier},
+    prelude::{CertificateBundle, Error},
+    CryptoError,
 };
 use std::{fmt::Display, time::Duration};
 
@@ -336,7 +338,7 @@ impl X509TestChain {
             )
             .await
         {
-            Ok(_) | Err(CryptoError::E2eiError(Error::TrustAnchorAlreadyRegistered)) => {}
+            Ok(_) | Err(mls::client::error::Error::E2eiError(Error::TrustAnchorAlreadyRegistered)) => {}
             Err(e) => panic!("{:?}", e),
         }
 

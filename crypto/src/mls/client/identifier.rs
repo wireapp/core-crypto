@@ -1,8 +1,8 @@
-use super::CredentialBundle;
-use crate::{
-    prelude::CryptoError,
-    prelude::{CertificateBundle, Client, ClientId, CryptoResult},
+use super::{
+    error::{Error, Result},
+    CredentialBundle,
 };
+use crate::prelude::{CertificateBundle, Client, ClientId};
 use mls_crypto_provider::MlsCryptoProvider;
 use openmls_traits::types::SignatureScheme;
 use std::collections::{HashMap, HashSet};
@@ -20,14 +20,14 @@ pub enum ClientIdentifier {
 impl ClientIdentifier {
     /// Extract the unique [ClientId] from an identifier. Use with parsimony as, in case of a x509
     /// certificate this leads to parsing the certificate
-    pub fn get_id(&self) -> CryptoResult<std::borrow::Cow<ClientId>> {
+    pub fn get_id(&self) -> Result<std::borrow::Cow<ClientId>> {
         match self {
             ClientIdentifier::Basic(id) => Ok(std::borrow::Cow::Borrowed(id)),
             ClientIdentifier::X509(certs) => {
                 // since ClientId has uniqueness constraints, it is the same for all certificates.
                 // hence no need to compute it for every certificate then verify its uniqueness
                 // that's not a getter's job
-                let cert = certs.values().next().ok_or(CryptoError::ImplementationError)?;
+                let cert = certs.values().next().ok_or(Error::NoX509CertificateBundle)?;
                 let id = cert.get_client_id()?;
                 Ok(std::borrow::Cow::Owned(id))
             }
@@ -40,11 +40,11 @@ impl ClientIdentifier {
         self,
         backend: &MlsCryptoProvider,
         signature_schemes: HashSet<SignatureScheme>,
-    ) -> CryptoResult<Vec<(SignatureScheme, ClientId, CredentialBundle)>> {
+    ) -> Result<Vec<(SignatureScheme, ClientId, CredentialBundle)>> {
         match self {
             ClientIdentifier::Basic(id) => signature_schemes.iter().try_fold(
                 Vec::with_capacity(signature_schemes.len()),
-                |mut acc, &sc| -> CryptoResult<_> {
+                |mut acc, &sc| -> Result<_> {
                     let cb = Client::new_basic_credential_bundle(&id, sc, backend)?;
                     acc.push((sc, id.clone(), cb));
                     Ok(acc)
@@ -54,7 +54,7 @@ impl ClientIdentifier {
                 let cap = certs.len();
                 certs
                     .into_iter()
-                    .try_fold(Vec::with_capacity(cap), |mut acc, (sc, cert)| -> CryptoResult<_> {
+                    .try_fold(Vec::with_capacity(cap), |mut acc, (sc, cert)| -> Result<_> {
                         let id = cert.get_client_id()?;
                         let cb = Client::new_x509_credential_bundle(cert)?;
                         acc.push((sc, id, cb));
