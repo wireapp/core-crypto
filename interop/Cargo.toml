@@ -40,6 +40,7 @@ xshell = "0.2"
 spinoff = { version = "0.8", features = ["aesthetic"], default-features = false }
 
 [target.'cfg(not(target_family = "wasm"))'.dependencies]
+async-fs = "2.1"
 cryptobox = { git = "https://github.com/wireapp/cryptobox", optional = true }
 proteus = { git = "https://github.com/wireapp/proteus", branch = "otak/fix-1.0.3", optional = true }
 tokio = { version = "1.42", features = ["full"] }

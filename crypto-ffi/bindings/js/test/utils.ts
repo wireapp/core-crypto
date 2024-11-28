@@ -58,10 +58,18 @@ export async function setup() {
 
 export async function teardown() {
     await browser.execute(async () => {
+        function promiseForIDBRequest(tx: IDBRequest) {
+            return new Promise<void>((resolve, reject) => {
+                tx.onsuccess = () => resolve();
+                tx.onerror = () => reject(tx.error);
+            });
+        }
+
         // Delete all core crypto instances.
         for (const ccKey in window.cc) {
             const cc = window.ensureCcDefined(ccKey);
-            await cc.wipe();
+            await cc.close();
+            await promiseForIDBRequest(window.indexedDB.deleteDatabase(ccKey));
             delete window.cc[ccKey];
         }
     });

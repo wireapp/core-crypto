@@ -1582,27 +1582,6 @@ impl CoreCrypto {
         }
     }
 
-    /// Returns: [`WasmCryptoResult<()>`]
-    ///
-    /// see [core_crypto::mls::MlsCentral::wipe]
-    pub fn wipe(self) -> Promise {
-        let error_message: &JsValue = &format!(
-            "There are other outstanding references to this CoreCrypto instance [strong refs = {}]",
-            Arc::strong_count(&self.inner)
-        )
-        .into();
-        match Arc::into_inner(self.inner) {
-            Some(central) => future_to_promise(
-                async move {
-                    central.take().wipe().await.map_err(CoreCryptoError::from)?;
-                    WasmCryptoResult::Ok(JsValue::UNDEFINED)
-                }
-                .err_into(),
-            ),
-            None => Promise::reject(error_message),
-        }
-    }
-
     pub fn set_logger(logger: CoreCryptoWasmLogger) {
         // unwrapping poisoned lock error which shouldn't happen since we don't panic while replacing the logger
         LOGGER.handle().replace(logger).unwrap();

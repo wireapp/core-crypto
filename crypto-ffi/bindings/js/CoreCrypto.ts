@@ -1138,15 +1138,6 @@ export class CoreCrypto {
     }
 
     /**
-     * Wipes the {@link CoreCrypto} backing storage (i.e. {@link https://developer.mozilla.org/en-US/docs/Web/API/IndexedDB_API | IndexedDB} database)
-     *
-     * **CAUTION**: This {@link CoreCrypto} instance won't be useable after a call to this method, but there's no way to express this requirement in TypeScript so you'll get errors instead!
-     */
-    async wipe() {
-        await CoreCryptoError.asyncMapErr(this.#cc.wipe());
-    }
-
-    /**
      * Closes this {@link CoreCrypto} instance and deallocates all loaded resources
      *
      * **CAUTION**: This {@link CoreCrypto} instance won't be usable after a call to this method, but there's no way to express this requirement in TypeScript, so you'll get errors instead!

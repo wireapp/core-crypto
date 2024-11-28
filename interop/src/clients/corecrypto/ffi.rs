@@ -18,7 +18,6 @@ use color_eyre::eyre::Result;
 use core_crypto_ffi::{
     context::TransactionHelper, ClientId, CoreCrypto, CustomConfiguration, MlsCredentialType, UniffiCustomTypeConverter,
 };
-use std::sync::Arc;
 
 use crate::{
     clients::{EmulatedClient, EmulatedClientProtocol, EmulatedClientType, EmulatedMlsClient},
@@ -33,6 +32,9 @@ pub(crate) struct CoreCryptoFfiClient {
     prekey_last_id: u16,
 }
 
+const KEY_STORE_PATH: &str = "ffi_keystore";
+const KEY_STORE_KEY: &str = "key";
+
 impl CoreCryptoFfiClient {
     pub(crate) async fn new() -> Result<CoreCryptoFfiClient> {
         let client_id = uuid::Uuid::new_v4();
@@ -40,8 +42,8 @@ impl CoreCryptoFfiClient {
         let client_id = ClientId::into_custom(client_id_bytes.clone()).unwrap();
         let ciphersuite = CIPHERSUITE_IN_USE;
         let cc = CoreCrypto::new(
-            "path".into(),
-            "key".into(),
+            KEY_STORE_PATH.into(),
+            KEY_STORE_KEY.into(),
             Some(client_id),
             Some(vec![ciphersuite].into()),
             None,
@@ -75,7 +77,8 @@ impl EmulatedClient for CoreCryptoFfiClient {
     }
 
     async fn wipe(mut self) -> Result<()> {
-        Ok(Arc::new(self.cc).wipe().await?)
+        drop(self.cc);
+        Ok(async_fs::remove_file(KEY_STORE_PATH).await?)
     }
 }
 
