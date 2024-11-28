@@ -110,14 +110,14 @@ pub enum MlsError {
     StaleProposal,
     #[error("The received commit is deemed stale and is from an older epoch.")]
     StaleCommit,
-    #[error("Another MLS error occurred but the details are probably irrelevant to clients")]
-    Other,
+    #[error("{0}")]
+    Other(String),
 }
 
 impl From<core_crypto::MlsError> for MlsError {
     #[inline]
-    fn from(_: core_crypto::MlsError) -> Self {
-        Self::Other
+    fn from(e: core_crypto::MlsError) -> Self {
+        Self::Other(e.to_string())
     }
 }
 
@@ -179,8 +179,8 @@ pub enum CoreCryptoError {
     #[cfg(feature = "proteus")]
     #[error(transparent)]
     Proteus(#[from] ProteusError),
-    #[error("End to end identity error")]
-    E2eiError,
+    #[error("End to end identity error: {0}")]
+    E2eiError(String),
     #[error("error from client: {0}")]
     ClientError(String),
 }
@@ -210,15 +210,15 @@ impl From<CryptoError> for CoreCryptoError {
             CryptoError::UnmergedPendingGroup => MlsError::UnmergedPendingGroup.into(),
             CryptoError::StaleProposal => MlsError::StaleProposal.into(),
             CryptoError::StaleCommit => MlsError::StaleCommit.into(),
-            CryptoError::E2eiError(_) => Self::E2eiError,
-            _ => MlsError::Other.into(),
+            CryptoError::E2eiError(e) => Self::E2eiError(e.to_string()),
+            _ => MlsError::Other(value.to_string()).into(),
         }
     }
 }
 
 impl From<E2eIdentityError> for CoreCryptoError {
-    fn from(_: E2eIdentityError) -> Self {
-        Self::E2eiError
+    fn from(e: E2eIdentityError) -> Self {
+        Self::E2eiError(e.to_string())
     }
 }
 

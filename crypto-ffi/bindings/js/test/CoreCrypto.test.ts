@@ -149,6 +149,9 @@ describe("transaction context", () => {
         }, ALICE_ID);
         expect(error).not.toBeNull();
         expect(error?.name).toEqual("MlsErrorOther");
+        expect(error?.message).toEqual(
+            "This context has already been finished and can no longer be used."
+        );
     });
 
     it("should roll back transaction after error", async () => {
