@@ -204,6 +204,7 @@ plugin = "detect-release"
 
 [tasks.ios-device]
 dependencies = ["ffi-swift"]
+env = { "IPHONEOS_DEPLOYMENT_TARGET"="15.0" }
 condition = { platforms = ["mac"] }
 command = "cargo"
 args = ["rustc", "--target", "aarch64-apple-ios", "--crate-type=cdylib", "--crate-type=staticlib", "--release", "--locked", "--", "-C", "strip=symbols"]
