@@ -209,7 +209,8 @@ impl MlsConversation {
             }
             ProcessedMessageContent::StagedCommitMessage(staged_commit) => {
                 self.validate_external_commit(&staged_commit, sender_client_id, parent_conv, backend, callbacks)
-                    .await?;
+                    .await
+                    .map_err(Error::mls("validating external commit"))?;
 
                 self.validate_commit(&staged_commit, backend).await?;
 
@@ -300,7 +301,8 @@ impl MlsConversation {
             }
             ProcessedMessageContent::ExternalJoinProposalMessage(proposal) => {
                 self.validate_external_proposal(&proposal, parent_conv, callbacks)
-                    .await?;
+                    .await
+                    .map_err(Error::mls("validating external commit"))?;
 
                 debug!(
                     group_id = Obfuscated::from(&self.id),
@@ -443,7 +445,10 @@ impl CentralContext {
         let msg =
             MlsMessageIn::tls_deserialize(&mut message.as_ref()).map_err(Error::tls_deserialize("mls message in"))?;
         let Ok(conversation) = self.get_conversation(id).await else {
-            return self.handle_when_group_is_pending(id, message).await.map_err(Into::into);
+            return self
+                .handle_when_group_is_pending(id, message)
+                .await
+                .map_err(Error::mls("handling when group is pending"));
         };
         let parent_conversation = self.get_parent_conversation(&conversation).await?;
         let guard = self.callbacks().await?;

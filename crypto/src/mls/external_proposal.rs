@@ -5,10 +5,11 @@ use openmls::{
 };
 use std::collections::HashSet;
 
+use super::error::{Error, Result};
 use crate::{
     group_store::GroupStoreValue,
     mls::{self, credential::typ::MlsCredentialType, ClientId, ConversationId},
-    prelude::{CoreCryptoCallbacks, CryptoError, CryptoResult, MlsCiphersuite, MlsConversation, MlsError},
+    prelude::{CoreCryptoCallbacks, MlsCiphersuite, MlsConversation},
 };
 
 use crate::context::CentralContext;
@@ -21,11 +22,11 @@ impl MlsConversation {
         proposal: &QueuedProposal,
         parent_conversation: Option<&GroupStoreValue<MlsConversation>>,
         callbacks: Option<&dyn CoreCryptoCallbacks>,
-    ) -> CryptoResult<()> {
+    ) -> Result<()> {
         let is_external_proposal = matches!(proposal.sender(), Sender::External(_) | Sender::NewMemberProposal);
         if is_external_proposal {
             if let Proposal::Add(add_proposal) = proposal.proposal() {
-                let callbacks = callbacks.ok_or(CryptoError::CallbacksNotSet)?;
+                let callbacks = callbacks.ok_or(Error::CallbacksNotSet)?;
                 let existing_clients = self.members_in_next_epoch();
                 let self_identity = add_proposal.key_package().leaf_node().credential().identity();
                 let parent_clients = if let Some(parent_conv) = parent_conversation {
@@ -50,7 +51,7 @@ impl MlsConversation {
                     )
                     .await;
                 if !is_self_user_in_group {
-                    return Err(CryptoError::UnauthorizedExternalAddProposal);
+                    return Err(Error::UnauthorizedExternalAddProposal);
                 }
             }
         } else {
@@ -113,7 +114,7 @@ impl CentralContext {
         epoch: GroupEpoch,
         ciphersuite: MlsCiphersuite,
         credential_type: MlsCredentialType,
-    ) -> CryptoResult<MlsMessageOut> {
+    ) -> Result<MlsMessageOut> {
         let group_id = GroupId::from_slice(conversation_id.as_slice());
         let mls_provider = self.mls_provider().await?;
 
@@ -127,22 +128,28 @@ impl CentralContext {
                 // If a Basic CredentialBundle does not exist, just create one instead of failing
                 client
                     .init_basic_credential_bundle_if_missing(&mls_provider, ciphersuite.signature_algorithm())
-                    .await?;
+                    .await
+                    .map_err(Error::client("initializing basic credential bundle if missing"))?;
 
                 client
                     .find_most_recent_credential_bundle(ciphersuite.signature_algorithm(), credential_type)
-                    .await?
+                    .await
+                    .map_err(Error::client(
+                        "finding most recent credential bundle (which we just created)",
+                    ))?
             }
             (Err(mls::client::error::Error::CredentialNotFound(_)), MlsCredentialType::X509) => {
-                return Err(CryptoError::E2eiEnrollmentNotDone)
+                return Err(Error::E2eiEnrollmentNotDone)
             }
-            (Err(e), _) => return Err(e.into()),
+            (Err(e), _) => return Err(Error::client("finding most recent credential bundle")(e)),
         };
         let kp = client
             .generate_one_keypackage_from_credential_bundle(&mls_provider, ciphersuite, &cb)
-            .await?;
+            .await
+            .map_err(Error::client("generating one keypackage from credential bundle"))?;
 
-        Ok(JoinProposal::new(kp, group_id, epoch, &cb.signature_key).map_err(MlsError::from)?)
+        Ok(JoinProposal::new(kp, group_id, epoch, &cb.signature_key)
+            .map_err(Error::mls_operation("creating join proposal"))?)
     }
 }
 
