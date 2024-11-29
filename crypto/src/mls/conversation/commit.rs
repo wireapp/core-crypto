@@ -152,9 +152,11 @@ impl MlsConversation {
                 } else {
                     None
                 }
-            }))?,
+            }))
+            .map_err(Error::credential("extracting crl uris from credentials"))?,
         )
-        .await?;
+        .await
+        .map_err(Error::credential("getting new crl distribution points"))?;
 
         let (commit, welcome, gi) = self
             .group

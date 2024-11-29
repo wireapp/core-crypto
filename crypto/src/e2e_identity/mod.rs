@@ -99,7 +99,10 @@ impl CentralContext {
             )
             .await?;
 
-        let crl_new_distribution_points = self.extract_dp_on_init(&certificate_chain[..]).await?;
+        let crl_new_distribution_points = self
+            .extract_dp_on_init(&certificate_chain[..])
+            .await
+            .map_err(Error::credential("extracting dp on init"))?;
 
         let private_key = CertificatePrivateKey {
             value: sk,

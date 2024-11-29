@@ -85,7 +85,8 @@ impl CentralContext {
         let sign_keypair = Some((&cb.signature_key).try_into()?);
         let existing_identity = cb
             .to_mls_credential_with_key()
-            .extract_identity(ciphersuite, None)?
+            .extract_identity(ciphersuite, None)
+            .map_err(Error::credential("extracting identity"))?
             .x509_identity
             .ok_or(Error::ImplementationError)?;
 
@@ -135,7 +136,10 @@ impl CentralContext {
             signature_scheme: cs.signature_algorithm(),
         };
 
-        let crl_new_distribution_points = self.extract_dp_on_init(&certificate_chain[..]).await?;
+        let crl_new_distribution_points = self
+            .extract_dp_on_init(&certificate_chain[..])
+            .await
+            .map_err(Error::credential("extracting dp on init"))?;
 
         let cert_bundle = CertificateBundle {
             certificate_chain,
