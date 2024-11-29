@@ -24,13 +24,13 @@ use core_crypto_keystore::{
     CryptoKeystoreMls,
 };
 
+use super::error::{Error, Result};
 use crate::{
     e2e_identity::init_certificates::NewCrlDistributionPoint,
     mls::credential::crl::{extract_crl_uris_from_group, get_new_crl_distribution_points},
     prelude::{
-        decrypt::MlsBufferedConversationDecryptMessage, ConversationId, CryptoError, CryptoResult, MlsCiphersuite,
-        MlsConversation, MlsConversationConfiguration, MlsCredentialType, MlsCustomConfiguration, MlsError,
-        MlsGroupInfoBundle,
+        decrypt::MlsBufferedConversationDecryptMessage, ConversationId, MlsCiphersuite, MlsConversation,
+        MlsConversationConfiguration, MlsCredentialType, MlsCustomConfiguration, MlsGroupInfoBundle,
     },
 };
 
@@ -54,8 +54,11 @@ impl MlsConversationInitBundle {
     /// 0 -> external commit
     /// 1 -> public group state
     #[allow(clippy::type_complexity)]
-    pub fn to_bytes(self) -> CryptoResult<(Vec<u8>, MlsGroupInfoBundle, NewCrlDistributionPoint)> {
-        let commit = self.commit.tls_serialize_detached().map_err(MlsError::from)?;
+    pub fn to_bytes(self) -> Result<(Vec<u8>, MlsGroupInfoBundle, NewCrlDistributionPoint)> {
+        let commit = self
+            .commit
+            .tls_serialize_detached()
+            .map_err(Error::mls_operation("serializing detached commit"))?;
         Ok((commit, self.group_info, self.crl_new_distribution_points))
     }
 }
@@ -92,16 +95,18 @@ impl CentralContext {
         group_info: VerifiableGroupInfo,
         custom_cfg: MlsCustomConfiguration,
         credential_type: MlsCredentialType,
-    ) -> CryptoResult<MlsConversationInitBundle> {
+    ) -> Result<MlsConversationInitBundle> {
         let client = &self.mls_client().await?;
 
         let cs: MlsCiphersuite = group_info.ciphersuite().into();
         let mls_provider = self.mls_provider().await?;
         let cb = client
             .get_most_recent_or_create_credential_bundle(&mls_provider, cs.signature_algorithm(), credential_type)
-            .await?;
+            .await
+            .map_err(Error::client("getting or creating credential bundle"))?;
 
-        let serialized_cfg = serde_json::to_vec(&custom_cfg).map_err(MlsError::MlsKeystoreSerializationError)?;
+        let serialized_cfg =
+            serde_json::to_vec(&custom_cfg).map_err(Error::mls_operation("serializing mls keystore"))?;
 
         let configuration = MlsConversationConfiguration {
             ciphersuite: cs,
@@ -114,29 +119,39 @@ impl CentralContext {
             &cb.signature_key,
             None,
             group_info,
-            &configuration.as_openmls_default_configuration()?,
+            &configuration
+                .as_openmls_default_configuration()
+                .map_err(Error::conversation(
+                    "using configuration as openmls default configuration",
+                ))?,
             &[],
             cb.to_mls_credential_with_key(),
         )
         .await
-        .map_err(MlsError::from)?;
+        .map_err(Error::mls_operation("joining mls group by external commit"))?;
 
         // We should always have ratchet tree extension turned on hence GroupInfo should always be present
-        let group_info = group_info.ok_or(CryptoError::ImplementationError)?;
-        let group_info = MlsGroupInfoBundle::try_new_full_plaintext(group_info)?;
+        let group_info = group_info.ok_or(Error::MissingGroupInfo)?;
+        let group_info = MlsGroupInfoBundle::try_new_full_plaintext(group_info)
+            .map_err(Error::conversation("trying new full plaintext group info bundle"))?;
 
-        let crl_new_distribution_points =
-            get_new_crl_distribution_points(&mls_provider, extract_crl_uris_from_group(&group)?).await?;
+        let crl_new_distribution_points = get_new_crl_distribution_points(
+            &mls_provider,
+            extract_crl_uris_from_group(&group).map_err(Error::credential("extracting crl uris from group"))?,
+        )
+        .await
+        .map_err(Error::credential("getting new crl distribution points"))?;
 
         mls_provider
             .key_store()
             .mls_pending_groups_save(
                 group.group_id().as_slice(),
-                &core_crypto_keystore::ser(&group)?,
+                &core_crypto_keystore::ser(&group).map_err(Error::keystore("serializing mls group"))?,
                 &serialized_cfg,
                 None,
             )
-            .await?;
+            .await
+            .map_err(Error::keystore("saving mls pending groups"))?;
 
         Ok(MlsConversationInitBundle {
             conversation_id: group.group_id().to_vec(),
@@ -158,21 +173,27 @@ impl CentralContext {
     pub async fn merge_pending_group_from_external_commit(
         &self,
         id: &ConversationId,
-    ) -> CryptoResult<Option<Vec<MlsBufferedConversationDecryptMessage>>> {
+    ) -> Result<Option<Vec<MlsBufferedConversationDecryptMessage>>> {
         // Retrieve the pending MLS group from the keystore
         let mls_provider = self.mls_provider().await?;
-        let (group, cfg) = mls_provider.key_store().mls_pending_groups_load(id).await?;
+        let (group, cfg) = mls_provider
+            .key_store()
+            .mls_pending_groups_load(id)
+            .await
+            .map_err(Error::keystore("loading mls pending groups"))?;
 
-        let mut mls_group = core_crypto_keystore::deser::<MlsGroup>(&group)?;
+        let mut mls_group =
+            core_crypto_keystore::deser::<MlsGroup>(&group).map_err(Error::keystore("deserializing mls group"))?;
 
         // Merge it aka bring the MLS group to life and make it usable
         mls_group
             .merge_pending_commit(&mls_provider)
             .await
-            .map_err(MlsError::from)?;
+            .map_err(Error::mls_operation("merging pending commit"))?;
 
         // Restore the custom configuration and build a conversation from it
-        let custom_cfg = serde_json::from_slice(&cfg).map_err(MlsError::MlsKeystoreSerializationError)?;
+        let custom_cfg =
+            serde_json::from_slice(&cfg).map_err(Error::mls_operation("deserializing mls custom configuration"))?;
         let configuration = MlsConversationConfiguration {
             ciphersuite: mls_group.ciphersuite().into(),
             custom: custom_cfg,
@@ -182,17 +203,31 @@ impl CentralContext {
         let is_rejoin = mls_provider.key_store().mls_group_exists(id.as_slice()).await;
 
         // Persist the now usable MLS group in the keystore
-        let mut conversation = MlsConversation::from_mls_group(mls_group, configuration, &mls_provider).await?;
+        // TODO: find a way to make the insertion of the MlsGroup and deletion of the pending group transactional. Tracking issue: WPB-9595
+        let mut conversation = MlsConversation::from_mls_group(mls_group, configuration, &mls_provider)
+            .await
+            .map_err(Error::conversation("constructing conversation from mls group"))?;
 
-        let pending_messages = self.restore_pending_messages(&mut conversation, is_rejoin).await?;
+        let pending_messages = self
+            .restore_pending_messages(&mut conversation, is_rejoin)
+            .await
+            .map_err(Error::conversation("restoring pending messages"))?;
 
         self.mls_groups().await?.insert(id.clone(), conversation);
 
         // cleanup the pending group we no longer need
-        mls_provider.key_store().mls_pending_groups_delete(id).await?;
+        mls_provider
+            .key_store()
+            .mls_pending_groups_delete(id)
+            .await
+            .map_err(Error::keystore("cleaning up pending pending groups"))?;
 
         if pending_messages.is_some() {
-            mls_provider.key_store().remove::<MlsPendingMessage, _>(id).await?;
+            mls_provider
+                .key_store()
+                .remove::<MlsPendingMessage, _>(id)
+                .await
+                .map_err(Error::keystore("deleting mls pending message by id"))?;
         }
 
         Ok(pending_messages)
@@ -208,11 +243,16 @@ impl CentralContext {
     /// # Errors
     /// Errors resulting from the KeyStore calls
     #[cfg_attr(test, crate::dispotent)]
-    pub async fn clear_pending_group_from_external_commit(&self, id: &ConversationId) -> CryptoResult<()> {
-        Ok(self.keystore().await?.mls_pending_groups_delete(id).await?)
+    pub async fn clear_pending_group_from_external_commit(&self, id: &ConversationId) -> Result<()> {
+        self.keystore()
+            .await?
+            .mls_pending_groups_delete(id)
+            .await
+            .map_err(Error::keystore("deleting pending groups by id"))?;
+        Ok(())
     }
 
-    pub(crate) async fn pending_group_exists(&self, id: &ConversationId) -> CryptoResult<bool> {
+    pub(crate) async fn pending_group_exists(&self, id: &ConversationId) -> Result<bool> {
         Ok(self
             .keystore()
             .await?
@@ -231,8 +271,11 @@ mod tests {
 
     use core_crypto_keystore::{CryptoKeystoreError, CryptoKeystoreMls, MissingKeyErrorKind};
 
-    use crate::prelude::MlsConversationConfiguration;
-    use crate::{prelude::MlsConversationInitBundle, test_utils::*, CryptoError};
+    use crate::{
+        prelude::{MlsConversationConfiguration, MlsConversationInitBundle},
+        test_utils::*,
+        CryptoError,
+    };
 
     wasm_bindgen_test_configure!(run_in_browser);
 
