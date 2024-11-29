@@ -51,8 +51,8 @@ impl<'conn> Deref for TransactionWrapper<'conn> {
 // and dropped in a single call.
 unsafe impl Send for SqlCipherConnection {}
 unsafe impl Sync for SqlCipherConnection {}
-unsafe impl<'conn> Send for TransactionWrapper<'conn> {}
-unsafe impl<'conn> Sync for TransactionWrapper<'conn> {}
+unsafe impl Send for TransactionWrapper<'_> {}
+unsafe impl Sync for TransactionWrapper<'_> {}
 
 impl std::ops::Deref for SqlCipherConnection {
     type Target = rusqlite::Connection;

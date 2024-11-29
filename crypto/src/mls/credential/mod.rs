@@ -458,7 +458,7 @@ mod tests {
                     ..Default::default()
                 })
             };
-            let cb = CertificateBundle::from_certificate_and_issuer(&alice_cert, &local_ca);
+            let cb = CertificateBundle::from_certificate_and_issuer(&alice_cert, local_ca);
             let alice_identifier = ClientIdentifier::X509(HashMap::from([(case.signature_scheme(), cb)]));
 
             let (bob_identifier, _) = x509_test_chain.issue_simple_certificate_bundle("bob", None);

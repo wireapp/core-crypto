@@ -420,7 +420,7 @@ impl X509TestChain {
         let certificate = intermediate.create_and_sign_end_identity(cert_params);
 
         let sc = intermediate.signature_scheme;
-        let cert_bundle = CertificateBundle::from_certificate_and_issuer(&certificate, &intermediate);
+        let cert_bundle = CertificateBundle::from_certificate_and_issuer(&certificate, intermediate);
 
         self.actors.push(X509TestChainActor {
             name: common_name,
