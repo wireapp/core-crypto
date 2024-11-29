@@ -43,7 +43,7 @@ use crate::{
         ClientId, ConversationId, MlsConversation,
     },
     prelude::{E2eiConversationState, MlsProposalBundle, WireIdentity},
-    CoreCryptoCallbacks, CryptoError, CryptoResult, MlsError, MlsError,
+    MlsError,
 };
 
 /// Represents the potential items a consumer might require after passing us an encrypted message we
@@ -148,10 +148,12 @@ impl MlsConversation {
         let credential = message.credential();
         let epoch = message.epoch();
 
-        let identity = credential.extract_identity(
-            self.ciphersuite(),
-            backend.authentication_service().borrow().await.as_ref(),
-        )?;
+        let identity = credential
+            .extract_identity(
+                self.ciphersuite(),
+                backend.authentication_service().borrow().await.as_ref(),
+            )
+            .map_err(Error::credential("extracting identity"))?;
 
         let sender_client_id: ClientId = credential.credential.identity().into();
 
@@ -177,8 +179,11 @@ impl MlsConversation {
                 }
             }
             ProcessedMessageContent::ProposalMessage(proposal) => {
-                let crl_dps = extract_crl_uris_from_proposals(&[proposal.proposal().clone()])?;
-                let crl_new_distribution_points = get_new_crl_distribution_points(backend, crl_dps).await?;
+                let crl_dps = extract_crl_uris_from_proposals(&[proposal.proposal().clone()])
+                    .map_err(Error::credential("extracting crl urls from proposals"))?;
+                let crl_new_distribution_points = get_new_crl_distribution_points(backend, crl_dps)
+                    .await
+                    .map_err(Error::credential("getting new crl distribution points"))?;
 
                 info!(
                     group_id = Obfuscated::from(&self.id),
@@ -223,10 +228,16 @@ impl MlsConversation {
                     .collect();
 
                 // - This requires a change in OpenMLS to get access to it
-                let mut crl_dps = extract_crl_uris_from_proposals(&proposal_refs)?;
-                crl_dps.extend(extract_crl_uris_from_update_path(&staged_commit)?);
+                let mut crl_dps = extract_crl_uris_from_proposals(&proposal_refs)
+                    .map_err(Error::credential("extracting crl urls from proposals"))?;
+                crl_dps.extend(
+                    extract_crl_uris_from_update_path(&staged_commit)
+                        .map_err(Error::credential("extracting crl urls from update path"))?,
+                );
 
-                let crl_new_distribution_points = get_new_crl_distribution_points(backend, crl_dps).await?;
+                let crl_new_distribution_points = get_new_crl_distribution_points(backend, crl_dps)
+                    .await
+                    .map_err(Error::credential("getting new crl distribution points"))?;
 
                 // getting the pending has to be done before `merge_staged_commit` otherwise it's wiped out
                 let pending_commit = self.group.pending_commit().cloned();
@@ -290,8 +301,11 @@ impl MlsConversation {
                     "Received external join proposal"
                 );
 
-                let crl_dps = extract_crl_uris_from_proposals(&[proposal.proposal().clone()])?;
-                let crl_new_distribution_points = get_new_crl_distribution_points(backend, crl_dps).await?;
+                let crl_dps = extract_crl_uris_from_proposals(&[proposal.proposal().clone()])
+                    .map_err(Error::credential("extracting crl uris from proposals"))?;
+                let crl_new_distribution_points = get_new_crl_distribution_points(backend, crl_dps)
+                    .await
+                    .map_err(Error::credential("getting new crl distribution points"))?;
                 self.group.store_pending_proposal(*proposal);
 
                 MlsConversationDecryptMessage {

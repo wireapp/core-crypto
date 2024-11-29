@@ -252,6 +252,9 @@ pub enum CryptoError {
     /// Something happened within a conversation
     #[error(transparent)]
     Conversation(#[from] crate::mls::conversation::error::Error),
+    /// Something happened about a MLS credential
+    #[error(transparent)]
+    MlsCredential(#[from] crate::mls::credential::error::Error),
 }
 
 impl From<MlsError> for CryptoError {
