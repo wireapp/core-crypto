@@ -4,6 +4,7 @@ use std::cmp::Ordering;
 use std::hash::{Hash, Hasher};
 
 pub(crate) mod crl;
+pub mod error;
 pub(crate) mod ext;
 pub(crate) mod typ;
 pub(crate) mod x509;
@@ -15,7 +16,8 @@ use openmls_x509_credential::CertificateKeyPair;
 
 use mls_crypto_provider::MlsCryptoProvider;
 
-use crate::prelude::{CertificateBundle, Client, ClientId, CryptoResult, MlsError};
+use self::error::{Error, Result};
+use crate::prelude::{CertificateBundle, Client, ClientId};
 
 #[derive(Debug)]
 pub struct CredentialBundle {
@@ -105,8 +107,11 @@ impl Client {
         id: &ClientId,
         sc: SignatureScheme,
         backend: &MlsCryptoProvider,
-    ) -> CryptoResult<CredentialBundle> {
-        let (sk, pk) = backend.crypto().signature_key_gen(sc).map_err(MlsError::from)?;
+    ) -> Result<CredentialBundle> {
+        let (sk, pk) = backend
+            .crypto()
+            .signature_key_gen(sc)
+            .map_err(Error::mls_operation("generating a signature key"))?;
 
         let signature_key = SignatureKeyPair::from_raw(sc, sk, pk);
         let credential = Credential::new_basic(id.to_vec());
@@ -119,14 +124,15 @@ impl Client {
         Ok(cb)
     }
 
-    pub(crate) fn new_x509_credential_bundle(cert: CertificateBundle) -> CryptoResult<CredentialBundle> {
+    pub(crate) fn new_x509_credential_bundle(cert: CertificateBundle) -> Result<CredentialBundle> {
         let created_at = cert.get_created_at()?;
         let (sk, ..) = cert.private_key.into_parts();
         let chain = cert.certificate_chain;
 
-        let kp = CertificateKeyPair::new(sk, chain.clone()).map_err(MlsError::from)?;
+        let kp = CertificateKeyPair::new(sk, chain.clone())
+            .map_err(Error::mls_operation("creating certificate key pair"))?;
 
-        let credential = Credential::new_x509(chain).map_err(MlsError::from)?;
+        let credential = Credential::new_x509(chain).map_err(Error::mls_operation("creating x509 credential"))?;
 
         let cb = CredentialBundle {
             credential,
@@ -149,7 +155,7 @@ mod tests {
     use crate::{
         mls::credential::x509::CertificatePrivateKey,
         prelude::{
-            ClientIdentifier, ConversationId, CryptoError, E2eiConversationState, MlsCentral, MlsCentralConfiguration,
+            ClientIdentifier, ConversationId, E2eiConversationState, MlsCentral, MlsCentralConfiguration,
             MlsCredentialType, INITIAL_KEYING_MATERIAL_COUNT,
         },
         test_utils::{
@@ -232,7 +238,7 @@ mod tests {
             try_talk(&case, Some(&x509_test_chain), alice_identifier, bob_identifier)
                 .await
                 .unwrap_err(),
-            CryptoError::InvalidIdentity
+            Error::InvalidIdentity
         ));
     }
 
@@ -258,7 +264,7 @@ mod tests {
                 try_talk(&case, Some(&x509_test_chain), bob_identifier, alice_identifier)
                     .await
                     .unwrap_err(),
-                CryptoError::InvalidIdentity
+                Error::InvalidIdentity
             ));
         }
     }
@@ -288,7 +294,7 @@ mod tests {
                 try_talk(&case, Some(&x509_test_chain), alice_identifier, bob_identifier)
                     .await
                     .unwrap_err(),
-                CryptoError::MlsError(MlsError::MlsCryptoError(openmls::prelude::CryptoError::MismatchKeypair))
+                Error::MlsError(MlsError::MlsCryptoError(openmls::prelude::CryptoError::MismatchKeypair))
             ));
         }
     }
@@ -489,7 +495,7 @@ mod tests {
         x509_test_chain: Option<&X509TestChain>,
         creator_identifier: ClientIdentifier,
         guest_identifier: ClientIdentifier,
-    ) -> CryptoResult<(ClientContext, ClientContext, ConversationId)> {
+    ) -> Result<(ClientContext, ClientContext, ConversationId)> {
         let id = conversation_id();
         let ciphersuites = vec![case.ciphersuite()];
 

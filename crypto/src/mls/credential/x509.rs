@@ -5,14 +5,12 @@ use mls_crypto_provider::PkiKeypair;
 #[cfg(test)]
 use x509_cert::der::Encode;
 
+use super::error::{Error, Result};
 use openmls_traits::types::SignatureScheme;
 use wire_e2e_identity::prelude::{HashAlgorithm, WireIdentityReader};
 use zeroize::Zeroize;
 
-use crate::{
-    e2e_identity::id::WireQualifiedClientId,
-    prelude::{ClientId, CryptoError, CryptoResult},
-};
+use crate::{e2e_identity::id::WireQualifiedClientId, prelude::ClientId};
 
 #[derive(Debug, Clone, Zeroize)]
 #[zeroize(drop)]
@@ -42,8 +40,8 @@ pub struct CertificateBundle {
 
 impl CertificateBundle {
     /// Reads the client_id from the leaf certificate
-    pub fn get_client_id(&self) -> CryptoResult<ClientId> {
-        let leaf = self.certificate_chain.first().ok_or(CryptoError::InvalidIdentity)?;
+    pub fn get_client_id(&self) -> Result<ClientId> {
+        let leaf = self.certificate_chain.first().ok_or(Error::InvalidIdentity)?;
 
         let hash_alg = match self.private_key.signature_scheme {
             SignatureScheme::ECDSA_SECP256R1_SHA256 | SignatureScheme::ED25519 => HashAlgorithm::SHA256,
@@ -53,15 +51,18 @@ impl CertificateBundle {
 
         let identity = leaf
             .extract_identity(None, hash_alg)
-            .map_err(|_| CryptoError::InvalidIdentity)?;
-        let client_id = identity.client_id.parse::<WireQualifiedClientId>()?;
+            .map_err(|_| Error::InvalidIdentity)?;
+        let client_id = identity
+            .client_id
+            .parse::<WireQualifiedClientId>()
+            .map_err(Error::e2e("parsing wire qualified client id"))?;
         Ok(client_id.into())
     }
 
     /// Reads the 'Not Before' claim from the leaf certificate
-    pub fn get_created_at(&self) -> CryptoResult<u64> {
-        let leaf = self.certificate_chain.first().ok_or(CryptoError::InvalidIdentity)?;
-        leaf.extract_created_at().map_err(|_| CryptoError::InvalidIdentity)
+    pub fn get_created_at(&self) -> Result<u64> {
+        let leaf = self.certificate_chain.first().ok_or(Error::InvalidIdentity)?;
+        leaf.extract_created_at().map_err(|_| Error::InvalidIdentity)
     }
 }
 

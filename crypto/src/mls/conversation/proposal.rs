@@ -36,9 +36,11 @@ impl MlsConversation {
 
         let crl_new_distribution_points = get_new_crl_distribution_points(
             backend,
-            extract_crl_uris_from_credentials(std::iter::once(key_package.credential().mls_credential()))?,
+            extract_crl_uris_from_credentials(std::iter::once(key_package.credential().mls_credential()))
+                .map_err(Error::credential("extracting crl uris from credentials"))?,
         )
-        .await?;
+        .await
+        .map_err(Error::credential("getting new crl distribution points"))?;
 
         let (proposal, proposal_ref) = self
             .group

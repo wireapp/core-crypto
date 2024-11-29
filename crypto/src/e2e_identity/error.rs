@@ -84,7 +84,16 @@ pub enum Error {
         #[source]
         source: Box<crate::mls::client::error::Error>,
     },
-    /// Something in the conversation went wrong
+    /// Something in the MLS credential went wrong
+    #[error("{context}")]
+    MlsCredential {
+        /// What was happening when the error was thrown
+        context: &'static str,
+        /// The inner error which was produced
+        #[source]
+        source: Box<crate::mls::credential::error::Error>,
+    },
+    /// Something in the MLS conversation went wrong
     #[error("{context}")]
     Conversation {
         /// What was happening when the error was thrown
@@ -117,6 +126,13 @@ impl Error {
 
     pub(crate) fn conversation(context: &'static str) -> impl FnOnce(crate::mls::conversation::error::Error) -> Self {
         move |source| Self::Conversation {
+            context,
+            source: Box::new(source),
+        }
+    }
+
+    pub(crate) fn credential(context: &'static str) -> impl FnOnce(crate::mls::credential::error::Error) -> Self {
+        move |source| Self::MlsCredential {
             context,
             source: Box::new(source),
         }

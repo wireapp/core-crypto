@@ -84,8 +84,13 @@ impl CentralContext {
                 .await?;
 
         // We wait for the group to be created then we iterate through all members
-        let crl_new_distribution_points =
-            get_new_crl_distribution_points(&mls_provider, extract_crl_uris_from_group(&conversation.group)?).await?;
+        let crl_new_distribution_points = get_new_crl_distribution_points(
+            &mls_provider,
+            extract_crl_uris_from_group(&conversation.group)
+                .map_err(Error::credential("extracting crl uris from group"))?,
+        )
+        .await
+        .map_err(Error::credential("getting new crl distribution points"))?;
 
         let id = conversation.id.clone();
         mls_groups.insert(id.clone(), conversation);
