@@ -10,10 +10,11 @@
 use mls_crypto_provider::MlsCryptoProvider;
 use openmls::prelude::MlsMessageOutBody;
 
+use super::error::{Error, Result};
 use super::MlsConversation;
 use crate::context::CentralContext;
 use crate::prelude::Client;
-use crate::{mls::ConversationId, CryptoError, CryptoResult, MlsError};
+use crate::mls::ConversationId;
 
 /// Abstraction over a MLS group capable of encrypting a MLS message
 impl MlsConversation {
@@ -25,21 +26,23 @@ impl MlsConversation {
         client: &Client,
         message: impl AsRef<[u8]>,
         backend: &MlsCryptoProvider,
-    ) -> CryptoResult<Vec<u8>> {
+    ) -> Result<Vec<u8>> {
         let signer = &self
             .find_current_credential_bundle(client)
             .await
-            .map_err(|_| CryptoError::IdentityInitializationError)?
+            .map_err(|_| Error::IdentityInitializationError)?
             .signature_key;
         let encrypted = self
             .group
             .create_message(backend, signer, message.as_ref())
-            .map_err(MlsError::from)?;
+            .map_err(Error::mls_operation("creating message"))?;
 
         // make sure all application messages are encrypted
         debug_assert!(matches!(encrypted.body, MlsMessageOutBody::PrivateMessage(_)));
 
-        let encrypted = encrypted.to_bytes().map_err(MlsError::from)?;
+        let encrypted = encrypted
+            .to_bytes()
+            .map_err(Error::mls_operation("constructing byte vector of encrypted message"))?;
 
         self.persist_group_when_changed(&backend.keystore(), false).await?;
         Ok(encrypted)
@@ -60,11 +63,7 @@ impl CentralContext {
     /// If the conversation can't be found, an error will be returned. Other errors are originating
     /// from OpenMls and the KeyStore
     #[cfg_attr(test, crate::idempotent)]
-    pub async fn encrypt_message(
-        &self,
-        conversation: &ConversationId,
-        message: impl AsRef<[u8]>,
-    ) -> CryptoResult<Vec<u8>> {
+    pub async fn encrypt_message(&self, conversation: &ConversationId, message: impl AsRef<[u8]>) -> Result<Vec<u8>> {
         let client = self.mls_client().await?;
         self.get_conversation(conversation)
             .await?

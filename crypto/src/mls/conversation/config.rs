@@ -31,9 +31,9 @@ use openmls_traits::OpenMlsCryptoProvider;
 use serde::{Deserialize, Serialize};
 use wire_e2e_identity::prelude::parse_json_jwk;
 
+use super::error::{Error, Result};
 use crate::context::CentralContext;
-use crate::prelude::{CryptoResult, MlsCiphersuite};
-use crate::MlsError;
+use crate::prelude::MlsCiphersuite;
 
 /// Sets the config in OpenMls for the oldest possible epoch(past current) that a message can be decrypted
 pub(crate) const MAX_PAST_EPOCHS: usize = 3;
@@ -51,7 +51,7 @@ impl CentralContext {
         &self,
         cfg: &mut MlsConversationConfiguration,
         external_senders: Vec<Vec<u8>>,
-    ) -> CryptoResult<()> {
+    ) -> Result<()> {
         let mls_provider = self.mls_provider().await?;
         cfg.external_senders = external_senders
             .into_iter()
@@ -64,7 +64,7 @@ impl CentralContext {
                     )
                 })
             })
-            .collect::<CryptoResult<_>>()?;
+            .collect::<Result<_>>()?;
         Ok(())
     }
 }
@@ -106,7 +106,7 @@ impl MlsConversationConfiguration {
 
     /// Generates an `MlsGroupConfig` from this configuration
     #[inline(always)]
-    pub fn as_openmls_default_configuration(&self) -> CryptoResult<openmls::group::MlsGroupConfig> {
+    pub fn as_openmls_default_configuration(&self) -> Result<openmls::group::MlsGroupConfig> {
         let crypto_config = openmls::prelude::CryptoConfig {
             version: Self::DEFAULT_PROTOCOL_VERSION,
             ciphersuite: self.ciphersuite.into(),
@@ -144,10 +144,11 @@ impl MlsConversationConfiguration {
     }
 
     /// This expects a raw json serialized JWK. It works with any Signature scheme
-    fn parse_external_sender(jwk: &[u8]) -> CryptoResult<ExternalSender> {
+    fn parse_external_sender(jwk: &[u8]) -> Result<ExternalSender> {
         let pk = parse_json_jwk(jwk)
             .map_err(wire_e2e_identity::prelude::E2eIdentityError::from)
-            .map_err(crate::e2e_identity::error::Error::from)?;
+            .map_err(crate::e2e_identity::error::Error::from)
+            .map_err(Error::e2e_identity("parsing jwk"))?;
         Ok(ExternalSender::new(
             pk.into(),
             Credential::new_basic(Self::WIRE_SERVER_IDENTITY.into()),
@@ -161,12 +162,13 @@ impl MlsConversationConfiguration {
         key: Vec<u8>,
         signature_scheme: SignatureScheme,
         backend: &MlsCryptoProvider,
-    ) -> CryptoResult<ExternalSender> {
+    ) -> Result<ExternalSender> {
         backend
             .crypto()
             .validate_signature_key(signature_scheme, &key[..])
-            .map_err(MlsError::from)?;
-        let key = OpenMlsSignaturePublicKey::new(key.into(), signature_scheme).map_err(MlsError::from)?;
+            .map_err(Error::mls_operation("validating signature key"))?;
+        let key = OpenMlsSignaturePublicKey::new(key.into(), signature_scheme)
+            .map_err(Error::mls_operation("creating new signature public key"))?;
         Ok(ExternalSender::new(
             key.into(),
             Credential::new_basic(Self::WIRE_SERVER_IDENTITY.into()),

@@ -1,9 +1,10 @@
+use super::error::{Error, Result};
 use crate::{
     mls::credential::{
         crl::{extract_crl_uris_from_group, get_new_crl_distribution_points},
         ext::CredentialExt,
     },
-    prelude::{CryptoError, CryptoResult, MlsConversation, MlsConversationDecryptMessage},
+    prelude::{MlsConversation, MlsConversationDecryptMessage},
 };
 use mls_crypto_provider::MlsCryptoProvider;
 use openmls::prelude::{
@@ -16,36 +17,31 @@ impl MlsConversation {
     pub(crate) fn extract_confirmation_tag_from_own_commit<'a>(
         &self,
         own_commit: &'a MlsMessageIn,
-    ) -> CryptoResult<&'a ConfirmationTag> {
-        match own_commit.body_as_ref() {
-            MlsMessageInBody::PublicMessage(msg) => {
-                let is_commit = matches!(msg.content_type(), ContentType::Commit);
-                let own_index = self.group.own_leaf_index();
-                let is_self_sent = matches!(msg.sender(), Sender::Member(i) if i == &own_index);
-                let is_own_commit = is_commit && is_self_sent;
+    ) -> Result<&'a ConfirmationTag> {
+        if let MlsMessageInBody::PublicMessage(msg) = own_commit.body_as_ref() {
+            let is_commit = matches!(msg.content_type(), ContentType::Commit);
+            let own_index = self.group.own_leaf_index();
+            let is_self_sent = matches!(msg.sender(), Sender::Member(i) if i == &own_index);
+            let is_own_commit = is_commit && is_self_sent;
 
-                match is_own_commit.then_some(msg.body()) {
-                    Some(FramedContentBodyIn::Commit(_)) => {
-                        let confirmation_tag = msg
-                            .auth
-                            .confirmation_tag
-                            .as_ref()
-                            .ok_or(CryptoError::InternalMlsError)?;
-                        Ok(confirmation_tag)
-                    }
-                    // Not an own commit. Should never be reached if this function
-                    // is called correctly.
-                    _ => unreachable!(
-                        "extract_confirmation_tag_from_own_commit() must always be called \
-                        with an own commit."
-                    ),
-                }
-            }
-            // Not a public message. Should never be reached if this function is called correctly.
-            _ => unreachable!(
+            assert!(
+                is_own_commit,
+                "extract_confirmation_tag_from_own_commit() must always be called with an own commit."
+            );
+            assert!(
+                matches!(msg.body(), FramedContentBodyIn::Commit(_)),
+                "extract_confirmation_tag_from_own_commit() must always be called with an own commit."
+            );
+
+            msg.auth
+                .confirmation_tag
+                .as_ref()
+                .ok_or(Error::MlsMessageInvalidState("Message confirmation tag not present"))
+        } else {
+            panic!(
                 "extract_confirmation_tag_from_own_commit() must always be called \
                  with an MlsMessageIn containing an MlsMessageInBody::PublicMessage"
-            ),
+            );
         }
     }
 
@@ -53,7 +49,7 @@ impl MlsConversation {
         &mut self,
         backend: &MlsCryptoProvider,
         ct: &ConfirmationTag,
-    ) -> CryptoResult<MlsConversationDecryptMessage> {
+    ) -> Result<MlsConversationDecryptMessage> {
         if self.group.pending_commit().is_some() {
             if self.eq_pending_commit(ct) {
                 // incoming is from ourselves and it's the same as the local pending commit
@@ -63,13 +59,13 @@ impl MlsConversation {
                 // this would mean we created a commit that got accepted by the DS but we cleared it locally
                 // then somehow retried and created another commit. This is a manifest client error
                 // and should be identified as such
-                Err(CryptoError::ClearingPendingCommitError)
+                Err(Error::ClearingPendingCommitError)
             }
         } else {
             // This either means the DS replayed one of our commit OR we cleared a commit accepted by the DS
             // In both cases, CoreCrypto cannot be of any help since it cannot decrypt self commits
             // => deflect this case and let the caller handle it
-            Err(CryptoError::SelfCommitIgnored)
+            Err(Error::SelfCommitIgnored)
         }
     }
 
@@ -86,10 +82,13 @@ impl MlsConversation {
     pub(crate) async fn merge_pending_commit(
         &mut self,
         backend: &MlsCryptoProvider,
-    ) -> CryptoResult<MlsConversationDecryptMessage> {
+    ) -> Result<MlsConversationDecryptMessage> {
         self.commit_accepted(backend).await?;
 
-        let own_leaf = self.group.own_leaf().ok_or(CryptoError::InternalMlsError)?;
+        let own_leaf = self
+            .group
+            .own_leaf()
+            .ok_or(Error::MlsGroupInvalidState("own_leaf is None"))?;
 
         // We return self identity here, probably not necessary to check revocation
         let own_leaf_credential_with_key = CredentialWithKey {
@@ -120,7 +119,8 @@ mod tests {
     use crate::test_utils::*;
     use openmls::prelude::{ProcessMessageError, ValidationError};
 
-    use crate::prelude::{CryptoError, MlsError};
+    use super::super::error::Error;
+    use crate::prelude::MlsError;
 
     use wasm_bindgen_test::*;
 
@@ -238,7 +238,7 @@ mod tests {
                             .context
                             .decrypt_message(&id, &add_bob.commit.to_bytes().unwrap())
                             .await;
-                        assert!(matches!(decrypt.unwrap_err(), CryptoError::ClearingPendingCommitError));
+                        assert!(matches!(decrypt.unwrap_err(), Error::ClearingPendingCommitError));
                     })
                 },
             )
@@ -275,7 +275,7 @@ mod tests {
                         .decrypt_message(&id, &commit.to_bytes().unwrap())
                         .await;
                     // this means DS replayed the commit. In that case just ignore, we have already merged the commit anyway
-                    assert!(matches!(decrypt_self.unwrap_err(), CryptoError::SelfCommitIgnored));
+                    assert!(matches!(decrypt_self.unwrap_err(), Error::SelfCommitIgnored));
                 })
             })
             .await
@@ -323,11 +323,13 @@ mod tests {
                     .context
                     .decrypt_message(&conversation_id, commit_serialized)
                     .await;
+                let error = decryption_result.unwrap_err();
+                let error = error.downcast_mls::<MlsError>().unwrap().0;
                 assert!(matches!(
-                    decryption_result.unwrap_err(),
-                    CryptoError::MlsError(MlsError::MlsMessageError(ProcessMessageError::ValidationError(
+                    error,
+                    MlsError::MlsMessageError(ProcessMessageError::ValidationError(
                         ValidationError::InvalidMembershipTag
-                    )))
+                    ))
                 ));
 
                 // There is still a pending commit.

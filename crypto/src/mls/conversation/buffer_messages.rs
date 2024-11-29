@@ -3,12 +3,14 @@
 //!
 //! Feel free to delete all of this when the issue is fixed on the DS side !
 
+use super::error::{Error, Result};
 use crate::context::CentralContext;
 use crate::{
     group_store::GroupStoreValue,
     prelude::{
-        decrypt::MlsBufferedConversationDecryptMessage, Client, ConversationId, CryptoError, CryptoResult,
-        MlsConversation, MlsConversationDecryptMessage, MlsError,
+        decrypt::MlsBufferedConversationDecryptMessage, decrypt::MlsBufferedConversationDecryptMessage, Client,
+        ConversationId, CoreCryptoCallbacks, CryptoError, CryptoResult, MlsConversation, MlsConversationDecryptMessage,
+        MlsError,
     },
 };
 use core_crypto_keystore::{
@@ -25,22 +27,25 @@ impl CentralContext {
         &self,
         id: &ConversationId,
         message: impl AsRef<[u8]>,
-    ) -> CryptoResult<MlsConversationDecryptMessage> {
+    ) -> Result<MlsConversationDecryptMessage> {
         let keystore = self.keystore().await?;
 
         let pending_msg = MlsPendingMessage {
             foreign_id: id.clone(),
             message: message.as_ref().to_vec(),
         };
-        keystore.save::<MlsPendingMessage>(pending_msg).await?;
-        Err(CryptoError::BufferedFutureMessage)
+        keystore
+            .save::<MlsPendingMessage>(pending_msg)
+            .await
+            .map_err(Error::keystore("saving pending mls message"))?;
+        Err(Error::BufferedFutureMessage)
     }
 
     pub(crate) async fn restore_pending_messages(
         &self,
         conversation: &mut MlsConversation,
         is_rejoin: bool,
-    ) -> CryptoResult<Option<Vec<MlsBufferedConversationDecryptMessage>>> {
+    ) -> Result<Option<Vec<MlsBufferedConversationDecryptMessage>>> {
         let parent_conversation = match &conversation.parent_id {
             Some(id) => self.get_conversation(id).await.ok(),
             _ => None,
@@ -62,7 +67,7 @@ impl MlsConversation {
         backend: &'a MlsCryptoProvider,
         parent_conversation: Option<&'a GroupStoreValue<Self>>,
         is_rejoin: bool,
-    ) -> CryptoResult<Option<Vec<MlsBufferedConversationDecryptMessage>>> {
+    ) -> Result<Option<Vec<MlsBufferedConversationDecryptMessage>>> {
         // using the macro produces a clippy warning
         info!("restore_pending_messages");
         let result = async move {
@@ -74,27 +79,37 @@ impl MlsConversation {
                 // and you go out of sync so there's no point in decrypting buffered messages
 
                 trace!("External commit trying to rejoin group");
-                if keystore.find::<MlsPendingMessage>(group_id).await?.is_some() {
-                    keystore.remove::<MlsPendingMessage, _>(group_id).await?;
+                if keystore
+                    .find::<MlsPendingMessage>(group_id)
+                    .await
+                    .map_err(Error::keystore("finding mls pending message by group id"))?
+                    .is_some()
+                {
+                    keystore
+                        .remove::<MlsPendingMessage, _>(group_id)
+                        .await
+                        .map_err(Error::keystore("removing mls pending message"))?;
                 }
                 return Ok(None);
             }
 
             let mut pending_messages = keystore
                 .find_all::<MlsPendingMessage>(EntityFindParams::default())
-                .await?
+                .await
+                .map_err(Error::keystore("finding all mls pending messages"))?
                 .into_iter()
                 .filter(|pm| pm.foreign_id == group_id)
-                .try_fold(vec![], |mut acc, m| {
-                    let msg = MlsMessageIn::tls_deserialize(&mut m.message.as_slice()).map_err(MlsError::from)?;
+                .map(|m| -> Result<_> {
+                    let msg = MlsMessageIn::tls_deserialize(&mut m.message.as_slice())
+                        .map_err(Error::tls_deserialize("mls message in"))?;
                     let ct = match msg.body_as_ref() {
-                        MlsMessageInBody::PublicMessage(m) => Ok(m.content_type()),
-                        MlsMessageInBody::PrivateMessage(m) => Ok(m.content_type()),
-                        _ => Err(CryptoError::ConsumerError),
-                    }?;
-                    acc.push((ct as u8, msg));
-                    CryptoResult::Ok(acc)
-                })?;
+                        MlsMessageInBody::PublicMessage(m) => m.content_type(),
+                        MlsMessageInBody::PrivateMessage(m) => m.content_type(),
+                        _ => return Err(Error::InappropriateMessageBodyType),
+                    };
+                    Ok((ct as u8, msg))
+                })
+                .collect::<Result<Vec<_>>>()?;
 
             // We want to restore application messages first, then Proposals & finally Commits
             // luckily for us that's the exact same order as the [ContentType] enum
@@ -103,7 +118,7 @@ impl MlsConversation {
             let mut decrypted_messages = Vec::with_capacity(pending_messages.len());
             for (_, m) in pending_messages {
                 let parent_conversation = match &self.parent_id {
-                    Some(_) => Some(parent_conversation.ok_or(CryptoError::ParentGroupNotFound)?),
+                    Some(_) => Some(parent_conversation.ok_or(Error::ParentGroupNotFound)?),
                     _ => None,
                 };
                 let restore_pending = false; // to prevent infinite recursion
@@ -130,7 +145,8 @@ impl MlsConversation {
 
 #[cfg(test)]
 mod tests {
-    use crate::{test_utils::*, CryptoError};
+    use super::super::error::Error;
+    use crate::test_utils::*;
     use wasm_bindgen_test::*;
 
     wasm_bindgen_test_configure!(run_in_browser);
@@ -207,10 +223,10 @@ mod tests {
                         .map(|m| m.to_bytes().unwrap());
                     for m in messages {
                         let decrypt = bob_central.context.decrypt_message(&id, m).await;
-                        assert!(matches!(decrypt.unwrap_err(), CryptoError::BufferedFutureMessage));
+                        assert!(matches!(decrypt.unwrap_err(), Error::BufferedFutureMessage));
                     }
                     let decrypt = bob_central.context.decrypt_message(&id, app_msg).await;
-                    assert!(matches!(decrypt.unwrap_err(), CryptoError::BufferedFutureMessage));
+                    assert!(matches!(decrypt.unwrap_err(), Error::BufferedFutureMessage));
 
                     // Bob should have buffered the messages
                     assert_eq!(bob_central.context.count_entities().await.pending_messages, 4);
@@ -334,10 +350,10 @@ mod tests {
                             .map(|m| m.to_bytes().unwrap());
                         for m in messages {
                             let decrypt = alice_central.context.decrypt_message(&id, m).await;
-                            assert!(matches!(decrypt.unwrap_err(), CryptoError::BufferedFutureMessage));
+                            assert!(matches!(decrypt.unwrap_err(), Error::BufferedFutureMessage));
                         }
                         let decrypt = alice_central.context.decrypt_message(&id, app_msg).await;
-                        assert!(matches!(decrypt.unwrap_err(), CryptoError::BufferedFutureMessage));
+                        assert!(matches!(decrypt.unwrap_err(), Error::BufferedFutureMessage));
 
                         // Alice should have buffered the messages
                         assert_eq!(alice_central.context.count_entities().await.pending_messages, 4);
