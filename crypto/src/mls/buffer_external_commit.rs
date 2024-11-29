@@ -5,7 +5,8 @@
 //!
 //! Feel free to delete all of this when the issue is fixed on the DS side !
 
-use crate::prelude::{ConversationId, CryptoError, CryptoResult, MlsConversationDecryptMessage};
+use super::error::{Error, Result};
+use crate::prelude::{ConversationId, MlsConversationDecryptMessage};
 use core_crypto_keystore::{
     connection::FetchFromDatabase,
     entities::{MlsPendingMessage, PersistedMlsPendingGroup},
@@ -18,24 +19,32 @@ impl CentralContext {
         &self,
         id: &ConversationId,
         message: impl AsRef<[u8]>,
-    ) -> CryptoResult<MlsConversationDecryptMessage> {
+    ) -> Result<MlsConversationDecryptMessage> {
         let keystore = self.keystore().await?;
-        let Some(pending_group) = keystore.find::<PersistedMlsPendingGroup>(id).await? else {
-            return Err(CryptoError::ConversationNotFound(id.clone()));
+        let Some(pending_group) = keystore
+            .find::<PersistedMlsPendingGroup>(id)
+            .await
+            .map_err(Error::keystore("finding persisted mls pending group"))?
+        else {
+            return Err(Error::ConversationNotFound(id.clone()));
         };
 
         let pending_msg = MlsPendingMessage {
             foreign_id: pending_group.id.clone(),
             message: message.as_ref().to_vec(),
         };
-        keystore.save::<MlsPendingMessage>(pending_msg).await?;
-        Err(CryptoError::UnmergedPendingGroup)
+        keystore
+            .save::<MlsPendingMessage>(pending_msg)
+            .await
+            .map_err(Error::keystore("saving mls pending message"))?;
+        Err(Error::UnmergedPendingGroup)
     }
 }
 
 #[cfg(test)]
 mod tests {
-    use crate::{test_utils::*, CryptoError};
+    use super::super::error::Error;
+    use crate::test_utils::*;
     use wasm_bindgen_test::*;
 
     wasm_bindgen_test_configure!(run_in_browser);
@@ -43,6 +52,8 @@ mod tests {
     #[apply(all_cred_cipher)]
     #[wasm_bindgen_test]
     async fn should_buffer_and_reapply_messages_after_external_commit_merged(case: TestCase) {
+        use crate::mls;
+
         run_test_with_client_ids(
             case.clone(),
             ["alice", "bob", "charlie", "debbie"],
@@ -115,10 +126,16 @@ mod tests {
                         .map(|m| m.to_bytes().unwrap());
                     for m in messages {
                         let decrypt = bob_central.context.decrypt_message(&id, m).await;
-                        assert!(matches!(decrypt.unwrap_err(), CryptoError::UnmergedPendingGroup));
+                        assert!(matches!(
+                            decrypt.unwrap_err(),
+                            mls::conversation::error::Error::UnmergedPendingGroup
+                        ));
                     }
                     let decrypt = bob_central.context.decrypt_message(&id, app_msg).await;
-                    assert!(matches!(decrypt.unwrap_err(), CryptoError::UnmergedPendingGroup));
+                    assert!(matches!(
+                        decrypt.unwrap_err(),
+                        mls::conversation::error::Error::UnmergedPendingGroup
+                    ));
 
                     // Bob should have buffered the messages
                     assert_eq!(bob_central.context.count_entities().await.pending_messages, 4);

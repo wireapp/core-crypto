@@ -1,5 +1,5 @@
+use super::error::{Error, Result};
 use crate::prelude::CiphersuiteName;
-use crate::{CryptoError, CryptoResult};
 use openmls_traits::types::{Ciphersuite, HashType};
 use wire_e2e_identity::prelude::HashAlgorithm;
 
@@ -44,11 +44,11 @@ impl From<MlsCiphersuite> for u16 {
 }
 
 impl TryFrom<u16> for MlsCiphersuite {
-    type Error = CryptoError;
+    type Error = Error;
 
-    fn try_from(c: u16) -> CryptoResult<Self> {
+    fn try_from(c: u16) -> Result<Self> {
         Ok(CiphersuiteName::try_from(c)
-            .map_err(|_| CryptoError::ImplementationError)?
+            .map_err(|_| Error::UnknownCiphersuite)?
             .into())
     }
 }

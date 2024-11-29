@@ -114,7 +114,9 @@ impl CentralContext {
             private_key,
         };
         let identifier = ClientIdentifier::X509(HashMap::from([(cs.signature_algorithm(), cert_bundle)]));
-        self.mls_init(identifier, vec![cs], nb_init_key_packages).await?;
+        self.mls_init(identifier, vec![cs], nb_init_key_packages)
+            .await
+            .map_err(Error::mls("initializing mls"))?;
         Ok(crl_new_distribution_points)
     }
 }
