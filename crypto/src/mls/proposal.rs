@@ -18,9 +18,10 @@ use openmls::prelude::{hash_ref::ProposalRef, KeyPackage};
 
 use mls_crypto_provider::MlsCryptoProvider;
 
+use super::error::{Error, Result};
 use crate::{
     mls::{ClientId, ConversationId, MlsConversation},
-    prelude::{Client, CryptoError, CryptoResult, MlsProposalBundle},
+    prelude::{Client, MlsProposalBundle},
 };
 
 use crate::context::CentralContext;
@@ -75,24 +76,29 @@ impl MlsProposal {
         client: &Client,
         backend: &MlsCryptoProvider,
         mut conversation: impl std::ops::DerefMut<Target = MlsConversation>,
-    ) -> CryptoResult<MlsProposalBundle> {
+    ) -> Result<MlsProposalBundle> {
         let proposal = match self {
-            MlsProposal::Add(key_package) => {
-                (*conversation)
-                    .propose_add_member(client, backend, key_package.into())
-                    .await
-            }
-            MlsProposal::Update => (*conversation).propose_self_update(client, backend).await,
+            MlsProposal::Add(key_package) => (*conversation)
+                .propose_add_member(client, backend, key_package.into())
+                .await
+                .map_err(Error::conversation("proposing to add member"))?,
+            MlsProposal::Update => (*conversation)
+                .propose_self_update(client, backend)
+                .await
+                .map_err(Error::conversation("proposing self update"))?,
             MlsProposal::Remove(client_id) => {
                 let index = conversation
                     .group
                     .members()
                     .find(|kp| kp.credential.identity() == client_id.as_slice())
-                    .ok_or(CryptoError::ClientNotFound(client_id))
+                    .ok_or(Error::ClientNotFound(client_id))
                     .map(|kp| kp.index)?;
-                (*conversation).propose_remove_member(client, backend, index).await
+                (*conversation)
+                    .propose_remove_member(client, backend, index)
+                    .await
+                    .map_err(Error::conversation("proposing to remove member"))?
             }
-        }?;
+        };
         Ok(proposal)
     }
 }
@@ -100,27 +106,19 @@ impl MlsProposal {
 impl CentralContext {
     /// Creates a new Add proposal
     #[cfg_attr(test, crate::idempotent)]
-    pub async fn new_add_proposal(
-        &self,
-        id: &ConversationId,
-        key_package: KeyPackage,
-    ) -> CryptoResult<MlsProposalBundle> {
+    pub async fn new_add_proposal(&self, id: &ConversationId, key_package: KeyPackage) -> Result<MlsProposalBundle> {
         self.new_proposal(id, MlsProposal::Add(key_package)).await
     }
 
     /// Creates a new Add proposal
     #[cfg_attr(test, crate::idempotent)]
-    pub async fn new_remove_proposal(
-        &self,
-        id: &ConversationId,
-        client_id: ClientId,
-    ) -> CryptoResult<MlsProposalBundle> {
+    pub async fn new_remove_proposal(&self, id: &ConversationId, client_id: ClientId) -> Result<MlsProposalBundle> {
         self.new_proposal(id, MlsProposal::Remove(client_id)).await
     }
 
     /// Creates a new Add proposal
     #[cfg_attr(test, crate::dispotent)]
-    pub async fn new_update_proposal(&self, id: &ConversationId) -> CryptoResult<MlsProposalBundle> {
+    pub async fn new_update_proposal(&self, id: &ConversationId) -> Result<MlsProposalBundle> {
         self.new_proposal(id, MlsProposal::Update).await
     }
 
@@ -136,8 +134,11 @@ impl CentralContext {
     /// # Errors
     /// If the conversation is not found, an error will be returned. Errors from OpenMls can be
     /// returned as well, when for example there's a commit pending to be merged
-    async fn new_proposal(&self, id: &ConversationId, proposal: MlsProposal) -> CryptoResult<MlsProposalBundle> {
-        let conversation = self.get_conversation(id).await?;
+    async fn new_proposal(&self, id: &ConversationId, proposal: MlsProposal) -> Result<MlsProposalBundle> {
+        let conversation = self
+            .get_conversation(id)
+            .await
+            .map_err(Error::conversation("getting conversation by id"))?;
         let client = &self.mls_client().await?;
         proposal
             .create(client, &self.mls_provider().await?, conversation.write().await)

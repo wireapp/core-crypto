@@ -2,12 +2,12 @@ use log::trace;
 use openmls::prelude::{GroupEpoch, GroupId, JoinProposal, LeafNodeIndex, MlsMessageOut, Proposal};
 use std::collections::HashSet;
 
+use super::error::{Error, Result};
 use crate::{
+    context::CentralContext,
     mls::{self, credential::typ::MlsCredentialType, ClientId, ConversationId},
-    prelude::{CryptoError, CryptoResult, MlsCiphersuite, MlsConversation, MlsError},
+    prelude::{MlsCiphersuite, MlsConversation},
 };
-
-use crate::context::CentralContext;
 
 impl MlsConversation {
     /// Get actual group members and subtract pending remove proposals
@@ -64,7 +64,7 @@ impl CentralContext {
         epoch: GroupEpoch,
         ciphersuite: MlsCiphersuite,
         credential_type: MlsCredentialType,
-    ) -> CryptoResult<MlsMessageOut> {
+    ) -> Result<MlsMessageOut> {
         let group_id = GroupId::from_slice(conversation_id.as_slice());
         let mls_provider = self.mls_provider().await?;
 
@@ -78,22 +78,28 @@ impl CentralContext {
                 // If a Basic CredentialBundle does not exist, just create one instead of failing
                 client
                     .init_basic_credential_bundle_if_missing(&mls_provider, ciphersuite.signature_algorithm())
-                    .await?;
+                    .await
+                    .map_err(Error::client("initializing basic credential bundle if missing"))?;
 
                 client
                     .find_most_recent_credential_bundle(ciphersuite.signature_algorithm(), credential_type)
-                    .await?
+                    .await
+                    .map_err(Error::client(
+                        "finding most recent credential bundle (which we just created)",
+                    ))?
             }
             (Err(mls::client::error::Error::CredentialNotFound(_)), MlsCredentialType::X509) => {
-                return Err(CryptoError::E2eiEnrollmentNotDone)
+                return Err(Error::E2eiEnrollmentNotDone)
             }
-            (Err(e), _) => return Err(e.into()),
+            (Err(e), _) => return Err(Error::client("finding most recent credential bundle")(e)),
         };
         let kp = client
             .generate_one_keypackage_from_credential_bundle(&mls_provider, ciphersuite, &cb)
-            .await?;
+            .await
+            .map_err(Error::client("generating one keypackage from credential bundle"))?;
 
-        Ok(JoinProposal::new(kp, group_id, epoch, &cb.signature_key).map_err(MlsError::from)?)
+        Ok(JoinProposal::new(kp, group_id, epoch, &cb.signature_key)
+            .map_err(Error::mls_operation("creating join proposal"))?)
     }
 }
 

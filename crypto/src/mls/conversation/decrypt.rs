@@ -436,7 +436,10 @@ impl CentralContext {
         let msg =
             MlsMessageIn::tls_deserialize(&mut message.as_ref()).map_err(Error::tls_deserialize("mls message in"))?;
         let Ok(conversation) = self.get_conversation(id).await else {
-            return self.handle_when_group_is_pending(id, message).await.map_err(Into::into);
+            return self
+                .handle_when_group_is_pending(id, message)
+                .await
+                .map_err(Error::mls("handling when group is pending"));
         };
         let parent_conversation = self.get_parent_conversation(&conversation).await?;
         let client = &self.mls_client().await?;
