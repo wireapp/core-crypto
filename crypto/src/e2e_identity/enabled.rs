@@ -1,12 +1,14 @@
 //! Utility for clients to get the current state of E2EI when the app resumes
 
+use super::error::{Error, Result};
 use crate::context::CentralContext;
-use crate::prelude::{Client, CryptoError, CryptoResult, MlsCentral, MlsCredentialType};
+use crate::mls;
+use crate::prelude::{Client, MlsCentral, MlsCredentialType};
 use openmls_traits::types::SignatureScheme;
 
 impl CentralContext {
     /// See [MlsCentral::e2ei_is_enabled]
-    pub async fn e2ei_is_enabled(&self, signature_scheme: SignatureScheme) -> CryptoResult<bool> {
+    pub async fn e2ei_is_enabled(&self, signature_scheme: SignatureScheme) -> Result<bool> {
         let client = self.mls_client().await?;
         client.e2ei_is_enabled(signature_scheme).await
     }
@@ -14,23 +16,26 @@ impl CentralContext {
 
 impl MlsCentral {
     /// Returns true when end-to-end-identity is enabled for the given SignatureScheme
-    pub async fn e2ei_is_enabled(&self, signature_scheme: SignatureScheme) -> CryptoResult<bool> {
+    pub async fn e2ei_is_enabled(&self, signature_scheme: SignatureScheme) -> Result<bool> {
         self.mls_client.e2ei_is_enabled(signature_scheme).await
     }
 }
 
 impl Client {
-    async fn e2ei_is_enabled(&self, signature_scheme: SignatureScheme) -> CryptoResult<bool> {
+    async fn e2ei_is_enabled(&self, signature_scheme: SignatureScheme) -> Result<bool> {
         let x509_result = self
             .find_most_recent_credential_bundle(signature_scheme, MlsCredentialType::X509)
             .await;
         match x509_result {
-            Err(CryptoError::CredentialNotFound(MlsCredentialType::X509)) => {
+            Err(mls::client::error::Error::CredentialNotFound(MlsCredentialType::X509)) => {
                 self.find_most_recent_credential_bundle(signature_scheme, MlsCredentialType::Basic)
-                    .await?;
+                    .await
+                    .map_err(Error::mls_client(
+                        "finding most recent basic credential bundle after searching for x509",
+                    ))?;
                 Ok(false)
             }
-            Err(e) => Err(e),
+            Err(e) => Err(Error::mls_client("finding most recent x509 credential bundle")(e)),
             Ok(_) => Ok(true),
         }
     }
@@ -38,7 +43,7 @@ impl Client {
 
 #[cfg(test)]
 mod tests {
-    use crate::{prelude::MlsCredentialType, test_utils::*, CryptoError};
+    use crate::{e2e_identity::error::Error, prelude::MlsCredentialType, test_utils::*, CryptoError};
     use openmls_traits::types::SignatureScheme;
     use wasm_bindgen_test::*;
 
@@ -66,7 +71,8 @@ mod tests {
             Box::pin(async move {
                 assert!(matches!(
                     cc.context.e2ei_is_enabled(case.signature_scheme()).await.unwrap_err(),
-                    CryptoError::MlsNotInitialized
+                    Error::CryptoError(boxed)
+                    if matches!(*boxed, CryptoError::MlsNotInitialized)
                 ));
             })
         })
@@ -85,7 +91,8 @@ mod tests {
                 };
                 assert!(matches!(
                     cc.context.e2ei_is_enabled(other_sc).await.unwrap_err(),
-                    CryptoError::CredentialNotFound(_)
+                    Error::CryptoError(boxed)
+                    if matches!(*boxed, CryptoError::CredentialNotFound(_))
                 ));
             })
         })

@@ -15,7 +15,7 @@
 // along with this program. If not, see http://www.gnu.org/licenses/.
 
 use crate::mls::conversation::config::MAX_PAST_EPOCHS;
-use crate::prelude::{E2eIdentityError, MlsCredentialType};
+use crate::prelude::MlsCredentialType;
 
 #[cfg(all(feature = "cryptobox-migrate", target_family = "wasm"))]
 use rexie;
@@ -27,7 +27,7 @@ use rexie;
 pub enum CryptoError {
     /// End to end identity error
     #[error("End to end identity error")]
-    E2eiError(#[from] E2eIdentityError),
+    E2eiError(#[from] crate::e2e_identity::error::Error),
     /// This error is emitted when the requested conversation couldn't be found in our store
     #[error("Couldn't find conversation")]
     ConversationNotFound(crate::prelude::ConversationId),
@@ -258,6 +258,15 @@ pub enum CryptoError {
     /// Invalid Context. This context has been finished and can no longer be used.
     #[error("This context has already been finished and can no longer be used.")]
     InvalidContext,
+    /// Something happened in the MLS client code
+    #[error(transparent)]
+    MlsClient(#[from] crate::mls::client::error::Error),
+    /// Something happened within a conversation
+    #[error(transparent)]
+    Conversation(#[from] crate::mls::conversation::error::Error),
+    /// Something happened about a MLS credential
+    #[error(transparent)]
+    MlsCredential(#[from] crate::mls::credential::error::Error),
 }
 
 impl From<MlsError> for CryptoError {

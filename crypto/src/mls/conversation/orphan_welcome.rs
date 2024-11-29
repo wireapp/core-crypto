@@ -4,11 +4,12 @@
 
 #[cfg(test)]
 mod tests {
-    use crate::CryptoError;
+
     use openmls::prelude::KeyPackage;
     use openmls_traits::OpenMlsCryptoProvider;
     use wasm_bindgen_test::*;
 
+    use super::super::error::Error;
     use crate::test_utils::*;
 
     wasm_bindgen_test_configure!(run_in_browser);
@@ -48,7 +49,7 @@ mod tests {
                     .context
                     .process_welcome_message(welcome.into(), case.custom_cfg())
                     .await;
-                assert!(matches!(process_welcome.unwrap_err(), CryptoError::OrphanWelcome));
+                assert!(matches!(process_welcome.unwrap_err(), Error::OrphanWelcome));
             })
         })
         .await;

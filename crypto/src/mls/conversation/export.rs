@@ -16,10 +16,9 @@
 
 //! Primitives to export data from a group, such as derived keys and client ids.
 
+use super::error::{Error, Result};
 use crate::context::CentralContext;
-use crate::mls::{
-    client::id::ClientId, ConversationId, CryptoError, CryptoResult, MlsCentral, MlsConversation, MlsError,
-};
+use crate::mls::{client::id::ClientId, ConversationId, MlsCentral, MlsConversation};
 
 impl MlsConversation {
     const EXPORTER_LABEL: &'static str = "exporter";
@@ -30,11 +29,10 @@ impl MlsConversation {
         &self,
         backend: &impl openmls_traits::OpenMlsCryptoProvider,
         key_length: usize,
-    ) -> CryptoResult<Vec<u8>> {
+    ) -> Result<Vec<u8>> {
         self.group
             .export_secret(backend, Self::EXPORTER_LABEL, Self::EXPORTER_CONTEXT, key_length)
-            .map_err(MlsError::from)
-            .map_err(CryptoError::from)
+            .map_err(Error::mls_operation("exporting secret key"))
     }
 
     /// See [MlsCentral::get_client_ids]
@@ -49,11 +47,7 @@ impl MlsConversation {
 impl CentralContext {
     /// See [MlsCentral::export_secret_key]
     #[cfg_attr(test, crate::idempotent)]
-    pub async fn export_secret_key(
-        &self,
-        conversation_id: &ConversationId,
-        key_length: usize,
-    ) -> CryptoResult<Vec<u8>> {
+    pub async fn export_secret_key(&self, conversation_id: &ConversationId, key_length: usize) -> Result<Vec<u8>> {
         self.get_conversation(conversation_id)
             .await?
             .read()
@@ -63,7 +57,7 @@ impl CentralContext {
 
     /// See [MlsCentral::get_client_ids]
     #[cfg_attr(test, crate::idempotent)]
-    pub async fn get_client_ids(&self, conversation_id: &ConversationId) -> CryptoResult<Vec<ClientId>> {
+    pub async fn get_client_ids(&self, conversation_id: &ConversationId) -> Result<Vec<ClientId>> {
         Ok(self
             .get_conversation(conversation_id)
             .await?
@@ -84,14 +78,9 @@ impl MlsCentral {
     /// # Errors
     /// OpenMls secret generation error or conversation not found
     #[cfg_attr(test, crate::idempotent)]
-    pub async fn export_secret_key(
-        &self,
-        conversation_id: &ConversationId,
-        key_length: usize,
-    ) -> CryptoResult<Vec<u8>> {
+    pub async fn export_secret_key(&self, conversation_id: &ConversationId, key_length: usize) -> Result<Vec<u8>> {
         self.get_conversation(conversation_id)
             .await?
-            .ok_or_else(|| CryptoError::ConversationNotFound(conversation_id.clone()))?
             .export_secret_key(&self.mls_backend, key_length)
     }
 
@@ -103,22 +92,16 @@ impl MlsCentral {
     /// # Errors
     /// if the conversation can't be found
     #[cfg_attr(test, crate::idempotent)]
-    pub async fn get_client_ids(&self, conversation_id: &ConversationId) -> CryptoResult<Vec<ClientId>> {
-        Ok(self
-            .get_conversation(conversation_id)
-            .await?
-            .ok_or_else(|| CryptoError::ConversationNotFound(conversation_id.clone()))?
-            .get_client_ids())
+    pub async fn get_client_ids(&self, conversation_id: &ConversationId) -> Result<Vec<ClientId>> {
+        Ok(self.get_conversation(conversation_id).await?.get_client_ids())
     }
 }
 
 #[cfg(test)]
 mod tests {
 
-    use crate::{
-        prelude::{CryptoError, MlsError},
-        test_utils::*,
-    };
+    use super::super::error::Error;
+    use crate::{prelude::MlsError, test_utils::*};
     use openmls::prelude::ExportSecretError;
 
     use wasm_bindgen_test::*;
@@ -162,9 +145,11 @@ mod tests {
                         .unwrap();
 
                     let result = alice_central.context.export_secret_key(&id, usize::MAX).await;
+                    let error = result.unwrap_err();
+                    let error = error.downcast_mls().unwrap().0;
                     assert!(matches!(
-                        result.unwrap_err(),
-                        CryptoError::MlsError(MlsError::MlsExportSecretError(ExportSecretError::KeyLengthTooLong))
+                        error,
+                        MlsError::MlsExportSecretError(ExportSecretError::KeyLengthTooLong)
                     ));
                 })
             })
@@ -185,7 +170,7 @@ mod tests {
 
                     let unknown_id = b"not_found".to_vec();
                     let error = alice_central.context.get_client_ids(&unknown_id).await.unwrap_err();
-                    assert!(matches!(error, CryptoError::ConversationNotFound(c) if c == unknown_id));
+                    assert!(matches!(error, Error::ConversationNotFound(c) if c == unknown_id));
                 })
             })
             .await
@@ -230,7 +215,7 @@ mod tests {
 
                     let unknown_id = b"not_found".to_vec();
                     let error = alice_central.context.get_client_ids(&unknown_id).await.unwrap_err();
-                    assert!(matches!(error, CryptoError::ConversationNotFound(c) if c == unknown_id));
+                    assert!(matches!(error, Error::ConversationNotFound(c) if c == unknown_id));
                 })
             })
             .await
