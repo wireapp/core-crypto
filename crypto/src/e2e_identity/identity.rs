@@ -181,7 +181,10 @@ impl MlsConversation {
         self.members_with_key()
             .into_iter()
             .filter(|(id, _)| device_ids.contains(&ClientId::from(id.as_slice())))
-            .map(|(_, c)| c.extract_identity(self.ciphersuite(), env).map_err(Into::into))
+            .map(|(_, c)| {
+                c.extract_identity(self.ciphersuite(), env)
+                    .map_err(Error::credential("extracting identity"))
+            })
             .collect::<Result<Vec<_>>>()
     }
 
@@ -201,7 +204,9 @@ impl MlsConversation {
             .filter(|(uid, _)| user_ids.contains(uid))
             .map(|(uid, c)| {
                 let uid = String::try_from(uid).map_err(Error::GetUserIdentities)?;
-                let identity = c.extract_identity(self.ciphersuite(), env)?;
+                let identity = c
+                    .extract_identity(self.ciphersuite(), env)
+                    .map_err(Error::credential("extracting identity"))?;
                 Ok((uid, identity))
             })
             .process_results(|iter| iter.into_group_map())

@@ -28,7 +28,7 @@ impl ClientIdentifier {
                 // hence no need to compute it for every certificate then verify its uniqueness
                 // that's not a getter's job
                 let cert = certs.values().next().ok_or(Error::NoX509CertificateBundle)?;
-                let id = cert.get_client_id()?;
+                let id = cert.get_client_id().map_err(Error::credential("getting client id"))?;
                 Ok(std::borrow::Cow::Owned(id))
             }
         }
@@ -45,7 +45,8 @@ impl ClientIdentifier {
             ClientIdentifier::Basic(id) => signature_schemes.iter().try_fold(
                 Vec::with_capacity(signature_schemes.len()),
                 |mut acc, &sc| -> Result<_> {
-                    let cb = Client::new_basic_credential_bundle(&id, sc, backend)?;
+                    let cb = Client::new_basic_credential_bundle(&id, sc, backend)
+                        .map_err(Error::credential("creating new basic credential bundle"))?;
                     acc.push((sc, id.clone(), cb));
                     Ok(acc)
                 },
@@ -55,8 +56,9 @@ impl ClientIdentifier {
                 certs
                     .into_iter()
                     .try_fold(Vec::with_capacity(cap), |mut acc, (sc, cert)| -> Result<_> {
-                        let id = cert.get_client_id()?;
-                        let cb = Client::new_x509_credential_bundle(cert)?;
+                        let id = cert.get_client_id().map_err(Error::credential("getting client id"))?;
+                        let cb = Client::new_x509_credential_bundle(cert)
+                            .map_err(Error::credential("creating new x509 credential bundle"))?;
                         acc.push((sc, id, cb));
                         Ok(acc)
                     })

@@ -174,7 +174,8 @@ impl Client {
                 .map_err(Error::GenerateRandomClientId)?
                 .into();
 
-            let cb = Self::new_basic_credential_bundle(&tmp_client_id, cs.signature_algorithm(), backend)?;
+            let cb = Self::new_basic_credential_bundle(&tmp_client_id, cs.signature_algorithm(), backend)
+                .map_err(Error::credential("creating new basic credential bundle"))?;
 
             let sign_kp = MlsSignatureKeyPair::new(
                 cs.signature_algorithm(),
@@ -384,7 +385,10 @@ impl Client {
                         }
                     }
                     openmls::prelude::MlsCredentialType::X509(cert) => {
-                        let spk = cert.extract_public_key()?.ok_or(CryptoError::InternalMlsError)?;
+                        let spk = cert
+                            .extract_public_key()
+                            .map_err(Error::credential("extracting public key"))?
+                            .ok_or(CryptoError::InternalMlsError)?;
                         if signature_key.public() != spk {
                             return Err(Error::WrongCredential);
                         }
@@ -530,7 +534,8 @@ impl Client {
         if matches!(existing_cb, Err(Error::CredentialNotFound(_))) {
             let id = self.id().await?;
             debug!(id:% = &id; "Initializing basic credential bundle");
-            let cb = Self::new_basic_credential_bundle(&id, sc, backend)?;
+            let cb = Self::new_basic_credential_bundle(&id, sc, backend)
+                .map_err(Error::credential("creating new basic credential bundle"))?;
             self.save_identity(&backend.keystore(), None, sc, cb).await?;
         }
         Ok(())
@@ -542,8 +547,9 @@ impl Client {
         sc: SignatureScheme,
         cb: CertificateBundle,
     ) -> Result<CredentialBundle> {
-        let id = cb.get_client_id()?;
-        let cb = Self::new_x509_credential_bundle(cb)?;
+        let id = cb.get_client_id().map_err(Error::credential("getting client id"))?;
+        let cb =
+            Self::new_x509_credential_bundle(cb).map_err(Error::credential("creating new x509 credential bundle"))?;
         self.save_identity(keystore, Some(&id), sc, cb).await
     }
 }
