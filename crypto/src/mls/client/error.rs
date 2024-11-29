@@ -83,6 +83,13 @@ pub enum Error {
     /// Generating signature keypair
     #[error("Generating signature keypair")]
     GeneratingSignatureKeypair(#[source] openmls_traits::types::CryptoError),
+    /// Something went wrong in a conversation
+    #[error("{context}")]
+    Conversation {
+        context: &'static str,
+        #[source]
+        source: Box<crate::mls::conversation::error::Error>,
+    },
     /// Compatibility wrapper
     ///
     /// This should be removed before merging this branch, but it allows an easier migration path to module-specific errors.
@@ -114,5 +121,12 @@ impl Error {
 
     pub(crate) fn tls_deserialize(item: &'static str) -> impl FnOnce(tls_codec::Error) -> Self {
         move |source| Self::TlsDeserialize { item, source }
+    }
+
+    pub(crate) fn conversation(context: &'static str) -> impl FnOnce(crate::mls::conversation::error::Error) -> Self {
+        move |source| Self::Conversation {
+            context,
+            source: Box::new(source),
+        }
     }
 }

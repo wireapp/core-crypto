@@ -1,17 +1,18 @@
+use super::error::{Error, Result};
 use crate::context::CentralContext;
-use crate::prelude::{ConversationId, CryptoError, CryptoResult, MlsCentral, MlsConversation};
+use crate::prelude::{ConversationId, MlsCentral, MlsConversation};
 
 impl MlsCentral {
     /// Returns the raw public key of the single external sender present in this group.
     /// This should be used to initialize a subconversation
-    pub async fn get_external_sender(&self, id: &ConversationId) -> CryptoResult<Vec<u8>> {
+    pub async fn get_external_sender(&self, id: &ConversationId) -> Result<Vec<u8>> {
         self.get_conversation(id).await?.get_external_sender().await
     }
 }
 
 impl CentralContext {
     /// See [MlsCentral::get_external_sender]
-    pub async fn get_external_sender(&self, id: &ConversationId) -> CryptoResult<Vec<u8>> {
+    pub async fn get_external_sender(&self, id: &ConversationId) -> Result<Vec<u8>> {
         self.get_conversation(id)
             .await?
             .read()
@@ -22,13 +23,13 @@ impl CentralContext {
 }
 
 impl MlsConversation {
-    async fn get_external_sender(&self) -> CryptoResult<Vec<u8>> {
+    async fn get_external_sender(&self) -> Result<Vec<u8>> {
         let ext_senders = self
             .group
             .group_context_extensions()
             .external_senders()
-            .ok_or(CryptoError::MissingExternalSenderExtension)?;
-        let ext_sender = ext_senders.first().ok_or(CryptoError::MissingExternalSenderExtension)?;
+            .ok_or(Error::MissingExternalSenderExtension)?;
+        let ext_sender = ext_senders.first().ok_or(Error::MissingExternalSenderExtension)?;
         let ext_sender_public_key = ext_sender.signature_key().as_slice().to_vec();
         Ok(ext_sender_public_key)
     }

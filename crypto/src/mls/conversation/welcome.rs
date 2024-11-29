@@ -1,14 +1,12 @@
 use std::borrow::BorrowMut;
 
+use super::error::{Error, Result};
 use crate::context::CentralContext;
 use crate::{
     e2e_identity::init_certificates::NewCrlDistributionPoint,
     group_store::GroupStore,
     mls::credential::crl::{extract_crl_uris_from_group, get_new_crl_distribution_points},
-    prelude::{
-        ConversationId, CryptoError, CryptoResult, MlsConversation, MlsConversationConfiguration,
-        MlsCustomConfiguration, MlsError,
-    },
+    prelude::{ConversationId, MlsConversation, MlsConversationConfiguration, MlsCustomConfiguration},
 };
 use core_crypto_keystore::{connection::FetchFromDatabase, entities::PersistedMlsPendingGroup};
 use mls_crypto_provider::MlsCryptoProvider;
@@ -42,9 +40,10 @@ impl CentralContext {
         &self,
         welcome: Vec<u8>,
         custom_cfg: MlsCustomConfiguration,
-    ) -> CryptoResult<WelcomeBundle> {
+    ) -> Result<WelcomeBundle> {
         let mut cursor = std::io::Cursor::new(welcome);
-        let welcome = MlsMessageIn::tls_deserialize(&mut cursor).map_err(MlsError::from)?;
+        let welcome =
+            MlsMessageIn::tls_deserialize(&mut cursor).map_err(Error::tls_deserialize("mls message in (welcome)"))?;
         self.process_welcome_message(welcome, custom_cfg).await
     }
 
@@ -66,10 +65,11 @@ impl CentralContext {
         &self,
         welcome: MlsMessageIn,
         custom_cfg: MlsCustomConfiguration,
-    ) -> CryptoResult<WelcomeBundle> {
-        let welcome = match welcome.extract() {
-            MlsMessageInBody::Welcome(welcome) => welcome,
-            _ => return Err(CryptoError::ConsumerError),
+    ) -> Result<WelcomeBundle> {
+        let MlsMessageInBody::Welcome(welcome) = welcome.extract() else {
+            return Err(Error::CallerError(
+                "the message provided to process_welcome_message was not a welcome message",
+            ));
         };
         let cs = welcome.ciphersuite().into();
         let configuration = MlsConversationConfiguration {
@@ -113,15 +113,15 @@ impl MlsConversation {
         configuration: MlsConversationConfiguration,
         backend: &MlsCryptoProvider,
         mls_groups: &mut GroupStore<MlsConversation>,
-    ) -> CryptoResult<Self> {
+    ) -> Result<Self> {
         let mls_group_config = configuration.as_openmls_default_configuration()?;
 
         let group = MlsGroup::new_from_welcome(backend, &mls_group_config, welcome, None).await;
 
         let group = match group {
             Err(openmls::prelude::WelcomeError::NoMatchingKeyPackage)
-            | Err(openmls::prelude::WelcomeError::NoMatchingEncryptionKey) => return Err(CryptoError::OrphanWelcome),
-            _ => group.map_err(MlsError::from)?,
+            | Err(openmls::prelude::WelcomeError::NoMatchingEncryptionKey) => return Err(Error::OrphanWelcome),
+            _ => group.map_err(Error::mls_operation("group could not be created from welcome"))?,
         };
 
         let id = ConversationId::from(group.group_id().as_slice());
@@ -132,7 +132,7 @@ impl MlsConversation {
         let pending_group_exists = pending_group.ok().flatten().is_some();
 
         if conversation_exists || pending_group_exists {
-            return Err(CryptoError::ConversationAlreadyExists(id));
+            return Err(Error::ConversationAlreadyExists(id));
         }
 
         Self::from_mls_group(group, configuration, backend).await
@@ -219,7 +219,7 @@ mod tests {
                     .context
                     .process_welcome_message(welcome.into(), case.custom_cfg())
                     .await;
-                assert!(matches!(join_welcome.unwrap_err(), CryptoError::ConversationAlreadyExists(i) if i == id));
+                assert!(matches!(join_welcome.unwrap_err(), Error::ConversationAlreadyExists(i) if i == id));
             })
         })
         .await;

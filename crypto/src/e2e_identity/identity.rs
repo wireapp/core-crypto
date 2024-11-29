@@ -93,7 +93,10 @@ impl CentralContext {
         let auth_service = mls_provider.authentication_service();
         auth_service.refresh_time_of_interest().await;
         let auth_service = auth_service.borrow().await;
-        let conversation = self.get_conversation(conversation_id).await?;
+        let conversation = self
+            .get_conversation(conversation_id)
+            .await
+            .map_err(Error::conversation("getting conversation by id"))?;
         let conversation_guard = conversation.read().await;
         conversation_guard.get_device_identities(client_ids, auth_service.as_ref())
     }
@@ -108,7 +111,10 @@ impl CentralContext {
         let auth_service = mls_provider.authentication_service();
         auth_service.refresh_time_of_interest().await;
         let auth_service = auth_service.borrow().await;
-        let conversation = self.get_conversation(conversation_id).await?;
+        let conversation = self
+            .get_conversation(conversation_id)
+            .await
+            .map_err(Error::conversation("getting conversation by id"))?;
         let conversation_guard = conversation.read().await;
         conversation_guard.get_user_identities(user_ids, auth_service.as_ref())
     }
@@ -127,7 +133,10 @@ impl MlsCentral {
             .authentication_service()
             .refresh_time_of_interest()
             .await;
-        let conversation = self.get_conversation(conversation_id).await?;
+        let conversation = self
+            .get_conversation(conversation_id)
+            .await
+            .map_err(Error::conversation("getting conversation by id"))?;
         conversation.get_device_identities(
             client_ids,
             self.mls_backend.authentication_service().borrow().await.as_ref(),
@@ -149,7 +158,10 @@ impl MlsCentral {
             .authentication_service()
             .refresh_time_of_interest()
             .await;
-        let conversation = self.get_conversation(conversation_id).await?;
+        let conversation = self
+            .get_conversation(conversation_id)
+            .await
+            .map_err(Error::conversation("getting conversation by id"))?;
         conversation.get_user_identities(
             user_ids,
             self.mls_backend.authentication_service().borrow().await.as_ref(),
