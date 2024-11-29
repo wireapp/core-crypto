@@ -205,7 +205,7 @@ impl CoreCryptoContext {
     }
 
     /// Returns: [`WasmCryptoResult<CommitBundle>`]
-
+    ///
     /// see [core_crypto::context::CentralContext::e2ei_rotate]
     pub fn e2ei_rotate(&self, conversation_id: ConversationId) -> Promise {
         let context = self.inner.clone();

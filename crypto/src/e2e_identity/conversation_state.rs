@@ -379,7 +379,7 @@ mod tests {
                     .as_ref()
                     .expect("No x509 test chain")
                     .find_local_intermediate_ca();
-                let cert = CertificateBundle::new_with_default_values(&intermediate_ca, Some(expiration_time));
+                let cert = CertificateBundle::new_with_default_values(intermediate_ca, Some(expiration_time));
                 let cb = Client::new_x509_credential_bundle(cert.clone()).unwrap();
                 let commit = alice_central.context.e2ei_rotate(&id, Some(&cb)).await.unwrap().commit;
                 alice_central.context.commit_accepted(&id).await.unwrap();
@@ -450,7 +450,7 @@ mod tests {
                     alice_intermediate_ca.update_end_identity(&mut alice_cert.certificate, Some(expiration_time));
 
                     let cert_bundle =
-                        CertificateBundle::from_certificate_and_issuer(&alice_cert.certificate, &alice_intermediate_ca);
+                        CertificateBundle::from_certificate_and_issuer(&alice_cert.certificate, alice_intermediate_ca);
                     let cb = Client::new_x509_credential_bundle(cert_bundle.clone()).unwrap();
                     alice_central.context.e2ei_rotate(&id, Some(&cb)).await.unwrap();
                     alice_central.context.commit_accepted(&id).await.unwrap();
