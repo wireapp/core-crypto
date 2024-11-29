@@ -159,6 +159,15 @@ pub enum Error {
         #[source]
         source: Box<crate::mls::credential::error::Error>,
     },
+    /// Something in the MLS root module went wrong
+    #[error("{context}")]
+    MlsRoot {
+        /// What was happening in the caller
+        context: &'static str,
+        /// What happened
+        #[source]
+        source: Box<crate::mls::error::Error>,
+    },
     /// Compatibility wrapper
     ///
     /// This should be removed before merging this branch, but it allows an easier migration path to module-specific errors.
@@ -234,5 +243,12 @@ impl Error {
             return None;
         };
         source.downcast_ref::<T>().map(|t| (t, *context))
+    }
+
+    pub(crate) fn mls(context: &'static str) -> impl FnOnce(crate::mls::error::Error) -> Self {
+        move |source| Self::MlsRoot {
+            context,
+            source: Box::new(source),
+        }
     }
 }
