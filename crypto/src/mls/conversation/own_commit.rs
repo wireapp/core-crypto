@@ -95,10 +95,16 @@ impl MlsConversation {
             credential: own_leaf.credential().clone(),
             signature_key: own_leaf.signature_key().clone(),
         };
-        let identity = own_leaf_credential_with_key.extract_identity(self.ciphersuite(), None)?;
+        let identity = own_leaf_credential_with_key
+            .extract_identity(self.ciphersuite(), None)
+            .map_err(Error::credential("extracting identity"))?;
 
-        let crl_new_distribution_points =
-            get_new_crl_distribution_points(backend, extract_crl_uris_from_group(&self.group)?).await?;
+        let crl_new_distribution_points = get_new_crl_distribution_points(
+            backend,
+            extract_crl_uris_from_group(&self.group).map_err(Error::credential("extracting crl uris from group"))?,
+        )
+        .await
+        .map_err(Error::credential("getting new crl distribution points"))?;
 
         Ok(MlsConversationDecryptMessage {
             app_msg: None,

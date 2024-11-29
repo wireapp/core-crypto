@@ -150,7 +150,15 @@ pub enum Error {
         #[source]
         source: Box<dyn std::error::Error + Send + Sync>,
     },
-
+    /// Something in the MLS credential went wrong
+    #[error("{context}")]
+    MlsCredential {
+        /// What was happening when the error was thrown
+        context: &'static str,
+        /// The inner error which was produced
+        #[source]
+        source: Box<crate::mls::credential::error::Error>,
+    },
     /// Compatibility wrapper
     ///
     /// This should be removed before merging this branch, but it allows an easier migration path to module-specific errors.
@@ -203,6 +211,13 @@ impl Error {
         E: 'static + std::error::Error + Send + Sync,
     {
         move |source| Self::MlsOperation {
+            context,
+            source: Box::new(source),
+        }
+    }
+
+    pub(crate) fn credential(context: &'static str) -> impl FnOnce(crate::mls::credential::error::Error) -> Self {
+        move |source| Self::MlsCredential {
             context,
             source: Box::new(source),
         }
