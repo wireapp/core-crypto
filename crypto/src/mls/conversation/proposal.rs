@@ -9,13 +9,13 @@ use openmls::{binary_tree::LeafNodeIndex, framing::MlsMessageOut, key_packages::
 
 use mls_crypto_provider::MlsCryptoProvider;
 
+use super::error::{Error, Result};
 use crate::{
     e2e_identity::init_certificates::NewCrlDistributionPoint, mls::credential::crl::get_new_crl_distribution_points,
 };
 use crate::{
     mls::credential::crl::extract_crl_uris_from_credentials,
     prelude::{Client, MlsConversation, MlsProposalRef},
-    CryptoError, CryptoResult, MlsError,
 };
 
 /// Creating proposals
@@ -27,11 +27,11 @@ impl MlsConversation {
         client: &Client,
         backend: &MlsCryptoProvider,
         key_package: KeyPackageIn,
-    ) -> CryptoResult<MlsProposalBundle> {
+    ) -> Result<MlsProposalBundle> {
         let signer = &self
             .find_current_credential_bundle(client)
             .await
-            .map_err(|_| CryptoError::IdentityInitializationError)?
+            .map_err(|_| Error::IdentityInitializationError)?
             .signature_key;
 
         let crl_new_distribution_points = get_new_crl_distribution_points(
@@ -44,7 +44,7 @@ impl MlsConversation {
             .group
             .propose_add_member(backend, signer, key_package)
             .await
-            .map_err(MlsError::from)?;
+            .map_err(Error::mls_operation("propose add member"))?;
         let proposal = MlsProposalBundle {
             proposal,
             proposal_ref: proposal_ref.into(),
@@ -61,17 +61,16 @@ impl MlsConversation {
         client: &Client,
         backend: &MlsCryptoProvider,
         member: LeafNodeIndex,
-    ) -> CryptoResult<MlsProposalBundle> {
+    ) -> Result<MlsProposalBundle> {
         let signer = &self
             .find_current_credential_bundle(client)
             .await
-            .map_err(|_| CryptoError::IdentityInitializationError)?
+            .map_err(|_| Error::IdentityInitializationError)?
             .signature_key;
         let proposal = self
             .group
             .propose_remove_member(backend, signer, member)
-            .map_err(MlsError::from)
-            .map_err(CryptoError::from)
+            .map_err(Error::mls_operation("propose remove member"))
             .map(MlsProposalBundle::from)?;
         self.persist_group_when_changed(&backend.keystore(), false).await?;
         Ok(proposal)
@@ -83,7 +82,7 @@ impl MlsConversation {
         &mut self,
         client: &Client,
         backend: &MlsCryptoProvider,
-    ) -> CryptoResult<MlsProposalBundle> {
+    ) -> Result<MlsProposalBundle> {
         self.propose_explicit_self_update(client, backend, None).await
     }
 
@@ -94,15 +93,19 @@ impl MlsConversation {
         client: &Client,
         backend: &MlsCryptoProvider,
         leaf_node: Option<LeafNode>,
-    ) -> CryptoResult<MlsProposalBundle> {
+    ) -> Result<MlsProposalBundle> {
         let msg_signer = &self
             .find_current_credential_bundle(client)
             .await
-            .map_err(|_| CryptoError::IdentityInitializationError)?
+            .map_err(|_| Error::IdentityInitializationError)?
             .signature_key;
 
         let proposal = if let Some(leaf_node) = leaf_node {
-            let leaf_node_signer = &self.find_most_recent_credential_bundle(client).await?.signature_key;
+            let leaf_node_signer = &self
+                .find_most_recent_credential_bundle(client)
+                .await
+                .map_err(Error::client("finding most recent credential bundle"))?
+                .signature_key;
 
             self.group
                 .propose_explicit_self_update(backend, msg_signer, leaf_node, leaf_node_signer)
@@ -110,8 +113,8 @@ impl MlsConversation {
         } else {
             self.group.propose_self_update(backend, msg_signer).await
         }
-        .map_err(MlsError::from)
-        .map(MlsProposalBundle::from)?;
+        .map(MlsProposalBundle::from)
+        .map_err(Error::mls_operation("proposing self update"))?;
 
         self.persist_group_when_changed(&backend.keystore(), false).await?;
         Ok(proposal)
@@ -144,9 +147,12 @@ impl MlsProposalBundle {
     /// 0 -> proposal
     /// 1 -> proposal reference
     #[allow(clippy::type_complexity)]
-    pub fn to_bytes(self) -> CryptoResult<(Vec<u8>, Vec<u8>, NewCrlDistributionPoint)> {
+    pub fn to_bytes(self) -> Result<(Vec<u8>, Vec<u8>, NewCrlDistributionPoint)> {
         use openmls::prelude::TlsSerializeTrait as _;
-        let proposal = self.proposal.tls_serialize_detached().map_err(MlsError::from)?;
+        let proposal = self
+            .proposal
+            .tls_serialize_detached()
+            .map_err(Error::tls_serialize("proposal"))?;
         let proposal_ref = self.proposal_ref.to_bytes();
 
         Ok((proposal, proposal_ref, self.crl_new_distribution_points))
@@ -409,7 +415,7 @@ mod tests {
                         .context
                         .decrypt_message(&id, &proposal.to_bytes().unwrap())
                         .await;
-                    assert!(matches!(past_proposal.unwrap_err(), CryptoError::StaleProposal));
+                    assert!(matches!(past_proposal.unwrap_err(), Error::StaleProposal));
                 })
             })
             .await;

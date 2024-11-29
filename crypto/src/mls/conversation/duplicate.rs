@@ -2,17 +2,13 @@
 //! in CoreCrypto so as not to return a decryption error to the client. Remove this when this is used
 //! with a DS guaranteeing exactly once delivery semantics since the following degrades the performances
 
+use super::error::{Error, Result};
 use crate::prelude::MlsConversation;
-use crate::{CryptoError, MlsError};
 use mls_crypto_provider::MlsCryptoProvider;
 use openmls::prelude::{ContentType, FramedContentBodyIn, Proposal, PublicMessageIn, Sender};
 
 impl MlsConversation {
-    pub(crate) fn is_duplicate_message(
-        &self,
-        backend: &MlsCryptoProvider,
-        msg: &PublicMessageIn,
-    ) -> Result<bool, CryptoError> {
+    pub(crate) fn is_duplicate_message(&self, backend: &MlsCryptoProvider, msg: &PublicMessageIn) -> Result<bool> {
         let (sender, content_type) = (msg.sender(), msg.body().content_type());
 
         match (content_type, sender) {
@@ -20,11 +16,14 @@ impl MlsConversation {
                 // we use the confirmation tag to detect duplicate since it is issued from the GroupContext
                 // which is supposed to be unique per epoch
                 if let Some(msg_ct) = msg.confirmation_tag() {
-                    let group_ct = self.group.compute_confirmation_tag(backend).map_err(MlsError::from)?;
+                    let group_ct = self
+                        .group
+                        .compute_confirmation_tag(backend)
+                        .map_err(Error::mls_operation("computing confirmation tag"))?;
                     Ok(msg_ct == &group_ct)
                 } else {
                     // a commit MUST have a ConfirmationTag
-                    Err(CryptoError::InternalMlsError)
+                    Err(Error::MlsGroupInvalidState("a commit must have a ConfirmationTag"))
                 }
             }
             (ContentType::Proposal, Sender::Member(_) | Sender::NewMemberProposal) => {
@@ -34,7 +33,9 @@ impl MlsConversation {
                         let already_exists = self.group.pending_proposals().any(|pp| pp.proposal() == &proposal);
                         Ok(already_exists)
                     }
-                    _ => Err(CryptoError::InternalMlsError),
+                    _ => Err(Error::MlsGroupInvalidState(
+                        "message body was not a proposal despite ContentType::Proposal",
+                    )),
                 }
             }
             (_, _) => Ok(false),
@@ -44,7 +45,8 @@ impl MlsConversation {
 
 #[cfg(test)]
 mod tests {
-    use crate::{test_utils::*, CryptoError};
+    use super::super::error::Error;
+    use crate::test_utils::*;
     use wasm_bindgen_test::*;
 
     wasm_bindgen_test_configure!(run_in_browser);
@@ -82,7 +84,7 @@ mod tests {
                         .context
                         .decrypt_message(&id, &commit.to_bytes().unwrap())
                         .await;
-                    assert!(matches!(decrypt_duplicate.unwrap_err(), CryptoError::DuplicateMessage));
+                    assert!(matches!(decrypt_duplicate.unwrap_err(), Error::DuplicateMessage));
 
                     // Decrypting unknown commit.
                     // It fails with this error since it's not the commit who has created this epoch
@@ -90,7 +92,7 @@ mod tests {
                         .context
                         .decrypt_message(&id, &unknown_commit.to_bytes().unwrap())
                         .await;
-                    assert!(matches!(decrypt_lost_commit.unwrap_err(), CryptoError::StaleCommit));
+                    assert!(matches!(decrypt_lost_commit.unwrap_err(), Error::StaleCommit));
                 })
             })
             .await
@@ -147,7 +149,7 @@ mod tests {
                     .context
                     .decrypt_message(&id, &ext_commit.to_bytes().unwrap())
                     .await;
-                assert!(matches!(decryption.unwrap_err(), CryptoError::DuplicateMessage));
+                assert!(matches!(decryption.unwrap_err(), Error::DuplicateMessage));
 
                 // Decrypting unknown external commit.
                 // It fails with this error since it's not the external commit who has created this epoch
@@ -155,7 +157,7 @@ mod tests {
                     .context
                     .decrypt_message(&id, &unknown_ext_commit.to_bytes().unwrap())
                     .await;
-                assert!(matches!(decryption.unwrap_err(), CryptoError::StaleCommit));
+                assert!(matches!(decryption.unwrap_err(), Error::StaleCommit));
             })
         })
         .await
@@ -188,7 +190,7 @@ mod tests {
                     .context
                     .decrypt_message(&id, &proposal.to_bytes().unwrap())
                     .await;
-                assert!(matches!(decryption.unwrap_err(), CryptoError::DuplicateMessage));
+                assert!(matches!(decryption.unwrap_err(), Error::DuplicateMessage));
 
                 // advance Bob's epoch to trigger failure
                 bob_central.context.commit_pending_proposals(&id).await.unwrap();
@@ -199,7 +201,7 @@ mod tests {
                     .context
                     .decrypt_message(&id, &proposal.to_bytes().unwrap())
                     .await;
-                assert!(matches!(decryption.unwrap_err(), CryptoError::StaleProposal));
+                assert!(matches!(decryption.unwrap_err(), Error::StaleProposal));
             })
         })
         .await
@@ -237,7 +239,7 @@ mod tests {
                     .context
                     .decrypt_message(&id, &ext_proposal.to_bytes().unwrap())
                     .await;
-                assert!(matches!(decryption.unwrap_err(), CryptoError::DuplicateMessage));
+                assert!(matches!(decryption.unwrap_err(), Error::DuplicateMessage));
 
                 // advance alice's epoch
                 alice_central.context.commit_pending_proposals(&id).await.unwrap();
@@ -248,7 +250,7 @@ mod tests {
                     .context
                     .decrypt_message(&id, &ext_proposal.to_bytes().unwrap())
                     .await;
-                assert!(matches!(decryption.unwrap_err(), CryptoError::StaleProposal));
+                assert!(matches!(decryption.unwrap_err(), Error::StaleProposal));
             })
         })
         .await
@@ -275,7 +277,7 @@ mod tests {
                 bob_central.context.decrypt_message(&id, &encrypted).await.unwrap();
                 // decrypt twice .. not ok
                 let decryption = bob_central.context.decrypt_message(&id, &encrypted).await;
-                assert!(matches!(decryption.unwrap_err(), CryptoError::DuplicateMessage));
+                assert!(matches!(decryption.unwrap_err(), Error::DuplicateMessage));
             })
         })
         .await

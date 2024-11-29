@@ -72,10 +72,12 @@ mod tests {
                             .add_members_to_conversation(&id, vec![invalid_kp.into()])
                             .await;
 
+                        let error = commit_creation.unwrap_err();
+                        let error = error.downcast_mls().unwrap().0;
                         assert!(matches!(
-                            commit_creation.unwrap_err(),
-                            CryptoError::MlsError(MlsError::MlsAddMembersError(
-                                AddMembersError::KeyPackageVerifyError(KeyPackageVerifyError::InvalidLeafNode(_))
+                            error,
+                            MlsError::MlsAddMembersError(AddMembersError::KeyPackageVerifyError(
+                                KeyPackageVerifyError::InvalidLeafNode(_)
                             ))
                         ));
                         assert!(alice_central.pending_proposals(&id).await.is_empty());

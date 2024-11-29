@@ -4,7 +4,8 @@ use openmls_traits::OpenMlsCryptoProvider;
 
 use mls_crypto_provider::MlsCryptoProvider;
 
-use crate::prelude::{Client, CryptoError, CryptoResult, MlsConversation, MlsProposalBundle};
+use super::error::{Error, Result};
+use crate::prelude::{Client, MlsConversation, MlsProposalBundle};
 
 /// Marker struct holding methods responsible for restoring (renewing) proposals (or pending commit)
 /// in case another commit has been accepted by the backend instead of ours
@@ -101,7 +102,7 @@ impl MlsConversation {
         backend: &MlsCryptoProvider,
         proposals: impl Iterator<Item = QueuedProposal>,
         needs_update: bool,
-    ) -> CryptoResult<Vec<MlsProposalBundle>> {
+    ) -> Result<Vec<MlsProposalBundle>> {
         let mut bundle = vec![];
         let is_external = |p: &QueuedProposal| matches!(p.sender(), Sender::External(_) | Sender::NewMemberProposal);
         let proposals = proposals.filter(|p| !is_external(p));
@@ -110,7 +111,7 @@ impl MlsConversation {
                 Proposal::Add(add) => self.propose_add_member(client, backend, add.key_package.into()).await?,
                 Proposal::Remove(remove) => self.propose_remove_member(client, backend, remove.removed()).await?,
                 Proposal::Update(update) => self.renew_update(client, backend, Some(update.leaf_node())).await?,
-                _ => return Err(CryptoError::ImplementationError),
+                _ => return Err(Error::PropopsalVariantCannotBeRenewed),
             };
             bundle.push(msg);
         }
@@ -129,24 +130,28 @@ impl MlsConversation {
         client: &Client,
         backend: &MlsCryptoProvider,
         leaf_node: Option<&LeafNode>,
-    ) -> CryptoResult<MlsProposalBundle> {
+    ) -> Result<MlsProposalBundle> {
         if let Some(leaf_node) = leaf_node {
             // Creating an update rekeys the LeafNode everytime. Hence we need to clear the previous
             // encryption key from the keystore otherwise we would have a leak
             backend
                 .key_store()
                 .remove::<MlsEncryptionKeyPair, _>(leaf_node.encryption_key().as_slice())
-                .await?;
+                .await
+                .map_err(Error::keystore("removing mls encryption keypair"))?;
         }
 
         let mut leaf_node = leaf_node
             .or_else(|| self.group.own_leaf())
             .cloned()
-            .ok_or(CryptoError::InternalMlsError)?;
+            .ok_or(Error::MlsGroupInvalidState("own_leaf is None"))?;
 
         let sc = self.signature_scheme();
         let ct = self.own_credential_type()?;
-        let cb = client.find_most_recent_credential_bundle(sc, ct).await?;
+        let cb = client
+            .find_most_recent_credential_bundle(sc, ct)
+            .await
+            .map_err(Error::client("finding most recent credential bundle"))?;
 
         leaf_node.set_credential_with_key(cb.to_mls_credential_with_key());
 
