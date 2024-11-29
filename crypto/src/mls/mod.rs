@@ -6,7 +6,7 @@ use log::trace;
 use crate::prelude::{
     identifier::ClientIdentifier, key_package::INITIAL_KEYING_MATERIAL_COUNT, Client, ClientId, ConversationId,
     CoreCryptoCallbacks, CryptoError, CryptoResult, MlsCentralConfiguration, MlsCiphersuite, MlsConversation,
-    MlsConversationConfiguration, MlsCredentialType, MlsError,
+    MlsConversationConfiguration, MlsCredentialType,
 };
 use crate::CoreCrypto;
 use mls_crypto_provider::{EntropySeed, MlsCryptoProvider, MlsCryptoProviderConfiguration};
@@ -257,7 +257,10 @@ impl MlsCentral {
     /// Checks if a given conversation id exists locally
     pub async fn conversation_exists(&self, id: &ConversationId) -> CryptoResult<bool> {
         let result = self.get_conversation(id).await;
-        Ok(!matches!(result, Err(CryptoError::ConversationNotFound(_))))
+        Ok(!matches!(
+            result,
+            Err(conversation::error::Error::ConversationNotFound(_))
+        ))
     }
 
     /// Returns the epoch of a given conversation

@@ -90,7 +90,9 @@ impl MlsConversation {
     pub(crate) async fn find_current_credential_bundle(&self, client: &Client) -> Result<Arc<CredentialBundle>> {
         let own_leaf = self.group.own_leaf().ok_or(CryptoError::InternalMlsError)?;
         let sc = self.ciphersuite().signature_algorithm();
-        let ct = self.own_credential_type()?;
+        let ct = self
+            .own_credential_type()
+            .map_err(Error::conversation("getting own credential type"))?;
 
         client
             .find_credential_bundle_by_public_key(sc, ct, own_leaf.signature_key())
@@ -99,7 +101,9 @@ impl MlsConversation {
 
     pub(crate) async fn find_most_recent_credential_bundle(&self, client: &Client) -> Result<Arc<CredentialBundle>> {
         let sc = self.ciphersuite().signature_algorithm();
-        let ct = self.own_credential_type()?;
+        let ct = self
+            .own_credential_type()
+            .map_err(Error::conversation("getting own credential type"))?;
 
         client.find_most_recent_credential_bundle(sc, ct).await
     }
