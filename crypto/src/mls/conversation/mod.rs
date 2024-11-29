@@ -38,10 +38,11 @@ use mls_crypto_provider::{CryptoKeystore, MlsCryptoProvider};
 
 use config::MlsConversationConfiguration;
 
+use self::error::{Error, Result};
 use crate::{
     group_store::{GroupStore, GroupStoreValue},
     mls::{client::Client, MlsCentral},
-    prelude::{CryptoError, CryptoResult, MlsCiphersuite, MlsCredentialType, MlsError},
+    prelude::{MlsCiphersuite, MlsCredentialType},
 };
 
 use crate::context::CentralContext;
@@ -57,6 +58,7 @@ mod duplicate;
 #[cfg(test)]
 mod durability;
 pub(crate) mod encrypt;
+pub mod error;
 pub(crate) mod export;
 pub(crate) mod external_sender;
 pub(crate) mod group_info;
@@ -68,6 +70,7 @@ pub(crate) mod proposal;
 mod renew;
 pub(crate) mod welcome;
 mod wipe;
+
 /// A unique identifier for a group/conversation. The identifier must be unique within a client.
 pub type ConversationId = Vec<u8>;
 
@@ -103,11 +106,12 @@ impl MlsConversation {
         creator_credential_type: MlsCredentialType,
         configuration: MlsConversationConfiguration,
         backend: &MlsCryptoProvider,
-    ) -> CryptoResult<Self> {
+    ) -> Result<Self> {
         let (cs, ct) = (configuration.ciphersuite, creator_credential_type);
         let cb = author_client
             .get_most_recent_or_create_credential_bundle(backend, cs.signature_algorithm(), ct)
-            .await?;
+            .await
+            .map_err(Error::client("getting or creating credential bundle"))?;
 
         let group = MlsGroup::new_with_group_id(
             backend,
@@ -117,7 +121,7 @@ impl MlsConversation {
             cb.to_mls_credential_with_key(),
         )
         .await
-        .map_err(MlsError::from)?;
+        .map_err(Error::mls_operation("creating group with id"))?;
 
         let mut conversation = Self {
             id,
@@ -138,7 +142,7 @@ impl MlsConversation {
         group: MlsGroup,
         configuration: MlsConversationConfiguration,
         backend: &MlsCryptoProvider,
-    ) -> CryptoResult<Self> {
+    ) -> Result<Self> {
         let id = ConversationId::from(group.group_id().as_slice());
 
         let mut conversation = Self {
@@ -156,8 +160,9 @@ impl MlsConversation {
     }
 
     /// Internal API: restore the conversation from a persistence-saved serialized Group State.
-    pub(crate) fn from_serialized_state(buf: Vec<u8>, parent_id: Option<ConversationId>) -> CryptoResult<Self> {
-        let group: MlsGroup = core_crypto_keystore::deser(&buf)?;
+    pub(crate) fn from_serialized_state(buf: Vec<u8>, parent_id: Option<ConversationId>) -> Result<Self> {
+        let group: MlsGroup =
+            core_crypto_keystore::deser(&buf).map_err(Error::keystore("deserializing group state"))?;
         let id = ConversationId::from(group.group_id().as_slice());
         let configuration = MlsConversationConfiguration {
             ciphersuite: group.ciphersuite().into(),
@@ -202,19 +207,16 @@ impl MlsConversation {
         })
     }
 
-    pub(crate) async fn persist_group_when_changed(
-        &mut self,
-        keystore: &CryptoKeystore,
-        force: bool,
-    ) -> CryptoResult<()> {
+    pub(crate) async fn persist_group_when_changed(&mut self, keystore: &CryptoKeystore, force: bool) -> Result<()> {
         if force || self.group.state_changed() == openmls::group::InnerState::Changed {
             keystore
                 .mls_group_persist(
                     &self.id,
-                    &core_crypto_keystore::ser(&self.group)?,
+                    &core_crypto_keystore::ser(&self.group).map_err(Error::keystore("serializing group state"))?,
                     self.parent_id.as_deref(),
                 )
-                .await?;
+                .await
+                .map_err(Error::keystore("persisting mls group"))?;
 
             self.group.set_state(openmls::group::InnerState::Persisted);
         }
@@ -224,21 +226,21 @@ impl MlsConversation {
 
     /// Marks this conversation as child of another.
     /// Prequisite: Being a member of this group and for it to be stored in the keystore
-    pub async fn mark_as_child_of(&mut self, parent_id: &ConversationId, keystore: &Connection) -> CryptoResult<()> {
+    pub async fn mark_as_child_of(&mut self, parent_id: &ConversationId, keystore: &Connection) -> Result<()> {
         if keystore.mls_group_exists(parent_id).await {
             self.parent_id = Some(parent_id.clone());
             self.persist_group_when_changed(keystore, true).await?;
             Ok(())
         } else {
-            Err(CryptoError::ParentGroupNotFound)
+            Err(Error::ParentGroupNotFound)
         }
     }
 
-    pub(crate) fn own_credential_type(&self) -> CryptoResult<MlsCredentialType> {
+    pub(crate) fn own_credential_type(&self) -> Result<MlsCredentialType> {
         Ok(self
             .group
             .own_leaf_node()
-            .ok_or(CryptoError::InternalMlsError)?
+            .ok_or(Error::MlsGroupInvalidState("own_leaf_node not present in group"))?
             .credential()
             .credential_type()
             .into())
@@ -254,42 +256,46 @@ impl MlsConversation {
 }
 
 impl MlsCentral {
-    pub(crate) async fn get_conversation(&self, id: &ConversationId) -> CryptoResult<MlsConversation> {
+    pub(crate) async fn get_conversation(&self, id: &ConversationId) -> Result<MlsConversation> {
         GroupStore::fetch_from_keystore(id, &self.mls_backend.keystore(), None)
             .await?
-            .ok_or_else(|| CryptoError::ConversationNotFound(id.clone()))
+            .ok_or_else(|| Error::ConversationNotFound(id.clone()))
     }
 }
 
 impl CentralContext {
-    pub(crate) async fn get_conversation(&self, id: &ConversationId) -> CryptoResult<GroupStoreValue<MlsConversation>> {
+    pub(crate) async fn get_conversation(&self, id: &ConversationId) -> Result<GroupStoreValue<MlsConversation>> {
         let keystore = self.mls_provider().await?.keystore();
         self.mls_groups()
             .await?
             .get_fetch(id, &keystore, None)
             .await?
-            .ok_or_else(|| CryptoError::ConversationNotFound(id.clone()))
+            .ok_or_else(|| Error::ConversationNotFound(id.clone()))
     }
 
     pub(crate) async fn get_parent_conversation(
         &self,
         conversation: &GroupStoreValue<MlsConversation>,
-    ) -> CryptoResult<Option<GroupStoreValue<MlsConversation>>> {
+    ) -> Result<Option<GroupStoreValue<MlsConversation>>> {
         let conversation_lock = conversation.read().await;
         if let Some(parent_id) = conversation_lock.parent_id.as_ref() {
             Ok(Some(
                 self.get_conversation(parent_id)
                     .await
-                    .map_err(|_| CryptoError::ParentGroupNotFound)?,
+                    .map_err(|_| Error::ParentGroupNotFound)?,
             ))
         } else {
             Ok(None)
         }
     }
 
-    pub(crate) async fn get_all_conversations(&self) -> CryptoResult<Vec<GroupStoreValue<MlsConversation>>> {
+    pub(crate) async fn get_all_conversations(&self) -> Result<Vec<GroupStoreValue<MlsConversation>>> {
         let keystore = self.mls_provider().await?.keystore();
-        self.mls_groups().await?.get_fetch_all(&keystore).await
+        self.mls_groups()
+            .await?
+            .get_fetch_all(&keystore)
+            .await
+            .map_err(Into::into)
     }
 
     /// Mark a conversation as child of another one
@@ -299,7 +305,7 @@ impl CentralContext {
         &self,
         child_id: &ConversationId,
         parent_id: &ConversationId,
-    ) -> CryptoResult<()> {
+    ) -> Result<()> {
         let conversation = self.get_conversation(child_id).await?;
         conversation
             .write()

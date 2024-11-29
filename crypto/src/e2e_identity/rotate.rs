@@ -203,7 +203,10 @@ impl CentralContext {
         client: &Client,
         cb: &CredentialBundle,
     ) -> Result<HashMap<ConversationId, MlsCommitBundle>> {
-        let all_conversations = self.get_all_conversations().await?;
+        let all_conversations = self
+            .get_all_conversations()
+            .await
+            .map_err(Error::conversation("getting all conversations"))?;
 
         let mut commits = HashMap::with_capacity(all_conversations.len());
         for conv in all_conversations {
@@ -225,7 +228,8 @@ impl CentralContext {
     ) -> Result<MlsCommitBundle> {
         let client = &self.mls_client().await?;
         self.get_conversation(id)
-            .await?
+            .await
+            .map_err(Error::conversation("getting conversation by id"))?
             .write()
             .await
             .e2ei_rotate(&self.mls_provider().await?, client, cb)
@@ -252,7 +256,7 @@ impl MlsConversation {
         leaf_node.set_credential_with_key(cb.to_mls_credential_with_key());
         self.update_keying_material(client, backend, Some(cb), Some(leaf_node))
             .await
-            .map_err(Into::into)
+            .map_err(Error::conversation("updating keying material"))
     }
 }
 

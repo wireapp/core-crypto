@@ -17,22 +17,25 @@ use openmls_traits::OpenMlsCryptoProvider;
 
 use mls_crypto_provider::MlsCryptoProvider;
 
+use super::error::{Error, Result};
 use crate::context::CentralContext;
 use crate::{
     mls::{ConversationId, MlsConversation},
     prelude::{decrypt::MlsBufferedConversationDecryptMessage, MlsProposalRef},
-    CryptoError, CryptoResult, MlsError,
 };
 
 /// Abstraction over a MLS group capable of merging a commit
 impl MlsConversation {
     /// see [CentralContext::commit_accepted]
     #[cfg_attr(test, crate::durable)]
-    pub async fn commit_accepted(&mut self, backend: &MlsCryptoProvider) -> CryptoResult<()> {
+    pub async fn commit_accepted(&mut self, backend: &MlsCryptoProvider) -> Result<()> {
         // openmls stores here all the encryption keypairs used for update proposals..
         let previous_own_leaf_nodes = self.group.own_leaf_nodes.clone();
 
-        self.group.merge_pending_commit(backend).await.map_err(MlsError::from)?;
+        self.group
+            .merge_pending_commit(backend)
+            .await
+            .map_err(Error::mls_operation("merging pending commit"))?;
         self.persist_group_when_changed(&backend.keystore(), false).await?;
 
         // ..so if there's any, we clear them after the commit is merged
@@ -50,13 +53,13 @@ impl MlsConversation {
         &mut self,
         proposal_ref: MlsProposalRef,
         backend: &MlsCryptoProvider,
-    ) -> CryptoResult<()> {
+    ) -> Result<()> {
         self.group
             .remove_pending_proposal(backend.key_store(), &proposal_ref)
             .await
             .map_err(|e| match e {
-                MlsGroupStateError::PendingProposalNotFound => CryptoError::PendingProposalNotFound(proposal_ref),
-                _ => CryptoError::from(MlsError::from(e)),
+                MlsGroupStateError::PendingProposalNotFound => Error::PendingProposalNotFound(proposal_ref),
+                _ => Error::mls_operation("removing pending proposal")(e),
             })?;
         self.persist_group_when_changed(&backend.keystore(), true).await?;
         Ok(())
@@ -64,13 +67,13 @@ impl MlsConversation {
 
     /// see [CentralContext::clear_pending_commit]
     #[cfg_attr(test, crate::durable)]
-    pub async fn clear_pending_commit(&mut self, backend: &MlsCryptoProvider) -> CryptoResult<()> {
+    pub async fn clear_pending_commit(&mut self, backend: &MlsCryptoProvider) -> Result<()> {
         if self.group.pending_commit().is_some() {
             self.group.clear_pending_commit();
             self.persist_group_when_changed(&backend.keystore(), true).await?;
             Ok(())
         } else {
-            Err(CryptoError::PendingCommitNotFound)
+            Err(Error::PendingCommitNotFound)
         }
     }
 }
@@ -95,14 +98,18 @@ impl CentralContext {
     pub async fn commit_accepted(
         &self,
         id: &ConversationId,
-    ) -> CryptoResult<Option<Vec<MlsBufferedConversationDecryptMessage>>> {
+    ) -> Result<Option<Vec<MlsBufferedConversationDecryptMessage>>> {
         let conv = self.get_conversation(id).await?;
         let mut conv = conv.write().await;
         conv.commit_accepted(&self.mls_provider().await?).await?;
 
         let pending_messages = self.restore_pending_messages(&mut conv, false).await?;
         if pending_messages.is_some() {
-            self.keystore().await?.remove::<MlsPendingMessage, _>(id).await?;
+            self.keystore()
+                .await?
+                .remove::<MlsPendingMessage, _>(id)
+                .await
+                .map_err(Error::keystore("removing pending mls message"))?;
         }
         Ok(pending_messages)
     }
@@ -125,7 +132,7 @@ impl CentralContext {
         &self,
         conversation_id: &ConversationId,
         proposal_ref: MlsProposalRef,
-    ) -> CryptoResult<()> {
+    ) -> Result<()> {
         self.get_conversation(conversation_id)
             .await?
             .write()
@@ -148,7 +155,7 @@ impl CentralContext {
     /// # Errors
     /// When the conversation is not found or there is no pending commit
     #[cfg_attr(test, crate::idempotent)]
-    pub async fn clear_pending_commit(&self, conversation_id: &ConversationId) -> CryptoResult<()> {
+    pub async fn clear_pending_commit(&self, conversation_id: &ConversationId) -> Result<()> {
         self.get_conversation(conversation_id)
             .await?
             .write()
@@ -354,7 +361,7 @@ mod tests {
                     let id = conversation_id();
                     let simple_ref = MlsProposalRef::from(vec![0; case.ciphersuite().hash_length()]);
                     let clear = alice_central.context.clear_pending_proposal(&id, simple_ref).await;
-                    assert!(matches!(clear.unwrap_err(), CryptoError::ConversationNotFound(conv_id) if conv_id == id))
+                    assert!(matches!(clear.unwrap_err(), Error::ConversationNotFound(conv_id) if conv_id == id))
                 })
             })
             .await
@@ -367,13 +374,16 @@ mod tests {
                 Box::pin(async move {
                     let id = conversation_id();
                     alice_central
-                        .context.new_conversation(&id, case.credential_type, case.cfg.clone())
+                        .context
+                        .new_conversation(&id, case.credential_type, case.cfg.clone())
                         .await
                         .unwrap();
                     assert!(alice_central.pending_proposals(&id).await.is_empty());
                     let any_ref = MlsProposalRef::from(vec![0; case.ciphersuite().hash_length()]);
                     let clear = alice_central.context.clear_pending_proposal(&id, any_ref.clone()).await;
-                    assert!(matches!(clear.unwrap_err(), CryptoError::PendingProposalNotFound(prop_ref) if prop_ref == any_ref))
+                    assert!(
+                        matches!(clear.unwrap_err(), Error::PendingProposalNotFound(prop_ref) if prop_ref == any_ref)
+                    )
                 })
             })
             .await
@@ -442,7 +452,7 @@ mod tests {
                 Box::pin(async move {
                     let id = conversation_id();
                     let clear = alice_central.context.clear_pending_commit(&id).await;
-                    assert!(matches!(clear.unwrap_err(), CryptoError::ConversationNotFound(conv_id) if conv_id == id))
+                    assert!(matches!(clear.unwrap_err(), Error::ConversationNotFound(conv_id) if conv_id == id))
                 })
             })
             .await
@@ -461,7 +471,7 @@ mod tests {
                         .unwrap();
                     assert!(alice_central.pending_commit(&id).await.is_none());
                     let clear = alice_central.context.clear_pending_commit(&id).await;
-                    assert!(matches!(clear.unwrap_err(), CryptoError::PendingCommitNotFound))
+                    assert!(matches!(clear.unwrap_err(), Error::PendingCommitNotFound))
                 })
             })
             .await

@@ -82,7 +82,16 @@ pub enum Error {
         context: &'static str,
         /// The inner error which was produced
         #[source]
-        source: crate::mls::client::error::Error,
+        source: Box<crate::mls::client::error::Error>,
+    },
+    /// Something in the conversation went wrong
+    #[error("{context}")]
+    Conversation {
+        /// What was happening when the error was thrown
+        context: &'static str,
+        /// What happend within the conversation
+        #[source]
+        source: Box<crate::mls::conversation::error::Error>,
     },
     /// Compatibility wrapper
     ///
@@ -100,6 +109,16 @@ impl From<crate::CryptoError> for Error {
 
 impl Error {
     pub(crate) fn mls_client(context: &'static str) -> impl FnOnce(crate::mls::client::error::Error) -> Self {
-        move |source| Self::MlsClient { context, source }
+        move |source| Self::MlsClient {
+            context,
+            source: Box::new(source),
+        }
+    }
+
+    pub(crate) fn conversation(context: &'static str) -> impl FnOnce(crate::mls::conversation::error::Error) -> Self {
+        move |source| Self::Conversation {
+            context,
+            source: Box::new(source),
+        }
     }
 }
