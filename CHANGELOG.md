@@ -1,5 +1,87 @@
 # Changelog
 
+## v2.0.0 - 2024-12-02
+
+### Highlights
+
+- The number of public errors has been reduced and simplified. It's no longer necessary to use the
+  `proteus_last_error_code` function, since thrown error should contain all the information.
+- The logger callback now includes an additional context parameter which contains additional context
+  for a log event in the form of a JSON Object string.
+- It's now possible to change the logger and log level at runtime (see `setLogLevel` and `setLogger`).
+
+### Breaking changes
+
+- Dropped support for `i686-linux-android` target.
+- `CoreCryptoLogger` takes an additional `context` parameter.
+- `CoreCryptoError` and its child errors have been refactored to reduce the amount of error we expose and provide explicit 
+   errors for Proteus errors. The errors we have removed will appear under the `Other` case.  
+   ```
+   enum ProteusError {
+       SessionNotFound,
+       DuplicateMessage,
+       RemoteIdentityChanged,
+       Other(Int),
+   }
+  
+   pub enum MlsError {
+       ConversationAlreadyExists,
+       DuplicateMessage,
+       BufferedFutureMessage,
+       WrongEpoch,
+       MessageEpochTooOld,
+       SelfCommitIgnored,
+       UnmergedPendingGroup,
+       StaleProposal,
+       StaleCommit,
+       Other(String)
+   }
+   ```
+
+### Features
+
+- include the message of the source error when bundling errors together [WPB-14614] (16bc6e6)
+- refactor non-WASM error types (9d41c11)
+- proteus error codes are `Option<u16>` not `u32` outside wasm also (52547a0)
+- refactor WASM error types (31c860a)
+- proteus error codes are `Option<u16>` not `u32` (838c1ce)
+- add logging for following the changes in mls groups WPB-11544 (8cc0e7f)
+- support logs with a context of key/value pairs (b6ef534)
+- disambiguate `WrongEpoch` [WPB-14351] (e6a5e01)
+- support changing the logger and log level at runtime WPB-11541 (cd071f0)
+- add helper to extract data from within a transaction (c852363)
+- relax `Debug` trait bound on `CoreCryptoCommand` and add Rust helper [WPB-12132] (e952a0f)
+
+### Bug Fixes
+
+- bump ios deployment target to 15.0 to fix linker issue (1327b1b)
+- improve errors when hitting an idb error during IndexedDB migration (0c0c954)
+- don't obfuscate rexie error in keystore v1.0.0 (6ed43e6)
+- improve errors when hitting a indexdb error during cryptobox migration (682bd9a)
+- build without error without default features (97e2d24)
+
+### Documentation
+
+- improve platform-specific test instructions (a08a3b2)
+- improve naming and documentation for `TransactionHelper` (e8b4756)
+
+### Testing
+
+- cause jvm kotlin tests to pass (3b8d930)
+- fixup tests broken by recent changes (59db9ed)
+- change test for build metadata to achieve closer parity with the kotlin test (ffd4e02)
+- use wdio where `bun test` was used previously (9c67569)
+- use util functions, migrate tests from puppeteer to wdio [WPB-12176] (fbff47a)
+- add test util functions [WPB-12176] (196c877)
+- crypto: use world.com instead of wire.com [WPB-14356] (6edcef7)
+- crypto: use explicit functions to create certificate bundles [WPB-14356] (c52b9b6)
+- crypto: remove From impls for CertificateBundle [WPB-14356] (2f59009)
+- add js test for for logs with context data (600ba7c)
+- add test that build metadata is available in kotlin via uniffi (87c3ab9)
+- add test that build metadata is available in ts (4aa18e6)
+- add js binding test verifying that we can replace a logger (30d9db7)
+- update js tests after renaming initLogger to setLogger (1c1c949)
+
 ## v1.1.2 - 2024-11-27
 
 ### Bug Fixes
