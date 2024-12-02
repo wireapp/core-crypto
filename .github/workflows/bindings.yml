@@ -81,18 +81,76 @@ jobs:
 
   build-swift:
     runs-on: macos-latest
+    strategy:
+      matrix:
+        task:
+          - ios-device
+          - ios-simulator-x86
+          - ios-simulator-arm
     steps:
       - uses: actions/checkout@v4
-      - uses: actions-rust-lang/setup-rust-toolchain@v1  # this implicitly caches Rust tools and build artifacts
+
+      - name: Determine Rust target
+        id: rust-target
+        run: |
+          if [[ "${{ matrix.task }}" == "ios-device" ]]; then
+            echo "target=aarch64-apple-ios" >> $GITHUB_ENV
+          elif [[ "${{ matrix.task }}" == "ios-simulator-x86" ]]; then
+            echo "target=x86_64-apple-ios" >> $GITHUB_ENV
+          elif [[ "${{ matrix.task }}" == "ios-simulator-arm" ]]; then
+            echo "target=aarch64-apple-ios-sim" >> $GITHUB_ENV
+          fi
+
+      - uses: actions-rust-lang/setup-rust-toolchain@v1
         with:
-          rustflags: ''
-          target: "aarch64-apple-ios,x86_64-apple-ios,aarch64-apple-ios-sim"
+          target: ${{ env.target }}
+
       - name: Setup cargo-make
         uses: davidB/rust-cargo-make@v1
-      - name: Build Swift package
+
+      - name: Build ${{ matrix.task }}
         run: |
           cd crypto-ffi
-          cargo make ios-create-xcframework
+          cargo make ${{ matrix.task }}
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{github.event.number}}-${{ matrix.task }}
+          path: target
+          retention-days: 1
+          overwrite: 'true'
+      # Only needs to be uploaded once, this step finishes fastest.
+      - name: Upload FFI artifact
+        if: startsWith(matrix.task, 'ios-simulator-arm')
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{github.event.number}}-swift-ffi
+          path: crypto-ffi/bindings/swift/WireCoreCrypto
+          retention-days: 1
+          overwrite: 'true'
+
+  create-xcframework:
+    needs: build-swift
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Download artifacts for ios
+        uses: actions/download-artifact@v4
+        with:
+          path: target
+          pattern: ${{github.event.number}}-ios-*
+          merge-multiple: 'true'
+      - name: Download FFI artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: ${{github.event.number}}-swift-ffi
+          path: crypto-ffi/bindings/swift/WireCoreCrypto
+      - name: Create xcframework
+        run: |
+          cd crypto-ffi/bindings/swift
+          ./build-xcframework.sh
+  
 
   build-and-test-wasm:
     runs-on: ubuntu-latest
