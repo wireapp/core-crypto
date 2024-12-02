@@ -78,7 +78,7 @@ core-crypto-keystore = { workspace = true, features = ["ios-wal-compat"] }
 itertools.workspace = true
 uuid = { workspace = true, features = ["v4", "v5"] }
 rand.workspace = true
-tempfile = "3.13"
+tempfile = "3.14"
 wasm-bindgen = "0.2"
 wasm-bindgen-futures = "0.4"
 wasm-bindgen-test = "0.3"
