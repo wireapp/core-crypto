@@ -43,7 +43,7 @@ jobs:
   build-darwin-artifacts:
     if: github.repository == 'wireapp/core-crypto'
     name: Build Darwin Artifacts
-    runs-on: macos-latest
+    runs-on: ghcr.io/cirruslabs/macos-runner:sonoma
     steps:
       - uses: actions/checkout@v4
       - name: Setup rust
