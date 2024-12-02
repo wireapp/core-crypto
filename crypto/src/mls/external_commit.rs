@@ -186,7 +186,6 @@ impl CentralContext {
         let is_rejoin = mls_provider.key_store().mls_group_exists(id.as_slice()).await;
 
         // Persist the now usable MLS group in the keystore
-        // TODO: find a way to make the insertion of the MlsGroup and deletion of the pending group transactional. Tracking issue: WPB-9595
         let mut conversation = MlsConversation::from_mls_group(mls_group, configuration, &mls_provider).await?;
 
         let pending_messages = self.restore_pending_messages(&mut conversation, is_rejoin).await?;
