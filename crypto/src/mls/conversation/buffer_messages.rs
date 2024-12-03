@@ -27,7 +27,7 @@ impl CentralContext {
         id: &ConversationId,
         message: impl AsRef<[u8]>,
     ) -> Result<MlsConversationDecryptMessage> {
-        let keystore = self.keystore().await?;
+        let keystore = self.keystore().await.map_err(Error::root("getting keystore"))?;
 
         let pending_msg = MlsPendingMessage {
             foreign_id: id.clone(),
@@ -49,10 +49,10 @@ impl CentralContext {
             Some(id) => self.get_conversation(id).await.ok(),
             _ => None,
         };
-        let guard = self.callbacks().await?;
+        let guard = self.callbacks().await.map_err(Error::root("getting callbacks"))?;
         let callbacks = guard.as_ref().map(|boxed| boxed.as_ref());
-        let client = &self.mls_client().await?;
-        let mls_provider = self.mls_provider().await?;
+        let client = &self.mls_client().await.map_err(Error::root("getting mls client"))?;
+        let mls_provider = self.mls_provider().await.map_err(Error::root("getting mls provider"))?;
         conversation
             .restore_pending_messages(
                 client,

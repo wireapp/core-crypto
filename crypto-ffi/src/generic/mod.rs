@@ -27,7 +27,7 @@ use crate::UniffiCustomTypeConverter;
 pub use core_crypto::prelude::ConversationId;
 use core_crypto::{
     prelude::{
-        ClientIdentifier, CryptoError, Error, EntropySeed, KeyPackageIn, KeyPackageRef,
+        ClientIdentifier, CryptoError, EntropySeed, Error, KeyPackageIn, KeyPackageRef,
         MlsBufferedConversationDecryptMessage, MlsCentral, MlsCentralConfiguration, MlsCiphersuite, MlsCommitBundle,
         MlsConversationConfiguration, MlsConversationCreationMessage, MlsConversationDecryptMessage,
         MlsConversationInitBundle, MlsCustomConfiguration, MlsGroupInfoBundle, MlsProposalBundle, MlsRotateBundle,

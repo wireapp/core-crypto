@@ -451,9 +451,9 @@ impl CentralContext {
                 .map_err(Error::mls("handling when group is pending"));
         };
         let parent_conversation = self.get_parent_conversation(&conversation).await?;
-        let guard = self.callbacks().await?;
+        let guard = self.callbacks().await.map_err(Error::root("getting callbacks"))?;
         let callbacks = guard.as_ref().map(|boxed| boxed.as_ref());
-        let client = &self.mls_client().await?;
+        let client = &self.mls_client().await.map_err(Error::root("getting mls client"))?;
         let decrypt_message = conversation
             .write()
             .await
@@ -461,7 +461,7 @@ impl CentralContext {
                 msg,
                 parent_conversation.as_ref(),
                 client,
-                &self.mls_provider().await?,
+                &self.mls_provider().await.map_err(Error::root("getting mls provider"))?,
                 callbacks,
                 true,
             )

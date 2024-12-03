@@ -1,6 +1,6 @@
 use super::error::{Error, Result};
 use crate::context::CentralContext;
-use crate::{e2e_identity::CrlRegistration, prelude::MlsCentral, CryptoError};
+use crate::{e2e_identity::CrlRegistration, prelude::MlsCentral};
 use core_crypto_keystore::connection::FetchFromDatabase;
 use core_crypto_keystore::entities::{E2eiAcmeCA, E2eiCrl, E2eiIntermediateCert};
 use openmls_traits::OpenMlsCryptoProvider;
@@ -8,7 +8,6 @@ use std::collections::HashSet;
 use wire_e2e_identity::prelude::x509::{
     extract_crl_uris, extract_expiration_from_crl,
     revocation::{PkiEnvironment, PkiEnvironmentParams},
-    RustyX509CheckError,
 };
 use x509_cert::der::pem::LineEnding;
 use x509_cert::der::{Decode, EncodePem};
@@ -37,7 +36,13 @@ impl CentralContext {
     /// See [MlsCentral::e2ei_is_pki_env_setup].
     /// Unlike [MlsCentral::e2ei_is_pki_env_setup], this function returns a result.
     pub async fn e2ei_is_pki_env_setup(&self) -> Result<bool> {
-        Ok(self.mls_provider().await?.authentication_service().is_env_setup().await)
+        Ok(self
+            .mls_provider()
+            .await
+            .map_err(Error::root("getting mls provider"))?
+            .authentication_service()
+            .is_env_setup()
+            .await)
     }
 
     /// See [MlsCentral::e2ei_dump_pki_env].
@@ -45,7 +50,7 @@ impl CentralContext {
         if !self.e2ei_is_pki_env_setup().await? {
             return Ok(None);
         }
-        let mls_provider = self.mls_provider().await?;
+        let mls_provider = self.mls_provider().await.map_err(Error::root("getting mls provider"))?;
         let Some(pki_env) = &*mls_provider.authentication_service().borrow().await else {
             return Ok(None);
         };
@@ -63,7 +68,8 @@ impl CentralContext {
         {
             if self
                 .mls_provider()
-                .await?
+                .await
+                .map_err(Error::root("getting mls provider"))?
                 .keystore()
                 .find_unique::<E2eiAcmeCA>()
                 .await
@@ -78,22 +84,23 @@ impl CentralContext {
             trust_roots: Default::default(),
             crls: Default::default(),
             time_of_interest: Default::default(),
-        })
-        .map_err(|e| CryptoError::E2eiError(e.into()))?;
+        })?;
 
         // Parse/decode PEM cert
-        let root_cert =
-            PkiEnvironment::decode_pem_cert(trust_anchor_pem).map_err(|e| CryptoError::E2eiError(e.into()))?;
+        let root_cert = PkiEnvironment::decode_pem_cert(trust_anchor_pem)?;
 
         // Validate it (expiration & signature only)
-        pki_env
-            .validate_trust_anchor_cert(&root_cert)
-            .map_err(|e| CryptoError::E2eiError(e.into()))?;
+        pki_env.validate_trust_anchor_cert(&root_cert)?;
 
         // Save DER repr in keystore
-        let cert_der = PkiEnvironment::encode_cert_to_der(&root_cert).map_err(|e| CryptoError::E2eiError(e.into()))?;
+        let cert_der = PkiEnvironment::encode_cert_to_der(&root_cert)?;
         let acme_ca = E2eiAcmeCA { content: cert_der };
-        self.mls_provider().await?.keystore().save(acme_ca).await?;
+        self.mls_provider()
+            .await
+            .map_err(Error::root("getting mls provider"))?
+            .keystore()
+            .save(acme_ca)
+            .await?;
 
         // To do that, tear down and recreate the pki env
         self.init_pki_env().await?;
@@ -102,8 +109,16 @@ impl CentralContext {
     }
 
     pub(crate) async fn init_pki_env(&self) -> Result<()> {
-        if let Some(pki_env) = restore_pki_env(&self.mls_provider().await?.keystore()).await? {
-            let provider = self.mls_provider().await?;
+        if let Some(pki_env) = restore_pki_env(
+            &self
+                .mls_provider()
+                .await
+                .map_err(Error::root("getting mls provider"))?
+                .keystore(),
+        )
+        .await?
+        {
+            let provider = self.mls_provider().await.map_err(Error::root("getting mls provider"))?;
             provider.authentication_service().update_env(pki_env).await?;
         }
 
@@ -119,7 +134,7 @@ impl CentralContext {
     /// * `cert_pem` - PEM certificate to register as an Intermediate CA
     pub async fn e2ei_register_intermediate_ca_pem(&self, cert_pem: String) -> Result<NewCrlDistributionPoint> {
         // Parse/decode PEM cert
-        let inter_ca = PkiEnvironment::decode_pem_cert(cert_pem).map_err(|e| CryptoError::E2eiError(e.into()))?;
+        let inter_ca = PkiEnvironment::decode_pem_cert(cert_pem)?;
         self.e2ei_register_intermediate_ca(inter_ca).await
     }
 
@@ -130,7 +145,7 @@ impl CentralContext {
 
     async fn e2ei_register_intermediate_ca(&self, inter_ca: x509_cert::Certificate) -> Result<NewCrlDistributionPoint> {
         // TrustAnchor must have been registered at this point
-        let keystore = self.keystore().await?;
+        let keystore = self.keystore().await.map_err(Error::root("getting keystore"))?;
         let trust_anchor = keystore.find_unique::<E2eiAcmeCA>().await?;
         let trust_anchor = x509_cert::Certificate::from_der(&trust_anchor.content)?;
 
@@ -140,18 +155,15 @@ impl CentralContext {
             return Ok(None.into());
         }
 
-        let intermediate_crl = extract_crl_uris(&inter_ca)
-            .map_err(|e| CryptoError::E2eiError(e.into()))?
-            .map(|s| s.into_iter().collect());
+        let intermediate_crl = extract_crl_uris(&inter_ca)?.map(|s| s.into_iter().collect());
 
-        let (ski, aki) =
-            PkiEnvironment::extract_ski_aki_from_cert(&inter_ca).map_err(|e| CryptoError::E2eiError(e.into()))?;
+        let (ski, aki) = PkiEnvironment::extract_ski_aki_from_cert(&inter_ca)?;
 
         let ski_aki_pair = format!("{ski}:{}", aki.unwrap_or_default());
 
         // Validate it
         {
-            let provider = self.mls_provider().await?;
+            let provider = self.mls_provider().await.map_err(Error::root("getting mls provider"))?;
             let auth_service_arc = provider.authentication_service().borrow().await;
             let Some(pki_env) = auth_service_arc.as_ref() else {
                 return Err(Error::PkiEnvironmentUnset);
@@ -160,7 +172,7 @@ impl CentralContext {
         }
 
         // Save DER repr in keystore
-        let cert_der = PkiEnvironment::encode_cert_to_der(&inter_ca).map_err(|e| CryptoError::E2eiError(e.into()))?;
+        let cert_der = PkiEnvironment::encode_cert_to_der(&inter_ca)?;
         let intermediate_ca = E2eiIntermediateCert {
             content: cert_der,
             ski_aki_pair,
@@ -186,23 +198,20 @@ impl CentralContext {
     pub async fn e2ei_register_crl(&self, crl_dp: String, crl_der: Vec<u8>) -> Result<CrlRegistration> {
         // Parse & Validate CRL
         let crl = {
-            let provider = self.mls_provider().await?;
+            let provider = self.mls_provider().await.map_err(Error::root("getting mls provider"))?;
             let auth_service_arc = provider.authentication_service().borrow().await;
             let Some(pki_env) = auth_service_arc.as_ref() else {
                 return Err(Error::PkiEnvironmentUnset);
             };
-            pki_env
-                .validate_crl_with_raw(&crl_der)
-                .map_err(|e| CryptoError::E2eiError(e.into()))?
+            pki_env.validate_crl_with_raw(&crl_der)?
         };
 
         let expiration = extract_expiration_from_crl(&crl);
 
-        let ks = self.keystore().await?;
+        let ks = self.keystore().await.map_err(Error::root("getting keystore"))?;
 
         let dirty = if let Some(existing_crl) = ks.find::<E2eiCrl>(crl_dp.as_bytes()).await.ok().flatten() {
-            let old_crl = PkiEnvironment::decode_der_crl(existing_crl.content.clone())
-                .map_err(|e| CryptoError::E2eiError(e.into()))?;
+            let old_crl = PkiEnvironment::decode_der_crl(existing_crl.content.clone())?;
 
             old_crl.tbs_cert_list.revoked_certificates != crl.tbs_cert_list.revoked_certificates
         } else {
@@ -211,7 +220,7 @@ impl CentralContext {
 
         // Save DER repr in keystore
         let crl_data = E2eiCrl {
-            content: PkiEnvironment::encode_crl_to_der(&crl).map_err(|e| CryptoError::E2eiError(e.into()))?,
+            content: PkiEnvironment::encode_crl_to_der(&crl)?,
             distribution_point: crl_dp,
         };
         ks.save(crl_data).await?;
@@ -245,7 +254,7 @@ impl E2eiDumpedPkiEnv {
     async fn from_pki_env(pki_env: &PkiEnvironment) -> Result<Option<E2eiDumpedPkiEnv>> {
         let Some(root) = pki_env
             .get_trust_anchors()
-            .map_err(|e| CryptoError::E2eiError(RustyX509CheckError::from(e).into()))?
+            .map_err(Error::certificate_validation("getting pki trust anchors"))?
             .pop()
         else {
             return Ok(None);
@@ -255,32 +264,27 @@ impl E2eiDumpedPkiEnv {
             return Ok(None);
         };
 
-        let root_ca = root
-            .to_pem(LineEnding::LF)
-            .map_err(|e| CryptoError::E2eiError(RustyX509CheckError::from(e).into()))?;
+        let root_ca = root.to_pem(LineEnding::LF)?;
 
         let inner_intermediates = pki_env
             .get_intermediates()
-            .map_err(|e| CryptoError::E2eiError(RustyX509CheckError::from(e).into()))?;
+            .map_err(Error::certificate_validation("getting pki intermediates"))?;
 
         let mut intermediates = Vec::with_capacity(inner_intermediates.len());
 
         for inter in inner_intermediates {
-            let pem_inter = inter
-                .decoded_cert
-                .to_pem(LineEnding::LF)
-                .map_err(|e| CryptoError::E2eiError(RustyX509CheckError::from(e).into()))?;
+            let pem_inter = inter.decoded_cert.to_pem(LineEnding::LF)?;
             intermediates.push(pem_inter);
         }
 
         let inner_crls: Vec<Vec<u8>> = pki_env
             .get_all_crls()
-            .map_err(|e| CryptoError::E2eiError(RustyX509CheckError::from(e).into()))?;
+            .map_err(Error::certificate_validation("getting all crls"))?;
 
         let mut crls = Vec::with_capacity(inner_crls.len());
         for crl in inner_crls.into_iter() {
             let crl_pem = x509_cert::der::pem::encode_string("X509 CRL", LineEnding::LF, &crl)
-                .map_err(|e| CryptoError::E2eiError(RustyX509CheckError::from(e).into()))?;
+                .map_err(Error::certificate_validation("encoding crl title to pem"))?;
             crls.push(crl_pem);
         }
 
@@ -323,9 +327,7 @@ pub(crate) async fn restore_pki_env(data_provider: &impl FetchFromDatabase) -> R
         time_of_interest: None,
     };
 
-    Ok(Some(
-        PkiEnvironment::init(params).map_err(|e| CryptoError::E2eiError(e.into()))?,
-    ))
+    Ok(Some(PkiEnvironment::init(params)?))
 }
 
 #[cfg(test)]

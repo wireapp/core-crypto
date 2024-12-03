@@ -101,10 +101,10 @@ impl CentralContext {
         custom_cfg: MlsCustomConfiguration,
         credential_type: MlsCredentialType,
     ) -> Result<MlsConversationInitBundle> {
-        let client = &self.mls_client().await?;
+        let client = &self.mls_client().await.map_err(Error::root("getting mls client"))?;
 
         let cs: MlsCiphersuite = group_info.ciphersuite().into();
-        let mls_provider = self.mls_provider().await?;
+        let mls_provider = self.mls_provider().await.map_err(Error::root("getting mls provider"))?;
         let cb = client
             .get_most_recent_or_create_credential_bundle(&mls_provider, cs.signature_algorithm(), credential_type)
             .await
@@ -180,7 +180,7 @@ impl CentralContext {
         id: &ConversationId,
     ) -> Result<Option<Vec<MlsBufferedConversationDecryptMessage>>> {
         // Retrieve the pending MLS group from the keystore
-        let mls_provider = self.mls_provider().await?;
+        let mls_provider = self.mls_provider().await.map_err(Error::root("getting mls provider"))?;
         let (group, cfg) = mls_provider
             .key_store()
             .mls_pending_groups_load(id)
@@ -218,7 +218,10 @@ impl CentralContext {
             .await
             .map_err(Error::conversation("restoring pending messages"))?;
 
-        self.mls_groups().await?.insert(id.clone(), conversation);
+        self.mls_groups()
+            .await
+            .map_err(Error::root("getting mls groups"))?
+            .insert(id.clone(), conversation);
 
         // cleanup the pending group we no longer need
         mls_provider
@@ -250,7 +253,8 @@ impl CentralContext {
     #[cfg_attr(test, crate::dispotent)]
     pub async fn clear_pending_group_from_external_commit(&self, id: &ConversationId) -> Result<()> {
         self.keystore()
-            .await?
+            .await
+            .map_err(Error::root("getting keystore"))?
             .mls_pending_groups_delete(id)
             .await
             .map_err(Error::keystore("deleting pending groups by id"))?;
@@ -260,7 +264,8 @@ impl CentralContext {
     pub(crate) async fn pending_group_exists(&self, id: &ConversationId) -> Result<bool> {
         Ok(self
             .keystore()
-            .await?
+            .await
+            .map_err(Error::root("getting keystore"))?
             .find::<PersistedMlsPendingGroup>(id.as_slice())
             .await
             .ok()

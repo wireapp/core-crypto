@@ -15,8 +15,8 @@ use crate::e2e_identity::refresh_token::RefreshToken;
 use crate::{
     mls::credential::{ext::CredentialExt, x509::CertificatePrivateKey, CredentialBundle},
     prelude::{
-        CertificateBundle, Client, ConversationId, CryptoError, E2eiEnrollment, MlsCiphersuite, MlsCommitBundle,
-        MlsConversation, MlsCredentialType,
+        CertificateBundle, Client, ConversationId, E2eiEnrollment, MlsCiphersuite, MlsCommitBundle, MlsConversation,
+        MlsCredentialType,
     },
 };
 
@@ -34,11 +34,12 @@ impl CentralContext {
         expiry_sec: u32,
         ciphersuite: MlsCiphersuite,
     ) -> Result<E2eiEnrollment> {
-        let mls_provider = self.mls_provider().await?;
+        let mls_provider = self.mls_provider().await.map_err(Error::root("getting mls provider"))?;
         // look for existing credential of type basic. If there isn't, then this method has been misused
         let cb = self
             .mls_client()
-            .await?
+            .await
+            .map_err(Error::root("getting mls client"))?
             .find_most_recent_credential_bundle(ciphersuite.signature_algorithm(), MlsCredentialType::Basic)
             .await
             .map_err(|_| Error::MissingExistingClient(MlsCredentialType::Basic))?;
@@ -73,11 +74,12 @@ impl CentralContext {
         expiry_sec: u32,
         ciphersuite: MlsCiphersuite,
     ) -> Result<E2eiEnrollment> {
-        let mls_provider = self.mls_provider().await?;
+        let mls_provider = self.mls_provider().await.map_err(Error::root("getting mls provider"))?;
         // look for existing credential of type x509. If there isn't, then this method has been misused
         let cb = self
             .mls_client()
-            .await?
+            .await
+            .map_err(Error::root("getting mls client"))?
             .find_most_recent_credential_bundle(ciphersuite.signature_algorithm(), MlsCredentialType::X509)
             .await
             .map_err(|_| Error::MissingExistingClient(MlsCredentialType::X509))?;
@@ -122,12 +124,13 @@ impl CentralContext {
             .certificate_response(
                 certificate_chain,
                 self.mls_provider()
-                    .await?
+                    .await
+                    .map_err(Error::root("getting mls provider"))?
                     .authentication_service()
                     .borrow()
                     .await
                     .as_ref()
-                    .ok_or(CryptoError::ConsumerError)?,
+                    .ok_or(Error::PkiEnvironmentUnset)?,
             )
             .await?;
 
@@ -145,11 +148,15 @@ impl CentralContext {
             certificate_chain,
             private_key,
         };
-        let client = &self.mls_client().await?;
+        let client = &self.mls_client().await.map_err(Error::root("getting mls client"))?;
 
         let new_cb = client
             .save_new_x509_credential_bundle(
-                &self.mls_provider().await?.keystore(),
+                &self
+                    .mls_provider()
+                    .await
+                    .map_err(Error::root("getting mls provider"))?
+                    .keystore(),
                 cs.signature_algorithm(),
                 cert_bundle,
             )
@@ -161,7 +168,12 @@ impl CentralContext {
         let key_package_refs_to_remove = self.find_key_packages_to_remove(&new_cb).await?;
 
         let new_key_packages = client
-            .generate_new_keypackages(&self.mls_provider().await?, cs, &new_cb, new_key_packages_count)
+            .generate_new_keypackages(
+                &self.mls_provider().await.map_err(Error::root("getting mls provider"))?,
+                cs,
+                &new_cb,
+                new_key_packages_count,
+            )
             .await
             .map_err(Error::mls_client("generating new keypackages"))?;
 
@@ -174,13 +186,13 @@ impl CentralContext {
     }
 
     async fn find_key_packages_to_remove(&self, cb: &CredentialBundle) -> Result<Vec<KeyPackageRef>> {
-        let transaction = self.keystore().await?;
+        let transaction = self.keystore().await.map_err(Error::root("getting keystore"))?;
         let nb_kp = transaction.count::<MlsKeyPackage>().await?;
         let kps: Vec<KeyPackage> = transaction.mls_fetch_keypackages(nb_kp as u32).await?;
 
         let mut kp_refs = vec![];
 
-        let provider = self.mls_provider().await?;
+        let provider = self.mls_provider().await.map_err(Error::root("getting mls provider"))?;
         for kp in kps {
             let kp_cred = kp.leaf_node().credential().mls_credential();
             let local_cred = cb.credential().mls_credential();
@@ -216,7 +228,13 @@ impl CentralContext {
         for conv in all_conversations {
             let mut conv = conv.write().await;
             let id = conv.id().clone();
-            let commit = conv.e2ei_rotate(&self.mls_provider().await?, client, Some(cb)).await?;
+            let commit = conv
+                .e2ei_rotate(
+                    &self.mls_provider().await.map_err(Error::root("getting mls provider"))?,
+                    client,
+                    Some(cb),
+                )
+                .await?;
             let _ = commits.insert(id, commit);
         }
         Ok(commits)
@@ -230,13 +248,17 @@ impl CentralContext {
         id: &crate::prelude::ConversationId,
         cb: Option<&CredentialBundle>,
     ) -> Result<MlsCommitBundle> {
-        let client = &self.mls_client().await?;
+        let client = &self.mls_client().await.map_err(Error::root("getting mls client"))?;
         self.get_conversation(id)
             .await
             .map_err(Error::conversation("getting conversation by id"))?
             .write()
             .await
-            .e2ei_rotate(&self.mls_provider().await?, client, cb)
+            .e2ei_rotate(
+                &self.mls_provider().await.map_err(Error::root("getting mls provider"))?,
+                client,
+                cb,
+            )
             .await
     }
 }
@@ -256,7 +278,7 @@ impl MlsConversation {
                 .await
                 .map_err(|_| Error::MissingExistingClient(MlsCredentialType::X509))?,
         };
-        let mut leaf_node = self.group.own_leaf().ok_or(CryptoError::InternalMlsError)?.clone();
+        let mut leaf_node = self.group.own_leaf().ok_or(Error::InternalMlsError)?.clone();
         leaf_node.set_credential_with_key(cb.to_mls_credential_with_key());
         self.update_keying_material(client, backend, Some(cb), Some(leaf_node))
             .await

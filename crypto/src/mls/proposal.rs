@@ -139,9 +139,13 @@ impl CentralContext {
             .get_conversation(id)
             .await
             .map_err(Error::conversation("getting conversation by id"))?;
-        let client = &self.mls_client().await?;
+        let client = &self.mls_client().await.map_err(Error::root("getting mls client"))?;
         proposal
-            .create(client, &self.mls_provider().await?, conversation.write().await)
+            .create(
+                client,
+                &self.mls_provider().await.map_err(Error::root("getting mls provider"))?,
+                conversation.write().await,
+            )
             .await
     }
 }

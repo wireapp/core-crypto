@@ -28,7 +28,7 @@ use crate::{
     },
     prelude::{
         identifier::ClientIdentifier, key_package::KEYPACKAGE_DEFAULT_LIFETIME, CertificateBundle, ClientId,
-        CryptoError, MlsCiphersuite, MlsCredentialType,
+        MlsCiphersuite, MlsCredentialType,
     },
 };
 use async_lock::RwLock;
@@ -250,7 +250,7 @@ impl Client {
             let scheme = tmp_kp
                 .signature_scheme
                 .try_into()
-                .map_err(|_| CryptoError::ImplementationError)?;
+                .map_err(|_| Error::InvalidSignatureScheme)?;
             let new_keypair =
                 MlsSignatureKeyPair::new(scheme, tmp_kp.pk.clone(), tmp_kp.keypair.clone(), id.clone().into());
 
@@ -311,12 +311,12 @@ impl Client {
         }
 
         let identities = match self.state.read().await.deref() {
-            None => Err(CryptoError::MlsNotInitialized),
+            None => return Err(Error::MlsNotInitialized),
             // Cloning is fine because identities is an arc internally.
             // We can't keep the lock for longer because requesting the key packages below will also
             // acquire it.
-            Some(ClientInner { identities, .. }) => Ok(identities.clone()),
-        }?;
+            Some(ClientInner { identities, .. }) => identities.clone(),
+        };
 
         if nb_key_package != 0 {
             for cs in ciphersuites {
@@ -388,7 +388,7 @@ impl Client {
                         let spk = cert
                             .extract_public_key()
                             .map_err(Error::credential("extracting public key"))?
-                            .ok_or(CryptoError::InternalMlsError)?;
+                            .ok_or(Error::InternalMlsError)?;
                         if signature_key.public() != spk {
                             return Err(Error::WrongCredential);
                         }
@@ -470,8 +470,8 @@ impl Client {
                     id.clone().into(),
                 );
                 keystore.save(sign_kp).await.map_err(|e| match e {
-                    CryptoKeystoreError::AlreadyExists => CryptoError::CredentialBundleConflict,
-                    _ => e.into(),
+                    CryptoKeystoreError::AlreadyExists => Error::CredentialBundleConflict,
+                    _ => Error::keystore("saving mls signature key pair")(e),
                 })?;
 
                 // set the creation date of the signature keypair which is the same for the CredentialBundle
@@ -517,7 +517,7 @@ impl Client {
                 .find_most_recent_credential_bundle(sc, ct)
                 .await
                 .map_err(|e| match e {
-                    Error::CredentialNotFound(_) => CryptoError::E2eiEnrollmentNotDone.into(),
+                    Error::CredentialNotFound(_) => Error::E2eiEnrollmentNotDone,
                     _ => e,
                 }),
         }
