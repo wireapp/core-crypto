@@ -300,15 +300,6 @@ impl MlsCentral {
         Ok(())
     }
 
-    /// Destroys everything we have, in-memory and on disk.
-    ///
-    /// # Errors
-    /// KeyStore errors, such as IO
-    pub async fn wipe(self) -> CryptoResult<()> {
-        self.mls_backend.destroy_and_reset().await?;
-        Ok(())
-    }
-
     /// see [mls_crypto_provider::MlsCryptoProvider::reseed]
     pub async fn reseed(&self, seed: Option<EntropySeed>) -> CryptoResult<()> {
         self.mls_backend.reseed(seed)?;

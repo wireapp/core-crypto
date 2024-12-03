@@ -175,13 +175,6 @@ impl MlsCryptoProvider {
         Ok(self.key_store.close().await?)
     }
 
-    /// Tears down this provider and **obliterates every single piece of data stored on disk**.
-    ///
-    /// *you have been warned*
-    pub async fn destroy_and_reset(self) -> MlsProviderResult<()> {
-        Ok(self.key_store.wipe().await?)
-    }
-
     /// Clone keystore (its an `Arc` internnaly)
     pub fn keystore(&self) -> CryptoKeystore {
         self.key_store.clone()
