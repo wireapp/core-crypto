@@ -16,10 +16,11 @@
 
 use crate::clients::{EmulatedClient, EmulatedClientProtocol, EmulatedClientType, EmulatedProteusClient};
 use color_eyre::eyre::{eyre, Result};
+use std::cell::Cell;
 
 pub(crate) struct CryptoboxNativeClient {
     client_id: Vec<u8>,
-    last_prekey_id: u16,
+    last_prekey_id: Cell<u16>,
     cbox: Option<cryptobox::CBox<cryptobox::store::file::FileStore>>,
     tempdir: Option<tempfile::TempDir>,
 }
@@ -29,7 +30,7 @@ impl CryptoboxNativeClient {
         let client_id = uuid::Uuid::new_v4().into_bytes().to_vec();
         Self {
             client_id,
-            last_prekey_id: 0,
+            last_prekey_id: Cell::new(0),
             cbox: None,
             tempdir: None,
         }
@@ -73,18 +74,18 @@ impl EmulatedProteusClient for CryptoboxNativeClient {
         Ok(())
     }
 
-    async fn get_prekey(&mut self) -> Result<Vec<u8>> {
-        if let Some(cbox) = &mut self.cbox {
-            self.last_prekey_id += 1;
-            let prekey_bundle = cbox.new_prekey(proteus::keys::PreKeyId::new(self.last_prekey_id))?;
+    async fn get_prekey(&self) -> Result<Vec<u8>> {
+        if let Some(cbox) = &self.cbox {
+            self.last_prekey_id.replace(self.last_prekey_id.get() + 1);
+            let prekey_bundle = cbox.new_prekey(proteus::keys::PreKeyId::new(self.last_prekey_id.get()))?;
             Ok(prekey_bundle.serialise()?)
         } else {
             return Err(eyre!("Cryptobox isn't initialized"));
         }
     }
 
-    async fn session_from_prekey(&mut self, session_id: &str, prekey: &[u8]) -> Result<()> {
-        if let Some(cbox) = &mut self.cbox {
+    async fn session_from_prekey(&self, session_id: &str, prekey: &[u8]) -> Result<()> {
+        if let Some(cbox) = &self.cbox {
             let mut session = cbox.session_from_prekey(session_id.to_string(), prekey)?;
             cbox.session_save(&mut session)?;
             Ok(())
@@ -93,8 +94,8 @@ impl EmulatedProteusClient for CryptoboxNativeClient {
         }
     }
 
-    async fn session_from_message(&mut self, session_id: &str, message: &[u8]) -> Result<Vec<u8>> {
-        if let Some(cbox) = &mut self.cbox {
+    async fn session_from_message(&self, session_id: &str, message: &[u8]) -> Result<Vec<u8>> {
+        if let Some(cbox) = &self.cbox {
             let (mut session, message) = cbox.session_from_message(session_id.to_string(), message)?;
             cbox.session_save(&mut session)?;
             Ok(message)
@@ -103,8 +104,8 @@ impl EmulatedProteusClient for CryptoboxNativeClient {
         }
     }
 
-    async fn encrypt(&mut self, session_id: &str, plaintext: &[u8]) -> Result<Vec<u8>> {
-        if let Some(cbox) = &mut self.cbox {
+    async fn encrypt(&self, session_id: &str, plaintext: &[u8]) -> Result<Vec<u8>> {
+        if let Some(cbox) = &self.cbox {
             if let Some(mut session) = cbox.session_load(session_id.to_string())? {
                 let encrypted = session.encrypt(plaintext)?;
                 cbox.session_save(&mut session)?;
@@ -117,8 +118,8 @@ impl EmulatedProteusClient for CryptoboxNativeClient {
         }
     }
 
-    async fn decrypt(&mut self, session_id: &str, ciphertext: &[u8]) -> Result<Vec<u8>> {
-        if let Some(cbox) = &mut self.cbox {
+    async fn decrypt(&self, session_id: &str, ciphertext: &[u8]) -> Result<Vec<u8>> {
+        if let Some(cbox) = &self.cbox {
             if let Some(mut session) = cbox.session_load(session_id.to_string())? {
                 let decrypted = session.decrypt(ciphertext)?;
                 cbox.session_save(&mut session)?;

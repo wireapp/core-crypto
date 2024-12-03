@@ -70,13 +70,13 @@ pub(crate) trait EmulatedClient {
 #[async_trait::async_trait(?Send)]
 #[allow(dead_code)]
 pub(crate) trait EmulatedMlsClient: EmulatedClient {
-    async fn get_keypackage(&mut self) -> Result<Vec<u8>>;
-    async fn add_client(&mut self, conversation_id: &[u8], kp: &[u8]) -> Result<Vec<u8>>;
-    async fn kick_client(&mut self, conversation_id: &[u8], client_id: &[u8]) -> Result<Vec<u8>>;
-    async fn process_welcome(&mut self, welcome: &[u8]) -> Result<Vec<u8>>;
-    async fn encrypt_message(&mut self, conversation_id: &[u8], message: &[u8]) -> Result<Vec<u8>>;
+    async fn get_keypackage(&self) -> Result<Vec<u8>>;
+    async fn add_client(&self, conversation_id: &[u8], kp: &[u8]) -> Result<Vec<u8>>;
+    async fn kick_client(&self, conversation_id: &[u8], client_id: &[u8]) -> Result<Vec<u8>>;
+    async fn process_welcome(&self, welcome: &[u8]) -> Result<Vec<u8>>;
+    async fn encrypt_message(&self, conversation_id: &[u8], message: &[u8]) -> Result<Vec<u8>>;
     // TODO: Make it more complex so that we can extract other things like proposals etc. Tracking issue: WPB-9647
-    async fn decrypt_message(&mut self, conversation_id: &[u8], message: &[u8]) -> Result<Option<Vec<u8>>>;
+    async fn decrypt_message(&self, conversation_id: &[u8], message: &[u8]) -> Result<Option<Vec<u8>>>;
 }
 
 #[async_trait::async_trait(?Send)]
@@ -85,11 +85,11 @@ pub(crate) trait EmulatedProteusClient: EmulatedClient {
     async fn init(&mut self) -> Result<()> {
         Ok(())
     }
-    async fn get_prekey(&mut self) -> Result<Vec<u8>>;
-    async fn session_from_prekey(&mut self, session_id: &str, prekey: &[u8]) -> Result<()>;
-    async fn session_from_message(&mut self, session_id: &str, message: &[u8]) -> Result<Vec<u8>>;
-    async fn encrypt(&mut self, session_id: &str, plaintext: &[u8]) -> Result<Vec<u8>>;
-    async fn decrypt(&mut self, session_id: &str, ciphertext: &[u8]) -> Result<Vec<u8>>;
+    async fn get_prekey(&self) -> Result<Vec<u8>>;
+    async fn session_from_prekey(&self, session_id: &str, prekey: &[u8]) -> Result<()>;
+    async fn session_from_message(&self, session_id: &str, message: &[u8]) -> Result<Vec<u8>>;
+    async fn encrypt(&self, session_id: &str, plaintext: &[u8]) -> Result<Vec<u8>>;
+    async fn decrypt(&self, session_id: &str, ciphertext: &[u8]) -> Result<Vec<u8>>;
     async fn fingerprint(&self) -> Result<String>;
 }
 

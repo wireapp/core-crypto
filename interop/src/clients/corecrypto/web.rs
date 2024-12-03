@@ -20,6 +20,7 @@ use crate::{
 };
 use color_eyre::eyre::Result;
 use core_crypto::prelude::{KeyPackage, KeyPackageIn};
+use std::cell::Cell;
 use std::net::SocketAddr;
 use tls_codec::Deserialize;
 
@@ -28,7 +29,7 @@ pub(crate) struct CoreCryptoWebClient {
     browser: fantoccini::Client,
     client_id: Vec<u8>,
     #[cfg(feature = "proteus")]
-    prekey_last_id: u16,
+    prekey_last_id: Cell<u16>,
 }
 
 impl CoreCryptoWebClient {
@@ -62,7 +63,7 @@ callback();"#,
             browser,
             client_id: client_id.into_bytes().into(),
             #[cfg(feature = "proteus")]
-            prekey_last_id: 0,
+            prekey_last_id: Cell::new(0),
         })
     }
 
@@ -93,7 +94,7 @@ callback();"#,
             browser,
             client_id: client_id.into_bytes().into(),
             #[cfg(feature = "proteus")]
-            prekey_last_id: 0,
+            prekey_last_id: Cell::new(0),
         })
     }
 }
@@ -117,13 +118,19 @@ impl EmulatedClient for CoreCryptoWebClient {
     }
 
     async fn wipe(mut self) -> Result<()> {
+        let client_id = uuid::Uuid::from_slice(self.client_id.as_slice())?;
+        let client_id_str = client_id.as_hyphenated().to_string();
+        let database_name = format!("db-{client_id_str}");
         let _ = self
             .browser
             .execute_async(
                 r#"
-    const [callback] = arguments;
-    window.cc.wipe().then(callback);"#,
-                vec![],
+    const [databaseName, callback] = arguments;
+    await window.cc.close();
+    const result = window.indexedDB.deleteDatabase(databaseName);
+    result.onsuccess = callback;
+    result.onfailure = callback;"#,
+                vec![serde_json::json!(database_name)],
             )
             .await?;
 
@@ -133,7 +140,7 @@ impl EmulatedClient for CoreCryptoWebClient {
 
 #[async_trait::async_trait(?Send)]
 impl EmulatedMlsClient for CoreCryptoWebClient {
-    async fn get_keypackage(&mut self) -> Result<Vec<u8>> {
+    async fn get_keypackage(&self) -> Result<Vec<u8>> {
         let ciphersuite = CIPHERSUITE_IN_USE as u16;
         let start = std::time::Instant::now();
         let kp_raw = self
@@ -160,7 +167,7 @@ window.cc.clientKeypackages(ciphersuite, window.credentialType, 1).then(([kp]) =
         Ok(kp_raw)
     }
 
-    async fn add_client(&mut self, conversation_id: &[u8], kp: &[u8]) -> Result<Vec<u8>> {
+    async fn add_client(&self, conversation_id: &[u8], kp: &[u8]) -> Result<Vec<u8>> {
         Ok(self
             .browser
             .execute_async(
@@ -179,7 +186,7 @@ window.cc.addClientsToConversation(conversationId, [{ kp: keyPackage }])
             .and_then(|value| Ok(serde_json::from_value(value)?))?)
     }
 
-    async fn kick_client(&mut self, conversation_id: &[u8], client_id: &[u8]) -> Result<Vec<u8>> {
+    async fn kick_client(&self, conversation_id: &[u8], client_id: &[u8]) -> Result<Vec<u8>> {
         Ok(self
             .browser
             .execute_async(
@@ -195,7 +202,7 @@ window.cc.removeClientsFromConversation(conversationId, [clientId])
             .and_then(|value| Ok(serde_json::from_value(value)?))?)
     }
 
-    async fn process_welcome(&mut self, welcome: &[u8]) -> Result<Vec<u8>> {
+    async fn process_welcome(&self, welcome: &[u8]) -> Result<Vec<u8>> {
         Ok(self
             .browser
             .execute_async(
@@ -210,7 +217,7 @@ window.cc.processWelcomeMessage(welcomeMessage)
             .and_then(|value| Ok(serde_json::from_value(value)?))?)
     }
 
-    async fn encrypt_message(&mut self, conversation_id: &[u8], message: &[u8]) -> Result<Vec<u8>> {
+    async fn encrypt_message(&self, conversation_id: &[u8], message: &[u8]) -> Result<Vec<u8>> {
         Ok(self
             .browser
             .execute_async(
@@ -226,7 +233,7 @@ window.cc.encryptMessage(conversationId, message)
             .and_then(|value| Ok(serde_json::from_value(value)?))?)
     }
 
-    async fn decrypt_message(&mut self, conversation_id: &[u8], message: &[u8]) -> Result<Option<Vec<u8>>> {
+    async fn decrypt_message(&self, conversation_id: &[u8], message: &[u8]) -> Result<Option<Vec<u8>>> {
         let res = self
             .browser
             .execute_async(
@@ -264,15 +271,16 @@ window.cc.proteusInit().then(callback);"#,
         Ok(())
     }
 
-    async fn get_prekey(&mut self) -> Result<Vec<u8>> {
-        self.prekey_last_id += 1;
+    async fn get_prekey(&self) -> Result<Vec<u8>> {
+        let prekey_last_id = self.prekey_last_id.get() + 1;
+        self.prekey_last_id.replace(prekey_last_id);
         let prekey = self
             .browser
             .execute_async(
                 r#"
 const [prekeyId, callback] = arguments;
 window.cc.proteusNewPrekey(prekeyId).then(callback);"#,
-                vec![self.prekey_last_id.into()],
+                vec![prekey_last_id.into()],
             )
             .await
             .and_then(|value| Ok(serde_json::from_value(value)?))?;
@@ -280,7 +288,7 @@ window.cc.proteusNewPrekey(prekeyId).then(callback);"#,
         Ok(prekey)
     }
 
-    async fn session_from_prekey(&mut self, session_id: &str, prekey: &[u8]) -> Result<()> {
+    async fn session_from_prekey(&self, session_id: &str, prekey: &[u8]) -> Result<()> {
         self.browser
             .execute_async(
                 r#"
@@ -293,7 +301,7 @@ window.cc.proteusSessionFromPrekey(sessionId, prekeyBuffer).then(callback);"#,
         Ok(())
     }
 
-    async fn session_from_message(&mut self, session_id: &str, message: &[u8]) -> Result<Vec<u8>> {
+    async fn session_from_message(&self, session_id: &str, message: &[u8]) -> Result<Vec<u8>> {
         let cleartext = self
             .browser
             .execute_async(
@@ -308,7 +316,7 @@ window.cc.proteusSessionFromMessage(sessionId, messageBuffer).then(callback);"#,
 
         Ok(cleartext)
     }
-    async fn encrypt(&mut self, session_id: &str, plaintext: &[u8]) -> Result<Vec<u8>> {
+    async fn encrypt(&self, session_id: &str, plaintext: &[u8]) -> Result<Vec<u8>> {
         let ciphertext = self
             .browser
             .execute_async(
@@ -324,7 +332,7 @@ window.cc.proteusEncrypt(sessionId, plaintextBuffer).then(callback);"#,
         Ok(ciphertext)
     }
 
-    async fn decrypt(&mut self, session_id: &str, ciphertext: &[u8]) -> Result<Vec<u8>> {
+    async fn decrypt(&self, session_id: &str, ciphertext: &[u8]) -> Result<Vec<u8>> {
         let cleartext = self
             .browser
             .execute_async(
