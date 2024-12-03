@@ -17,7 +17,7 @@
 use crate::{
     prelude::{ClientId, ConversationId, MlsCentral, MlsCentralConfiguration},
     test_utils::x509::{CertificateParams, X509TestChain, X509TestChainActorArg, X509TestChainArgs},
-    CoreCrypto, CoreCryptoCallbacks,
+    CoreCrypto, CryptoResult, MlsTransport, MlsTransportResponse,
 };
 pub use openmls_traits::types::SignatureScheme;
 pub use rstest::*;
@@ -35,7 +35,7 @@ pub mod proteus_utils;
 
 use crate::context::CentralContext;
 use crate::e2e_identity::id::{QualifiedE2eiClientId, WireQualifiedClientId};
-use crate::prelude::Client;
+use crate::prelude::{Client, MlsCommitBundle};
 pub use crate::prelude::{ClientIdentifier, MlsCredentialType, INITIAL_KEYING_MATERIAL_COUNT};
 pub use fixtures::{TestCase, *};
 pub use message::*;
@@ -311,7 +311,7 @@ async fn create_centrals<const N: usize>(
                 .unwrap();
             context.finish().await.unwrap();
             central
-                .callbacks(std::sync::Arc::<ValidationCallbacks>::default())
+                .provide_transport(Arc::<CoreCryptoTransportSuccessProvider>::default())
                 .await;
             central
         }
@@ -427,7 +427,7 @@ pub async fn run_test_wo_clients(
             .unwrap();
             let central = MlsCentral::try_new(configuration).await.unwrap();
             central
-                .callbacks(std::sync::Arc::<ValidationCallbacks>::default())
+                .provide_transport(std::sync::Arc::<CoreCryptoTransportSuccessProvider>::default())
                 .await;
             let cc = CoreCrypto::from(central);
             let context = cc.new_transaction().await.unwrap();
@@ -502,46 +502,20 @@ pub fn conversation_id() -> ConversationId {
     ConversationId::from(format!("{}@conversations.wire.com", uuid.hyphenated()))
 }
 
-#[derive(Debug)]
-pub struct ValidationCallbacks {
-    pub authorize: bool,
-    pub user_authorize: bool,
-    pub client_is_existing_group_user: bool,
-}
-
-impl Default for ValidationCallbacks {
-    fn default() -> Self {
-        Self {
-            authorize: true,
-            user_authorize: true,
-            client_is_existing_group_user: true,
-        }
-    }
-}
+#[derive(Debug, Default)]
+pub struct CoreCryptoTransportSuccessProvider;
 
 #[cfg_attr(target_family = "wasm", async_trait::async_trait(?Send))]
 #[cfg_attr(not(target_family = "wasm"), async_trait::async_trait)]
-impl CoreCryptoCallbacks for ValidationCallbacks {
-    async fn authorize(&self, _conversation_id: ConversationId, _client_id: ClientId) -> bool {
-        self.authorize
+impl MlsTransport for CoreCryptoTransportSuccessProvider {
+    async fn send_commit_bundle(
+        &self,
+        _commit_bundle: MlsCommitBundle,
+    ) -> Result<MlsTransportResponse, Box<dyn std::error::Error>> {
+        Ok(MlsTransportResponse::Success)
     }
 
-    async fn user_authorize(
-        &self,
-        _conversation_id: ConversationId,
-        _external_client_id: ClientId,
-        _existing_clients: Vec<ClientId>,
-    ) -> bool {
-        self.user_authorize
-    }
-
-    async fn client_is_existing_group_user(
-        &self,
-        _conversation_id: ConversationId,
-        _client_id: ClientId,
-        _existing_clients: Vec<ClientId>,
-        _parent_conversation_clients: Option<Vec<ClientId>>,
-    ) -> bool {
-        self.client_is_existing_group_user
+    async fn send_message(&self, _mls_message: Vec<u8>) -> Result<MlsTransportResponse, Box<dyn std::error::Error>> {
+        Ok(MlsTransportResponse::Success)
     }
 }
