@@ -22,7 +22,7 @@ use std::ops::Deref;
 
 use crate::proteus_impl;
 use core_crypto::prelude::*;
-use core_crypto::CryptoError;
+use core_crypto::{CryptoError, MlsTransportResponse};
 use futures_util::future::TryFutureExt;
 use js_sys::{Promise, Uint8Array};
 use log::kv::{Key, Value, Visitor};
@@ -185,6 +185,13 @@ pub(crate) enum InternalError {
     TransactionFailed {
         uncaught_error: JsValue,
         proteus_error_code: Option<u16>,
+    },
+    #[error(
+        "Error during transport callback execution. Attempted operation: {attempted_operation:?}. JsError: {error:?}"
+    )]
+    TransportError {
+        attempted_operation: String,
+        error: JsValue,
     },
 }
 
@@ -1327,133 +1334,142 @@ impl log::Log for CoreCryptoWasmLogger {
     fn flush(&self) {}
 }
 
-#[wasm_bindgen]
-#[derive(Debug, Clone)]
-/// see [core_crypto::prelude::CoreCryptoCallbacks]
-pub struct CoreCryptoWasmCallbacks {
-    authorize: std::sync::Arc<async_lock::RwLock<js_sys::Function>>,
-    user_authorize: std::sync::Arc<async_lock::RwLock<js_sys::Function>>,
-    client_is_existing_group_user: std::sync::Arc<async_lock::RwLock<js_sys::Function>>,
-    ctx: std::sync::Arc<async_lock::RwLock<JsValue>>,
+#[derive(serde::Serialize, serde::Deserialize)]
+#[wasm_bindgen(inspectable)]
+pub enum MlsTransportResponseVariant {
+    Success,
+    Retry,
+    Abort,
+}
+
+#[derive(serde::Serialize, serde::Deserialize)]
+#[serde(rename_all = "camelCase")]
+#[wasm_bindgen(inspectable)]
+pub struct WasmMlsTransportResponse {
+    variant: MlsTransportResponseVariant,
+    abort_reason: Option<String>,
 }
 
 #[wasm_bindgen]
-impl CoreCryptoWasmCallbacks {
+impl WasmMlsTransportResponse {
     #[wasm_bindgen(constructor)]
-    pub fn new(
-        authorize: js_sys::Function,
-        user_authorize: js_sys::Function,
-        client_is_existing_group_user: js_sys::Function,
-        ctx: JsValue,
-    ) -> Self {
-        #[allow(clippy::arc_with_non_send_sync)] // see https://github.com/rustwasm/wasm-bindgen/pull/955
-        Self {
-            authorize: std::sync::Arc::new(authorize.into()),
-            user_authorize: std::sync::Arc::new(user_authorize.into()),
-            client_is_existing_group_user: std::sync::Arc::new(client_is_existing_group_user.into()),
-            ctx: std::sync::Arc::new(ctx.into()),
+    pub fn new(variant: MlsTransportResponseVariant, abort_reason: Option<String>) -> WasmMlsTransportResponse {
+        WasmMlsTransportResponse { variant, abort_reason }
+    }
+}
+
+impl From<WasmMlsTransportResponse> for MlsTransportResponse {
+    fn from(response: WasmMlsTransportResponse) -> Self {
+        match response.variant {
+            MlsTransportResponseVariant::Success => MlsTransportResponse::Success,
+            MlsTransportResponseVariant::Retry => MlsTransportResponse::Retry,
+            MlsTransportResponseVariant::Abort => MlsTransportResponse::Abort {
+                reason: response.abort_reason.unwrap_or_default(),
+            },
         }
     }
 }
 
-impl CoreCryptoWasmCallbacks {
-    async fn drive_js_func_call(result: Result<JsValue, JsValue>) -> Result<bool, JsValue> {
+impl From<MlsTransportResponse> for WasmMlsTransportResponse {
+    fn from(response: MlsTransportResponse) -> Self {
+        match response {
+            MlsTransportResponse::Success => WasmMlsTransportResponse {
+                variant: MlsTransportResponseVariant::Success,
+                abort_reason: None,
+            },
+            MlsTransportResponse::Retry => WasmMlsTransportResponse {
+                variant: MlsTransportResponseVariant::Retry,
+                abort_reason: None,
+            },
+            MlsTransportResponse::Abort { reason } => WasmMlsTransportResponse {
+                variant: MlsTransportResponseVariant::Abort,
+                abort_reason: (!reason.is_empty()).then_some(reason),
+            },
+        }
+    }
+}
+
+#[wasm_bindgen]
+#[derive(Debug, Clone)]
+/// see [core_crypto::prelude::MlsTransport]
+pub struct MlsTransportProvider {
+    send_commit_bundle: Arc<async_lock::RwLock<js_sys::Function>>,
+    send_message: Arc<async_lock::RwLock<js_sys::Function>>,
+    ctx: Arc<async_lock::RwLock<JsValue>>,
+}
+
+#[wasm_bindgen]
+impl MlsTransportProvider {
+    #[wasm_bindgen(constructor)]
+    pub fn new(send_commit_bundle: js_sys::Function, send_message: js_sys::Function, ctx: JsValue) -> Self {
+        #[allow(clippy::arc_with_non_send_sync)] // see https://github.com/rustwasm/wasm-bindgen/pull/955
+        Self {
+            send_commit_bundle: Arc::new(send_commit_bundle.into()),
+            send_message: Arc::new(send_message.into()),
+            ctx: Arc::new(ctx.into()),
+        }
+    }
+}
+
+impl MlsTransportProvider {
+    async fn drive_js_func_call(result: Result<JsValue, JsValue>) -> Result<WasmMlsTransportResponse, JsValue> {
         let value = result?;
-        let promise: js_sys::Promise = match value.dyn_into() {
+        let promise: Promise = match value.dyn_into() {
             Ok(promise) => promise,
             Err(e) => {
                 web_sys::console::warn_1(&js_sys::JsString::from(
                     r#"
-[CoreCrypto] One or more callbacks are not returning a `Promise`
-
-They will thus be automatically coerced into returning `false`.
+[CoreCrypto] One or more transport functions are not returning a `Promise`
 Please make all callbacks `async` or manually return a `Promise` via `Promise.resolve(boolean)`"#,
                 ));
                 return Err(e);
             }
         };
         let fut = wasm_bindgen_futures::JsFuture::from(promise);
+        let result = fut.await?;
+        let result = serde_wasm_bindgen::from_value(result)?;
 
-        fut.await.map(|jsval| jsval.as_bool().unwrap_or_default())
+        Ok(result)
     }
 }
 
 // SAFETY: All callback instances are wrapped into Arc<RwLock> so this is safe to mark
-unsafe impl Send for CoreCryptoWasmCallbacks {}
-unsafe impl Sync for CoreCryptoWasmCallbacks {}
+unsafe impl Send for MlsTransportProvider {}
+unsafe impl Sync for MlsTransportProvider {}
 unsafe impl Send for CoreCryptoWasmLogger {}
 unsafe impl Sync for CoreCryptoWasmLogger {}
 
 #[async_trait::async_trait(?Send)]
-impl CoreCryptoCallbacks for CoreCryptoWasmCallbacks {
-    async fn authorize(&self, conversation_id: ConversationId, client_id: ClientId) -> bool {
-        let authorize = self.authorize.read().await;
+impl MlsTransport for MlsTransportProvider {
+    async fn send_commit_bundle(
+        &self,
+        commit_bundle: MlsCommitBundle,
+    ) -> Result<MlsTransportResponse, Box<dyn std::error::Error>> {
+        let send_commit_bundle = self.send_commit_bundle.read().await;
         let this = self.ctx.read().await;
-
-        Self::drive_js_func_call(authorize.call2(
-            &this,
-            &js_sys::Uint8Array::from(conversation_id.as_slice()),
-            &js_sys::Uint8Array::from(client_id.as_slice()),
-        ))
-        .await
-        .unwrap_or_default()
+        let commit_bundle = CommitBundle::try_from(commit_bundle)?;
+        Ok(
+            Self::drive_js_func_call(send_commit_bundle.call1(&this, &commit_bundle.into()))
+                .await
+                .map_err(|e| InternalError::TransportError {
+                    attempted_operation: "send_message".into(),
+                    error: e,
+                })?
+                .into(),
+        )
     }
 
-    async fn user_authorize(
-        &self,
-        conversation_id: ConversationId,
-        external_client_id: ClientId,
-        existing_clients: Vec<ClientId>,
-    ) -> bool {
-        let user_authorize = self.user_authorize.read().await;
+    async fn send_message(&self, mls_message: Vec<u8>) -> Result<MlsTransportResponse, Box<dyn std::error::Error>> {
+        let send_message = self.send_message.read().await;
         let this = self.ctx.read().await;
-        let clients = existing_clients
-            .into_iter()
-            .map(|client| js_sys::Uint8Array::from(client.as_slice()))
-            .collect::<js_sys::Array>();
-
-        Self::drive_js_func_call(user_authorize.call3(
-            &this,
-            &js_sys::Uint8Array::from(conversation_id.as_slice()),
-            &js_sys::Uint8Array::from(external_client_id.as_slice()),
-            &clients,
-        ))
-        .await
-        .unwrap_or_default()
-    }
-
-    async fn client_is_existing_group_user(
-        &self,
-        conversation_id: ConversationId,
-        client_id: ClientId,
-        existing_clients: Vec<ClientId>,
-        parent_conversation_clients: Option<Vec<ClientId>>,
-    ) -> bool {
-        let client_is_existing_group_user = self.client_is_existing_group_user.read().await;
-        let this = self.ctx.read().await;
-        let clients = existing_clients
-            .into_iter()
-            .map(|client| js_sys::Uint8Array::from(client.as_slice()))
-            .collect::<js_sys::Array>();
-
-        let parent_clients = parent_conversation_clients.map(|clients| {
-            clients
-                .into_iter()
-                .map(|client_id| js_sys::Uint8Array::from(client_id.as_slice()))
-                .collect::<js_sys::Array>()
-        });
-
-        Self::drive_js_func_call(client_is_existing_group_user.apply(
-            &this,
-            &js_sys::Array::of4(
-                &js_sys::Uint8Array::from(conversation_id.as_slice()).into(),
-                &js_sys::Uint8Array::from(client_id.as_slice()).into(),
-                &clients.into(),
-                &parent_clients.into(),
-            ),
-        ))
-        .await
-        .unwrap_or_default()
+        let mls_message = js_sys::Uint8Array::from(mls_message.as_slice());
+        Ok(Self::drive_js_func_call(send_message.call1(&this, &mls_message))
+            .await
+            .map_err(|e| InternalError::TransportError {
+                attempted_operation: "send_message".into(),
+                error: e,
+            })?
+            .into())
     }
 }
 
@@ -1603,12 +1619,12 @@ impl CoreCrypto {
 
     /// Returns: [`WasmCryptoResult<()>`]
     ///
-    /// see [core_crypto::mls::MlsCentral::callbacks]
-    pub fn set_callbacks(&self, callbacks: CoreCryptoWasmCallbacks) -> Promise {
+    /// see [core_crypto::mls::MlsCentral::provide_transport]
+    pub fn provide_transport(&self, callbacks: MlsTransportProvider) -> Promise {
         let central = self.inner.clone();
         future_to_promise(
             async move {
-                central.callbacks(std::sync::Arc::new(callbacks)).await;
+                central.provide_transport(Arc::new(callbacks)).await;
 
                 WasmCryptoResult::Ok(JsValue::UNDEFINED)
             }
