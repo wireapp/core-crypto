@@ -20,7 +20,7 @@ impl CentralContext {
         id: &ConversationId,
         message: impl AsRef<[u8]>,
     ) -> Result<MlsConversationDecryptMessage> {
-        let keystore = self.keystore().await?;
+        let keystore = self.keystore().await.map_err(Error::root("getting keystore"))?;
         let Some(pending_group) = keystore
             .find::<PersistedMlsPendingGroup>(id)
             .await
@@ -43,7 +43,6 @@ impl CentralContext {
 
 #[cfg(test)]
 mod tests {
-    use super::super::error::Error;
     use crate::test_utils::*;
     use wasm_bindgen_test::*;
 

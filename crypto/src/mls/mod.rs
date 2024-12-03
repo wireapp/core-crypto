@@ -211,7 +211,10 @@ impl MlsCentral {
         };
 
         let cc = CoreCrypto::from(central);
-        let context = cc.new_transaction().await?;
+        let context = cc
+            .new_transaction()
+            .await
+            .map_err(Error::root("starting new transaction"))?;
         if let Some(id) = configuration.client_id {
             mls_client
                 .init(
@@ -230,7 +233,7 @@ impl MlsCentral {
             .init_pki_env()
             .await
             .map_err(Error::e2e("initializing pki environment"))?;
-        context.finish().await?;
+        context.finish().await.map_err(Error::root("finishing transaction"))?;
         Ok(central)
     }
 
@@ -343,9 +346,14 @@ impl CentralContext {
         nb_init_key_packages: Option<usize>,
     ) -> Result<()> {
         let nb_key_package = nb_init_key_packages.unwrap_or(INITIAL_KEYING_MATERIAL_COUNT);
-        let mls_client = self.mls_client().await?;
+        let mls_client = self.mls_client().await.map_err(Error::root("getting mls client"))?;
         mls_client
-            .init(identifier, &ciphersuites, &self.mls_provider().await?, nb_key_package)
+            .init(
+                identifier,
+                &ciphersuites,
+                &self.mls_provider().await.map_err(Error::root("getting mls provider"))?,
+                nb_key_package,
+            )
             .await
             .map_err(Error::mls_operation("initializing mls client"))?;
 
@@ -368,8 +376,12 @@ impl CentralContext {
     #[cfg_attr(test, crate::dispotent)]
     pub async fn mls_generate_keypairs(&self, ciphersuites: Vec<MlsCiphersuite>) -> Result<Vec<ClientId>> {
         self.mls_client()
-            .await?
-            .generate_raw_keypairs(&ciphersuites, &self.mls_provider().await?)
+            .await
+            .map_err(Error::root("getting mls client"))?
+            .generate_raw_keypairs(
+                &ciphersuites,
+                &self.mls_provider().await.map_err(Error::root("getting mls provider"))?,
+            )
             .await
             .map_err(Error::mls_operation("generating raw keypairs"))
     }
@@ -385,8 +397,14 @@ impl CentralContext {
         ciphersuites: Vec<MlsCiphersuite>,
     ) -> Result<()> {
         self.mls_client()
-            .await?
-            .init_with_external_client_id(client_id, tmp_client_ids, &ciphersuites, &self.mls_provider().await?)
+            .await
+            .map_err(Error::root("getting mls client"))?
+            .init_with_external_client_id(
+                client_id,
+                tmp_client_ids,
+                &ciphersuites,
+                &self.mls_provider().await.map_err(Error::root("getting mls provider"))?,
+            )
             .await
             .map_err(Error::mls_operation("initializing mls client with external client id"))
     }
@@ -399,7 +417,8 @@ impl CentralContext {
     ) -> Result<Vec<u8>> {
         let cb = self
             .mls_client()
-            .await?
+            .await
+            .map_err(Error::root("getting mls client"))?
             .find_most_recent_credential_bundle(ciphersuite.signature_algorithm(), credential_type)
             .await
             .map_err(Error::mls_operation("finding most recent credential bundle"))?;
@@ -409,7 +428,8 @@ impl CentralContext {
     /// see [MlsCentral::client_id]
     pub async fn client_id(&self) -> Result<ClientId> {
         self.mls_client()
-            .await?
+            .await
+            .map_err(Error::root("getting mls client"))?
             .id()
             .await
             .map_err(Error::mls_operation("getting client id"))
@@ -438,15 +458,18 @@ impl CentralContext {
         }
         let conversation = MlsConversation::create(
             id.clone(),
-            &self.mls_client().await?,
+            &self.mls_client().await.map_err(Error::root("getting mls client"))?,
             creator_credential_type,
             config,
-            &self.mls_provider().await?,
+            &self.mls_provider().await.map_err(Error::root("getting mls provider"))?,
         )
         .await
         .map_err(Error::conversation("creating conversation"))?;
 
-        self.mls_groups().await?.insert(id.clone(), conversation);
+        self.mls_groups()
+            .await
+            .map_err(Error::root("getting mls groups"))?
+            .insert(id.clone(), conversation);
 
         Ok(())
     }
@@ -455,8 +478,17 @@ impl CentralContext {
     pub async fn conversation_exists(&self, id: &ConversationId) -> Result<bool> {
         Ok(self
             .mls_groups()
-            .await?
-            .get_fetch(id, &self.mls_provider().await?.keystore(), None)
+            .await
+            .map_err(Error::root("getting mls groups"))?
+            .get_fetch(
+                id,
+                &self
+                    .mls_provider()
+                    .await
+                    .map_err(Error::root("getting mls provider"))?
+                    .keystore(),
+                None,
+            )
             .await
             .ok()
             .flatten()
@@ -499,7 +531,8 @@ impl CentralContext {
     pub async fn random_bytes(&self, len: usize) -> Result<Vec<u8>> {
         use openmls_traits::random::OpenMlsRand as _;
         self.mls_provider()
-            .await?
+            .await
+            .map_err(Error::root("getting mls provider"))?
             .rand()
             .random_vec(len)
             .map_err(Error::mls_operation("generating random vector"))
@@ -512,7 +545,7 @@ mod tests {
 
     use crate::prelude::{CertificateBundle, ClientIdentifier, MlsCredentialType, INITIAL_KEYING_MATERIAL_COUNT};
     use crate::{
-        mls::{CryptoError, MlsCentral, MlsCentralConfiguration},
+        mls::{MlsCentral, MlsCentralConfiguration},
         test_utils::{x509::X509TestChain, *},
         CoreCrypto,
     };

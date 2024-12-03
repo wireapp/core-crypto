@@ -20,6 +20,120 @@ use crate::prelude::MlsCredentialType;
 #[cfg(all(feature = "cryptobox-migrate", target_family = "wasm"))]
 use rexie;
 
+/// A module-specific [Result][core::result::Result] type with a default error variant.
+pub type Result<T, E = Error> = core::result::Result<T, E>;
+
+/// Errors produced by the root module group
+#[derive(Debug, thiserror::Error)]
+pub enum Error {
+    /// Invalid Context. This context has been finished and can no longer be used.
+    #[error("This context has already been finished and can no longer be used.")]
+    InvalidContext,
+    /// The proteus client has been called but has not been initialized yet
+    #[error("Proteus client hasn't been initialized")]
+    ProteusNotInitialized,
+    /// This error is emitted when the requested conversation couldn't be found in our store
+    #[error("Couldn't find conversation")]
+    ConversationNotFound(crate::prelude::ConversationId),
+    /// A key store operation failed
+    //
+    // This uses a `Box<dyn>` pattern because we do not directly import `keystore` from here right now,
+    // and it feels a bit silly to add the dependency only for this.
+    #[error("{context}")]
+    Keystore {
+        /// What happened witht the keystore
+        #[source]
+        source: Box<dyn std::error::Error + Send + Sync>,
+        /// What was happening in the caller
+        context: &'static str,
+    },
+    /// Something went wrong in a conversation
+    #[error("{context}")]
+    Conversation {
+        /// What the caller was doing at the time
+        context: &'static str,
+        /// What happened in the conversation
+        #[source]
+        source: Box<crate::mls::conversation::error::Error>,
+    },
+    /// A MLS operation failed
+    #[error("{context}")]
+    MlsOperation {
+        /// What the caller was doing at the time
+        context: &'static str,
+        /// What happened in MLS
+        #[source]
+        source: Box<dyn std::error::Error + Send + Sync>,
+    },
+    /// A Proteus operation failed
+    #[error("{context}")]
+    ProteusOperation {
+        /// What the caller was doing at the time
+        context: &'static str,
+        /// What happened in Proteus
+        #[source]
+        source: Box<dyn std::error::Error + Send + Sync>,
+    },
+    /// A cryptobox migration operation failed
+    #[error("{context}")]
+    CryptoboxMigration {
+        /// What the caller was doing at the time
+        context: &'static str,
+        /// What happened in the cryptobox migration
+        #[source]
+        source: Box<dyn std::error::Error + Send + Sync>,
+    },
+}
+
+impl Error {
+    pub(crate) fn keystore<E>(context: &'static str) -> impl FnOnce(E) -> Self
+    where
+        E: 'static + std::error::Error + Send + Sync,
+    {
+        move |err| Self::Keystore {
+            context,
+            source: Box::new(err),
+        }
+    }
+
+    pub(crate) fn conversation(context: &'static str) -> impl FnOnce(crate::mls::conversation::error::Error) -> Self {
+        move |source| Self::Conversation {
+            context,
+            source: Box::new(source),
+        }
+    }
+
+    pub(crate) fn mls_operation<E>(context: &'static str) -> impl FnOnce(E) -> Self
+    where
+        E: 'static + std::error::Error + Send + Sync,
+    {
+        move |source| Self::MlsOperation {
+            context,
+            source: Box::new(source),
+        }
+    }
+
+    pub(crate) fn proteus_operation<E>(context: &'static str) -> impl FnOnce(E) -> Self
+    where
+        E: 'static + std::error::Error + Send + Sync,
+    {
+        move |source| Self::ProteusOperation {
+            context,
+            source: Box::new(source),
+        }
+    }
+
+    pub(crate) fn cryptobox_migration<E>(context: &'static str) -> impl FnOnce(E) -> Self
+    where
+        E: 'static + std::error::Error + Send + Sync,
+    {
+        move |source| Self::CryptoboxMigration {
+            context,
+            source: Box::new(source),
+        }
+    }
+}
+
 /// CoreCrypto errors
 #[derive(Debug, thiserror::Error, strum::IntoStaticStr)]
 #[cfg_attr(feature = "uniffi", derive(uniffi::Error))]
@@ -273,9 +387,6 @@ impl From<MlsError> for CryptoError {
         }
     }
 }
-
-/// A simpler definition for Result types that the Error is a [CryptoError]
-pub type CryptoResult<T> = Result<T, CryptoError>;
 
 impl CryptoError {
     /// Returns the proteus error code

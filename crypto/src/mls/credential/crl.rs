@@ -111,6 +111,10 @@ impl CentralContext {
             crl_new_distribution_points.extend(crl_dp);
         }
 
-        get_new_crl_distribution_points(&self.mls_provider().await?, crl_new_distribution_points).await
+        get_new_crl_distribution_points(
+            &self.mls_provider().await.map_err(Error::root("getting mls provider"))?,
+            crl_new_distribution_points,
+        )
+        .await
     }
 }

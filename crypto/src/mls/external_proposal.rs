@@ -66,9 +66,9 @@ impl CentralContext {
         credential_type: MlsCredentialType,
     ) -> Result<MlsMessageOut> {
         let group_id = GroupId::from_slice(conversation_id.as_slice());
-        let mls_provider = self.mls_provider().await?;
+        let mls_provider = self.mls_provider().await.map_err(Error::root("getting mls provider"))?;
 
-        let client = self.mls_client().await?;
+        let client = self.mls_client().await.map_err(Error::root("getting mls client"))?;
         let cb = client
             .find_most_recent_credential_bundle(ciphersuite.signature_algorithm(), credential_type)
             .await;
