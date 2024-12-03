@@ -1,64 +1,15 @@
-use log::{trace, warn};
-use openmls::{
-    group::QueuedProposal,
-    prelude::{GroupEpoch, GroupId, JoinProposal, LeafNodeIndex, MlsMessageOut, Proposal, Sender},
-};
+use log::trace;
+use openmls::prelude::{GroupEpoch, GroupId, JoinProposal, LeafNodeIndex, MlsMessageOut, Proposal};
 use std::collections::HashSet;
 
 use crate::{
-    group_store::GroupStoreValue,
     mls::{credential::typ::MlsCredentialType, ClientId, ConversationId},
-    prelude::{CoreCryptoCallbacks, CryptoError, CryptoResult, MlsCiphersuite, MlsConversation, MlsError},
+    prelude::{CryptoError, CryptoResult, MlsCiphersuite, MlsConversation, MlsError},
 };
 
 use crate::context::CentralContext;
 
 impl MlsConversation {
-    /// Validates the proposal. If it is external and an `Add` proposal it will call the callback
-    /// interface to validate the proposal, otherwise it will succeed.
-    pub(crate) async fn validate_external_proposal(
-        &self,
-        proposal: &QueuedProposal,
-        parent_conversation: Option<&GroupStoreValue<MlsConversation>>,
-        callbacks: Option<&dyn CoreCryptoCallbacks>,
-    ) -> CryptoResult<()> {
-        let is_external_proposal = matches!(proposal.sender(), Sender::External(_) | Sender::NewMemberProposal);
-        if is_external_proposal {
-            if let Proposal::Add(add_proposal) = proposal.proposal() {
-                let callbacks = callbacks.ok_or(CryptoError::CallbacksNotSet)?;
-                let existing_clients = self.members_in_next_epoch();
-                let self_identity = add_proposal.key_package().leaf_node().credential().identity();
-                let parent_clients = if let Some(parent_conv) = parent_conversation {
-                    Some(
-                        parent_conv
-                            .read()
-                            .await
-                            .group
-                            .members()
-                            .map(|kp| kp.credential.identity().to_vec().into())
-                            .collect(),
-                    )
-                } else {
-                    None
-                };
-                let is_self_user_in_group = callbacks
-                    .client_is_existing_group_user(
-                        self.id.clone(),
-                        self_identity.into(),
-                        existing_clients,
-                        parent_clients,
-                    )
-                    .await;
-                if !is_self_user_in_group {
-                    return Err(CryptoError::UnauthorizedExternalAddProposal);
-                }
-            }
-        } else {
-            warn!("Not external proposal.");
-        }
-        Ok(())
-    }
-
     /// Get actual group members and subtract pending remove proposals
     pub fn members_in_next_epoch(&self) -> Vec<ClientId> {
         let pending_removals = self.pending_removals();
