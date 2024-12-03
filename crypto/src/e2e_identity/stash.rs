@@ -1,8 +1,8 @@
 use openmls_traits::{random::OpenMlsRand, OpenMlsCryptoProvider};
 
-use super::error::Result;
+use super::error::{Error, Result};
 use crate::context::CentralContext;
-use crate::prelude::{CryptoError, E2eiEnrollment};
+use crate::prelude::E2eiEnrollment;
 use core_crypto_keystore::CryptoKeystoreMls;
 use mls_crypto_provider::MlsCryptoProvider;
 
@@ -16,12 +16,15 @@ impl E2eiEnrollment {
         const HANDLE_SIZE: usize = 32;
 
         let content = serde_json::to_vec(&self)?;
-        let handle = backend.crypto().random_vec(HANDLE_SIZE).map_err(CryptoError::from)?;
+        let handle = backend
+            .crypto()
+            .random_vec(HANDLE_SIZE)
+            .map_err(Error::mls_operation("generating random vector of bytes"))?;
         backend
             .key_store()
             .save_e2ei_enrollment(&handle, &content)
             .await
-            .map_err(CryptoError::from)?;
+            .map_err(Error::keystore("saving e2ei enrollment"))?;
         Ok(handle)
     }
 
@@ -30,7 +33,7 @@ impl E2eiEnrollment {
             .key_store()
             .pop_e2ei_enrollment(&handle)
             .await
-            .map_err(CryptoError::from)?;
+            .map_err(Error::keystore("popping e2ei enrollment"))?;
         Ok(serde_json::from_slice(&content)?)
     }
 }
@@ -45,7 +48,9 @@ impl CentralContext {
     /// # Returns
     /// A handle for retrieving the enrollment later on
     pub async fn e2ei_enrollment_stash(&self, enrollment: E2eiEnrollment) -> Result<EnrollmentHandle> {
-        enrollment.stash(&self.mls_provider().await?).await
+        enrollment
+            .stash(&self.mls_provider().await.map_err(Error::root("getting mls provider"))?)
+            .await
     }
 
     /// Fetches the persisted enrollment and deletes it from the keystore
@@ -53,7 +58,11 @@ impl CentralContext {
     /// # Arguments
     /// * `handle` - returned by [CentralContext::e2ei_enrollment_stash]
     pub async fn e2ei_enrollment_stash_pop(&self, handle: EnrollmentHandle) -> Result<E2eiEnrollment> {
-        E2eiEnrollment::stash_pop(&self.mls_provider().await?, handle).await
+        E2eiEnrollment::stash_pop(
+            &self.mls_provider().await.map_err(Error::root("getting mls provider"))?,
+            handle,
+        )
+        .await
     }
 }
 

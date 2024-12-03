@@ -18,6 +18,12 @@ pub enum Error {
     /// A Credential was not found locally which is very likely an implementation error
     #[error("A Credential of type {0:?} was not found locally which is very likely an implementation error")]
     CredentialNotFound(crate::prelude::MlsCredentialType),
+    /// Supplied signature scheme was not valid
+    #[error("supplied signature scheme was not valid")]
+    InvalidSignatureScheme,
+    /// When looking for a X509 credential for a given ciphersuite and it has not been done
+    #[error("End-to-end identity enrollment has not been done")]
+    E2eiEnrollmentNotDone,
     /// A key store operation failed
     //
     // This uses a `Box<dyn>` pattern because we do not directly import `keystore` from here right now,
@@ -83,6 +89,9 @@ pub enum Error {
     /// Generating signature keypair
     #[error("Generating signature keypair")]
     GeneratingSignatureKeypair(#[source] openmls_traits::types::CryptoError),
+    /// The MLS group is in an invalid state for an unknown reason
+    #[error("The MLS group is in an invalid state for an unknown reason")]
+    InternalMlsError,
     /// Something went wrong in a conversation
     #[error("{context}")]
     Conversation {
@@ -99,18 +108,15 @@ pub enum Error {
         #[source]
         source: Box<crate::mls::credential::error::Error>,
     },
-    /// Compatibility wrapper
-    ///
-    /// This should be removed before merging this branch, but it allows an easier migration path to module-specific errors.
-    #[deprecated]
-    #[error(transparent)]
-    CryptoError(Box<crate::CryptoError>),
-}
-
-impl From<crate::CryptoError> for Error {
-    fn from(value: crate::CryptoError) -> Self {
-        Self::CryptoError(Box::new(value))
-    }
+    /// Something in the root module went wrong
+    #[error("{context}")]
+    Root {
+        /// What was happening in the caller
+        context: &'static str,
+        /// What happened
+        #[source]
+        source: Box<crate::Error>,
+    },
 }
 
 impl Error {
@@ -141,6 +147,13 @@ impl Error {
 
     pub(crate) fn credential(context: &'static str) -> impl FnOnce(crate::mls::credential::error::Error) -> Self {
         move |source| Self::MlsCredential {
+            context,
+            source: Box::new(source),
+        }
+    }
+
+    pub(crate) fn root(context: &'static str) -> impl FnOnce(crate::Error) -> Self {
+        move |source| Self::Root {
             context,
             source: Box::new(source),
         }

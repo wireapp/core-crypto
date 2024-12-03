@@ -4,7 +4,7 @@ use crate::mls::client::{
 };
 use crate::{
     mls::credential::{typ::MlsCredentialType, CredentialBundle},
-    prelude::{Client, CryptoError, MlsConversation},
+    prelude::{Client, MlsConversation},
 };
 use openmls::prelude::{Credential, SignaturePublicKey};
 use openmls_traits::types::SignatureScheme;
@@ -88,7 +88,7 @@ impl ClientIdentities {
 
 impl MlsConversation {
     pub(crate) async fn find_current_credential_bundle(&self, client: &Client) -> Result<Arc<CredentialBundle>> {
-        let own_leaf = self.group.own_leaf().ok_or(CryptoError::InternalMlsError)?;
+        let own_leaf = self.group.own_leaf().ok_or(Error::InternalMlsError)?;
         let sc = self.ciphersuite().signature_algorithm();
         let ct = self
             .own_credential_type()

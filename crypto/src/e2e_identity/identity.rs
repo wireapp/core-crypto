@@ -89,7 +89,7 @@ impl CentralContext {
         conversation_id: &ConversationId,
         client_ids: &[ClientId],
     ) -> Result<Vec<WireIdentity>> {
-        let mls_provider = self.mls_provider().await?;
+        let mls_provider = self.mls_provider().await.map_err(Error::root("getting mls provider"))?;
         let auth_service = mls_provider.authentication_service();
         auth_service.refresh_time_of_interest().await;
         let auth_service = auth_service.borrow().await;
@@ -107,7 +107,7 @@ impl CentralContext {
         conversation_id: &ConversationId,
         user_ids: &[String],
     ) -> Result<HashMap<String, Vec<WireIdentity>>> {
-        let mls_provider = self.mls_provider().await?;
+        let mls_provider = self.mls_provider().await.map_err(Error::root("getting mls provider"))?;
         let auth_service = mls_provider.authentication_service();
         auth_service.refresh_time_of_interest().await;
         let auth_service = auth_service.borrow().await;

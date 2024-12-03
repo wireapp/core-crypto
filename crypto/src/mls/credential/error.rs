@@ -63,18 +63,15 @@ pub enum Error {
         #[source]
         source: Box<dyn std::error::Error + Send + Sync>,
     },
-    /// Compatibility wrapper
-    ///
-    /// This should be removed before merging this branch, but it allows an easier migration path to module-specific errors.
-    #[deprecated]
-    #[error(transparent)]
-    CryptoError(Box<crate::CryptoError>),
-}
-
-impl From<crate::CryptoError> for Error {
-    fn from(value: crate::CryptoError) -> Self {
-        Self::CryptoError(Box::new(value))
-    }
+    /// Something in the root module went wrong
+    #[error("{context}")]
+    Root {
+        /// What was happening in the caller
+        context: &'static str,
+        /// What happened
+        #[source]
+        source: Box<crate::Error>,
+    },
 }
 
 impl Error {
@@ -103,6 +100,13 @@ impl Error {
         E: 'static + std::error::Error + Send + Sync,
     {
         move |source| Self::MlsOperation {
+            context,
+            source: Box::new(source),
+        }
+    }
+
+    pub(crate) fn root(context: &'static str) -> impl FnOnce(crate::Error) -> Self {
+        move |source| Self::Root {
             context,
             source: Box::new(source),
         }

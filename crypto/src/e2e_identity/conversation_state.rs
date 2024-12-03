@@ -42,20 +42,23 @@ impl CentralContext {
             .map_err(Error::conversation("getting conversation by id"))?;
         let conversation_guard = conversation.read().await;
         conversation_guard
-            .e2ei_conversation_state(&self.mls_provider().await?)
+            .e2ei_conversation_state(&self.mls_provider().await.map_err(Error::root("getting mls provider"))?)
             .await
     }
 
     /// See [MlsCentral::e2ei_verify_group_state].
     pub async fn e2ei_verify_group_state(&self, group_info: VerifiableGroupInfo) -> Result<E2eiConversationState> {
-        let mls_provider = self.mls_provider().await?;
+        let mls_provider = self.mls_provider().await.map_err(Error::root("getting mls provider"))?;
         let auth_service = mls_provider.authentication_service();
         auth_service.refresh_time_of_interest().await;
         let cs = group_info.ciphersuite().into();
 
         let is_sender = true; // verify the ratchet tree as sender to turn on hardened verification
         let Ok(rt) = group_info
-            .take_ratchet_tree(&self.mls_provider().await?, is_sender)
+            .take_ratchet_tree(
+                &self.mls_provider().await.map_err(Error::root("getting mls provider"))?,
+                is_sender,
+            )
             .await
         else {
             return Ok(E2eiConversationState::NotVerified);
@@ -81,8 +84,13 @@ impl CentralContext {
         // the e2ei state of a conversation and as a consequence degrade this conversation for all
         // participants once joining it.
         // This 👇 verifies the GroupInfo and the RatchetTree btw
-        let rt = group_info.take_ratchet_tree(&self.mls_provider().await?, false).await?;
-        let mls_provider = self.mls_provider().await?;
+        let rt = group_info
+            .take_ratchet_tree(
+                &self.mls_provider().await.map_err(Error::root("getting mls provider"))?,
+                false,
+            )
+            .await?;
+        let mls_provider = self.mls_provider().await.map_err(Error::root("getting mls provider"))?;
         let auth_service = mls_provider.authentication_service().borrow().await;
         get_credential_in_use_in_ratchet_tree(cs, rt, credential_type, auth_service.as_ref()).await
     }

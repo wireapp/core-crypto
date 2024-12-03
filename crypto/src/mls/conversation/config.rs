@@ -52,7 +52,7 @@ impl CentralContext {
         cfg: &mut MlsConversationConfiguration,
         external_senders: Vec<Vec<u8>>,
     ) -> Result<()> {
-        let mls_provider = self.mls_provider().await?;
+        let mls_provider = self.mls_provider().await.map_err(Error::root("getting mls provider"))?;
         cfg.external_senders = external_senders
             .into_iter()
             .map(|key| {
