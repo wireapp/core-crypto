@@ -14,10 +14,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see http://www.gnu.org/licenses/.
 
-use mls_crypto_provider::MlsCryptoProvider;
-use openmls::prelude::{
-    group_info::VerifiableGroupInfo, CredentialType, MlsGroup, MlsMessageOut, Proposal, Sender, StagedCommit,
-};
+use openmls::prelude::{group_info::VerifiableGroupInfo, MlsGroup, MlsMessageOut};
 use openmls_traits::OpenMlsCryptoProvider;
 use tls_codec::Serialize;
 
@@ -28,13 +25,12 @@ use core_crypto_keystore::{
 };
 
 use crate::{
-    e2e_identity::{conversation_state::compute_state, init_certificates::NewCrlDistributionPoint},
-    group_store::GroupStoreValue,
+    e2e_identity::init_certificates::NewCrlDistributionPoint,
     mls::credential::crl::{extract_crl_uris_from_group, get_new_crl_distribution_points},
     prelude::{
-        decrypt::MlsBufferedConversationDecryptMessage, id::ClientId, ConversationId, CoreCryptoCallbacks, CryptoError,
-        CryptoResult, E2eiConversationState, MlsCiphersuite, MlsConversation, MlsConversationConfiguration,
-        MlsCredentialType, MlsCustomConfiguration, MlsError, MlsGroupInfoBundle,
+        decrypt::MlsBufferedConversationDecryptMessage, ConversationId, CryptoError, CryptoResult, MlsCiphersuite,
+        MlsConversation, MlsConversationConfiguration, MlsCredentialType, MlsCustomConfiguration, MlsError,
+        MlsGroupInfoBundle,
     },
 };
 
@@ -228,88 +224,9 @@ impl CentralContext {
     }
 }
 
-impl MlsConversation {
-    pub(crate) async fn validate_external_commit(
-        &self,
-        commit: &StagedCommit,
-        sender: ClientId,
-        parent_conversation: Option<&GroupStoreValue<MlsConversation>>,
-        backend: &MlsCryptoProvider,
-        callbacks: Option<&dyn CoreCryptoCallbacks>,
-    ) -> CryptoResult<()> {
-        // i.e. has this commit been created by [MlsCentral::join_by_external_commit] ?
-        let is_external_init = commit.queued_proposals().any(|p| {
-            matches!(p.sender(), Sender::NewMemberCommit) && matches!(p.proposal(), Proposal::ExternalInit(_))
-        });
-
-        if is_external_init {
-            let callbacks = callbacks.ok_or(CryptoError::CallbacksNotSet)?;
-            // first let's verify the sender belongs to an user already in the MLS group
-            let existing_clients = self.members_in_next_epoch();
-            let parent_clients = if let Some(parent_conv) = parent_conversation {
-                Some(
-                    parent_conv
-                        .read()
-                        .await
-                        .group
-                        .members()
-                        .map(|kp| kp.credential.identity().to_vec().into())
-                        .collect(),
-                )
-            } else {
-                None
-            };
-            if !callbacks
-                .client_is_existing_group_user(
-                    self.id.clone(),
-                    sender.clone(),
-                    existing_clients.clone(),
-                    parent_clients,
-                )
-                .await
-            {
-                return Err(CryptoError::UnauthorizedExternalCommit);
-            }
-            // then verify that the user this client belongs to has the right role (is allowed)
-            // to perform such operation
-            if !callbacks
-                .user_authorize(self.id.clone(), sender, existing_clients)
-                .await
-            {
-                return Err(CryptoError::UnauthorizedExternalCommit);
-            }
-        }
-
-        if backend.authentication_service().is_env_setup().await {
-            let credentials: Vec<_> = commit
-                .add_proposals()
-                .filter_map(|add_proposal| {
-                    let credential = add_proposal.add_proposal().key_package().leaf_node().credential();
-
-                    matches!(credential.credential_type(), CredentialType::X509).then(|| credential.clone())
-                })
-                .collect();
-            let state = compute_state(
-                self.ciphersuite(),
-                credentials.iter(),
-                MlsCredentialType::X509,
-                backend.authentication_service().borrow().await.as_ref(),
-            )
-            .await;
-            if state != E2eiConversationState::Verified {
-                // FIXME: Uncomment when PKI env can be seeded - the computation is still done to assess performance and impact of the validations. Tracking issue: WPB-9665
-                // return Err(CryptoError::InvalidCertificateChain);
-            }
-        }
-
-        Ok(())
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use openmls::prelude::*;
-    use std::sync::Arc;
     use wasm_bindgen_test::*;
 
     use core_crypto_keystore::{CryptoKeystoreError, CryptoKeystoreMls, MissingKeyErrorKind};
@@ -627,94 +544,6 @@ mod tests {
                 })
             },
         )
-        .await
-    }
-
-    #[apply(all_cred_cipher)]
-    #[wasm_bindgen_test]
-    async fn should_fail_when_sender_user_not_in_group(case: TestCase) {
-        run_test_with_client_ids(case.clone(), ["alice", "bob"], move |[alice_central, bob_central]| {
-            Box::pin(async move {
-                let id = conversation_id();
-
-                alice_central
-                    .context
-                    .set_callbacks(Some(Arc::new(ValidationCallbacks {
-                        client_is_existing_group_user: false,
-                        ..Default::default()
-                    })))
-                    .await
-                    .unwrap();
-
-                alice_central
-                    .context
-                    .new_conversation(&id, case.credential_type, case.cfg.clone())
-                    .await
-                    .unwrap();
-
-                // export Alice group info
-                let group_info = alice_central.get_group_info(&id).await;
-
-                // Bob tries to join Alice's group
-                let MlsConversationInitBundle { commit, .. } = bob_central
-                    .context
-                    .join_by_external_commit(group_info, case.custom_cfg(), case.credential_type)
-                    .await
-                    .unwrap();
-                let alice_accepts_ext_commit = alice_central
-                    .context
-                    .decrypt_message(&id, &commit.to_bytes().unwrap())
-                    .await;
-                assert!(matches!(
-                    alice_accepts_ext_commit.unwrap_err(),
-                    CryptoError::UnauthorizedExternalCommit
-                ))
-            })
-        })
-        .await
-    }
-
-    #[apply(all_cred_cipher)]
-    #[wasm_bindgen_test]
-    async fn should_fail_when_sender_lacks_role(case: TestCase) {
-        run_test_with_client_ids(case.clone(), ["alice", "bob"], move |[alice_central, bob_central]| {
-            Box::pin(async move {
-                let id = conversation_id();
-
-                alice_central
-                    .context
-                    .set_callbacks(Some(Arc::new(ValidationCallbacks {
-                        user_authorize: false,
-                        ..Default::default()
-                    })))
-                    .await
-                    .unwrap();
-
-                alice_central
-                    .context
-                    .new_conversation(&id, case.credential_type, case.cfg.clone())
-                    .await
-                    .unwrap();
-
-                // export Alice group info
-                let group_info = alice_central.get_group_info(&id).await;
-
-                // Bob tries to join Alice's group
-                let MlsConversationInitBundle { commit, .. } = bob_central
-                    .context
-                    .join_by_external_commit(group_info, case.custom_cfg(), case.credential_type)
-                    .await
-                    .unwrap();
-                let alice_accepts_ext_commit = alice_central
-                    .context
-                    .decrypt_message(&id, &commit.to_bytes().unwrap())
-                    .await;
-                assert!(matches!(
-                    alice_accepts_ext_commit.unwrap_err(),
-                    CryptoError::UnauthorizedExternalCommit
-                ))
-            })
-        })
         .await
     }
 
