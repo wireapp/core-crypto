@@ -113,18 +113,6 @@ pub enum CryptoError {
     /// Standard I/O Error
     #[error(transparent)]
     IoError(#[from] std::io::Error),
-    /// Authorization error
-    #[error("The current client id isn't authorized to perform this action")]
-    Unauthorized,
-    /// Callbacks are not provided
-    #[error("The callbacks needed for CoreCrypto to operate were not set")]
-    CallbacksNotSet,
-    /// External Add Proposal Validation failed
-    #[error("External add proposal validation failed: only users already in the group are allowed")]
-    UnauthorizedExternalAddProposal,
-    /// External Commit sender was not authorized to perform such
-    #[error("External Commit sender was not authorized to perform such")]
-    UnauthorizedExternalCommit,
     /// A supplied [`openmls::ciphersuite::hash_ref::HashReference`] is not of the expected size: 16
     #[error("A supplied reference is not of the expected size: 16")]
     InvalidHashReference,
