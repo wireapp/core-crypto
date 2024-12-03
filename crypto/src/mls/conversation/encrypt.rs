@@ -13,8 +13,8 @@ use openmls::prelude::MlsMessageOutBody;
 use super::error::{Error, Result};
 use super::MlsConversation;
 use crate::context::CentralContext;
-use crate::prelude::Client;
 use crate::mls::ConversationId;
+use crate::prelude::Client;
 
 /// Abstraction over a MLS group capable of encrypting a MLS message
 impl MlsConversation {
@@ -64,12 +64,16 @@ impl CentralContext {
     /// from OpenMls and the KeyStore
     #[cfg_attr(test, crate::idempotent)]
     pub async fn encrypt_message(&self, conversation: &ConversationId, message: impl AsRef<[u8]>) -> Result<Vec<u8>> {
-        let client = self.mls_client().await?;
+        let client = self.mls_client().await.map_err(Error::root("getting mls client"))?;
         self.get_conversation(conversation)
             .await?
             .write()
             .await
-            .encrypt_message(&client, message, &self.mls_provider().await?)
+            .encrypt_message(
+                &client,
+                message,
+                &self.mls_provider().await.map_err(Error::root("getting mls provider"))?,
+            )
             .await
     }
 }

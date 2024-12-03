@@ -9,7 +9,7 @@ use openmls_traits::types::SignatureScheme;
 impl CentralContext {
     /// See [MlsCentral::e2ei_is_enabled]
     pub async fn e2ei_is_enabled(&self, signature_scheme: SignatureScheme) -> Result<bool> {
-        let client = self.mls_client().await?;
+        let client = self.mls_client().await.map_err(Error::root("getting mls client"))?;
         client.e2ei_is_enabled(signature_scheme).await
     }
 }

@@ -442,7 +442,7 @@ impl CentralContext {
                 .map_err(Error::mls("handling when group is pending"));
         };
         let parent_conversation = self.get_parent_conversation(&conversation).await?;
-        let client = &self.mls_client().await?;
+        let client = &self.mls_client().await.map_err(Error::root("getting mls client"))?;
         let decrypt_message = conversation
             .write()
             .await
@@ -450,7 +450,7 @@ impl CentralContext {
                 msg,
                 parent_conversation.as_ref(),
                 client,
-                &self.mls_provider().await?,
+                &self.mls_provider().await.map_err(Error::root("getting mls provider"))?,
                 true,
             )
             .await;
@@ -474,7 +474,7 @@ mod tests {
     use crate::{
         mls::conversation::{config::MAX_PAST_EPOCHS, error::Error},
         prelude::MlsCommitBundle,
-        test_utils::{ValidationCallbacks, *},
+        test_utils::*,
     };
 
     use super::*;

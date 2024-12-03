@@ -77,8 +77,8 @@ impl CentralContext {
             custom: custom_cfg,
             ..Default::default()
         };
-        let mls_provider = self.mls_provider().await?;
-        let mut mls_groups = self.mls_groups().await?;
+        let mls_provider = self.mls_provider().await.map_err(Error::root("getting mls provider"))?;
+        let mut mls_groups = self.mls_groups().await.map_err(Error::root("getting mls groups"))?;
         let conversation =
             MlsConversation::from_welcome_message(welcome, configuration, &mls_provider, mls_groups.borrow_mut())
                 .await?;

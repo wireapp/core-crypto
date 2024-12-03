@@ -52,7 +52,10 @@ impl CentralContext {
             .await?
             .read()
             .await
-            .export_secret_key(&self.mls_provider().await?, key_length)
+            .export_secret_key(
+                &self.mls_provider().await.map_err(Error::root("getting mls provider"))?,
+                key_length,
+            )
     }
 
     /// See [MlsCentral::get_client_ids]

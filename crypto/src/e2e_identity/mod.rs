@@ -12,7 +12,6 @@ use crate::{
     e2e_identity::{crypto::E2eiSignatureKeypair, id::QualifiedE2eiClientId},
     mls::credential::x509::CertificatePrivateKey,
     prelude::{id::ClientId, identifier::ClientIdentifier, CertificateBundle, MlsCiphersuite},
-    CryptoError,
 };
 
 pub(crate) mod conversation_state;
@@ -68,7 +67,7 @@ impl CentralContext {
             handle,
             team,
             expiry_sec,
-            &self.mls_provider().await?,
+            &self.mls_provider().await.map_err(Error::root("getting mls provider"))?,
             ciphersuite,
             signature_keypair,
             #[cfg(not(target_family = "wasm"))]
@@ -90,12 +89,13 @@ impl CentralContext {
             .certificate_response(
                 certificate_chain,
                 self.mls_provider()
-                    .await?
+                    .await
+                    .map_err(Error::root("getting mls provider"))?
                     .authentication_service()
                     .borrow()
                     .await
                     .as_ref()
-                    .ok_or(CryptoError::ConsumerError)?,
+                    .ok_or(Error::PkiEnvironmentUnset)?,
             )
             .await?;
 
@@ -727,7 +727,11 @@ pub(crate) mod tests {
         x509_test_chain.register_with_central(&ctx.context).await;
         #[cfg(not(target_family = "wasm"))]
         {
-            let backend = ctx.context.mls_provider().await?;
+            let backend = ctx
+                .context
+                .mls_provider()
+                .await
+                .map_err(Error::root("getting mls provider"))?;
             let keystore = backend.key_store();
             if is_renewal {
                 let initial_refresh_token =
@@ -746,7 +750,11 @@ pub(crate) mod tests {
 
         #[cfg(not(target_family = "wasm"))]
         {
-            let backend = ctx.context.mls_provider().await?;
+            let backend = ctx
+                .context
+                .mls_provider()
+                .await
+                .map_err(Error::root("getting mls provider"))?;
             let keystore = backend.key_store();
             if is_renewal {
                 assert!(enrollment.refresh_token.is_some());
@@ -914,7 +922,11 @@ pub(crate) mod tests {
 
         #[cfg(not(target_family = "wasm"))]
         {
-            let backend = ctx.context.mls_provider().await?;
+            let backend = ctx
+                .context
+                .mls_provider()
+                .await
+                .map_err(Error::root("getting mls provider"))?;
             let keystore = backend.key_store();
             enrollment
                 .new_oidc_challenge_response(&ctx.context.mls_provider().await.unwrap(), oidc_chall_resp)

@@ -42,12 +42,16 @@ impl CentralContext {
         id: &ConversationId,
         key_packages: Vec<KeyPackageIn>,
     ) -> Result<MlsConversationCreationMessage> {
-        let client = self.mls_client().await?;
+        let client = self.mls_client().await.map_err(Error::root("getting mls client"))?;
         self.get_conversation(id)
             .await?
             .write()
             .await
-            .add_members(&client, key_packages, &self.mls_provider().await?)
+            .add_members(
+                &client,
+                key_packages,
+                &self.mls_provider().await.map_err(Error::root("getting mls provider"))?,
+            )
             .await
     }
 
@@ -70,12 +74,16 @@ impl CentralContext {
         id: &ConversationId,
         clients: &[ClientId],
     ) -> Result<MlsCommitBundle> {
-        let client = self.mls_client().await?;
+        let client = self.mls_client().await.map_err(Error::root("getting mls client"))?;
         self.get_conversation(id)
             .await?
             .write()
             .await
-            .remove_members(&client, clients, &self.mls_provider().await?)
+            .remove_members(
+                &client,
+                clients,
+                &self.mls_provider().await.map_err(Error::root("getting mls provider"))?,
+            )
             .await
     }
 
@@ -94,12 +102,17 @@ impl CentralContext {
     /// from OpenMls and the KeyStore
     #[cfg_attr(test, crate::idempotent)]
     pub async fn update_keying_material(&self, id: &ConversationId) -> Result<MlsCommitBundle> {
-        let client = self.mls_client().await?;
+        let client = self.mls_client().await.map_err(Error::root("getting mls client"))?;
         self.get_conversation(id)
             .await?
             .write()
             .await
-            .update_keying_material(&client, &self.mls_provider().await?, None, None)
+            .update_keying_material(
+                &client,
+                &self.mls_provider().await.map_err(Error::root("getting mls provider"))?,
+                None,
+                None,
+            )
             .await
     }
 
@@ -115,12 +128,15 @@ impl CentralContext {
     /// Errors can be originating from the KeyStore and OpenMls
     #[cfg_attr(test, crate::idempotent)]
     pub async fn commit_pending_proposals(&self, id: &ConversationId) -> Result<Option<MlsCommitBundle>> {
-        let client = self.mls_client().await?;
+        let client = self.mls_client().await.map_err(Error::root("getting mls client"))?;
         self.get_conversation(id)
             .await?
             .write()
             .await
-            .commit_pending_proposals(&client, &self.mls_provider().await?)
+            .commit_pending_proposals(
+                &client,
+                &self.mls_provider().await.map_err(Error::root("getting mls provider"))?,
+            )
             .await
     }
 }
