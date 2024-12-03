@@ -8,8 +8,8 @@ use crate::obfuscate::Obfuscated;
 use crate::{
     group_store::GroupStoreValue,
     prelude::{
-        decrypt::MlsBufferedConversationDecryptMessage, Client, ConversationId, CoreCryptoCallbacks, CryptoError,
-        CryptoResult, MlsConversation, MlsError,
+        decrypt::MlsBufferedConversationDecryptMessage, Client, ConversationId, CryptoError, CryptoResult,
+        MlsConversation, MlsConversationDecryptMessage, MlsError,
     },
 };
 use core_crypto_keystore::{
@@ -46,18 +46,10 @@ impl CentralContext {
             Some(id) => self.get_conversation(id).await.ok(),
             _ => None,
         };
-        let guard = self.callbacks().await?;
-        let callbacks = guard.as_ref().map(|boxed| boxed.as_ref());
         let client = &self.mls_client().await?;
         let mls_provider = self.mls_provider().await?;
         conversation
-            .restore_pending_messages(
-                client,
-                &mls_provider,
-                callbacks,
-                parent_conversation.as_ref(),
-                is_rejoin,
-            )
+            .restore_pending_messages(client, &mls_provider, parent_conversation.as_ref(), is_rejoin)
             .await
     }
 }
@@ -69,7 +61,6 @@ impl MlsConversation {
         &'a mut self,
         client: &'a Client,
         backend: &'a MlsCryptoProvider,
-        callbacks: Option<&'a dyn CoreCryptoCallbacks>,
         parent_conversation: Option<&'a GroupStoreValue<Self>>,
         is_rejoin: bool,
     ) -> CryptoResult<Option<Vec<MlsBufferedConversationDecryptMessage>>> {
@@ -119,7 +110,7 @@ impl MlsConversation {
                 };
                 let restore_pending = false; // to prevent infinite recursion
                 let decrypted = self
-                    .decrypt_message(m, parent_conversation, client, backend, callbacks, restore_pending)
+                    .decrypt_message(m, parent_conversation, client, backend, restore_pending)
                     .await?;
                 decrypted_messages.push(decrypted.into());
             }
