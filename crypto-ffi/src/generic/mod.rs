@@ -830,67 +830,64 @@ impl From<MlsCredentialType> for core_crypto::prelude::MlsCredentialType {
     }
 }
 
-#[derive(Debug)]
-struct CoreCryptoCallbacksWrapper(std::sync::Arc<dyn CoreCryptoCallbacks>);
+#[derive(Debug, Clone, PartialEq, Eq, uniffi::Enum)]
+pub enum MlsTransportResponse {
+    /// The message was accepted by the distribution service
+    Success,
+    /// A client should have consumed all incoming messages before re-trying.
+    Retry,
+    /// The message was rejected by the distribution service and there's no recovery.
+    Abort { reason: String },
+}
 
-#[cfg_attr(target_family = "wasm", async_trait::async_trait(?Send))]
-#[cfg_attr(not(target_family = "wasm"), async_trait::async_trait)]
-impl core_crypto::prelude::CoreCryptoCallbacks for CoreCryptoCallbacksWrapper {
-    async fn authorize(&self, conversation_id: Vec<u8>, client_id: core_crypto::prelude::ClientId) -> bool {
-        self.0.authorize(conversation_id, ClientId(client_id)).await
-    }
-    async fn user_authorize(
-        &self,
-        conversation_id: Vec<u8>,
-        external_client_id: core_crypto::prelude::ClientId,
-        existing_clients: Vec<core_crypto::prelude::ClientId>,
-    ) -> bool {
-        self.0
-            .user_authorize(
-                conversation_id,
-                ClientId(external_client_id),
-                existing_clients.into_iter().map(ClientId).collect(),
-            )
-            .await
-    }
-    async fn client_is_existing_group_user(
-        &self,
-        conversation_id: Vec<u8>,
-        client_id: core_crypto::prelude::ClientId,
-        existing_clients: Vec<core_crypto::prelude::ClientId>,
-        parent_conversation_clients: Option<Vec<core_crypto::prelude::ClientId>>,
-    ) -> bool {
-        self.0
-            .client_is_existing_group_user(
-                conversation_id,
-                ClientId(client_id),
-                existing_clients.into_iter().map(ClientId).collect(),
-                parent_conversation_clients.map(|pccs| pccs.into_iter().map(ClientId).collect()),
-            )
-            .await
+impl From<MlsTransportResponse> for core_crypto::MlsTransportResponse {
+    fn from(value: MlsTransportResponse) -> Self {
+        match value {
+            MlsTransportResponse::Success => Self::Success,
+            MlsTransportResponse::Retry => Self::Retry,
+            MlsTransportResponse::Abort { reason } => Self::Abort { reason },
+        }
     }
 }
 
-/// This is needed instead of the original trait ([core_crypto::CoreCryptoCallbacks]) to use the
-/// custom type [ClientId], that UniFFi can handle.
+impl From<core_crypto::MlsTransportResponse> for MlsTransportResponse {
+    fn from(value: core_crypto::MlsTransportResponse) -> Self {
+        match value {
+            core_crypto::MlsTransportResponse::Success => Self::Success,
+            core_crypto::MlsTransportResponse::Retry => Self::Retry,
+            core_crypto::MlsTransportResponse::Abort { reason } => Self::Abort { reason },
+        }
+    }
+}
+
+#[derive(Debug)]
+struct MlsTransportWrapper(Arc<dyn MlsTransport>);
+
+#[async_trait::async_trait]
+impl core_crypto::prelude::MlsTransport for MlsTransportWrapper {
+    async fn send_commit_bundle(
+        &self,
+        commit_bundle: MlsCommitBundle,
+    ) -> Result<core_crypto::MlsTransportResponse, Box<dyn std::error::Error>> {
+        let commit_bundle = CommitBundle::try_from(commit_bundle)?;
+        Ok(self.0.send_commit_bundle(commit_bundle).await.into())
+    }
+
+    async fn send_message(
+        &self,
+        mls_message: Vec<u8>,
+    ) -> Result<core_crypto::MlsTransportResponse, Box<dyn std::error::Error>> {
+        Ok(self.0.send_message(mls_message).await.into())
+    }
+}
+
+/// This is needed instead of the original trait ([core_crypto::CoreCryptoTransport]) to use types
+/// that we export via uniffi.
 #[uniffi::export(with_foreign)]
-#[cfg_attr(target_family = "wasm", async_trait::async_trait(?Send))]
-#[cfg_attr(not(target_family = "wasm"), async_trait::async_trait)]
-pub trait CoreCryptoCallbacks: std::fmt::Debug + Send + Sync {
-    async fn authorize(&self, conversation_id: Vec<u8>, client_id: ClientId) -> bool;
-    async fn user_authorize(
-        &self,
-        conversation_id: Vec<u8>,
-        external_client_id: ClientId,
-        existing_clients: Vec<ClientId>,
-    ) -> bool;
-    async fn client_is_existing_group_user(
-        &self,
-        conversation_id: Vec<u8>,
-        client_id: ClientId,
-        existing_clients: Vec<ClientId>,
-        parent_conversation_clients: Option<Vec<ClientId>>,
-    ) -> bool;
+#[async_trait::async_trait]
+pub trait MlsTransport: std::fmt::Debug + Send + Sync {
+    async fn send_commit_bundle(&self, commit_bundle: CommitBundle) -> MlsTransportResponse;
+    async fn send_message(&self, mls_message: Vec<u8>) -> MlsTransportResponse;
 }
 
 static INIT_LOGGER: Once = Once::new();
@@ -1165,10 +1162,10 @@ impl CoreCrypto {
         }
     }
 
-    /// See [core_crypto::mls::MlsCentral::callbacks]
-    pub async fn set_callbacks(&self, callbacks: std::sync::Arc<dyn CoreCryptoCallbacks>) -> CoreCryptoResult<()> {
+    /// See [core_crypto::mls::MlsCentral::provide_transport]
+    pub async fn provide_transport(&self, callbacks: Arc<dyn MlsTransport>) -> CoreCryptoResult<()> {
         self.central
-            .callbacks(std::sync::Arc::new(CoreCryptoCallbacksWrapper(callbacks)))
+            .provide_transport(Arc::new(MlsTransportWrapper(callbacks)))
             .await;
         Ok(())
     }
