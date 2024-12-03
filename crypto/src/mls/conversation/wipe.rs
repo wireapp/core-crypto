@@ -12,7 +12,7 @@ impl CentralContext {
     /// KeyStore errors, such as IO
     #[cfg_attr(test, crate::dispotent)]
     pub async fn wipe_conversation(&self, id: &ConversationId) -> Result<()> {
-        let provider = self.mls_provider().await?;
+        let provider = self.mls_provider().await.map_err(Error::root("getting mls provider"))?;
         self.get_conversation(id)
             .await?
             .write()
@@ -24,7 +24,11 @@ impl CentralContext {
             .mls_group_delete(id)
             .await
             .map_err(Error::keystore("deleting mls group"))?;
-        let _ = self.mls_groups().await?.remove(id);
+        let _ = self
+            .mls_groups()
+            .await
+            .map_err(Error::root("getting mls groups"))?
+            .remove(id);
         Ok(())
     }
 }

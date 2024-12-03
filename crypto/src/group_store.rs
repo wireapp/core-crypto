@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see http://www.gnu.org/licenses/.
 
-use crate::prelude::{CryptoResult, MlsConversation};
+use crate::{prelude::MlsConversation, Error, Result};
 use core_crypto_keystore::{connection::FetchFromDatabase, entities::EntityFindParams};
 
 #[cfg_attr(target_family = "wasm", async_trait::async_trait(?Send))]
@@ -29,11 +29,11 @@ pub(crate) trait GroupStoreEntity: std::fmt::Debug {
         id: &[u8],
         identity: Option<Self::IdentityType>,
         keystore: &impl FetchFromDatabase,
-    ) -> CryptoResult<Option<Self>>
+    ) -> Result<Option<Self>>
     where
         Self: Sized;
 
-    async fn fetch_all(keystore: &impl FetchFromDatabase) -> CryptoResult<Vec<Self>>
+    async fn fetch_all(keystore: &impl FetchFromDatabase) -> Result<Vec<Self>>
     where
         Self: Sized;
 }
@@ -52,25 +52,26 @@ impl GroupStoreEntity for MlsConversation {
         id: &[u8],
         _: Option<Self::IdentityType>,
         keystore: &impl FetchFromDatabase,
-    ) -> crate::CryptoResult<Option<Self>> {
-        let result = keystore.find::<Self::RawStoreValue>(id).await?;
+    ) -> crate::Result<Option<Self>> {
+        let result = keystore
+            .find::<Self::RawStoreValue>(id)
+            .await
+            .map_err(Error::keystore("finding mls conversation from keystore by id"))?;
         let Some(store_value) = result else {
             return Ok(None);
         };
 
-        let conversation = Self::from_serialized_state(store_value.state.clone(), store_value.parent_id.clone())?;
+        let conversation = Self::from_serialized_state(store_value.state.clone(), store_value.parent_id.clone())
+            .map_err(Error::conversation("deserializing mls conversation"))?;
         // If the conversation is not active, pretend it doesn't exist
-        Ok(if conversation.group.is_active() {
-            Some(conversation)
-        } else {
-            None
-        })
+        Ok(conversation.group.is_active().then_some(conversation))
     }
 
-    async fn fetch_all(keystore: &impl FetchFromDatabase) -> CryptoResult<Vec<Self>> {
+    async fn fetch_all(keystore: &impl FetchFromDatabase) -> Result<Vec<Self>> {
         let all_conversations = keystore
             .find_all::<Self::RawStoreValue>(EntityFindParams::default())
-            .await?;
+            .await
+            .map_err(Error::keystore("finding all mls conversations"))?;
         Ok(all_conversations
             .iter()
             .filter_map(|c| {
@@ -96,18 +97,21 @@ impl GroupStoreEntity for crate::proteus::ProteusConversationSession {
         id: &[u8],
         identity: Option<Self::IdentityType>,
         keystore: &impl FetchFromDatabase,
-    ) -> crate::CryptoResult<Option<Self>> {
-        let result = keystore.find::<Self::RawStoreValue>(id).await?;
+    ) -> crate::Result<Option<Self>> {
+        let result = keystore
+            .find::<Self::RawStoreValue>(id)
+            .await
+            .map_err(Error::keystore("finding raw group store entity by id"))?;
         let Some(store_value) = result else {
             return Ok(None);
         };
 
         let Some(identity) = identity else {
-            return Err(crate::CryptoError::ProteusNotInitialized);
+            return Err(crate::Error::ProteusNotInitialized);
         };
 
         let session = proteus_wasm::session::Session::deserialise(identity, &store_value.session)
-            .map_err(crate::ProteusError::from)?;
+            .map_err(Error::proteus_operation("deserializing session"))?;
 
         Ok(Some(Self {
             identifier: store_value.id.clone(),
@@ -115,7 +119,7 @@ impl GroupStoreEntity for crate::proteus::ProteusConversationSession {
         }))
     }
 
-    async fn fetch_all(_keystore: &impl FetchFromDatabase) -> CryptoResult<Vec<Self>>
+    async fn fetch_all(_keystore: &impl FetchFromDatabase) -> Result<Vec<Self>>
     where
         Self: Sized,
     {
@@ -197,7 +201,7 @@ impl<V: GroupStoreEntity> GroupStore<V> {
         k: &[u8],
         keystore: &impl FetchFromDatabase,
         identity: Option<V::IdentityType>,
-    ) -> crate::CryptoResult<Option<GroupStoreValue<V>>> {
+    ) -> crate::Result<Option<GroupStoreValue<V>>> {
         // Optimistic cache lookup
         if let Some(value) = self.0.get(k) {
             return Ok(Some(value.clone()));
@@ -222,14 +226,11 @@ impl<V: GroupStoreEntity> GroupStore<V> {
         k: &[u8],
         keystore: &impl FetchFromDatabase,
         identity: Option<V::IdentityType>,
-    ) -> crate::CryptoResult<Option<V>> {
+    ) -> crate::Result<Option<V>> {
         V::fetch_from_id(k, identity, keystore).await
     }
 
-    pub(crate) async fn get_fetch_all(
-        &mut self,
-        keystore: &impl FetchFromDatabase,
-    ) -> CryptoResult<Vec<GroupStoreValue<V>>> {
+    pub(crate) async fn get_fetch_all(&mut self, keystore: &impl FetchFromDatabase) -> Result<Vec<GroupStoreValue<V>>> {
         let all = V::fetch_all(keystore)
             .await?
             .into_iter()
@@ -368,12 +369,12 @@ mod tests {
             id: &[u8],
             _identity: Option<Self::IdentityType>,
             _keystore: &impl FetchFromDatabase,
-        ) -> crate::CryptoResult<Option<Self>> {
+        ) -> crate::Result<Option<Self>> {
             let id = std::str::from_utf8(id)?;
             Ok(Some(id.into()))
         }
 
-        async fn fetch_all(_keystore: &impl FetchFromDatabase) -> CryptoResult<Vec<Self>> {
+        async fn fetch_all(_keystore: &impl FetchFromDatabase) -> Result<Vec<Self>> {
             unreachable!()
         }
     }

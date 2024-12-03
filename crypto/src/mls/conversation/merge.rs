@@ -101,12 +101,14 @@ impl CentralContext {
     ) -> Result<Option<Vec<MlsBufferedConversationDecryptMessage>>> {
         let conv = self.get_conversation(id).await?;
         let mut conv = conv.write().await;
-        conv.commit_accepted(&self.mls_provider().await?).await?;
+        conv.commit_accepted(&self.mls_provider().await.map_err(Error::root("getting mls provider"))?)
+            .await?;
 
         let pending_messages = self.restore_pending_messages(&mut conv, false).await?;
         if pending_messages.is_some() {
             self.keystore()
-                .await?
+                .await
+                .map_err(Error::root("getting keystore"))?
                 .remove::<MlsPendingMessage, _>(id)
                 .await
                 .map_err(Error::keystore("removing pending mls message"))?;
@@ -137,7 +139,10 @@ impl CentralContext {
             .await?
             .write()
             .await
-            .clear_pending_proposal(proposal_ref, &self.mls_provider().await?)
+            .clear_pending_proposal(
+                proposal_ref,
+                &self.mls_provider().await.map_err(Error::root("getting mls provider"))?,
+            )
             .await
     }
 
@@ -160,7 +165,7 @@ impl CentralContext {
             .await?
             .write()
             .await
-            .clear_pending_commit(&self.mls_provider().await?)
+            .clear_pending_commit(&self.mls_provider().await.map_err(Error::root("getting mls provider"))?)
             .await
     }
 }

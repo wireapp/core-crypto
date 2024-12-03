@@ -258,18 +258,25 @@ impl MlsConversation {
 impl MlsCentral {
     pub(crate) async fn get_conversation(&self, id: &ConversationId) -> Result<MlsConversation> {
         GroupStore::fetch_from_keystore(id, &self.mls_backend.keystore(), None)
-            .await?
+            .await
+            .map_err(Error::root("getting conversation by id"))?
             .ok_or_else(|| Error::ConversationNotFound(id.clone()))
     }
 }
 
 impl CentralContext {
     pub(crate) async fn get_conversation(&self, id: &ConversationId) -> Result<GroupStoreValue<MlsConversation>> {
-        let keystore = self.mls_provider().await?.keystore();
+        let keystore = self
+            .mls_provider()
+            .await
+            .map_err(Error::root("getting mls provider"))?
+            .keystore();
         self.mls_groups()
-            .await?
+            .await
+            .map_err(Error::root("getting mls groups"))?
             .get_fetch(id, &keystore, None)
-            .await?
+            .await
+            .map_err(Error::root("fetching conversation from mls groups by id"))?
             .ok_or_else(|| Error::ConversationNotFound(id.clone()))
     }
 
@@ -290,12 +297,17 @@ impl CentralContext {
     }
 
     pub(crate) async fn get_all_conversations(&self) -> Result<Vec<GroupStoreValue<MlsConversation>>> {
-        let keystore = self.mls_provider().await?.keystore();
+        let keystore = self
+            .mls_provider()
+            .await
+            .map_err(Error::root("getting mls provider"))?
+            .keystore();
         self.mls_groups()
-            .await?
+            .await
+            .map_err(Error::root("getting mls groups"))?
             .get_fetch_all(&keystore)
             .await
-            .map_err(Into::into)
+            .map_err(Error::keystore("fetching all mls groups from keystore"))
     }
 
     /// Mark a conversation as child of another one
@@ -310,7 +322,10 @@ impl CentralContext {
         conversation
             .write()
             .await
-            .mark_as_child_of(parent_id, &self.keystore().await?)
+            .mark_as_child_of(
+                parent_id,
+                &self.keystore().await.map_err(Error::root("getting keystore"))?,
+            )
             .await?;
 
         Ok(())
