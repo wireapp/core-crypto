@@ -42,12 +42,6 @@ impl CentralContext {
         key_packages: Vec<KeyPackageIn>,
     ) -> CryptoResult<MlsConversationCreationMessage> {
         let client = self.mls_client().await?;
-        if let Some(callbacks) = self.callbacks().await?.as_ref() {
-            let client_id = client.id().await?;
-            if !callbacks.authorize(id.clone(), client_id).await {
-                return Err(CryptoError::Unauthorized);
-            }
-        }
         self.get_conversation(id)
             .await?
             .write()
@@ -76,12 +70,6 @@ impl CentralContext {
         clients: &[ClientId],
     ) -> CryptoResult<MlsCommitBundle> {
         let client = self.mls_client().await?;
-        if let Some(callbacks) = self.callbacks().await?.as_ref() {
-            let client_id = client.id().await?;
-            if !callbacks.authorize(id.clone(), client_id).await {
-                return Err(CryptoError::Unauthorized);
-            }
-        }
         self.get_conversation(id)
             .await?
             .write()

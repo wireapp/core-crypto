@@ -42,7 +42,7 @@ use crate::{
         ClientId, ConversationId, MlsConversation,
     },
     prelude::{E2eiConversationState, MlsProposalBundle, WireIdentity},
-    CoreCryptoCallbacks, CryptoError, CryptoResult, MlsError,
+    CryptoError, CryptoResult, MlsError,
 };
 
 /// Represents the potential items a consumer might require after passing us an encrypted message we
@@ -124,7 +124,6 @@ impl MlsConversation {
         parent_conv: Option<&GroupStoreValue<MlsConversation>>,
         client: &Client,
         backend: &MlsCryptoProvider,
-        callbacks: Option<&dyn CoreCryptoCallbacks>,
         restore_pending: bool,
     ) -> CryptoResult<MlsConversationDecryptMessage> {
         let message = match self.parse_message(backend, message.clone()).await {
@@ -196,9 +195,6 @@ impl MlsConversation {
                 }
             }
             ProcessedMessageContent::StagedCommitMessage(staged_commit) => {
-                self.validate_external_commit(&staged_commit, sender_client_id, parent_conv, backend, callbacks)
-                    .await?;
-
                 self.validate_commit(&staged_commit, backend).await?;
 
                 #[allow(clippy::needless_collect)] // false positive
@@ -245,7 +241,7 @@ impl MlsConversation {
 
                 let buffered_messages = if restore_pending {
                     if let Some(pm) = self
-                        .restore_pending_messages(client, backend, callbacks, parent_conv, false)
+                        .restore_pending_messages(client, backend, parent_conv, false)
                         .await?
                     {
                         backend.key_store().remove::<MlsPendingMessage, _>(self.id()).await?;
@@ -277,9 +273,6 @@ impl MlsConversation {
                 }
             }
             ProcessedMessageContent::ExternalJoinProposalMessage(proposal) => {
-                self.validate_external_proposal(&proposal, parent_conv, callbacks)
-                    .await?;
-
                 info!(
                     group_id = Obfuscated::from(&self.id),
                     sender = Obfuscated::from(proposal.sender());
@@ -424,8 +417,6 @@ impl CentralContext {
             return self.handle_when_group_is_pending(id, message).await;
         };
         let parent_conversation = self.get_parent_conversation(&conversation).await?;
-        let guard = self.callbacks().await?;
-        let callbacks = guard.as_ref().map(|boxed| boxed.as_ref());
         let client = &self.mls_client().await?;
         let decrypt_message = conversation
             .write()
@@ -435,7 +426,6 @@ impl CentralContext {
                 parent_conversation.as_ref(),
                 client,
                 &self.mls_provider().await?,
-                callbacks,
                 true,
             )
             .await;
@@ -456,12 +446,7 @@ impl CentralContext {
 mod tests {
     use wasm_bindgen_test::*;
 
-    use crate::{
-        mls::conversation::config::MAX_PAST_EPOCHS,
-        prelude::MlsCommitBundle,
-        test_utils::{ValidationCallbacks, *},
-        CryptoError,
-    };
+    use crate::{mls::conversation::config::MAX_PAST_EPOCHS, prelude::MlsCommitBundle, test_utils::*, CryptoError};
 
     use super::*;
 
@@ -961,7 +946,6 @@ mod tests {
 
     mod external_proposal {
         use super::*;
-        use std::sync::Arc;
 
         #[apply(all_cred_cipher)]
         #[wasm_bindgen_test]
@@ -1002,107 +986,6 @@ mod tests {
                         assert!(decrypted.app_msg.is_none());
                         assert!(decrypted.delay.is_some());
                         assert!(!decrypted.has_epoch_changed)
-                    })
-                },
-            )
-            .await
-        }
-
-        #[apply(all_cred_cipher)]
-        #[wasm_bindgen_test]
-        async fn cannot_decrypt_proposal_no_callback(case: TestCase) {
-            run_test_with_client_ids(
-                case.clone(),
-                ["alice", "bob", "alice2"],
-                move |[alice_central, bob_central, alice2_central]| {
-                    Box::pin(async move {
-                        let id = conversation_id();
-
-                        alice_central
-                            .context
-                            .new_conversation(&id, case.credential_type, case.cfg.clone())
-                            .await
-                            .unwrap();
-                        alice_central.invite_all(&case, &id, [&bob_central]).await.unwrap();
-
-                        let epoch = alice_central.get_conversation_unchecked(&id).await.group.epoch();
-                        let message = alice2_central
-                            .context
-                            .new_external_add_proposal(id.clone(), epoch, case.ciphersuite(), case.credential_type)
-                            .await
-                            .unwrap();
-
-                        alice_central.context.set_callbacks(None).await.unwrap();
-                        let error = alice_central
-                            .context
-                            .decrypt_message(&id, &message.to_bytes().unwrap())
-                            .await
-                            .unwrap_err();
-
-                        assert!(matches!(error, CryptoError::CallbacksNotSet));
-
-                        bob_central.context.set_callbacks(None).await.unwrap();
-                        let error = bob_central
-                            .context
-                            .decrypt_message(&id, &message.to_bytes().unwrap())
-                            .await
-                            .unwrap_err();
-
-                        assert!(matches!(error, CryptoError::CallbacksNotSet));
-                    })
-                },
-            )
-            .await
-        }
-
-        #[apply(all_cred_cipher)]
-        #[wasm_bindgen_test]
-        async fn cannot_decrypt_proposal_validation(case: TestCase) {
-            run_test_with_client_ids(
-                case.clone(),
-                ["alice", "bob", "alice2"],
-                move |[alice_central, bob_central, alice2_central]| {
-                    Box::pin(async move {
-                        let id = conversation_id();
-                        alice_central
-                            .context
-                            .set_callbacks(Some(Arc::new(ValidationCallbacks {
-                                client_is_existing_group_user: false,
-                                ..Default::default()
-                            })))
-                            .await
-                            .unwrap();
-
-                        alice_central
-                            .context
-                            .new_conversation(&id, case.credential_type, case.cfg.clone())
-                            .await
-                            .unwrap();
-                        alice_central.invite_all(&case, &id, [&bob_central]).await.unwrap();
-
-                        let epoch = alice_central.get_conversation_unchecked(&id).await.group.epoch();
-                        let external_proposal = alice2_central
-                            .context
-                            .new_external_add_proposal(id.clone(), epoch, case.ciphersuite(), case.credential_type)
-                            .await
-                            .unwrap();
-
-                        let error = alice_central
-                            .context
-                            .decrypt_message(&id, &external_proposal.to_bytes().unwrap())
-                            .await
-                            .unwrap_err();
-
-                        assert!(matches!(error, CryptoError::UnauthorizedExternalAddProposal));
-
-                        bob_central.context.set_callbacks(None).await.unwrap();
-                        let error = bob_central
-                            .context
-                            .decrypt_message(&id, &external_proposal.to_bytes().unwrap())
-                            .await
-                            .unwrap_err();
-
-                        assert!(matches!(error, CryptoError::CallbacksNotSet));
                     })
                 },
             )
