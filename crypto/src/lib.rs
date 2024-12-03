@@ -52,6 +52,7 @@ mod group_store;
 mod obfuscate;
 
 mod build_metadata;
+use crate::prelude::MlsCommitBundle;
 pub use build_metadata::{BuildMetadata, BUILD_METADATA};
 
 /// Common imports that should be useful for most uses of the crate
@@ -98,55 +99,35 @@ pub mod prelude {
             proposal::{MlsProposal, MlsProposalRef},
             MlsCentral,
         },
-        CoreCrypto, CoreCryptoCallbacks,
+        CoreCrypto, MlsTransport,
     };
 }
 
-/// Client callbacks in order to Core Crypto to verify user authorization
-///
-/// This trait is used to provide callback mechanisms for the MlsCentral struct, for example for
-/// operations like adding or removing memebers that can be authorized through a caller provided
-/// authorization method.
+/// Response from the delivery service
+pub enum MlsTransportResponse {
+    /// The message was accepted by the delivery service
+    Success,
+    /// A client should have consumed all incoming messages before re-trying.
+    Retry,
+    /// The message was rejected by the delivery service and there's no recovery.
+    Abort {
+        /// Why did the delivery service reject the message?
+        reason: String,
+    },
+}
+
+/// Client callbacks to allow communication with the delivery service.
+/// There are two different endpoints, one for messages and one for commit bundles.
 #[cfg_attr(target_family = "wasm", async_trait::async_trait(?Send))]
 #[cfg_attr(not(target_family = "wasm"), async_trait::async_trait)]
-pub trait CoreCryptoCallbacks: std::fmt::Debug + Send + Sync {
-    /// Function responsible for authorizing an operation.
-    /// Returns `true` if the operation is authorized.
-    ///
-    /// # Arguments
-    /// * `conversation_id` - id of the group/conversation
-    /// * `client_id` - id of the client to authorize
-    async fn authorize(&self, conversation_id: prelude::ConversationId, client_id: prelude::ClientId) -> bool;
-    /// Function responsible for authorizing an operation for a given user.
-    /// Use `external_client_id` & `existing_clients` to get all the 'client_id' belonging to the same user
-    /// as `external_client_id`. Then, given those client ids, verify that at least one has the right role
-    /// (is authorized) exactly like it's done in [Self::authorize]
-    /// Returns `true` if the operation is authorized.
-    ///
-    /// # Arguments
-    /// * `conversation_id` - id of the group/conversation
-    /// * `external_client_id` - id a client external to the MLS group
-    /// * `existing_clients` - all the clients in the MLS group
-    async fn user_authorize(
+pub trait MlsTransport: std::fmt::Debug + Send + Sync {
+    /// Send a commit bundle to the corresponding endpoint.
+    async fn send_commit_bundle(
         &self,
-        conversation_id: prelude::ConversationId,
-        external_client_id: prelude::ClientId,
-        existing_clients: Vec<prelude::ClientId>,
-    ) -> bool;
-    /// Validates if the given `client_id` belongs to one of the provided `existing_clients`
-    /// This basically allows to defer the client ID parsing logic to the caller - because CoreCrypto is oblivious to such things
-    ///
-    /// # Arguments
-    /// * `conversation_id` - ID of the conversation
-    /// * `client_id` - client ID of the client referenced within the sent proposal
-    /// * `existing_clients` - all the clients in the MLS group
-    async fn client_is_existing_group_user(
-        &self,
-        conversation_id: prelude::ConversationId,
-        client_id: prelude::ClientId,
-        existing_clients: Vec<prelude::ClientId>,
-        parent_conversation_clients: Option<Vec<prelude::ClientId>>,
-    ) -> bool;
+        commit_bundle: MlsCommitBundle,
+    ) -> Result<MlsTransportResponse, Box<dyn std::error::Error>>;
+    /// Send a message to the corresponding endpoint.
+    async fn send_message(&self, mls_message: Vec<u8>) -> Result<MlsTransportResponse, Box<dyn std::error::Error>>;
 }
 
 #[derive(Debug)]
