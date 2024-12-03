@@ -7,7 +7,7 @@ use crate::proteus::ProteusCentral;
 use crate::{
     group_store::GroupStore,
     prelude::{Client, MlsConversation},
-    CoreCrypto, CoreCryptoCallbacks, CryptoError, CryptoResult,
+    CoreCrypto, CryptoError, CryptoResult, MlsTransport,
 };
 use async_lock::{Mutex, RwLock, RwLockReadGuardArc, RwLockWriteGuardArc};
 use core_crypto_keystore::connection::FetchFromDatabase;
@@ -34,7 +34,7 @@ pub struct CentralContext {
 enum ContextState {
     Valid {
         provider: MlsCryptoProvider,
-        callbacks: Arc<RwLock<Option<std::sync::Arc<dyn CoreCryptoCallbacks + 'static>>>>,
+        transport: Arc<RwLock<Option<Arc<dyn MlsTransport + 'static>>>>,
         mls_client: Client,
         mls_groups: Arc<RwLock<GroupStore<MlsConversation>>>,
         #[cfg(feature = "proteus")]
@@ -64,13 +64,13 @@ impl CentralContext {
     ) -> CryptoResult<Self> {
         mls_central.mls_backend.new_transaction().await?;
         let mls_groups = Arc::new(RwLock::new(Default::default()));
-        let callbacks = mls_central.callbacks.clone();
+        let callbacks = mls_central.transport.clone();
         let mls_client = mls_central.mls_client.clone();
         Ok(Self {
             state: Arc::new(
                 ContextState::Valid {
                     mls_client,
-                    callbacks,
+                    transport: callbacks,
                     provider: mls_central.mls_backend.clone(),
                     mls_groups,
                     #[cfg(feature = "proteus")]
@@ -88,22 +88,26 @@ impl CentralContext {
         }
     }
 
-    pub(crate) async fn callbacks(
-        &self,
-    ) -> CryptoResult<RwLockReadGuardArc<Option<Arc<dyn CoreCryptoCallbacks + 'static>>>> {
+    // This is going to be needed soon.
+    #[expect(dead_code)]
+    pub(crate) async fn transport(&self) -> CryptoResult<RwLockReadGuardArc<Option<Arc<dyn MlsTransport + 'static>>>> {
         match self.state.read().await.deref() {
-            ContextState::Valid { callbacks, .. } => Ok(callbacks.read_arc().await),
+            ContextState::Valid {
+                transport: callbacks, ..
+            } => Ok(callbacks.read_arc().await),
             ContextState::Invalid => Err(CryptoError::InvalidContext),
         }
     }
 
+    // This is going to be needed soon.
+    #[expect(dead_code)]
     #[cfg(test)]
-    pub(crate) async fn set_callbacks(
+    pub(crate) async fn set_transport_callbacks(
         &self,
-        callbacks: Option<Arc<dyn CoreCryptoCallbacks + 'static>>,
+        callbacks: Option<Arc<dyn MlsTransport + 'static>>,
     ) -> CryptoResult<()> {
         match self.state.read().await.deref() {
-            ContextState::Valid { callbacks: cbs, .. } => {
+            ContextState::Valid { transport: cbs, .. } => {
                 *cbs.write_arc().await = callbacks;
                 Ok(())
             }
