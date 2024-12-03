@@ -5,8 +5,8 @@ use log::trace;
 
 use crate::prelude::{
     identifier::ClientIdentifier, key_package::INITIAL_KEYING_MATERIAL_COUNT, Client, ClientId, ConversationId,
-    CoreCryptoCallbacks, CryptoError, CryptoResult, MlsCentralConfiguration, MlsCiphersuite, MlsConversation,
-    MlsConversationConfiguration, MlsCredentialType, MlsError,
+    CryptoError, CryptoResult, MlsCentralConfiguration, MlsCiphersuite, MlsConversation, MlsConversationConfiguration,
+    MlsCredentialType, MlsError, MlsTransport,
 };
 use crate::CoreCrypto;
 use mls_crypto_provider::{EntropySeed, MlsCryptoProvider, MlsCryptoProviderConfiguration};
@@ -145,7 +145,7 @@ pub struct MlsCentral {
     pub(crate) mls_client: Client,
     pub(crate) mls_backend: MlsCryptoProvider,
     // this should be moved to the context
-    pub(crate) callbacks: Arc<RwLock<Option<std::sync::Arc<dyn CoreCryptoCallbacks + 'static>>>>,
+    pub(crate) transport: Arc<RwLock<Option<Arc<dyn MlsTransport + 'static>>>>,
 }
 
 impl MlsCentral {
@@ -200,7 +200,7 @@ impl MlsCentral {
         let central = Self {
             mls_backend: mls_backend.clone(),
             mls_client: mls_client.clone(),
-            callbacks: Arc::new(None.into()),
+            transport: Arc::new(None.into()),
         };
 
         let cc = CoreCrypto::from(central);
@@ -223,12 +223,10 @@ impl MlsCentral {
         Ok(central)
     }
 
-    /// Sets the consumer callbacks (i.e authorization callbacks for CoreCrypto to perform authorization calls when needed)
-    ///
-    /// # Arguments
-    /// * `callbacks` - a callback to be called to perform authorization
-    pub async fn callbacks(&self, callbacks: std::sync::Arc<dyn CoreCryptoCallbacks>) {
-        self.callbacks.write().await.replace(callbacks);
+    /// Provide the implementation of functions to communicate with the delivery service
+    /// (see [MlsTransport]).
+    pub async fn provide_transport(&self, transport: Arc<dyn MlsTransport>) {
+        self.transport.write().await.replace(transport);
     }
 
     /// Returns the client's most recent public signature key as a buffer.
