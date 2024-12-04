@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see http://www.gnu.org/licenses/.
 
-use crate::{prelude::MlsConversation, Error, RecursiveError, Result};
+use crate::{prelude::MlsConversation, Error, KeystoreError, RecursiveError, Result};
 use core_crypto_keystore::{connection::FetchFromDatabase, entities::EntityFindParams};
 
 #[cfg_attr(target_family = "wasm", async_trait::async_trait(?Send))]
@@ -56,7 +56,7 @@ impl GroupStoreEntity for MlsConversation {
         let result = keystore
             .find::<Self::RawStoreValue>(id)
             .await
-            .map_err(Error::keystore("finding mls conversation from keystore by id"))?;
+            .map_err(KeystoreError::wrap("finding mls conversation from keystore by id"))?;
         let Some(store_value) = result else {
             return Ok(None);
         };
@@ -71,7 +71,7 @@ impl GroupStoreEntity for MlsConversation {
         let all_conversations = keystore
             .find_all::<Self::RawStoreValue>(EntityFindParams::default())
             .await
-            .map_err(Error::keystore("finding all mls conversations"))?;
+            .map_err(KeystoreError::wrap("finding all mls conversations"))?;
         Ok(all_conversations
             .iter()
             .filter_map(|c| {
@@ -101,7 +101,7 @@ impl GroupStoreEntity for crate::proteus::ProteusConversationSession {
         let result = keystore
             .find::<Self::RawStoreValue>(id)
             .await
-            .map_err(Error::keystore("finding raw group store entity by id"))?;
+            .map_err(KeystoreError::wrap("finding raw group store entity by id"))?;
         let Some(store_value) = result else {
             return Ok(None);
         };

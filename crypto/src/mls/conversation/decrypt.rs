@@ -42,7 +42,7 @@ use crate::{
     },
     obfuscate::Obfuscated,
     prelude::{E2eiConversationState, MlsProposalBundle, WireIdentity},
-    MlsError, RecursiveError,
+    KeystoreError, MlsError, RecursiveError,
 };
 
 /// Represents the potential items a consumer might require after passing us an encrypted message we
@@ -265,7 +265,7 @@ impl MlsConversation {
                             .key_store()
                             .remove::<MlsPendingMessage, _>(self.id())
                             .await
-                            .map_err(Error::keystore("removing pending message"))?;
+                            .map_err(KeystoreError::wrap("removing pending message"))?;
                         Some(pm)
                     } else {
                         None
