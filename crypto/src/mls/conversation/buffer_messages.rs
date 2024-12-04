@@ -11,7 +11,7 @@ use crate::{
         decrypt::MlsBufferedConversationDecryptMessage, Client, ConversationId, MlsConversation,
         MlsConversationDecryptMessage,
     },
-    RecursiveError,
+    KeystoreError, RecursiveError,
 };
 use core_crypto_keystore::{
     connection::FetchFromDatabase,
@@ -40,7 +40,7 @@ impl CentralContext {
         keystore
             .save::<MlsPendingMessage>(pending_msg)
             .await
-            .map_err(Error::keystore("saving pending mls message"))?;
+            .map_err(KeystoreError::wrap("saving pending mls message"))?;
         Err(Error::BufferedFutureMessage)
     }
 
@@ -91,13 +91,13 @@ impl MlsConversation {
                 if keystore
                     .find::<MlsPendingMessage>(group_id)
                     .await
-                    .map_err(Error::keystore("finding mls pending message by group id"))?
+                    .map_err(KeystoreError::wrap("finding mls pending message by group id"))?
                     .is_some()
                 {
                     keystore
                         .remove::<MlsPendingMessage, _>(group_id)
                         .await
-                        .map_err(Error::keystore("removing mls pending message"))?;
+                        .map_err(KeystoreError::wrap("removing mls pending message"))?;
                 }
                 return Ok(None);
             }
@@ -105,7 +105,7 @@ impl MlsConversation {
             let mut pending_messages = keystore
                 .find_all::<MlsPendingMessage>(EntityFindParams::default())
                 .await
-                .map_err(Error::keystore("finding all mls pending messages"))?
+                .map_err(KeystoreError::wrap("finding all mls pending messages"))?
                 .into_iter()
                 .filter(|pm| pm.foreign_id == group_id)
                 .map(|m| -> Result<_> {

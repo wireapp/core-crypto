@@ -19,14 +19,8 @@ pub enum Error {
     CredentialNotFound(crate::prelude::MlsCredentialType),
     #[error("supplied signature scheme was not valid")]
     InvalidSignatureScheme,
-    // This uses a `Box<dyn>` pattern because we do not directly import `keystore` from here right now,
-    // and it feels a bit silly to add the dependency only for this.
-    #[error("{context}")]
-    Keystore {
-        #[source]
-        source: Box<dyn std::error::Error + Send + Sync>,
-        context: &'static str,
-    },
+    #[error(transparent)]
+    Keystore(#[from] crate::KeystoreError),
     #[error("Serializing {item} for TLS")]
     TlsSerialize {
         item: &'static str,
@@ -80,16 +74,6 @@ pub enum Error {
 }
 
 impl Error {
-    pub(crate) fn keystore<E>(context: &'static str) -> impl FnOnce(E) -> Self
-    where
-        E: 'static + std::error::Error + Send + Sync,
-    {
-        move |err| Self::Keystore {
-            context,
-            source: Box::new(err),
-        }
-    }
-
     pub(crate) fn tls_serialize(item: &'static str) -> impl FnOnce(tls_codec::Error) -> Self {
         move |source| Self::TlsSerialize { item, source }
     }

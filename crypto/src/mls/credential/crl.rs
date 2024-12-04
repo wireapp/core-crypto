@@ -1,5 +1,7 @@
 use super::{Error, Result};
-use crate::{context::CentralContext, e2e_identity::init_certificates::NewCrlDistributionPoint, RecursiveError};
+use crate::{
+    context::CentralContext, e2e_identity::init_certificates::NewCrlDistributionPoint, KeystoreError, RecursiveError,
+};
 use core_crypto_keystore::{connection::FetchFromDatabase, entities::E2eiCrl};
 use mls_crypto_provider::MlsCryptoProvider;
 use openmls::{
@@ -75,7 +77,7 @@ pub(crate) async fn get_new_crl_distribution_points(
         .key_store()
         .find_all::<E2eiCrl>(Default::default())
         .await
-        .map_err(Error::keystore("finding all e2e crl"))?;
+        .map_err(KeystoreError::wrap("finding all e2e crl"))?;
     let stored_crl_dps: HashSet<&str> = stored_crls.iter().map(|crl| crl.distribution_point.as_str()).collect();
     crl_dps.retain(|dp| !stored_crl_dps.contains(&dp.as_str()));
 

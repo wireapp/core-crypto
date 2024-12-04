@@ -33,7 +33,7 @@ use crate::{
         decrypt::MlsBufferedConversationDecryptMessage, ConversationId, MlsCiphersuite, MlsConversation,
         MlsConversationConfiguration, MlsCredentialType, MlsCustomConfiguration, MlsGroupInfoBundle,
     },
-    LeafError, RecursiveError,
+    KeystoreError, LeafError, RecursiveError,
 };
 
 /// Returned when a commit is created
@@ -154,12 +154,12 @@ impl CentralContext {
             .key_store()
             .mls_pending_groups_save(
                 group.group_id().as_slice(),
-                &core_crypto_keystore::ser(&group).map_err(Error::keystore("serializing mls group"))?,
+                &core_crypto_keystore::ser(&group).map_err(KeystoreError::wrap("serializing mls group"))?,
                 &serialized_cfg,
                 None,
             )
             .await
-            .map_err(Error::keystore("saving mls pending groups"))?;
+            .map_err(KeystoreError::wrap("saving mls pending groups"))?;
 
         Ok(MlsConversationInitBundle {
             conversation_id: group.group_id().to_vec(),
@@ -191,10 +191,10 @@ impl CentralContext {
             .key_store()
             .mls_pending_groups_load(id)
             .await
-            .map_err(Error::keystore("loading mls pending groups"))?;
+            .map_err(KeystoreError::wrap("loading mls pending groups"))?;
 
         let mut mls_group =
-            core_crypto_keystore::deser::<MlsGroup>(&group).map_err(Error::keystore("deserializing mls group"))?;
+            core_crypto_keystore::deser::<MlsGroup>(&group).map_err(KeystoreError::wrap("deserializing mls group"))?;
 
         // Merge it aka bring the MLS group to life and make it usable
         mls_group
@@ -236,14 +236,14 @@ impl CentralContext {
             .key_store()
             .mls_pending_groups_delete(id)
             .await
-            .map_err(Error::keystore("cleaning up pending pending groups"))?;
+            .map_err(KeystoreError::wrap("cleaning up pending pending groups"))?;
 
         if pending_messages.is_some() {
             mls_provider
                 .key_store()
                 .remove::<MlsPendingMessage, _>(id)
                 .await
-                .map_err(Error::keystore("deleting mls pending message by id"))?;
+                .map_err(KeystoreError::wrap("deleting mls pending message by id"))?;
         }
 
         Ok(pending_messages)
@@ -265,7 +265,7 @@ impl CentralContext {
             .map_err(RecursiveError::root("getting keystore"))?
             .mls_pending_groups_delete(id)
             .await
-            .map_err(Error::keystore("deleting pending groups by id"))?;
+            .map_err(KeystoreError::wrap("deleting pending groups by id"))?;
         Ok(())
     }
 
@@ -511,7 +511,7 @@ mod tests {
 
                 assert!(matches!(
                     merge_unknown.unwrap_err(),
-                    crate::CryptoError::KeyStoreError(CryptoKeystoreError::MissingKeyInStore(
+                    crate::CryptoKeystoreError::wrapError(CryptoKeystoreError::MissingKeyInStore(
                         MissingKeyErrorKind::MlsPendingGroup
                     ))
                 ));
@@ -646,7 +646,7 @@ mod tests {
                 let result = bob_central.context.merge_pending_group_from_external_commit(&id).await;
                 assert!(matches!(
                     result.unwrap_err(),
-                    CryptoError::KeyStoreError(CryptoKeystoreError::MissingKeyInStore(
+                    CryptoKeystoreError::wrapError(CryptoKeystoreError::MissingKeyInStore(
                         MissingKeyErrorKind::MlsPendingGroup
                     ))
                 ))
