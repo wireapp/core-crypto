@@ -147,7 +147,7 @@ impl MlsConversationConfiguration {
     fn parse_external_sender(jwk: &[u8]) -> Result<ExternalSender> {
         let pk = parse_json_jwk(jwk)
             .map_err(wire_e2e_identity::prelude::E2eIdentityError::from)
-            .map_err(crate::e2e_identity::error::Error::from)
+            .map_err(crate::e2e_identity::Error::from)
             .map_err(Error::e2e_identity("parsing jwk"))?;
         Ok(ExternalSender::new(
             pk.into(),

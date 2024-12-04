@@ -38,7 +38,6 @@ use mls_crypto_provider::{CryptoKeystore, MlsCryptoProvider};
 
 use config::MlsConversationConfiguration;
 
-use self::error::{Error, Result};
 use crate::{
     group_store::{GroupStore, GroupStoreValue},
     mls::{client::Client, MlsCentral},
@@ -58,7 +57,7 @@ mod duplicate;
 #[cfg(test)]
 mod durability;
 pub(crate) mod encrypt;
-pub mod error;
+mod error;
 pub(crate) mod export;
 pub(crate) mod external_sender;
 pub(crate) mod group_info;
@@ -70,6 +69,8 @@ pub(crate) mod proposal;
 mod renew;
 pub(crate) mod welcome;
 mod wipe;
+
+pub use error::{Error, Result};
 
 /// A unique identifier for a group/conversation. The identifier must be unique within a client.
 pub type ConversationId = Vec<u8>;

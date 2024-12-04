@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see http://www.gnu.org/licenses/.
 
-pub(crate) mod error;
+mod error;
 pub(crate) mod id;
 pub(crate) mod identifier;
 pub(crate) mod identities;
@@ -22,15 +22,14 @@ pub(crate) mod key_package;
 pub(crate) mod user_id;
 
 use crate::{
-    mls::{
-        client::error::{Error, Result},
-        credential::{ext::CredentialExt, CredentialBundle},
-    },
+    mls::credential::{ext::CredentialExt, CredentialBundle},
     prelude::{
         identifier::ClientIdentifier, key_package::KEYPACKAGE_DEFAULT_LIFETIME, CertificateBundle, ClientId,
         MlsCiphersuite, MlsCredentialType,
     },
 };
+pub use error::{Error, Result};
+
 use async_lock::RwLock;
 use core_crypto_keystore::{connection::FetchFromDatabase, Connection, CryptoKeystoreError};
 use log::debug;

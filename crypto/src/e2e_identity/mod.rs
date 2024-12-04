@@ -4,7 +4,6 @@ use std::collections::HashMap;
 use wire_e2e_identity::prelude::{E2eiAcmeAuthorization, RustyE2eIdentity};
 use zeroize::Zeroize;
 
-use error::{Error, Result};
 use mls_crypto_provider::MlsCryptoProvider;
 
 use crate::e2e_identity::init_certificates::NewCrlDistributionPoint;
@@ -18,7 +17,7 @@ pub(crate) mod conversation_state;
 mod crypto;
 pub(crate) mod device_status;
 pub mod enabled;
-pub mod error;
+mod error;
 pub(crate) mod id;
 pub(crate) mod identity;
 pub(crate) mod init_certificates;
@@ -29,6 +28,7 @@ pub(crate) mod stash;
 pub mod types;
 
 use crate::context::CentralContext;
+pub use error::{Error, Result};
 pub use init_certificates::E2eiDumpedPkiEnv;
 
 type Json = Vec<u8>;
