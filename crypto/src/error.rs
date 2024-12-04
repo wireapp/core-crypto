@@ -47,15 +47,6 @@ pub enum Error {
         /// What was happening in the caller
         context: &'static str,
     },
-    /// Something went wrong in a conversation
-    #[error("{context}")]
-    Conversation {
-        /// What the caller was doing at the time
-        context: &'static str,
-        /// What happened in the conversation
-        #[source]
-        source: Box<crate::mls::conversation::Error>,
-    },
     /// A MLS operation failed
     #[error("{context}")]
     MlsOperation {
@@ -83,6 +74,9 @@ pub enum Error {
         #[source]
         source: Box<dyn std::error::Error + Send + Sync>,
     },
+    /// A crate-internal operation failed
+    #[error(transparent)]
+    Recursive(#[from] RecursiveError),
 }
 
 impl Error {
@@ -93,13 +87,6 @@ impl Error {
         move |err| Self::Keystore {
             context,
             source: Box::new(err),
-        }
-    }
-
-    pub(crate) fn conversation(context: &'static str) -> impl FnOnce(crate::mls::conversation::Error) -> Self {
-        move |source| Self::Conversation {
-            context,
-            source: Box::new(source),
         }
     }
 
@@ -155,6 +142,116 @@ pub enum LeafError {
     /// This may be an implementation error.
     #[error("unexpectedly failed to retrieve group info")]
     MissingGroupInfo,
+}
+
+/// These errors wrap each of the module-specific errors in CoreCrypto.
+///
+/// The goal here is to reduce the need to redeclare each of these error
+/// types as an individual variant of a module-specific error type.
+#[derive(Debug, thiserror::Error)]
+pub enum RecursiveError {
+    /// Wrap a [crate::Error] for recursion.
+    #[error("{context}")]
+    Root {
+        /// What was happening in the caller
+        context: &'static str,
+        /// What happened
+        #[source]
+        source: Box<crate::Error>,
+    },
+    /// Wrap a [crate::e2e_identity::Error] for recursion.
+    #[error("{context}")]
+    E2e {
+        /// What was happening in the caller
+        context: &'static str,
+        /// What happened
+        #[source]
+        source: Box<crate::e2e_identity::Error>,
+    },
+    /// Wrap a [crate::mls::Error] for recursion.
+    #[error("{context}")]
+    Mls {
+        /// What was happening in the caller
+        context: &'static str,
+        /// What happened
+        #[source]
+        source: Box<crate::mls::Error>,
+    },
+    /// Wrap a [crate::mls::client::Error] for recursion.
+    #[error("{context}")]
+    MlsClient {
+        /// What was happening in the caller
+        context: &'static str,
+        /// What happened
+        #[source]
+        source: Box<crate::mls::client::Error>,
+    },
+    /// Wrap a [crate::mls::conversation::Error] for recursion.
+    #[error("{context}")]
+    MlsConversation {
+        /// What was happening in the caller
+        context: &'static str,
+        /// What happened
+        #[source]
+        source: Box<crate::mls::conversation::Error>,
+    },
+    /// Wrap a [crate::mls::credential::Error] for recursion.
+    #[error("{context}")]
+    MlsCredential {
+        /// What was happening in the caller
+        context: &'static str,
+        /// What happened
+        #[source]
+        source: Box<crate::mls::credential::Error>,
+    },
+}
+
+impl RecursiveError {
+    pub(crate) fn root<E: Into<crate::Error>>(context: &'static str) -> impl FnOnce(E) -> Self {
+        move |into_source| Self::Root {
+            context,
+            source: Box::new(into_source.into()),
+        }
+    }
+
+    pub(crate) fn e2e_identity<E: Into<crate::e2e_identity::Error>>(context: &'static str) -> impl FnOnce(E) -> Self {
+        move |into_source| Self::E2e {
+            context,
+            source: Box::new(into_source.into()),
+        }
+    }
+
+    pub(crate) fn mls<E: Into<crate::mls::Error>>(context: &'static str) -> impl FnOnce(E) -> Self {
+        move |into_source| Self::Mls {
+            context,
+            source: Box::new(into_source.into()),
+        }
+    }
+
+    pub(crate) fn mls_client<E: Into<crate::mls::client::Error>>(context: &'static str) -> impl FnOnce(E) -> Self {
+        move |into_source| Self::MlsClient {
+            context,
+            source: Box::new(into_source.into()),
+        }
+    }
+
+    pub(crate) fn mls_conversation<E: Into<crate::mls::conversation::Error>>(
+        context: &'static str,
+    ) -> impl FnOnce(E) -> Self {
+        move |into_source| Self::MlsConversation {
+            context,
+            source: Box::new(into_source.into()),
+        }
+    }
+
+    pub(crate) fn mls_credential<E: Into<crate::mls::credential::Error>>(
+        context: &'static str,
+    ) -> impl FnOnce(E) -> Self {
+        move |into_source| Self::MlsCredential {
+            context,
+            source: Box::new(into_source.into()),
+        }
+    }
 }
 
 /// CoreCrypto errors

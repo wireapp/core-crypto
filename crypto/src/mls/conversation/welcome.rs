@@ -1,13 +1,13 @@
 use std::borrow::BorrowMut;
 
 use super::{Error, Result};
-use crate::context::CentralContext;
-use crate::LeafError;
 use crate::{
+    context::CentralContext,
     e2e_identity::init_certificates::NewCrlDistributionPoint,
     group_store::GroupStore,
     mls::credential::crl::{extract_crl_uris_from_group, get_new_crl_distribution_points},
     prelude::{ConversationId, MlsConversation, MlsConversationConfiguration, MlsCustomConfiguration},
+    LeafError, RecursiveError,
 };
 use core_crypto_keystore::{connection::FetchFromDatabase, entities::PersistedMlsPendingGroup};
 use mls_crypto_provider::MlsCryptoProvider;
@@ -78,8 +78,14 @@ impl CentralContext {
             custom: custom_cfg,
             ..Default::default()
         };
-        let mls_provider = self.mls_provider().await.map_err(Error::root("getting mls provider"))?;
-        let mut mls_groups = self.mls_groups().await.map_err(Error::root("getting mls groups"))?;
+        let mls_provider = self
+            .mls_provider()
+            .await
+            .map_err(RecursiveError::root("getting mls provider"))?;
+        let mut mls_groups = self
+            .mls_groups()
+            .await
+            .map_err(RecursiveError::root("getting mls groups"))?;
         let conversation =
             MlsConversation::from_welcome_message(welcome, configuration, &mls_provider, mls_groups.borrow_mut())
                 .await?;
@@ -88,10 +94,10 @@ impl CentralContext {
         let crl_new_distribution_points = get_new_crl_distribution_points(
             &mls_provider,
             extract_crl_uris_from_group(&conversation.group)
-                .map_err(Error::credential("extracting crl uris from group"))?,
+                .map_err(RecursiveError::mls_credential("extracting crl uris from group"))?,
         )
         .await
-        .map_err(Error::credential("getting new crl distribution points"))?;
+        .map_err(RecursiveError::mls_credential("getting new crl distribution points"))?;
 
         let id = conversation.id.clone();
         mls_groups.insert(id.clone(), conversation);
@@ -225,7 +231,9 @@ mod tests {
                     .context
                     .process_welcome_message(welcome.into(), case.custom_cfg())
                     .await;
-                assert!(matches!(join_welcome.unwrap_err(), Error::ConversationAlreadyExists(i) if i == id));
+                assert!(
+                    matches!(join_welcome.unwrap_err(), Error::Leaf(LeafError::ConversationAlreadyExists(i)) if i == id)
+                );
             })
         })
         .await;

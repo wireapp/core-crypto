@@ -11,11 +11,10 @@ use mls_crypto_provider::MlsCryptoProvider;
 
 use super::{Error, Result};
 use crate::{
-    e2e_identity::init_certificates::NewCrlDistributionPoint, mls::credential::crl::get_new_crl_distribution_points,
-};
-use crate::{
-    mls::credential::crl::extract_crl_uris_from_credentials,
+    e2e_identity::init_certificates::NewCrlDistributionPoint,
+    mls::credential::crl::{extract_crl_uris_from_credentials, get_new_crl_distribution_points},
     prelude::{Client, MlsConversation, MlsProposalRef},
+    RecursiveError,
 };
 
 /// Creating proposals
@@ -37,10 +36,10 @@ impl MlsConversation {
         let crl_new_distribution_points = get_new_crl_distribution_points(
             backend,
             extract_crl_uris_from_credentials(std::iter::once(key_package.credential().mls_credential()))
-                .map_err(Error::credential("extracting crl uris from credentials"))?,
+                .map_err(RecursiveError::mls_credential("extracting crl uris from credentials"))?,
         )
         .await
-        .map_err(Error::credential("getting new crl distribution points"))?;
+        .map_err(RecursiveError::mls_credential("getting new crl distribution points"))?;
 
         let (proposal, proposal_ref) = self
             .group
@@ -106,7 +105,7 @@ impl MlsConversation {
             let leaf_node_signer = &self
                 .find_most_recent_credential_bundle(client)
                 .await
-                .map_err(Error::client("finding most recent credential bundle"))?
+                .map_err(RecursiveError::mls_client("finding most recent credential bundle"))?
                 .signature_key;
 
             self.group

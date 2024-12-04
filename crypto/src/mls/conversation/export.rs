@@ -17,8 +17,11 @@
 //! Primitives to export data from a group, such as derived keys and client ids.
 
 use super::{Error, Result};
-use crate::context::CentralContext;
-use crate::mls::{client::id::ClientId, ConversationId, MlsCentral, MlsConversation};
+use crate::{
+    context::CentralContext,
+    mls::{client::id::ClientId, ConversationId, MlsCentral, MlsConversation},
+    RecursiveError,
+};
 
 impl MlsConversation {
     const EXPORTER_LABEL: &'static str = "exporter";
@@ -53,7 +56,10 @@ impl CentralContext {
             .read()
             .await
             .export_secret_key(
-                &self.mls_provider().await.map_err(Error::root("getting mls provider"))?,
+                &self
+                    .mls_provider()
+                    .await
+                    .map_err(RecursiveError::root("getting mls provider"))?,
                 key_length,
             )
     }

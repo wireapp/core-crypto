@@ -3,8 +3,6 @@
 // We allow missing documentation in the error module because the types are generally self-descriptive.
 #![allow(missing_docs)]
 
-use crate::LeafError;
-
 pub type Result<T, E = Error> = core::result::Result<T, E>;
 
 #[derive(Debug, thiserror::Error)]
@@ -75,26 +73,10 @@ pub enum Error {
     WrongCredential,
     #[error("Generating signature keypair")]
     GeneratingSignatureKeypair(#[source] openmls_traits::types::CryptoError),
-    #[error("{context}")]
-    Conversation {
-        context: &'static str,
-        #[source]
-        source: Box<crate::mls::conversation::Error>,
-    },
-    #[error("{context}")]
-    MlsCredential {
-        context: &'static str,
-        #[source]
-        source: Box<crate::mls::credential::Error>,
-    },
-    #[error("{context}")]
-    Root {
-        context: &'static str,
-        #[source]
-        source: Box<crate::Error>,
-    },
     #[error(transparent)]
-    Leaf(#[from] LeafError),
+    Leaf(#[from] crate::LeafError),
+    #[error(transparent)]
+    Recursive(#[from] crate::RecursiveError),
 }
 
 impl Error {
@@ -114,26 +96,5 @@ impl Error {
 
     pub(crate) fn tls_deserialize(item: &'static str) -> impl FnOnce(tls_codec::Error) -> Self {
         move |source| Self::TlsDeserialize { item, source }
-    }
-
-    pub(crate) fn conversation(context: &'static str) -> impl FnOnce(crate::mls::conversation::Error) -> Self {
-        move |source| Self::Conversation {
-            context,
-            source: Box::new(source),
-        }
-    }
-
-    pub(crate) fn credential(context: &'static str) -> impl FnOnce(crate::mls::credential::Error) -> Self {
-        move |source| Self::MlsCredential {
-            context,
-            source: Box::new(source),
-        }
-    }
-
-    pub(crate) fn root(context: &'static str) -> impl FnOnce(crate::Error) -> Self {
-        move |source| Self::Root {
-            context,
-            source: Box::new(source),
-        }
     }
 }

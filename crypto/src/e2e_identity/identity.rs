@@ -5,13 +5,12 @@ use itertools::Itertools;
 use openmls_traits::OpenMlsCryptoProvider;
 use x509_cert::der::pem::LineEnding;
 
-use crate::context::CentralContext;
-use crate::e2e_identity::id::WireQualifiedClientId;
-use crate::mls::credential::ext::CredentialExt;
-use crate::prelude::MlsCredentialType;
 use crate::{
-    e2e_identity::device_status::DeviceStatus,
-    prelude::{user_id::UserId, ClientId, ConversationId, MlsCentral, MlsConversation},
+    context::CentralContext,
+    e2e_identity::{device_status::DeviceStatus, id::WireQualifiedClientId},
+    mls::credential::ext::CredentialExt,
+    prelude::{user_id::UserId, ClientId, ConversationId, MlsCentral, MlsConversation, MlsCredentialType},
+    RecursiveError,
 };
 
 use super::{Error, Result};
@@ -89,14 +88,17 @@ impl CentralContext {
         conversation_id: &ConversationId,
         client_ids: &[ClientId],
     ) -> Result<Vec<WireIdentity>> {
-        let mls_provider = self.mls_provider().await.map_err(Error::root("getting mls provider"))?;
+        let mls_provider = self
+            .mls_provider()
+            .await
+            .map_err(RecursiveError::root("getting mls provider"))?;
         let auth_service = mls_provider.authentication_service();
         auth_service.refresh_time_of_interest().await;
         let auth_service = auth_service.borrow().await;
         let conversation = self
             .get_conversation(conversation_id)
             .await
-            .map_err(Error::conversation("getting conversation by id"))?;
+            .map_err(RecursiveError::mls_conversation("getting conversation by id"))?;
         let conversation_guard = conversation.read().await;
         conversation_guard.get_device_identities(client_ids, auth_service.as_ref())
     }
@@ -107,14 +109,17 @@ impl CentralContext {
         conversation_id: &ConversationId,
         user_ids: &[String],
     ) -> Result<HashMap<String, Vec<WireIdentity>>> {
-        let mls_provider = self.mls_provider().await.map_err(Error::root("getting mls provider"))?;
+        let mls_provider = self
+            .mls_provider()
+            .await
+            .map_err(RecursiveError::root("getting mls provider"))?;
         let auth_service = mls_provider.authentication_service();
         auth_service.refresh_time_of_interest().await;
         let auth_service = auth_service.borrow().await;
         let conversation = self
             .get_conversation(conversation_id)
             .await
-            .map_err(Error::conversation("getting conversation by id"))?;
+            .map_err(RecursiveError::mls_conversation("getting conversation by id"))?;
         let conversation_guard = conversation.read().await;
         conversation_guard.get_user_identities(user_ids, auth_service.as_ref())
     }
@@ -136,7 +141,7 @@ impl MlsCentral {
         let conversation = self
             .get_conversation(conversation_id)
             .await
-            .map_err(Error::conversation("getting conversation by id"))?;
+            .map_err(RecursiveError::mls_conversation("getting conversation by id"))?;
         conversation.get_device_identities(
             client_ids,
             self.mls_backend.authentication_service().borrow().await.as_ref(),
@@ -161,7 +166,7 @@ impl MlsCentral {
         let conversation = self
             .get_conversation(conversation_id)
             .await
-            .map_err(Error::conversation("getting conversation by id"))?;
+            .map_err(RecursiveError::mls_conversation("getting conversation by id"))?;
         conversation.get_user_identities(
             user_ids,
             self.mls_backend.authentication_service().borrow().await.as_ref(),
@@ -183,9 +188,10 @@ impl MlsConversation {
             .filter(|(id, _)| device_ids.contains(&ClientId::from(id.as_slice())))
             .map(|(_, c)| {
                 c.extract_identity(self.ciphersuite(), env)
-                    .map_err(Error::credential("extracting identity"))
+                    .map_err(RecursiveError::mls_credential("extracting identity"))
             })
-            .collect::<Result<Vec<_>>>()
+            .collect::<Result<Vec<_>, _>>()
+            .map_err(Into::into)
     }
 
     fn get_user_identities(
@@ -206,7 +212,7 @@ impl MlsConversation {
                 let uid = String::try_from(uid).map_err(Error::GetUserIdentities)?;
                 let identity = c
                     .extract_identity(self.ciphersuite(), env)
-                    .map_err(Error::credential("extracting identity"))?;
+                    .map_err(RecursiveError::mls_credential("extracting identity"))?;
                 Ok((uid, identity))
             })
             .process_results(|iter| iter.into_group_map())

@@ -5,7 +5,10 @@ use openmls_traits::OpenMlsCryptoProvider;
 use mls_crypto_provider::MlsCryptoProvider;
 
 use super::{Error, Result};
-use crate::prelude::{Client, MlsConversation, MlsProposalBundle};
+use crate::{
+    prelude::{Client, MlsConversation, MlsProposalBundle},
+    RecursiveError,
+};
 
 /// Marker struct holding methods responsible for restoring (renewing) proposals (or pending commit)
 /// in case another commit has been accepted by the backend instead of ours
@@ -151,7 +154,7 @@ impl MlsConversation {
         let cb = client
             .find_most_recent_credential_bundle(sc, ct)
             .await
-            .map_err(Error::client("finding most recent credential bundle"))?;
+            .map_err(RecursiveError::mls_client("finding most recent credential bundle"))?;
 
         leaf_node.set_credential_with_key(cb.to_mls_credential_with_key());
 

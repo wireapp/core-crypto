@@ -1,6 +1,7 @@
 use crate::{
     mls::credential::ext::CredentialExt,
     prelude::{ConversationId, MlsCentral, MlsConversation, MlsCredentialType},
+    RecursiveError,
 };
 
 use mls_crypto_provider::MlsCryptoProvider;
@@ -15,7 +16,7 @@ use openmls::{
     treesync::RatchetTree,
 };
 
-use super::{Error, Result};
+use super::Result;
 
 /// Indicates the state of a Conversation regarding end-to-end identity.
 ///
@@ -39,16 +40,24 @@ impl CentralContext {
         let conversation = self
             .get_conversation(id)
             .await
-            .map_err(Error::conversation("getting conversation by id"))?;
+            .map_err(RecursiveError::mls_conversation("getting conversation by id"))?;
         let conversation_guard = conversation.read().await;
         conversation_guard
-            .e2ei_conversation_state(&self.mls_provider().await.map_err(Error::root("getting mls provider"))?)
+            .e2ei_conversation_state(
+                &self
+                    .mls_provider()
+                    .await
+                    .map_err(RecursiveError::root("getting mls provider"))?,
+            )
             .await
     }
 
     /// See [MlsCentral::e2ei_verify_group_state].
     pub async fn e2ei_verify_group_state(&self, group_info: VerifiableGroupInfo) -> Result<E2eiConversationState> {
-        let mls_provider = self.mls_provider().await.map_err(Error::root("getting mls provider"))?;
+        let mls_provider = self
+            .mls_provider()
+            .await
+            .map_err(RecursiveError::root("getting mls provider"))?;
         let auth_service = mls_provider.authentication_service();
         auth_service.refresh_time_of_interest().await;
         let cs = group_info.ciphersuite().into();
@@ -56,7 +65,10 @@ impl CentralContext {
         let is_sender = true; // verify the ratchet tree as sender to turn on hardened verification
         let Ok(rt) = group_info
             .take_ratchet_tree(
-                &self.mls_provider().await.map_err(Error::root("getting mls provider"))?,
+                &self
+                    .mls_provider()
+                    .await
+                    .map_err(RecursiveError::root("getting mls provider"))?,
                 is_sender,
             )
             .await
@@ -86,11 +98,17 @@ impl CentralContext {
         // This 👇 verifies the GroupInfo and the RatchetTree btw
         let rt = group_info
             .take_ratchet_tree(
-                &self.mls_provider().await.map_err(Error::root("getting mls provider"))?,
+                &self
+                    .mls_provider()
+                    .await
+                    .map_err(RecursiveError::root("getting mls provider"))?,
                 false,
             )
             .await?;
-        let mls_provider = self.mls_provider().await.map_err(Error::root("getting mls provider"))?;
+        let mls_provider = self
+            .mls_provider()
+            .await
+            .map_err(RecursiveError::root("getting mls provider"))?;
         let auth_service = mls_provider.authentication_service().borrow().await;
         get_credential_in_use_in_ratchet_tree(cs, rt, credential_type, auth_service.as_ref()).await
     }

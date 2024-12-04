@@ -18,10 +18,11 @@ use openmls_traits::OpenMlsCryptoProvider;
 use mls_crypto_provider::MlsCryptoProvider;
 
 use super::{Error, Result};
-use crate::context::CentralContext;
 use crate::{
+    context::CentralContext,
     mls::{ConversationId, MlsConversation},
     prelude::{decrypt::MlsBufferedConversationDecryptMessage, MlsProposalRef},
+    RecursiveError,
 };
 
 /// Abstraction over a MLS group capable of merging a commit
@@ -101,14 +102,19 @@ impl CentralContext {
     ) -> Result<Option<Vec<MlsBufferedConversationDecryptMessage>>> {
         let conv = self.get_conversation(id).await?;
         let mut conv = conv.write().await;
-        conv.commit_accepted(&self.mls_provider().await.map_err(Error::root("getting mls provider"))?)
-            .await?;
+        conv.commit_accepted(
+            &self
+                .mls_provider()
+                .await
+                .map_err(RecursiveError::root("getting mls provider"))?,
+        )
+        .await?;
 
         let pending_messages = self.restore_pending_messages(&mut conv, false).await?;
         if pending_messages.is_some() {
             self.keystore()
                 .await
-                .map_err(Error::root("getting keystore"))?
+                .map_err(RecursiveError::root("getting keystore"))?
                 .remove::<MlsPendingMessage, _>(id)
                 .await
                 .map_err(Error::keystore("removing pending mls message"))?;
@@ -141,7 +147,10 @@ impl CentralContext {
             .await
             .clear_pending_proposal(
                 proposal_ref,
-                &self.mls_provider().await.map_err(Error::root("getting mls provider"))?,
+                &self
+                    .mls_provider()
+                    .await
+                    .map_err(RecursiveError::root("getting mls provider"))?,
             )
             .await
     }
@@ -165,7 +174,12 @@ impl CentralContext {
             .await?
             .write()
             .await
-            .clear_pending_commit(&self.mls_provider().await.map_err(Error::root("getting mls provider"))?)
+            .clear_pending_commit(
+                &self
+                    .mls_provider()
+                    .await
+                    .map_err(RecursiveError::root("getting mls provider"))?,
+            )
             .await
     }
 }
@@ -361,12 +375,14 @@ mod tests {
         #[apply(all_cred_cipher)]
         #[wasm_bindgen_test]
         pub async fn should_fail_when_conversation_not_found(case: TestCase) {
+            use crate::{mls, LeafError};
+
             run_test_with_client_ids(case.clone(), ["alice"], move |[alice_central]| {
                 Box::pin(async move {
                     let id = conversation_id();
                     let simple_ref = MlsProposalRef::from(vec![0; case.ciphersuite().hash_length()]);
                     let clear = alice_central.context.clear_pending_proposal(&id, simple_ref).await;
-                    assert!(matches!(clear.unwrap_err(), Error::ConversationNotFound(conv_id) if conv_id == id))
+                    assert!(matches!(clear.unwrap_err(), mls::conversation::error::Error::Leaf(LeafError::ConversationNotFound(conv_id)) if conv_id == id))
                 })
             })
             .await

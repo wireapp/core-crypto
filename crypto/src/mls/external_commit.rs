@@ -26,16 +26,15 @@ use core_crypto_keystore::{
 
 use super::{Error, Result};
 use crate::{
+    context::CentralContext,
     e2e_identity::init_certificates::NewCrlDistributionPoint,
     mls::credential::crl::{extract_crl_uris_from_group, get_new_crl_distribution_points},
     prelude::{
         decrypt::MlsBufferedConversationDecryptMessage, ConversationId, MlsCiphersuite, MlsConversation,
         MlsConversationConfiguration, MlsCredentialType, MlsCustomConfiguration, MlsGroupInfoBundle,
     },
-    LeafError,
+    LeafError, RecursiveError,
 };
-
-use crate::context::CentralContext;
 
 /// Returned when a commit is created
 #[derive(Debug)]
@@ -97,14 +96,20 @@ impl CentralContext {
         custom_cfg: MlsCustomConfiguration,
         credential_type: MlsCredentialType,
     ) -> Result<MlsConversationInitBundle> {
-        let client = &self.mls_client().await.map_err(Error::root("getting mls client"))?;
+        let client = &self
+            .mls_client()
+            .await
+            .map_err(RecursiveError::root("getting mls client"))?;
 
         let cs: MlsCiphersuite = group_info.ciphersuite().into();
-        let mls_provider = self.mls_provider().await.map_err(Error::root("getting mls provider"))?;
+        let mls_provider = self
+            .mls_provider()
+            .await
+            .map_err(RecursiveError::root("getting mls provider"))?;
         let cb = client
             .get_most_recent_or_create_credential_bundle(&mls_provider, cs.signature_algorithm(), credential_type)
             .await
-            .map_err(Error::client("getting or creating credential bundle"))?;
+            .map_err(RecursiveError::mls_client("getting or creating credential bundle"))?;
 
         let serialized_cfg =
             serde_json::to_vec(&custom_cfg).map_err(Error::mls_operation("serializing mls keystore"))?;
@@ -122,7 +127,7 @@ impl CentralContext {
             group_info,
             &configuration
                 .as_openmls_default_configuration()
-                .map_err(Error::conversation(
+                .map_err(RecursiveError::mls_conversation(
                     "using configuration as openmls default configuration",
                 ))?,
             &[],
@@ -133,15 +138,17 @@ impl CentralContext {
 
         // We should always have ratchet tree extension turned on hence GroupInfo should always be present
         let group_info = group_info.ok_or(LeafError::MissingGroupInfo)?;
-        let group_info = MlsGroupInfoBundle::try_new_full_plaintext(group_info)
-            .map_err(Error::conversation("trying new full plaintext group info bundle"))?;
+        let group_info = MlsGroupInfoBundle::try_new_full_plaintext(group_info).map_err(
+            RecursiveError::mls_conversation("trying new full plaintext group info bundle"),
+        )?;
 
         let crl_new_distribution_points = get_new_crl_distribution_points(
             &mls_provider,
-            extract_crl_uris_from_group(&group).map_err(Error::credential("extracting crl uris from group"))?,
+            extract_crl_uris_from_group(&group)
+                .map_err(RecursiveError::mls_credential("extracting crl uris from group"))?,
         )
         .await
-        .map_err(Error::credential("getting new crl distribution points"))?;
+        .map_err(RecursiveError::mls_credential("getting new crl distribution points"))?;
 
         mls_provider
             .key_store()
@@ -176,7 +183,10 @@ impl CentralContext {
         id: &ConversationId,
     ) -> Result<Option<Vec<MlsBufferedConversationDecryptMessage>>> {
         // Retrieve the pending MLS group from the keystore
-        let mls_provider = self.mls_provider().await.map_err(Error::root("getting mls provider"))?;
+        let mls_provider = self
+            .mls_provider()
+            .await
+            .map_err(RecursiveError::root("getting mls provider"))?;
         let (group, cfg) = mls_provider
             .key_store()
             .mls_pending_groups_load(id)
@@ -207,16 +217,18 @@ impl CentralContext {
         // TODO: find a way to make the insertion of the MlsGroup and deletion of the pending group transactional. Tracking issue: WPB-9595
         let mut conversation = MlsConversation::from_mls_group(mls_group, configuration, &mls_provider)
             .await
-            .map_err(Error::conversation("constructing conversation from mls group"))?;
+            .map_err(RecursiveError::mls_conversation(
+                "constructing conversation from mls group",
+            ))?;
 
         let pending_messages = self
             .restore_pending_messages(&mut conversation, is_rejoin)
             .await
-            .map_err(Error::conversation("restoring pending messages"))?;
+            .map_err(RecursiveError::mls_conversation("restoring pending messages"))?;
 
         self.mls_groups()
             .await
-            .map_err(Error::root("getting mls groups"))?
+            .map_err(RecursiveError::root("getting mls groups"))?
             .insert(id.clone(), conversation);
 
         // cleanup the pending group we no longer need
@@ -250,7 +262,7 @@ impl CentralContext {
     pub async fn clear_pending_group_from_external_commit(&self, id: &ConversationId) -> Result<()> {
         self.keystore()
             .await
-            .map_err(Error::root("getting keystore"))?
+            .map_err(RecursiveError::root("getting keystore"))?
             .mls_pending_groups_delete(id)
             .await
             .map_err(Error::keystore("deleting pending groups by id"))?;
@@ -261,7 +273,7 @@ impl CentralContext {
         Ok(self
             .keystore()
             .await
-            .map_err(Error::root("getting keystore"))?
+            .map_err(RecursiveError::root("getting keystore"))?
             .find::<PersistedMlsPendingGroup>(id.as_slice())
             .await
             .ok()
