@@ -1,6 +1,8 @@
 package com.wire.crypto
 
+import com.wire.crypto.uniffi.CommitBundle
 import com.wire.crypto.uniffi.CoreCryptoLogLevel
+import com.wire.crypto.uniffi.MlsTransportResponse
 
 typealias EnrollmentHandle = ByteArray
 
@@ -61,7 +63,6 @@ class CoreCrypto(private val cc: com.wire.crypto.uniffi.CoreCrypto) {
             databaseKey: String
         ): CoreCrypto {
             val cc = com.wire.crypto.uniffi.coreCryptoDeferredInit(keystore, databaseKey)
-            cc.setCallbacks(Callbacks())
             return CoreCrypto(cc)
         }
     }
@@ -112,6 +113,10 @@ class CoreCrypto(private val cc: com.wire.crypto.uniffi.CoreCrypto) {
         cc.proteusInit()
     }
 
+    suspend fun provideTransport(transport: MlsTransport) {
+        cc.provideTransport(transport)
+    }
+
     /**
      * Closes this [CoreCrypto] instance and deallocates all loaded resources.
      *
@@ -131,20 +136,21 @@ class CoreCrypto(private val cc: com.wire.crypto.uniffi.CoreCrypto) {
     }
 }
 
-private class Callbacks : com.wire.crypto.uniffi.CoreCryptoCallbacks {
 
-    override suspend fun authorize(conversationId: ByteArray, clientId: ByteArray): Boolean = true
 
-    override suspend fun userAuthorize(
-        conversationId: ByteArray,
-        externalClientId: ByteArray,
-        existingClients: List<ByteArray>
-    ): Boolean = true
+/**
+ * You must implement this interface and pass the implementing object to [CoreCrypto.provideTransport].
+ * CoreCrypto uses it to communicate with the delivery service.
+ */
+interface MlsTransport : com.wire.crypto.uniffi.MlsTransport {
+    /**
+     * Send a message to the delivery service.
+     */
+    override suspend fun sendMessage(mlsMessage: ByteArray): MlsTransportResponse
 
-    override suspend fun clientIsExistingGroupUser(
-        conversationId: ByteArray,
-        clientId: ByteArray,
-        existingClients: List<ByteArray>,
-        parentConversationClients: List<ByteArray>?
-    ): Boolean = true
+    /**
+     * Send a commit bundle to the delivery service.
+     */
+    override suspend fun sendCommitBundle(commitBundle: CommitBundle): MlsTransportResponse
 }
+
