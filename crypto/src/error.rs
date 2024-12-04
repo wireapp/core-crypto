@@ -54,7 +54,7 @@ pub enum Error {
         context: &'static str,
         /// What happened in the conversation
         #[source]
-        source: Box<crate::mls::conversation::error::Error>,
+        source: Box<crate::mls::conversation::Error>,
     },
     /// A MLS operation failed
     #[error("{context}")]
@@ -96,7 +96,7 @@ impl Error {
         }
     }
 
-    pub(crate) fn conversation(context: &'static str) -> impl FnOnce(crate::mls::conversation::error::Error) -> Self {
+    pub(crate) fn conversation(context: &'static str) -> impl FnOnce(crate::mls::conversation::Error) -> Self {
         move |source| Self::Conversation {
             context,
             source: Box::new(source),
@@ -141,7 +141,7 @@ impl Error {
 pub enum CryptoError {
     /// End to end identity error
     #[error("End to end identity error")]
-    E2eiError(#[from] crate::e2e_identity::error::Error),
+    E2eiError(#[from] crate::e2e_identity::Error),
     /// This error is emitted when the requested conversation couldn't be found in our store
     #[error("Couldn't find conversation")]
     ConversationNotFound(crate::prelude::ConversationId),
@@ -362,13 +362,13 @@ pub enum CryptoError {
     InvalidContext,
     /// Something happened in the MLS client code
     #[error(transparent)]
-    MlsClient(#[from] crate::mls::client::error::Error),
+    MlsClient(#[from] crate::mls::client::Error),
     /// Something happened within a conversation
     #[error(transparent)]
-    Conversation(#[from] crate::mls::conversation::error::Error),
+    Conversation(#[from] crate::mls::conversation::Error),
     /// Something happened about a MLS credential
     #[error(transparent)]
-    MlsCredential(#[from] crate::mls::credential::error::Error),
+    MlsCredential(#[from] crate::mls::credential::Error),
 }
 
 impl From<MlsError> for CryptoError {
