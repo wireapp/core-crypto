@@ -1,4 +1,4 @@
-use super::error::{Error, Result};
+use super::{Error, Result};
 use crate::{
     mls::credential::{
         crl::{extract_crl_uris_from_group, get_new_crl_distribution_points},

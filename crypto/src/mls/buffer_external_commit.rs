@@ -5,8 +5,11 @@
 //!
 //! Feel free to delete all of this when the issue is fixed on the DS side !
 
-use super::error::{Error, Result};
-use crate::prelude::{ConversationId, MlsConversationDecryptMessage};
+use super::{Error, Result};
+use crate::{
+    prelude::{ConversationId, MlsConversationDecryptMessage},
+    LeafError,
+};
 use core_crypto_keystore::{
     connection::FetchFromDatabase,
     entities::{MlsPendingMessage, PersistedMlsPendingGroup},
@@ -26,7 +29,7 @@ impl CentralContext {
             .await
             .map_err(Error::keystore("finding persisted mls pending group"))?
         else {
-            return Err(Error::ConversationNotFound(id.clone()));
+            return Err(LeafError::ConversationNotFound(id.clone()).into());
         };
 
         let pending_msg = MlsPendingMessage {

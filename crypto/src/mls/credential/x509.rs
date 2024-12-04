@@ -5,7 +5,7 @@ use mls_crypto_provider::PkiKeypair;
 #[cfg(test)]
 use x509_cert::der::Encode;
 
-use super::error::{Error, Result};
+use super::{Error, Result};
 use openmls_traits::types::SignatureScheme;
 use wire_e2e_identity::prelude::{HashAlgorithm, WireIdentityReader};
 use zeroize::Zeroize;

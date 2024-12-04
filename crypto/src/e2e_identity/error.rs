@@ -3,7 +3,7 @@
 // We allow missing documentation in the error module because the types are generally self-descriptive.
 #![allow(missing_docs)]
 
-use crate::prelude::MlsCredentialType;
+use crate::{prelude::MlsCredentialType, LeafError};
 use core_crypto_keystore::CryptoKeystoreError;
 
 pub type Result<T, E = Error> = core::result::Result<T, E>;
@@ -54,8 +54,6 @@ pub enum Error {
     KeyPackageHashRef(#[from] openmls::error::LibraryError),
     #[error("Serializing key package for TLS")]
     TlsSerializingKeyPackage(#[from] tls_codec::Error),
-    #[error("The MLS group is in an invalid state for an unknown reason")]
-    InternalMlsError,
     #[error("{context}: {upstream}")]
     CertificateValidation {
         context: &'static str,
@@ -108,6 +106,8 @@ pub enum Error {
         #[source]
         source: Box<crate::Error>,
     },
+    #[error(transparent)]
+    Leaf(#[from] LeafError),
 }
 
 impl Error {

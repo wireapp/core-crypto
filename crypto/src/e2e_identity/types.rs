@@ -1,6 +1,6 @@
 //! We only expose byte arrays through the FFI so we do all the conversions here
 
-use super::error::{Error, Result};
+use super::{Error, Result};
 
 /// See [RFC 8555 Section 7.1.1](https://www.rfc-editor.org/rfc/rfc8555.html#section-7.1.1)
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]

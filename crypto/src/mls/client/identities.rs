@@ -1,6 +1,9 @@
-use crate::mls::client::{
-    error::{Error, Result},
-    ClientInner,
+use crate::{
+    mls::client::{
+        error::{Error, Result},
+        ClientInner,
+    },
+    LeafError,
 };
 use crate::{
     mls::credential::{typ::MlsCredentialType, CredentialBundle},
@@ -88,7 +91,7 @@ impl ClientIdentities {
 
 impl MlsConversation {
     pub(crate) async fn find_current_credential_bundle(&self, client: &Client) -> Result<Arc<CredentialBundle>> {
-        let own_leaf = self.group.own_leaf().ok_or(Error::InternalMlsError)?;
+        let own_leaf = self.group.own_leaf().ok_or(LeafError::InternalMlsError)?;
         let sc = self.ciphersuite().signature_algorithm();
         let ct = self
             .own_credential_type()
