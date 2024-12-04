@@ -20,12 +20,13 @@ import initWasm, {
     ConversationConfiguration as ConversationConfigurationFfi,
     CoreCrypto as CoreCryptoFfi,
     CoreCryptoContext as CoreCryptoContextFfi,
-    CoreCryptoWasmCallbacks,
+    WasmMlsTransportResponse,
     CoreCryptoWasmLogger,
     CustomConfiguration as CustomConfigurationFfi,
     E2eiDumpedPkiEnv,
     NewAcmeAuthz,
     NewAcmeOrder,
+    MlsTransportProvider,
 } from "./wasm";
 
 import CoreCryptoContext from "./CoreCryptoContext";
@@ -819,54 +820,23 @@ export interface ExternalAddProposalArgs extends ExternalProposalArgs {
     credentialType: CredentialType;
 }
 
-export interface CoreCryptoCallbacks {
+export interface MlsTransport {
     /**
-     * This callback is called by CoreCrypto to know whether a given clientId is authorized to "write"
-     * in the given conversationId. Think of it as a "isAdmin" callback conceptually
+     * This callback is called by CoreCrypto to send a commit bundle to the delivery service.
      *
-     * This callback exists because there are many business cases where CoreCrypto doesn't have enough knowledge
-     * (such as what can exist on a backend) to inform the decision
-     *
-     * @param conversationId - id of the group/conversation
-     * @param clientId - id of the client performing an operation requiring authorization
-     * @returns whether the user is authorized by the logic layer to perform the operation
+     * @param commitBundle - the commit bundle
+     * @returns a promise resolving to a {@link WasmMlsTransportResponse}
      */
-    authorize: (
-        conversationId: Uint8Array,
-        clientId: Uint8Array
-    ) => Promise<boolean>;
+    sendCommitBundle: (
+        commitBundle: CommitBundle
+    ) => Promise<WasmMlsTransportResponse>;
 
     /**
-     * A mix between {@link authorize} and {@link clientIsExistingGroupUser}. We currently use this callback to verify
-     * external commits to join a group ; in such case, the client has to:
-     * * first, belong to a user which is already in the MLS group (similar to {@link clientIsExistingGroupUser})
-     * * then, this user should be authorized to "write" in the given conversation (similar to {@link authorize})
-     *
-     * @param conversationId - id of the group/conversation
-     * @param externalClientId - id of the client performing an operation requiring authorization
-     * @param existingClients - all the clients currently within the MLS group
-     * @returns true if the external client is authorized to write to the conversation
+     *  This callback is called by CoreCrypto to send a regular message to the delivery service.
+     * @param message
+     * @returns a promise resolving to a {@link WasmMlsTransportResponse}
      */
-    userAuthorize: (
-        conversationId: Uint8Array,
-        externalClientId: Uint8Array,
-        existingClients: Uint8Array[]
-    ) => Promise<boolean>;
-
-    /**
-     * Callback to ensure that the given `clientId` belongs to one of the provided `existingClients`
-     * This basically allows to defer the client ID parsing logic to the caller - because CoreCrypto is oblivious to such things
-     *
-     * @param conversationId - id of the group/conversation
-     * @param clientId - id of a client
-     * @param existingClients - all the clients currently within the MLS group
-     */
-    clientIsExistingGroupUser: (
-        conversationId: Uint8Array,
-        clientId: Uint8Array,
-        existingClients: Uint8Array[],
-        parent_conversation_clients?: Uint8Array[]
-    ) => Promise<boolean>;
+    sendMessage: (message: Uint8Array) => Promise<WasmMlsTransportResponse>;
 }
 
 /**
@@ -1186,22 +1156,23 @@ export class CoreCrypto {
     }
 
     /**
-     * Registers the callbacks for CoreCrypto to use in order to gain additional information
+     * Registers the transport callbacks for core crypto to give it access to backend endpoints for sending
+     * a commit bundle or a message, respectively.
      *
-     * @param callbacks - Any interface following the {@link CoreCryptoCallbacks} interface
+     * @param transportProvider - Any interface following the {@link MlsTransport} interface
      */
-    async registerCallbacks(
-        callbacks: CoreCryptoCallbacks,
+    async provideTransport(
+        transportProvider: MlsTransport,
         ctx: unknown = null
     ): Promise<void> {
         try {
-            const wasmCallbacks = new CoreCryptoWasmCallbacks(
-                callbacks.authorize,
-                callbacks.userAuthorize,
-                callbacks.clientIsExistingGroupUser,
-                ctx
+            await this.#cc.provide_transport(
+                new MlsTransportProvider(
+                    transportProvider.sendCommitBundle,
+                    transportProvider.sendMessage,
+                    ctx
+                )
             );
-            await this.#cc.set_callbacks(wasmCallbacks);
         } catch (e) {
             throw CoreCryptoError.fromStdError(e as Error);
         }
