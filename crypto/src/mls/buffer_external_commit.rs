@@ -8,7 +8,7 @@
 use super::{Error, Result};
 use crate::{
     prelude::{ConversationId, MlsConversationDecryptMessage},
-    LeafError, RecursiveError,
+    KeystoreError, LeafError, RecursiveError,
 };
 use core_crypto_keystore::{
     connection::FetchFromDatabase,
@@ -30,7 +30,7 @@ impl CentralContext {
         let Some(pending_group) = keystore
             .find::<PersistedMlsPendingGroup>(id)
             .await
-            .map_err(Error::keystore("finding persisted mls pending group"))?
+            .map_err(KeystoreError::wrap("finding persisted mls pending group"))?
         else {
             return Err(LeafError::ConversationNotFound(id.clone()).into());
         };
@@ -42,7 +42,7 @@ impl CentralContext {
         keystore
             .save::<MlsPendingMessage>(pending_msg)
             .await
-            .map_err(Error::keystore("saving mls pending message"))?;
+            .map_err(KeystoreError::wrap("saving mls pending message"))?;
         Err(Error::UnmergedPendingGroup)
     }
 }
@@ -133,13 +133,13 @@ mod tests {
                         let decrypt = bob_central.context.decrypt_message(&id, m).await;
                         assert!(matches!(
                             decrypt.unwrap_err(),
-                            mls::conversation::error::Error::UnmergedPendingGroup
+                            mls::conversation::Error::UnmergedPendingGroup
                         ));
                     }
                     let decrypt = bob_central.context.decrypt_message(&id, app_msg).await;
                     assert!(matches!(
                         decrypt.unwrap_err(),
-                        mls::conversation::error::Error::UnmergedPendingGroup
+                        mls::conversation::Error::UnmergedPendingGroup
                     ));
 
                     // Bob should have buffered the messages

@@ -27,7 +27,7 @@ use crate::{
         identifier::ClientIdentifier, key_package::KEYPACKAGE_DEFAULT_LIFETIME, CertificateBundle, ClientId,
         MlsCiphersuite, MlsCredentialType,
     },
-    LeafError, RecursiveError,
+    KeystoreError, LeafError, RecursiveError,
 };
 pub use error::{Error, Result};
 
@@ -91,7 +91,7 @@ impl Client {
             .key_store()
             .find_all::<MlsCredential>(EntityFindParams::default())
             .await
-            .map_err(Error::keystore("finding all mls credentials"))?;
+            .map_err(KeystoreError::wrap("finding all mls credentials"))?;
 
         let credentials = credentials
             .into_iter()
@@ -189,7 +189,7 @@ impl Client {
                 .key_store()
                 .save(sign_kp)
                 .await
-                .map_err(Error::keystore("save signature keypair in keystore"))?;
+                .map_err(KeystoreError::wrap("save signature keypair in keystore"))?;
 
             tmp_client_ids.push(tmp_client_id);
         }
@@ -219,7 +219,7 @@ impl Client {
             .key_store()
             .find_all::<MlsSignatureKeyPair>(EntityFindParams::default())
             .await
-            .map_err(Error::keystore("finding all mls signature keypairs"))?;
+            .map_err(KeystoreError::wrap("finding all mls signature keypairs"))?;
 
         match stored_skp.len().cmp(&tmp_ids.len()) {
             std::cmp::Ordering::Less => return Err(Error::NoProvisionalIdentityFound),
@@ -265,7 +265,7 @@ impl Client {
                 .key_store()
                 .remove::<MlsSignatureKeyPair, &[u8]>(&new_keypair.pk)
                 .await
-                .map_err(Error::keystore("removing mls signature keypair"))?;
+                .map_err(KeystoreError::wrap("removing mls signature keypair"))?;
 
             let signature_key = SignatureKeyPair::tls_deserialize(&mut new_keypair.keypair.as_slice())
                 .map_err(Error::tls_deserialize("signature key"))?;
@@ -350,7 +350,7 @@ impl Client {
             .key_store()
             .find_all::<MlsSignatureKeyPair>(EntityFindParams::default())
             .await
-            .map_err(Error::keystore("finding all mls signature keypairs"))?;
+            .map_err(KeystoreError::wrap("finding all mls signature keypairs"))?;
 
         for sc in signature_schemes {
             let kp = store_skps.iter().find(|skp| skp.signature_scheme == (sc as u16));
@@ -372,7 +372,7 @@ impl Client {
                     .key_store()
                     .save(store_keypair.clone())
                     .await
-                    .map_err(Error::keystore("storing keypairs in keystore"))?;
+                    .map_err(KeystoreError::wrap("storing keypairs in keystore"))?;
                 SignatureKeyPair::tls_deserialize(&mut store_keypair.keypair.as_slice())
                     .map_err(Error::tls_deserialize("signature keypair"))?
             };
@@ -416,7 +416,7 @@ impl Client {
             .key_store()
             .find_all::<MlsCredential>(EntityFindParams::default())
             .await
-            .map_err(Error::keystore("finding all mls credentialss"))?;
+            .map_err(KeystoreError::wrap("finding all mls credentialss"))?;
         let mut credentials = Vec::with_capacity(store_credentials.len());
         for store_credential in store_credentials.into_iter() {
             let credential = Credential::tls_deserialize(&mut store_credential.credential.as_slice())
@@ -459,7 +459,7 @@ impl Client {
                 let credential = keystore
                     .save(credential)
                     .await
-                    .map_err(Error::keystore("saving credential"))?;
+                    .map_err(KeystoreError::wrap("saving credential"))?;
 
                 let sign_kp = MlsSignatureKeyPair::new(
                     sc,
@@ -471,7 +471,7 @@ impl Client {
                 );
                 keystore.save(sign_kp).await.map_err(|e| match e {
                     CryptoKeystoreError::AlreadyExists => Error::CredentialBundleConflict,
-                    _ => Error::keystore("saving mls signature key pair")(e),
+                    _ => KeystoreError::wrap("saving mls signature key pair")(e).into(),
                 })?;
 
                 // set the creation date of the signature keypair which is the same for the CredentialBundle
@@ -592,7 +592,7 @@ impl Client {
             .key_store()
             .mls_fetch_keypackages::<openmls::prelude::KeyPackage>(u32::MAX)
             .await
-            .map_err(Error::keystore("fetching mls keypackages"))?;
+            .map_err(KeystoreError::wrap("fetching mls keypackages"))?;
         Ok(kps)
     }
 }

@@ -36,17 +36,8 @@ pub enum Error {
     #[error("Couldn't find conversation")]
     ConversationNotFound(crate::prelude::ConversationId),
     /// A key store operation failed
-    //
-    // This uses a `Box<dyn>` pattern because we do not directly import `keystore` from here right now,
-    // and it feels a bit silly to add the dependency only for this.
-    #[error("{context}")]
-    Keystore {
-        /// What happened witht the keystore
-        #[source]
-        source: Box<dyn std::error::Error + Send + Sync>,
-        /// What was happening in the caller
-        context: &'static str,
-    },
+    #[error(transparent)]
+    Keystore(#[from] KeystoreError),
     /// A MLS operation failed
     #[error("{context}")]
     MlsOperation {
@@ -80,16 +71,6 @@ pub enum Error {
 }
 
 impl Error {
-    pub(crate) fn keystore<E>(context: &'static str) -> impl FnOnce(E) -> Self
-    where
-        E: 'static + std::error::Error + Send + Sync,
-    {
-        move |err| Self::Keystore {
-            context,
-            source: Box::new(err),
-        }
-    }
-
     pub(crate) fn mls_operation<E>(context: &'static str) -> impl FnOnce(E) -> Self
     where
         E: 'static + std::error::Error + Send + Sync,
@@ -250,6 +231,32 @@ impl RecursiveError {
         move |into_source| Self::MlsCredential {
             context,
             source: Box::new(into_source.into()),
+        }
+    }
+}
+
+/// A key store operation failed
+//
+// This uses a `Box<dyn>` pattern because we do not directly import `keystore` from here right now,
+// and it feels a bit silly to add the dependency only for this.
+#[derive(Debug, thiserror::Error)]
+#[error("{context}")]
+pub struct KeystoreError {
+    /// What was happening in the caller
+    context: &'static str,
+    /// What happened with the keystore
+    #[source]
+    source: Box<dyn std::error::Error + Send + Sync>,
+}
+
+impl KeystoreError {
+    pub(crate) fn wrap<E>(context: &'static str) -> impl FnOnce(E) -> Self
+    where
+        E: 'static + std::error::Error + Send + Sync,
+    {
+        move |source| Self {
+            source: Box::new(source),
+            context,
         }
     }
 }

@@ -44,7 +44,7 @@ use crate::{
     group_store::{GroupStore, GroupStoreValue},
     mls::{client::Client, MlsCentral},
     prelude::{MlsCiphersuite, MlsCredentialType},
-    LeafError, RecursiveError,
+    KeystoreError, LeafError, RecursiveError,
 };
 
 use crate::context::CentralContext;
@@ -166,7 +166,7 @@ impl MlsConversation {
     /// Internal API: restore the conversation from a persistence-saved serialized Group State.
     pub(crate) fn from_serialized_state(buf: Vec<u8>, parent_id: Option<ConversationId>) -> Result<Self> {
         let group: MlsGroup =
-            core_crypto_keystore::deser(&buf).map_err(Error::keystore("deserializing group state"))?;
+            core_crypto_keystore::deser(&buf).map_err(KeystoreError::wrap("deserializing group state"))?;
         let id = ConversationId::from(group.group_id().as_slice());
         let configuration = MlsConversationConfiguration {
             ciphersuite: group.ciphersuite().into(),
@@ -216,11 +216,11 @@ impl MlsConversation {
             keystore
                 .mls_group_persist(
                     &self.id,
-                    &core_crypto_keystore::ser(&self.group).map_err(Error::keystore("serializing group state"))?,
+                    &core_crypto_keystore::ser(&self.group).map_err(KeystoreError::wrap("serializing group state"))?,
                     self.parent_id.as_deref(),
                 )
                 .await
-                .map_err(Error::keystore("persisting mls group"))?;
+                .map_err(KeystoreError::wrap("persisting mls group"))?;
 
             self.group.set_state(openmls::group::InnerState::Persisted);
         }
@@ -311,7 +311,8 @@ impl CentralContext {
             .map_err(RecursiveError::root("getting mls groups"))?
             .get_fetch_all(&keystore)
             .await
-            .map_err(Error::keystore("fetching all mls groups from keystore"))
+            .map_err(KeystoreError::wrap("fetching all mls groups from keystore"))
+            .map_err(Into::into)
     }
 
     /// Mark a conversation as child of another one

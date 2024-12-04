@@ -15,6 +15,7 @@
 // along with this program. If not, see http://www.gnu.org/licenses/.
 
 use crate::context::CentralContext;
+use crate::KeystoreError;
 use crate::{
     group_store::{GroupStore, GroupStoreValue},
     CoreCrypto, Error, Result,
@@ -92,7 +93,7 @@ impl CoreCrypto {
                 // Just attach operations to running transaction if there is one
                 new_transaction_is_needed = false;
             }
-            Err(e) => return Err(Error::keystore("starting transaction in keystore")(e)),
+            Err(e) => return Err(KeystoreError::wrap("starting transaction in keystore")(e).into()),
         }
         let proteus_client = ProteusCentral::try_new(&keystore).await?;
 
@@ -105,7 +106,7 @@ impl CoreCrypto {
             keystore
                 .commit_transaction()
                 .await
-                .map_err(Error::keystore("commiting transaction in keystore"))?;
+                .map_err(KeystoreError::wrap("commiting transaction in keystore"))?;
         }
         Ok(())
     }
@@ -417,7 +418,7 @@ impl ProteusCentral {
         let keypair = if let Some(identity) = keystore
             .find::<ProteusIdentity>(&[])
             .await
-            .map_err(Error::keystore("finding proteus identity"))?
+            .map_err(KeystoreError::wrap("finding proteus identity"))?
         {
             let sk = identity.sk_raw();
             let pk = identity.pk_raw();
@@ -444,7 +445,7 @@ impl ProteusCentral {
         keystore
             .save(ks_identity)
             .await
-            .map_err(Error::keystore("saving new proteus identity"))?;
+            .map_err(KeystoreError::wrap("saving new proteus identity"))?;
 
         Ok(kp)
     }
@@ -458,7 +459,7 @@ impl ProteusCentral {
         for session in keystore
             .find_all::<ProteusSession>(Default::default())
             .await
-            .map_err(Error::keystore("finding all proteus sessions"))?
+            .map_err(KeystoreError::wrap("finding all proteus sessions"))?
             .into_iter()
         {
             let proteus_session = Session::deserialise(identity.clone(), &session.session)
@@ -583,7 +584,7 @@ impl ProteusCentral {
         keystore
             .save(db_session)
             .await
-            .map_err(Error::keystore("saving proteus session"))?;
+            .map_err(KeystoreError::wrap("saving proteus session"))?;
         Ok(())
     }
 
@@ -690,7 +691,7 @@ impl ProteusCentral {
         keystore
             .save(keystore_prekey)
             .await
-            .map_err(Error::keystore("saving keystore prekey"))?;
+            .map_err(KeystoreError::wrap("saving keystore prekey"))?;
         Ok(bundle)
     }
 
@@ -700,7 +701,7 @@ impl ProteusCentral {
     pub(crate) async fn new_prekey_auto(&self, keystore: &CryptoKeystore) -> Result<(u16, Vec<u8>)> {
         let id = core_crypto_keystore::entities::ProteusPrekey::get_free_id(keystore)
             .await
-            .map_err(Error::keystore("getting proteus prekey by id"))?;
+            .map_err(KeystoreError::wrap("getting proteus prekey by id"))?;
         Ok((id, self.new_prekey(id, keystore).await?))
     }
 
@@ -717,7 +718,7 @@ impl ProteusCentral {
                 Self::last_resort_prekey_id().to_le_bytes().as_slice(),
             )
             .await
-            .map_err(Error::keystore("finding proteus prekey"))?
+            .map_err(KeystoreError::wrap("finding proteus prekey"))?
         {
             proteus_wasm::keys::PreKey::deserialise(&last_resort.prekey)
                 .map_err(Error::proteus_operation("deserialising proteus prekey"))?
@@ -733,7 +734,7 @@ impl ProteusCentral {
                         .map_err(Error::proteus_operation("serialising last resort prekey"))?,
                 )
                 .await
-                .map_err(Error::keystore("storing proteus prekey"))?;
+                .map_err(KeystoreError::wrap("storing proteus prekey"))?;
 
             last_resort
         };
@@ -823,7 +824,7 @@ impl ProteusCentral {
         let mut identity = if let Some(store_kp) = keystore
             .find::<ProteusIdentity>(&[])
             .await
-            .map_err(Error::keystore("finding proteus identity"))?
+            .map_err(KeystoreError::wrap("finding proteus identity"))?
         {
             Some(Box::new(
                 IdentityKeyPair::from_raw_key_pair(*store_kp.sk_raw(), *store_kp.pk_raw()).map_err(
@@ -869,7 +870,7 @@ impl ProteusCentral {
                 keystore
                     .save(ks_identity)
                     .await
-                    .map_err(Error::keystore("saving proteus identity"))?;
+                    .map_err(KeystoreError::wrap("saving proteus identity"))?;
 
                 if delete && legacy_identity.exists() {
                     async_fs::remove_file(legacy_identity)
@@ -907,7 +908,7 @@ impl ProteusCentral {
             if keystore
                 .find::<ProteusSession>(proteus_session_id.as_bytes())
                 .await
-                .map_err(Error::keystore("finding proteus session by id"))?
+                .map_err(KeystoreError::wrap("finding proteus session by id"))?
                 .is_some()
             {
                 continue;
@@ -929,7 +930,7 @@ impl ProteusCentral {
             keystore
                 .save(keystore_session)
                 .await
-                .map_err(Error::keystore("saving proteus session"))?;
+                .map_err(KeystoreError::wrap("saving proteus session"))?;
         }
 
         // Prekey migration
@@ -955,7 +956,7 @@ impl ProteusCentral {
             if keystore
                 .find::<ProteusPrekey>(&proteus_prekey_id.value().to_le_bytes())
                 .await
-                .map_err(Error::keystore("finding proteus prekey by id"))?
+                .map_err(KeystoreError::wrap("finding proteus prekey by id"))?
                 .is_some()
             {
                 continue;
@@ -970,7 +971,7 @@ impl ProteusCentral {
                 keystore
                     .save(keystore_prekey)
                     .await
-                    .map_err(Error::keystore("saving proteus prekey"))?;
+                    .map_err(KeystoreError::wrap("saving proteus prekey"))?;
             }
         }
 

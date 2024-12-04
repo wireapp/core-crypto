@@ -27,6 +27,7 @@ use core_crypto_keystore::{
 use mls_crypto_provider::{CryptoKeystore, MlsCryptoProvider};
 
 use super::{Error, Result};
+use crate::KeystoreError;
 use crate::{
     context::CentralContext,
     mls::{client::ClientInner, credential::CredentialBundle},
@@ -79,7 +80,7 @@ impl Client {
                         },
                     )
                     .await
-                    .map_err(Error::keystore("building keypackage"))?;
+                    .map_err(KeystoreError::wrap("building keypackage"))?;
 
                 Ok(keypackage)
             }
@@ -110,7 +111,7 @@ impl Client {
         let mut existing_kps = backend
             .key_store()
             .mls_fetch_keypackages::<KeyPackage>(count as u32)
-            .await.map_err(Error::keystore("fetching mls keypackages"))?
+            .await.map_err(KeystoreError::wrap("fetching mls keypackages"))?
             .into_iter()
             // TODO: do this filtering in SQL when the schema is updated. Tracking issue: WPB-9599
             .filter(|kp|
@@ -165,7 +166,7 @@ impl Client {
             .key_store()
             .find_all(EntityFindParams::default())
             .await
-            .map_err(Error::keystore("finding all key stores"))?;
+            .map_err(KeystoreError::wrap("finding all key stores"))?;
 
         let mut valid_count = 0;
         for kp in kps
@@ -178,7 +179,7 @@ impl Client {
                     .unwrap_or_default()
             })
         {
-            let kp = kp.map_err(Error::keystore("counting valid keypackages"))?;
+            let kp = kp.map_err(KeystoreError::wrap("counting valid keypackages"))?;
             if !Self::is_mls_keypackage_expired(&kp) {
                 valid_count += 1;
             }
@@ -245,7 +246,7 @@ impl Client {
                             .keystore()
                             .cred_delete_by_credential(credential.clone())
                             .await
-                            .map_err(Error::keystore("deleting credential"))?;
+                            .map_err(KeystoreError::wrap("deleting credential"))?;
                         let credential = Credential::tls_deserialize(&mut credential.as_slice())
                             .map_err(Error::tls_deserialize("credential"))?;
                         identities.remove(&credential).await?;
@@ -286,15 +287,15 @@ impl Client {
             keystore
                 .remove::<MlsKeyPackage, &[u8]>(kp_ref.as_slice())
                 .await
-                .map_err(Error::keystore("removing key package from keystore"))?;
+                .map_err(KeystoreError::wrap("removing key package from keystore"))?;
             keystore
                 .remove::<MlsHpkePrivateKey, &[u8]>(kp.hpke_init_key().as_slice())
                 .await
-                .map_err(Error::keystore("removing private key from keystore"))?;
+                .map_err(KeystoreError::wrap("removing private key from keystore"))?;
             keystore
                 .remove::<MlsEncryptionKeyPair, &[u8]>(kp.leaf_node().encryption_key().as_slice())
                 .await
-                .map_err(Error::keystore("removing encryption keypair from keystore"))?;
+                .map_err(KeystoreError::wrap("removing encryption keypair from keystore"))?;
         }
 
         let kp_to_delete = kp_to_delete
@@ -309,13 +310,13 @@ impl Client {
         let kps: Vec<MlsKeyPackage> = keystore
             .find_all(EntityFindParams::default())
             .await
-            .map_err(Error::keystore("finding all keypackages"))?;
+            .map_err(KeystoreError::wrap("finding all keypackages"))?;
 
         let kps = kps
             .into_iter()
             .map(|raw_kp| -> Result<_> {
                 let kp = core_crypto_keystore::deser::<KeyPackage>(&raw_kp.keypackage)
-                    .map_err(Error::keystore("deserializing keypackage"))?;
+                    .map_err(KeystoreError::wrap("deserializing keypackage"))?;
                 Ok((raw_kp, kp))
             })
             .collect::<Result<Vec<_>, _>>()?;

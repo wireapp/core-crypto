@@ -1,7 +1,6 @@
 //! This module contains the primitives to enable transactional support on a higher level within the
 //! [MlsCentral]. All mutating operations need to be done through a [CentralContext].
 
-use crate::mls::MlsCentral;
 #[cfg(feature = "proteus")]
 use crate::proteus::ProteusCentral;
 use crate::{
@@ -9,6 +8,7 @@ use crate::{
     prelude::{Client, MlsConversation},
     CoreCrypto, CoreCryptoCallbacks, Error, Result,
 };
+use crate::{mls::MlsCentral, KeystoreError};
 use async_lock::{Mutex, RwLock, RwLockReadGuardArc, RwLockWriteGuardArc};
 use core_crypto_keystore::connection::FetchFromDatabase;
 use core_crypto_keystore::entities::ConsumerData;
@@ -153,7 +153,8 @@ impl CentralContext {
             .keystore()
             .commit_transaction()
             .await
-            .map_err(Error::keystore("commiting transaction"));
+            .map_err(KeystoreError::wrap("commiting transaction"))
+            .map_err(Into::into);
 
         *guard = ContextState::Invalid;
         commit_result
@@ -173,7 +174,8 @@ impl CentralContext {
             .keystore()
             .rollback_transaction()
             .await
-            .map_err(Error::keystore("rolling back transaction"));
+            .map_err(KeystoreError::wrap("rolling back transaction"))
+            .map_err(Into::into);
 
         *guard = ContextState::Invalid;
         result
@@ -187,7 +189,7 @@ impl CentralContext {
             .await?
             .save(ConsumerData::from(data))
             .await
-            .map_err(Error::keystore("saving consumer data"))?;
+            .map_err(KeystoreError::wrap("saving consumer data"))?;
         Ok(())
     }
 
@@ -197,7 +199,7 @@ impl CentralContext {
         match self.keystore().await?.find_unique::<ConsumerData>().await {
             Ok(data) => Ok(Some(data.into())),
             Err(CryptoKeystoreError::NotFound(..)) => Ok(None),
-            Err(err) => Err(Error::keystore("finding unique consumer data")(err)),
+            Err(err) => Err(KeystoreError::wrap("finding unique consumer data")(err).into()),
         }
     }
 }
