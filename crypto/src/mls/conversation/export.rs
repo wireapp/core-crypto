@@ -16,7 +16,7 @@
 
 //! Primitives to export data from a group, such as derived keys and client ids.
 
-use super::error::{Error, Result};
+use super::{Error, Result};
 use crate::context::CentralContext;
 use crate::mls::{client::id::ClientId, ConversationId, MlsCentral, MlsConversation};
 

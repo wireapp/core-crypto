@@ -14,7 +14,7 @@ use crate::{
     prelude::{user_id::UserId, ClientId, ConversationId, MlsCentral, MlsConversation},
 };
 
-use super::error::{Error, Result};
+use super::{Error, Result};
 
 /// Represents the identity claims identifying a client
 /// Those claims are verifiable by any member in the group

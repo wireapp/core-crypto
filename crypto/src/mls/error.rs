@@ -3,14 +3,12 @@
 // We allow missing documentation in the error module because the types are generally self-descriptive.
 #![allow(missing_docs)]
 
+use crate::LeafError;
+
 pub type Result<T, E = Error> = core::result::Result<T, E>;
 
 #[derive(Debug, thiserror::Error)]
 pub enum Error {
-    #[error("Couldn't find conversation")]
-    ConversationNotFound(crate::prelude::ConversationId),
-    #[error("Conversation already exists")]
-    ConversationAlreadyExists(crate::prelude::ConversationId),
     #[error("Couldn't find client")]
     ClientNotFound(crate::prelude::ClientId),
     #[error(
@@ -20,19 +18,12 @@ pub enum Error {
     /// The ciphersuite identifier presented does not map to a known ciphersuite.
     #[error("Unknown ciphersuite")]
     UnknownCiphersuite,
-    /// Unexpectedly failed to retrieve group info
-    ///
-    /// This may be an implementation error.
-    #[error("unexpectedly failed to retrieve group info")]
-    MissingGroupInfo,
     #[error("The callbacks needed for CoreCrypto to operate were not set")]
     CallbacksNotSet,
     #[error("External add proposal validation failed: only users already in the group are allowed")]
     UnauthorizedExternalAddProposal,
     #[error("External Commit sender was not authorized to perform such")]
     UnauthorizedExternalCommit,
-    #[error("End-to-end identity enrollment has not been done")]
-    E2eiEnrollmentNotDone,
     #[error("Malformed or empty identifier found: {0}")]
     MalformedIdentifier(&'static str),
     // This uses a `Box<dyn>` pattern because we do not directly import `keystore` from here right now,
@@ -79,6 +70,8 @@ pub enum Error {
         #[source]
         source: Box<crate::Error>,
     },
+    #[error(transparent)]
+    Leaf(#[from] LeafError),
 }
 
 impl Error {

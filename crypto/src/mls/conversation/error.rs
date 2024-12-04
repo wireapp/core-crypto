@@ -3,6 +3,8 @@
 // We allow missing documentation in the error module because the types are generally self-descriptive.
 #![allow(missing_docs)]
 
+use crate::LeafError;
+
 use super::config::MAX_PAST_EPOCHS;
 
 pub type Result<T, E = Error> = core::result::Result<T, E>;
@@ -15,10 +17,6 @@ pub enum Error {
     ParentGroupNotFound,
     #[error("The current client id isn't authorized to perform this action")]
     Unauthorized,
-    #[error("Couldn't find conversation")]
-    ConversationNotFound(crate::prelude::ConversationId),
-    #[error("Conversation already exists")]
-    ConversationAlreadyExists(crate::prelude::ConversationId),
     #[error("We already decrypted this message once")]
     DuplicateMessage,
     #[error("The epoch in which message was encrypted is older than {MAX_PAST_EPOCHS}")]
@@ -55,11 +53,6 @@ pub enum Error {
     SelfCommitIgnored,
     #[error("This proposal variant cannot be renewed")]
     PropopsalVariantCannotBeRenewed,
-    /// Unexpectedly failed to retrieve group info
-    ///
-    /// This may be an implementation error. Adding errors shold always generate a new commit.
-    #[error("unexpectedly failed to retrieve group info")]
-    MissingGroupInfo,
     #[error("caller error: {0}")]
     CallerError(&'static str),
     /// This happens when the DS cannot flag KeyPackages as claimed or not. It this scenario, a client
@@ -124,6 +117,8 @@ pub enum Error {
         #[source]
         source: Box<crate::Error>,
     },
+    #[error(transparent)]
+    Leaf(#[from] LeafError),
 }
 
 impl Error {
