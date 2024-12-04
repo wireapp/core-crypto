@@ -9,7 +9,7 @@ use openmls::{binary_tree::LeafNodeIndex, framing::MlsMessageOut, key_packages::
 
 use mls_crypto_provider::MlsCryptoProvider;
 
-use super::error::{Error, Result};
+use super::{Error, Result};
 use crate::{
     e2e_identity::init_certificates::NewCrlDistributionPoint, mls::credential::crl::get_new_crl_distribution_points,
 };

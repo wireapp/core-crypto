@@ -18,7 +18,7 @@ use openmls::prelude::{hash_ref::ProposalRef, KeyPackage};
 
 use mls_crypto_provider::MlsCryptoProvider;
 
-use super::error::{Error, Result};
+use super::{Error, Result};
 use crate::{
     mls::{ClientId, ConversationId, MlsConversation},
     prelude::{Client, MlsProposalBundle},

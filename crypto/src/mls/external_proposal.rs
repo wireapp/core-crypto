@@ -2,11 +2,12 @@ use log::trace;
 use openmls::prelude::{GroupEpoch, GroupId, JoinProposal, LeafNodeIndex, MlsMessageOut, Proposal};
 use std::collections::HashSet;
 
-use super::error::{Error, Result};
+use super::{Error, Result};
 use crate::{
     context::CentralContext,
     mls::{self, credential::typ::MlsCredentialType, ClientId, ConversationId},
     prelude::{MlsCiphersuite, MlsConversation},
+    LeafError,
 };
 
 impl MlsConversation {
@@ -89,7 +90,7 @@ impl CentralContext {
                     ))?
             }
             (Err(mls::client::Error::CredentialNotFound(_)), MlsCredentialType::X509) => {
-                return Err(Error::E2eiEnrollmentNotDone)
+                return Err(LeafError::E2eiEnrollmentNotDone.into())
             }
             (Err(e), _) => return Err(Error::client("finding most recent credential bundle")(e)),
         };
@@ -98,8 +99,8 @@ impl CentralContext {
             .await
             .map_err(Error::client("generating one keypackage from credential bundle"))?;
 
-        Ok(JoinProposal::new(kp, group_id, epoch, &cb.signature_key)
-            .map_err(Error::mls_operation("creating join proposal"))?)
+        JoinProposal::new(kp, group_id, epoch, &cb.signature_key)
+            .map_err(Error::mls_operation("creating join proposal"))
     }
 }
 

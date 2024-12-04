@@ -1,7 +1,8 @@
 use std::borrow::BorrowMut;
 
-use super::error::{Error, Result};
+use super::{Error, Result};
 use crate::context::CentralContext;
+use crate::LeafError;
 use crate::{
     e2e_identity::init_certificates::NewCrlDistributionPoint,
     group_store::GroupStore,
@@ -137,7 +138,7 @@ impl MlsConversation {
         let pending_group_exists = pending_group.ok().flatten().is_some();
 
         if conversation_exists || pending_group_exists {
-            return Err(Error::ConversationAlreadyExists(id));
+            return Err(LeafError::ConversationAlreadyExists(id).into());
         }
 
         Self::from_mls_group(group, configuration, backend).await

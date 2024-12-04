@@ -38,6 +38,7 @@ use mls_crypto_provider::{CryptoKeystore, MlsCryptoProvider};
 
 use config::MlsConversationConfiguration;
 
+use crate::LeafError;
 use crate::{
     group_store::{GroupStore, GroupStoreValue},
     mls::{client::Client, MlsCentral},
@@ -261,7 +262,7 @@ impl MlsCentral {
         GroupStore::fetch_from_keystore(id, &self.mls_backend.keystore(), None)
             .await
             .map_err(Error::root("getting conversation by id"))?
-            .ok_or_else(|| Error::ConversationNotFound(id.clone()))
+            .ok_or_else(|| LeafError::ConversationNotFound(id.clone()).into())
     }
 }
 
@@ -278,7 +279,7 @@ impl CentralContext {
             .get_fetch(id, &keystore, None)
             .await
             .map_err(Error::root("fetching conversation from mls groups by id"))?
-            .ok_or_else(|| Error::ConversationNotFound(id.clone()))
+            .ok_or_else(|| LeafError::ConversationNotFound(id.clone()).into())
     }
 
     pub(crate) async fn get_parent_conversation(
