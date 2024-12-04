@@ -6,22 +6,20 @@ import java.io.File
 
 typealias EnrollmentHandle = ByteArray
 
-private class Callbacks : CoreCryptoCallbacks {
+/**
+ * You must implement this interface and pass the implementing object to [CoreCrypto.provideTransport].
+ * CoreCrypto uses it to communicate with the delivery service.
+ */
+interface MlsTransport : com.wire.crypto.uniffi.MlsTransport {
+    /**
+     * Send a message to the delivery service.
+     */
+    override suspend fun sendMessage(mlsMessage: ByteArray): MlsTransportResponse
 
-    override suspend fun authorize(conversationId: ByteArray, clientId: ByteArray): Boolean = true
-
-    override suspend fun userAuthorize(
-        conversationId: ByteArray,
-        externalClientId: ByteArray,
-        existingClients: List<ByteArray>,
-    ): Boolean = true
-
-    override suspend fun clientIsExistingGroupUser(
-        conversationId: ByteArray,
-        clientId: ByteArray,
-        existingClients: List<ByteArray>,
-        parentConversationClients: List<ByteArray>?,
-    ): Boolean = true
+    /**
+     * Send a commit bundle to the delivery service.
+     */
+    override suspend fun sendCommitBundle(commitBundle: CommitBundle): MlsTransportResponse
 }
 
 /**
@@ -397,7 +395,6 @@ private constructor(internal val cc: CoreCrypto, private val rootDir: String) {
             val path = "$rootDir/$KEYSTORE_NAME"
             File(rootDir).mkdirs()
             val cc = coreCryptoDeferredInit(path, databaseKey)
-            cc.setCallbacks(Callbacks())
             return CoreCryptoCentral(cc, rootDir)
         }
     }

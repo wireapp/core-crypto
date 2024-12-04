@@ -782,8 +782,9 @@ class CoreCryptoContext(private val cc: CoreCryptoContext) {
         cc.proteusInit()
     }
 
-
-
+    suspend fun provideTransport(transport: MlsTransport) {
+        cc.provideTransport(transport)
+    }
 
     private fun toPreKey(id: UShort, data: ByteArray): PreKey = PreKey(id, data)
 
