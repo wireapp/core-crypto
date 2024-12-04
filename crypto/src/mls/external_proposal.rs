@@ -5,11 +5,12 @@ use openmls::{
 };
 use std::collections::HashSet;
 
-use super::error::{Error, Result};
+use super::{Error, Result};
 use crate::{
     group_store::GroupStoreValue,
     mls::{self, credential::typ::MlsCredentialType, ClientId, ConversationId},
     prelude::{CoreCryptoCallbacks, MlsCiphersuite, MlsConversation},
+    LeafError,
 };
 
 use crate::context::CentralContext;
@@ -139,7 +140,7 @@ impl CentralContext {
                     ))?
             }
             (Err(mls::client::Error::CredentialNotFound(_)), MlsCredentialType::X509) => {
-                return Err(Error::E2eiEnrollmentNotDone)
+                return Err(LeafError::E2eiEnrollmentNotDone.into())
             }
             (Err(e), _) => return Err(Error::client("finding most recent credential bundle")(e)),
         };

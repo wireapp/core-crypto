@@ -1,4 +1,4 @@
-use super::error::{Error, Result};
+use super::{Error, Result};
 use crate::context::CentralContext;
 use crate::e2e_identity::init_certificates::NewCrlDistributionPoint;
 use core_crypto_keystore::{connection::FetchFromDatabase, entities::E2eiCrl};

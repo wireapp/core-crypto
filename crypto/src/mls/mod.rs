@@ -8,7 +8,7 @@ use crate::prelude::{
     CoreCryptoCallbacks, MlsCentralConfiguration, MlsCiphersuite, MlsConversation, MlsConversationConfiguration,
     MlsCredentialType,
 };
-use crate::CoreCrypto;
+use crate::{CoreCrypto, LeafError};
 use mls_crypto_provider::{EntropySeed, MlsCryptoProvider, MlsCryptoProviderConfiguration};
 use openmls_traits::OpenMlsCryptoProvider;
 
@@ -273,7 +273,16 @@ impl MlsCentral {
     /// Checks if a given conversation id exists locally
     pub async fn conversation_exists(&self, id: &ConversationId) -> Result<bool> {
         let result = self.get_conversation(id).await;
-        Ok(!matches!(result, Err(conversation::Error::ConversationNotFound(_))))
+        if matches!(
+            result,
+            Err(conversation::Error::Leaf(LeafError::ConversationNotFound(_)))
+        ) {
+            Ok(false)
+        } else {
+            result
+                .map(|_| true)
+                .map_err(Error::conversation("getting conversation by id to check for existence"))
+        }
     }
 
     /// Returns the epoch of a given conversation
@@ -462,7 +471,7 @@ impl CentralContext {
         config: MlsConversationConfiguration,
     ) -> Result<()> {
         if self.conversation_exists(id).await? || self.pending_group_exists(id).await? {
-            return Err(Error::ConversationAlreadyExists(id.clone()));
+            return Err(LeafError::ConversationAlreadyExists(id.clone()).into());
         }
         let conversation = MlsConversation::create(
             id.clone(),

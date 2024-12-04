@@ -1,7 +1,7 @@
 use openmls::prelude::{group_info::GroupInfo, MlsMessageOut};
 use serde::{Deserialize, Serialize};
 
-use super::error::{Error, Result};
+use super::{Error, Result};
 
 /// A [GroupInfo] with metadata
 #[derive(Debug, Clone, Serialize, Deserialize)]
