@@ -3,18 +3,23 @@
   "version": "2.0.0",
   "description": "CoreCrypto bindings for the Web",
   "type": "module",
-  "module": "platforms/web/corecrypto.js",
-  "types": "platforms/web/corecrypto.d.ts",
+  "module": "corecrypto.js",
+  "types": "corecrypto.d.ts",
   "scripts": {
-    "clean": "rm -f ./platforms/web/*.{js,ts,wasm,html} && rm -rf ./platforms/web/assets",
-    "test": "[ \"$(basename $PWD)\" != \"crypto-ffi\" ] && echo \"Error: Not in crypto-ffi directory, do:\" && echo cd crypto-ffi && exit 1 || bun run build_ts.ts && wdio run bindings/js/wdio.conf.ts --spec bindings/js/test/**/*.test.ts",
-    "bench": "[ \"$(basename $PWD)\" != \"crypto-ffi\" ] && echo \"Error: Not in crypto-ffi directory, do:\" && echo cd crypto-ffi && exit 1 ||bun run build_ts.ts && wdio run bindings/js/wdio.conf.ts --spec bindings/js/benches/**/*.bench.ts --log-level warn"
+    "clean": "rm -f corecrypto.js corecrypto.d.ts",
+    "build": "bun build --target browser --outfile corecrypto.js CoreCrypto.ts",
+    "postbuild": "bunx dts-bundle-generator --project tsconfig.json -o corecrypto.d.ts --no-check CoreCrypto.ts",
+    "test": "bunx wdio run wdio.conf.ts --spec test/**/*.test.ts",
+    "bench": "bunx wdio run wdio.conf.ts --spec benches/**/*.bench.ts --log-level warn"
   },
   "publishConfig": {
     "access": "public"
   },
   "files": [
-    "platforms/web"
+    "corecrypto.js",
+    "corecrypto.d.ts",
+    "wasm/core-crypto-ffi_bg.wasm",
+    "wasm/core-crypto-ffi_bg.wasm.d.ts"
   ],
   "keywords": [
     "wire",
