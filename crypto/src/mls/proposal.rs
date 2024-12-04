@@ -22,6 +22,7 @@ use super::{Error, Result};
 use crate::{
     mls::{ClientId, ConversationId, MlsConversation},
     prelude::{Client, MlsProposalBundle},
+    RecursiveError,
 };
 
 use crate::context::CentralContext;
@@ -81,11 +82,11 @@ impl MlsProposal {
             MlsProposal::Add(key_package) => (*conversation)
                 .propose_add_member(client, backend, key_package.into())
                 .await
-                .map_err(Error::conversation("proposing to add member"))?,
+                .map_err(RecursiveError::mls_conversation("proposing to add member"))?,
             MlsProposal::Update => (*conversation)
                 .propose_self_update(client, backend)
                 .await
-                .map_err(Error::conversation("proposing self update"))?,
+                .map_err(RecursiveError::mls_conversation("proposing self update"))?,
             MlsProposal::Remove(client_id) => {
                 let index = conversation
                     .group
@@ -96,7 +97,7 @@ impl MlsProposal {
                 (*conversation)
                     .propose_remove_member(client, backend, index)
                     .await
-                    .map_err(Error::conversation("proposing to remove member"))?
+                    .map_err(RecursiveError::mls_conversation("proposing to remove member"))?
             }
         };
         Ok(proposal)
@@ -138,12 +139,18 @@ impl CentralContext {
         let conversation = self
             .get_conversation(id)
             .await
-            .map_err(Error::conversation("getting conversation by id"))?;
-        let client = &self.mls_client().await.map_err(Error::root("getting mls client"))?;
+            .map_err(RecursiveError::mls_conversation("getting conversation by id"))?;
+        let client = &self
+            .mls_client()
+            .await
+            .map_err(RecursiveError::root("getting mls client"))?;
         proposal
             .create(
                 client,
-                &self.mls_provider().await.map_err(Error::root("getting mls provider"))?,
+                &self
+                    .mls_provider()
+                    .await
+                    .map_err(RecursiveError::root("getting mls provider"))?,
                 conversation.write().await,
             )
             .await

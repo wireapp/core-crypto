@@ -10,7 +10,7 @@ use crate::{
     group_store::GroupStoreValue,
     mls::{self, credential::typ::MlsCredentialType, ClientId, ConversationId},
     prelude::{CoreCryptoCallbacks, MlsCiphersuite, MlsConversation},
-    LeafError,
+    LeafError, RecursiveError,
 };
 
 use crate::context::CentralContext;
@@ -117,9 +117,15 @@ impl CentralContext {
         credential_type: MlsCredentialType,
     ) -> Result<MlsMessageOut> {
         let group_id = GroupId::from_slice(conversation_id.as_slice());
-        let mls_provider = self.mls_provider().await.map_err(Error::root("getting mls provider"))?;
+        let mls_provider = self
+            .mls_provider()
+            .await
+            .map_err(RecursiveError::root("getting mls provider"))?;
 
-        let client = self.mls_client().await.map_err(Error::root("getting mls client"))?;
+        let client = self
+            .mls_client()
+            .await
+            .map_err(RecursiveError::root("getting mls client"))?;
         let cb = client
             .find_most_recent_credential_bundle(ciphersuite.signature_algorithm(), credential_type)
             .await;
@@ -130,27 +136,31 @@ impl CentralContext {
                 client
                     .init_basic_credential_bundle_if_missing(&mls_provider, ciphersuite.signature_algorithm())
                     .await
-                    .map_err(Error::client("initializing basic credential bundle if missing"))?;
+                    .map_err(RecursiveError::mls_client(
+                        "initializing basic credential bundle if missing",
+                    ))?;
 
                 client
                     .find_most_recent_credential_bundle(ciphersuite.signature_algorithm(), credential_type)
                     .await
-                    .map_err(Error::client(
+                    .map_err(RecursiveError::mls_client(
                         "finding most recent credential bundle (which we just created)",
                     ))?
             }
             (Err(mls::client::Error::CredentialNotFound(_)), MlsCredentialType::X509) => {
                 return Err(LeafError::E2eiEnrollmentNotDone.into())
             }
-            (Err(e), _) => return Err(Error::client("finding most recent credential bundle")(e)),
+            (Err(e), _) => return Err(RecursiveError::mls_client("finding most recent credential bundle")(e).into()),
         };
         let kp = client
             .generate_one_keypackage_from_credential_bundle(&mls_provider, ciphersuite, &cb)
             .await
-            .map_err(Error::client("generating one keypackage from credential bundle"))?;
+            .map_err(RecursiveError::mls_client(
+                "generating one keypackage from credential bundle",
+            ))?;
 
-        Ok(JoinProposal::new(kp, group_id, epoch, &cb.signature_key)
-            .map_err(Error::mls_operation("creating join proposal"))?)
+        JoinProposal::new(kp, group_id, epoch, &cb.signature_key)
+            .map_err(Error::mls_operation("creating join proposal"))
     }
 }
 

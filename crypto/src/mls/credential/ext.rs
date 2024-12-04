@@ -1,5 +1,8 @@
 use super::{Error, Result};
-use crate::prelude::{DeviceStatus, MlsCiphersuite, MlsCredentialType, WireIdentity};
+use crate::{
+    prelude::{DeviceStatus, MlsCiphersuite, MlsCredentialType, WireIdentity},
+    RecursiveError,
+};
 use openmls::prelude::{Credential, CredentialType, CredentialWithKey};
 use openmls_traits::types::{HashType, SignatureScheme};
 use wire_e2e_identity::prelude::{compute_raw_key_thumbprint, HashAlgorithm, JwsAlgorithm};
@@ -124,8 +127,8 @@ impl CredentialExt for openmls::prelude::Certificate {
         let identity = leaf
             .extract_identity(env, cs.e2ei_hash_alg())
             .map_err(|_| Error::InvalidIdentity)?;
-        let identity =
-            WireIdentity::try_from((identity, leaf)).map_err(Error::e2e("converting identity to WireIdentity"))?;
+        let identity = WireIdentity::try_from((identity, leaf))
+            .map_err(RecursiveError::e2e_identity("converting identity to WireIdentity"))?;
         Ok(identity)
     }
 

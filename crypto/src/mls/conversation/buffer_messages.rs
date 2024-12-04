@@ -4,13 +4,14 @@
 //! Feel free to delete all of this when the issue is fixed on the DS side !
 
 use super::{Error, Result};
-use crate::context::CentralContext;
 use crate::{
+    context::CentralContext,
     group_store::GroupStoreValue,
     prelude::{
         decrypt::MlsBufferedConversationDecryptMessage, Client, ConversationId, CoreCryptoCallbacks, MlsConversation,
         MlsConversationDecryptMessage,
     },
+    RecursiveError,
 };
 use core_crypto_keystore::{
     connection::FetchFromDatabase,
@@ -27,7 +28,10 @@ impl CentralContext {
         id: &ConversationId,
         message: impl AsRef<[u8]>,
     ) -> Result<MlsConversationDecryptMessage> {
-        let keystore = self.keystore().await.map_err(Error::root("getting keystore"))?;
+        let keystore = self
+            .keystore()
+            .await
+            .map_err(RecursiveError::root("getting keystore"))?;
 
         let pending_msg = MlsPendingMessage {
             foreign_id: id.clone(),
@@ -49,10 +53,19 @@ impl CentralContext {
             Some(id) => self.get_conversation(id).await.ok(),
             _ => None,
         };
-        let guard = self.callbacks().await.map_err(Error::root("getting callbacks"))?;
+        let guard = self
+            .callbacks()
+            .await
+            .map_err(RecursiveError::root("getting callbacks"))?;
         let callbacks = guard.as_ref().map(|boxed| boxed.as_ref());
-        let client = &self.mls_client().await.map_err(Error::root("getting mls client"))?;
-        let mls_provider = self.mls_provider().await.map_err(Error::root("getting mls provider"))?;
+        let client = &self
+            .mls_client()
+            .await
+            .map_err(RecursiveError::root("getting mls client"))?;
+        let mls_provider = self
+            .mls_provider()
+            .await
+            .map_err(RecursiveError::root("getting mls provider"))?;
         conversation
             .restore_pending_messages(
                 client,

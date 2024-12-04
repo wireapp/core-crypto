@@ -3,6 +3,7 @@ use openmls_traits::{random::OpenMlsRand, OpenMlsCryptoProvider};
 use super::{Error, Result};
 use crate::context::CentralContext;
 use crate::prelude::E2eiEnrollment;
+use crate::RecursiveError;
 use core_crypto_keystore::CryptoKeystoreMls;
 use mls_crypto_provider::MlsCryptoProvider;
 
@@ -49,7 +50,12 @@ impl CentralContext {
     /// A handle for retrieving the enrollment later on
     pub async fn e2ei_enrollment_stash(&self, enrollment: E2eiEnrollment) -> Result<EnrollmentHandle> {
         enrollment
-            .stash(&self.mls_provider().await.map_err(Error::root("getting mls provider"))?)
+            .stash(
+                &self
+                    .mls_provider()
+                    .await
+                    .map_err(RecursiveError::root("getting mls provider"))?,
+            )
             .await
     }
 
@@ -59,7 +65,10 @@ impl CentralContext {
     /// * `handle` - returned by [CentralContext::e2ei_enrollment_stash]
     pub async fn e2ei_enrollment_stash_pop(&self, handle: EnrollmentHandle) -> Result<E2eiEnrollment> {
         E2eiEnrollment::stash_pop(
-            &self.mls_provider().await.map_err(Error::root("getting mls provider"))?,
+            &self
+                .mls_provider()
+                .await
+                .map_err(RecursiveError::root("getting mls provider"))?,
             handle,
         )
         .await

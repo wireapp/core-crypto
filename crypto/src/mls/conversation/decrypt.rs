@@ -9,13 +9,12 @@
 //! | 1+ pend. Proposal | ✅              | ✅              |
 
 use log::debug;
-use openmls::prelude::StageCommitError;
 use openmls::{
     framing::errors::{MessageDecryptionError, SecretTreeError},
     group::StagedCommit,
     prelude::{
         ContentType, CredentialType, MlsMessageIn, MlsMessageInBody, ProcessMessageError, ProcessedMessage,
-        ProcessedMessageContent, Proposal, ProtocolMessage, ValidationError,
+        ProcessedMessageContent, Proposal, ProtocolMessage, StageCommitError, ValidationError,
     },
 };
 use openmls_traits::OpenMlsCryptoProvider;
@@ -26,9 +25,8 @@ use core_crypto_keystore::entities::MlsPendingMessage;
 use mls_crypto_provider::MlsCryptoProvider;
 
 use super::{Error, Result};
-use crate::context::CentralContext;
-use crate::obfuscate::Obfuscated;
 use crate::{
+    context::CentralContext,
     e2e_identity::{conversation_state::compute_state, init_certificates::NewCrlDistributionPoint},
     group_store::GroupStoreValue,
     mls::{
@@ -42,8 +40,9 @@ use crate::{
         },
         ClientId, ConversationId, MlsConversation,
     },
+    obfuscate::Obfuscated,
     prelude::{E2eiConversationState, MlsProposalBundle, WireIdentity},
-    CoreCryptoCallbacks, MlsError,
+    CoreCryptoCallbacks, MlsError, RecursiveError,
 };
 
 /// Represents the potential items a consumer might require after passing us an encrypted message we
@@ -154,7 +153,7 @@ impl MlsConversation {
                 self.ciphersuite(),
                 backend.authentication_service().borrow().await.as_ref(),
             )
-            .map_err(Error::credential("extracting identity"))?;
+            .map_err(RecursiveError::mls_credential("extracting identity"))?;
 
         let sender_client_id: ClientId = credential.credential.identity().into();
 
@@ -181,10 +180,10 @@ impl MlsConversation {
             }
             ProcessedMessageContent::ProposalMessage(proposal) => {
                 let crl_dps = extract_crl_uris_from_proposals(&[proposal.proposal().clone()])
-                    .map_err(Error::credential("extracting crl urls from proposals"))?;
+                    .map_err(RecursiveError::mls_credential("extracting crl urls from proposals"))?;
                 let crl_new_distribution_points = get_new_crl_distribution_points(backend, crl_dps)
                     .await
-                    .map_err(Error::credential("getting new crl distribution points"))?;
+                    .map_err(RecursiveError::mls_credential("getting new crl distribution points"))?;
 
                 debug!(
                     group_id = Obfuscated::from(&self.id),
@@ -210,7 +209,7 @@ impl MlsConversation {
             ProcessedMessageContent::StagedCommitMessage(staged_commit) => {
                 self.validate_external_commit(&staged_commit, sender_client_id, parent_conv, backend, callbacks)
                     .await
-                    .map_err(Error::mls("validating external commit"))?;
+                    .map_err(RecursiveError::mls("validating external commit"))?;
 
                 self.validate_commit(&staged_commit, backend).await?;
 
@@ -234,15 +233,15 @@ impl MlsConversation {
 
                 // - This requires a change in OpenMLS to get access to it
                 let mut crl_dps = extract_crl_uris_from_proposals(&proposal_refs)
-                    .map_err(Error::credential("extracting crl urls from proposals"))?;
+                    .map_err(RecursiveError::mls_credential("extracting crl urls from proposals"))?;
                 crl_dps.extend(
                     extract_crl_uris_from_update_path(&staged_commit)
-                        .map_err(Error::credential("extracting crl urls from update path"))?,
+                        .map_err(RecursiveError::mls_credential("extracting crl urls from update path"))?,
                 );
 
                 let crl_new_distribution_points = get_new_crl_distribution_points(backend, crl_dps)
                     .await
-                    .map_err(Error::credential("getting new crl distribution points"))?;
+                    .map_err(RecursiveError::mls_credential("getting new crl distribution points"))?;
 
                 // getting the pending has to be done before `merge_staged_commit` otherwise it's wiped out
                 let pending_commit = self.group.pending_commit().cloned();
@@ -302,7 +301,7 @@ impl MlsConversation {
             ProcessedMessageContent::ExternalJoinProposalMessage(proposal) => {
                 self.validate_external_proposal(&proposal, parent_conv, callbacks)
                     .await
-                    .map_err(Error::mls("validating external commit"))?;
+                    .map_err(RecursiveError::mls("validating external commit"))?;
 
                 debug!(
                     group_id = Obfuscated::from(&self.id),
@@ -311,10 +310,10 @@ impl MlsConversation {
                 );
 
                 let crl_dps = extract_crl_uris_from_proposals(&[proposal.proposal().clone()])
-                    .map_err(Error::credential("extracting crl uris from proposals"))?;
+                    .map_err(RecursiveError::mls_credential("extracting crl uris from proposals"))?;
                 let crl_new_distribution_points = get_new_crl_distribution_points(backend, crl_dps)
                     .await
-                    .map_err(Error::credential("getting new crl distribution points"))?;
+                    .map_err(RecursiveError::mls_credential("getting new crl distribution points"))?;
                 self.group.store_pending_proposal(*proposal);
 
                 MlsConversationDecryptMessage {
@@ -448,12 +447,19 @@ impl CentralContext {
             return self
                 .handle_when_group_is_pending(id, message)
                 .await
-                .map_err(Error::mls("handling when group is pending"));
+                .map_err(RecursiveError::mls("handling when group is pending"))
+                .map_err(Into::into);
         };
         let parent_conversation = self.get_parent_conversation(&conversation).await?;
-        let guard = self.callbacks().await.map_err(Error::root("getting callbacks"))?;
+        let guard = self
+            .callbacks()
+            .await
+            .map_err(RecursiveError::root("getting callbacks"))?;
         let callbacks = guard.as_ref().map(|boxed| boxed.as_ref());
-        let client = &self.mls_client().await.map_err(Error::root("getting mls client"))?;
+        let client = &self
+            .mls_client()
+            .await
+            .map_err(RecursiveError::root("getting mls client"))?;
         let decrypt_message = conversation
             .write()
             .await
@@ -461,7 +467,10 @@ impl CentralContext {
                 msg,
                 parent_conversation.as_ref(),
                 client,
-                &self.mls_provider().await.map_err(Error::root("getting mls provider"))?,
+                &self
+                    .mls_provider()
+                    .await
+                    .map_err(RecursiveError::root("getting mls provider"))?,
                 callbacks,
                 true,
             )

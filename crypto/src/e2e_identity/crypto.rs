@@ -30,7 +30,7 @@ impl super::E2eiEnrollment {
                 .map_err(Error::NormalizingEd25519Key)?
                 .to_bytes()
                 .to_vec(),
-            SignatureScheme::ED448 => return Err(Error::NotYetSupported.into()),
+            SignatureScheme::ED448 => return Err(Error::NotYetSupported),
         };
         Ok(sk)
     }

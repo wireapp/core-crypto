@@ -10,7 +10,7 @@ use openmls_traits::types::SignatureScheme;
 use wire_e2e_identity::prelude::{HashAlgorithm, WireIdentityReader};
 use zeroize::Zeroize;
 
-use crate::{e2e_identity::id::WireQualifiedClientId, prelude::ClientId};
+use crate::{e2e_identity::id::WireQualifiedClientId, prelude::ClientId, RecursiveError};
 
 #[derive(Debug, Clone, Zeroize)]
 #[zeroize(drop)]
@@ -55,7 +55,7 @@ impl CertificateBundle {
         let client_id = identity
             .client_id
             .parse::<WireQualifiedClientId>()
-            .map_err(Error::e2e("parsing wire qualified client id"))?;
+            .map_err(RecursiveError::e2e_identity("parsing wire qualified client id"))?;
         Ok(client_id.into())
     }
 

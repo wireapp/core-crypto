@@ -3,7 +3,7 @@ use crate::{
         error::{Error, Result},
         ClientInner,
     },
-    LeafError,
+    LeafError, RecursiveError,
 };
 use crate::{
     mls::credential::{typ::MlsCredentialType, CredentialBundle},
@@ -95,7 +95,7 @@ impl MlsConversation {
         let sc = self.ciphersuite().signature_algorithm();
         let ct = self
             .own_credential_type()
-            .map_err(Error::conversation("getting own credential type"))?;
+            .map_err(RecursiveError::mls_conversation("getting own credential type"))?;
 
         client
             .find_credential_bundle_by_public_key(sc, ct, own_leaf.signature_key())
@@ -106,7 +106,7 @@ impl MlsConversation {
         let sc = self.ciphersuite().signature_algorithm();
         let ct = self
             .own_credential_type()
-            .map_err(Error::conversation("getting own credential type"))?;
+            .map_err(RecursiveError::mls_conversation("getting own credential type"))?;
 
         client.find_most_recent_credential_bundle(sc, ct).await
     }
