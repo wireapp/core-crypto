@@ -1,82 +1,58 @@
-//! MLS errors
+//! MLS conversation errors
+
+// We allow missing documentation in the error module because the types are generally self-descriptive.
+#![allow(missing_docs)]
 
 use super::config::MAX_PAST_EPOCHS;
 
-/// Module-specific wrapper aroud a [Result][core::result::Result].
 pub type Result<T, E = Error> = core::result::Result<T, E>;
 
-/// MLS client errors
 #[derive(Debug, thiserror::Error)]
 pub enum Error {
-    /// Message body type was not suitable for restoration
     #[error("Message body type not suitable for restoration")]
     InappropriateMessageBodyType,
-    /// Parent group cannot be found
     #[error("The specified parent group has not been found in the keystore")]
     ParentGroupNotFound,
-    /// Authorization error
     #[error("The current client id isn't authorized to perform this action")]
     Unauthorized,
-    /// This error is emitted when the requested conversation couldn't be found in our store
     #[error("Couldn't find conversation")]
     ConversationNotFound(crate::prelude::ConversationId),
-    /// This error is emitted when the requested conversation already exists with the given id
     #[error("Conversation already exists")]
     ConversationAlreadyExists(crate::prelude::ConversationId),
-    /// We already decrypted this message once
     #[error("We already decrypted this message once")]
     DuplicateMessage,
-    /// Message epoch is too old
     #[error("The epoch in which message was encrypted is older than {MAX_PAST_EPOCHS}")]
     MessageEpochTooOld,
-    /// Incoming message is from a prior epoch
     #[error("Incoming message is from a prior epoch")]
     StaleMessage,
-    /// Incoming message is for a future epoch. We will buffer it until the commit for that epoch arrives
     #[error("Incoming message is for a future epoch. We will buffer it until the commit for that epoch arrives")]
     BufferedFutureMessage,
-    /// Incoming message is from an epoch too far in the future to buffer.
     #[error("Incoming message is from an epoch too far in the future to buffer.")]
     UnbufferedFarFutureMessage,
-    /// The received commit is deemed stale and is from an older epoch
     #[error("The received commit is deemed stale and is from an older epoch.")]
     StaleCommit,
-    /// The received proposal is deemed stale and is from an older epoch
     #[error("The received proposal is deemed stale and is from an older epoch.")]
     StaleProposal,
-    /// An application message failed to decrypt
     #[error("An application message failed to decrypt")]
     DecryptionError,
-    /// MLS Client was not initialized the right way
     #[error("MLS Client was not initialized the right way")]
     IdentityInitializationError,
-    /// The MLS group is in an invalid state for an unknown reason
     #[error("MLS group is in an invalid state: {0}")]
     MlsGroupInvalidState(&'static str),
-    /// The MLS message is in an invalid state for an unknown reason
     #[error("MLS message is in an invalid state: {0}")]
     MlsMessageInvalidState(&'static str),
-    /// The group lacks an ExternalSender extension whereas it should have at least one
     #[error("The group lacks an ExternalSender extension whereas it should have at least one")]
     MissingExternalSenderExtension,
-    /// This error is emitted when a pending proposal couldn't be found in MLS group
     #[error("Couldn't find pending proposal {0}")]
     PendingProposalNotFound(crate::mls::proposal::MlsProposalRef),
-    /// This error is emitted when a pending commmit couldn't be found in MLS group
     #[error("Couldn't find pending commit")]
     PendingCommitNotFound,
-    /// Happens when a client creates a commit, sends it to the DS which accepts it but then client
-    /// clears this pending commit and creates another commit. This is triggered when the client
-    /// tries to decrypt the original commit. This means something is very wrong in the client's
-    /// code and has to be fixed immediately
     #[error("Happens when a client creates a commit, sends it to the DS which accepts it but then client \
     clears this pending commit and creates another commit. This is triggered when the client tries to decrypt the original commit.\
     This means something is very wrong in the client's code and has to be fixed immediately")]
     ClearingPendingCommitError,
-    /// Tried to decrypt a commit created by self which is likely to have been replayed by the DS
     #[error("Tried to decrypt a commit created by self which is likely to have been replayed by the DS")]
     SelfCommitIgnored,
-    /// This proposal variant cannot be renewed
     #[error("This proposal variant cannot be renewed")]
     PropopsalVariantCannotBeRenewed,
     /// Unexpectedly failed to retrieve group info
@@ -84,7 +60,6 @@ pub enum Error {
     /// This may be an implementation error. Adding errors shold always generate a new commit.
     #[error("unexpectedly failed to retrieve group info")]
     MissingGroupInfo,
-    /// The caller of this function used it wrong
     #[error("caller error: {0}")]
     CallerError(&'static str),
     /// This happens when the DS cannot flag KeyPackages as claimed or not. It this scenario, a client
@@ -93,87 +68,59 @@ pub enum Error {
     /// with an External Commit instead
     #[error("Although this Welcome seems valid, the local KeyPackage it references has already been deleted locally. Join this group with an external commit")]
     OrphanWelcome,
-    /// A key store operation failed
-    //
     // This uses a `Box<dyn>` pattern because we do not directly import `keystore` from here right now,
     // and it feels a bit silly to add the dependency only for this.
     #[error("{context}")]
     Keystore {
-        /// What happened in the keystore
         #[source]
         source: Box<dyn std::error::Error + Send + Sync>,
-        /// What the caller was doing at the time
         context: &'static str,
     },
-    /// Serializing an item for tls
     #[error("Serializing {item} for TLS")]
     TlsSerialize {
-        /// What was being serialized
         item: &'static str,
-        /// What happened during serialization
         #[source]
         source: tls_codec::Error,
     },
-    /// Deserializing an item for tls
     #[error("Deserializing {item} for TLS")]
     TlsDeserialize {
-        /// What was being deserialized
         item: &'static str,
-        /// What happened during deserialization
         #[source]
         source: tls_codec::Error,
     },
-    /// Client error
     #[error("{context}")]
     Client {
-        /// What the caller was doing at the time
         context: &'static str,
-        /// What happened in the client
         #[source]
-        source: Box<crate::mls::client::error::Error>,
+        source: Box<crate::mls::client::Error>,
     },
-    /// E2E Identity error
     #[error("{context}")]
     E2eIdentity {
-        /// What the caller was doing at the time
         context: &'static str,
-        /// What happened in e2e identity
         #[source]
-        source: Box<crate::e2e_identity::error::Error>,
+        source: Box<crate::e2e_identity::Error>,
     },
-    /// A MLS operation failed
     #[error("{context}")]
     MlsOperation {
-        /// What the caller was doing at the time
         context: &'static str,
-        /// What happened in MLS
         #[source]
         source: Box<dyn std::error::Error + Send + Sync>,
     },
-    /// Something in the MLS credential went wrong
     #[error("{context}")]
     MlsCredential {
-        /// What was happening when the error was thrown
         context: &'static str,
-        /// The inner error which was produced
         #[source]
-        source: Box<crate::mls::credential::error::Error>,
+        source: Box<crate::mls::credential::Error>,
     },
-    /// Something in the MLS root module went wrong
     #[error("{context}")]
     MlsRoot {
-        /// What was happening in the caller
         context: &'static str,
-        /// What happened
         #[source]
         source: Box<crate::mls::error::Error>,
     },
-    /// Something in the root module went wrong
     #[error("{context}")]
     Root {
-        /// What was happening in the caller
         context: &'static str,
-        /// What happened
         #[source]
         source: Box<crate::Error>,
     },
@@ -198,14 +145,14 @@ impl Error {
         move |source| Self::TlsDeserialize { item, source }
     }
 
-    pub(crate) fn client(context: &'static str) -> impl FnOnce(crate::mls::client::error::Error) -> Self {
+    pub(crate) fn client(context: &'static str) -> impl FnOnce(crate::mls::client::Error) -> Self {
         move |source| Self::Client {
             context,
             source: Box::new(source),
         }
     }
 
-    pub(crate) fn e2e_identity(context: &'static str) -> impl FnOnce(crate::e2e_identity::error::Error) -> Self {
+    pub(crate) fn e2e_identity(context: &'static str) -> impl FnOnce(crate::e2e_identity::Error) -> Self {
         move |source| Self::E2eIdentity {
             context,
             source: Box::new(source),
@@ -222,7 +169,7 @@ impl Error {
         }
     }
 
-    pub(crate) fn credential(context: &'static str) -> impl FnOnce(crate::mls::credential::error::Error) -> Self {
+    pub(crate) fn credential(context: &'static str) -> impl FnOnce(crate::mls::credential::Error) -> Self {
         move |source| Self::MlsCredential {
             context,
             source: Box::new(source),
@@ -242,7 +189,7 @@ impl Error {
         source.downcast_ref::<T>().map(|t| (t, *context))
     }
 
-    pub(crate) fn mls(context: &'static str) -> impl FnOnce(crate::mls::error::Error) -> Self {
+    pub(crate) fn mls(context: &'static str) -> impl FnOnce(crate::mls::Error) -> Self {
         move |source| Self::MlsRoot {
             context,
             source: Box::new(source),

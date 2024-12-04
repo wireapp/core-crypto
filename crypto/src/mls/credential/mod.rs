@@ -1,23 +1,19 @@
-use openmls::prelude::{CredentialWithKey, OpenMlsCrypto};
-use openmls_traits::OpenMlsCryptoProvider;
+use mls_crypto_provider::MlsCryptoProvider;
+use openmls::prelude::{Credential, CredentialWithKey, OpenMlsCrypto};
+use openmls_basic_credential::SignatureKeyPair;
+use openmls_traits::{types::SignatureScheme, OpenMlsCryptoProvider};
+use openmls_x509_credential::CertificateKeyPair;
 use std::cmp::Ordering;
 use std::hash::{Hash, Hasher};
 
 pub(crate) mod crl;
-pub mod error;
+mod error;
 pub(crate) mod ext;
 pub(crate) mod typ;
 pub(crate) mod x509;
 
-use openmls::prelude::Credential;
-use openmls_basic_credential::SignatureKeyPair;
-use openmls_traits::types::SignatureScheme;
-use openmls_x509_credential::CertificateKeyPair;
-
-use mls_crypto_provider::MlsCryptoProvider;
-
-use self::error::{Error, Result};
 use crate::prelude::{CertificateBundle, Client, ClientId};
+pub use error::{Error, Result};
 
 #[derive(Debug)]
 pub struct CredentialBundle {
