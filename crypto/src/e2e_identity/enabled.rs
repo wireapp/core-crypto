@@ -1,15 +1,21 @@
 //! Utility for clients to get the current state of E2EI when the app resumes
 
-use super::{Error, Result};
-use crate::context::CentralContext;
-use crate::mls;
-use crate::prelude::{Client, MlsCentral, MlsCredentialType};
+use super::Result;
+use crate::{
+    context::CentralContext,
+    mls,
+    prelude::{Client, MlsCentral, MlsCredentialType},
+    RecursiveError,
+};
 use openmls_traits::types::SignatureScheme;
 
 impl CentralContext {
     /// See [MlsCentral::e2ei_is_enabled]
     pub async fn e2ei_is_enabled(&self, signature_scheme: SignatureScheme) -> Result<bool> {
-        let client = self.mls_client().await.map_err(Error::root("getting mls client"))?;
+        let client = self
+            .mls_client()
+            .await
+            .map_err(RecursiveError::root("getting mls client"))?;
         client.e2ei_is_enabled(signature_scheme).await
     }
 }
@@ -30,12 +36,12 @@ impl Client {
             Err(mls::client::Error::CredentialNotFound(MlsCredentialType::X509)) => {
                 self.find_most_recent_credential_bundle(signature_scheme, MlsCredentialType::Basic)
                     .await
-                    .map_err(Error::mls_client(
+                    .map_err(RecursiveError::mls_client(
                         "finding most recent basic credential bundle after searching for x509",
                     ))?;
                 Ok(false)
             }
-            Err(e) => Err(Error::mls_client("finding most recent x509 credential bundle")(e)),
+            Err(e) => Err(RecursiveError::mls_client("finding most recent x509 credential bundle")(e).into()),
             Ok(_) => Ok(true),
         }
     }

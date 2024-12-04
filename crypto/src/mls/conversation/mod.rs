@@ -29,8 +29,10 @@
 
 use std::collections::HashMap;
 
-use openmls::prelude::{CredentialWithKey, SignaturePublicKey};
-use openmls::{group::MlsGroup, prelude::Credential};
+use openmls::{
+    group::MlsGroup,
+    prelude::{Credential, CredentialWithKey, SignaturePublicKey},
+};
 use openmls_traits::types::SignatureScheme;
 
 use core_crypto_keystore::{Connection, CryptoKeystoreMls};
@@ -38,11 +40,11 @@ use mls_crypto_provider::{CryptoKeystore, MlsCryptoProvider};
 
 use config::MlsConversationConfiguration;
 
-use crate::LeafError;
 use crate::{
     group_store::{GroupStore, GroupStoreValue},
     mls::{client::Client, MlsCentral},
     prelude::{MlsCiphersuite, MlsCredentialType},
+    LeafError, RecursiveError,
 };
 
 use crate::context::CentralContext;
@@ -113,7 +115,7 @@ impl MlsConversation {
         let cb = author_client
             .get_most_recent_or_create_credential_bundle(backend, cs.signature_algorithm(), ct)
             .await
-            .map_err(Error::client("getting or creating credential bundle"))?;
+            .map_err(RecursiveError::mls_client("getting or creating credential bundle"))?;
 
         let group = MlsGroup::new_with_group_id(
             backend,
@@ -261,7 +263,7 @@ impl MlsCentral {
     pub(crate) async fn get_conversation(&self, id: &ConversationId) -> Result<MlsConversation> {
         GroupStore::fetch_from_keystore(id, &self.mls_backend.keystore(), None)
             .await
-            .map_err(Error::root("getting conversation by id"))?
+            .map_err(RecursiveError::root("getting conversation by id"))?
             .ok_or_else(|| LeafError::ConversationNotFound(id.clone()).into())
     }
 }
@@ -271,14 +273,14 @@ impl CentralContext {
         let keystore = self
             .mls_provider()
             .await
-            .map_err(Error::root("getting mls provider"))?
+            .map_err(RecursiveError::root("getting mls provider"))?
             .keystore();
         self.mls_groups()
             .await
-            .map_err(Error::root("getting mls groups"))?
+            .map_err(RecursiveError::root("getting mls groups"))?
             .get_fetch(id, &keystore, None)
             .await
-            .map_err(Error::root("fetching conversation from mls groups by id"))?
+            .map_err(RecursiveError::root("fetching conversation from mls groups by id"))?
             .ok_or_else(|| LeafError::ConversationNotFound(id.clone()).into())
     }
 
@@ -302,11 +304,11 @@ impl CentralContext {
         let keystore = self
             .mls_provider()
             .await
-            .map_err(Error::root("getting mls provider"))?
+            .map_err(RecursiveError::root("getting mls provider"))?
             .keystore();
         self.mls_groups()
             .await
-            .map_err(Error::root("getting mls groups"))?
+            .map_err(RecursiveError::root("getting mls groups"))?
             .get_fetch_all(&keystore)
             .await
             .map_err(Error::keystore("fetching all mls groups from keystore"))
@@ -326,7 +328,10 @@ impl CentralContext {
             .await
             .mark_as_child_of(
                 parent_id,
-                &self.keystore().await.map_err(Error::root("getting keystore"))?,
+                &self
+                    .keystore()
+                    .await
+                    .map_err(RecursiveError::root("getting keystore"))?,
             )
             .await?;
 

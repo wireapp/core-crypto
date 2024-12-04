@@ -3,7 +3,7 @@
 // We allow missing documentation in the error module because the types are generally self-descriptive.
 #![allow(missing_docs)]
 
-use crate::{prelude::MlsCredentialType, LeafError};
+use crate::{prelude::MlsCredentialType, LeafError, RecursiveError};
 use core_crypto_keystore::CryptoKeystoreError;
 
 pub type Result<T, E = Error> = core::result::Result<T, E>;
@@ -63,24 +63,6 @@ pub enum Error {
         upstream: String,
     },
     #[error("{context}")]
-    MlsClient {
-        context: &'static str,
-        #[source]
-        source: Box<crate::mls::client::Error>,
-    },
-    #[error("{context}")]
-    MlsCredential {
-        context: &'static str,
-        #[source]
-        source: Box<crate::mls::credential::Error>,
-    },
-    #[error("{context}")]
-    Conversation {
-        context: &'static str,
-        #[source]
-        source: Box<crate::mls::conversation::Error>,
-    },
-    #[error("{context}")]
     MlsOperation {
         context: &'static str,
         #[source]
@@ -94,20 +76,10 @@ pub enum Error {
         source: Box<dyn std::error::Error + Send + Sync>,
         context: &'static str,
     },
-    #[error("{context}")]
-    MlsRoot {
-        context: &'static str,
-        #[source]
-        source: Box<crate::mls::Error>,
-    },
-    #[error("{context}")]
-    Root {
-        context: &'static str,
-        #[source]
-        source: Box<crate::Error>,
-    },
     #[error(transparent)]
     Leaf(#[from] LeafError),
+    #[error(transparent)]
+    Recursive(#[from] RecursiveError),
 }
 
 impl Error {
@@ -118,34 +90,6 @@ impl Error {
         move |source| Self::CertificateValidation {
             context,
             upstream: format!("{source:?}"),
-        }
-    }
-
-    pub(crate) fn mls_client(context: &'static str) -> impl FnOnce(crate::mls::client::Error) -> Self {
-        move |source| Self::MlsClient {
-            context,
-            source: Box::new(source),
-        }
-    }
-
-    pub(crate) fn conversation(context: &'static str) -> impl FnOnce(crate::mls::conversation::Error) -> Self {
-        move |source| Self::Conversation {
-            context,
-            source: Box::new(source),
-        }
-    }
-
-    pub(crate) fn credential(context: &'static str) -> impl FnOnce(crate::mls::credential::Error) -> Self {
-        move |source| Self::MlsCredential {
-            context,
-            source: Box::new(source),
-        }
-    }
-
-    pub(crate) fn mls(context: &'static str) -> impl FnOnce(crate::mls::Error) -> Self {
-        move |source| Self::MlsRoot {
-            context,
-            source: Box::new(source),
         }
     }
 
@@ -166,13 +110,6 @@ impl Error {
         move |err| Self::Keystore {
             context,
             source: Box::new(err),
-        }
-    }
-
-    pub(crate) fn root(context: &'static str) -> impl FnOnce(crate::Error) -> Self {
-        move |source| Self::Root {
-            context,
-            source: Box::new(source),
         }
     }
 }

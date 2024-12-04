@@ -6,11 +6,14 @@ use zeroize::Zeroize;
 
 use mls_crypto_provider::MlsCryptoProvider;
 
-use crate::e2e_identity::init_certificates::NewCrlDistributionPoint;
 use crate::{
-    e2e_identity::{crypto::E2eiSignatureKeypair, id::QualifiedE2eiClientId},
+    context::CentralContext,
+    e2e_identity::{
+        crypto::E2eiSignatureKeypair, id::QualifiedE2eiClientId, init_certificates::NewCrlDistributionPoint,
+    },
     mls::credential::x509::CertificatePrivateKey,
     prelude::{id::ClientId, identifier::ClientIdentifier, CertificateBundle, MlsCiphersuite},
+    RecursiveError,
 };
 
 pub(crate) mod conversation_state;
@@ -27,7 +30,6 @@ pub(crate) mod rotate;
 pub(crate) mod stash;
 pub mod types;
 
-use crate::context::CentralContext;
 pub use error::{Error, Result};
 pub use init_certificates::E2eiDumpedPkiEnv;
 
@@ -67,7 +69,10 @@ impl CentralContext {
             handle,
             team,
             expiry_sec,
-            &self.mls_provider().await.map_err(Error::root("getting mls provider"))?,
+            &self
+                .mls_provider()
+                .await
+                .map_err(RecursiveError::root("getting mls provider"))?,
             ciphersuite,
             signature_keypair,
             #[cfg(not(target_family = "wasm"))]
@@ -90,7 +95,7 @@ impl CentralContext {
                 certificate_chain,
                 self.mls_provider()
                     .await
-                    .map_err(Error::root("getting mls provider"))?
+                    .map_err(RecursiveError::root("getting mls provider"))?
                     .authentication_service()
                     .borrow()
                     .await
@@ -102,7 +107,7 @@ impl CentralContext {
         let crl_new_distribution_points = self
             .extract_dp_on_init(&certificate_chain[..])
             .await
-            .map_err(Error::credential("extracting dp on init"))?;
+            .map_err(RecursiveError::mls_credential("extracting dp on init"))?;
 
         let private_key = CertificatePrivateKey {
             value: sk,
@@ -116,7 +121,7 @@ impl CentralContext {
         let identifier = ClientIdentifier::X509(HashMap::from([(cs.signature_algorithm(), cert_bundle)]));
         self.mls_init(identifier, vec![cs], nb_init_key_packages)
             .await
-            .map_err(Error::mls("initializing mls"))?;
+            .map_err(RecursiveError::mls("initializing mls"))?;
         Ok(crl_new_distribution_points)
     }
 }
@@ -587,9 +592,9 @@ pub(crate) mod tests {
     use serde_json::json;
     use wasm_bindgen_test::*;
 
-    use crate::context::CentralContext;
     #[cfg(not(target_family = "wasm"))]
     use crate::e2e_identity::refresh_token::RefreshToken;
+    use crate::{context::CentralContext, RecursiveError};
     use crate::{
         e2e_identity::{
             error::{Error, Result},
@@ -731,7 +736,7 @@ pub(crate) mod tests {
                 .context
                 .mls_provider()
                 .await
-                .map_err(Error::root("getting mls provider"))?;
+                .map_err(RecursiveError::root("getting mls provider"))?;
             let keystore = backend.key_store();
             if is_renewal {
                 let initial_refresh_token =
@@ -754,7 +759,7 @@ pub(crate) mod tests {
                 .context
                 .mls_provider()
                 .await
-                .map_err(Error::root("getting mls provider"))?;
+                .map_err(RecursiveError::root("getting mls provider"))?;
             let keystore = backend.key_store();
             if is_renewal {
                 assert!(enrollment.refresh_token.is_some());
@@ -926,7 +931,7 @@ pub(crate) mod tests {
                 .context
                 .mls_provider()
                 .await
-                .map_err(Error::root("getting mls provider"))?;
+                .map_err(RecursiveError::root("getting mls provider"))?;
             let keystore = backend.key_store();
             enrollment
                 .new_oidc_challenge_response(&ctx.context.mls_provider().await.unwrap(), oidc_chall_resp)

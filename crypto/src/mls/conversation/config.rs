@@ -25,15 +25,16 @@ use openmls::prelude::{
     RequiredCapabilitiesExtension, SenderRatchetConfiguration, WireFormatPolicy, PURE_CIPHERTEXT_WIRE_FORMAT_POLICY,
     PURE_PLAINTEXT_WIRE_FORMAT_POLICY,
 };
-use openmls_traits::crypto::OpenMlsCrypto;
-use openmls_traits::types::{Ciphersuite, SignatureScheme};
-use openmls_traits::OpenMlsCryptoProvider;
+use openmls_traits::{
+    crypto::OpenMlsCrypto,
+    types::{Ciphersuite, SignatureScheme},
+    OpenMlsCryptoProvider,
+};
 use serde::{Deserialize, Serialize};
 use wire_e2e_identity::prelude::parse_json_jwk;
 
 use super::{Error, Result};
-use crate::context::CentralContext;
-use crate::prelude::MlsCiphersuite;
+use crate::{context::CentralContext, prelude::MlsCiphersuite, RecursiveError};
 
 /// Sets the config in OpenMls for the oldest possible epoch(past current) that a message can be decrypted
 pub(crate) const MAX_PAST_EPOCHS: usize = 3;
@@ -52,7 +53,10 @@ impl CentralContext {
         cfg: &mut MlsConversationConfiguration,
         external_senders: Vec<Vec<u8>>,
     ) -> Result<()> {
-        let mls_provider = self.mls_provider().await.map_err(Error::root("getting mls provider"))?;
+        let mls_provider = self
+            .mls_provider()
+            .await
+            .map_err(RecursiveError::root("getting mls provider"))?;
         cfg.external_senders = external_senders
             .into_iter()
             .map(|key| {
@@ -148,7 +152,7 @@ impl MlsConversationConfiguration {
         let pk = parse_json_jwk(jwk)
             .map_err(wire_e2e_identity::prelude::E2eIdentityError::from)
             .map_err(crate::e2e_identity::Error::from)
-            .map_err(Error::e2e_identity("parsing jwk"))?;
+            .map_err(RecursiveError::e2e_identity("parsing jwk"))?;
         Ok(ExternalSender::new(
             pk.into(),
             Credential::new_basic(Self::WIRE_SERVER_IDENTITY.into()),

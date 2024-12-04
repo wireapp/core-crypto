@@ -1,16 +1,16 @@
 use super::{Error, Result};
-use crate::context::CentralContext;
-use crate::{e2e_identity::CrlRegistration, prelude::MlsCentral};
-use core_crypto_keystore::connection::FetchFromDatabase;
-use core_crypto_keystore::entities::{E2eiAcmeCA, E2eiCrl, E2eiIntermediateCert};
+use crate::{context::CentralContext, e2e_identity::CrlRegistration, prelude::MlsCentral, RecursiveError};
+use core_crypto_keystore::{
+    connection::FetchFromDatabase,
+    entities::{E2eiAcmeCA, E2eiCrl, E2eiIntermediateCert},
+};
 use openmls_traits::OpenMlsCryptoProvider;
 use std::collections::HashSet;
 use wire_e2e_identity::prelude::x509::{
     extract_crl_uris, extract_expiration_from_crl,
     revocation::{PkiEnvironment, PkiEnvironmentParams},
 };
-use x509_cert::der::pem::LineEnding;
-use x509_cert::der::{Decode, EncodePem};
+use x509_cert::der::{pem::LineEnding, Decode, EncodePem};
 
 #[derive(Debug, Clone, derive_more::From, derive_more::Into, derive_more::Deref, derive_more::DerefMut)]
 pub struct NewCrlDistributionPoint(Option<HashSet<String>>);
@@ -39,7 +39,7 @@ impl CentralContext {
         Ok(self
             .mls_provider()
             .await
-            .map_err(Error::root("getting mls provider"))?
+            .map_err(RecursiveError::root("getting mls provider"))?
             .authentication_service()
             .is_env_setup()
             .await)
@@ -50,7 +50,10 @@ impl CentralContext {
         if !self.e2ei_is_pki_env_setup().await? {
             return Ok(None);
         }
-        let mls_provider = self.mls_provider().await.map_err(Error::root("getting mls provider"))?;
+        let mls_provider = self
+            .mls_provider()
+            .await
+            .map_err(RecursiveError::root("getting mls provider"))?;
         let Some(pki_env) = &*mls_provider.authentication_service().borrow().await else {
             return Ok(None);
         };
@@ -69,7 +72,7 @@ impl CentralContext {
             if self
                 .mls_provider()
                 .await
-                .map_err(Error::root("getting mls provider"))?
+                .map_err(RecursiveError::root("getting mls provider"))?
                 .keystore()
                 .find_unique::<E2eiAcmeCA>()
                 .await
@@ -97,7 +100,7 @@ impl CentralContext {
         let acme_ca = E2eiAcmeCA { content: cert_der };
         self.mls_provider()
             .await
-            .map_err(Error::root("getting mls provider"))?
+            .map_err(RecursiveError::root("getting mls provider"))?
             .keystore()
             .save(acme_ca)
             .await?;
@@ -113,12 +116,15 @@ impl CentralContext {
             &self
                 .mls_provider()
                 .await
-                .map_err(Error::root("getting mls provider"))?
+                .map_err(RecursiveError::root("getting mls provider"))?
                 .keystore(),
         )
         .await?
         {
-            let provider = self.mls_provider().await.map_err(Error::root("getting mls provider"))?;
+            let provider = self
+                .mls_provider()
+                .await
+                .map_err(RecursiveError::root("getting mls provider"))?;
             provider.authentication_service().update_env(pki_env).await?;
         }
 
@@ -145,7 +151,10 @@ impl CentralContext {
 
     async fn e2ei_register_intermediate_ca(&self, inter_ca: x509_cert::Certificate) -> Result<NewCrlDistributionPoint> {
         // TrustAnchor must have been registered at this point
-        let keystore = self.keystore().await.map_err(Error::root("getting keystore"))?;
+        let keystore = self
+            .keystore()
+            .await
+            .map_err(RecursiveError::root("getting keystore"))?;
         let trust_anchor = keystore.find_unique::<E2eiAcmeCA>().await?;
         let trust_anchor = x509_cert::Certificate::from_der(&trust_anchor.content)?;
 
@@ -163,7 +172,10 @@ impl CentralContext {
 
         // Validate it
         {
-            let provider = self.mls_provider().await.map_err(Error::root("getting mls provider"))?;
+            let provider = self
+                .mls_provider()
+                .await
+                .map_err(RecursiveError::root("getting mls provider"))?;
             let auth_service_arc = provider.authentication_service().borrow().await;
             let Some(pki_env) = auth_service_arc.as_ref() else {
                 return Err(Error::PkiEnvironmentUnset);
@@ -198,7 +210,10 @@ impl CentralContext {
     pub async fn e2ei_register_crl(&self, crl_dp: String, crl_der: Vec<u8>) -> Result<CrlRegistration> {
         // Parse & Validate CRL
         let crl = {
-            let provider = self.mls_provider().await.map_err(Error::root("getting mls provider"))?;
+            let provider = self
+                .mls_provider()
+                .await
+                .map_err(RecursiveError::root("getting mls provider"))?;
             let auth_service_arc = provider.authentication_service().borrow().await;
             let Some(pki_env) = auth_service_arc.as_ref() else {
                 return Err(Error::PkiEnvironmentUnset);
@@ -208,7 +223,10 @@ impl CentralContext {
 
         let expiration = extract_expiration_from_crl(&crl);
 
-        let ks = self.keystore().await.map_err(Error::root("getting keystore"))?;
+        let ks = self
+            .keystore()
+            .await
+            .map_err(RecursiveError::root("getting keystore"))?;
 
         let dirty = if let Some(existing_crl) = ks.find::<E2eiCrl>(crl_dp.as_bytes()).await.ok().flatten() {
             let old_crl = PkiEnvironment::decode_der_crl(existing_crl.content.clone())?;

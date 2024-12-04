@@ -8,7 +8,7 @@
 use super::{Error, Result};
 use crate::{
     prelude::{ConversationId, MlsConversationDecryptMessage},
-    LeafError,
+    LeafError, RecursiveError,
 };
 use core_crypto_keystore::{
     connection::FetchFromDatabase,
@@ -23,7 +23,10 @@ impl CentralContext {
         id: &ConversationId,
         message: impl AsRef<[u8]>,
     ) -> Result<MlsConversationDecryptMessage> {
-        let keystore = self.keystore().await.map_err(Error::root("getting keystore"))?;
+        let keystore = self
+            .keystore()
+            .await
+            .map_err(RecursiveError::root("getting keystore"))?;
         let Some(pending_group) = keystore
             .find::<PersistedMlsPendingGroup>(id)
             .await

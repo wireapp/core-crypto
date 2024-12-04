@@ -57,11 +57,10 @@ impl ProteusConversationSession {
         ciphertext: &[u8],
     ) -> Result<Vec<u8>> {
         let envelope = Envelope::deserialise(ciphertext).map_err(Error::proteus_operation("deserializing envelope"))?;
-        Ok(self
-            .session
+        self.session
             .decrypt(store, &envelope)
             .await
-            .map_err(Error::proteus_operation("decrypting message for proteus session"))?)
+            .map_err(Error::proteus_operation("decrypting message for proteus session"))
     }
 
     /// Returns the session identifier
