@@ -74,7 +74,7 @@ impl CentralContext {
             .await;
         let cb = match (cb, credential_type) {
             (Ok(cb), _) => cb,
-            (Err(mls::client::error::Error::CredentialNotFound(_)), MlsCredentialType::Basic) => {
+            (Err(mls::client::Error::CredentialNotFound(_)), MlsCredentialType::Basic) => {
                 // If a Basic CredentialBundle does not exist, just create one instead of failing
                 client
                     .init_basic_credential_bundle_if_missing(&mls_provider, ciphersuite.signature_algorithm())
@@ -88,7 +88,7 @@ impl CentralContext {
                         "finding most recent credential bundle (which we just created)",
                     ))?
             }
-            (Err(mls::client::error::Error::CredentialNotFound(_)), MlsCredentialType::X509) => {
+            (Err(mls::client::Error::CredentialNotFound(_)), MlsCredentialType::X509) => {
                 return Err(Error::E2eiEnrollmentNotDone)
             }
             (Err(e), _) => return Err(Error::client("finding most recent credential bundle")(e)),

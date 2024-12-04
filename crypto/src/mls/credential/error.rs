@@ -1,17 +1,16 @@
 //! MLS credential errors
 
-/// Module-specific wrapper aroud a [Result][core::result::Result].
+// We allow missing documentation in the error module because the types are generally self-descriptive.
+#![allow(missing_docs)]
+
 pub type Result<T, E = Error> = core::result::Result<T, E>;
 
-/// MLS credential errors
 #[derive(Debug, thiserror::Error)]
 pub enum Error {
-    /// The certificate chain is invalid or not complete
     #[error("The certificate chain is invalid or not complete")]
     InvalidCertificateChain,
     #[error("decoding X509 certificate")]
     DecodeX509(#[source] x509_cert::der::Error),
-    /// Client presented an invalid identity
     #[error("Client presented an invalid identity")]
     InvalidIdentity,
     /// Unsupported credential type.
@@ -30,45 +29,31 @@ pub enum Error {
     /// Where possible, a short workaround is included.
     #[error("unsupported operation. prefer `{0}`")]
     UnsupportedOperation(&'static str),
-    /// Unsupported algorithm
     #[error("unsupported algorithm")]
     UnsupportedAlgorithm,
-    /// Something went wrong in e2e identity
     #[error("{context}")]
     E2e {
-        /// What was happening in the caller at the time
         context: &'static str,
-        /// What happened in e2e
         #[source]
-        source: Box<crate::e2e_identity::error::Error>,
+        source: Box<crate::e2e_identity::Error>,
     },
-    /// A key store operation failed
-    //
     // This uses a `Box<dyn>` pattern because we do not directly import `keystore` from here right now,
     // and it feels a bit silly to add the dependency only for this.
     #[error("{context}")]
     Keystore {
-        /// What happened in the keystore
         #[source]
         source: Box<dyn std::error::Error + Send + Sync>,
-        /// What the caller was doing at the time
         context: &'static str,
     },
-    /// A MLS operation failed
     #[error("{context}")]
     MlsOperation {
-        /// What the caller was doing at the time
         context: &'static str,
-        /// What happened in MLS
         #[source]
         source: Box<dyn std::error::Error + Send + Sync>,
     },
-    /// Something in the root module went wrong
     #[error("{context}")]
     Root {
-        /// What was happening in the caller
         context: &'static str,
-        /// What happened
         #[source]
         source: Box<crate::Error>,
     },
@@ -77,7 +62,7 @@ pub enum Error {
 impl Error {
     pub(crate) fn e2e<E>(context: &'static str) -> impl FnOnce(E) -> Self
     where
-        E: Into<crate::e2e_identity::error::Error>,
+        E: Into<crate::e2e_identity::Error>,
     {
         move |err| Self::E2e {
             context,
