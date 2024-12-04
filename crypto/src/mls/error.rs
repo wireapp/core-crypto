@@ -24,14 +24,8 @@ pub enum Error {
     UnauthorizedExternalCommit,
     #[error("Malformed or empty identifier found: {0}")]
     MalformedIdentifier(&'static str),
-    // This uses a `Box<dyn>` pattern because we do not directly import `keystore` from here right now,
-    // and it feels a bit silly to add the dependency only for this.
-    #[error("{context}")]
-    Keystore {
-        #[source]
-        source: Box<dyn std::error::Error + Send + Sync>,
-        context: &'static str,
-    },
+    #[error(transparent)]
+    Keystore(#[from] crate::KeystoreError),
     #[error("{context}")]
     MlsOperation {
         context: &'static str,
@@ -45,16 +39,6 @@ pub enum Error {
 }
 
 impl Error {
-    pub(crate) fn keystore<E>(context: &'static str) -> impl FnOnce(E) -> Self
-    where
-        E: 'static + std::error::Error + Send + Sync,
-    {
-        move |err| Self::Keystore {
-            context,
-            source: Box::new(err),
-        }
-    }
-
     pub(crate) fn mls_operation<E>(context: &'static str) -> impl FnOnce(E) -> Self
     where
         E: 'static + std::error::Error + Send + Sync,

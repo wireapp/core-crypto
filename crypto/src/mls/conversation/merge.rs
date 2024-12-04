@@ -22,7 +22,7 @@ use crate::{
     context::CentralContext,
     mls::{ConversationId, MlsConversation},
     prelude::{decrypt::MlsBufferedConversationDecryptMessage, MlsProposalRef},
-    RecursiveError,
+    KeystoreError, RecursiveError,
 };
 
 /// Abstraction over a MLS group capable of merging a commit
@@ -117,7 +117,7 @@ impl CentralContext {
                 .map_err(RecursiveError::root("getting keystore"))?
                 .remove::<MlsPendingMessage, _>(id)
                 .await
-                .map_err(Error::keystore("removing pending mls message"))?;
+                .map_err(KeystoreError::wrap("removing pending mls message"))?;
         }
         Ok(pending_messages)
     }
