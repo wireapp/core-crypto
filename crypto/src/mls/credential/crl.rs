@@ -1,6 +1,5 @@
 use super::{Error, Result};
-use crate::context::CentralContext;
-use crate::e2e_identity::init_certificates::NewCrlDistributionPoint;
+use crate::{context::CentralContext, e2e_identity::init_certificates::NewCrlDistributionPoint, RecursiveError};
 use core_crypto_keystore::{connection::FetchFromDatabase, entities::E2eiCrl};
 use mls_crypto_provider::MlsCryptoProvider;
 use openmls::{
@@ -50,17 +49,18 @@ pub(crate) fn extract_crl_uris_from_group(group: &MlsGroup) -> Result<HashSet<St
 }
 
 pub(crate) fn extract_dp(cert: &Certificate) -> Result<HashSet<String>> {
-    Ok(cert
-        .certificates
+    cert.certificates
         .iter()
         .try_fold(HashSet::new(), |mut acc, cert| -> Result<HashSet<String>> {
             use x509_cert::der::Decode as _;
             let cert = x509_cert::Certificate::from_der(cert.as_slice()).map_err(Error::DecodeX509)?;
-            if let Some(crl_uris) = extract_crl_uris(&cert).map_err(Error::e2e("extracting crl urls"))? {
+            if let Some(crl_uris) =
+                extract_crl_uris(&cert).map_err(RecursiveError::e2e_identity("extracting crl urls"))?
+            {
                 acc.extend(crl_uris);
             }
             Ok(acc)
-        })?)
+        })
 }
 
 pub(crate) async fn get_new_crl_distribution_points(
@@ -96,7 +96,7 @@ impl CentralContext {
                 let mut crl_dp = self
                     .e2ei_register_intermediate_ca_der(int)
                     .await
-                    .map_err(Error::e2e("registering intermediate ca der"))?;
+                    .map_err(RecursiveError::e2e_identity("registering intermediate ca der"))?;
                 if let Some(crl_dp) = crl_dp.take() {
                     crl_new_distribution_points.extend(crl_dp);
                 }
@@ -106,13 +106,16 @@ impl CentralContext {
         let ee = certificate_chain.first().ok_or(Error::InvalidCertificateChain)?;
 
         let ee = x509_cert::Certificate::from_der(ee).map_err(Error::DecodeX509)?;
-        let mut ee_crl_dp = extract_crl_uris(&ee).map_err(Error::e2e("extracting crl urls"))?;
+        let mut ee_crl_dp = extract_crl_uris(&ee).map_err(RecursiveError::e2e_identity("extracting crl urls"))?;
         if let Some(crl_dp) = ee_crl_dp.take() {
             crl_new_distribution_points.extend(crl_dp);
         }
 
         get_new_crl_distribution_points(
-            &self.mls_provider().await.map_err(Error::root("getting mls provider"))?,
+            &self
+                .mls_provider()
+                .await
+                .map_err(RecursiveError::root("getting mls provider"))?,
             crl_new_distribution_points,
         )
         .await

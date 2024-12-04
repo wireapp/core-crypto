@@ -3,8 +3,6 @@
 // We allow missing documentation in the error module because the types are generally self-descriptive.
 #![allow(missing_docs)]
 
-use crate::LeafError;
-
 pub type Result<T, E = Error> = core::result::Result<T, E>;
 
 #[derive(Debug, thiserror::Error)]
@@ -40,38 +38,10 @@ pub enum Error {
         #[source]
         source: Box<dyn std::error::Error + Send + Sync>,
     },
-    #[error("{context}")]
-    MlsClient {
-        context: &'static str,
-        #[source]
-        source: Box<crate::mls::client::Error>,
-    },
-    #[error("{context}")]
-    MlsConversation {
-        context: &'static str,
-        #[source]
-        source: Box<crate::mls::conversation::Error>,
-    },
-    #[error("{context}")]
-    MlsCredential {
-        context: &'static str,
-        #[source]
-        source: Box<crate::mls::credential::Error>,
-    },
-    #[error("{context}")]
-    E2e {
-        context: &'static str,
-        #[source]
-        source: Box<crate::e2e_identity::Error>,
-    },
-    #[error("{context}")]
-    Root {
-        context: &'static str,
-        #[source]
-        source: Box<crate::Error>,
-    },
     #[error(transparent)]
-    Leaf(#[from] LeafError),
+    Leaf(#[from] crate::LeafError),
+    #[error(transparent)]
+    Recursive(#[from] crate::RecursiveError),
 }
 
 impl Error {
@@ -90,41 +60,6 @@ impl Error {
         E: 'static + std::error::Error + Send + Sync,
     {
         move |source| Self::MlsOperation {
-            context,
-            source: Box::new(source),
-        }
-    }
-
-    pub(crate) fn client(context: &'static str) -> impl FnOnce(crate::mls::client::Error) -> Self {
-        move |source| Self::MlsClient {
-            context,
-            source: Box::new(source),
-        }
-    }
-
-    pub(crate) fn conversation(context: &'static str) -> impl FnOnce(crate::mls::conversation::Error) -> Self {
-        move |source| Self::MlsConversation {
-            context,
-            source: Box::new(source),
-        }
-    }
-
-    pub(crate) fn credential(context: &'static str) -> impl FnOnce(crate::mls::credential::Error) -> Self {
-        move |source| Self::MlsCredential {
-            context,
-            source: Box::new(source),
-        }
-    }
-
-    pub(crate) fn e2e(context: &'static str) -> impl FnOnce(crate::e2e_identity::Error) -> Self {
-        move |source| Self::E2e {
-            context,
-            source: Box::new(source),
-        }
-    }
-
-    pub(crate) fn root(context: &'static str) -> impl FnOnce(crate::Error) -> Self {
-        move |source| Self::Root {
             context,
             source: Box::new(source),
         }

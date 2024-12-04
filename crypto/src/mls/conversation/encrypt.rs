@@ -10,11 +10,13 @@
 use mls_crypto_provider::MlsCryptoProvider;
 use openmls::prelude::MlsMessageOutBody;
 
-use super::MlsConversation;
 use super::{Error, Result};
-use crate::context::CentralContext;
-use crate::mls::ConversationId;
-use crate::prelude::Client;
+use crate::{
+    context::CentralContext,
+    mls::{ConversationId, MlsConversation},
+    prelude::Client,
+    RecursiveError,
+};
 
 /// Abstraction over a MLS group capable of encrypting a MLS message
 impl MlsConversation {
@@ -64,7 +66,10 @@ impl CentralContext {
     /// from OpenMls and the KeyStore
     #[cfg_attr(test, crate::idempotent)]
     pub async fn encrypt_message(&self, conversation: &ConversationId, message: impl AsRef<[u8]>) -> Result<Vec<u8>> {
-        let client = self.mls_client().await.map_err(Error::root("getting mls client"))?;
+        let client = self
+            .mls_client()
+            .await
+            .map_err(RecursiveError::root("getting mls client"))?;
         self.get_conversation(conversation)
             .await?
             .write()
@@ -72,7 +77,10 @@ impl CentralContext {
             .encrypt_message(
                 &client,
                 message,
-                &self.mls_provider().await.map_err(Error::root("getting mls provider"))?,
+                &self
+                    .mls_provider()
+                    .await
+                    .map_err(RecursiveError::root("getting mls provider"))?,
             )
             .await
     }

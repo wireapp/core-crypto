@@ -268,6 +268,8 @@ mod tests {
     #[apply(all_cred_cipher)]
     #[wasm_bindgen_test]
     async fn should_fail_when_signature_key_doesnt_match_certificate_public_key(case: TestCase) {
+        use crate::RecursiveError;
+
         if case.is_x509() {
             let mut x509_test_chain = X509TestChain::init_empty(case.signature_scheme());
             let x509_intermediate = x509_test_chain.find_local_intermediate_ca();
@@ -290,7 +292,9 @@ mod tests {
                 try_talk(&case, Some(&x509_test_chain), alice_identifier, bob_identifier)
                     .await
                     .unwrap_err(),
-                Error::MlsError(MlsError::MlsCryptoError(openmls::prelude::CryptoError::MismatchKeypair))
+                Error::Recursive(RecursiveError::Mls(MlsError::MlsCryptoError(
+                    openmls::prelude::CryptoError::MismatchKeypair
+                )))
             ));
         }
     }

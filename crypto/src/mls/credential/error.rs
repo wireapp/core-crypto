@@ -31,12 +31,6 @@ pub enum Error {
     UnsupportedOperation(&'static str),
     #[error("unsupported algorithm")]
     UnsupportedAlgorithm,
-    #[error("{context}")]
-    E2e {
-        context: &'static str,
-        #[source]
-        source: Box<crate::e2e_identity::Error>,
-    },
     // This uses a `Box<dyn>` pattern because we do not directly import `keystore` from here right now,
     // and it feels a bit silly to add the dependency only for this.
     #[error("{context}")]
@@ -51,25 +45,11 @@ pub enum Error {
         #[source]
         source: Box<dyn std::error::Error + Send + Sync>,
     },
-    #[error("{context}")]
-    Root {
-        context: &'static str,
-        #[source]
-        source: Box<crate::Error>,
-    },
+    #[error(transparent)]
+    Recursive(#[from] crate::RecursiveError),
 }
 
 impl Error {
-    pub(crate) fn e2e<E>(context: &'static str) -> impl FnOnce(E) -> Self
-    where
-        E: Into<crate::e2e_identity::Error>,
-    {
-        move |err| Self::E2e {
-            context,
-            source: Box::new(err.into()),
-        }
-    }
-
     pub(crate) fn keystore<E>(context: &'static str) -> impl FnOnce(E) -> Self
     where
         E: 'static + std::error::Error + Send + Sync,
@@ -85,13 +65,6 @@ impl Error {
         E: 'static + std::error::Error + Send + Sync,
     {
         move |source| Self::MlsOperation {
-            context,
-            source: Box::new(source),
-        }
-    }
-
-    pub(crate) fn root(context: &'static str) -> impl FnOnce(crate::Error) -> Self {
-        move |source| Self::Root {
             context,
             source: Box::new(source),
         }
