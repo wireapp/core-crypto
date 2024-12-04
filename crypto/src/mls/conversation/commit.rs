@@ -9,17 +9,19 @@ use openmls::prelude::{KeyPackageIn, LeafNode, LeafNodeIndex, MlsMessageOut};
 
 use mls_crypto_provider::MlsCryptoProvider;
 
-use super::MlsConversation;
 use super::{Error, Result};
-use crate::context::CentralContext;
-use crate::LeafError;
 use crate::{
+    context::CentralContext,
     e2e_identity::init_certificates::NewCrlDistributionPoint,
-    mls::credential::{
-        crl::{extract_crl_uris_from_credentials, get_new_crl_distribution_points},
-        CredentialBundle,
+    mls::{
+        credential::{
+            crl::{extract_crl_uris_from_credentials, get_new_crl_distribution_points},
+            CredentialBundle,
+        },
+        MlsConversation,
     },
     prelude::{Client, ClientId, ConversationId, MlsGroupInfoBundle},
+    LeafError, RecursiveError,
 };
 
 impl CentralContext {
@@ -43,7 +45,10 @@ impl CentralContext {
         id: &ConversationId,
         key_packages: Vec<KeyPackageIn>,
     ) -> Result<MlsConversationCreationMessage> {
-        let client = self.mls_client().await.map_err(Error::root("getting mls client"))?;
+        let client = self
+            .mls_client()
+            .await
+            .map_err(RecursiveError::root("getting mls client"))?;
         self.get_conversation(id)
             .await?
             .write()
@@ -51,7 +56,10 @@ impl CentralContext {
             .add_members(
                 &client,
                 key_packages,
-                &self.mls_provider().await.map_err(Error::root("getting mls provider"))?,
+                &self
+                    .mls_provider()
+                    .await
+                    .map_err(RecursiveError::root("getting mls provider"))?,
             )
             .await
     }
@@ -75,7 +83,10 @@ impl CentralContext {
         id: &ConversationId,
         clients: &[ClientId],
     ) -> Result<MlsCommitBundle> {
-        let client = self.mls_client().await.map_err(Error::root("getting mls client"))?;
+        let client = self
+            .mls_client()
+            .await
+            .map_err(RecursiveError::root("getting mls client"))?;
         self.get_conversation(id)
             .await?
             .write()
@@ -83,7 +94,10 @@ impl CentralContext {
             .remove_members(
                 &client,
                 clients,
-                &self.mls_provider().await.map_err(Error::root("getting mls provider"))?,
+                &self
+                    .mls_provider()
+                    .await
+                    .map_err(RecursiveError::root("getting mls provider"))?,
             )
             .await
     }
@@ -103,14 +117,20 @@ impl CentralContext {
     /// from OpenMls and the KeyStore
     #[cfg_attr(test, crate::idempotent)]
     pub async fn update_keying_material(&self, id: &ConversationId) -> Result<MlsCommitBundle> {
-        let client = self.mls_client().await.map_err(Error::root("getting mls client"))?;
+        let client = self
+            .mls_client()
+            .await
+            .map_err(RecursiveError::root("getting mls client"))?;
         self.get_conversation(id)
             .await?
             .write()
             .await
             .update_keying_material(
                 &client,
-                &self.mls_provider().await.map_err(Error::root("getting mls provider"))?,
+                &self
+                    .mls_provider()
+                    .await
+                    .map_err(RecursiveError::root("getting mls provider"))?,
                 None,
                 None,
             )
@@ -129,14 +149,20 @@ impl CentralContext {
     /// Errors can be originating from the KeyStore and OpenMls
     #[cfg_attr(test, crate::idempotent)]
     pub async fn commit_pending_proposals(&self, id: &ConversationId) -> Result<Option<MlsCommitBundle>> {
-        let client = self.mls_client().await.map_err(Error::root("getting mls client"))?;
+        let client = self
+            .mls_client()
+            .await
+            .map_err(RecursiveError::root("getting mls client"))?;
         self.get_conversation(id)
             .await?
             .write()
             .await
             .commit_pending_proposals(
                 &client,
-                &self.mls_provider().await.map_err(Error::root("getting mls provider"))?,
+                &self
+                    .mls_provider()
+                    .await
+                    .map_err(RecursiveError::root("getting mls provider"))?,
             )
             .await
     }
@@ -156,7 +182,7 @@ impl MlsConversation {
         let signer = &self
             .find_most_recent_credential_bundle(client)
             .await
-            .map_err(Error::client("finding most recent credential bundle"))?
+            .map_err(RecursiveError::mls_client("finding most recent credential bundle"))?
             .signature_key;
 
         // No need to also check pending proposals since they should already have been scanned while decrypting the proposal message
@@ -170,10 +196,10 @@ impl MlsConversation {
                     None
                 }
             }))
-            .map_err(Error::credential("extracting crl uris from credentials"))?,
+            .map_err(RecursiveError::mls_credential("extracting crl uris from credentials"))?,
         )
         .await
-        .map_err(Error::credential("getting new crl distribution points"))?;
+        .map_err(RecursiveError::mls_credential("getting new crl distribution points"))?;
 
         let (commit, welcome, gi) = self
             .group
@@ -220,7 +246,7 @@ impl MlsConversation {
         let signer = &self
             .find_most_recent_credential_bundle(client)
             .await
-            .map_err(Error::client("finding most recent credential bundle"))?
+            .map_err(RecursiveError::mls_client("finding most recent credential bundle"))?
             .signature_key;
 
         let (commit, welcome, gi) = self
@@ -255,7 +281,7 @@ impl MlsConversation {
             None => &self
                 .find_most_recent_credential_bundle(client)
                 .await
-                .map_err(Error::client("finding most recent credential bundle"))?,
+                .map_err(RecursiveError::mls_client("finding most recent credential bundle"))?,
             Some(cb) => cb,
         };
         let (commit, welcome, group_info) = self
@@ -288,7 +314,7 @@ impl MlsConversation {
             let signer = &self
                 .find_most_recent_credential_bundle(client)
                 .await
-                .map_err(Error::client("finding most recent credential bundle"))?
+                .map_err(RecursiveError::mls_client("finding most recent credential bundle"))?
                 .signature_key;
 
             let (commit, welcome, gi) = self
@@ -519,6 +545,8 @@ mod tests {
         #[apply(all_cred_cipher)]
         #[wasm_bindgen_test]
         async fn alice_can_remove_bob_from_conversation(case: TestCase) {
+            use crate::mls;
+
             run_test_with_client_ids(case.clone(), ["alice", "bob"], move |[alice_central, bob_central]| {
                 Box::pin(async move {
                     let id = conversation_id();
@@ -551,7 +579,7 @@ mod tests {
                     // But has been removed from the conversation
                     assert!(matches!(
                        bob_central.context.get_conversation(&id).await.unwrap_err(),
-                        Error::ConversationNotFound(conv_id) if conv_id == id
+                        mls::conversation::error::Error::Leaf(LeafError::ConversationNotFound(conv_id)) if conv_id == id
                     ));
                     assert!(alice_central.try_talk_to(&id, &bob_central).await.is_err());
                 })

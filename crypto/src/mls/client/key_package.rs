@@ -26,14 +26,12 @@ use core_crypto_keystore::{
 };
 use mls_crypto_provider::{CryptoKeystore, MlsCryptoProvider};
 
-use crate::context::CentralContext;
-use crate::mls::client::{
-    error::{Error, Result},
-    ClientInner,
-};
+use super::{Error, Result};
 use crate::{
-    mls::credential::CredentialBundle,
+    context::CentralContext,
+    mls::{client::ClientInner, credential::CredentialBundle},
     prelude::{Client, MlsCiphersuite, MlsConversationConfiguration, MlsCredentialType},
+    RecursiveError,
 };
 
 /// Default number of KeyPackages a client generates the first time it's created
@@ -363,13 +361,19 @@ impl CentralContext {
         credential_type: MlsCredentialType,
         amount_requested: usize,
     ) -> Result<Vec<KeyPackage>> {
-        let client = self.mls_client().await.map_err(Error::root("getting mls client"))?;
+        let client = self
+            .mls_client()
+            .await
+            .map_err(RecursiveError::root("getting mls client"))?;
         client
             .request_key_packages(
                 amount_requested,
                 ciphersuite,
                 credential_type,
-                &self.mls_provider().await.map_err(Error::root("getting mls provider"))?,
+                &self
+                    .mls_provider()
+                    .await
+                    .map_err(RecursiveError::root("getting mls provider"))?,
             )
             .await
     }
@@ -381,10 +385,16 @@ impl CentralContext {
         ciphersuite: MlsCiphersuite,
         credential_type: MlsCredentialType,
     ) -> Result<usize> {
-        let client = self.mls_client().await.map_err(Error::root("getting mls client"))?;
+        let client = self
+            .mls_client()
+            .await
+            .map_err(RecursiveError::root("getting mls client"))?;
         client
             .valid_keypackages_count(
-                &self.mls_provider().await.map_err(Error::root("getting mls provider"))?,
+                &self
+                    .mls_provider()
+                    .await
+                    .map_err(RecursiveError::root("getting mls provider"))?,
                 ciphersuite,
                 credential_type,
             )
@@ -398,10 +408,16 @@ impl CentralContext {
         if refs.is_empty() {
             return Err(Error::EmptyKeypackageList);
         }
-        let mut client = self.mls_client().await.map_err(Error::root("getting mls client"))?;
+        let mut client = self
+            .mls_client()
+            .await
+            .map_err(RecursiveError::root("getting mls client"))?;
         client
             .prune_keypackages_and_credential(
-                &self.mls_provider().await.map_err(Error::root("getting mls provider"))?,
+                &self
+                    .mls_provider()
+                    .await
+                    .map_err(RecursiveError::root("getting mls provider"))?,
                 refs,
             )
             .await

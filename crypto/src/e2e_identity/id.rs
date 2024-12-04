@@ -65,7 +65,7 @@ impl TryFrom<WireQualifiedClientId> for String {
     type Error = Error;
 
     fn try_from(id: WireQualifiedClientId) -> Result<Self> {
-        Ok(String::from_utf8(id.to_vec()).map_err(|_| Error::InvalidClientId)?)
+        String::from_utf8(id.to_vec()).map_err(|_| Error::InvalidClientId)
     }
 }
 
@@ -140,6 +140,6 @@ impl TryFrom<QualifiedE2eiClientId> for String {
     type Error = Error;
 
     fn try_from(id: QualifiedE2eiClientId) -> Result<Self> {
-        Ok(String::from_utf8(id.to_vec()).map_err(|_| Error::InvalidClientId)?)
+        String::from_utf8(id.to_vec()).map_err(|_| Error::InvalidClientId)
     }
 }

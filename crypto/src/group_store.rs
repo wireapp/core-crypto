@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see http://www.gnu.org/licenses/.
 
-use crate::{prelude::MlsConversation, Error, Result};
+use crate::{prelude::MlsConversation, Error, RecursiveError, Result};
 use core_crypto_keystore::{connection::FetchFromDatabase, entities::EntityFindParams};
 
 #[cfg_attr(target_family = "wasm", async_trait::async_trait(?Send))]
@@ -62,7 +62,7 @@ impl GroupStoreEntity for MlsConversation {
         };
 
         let conversation = Self::from_serialized_state(store_value.state.clone(), store_value.parent_id.clone())
-            .map_err(Error::conversation("deserializing mls conversation"))?;
+            .map_err(RecursiveError::mls_conversation("deserializing mls conversation"))?;
         // If the conversation is not active, pretend it doesn't exist
         Ok(conversation.group.is_active().then_some(conversation))
     }

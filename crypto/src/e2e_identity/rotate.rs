@@ -3,22 +3,21 @@ use std::collections::HashMap;
 use openmls::prelude::{KeyPackage, KeyPackageRef, MlsCredentialType as OpenMlsCredential};
 use openmls_traits::OpenMlsCryptoProvider;
 
-use core_crypto_keystore::connection::FetchFromDatabase;
-use core_crypto_keystore::{entities::MlsKeyPackage, CryptoKeystoreMls};
+use core_crypto_keystore::{connection::FetchFromDatabase, entities::MlsKeyPackage, CryptoKeystoreMls};
 use mls_crypto_provider::MlsCryptoProvider;
 
 use super::{Error, Result};
-use crate::context::CentralContext;
-use crate::e2e_identity::init_certificates::NewCrlDistributionPoint;
 #[cfg(not(target_family = "wasm"))]
 use crate::e2e_identity::refresh_token::RefreshToken;
-use crate::LeafError;
 use crate::{
+    context::CentralContext,
+    e2e_identity::init_certificates::NewCrlDistributionPoint,
     mls::credential::{ext::CredentialExt, x509::CertificatePrivateKey, CredentialBundle},
     prelude::{
         CertificateBundle, Client, ConversationId, E2eiEnrollment, MlsCiphersuite, MlsCommitBundle, MlsConversation,
         MlsCredentialType,
     },
+    LeafError, RecursiveError,
 };
 
 impl CentralContext {
@@ -35,12 +34,15 @@ impl CentralContext {
         expiry_sec: u32,
         ciphersuite: MlsCiphersuite,
     ) -> Result<E2eiEnrollment> {
-        let mls_provider = self.mls_provider().await.map_err(Error::root("getting mls provider"))?;
+        let mls_provider = self
+            .mls_provider()
+            .await
+            .map_err(RecursiveError::root("getting mls provider"))?;
         // look for existing credential of type basic. If there isn't, then this method has been misused
         let cb = self
             .mls_client()
             .await
-            .map_err(Error::root("getting mls client"))?
+            .map_err(RecursiveError::root("getting mls client"))?
             .find_most_recent_credential_bundle(ciphersuite.signature_algorithm(), MlsCredentialType::Basic)
             .await
             .map_err(|_| Error::MissingExistingClient(MlsCredentialType::Basic))?;
@@ -75,12 +77,15 @@ impl CentralContext {
         expiry_sec: u32,
         ciphersuite: MlsCiphersuite,
     ) -> Result<E2eiEnrollment> {
-        let mls_provider = self.mls_provider().await.map_err(Error::root("getting mls provider"))?;
+        let mls_provider = self
+            .mls_provider()
+            .await
+            .map_err(RecursiveError::root("getting mls provider"))?;
         // look for existing credential of type x509. If there isn't, then this method has been misused
         let cb = self
             .mls_client()
             .await
-            .map_err(Error::root("getting mls client"))?
+            .map_err(RecursiveError::root("getting mls client"))?
             .find_most_recent_credential_bundle(ciphersuite.signature_algorithm(), MlsCredentialType::X509)
             .await
             .map_err(|_| Error::MissingExistingClient(MlsCredentialType::X509))?;
@@ -89,7 +94,7 @@ impl CentralContext {
         let existing_identity = cb
             .to_mls_credential_with_key()
             .extract_identity(ciphersuite, None)
-            .map_err(Error::credential("extracting identity"))?
+            .map_err(RecursiveError::mls_credential("extracting identity"))?
             .x509_identity
             .ok_or(Error::ImplementationError)?;
 
@@ -126,7 +131,7 @@ impl CentralContext {
                 certificate_chain,
                 self.mls_provider()
                     .await
-                    .map_err(Error::root("getting mls provider"))?
+                    .map_err(RecursiveError::root("getting mls provider"))?
                     .authentication_service()
                     .borrow()
                     .await
@@ -143,26 +148,29 @@ impl CentralContext {
         let crl_new_distribution_points = self
             .extract_dp_on_init(&certificate_chain[..])
             .await
-            .map_err(Error::credential("extracting dp on init"))?;
+            .map_err(RecursiveError::mls_credential("extracting dp on init"))?;
 
         let cert_bundle = CertificateBundle {
             certificate_chain,
             private_key,
         };
-        let client = &self.mls_client().await.map_err(Error::root("getting mls client"))?;
+        let client = &self
+            .mls_client()
+            .await
+            .map_err(RecursiveError::root("getting mls client"))?;
 
         let new_cb = client
             .save_new_x509_credential_bundle(
                 &self
                     .mls_provider()
                     .await
-                    .map_err(Error::root("getting mls provider"))?
+                    .map_err(RecursiveError::root("getting mls provider"))?
                     .keystore(),
                 cs.signature_algorithm(),
                 cert_bundle,
             )
             .await
-            .map_err(Error::mls_client("saving new x509 credential bundle"))?;
+            .map_err(RecursiveError::mls_client("saving new x509 credential bundle"))?;
 
         let commits = self.e2ei_update_all(client, &new_cb).await?;
 
@@ -170,13 +178,16 @@ impl CentralContext {
 
         let new_key_packages = client
             .generate_new_keypackages(
-                &self.mls_provider().await.map_err(Error::root("getting mls provider"))?,
+                &self
+                    .mls_provider()
+                    .await
+                    .map_err(RecursiveError::root("getting mls provider"))?,
                 cs,
                 &new_cb,
                 new_key_packages_count,
             )
             .await
-            .map_err(Error::mls_client("generating new keypackages"))?;
+            .map_err(RecursiveError::mls_client("generating new keypackages"))?;
 
         Ok(MlsRotateBundle {
             commits,
@@ -187,13 +198,19 @@ impl CentralContext {
     }
 
     async fn find_key_packages_to_remove(&self, cb: &CredentialBundle) -> Result<Vec<KeyPackageRef>> {
-        let transaction = self.keystore().await.map_err(Error::root("getting keystore"))?;
+        let transaction = self
+            .keystore()
+            .await
+            .map_err(RecursiveError::root("getting keystore"))?;
         let nb_kp = transaction.count::<MlsKeyPackage>().await?;
         let kps: Vec<KeyPackage> = transaction.mls_fetch_keypackages(nb_kp as u32).await?;
 
         let mut kp_refs = vec![];
 
-        let provider = self.mls_provider().await.map_err(Error::root("getting mls provider"))?;
+        let provider = self
+            .mls_provider()
+            .await
+            .map_err(RecursiveError::root("getting mls provider"))?;
         for kp in kps {
             let kp_cred = kp.leaf_node().credential().mls_credential();
             let local_cred = cb.credential().mls_credential();
@@ -223,7 +240,7 @@ impl CentralContext {
         let all_conversations = self
             .get_all_conversations()
             .await
-            .map_err(Error::conversation("getting all conversations"))?;
+            .map_err(RecursiveError::mls_conversation("getting all conversations"))?;
 
         let mut commits = HashMap::with_capacity(all_conversations.len());
         for conv in all_conversations {
@@ -231,7 +248,10 @@ impl CentralContext {
             let id = conv.id().clone();
             let commit = conv
                 .e2ei_rotate(
-                    &self.mls_provider().await.map_err(Error::root("getting mls provider"))?,
+                    &self
+                        .mls_provider()
+                        .await
+                        .map_err(RecursiveError::root("getting mls provider"))?,
                     client,
                     Some(cb),
                 )
@@ -249,14 +269,20 @@ impl CentralContext {
         id: &crate::prelude::ConversationId,
         cb: Option<&CredentialBundle>,
     ) -> Result<MlsCommitBundle> {
-        let client = &self.mls_client().await.map_err(Error::root("getting mls client"))?;
+        let client = &self
+            .mls_client()
+            .await
+            .map_err(RecursiveError::root("getting mls client"))?;
         self.get_conversation(id)
             .await
-            .map_err(Error::conversation("getting conversation by id"))?
+            .map_err(RecursiveError::mls_conversation("getting conversation by id"))?
             .write()
             .await
             .e2ei_rotate(
-                &self.mls_provider().await.map_err(Error::root("getting mls provider"))?,
+                &self
+                    .mls_provider()
+                    .await
+                    .map_err(RecursiveError::root("getting mls provider"))?,
                 client,
                 cb,
             )
@@ -283,7 +309,8 @@ impl MlsConversation {
         leaf_node.set_credential_with_key(cb.to_mls_credential_with_key());
         self.update_keying_material(client, backend, Some(cb), Some(leaf_node))
             .await
-            .map_err(Error::conversation("updating keying material"))
+            .map_err(RecursiveError::mls_conversation("updating keying material"))
+            .map_err(Into::into)
     }
 }
 

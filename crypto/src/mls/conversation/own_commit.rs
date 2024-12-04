@@ -5,6 +5,7 @@ use crate::{
         ext::CredentialExt,
     },
     prelude::{MlsConversation, MlsConversationDecryptMessage},
+    RecursiveError,
 };
 use mls_crypto_provider::MlsCryptoProvider;
 use openmls::prelude::{
@@ -97,14 +98,15 @@ impl MlsConversation {
         };
         let identity = own_leaf_credential_with_key
             .extract_identity(self.ciphersuite(), None)
-            .map_err(Error::credential("extracting identity"))?;
+            .map_err(RecursiveError::mls_credential("extracting identity"))?;
 
         let crl_new_distribution_points = get_new_crl_distribution_points(
             backend,
-            extract_crl_uris_from_group(&self.group).map_err(Error::credential("extracting crl uris from group"))?,
+            extract_crl_uris_from_group(&self.group)
+                .map_err(RecursiveError::mls_credential("extracting crl uris from group"))?,
         )
         .await
-        .map_err(Error::credential("getting new crl distribution points"))?;
+        .map_err(RecursiveError::mls_credential("getting new crl distribution points"))?;
 
         Ok(MlsConversationDecryptMessage {
             app_msg: None,
