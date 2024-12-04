@@ -7,7 +7,7 @@ use mls_crypto_provider::MlsCryptoProvider;
 use super::{Error, Result};
 use crate::{
     prelude::{Client, MlsConversation, MlsProposalBundle},
-    RecursiveError,
+    KeystoreError, RecursiveError,
 };
 
 /// Marker struct holding methods responsible for restoring (renewing) proposals (or pending commit)
@@ -141,7 +141,7 @@ impl MlsConversation {
                 .key_store()
                 .remove::<MlsEncryptionKeyPair, _>(leaf_node.encryption_key().as_slice())
                 .await
-                .map_err(Error::keystore("removing mls encryption keypair"))?;
+                .map_err(KeystoreError::wrap("removing mls encryption keypair"))?;
         }
 
         let mut leaf_node = leaf_node

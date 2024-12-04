@@ -2,7 +2,7 @@ use super::{Error, Result};
 use crate::{
     context::CentralContext,
     prelude::{ConversationId, MlsConversation},
-    RecursiveError,
+    KeystoreError, RecursiveError,
 };
 use core_crypto_keystore::CryptoKeystoreMls;
 use mls_crypto_provider::MlsCryptoProvider;
@@ -29,7 +29,7 @@ impl CentralContext {
             .key_store()
             .mls_group_delete(id)
             .await
-            .map_err(Error::keystore("deleting mls group"))?;
+            .map_err(KeystoreError::wrap("deleting mls group"))?;
         let _ = self
             .mls_groups()
             .await

@@ -3,7 +3,7 @@ use openmls_traits::{random::OpenMlsRand, OpenMlsCryptoProvider};
 use super::{Error, Result};
 use crate::context::CentralContext;
 use crate::prelude::E2eiEnrollment;
-use crate::RecursiveError;
+use crate::{KeystoreError, RecursiveError};
 use core_crypto_keystore::CryptoKeystoreMls;
 use mls_crypto_provider::MlsCryptoProvider;
 
@@ -25,7 +25,7 @@ impl E2eiEnrollment {
             .key_store()
             .save_e2ei_enrollment(&handle, &content)
             .await
-            .map_err(Error::keystore("saving e2ei enrollment"))?;
+            .map_err(KeystoreError::wrap("saving e2ei enrollment"))?;
         Ok(handle)
     }
 
@@ -34,7 +34,7 @@ impl E2eiEnrollment {
             .key_store()
             .pop_e2ei_enrollment(&handle)
             .await
-            .map_err(Error::keystore("popping e2ei enrollment"))?;
+            .map_err(KeystoreError::wrap("popping e2ei enrollment"))?;
         Ok(serde_json::from_slice(&content)?)
     }
 }
