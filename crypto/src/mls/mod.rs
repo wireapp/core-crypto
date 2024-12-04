@@ -12,7 +12,6 @@ use crate::CoreCrypto;
 use mls_crypto_provider::{EntropySeed, MlsCryptoProvider, MlsCryptoProviderConfiguration};
 use openmls_traits::OpenMlsCryptoProvider;
 
-use self::error::{Error, Result};
 use crate::context::CentralContext;
 
 pub(crate) mod buffer_external_commit;
@@ -20,10 +19,12 @@ pub(crate) mod ciphersuite;
 pub(crate) mod client;
 pub mod conversation;
 pub(crate) mod credential;
-pub mod error;
+mod error;
 pub(crate) mod external_commit;
 pub(crate) mod external_proposal;
 pub(crate) mod proposal;
+
+pub use error::{Error, Result};
 
 // Prevents direct instantiation of [MlsCentralConfiguration]
 pub(crate) mod config {
@@ -272,10 +273,7 @@ impl MlsCentral {
     /// Checks if a given conversation id exists locally
     pub async fn conversation_exists(&self, id: &ConversationId) -> Result<bool> {
         let result = self.get_conversation(id).await;
-        Ok(!matches!(
-            result,
-            Err(conversation::error::Error::ConversationNotFound(_))
-        ))
+        Ok(!matches!(result, Err(conversation::Error::ConversationNotFound(_))))
     }
 
     /// Returns the epoch of a given conversation

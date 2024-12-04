@@ -27,7 +27,7 @@ impl Client {
             .find_most_recent_credential_bundle(signature_scheme, MlsCredentialType::X509)
             .await;
         match x509_result {
-            Err(mls::client::error::Error::CredentialNotFound(MlsCredentialType::X509)) => {
+            Err(mls::client::Error::CredentialNotFound(MlsCredentialType::X509)) => {
                 self.find_most_recent_credential_bundle(signature_scheme, MlsCredentialType::Basic)
                     .await
                     .map_err(Error::mls_client(
