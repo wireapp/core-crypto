@@ -1,4 +1,4 @@
-use super::error::{Error, Result};
+use super::{Error, Result};
 use crate::prelude::CiphersuiteName;
 use openmls_traits::types::{Ciphersuite, HashType};
 use wire_e2e_identity::prelude::HashAlgorithm;

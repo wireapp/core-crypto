@@ -4,7 +4,7 @@ use openmls_traits::OpenMlsCryptoProvider;
 
 use mls_crypto_provider::MlsCryptoProvider;
 
-use super::error::{Error, Result};
+use super::{Error, Result};
 use crate::prelude::{Client, MlsConversation, MlsProposalBundle};
 
 /// Marker struct holding methods responsible for restoring (renewing) proposals (or pending commit)

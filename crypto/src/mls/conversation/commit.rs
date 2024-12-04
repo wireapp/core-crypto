@@ -9,9 +9,10 @@ use openmls::prelude::{KeyPackageIn, LeafNode, LeafNodeIndex, MlsMessageOut};
 
 use mls_crypto_provider::MlsCryptoProvider;
 
-use super::error::{Error, Result};
 use super::MlsConversation;
+use super::{Error, Result};
 use crate::context::CentralContext;
+use crate::LeafError;
 use crate::{
     e2e_identity::init_certificates::NewCrlDistributionPoint,
     mls::credential::{
@@ -181,7 +182,7 @@ impl MlsConversation {
             .map_err(Error::mls_operation("group add members"))?;
 
         // SAFETY: This should be safe as adding members always generates a new commit
-        let gi = gi.ok_or(Error::MissingGroupInfo)?;
+        let gi = gi.ok_or(LeafError::MissingGroupInfo)?;
         let group_info = MlsGroupInfoBundle::try_new_full_plaintext(gi)?;
 
         self.persist_group_when_changed(&backend.keystore(), false).await?;
@@ -229,7 +230,7 @@ impl MlsConversation {
             .map_err(Error::mls_operation("group remove members"))?;
 
         // SAFETY: This should be safe as removing members always generates a new commit
-        let gi = gi.ok_or(Error::MissingGroupInfo)?;
+        let gi = gi.ok_or(LeafError::MissingGroupInfo)?;
         let group_info = MlsGroupInfoBundle::try_new_full_plaintext(gi)?;
 
         self.persist_group_when_changed(&backend.keystore(), false).await?;
@@ -264,7 +265,7 @@ impl MlsConversation {
             .map_err(Error::mls_operation("group self update"))?;
 
         // We should always have ratchet tree extension turned on hence GroupInfo should always be present
-        let group_info = group_info.ok_or(Error::MissingGroupInfo)?;
+        let group_info = group_info.ok_or(LeafError::MissingGroupInfo)?;
         let group_info = MlsGroupInfoBundle::try_new_full_plaintext(group_info)?;
 
         self.persist_group_when_changed(&backend.keystore(), false).await?;

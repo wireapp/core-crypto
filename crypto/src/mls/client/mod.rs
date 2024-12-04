@@ -27,6 +27,7 @@ use crate::{
         identifier::ClientIdentifier, key_package::KEYPACKAGE_DEFAULT_LIFETIME, CertificateBundle, ClientId,
         MlsCiphersuite, MlsCredentialType,
     },
+    LeafError,
 };
 pub use error::{Error, Result};
 
@@ -387,7 +388,7 @@ impl Client {
                         let spk = cert
                             .extract_public_key()
                             .map_err(Error::credential("extracting public key"))?
-                            .ok_or(Error::InternalMlsError)?;
+                            .ok_or(LeafError::InternalMlsError)?;
                         if signature_key.public() != spk {
                             return Err(Error::WrongCredential);
                         }
@@ -516,7 +517,7 @@ impl Client {
                 .find_most_recent_credential_bundle(sc, ct)
                 .await
                 .map_err(|e| match e {
-                    Error::CredentialNotFound(_) => Error::E2eiEnrollmentNotDone,
+                    Error::CredentialNotFound(_) => LeafError::E2eiEnrollmentNotDone.into(),
                     _ => e,
                 }),
         }

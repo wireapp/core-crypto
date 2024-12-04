@@ -7,11 +7,12 @@ use core_crypto_keystore::connection::FetchFromDatabase;
 use core_crypto_keystore::{entities::MlsKeyPackage, CryptoKeystoreMls};
 use mls_crypto_provider::MlsCryptoProvider;
 
-use super::error::{Error, Result};
+use super::{Error, Result};
 use crate::context::CentralContext;
 use crate::e2e_identity::init_certificates::NewCrlDistributionPoint;
 #[cfg(not(target_family = "wasm"))]
 use crate::e2e_identity::refresh_token::RefreshToken;
+use crate::LeafError;
 use crate::{
     mls::credential::{ext::CredentialExt, x509::CertificatePrivateKey, CredentialBundle},
     prelude::{
@@ -278,7 +279,7 @@ impl MlsConversation {
                 .await
                 .map_err(|_| Error::MissingExistingClient(MlsCredentialType::X509))?,
         };
-        let mut leaf_node = self.group.own_leaf().ok_or(Error::InternalMlsError)?.clone();
+        let mut leaf_node = self.group.own_leaf().ok_or(LeafError::InternalMlsError)?.clone();
         leaf_node.set_credential_with_key(cb.to_mls_credential_with_key());
         self.update_keying_material(client, backend, Some(cb), Some(leaf_node))
             .await

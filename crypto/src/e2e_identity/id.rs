@@ -1,4 +1,4 @@
-use super::error::{Error, Result};
+use super::{Error, Result};
 use crate::prelude::ClientId;
 use base64::Engine;
 

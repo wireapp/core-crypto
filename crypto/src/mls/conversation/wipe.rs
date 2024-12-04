@@ -1,4 +1,4 @@
-use super::error::{Error, Result};
+use super::{Error, Result};
 use crate::context::CentralContext;
 use crate::prelude::{ConversationId, MlsConversation};
 use core_crypto_keystore::CryptoKeystoreMls;

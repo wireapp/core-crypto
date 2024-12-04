@@ -3,6 +3,8 @@
 // We allow missing documentation in the error module because the types are generally self-descriptive.
 #![allow(missing_docs)]
 
+use crate::LeafError;
+
 pub type Result<T, E = Error> = core::result::Result<T, E>;
 
 #[derive(Debug, thiserror::Error)]
@@ -19,8 +21,6 @@ pub enum Error {
     CredentialNotFound(crate::prelude::MlsCredentialType),
     #[error("supplied signature scheme was not valid")]
     InvalidSignatureScheme,
-    #[error("End-to-end identity enrollment has not been done")]
-    E2eiEnrollmentNotDone,
     // This uses a `Box<dyn>` pattern because we do not directly import `keystore` from here right now,
     // and it feels a bit silly to add the dependency only for this.
     #[error("{context}")]
@@ -75,8 +75,6 @@ pub enum Error {
     WrongCredential,
     #[error("Generating signature keypair")]
     GeneratingSignatureKeypair(#[source] openmls_traits::types::CryptoError),
-    #[error("The MLS group is in an invalid state for an unknown reason")]
-    InternalMlsError,
     #[error("{context}")]
     Conversation {
         context: &'static str,
@@ -95,6 +93,8 @@ pub enum Error {
         #[source]
         source: Box<crate::Error>,
     },
+    #[error(transparent)]
+    Leaf(#[from] LeafError),
 }
 
 impl Error {

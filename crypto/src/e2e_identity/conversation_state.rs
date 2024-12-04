@@ -15,7 +15,7 @@ use openmls::{
     treesync::RatchetTree,
 };
 
-use super::error::{Error, Result};
+use super::{Error, Result};
 
 /// Indicates the state of a Conversation regarding end-to-end identity.
 ///

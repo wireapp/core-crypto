@@ -24,7 +24,7 @@ use core_crypto_keystore::{
     CryptoKeystoreMls,
 };
 
-use super::error::{Error, Result};
+use super::{Error, Result};
 use crate::{
     e2e_identity::init_certificates::NewCrlDistributionPoint,
     mls::credential::crl::{extract_crl_uris_from_group, get_new_crl_distribution_points},
@@ -32,6 +32,7 @@ use crate::{
         decrypt::MlsBufferedConversationDecryptMessage, ConversationId, MlsCiphersuite, MlsConversation,
         MlsConversationConfiguration, MlsCredentialType, MlsCustomConfiguration, MlsGroupInfoBundle,
     },
+    LeafError,
 };
 
 use crate::context::CentralContext;
@@ -131,7 +132,7 @@ impl CentralContext {
         .map_err(Error::mls_operation("joining mls group by external commit"))?;
 
         // We should always have ratchet tree extension turned on hence GroupInfo should always be present
-        let group_info = group_info.ok_or(Error::MissingGroupInfo)?;
+        let group_info = group_info.ok_or(LeafError::MissingGroupInfo)?;
         let group_info = MlsGroupInfoBundle::try_new_full_plaintext(group_info)
             .map_err(Error::conversation("trying new full plaintext group info bundle"))?;
 

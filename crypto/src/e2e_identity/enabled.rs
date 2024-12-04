@@ -1,6 +1,6 @@
 //! Utility for clients to get the current state of E2EI when the app resumes
 
-use super::error::{Error, Result};
+use super::{Error, Result};
 use crate::context::CentralContext;
 use crate::mls;
 use crate::prelude::{Client, MlsCentral, MlsCredentialType};

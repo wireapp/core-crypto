@@ -25,7 +25,7 @@ use tls_codec::Deserialize;
 use core_crypto_keystore::entities::MlsPendingMessage;
 use mls_crypto_provider::MlsCryptoProvider;
 
-use super::error::{Error, Result};
+use super::{Error, Result};
 use crate::context::CentralContext;
 use crate::obfuscate::Obfuscated;
 use crate::{

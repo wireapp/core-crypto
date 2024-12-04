@@ -1,4 +1,4 @@
-use super::error::{Error, Result};
+use super::{Error, Result};
 use crate::prelude::{DeviceStatus, MlsCiphersuite, MlsCredentialType, WireIdentity};
 use openmls::prelude::{Credential, CredentialType, CredentialWithKey};
 use openmls_traits::types::{HashType, SignatureScheme};
