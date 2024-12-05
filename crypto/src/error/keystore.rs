@@ -29,6 +29,7 @@ pub struct KeystoreError {
 }
 
 impl KeystoreError {
+    #[cfg(not(target_family = "wasm"))]
     pub(crate) fn wrap<E>(context: &'static str) -> impl FnOnce(E) -> Self
     where
         E: 'static + std::error::Error + Send + Sync,
@@ -36,6 +37,57 @@ impl KeystoreError {
         move |source| Self {
             source: Box::new(source),
             context,
+        }
+    }
+
+    /// Some of the error variants for WASM are not thread-safe at all
+    /// (looking at you, [idb::Error]), so we have to construct an approximation
+    /// of them instead.
+    #[cfg(target_family = "wasm")]
+    pub(crate) fn wrap<E>(context: &'static str) -> impl FnOnce(E) -> Self
+    where
+        E: std::error::Error,
+    {
+        move |source| {
+            let ts = threadsafe_error::Threadsafe::from(&source);
+            Self {
+                source: Box::new(ts),
+                context,
+            }
+        }
+    }
+}
+
+#[cfg(target_family = "wasm")]
+mod threadsafe_error {
+    #[derive(Debug, thiserror::Error)]
+    #[error("{message}")]
+    pub(crate) struct Threadsafe {
+        message: String,
+        #[source]
+        inner: Option<Box<Threadsafe>>,
+    }
+
+    impl Threadsafe {
+        fn new(message: impl ToString) -> Self {
+            Self {
+                message: message.to_string(),
+                inner: None,
+            }
+        }
+
+        fn set_inner(&mut self, inner: Self) {
+            self.inner = Some(Box::new(inner));
+        }
+    }
+
+    impl<E: std::error::Error + ?Sized> From<&E> for Threadsafe {
+        fn from(err: &E) -> Self {
+            let mut ts = Self::new(err);
+            if let Some(source) = err.source() {
+                ts.set_inner(Self::from(source))
+            }
+            ts
         }
     }
 }
