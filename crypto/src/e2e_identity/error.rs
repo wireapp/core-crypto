@@ -20,6 +20,14 @@ pub enum Error {
     OutOfOrderEnrollment(&'static str),
     #[error("Invalid OIDC RefreshToken supplied")]
     InvalidRefreshToken,
+    #[error("We already have an ACME Root Trust Anchor registered. Cannot proceed but this is usually indicative of double registration and can be ignored")]
+    TrustAnchorAlreadyRegistered,
+    #[error("The encountered ClientId does not match Wire's definition")]
+    InvalidClientId,
+    #[error("This function accepts a list of IDs as a parameter, but that list was empty")]
+    EmptyInputIdList,
+    #[error("PKI Environment must be set before calling this function")]
+    PkiEnvironmentUnset,
     #[error("An error occurred while trying to persist the RefreshToken in the keystore")]
     KeyStoreError(#[from] CryptoKeystoreError),
     #[error(transparent)]
@@ -30,28 +38,8 @@ pub enum Error {
     UrlError(#[from] url::ParseError),
     #[error(transparent)]
     JsonError(#[from] serde_json::Error),
-    #[error("We already have an ACME Root Trust Anchor registered. Cannot proceed but this is usually indicative of double registration and can be ignored")]
-    TrustAnchorAlreadyRegistered,
-    #[error("Getting MLS ratchet tree")]
-    MlsRatchetTree(#[from] openmls::messages::group_info::GroupInfoError),
-    #[error("Generating signature key")]
-    SignatureKeyGen(#[source] openmls_traits::types::CryptoError),
-    #[error("Normalizing ed25519 key")]
-    NormalizingEd25519Key(#[source] openmls_traits::types::CryptoError),
-    #[error("Generating new PKI keypair")]
-    GeneratePkiKeypair(#[from] mls_crypto_provider::MlsProviderError),
-    #[error("The encountered ClientId does not match Wire's definition")]
-    InvalidClientId,
     #[error(transparent)]
     X509CertDerError(#[from] x509_cert::der::Error),
-    #[error("This function accepts a list of IDs as a parameter, but that list was empty")]
-    EmptyInputIdList,
-    #[error("Getting user identities")]
-    GetUserIdentities(#[source] crate::mls::client::Error),
-    #[error("PKI Environment must be set before calling this function")]
-    PkiEnvironmentUnset,
-    #[error("Computing key package hash ref")]
-    KeyPackageHashRef(#[from] openmls::error::LibraryError),
     #[error("Serializing key package for TLS")]
     TlsSerializingKeyPackage(#[from] tls_codec::Error),
     #[error("{context}: {upstream}")]
