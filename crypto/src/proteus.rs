@@ -15,11 +15,11 @@
 // along with this program. If not, see http://www.gnu.org/licenses/.
 
 use crate::context::CentralContext;
-use crate::KeystoreError;
 use crate::{
     group_store::{GroupStore, GroupStoreValue},
     CoreCrypto, Error, Result,
 };
+use crate::{KeystoreError, ProteusError};
 use core_crypto_keystore::{
     connection::FetchFromDatabase,
     entities::{ProteusIdentity, ProteusSession},
@@ -48,7 +48,8 @@ impl ProteusConversationSession {
         self.session
             .encrypt(plaintext)
             .and_then(|e| e.serialise())
-            .map_err(Error::proteus_operation("encrypting message for proteus session"))
+            .map_err(ProteusError::wrap("encrypting message for proteus session"))
+            .map_err(Into::into)
     }
 
     /// Decrypts a message for this Proteus session
@@ -57,11 +58,12 @@ impl ProteusConversationSession {
         store: &mut core_crypto_keystore::Connection,
         ciphertext: &[u8],
     ) -> Result<Vec<u8>> {
-        let envelope = Envelope::deserialise(ciphertext).map_err(Error::proteus_operation("deserializing envelope"))?;
+        let envelope = Envelope::deserialise(ciphertext).map_err(ProteusError::wrap("deserializing envelope"))?;
         self.session
             .decrypt(store, &envelope)
             .await
-            .map_err(Error::proteus_operation("decrypting message for proteus session"))
+            .map_err(ProteusError::wrap("decrypting message for proteus session"))
+            .map_err(Into::into)
     }
 
     /// Returns the session identifier
@@ -424,8 +426,7 @@ impl ProteusCentral {
             let pk = identity.pk_raw();
             // SAFETY: Byte lengths are ensured at the keystore level so this function is safe to call, despite being cursed
 
-            IdentityKeyPair::from_raw_key_pair(*sk, *pk)
-                .map_err(Error::proteus_operation("constructing identity keypair"))?
+            IdentityKeyPair::from_raw_key_pair(*sk, *pk).map_err(ProteusError::wrap("constructing identity keypair"))?
         } else {
             Self::create_identity(keystore).await?
         };
@@ -463,7 +464,7 @@ impl ProteusCentral {
             .into_iter()
         {
             let proteus_session = Session::deserialise(identity.clone(), &session.session)
-                .map_err(Error::proteus_operation("deserializing session"))?;
+                .map_err(ProteusError::wrap("deserializing session"))?;
 
             let identifier = session.id.clone();
 
@@ -489,7 +490,7 @@ impl ProteusCentral {
         session_id: &str,
         key: &[u8],
     ) -> Result<GroupStoreValue<ProteusConversationSession>> {
-        let prekey = PreKeyBundle::deserialise(key).map_err(Error::proteus_operation("deserializing prekey bundle"))?;
+        let prekey = PreKeyBundle::deserialise(key).map_err(ProteusError::wrap("deserializing prekey bundle"))?;
         // Note on the `::<Error>` turbofish below:
         //
         // `init_from_prekey` returns an error type which is parametric over some wrapped `E`,
@@ -517,7 +518,7 @@ impl ProteusCentral {
         //
         // So instead we use our own error type, which is recursive and silly, but gets the job done.
         let proteus_session = Session::init_from_prekey::<Error>(self.proteus_identity.clone(), prekey)
-            .map_err(Error::proteus_operation("initializing session from prekey"))?;
+            .map_err(KeystoreError::wrap("initializing session from prekey"))?;
 
         let proteus_conversation = ProteusConversationSession {
             identifier: session_id.into(),
@@ -536,10 +537,10 @@ impl ProteusCentral {
         session_id: &str,
         envelope: &[u8],
     ) -> Result<(GroupStoreValue<ProteusConversationSession>, Vec<u8>)> {
-        let message = Envelope::deserialise(envelope).map_err(Error::proteus_operation("deserialising envelope"))?;
+        let message = Envelope::deserialise(envelope).map_err(ProteusError::wrap("deserialising envelope"))?;
         let (session, payload) = Session::init_from_message(self.proteus_identity.clone(), keystore, &message)
             .await
-            .map_err(Error::proteus_operation("initializing session from message"))?;
+            .map_err(ProteusError::wrap("initializing session from message"))?;
 
         let proteus_conversation = ProteusConversationSession {
             identifier: session_id.into(),
@@ -579,7 +580,7 @@ impl ProteusCentral {
             session: session
                 .session
                 .serialise()
-                .map_err(Error::proteus_operation("serializing session"))?,
+                .map_err(ProteusError::wrap("serializing session"))?,
         };
         keystore
             .save(db_session)
@@ -680,14 +681,12 @@ impl ProteusCentral {
         let prekey = PreKey::new(prekey_id);
         let keystore_prekey = core_crypto_keystore::entities::ProteusPrekey::from_raw(
             id,
-            prekey
-                .serialise()
-                .map_err(Error::proteus_operation("serialsing prekey"))?,
+            prekey.serialise().map_err(ProteusError::wrap("serialsing prekey"))?,
         );
         let bundle = PreKeyBundle::new(self.proteus_identity.as_ref().public_key.clone(), &prekey);
         let bundle = bundle
             .serialise()
-            .map_err(Error::proteus_operation("serialising prekey bundle"))?;
+            .map_err(ProteusError::wrap("serialising prekey bundle"))?;
         keystore
             .save(keystore_prekey)
             .await
@@ -721,7 +720,7 @@ impl ProteusCentral {
             .map_err(KeystoreError::wrap("finding proteus prekey"))?
         {
             proteus_wasm::keys::PreKey::deserialise(&last_resort.prekey)
-                .map_err(Error::proteus_operation("deserialising proteus prekey"))?
+                .map_err(ProteusError::wrap("deserialising proteus prekey"))?
         } else {
             let last_resort = proteus_wasm::keys::PreKey::last_resort();
 
@@ -731,7 +730,7 @@ impl ProteusCentral {
                     Self::last_resort_prekey_id(),
                     &last_resort
                         .serialise()
-                        .map_err(Error::proteus_operation("serialising last resort prekey"))?,
+                        .map_err(ProteusError::wrap("serialising last resort prekey"))?,
                 )
                 .await
                 .map_err(KeystoreError::wrap("storing proteus prekey"))?;
@@ -742,7 +741,7 @@ impl ProteusCentral {
         let bundle = PreKeyBundle::new(self.proteus_identity.as_ref().public_key.clone(), &last_resort);
         let bundle = bundle
             .serialise()
-            .map_err(Error::proteus_operation("serialising prekey bundle"))?;
+            .map_err(ProteusError::wrap("serialising prekey bundle"))?;
 
         Ok(bundle)
     }
@@ -786,8 +785,7 @@ impl ProteusCentral {
     /// # Errors
     /// If the prekey cannot be deserialized
     pub fn fingerprint_prekeybundle(prekey: &[u8]) -> Result<String> {
-        let prekey =
-            PreKeyBundle::deserialise(prekey).map_err(Error::proteus_operation("deserialising prekey bundle"))?;
+        let prekey = PreKeyBundle::deserialise(prekey).map_err(ProteusError::wrap("deserialising prekey bundle"))?;
         Ok(prekey.identity_key.fingerprint())
     }
 
@@ -813,9 +811,10 @@ impl ProteusCentral {
         let root_dir = std::path::PathBuf::from(path);
 
         if !root_dir.exists() {
-            return Err(Error::cryptobox_migration("root dir does not exist")(
-                crate::CryptoboxMigrationError::ProvidedPathDoesNotExist(path.into()),
-            ));
+            return Err(CryptoboxMigrationError::wrap("root dir does not exist")(
+                crate::CryptoboxMigrationErrorKind::ProvidedPathDoesNotExist(path.into()),
+            )
+            .into());
         }
 
         let session_dir = root_dir.join("sessions");
@@ -827,9 +826,8 @@ impl ProteusCentral {
             .map_err(KeystoreError::wrap("finding proteus identity"))?
         {
             Some(Box::new(
-                IdentityKeyPair::from_raw_key_pair(*store_kp.sk_raw(), *store_kp.pk_raw()).map_err(
-                    Error::proteus_operation("constructing identity keypair from raw keypair"),
-                )?,
+                IdentityKeyPair::from_raw_key_pair(*store_kp.sk_raw(), *store_kp.pk_raw())
+                    .map_err(ProteusError::wrap("constructing identity keypair from raw keypair"))?,
             ))
         } else {
             let identity_dir = root_dir.join("identities");
@@ -840,16 +838,16 @@ impl ProteusCentral {
             let identity_check = if legacy_identity.exists() {
                 let kp_cbor = async_fs::read(&legacy_identity)
                     .await
-                    .map_err(Error::cryptobox_migration("reading legacy identity from filesystem"))?;
+                    .map_err(CryptoboxMigrationError::wrap("reading legacy identity from filesystem"))?;
                 let kp = IdentityKeyPair::deserialise(&kp_cbor)
-                    .map_err(Error::proteus_operation("deserialising identity keypair"))?;
+                    .map_err(ProteusError::wrap("deserialising identity keypair"))?;
                 Some((Box::new(kp), true))
             } else if identity.exists() {
                 let kp_cbor = async_fs::read(&identity)
                     .await
-                    .map_err(Error::cryptobox_migration("reading identity from filesystem"))?;
+                    .map_err(CryptoboxMigrationError::wrap("reading identity from filesystem"))?;
                 let kp = proteus_wasm::identity::Identity::deserialise(&kp_cbor)
-                    .map_err(Error::proteus_operation("deserialising identity"))?;
+                    .map_err(ProteusError::wrap("deserialising identity"))?;
                 if let proteus_wasm::identity::Identity::Sec(kp) = kp {
                     Some((kp.into_owned(), false))
                 } else {
@@ -875,7 +873,7 @@ impl ProteusCentral {
                 if delete && legacy_identity.exists() {
                     async_fs::remove_file(legacy_identity)
                         .await
-                        .map_err(Error::cryptobox_migration("removing legacy identity"))?;
+                        .map_err(CryptoboxMigrationError::wrap("removing legacy identity"))?;
                 }
 
                 Some(kp)
@@ -885,9 +883,10 @@ impl ProteusCentral {
         };
 
         let Some(identity) = identity.take() else {
-            return Err(Error::cryptobox_migration("taking identity keypair")(
-                crate::CryptoboxMigrationError::IdentityNotFound(path.into()),
-            ));
+            return Err(CryptoboxMigrationError::wrap("taking identity keypair")(
+                crate::CryptoboxMigrationErrorKind::IdentityNotFound(path.into()),
+            )
+            .into());
         };
         let identity = *identity;
 
@@ -895,11 +894,11 @@ impl ProteusCentral {
         // Session migration
         let mut session_entries = async_fs::read_dir(session_dir)
             .await
-            .map_err(Error::cryptobox_migration("reading session entries"))?;
+            .map_err(CryptoboxMigrationError::wrap("reading session entries"))?;
         while let Some(session_file) = session_entries
             .try_next()
             .await
-            .map_err(Error::cryptobox_migration("getting next session file"))?
+            .map_err(CryptoboxMigrationError::wrap("getting next session file"))?
         {
             // The name of the file is the session id
             let proteus_session_id: String = session_file.file_name().to_string_lossy().to_string();
@@ -916,7 +915,7 @@ impl ProteusCentral {
 
             let raw_session = async_fs::read(session_file.path())
                 .await
-                .map_err(Error::cryptobox_migration("reading session file"))?;
+                .map_err(CryptoboxMigrationError::wrap("reading session file"))?;
             // Session integrity check
             let Ok(_) = Session::deserialise(&identity, &raw_session) else {
                 continue;
@@ -935,13 +934,15 @@ impl ProteusCentral {
 
         // Prekey migration
         use core_crypto_keystore::entities::ProteusPrekey;
+
+        use crate::CryptoboxMigrationError;
         let mut prekey_entries = async_fs::read_dir(prekey_dir)
             .await
-            .map_err(Error::cryptobox_migration("reading prekey entries"))?;
+            .map_err(CryptoboxMigrationError::wrap("reading prekey entries"))?;
         while let Some(prekey_file) = prekey_entries
             .try_next()
             .await
-            .map_err(Error::cryptobox_migration("getting next prekey file"))?
+            .map_err(CryptoboxMigrationError::wrap("getting next prekey file"))?
         {
             // The name of the file is the prekey id, so we parse it to get the ID
             let proteus_prekey_id = proteus_wasm::keys::PreKeyId::new(
@@ -949,7 +950,7 @@ impl ProteusCentral {
                     .file_name()
                     .to_string_lossy()
                     .parse()
-                    .map_err(Error::cryptobox_migration("parsing prekey file name"))?,
+                    .map_err(CryptoboxMigrationError::wrap("parsing prekey file name"))?,
             );
 
             // Check if the prekey ID is already existing
@@ -964,7 +965,7 @@ impl ProteusCentral {
 
             let raw_prekey = async_fs::read(prekey_file.path())
                 .await
-                .map_err(Error::cryptobox_migration("reading prekey file"))?;
+                .map_err(CryptoboxMigrationError::wrap("reading prekey file"))?;
             // Integrity check to see if the PreKey is actually correct
             if proteus_wasm::keys::PreKey::deserialise(&raw_prekey).is_ok() {
                 let keystore_prekey = ProteusPrekey::from_raw(proteus_prekey_id.value(), raw_prekey);

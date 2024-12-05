@@ -21,7 +21,7 @@ use crate::{
         MlsConversation,
     },
     prelude::{Client, ClientId, ConversationId, MlsGroupInfoBundle},
-    LeafError, RecursiveError,
+    LeafError, MlsError, RecursiveError,
 };
 
 impl CentralContext {
@@ -205,7 +205,7 @@ impl MlsConversation {
             .group
             .add_members(backend, signer, key_packages)
             .await
-            .map_err(Error::mls_operation("group add members"))?;
+            .map_err(MlsError::wrap("group add members"))?;
 
         // SAFETY: This should be safe as adding members always generates a new commit
         let gi = gi.ok_or(LeafError::MissingGroupInfo)?;
@@ -253,7 +253,7 @@ impl MlsConversation {
             .group
             .remove_members(backend, signer, &member_kps)
             .await
-            .map_err(Error::mls_operation("group remove members"))?;
+            .map_err(MlsError::wrap("group remove members"))?;
 
         // SAFETY: This should be safe as removing members always generates a new commit
         let gi = gi.ok_or(LeafError::MissingGroupInfo)?;
@@ -288,7 +288,7 @@ impl MlsConversation {
             .group
             .explicit_self_update(backend, &cb.signature_key, leaf_node)
             .await
-            .map_err(Error::mls_operation("group self update"))?;
+            .map_err(MlsError::wrap("group self update"))?;
 
         // We should always have ratchet tree extension turned on hence GroupInfo should always be present
         let group_info = group_info.ok_or(LeafError::MissingGroupInfo)?;
@@ -321,7 +321,7 @@ impl MlsConversation {
                 .group
                 .commit_to_pending_proposals(backend, signer)
                 .await
-                .map_err(Error::mls_operation("group commit to pending proposals"))?;
+                .map_err(MlsError::wrap("group commit to pending proposals"))?;
             let group_info = MlsGroupInfoBundle::try_new_full_plaintext(gi.unwrap())?;
 
             self.persist_group_when_changed(&backend.keystore(), false).await?;

@@ -16,11 +16,11 @@
 
 //! Primitives to export data from a group, such as derived keys and client ids.
 
-use super::{Error, Result};
+use super::Result;
 use crate::{
     context::CentralContext,
     mls::{client::id::ClientId, ConversationId, MlsCentral, MlsConversation},
-    RecursiveError,
+    MlsError, RecursiveError,
 };
 
 impl MlsConversation {
@@ -35,7 +35,8 @@ impl MlsConversation {
     ) -> Result<Vec<u8>> {
         self.group
             .export_secret(backend, Self::EXPORTER_LABEL, Self::EXPORTER_CONTEXT, key_length)
-            .map_err(Error::mls_operation("exporting secret key"))
+            .map_err(MlsError::wrap("exporting secret key"))
+            .map_err(Into::into)
     }
 
     /// See [MlsCentral::get_client_ids]
