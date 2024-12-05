@@ -14,12 +14,11 @@
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see http://www.gnu.org/licenses/.
 
-use crate::context::CentralContext;
 use crate::{
+    context::CentralContext,
     group_store::{GroupStore, GroupStoreValue},
-    CoreCrypto, Error, Result,
+    CoreCrypto, Error, KeystoreError, LeafError, ProteusError, Result,
 };
-use crate::{KeystoreError, ProteusError};
 use core_crypto_keystore::{
     connection::FetchFromDatabase,
     entities::{ProteusIdentity, ProteusSession},
@@ -611,18 +610,17 @@ impl ProteusCentral {
         session_id: &str,
         ciphertext: &[u8],
     ) -> Result<Vec<u8>> {
-        if let Some(session) = self
+        let session = self
             .proteus_sessions
             .get_fetch(session_id.as_bytes(), keystore, Some(self.proteus_identity.clone()))
             .await?
-        {
-            let plaintext = session.write().await.decrypt(keystore, ciphertext).await?;
-            ProteusCentral::session_save_by_ref(keystore, session).await?;
+            .ok_or(LeafError::ConversationNotFound(session_id.as_bytes().into()))
+            .map_err(ProteusError::wrap("getting session"))?;
 
-            Ok(plaintext)
-        } else {
-            Err(Error::ConversationNotFound(session_id.as_bytes().into()))
-        }
+        let plaintext = session.write().await.decrypt(keystore, ciphertext).await?;
+        ProteusCentral::session_save_by_ref(keystore, session).await?;
+
+        Ok(plaintext)
     }
 
     /// Encrypt a message for a session
@@ -632,14 +630,16 @@ impl ProteusCentral {
         session_id: &str,
         plaintext: &[u8],
     ) -> Result<Vec<u8>> {
-        if let Some(session) = self.session(session_id, keystore).await? {
-            let ciphertext = session.write().await.encrypt(plaintext)?;
-            ProteusCentral::session_save_by_ref(keystore, session).await?;
+        let session = self
+            .session(session_id, keystore)
+            .await?
+            .ok_or(LeafError::ConversationNotFound(session_id.as_bytes().into()))
+            .map_err(ProteusError::wrap("getting session"))?;
 
-            Ok(ciphertext)
-        } else {
-            Err(Error::ConversationNotFound(session_id.as_bytes().into()))
-        }
+        let ciphertext = session.write().await.encrypt(plaintext)?;
+        ProteusCentral::session_save_by_ref(keystore, session).await?;
+
+        Ok(ciphertext)
     }
 
     /// Encrypts a message for a list of sessions
@@ -751,11 +751,13 @@ impl ProteusCentral {
     /// # Errors
     /// When the session is not found
     pub(crate) async fn fingerprint_local(&mut self, session_id: &str, keystore: &CryptoKeystore) -> Result<String> {
-        if let Some(session) = self.session(session_id, keystore).await? {
-            Ok(session.read().await.fingerprint_local())
-        } else {
-            Err(Error::ConversationNotFound(session_id.as_bytes().into()))
-        }
+        let session = self
+            .session(session_id, keystore)
+            .await?
+            .ok_or(LeafError::ConversationNotFound(session_id.as_bytes().into()))
+            .map_err(ProteusError::wrap("getting session"))?;
+        let fingerprint = session.read().await.fingerprint_local();
+        Ok(fingerprint)
     }
 
     /// Proteus Session remote hex-encoded fingerprint
@@ -763,11 +765,13 @@ impl ProteusCentral {
     /// # Errors
     /// When the session is not found
     pub(crate) async fn fingerprint_remote(&mut self, session_id: &str, keystore: &CryptoKeystore) -> Result<String> {
-        if let Some(session) = self.session(session_id, keystore).await? {
-            Ok(session.read().await.fingerprint_remote())
-        } else {
-            Err(Error::ConversationNotFound(session_id.as_bytes().into()))
-        }
+        let session = self
+            .session(session_id, keystore)
+            .await?
+            .ok_or(LeafError::ConversationNotFound(session_id.as_bytes().into()))
+            .map_err(ProteusError::wrap("getting session"))?;
+        let fingerprint = session.read().await.fingerprint_remote();
+        Ok(fingerprint)
     }
 
     /// Hex-encoded fingerprint of the given prekey

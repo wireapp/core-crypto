@@ -43,9 +43,6 @@ pub enum Error {
     /// The proteus client has been called but has not been initialized yet
     #[error("Proteus client hasn't been initialized")]
     ProteusNotInitialized,
-    /// This error is emitted when the requested conversation couldn't be found in our store
-    #[error("Couldn't find conversation")]
-    ConversationNotFound(crate::prelude::ConversationId),
     /// A key store operation failed
     #[error(transparent)]
     Keystore(#[from] KeystoreError),
