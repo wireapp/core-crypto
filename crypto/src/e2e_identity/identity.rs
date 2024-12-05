@@ -209,7 +209,7 @@ impl MlsConversation {
             .filter_map(|(id, c)| UserId::try_from(id.as_slice()).ok().zip(Some(c)))
             .filter(|(uid, _)| user_ids.contains(uid))
             .map(|(uid, c)| {
-                let uid = String::try_from(uid).map_err(Error::GetUserIdentities)?;
+                let uid = String::try_from(uid).map_err(RecursiveError::mls_client("getting user identities"))?;
                 let identity = c
                     .extract_identity(self.ciphersuite(), env)
                     .map_err(RecursiveError::mls_credential("extracting identity"))?;

@@ -17,7 +17,7 @@ use crate::{
         CertificateBundle, Client, ConversationId, E2eiEnrollment, MlsCiphersuite, MlsCommitBundle, MlsConversation,
         MlsCredentialType,
     },
-    LeafError, RecursiveError,
+    LeafError, MlsError, RecursiveError,
 };
 
 impl CentralContext {
@@ -215,7 +215,9 @@ impl CentralContext {
             let kp_cred = kp.leaf_node().credential().mls_credential();
             let local_cred = cb.credential().mls_credential();
             let mut push_kpr = || -> Result<()> {
-                let kpr = kp.hash_ref(provider.crypto())?;
+                let kpr = kp
+                    .hash_ref(provider.crypto())
+                    .map_err(MlsError::wrap("computing key package hash_ref"))?;
                 kp_refs.push(kpr);
                 Ok(())
             };
