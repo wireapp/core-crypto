@@ -1,43 +1,12 @@
 {
   "name": "@wireapp/core-crypto",
   "version": "2.0.0",
-  "description": "CoreCrypto bindings for the Web",
-  "type": "module",
-  "module": "corecrypto.js",
-  "types": "corecrypto.d.ts",
-  "scripts": {
-    "clean": "rm -f corecrypto.js corecrypto.d.ts",
-    "build": "bun build --target browser --outfile corecrypto.js CoreCrypto.ts",
-    "postbuild": "bunx dts-bundle-generator --project tsconfig.json -o corecrypto.d.ts --no-check CoreCrypto.ts",
-    "test": "bunx wdio run wdio.conf.ts --spec test/**/*.test.ts",
-    "bench": "bunx wdio run wdio.conf.ts --spec benches/**/*.bench.ts --log-level warn"
-  },
-  "publishConfig": {
-    "access": "public"
-  },
-  "files": [
-    "corecrypto.js",
-    "corecrypto.d.ts",
-    "wasm/core-crypto-ffi_bg.wasm",
-    "wasm/core-crypto-ffi_bg.wasm.d.ts"
-  ],
-  "keywords": [
-    "wire",
-    "e2ee",
-    "corecrypto",
-    "mls",
-    "proteus"
-  ],
   "author": "Wire CoreCrypto team <team.corecrypto@wire.com>",
-  "license": "GPL-3.0",
-  "homepage": "https://github.com/wireapp/core-crypto",
   "repository": {
     "type": "git",
     "url": "git@github.com:wireapp/core-crypto.git"
   },
-  "bugs": {
-    "url": "https://github.com/wireapp/core-crypto/issues"
-  },
+  "module": "src/corecrypto.js",
   "devDependencies": {
     "@types/bun": "^1.1.13",
     "@types/mocha": "^10.0.9",
@@ -57,5 +26,36 @@
     "prettier": "^3.2.5",
     "ts-loader": "^9.5.1",
     "typescript": "^5.3.3"
-  }
+  },
+  "bugs": {
+    "url": "https://github.com/wireapp/core-crypto/issues"
+  },
+  "description": "CoreCrypto bindings for the Web",
+  "files": [
+    "src/corecrypto.js",
+    "src/corecrypto.d.ts",
+    "src/core-crypto-ffi_bg.wasm",
+    "src/core-crypto-ffi_bg.wasm.d.ts"
+  ],
+  "homepage": "https://github.com/wireapp/core-crypto",
+  "keywords": [
+    "wire",
+    "e2ee",
+    "corecrypto",
+    "mls",
+    "proteus"
+  ],
+  "license": "GPL-3.0",
+  "publishConfig": {
+    "access": "public"
+  },
+  "scripts": {
+    "clean": "rm -f src/corecrypto.js src/corecrypto.d.ts",
+    "build": "bun run clean && bun build --target browser --outfile src/corecrypto.js src/CoreCrypto.ts",
+    "postbuild": "bunx dts-bundle-generator --project tsconfig.json -o src/corecrypto.d.ts --no-check src/CoreCrypto.ts",
+    "test": "bunx wdio run wdio.conf.ts --spec test/**/*.test.ts",
+    "bench": "bunx wdio run wdio.conf.ts --spec benches/**/*.bench.ts --log-level warn"
+  },
+  "type": "module",
+  "types": "src/corecrypto.d.ts"
 }
