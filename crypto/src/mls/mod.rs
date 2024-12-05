@@ -9,7 +9,7 @@ use crate::{
         MlsCentralConfiguration, MlsCiphersuite, MlsConversation, MlsConversationConfiguration, MlsCredentialType,
         MlsTransport,
     },
-    CoreCrypto, LeafError, RecursiveError,
+    CoreCrypto, LeafError, MlsError, RecursiveError,
 };
 use mls_crypto_provider::{EntropySeed, MlsCryptoProvider, MlsCryptoProviderConfiguration};
 use openmls_traits::OpenMlsCryptoProvider;
@@ -117,7 +117,7 @@ pub(crate) mod config {
                 .map(|seed| &seed[..EntropySeed::EXPECTED_LEN])
                 .map(EntropySeed::try_from_slice)
                 .transpose()
-                .map_err(Error::mls_operation("gathering external entropy"))?;
+                .map_err(MlsError::wrap("gathering external entropy"))?;
             Ok(Self {
                 store_path,
                 identity_key,
@@ -180,7 +180,7 @@ impl MlsCentral {
             entropy_seed: configuration.external_entropy.clone(),
         })
         .await
-        .map_err(Error::mls_operation("trying to initialize mls crypto provider object"))?;
+        .map_err(MlsError::wrap("trying to initialize mls crypto provider object"))?;
         Self::new_with_backend(mls_backend, configuration).await
     }
 
@@ -193,7 +193,7 @@ impl MlsCentral {
             entropy_seed: configuration.external_entropy.clone(),
         })
         .await
-        .map_err(Error::mls_operation(
+        .map_err(MlsError::wrap(
             "trying to initialize mls crypto provider object (in memory)",
         ))?;
         Self::new_with_backend(mls_backend, configuration).await
@@ -227,7 +227,7 @@ impl MlsCentral {
                         .unwrap_or(INITIAL_KEYING_MATERIAL_COUNT),
                 )
                 .await
-                .map_err(Error::mls_operation("initializing mls client"))?
+                .map_err(RecursiveError::mls_client("initializing mls client"))?
         }
         let central = cc.mls;
         context
@@ -271,7 +271,8 @@ impl MlsCentral {
         self.mls_client
             .id()
             .await
-            .map_err(Error::mls_operation("getting client id"))
+            .map_err(RecursiveError::mls_client("getting client id"))
+            .map_err(Into::into)
     }
 
     /// Checks if a given conversation id exists locally
@@ -294,7 +295,7 @@ impl MlsCentral {
         Ok(self
             .get_conversation(id)
             .await
-            .map_err(Error::mls_operation("getting conversation"))?
+            .map_err(RecursiveError::mls_conversation("getting conversation"))?
             .group
             .epoch()
             .as_u64())
@@ -309,7 +310,7 @@ impl MlsCentral {
         Ok(self
             .get_conversation(id)
             .await
-            .map_err(Error::mls_operation("getting conversation"))?
+            .map_err(RecursiveError::mls_conversation("getting conversation"))?
             .ciphersuite())
     }
 
@@ -319,7 +320,8 @@ impl MlsCentral {
         self.mls_backend
             .rand()
             .random_vec(len)
-            .map_err(Error::mls_operation("generating random vector"))
+            .map_err(MlsError::wrap("generating random vector"))
+            .map_err(Into::into)
     }
 
     /// Closes the connection with the local KeyStore
@@ -330,14 +332,16 @@ impl MlsCentral {
         self.mls_backend
             .close()
             .await
-            .map_err(Error::mls_operation("closing connection with keystore"))
+            .map_err(MlsError::wrap("closing connection with keystore"))
+            .map_err(Into::into)
     }
 
     /// see [mls_crypto_provider::MlsCryptoProvider::reseed]
     pub async fn reseed(&self, seed: Option<EntropySeed>) -> Result<()> {
         self.mls_backend
             .reseed(seed)
-            .map_err(Error::mls_operation("reseeding mls backend"))
+            .map_err(MlsError::wrap("reseeding mls backend"))
+            .map_err(Into::into)
     }
 }
 
@@ -367,13 +371,13 @@ impl CentralContext {
                 nb_key_package,
             )
             .await
-            .map_err(Error::mls_operation("initializing mls client"))?;
+            .map_err(RecursiveError::mls_client("initializing mls client"))?;
 
         if mls_client.is_e2ei_capable().await {
             let client_id = mls_client
                 .id()
                 .await
-                .map_err(Error::mls_operation("getting client id"))?;
+                .map_err(RecursiveError::mls_client("getting client id"))?;
             trace!(client_id:% = client_id; "Initializing PKI environment");
             self.init_pki_env()
                 .await
@@ -400,7 +404,8 @@ impl CentralContext {
                     .map_err(RecursiveError::root("getting mls provider"))?,
             )
             .await
-            .map_err(Error::mls_operation("generating raw keypairs"))
+            .map_err(RecursiveError::mls_client("generating raw keypairs"))
+            .map_err(Into::into)
     }
 
     /// Updates the current temporary Client ID with the newly provided one. This is the second step in the externally-generated clients process
@@ -426,7 +431,10 @@ impl CentralContext {
                     .map_err(RecursiveError::root("getting mls provider"))?,
             )
             .await
-            .map_err(Error::mls_operation("initializing mls client with external client id"))
+            .map_err(RecursiveError::mls_client(
+                "initializing mls client with external client id",
+            ))
+            .map_err(Into::into)
     }
 
     /// see [MlsCentral::client_public_key]
@@ -441,7 +449,7 @@ impl CentralContext {
             .map_err(RecursiveError::root("getting mls client"))?
             .find_most_recent_credential_bundle(ciphersuite.signature_algorithm(), credential_type)
             .await
-            .map_err(Error::mls_operation("finding most recent credential bundle"))?;
+            .map_err(RecursiveError::mls_client("finding most recent credential bundle"))?;
         Ok(cb.signature_key.to_public_vec())
     }
 
@@ -452,7 +460,8 @@ impl CentralContext {
             .map_err(RecursiveError::root("getting mls client"))?
             .id()
             .await
-            .map_err(Error::mls_operation("getting client id"))
+            .map_err(RecursiveError::mls_client("getting client id"))
+            .map_err(Into::into)
     }
 
     /// Create a new empty conversation
@@ -561,7 +570,8 @@ impl CentralContext {
             .map_err(RecursiveError::root("getting mls provider"))?
             .rand()
             .random_vec(len)
-            .map_err(Error::mls_operation("generating random vector"))
+            .map_err(MlsError::wrap("generating random vector"))
+            .map_err(Into::into)
     }
 }
 

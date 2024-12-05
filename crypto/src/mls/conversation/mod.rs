@@ -44,7 +44,7 @@ use crate::{
     group_store::{GroupStore, GroupStoreValue},
     mls::{client::Client, MlsCentral},
     prelude::{MlsCiphersuite, MlsCredentialType},
-    KeystoreError, LeafError, RecursiveError,
+    KeystoreError, LeafError, MlsError, RecursiveError,
 };
 
 use crate::context::CentralContext;
@@ -125,7 +125,7 @@ impl MlsConversation {
             cb.to_mls_credential_with_key(),
         )
         .await
-        .map_err(Error::mls_operation("creating group with id"))?;
+        .map_err(MlsError::wrap("creating group with id"))?;
 
         let mut conversation = Self {
             id,

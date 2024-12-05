@@ -22,7 +22,7 @@ use crate::{
     context::CentralContext,
     mls::{ConversationId, MlsConversation},
     prelude::{decrypt::MlsBufferedConversationDecryptMessage, MlsProposalRef},
-    KeystoreError, RecursiveError,
+    KeystoreError, MlsError, RecursiveError,
 };
 
 /// Abstraction over a MLS group capable of merging a commit
@@ -36,7 +36,7 @@ impl MlsConversation {
         self.group
             .merge_pending_commit(backend)
             .await
-            .map_err(Error::mls_operation("merging pending commit"))?;
+            .map_err(MlsError::wrap("merging pending commit"))?;
         self.persist_group_when_changed(&backend.keystore(), false).await?;
 
         // ..so if there's any, we clear them after the commit is merged
@@ -60,7 +60,7 @@ impl MlsConversation {
             .await
             .map_err(|e| match e {
                 MlsGroupStateError::PendingProposalNotFound => Error::PendingProposalNotFound(proposal_ref),
-                _ => Error::mls_operation("removing pending proposal")(e),
+                _ => MlsError::wrap("removing pending proposal")(e).into(),
             })?;
         self.persist_group_when_changed(&backend.keystore(), true).await?;
         Ok(())

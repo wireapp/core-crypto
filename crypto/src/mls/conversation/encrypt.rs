@@ -15,7 +15,7 @@ use crate::{
     context::CentralContext,
     mls::{ConversationId, MlsConversation},
     prelude::Client,
-    RecursiveError,
+    MlsError, RecursiveError,
 };
 
 /// Abstraction over a MLS group capable of encrypting a MLS message
@@ -37,14 +37,14 @@ impl MlsConversation {
         let encrypted = self
             .group
             .create_message(backend, signer, message.as_ref())
-            .map_err(Error::mls_operation("creating message"))?;
+            .map_err(MlsError::wrap("creating message"))?;
 
         // make sure all application messages are encrypted
         debug_assert!(matches!(encrypted.body, MlsMessageOutBody::PrivateMessage(_)));
 
         let encrypted = encrypted
             .to_bytes()
-            .map_err(Error::mls_operation("constructing byte vector of encrypted message"))?;
+            .map_err(MlsError::wrap("constructing byte vector of encrypted message"))?;
 
         self.persist_group_when_changed(&backend.keystore(), false).await?;
         Ok(encrypted)
