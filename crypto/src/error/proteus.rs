@@ -36,21 +36,33 @@ pub enum ProteusErrorKind {
     #[error(transparent)]
     /// Error when there's a critical error within a proteus Session
     ProteusSessionError(#[from] proteus_wasm::session::Error<core_crypto_keystore::CryptoKeystoreError>),
+    /// Common errors we generate
+    #[cfg(feature = "proteus")]
+    #[error(transparent)]
+    Leaf(#[from] crate::LeafError),
 }
 
 impl ProteusErrorKind {
+    #[cfg(feature = "proteus")]
+    fn proteus_error_code(&self) -> Option<proteus_traits::ProteusErrorKind> {
+        use proteus_traits::ProteusErrorCode as _;
+        let mut out = match self {
+            ProteusErrorKind::ProteusDecodeError(decode_error) => Some(decode_error.code()),
+            ProteusErrorKind::ProteusEncodeError(encode_error) => Some(encode_error.code()),
+            ProteusErrorKind::ProteusInternalError(proteus_error) => Some(proteus_error.code()),
+            ProteusErrorKind::ProteusSessionError(session_error) => Some(session_error.code()),
+            ProteusErrorKind::Leaf(_) => None,
+        };
+        if out == Some(proteus_traits::ProteusErrorKind::None) {
+            out = None;
+        }
+        out
+    }
     /// Returns the proteus error code
     pub fn error_code(&self) -> Option<u16> {
         cfg_if::cfg_if! {
             if #[cfg(feature = "proteus")] {
-                use proteus_traits::{ProteusErrorCode as _};
-                let kind = match self {
-                    ProteusErrorKind::ProteusDecodeError(e) => e.code(),
-                    ProteusErrorKind::ProteusEncodeError(e) => e.code(),
-                    ProteusErrorKind::ProteusSessionError(e) => e.code(),
-                    ProteusErrorKind::ProteusInternalError(e) => e.code(),
-                };
-                (kind != proteus_traits::ProteusErrorKind::None).then_some(kind as u16)
+                self.proteus_error_code().map(|code| code as u16)
             } else {
                 None
             }
