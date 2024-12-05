@@ -971,20 +971,26 @@ impl ProteusCentral {
 
     #[cfg(target_family = "wasm")]
     fn get_cbor_bytes_from_map(map: serde_json::map::Map<String, serde_json::Value>) -> Result<Vec<u8>> {
-        use crate::CryptoboxMigrationError;
+        use crate::{CryptoboxMigrationError, CryptoboxMigrationErrorKind};
 
         let Some(js_value) = map.get("serialised") else {
-            return Err(CryptoboxMigrationError::MissingKeyInValue("serialised".to_string()).into());
+            return Err(CryptoboxMigrationError::wrap("getting serialised cbor bytes from map")(
+                CryptoboxMigrationErrorKind::MissingKeyInValue("serialised".to_string()),
+            )
+            .into());
         };
 
         let Some(b64_value) = js_value.as_str() else {
-            return Err(CryptoboxMigrationError::WrongValueType("string".to_string()).into());
+            return Err(CryptoboxMigrationError::wrap("getting js value as string")(
+                CryptoboxMigrationErrorKind::WrongValueType("string".to_string()),
+            )
+            .into());
         };
 
         use base64::Engine as _;
         let cbor_bytes = base64::prelude::BASE64_STANDARD
             .decode(b64_value)
-            .map_err(CryptoboxMigrationError::from)?;
+            .map_err(CryptoboxMigrationError::wrap("decoding cbor bytes"))?;
         Ok(cbor_bytes)
     }
 
@@ -992,7 +998,7 @@ impl ProteusCentral {
     async fn cryptobox_migrate_impl(keystore: &CryptoKeystore, path: &str) -> Result<()> {
         use rexie::{Rexie, TransactionMode};
 
-        use crate::CryptoboxMigrationError;
+        use crate::{CryptoboxMigrationError, CryptoboxMigrationErrorKind};
         let local_identity_key = "local_identity";
         let local_identity_store_name = "keys";
         let prekeys_store_name = "prekeys";
@@ -1002,7 +1008,7 @@ impl ProteusCentral {
         let db = Rexie::builder(path)
             .build()
             .await
-            .map_err(CryptoboxMigrationError::from)?;
+            .map_err(CryptoboxMigrationError::wrap("building rexie"))?;
 
         let store_names = db.store_names();
 
@@ -1010,37 +1016,47 @@ impl ProteusCentral {
 
         if !expected_stores
             .iter()
-            .map(|s| s.to_string())
+            .map(ToString::to_string)
             .all(|s| store_names.contains(&s))
         {
-            return Err(crate::CryptoboxMigrationError::ProvidedPathDoesNotExist(path.into()).into());
+            return Err(CryptoboxMigrationError::wrap("checking expected stores")(
+                CryptoboxMigrationErrorKind::ProvidedPathDoesNotExist(path.into()),
+            )
+            .into());
         }
 
-        let mut proteus_identity = if let Some(store_kp) = keystore.find::<ProteusIdentity>(&[]).await? {
+        let mut proteus_identity = if let Some(store_kp) = keystore
+            .find::<ProteusIdentity>(&[])
+            .await
+            .map_err(KeystoreError::wrap("finding proteus identity for empty id"))?
+        {
             Some(
                 proteus_wasm::keys::IdentityKeyPair::from_raw_key_pair(*store_kp.sk_raw(), *store_kp.pk_raw())
-                    .map_err(ProteusError::from)?,
+                    .map_err(ProteusError::wrap("constructing identity keypair from raw"))?,
             )
         } else {
             let transaction = db
                 .transaction(&[local_identity_store_name], TransactionMode::ReadOnly)
-                .map_err(CryptoboxMigrationError::from)?;
+                .map_err(CryptoboxMigrationError::wrap("initializing rexie transaction"))?;
 
             let identity_store = transaction
                 .store(local_identity_store_name)
-                .map_err(CryptoboxMigrationError::from)?;
+                .map_err(CryptoboxMigrationError::wrap("storing local identity store name"))?;
 
             if let Some(cryptobox_js_value) = identity_store
                 .get(local_identity_key.into())
                 .await
-                .map_err(CryptoboxMigrationError::from)?
+                .map_err(CryptoboxMigrationError::wrap("getting local identity key js value"))?
             {
                 let js_value: serde_json::map::Map<String, serde_json::Value> =
-                    serde_wasm_bindgen::from_value(cryptobox_js_value).map_err(CryptoboxMigrationError::from)?;
+                    serde_wasm_bindgen::from_value(cryptobox_js_value).map_err(CryptoboxMigrationError::wrap(
+                        "getting local identity key from identity store",
+                    ))?;
 
                 let kp_cbor = Self::get_cbor_bytes_from_map(js_value)?;
 
-                let kp = proteus_wasm::keys::IdentityKeyPair::deserialise(&kp_cbor).map_err(ProteusError::from)?;
+                let kp = proteus_wasm::keys::IdentityKeyPair::deserialise(&kp_cbor)
+                    .map_err(ProteusError::wrap("deserializing identity keypair"))?;
 
                 let pk = kp.public_key.public_key.as_slice().to_vec();
 
@@ -1048,7 +1064,10 @@ impl ProteusCentral {
                     sk: kp.secret_key.to_keypair_bytes().into(),
                     pk,
                 };
-                keystore.save(ks_identity).await?;
+                keystore
+                    .save(ks_identity)
+                    .await
+                    .map_err(KeystoreError::wrap("saving proteus identity in keystore"))?;
 
                 Some(kp)
             } else {
@@ -1057,31 +1076,41 @@ impl ProteusCentral {
         };
 
         let Some(proteus_identity) = proteus_identity.take() else {
-            return Err(crate::CryptoboxMigrationError::IdentityNotFound(path.into()).into());
+            return Err(CryptoboxMigrationError::wrap("taking proteus identity")(
+                CryptoboxMigrationErrorKind::IdentityNotFound(path.into()),
+            )
+            .into());
         };
 
         if store_names.contains(&sessions_store_name.to_string()) {
             let transaction = db
                 .transaction(&[sessions_store_name], TransactionMode::ReadOnly)
-                .map_err(CryptoboxMigrationError::from)?;
+                .map_err(CryptoboxMigrationError::wrap("starting rexie transaction"))?;
 
             let sessions_store = transaction
                 .store(sessions_store_name)
-                .map_err(CryptoboxMigrationError::from)?;
+                .map_err(CryptoboxMigrationError::wrap("getting sessions store"))?;
 
             let sessions = sessions_store
                 .scan(None, None, None, None)
                 .await
-                .map_err(CryptoboxMigrationError::from)?;
+                .map_err(CryptoboxMigrationError::wrap("scanning sessions store for sessions"))?;
 
             for (session_id, session_js_value) in sessions.into_iter().map(|(k, v)| (k.as_string().unwrap(), v)) {
                 // If the session is already in store, skip ahead
-                if keystore.find::<ProteusSession>(session_id.as_bytes()).await?.is_some() {
+                if keystore
+                    .find::<ProteusSession>(session_id.as_bytes())
+                    .await
+                    .map_err(KeystoreError::wrap("finding proteus session by id"))?
+                    .is_some()
+                {
                     continue;
                 }
 
                 let js_value: serde_json::map::Map<String, serde_json::Value> =
-                    serde_wasm_bindgen::from_value(session_js_value).map_err(CryptoboxMigrationError::from)?;
+                    serde_wasm_bindgen::from_value(session_js_value).map_err(CryptoboxMigrationError::wrap(
+                        "converting session js value to serde map",
+                    ))?;
 
                 let session_cbor_bytes = Self::get_cbor_bytes_from_map(js_value)?;
 
@@ -1092,7 +1121,10 @@ impl ProteusCentral {
                         session: session_cbor_bytes,
                     };
 
-                    keystore.save(keystore_session).await?;
+                    keystore
+                        .save(keystore_session)
+                        .await
+                        .map_err(KeystoreError::wrap("saving keystore session"))?;
                 }
             }
         }
@@ -1102,41 +1134,50 @@ impl ProteusCentral {
 
             let transaction = db
                 .transaction(&[prekeys_store_name], TransactionMode::ReadOnly)
-                .map_err(CryptoboxMigrationError::from)?;
+                .map_err(CryptoboxMigrationError::wrap("beginning rexie transaction"))?;
 
             let prekeys_store = transaction
                 .store(prekeys_store_name)
-                .map_err(CryptoboxMigrationError::from)?;
+                .map_err(CryptoboxMigrationError::wrap("getting prekeys store"))?;
 
             let prekeys = prekeys_store
                 .scan(None, None, None, None)
                 .await
-                .map_err(CryptoboxMigrationError::from)?;
+                .map_err(CryptoboxMigrationError::wrap("scanning for prekeys"))?;
 
             for (prekey_id, prekey_js_value) in prekeys
                 .into_iter()
                 .map(|(id, prekey_js_value)| (id.as_string().unwrap(), prekey_js_value))
             {
-                let prekey_id: u16 = prekey_id.parse()?;
+                let prekey_id: u16 = prekey_id
+                    .parse()
+                    .map_err(CryptoboxMigrationError::wrap("parsing prekey id"))?;
 
                 // Check if the prekey ID is already existing
                 if keystore
                     .find::<ProteusPrekey>(&prekey_id.to_le_bytes())
-                    .await?
+                    .await
+                    .map_err(KeystoreError::wrap(
+                        "finding proteus prekey by id to check for existence",
+                    ))?
                     .is_some()
                 {
                     continue;
                 }
 
                 let js_value: serde_json::map::Map<String, serde_json::Value> =
-                    serde_wasm_bindgen::from_value(prekey_js_value).map_err(CryptoboxMigrationError::from)?;
+                    serde_wasm_bindgen::from_value(prekey_js_value)
+                        .map_err(CryptoboxMigrationError::wrap("converting prekey js value to serde map"))?;
 
                 let raw_prekey_cbor = Self::get_cbor_bytes_from_map(js_value)?;
 
                 // Integrity check to see if the PreKey is actually correct
                 if proteus_wasm::keys::PreKey::deserialise(&raw_prekey_cbor).is_ok() {
                     let keystore_prekey = ProteusPrekey::from_raw(prekey_id, raw_prekey_cbor);
-                    keystore.save(keystore_prekey).await?;
+                    keystore
+                        .save(keystore_prekey)
+                        .await
+                        .map_err(KeystoreError::wrap("saving proteus prekey"))?;
                 }
             }
         }

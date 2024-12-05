@@ -57,7 +57,7 @@ pub enum CryptoboxMigrationErrorKind {
     #[cfg(all(feature = "cryptobox-migrate", not(target_family = "wasm")))]
     #[error(transparent)]
     Io(#[from] std::io::Error),
-    #[cfg(all(feature = "cryptobox-migrate", not(target_family = "wasm")))]
+    #[cfg(feature = "cryptobox-migrate")]
     #[error(transparent)]
     ParseInt(#[from] std::num::ParseIntError),
 }
