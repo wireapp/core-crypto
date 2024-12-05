@@ -1,5 +1,5 @@
 use super::error::*;
-use crate::prelude::MlsCiphersuite;
+use crate::{prelude::MlsCiphersuite, MlsError};
 use mls_crypto_provider::{MlsCryptoProvider, PkiKeypair, RustCrypto};
 use openmls_basic_credential::SignatureKeyPair as OpenMlsSignatureKeyPair;
 use openmls_traits::{
@@ -18,7 +18,7 @@ impl super::E2eiEnrollment {
         let (sk, _) = backend
             .crypto()
             .signature_key_gen(ciphersuite.signature_algorithm())
-            .map_err(Error::SignatureKeyGen)?;
+            .map_err(MlsError::wrap("performing signature keygen"))?;
         E2eiSignatureKeypair::try_new(ciphersuite.signature_algorithm(), sk)
     }
 
@@ -27,7 +27,7 @@ impl super::E2eiEnrollment {
             SignatureScheme::ECDSA_SECP256R1_SHA256 | SignatureScheme::ECDSA_SECP384R1_SHA384 => self.sign_sk.to_vec(),
             SignatureScheme::ECDSA_SECP521R1_SHA512 => RustCrypto::normalize_p521_secret_key(&self.sign_sk).to_vec(),
             SignatureScheme::ED25519 => RustCrypto::normalize_ed25519_key(self.sign_sk.as_slice())
-                .map_err(Error::NormalizingEd25519Key)?
+                .map_err(MlsError::wrap("normalizing ed25519 key"))?
                 .to_bytes()
                 .to_vec(),
             SignatureScheme::ED448 => return Err(Error::NotYetSupported),
@@ -59,7 +59,7 @@ pub struct E2eiSignatureKeypair(Vec<u8>);
 
 impl E2eiSignatureKeypair {
     pub fn try_new(sc: SignatureScheme, sk: Vec<u8>) -> Result<Self> {
-        let keypair = PkiKeypair::new(sc, sk)?;
+        let keypair = PkiKeypair::new(sc, sk).map_err(MlsError::wrap("creating new pki keypair"))?;
         Ok(Self(keypair.signing_key_bytes()))
     }
 }
