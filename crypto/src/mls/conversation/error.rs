@@ -3,8 +3,6 @@
 // We allow missing documentation in the error module because the types are generally self-descriptive.
 #![allow(missing_docs)]
 
-use crate::{LeafError, RecursiveError};
-
 use super::config::MAX_PAST_EPOCHS;
 
 pub type Result<T, E = Error> = core::result::Result<T, E>;
@@ -61,8 +59,6 @@ pub enum Error {
     /// with an External Commit instead
     #[error("Although this Welcome seems valid, the local KeyPackage it references has already been deleted locally. Join this group with an external commit")]
     OrphanWelcome,
-    #[error(transparent)]
-    Keystore(#[from] crate::KeystoreError),
     #[error("Serializing {item} for TLS")]
     TlsSerialize {
         item: &'static str,
@@ -78,9 +74,11 @@ pub enum Error {
     #[error(transparent)]
     Mls(#[from] crate::MlsError),
     #[error(transparent)]
-    Leaf(#[from] LeafError),
+    Keystore(#[from] crate::KeystoreError),
     #[error(transparent)]
-    Recursive(#[from] RecursiveError),
+    Leaf(#[from] crate::LeafError),
+    #[error(transparent)]
+    Recursive(#[from] crate::RecursiveError),
 }
 
 impl Error {
