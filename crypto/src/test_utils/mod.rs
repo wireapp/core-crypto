@@ -508,14 +508,11 @@ pub struct CoreCryptoTransportSuccessProvider;
 #[cfg_attr(target_family = "wasm", async_trait::async_trait(?Send))]
 #[cfg_attr(not(target_family = "wasm"), async_trait::async_trait)]
 impl MlsTransport for CoreCryptoTransportSuccessProvider {
-    async fn send_commit_bundle(
-        &self,
-        _commit_bundle: MlsCommitBundle,
-    ) -> Result<MlsTransportResponse, Box<dyn std::error::Error>> {
+    async fn send_commit_bundle(&self, _commit_bundle: MlsCommitBundle) -> CryptoResult<MlsTransportResponse> {
         Ok(MlsTransportResponse::Success)
     }
 
-    async fn send_message(&self, _mls_message: Vec<u8>) -> Result<MlsTransportResponse, Box<dyn std::error::Error>> {
+    async fn send_message(&self, _mls_message: Vec<u8>) -> CryptoResult<MlsTransportResponse> {
         Ok(MlsTransportResponse::Success)
     }
 }

@@ -865,18 +865,13 @@ struct MlsTransportWrapper(Arc<dyn MlsTransport>);
 
 #[async_trait::async_trait]
 impl core_crypto::prelude::MlsTransport for MlsTransportWrapper {
-    async fn send_commit_bundle(
-        &self,
-        commit_bundle: MlsCommitBundle,
-    ) -> Result<core_crypto::MlsTransportResponse, Box<dyn std::error::Error>> {
-        let commit_bundle = CommitBundle::try_from(commit_bundle)?;
+    async fn send_commit_bundle(&self, commit_bundle: MlsCommitBundle) -> CryptoResult<MlsTransportResponse> {
+        let commit_bundle =
+            CommitBundle::try_from(commit_bundle).map_err(|e| CryptoError::ErrorDuringMlsTransport(e.into()))?;
         Ok(self.0.send_commit_bundle(commit_bundle).await.into())
     }
 
-    async fn send_message(
-        &self,
-        mls_message: Vec<u8>,
-    ) -> Result<core_crypto::MlsTransportResponse, Box<dyn std::error::Error>> {
+    async fn send_message(&self, mls_message: Vec<u8>) -> CryptoResult<MlsTransportResponse> {
         Ok(self.0.send_message(mls_message).await.into())
     }
 }

@@ -113,6 +113,15 @@ pub enum CryptoError {
     /// Standard I/O Error
     #[error(transparent)]
     IoError(#[from] std::io::Error),
+    /// Mls Transport Callbacks were not provided
+    #[error("The mls transport callbacks needed for CoreCrypto to operate were not set")]
+    MlsTransportNotProvided,
+    /// Any error that occurs during mls transport.
+    #[error(transparent)]
+    ErrorDuringMlsTransport(Box<dyn std::error::Error>),
+    /// Message rejected by the delivery service
+    #[error("Message rejected by the delivery service. Reason: {reason}")]
+    MessageRejected { reason: String },
     /// A supplied [`openmls::ciphersuite::hash_ref::HashReference`] is not of the expected size: 16
     #[error("A supplied reference is not of the expected size: 16")]
     InvalidHashReference,

@@ -11,6 +11,7 @@ use mls_crypto_provider::MlsCryptoProvider;
 
 use super::MlsConversation;
 use crate::context::CentralContext;
+use crate::prelude::MlsBufferedConversationDecryptMessage;
 use crate::{
     e2e_identity::init_certificates::NewCrlDistributionPoint,
     mls::credential::{
@@ -18,9 +19,32 @@ use crate::{
         CredentialBundle,
     },
     prelude::{Client, ClientId, ConversationId, CryptoError, CryptoResult, MlsError, MlsGroupInfoBundle},
+    MlsTransportResponse,
 };
 
 impl CentralContext {
+    pub(crate) async fn send_commit<F, Fut>(
+        &self,
+        id: &ConversationId,
+        commit: MlsCommitBundle,
+        retry: F,
+    ) -> CryptoResult<Option<Vec<MlsBufferedConversationDecryptMessage>>>
+    where
+        F: FnOnce() -> Fut,
+        Fut: std::future::Future<Output = CryptoResult<Option<Vec<MlsBufferedConversationDecryptMessage>>>>,
+    {
+        let guard = self.mls_transport().await?;
+        let transport = guard.as_ref().ok_or(CryptoError::MlsTransportNotProvided)?;
+        match transport.send_commit_bundle(commit).await? {
+            MlsTransportResponse::Success => self.commit_accepted(id).await,
+            MlsTransportResponse::Abort { reason } => {
+                self.clear_pending_commit(id).await?;
+                Err(CryptoError::MessageRejected { reason })
+            }
+            MlsTransportResponse::Retry => retry().await,
+        }
+    }
+
     /// Adds new members to the group/conversation
     ///
     /// # Arguments
@@ -253,7 +277,9 @@ impl MlsConversation {
         client: &Client,
         backend: &MlsCryptoProvider,
     ) -> CryptoResult<Option<MlsCommitBundle>> {
-        if self.group.pending_proposals().count() > 0 {
+        if self.group.pending_proposals().count() == 0 {
+            Ok(None)
+        } else {
             let signer = &self.find_most_recent_credential_bundle(client).await?.signature_key;
 
             let (commit, welcome, gi) = self
@@ -270,8 +296,6 @@ impl MlsConversation {
                 commit,
                 group_info,
             }))
-        } else {
-            Ok(None)
         }
     }
 }

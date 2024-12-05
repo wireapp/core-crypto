@@ -92,7 +92,7 @@ impl CentralContext {
     /// to be used for the new epoch.
     /// We can now safely "merge" it (effectively apply the commit to the group) and update it
     /// in the keystore. The previous can be discarded to respect Forward Secrecy.
-    pub async fn commit_accepted(
+    pub(crate) async fn commit_accepted(
         &self,
         id: &ConversationId,
     ) -> CryptoResult<Option<Vec<MlsBufferedConversationDecryptMessage>>> {
@@ -148,7 +148,7 @@ impl CentralContext {
     /// # Errors
     /// When the conversation is not found or there is no pending commit
     #[cfg_attr(test, crate::idempotent)]
-    pub async fn clear_pending_commit(&self, conversation_id: &ConversationId) -> CryptoResult<()> {
+    pub(crate) async fn clear_pending_commit(&self, conversation_id: &ConversationId) -> CryptoResult<()> {
         self.get_conversation(conversation_id)
             .await?
             .write()
