@@ -27,7 +27,7 @@ use crate::{
         identifier::ClientIdentifier, key_package::KEYPACKAGE_DEFAULT_LIFETIME, CertificateBundle, ClientId,
         MlsCiphersuite, MlsCredentialType,
     },
-    KeystoreError, LeafError, RecursiveError,
+    KeystoreError, LeafError, MlsError, RecursiveError,
 };
 pub use error::{Error, Result};
 
@@ -171,7 +171,7 @@ impl Client {
             let tmp_client_id: ClientId = backend
                 .rand()
                 .random_vec(TEMP_KEY_SIZE)
-                .map_err(Error::GenerateRandomClientId)?
+                .map_err(MlsError::wrap("generating random client id"))?
                 .into();
 
             let cb = Self::new_basic_credential_bundle(&tmp_client_id, cs.signature_algorithm(), backend)
@@ -362,7 +362,7 @@ impl Client {
                 let (sk, pk) = backend
                     .crypto()
                     .signature_key_gen(sc)
-                    .map_err(Error::GeneratingSignatureKeypair)?;
+                    .map_err(MlsError::wrap("generating signature key"))?;
                 let keypair = SignatureKeyPair::from_raw(sc, sk, pk.clone());
                 let raw_keypair = keypair
                     .tls_serialize_detached()
