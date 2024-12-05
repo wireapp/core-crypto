@@ -1,7 +1,7 @@
 use crate::{
     mls::credential::ext::CredentialExt,
     prelude::{ConversationId, MlsCentral, MlsConversation, MlsCredentialType},
-    RecursiveError,
+    MlsError, RecursiveError,
 };
 
 use mls_crypto_provider::MlsCryptoProvider;
@@ -104,7 +104,8 @@ impl CentralContext {
                     .map_err(RecursiveError::root("getting mls provider"))?,
                 false,
             )
-            .await?;
+            .await
+            .map_err(MlsError::wrap("taking ratchet tree"))?;
         let mls_provider = self
             .mls_provider()
             .await
@@ -155,7 +156,10 @@ impl MlsCentral {
         // the e2ei state of a conversation and as a consequence degrade this conversation for all
         // participants once joining it.
         // This 👇 verifies the GroupInfo and the RatchetTree btw
-        let rt = group_info.take_ratchet_tree(&self.mls_backend, false).await?;
+        let rt = group_info
+            .take_ratchet_tree(&self.mls_backend, false)
+            .await
+            .map_err(MlsError::wrap("taking ratchet tree"))?;
         get_credential_in_use_in_ratchet_tree(
             cs,
             rt,

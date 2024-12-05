@@ -1,5 +1,5 @@
 use super::{Error, Result};
-use crate::{context::CentralContext, e2e_identity::CrlRegistration, prelude::MlsCentral, RecursiveError};
+use crate::{context::CentralContext, e2e_identity::CrlRegistration, prelude::MlsCentral, MlsError, RecursiveError};
 use core_crypto_keystore::{
     connection::FetchFromDatabase,
     entities::{E2eiAcmeCA, E2eiCrl, E2eiIntermediateCert},
@@ -125,7 +125,11 @@ impl CentralContext {
                 .mls_provider()
                 .await
                 .map_err(RecursiveError::root("getting mls provider"))?;
-            provider.authentication_service().update_env(pki_env).await?;
+            provider
+                .authentication_service()
+                .update_env(pki_env)
+                .await
+                .map_err(MlsError::wrap("updating authentication service env"))?;
         }
 
         Ok(())
