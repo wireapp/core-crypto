@@ -7,7 +7,7 @@ use crate::{
     group_store::GroupStore,
     mls::credential::crl::{extract_crl_uris_from_group, get_new_crl_distribution_points},
     prelude::{ConversationId, MlsConversation, MlsConversationConfiguration, MlsCustomConfiguration},
-    LeafError, RecursiveError,
+    LeafError, MlsError, RecursiveError,
 };
 use core_crypto_keystore::{connection::FetchFromDatabase, entities::PersistedMlsPendingGroup};
 use mls_crypto_provider::MlsCryptoProvider;
@@ -133,7 +133,7 @@ impl MlsConversation {
         let group = match group {
             Err(openmls::prelude::WelcomeError::NoMatchingKeyPackage)
             | Err(openmls::prelude::WelcomeError::NoMatchingEncryptionKey) => return Err(Error::OrphanWelcome),
-            _ => group.map_err(Error::mls_operation("group could not be created from welcome"))?,
+            _ => group.map_err(MlsError::wrap("group could not be created from welcome"))?,
         };
 
         let id = ConversationId::from(group.group_id().as_slice());

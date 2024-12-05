@@ -14,7 +14,7 @@ use crate::{
     e2e_identity::init_certificates::NewCrlDistributionPoint,
     mls::credential::crl::{extract_crl_uris_from_credentials, get_new_crl_distribution_points},
     prelude::{Client, MlsConversation, MlsProposalRef},
-    RecursiveError,
+    MlsError, RecursiveError,
 };
 
 /// Creating proposals
@@ -45,7 +45,7 @@ impl MlsConversation {
             .group
             .propose_add_member(backend, signer, key_package)
             .await
-            .map_err(Error::mls_operation("propose add member"))?;
+            .map_err(MlsError::wrap("propose add member"))?;
         let proposal = MlsProposalBundle {
             proposal,
             proposal_ref: proposal_ref.into(),
@@ -71,7 +71,7 @@ impl MlsConversation {
         let proposal = self
             .group
             .propose_remove_member(backend, signer, member)
-            .map_err(Error::mls_operation("propose remove member"))
+            .map_err(MlsError::wrap("propose remove member"))
             .map(MlsProposalBundle::from)?;
         self.persist_group_when_changed(&backend.keystore(), false).await?;
         Ok(proposal)
@@ -115,7 +115,7 @@ impl MlsConversation {
             self.group.propose_self_update(backend, msg_signer).await
         }
         .map(MlsProposalBundle::from)
-        .map_err(Error::mls_operation("proposing self update"))?;
+        .map_err(MlsError::wrap("proposing self update"))?;
 
         self.persist_group_when_changed(&backend.keystore(), false).await?;
         Ok(proposal)

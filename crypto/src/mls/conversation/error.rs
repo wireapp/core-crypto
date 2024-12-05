@@ -75,12 +75,8 @@ pub enum Error {
         #[source]
         source: tls_codec::Error,
     },
-    #[error("{context}")]
-    MlsOperation {
-        context: &'static str,
-        #[source]
-        source: Box<dyn std::error::Error + Send + Sync>,
-    },
+    #[error(transparent)]
+    Mls(#[from] crate::MlsError),
     #[error(transparent)]
     Leaf(#[from] LeafError),
     #[error(transparent)]
@@ -94,28 +90,5 @@ impl Error {
 
     pub(crate) fn tls_deserialize(item: &'static str) -> impl FnOnce(tls_codec::Error) -> Self {
         move |source| Self::TlsDeserialize { item, source }
-    }
-
-    pub(crate) fn mls_operation<E>(context: &'static str) -> impl FnOnce(E) -> Self
-    where
-        E: 'static + std::error::Error + Send + Sync,
-    {
-        move |source| Self::MlsOperation {
-            context,
-            source: Box::new(source),
-        }
-    }
-
-    /// Attempt to downcast this error as a specific MLS error variant.
-    ///
-    /// Most useful for testing.
-    pub(crate) fn downcast_mls<T>(&self) -> Option<(&T, &'static str)>
-    where
-        T: 'static + std::error::Error + Send + Sync,
-    {
-        let Self::MlsOperation { context, source } = self else {
-            return None;
-        };
-        source.downcast_ref::<T>().map(|t| (t, *context))
     }
 }

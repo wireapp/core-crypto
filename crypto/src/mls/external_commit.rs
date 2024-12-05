@@ -38,7 +38,7 @@ use crate::{
         E2eiConversationState, MlsCiphersuite, MlsConversation, MlsConversationConfiguration, MlsCredentialType,
         MlsCustomConfiguration, MlsGroupInfoBundle,
     },
-    KeystoreError, LeafError, RecursiveError,
+    KeystoreError, LeafError, MlsError, RecursiveError,
 };
 
 /// Returned when a commit is created
@@ -63,7 +63,7 @@ impl MlsConversationInitBundle {
         let commit = self
             .commit
             .tls_serialize_detached()
-            .map_err(Error::mls_operation("serializing detached commit"))?;
+            .map_err(MlsError::wrap("serializing detached commit"))?;
         Ok((commit, self.group_info, self.crl_new_distribution_points))
     }
 }
@@ -116,8 +116,7 @@ impl CentralContext {
             .await
             .map_err(RecursiveError::mls_client("getting or creating credential bundle"))?;
 
-        let serialized_cfg =
-            serde_json::to_vec(&custom_cfg).map_err(Error::mls_operation("serializing mls keystore"))?;
+        let serialized_cfg = serde_json::to_vec(&custom_cfg).map_err(MlsError::wrap("serializing mls keystore"))?;
 
         let configuration = MlsConversationConfiguration {
             ciphersuite: cs,
@@ -139,7 +138,7 @@ impl CentralContext {
             cb.to_mls_credential_with_key(),
         )
         .await
-        .map_err(Error::mls_operation("joining mls group by external commit"))?;
+        .map_err(MlsError::wrap("joining mls group by external commit"))?;
 
         // We should always have ratchet tree extension turned on hence GroupInfo should always be present
         let group_info = group_info.ok_or(LeafError::MissingGroupInfo)?;
@@ -205,11 +204,11 @@ impl CentralContext {
         mls_group
             .merge_pending_commit(&mls_provider)
             .await
-            .map_err(Error::mls_operation("merging pending commit"))?;
+            .map_err(MlsError::wrap("merging pending commit"))?;
 
         // Restore the custom configuration and build a conversation from it
         let custom_cfg =
-            serde_json::from_slice(&cfg).map_err(Error::mls_operation("deserializing mls custom configuration"))?;
+            serde_json::from_slice(&cfg).map_err(MlsError::wrap("deserializing mls custom configuration"))?;
         let configuration = MlsConversationConfiguration {
             ciphersuite: mls_group.ciphersuite().into(),
             custom: custom_cfg,
@@ -374,7 +373,7 @@ mod tests {
     use core_crypto_keystore::{CryptoKeystoreError, CryptoKeystoreMls, MissingKeyErrorKind};
 
     use crate::prelude::MlsConversationConfiguration;
-    use crate::{prelude::MlsConversationInitBundle, test_utils::*, CryptoError};
+    use crate::{prelude::MlsConversationInitBundle, test_utils::*};
 
     wasm_bindgen_test_configure!(run_in_browser);
 

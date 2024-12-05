@@ -1,8 +1,8 @@
-use super::{Error, Result};
+use super::Result;
 use crate::{
     context::CentralContext,
     prelude::{ConversationId, MlsConversation},
-    KeystoreError, RecursiveError,
+    KeystoreError, MlsError, RecursiveError,
 };
 use core_crypto_keystore::CryptoKeystoreMls;
 use mls_crypto_provider::MlsCryptoProvider;
@@ -51,7 +51,7 @@ impl MlsConversation {
             self.group
                 .remove_pending_proposal(backend.key_store(), proposal.proposal_reference())
                 .await
-                .map_err(Error::mls_operation("removing pending proposal"))?;
+                .map_err(MlsError::wrap("removing pending proposal"))?;
         }
 
         Ok(())

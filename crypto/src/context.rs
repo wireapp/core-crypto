@@ -6,7 +6,7 @@ use crate::proteus::ProteusCentral;
 use crate::{
     group_store::GroupStore,
     prelude::{Client, MlsConversation},
-    CoreCrypto, CoreCryptoCallbacks, Error, Result,
+    CoreCrypto, CoreCryptoCallbacks, Error, MlsError, Result,
 };
 use crate::{mls::MlsCentral, KeystoreError};
 use async_lock::{Mutex, RwLock, RwLockReadGuardArc, RwLockWriteGuardArc};
@@ -66,7 +66,7 @@ impl CentralContext {
             .mls_backend
             .new_transaction()
             .await
-            .map_err(Error::mls_operation("creating new transaction"))?;
+            .map_err(MlsError::wrap("creating new transaction"))?;
         let mls_groups = Arc::new(RwLock::new(Default::default()));
         let callbacks = mls_central.callbacks.clone();
         let mls_client = mls_central.mls_client.clone();
