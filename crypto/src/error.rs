@@ -117,8 +117,8 @@ pub enum CryptoError {
     #[error("The mls transport callbacks needed for CoreCrypto to operate were not set")]
     MlsTransportNotProvided,
     /// Any error that occurs during mls transport.
-    #[error(transparent)]
-    ErrorDuringMlsTransport(Box<dyn std::error::Error>),
+    #[error("Error during mls transport: {0}")]
+    ErrorDuringMlsTransport(String),
     /// Message rejected by the delivery service
     #[error("Message rejected by the delivery service. Reason: {reason}")]
     MessageRejected { reason: String },
