@@ -23,25 +23,26 @@ use crate::{
 };
 
 impl CentralContext {
-    pub(crate) async fn send_commit<F, Fut>(
+    pub(crate) async fn send_commit(
         &self,
         id: &ConversationId,
         commit: MlsCommitBundle,
-        retry: F,
-    ) -> CryptoResult<Option<Vec<MlsBufferedConversationDecryptMessage>>>
-    where
-        F: FnOnce() -> Fut,
-        Fut: std::future::Future<Output = CryptoResult<Option<Vec<MlsBufferedConversationDecryptMessage>>>>,
-    {
+    ) -> CryptoResult<Option<Vec<MlsBufferedConversationDecryptMessage>>> {
         let guard = self.mls_transport().await?;
         let transport = guard.as_ref().ok_or(CryptoError::MlsTransportNotProvided)?;
-        match transport.send_commit_bundle(commit).await? {
-            MlsTransportResponse::Success => self.commit_accepted(id).await,
-            MlsTransportResponse::Abort { reason } => {
-                self.clear_pending_commit(id).await?;
-                Err(CryptoError::MessageRejected { reason })
+        loop {
+            match transport.send_commit_bundle(commit.clone()).await? {
+                MlsTransportResponse::Success => {
+                    return self.commit_accepted(id).await;
+                }
+                MlsTransportResponse::Abort { reason } => {
+                    self.clear_pending_commit(id).await?;
+                    return Err(CryptoError::MessageRejected { reason });
+                }
+                MlsTransportResponse::Retry => {
+                    transport.send_commit_bundle(commit.clone()).await?;
+                }
             }
-            MlsTransportResponse::Retry => retry().await,
         }
     }
 
