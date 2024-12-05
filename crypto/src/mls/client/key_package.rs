@@ -27,13 +27,13 @@ use core_crypto_keystore::{
 use mls_crypto_provider::{CryptoKeystore, MlsCryptoProvider};
 
 use super::{Error, Result};
-use crate::KeystoreError;
 use crate::{
     context::CentralContext,
     mls::{client::ClientInner, credential::CredentialBundle},
     prelude::{Client, MlsCiphersuite, MlsConversationConfiguration, MlsCredentialType},
     RecursiveError,
 };
+use crate::{KeystoreError, MlsError};
 
 /// Default number of KeyPackages a client generates the first time it's created
 #[cfg(not(test))]
@@ -230,7 +230,9 @@ impl Client {
                         .credential()
                         .tls_serialize_detached()
                         .map_err(Error::tls_serialize("keypackage"))?;
-                    let kp_ref = kp.hash_ref(backend.crypto()).map_err(Error::ComputeKeypackageHashref)?;
+                    let kp_ref = kp
+                        .hash_ref(backend.crypto())
+                        .map_err(MlsError::wrap("computing keypackage hashref"))?;
                     grouped_kps
                         .entry(cred)
                         .and_modify(|kprfs| kprfs.push(kp_ref.clone()))

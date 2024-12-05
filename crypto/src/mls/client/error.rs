@@ -19,24 +19,8 @@ pub enum Error {
     CredentialNotFound(crate::prelude::MlsCredentialType),
     #[error("supplied signature scheme was not valid")]
     InvalidSignatureScheme,
-    #[error(transparent)]
-    Keystore(#[from] crate::KeystoreError),
-    #[error("Serializing {item} for TLS")]
-    TlsSerialize {
-        item: &'static str,
-        #[source]
-        source: tls_codec::Error,
-    },
-    #[error("Deserializing {item} for TLS")]
-    TlsDeserialize {
-        item: &'static str,
-        #[source]
-        source: tls_codec::Error,
-    },
     #[error("Keypackage list was empty")]
     EmptyKeypackageList,
-    #[error("Computing keypackage hashref")]
-    ComputeKeypackageHashref(#[source] openmls::error::LibraryError),
     /// The keystore has no knowledge of such client; this shouldn't happen as Client::init is failsafe (find-else-create)
     #[error("The provided client signature has not been found in the keystore")]
     ClientSignatureNotFound,
@@ -47,8 +31,6 @@ pub enum Error {
     UnexpectedlyReady,
     #[error("The keystore already contains a stored identity. Cannot create a new one!")]
     IdentityAlreadyPresent,
-    #[error("Generating random client id")]
-    GenerateRandomClientId(#[source] mls_crypto_provider::MlsProviderError),
     #[error(
         r#"The externally-generated client ID initialization cannot continue - there's no provisional keypair in-store!
 
@@ -65,8 +47,22 @@ pub enum Error {
     TooManyIdentitiesPresent,
     #[error("The supplied credential does not match the id or signature schemes provided")]
     WrongCredential,
-    #[error("Generating signature keypair")]
-    GeneratingSignatureKeypair(#[source] openmls_traits::types::CryptoError),
+    #[error("Serializing {item} for TLS")]
+    TlsSerialize {
+        item: &'static str,
+        #[source]
+        source: tls_codec::Error,
+    },
+    #[error("Deserializing {item} for TLS")]
+    TlsDeserialize {
+        item: &'static str,
+        #[source]
+        source: tls_codec::Error,
+    },
+    #[error(transparent)]
+    Mls(#[from] crate::MlsError),
+    #[error(transparent)]
+    Keystore(#[from] crate::KeystoreError),
     #[error(transparent)]
     Leaf(#[from] crate::LeafError),
     #[error(transparent)]
