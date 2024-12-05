@@ -130,11 +130,13 @@ impl MlsConversation {
             // Handles the case where we receive our own commits.
             Err(err)
                 if matches!(
-                    err.downcast_mls(),
-                    Some((
-                        MlsError::MlsMessageError(ProcessMessageError::InvalidCommit(StageCommitError::OwnCommit,)),
-                        _
-                    ))
+                    err,
+                    Error::Mls(crate::MlsError {
+                        source: crate::MlsErrorKind::MlsMessageError(ProcessMessageError::InvalidCommit(
+                            StageCommitError::OwnCommit
+                        )),
+                        ..
+                    })
                 ) =>
             {
                 let ct = self.extract_confirmation_tag_from_own_commit(&message)?;
@@ -244,7 +246,7 @@ impl MlsConversation {
                 self.group
                     .merge_staged_commit(backend, *staged_commit.clone())
                     .await
-                    .map_err(Error::mls_operation("merge staged commit"))?;
+                    .map_err(MlsError::wrap("merge staged commit"))?;
 
                 let (proposals_to_renew, needs_update) = Renew::renew(
                     &self.group.own_leaf_index(),
@@ -339,9 +341,9 @@ impl MlsConversation {
                 (ProtocolMessage::PrivateMessage(m), ct)
             }
             _ => {
-                return Err(Error::mls_operation("parsing inbound message")(
-                    ProcessMessageError::IncompatibleWireFormat,
-                ))
+                return Err(
+                    MlsError::wrap("parsing inbound message")(ProcessMessageError::IncompatibleWireFormat).into(),
+                )
             }
         };
         let msg_epoch = protocol_message.epoch().as_u64();
@@ -377,7 +379,7 @@ impl MlsConversation {
                 ProcessMessageError::ValidationError(ValidationError::UnableToDecrypt(
                     MessageDecryptionError::SecretTreeError(SecretTreeError::TooDistantInThePast),
                 )) => Error::MessageEpochTooOld,
-                _ => Error::mls_operation("processing message")(e),
+                _ => MlsError::wrap("processing message")(e).into(),
             })?;
         if is_duplicate {
             return Err(Error::DuplicateMessage);

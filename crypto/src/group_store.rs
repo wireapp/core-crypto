@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see http://www.gnu.org/licenses/.
 
-use crate::{prelude::MlsConversation, Error, KeystoreError, RecursiveError, Result};
+use crate::{prelude::MlsConversation, KeystoreError, ProteusError, RecursiveError, Result};
 use core_crypto_keystore::{connection::FetchFromDatabase, entities::EntityFindParams};
 
 #[cfg_attr(target_family = "wasm", async_trait::async_trait(?Send))]
@@ -111,7 +111,7 @@ impl GroupStoreEntity for crate::proteus::ProteusConversationSession {
         };
 
         let session = proteus_wasm::session::Session::deserialise(identity, &store_value.session)
-            .map_err(Error::proteus_operation("deserializing session"))?;
+            .map_err(ProteusError::wrap("deserializing session"))?;
 
         Ok(Some(Self {
             identifier: store_value.id.clone(),

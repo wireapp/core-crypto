@@ -33,8 +33,8 @@ use openmls_traits::{
 use serde::{Deserialize, Serialize};
 use wire_e2e_identity::prelude::parse_json_jwk;
 
-use super::{Error, Result};
-use crate::{context::CentralContext, prelude::MlsCiphersuite, RecursiveError};
+use super::Result;
+use crate::{context::CentralContext, prelude::MlsCiphersuite, MlsError, RecursiveError};
 
 /// Sets the config in OpenMls for the oldest possible epoch(past current) that a message can be decrypted
 pub(crate) const MAX_PAST_EPOCHS: usize = 3;
@@ -170,9 +170,9 @@ impl MlsConversationConfiguration {
         backend
             .crypto()
             .validate_signature_key(signature_scheme, &key[..])
-            .map_err(Error::mls_operation("validating signature key"))?;
+            .map_err(MlsError::wrap("validating signature key"))?;
         let key = OpenMlsSignaturePublicKey::new(key.into(), signature_scheme)
-            .map_err(Error::mls_operation("creating new signature public key"))?;
+            .map_err(MlsError::wrap("creating new signature public key"))?;
         Ok(ExternalSender::new(
             key.into(),
             Credential::new_basic(Self::WIRE_SERVER_IDENTITY.into()),

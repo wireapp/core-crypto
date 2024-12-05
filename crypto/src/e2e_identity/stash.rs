@@ -1,9 +1,9 @@
 use openmls_traits::{random::OpenMlsRand, OpenMlsCryptoProvider};
 
-use super::{Error, Result};
+use super::Result;
 use crate::context::CentralContext;
 use crate::prelude::E2eiEnrollment;
-use crate::{KeystoreError, RecursiveError};
+use crate::{KeystoreError, MlsError, RecursiveError};
 use core_crypto_keystore::CryptoKeystoreMls;
 use mls_crypto_provider::MlsCryptoProvider;
 
@@ -20,7 +20,7 @@ impl E2eiEnrollment {
         let handle = backend
             .crypto()
             .random_vec(HANDLE_SIZE)
-            .map_err(Error::mls_operation("generating random vector of bytes"))?;
+            .map_err(MlsError::wrap("generating random vector of bytes"))?;
         backend
             .key_store()
             .save_e2ei_enrollment(&handle, &content)

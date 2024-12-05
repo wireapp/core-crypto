@@ -3,7 +3,7 @@
 //! with a DS guaranteeing exactly once delivery semantics since the following degrades the performances
 
 use super::{Error, Result};
-use crate::prelude::MlsConversation;
+use crate::{prelude::MlsConversation, MlsError};
 use mls_crypto_provider::MlsCryptoProvider;
 use openmls::prelude::{ContentType, FramedContentBodyIn, Proposal, PublicMessageIn, Sender};
 
@@ -19,7 +19,7 @@ impl MlsConversation {
                     let group_ct = self
                         .group
                         .compute_confirmation_tag(backend)
-                        .map_err(Error::mls_operation("computing confirmation tag"))?;
+                        .map_err(MlsError::wrap("computing confirmation tag"))?;
                     Ok(msg_ct == &group_ct)
                 } else {
                     // a commit MUST have a ConfirmationTag

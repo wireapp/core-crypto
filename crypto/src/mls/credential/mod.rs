@@ -13,6 +13,7 @@ pub(crate) mod typ;
 pub(crate) mod x509;
 
 use crate::prelude::{CertificateBundle, Client, ClientId};
+use crate::MlsError;
 pub use error::{Error, Result};
 
 #[derive(Debug)]
@@ -107,7 +108,7 @@ impl Client {
         let (sk, pk) = backend
             .crypto()
             .signature_key_gen(sc)
-            .map_err(Error::mls_operation("generating a signature key"))?;
+            .map_err(MlsError::wrap("generating a signature key"))?;
 
         let signature_key = SignatureKeyPair::from_raw(sc, sk, pk);
         let credential = Credential::new_basic(id.to_vec());
@@ -125,10 +126,9 @@ impl Client {
         let (sk, ..) = cert.private_key.into_parts();
         let chain = cert.certificate_chain;
 
-        let kp = CertificateKeyPair::new(sk, chain.clone())
-            .map_err(Error::mls_operation("creating certificate key pair"))?;
+        let kp = CertificateKeyPair::new(sk, chain.clone()).map_err(MlsError::wrap("creating certificate key pair"))?;
 
-        let credential = Credential::new_x509(chain).map_err(Error::mls_operation("creating x509 credential"))?;
+        let credential = Credential::new_x509(chain).map_err(MlsError::wrap("creating x509 credential"))?;
 
         let cb = CredentialBundle {
             credential,
@@ -292,9 +292,12 @@ mod tests {
                 try_talk(&case, Some(&x509_test_chain), alice_identifier, bob_identifier)
                     .await
                     .unwrap_err(),
-                Error::Recursive(RecursiveError::Mls(MlsError::MlsCryptoError(
-                    openmls::prelude::CryptoError::MismatchKeypair
-                )))
+                Error::Recursive(RecursiveError::Mls {
+                    source,
+                    ..
+                }) if matches!(*source, crate::mls::Error::Mls(crate::MlsError{ source: crate::MlsErrorKind::MlsCryptoError(
+                        openmls::prelude::CryptoError::MismatchKeypair
+                    ), ..}))
             ));
         }
     }
