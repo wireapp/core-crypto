@@ -2,12 +2,12 @@ use log::trace;
 use openmls::prelude::{GroupEpoch, GroupId, JoinProposal, LeafNodeIndex, MlsMessageOut, Proposal};
 use std::collections::HashSet;
 
-use super::{Error, Result};
+use super::Result;
 use crate::{
     context::CentralContext,
     mls::{self, credential::typ::MlsCredentialType, ClientId, ConversationId},
     prelude::{MlsCiphersuite, MlsConversation},
-    LeafError, RecursiveError,
+    LeafError, MlsError, RecursiveError,
 };
 
 impl MlsConversation {
@@ -110,7 +110,8 @@ impl CentralContext {
             ))?;
 
         JoinProposal::new(kp, group_id, epoch, &cb.signature_key)
-            .map_err(Error::mls_operation("creating join proposal"))
+            .map_err(MlsError::wrap("creating join proposal"))
+            .map_err(Into::into)
     }
 }
 
@@ -188,7 +189,7 @@ mod tests {
 
     mod remove {
         use super::*;
-        use crate::prelude::{CryptoError, MlsConversationCreationMessage, MlsConversationInitBundle, MlsError};
+        use crate::prelude::{MlsConversationCreationMessage, MlsConversationInitBundle, MlsError};
         use openmls::prelude::{
             ExternalProposal, GroupId, MlsMessageIn, ProcessMessageError, SenderExtensionIndex, ValidationError,
         };

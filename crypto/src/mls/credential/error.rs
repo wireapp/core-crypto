@@ -33,24 +33,8 @@ pub enum Error {
     UnsupportedAlgorithm,
     #[error(transparent)]
     Keystore(#[from] crate::KeystoreError),
-    #[error("{context}")]
-    MlsOperation {
-        context: &'static str,
-        #[source]
-        source: Box<dyn std::error::Error + Send + Sync>,
-    },
+    #[error(transparent)]
+    Mls(#[from] crate::MlsError),
     #[error(transparent)]
     Recursive(#[from] crate::RecursiveError),
-}
-
-impl Error {
-    pub(crate) fn mls_operation<E>(context: &'static str) -> impl FnOnce(E) -> Self
-    where
-        E: 'static + std::error::Error + Send + Sync,
-    {
-        move |source| Self::MlsOperation {
-            context,
-            source: Box::new(source),
-        }
-    }
 }

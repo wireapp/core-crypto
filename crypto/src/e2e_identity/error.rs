@@ -3,7 +3,7 @@
 // We allow missing documentation in the error module because the types are generally self-descriptive.
 #![allow(missing_docs)]
 
-use crate::{prelude::MlsCredentialType, LeafError, RecursiveError};
+use crate::prelude::MlsCredentialType;
 use core_crypto_keystore::CryptoKeystoreError;
 
 pub type Result<T, E = Error> = core::result::Result<T, E>;
@@ -62,18 +62,14 @@ pub enum Error {
         // so ¯\_(ツ)_/¯
         upstream: String,
     },
-    #[error("{context}")]
-    MlsOperation {
-        context: &'static str,
-        #[source]
-        source: Box<dyn std::error::Error + Send + Sync>,
-    },
+    #[error(transparent)]
+    Mls(#[from] crate::MlsError),
     #[error(transparent)]
     Keystore(#[from] crate::KeystoreError),
     #[error(transparent)]
-    Leaf(#[from] LeafError),
+    Leaf(#[from] crate::LeafError),
     #[error(transparent)]
-    Recursive(#[from] RecursiveError),
+    Recursive(#[from] crate::RecursiveError),
 }
 
 impl Error {
@@ -84,16 +80,6 @@ impl Error {
         move |source| Self::CertificateValidation {
             context,
             upstream: format!("{source:?}"),
-        }
-    }
-
-    pub(crate) fn mls_operation<E>(context: &'static str) -> impl FnOnce(E) -> Self
-    where
-        E: 'static + std::error::Error + Send + Sync,
-    {
-        move |source| Self::MlsOperation {
-            context,
-            source: Box::new(source),
         }
     }
 }
