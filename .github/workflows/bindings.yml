@@ -16,7 +16,7 @@ env:
   CARGO_REGISTRIES_CRATES_IO_PROTOCOL: sparse
 
 jobs:
-  build-android:
+  build-and-test-android:
     if: github.repository == 'wireapp/core-crypto'
     runs-on: ubuntu-latest
     steps:
@@ -51,6 +51,18 @@ jobs:
         run: |
           cd crypto-ffi/bindings
           ./gradlew android:build -x lint -x lintRelease
+      - name: Enable KVM group perms
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+      - name: Android Instrumentation Tests
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 32
+          arch: x86_64
+          working-directory: ./crypto-ffi/bindings
+          script: ./gradlew android:connectedAndroidTest
 
   build-and-test-jvm:
     if: github.repository == 'wireapp/core-crypto'
@@ -150,7 +162,7 @@ jobs:
         run: |
           cd crypto-ffi/bindings/swift
           ./build-xcframework.sh
-  
+
 
   build-and-test-wasm:
     runs-on: ubuntu-latest
