@@ -19,6 +19,7 @@ use crate::{
     test_utils::x509::{CertificateParams, X509TestChain, X509TestChainActorArg, X509TestChainArgs},
     CoreCrypto, CryptoResult, MlsTransport, MlsTransportResponse,
 };
+use async_lock::RwLock;
 pub use openmls_traits::types::SignatureScheme;
 pub use rstest::*;
 pub use rstest_reuse::{self, *};
@@ -46,6 +47,7 @@ pub const GROUP_SAMPLE_SIZE: usize = 9;
 pub struct ClientContext {
     pub context: CentralContext,
     pub central: MlsCentral,
+    pub mls_transport: Arc<dyn MlsTransportTestExt>,
     pub x509_test_chain: std::sync::Arc<Option<X509TestChain>>,
 }
 
@@ -310,10 +312,9 @@ async fn create_centrals<const N: usize>(
                 .await
                 .unwrap();
             context.finish().await.unwrap();
-            central
-                .provide_transport(Arc::<CoreCryptoTransportSuccessProvider>::default())
-                .await;
-            central
+            let transport = Arc::<CoreCryptoTransportSuccessProvider>::default();
+            central.provide_transport(transport.clone()).await;
+            (central, transport)
         }
     });
     futures_util::future::join_all(stream).await.try_into().unwrap()
@@ -502,17 +503,41 @@ pub fn conversation_id() -> ConversationId {
     ConversationId::from(format!("{}@conversations.wire.com", uuid.hyphenated()))
 }
 
+#[cfg_attr(target_family = "wasm", async_trait::async_trait(?Send))]
+#[cfg_attr(not(target_family = "wasm"), async_trait::async_trait)]
+pub trait MlsTransportTestExt: MlsTransport {
+    async fn latest_commit_bundle(&self) -> Option<MlsCommitBundle>;
+    async fn latest_message(&self) -> Option<Vec<u8>>;
+}
+
 #[derive(Debug, Default)]
-pub struct CoreCryptoTransportSuccessProvider;
+pub struct CoreCryptoTransportSuccessProvider {
+    latest_commit_bundle: RwLock<Option<MlsCommitBundle>>,
+    latest_message: RwLock<Option<Vec<u8>>>,
+}
 
 #[cfg_attr(target_family = "wasm", async_trait::async_trait(?Send))]
 #[cfg_attr(not(target_family = "wasm"), async_trait::async_trait)]
 impl MlsTransport for CoreCryptoTransportSuccessProvider {
-    async fn send_commit_bundle(&self, _commit_bundle: MlsCommitBundle) -> CryptoResult<MlsTransportResponse> {
+    async fn send_commit_bundle(&self, commit_bundle: MlsCommitBundle) -> CryptoResult<MlsTransportResponse> {
+        self.latest_commit_bundle.write().await.replace(commit_bundle);
         Ok(MlsTransportResponse::Success)
     }
 
-    async fn send_message(&self, _mls_message: Vec<u8>) -> CryptoResult<MlsTransportResponse> {
+    async fn send_message(&self, mls_message: Vec<u8>) -> CryptoResult<MlsTransportResponse> {
+        self.latest_message.write().await.replace(mls_message);
         Ok(MlsTransportResponse::Success)
+    }
+}
+
+#[cfg_attr(target_family = "wasm", async_trait::async_trait(?Send))]
+#[cfg_attr(not(target_family = "wasm"), async_trait::async_trait)]
+impl MlsTransportTestExt for CoreCryptoTransportSuccessProvider {
+    async fn latest_commit_bundle(&self) -> Option<MlsCommitBundle> {
+        self.latest_commit_bundle.read().await.clone()
+    }
+
+    async fn latest_message(&self) -> Option<Vec<u8>> {
+        self.latest_message.read().await.clone()
     }
 }

@@ -63,14 +63,24 @@ impl CentralContext {
         &self,
         id: &ConversationId,
         key_packages: Vec<KeyPackageIn>,
-    ) -> CryptoResult<MlsConversationCreationMessage> {
+    ) -> CryptoResult<Option<Vec<MlsBufferedConversationDecryptMessage>>> {
         let client = self.mls_client().await?;
-        self.get_conversation(id)
+        let message = self
+            .get_conversation(id)
             .await?
             .write()
             .await
             .add_members(&client, key_packages, &self.mls_provider().await?)
-            .await
+            .await?;
+        let commit = MlsCommitBundle {
+            commit: message.commit,
+            welcome: Some(message.welcome),
+            group_info: message.group_info,
+        };
+
+        // TODO: check whether message.crl_new_distribution_points must be returned or not.
+
+        self.send_commit(id, commit).await
     }
 
     /// Removes clients from the group/conversation.
@@ -136,14 +146,22 @@ impl CentralContext {
     /// # Errors
     /// Errors can be originating from the KeyStore and OpenMls
     #[cfg_attr(test, crate::idempotent)]
-    pub async fn commit_pending_proposals(&self, id: &ConversationId) -> CryptoResult<Option<MlsCommitBundle>> {
+    pub async fn commit_pending_proposals(
+        &self,
+        id: &ConversationId,
+    ) -> CryptoResult<Option<Vec<MlsBufferedConversationDecryptMessage>>> {
         let client = self.mls_client().await?;
-        self.get_conversation(id)
+        let commit = self
+            .get_conversation(id)
             .await?
             .write()
             .await
             .commit_pending_proposals(&client, &self.mls_provider().await?)
-            .await
+            .await?;
+        let Some(commit) = commit else {
+            return Ok(None);
+        };
+        self.send_commit(id, commit).await
     }
 }
 
@@ -435,13 +453,19 @@ mod tests {
                         .unwrap();
 
                     let bob = bob_central.rand_key_package(&case).await;
-                    let welcome = alice_central
+                    alice_central
                         .context
                         .add_members_to_conversation(&id, vec![bob])
                         .await
+                        .unwrap();
+
+                    let welcome = alice_central
+                        .mls_transport
+                        .latest_commit_bundle()
+                        .await
                         .unwrap()
-                        .welcome;
-                    alice_central.context.commit_accepted(&id).await.unwrap();
+                        .welcome
+                        .unwrap();
 
                     bob_central
                         .context
