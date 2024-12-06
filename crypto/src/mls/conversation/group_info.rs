@@ -33,6 +33,9 @@ impl MlsGroupInfoBundle {
 
 #[cfg(test)]
 impl MlsGroupInfoBundle {
+    // test functions are not held to the same standard
+    #![allow(missing_docs)]
+
     pub fn get_group_info(self) -> openmls::prelude::group_info::VerifiableGroupInfo {
         match self.get_payload().extract() {
             openmls::prelude::MlsMessageInBody::GroupInfo(vgi) => vgi,

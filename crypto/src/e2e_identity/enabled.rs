@@ -49,7 +49,7 @@ impl Client {
 
 #[cfg(test)]
 mod tests {
-    use crate::{e2e_identity::error::Error, prelude::MlsCredentialType, test_utils::*};
+    use crate::{e2e_identity::error::Error, mls, prelude::MlsCredentialType, test_utils::*, RecursiveError};
     use openmls_traits::types::SignatureScheme;
     use wasm_bindgen_test::*;
 
@@ -77,8 +77,8 @@ mod tests {
             Box::pin(async move {
                 assert!(matches!(
                     cc.context.e2ei_is_enabled(case.signature_scheme()).await.unwrap_err(),
-                    Error::CryptoError(boxed)
-                    if matches!(*boxed, CryptoError::MlsNotInitialized)
+                    Error::Recursive(RecursiveError::MlsClient {  source, .. })
+                    if matches!(*source, mls::client::Error::MlsNotInitialized)
                 ));
             })
         })
@@ -97,8 +97,8 @@ mod tests {
                 };
                 assert!(matches!(
                     cc.context.e2ei_is_enabled(other_sc).await.unwrap_err(),
-                    Error::CryptoError(boxed)
-                    if matches!(*boxed, CryptoError::CredentialNotFound(_))
+                    Error::Recursive(RecursiveError::MlsClient {  source, .. })
+                    if matches!(*source, mls::client::Error::CredentialNotFound(_))
                 ));
             })
         })

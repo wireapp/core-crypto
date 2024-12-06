@@ -293,6 +293,8 @@ mod tests {
     #[apply(all_cred_cipher)]
     #[wasm_bindgen_test]
     pub async fn should_fail_when_tampering_with_incoming_own_commit_same_as_pending(case: TestCase) {
+        use crate::MlsErrorKind;
+
         if case.is_pure_ciphertext() {
             return;
         };
@@ -332,12 +334,14 @@ mod tests {
                     .decrypt_message(&conversation_id, commit_serialized)
                     .await;
                 let error = decryption_result.unwrap_err();
-                let error = error.downcast_mls::<MlsError>().unwrap().0;
                 assert!(matches!(
                     error,
-                    MlsError::MlsMessageError(ProcessMessageError::ValidationError(
-                        ValidationError::InvalidMembershipTag
-                    ))
+                    Error::Mls(MlsError {
+                        source: MlsErrorKind::MlsMessageError(ProcessMessageError::ValidationError(
+                            ValidationError::InvalidMembershipTag
+                        )),
+                        ..
+                    })
                 ));
 
                 // There is still a pending commit.

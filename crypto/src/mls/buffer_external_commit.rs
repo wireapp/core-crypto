@@ -57,7 +57,7 @@ mod tests {
     #[apply(all_cred_cipher)]
     #[wasm_bindgen_test]
     async fn should_buffer_and_reapply_messages_after_external_commit_merged(case: TestCase) {
-        use crate::mls;
+        use crate::{mls, RecursiveError};
 
         run_test_with_client_ids(
             case.clone(),
@@ -133,13 +133,15 @@ mod tests {
                         let decrypt = bob_central.context.decrypt_message(&id, m).await;
                         assert!(matches!(
                             decrypt.unwrap_err(),
-                            mls::conversation::Error::UnmergedPendingGroup
+                            mls::conversation::Error::Recursive(RecursiveError::Mls{source, ..})
+                            if matches!(*source, mls::Error::UnmergedPendingGroup)
                         ));
                     }
                     let decrypt = bob_central.context.decrypt_message(&id, app_msg).await;
                     assert!(matches!(
                         decrypt.unwrap_err(),
-                        mls::conversation::Error::UnmergedPendingGroup
+                        mls::conversation::Error::Recursive(RecursiveError::Mls{source, ..})
+                        if matches!(*source, mls::Error::UnmergedPendingGroup)
                     ));
 
                     // Bob should have buffered the messages
@@ -192,6 +194,8 @@ mod tests {
     #[apply(all_cred_cipher)]
     #[wasm_bindgen_test]
     async fn should_not_reapply_buffered_messages_when_external_commit_contains_remove(case: TestCase) {
+        use crate::mls;
+
         run_test_with_client_ids(
             case.clone(),
             ["alice", "bob"],
@@ -214,9 +218,15 @@ mod tests {
 
                     // Since Alice missed Bob's commit she should buffer this message
                     let decrypt = alice_central.context.decrypt_message(&id, msg1).await;
-                    assert!(matches!(decrypt.unwrap_err(), CryptoError::BufferedFutureMessage));
+                    assert!(matches!(
+                        decrypt.unwrap_err(),
+                        mls::conversation::Error::BufferedFutureMessage
+                    ));
                     let decrypt = alice_central.context.decrypt_message(&id, msg2).await;
-                    assert!(matches!(decrypt.unwrap_err(), CryptoError::BufferedFutureMessage));
+                    assert!(matches!(
+                        decrypt.unwrap_err(),
+                        mls::conversation::Error::BufferedFutureMessage
+                    ));
                     assert_eq!(alice_central.context.count_entities().await.pending_messages, 2);
 
                     let gi = bob_central.get_group_info(&id).await;

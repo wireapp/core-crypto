@@ -414,7 +414,7 @@ mod tests {
 
     use crate::test_utils::*;
 
-    use super::*;
+    use super::{Error, *};
 
     wasm_bindgen_test_configure!(run_in_browser);
 

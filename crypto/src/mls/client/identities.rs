@@ -153,7 +153,7 @@ impl Client {
 
 #[cfg(test)]
 mod tests {
-    use crate::test_utils::*;
+    use crate::{mls, test_utils::*};
     use openmls::prelude::SignaturePublicKey;
     use rand::Rng;
     use wasm_bindgen_test::*;
@@ -240,9 +240,6 @@ mod tests {
         #[apply(all_cred_cipher)]
         #[wasm_bindgen_test]
         async fn pushing_duplicates_should_fail(case: TestCase) {
-            use crate::mls::client::error::Error;
-            use crate::CryptoError;
-
             run_test_with_client_ids(case.clone(), ["alice"], move |[mut central]| {
                 Box::pin(async move {
                     let cert = central.get_intermediate_ca().cloned();
@@ -256,7 +253,10 @@ mod tests {
                             cb,
                         )
                         .await;
-                    assert!(matches!(push.unwrap_err(), Error::CryptoError(boxed) if matches!(*boxed, CryptoError::CredentialBundleConflict)));
+                    assert!(matches!(
+                        push.unwrap_err(),
+                        mls::client::Error::CredentialBundleConflict
+                    ));
                 })
             })
             .await

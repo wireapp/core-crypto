@@ -25,6 +25,7 @@ pub struct EntitiesCount {
 }
 
 impl MlsCentral {
+    /// Count the entities
     pub async fn count_entities(&self) -> EntitiesCount {
         let keystore = self.mls_backend.keystore();
         let credential = keystore.count::<MlsCredential>().await.unwrap();
@@ -55,6 +56,7 @@ impl MlsCentral {
 }
 
 impl CentralContext {
+    /// Count the entities
     pub async fn count_entities(&self) -> EntitiesCount {
         let keystore = self.keystore().await.unwrap();
         let credential = keystore.count::<MlsCredential>().await.unwrap();
