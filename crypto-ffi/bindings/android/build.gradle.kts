@@ -27,12 +27,13 @@ dependencies {
     implementation(libs.ktx.core)
     implementation(libs.coroutines.core)
     implementation(libs.slf4j)
-    testImplementation(kotlin("test"))
-    testImplementation(libs.android.logback)
-    testImplementation(libs.android.junit)
-    testImplementation(libs.espresso)
-    testImplementation(libs.coroutines.test)
-    testImplementation(libs.assertj.core)
+
+    androidTestImplementation(kotlin("test"))
+    androidTestImplementation(libs.android.logback)
+    androidTestImplementation(libs.android.junit)
+    androidTestImplementation(libs.espresso)
+    androidTestImplementation(libs.coroutines.test)
+    androidTestImplementation(libs.assertj.core)
 }
 
 android {
@@ -48,6 +49,10 @@ android {
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
+    }
+
+    kotlin {
+        jvmToolchain(17)
     }
 
     buildTypes {
