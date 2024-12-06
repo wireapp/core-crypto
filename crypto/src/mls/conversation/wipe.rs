@@ -90,11 +90,13 @@ mod tests {
     #[apply(all_cred_cipher)]
     #[wasm_bindgen_test]
     async fn cannot_wipe_group_non_existent(case: TestCase) {
+        use crate::LeafError;
+
         run_test_with_central(case.clone(), move |[central]| {
             Box::pin(async move {
                 let id = conversation_id();
                 let err = central.context.wipe_conversation(&id).await.unwrap_err();
-                assert!(matches!(err, Error::ConversationNotFound(conv_id) if conv_id == id));
+                assert!(matches!(err, Error::Leaf(LeafError::ConversationNotFound(conv_id)) if conv_id == id));
             })
         })
         .await;

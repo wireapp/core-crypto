@@ -109,9 +109,7 @@ impl MlsCentral {
 
 #[cfg(test)]
 mod tests {
-
-    use super::super::error::Error;
-    use crate::{prelude::MlsError, test_utils::*};
+    use crate::{mls, test_utils::*, LeafError, MlsErrorKind};
     use openmls::prelude::ExportSecretError;
 
     use wasm_bindgen_test::*;
@@ -156,10 +154,10 @@ mod tests {
 
                     let result = alice_central.context.export_secret_key(&id, usize::MAX).await;
                     let error = result.unwrap_err();
-                    let error = error.downcast_mls().unwrap().0;
-                    assert!(matches!(
+                    // let error = error.downcast_mls().unwrap().0;
+                    assert!(innermost_source_matches!(
                         error,
-                        MlsError::MlsExportSecretError(ExportSecretError::KeyLengthTooLong)
+                        MlsErrorKind::MlsExportSecretError(ExportSecretError::KeyLengthTooLong)
                     ));
                 })
             })
@@ -180,7 +178,12 @@ mod tests {
 
                     let unknown_id = b"not_found".to_vec();
                     let error = alice_central.context.get_client_ids(&unknown_id).await.unwrap_err();
-                    assert!(matches!(error, Error::ConversationNotFound(c) if c == unknown_id));
+                    // assert!(matches!(error, Error::ConversationNotFound(c) if c == unknown_id));
+                    assert!(matches!(
+                        error,
+                        mls::conversation::Error::Leaf(LeafError::ConversationNotFound(c))
+                        if c == unknown_id
+                    ))
                 })
             })
             .await
@@ -225,7 +228,11 @@ mod tests {
 
                     let unknown_id = b"not_found".to_vec();
                     let error = alice_central.context.get_client_ids(&unknown_id).await.unwrap_err();
-                    assert!(matches!(error, Error::ConversationNotFound(c) if c == unknown_id));
+                    assert!(matches!(
+                        error,
+                        mls::conversation::Error::Leaf(LeafError::ConversationNotFound(c))
+                        if c == unknown_id
+                    ))
                 })
             })
             .await

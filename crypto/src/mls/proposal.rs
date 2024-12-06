@@ -246,6 +246,8 @@ mod tests {
         #[apply(all_cred_cipher)]
         #[wasm_bindgen_test]
         pub async fn should_remove_member(case: TestCase) {
+            use crate::mls;
+
             run_test_with_client_ids(case.clone(), ["alice", "bob"], |[alice_central, bob_central]| {
                 Box::pin(async move {
                     let id = conversation_id();
@@ -284,7 +286,7 @@ mod tests {
                         .unwrap();
                     assert!(matches!(
                         bob_central.context.get_conversation(&id).await.unwrap_err(),
-                        CryptoError::ConversationNotFound(conv_id) if conv_id == id
+                        mls::conversation::Error::Leaf(LeafError::ConversationNotFound(conv_id)) if conv_id == id
                     ));
                 })
             })
@@ -294,6 +296,8 @@ mod tests {
         #[apply(all_cred_cipher)]
         #[wasm_bindgen_test]
         pub async fn should_fail_when_unknown_client(case: TestCase) {
+            use crate::mls;
+
             run_test_with_client_ids(case.clone(), ["alice"], move |[alice_central]| {
                 Box::pin(async move {
                     let id = conversation_id();
@@ -309,7 +313,7 @@ mod tests {
                         .await;
                     assert!(matches!(
                         remove_proposal.unwrap_err(),
-                        CryptoError::ClientNotFound(client_id) if client_id == b"unknown"[..].into()
+                        mls::Error::ClientNotFound(client_id) if client_id == b"unknown"[..].into()
                     ));
                 })
             })

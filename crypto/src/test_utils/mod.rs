@@ -14,6 +14,10 @@
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see http://www.gnu.org/licenses/.
 
+// disabling the requirement for documentation here because these test utils should not be held to the same standard,
+// and historically have not been.
+#![allow(missing_docs)]
+
 use crate::{
     prelude::{ClientId, ConversationId, MlsCentral, MlsCentralConfiguration},
     test_utils::x509::{CertificateParams, X509TestChain, X509TestChainActorArg, X509TestChainArgs},
@@ -30,6 +34,7 @@ pub mod fixtures;
 pub mod message;
 pub mod x509;
 // Cannot name it `proteus` because then it conflicts with proteus the crate :(
+mod error;
 #[cfg(feature = "proteus")]
 pub mod proteus_utils;
 
@@ -37,10 +42,37 @@ use crate::context::CentralContext;
 use crate::e2e_identity::id::{QualifiedE2eiClientId, WireQualifiedClientId};
 use crate::prelude::{Client, MlsCommitBundle};
 pub use crate::prelude::{ClientIdentifier, MlsCredentialType, INITIAL_KEYING_MATERIAL_COUNT};
+pub use error::Error as TestError;
+use error::Result;
 pub use fixtures::{TestCase, *};
 pub use message::*;
 
 pub const GROUP_SAMPLE_SIZE: usize = 9;
+
+/// Trace up the error's source chain, and return whether the innermost matches the
+/// provided pattern, and guard if supplied.
+///
+/// Syntax matches that of [std::matches].
+///
+/// We can't write `fn innermost_source` because Rust can't prove that the innermost
+/// error lives as long as the original error, and demands that it live as long as
+/// `'static`, which is unhelpful. But we can inline the whole thing with a macro, as here.
+macro_rules! innermost_source_matches {
+    ($err:expr, $pattern:pat $(if $guard:expr)? $(,)?) => {{
+        let mut err: &dyn std::error::Error = &$err;
+        while let Some(inner) = err.source() {
+            err = inner;
+        }
+
+        let outcome = matches!(err.downcast_ref(), Some($pattern) $($guard)?);
+        if !outcome {
+            dbg!(err);
+        }
+
+        outcome
+    }};
+}
+pub(crate) use innermost_source_matches;
 
 #[derive(Debug, Clone)]
 pub struct ClientContext {
