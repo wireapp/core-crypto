@@ -39,9 +39,7 @@ impl CentralContext {
                     self.clear_pending_commit(id).await?;
                     return Err(CryptoError::MessageRejected { reason });
                 }
-                MlsTransportResponse::Retry => {
-                    transport.send_commit_bundle(commit.clone()).await?;
-                }
+                MlsTransportResponse::Retry => {}
             }
         }
     }
