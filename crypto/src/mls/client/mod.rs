@@ -558,6 +558,9 @@ impl Client {
 
 #[cfg(test)]
 impl Client {
+    // test functions are not held to the same documentation standard as proper functions
+    #![allow(missing_docs)]
+
     pub async fn random_generate(
         case: &crate::test_utils::TestCase,
         backend: &MlsCryptoProvider,

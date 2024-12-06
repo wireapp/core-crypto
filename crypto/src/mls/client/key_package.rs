@@ -38,6 +38,7 @@ use crate::{KeystoreError, MlsError};
 /// Default number of KeyPackages a client generates the first time it's created
 #[cfg(not(test))]
 pub const INITIAL_KEYING_MATERIAL_COUNT: usize = 100;
+/// Default number of KeyPackages a client generates the first time it's created
 #[cfg(test)]
 pub const INITIAL_KEYING_MATERIAL_COUNT: usize = 10;
 

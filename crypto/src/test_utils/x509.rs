@@ -1,12 +1,11 @@
-use crate::{
-    e2e_identity::id::QualifiedE2eiClientId,
-    mls::{self, client::identifier::ClientIdentifier},
-    prelude::{CertificateBundle, Error},
-    CryptoError,
-};
 use std::{fmt::Display, time::Duration};
 
-use crate::context::CentralContext;
+use crate::{
+    context::CentralContext,
+    e2e_identity::{self, id::QualifiedE2eiClientId},
+    mls::client::identifier::ClientIdentifier,
+    prelude::CertificateBundle,
+};
 use mls_crypto_provider::{CertProfile, CertificateGenerationArgs, MlsCryptoProvider, PkiKeypair, RustCrypto};
 use openmls_traits::{crypto::OpenMlsCrypto, random::OpenMlsRand, types::SignatureScheme};
 use x509_cert::der::EncodePem;
@@ -338,7 +337,7 @@ impl X509TestChain {
             )
             .await
         {
-            Ok(_) | Err(mls::client::error::Error::E2eiError(Error::TrustAnchorAlreadyRegistered)) => {}
+            Ok(_) | Err(e2e_identity::Error::TrustAnchorAlreadyRegistered) => {}
             Err(e) => panic!("{:?}", e),
         }
 

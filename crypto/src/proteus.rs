@@ -1480,6 +1480,8 @@ mod tests {
     #[cfg(all(feature = "cryptobox-migrate", not(target_family = "wasm")))]
     #[async_std::test]
     async fn can_import_cryptobox() {
+        use crate::CryptoboxMigrationErrorKind;
+
         let session_id = uuid::Uuid::new_v4().hyphenated().to_string();
 
         let cryptobox_folder = tempfile::tempdir().unwrap();
@@ -1521,8 +1523,10 @@ mod tests {
                 .unwrap();
         keystore.new_transaction().await.unwrap();
 
-        let Err(crate::Error::CryptoboxMigrationError(crate::CryptoboxMigrationError::ProvidedPathDoesNotExist(_))) =
-            ProteusCentral::cryptobox_migrate(&keystore, "invalid path").await
+        let Err(crate::Error::CryptoboxMigration(crate::CryptoboxMigrationError {
+            source: CryptoboxMigrationErrorKind::ProvidedPathDoesNotExist(_),
+            ..
+        })) = ProteusCentral::cryptobox_migrate(&keystore, "invalid path").await
         else {
             panic!("ProteusCentral::cryptobox_migrate did not throw an error on invalid path");
         };

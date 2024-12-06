@@ -631,11 +631,22 @@ mod tests {
         #[apply(all_cred_cipher)]
         #[wasm_bindgen_test]
         async fn conversation_not_found(case: TestCase) {
+            use crate::{mls, LeafError, RecursiveError};
+            use std::ops::Deref as _;
+
             run_test_with_central(case.clone(), move |[central]| {
                 Box::pin(async move {
                     let id = conversation_id();
                     let err = central.context.conversation_epoch(&id).await.unwrap_err();
-                    assert!(matches!(err, CryptoError::ConversationNotFound(conv_id) if conv_id == id));
+                    assert!(matches!(
+                        err,
+                        mls::Error::Recursive(RecursiveError::MlsConversation{source, ..})
+                        if matches!(
+                            source.deref(),
+                            mls::conversation::Error::Leaf(LeafError::ConversationNotFound(conv_id))
+                            if *conv_id == id
+                        )
+                    ));
                 })
             })
             .await;
@@ -643,7 +654,7 @@ mod tests {
     }
 
     mod invariants {
-        use crate::prelude::MlsCiphersuite;
+        use crate::{mls, prelude::MlsCiphersuite};
 
         use super::*;
 
@@ -683,7 +694,7 @@ mod tests {
             );
             assert!(matches!(
                 configuration.unwrap_err(),
-                CryptoError::MalformedIdentifier("store_path")
+                mls::Error::MalformedIdentifier("store_path")
             ));
         }
 
@@ -703,7 +714,7 @@ mod tests {
                     );
                     assert!(matches!(
                         configuration.unwrap_err(),
-                        CryptoError::MalformedIdentifier("identity_key")
+                        mls::Error::MalformedIdentifier("identity_key")
                     ));
                 })
             })
@@ -726,7 +737,7 @@ mod tests {
                     );
                     assert!(matches!(
                         configuration.unwrap_err(),
-                        CryptoError::MalformedIdentifier("client_id")
+                        mls::Error::MalformedIdentifier("client_id")
                     ));
                 })
             })
@@ -737,6 +748,8 @@ mod tests {
     #[apply(all_cred_cipher)]
     #[wasm_bindgen_test]
     async fn create_conversation_should_fail_when_already_exists(case: TestCase) {
+        use crate::{mls, LeafError};
+
         run_test_with_client_ids(case.clone(), ["alice"], move |[alice_central]| {
             Box::pin(async move {
                 let id = conversation_id();
@@ -752,7 +765,7 @@ mod tests {
                     .context
                     .new_conversation(&id, case.credential_type, case.cfg.clone())
                     .await;
-                assert!(matches!(repeat_create.unwrap_err(), CryptoError::ConversationAlreadyExists(i) if i == id));
+                assert!(matches!(repeat_create.unwrap_err(), mls::Error::Leaf(LeafError::ConversationAlreadyExists(i)) if i == id));
             })
         })
         .await;
