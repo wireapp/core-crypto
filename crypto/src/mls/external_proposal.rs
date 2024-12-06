@@ -189,7 +189,10 @@ mod tests {
 
     mod remove {
         use super::*;
-        use crate::prelude::{MlsConversationCreationMessage, MlsConversationInitBundle, MlsError};
+        use crate::{
+            prelude::{MlsConversationCreationMessage, MlsConversationInitBundle, MlsError},
+            MlsErrorKind,
+        };
         use openmls::prelude::{
             ExternalProposal, GroupId, MlsMessageIn, ProcessMessageError, SenderExtensionIndex, ValidationError,
         };
@@ -262,6 +265,8 @@ mod tests {
         #[apply(all_cred_cipher)]
         #[wasm_bindgen_test]
         async fn should_fail_when_invalid_external_sender(case: TestCase) {
+            use crate::mls;
+
             run_test_with_client_ids(
                 case.clone(),
                 ["owner", "guest", "ds", "attacker"],
@@ -301,17 +306,23 @@ mod tests {
 
                         assert!(matches!(
                             owner_decrypt.unwrap_err(),
-                            CryptoError::MlsError(MlsError::MlsMessageError(ProcessMessageError::ValidationError(
-                                ValidationError::UnauthorizedExternalSender
-                            )))
+                            mls::conversation::Error::Mls(MlsError {
+                                source: MlsErrorKind::MlsMessageError(ProcessMessageError::ValidationError(
+                                    ValidationError::UnauthorizedExternalSender
+                                )),
+                                ..
+                            })
                         ));
 
                         let guest_decrypt = owner.context.decrypt_message(&id, proposal.to_bytes().unwrap()).await;
                         assert!(matches!(
                             guest_decrypt.unwrap_err(),
-                            CryptoError::MlsError(MlsError::MlsMessageError(ProcessMessageError::ValidationError(
-                                ValidationError::UnauthorizedExternalSender
-                            )))
+                            mls::conversation::Error::Mls(MlsError {
+                                source: MlsErrorKind::MlsMessageError(ProcessMessageError::ValidationError(
+                                    ValidationError::UnauthorizedExternalSender
+                                )),
+                                ..
+                            })
                         ));
                     })
                 },
@@ -322,6 +333,8 @@ mod tests {
         #[apply(all_cred_cipher)]
         #[wasm_bindgen_test]
         async fn should_fail_when_wrong_signature_key(case: TestCase) {
+            use crate::mls;
+
             run_test_with_client_ids(case.clone(), ["owner", "guest", "ds"], move |[owner, guest, ds]| {
                 Box::pin(async move {
                     let id = conversation_id();
@@ -361,13 +374,19 @@ mod tests {
                     let owner_decrypt = owner.context.decrypt_message(&id, proposal.to_bytes().unwrap()).await;
                     assert!(matches!(
                         owner_decrypt.unwrap_err(),
-                        CryptoError::MlsError(MlsError::MlsMessageError(ProcessMessageError::InvalidSignature))
+                        mls::conversation::Error::Mls(MlsError {
+                            source: MlsErrorKind::MlsMessageError(ProcessMessageError::InvalidSignature),
+                            ..
+                        })
                     ));
 
                     let guest_decrypt = owner.context.decrypt_message(&id, proposal.to_bytes().unwrap()).await;
                     assert!(matches!(
                         guest_decrypt.unwrap_err(),
-                        CryptoError::MlsError(MlsError::MlsMessageError(ProcessMessageError::InvalidSignature))
+                        mls::conversation::Error::Mls(MlsError {
+                            source: MlsErrorKind::MlsMessageError(ProcessMessageError::InvalidSignature),
+                            ..
+                        })
                     ));
                 })
             })

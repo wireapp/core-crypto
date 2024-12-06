@@ -31,7 +31,8 @@ use wire_e2e_identity::prelude::WireIdentityReader;
 use x509_cert::der::Encode;
 
 use crate::group_store::GroupStore;
-use crate::test_utils::ClientContext;
+use crate::test_utils::{ClientContext, TestError};
+use crate::RecursiveError;
 use crate::{
     e2e_identity::{
         device_status::DeviceStatus,
@@ -39,11 +40,11 @@ use crate::{
     },
     mls::credential::{ext::CredentialExt, CredentialBundle},
     prelude::{
-        CertificateBundle, Client, ClientId, ConversationId, CryptoError, CryptoResult, MlsCiphersuite,
-        MlsConversation, MlsConversationConfiguration, MlsConversationDecryptMessage, MlsConversationInitBundle,
-        MlsCredentialType, MlsCustomConfiguration, MlsError, WireIdentity,
+        CertificateBundle, Client, ClientId, ConversationId, MlsCiphersuite, MlsConversation,
+        MlsConversationConfiguration, MlsConversationDecryptMessage, MlsConversationInitBundle, MlsCredentialType,
+        MlsCustomConfiguration, MlsError, WireIdentity,
     },
-    test_utils::{x509::X509Certificate, MessageExt, TestCase},
+    test_utils::{x509::X509Certificate, MessageExt, Result, TestCase},
 };
 
 #[allow(clippy::redundant_static_lifetimes)]
@@ -132,25 +133,35 @@ impl ClientContext {
             .cloned()
     }
 
-    pub async fn try_talk_to(&self, id: &ConversationId, other: &Self) -> CryptoResult<()> {
+    pub async fn try_talk_to(&self, id: &ConversationId, other: &Self) -> Result<()> {
         let msg = b"Hello other";
-        let encrypted = self.context.encrypt_message(id, msg).await?;
+        let encrypted = self
+            .context
+            .encrypt_message(id, msg)
+            .await
+            .map_err(RecursiveError::mls_conversation("encrypting message"))?;
         let decrypted = other
             .context
             .decrypt_message(id, encrypted)
-            .await?
+            .await
+            .map_err(RecursiveError::mls_conversation("decrypting message"))?
             .app_msg
-            .ok_or(CryptoError::ImplementationError)?;
+            .ok_or(TestError::ImplementationError)?;
         assert_eq!(&msg[..], &decrypted[..]);
         // other --> self
         let msg = b"Hello self";
-        let encrypted = other.context.encrypt_message(id, msg).await?;
+        let encrypted = other
+            .context
+            .encrypt_message(id, msg)
+            .await
+            .map_err(RecursiveError::mls_conversation("encrypting message"))?;
         let decrypted = self
             .context
             .decrypt_message(id, encrypted)
-            .await?
+            .await
+            .map_err(RecursiveError::mls_conversation("decrypting message"))?
             .app_msg
-            .ok_or(CryptoError::ImplementationError)?;
+            .ok_or(TestError::ImplementationError)?;
         assert_eq!(&msg[..], &decrypted[..]);
         Ok(())
     }
@@ -161,7 +172,7 @@ impl ClientContext {
         case: &TestCase,
         id: &ConversationId,
         others: [&Self; N],
-    ) -> CryptoResult<()> {
+    ) -> Result<()> {
         let mut kps = vec![];
         for cc in others {
             let kp = cc.rand_key_package(case).await;
@@ -176,20 +187,29 @@ impl ClientContext {
         case: &TestCase,
         id: &ConversationId,
         others: [(&Self, KeyPackageIn); N],
-    ) -> CryptoResult<()> {
+    ) -> Result<()> {
         let size_before = self.get_conversation_unchecked(id).await.members().len();
 
         let kps = others.iter().map(|(_, kp)| kp).cloned().collect::<Vec<_>>();
-        let welcome = self.context.add_members_to_conversation(id, kps).await?.welcome;
+        let welcome = self
+            .context
+            .add_members_to_conversation(id, kps)
+            .await
+            .map_err(RecursiveError::mls_conversation("adding members to conversation"))?
+            .welcome;
 
         for (other, ..) in &others {
             other
                 .context
                 .process_welcome_message(welcome.clone().into(), case.custom_cfg())
-                .await?;
+                .await
+                .map_err(RecursiveError::mls_conversation("processing welcome message"))?;
         }
 
-        self.context.commit_accepted(id).await?;
+        self.context
+            .commit_accepted(id)
+            .await
+            .map_err(RecursiveError::mls_conversation("commiting accepted"))?;
         assert_eq!(
             self.get_conversation_unchecked(id).await.members().len(),
             size_before + N
@@ -212,7 +232,7 @@ impl ClientContext {
         id: &ConversationId,
         group_info: VerifiableGroupInfo,
         others: Vec<&Self>,
-    ) -> CryptoResult<()> {
+    ) -> Result<()> {
         use tls_codec::Serialize as _;
 
         let MlsConversationInitBundle {
@@ -222,13 +242,17 @@ impl ClientContext {
         } = self
             .context
             .join_by_external_commit(group_info, case.custom_cfg(), case.credential_type)
-            .await?;
+            .await
+            .map_err(RecursiveError::mls("joining by external commit"))?;
         self.context
             .merge_pending_group_from_external_commit(&conversation_id)
-            .await?;
+            .await
+            .map_err(RecursiveError::mls("merging pending group from external commit"))?;
         assert_eq!(conversation_id.as_slice(), id.as_slice());
         for other in others {
-            let commit = commit.tls_serialize_detached().map_err(MlsError::from)?;
+            let commit = commit
+                .tls_serialize_detached()
+                .map_err(MlsError::wrap("serializing detached tls"))?;
             other.context.decrypt_message(id, commit).await.unwrap();
             self.try_talk_to(id, other).await?;
         }
@@ -241,8 +265,11 @@ impl ClientContext {
         welcome: MlsMessageIn,
         custom_cfg: MlsCustomConfiguration,
         others: Vec<&Self>,
-    ) -> CryptoResult<()> {
-        self.context.process_welcome_message(welcome, custom_cfg).await?;
+    ) -> Result<()> {
+        self.context
+            .process_welcome_message(welcome, custom_cfg)
+            .await
+            .map_err(RecursiveError::mls_conversation("processing welcome message"))?;
         for other in others {
             self.try_talk_to(id, other).await?;
         }
@@ -674,14 +701,15 @@ impl Client {
         backend: &MlsCryptoProvider,
         sc: SignatureScheme,
         cb: CertificateBundle,
-    ) -> CryptoResult<()> {
+    ) -> Result<()> {
         let existing_cb = self
             .find_most_recent_credential_bundle(sc, MlsCredentialType::X509)
             .await
             .is_err();
         if existing_cb {
             self.save_new_x509_credential_bundle(&backend.keystore(), sc, cb)
-                .await?;
+                .await
+                .map_err(RecursiveError::mls_client("saving new x509 credential bundle"))?;
         }
         Ok(())
     }
@@ -691,12 +719,16 @@ impl Client {
         backend: &MlsCryptoProvider,
         cs: MlsCiphersuite,
         ct: MlsCredentialType,
-    ) -> CryptoResult<KeyPackage> {
+    ) -> Result<KeyPackage> {
         let cb = self
             .find_most_recent_credential_bundle(cs.signature_algorithm(), ct)
-            .await?;
+            .await
+            .map_err(RecursiveError::mls_client("finding most recent credential bundle"))?;
         self.generate_one_keypackage_from_credential_bundle(backend, cs, &cb)
             .await
+            .map_err(RecursiveError::mls_client(
+                "generating new keypackage from credential bundle",
+            ))
             .map_err(Into::into)
     }
 }
