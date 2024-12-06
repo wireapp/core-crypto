@@ -373,6 +373,7 @@ mod tests {
     use core_crypto_keystore::{CryptoKeystoreError, CryptoKeystoreMls, MissingKeyErrorKind};
 
     use crate::prelude::MlsConversationConfiguration;
+    use crate::LeafError;
     use crate::{prelude::MlsConversationInitBundle, test_utils::*};
 
     wasm_bindgen_test_configure!(run_in_browser);
@@ -515,6 +516,8 @@ mod tests {
     #[apply(all_cred_cipher)]
     #[wasm_bindgen_test]
     async fn should_fail_when_bad_epoch(case: TestCase) {
+        use crate::mls;
+
         run_test_with_client_ids(case.clone(), ["alice", "bob"], move |[alice_central, bob_central]| {
             Box::pin(async move {
                 let id = conversation_id();
@@ -545,7 +548,7 @@ mod tests {
                     .context
                     .decrypt_message(&id, &external_commit.to_bytes().unwrap())
                     .await;
-                assert!(matches!(result.unwrap_err(), crate::CryptoError::StaleCommit));
+                assert!(matches!(result.unwrap_err(), mls::conversation::Error::StaleCommit));
             })
         })
         .await
@@ -583,6 +586,8 @@ mod tests {
     #[apply(all_cred_cipher)]
     #[wasm_bindgen_test]
     async fn should_fail_when_no_pending_external_commit(case: TestCase) {
+        use crate::{mls, KeystoreError};
+
         run_test_with_central(case.clone(), move |[central]| {
             Box::pin(async move {
                 let id = conversation_id();
@@ -591,9 +596,11 @@ mod tests {
 
                 assert!(matches!(
                     merge_unknown.unwrap_err(),
-                    crate::CryptoKeystoreError::wrapError(CryptoKeystoreError::MissingKeyInStore(
-                        MissingKeyErrorKind::MlsPendingGroup
-                    ))
+                    mls::error::Error::Keystore(KeystoreError { source, .. })
+                    if matches!(
+                        source.downcast_ref(),
+                        Some(&CryptoKeystoreError::MissingKeyInStore(MissingKeyErrorKind::MlsPendingGroup))
+                    )
                 ));
             })
         })
@@ -691,6 +698,8 @@ mod tests {
     #[apply(all_cred_cipher)]
     #[wasm_bindgen_test]
     async fn should_fail_when_sender_user_not_in_group(case: TestCase) {
+        use crate::{mls, RecursiveError};
+
         run_test_with_client_ids(case.clone(), ["alice", "bob"], move |[alice_central, bob_central]| {
             Box::pin(async move {
                 let id = conversation_id();
@@ -725,7 +734,8 @@ mod tests {
                     .await;
                 assert!(matches!(
                     alice_accepts_ext_commit.unwrap_err(),
-                    CryptoError::UnauthorizedExternalCommit
+                    mls::conversation::Error::Recursive(RecursiveError::Mls { source, .. })
+                    if matches!(*source, mls::Error::UnauthorizedExternalCommit)
                 ))
             })
         })
@@ -735,6 +745,8 @@ mod tests {
     #[apply(all_cred_cipher)]
     #[wasm_bindgen_test]
     async fn should_fail_when_sender_lacks_role(case: TestCase) {
+        use crate::{mls, RecursiveError};
+
         run_test_with_client_ids(case.clone(), ["alice", "bob"], move |[alice_central, bob_central]| {
             Box::pin(async move {
                 let id = conversation_id();
@@ -769,7 +781,8 @@ mod tests {
                     .await;
                 assert!(matches!(
                     alice_accepts_ext_commit.unwrap_err(),
-                    CryptoError::UnauthorizedExternalCommit
+                    mls::conversation::Error::Recursive(RecursiveError::Mls { source, .. })
+                    if matches!(*source, mls::Error::UnauthorizedExternalCommit)
                 ))
             })
         })
@@ -779,6 +792,8 @@ mod tests {
     #[apply(all_cred_cipher)]
     #[wasm_bindgen_test]
     async fn clear_pending_group_should_succeed(case: TestCase) {
+        use crate::{mls, KeystoreError};
+
         run_test_with_client_ids(case.clone(), ["alice", "bob"], move |[alice_central, bob_central]| {
             Box::pin(async move {
                 let id = conversation_id();
@@ -814,9 +829,11 @@ mod tests {
                 let result = bob_central.context.merge_pending_group_from_external_commit(&id).await;
                 assert!(matches!(
                     result.unwrap_err(),
-                    CryptoKeystoreError::wrapError(CryptoKeystoreError::MissingKeyInStore(
-                        MissingKeyErrorKind::MlsPendingGroup
-                    ))
+                    mls::error::Error::Keystore(KeystoreError { source, .. })
+                    if matches!(
+                        source.downcast_ref(),
+                        Some(&CryptoKeystoreError::MissingKeyInStore(MissingKeyErrorKind::MlsPendingGroup))
+                    )
                 ))
             })
         })
@@ -826,6 +843,8 @@ mod tests {
     #[apply(all_cred_cipher)]
     #[wasm_bindgen_test]
     async fn new_with_inflight_join_should_fail_when_already_exists(case: TestCase) {
+        use crate::mls;
+
         run_test_with_client_ids(case.clone(), ["alice", "bob"], move |[alice_central, bob_central]| {
             Box::pin(async move {
                 let id = conversation_id();
@@ -848,7 +867,11 @@ mod tests {
                     .context
                     .new_conversation(&id, case.credential_type, case.cfg.clone())
                     .await;
-                assert!(matches!(conflict_join.unwrap_err(), CryptoError::ConversationAlreadyExists(i) if i == id));
+                assert!(matches!(
+                    conflict_join.unwrap_err(),
+                    mls::Error::Leaf(LeafError::ConversationAlreadyExists(i))
+                    if i == id
+                ));
             })
         })
         .await
@@ -857,6 +880,8 @@ mod tests {
     #[apply(all_cred_cipher)]
     #[wasm_bindgen_test]
     async fn new_with_inflight_welcome_should_fail_when_already_exists(case: TestCase) {
+        use crate::mls;
+
         run_test_with_client_ids(case.clone(), ["alice", "bob"], move |[alice_central, bob_central]| {
             Box::pin(async move {
                 let id = conversation_id();
@@ -889,7 +914,11 @@ mod tests {
                     .process_welcome_message(welcome.into(), case.custom_cfg())
                     .await;
 
-                assert!(matches!(conflict_welcome.unwrap_err(), CryptoError::ConversationAlreadyExists(i) if i == id));
+                assert!(matches!(
+                    conflict_welcome.unwrap_err(),
+                    mls::conversation::Error::Leaf(LeafError::ConversationAlreadyExists(i))
+                    if i == id
+                ));
             })
         })
         .await

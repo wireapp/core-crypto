@@ -74,6 +74,10 @@ pub enum RecursiveError {
         #[source]
         source: Box<crate::mls::credential::Error>,
     },
+    /// Wrap a [crate::test_utils::TestError] for recursion.
+    #[cfg(test)]
+    #[error(transparent)]
+    Test(#[from] Box<crate::test_utils::TestError>),
 }
 
 impl RecursiveError {
@@ -121,5 +125,10 @@ impl RecursiveError {
             context,
             source: Box::new(into_source.into()),
         }
+    }
+
+    #[cfg(test)]
+    pub(crate) fn test<E: Into<crate::test_utils::TestError>>() -> impl FnOnce(E) -> Self {
+        move |into_source| Self::Test(Box::new(into_source.into()))
     }
 }

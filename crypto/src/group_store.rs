@@ -370,7 +370,8 @@ mod tests {
             _identity: Option<Self::IdentityType>,
             _keystore: &impl FetchFromDatabase,
         ) -> crate::Result<Option<Self>> {
-            let id = std::str::from_utf8(id)?;
+            // it's not worth adding a variant to the Error type here to handle test dummy values
+            let id = std::str::from_utf8(id).expect("dummy value ids are strings");
             Ok(Some(id.into()))
         }
 

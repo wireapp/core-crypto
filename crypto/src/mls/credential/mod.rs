@@ -158,7 +158,7 @@ mod tests {
             x509::{CertificateParams, X509TestChain},
             *,
         },
-        CoreCrypto,
+        CoreCrypto, RecursiveError,
     };
 
     use super::*;
@@ -241,6 +241,8 @@ mod tests {
     #[apply(all_cred_cipher)]
     #[wasm_bindgen_test]
     async fn should_fail_when_certificate_chain_has_a_single_self_signed(case: TestCase) {
+        use crate::MlsErrorKind;
+
         if case.is_x509() {
             let mut x509_test_chain = X509TestChain::init_empty(case.signature_scheme());
 
@@ -256,20 +258,16 @@ mod tests {
             let alice_identifier = ClientIdentifier::X509([(case.signature_scheme(), cb)].into());
 
             let (bob_identifier, _) = x509_test_chain.issue_simple_certificate_bundle("bob", None);
-            assert!(matches!(
-                try_talk(&case, Some(&x509_test_chain), bob_identifier, alice_identifier)
-                    .await
-                    .unwrap_err(),
-                Error::InvalidIdentity
-            ));
+            let err = try_talk(&case, Some(&x509_test_chain), bob_identifier, alice_identifier)
+                .await
+                .unwrap_err();
+            assert!(innermost_source_matches!(err, MlsErrorKind::MlsAddMembersError(_)));
         }
     }
 
     #[apply(all_cred_cipher)]
     #[wasm_bindgen_test]
     async fn should_fail_when_signature_key_doesnt_match_certificate_public_key(case: TestCase) {
-        use crate::RecursiveError;
-
         if case.is_x509() {
             let mut x509_test_chain = X509TestChain::init_empty(case.signature_scheme());
             let x509_intermediate = x509_test_chain.find_local_intermediate_ca();
@@ -288,16 +286,12 @@ mod tests {
             let alice_identifier = ClientIdentifier::X509(HashMap::from([(case.signature_scheme(), cb)]));
 
             let (bob_identifier, _) = x509_test_chain.issue_simple_certificate_bundle("bob", None);
-            assert!(matches!(
-                try_talk(&case, Some(&x509_test_chain), alice_identifier, bob_identifier)
-                    .await
-                    .unwrap_err(),
-                Error::Recursive(RecursiveError::Mls {
-                    source,
-                    ..
-                }) if matches!(*source, crate::mls::Error::Mls(crate::MlsError{ source: crate::MlsErrorKind::MlsCryptoError(
-                        openmls::prelude::CryptoError::MismatchKeypair
-                    ), ..}))
+            let err = try_talk(&case, Some(&x509_test_chain), alice_identifier, bob_identifier)
+                .await
+                .unwrap_err();
+            assert!(innermost_source_matches!(
+                err,
+                crate::MlsErrorKind::MlsCryptoError(openmls::prelude::CryptoError::MismatchKeypair),
             ));
         }
     }
@@ -446,6 +440,8 @@ mod tests {
     #[apply(all_cred_cipher)]
     #[wasm_bindgen_test]
     async fn should_fail_when_certificate_not_valid_yet(case: TestCase) {
+        use crate::MlsErrorKind;
+
         if case.is_x509() {
             let mut x509_test_chain = X509TestChain::init_empty(case.signature_scheme());
 
@@ -472,13 +468,15 @@ mod tests {
 
             let (bob_identifier, _) = x509_test_chain.issue_simple_certificate_bundle("bob", None);
 
-            match try_talk(&case, Some(&x509_test_chain), alice_identifier, bob_identifier)
-                .await
-                .unwrap_err()
-            {
-                CryptoError::MlsError(MlsError::MlsCryptoError(openmls::prelude::CryptoError::ExpiredCertificate)) => {}
-                e => panic!("Unexpected error: {e:?}"),
-            }
+            assert!(matches!(
+                try_talk(&case, Some(&x509_test_chain), alice_identifier, bob_identifier)
+                    .await
+                    .unwrap_err(),
+                Error::Mls(MlsError {
+                    source: MlsErrorKind::MlsCryptoError(openmls::prelude::CryptoError::ExpiredCertificate),
+                    ..
+                })
+            ))
         }
     }
 
@@ -520,11 +518,17 @@ mod tests {
             ciphersuites.clone(),
             None,
             Some(INITIAL_KEYING_MATERIAL_COUNT),
-        )?;
+        )
+        .map_err(RecursiveError::mls("making creator config"))?;
 
-        let creator_central = MlsCentral::try_new(creator_cfg).await?;
+        let creator_central = MlsCentral::try_new(creator_cfg)
+            .await
+            .map_err(RecursiveError::mls("creating mls central"))?;
         let cc = CoreCrypto::from(creator_central);
-        let creator_transaction = cc.new_transaction().await?;
+        let creator_transaction = cc
+            .new_transaction()
+            .await
+            .map_err(RecursiveError::root("creating new transaction"))?;
         let creator_central = cc.mls;
 
         if let Some(x509_test_chain) = &x509_test_chain {
@@ -542,7 +546,8 @@ mod tests {
                 ciphersuites.clone(),
                 Some(INITIAL_KEYING_MATERIAL_COUNT),
             )
-            .await?;
+            .await
+            .map_err(RecursiveError::mls("initializing mls"))?;
 
         let guest_path = tmp_db_file();
         let guest_cfg = MlsCentralConfiguration::try_new(
@@ -552,11 +557,17 @@ mod tests {
             ciphersuites.clone(),
             None,
             Some(INITIAL_KEYING_MATERIAL_COUNT),
-        )?;
+        )
+        .map_err(RecursiveError::mls("creating mls config"))?;
 
-        let guest_central = MlsCentral::try_new(guest_cfg).await?;
+        let guest_central = MlsCentral::try_new(guest_cfg)
+            .await
+            .map_err(RecursiveError::mls("creating mls central"))?;
         let cc = CoreCrypto::from(guest_central);
-        let guest_transaction = cc.new_transaction().await?;
+        let guest_transaction = cc
+            .new_transaction()
+            .await
+            .map_err(RecursiveError::root("creating new transaction"))?;
         let guest_central = cc.mls;
         if let Some(x509_test_chain) = &x509_test_chain {
             x509_test_chain.register_with_central(&guest_transaction).await;
@@ -567,11 +578,13 @@ mod tests {
                 ciphersuites.clone(),
                 Some(INITIAL_KEYING_MATERIAL_COUNT),
             )
-            .await?;
+            .await
+            .map_err(RecursiveError::mls("initializing mls guest transaction"))?;
 
         creator_transaction
             .new_conversation(&id, creator_ct, case.cfg.clone())
-            .await?;
+            .await
+            .map_err(RecursiveError::mls("creating new transaction"))?;
 
         let guest_client_context = ClientContext {
             context: guest_transaction.clone(),
@@ -582,9 +595,13 @@ mod tests {
         let guest = guest_client_context.rand_key_package_of_type(case, guest_ct).await;
         creator_client_context
             .invite_all_members(case, &id, [(&guest_client_context, guest)])
-            .await?;
+            .await
+            .map_err(RecursiveError::test())?;
 
-        creator_client_context.try_talk_to(&id, &guest_client_context).await?;
+        creator_client_context
+            .try_talk_to(&id, &guest_client_context)
+            .await
+            .map_err(RecursiveError::test())?;
         Ok((creator_client_context, guest_client_context, id))
     }
 }

@@ -82,6 +82,9 @@ fn new_rand_client(domain: Option<String>) -> (String, String) {
 
 #[cfg(test)]
 impl CertificateBundle {
+    // test functions are not held to the same standard as real functions
+    #![allow(missing_docs)]
+
     /// Generates a certificate that is later turned into a [openmls::prelude::CredentialBundle]
     pub fn rand(name: &ClientId, signer: &crate::test_utils::x509::X509Certificate) -> Self {
         // here in our tests client_id is generally just "alice" or "bob"

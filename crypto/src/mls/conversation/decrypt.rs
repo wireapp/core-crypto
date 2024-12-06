@@ -1048,6 +1048,8 @@ mod tests {
         #[apply(all_cred_cipher)]
         #[wasm_bindgen_test]
         async fn cannot_decrypt_proposal_no_callback(case: TestCase) {
+            use crate::mls;
+
             run_test_with_client_ids(
                 case.clone(),
                 ["alice", "bob", "alice2"],
@@ -1076,7 +1078,14 @@ mod tests {
                             .await
                             .unwrap_err();
 
-                        assert!(matches!(error, Error::CallbacksNotSet));
+                        assert!(matches!(
+                            error,
+                            mls::conversation::Error::Recursive(RecursiveError::Mls {
+                                source,
+                                ..
+                            })
+                            if matches!(*source, mls::Error::CallbacksNotSet)
+                        ));
 
                         bob_central.context.set_callbacks(None).await.unwrap();
                         let error = bob_central
@@ -1085,7 +1094,14 @@ mod tests {
                             .await
                             .unwrap_err();
 
-                        assert!(matches!(error, Error::CallbacksNotSet));
+                        assert!(matches!(
+                            error,
+                            mls::conversation::Error::Recursive(RecursiveError::Mls {
+                                source,
+                                ..
+                            })
+                            if matches!(*source, mls::Error::CallbacksNotSet)
+                        ));
                     })
                 },
             )
@@ -1095,6 +1111,8 @@ mod tests {
         #[apply(all_cred_cipher)]
         #[wasm_bindgen_test]
         async fn cannot_decrypt_proposal_validation(case: TestCase) {
+            use crate::mls;
+
             run_test_with_client_ids(
                 case.clone(),
                 ["alice", "bob", "alice2"],
@@ -1130,7 +1148,14 @@ mod tests {
                             .await
                             .unwrap_err();
 
-                        assert!(matches!(error, CryptoError::UnauthorizedExternalAddProposal));
+                        assert!(matches!(
+                            error,
+                            mls::conversation::Error::Recursive(RecursiveError::Mls {
+                                source,
+                                ..
+                            })
+                            if matches!(*source, mls::Error::UnauthorizedExternalAddProposal)
+                        ));
 
                         bob_central.context.set_callbacks(None).await.unwrap();
                         let error = bob_central
@@ -1139,7 +1164,14 @@ mod tests {
                             .await
                             .unwrap_err();
 
-                        assert!(matches!(error, CryptoError::CallbacksNotSet));
+                        assert!(matches!(
+                            error,
+                            mls::conversation::Error::Recursive(RecursiveError::Mls {
+                                source,
+                                ..
+                            })
+                            if matches!(*source, mls::Error::CallbacksNotSet)
+                        ));
                     })
                 },
             )
