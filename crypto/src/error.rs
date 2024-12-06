@@ -121,7 +121,10 @@ pub enum CryptoError {
     ErrorDuringMlsTransport(String),
     /// Message rejected by the delivery service
     #[error("Message rejected by the delivery service. Reason: {reason}")]
-    MessageRejected { reason: String },
+    MessageRejected {
+        /// Why was the message rejected by the delivery service?
+        reason: String,
+    },
     /// A supplied [`openmls::ciphersuite::hash_ref::HashReference`] is not of the expected size: 16
     #[error("A supplied reference is not of the expected size: 16")]
     InvalidHashReference,
