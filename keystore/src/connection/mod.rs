@@ -35,7 +35,7 @@ use crate::entities::{Entity, EntityFindParams, StringEntityId};
 use std::ops::DerefMut;
 
 use crate::entities::{EntityTransactionExt, UniqueEntity};
-use crate::transaction::KeystoreTransaction;
+use crate::transaction::{KeystoreTransaction, TransactionGuard};
 use crate::{CryptoKeystoreError, CryptoKeystoreResult};
 use async_lock::{Mutex, MutexGuard};
 use std::sync::Arc;
@@ -157,11 +157,7 @@ impl Connection {
     }
 
     pub async fn wipe(self) -> CryptoKeystoreResult<()> {
-        if self.transaction.lock().await.is_some() {
-            return Err(CryptoKeystoreError::TransactionInProgress {
-                attempted_operation: "wipe()".to_string(),
-            });
-        }
+        TransactionGuard::wait_to_finish(self.transaction.clone()).await;
         let conn: KeystoreDatabaseConnection = Arc::into_inner(self.conn).unwrap().into_inner();
 
         conn.wipe().await?;
@@ -169,24 +165,17 @@ impl Connection {
     }
 
     pub async fn close(self) -> CryptoKeystoreResult<()> {
-        if self.transaction.lock().await.is_some() {
-            return Err(CryptoKeystoreError::TransactionInProgress {
-                attempted_operation: "close()".to_string(),
-            });
-        }
+        TransactionGuard::wait_to_finish(self.transaction.clone()).await;
         let conn: KeystoreDatabaseConnection = Arc::into_inner(self.conn).unwrap().into_inner();
         conn.close().await?;
         Ok(())
     }
 
+    /// Waits for the current transaction to be committed or rolled back, then starts a new one.
     pub async fn new_transaction(&self) -> CryptoKeystoreResult<()> {
-        let mut transaction = self.transaction.lock().await;
-        if transaction.is_some() {
-            return Err(CryptoKeystoreError::TransactionInProgress {
-                attempted_operation: "new_transaction()".to_string(),
-            });
-        }
-        *transaction = Some(KeystoreTransaction::new().await?);
+        TransactionGuard::wait_to_finish(self.transaction.clone()).await;
+        let mut transaction_guard = self.transaction.lock().await;
+        *transaction_guard = Some(KeystoreTransaction::new(std::thread::current().id()).await?);
         Ok(())
     }
 

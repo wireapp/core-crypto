@@ -87,15 +87,7 @@ impl CoreCrypto {
         // ? Cannot inline the statement or the borrow checker gets really confused about the type of `keystore`
         let keystore = self.mls.mls_backend.keystore();
 
-        let mut new_transaction_is_needed = true;
-        match keystore.new_transaction().await {
-            Ok(_) => {}
-            Err(CryptoKeystoreError::TransactionInProgress { .. }) => {
-                // Just attach operations to running transaction if there is one
-                new_transaction_is_needed = false;
-            }
-            Err(e) => return Err(e.into()),
-        }
+        keystore.new_transaction().await?;
         let proteus_client = ProteusCentral::try_new(&keystore).await?;
 
         // ? Make sure the last resort prekey exists
@@ -103,9 +95,8 @@ impl CoreCrypto {
 
         let mut guard = self.proteus.lock().await;
         *guard = Some(proteus_client);
-        if new_transaction_is_needed {
-            keystore.commit_transaction().await?;
-        }
+        keystore.commit_transaction().await?;
+
         Ok(())
     }
 }

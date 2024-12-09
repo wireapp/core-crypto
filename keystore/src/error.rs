@@ -71,8 +71,8 @@ pub enum CryptoKeystoreError {
     KeyReprError(#[from] std::str::Utf8Error),
     #[error("A transaction must be in progress to perform this operation.")]
     MutatingOperationWithoutTransaction,
-    #[error("Cannot perform the operation \"{attempted_operation:?}\" while a transaction is in progress.")]
-    TransactionInProgress { attempted_operation: String },
+    #[error("A transaction is already in progress on this thread! To prevent a deadlock, this is not allowed")]
+    TransactionRunningOnThread,
     #[error(transparent)]
     TryFromSliceError(#[from] std::array::TryFromSliceError),
     #[error("One of the Keystore locks has been poisoned")]
