@@ -32,9 +32,9 @@ import {
     WelcomeBundle,
     WireIdentity,
     CoreCryptoContextFfi,
-} from "./CoreCrypto";
+} from "./CoreCrypto.js";
 
-import * as CoreCryptoFfiTypes from "./wasm/core-crypto-ffi.d.js";
+import * as CoreCryptoFfiTypes from "./core-crypto-ffi.d.js";
 
 export default class CoreCryptoContext {
     /** @hidden */

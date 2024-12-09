@@ -21,8 +21,8 @@ import {
     E2eiConversationState,
     GroupInfoEncryptionType,
     RatchetTreeType,
-} from "../CoreCrypto";
-import CoreCryptoContext from "../CoreCryptoContext";
+} from "../src/CoreCrypto";
+import CoreCryptoContext from "../src/CoreCryptoContext";
 
 beforeEach(async () => {
     await setup();
