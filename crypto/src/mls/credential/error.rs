@@ -11,7 +11,7 @@ pub enum Error {
     InvalidCertificateChain,
     #[error("decoding X509 certificate")]
     DecodeX509(#[source] x509_cert::der::Error),
-    #[error("Client presented an invalid identity")]
+    #[error("client presented an invalid identity")]
     InvalidIdentity,
     /// Unsupported credential type.
     ///

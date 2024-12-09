@@ -7,7 +7,7 @@ mod tests {
 
     use crate::{mls, test_utils::*, MlsError, MlsErrorKind};
 
-    use openmls::prelude::{AddMembersError, KeyPackageVerifyError, ProposeAddMemberError};
+    use openmls::prelude::{AddMembersError, KeyPackageVerifyError};
 
     wasm_bindgen_test_configure!(run_in_browser);
 
@@ -46,16 +46,9 @@ mod tests {
                         }
 
                         let proposal_creation = alice_central.context.new_add_proposal(&id, invalid_kp).await;
-                        assert!(matches!(
+                        assert!(innermost_source_matches!(
                             proposal_creation.unwrap_err(),
-                            mls::Error::Mls(MlsError {
-                                source: MlsErrorKind::ProposeAddMemberError(
-                                    ProposeAddMemberError::KeyPackageVerifyError(
-                                        KeyPackageVerifyError::InvalidLeafNode(_)
-                                    )
-                                ),
-                                ..
-                            })
+                            KeyPackageVerifyError::InvalidLeafNode(_)
                         ));
                         assert!(alice_central.pending_proposals(&id).await.is_empty());
 
