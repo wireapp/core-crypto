@@ -181,7 +181,12 @@ impl EmulatedMlsClient for CoreCryptoFfiClient {
 #[async_trait::async_trait(?Send)]
 impl crate::clients::EmulatedProteusClient for CoreCryptoFfiClient {
     async fn init(&mut self) -> Result<()> {
-        self.cc.proteus_init().await.map_err(Into::into)
+        self.cc
+            .transaction(TransactionHelper::new(move |context| async move {
+                context.proteus_init().await.map_err(Into::into)
+            }))
+            .await?;
+        Ok(())
     }
 
     async fn get_prekey(&mut self) -> Result<Vec<u8>> {

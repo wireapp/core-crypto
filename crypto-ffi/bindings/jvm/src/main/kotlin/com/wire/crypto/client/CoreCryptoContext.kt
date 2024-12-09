@@ -773,6 +773,17 @@ class CoreCryptoContext(private val cc: CoreCryptoContext) {
     }
 
     // Proteus below
+    /**
+     * Initialise [CoreCrypto] to be used with proteus.
+     *
+     * All proteus related methods will fail until this function is called.
+     */
+    suspend fun proteusInit() {
+        cc.proteusInit()
+    }
+
+
+
 
     private fun toPreKey(id: UShort, data: ByteArray): PreKey = PreKey(id, data)
 

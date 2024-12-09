@@ -1724,25 +1724,6 @@ impl CoreCrypto {
         )
     }
 
-    /// Returns: [`WasmCryptoResult<()>`]
-    ///
-    /// see [core_crypto::proteus::ProteusCentral::try_new]
-    #[cfg_attr(not(feature = "proteus"), allow(unused_variables))]
-    pub fn proteus_init(&self) -> Promise {
-        let errcode_dest = self.proteus_last_error_code.clone();
-        let central = self.inner.clone();
-
-        future_to_promise(
-            async move {
-                proteus_impl! { errcode_dest => {
-                    central.proteus_init().await.map_err(CoreCryptoError::from)?;
-                    WasmCryptoResult::Ok(JsValue::UNDEFINED)
-                } or throw WasmCryptoResult<_> }
-            }
-            .err_into(),
-        )
-    }
-
     /// Returns: [`WasmCryptoResult<bool>`]
     ///
     /// see [core_crypto::proteus::ProteusCentral::session_exists]
