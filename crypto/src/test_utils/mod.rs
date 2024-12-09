@@ -66,7 +66,7 @@ macro_rules! innermost_source_matches {
 
         let outcome = matches!(err.downcast_ref(), Some($pattern) $($guard)?);
         if !outcome {
-            dbg!(err);
+            eprintln!("{err:?}: {err}");
         }
 
         outcome
