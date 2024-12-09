@@ -20,100 +20,55 @@ afterEach(async () => {
     await teardown();
 });
 
-/**
- * Encrypts {@link messageCount} many messages using the `clientName` client in the `conversationId` conversation.
- *
- * @param {string} clientName
- * @param {string} conversationId
- * @param message
- * @param {number} messageCount
- * @return {Promise<number[][]>} A promise resolving to an array of {@link messageCount} arrays, each containing
- * an encrypted message.
- */
-async function encrypt(
-    clientName: string,
-    conversationId: string,
-    message: string,
-    messageCount: number
-): Promise<number[][]> {
-    return await browser.execute(
-        async (clientName, conversationId, message, messageCount) => {
-            const cc = window.ensureCcDefined(clientName);
-            const encoder = new TextEncoder();
-            const conversationIdBytes = encoder.encode(conversationId);
-            return await cc.transaction(async (ctx) => {
-                const encryptedMessages: number[][] = [];
-                const messageBytes = encoder.encode(message);
-                for (let i = 0; i < messageCount; i++) {
-                    const encryptedMessage = await ctx.encryptMessage(
-                        conversationIdBytes,
-                        messageBytes
-                    );
+async function measureDecryption(
+    client1,
+    client2,
+    conversationId,
+    message,
+    messageCount
+) {
+    const cc1 = window.ensureCcDefined(client1);
+    const encoder = new TextEncoder();
+    const conversationIdBytes = encoder.encode(conversationId);
+    const messageBytes = encoder.encode(message);
 
-                    encryptedMessages.push(Array.from(encryptedMessage));
-                }
-                return encryptedMessages;
-            });
-        },
-        clientName,
-        conversationId,
-        message,
-        messageCount
-    );
-}
+    const encryptedMessages = await cc1.transaction(async (ctx) => {
+        const encryptedMessages = [];
+        for (let i = 0; i < messageCount; i++) {
+            const encryptedMessage = await ctx.encryptMessage(
+                conversationIdBytes,
+                messageBytes
+            );
 
-/**
- * Decrypts a list of previously encrypted messages, using the `clientName` client in the `conversationId` conversation.
- *
- * @param {string} clientName
- * @param {string} conversationId
- * @param {number[][]} encryptedMessages
- * @return {Promise<{ decryptedMessages: number[][]; durationMilliSeconds: number }>} The decrypted message bytes and
- * the duration of the operation in milliseconds
- */
-async function decrypt(
-    clientName: string,
-    conversationId: string,
-    encryptedMessages: number[][]
-): Promise<{ decryptedMessages: number[][]; durationMilliSeconds: number }> {
-    return await browser.execute(
-        async (clientName, conversationId, encryptedMessages) => {
-            const cc = window.ensureCcDefined(clientName);
-            const encoder = new TextEncoder();
-            const conversationIdBytes = encoder.encode(conversationId);
-            return await cc.transaction(async (ctx) => {
-                const start = performance.now();
+            encryptedMessages.push(encryptedMessage);
+        }
+        return encryptedMessages;
+    });
 
-                const decryptedMessages = await Promise.all(
-                    encryptedMessages.map(
-                        async (encryptedMessage) =>
-                            (
-                                await ctx.decryptMessage(
-                                    conversationIdBytes,
-                                    Uint8Array.from(encryptedMessage)
-                                )
-                            ).message
-                    )
-                );
+    // measure decryption performance
+    const cc2 = window.ensureCcDefined(client2);
+    return await cc2.transaction(async (ctx) => {
+        const start = performance.now();
 
-                const end = performance.now();
-                const duration = end - start;
+        let decryptedMessages = [];
+        for (let i = 0; i < messageCount; i++) {
+            const result = await ctx.decryptMessage(
+                conversationIdBytes,
+                encryptedMessages[i]
+            );
+            decryptedMessages.push(result.message);
+        }
 
-                return {
-                    decryptedMessages: decryptedMessages
-                        .filter(
-                            (message): message is Uint8Array =>
-                                message !== undefined
-                        )
-                        .map((message) => Array.from(message)),
-                    durationMilliSeconds: duration,
-                };
-            });
-        },
-        clientName,
-        conversationId,
-        encryptedMessages
-    );
+        const end = performance.now();
+        const duration = end - start;
+        decryptedMessages = decryptedMessages
+            .filter((message): message is Uint8Array => message !== undefined)
+            .map((x) => String.fromCharCode(...x));
+        return {
+            decryptedMessages: decryptedMessages,
+            durationMilliSeconds: duration,
+        };
+    });
 }
 
 describe("messages", () => {
@@ -125,26 +80,25 @@ describe("messages", () => {
         await invite(ALICE_ID, BOB_ID, CONV_ID);
 
         const MESSAGE = "Hello world!";
-        const messages = await encrypt(
-            ALICE_ID,
-            CONV_ID,
-            MESSAGE,
-            MESSAGE_COUNT
-        );
         const { decryptedMessages, durationMilliSeconds: duration } =
-            await decrypt(BOB_ID, CONV_ID, messages);
+            await browser.execute(
+                measureDecryption,
+                ALICE_ID,
+                BOB_ID,
+                CONV_ID,
+                MESSAGE,
+                MESSAGE_COUNT
+            );
+
         expect(decryptedMessages.length).toBe(MESSAGE_COUNT);
-        const decoder = new TextDecoder();
-        const decodedMessages = decryptedMessages.map((encodedMessage) =>
-            decoder.decode(new Uint8Array(encodedMessage))
-        );
-        expect(decodedMessages).toStrictEqual(
+        expect(decryptedMessages).toStrictEqual(
             Array(MESSAGE_COUNT).fill(MESSAGE)
         );
 
         console.log(`Decrypted ${MESSAGE_COUNT} messages in ${duration} ms`);
 
         if (!process.env.CI) return;
+
         // This format can directly be used by bencher
         const bencherJson = {
             [`decrypt${MESSAGE_COUNT}MessagesWeb`]: {
