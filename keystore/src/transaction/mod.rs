@@ -15,6 +15,7 @@ use itertools::Itertools;
 use std::future::Future;
 use std::pin::Pin;
 use std::task::Poll;
+use std::thread::ThreadId;
 use std::{ops::DerefMut, sync::Arc};
 
 pub(crate) struct TransactionGuard {
@@ -53,17 +54,23 @@ pub(crate) struct KeystoreTransaction {
     cache: Connection,
     deleted: Arc<RwLock<Vec<EntityId>>>,
     deleted_credentials: Arc<RwLock<Vec<Vec<u8>>>>,
+    thread_id: ThreadId,
 }
 
 impl KeystoreTransaction {
-    pub(crate) async fn new() -> CryptoKeystoreResult<Self> {
+    pub(crate) async fn new(thread_id: ThreadId) -> CryptoKeystoreResult<Self> {
         Ok(Self {
             // We're not using a proper key because we're not using the DB for security (memory is unencrypted).
             // We're using it for its API.
             cache: Connection::open_in_memory_with_key("core_crypto_transaction_cache", "").await?,
             deleted: Arc::new(Default::default()),
             deleted_credentials: Arc::new(Default::default()),
+            thread_id,
         })
+    }
+
+    pub(crate) fn thread_id(&self) -> ThreadId {
+        self.thread_id
     }
 
     pub(crate) async fn save_mut<

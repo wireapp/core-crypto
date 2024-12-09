@@ -175,7 +175,7 @@ impl Connection {
     pub async fn new_transaction(&self) -> CryptoKeystoreResult<()> {
         TransactionGuard::wait_to_finish(self.transaction.clone()).await;
         let mut transaction_guard = self.transaction.lock().await;
-        *transaction_guard = Some(KeystoreTransaction::new().await?);
+        *transaction_guard = Some(KeystoreTransaction::new(std::thread::current().id()).await?);
         Ok(())
     }
 
