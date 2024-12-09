@@ -35,7 +35,7 @@ hex.workspace = true
 zeroize = { workspace = true, features = ["zeroize_derive"] }
 async-trait.workspace = true
 async-lock.workspace = true
-postcard = { version = "1.0", default-features = false, features = ["use-std"] }
+postcard = { version = "1.1", default-features = false, features = ["use-std"] }
 sha2.workspace = true
 serde_json.workspace = true
 
