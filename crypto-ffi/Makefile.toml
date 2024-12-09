@@ -104,7 +104,8 @@ command = "wasm-pack"
 args = [
     "build",
     "--locked",
-    "--out-dir", "bindings/js/wasm",
+    "--no-pack",
+    "--out-dir", "bindings/js/src",
     "--out-name", "core-crypto-ffi",
     "--mode", "normal",
     "--target", "web",
