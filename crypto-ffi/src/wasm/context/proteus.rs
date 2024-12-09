@@ -12,6 +12,25 @@ use wasm_bindgen_futures::future_to_promise;
 impl CoreCryptoContext {
     /// Returns: [`WasmCryptoResult<()>`]
     ///
+    /// see [core_crypto::proteus::ProteusCentral::try_new]
+    #[cfg_attr(not(feature = "proteus"), allow(unused_variables))]
+    pub fn proteus_init(&self) -> Promise {
+        let errcode_dest = self.proteus_last_error_code.clone();
+        let context = self.inner.clone();
+
+        future_to_promise(
+            async move {
+                proteus_impl! { errcode_dest => {
+                    context.proteus_init().await.map_err(CoreCryptoError::from)?;
+                    WasmCryptoResult::Ok(JsValue::UNDEFINED)
+                } or throw WasmCryptoResult<_> }
+            }
+            .err_into(),
+        )
+    }
+
+    /// Returns: [`WasmCryptoResult<()>`]
+    ///
     /// See [core_crypto::context::CentralContext::proteus_session_from_prekey]
     pub fn proteus_session_from_prekey(&self, session_id: String, prekey: Box<[u8]>) -> Promise {
         let errcode_dest = self.proteus_last_error_code.clone();
