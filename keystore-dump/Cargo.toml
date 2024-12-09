@@ -18,7 +18,7 @@ clap = { version = "4", features = ["derive"] }
 tokio = { version = "1", features = ["full"] }
 serde_json.workspace = true
 serde.workspace = true
-postcard = { version = "1.0", default-features = false, features = ["use-std"] }
+postcard = { version = "1.1", default-features = false, features = ["use-std"] }
 hex.workspace = true
 serde-transcode = "1"
 
