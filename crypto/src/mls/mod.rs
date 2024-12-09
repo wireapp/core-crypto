@@ -3,12 +3,14 @@ use std::sync::Arc;
 use async_lock::RwLock;
 use log::trace;
 
-use crate::prelude::{
-    identifier::ClientIdentifier, key_package::INITIAL_KEYING_MATERIAL_COUNT, Client, ClientId, ConversationId,
-    CryptoError, CryptoResult, MlsCentralConfiguration, MlsCiphersuite, MlsConversation, MlsConversationConfiguration,
-    MlsCredentialType, MlsError, MlsTransport,
+use crate::{
+    prelude::{
+        identifier::ClientIdentifier, key_package::INITIAL_KEYING_MATERIAL_COUNT, Client, ClientId, ConversationId,
+        MlsCentralConfiguration, MlsCiphersuite, MlsConversation, MlsConversationConfiguration, MlsCredentialType,
+        MlsTransport,
+    },
+    CoreCrypto, LeafError, MlsError, RecursiveError,
 };
-use crate::CoreCrypto;
 use mls_crypto_provider::{EntropySeed, MlsCryptoProvider, MlsCryptoProviderConfiguration};
 use openmls_traits::OpenMlsCryptoProvider;
 
@@ -19,12 +21,16 @@ pub(crate) mod ciphersuite;
 pub(crate) mod client;
 pub mod conversation;
 pub(crate) mod credential;
+mod error;
 pub(crate) mod external_commit;
 pub(crate) mod external_proposal;
 pub(crate) mod proposal;
 
+pub use error::{Error, Result};
+
 // Prevents direct instantiation of [MlsCentralConfiguration]
 pub(crate) mod config {
+    use ciphersuite::MlsCiphersuite;
     use mls_crypto_provider::EntropySeed;
 
     use super::*;
@@ -91,26 +97,27 @@ pub(crate) mod config {
             ciphersuites: Vec<MlsCiphersuite>,
             entropy: Option<Vec<u8>>,
             nb_init_key_packages: Option<usize>,
-        ) -> CryptoResult<Self> {
+        ) -> Result<Self> {
             // TODO: probably more complex rules to enforce. Tracking issue: WPB-9598
             if store_path.trim().is_empty() {
-                return Err(CryptoError::MalformedIdentifier("store_path"));
+                return Err(Error::MalformedIdentifier("store_path"));
             }
             // TODO: probably more complex rules to enforce. Tracking issue: WPB-9598
             if identity_key.trim().is_empty() {
-                return Err(CryptoError::MalformedIdentifier("identity_key"));
+                return Err(Error::MalformedIdentifier("identity_key"));
             }
             // TODO: probably more complex rules to enforce. Tracking issue: WPB-9598
             if let Some(client_id) = client_id.as_ref() {
                 if client_id.is_empty() {
-                    return Err(CryptoError::MalformedIdentifier("client_id"));
+                    return Err(Error::MalformedIdentifier("client_id"));
                 }
             }
             let external_entropy = entropy
                 .as_deref()
                 .map(|seed| &seed[..EntropySeed::EXPECTED_LEN])
                 .map(EntropySeed::try_from_slice)
-                .transpose()?;
+                .transpose()
+                .map_err(MlsError::wrap("gathering external entropy"))?;
             Ok(Self {
                 store_path,
                 identity_key,
@@ -164,7 +171,7 @@ impl MlsCentral {
     /// * for x509 Credentials if the cetificate chain length is lower than 2
     /// * for Basic Credentials if the signature key cannot be generated either by not supported
     ///   scheme or the key generation fails
-    pub async fn try_new(configuration: MlsCentralConfiguration) -> CryptoResult<Self> {
+    pub async fn try_new(configuration: MlsCentralConfiguration) -> Result<Self> {
         // Init backend (crypto + rand + keystore)
         let mls_backend = MlsCryptoProvider::try_new_with_configuration(MlsCryptoProviderConfiguration {
             db_path: &configuration.store_path,
@@ -172,26 +179,27 @@ impl MlsCentral {
             in_memory: false,
             entropy_seed: configuration.external_entropy.clone(),
         })
-        .await?;
+        .await
+        .map_err(MlsError::wrap("trying to initialize mls crypto provider object"))?;
         Self::new_with_backend(mls_backend, configuration).await
     }
 
     /// Same as the [MlsCentral::try_new] but instead, it uses an in memory KeyStore. Although required, the `store_path` parameter from the `MlsCentralConfiguration` won't be used here.
-    pub async fn try_new_in_memory(configuration: MlsCentralConfiguration) -> CryptoResult<Self> {
+    pub async fn try_new_in_memory(configuration: MlsCentralConfiguration) -> Result<Self> {
         let mls_backend = MlsCryptoProvider::try_new_with_configuration(MlsCryptoProviderConfiguration {
             db_path: &configuration.store_path,
             identity_key: &configuration.identity_key,
             in_memory: true,
             entropy_seed: configuration.external_entropy.clone(),
         })
-        .await?;
+        .await
+        .map_err(MlsError::wrap(
+            "trying to initialize mls crypto provider object (in memory)",
+        ))?;
         Self::new_with_backend(mls_backend, configuration).await
     }
 
-    async fn new_with_backend(
-        mls_backend: MlsCryptoProvider,
-        configuration: MlsCentralConfiguration,
-    ) -> CryptoResult<Self> {
+    async fn new_with_backend(mls_backend: MlsCryptoProvider, configuration: MlsCentralConfiguration) -> Result<Self> {
         let mls_client = Client::default();
 
         // We create the core crypto instance first to enable creating a transaction from it and
@@ -204,7 +212,10 @@ impl MlsCentral {
         };
 
         let cc = CoreCrypto::from(central);
-        let context = cc.new_transaction().await?;
+        let context = cc
+            .new_transaction()
+            .await
+            .map_err(RecursiveError::root("starting new transaction"))?;
         if let Some(id) = configuration.client_id {
             mls_client
                 .init(
@@ -215,11 +226,18 @@ impl MlsCentral {
                         .nb_init_key_packages
                         .unwrap_or(INITIAL_KEYING_MATERIAL_COUNT),
                 )
-                .await?
+                .await
+                .map_err(RecursiveError::mls_client("initializing mls client"))?
         }
         let central = cc.mls;
-        context.init_pki_env().await?;
-        context.finish().await?;
+        context
+            .init_pki_env()
+            .await
+            .map_err(RecursiveError::e2e_identity("initializing pki environment"))?;
+        context
+            .finish()
+            .await
+            .map_err(RecursiveError::root("finishing transaction"))?;
         Ok(central)
     }
 
@@ -239,22 +257,33 @@ impl MlsCentral {
         &self,
         ciphersuite: MlsCiphersuite,
         credential_type: MlsCredentialType,
-    ) -> CryptoResult<Vec<u8>> {
+    ) -> Result<Vec<u8>> {
         let cb = self
             .mls_client
             .find_most_recent_credential_bundle(ciphersuite.signature_algorithm(), credential_type)
-            .await?;
+            .await
+            .map_err(RecursiveError::mls_client("finding most recent credential bundle"))?;
         Ok(cb.signature_key.to_public_vec())
     }
 
     /// Returns the client's id as a buffer
-    pub async fn client_id(&self) -> CryptoResult<ClientId> {
-        self.mls_client.id().await
+    pub async fn client_id(&self) -> Result<ClientId> {
+        self.mls_client
+            .id()
+            .await
+            .map_err(RecursiveError::mls_client("getting client id"))
+            .map_err(Into::into)
     }
 
     /// Checks if a given conversation id exists locally
-    pub async fn conversation_exists(&self, id: &ConversationId) -> CryptoResult<bool> {
-        Ok(self.get_conversation(id).await?.is_some())
+    pub async fn conversation_exists(&self, id: &ConversationId) -> Result<bool> {
+        match self.get_conversation(id).await {
+            Ok(_) => Ok(true),
+            Err(conversation::Error::Leaf(LeafError::ConversationNotFound(_))) => Ok(false),
+            Err(e) => {
+                Err(RecursiveError::mls_conversation("getting confersation by id to check for existence")(e).into())
+            }
+        }
     }
 
     /// Returns the epoch of a given conversation
@@ -262,11 +291,11 @@ impl MlsCentral {
     /// # Errors
     /// If the conversation can't be found
     #[cfg_attr(test, crate::idempotent)]
-    pub async fn conversation_epoch(&self, id: &ConversationId) -> CryptoResult<u64> {
+    pub async fn conversation_epoch(&self, id: &ConversationId) -> Result<u64> {
         Ok(self
             .get_conversation(id)
-            .await?
-            .ok_or_else(|| CryptoError::ConversationNotFound(id.clone()))?
+            .await
+            .map_err(RecursiveError::mls_conversation("getting conversation"))?
             .group
             .epoch()
             .as_u64())
@@ -277,33 +306,42 @@ impl MlsCentral {
     /// # Errors
     /// If the conversation can't be found
     #[cfg_attr(test, crate::idempotent)]
-    pub async fn conversation_ciphersuite(&self, id: &ConversationId) -> CryptoResult<MlsCiphersuite> {
+    pub async fn conversation_ciphersuite(&self, id: &ConversationId) -> Result<MlsCiphersuite> {
         Ok(self
             .get_conversation(id)
-            .await?
-            .ok_or_else(|| CryptoError::ConversationNotFound(id.clone()))?
+            .await
+            .map_err(RecursiveError::mls_conversation("getting conversation"))?
             .ciphersuite())
     }
 
     /// Generates a random byte array of the specified size
-    pub fn random_bytes(&self, len: usize) -> CryptoResult<Vec<u8>> {
+    pub fn random_bytes(&self, len: usize) -> Result<Vec<u8>> {
         use openmls_traits::random::OpenMlsRand as _;
-        Ok(self.mls_backend.rand().random_vec(len)?)
+        self.mls_backend
+            .rand()
+            .random_vec(len)
+            .map_err(MlsError::wrap("generating random vector"))
+            .map_err(Into::into)
     }
 
     /// Closes the connection with the local KeyStore
     ///
     /// # Errors
     /// KeyStore errors, such as IO
-    pub async fn close(self) -> CryptoResult<()> {
-        self.mls_backend.close().await?;
-        Ok(())
+    pub async fn close(self) -> Result<()> {
+        self.mls_backend
+            .close()
+            .await
+            .map_err(MlsError::wrap("closing connection with keystore"))
+            .map_err(Into::into)
     }
 
     /// see [mls_crypto_provider::MlsCryptoProvider::reseed]
-    pub async fn reseed(&self, seed: Option<EntropySeed>) -> CryptoResult<()> {
-        self.mls_backend.reseed(seed)?;
-        Ok(())
+    pub async fn reseed(&self, seed: Option<EntropySeed>) -> Result<()> {
+        self.mls_backend
+            .reseed(seed)
+            .map_err(MlsError::wrap("reseeding mls backend"))
+            .map_err(Into::into)
     }
 }
 
@@ -316,17 +354,34 @@ impl CentralContext {
         identifier: ClientIdentifier,
         ciphersuites: Vec<MlsCiphersuite>,
         nb_init_key_packages: Option<usize>,
-    ) -> CryptoResult<()> {
+    ) -> Result<()> {
         let nb_key_package = nb_init_key_packages.unwrap_or(INITIAL_KEYING_MATERIAL_COUNT);
-        let mls_client = self.mls_client().await?;
+        let mls_client = self
+            .mls_client()
+            .await
+            .map_err(RecursiveError::root("getting mls client"))?;
         mls_client
-            .init(identifier, &ciphersuites, &self.mls_provider().await?, nb_key_package)
-            .await?;
+            .init(
+                identifier,
+                &ciphersuites,
+                &self
+                    .mls_provider()
+                    .await
+                    .map_err(RecursiveError::root("getting mls provider"))?,
+                nb_key_package,
+            )
+            .await
+            .map_err(RecursiveError::mls_client("initializing mls client"))?;
 
         if mls_client.is_e2ei_capable().await {
-            let client_id = mls_client.id().await?;
+            let client_id = mls_client
+                .id()
+                .await
+                .map_err(RecursiveError::mls_client("getting client id"))?;
             trace!(client_id:% = client_id; "Initializing PKI environment");
-            self.init_pki_env().await?;
+            self.init_pki_env()
+                .await
+                .map_err(RecursiveError::e2e_identity("initializing pki env"))?;
         }
 
         Ok(())
@@ -337,11 +392,20 @@ impl CentralContext {
     ///
     /// This returns the TLS-serialized identity keys (i.e. the signature keypair's public key)
     #[cfg_attr(test, crate::dispotent)]
-    pub async fn mls_generate_keypairs(&self, ciphersuites: Vec<MlsCiphersuite>) -> CryptoResult<Vec<ClientId>> {
+    pub async fn mls_generate_keypairs(&self, ciphersuites: Vec<MlsCiphersuite>) -> Result<Vec<ClientId>> {
         self.mls_client()
-            .await?
-            .generate_raw_keypairs(&ciphersuites, &self.mls_provider().await?)
             .await
+            .map_err(RecursiveError::root("getting mls client"))?
+            .generate_raw_keypairs(
+                &ciphersuites,
+                &self
+                    .mls_provider()
+                    .await
+                    .map_err(RecursiveError::root("getting mls provider"))?,
+            )
+            .await
+            .map_err(RecursiveError::mls_client("generating raw keypairs"))
+            .map_err(Into::into)
     }
 
     /// Updates the current temporary Client ID with the newly provided one. This is the second step in the externally-generated clients process
@@ -353,11 +417,24 @@ impl CentralContext {
         client_id: ClientId,
         tmp_client_ids: Vec<ClientId>,
         ciphersuites: Vec<MlsCiphersuite>,
-    ) -> CryptoResult<()> {
+    ) -> Result<()> {
         self.mls_client()
-            .await?
-            .init_with_external_client_id(client_id, tmp_client_ids, &ciphersuites, &self.mls_provider().await?)
             .await
+            .map_err(RecursiveError::root("getting mls client"))?
+            .init_with_external_client_id(
+                client_id,
+                tmp_client_ids,
+                &ciphersuites,
+                &self
+                    .mls_provider()
+                    .await
+                    .map_err(RecursiveError::root("getting mls provider"))?,
+            )
+            .await
+            .map_err(RecursiveError::mls_client(
+                "initializing mls client with external client id",
+            ))
+            .map_err(Into::into)
     }
 
     /// see [MlsCentral::client_public_key]
@@ -365,18 +442,26 @@ impl CentralContext {
         &self,
         ciphersuite: MlsCiphersuite,
         credential_type: MlsCredentialType,
-    ) -> CryptoResult<Vec<u8>> {
+    ) -> Result<Vec<u8>> {
         let cb = self
             .mls_client()
-            .await?
+            .await
+            .map_err(RecursiveError::root("getting mls client"))?
             .find_most_recent_credential_bundle(ciphersuite.signature_algorithm(), credential_type)
-            .await?;
+            .await
+            .map_err(RecursiveError::mls_client("finding most recent credential bundle"))?;
         Ok(cb.signature_key.to_public_vec())
     }
 
     /// see [MlsCentral::client_id]
-    pub async fn client_id(&self) -> CryptoResult<ClientId> {
-        self.mls_client().await?.id().await
+    pub async fn client_id(&self) -> Result<ClientId> {
+        self.mls_client()
+            .await
+            .map_err(RecursiveError::root("getting mls client"))?
+            .id()
+            .await
+            .map_err(RecursiveError::mls_client("getting client id"))
+            .map_err(Into::into)
     }
 
     /// Create a new empty conversation
@@ -396,30 +481,49 @@ impl CentralContext {
         id: &ConversationId,
         creator_credential_type: MlsCredentialType,
         config: MlsConversationConfiguration,
-    ) -> CryptoResult<()> {
+    ) -> Result<()> {
         if self.conversation_exists(id).await? || self.pending_group_exists(id).await? {
-            return Err(CryptoError::ConversationAlreadyExists(id.clone()));
+            return Err(LeafError::ConversationAlreadyExists(id.clone()).into());
         }
         let conversation = MlsConversation::create(
             id.clone(),
-            &self.mls_client().await?,
+            &self
+                .mls_client()
+                .await
+                .map_err(RecursiveError::root("getting mls client"))?,
             creator_credential_type,
             config,
-            &self.mls_provider().await?,
+            &self
+                .mls_provider()
+                .await
+                .map_err(RecursiveError::root("getting mls provider"))?,
         )
-        .await?;
+        .await
+        .map_err(RecursiveError::mls_conversation("creating conversation"))?;
 
-        self.mls_groups().await?.insert(id.clone(), conversation);
+        self.mls_groups()
+            .await
+            .map_err(RecursiveError::root("getting mls groups"))?
+            .insert(id.clone(), conversation);
 
         Ok(())
     }
 
     /// Checks if a given conversation id exists locally
-    pub async fn conversation_exists(&self, id: &ConversationId) -> CryptoResult<bool> {
+    pub async fn conversation_exists(&self, id: &ConversationId) -> Result<bool> {
         Ok(self
             .mls_groups()
-            .await?
-            .get_fetch(id, &self.mls_provider().await?.keystore(), None)
+            .await
+            .map_err(RecursiveError::root("getting mls groups"))?
+            .get_fetch(
+                id,
+                &self
+                    .mls_provider()
+                    .await
+                    .map_err(RecursiveError::root("getting mls provider"))?
+                    .keystore(),
+                None,
+            )
             .await
             .ok()
             .flatten()
@@ -431,8 +535,16 @@ impl CentralContext {
     /// # Errors
     /// If the conversation can't be found
     #[cfg_attr(test, crate::idempotent)]
-    pub async fn conversation_epoch(&self, id: &ConversationId) -> CryptoResult<u64> {
-        Ok(self.get_conversation(id).await?.read().await.group.epoch().as_u64())
+    pub async fn conversation_epoch(&self, id: &ConversationId) -> Result<u64> {
+        Ok(self
+            .get_conversation(id)
+            .await
+            .map_err(RecursiveError::mls_conversation("getting conversation by id"))?
+            .read()
+            .await
+            .group
+            .epoch()
+            .as_u64())
     }
 
     /// Returns the ciphersuite of a given conversation
@@ -440,14 +552,26 @@ impl CentralContext {
     /// # Errors
     /// If the conversation can't be found
     #[cfg_attr(test, crate::idempotent)]
-    pub async fn conversation_ciphersuite(&self, id: &ConversationId) -> CryptoResult<MlsCiphersuite> {
-        Ok(self.get_conversation(id).await?.read().await.ciphersuite())
+    pub async fn conversation_ciphersuite(&self, id: &ConversationId) -> Result<MlsCiphersuite> {
+        Ok(self
+            .get_conversation(id)
+            .await
+            .map_err(RecursiveError::mls_conversation("getting conversation by id"))?
+            .read()
+            .await
+            .ciphersuite())
     }
 
     /// Generates a random byte array of the specified size
-    pub async fn random_bytes(&self, len: usize) -> CryptoResult<Vec<u8>> {
+    pub async fn random_bytes(&self, len: usize) -> Result<Vec<u8>> {
         use openmls_traits::random::OpenMlsRand as _;
-        Ok(self.mls_provider().await?.rand().random_vec(len)?)
+        self.mls_provider()
+            .await
+            .map_err(RecursiveError::root("getting mls provider"))?
+            .rand()
+            .random_vec(len)
+            .map_err(MlsError::wrap("generating random vector"))
+            .map_err(Into::into)
     }
 }
 
@@ -457,7 +581,7 @@ mod tests {
 
     use crate::prelude::{CertificateBundle, ClientIdentifier, MlsCredentialType, INITIAL_KEYING_MATERIAL_COUNT};
     use crate::{
-        mls::{CryptoError, MlsCentral, MlsCentralConfiguration},
+        mls::{MlsCentral, MlsCentralConfiguration},
         test_utils::{x509::X509TestChain, *},
         CoreCrypto,
     };
@@ -507,11 +631,22 @@ mod tests {
         #[apply(all_cred_cipher)]
         #[wasm_bindgen_test]
         async fn conversation_not_found(case: TestCase) {
+            use crate::{mls, LeafError, RecursiveError};
+            use std::ops::Deref as _;
+
             run_test_with_central(case.clone(), move |[central]| {
                 Box::pin(async move {
                     let id = conversation_id();
                     let err = central.context.conversation_epoch(&id).await.unwrap_err();
-                    assert!(matches!(err, CryptoError::ConversationNotFound(conv_id) if conv_id == id));
+                    assert!(matches!(
+                        err,
+                        mls::Error::Recursive(RecursiveError::MlsConversation{source, ..})
+                        if matches!(
+                            source.deref(),
+                            mls::conversation::Error::Leaf(LeafError::ConversationNotFound(conv_id))
+                            if *conv_id == id
+                        )
+                    ));
                 })
             })
             .await;
@@ -519,7 +654,7 @@ mod tests {
     }
 
     mod invariants {
-        use crate::prelude::MlsCiphersuite;
+        use crate::{mls, prelude::MlsCiphersuite};
 
         use super::*;
 
@@ -559,7 +694,7 @@ mod tests {
             );
             assert!(matches!(
                 configuration.unwrap_err(),
-                CryptoError::MalformedIdentifier("store_path")
+                mls::Error::MalformedIdentifier("store_path")
             ));
         }
 
@@ -579,7 +714,7 @@ mod tests {
                     );
                     assert!(matches!(
                         configuration.unwrap_err(),
-                        CryptoError::MalformedIdentifier("identity_key")
+                        mls::Error::MalformedIdentifier("identity_key")
                     ));
                 })
             })
@@ -602,7 +737,7 @@ mod tests {
                     );
                     assert!(matches!(
                         configuration.unwrap_err(),
-                        CryptoError::MalformedIdentifier("client_id")
+                        mls::Error::MalformedIdentifier("client_id")
                     ));
                 })
             })
@@ -613,6 +748,8 @@ mod tests {
     #[apply(all_cred_cipher)]
     #[wasm_bindgen_test]
     async fn create_conversation_should_fail_when_already_exists(case: TestCase) {
+        use crate::{mls, LeafError};
+
         run_test_with_client_ids(case.clone(), ["alice"], move |[alice_central]| {
             Box::pin(async move {
                 let id = conversation_id();
@@ -628,7 +765,7 @@ mod tests {
                     .context
                     .new_conversation(&id, case.credential_type, case.cfg.clone())
                     .await;
-                assert!(matches!(repeat_create.unwrap_err(), CryptoError::ConversationAlreadyExists(i) if i == id));
+                assert!(matches!(repeat_create.unwrap_err(), mls::Error::Leaf(LeafError::ConversationAlreadyExists(i)) if i == id));
             })
         })
         .await;

@@ -71,13 +71,12 @@ pub mod prelude {
         e2e_identity::{
             conversation_state::E2eiConversationState,
             device_status::DeviceStatus,
-            error::{E2eIdentityError, E2eIdentityResult},
             identity::{WireIdentity, X509Identity},
             rotate::MlsRotateBundle,
             types::{E2eiAcmeChallenge, E2eiAcmeDirectory, E2eiNewAcmeAuthz, E2eiNewAcmeOrder},
             E2eiEnrollment,
         },
-        error::{CryptoError, CryptoResult, CryptoboxMigrationError, MlsError, ProteusError},
+        error::{CryptoboxMigrationError, Error, KeystoreError, LeafError, MlsError, ProteusError, RecursiveError},
         mls::{
             ciphersuite::MlsCiphersuite,
             client::id::ClientId,

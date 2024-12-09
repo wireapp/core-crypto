@@ -14,11 +14,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see http://www.gnu.org/licenses/.
 
-use crate::mls::conversation::config::MAX_PAST_EPOCHS;
-use crate::prelude::{E2eIdentityError, MlsCredentialType};
-
-#[cfg(all(feature = "cryptobox-migrate", target_family = "wasm"))]
-use rexie;
+use crate::{mls::conversation::config::MAX_PAST_EPOCHS, prelude::MlsCredentialType};
 
 /// CoreCrypto errors
 #[derive(Debug, thiserror::Error, strum::IntoStaticStr)]
@@ -27,7 +23,7 @@ use rexie;
 pub enum CryptoError {
     /// End to end identity error
     #[error("End to end identity error")]
-    E2eiError(#[from] E2eIdentityError),
+    E2eiError(#[from] crate::e2e_identity::Error),
     /// This error is emitted when the requested conversation couldn't be found in our store
     #[error("Couldn't find conversation")]
     ConversationNotFound(crate::prelude::ConversationId),
@@ -87,7 +83,7 @@ pub enum CryptoError {
     KeyStoreError(#[from] core_crypto_keystore::CryptoKeystoreError),
     /// MLS Internal Errors
     #[error(transparent)]
-    MlsError(MlsError),
+    MlsError(crate::MlsErrorKind),
     /// UUID-related errors
     #[cfg(test)]
     #[error(transparent)]
@@ -113,6 +109,18 @@ pub enum CryptoError {
     /// Standard I/O Error
     #[error(transparent)]
     IoError(#[from] std::io::Error),
+    /// Authorization error
+    #[error("The current client id isn't authorized to perform this action")]
+    Unauthorized,
+    /// Callbacks are not provided
+    #[error("The callbacks needed for CoreCrypto to operate were not set")]
+    CallbacksNotSet,
+    /// External Add Proposal Validation failed
+    #[error("External add proposal validation failed: only users already in the group are allowed")]
+    UnauthorizedExternalAddProposal,
+    /// External Commit sender was not authorized to perform such
+    #[error("External Commit sender was not authorized to perform such")]
+    UnauthorizedExternalCommit,
     /// A supplied [`openmls::ciphersuite::hash_ref::HashReference`] is not of the expected size: 16
     #[error("A supplied reference is not of the expected size: 16")]
     InvalidHashReference,
@@ -130,10 +138,10 @@ pub enum CryptoError {
     BufferedFutureMessage,
     /// Proteus Error Wrapper
     #[error(transparent)]
-    ProteusError(#[from] ProteusError),
+    ProteusError(#[from] crate::ProteusErrorKind),
     /// Cryptobox migration error wrapper
     #[error(transparent)]
-    CryptoboxMigrationError(#[from] CryptoboxMigrationError),
+    CryptoboxMigrationError(#[from] crate::CryptoboxMigrationErrorKind),
     /// The proteus client has been called but has not been initialized yet
     #[error("Proteus client hasn't been initialized")]
     ProteusNotInitialized,
@@ -246,12 +254,21 @@ pub enum CryptoError {
     /// Invalid Context. This context has been finished and can no longer be used.
     #[error("This context has already been finished and can no longer be used.")]
     InvalidContext,
+    /// Something happened in the MLS client code
+    #[error(transparent)]
+    MlsClient(#[from] crate::mls::client::Error),
+    /// Something happened within a conversation
+    #[error(transparent)]
+    Conversation(#[from] crate::mls::conversation::Error),
+    /// Something happened about a MLS credential
+    #[error(transparent)]
+    MlsCredential(#[from] crate::mls::credential::Error),
 }
 
-impl From<MlsError> for CryptoError {
-    fn from(err: MlsError) -> Self {
+impl From<crate::MlsErrorKind> for CryptoError {
+    fn from(err: crate::MlsErrorKind) -> Self {
         match err {
-            MlsError::MlsAddMembersError(openmls::prelude::AddMembersError::KeyPackageVerifyError(
+            crate::MlsErrorKind::MlsAddMembersError(openmls::prelude::AddMembersError::KeyPackageVerifyError(
                 openmls::key_packages::errors::KeyPackageVerifyError::InvalidLeafNode(
                     openmls::prelude::LeafNodeValidationError::InvalidCredential(
                         openmls::credentials::errors::CredentialError::AuthenticationServiceValidationFailure(
@@ -265,9 +282,6 @@ impl From<MlsError> for CryptoError {
     }
 }
 
-/// A simpler definition for Result types that the Error is a [CryptoError]
-pub type CryptoResult<T> = Result<T, CryptoError>;
-
 impl CryptoError {
     /// Returns the proteus error code
     pub fn proteus_error_code(&self) -> Option<u16> {
@@ -275,207 +289,6 @@ impl CryptoError {
             e.error_code()
         } else {
             None
-        }
-    }
-}
-
-/// MLS-specific error wrapper - see github.com/openmls/openmls for details
-#[derive(Debug, thiserror::Error, strum::IntoStaticStr)]
-pub enum MlsError {
-    /// Welcome error
-    #[error(transparent)]
-    MlsWelcomeError(#[from] openmls::prelude::WelcomeError<core_crypto_keystore::CryptoKeystoreError>),
-    /// Generic error type that indicates unrecoverable errors in the library. See [openmls::error::LibraryError]
-    #[error(transparent)]
-    MlsLibraryError(#[from] openmls::error::LibraryError),
-    /// Create message error
-    #[error(transparent)]
-    MlsInvalidMessageError(#[from] openmls::prelude::CreateMessageError),
-    /// EmptyInput error
-    #[error(transparent)]
-    MlsEmptyInputError(#[from] openmls::prelude::EmptyInputError),
-    /// An error that occurs in methods of a [openmls::credentials::Credential].
-    #[error(transparent)]
-    MlsCredentialError(#[from] openmls::prelude::CredentialError),
-    /// New group error
-    #[error(transparent)]
-    MlsNewGroupError(#[from] openmls::prelude::NewGroupError<core_crypto_keystore::CryptoKeystoreError>),
-    /// Add members error
-    #[error(transparent)]
-    MlsAddMembersError(#[from] openmls::prelude::AddMembersError<core_crypto_keystore::CryptoKeystoreError>),
-    /// Remove members error
-    #[error(transparent)]
-    MlsRemoveMembersError(#[from] openmls::prelude::RemoveMembersError<core_crypto_keystore::CryptoKeystoreError>),
-    /// Parse message error
-    #[error(transparent)]
-    MlsMessageError(#[from] openmls::prelude::ProcessMessageError),
-    /// `KeyPackageBundle` new error
-    #[error(transparent)]
-    MlsKeyPackageBundleNewError(
-        #[from] openmls::prelude::KeyPackageNewError<core_crypto_keystore::CryptoKeystoreError>,
-    ),
-    /// Self update error
-    #[error(transparent)]
-    MlsSelfUpdateError(#[from] openmls::prelude::SelfUpdateError<core_crypto_keystore::CryptoKeystoreError>),
-    /// Group state error
-    #[error(transparent)]
-    MlsMlsGroupStateError(#[from] openmls::prelude::MlsGroupStateError),
-    /// Propose add members error
-    #[error(transparent)]
-    ProposeAddMemberError(#[from] openmls::prelude::ProposeAddMemberError),
-    /// Propose self update error
-    #[error(transparent)]
-    ProposeSelfUpdateError(#[from] openmls::prelude::ProposeSelfUpdateError<core_crypto_keystore::CryptoKeystoreError>),
-    /// Propose remove members error
-    #[error(transparent)]
-    ProposeRemoveMemberError(#[from] openmls::prelude::ProposeRemoveMemberError),
-    /// Commit to pending proposals error
-    #[error(transparent)]
-    MlsCommitToPendingProposalsError(
-        #[from] openmls::prelude::CommitToPendingProposalsError<core_crypto_keystore::CryptoKeystoreError>,
-    ),
-    /// Export public group state error
-    #[error(transparent)]
-    MlsExportGroupInfoError(#[from] openmls::prelude::ExportGroupInfoError),
-    /// Errors that are thrown by TLS serialization crate.
-    #[error(transparent)]
-    MlsTlsCodecError(#[from] tls_codec::Error),
-    /// This type represents all possible errors that can occur when serializing or
-    /// deserializing JSON data.
-    #[error(transparent)]
-    MlsKeystoreSerializationError(#[from] serde_json::Error),
-    /// A wrapper struct for an error string. This can be used when no complex error
-    /// variant is needed.
-    #[error(transparent)]
-    MlsErrorString(#[from] openmls::error::ErrorString),
-    /// External Commit error
-    #[error(transparent)]
-    MlsExternalCommitError(#[from] openmls::prelude::ExternalCommitError),
-    /// OpenMls crypto error
-    #[error(transparent)]
-    MlsCryptoError(#[from] openmls::prelude::CryptoError),
-    /// OpenMls Export Secret error
-    #[error(transparent)]
-    MlsExportSecretError(#[from] openmls::prelude::ExportSecretError),
-    /// OpenMLS merge commit error
-    #[error(transparent)]
-    MlsMergeCommitError(#[from] openmls::prelude::MergeCommitError<core_crypto_keystore::CryptoKeystoreError>),
-    /// OpenMLS keypackage validation error
-    #[error(transparent)]
-    MlsKeyPackageValidationError(#[from] openmls::prelude::KeyPackageVerifyError),
-    /// OpenMLS Commit merge error
-    #[error(transparent)]
-    MlsMergePendingCommitError(
-        #[from] openmls::prelude::MergePendingCommitError<core_crypto_keystore::CryptoKeystoreError>,
-    ),
-    /// OpenMLS encrypt message error
-    #[error(transparent)]
-    MlsEncryptMessageError(#[from] openmls::framing::errors::MlsMessageError),
-    /// OpenMLS delete KeyPackage error
-    #[error(transparent)]
-    MlsDeleteKeyPackageError(
-        #[from] openmls::key_packages::errors::KeyPackageDeleteError<core_crypto_keystore::CryptoKeystoreError>,
-    ),
-    /// OpenMLS update extensions error
-    #[error(transparent)]
-    MlsUpdateExtensionsError(
-        #[from] openmls::prelude::UpdateExtensionsError<core_crypto_keystore::CryptoKeystoreError>,
-    ),
-    /// OpenMLS LeafNode validation error
-    #[error(transparent)]
-    MlsLeafNodeValidationError(#[from] openmls::prelude::LeafNodeValidationError),
-    /// OpenMLS LeafNode validation error
-    #[error(transparent)]
-    RatchetTreeError(#[from] openmls::treesync::RatchetTreeError),
-    /// OpenMLS GroupInfo error
-    #[error(transparent)]
-    GroupInfoError(#[from] openmls::messages::group_info::GroupInfoError),
-}
-
-#[derive(Debug, thiserror::Error, strum::IntoStaticStr)]
-/// Wrapper for Proteus-related errors
-pub enum ProteusError {
-    #[cfg(feature = "proteus")]
-    #[error(transparent)]
-    /// Error when decoding CBOR and/or decrypting Proteus messages
-    ProteusDecodeError(#[from] proteus_wasm::DecodeError),
-    #[cfg(feature = "proteus")]
-    #[error(transparent)]
-    /// Error when encoding CBOR and/or decrypting Proteus messages
-    ProteusEncodeError(#[from] proteus_wasm::EncodeError),
-    #[cfg(feature = "proteus")]
-    #[error(transparent)]
-    /// Various internal Proteus errors
-    ProteusInternalError(#[from] proteus_wasm::error::ProteusError),
-    #[cfg(feature = "proteus")]
-    #[error(transparent)]
-    /// Error when there's a critical error within a proteus Session
-    ProteusSessionError(#[from] proteus_wasm::session::Error<core_crypto_keystore::CryptoKeystoreError>),
-}
-
-impl ProteusError {
-    /// Returns the proteus error code
-    pub fn error_code(&self) -> Option<u16> {
-        cfg_if::cfg_if! {
-            if #[cfg(feature = "proteus")] {
-                use proteus_traits::{ProteusErrorCode as _, ProteusErrorKind};
-                let kind = match self {
-                    ProteusError::ProteusDecodeError(e) => e.code(),
-                    ProteusError::ProteusEncodeError(e) => e.code(),
-                    ProteusError::ProteusSessionError(e) => e.code(),
-                    ProteusError::ProteusInternalError(e) => e.code(),
-                };
-                (kind != ProteusErrorKind::None).then_some(kind as u16)
-            } else {
-                None
-            }
-        }
-    }
-}
-
-#[derive(Debug, thiserror::Error, strum::IntoStaticStr)]
-/// Wrapper for errors that can happen during a Cryptobox migration
-pub enum CryptoboxMigrationError {
-    #[cfg(all(feature = "cryptobox-migrate", target_family = "wasm"))]
-    #[error(transparent)]
-    /// Rexie Error
-    RexieError(rexie::Error),
-    #[cfg(all(feature = "cryptobox-migrate", target_family = "wasm"))]
-    #[error(transparent)]
-    /// IndexedDB Error
-    IdbError(idb::Error),
-    #[cfg(all(feature = "cryptobox-migrate", target_family = "wasm"))]
-    #[error(transparent)]
-    /// Error when parsing/serializing JSON payloads from the WASM boundary
-    JsonParseError(#[from] serde_wasm_bindgen::Error),
-    #[cfg(all(feature = "cryptobox-migrate", target_family = "wasm"))]
-    #[error(transparent)]
-    /// Error when decoding base64
-    Base64DecodeError(#[from] base64::DecodeError),
-    #[error("The targeted value does not possess the targeted key ({0})")]
-    /// Error when trying to fetch a certain key from a structured value
-    MissingKeyInValue(String),
-    #[error("The value cannot be coerced to the {0} type")]
-    /// Error when trying to coerce a certain value to a certain type
-    WrongValueType(String),
-    #[cfg_attr(target_family = "wasm", error("The provided path [{0}] could not be found."))]
-    #[cfg_attr(
-        not(target_family = "wasm"),
-        error("The provided path store [{0}] is either non-existent or has an incorrect shape.")
-    )]
-    /// Error when trying to open a Cryptobox store that doesn't exist
-    ProvidedPathDoesNotExist(String),
-    #[error("The Cryptobox identity at path [{0}] could not be found.")]
-    /// Error when inspecting a Cryptobox store that doesn't contain an Identity
-    IdentityNotFound(String),
-}
-
-#[cfg(all(feature = "cryptobox-migrate", target_family = "wasm"))]
-impl From<rexie::Error> for CryptoboxMigrationError {
-    fn from(e: rexie::Error) -> Self {
-        match e {
-            rexie::Error::IdbError(e) => Self::IdbError(e),
-            _ => Self::RexieError(e),
         }
     }
 }

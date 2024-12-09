@@ -1,5 +1,9 @@
-use crate::context::CentralContext;
-use crate::prelude::{ConversationId, CryptoResult, MlsConversation, MlsError};
+use super::Result;
+use crate::{
+    context::CentralContext,
+    prelude::{ConversationId, MlsConversation},
+    KeystoreError, MlsError, RecursiveError,
+};
 use core_crypto_keystore::CryptoKeystoreMls;
 use mls_crypto_provider::MlsCryptoProvider;
 use openmls_traits::OpenMlsCryptoProvider;
@@ -10,22 +14,33 @@ impl CentralContext {
     /// # Errors
     /// KeyStore errors, such as IO
     #[cfg_attr(test, crate::dispotent)]
-    pub async fn wipe_conversation(&self, id: &ConversationId) -> CryptoResult<()> {
-        let provider = self.mls_provider().await?;
+    pub async fn wipe_conversation(&self, id: &ConversationId) -> Result<()> {
+        let provider = self
+            .mls_provider()
+            .await
+            .map_err(RecursiveError::root("getting mls provider"))?;
         self.get_conversation(id)
             .await?
             .write()
             .await
             .wipe_associated_entities(&provider)
             .await?;
-        provider.key_store().mls_group_delete(id).await?;
-        let _ = self.mls_groups().await?.remove(id);
+        provider
+            .key_store()
+            .mls_group_delete(id)
+            .await
+            .map_err(KeystoreError::wrap("deleting mls group"))?;
+        let _ = self
+            .mls_groups()
+            .await
+            .map_err(RecursiveError::root("getting mls groups"))?
+            .remove(id);
         Ok(())
     }
 }
 
 impl MlsConversation {
-    async fn wipe_associated_entities(&mut self, backend: &MlsCryptoProvider) -> CryptoResult<()> {
+    async fn wipe_associated_entities(&mut self, backend: &MlsCryptoProvider) -> Result<()> {
         // the own client may or may not have generated an epoch keypair in the previous epoch
         // Since it is a terminal operation, ignoring the error is fine here.
         let _ = self.group.delete_previous_epoch_keypairs(backend).await;
@@ -36,7 +51,7 @@ impl MlsConversation {
             self.group
                 .remove_pending_proposal(backend.key_store(), proposal.proposal_reference())
                 .await
-                .map_err(MlsError::from)?;
+                .map_err(MlsError::wrap("removing pending proposal"))?;
         }
 
         Ok(())
@@ -47,7 +62,8 @@ impl MlsConversation {
 mod tests {
     use wasm_bindgen_test::*;
 
-    use crate::{prelude::CryptoError, test_utils::*};
+    use super::super::error::Error;
+    use crate::test_utils::*;
 
     wasm_bindgen_test_configure!(run_in_browser);
 
@@ -74,11 +90,13 @@ mod tests {
     #[apply(all_cred_cipher)]
     #[wasm_bindgen_test]
     async fn cannot_wipe_group_non_existent(case: TestCase) {
+        use crate::LeafError;
+
         run_test_with_central(case.clone(), move |[central]| {
             Box::pin(async move {
                 let id = conversation_id();
                 let err = central.context.wipe_conversation(&id).await.unwrap_err();
-                assert!(matches!(err, CryptoError::ConversationNotFound(conv_id) if conv_id == id));
+                assert!(matches!(err, Error::Leaf(LeafError::ConversationNotFound(conv_id)) if conv_id == id));
             })
         })
         .await;
