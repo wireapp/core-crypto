@@ -22,7 +22,7 @@ use crate::{
 use core_crypto_keystore::{
     connection::FetchFromDatabase,
     entities::{ProteusIdentity, ProteusSession},
-    Connection as CryptoKeystore, CryptoKeystoreError,
+    Connection as CryptoKeystore,
 };
 use proteus_wasm::{
     keys::{IdentityKeyPair, PreKeyBundle},
@@ -78,35 +78,6 @@ impl ProteusConversationSession {
     /// Returns the public key fingerprint of the remote identity (= client you're communicating with)
     pub fn fingerprint_remote(&self) -> String {
         self.session.remote_identity().fingerprint()
-    }
-}
-
-impl CoreCrypto {
-    /// Initializes the proteus client
-    pub async fn proteus_init(&self) -> CryptoResult<()> {
-        // ? Cannot inline the statement or the borrow checker gets really confused about the type of `keystore`
-        let keystore = self.mls.mls_backend.keystore();
-
-        let mut new_transaction_is_needed = true;
-        match keystore.new_transaction().await {
-            Ok(_) => {}
-            Err(CryptoKeystoreError::TransactionInProgress { .. }) => {
-                // Just attach operations to running transaction if there is one
-                new_transaction_is_needed = false;
-            }
-            Err(e) => return Err(e.into()),
-        }
-        let proteus_client = ProteusCentral::try_new(&keystore).await?;
-
-        // ? Make sure the last resort prekey exists
-        let _ = proteus_client.last_resort_prekey(&keystore).await?;
-
-        let mut guard = self.proteus.lock().await;
-        *guard = Some(proteus_client);
-        if new_transaction_is_needed {
-            keystore.commit_transaction().await?;
-        }
-        Ok(())
     }
 }
 
@@ -170,6 +141,20 @@ impl CoreCrypto {
 }
 
 impl CentralContext {
+    /// Initializes the proteus client
+    pub async fn proteus_init(&self) -> CryptoResult<()> {
+        let keystore = self.keystore().await?;
+        let proteus_client = ProteusCentral::try_new(&keystore).await?;
+
+        // ? Make sure the last resort prekey exists
+        let _ = proteus_client.last_resort_prekey(&keystore).await?;
+
+        let mutex = self.proteus_central().await?;
+        let mut guard = mutex.lock().await;
+        *guard = Some(proteus_client);
+        Ok(())
+    }
+
     /// Reloads the sessions from the key store
     ///
     /// Warning: The Proteus client **MUST** be initialized with [CoreCrypto::proteus_init] first or it will do nothing
@@ -1086,9 +1071,10 @@ mod tests {
         )
         .unwrap();
         let cc: CoreCrypto = MlsCentral::try_new(cfg).await.unwrap().into();
-        assert!(cc.proteus_init().await.is_ok());
         let context = cc.new_transaction().await.unwrap();
+        assert!(context.proteus_init().await.is_ok());
         assert!(context.proteus_new_prekey(1).await.is_ok());
+        context.finish().await.unwrap();
         #[cfg(not(target_family = "wasm"))]
         drop(db_file);
     }
@@ -1114,7 +1100,7 @@ mod tests {
         let transaction = cc.new_transaction().await.unwrap();
         let x509_test_chain = X509TestChain::init_empty(case.signature_scheme());
         x509_test_chain.register_with_central(&transaction).await;
-        assert!(cc.proteus_init().await.is_ok());
+        assert!(transaction.proteus_init().await.is_ok());
         // proteus is initialized, prekeys can be generated
         assert!(transaction.proteus_new_prekey(1).await.is_ok());
         // 👇 and so a unique 'client_id' can be fetched from wire-server
