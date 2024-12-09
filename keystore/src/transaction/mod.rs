@@ -9,9 +9,41 @@ use crate::{
     connection::{Connection, DatabaseConnection, FetchFromDatabase, KeystoreDatabaseConnection},
     CryptoKeystoreError, CryptoKeystoreResult,
 };
-use async_lock::RwLock;
+use async_lock::{Mutex, RwLock};
+use futures_lite::pin;
 use itertools::Itertools;
+use std::future::Future;
+use std::pin::Pin;
+use std::task::Poll;
 use std::{ops::DerefMut, sync::Arc};
+
+pub(crate) struct TransactionGuard {
+    transaction: Arc<Mutex<Option<KeystoreTransaction>>>,
+}
+
+impl TransactionGuard {
+    /// Waits for the transaction passed in to finish (i.e., for the Option to become None).
+    pub fn wait_to_finish(transaction: Arc<Mutex<Option<KeystoreTransaction>>>) -> Self {
+        Self { transaction }
+    }
+}
+
+impl Future for TransactionGuard {
+    type Output = ();
+
+    fn poll(self: Pin<&mut Self>, ctx: &mut std::task::Context<'_>) -> Poll<Self::Output> {
+        let transaction_lock = self.transaction.lock();
+        pin!(transaction_lock);
+        let transaction_guard = std::task::ready!(transaction_lock.poll(ctx));
+        if transaction_guard.is_some() {
+            drop(transaction_guard);
+            ctx.waker().wake_by_ref();
+            Poll::Pending
+        } else {
+            Poll::Ready(())
+        }
+    }
+}
 
 /// This represents a transaction, where all operations will be done in memory and committed at the
 /// end
