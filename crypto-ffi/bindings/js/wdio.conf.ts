@@ -180,9 +180,10 @@ export const config: WebdriverIO.Config = {
             await fs.copyFile(src, destName);
         }
 
-        await copyFile(path.join(dir, "./test/index.html"), staticPath);
-        await copyFile(path.join(dir, "corecrypto.js"), staticPath);
-        await copyFile(path.join(dir, "wasm", "core-crypto-ffi_bg.wasm"), staticPath);
+        await copyFile(path.join(dir, "test", "index.html"), staticPath);
+        await copyFile(path.join(dir, "src", "corecrypto.js"), staticPath);
+        await copyFile(path.join(dir, "src", "core-crypto-ffi_bg.wasm"), staticPath);
+        log.info("Copied files to", staticPath);
      },
 
     async onComplete() {
