@@ -21,8 +21,8 @@ import {
     E2eiConversationState,
     GroupInfoEncryptionType,
     RatchetTreeType,
-} from "../CoreCrypto";
-import CoreCryptoContext from "../CoreCryptoContext";
+} from "../src/CoreCrypto";
+import CoreCryptoContext from "../src/CoreCryptoContext";
 
 beforeEach(async () => {
     await setup();
@@ -876,10 +876,10 @@ describe("logger", () => {
 });
 
 describe("build", () => {
-    it("metadata can be retrieved and contain key 'cargo_features'", async () => {
+    it("metadata can be retrieved and contain key 'gitDescribe'", async () => {
         await expect(
             browser.execute(async () =>
-                window.ccModule.CoreCrypto.buildMetadata().toJSON()
+                window.ccModule.buildMetadata().toJSON()
             )
         ).resolves.toMatchObject({ gitDescribe: expect.anything() });
     });

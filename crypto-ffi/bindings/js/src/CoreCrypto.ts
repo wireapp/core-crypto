@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see http://www.gnu.org/licenses/.
 
-import * as CoreCryptoFfiTypes from "./wasm/core-crypto-ffi.d.js";
+import * as CoreCryptoFfiTypes from "./core-crypto-ffi.d.js";
 import initWasm, {
     AcmeChallenge,
     ConversationConfiguration as ConversationConfigurationFfi,
@@ -27,9 +27,23 @@ import initWasm, {
     NewAcmeAuthz,
     NewAcmeOrder,
     MlsTransportProvider,
-} from "./wasm";
+} from "./core-crypto-ffi.js";
 
-import CoreCryptoContext from "./CoreCryptoContext";
+
+if (typeof window !== "undefined") {
+    // browser context
+    await initWasm({});
+} else {
+    // non-browser context, load WASM module from file
+    const fs = await import("fs/promises");
+    const path = new URL('core-crypto-ffi_bg.wasm', import.meta.url);
+    const file = await fs.open(path);
+    const buffer = await file.readFile();
+    const module = new WebAssembly.Module(buffer);
+    await initWasm({module_or_path: module});
+}
+
+import CoreCryptoContext from "./CoreCryptoContext.js";
 
 // re-exports
 export {
@@ -2225,15 +2239,15 @@ export class CoreCrypto {
         return CoreCryptoFfi.version();
     }
 
-    /**
-     * Returns build metadata for the {@link CoreCrypto} libary.
-     *
-     * @returns varous build metadata for `core-crypto`.
-     */
-    static buildMetadata(): CoreCryptoFfiTypes.BuildMetadata {
-        this.#assertModuleLoaded();
-        return CoreCryptoFfi.build_metadata();
-    }
+}
+
+/**
+ * Returns build metadata for the {@link CoreCrypto} libary.
+ *
+ * @returns varous build metadata for `core-crypto`.
+ */
+export function buildMetadata(): CoreCryptoFfiTypes.BuildMetadata {
+    return CoreCryptoFfi.build_metadata();
 }
 
 type JsonRawData = Uint8Array;
