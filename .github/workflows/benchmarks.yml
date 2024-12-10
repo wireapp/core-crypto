@@ -47,8 +47,10 @@ jobs:
       - name: Build & test WASM / JS package (web)
         run: |
           cd crypto-ffi
-          bun install
           cargo make wasm
+          cd bindings/js
+          bun install
+          bun run build
           bun run bench
       - uses: actions/checkout@v1
         with:
