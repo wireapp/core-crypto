@@ -37,7 +37,7 @@ use std::ops::DerefMut;
 use crate::entities::{EntityTransactionExt, UniqueEntity};
 use crate::transaction::KeystoreTransaction;
 use crate::{CryptoKeystoreError, CryptoKeystoreResult};
-use async_lock::{Mutex, MutexGuard};
+use async_lock::{Mutex, MutexGuard, Semaphore};
 use std::sync::Arc;
 
 /// Limit on the length of a blob to be stored in the database.
@@ -95,7 +95,10 @@ pub trait DatabaseConnection: DatabaseConnectionRequirements {
 pub struct Connection {
     pub(crate) conn: Arc<Mutex<KeystoreDatabaseConnection>>,
     pub(crate) transaction: Arc<Mutex<Option<KeystoreTransaction>>>,
+    transaction_semaphore: Arc<Semaphore>,
 }
+
+const ALLOWED_CONCURRENT_TRANSACTIONS_COUNT: usize = 1;
 
 /// Interface to fetch from the database either from the connection directly or through a
 /// transaaction
@@ -137,6 +140,7 @@ impl Connection {
         Ok(Self {
             conn,
             transaction: Default::default(),
+            transaction_semaphore: Arc::new(Semaphore::new(ALLOWED_CONCURRENT_TRANSACTIONS_COUNT)),
         })
     }
 
@@ -149,6 +153,7 @@ impl Connection {
         Ok(Self {
             conn,
             transaction: Default::default(),
+            transaction_semaphore: Arc::new(Semaphore::new(ALLOWED_CONCURRENT_TRANSACTIONS_COUNT)),
         })
     }
 
@@ -163,7 +168,6 @@ impl Connection {
             });
         }
         let conn: KeystoreDatabaseConnection = Arc::into_inner(self.conn).unwrap().into_inner();
-
         conn.wipe().await?;
         Ok(())
     }
@@ -179,14 +183,11 @@ impl Connection {
         Ok(())
     }
 
+    /// Waits for the current transaction to be committed or rolled back, then starts a new one.
     pub async fn new_transaction(&self) -> CryptoKeystoreResult<()> {
-        let mut transaction = self.transaction.lock().await;
-        if transaction.is_some() {
-            return Err(CryptoKeystoreError::TransactionInProgress {
-                attempted_operation: "new_transaction()".to_string(),
-            });
-        }
-        *transaction = Some(KeystoreTransaction::new().await?);
+        let semaphore = self.transaction_semaphore.acquire_arc().await;
+        let mut transaction_guard = self.transaction.lock().await;
+        *transaction_guard = Some(KeystoreTransaction::new(semaphore).await?);
         Ok(())
     }
 
