@@ -318,7 +318,8 @@ async fn run_proteus_test(chrome_driver_addr: &std::net::SocketAddr) -> Result<(
         Some(100),
     )?;
     let master_client = CoreCrypto::from(MlsCentral::try_new_in_memory(configuration).await?);
-    master_client.proteus_init().await?;
+    let transaction = master_client.new_transaction().await?;
+    transaction.proteus_init().await?;
 
     let master_fingerprint = master_client.proteus_fingerprint().await?;
 
@@ -345,7 +346,6 @@ async fn run_proteus_test(chrome_driver_addr: &std::net::SocketAddr) -> Result<(
     let mut master_sessions = vec![];
     let mut messages = std::collections::HashMap::new();
     const PROTEUS_INITIAL_MESSAGE: &[u8] = b"Hello world!";
-    let transaction = master_client.new_transaction().await?;
     for (fingerprint, prekey) in prekeys {
         spinner.update(format!(
             "[Proteus] Step 2: Session master -> {fingerprint}@{}",

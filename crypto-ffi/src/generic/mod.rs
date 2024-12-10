@@ -1582,13 +1582,13 @@ impl From<core_crypto::prelude::E2eiConversationState> for E2eiConversationState
 #[uniffi::export]
 impl CoreCrypto {
     /// See [core_crypto::proteus::ProteusCentral::try_new]
+    #[deprecated = "Please create a transaction in Core Crypto and call this method from it."]
     pub async fn proteus_init(&self) -> CoreCryptoResult<()> {
         proteus_impl! { self.proteus_last_error_code => {
-            self.central
-                .proteus_init()
-                .await?;
-
-            CoreCryptoResult::Ok(())
+            self.deprecated_transaction(|context| async move {
+                context.proteus_init().await?;
+            Ok(())
+            }).await
         }}
     }
 

@@ -176,7 +176,9 @@ impl EmulatedMlsClient for CoreCryptoNativeClient {
 #[async_trait::async_trait(?Send)]
 impl crate::clients::EmulatedProteusClient for CoreCryptoNativeClient {
     async fn init(&mut self) -> Result<()> {
-        Ok(self.cc.proteus_init().await?)
+        let transaction = self.cc.new_transaction().await?;
+        transaction.proteus_init().await?;
+        Ok(transaction.finish().await?)
     }
 
     async fn get_prekey(&self) -> Result<Vec<u8>> {

@@ -5,6 +5,16 @@ use crate::{CoreCryptoError, ProteusAutoPrekeyBundle};
 
 #[uniffi::export]
 impl CoreCryptoContext {
+    /// See [core_crypto::proteus::ProteusCentral::try_new]
+    pub async fn proteus_init(&self) -> CoreCryptoResult<()> {
+        proteus_impl! { self.proteus_last_error_code => {
+            self.context
+                .proteus_init()
+                .await?;
+            Ok(())
+        }}
+    }
+
     /// See [core_crypto::context::CentralContext::proteus_session_from_prekey]
     pub async fn proteus_session_from_prekey(&self, session_id: String, prekey: Vec<u8>) -> CoreCryptoResult<()> {
         proteus_impl! { self.proteus_last_error_code => {

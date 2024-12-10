@@ -859,6 +859,13 @@ export default class CoreCryptoContext {
     }
 
     /**
+     * Initializes the proteus client
+     */
+    async proteusInit(): Promise<void> {
+        return await CoreCryptoError.asyncMapErr(this.#ctx.proteus_init());
+    }
+
+    /**
      * Create a Proteus session using a prekey
      *
      * @param sessionId - ID of the Proteus session

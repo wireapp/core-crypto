@@ -1656,9 +1656,12 @@ export class CoreCrypto {
 
     /**
      * Initializes the proteus client
+     *
+     * @deprecated Create a transaction with {@link CoreCrypto.transaction}
+     * and use {@link CoreCryptoContext.proteusInit} instead.
      */
     async proteusInit(): Promise<void> {
-        return await CoreCryptoError.asyncMapErr(this.#cc.proteus_init());
+        return await this.transaction(async (ctx) => await ctx.proteusInit());
     }
 
     /**
