@@ -1922,14 +1922,6 @@ export class CoreCrypto {
     }
 
     /**
-     * Note: this call clears out the code and resets it to 0 (aka no error)
-     * @returns the last proteus error code that occured.
-     */
-    async proteusLastErrorCode(): Promise<number> {
-        return await this.#cc.proteus_last_error_code();
-    }
-
-    /**
      * See {@link CoreCryptoContext.e2eiNewEnrollment}.
      *
      * @deprecated Create a transaction with {@link CoreCrypto.transaction}

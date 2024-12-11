@@ -13,7 +13,6 @@ use core_crypto::{
     CryptoError, CryptoResult, MlsError,
 };
 use std::future::Future;
-use std::sync::atomic::AtomicU16;
 use std::{ops::Deref, sync::Arc};
 use tls_codec::{Deserialize, Serialize};
 
@@ -23,7 +22,6 @@ pub mod proteus;
 #[derive(uniffi::Object)]
 pub struct CoreCryptoContext {
     pub(super) context: Arc<CentralContext>,
-    proteus_last_error_code: AtomicU16,
 }
 
 impl Deref for CoreCryptoContext {
@@ -176,7 +174,6 @@ impl CoreCrypto {
     pub async fn transaction(&self, command: Arc<dyn CoreCryptoCommand>) -> CoreCryptoResult<()> {
         let context = Arc::new(CoreCryptoContext {
             context: Arc::new(self.central.new_transaction().await?),
-            proteus_last_error_code: AtomicU16::new(0),
         });
 
         let result = command.execute(context.clone()).await;

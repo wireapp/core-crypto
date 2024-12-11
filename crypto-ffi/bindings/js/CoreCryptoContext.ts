@@ -1089,14 +1089,6 @@ export default class CoreCryptoContext {
     }
 
     /**
-     * Note: this call clears out the code and resets it to 0 (aka no error)
-     * @returns the last proteus error code that occured.
-     */
-    async proteusLastErrorCode(): Promise<number> {
-        return await this.#ctx.proteus_last_error_code();
-    }
-
-    /**
      * Creates an enrollment instance with private key material you can use in order to fetch
      * a new x509 certificate from the acme server.
      *

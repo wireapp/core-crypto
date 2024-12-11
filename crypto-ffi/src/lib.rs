@@ -16,51 +16,20 @@
 
 #[macro_export]
 macro_rules! proteus_impl {
-    ($errcode_dest:expr => $body:block or throw $err_type:ty) => {{
+    ($body:block or throw $err_type:ty) => {
+        {
         cfg_if::cfg_if! {
             if #[cfg(feature = "proteus")] {
                 #[allow(clippy::redundant_closure_call)]
-                let result = (async move { $body }).await;
-
-                cfg_if::cfg_if! {
-                    if #[cfg(target_family = "wasm")] {
-                        if let Err(CoreCryptoError($crate::InternalError::ProteusError(err))) = &result {
-                            let err_code = err.error_code();
-                            let mut ec = $errcode_dest.write().await;
-                            *ec = err_code;
-                        }
-
-                        result
-                    } else {
-                        if let Err(CoreCryptoError::Proteus(err)) = &result {
-                            let err_code = err.error_code();
-                            $errcode_dest.store(err_code, std::sync::atomic::Ordering::SeqCst);
-                        }
-
-                        result
-                    }
-                }
-            } else {
-                return <$err_type>::Err(core_crypto::CryptoError::ProteusSupportNotEnabled("proteus".into()).into());
-            }
-        }
-    }};
-    ($body:block or throw $err_type:ty) => {{
-        cfg_if::cfg_if! {
-            if #[cfg(feature = "proteus")] {
                 $body
             } else {
                 return <$err_type>::Err(core_crypto::CryptoError::ProteusSupportNotEnabled("proteus".into()).into());
             }
         }
-    }};
-
+        }
+    };
     ($body:block) => {
         proteus_impl!($body or throw ::std::result::Result<_, _>)
-    };
-
-    ($errcode_dest:expr => $body:block) => {
-        proteus_impl!($errcode_dest => $body or throw ::std::result::Result<_, _>)
     };
 }
 

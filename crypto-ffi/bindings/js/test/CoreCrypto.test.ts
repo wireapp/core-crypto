@@ -393,13 +393,6 @@ describe("proteus", () => {
                 "ProteusErrorOther: Another Proteus error occurred but the details are probably irrelevant to clients (101)"
             )
         );
-
-        const lastErrorCode = await browser.execute(async (clientName) => {
-            const cc = window.ensureCcDefined(clientName);
-            return await cc.proteusLastErrorCode();
-        }, BOB_ID);
-
-        expect(lastErrorCode).toBe(101);
     });
 });
 

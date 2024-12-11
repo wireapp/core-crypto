@@ -17,7 +17,7 @@
 use crate::{
     prelude::{ClientId, ConversationId, MlsCentral, MlsCentralConfiguration},
     test_utils::x509::{CertificateParams, X509TestChain, X509TestChainActorArg, X509TestChainArgs},
-    CoreCrypto, CryptoResult, MlsTransport, MlsTransportResponse,
+    CoreCrypto, MlsTransport, MlsTransportResponse,
 };
 pub use openmls_traits::types::SignatureScheme;
 pub use rstest::*;
