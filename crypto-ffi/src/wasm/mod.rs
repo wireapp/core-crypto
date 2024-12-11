@@ -101,6 +101,12 @@ pub enum MlsError {
     StaleProposal,
     #[error("The received commit is deemed stale and is from an older epoch.")]
     StaleCommit,
+    /// This happens when the DS cannot flag KeyPackages as claimed or not. It this scenario, a client
+    /// requests their old KeyPackages to be deleted but one has already been claimed by another client to create a Welcome.
+    /// In that case the only solution is that the client receiving such a Welcome tries to join the group
+    /// with an External Commit instead
+    #[error("Although this Welcome seems valid, the local KeyPackage it references has already been deleted locally. Join this group with an external commit")]
+    OrphanWelcome,
     #[error("{0}")]
     Other(String),
 }
@@ -212,6 +218,7 @@ impl From<CryptoError> for InternalError {
             CryptoError::UnmergedPendingGroup => MlsError::UnmergedPendingGroup.into(),
             CryptoError::StaleProposal => MlsError::StaleProposal.into(),
             CryptoError::StaleCommit => MlsError::StaleCommit.into(),
+            CryptoError::OrphanWelcome => MlsError::OrphanWelcome.into(),
             CryptoError::E2eiError(e) => Self::E2eiError(e.to_string()),
             _ => MlsError::Other(value.to_string()).into(),
         }
