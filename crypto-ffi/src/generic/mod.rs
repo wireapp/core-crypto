@@ -954,9 +954,20 @@ struct CoreCryptoLoggerWrapper {
     logger: std::sync::Arc<dyn CoreCryptoLogger>,
 }
 
+impl CoreCryptoLoggerWrapper {
+    fn adjusted_log_level(&self, metadata: &Metadata) -> Level {
+        match (metadata.level(), metadata.target()) {
+            // increase log level for refinery_core::traits since they are too verbose in transactions
+            (level, "refinery_core::traits") if level >= Level::Info => Level::Debug,
+            (level, "refinery_core::traits::sync") if level >= Level::Info => Level::Debug,
+            (level, _) => level,
+        }
+    }
+}
+
 impl log::Log for CoreCryptoLoggerWrapper {
-    fn enabled(&self, _metadata: &Metadata) -> bool {
-        true
+    fn enabled(&self, metadata: &Metadata) -> bool {
+        log::max_level() >= self.adjusted_log_level(metadata)
     }
 
     fn log(&self, record: &Record) {
@@ -964,10 +975,17 @@ impl log::Log for CoreCryptoLoggerWrapper {
         let mut visitor = KeyValueVisitor(BTreeMap::new());
         let _ = kvs.visit(&mut visitor);
 
+        if !self.enabled(record.metadata()) {
+            return;
+        }
+
         let message = format!("{}", record.args());
         let context = serde_json::to_string(&visitor.0).ok();
-        self.logger
-            .log(CoreCryptoLogLevel::from(&record.level()), message, context);
+        self.logger.log(
+            CoreCryptoLogLevel::from(&self.adjusted_log_level(record.metadata())),
+            message,
+            context,
+        );
     }
 
     fn flush(&self) {}
