@@ -18,15 +18,13 @@
 
 package com.wire.crypto
 
-import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.*
 import kotlinx.coroutines.test.runTest
 import org.assertj.core.api.AssertionsForInterfaceTypes.assertThat
 import org.assertj.core.api.AssertionsForInterfaceTypes.assertThatNoException
 import java.nio.file.Files
-import kotlin.test.Test
-import kotlin.test.assertEquals
-import kotlin.test.assertFailsWith
-import kotlin.test.assertIs
+import kotlin.test.*
+import kotlin.time.Duration.Companion.milliseconds
 
 class MLSTest {
 
@@ -105,6 +103,33 @@ class MLSTest {
         // This would fail with a "Conversation already exists" exception, if the above
         // transaction hadn't been rolled back.
         cc.transaction { ctx -> ctx.createConversation(id) }
+    }
+
+    @Test
+    @Ignore("This currently incorrectly throws an error")
+    fun parallel_transactions_are_performed_serially() = runTest() {
+        withContext(Dispatchers.Default) {
+            val (alice) = newClients(aliceId)
+            val jobs: MutableList<Job> = mutableListOf()
+            val token = "t"
+            val transactionCount = 3
+            repeat(transactionCount) {
+                jobs += launch {
+                    alice.transaction { ctx ->
+                        delay(100.milliseconds)
+                        val data = ctx.getData()?.decodeToString()?.plus(token) ?: token
+                        ctx.setData(data.toByteArray())
+                    }
+                }
+            }
+            jobs.joinAll()
+
+            val result = alice.transaction { ctx ->
+                ctx.getData()?.decodeToString()
+            }
+
+            assertEquals(token.repeat(transactionCount), result, "Expected all transactions to complete")
+        }
     }
 
     @Test
