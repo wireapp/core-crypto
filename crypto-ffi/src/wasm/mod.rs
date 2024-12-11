@@ -187,11 +187,8 @@ pub(crate) enum InternalError {
     SerializationError(#[from] serde_wasm_bindgen::Error),
     #[error("Unknown ciphersuite identifier")]
     UnknownCiphersuite,
-    #[error("Transaction rolled back. Last proteus error code: {proteus_error_code:?}. Uncaught JsError: {uncaught_error:?}")]
-    TransactionFailed {
-        uncaught_error: JsValue,
-        proteus_error_code: Option<u16>,
-    },
+    #[error("Transaction rolled back. Uncaught JsError: {uncaught_error:?}")]
+    TransactionFailed { uncaught_error: JsValue },
     #[error(
         "Error during transport callback execution. Attempted operation: {attempted_operation:?}. JsError: {error:?}"
     )]
@@ -270,7 +267,6 @@ impl std::fmt::Display for CoreCryptoError {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         let proteus_error_code = match &self.0 {
             InternalError::ProteusError(ProteusError::Other(code)) => *code,
-            InternalError::TransactionFailed { proteus_error_code, .. } => *proteus_error_code,
             _ => None,
         };
 
@@ -1484,7 +1480,6 @@ impl MlsTransport for MlsTransportProvider {
 #[wasm_bindgen]
 pub struct CoreCrypto {
     inner: Arc<core_crypto::CoreCrypto>,
-    proteus_last_error_code: std::sync::Arc<async_lock::RwLock<Option<u16>>>,
 }
 
 #[wasm_bindgen]
@@ -1539,7 +1534,6 @@ impl CoreCrypto {
             .map_err(CoreCryptoError::from)?;
         Ok(CoreCrypto {
             inner: Arc::new(central.into()),
-            proteus_last_error_code: async_lock::RwLock::new(None).into(),
         })
     }
 
@@ -1559,7 +1553,6 @@ impl CoreCrypto {
 
         Ok(CoreCrypto {
             inner: Arc::new(central.into()),
-            proteus_last_error_code: async_lock::RwLock::new(None).into(),
         })
     }
 
@@ -1731,12 +1724,11 @@ impl CoreCrypto {
     /// see [core_crypto::proteus::ProteusCentral::session_exists]
     #[cfg_attr(not(feature = "proteus"), allow(unused_variables))]
     pub fn proteus_session_exists(&self, session_id: String) -> Promise {
-        let errcode_dest = self.proteus_last_error_code.clone();
         let central = self.inner.clone();
 
         future_to_promise(
             async move {
-                proteus_impl! { errcode_dest => {
+                proteus_impl! {{
                     let exists = central.proteus_session_exists(&session_id).await.map_err(CoreCryptoError::from)?;
                     WasmCryptoResult::Ok(JsValue::from_bool(exists))
                 } or throw WasmCryptoResult<_> }
@@ -1760,10 +1752,9 @@ impl CoreCrypto {
     /// see [core_crypto::proteus::ProteusCentral::fingerprint]
     #[cfg_attr(not(feature = "proteus"), allow(unused_variables))]
     pub async fn proteus_fingerprint(&self) -> WasmCryptoResult<String> {
-        let errcode_dest = self.proteus_last_error_code.clone();
         let central = self.inner.clone();
 
-        proteus_impl! { errcode_dest => {
+        proteus_impl! {{
             central.proteus_fingerprint().await.map_err(CoreCryptoError::from).map(Into::into)
         } or throw WasmCryptoResult<_> }
     }
@@ -1773,10 +1764,9 @@ impl CoreCrypto {
     /// see [core_crypto::proteus::ProteusCentral::fingerprint_local]
     #[cfg_attr(not(feature = "proteus"), allow(unused_variables))]
     pub async fn proteus_fingerprint_local(&self, session_id: String) -> WasmCryptoResult<String> {
-        let errcode_dest = self.proteus_last_error_code.clone();
         let central = self.inner.clone();
 
-        proteus_impl! { errcode_dest => {
+        proteus_impl! {{
             central
                 .proteus_fingerprint_local(&session_id)
                 .await
@@ -1790,10 +1780,9 @@ impl CoreCrypto {
     /// see [core_crypto::proteus::ProteusCentral::fingerprint_remote]
     #[cfg_attr(not(feature = "proteus"), allow(unused_variables))]
     pub async fn proteus_fingerprint_remote(&self, session_id: String) -> WasmCryptoResult<String> {
-        let errcode_dest = self.proteus_last_error_code.clone();
         let central = self.inner.clone();
 
-        proteus_impl! { errcode_dest => {
+        proteus_impl! {{
             central.proteus_fingerprint_remote(&session_id).await
                 .map_err(CoreCryptoError::from).map(Into::into)
         } or throw WasmCryptoResult<_> }
@@ -1808,24 +1797,6 @@ impl CoreCrypto {
             core_crypto::proteus::ProteusCentral::fingerprint_prekeybundle(&prekey)
                 .map_err(Into::into).map(Into::into)
         } or throw WasmCryptoResult<_>)
-    }
-
-    /// Returns: [`WasmCryptoResult<u32>`]
-    #[cfg_attr(not(feature = "proteus"), allow(unused_variables))]
-    pub fn proteus_last_error_code(&self) -> Promise {
-        let errcode = self.proteus_last_error_code.clone();
-        future_to_promise(
-            async move {
-                proteus_impl! {{
-                    let prev_value = *errcode.read().await;
-                    let mut errcode_val = errcode.write().await;
-                    *errcode_val = None;
-
-                    WasmCryptoResult::Ok(prev_value.into())
-                } or throw WasmCryptoResult<_> }
-            }
-            .err_into(),
-        )
     }
 
     /// Returns: [`WasmCryptoResult<Vec<u8>>`]
