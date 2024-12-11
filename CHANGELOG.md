@@ -1,5 +1,28 @@
 # Changelog
 
+## v3.0.0 - 2024-12-11
+
+### Highlights
+
+- Fix the 'transaction in progress' error when there was an attempt to perform multiple transactions
+  in parallel. This will no longer throw an error, instead the transactions will be queued and performed
+  serially one after another.
+
+### Breaking changes
+
+- Added the missing MLS error case OrphanWelcome.
+
+### Bug Fixes
+
+- expose `OrphanWelcome` to clients [WPB-14954] (530b2e4)
+- silence verbose logs when performing a transaction [WPB-14953] (b13553d)
+- don't swallow transaction errors if they don't originate from the closure [WPB-14895] (124b8a7)
+- wait for current transaction to finish when creating a new one [WPB-14895] (73b9d52)
+
+### Testing
+
+- parallel transactions are performed serially (ccc0b32)
+
 ## v2.0.0 - 2024-12-02
 
 ### Highlights
