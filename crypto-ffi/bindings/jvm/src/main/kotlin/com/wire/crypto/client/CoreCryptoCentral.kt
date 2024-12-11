@@ -53,8 +53,10 @@ suspend fun <R> CoreCryptoCentral.transaction(
                 }
             }
         )
-        // Catch the wrapped error, which we don't need, because we caught the original error above.
-    } catch (_: Throwable) {}
+    } catch (e: Throwable) {
+        // We prefer the closure error if it's available since the transaction won't include it
+        error = error?: e
+    }
     if (error != null) {
         throw error as Throwable
     }

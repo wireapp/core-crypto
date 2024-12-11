@@ -1070,30 +1070,32 @@ export class CoreCrypto {
         callback: (ctx: CoreCryptoContext) => Promise<R>
     ): Promise<R> {
         let result!: R;
-        let error: CoreCryptoError | null = null;
+        let error: CoreCryptoError | Error | null = null;
         try {
-            await this.#cc.transaction({
-                execute: async (ctx: CoreCryptoFfiTypes.CoreCryptoContext) => {
-                    try {
-                        result = await callback(
-                            CoreCryptoContext.fromFfiContext(ctx)
-                        );
-                    } catch (e) {
-                        // We want to catch the error before it gets wrapped by core crypto.
-                        if (e instanceof CoreCryptoError) {
-                            error = e as CoreCryptoError;
-                        } else {
-                            error = CoreCryptoError.fromStdError(
-                                e as Error
-                            ) as CoreCryptoError;
+            await CoreCryptoError.asyncMapErr(
+                this.#cc.transaction({
+                    execute: async (
+                        ctx: CoreCryptoFfiTypes.CoreCryptoContext
+                    ) => {
+                        try {
+                            result = await CoreCryptoError.asyncMapErr(
+                                callback(CoreCryptoContext.fromFfiContext(ctx))
+                            );
+                        } catch (e) {
+                            // We want to catch the error before it gets wrapped by core crypto.
+                            error = e as Error | CoreCryptoError;
+                            // This is to tell core crypto that there was an error inside the transaction.
+                            throw error;
                         }
-                        // This is to tell core crypto that there was an error inside the transaction.
-                        throw error;
-                    }
-                },
-            });
-            // Catch the wrapped error, which we don't need, because we caught the original error above.
-        } catch (_) {}
+                    },
+                })
+            );
+        } catch (e) {
+            // We prefer the closure error if it's available since the transaction will just wrap and re-throw it.
+            if (error === null) {
+                error = e as Error | CoreCryptoError;
+            }
+        }
         if (error !== null) {
             throw error;
         }
