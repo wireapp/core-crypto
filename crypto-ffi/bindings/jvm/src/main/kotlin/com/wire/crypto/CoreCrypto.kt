@@ -94,13 +94,15 @@ class CoreCrypto(private val cc: com.wire.crypto.uniffi.CoreCrypto) {
                     }
                 }
             })
-            // Catch the wrapped error, which we don't need, because we caught the original error above.
-        } catch (_: Throwable) { }
+        } catch (e: Throwable) {
+            // We prefer the closure error if it's available since the transaction won't include it
+            error = error?: e
+        }
         if (error != null) {
             throw error as Throwable
         }
 
-        // Since we know that transaction will either run or throw it's safe to do unchecked cast here
+        // Since we know that the transaction will either succeed or throw it's safe to do an unchecked cast here
         return result as R
     }
 
