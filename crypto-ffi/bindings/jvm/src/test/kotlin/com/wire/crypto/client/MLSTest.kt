@@ -21,11 +21,9 @@ package com.wire.crypto.client
 import com.wire.crypto.CoreCryptoException
 import com.wire.crypto.MlsException
 import java.nio.file.Files
-import kotlin.test.Test
-import kotlin.test.assertEquals
-import kotlin.test.assertFailsWith
-import kotlin.test.assertIs
-import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.*
+import kotlin.test.*
+import kotlin.time.Duration.Companion.milliseconds
 import kotlinx.coroutines.test.runTest
 import org.assertj.core.api.AssertionsForInterfaceTypes.assertThat
 import org.assertj.core.api.AssertionsForInterfaceTypes.assertThatNoException
@@ -108,6 +106,41 @@ class MLSTest {
         // transaction hadn't been rolled back.
         cc.transaction { ctx -> ctx.createConversation(id) }
     }
+
+    @Test
+    fun parallel_transactions_are_performed_serially() = runTest() {
+        withContext(Dispatchers.Default) {
+            val cc = initCc()
+            val jobs: MutableList<Job> = mutableListOf()
+            val token = "t"
+            val transactionCount = 3
+
+            // How this test ensures that transactions are performed serially:
+            // Each transaction gets the previous token string, adds one token at the end and stores it.
+            // If, for instance, the second and third transaction run in parallel they will both get same current
+            // token string "tt" and store "ttt".
+            // If they execute serially, one will store "ttt" and the other "tttt" (this is what we assert).
+
+            repeat(transactionCount) {
+                jobs += launch {
+                    cc.transaction { ctx ->
+                        delay(100.milliseconds)
+                        val data = ctx.getData()?.decodeToString()?.plus(token) ?: token
+                        ctx.setData(data.toByteArray())
+                    }
+                }
+            }
+            jobs.joinAll()
+
+            val result = cc.transaction { ctx ->
+                ctx.getData()?.decodeToString()
+            }
+
+            assertEquals(token.repeat(transactionCount), result, "Expected all transactions to complete")
+        }
+    }
+
+
 
     @Test
     fun getPublicKey_should_return_non_empty_result() = runTest {
