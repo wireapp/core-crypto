@@ -54,6 +54,18 @@ window.CoreCrypto = CoreCrypto;
 window.cc = await window.CoreCrypto.init(clientConfig);
 window.ciphersuite = Ciphersuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519;
 window.credentialType = CredentialType.Basic;
+
+window.deliveryService = {
+    async sendCommitBundle() {
+        return "success";
+    },
+    async sendMessage() {
+        return "success";
+    },
+};
+
+await window.cc.provideTransport(window.deliveryService);
+
 callback();"#,
                 vec![client_config],
             )
@@ -167,9 +179,8 @@ window.cc.clientKeypackages(ciphersuite, window.credentialType, 1).then(([kp]) =
         Ok(kp_raw)
     }
 
-    async fn add_client(&self, conversation_id: &[u8], kp: &[u8]) -> Result<Vec<u8>> {
-        Ok(self
-            .browser
+    async fn add_client(&self, conversation_id: &[u8], kp: &[u8]) -> Result<()> {
+        self.browser
             .execute_async(
                 r#"
 const [cId, kp, callback] = arguments;
@@ -182,11 +193,11 @@ window.cc.addClientsToConversation(conversationId, [{ kp: keyPackage }])
     .then(({ welcome }) => callback(welcome));"#,
                 vec![conversation_id.into(), kp.into()],
             )
-            .await
-            .and_then(|value| Ok(serde_json::from_value(value)?))?)
+            .await?;
+        Ok(())
     }
 
-    async fn kick_client(&self, conversation_id: &[u8], client_id: &[u8]) -> Result<Vec<u8>> {
+    async fn kick_client(&self, conversation_id: &[u8], client_id: &[u8]) -> Result<()> {
         Ok(self
             .browser
             .execute_async(

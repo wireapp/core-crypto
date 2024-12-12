@@ -14,7 +14,12 @@
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see http://www.gnu.org/licenses/.
 
+use core_crypto::prelude::MlsCommitBundle;
+use core_crypto::MlsTransport;
+use core_crypto_ffi::CommitBundle;
+use openmls::prelude::MlsMessageOut;
 use spinoff::Spinner;
+use tokio::sync::RwLock;
 
 pub(crate) struct RunningProcess {
     spinner: Option<Spinner>,
@@ -70,5 +75,58 @@ impl RunningProcess {
         } else {
             log::info!("{msg}");
         }
+    }
+}
+
+#[async_trait::async_trait]
+pub trait MlsTransportTestExt: MlsTransport {
+    async fn latest_commit_bundle(&self) -> MlsCommitBundle;
+    async fn latest_welcome_message(&self) -> MlsMessageOut {
+        self.latest_commit_bundle().await.welcome.unwrap().clone()
+    }
+}
+
+#[derive(Debug, Default)]
+pub struct MlsTransportSuccessProvider {
+    latest_commit_bundle: RwLock<Option<MlsCommitBundle>>,
+    latest_message: RwLock<Option<Vec<u8>>>,
+}
+
+#[async_trait::async_trait]
+impl MlsTransport for MlsTransportSuccessProvider {
+    async fn send_commit_bundle(
+        &self,
+        commit_bundle: MlsCommitBundle,
+    ) -> core_crypto::Result<core_crypto::MlsTransportResponse> {
+        self.latest_commit_bundle.write().await.replace(commit_bundle);
+        Ok(core_crypto::MlsTransportResponse::Success)
+    }
+
+    async fn send_message(&self, mls_message: Vec<u8>) -> core_crypto::Result<core_crypto::MlsTransportResponse> {
+        self.latest_message.write().await.replace(mls_message);
+        Ok(core_crypto::MlsTransportResponse::Success)
+    }
+}
+
+#[async_trait::async_trait]
+impl MlsTransportTestExt for MlsTransportSuccessProvider {
+    async fn latest_commit_bundle(&self) -> MlsCommitBundle {
+        self.latest_commit_bundle
+            .read()
+            .await
+            .clone()
+            .expect("latest_commit_bundle")
+    }
+}
+
+#[async_trait::async_trait]
+impl core_crypto_ffi::MlsTransport for MlsTransportSuccessProvider {
+    async fn send_commit_bundle(&self, _commit_bundle: CommitBundle) -> core_crypto_ffi::MlsTransportResponse {
+        core_crypto_ffi::MlsTransportResponse::Success
+    }
+
+    async fn send_message(&self, mls_message: Vec<u8>) -> core_crypto_ffi::MlsTransportResponse {
+        self.latest_message.write().await.replace(mls_message);
+        core_crypto_ffi::MlsTransportResponse::Success
     }
 }
