@@ -2580,6 +2580,7 @@ dependencies = [
  "femme",
  "hex",
  "log",
+ "openmls",
  "proteus",
  "proteus-wasm",
  "rand",
