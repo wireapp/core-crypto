@@ -92,19 +92,11 @@ impl CentralContext {
     /// to be used for the new epoch.
     /// We can now safely "merge" it (effectively apply the commit to the group) and update it
     /// in the keystore. The previous can be discarded to respect Forward Secrecy.
-    pub async fn commit_accepted(
-        &self,
-        id: &ConversationId,
-    ) -> CryptoResult<Option<Vec<MlsBufferedConversationDecryptMessage>>> {
+    pub(crate) async fn commit_accepted(&self, id: &ConversationId) -> CryptoResult<()> {
         let conv = self.get_conversation(id).await?;
         let mut conv = conv.write().await;
         conv.commit_accepted(&self.mls_provider().await?).await?;
-
-        let pending_messages = self.restore_pending_messages(&mut conv, false).await?;
-        if pending_messages.is_some() {
-            self.keystore().await?.remove::<MlsPendingMessage, _>(id).await?;
-        }
-        Ok(pending_messages)
+        Ok(())
     }
 
     /// Allows to remove a pending (uncommitted) proposal. Use this when backend rejects the proposal
