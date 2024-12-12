@@ -17,6 +17,7 @@
 pub use crate::prelude::{
     MlsCiphersuite, MlsConversationConfiguration, MlsCredentialType, MlsCustomConfiguration, MlsWirePolicy,
 };
+use crate::test_utils::ClientContext;
 pub use openmls_traits::types::SignatureScheme;
 pub use rstest::*;
 pub use rstest_reuse::{self, *};
@@ -80,7 +81,8 @@ pub use rstest_reuse::{self, *};
                 ..Default::default()
             },
             ..Default::default()
-        }
+        },
+        contexts: vec![],
     }),
 )]
 #[allow(non_snake_case)]
@@ -90,6 +92,7 @@ pub fn all_cred_cipher(case: TestCase) {}
 pub struct TestCase {
     pub credential_type: MlsCredentialType,
     pub cfg: MlsConversationConfiguration,
+    pub contexts: Vec<ClientContext>,
 }
 
 impl TestCase {
@@ -100,6 +103,7 @@ impl TestCase {
                 ciphersuite: cs.into(),
                 ..Default::default()
             },
+            ..Default::default()
         }
     }
 
@@ -119,6 +123,7 @@ impl TestCase {
         Self {
             credential_type: MlsCredentialType::X509,
             cfg: MlsConversationConfiguration::default(),
+            contexts: vec![],
         }
     }
 
@@ -140,6 +145,7 @@ impl Default for TestCase {
         Self {
             credential_type: MlsCredentialType::Basic,
             cfg: MlsConversationConfiguration::default(),
+            contexts: vec![],
         }
     }
 }
