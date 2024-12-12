@@ -167,9 +167,8 @@ window.cc.clientKeypackages(ciphersuite, window.credentialType, 1).then(([kp]) =
         Ok(kp_raw)
     }
 
-    async fn add_client(&self, conversation_id: &[u8], kp: &[u8]) -> Result<Vec<u8>> {
-        Ok(self
-            .browser
+    async fn add_client(&self, conversation_id: &[u8], kp: &[u8]) -> Result<()> {
+        self.browser
             .execute_async(
                 r#"
 const [cId, kp, callback] = arguments;
@@ -182,11 +181,11 @@ window.cc.addClientsToConversation(conversationId, [{ kp: keyPackage }])
     .then(({ welcome }) => callback(welcome));"#,
                 vec![conversation_id.into(), kp.into()],
             )
-            .await
-            .and_then(|value| Ok(serde_json::from_value(value)?))?)
+            .await?;
+        Ok(())
     }
 
-    async fn kick_client(&self, conversation_id: &[u8], client_id: &[u8]) -> Result<Vec<u8>> {
+    async fn kick_client(&self, conversation_id: &[u8], client_id: &[u8]) -> Result<()> {
         Ok(self
             .browser
             .execute_async(
