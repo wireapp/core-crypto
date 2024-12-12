@@ -17,23 +17,24 @@
 pub mod context;
 mod utils;
 
-use std::collections::{BTreeMap, HashMap};
-use std::ops::Deref;
+use std::{
+    collections::{BTreeMap, HashMap},
+    ops::Deref,
+    sync::{Arc, LazyLock, Once},
+};
 
 use crate::proteus_impl;
-use core_crypto::prelude::*;
-use core_crypto::{CryptoError, MlsTransportResponse};
+use core_crypto::{prelude::*, InnermostErrorMessage, MlsTransportResponse};
 use futures_util::future::TryFutureExt;
 use js_sys::{Promise, Uint8Array};
-use log::kv::{Key, Value, Visitor};
-use log::{kv, Level, LevelFilter, Metadata, Record};
+use log::{
+    kv::{self, Key, Value, Visitor},
+    Level, LevelFilter, Metadata, Record,
+};
 use log_reload::ReloadLog;
-use std::sync::Arc;
-use std::sync::{LazyLock, Once};
 use tls_codec::Deserialize;
 use utils::*;
-use wasm_bindgen::prelude::*;
-use wasm_bindgen::JsCast;
+use wasm_bindgen::{prelude::*, JsCast};
 use wasm_bindgen_futures::future_to_promise;
 
 #[allow(dead_code)]
@@ -114,13 +115,15 @@ pub enum MlsError {
 impl From<core_crypto::MlsError> for MlsError {
     #[inline]
     fn from(e: core_crypto::MlsError) -> Self {
-        Self::Other(e.to_string())
+        Self::Other(e.innermost_error_message())
     }
 }
 
 #[cfg(feature = "proteus")]
 #[derive(Debug, thiserror::Error, strum::AsRefStr)]
 pub enum ProteusError {
+    #[error("Proteus was not initialized")]
+    NotInitialized,
     #[error("The requested session was not found")]
     SessionNotFound,
     #[error("We already decrypted this message once")]
@@ -139,6 +142,7 @@ impl ProteusError {
         }
 
         match code {
+            5 => Self::NotInitialized,
             102 => Self::SessionNotFound,
             204 => Self::RemoteIdentityChanged,
             209 => Self::DuplicateMessage,
@@ -149,6 +153,7 @@ impl ProteusError {
 
     pub fn error_code(&self) -> Option<u16> {
         match self {
+            ProteusError::NotInitialized => Some(5),
             ProteusError::SessionNotFound => Some(102),
             ProteusError::RemoteIdentityChanged => Some(204),
             ProteusError::DuplicateMessage => Some(209),
@@ -161,15 +166,17 @@ impl ProteusError {
 impl From<core_crypto::ProteusError> for ProteusError {
     fn from(value: core_crypto::ProteusError) -> Self {
         type SessionError = proteus_wasm::session::Error<core_crypto_keystore::CryptoKeystoreError>;
-        match value {
-            core_crypto::ProteusError::ProteusSessionError(SessionError::InternalError(
+        match value.source {
+            core_crypto::ProteusErrorKind::ProteusSessionError(SessionError::InternalError(
                 proteus_wasm::internal::types::InternalError::NoSessionForTag,
             )) => Self::SessionNotFound,
-            core_crypto::ProteusError::ProteusSessionError(SessionError::DuplicateMessage) => Self::DuplicateMessage,
-            core_crypto::ProteusError::ProteusSessionError(SessionError::RemoteIdentityChanged) => {
+            core_crypto::ProteusErrorKind::ProteusSessionError(SessionError::DuplicateMessage) => {
+                Self::DuplicateMessage
+            }
+            core_crypto::ProteusErrorKind::ProteusSessionError(SessionError::RemoteIdentityChanged) => {
                 Self::RemoteIdentityChanged
             }
-            _ => Self::Other(value.error_code()),
+            _ => Self::Other(value.source.error_code()),
         }
     }
 }
@@ -196,6 +203,77 @@ pub(crate) enum InternalError {
         attempted_operation: String,
         error: JsValue,
     },
+    #[error("{0}")]
+    Other(String),
+}
+
+impl From<RecursiveError> for InternalError {
+    fn from(error: RecursiveError) -> Self {
+        // check if the innermost error is any kind of e2e error
+        let innermost = {
+            let mut err: &dyn std::error::Error = &error;
+            while let Some(inner) = err.source() {
+                err = inner;
+            }
+            err
+        };
+
+        if let Some(err) = innermost.downcast_ref::<core_crypto::e2e_identity::Error>() {
+            return InternalError::E2eiError(err.to_string());
+        }
+
+        // What now? We only really care about the innermost variants, not the error stack, but that produces
+        // an arbitrary set of types. We can't match against that!
+        //
+        // Or at least, not without the power of macros. We can use them to match against heterogenous types.
+
+        /// Like [`matches!`], but with an out expression which can reference items captured by the pattern.
+        ///
+        /// Hopefully only ever use this in conjunction with `interior_matches!`, because for most sane
+        /// circumstances, `if let` is the better design pattern.
+        macro_rules! matches_option {
+            ($val:expr, $pattern:pat $(if $guard:expr)? => $out:expr) => {
+                match ($val) {
+                    $pattern $(if $guard)? => Some($out),
+                    _ => None,
+                }
+            };
+        }
+
+        /// This is moderately horrific and we hopefully will not require it anywhere else, but
+        /// it solves a real problem here: how do we match against the innermost error variants,
+        /// when we have a heterogenous set of types to match against?
+        macro_rules! match_heterogenous {
+            ($err:expr => {
+                $( $pattern:pat $(if $guard:expr)? => $var:expr, )*
+                ||=> $default:expr,
+            }) => {{
+                if false {unreachable!()}
+                $(
+                    else if let Some(v) = matches_option!($err.downcast_ref(), Some($pattern) $(if $guard)? => $var) {
+                        v
+                    }
+                )*
+                else {
+                    $default
+                }
+            }};
+        }
+
+        match_heterogenous!(innermost => {
+            core_crypto::LeafError::ConversationAlreadyExists(id) => MlsError::ConversationAlreadyExists(id.clone()).into(),
+            core_crypto::mls::conversation::Error::BufferedFutureMessage => MlsError::BufferedFutureMessage.into(),
+            core_crypto::mls::conversation::Error::DuplicateMessage => MlsError::DuplicateMessage.into(),
+            core_crypto::mls::conversation::Error::MessageEpochTooOld => MlsError::MessageEpochTooOld.into(),
+            core_crypto::mls::conversation::Error::SelfCommitIgnored => MlsError::SelfCommitIgnored.into(),
+            core_crypto::mls::conversation::Error::StaleCommit => MlsError::StaleCommit.into(),
+            core_crypto::mls::conversation::Error::StaleProposal => MlsError::StaleProposal.into(),
+            core_crypto::mls::conversation::Error::UnbufferedFarFutureMessage => MlsError::WrongEpoch.into(),
+            core_crypto::mls::conversation::Error::OrphanWelcome => MlsError::OrphanWelcome.into(),
+            core_crypto::mls::Error::UnmergedPendingGroup => MlsError::UnmergedPendingGroup.into(),
+            ||=> MlsError::Other(error.innermost_error_message()).into(),
+        })
+    }
 }
 
 // This implementation is intended to be temporary; we're going to be completely restructuring the way we handle
@@ -203,39 +281,69 @@ pub(crate) enum InternalError {
 //
 // Certain error mappings could apply to both MLS and Proteus. In all such cases, we map them to the MLS variant.
 // When we redesign the errors in `core-crypto`, these ambiguities should disappear anyway.
-impl From<CryptoError> for InternalError {
-    fn from(value: CryptoError) -> Self {
+impl From<core_crypto::Error> for InternalError {
+    fn from(error: core_crypto::Error) -> Self {
+        // we can take care of the _simple_ error-mapping up here.
         #[cfg(feature = "proteus")]
-        if let Some(error_code) = value.proteus_error_code() {
-            if let Some(err) = ProteusError::from_error_code(error_code) {
-                return err.into();
+        if let core_crypto::Error::Proteus(proteus) = &error {
+            if let Some(code) = proteus.source.error_code() {
+                if code != 0 {
+                    if let Some(proteus_error) = ProteusError::from_error_code(code) {
+                        return Self::ProteusError(proteus_error);
+                    }
+                }
             }
         }
-
-        match value {
-            CryptoError::ConversationAlreadyExists(id) => MlsError::ConversationAlreadyExists(id).into(),
-            CryptoError::DuplicateMessage => MlsError::DuplicateMessage.into(),
-            CryptoError::BufferedFutureMessage => MlsError::BufferedFutureMessage.into(),
-            CryptoError::WrongEpoch => MlsError::WrongEpoch.into(),
-            CryptoError::MessageEpochTooOld => MlsError::MessageEpochTooOld.into(),
-            CryptoError::SelfCommitIgnored => MlsError::SelfCommitIgnored.into(),
-            CryptoError::UnmergedPendingGroup => MlsError::UnmergedPendingGroup.into(),
-            CryptoError::StaleProposal => MlsError::StaleProposal.into(),
-            CryptoError::StaleCommit => MlsError::StaleCommit.into(),
-            CryptoError::OrphanWelcome => MlsError::OrphanWelcome.into(),
-            CryptoError::E2eiError(e) => Self::E2eiError(e.to_string()),
-            _ => MlsError::Other(value.to_string()).into(),
+        match error {
+            #[cfg(feature = "proteus")]
+            core_crypto::Error::ProteusNotInitialized => Self::ProteusError(ProteusError::NotInitialized),
+            core_crypto::Error::Proteus(proteus) => Self::Other(proteus.innermost_error_message()),
+            core_crypto::Error::Mls(mls) => Self::MlsError(MlsError::from(mls)),
+            core_crypto::Error::InvalidContext => Self::Other(error.to_string()),
+            core_crypto::Error::Keystore(keystore_error) => Self::Other(keystore_error.innermost_error_message()),
+            core_crypto::Error::CryptoboxMigration(cryptobox) => Self::Other(cryptobox.innermost_error_message()),
+            core_crypto::Error::Recursive(recursive_error) => recursive_error.into(),
+            core_crypto::Error::FeatureDisabled(_) => Self::Other(error.to_string()),
         }
     }
 }
 
-impl From<E2eIdentityError> for InternalError {
-    fn from(e: E2eIdentityError) -> Self {
-        Self::E2eiError(e.to_string())
-    }
+/// We can't do a generic `impl<E: ToRecursiveError> From<E> for InternalError`
+/// because that has the potential to cause breaking conflicts later on: what if
+/// core-crypto later did `impl ToRecursiveError for core_crypto::Error`? That would
+/// cause a duplicate `From` impl.
+///
+/// Instead, we explicitly specify every variant which can be converted to a
+/// `InternalError`, and implement its `From` block directly.
+macro_rules! impl_from_via_recursive_error {
+    ($($t:ty),+ $(,)?) => {
+        $(
+            impl From<$t> for InternalError {
+                fn from(error: $t) -> Self {
+                    use core_crypto::ToRecursiveError;
+                    error
+                        .construct_recursive("this context string does not matter and gets immediately stripped")
+                        .into()
+                }
+            }
+        )*
+    };
 }
 
+impl_from_via_recursive_error!(
+    core_crypto::mls::Error,
+    core_crypto::mls::conversation::Error,
+    core_crypto::e2e_identity::Error,
+);
+
 impl InternalError {
+    fn generic<E>() -> impl FnOnce(E) -> Self
+    where
+        E: ToString,
+    {
+        |err| Self::Other(err.to_string())
+    }
+
     fn variant_name(&self) -> String {
         let mut out = self.as_ref().to_string();
         match self {
@@ -472,8 +580,7 @@ impl TryFrom<MlsConversationCreationMessage> for MemberAddedMessages {
     type Error = CoreCryptoError;
 
     fn try_from(msg: MlsConversationCreationMessage) -> Result<Self, Self::Error> {
-        let (welcome, commit, pgs, crl_new_distribution_points) =
-            msg.to_bytes().map_err(CryptoError::from).map_err(Self::Error::from)?;
+        let (welcome, commit, pgs, crl_new_distribution_points) = msg.to_bytes()?;
 
         Ok(Self {
             welcome,
@@ -522,10 +629,7 @@ impl TryFrom<MlsCommitBundle> for CommitBundle {
     type Error = CoreCryptoError;
 
     fn try_from(msg: MlsCommitBundle) -> Result<Self, Self::Error> {
-        let (welcome, commit, pgs) = msg
-            .to_bytes_triple()
-            .map_err(CryptoError::from)
-            .map_err(Self::Error::from)?;
+        let (welcome, commit, pgs) = msg.to_bytes_triple()?;
 
         Ok(Self {
             welcome,
@@ -622,8 +726,7 @@ impl TryFrom<MlsRotateBundle> for RotateBundle {
     type Error = CoreCryptoError;
 
     fn try_from(msg: MlsRotateBundle) -> Result<Self, Self::Error> {
-        let (commits, new_key_packages, key_package_refs_to_remove, crl_new_distribution_points) =
-            msg.to_bytes().map_err(CryptoError::from).map_err(Self::Error::from)?;
+        let (commits, new_key_packages, key_package_refs_to_remove, crl_new_distribution_points) = msg.to_bytes()?;
 
         let commits_size = commits.len();
         let commits = commits
@@ -677,8 +780,7 @@ impl TryFrom<MlsProposalBundle> for ProposalBundle {
     type Error = CoreCryptoError;
 
     fn try_from(msg: MlsProposalBundle) -> Result<Self, Self::Error> {
-        let (proposal, proposal_ref, crl_new_distribution_points) =
-            msg.to_bytes().map_err(CryptoError::from).map_err(Self::Error::from)?;
+        let (proposal, proposal_ref, crl_new_distribution_points) = msg.to_bytes()?;
 
         Ok(Self {
             proposal,
@@ -728,8 +830,7 @@ impl TryFrom<MlsConversationInitBundle> for ConversationInitBundle {
 
     fn try_from(mut from: MlsConversationInitBundle) -> Result<Self, Self::Error> {
         let conversation_id = std::mem::take(&mut from.conversation_id);
-        let (commit, pgs, crl_new_distribution_points) =
-            from.to_bytes().map_err(CryptoError::from).map_err(Self::Error::from)?;
+        let (commit, pgs, crl_new_distribution_points) = from.to_bytes()?;
 
         Ok(Self {
             conversation_id,
@@ -813,11 +914,11 @@ impl TryFrom<MlsConversationDecryptMessage> for DecryptedMessage {
             None
         };
 
-        let commit_delay = if let Some(delay) = from.delay {
-            Some(delay.try_into().map_err(CryptoError::from)?)
-        } else {
-            None
-        };
+        let commit_delay = from
+            .delay
+            .map(TryInto::try_into)
+            .transpose()
+            .map_err(InternalError::generic())?;
 
         Ok(Self {
             message: from.app_msg,
@@ -922,11 +1023,11 @@ impl TryFrom<MlsBufferedConversationDecryptMessage> for BufferedDecryptedMessage
             .map(TryInto::try_into)
             .collect::<WasmCryptoResult<Vec<_>>>()?;
 
-        let commit_delay = if let Some(delay) = from.delay {
-            Some(delay.try_into().map_err(CryptoError::from)?)
-        } else {
-            None
-        };
+        let commit_delay = from
+            .delay
+            .map(TryInto::try_into)
+            .transpose()
+            .map_err(InternalError::generic())?;
 
         Ok(Self {
             message: from.app_msg,
@@ -1518,7 +1619,7 @@ impl CoreCrypto {
         let nb_key_package = nb_key_package
             .map(usize::try_from)
             .transpose()
-            .map_err(CryptoError::from)?;
+            .expect("we never run corecrypto on systems with architectures narrower than 32 bits");
         let configuration = MlsCentralConfiguration::try_new(
             path,
             key,
@@ -1709,8 +1810,10 @@ impl CoreCrypto {
         future_to_promise(
             async move {
                 let seed = EntropySeed::try_from_slice(&seed)
-                    .map_err(CryptoError::from)
-                    .map_err(CoreCryptoError::from)?;
+                    .map_err(core_crypto::MlsError::wrap(
+                        "trying to construct entropy seed from slice",
+                    ))
+                    .map_err(core_crypto::Error::Mls)?;
 
                 central.reseed(Some(seed)).await?;
                 WasmCryptoResult::Ok(JsValue::UNDEFINED)
@@ -2270,14 +2373,16 @@ impl TryFrom<NewAcmeOrder> for core_crypto::prelude::E2eiNewAcmeOrder {
     type Error = CoreCryptoError;
 
     fn try_from(new_order: NewAcmeOrder) -> WasmCryptoResult<Self> {
+        let authorizations = new_order
+            .authorizations
+            .0
+            .into_iter()
+            .map(|a| String::from_utf8(a))
+            .collect::<Result<Vec<String>, _>>()
+            .map_err(|_| InternalError::Other("invalid authorization string: not utf8".into()))?;
         Ok(Self {
             delegate: new_order.delegate,
-            authorizations: new_order
-                .authorizations
-                .0
-                .into_iter()
-                .map(|a| String::from_utf8(a).map_err(CryptoError::from))
-                .collect::<CryptoResult<Vec<String>>>()?,
+            authorizations,
         })
     }
 }

@@ -1,19 +1,23 @@
-use crate::wasm::context::CoreCryptoContext;
-use crate::wasm::E2eiConversationState;
-use crate::{
-    Ciphersuite, CommitBundle, CoreCryptoError, CredentialType, CrlRegistration, E2eiDumpedPkiEnv, E2eiEnrollment,
-    RotateBundle, WasmCryptoResult, WireIdentity,
+use std::{
+    collections::HashMap,
+    ops::{Deref, DerefMut},
 };
-use core_crypto::prelude::{CiphersuiteName, ClientId, ConversationId, MlsCiphersuite, VerifiableGroupInfo};
-use core_crypto::{CryptoError, MlsError};
+
+use core_crypto::{
+    prelude::{CiphersuiteName, ClientId, ConversationId, MlsCiphersuite, VerifiableGroupInfo},
+    RecursiveError,
+};
 use futures_util::TryFutureExt;
 use js_sys::{Promise, Uint8Array};
-use std::collections::HashMap;
-use std::ops::{Deref, DerefMut};
 use tls_codec::Deserialize;
-use wasm_bindgen::prelude::wasm_bindgen;
-use wasm_bindgen::JsValue;
+use wasm_bindgen::{prelude::wasm_bindgen, JsValue};
 use wasm_bindgen_futures::future_to_promise;
+
+use crate::{
+    wasm::{context::CoreCryptoContext, E2eiConversationState},
+    Ciphersuite, CommitBundle, CoreCryptoError, CredentialType, CrlRegistration, E2eiDumpedPkiEnv, E2eiEnrollment,
+    InternalError, RotateBundle, WasmCryptoResult, WireIdentity,
+};
 
 #[wasm_bindgen]
 impl CoreCryptoContext {
@@ -183,7 +187,7 @@ impl CoreCryptoContext {
                 let nb_key_package = nb_key_package
                     .map(usize::try_from)
                     .transpose()
-                    .map_err(CryptoError::from)?;
+                    .expect("we never run corecrypto on systems with architectures narrower than 32 bits");
 
                 let crls = context
                     .e2ei_mls_init_only(
@@ -249,7 +253,9 @@ impl CoreCryptoContext {
         future_to_promise(
             async move {
                 let enrollment = std::sync::Arc::try_unwrap(enrollment.0)
-                    .map_err(|_| CryptoError::LockPoisonError)?
+                    .map_err(|_| {
+                        InternalError::Other("enrollment had multiple strong refs and could not be unwrapped".into())
+                    })?
                     .into_inner();
                 let handle = context.e2ei_enrollment_stash(enrollment).await?;
                 WasmCryptoResult::Ok(Uint8Array::from(handle.as_slice()).into())
@@ -365,9 +371,10 @@ impl CoreCryptoContext {
         future_to_promise(
             async move {
                 let group_info = VerifiableGroupInfo::tls_deserialize(&mut group_info.as_ref())
-                    .map_err(MlsError::from)
-                    .map_err(CryptoError::from)
-                    .map_err(CoreCryptoError::from)?;
+                    .map_err(core_crypto::mls::conversation::Error::tls_deserialize(
+                        "verifiable group info",
+                    ))
+                    .map_err(RecursiveError::mls_conversation("getting credential in use"))?;
 
                 let state: E2eiConversationState = context
                     .get_credential_in_use(group_info, credential_type.into())

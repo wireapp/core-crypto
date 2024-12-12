@@ -1,11 +1,13 @@
 use std::{collections::HashMap, ops::DerefMut};
 
-use crate::generic::{
-    context::CoreCryptoContext, Ciphersuite, ClientId, CoreCryptoResult, CrlRegistration, E2eiConversationState,
-    E2eiDumpedPkiEnv, E2eiEnrollment, MlsCredentialType, RotateBundle, WireIdentity,
+use crate::{
+    generic::{
+        context::CoreCryptoContext, Ciphersuite, ClientId, CoreCryptoResult, CrlRegistration, E2eiConversationState,
+        E2eiDumpedPkiEnv, E2eiEnrollment, MlsCredentialType, RotateBundle, WireIdentity,
+    },
+    CommitBundle, CoreCryptoError,
 };
-use crate::CommitBundle;
-use core_crypto::{prelude::VerifiableGroupInfo, CryptoError, MlsError};
+use core_crypto::{prelude::VerifiableGroupInfo, RecursiveError};
 use tls_codec::Deserialize;
 
 #[uniffi::export]
@@ -20,8 +22,7 @@ impl CoreCryptoContext {
         expiry_sec: u32,
         ciphersuite: Ciphersuite,
     ) -> CoreCryptoResult<E2eiEnrollment> {
-        Ok(self
-            .context
+        self.context
             .e2ei_new_enrollment(
                 client_id.into_bytes().into(),
                 display_name,
@@ -33,7 +34,8 @@ impl CoreCryptoContext {
             .await
             .map(async_lock::RwLock::new)
             .map(std::sync::Arc::new)
-            .map(E2eiEnrollment)?)
+            .map(E2eiEnrollment)
+            .map_err(Into::into)
     }
 
     /// See [core_crypto::context::CentralContext::e2ei_new_activation_enrollment]
@@ -102,7 +104,7 @@ impl CoreCryptoContext {
         let nb_key_package = nb_key_package
             .map(usize::try_from)
             .transpose()
-            .map_err(CryptoError::from)?;
+            .map_err(CoreCryptoError::generic())?;
 
         Ok(self
             .context
@@ -139,9 +141,13 @@ impl CoreCryptoContext {
 
     /// See [core_crypto::context::CentralContext::e2ei_enrollment_stash]
     pub async fn e2ei_enrollment_stash(&self, enrollment: std::sync::Arc<E2eiEnrollment>) -> CoreCryptoResult<Vec<u8>> {
-        let enrollment = std::sync::Arc::into_inner(enrollment).ok_or_else(|| CryptoError::LockPoisonError)?;
+        let enrollment = std::sync::Arc::into_inner(enrollment).ok_or_else(|| {
+            CoreCryptoError::Other("enrollment had multiple strong refs and could not be unpacked".into())
+        })?;
         let enrollment = std::sync::Arc::into_inner(enrollment.0)
-            .ok_or_else(|| CryptoError::LockPoisonError)?
+            .ok_or_else(|| {
+                CoreCryptoError::Other("enrollment.0 had multiple strong refs and could not be unpacked".into())
+            })?
             .into_inner();
 
         Ok(self.context.e2ei_enrollment_stash(enrollment).await?)
@@ -221,8 +227,10 @@ impl CoreCryptoContext {
         credential_type: MlsCredentialType,
     ) -> CoreCryptoResult<E2eiConversationState> {
         let group_info = VerifiableGroupInfo::tls_deserialize(&mut group_info.as_slice())
-            .map_err(MlsError::from)
-            .map_err(CryptoError::from)?;
+            .map_err(core_crypto::mls::conversation::Error::tls_deserialize(
+                "verifiable group info",
+            ))
+            .map_err(RecursiveError::mls_conversation("getting credential in use"))?;
         Ok(self
             .context
             .get_credential_in_use(group_info, credential_type.into())

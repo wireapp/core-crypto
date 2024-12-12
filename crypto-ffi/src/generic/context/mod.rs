@@ -4,16 +4,15 @@ use super::{
     MemberAddedMessages, MlsCredentialType, ProposalBundle, WelcomeBundle,
 };
 use async_lock::{Mutex, OnceCell};
-use core_crypto::context::CentralContext;
 use core_crypto::{
+    context::CentralContext,
     prelude::{
         ClientIdentifier, ConversationId, KeyPackageIn, KeyPackageRef, MlsConversationConfiguration,
         VerifiableGroupInfo,
     },
-    CryptoError, CryptoResult, MlsError,
+    RecursiveError,
 };
-use std::future::Future;
-use std::{ops::Deref, sync::Arc};
+use std::{future::Future, ops::Deref, sync::Arc};
 use tls_codec::{Deserialize, Serialize};
 
 pub mod e2ei;
@@ -191,10 +190,11 @@ impl CoreCrypto {
 }
 impl CoreCrypto {
     /// For internal use in deprecated functions.
-    pub(crate) async fn deprecated_transaction<F, Fut, R>(&self, callback: F) -> CoreCryptoResult<R>
+    pub(crate) async fn deprecated_transaction<F, Fut, R, E>(&self, callback: F) -> CoreCryptoResult<R>
     where
         F: FnOnce(CentralContext) -> Fut,
-        Fut: Future<Output = CryptoResult<R>>,
+        Fut: Future<Output = Result<R, E>>,
+        E: Into<core_crypto::Error>,
     {
         let context = self.central.new_transaction().await?;
         let result = callback(context.clone()).await;
@@ -205,7 +205,7 @@ impl CoreCrypto {
             }
             Err(err) => {
                 context.abort().await?;
-                Err(err.into())
+                Err(<E as Into<core_crypto::Error>>::into(err).into())
             }
         }
     }
@@ -233,7 +233,7 @@ impl CoreCryptoContext {
         let nb_key_package = nb_key_package
             .map(usize::try_from)
             .transpose()
-            .map_err(CryptoError::from)?;
+            .map_err(CoreCryptoError::generic())?;
         self.context
             .mls_init(
                 ClientIdentifier::Basic(client_id.0),
@@ -330,14 +330,15 @@ impl CoreCryptoContext {
         let kps = self
             .context
             .get_or_create_client_keypackages(ciphersuite.into(), credential_type.into(), amount_requested as usize)
-            .await?;
+            .await
+            .map_err(RecursiveError::mls_client("getting or creating client keypackages"))?;
 
         kps.into_iter()
             .map(|kp| {
-                Ok(kp
-                    .tls_serialize_detached()
-                    .map_err(MlsError::from)
-                    .map_err(CryptoError::from)?)
+                kp.tls_serialize_detached()
+                    .map_err(core_crypto::mls::conversation::Error::tls_serialize("keypackage"))
+                    .map_err(RecursiveError::mls_conversation("serializing keypackage"))
+                    .map_err(Into::into)
             })
             .collect::<CoreCryptoResult<Vec<Vec<u8>>>>()
     }
@@ -351,7 +352,8 @@ impl CoreCryptoContext {
         let count = self
             .context
             .client_valid_key_packages_count(ciphersuite.into(), credential_type.into())
-            .await?;
+            .await
+            .map_err(RecursiveError::mls_client("counting client valid keypackages"))?;
 
         Ok(count.try_into().unwrap_or(0))
     }
@@ -363,7 +365,10 @@ impl CoreCryptoContext {
             .map(|r| KeyPackageRef::from_slice(&r))
             .collect::<Vec<_>>();
 
-        self.context.delete_keypackages(&refs[..]).await?;
+        self.context
+            .delete_keypackages(&refs[..])
+            .await
+            .map_err(RecursiveError::mls_client("deleting keypackages"))?;
         Ok(())
     }
 
@@ -414,7 +419,9 @@ impl CoreCryptoContext {
             .into_iter()
             .map(|kp| {
                 KeyPackageIn::tls_deserialize(&mut kp.as_slice())
-                    .map_err(|e| CoreCryptoError::from(CryptoError::MlsError(e.into())))
+                    .map_err(core_crypto::mls::conversation::Error::tls_deserialize("keypackage"))
+                    .map_err(RecursiveError::mls_conversation("adding members to conversation"))
+                    .map_err(Into::into)
             })
             .collect::<CoreCryptoResult<Vec<_>>>()?;
 
@@ -496,8 +503,8 @@ impl CoreCryptoContext {
         keypackage: Vec<u8>,
     ) -> CoreCryptoResult<ProposalBundle> {
         let kp = KeyPackageIn::tls_deserialize(&mut keypackage.as_slice())
-            .map_err(MlsError::from)
-            .map_err(CryptoError::from)?;
+            .map_err(core_crypto::mls::conversation::Error::tls_deserialize("keypackage"))
+            .map_err(RecursiveError::mls_conversation("creating new add proposal"))?;
         self.context
             .new_add_proposal(&conversation_id, kp.into())
             .await?
@@ -529,8 +536,7 @@ impl CoreCryptoContext {
         ciphersuite: Ciphersuite,
         credential_type: MlsCredentialType,
     ) -> CoreCryptoResult<Vec<u8>> {
-        Ok(self
-            .context
+        self.context
             .new_external_add_proposal(
                 conversation_id,
                 epoch.into(),
@@ -539,8 +545,9 @@ impl CoreCryptoContext {
             )
             .await?
             .to_bytes()
-            .map_err(MlsError::from)
-            .map_err(CryptoError::from)?)
+            .map_err(core_crypto::MlsError::wrap("creating new external add proposal"))
+            .map_err(core_crypto::Error::Mls)
+            .map_err(Into::into)
     }
 
     /// See [core_crypto::context::CentralContext::join_by_external_commit]
@@ -551,8 +558,10 @@ impl CoreCryptoContext {
         credential_type: MlsCredentialType,
     ) -> CoreCryptoResult<ConversationInitBundle> {
         let group_info = VerifiableGroupInfo::tls_deserialize(&mut group_info.as_slice())
-            .map_err(MlsError::from)
-            .map_err(CryptoError::from)?;
+            .map_err(core_crypto::mls::conversation::Error::tls_deserialize(
+                "verifiable group info",
+            ))
+            .map_err(RecursiveError::mls_conversation("joining by external commmit"))?;
         self.context
             .join_by_external_commit(group_info, custom_configuration.into(), credential_type.into())
             .await?
