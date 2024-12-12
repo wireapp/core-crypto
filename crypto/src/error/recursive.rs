@@ -81,46 +81,48 @@ pub enum RecursiveError {
 }
 
 impl RecursiveError {
-    pub(crate) fn root<E: Into<crate::Error>>(context: &'static str) -> impl FnOnce(E) -> Self {
+    /// Convert a [crate::Error] into a [RecursiveError], with context
+    pub fn root<E: Into<crate::Error>>(context: &'static str) -> impl FnOnce(E) -> Self {
         move |into_source| Self::Root {
             context,
             source: Box::new(into_source.into()),
         }
     }
 
-    pub(crate) fn e2e_identity<E: Into<crate::e2e_identity::Error>>(context: &'static str) -> impl FnOnce(E) -> Self {
+    /// Convert a [crate::e2e_identity::Error] into a [RecursiveError], with context
+    pub fn e2e_identity<E: Into<crate::e2e_identity::Error>>(context: &'static str) -> impl FnOnce(E) -> Self {
         move |into_source| Self::E2e {
             context,
             source: Box::new(into_source.into()),
         }
     }
 
-    pub(crate) fn mls<E: Into<crate::mls::Error>>(context: &'static str) -> impl FnOnce(E) -> Self {
+    /// Convert a [crate::mls::Error] into a [RecursiveError], with context
+    pub fn mls<E: Into<crate::mls::Error>>(context: &'static str) -> impl FnOnce(E) -> Self {
         move |into_source| Self::Mls {
             context,
             source: Box::new(into_source.into()),
         }
     }
 
-    pub(crate) fn mls_client<E: Into<crate::mls::client::Error>>(context: &'static str) -> impl FnOnce(E) -> Self {
+    /// Convert a [crate::mls::client::Error] into a [RecursiveError], with context
+    pub fn mls_client<E: Into<crate::mls::client::Error>>(context: &'static str) -> impl FnOnce(E) -> Self {
         move |into_source| Self::MlsClient {
             context,
             source: Box::new(into_source.into()),
         }
     }
 
-    pub(crate) fn mls_conversation<E: Into<crate::mls::conversation::Error>>(
-        context: &'static str,
-    ) -> impl FnOnce(E) -> Self {
+    /// Convert a [crate::mls::conversation::Error] into a [RecursiveError], with context
+    pub fn mls_conversation<E: Into<crate::mls::conversation::Error>>(context: &'static str) -> impl FnOnce(E) -> Self {
         move |into_source| Self::MlsConversation {
             context,
             source: Box::new(into_source.into()),
         }
     }
 
-    pub(crate) fn mls_credential<E: Into<crate::mls::credential::Error>>(
-        context: &'static str,
-    ) -> impl FnOnce(E) -> Self {
+    /// Convert a [crate::mls::credential::Error] into a [RecursiveError], with context
+    pub fn mls_credential<E: Into<crate::mls::credential::Error>>(context: &'static str) -> impl FnOnce(E) -> Self {
         move |into_source| Self::MlsCredential {
             context,
             source: Box::new(into_source.into()),
@@ -132,3 +134,35 @@ impl RecursiveError {
         move |into_source| Self::Test(Box::new(into_source.into()))
     }
 }
+
+/// Like [`Into`], but different, because we don't actually want to implement `Into` for our subordinate error types.
+///
+/// By forcing ourselves to map errors everywhere in order for question mark operators to work, we ensure that
+pub trait ToRecursiveError {
+    /// Construct a recursive error given the current context
+    fn construct_recursive(self, context: &'static str) -> RecursiveError;
+}
+
+macro_rules! impl_to_recursive_error_for {
+    ($($for:path => $variant:ident),+ $(,)?) => {
+        $(
+            impl ToRecursiveError for $for {
+                fn construct_recursive(self, context: &'static str) -> RecursiveError {
+                    RecursiveError::$variant {
+                        context,
+                        source: Box::new(self),
+                    }
+                }
+            }
+        )+
+    };
+}
+
+impl_to_recursive_error_for!(
+    crate::Error => Root,
+    crate::e2e_identity::Error => E2e,
+    crate::mls::Error => Mls,
+    crate::mls::client::Error => MlsClient,
+    crate::mls::conversation::Error => MlsConversation,
+    crate::mls::credential::Error => MlsCredential,
+);

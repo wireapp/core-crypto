@@ -142,7 +142,7 @@ impl CoreCrypto {
 
 impl CentralContext {
     /// Initializes the proteus client
-    pub async fn proteus_init(&self) -> CryptoResult<()> {
+    pub async fn proteus_init(&self) -> Result<()> {
         let keystore = self.keystore().await?;
         let proteus_client = ProteusCentral::try_new(&keystore).await?;
 

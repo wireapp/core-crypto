@@ -26,7 +26,7 @@ pub struct WrappedContextualError<T> {
 }
 
 impl<T> WrappedContextualError<T> {
-    pub(crate) fn wrap<E>(context: &'static str) -> impl FnOnce(E) -> Self
+    pub fn wrap<E>(context: &'static str) -> impl FnOnce(E) -> Self
     where
         E: Into<T>,
     {
