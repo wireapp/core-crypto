@@ -31,6 +31,7 @@ use wire_e2e_identity::prelude::WireIdentityReader;
 use x509_cert::der::Encode;
 
 use crate::group_store::GroupStore;
+use crate::prelude::{MlsCommitBundle, WelcomeBundle};
 use crate::test_utils::ClientContext;
 use crate::{
     e2e_identity::{
@@ -40,14 +41,19 @@ use crate::{
     mls::credential::{ext::CredentialExt, CredentialBundle},
     prelude::{
         CertificateBundle, Client, ClientId, ConversationId, CryptoError, CryptoResult, MlsCiphersuite,
-        MlsConversation, MlsConversationConfiguration, MlsConversationDecryptMessage, MlsConversationInitBundle,
-        MlsCredentialType, MlsCustomConfiguration, MlsError, WireIdentity,
+        MlsConversation, MlsConversationConfiguration, MlsConversationDecryptMessage, MlsCredentialType,
+        MlsCustomConfiguration, MlsError, WireIdentity,
     },
     test_utils::{x509::X509Certificate, MessageExt, TestCase},
 };
 
 #[allow(clippy::redundant_static_lifetimes)]
 pub const TEAM: &'static str = "world";
+
+pub struct RotateAllResult {
+    pub(crate) conversation_ids_and_commits: Vec<(ConversationId, MlsCommitBundle)>,
+    pub(crate) new_key_packages: Vec<KeyPackage>,
+}
 
 impl ClientContext {
     pub async fn get_one_key_package(&self, case: &TestCase) -> KeyPackage {
@@ -215,17 +221,15 @@ impl ClientContext {
     ) -> CryptoResult<()> {
         use tls_codec::Serialize as _;
 
-        let MlsConversationInitBundle {
-            conversation_id,
-            commit,
-            ..
+        let WelcomeBundle {
+            id: conversation_id, ..
         } = self
             .context
             .join_by_external_commit(group_info, case.custom_cfg(), case.credential_type)
             .await?;
-        self.context
-            .merge_pending_group_from_external_commit(&conversation_id)
-            .await?;
+
+        let commit = self.mls_transport.latest_commit().await;
+
         assert_eq!(conversation_id.as_slice(), id.as_slice());
         for other in others {
             let commit = commit.tls_serialize_detached().map_err(MlsError::from)?;
@@ -476,7 +480,7 @@ impl ClientContext {
             .unwrap()
     }
 
-    pub async fn rotate_credential(
+    pub async fn save_new_credential(
         &self,
         case: &TestCase,
         handle: &str,
@@ -499,6 +503,45 @@ impl ClientContext {
                 case.signature_scheme(),
                 new_cert,
             )
+            .await
+            .unwrap()
+    }
+
+    pub(crate) async fn create_key_packages_and_update_credential_in_all_conversations(
+        &self,
+        cb: &CredentialBundle,
+        cipher_suite: MlsCiphersuite,
+        key_package_count: usize,
+    ) -> CryptoResult<RotateAllResult> {
+        let all_conversations = self.context.get_all_conversations().await?;
+        let mut conversation_ids_and_commits = Vec::with_capacity(all_conversations.len());
+        for conv in all_conversations {
+            let conv = conv.read().await;
+            let id = conv.id().clone();
+            self.context.e2ei_rotate(&id, None).await?;
+            let commit = self.mls_transport.latest_commit_bundle().await;
+            conversation_ids_and_commits.push((id, commit));
+        }
+        let new_key_packages = self
+            .client()
+            .await
+            .generate_new_keypackages(&self.central.mls_backend, cipher_suite, cb, key_package_count)
+            .await?;
+        Ok(RotateAllResult {
+            conversation_ids_and_commits,
+            new_key_packages,
+        })
+    }
+
+    /// Bob creates a commit but won't merge it immediately (e.g, because his app crashes before he receives the success response from the ds via MlsTransport api)
+    pub(crate) async fn create_unmerged_commit(&self, id: &ConversationId) -> MlsCommitBundle {
+        self.context
+            .get_conversation(&id)
+            .await
+            .unwrap()
+            .write()
+            .await
+            .update_keying_material(&self.client().await, &self.central.mls_backend, None, None)
             .await
             .unwrap()
     }
