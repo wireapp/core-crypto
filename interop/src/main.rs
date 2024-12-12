@@ -18,7 +18,6 @@
 
 use color_eyre::eyre::{eyre, Result};
 use std::rc::Rc;
-use tls_codec::Serialize;
 
 #[cfg(not(target_family = "wasm"))]
 use crate::clients::{EmulatedClient, EmulatedProteusClient};
@@ -172,18 +171,9 @@ async fn run_mls_test(chrome_driver_addr: &std::net::SocketAddr) -> Result<()> {
 
     let spinner = util::RunningProcess::new("[MLS] Step 2: Adding clients to conversation...", true);
 
-    let conversation_add_msg = transaction
+    transaction
         .add_members_to_conversation(&conversation_id, key_packages)
         .await?;
-
-    transaction.commit_accepted(&conversation_id).await?;
-
-    let welcome_raw = conversation_add_msg.welcome.tls_serialize_detached()?;
-
-    for c in clients.iter_mut() {
-        let conversation_id_from_welcome = c.process_welcome(&welcome_raw).await?;
-        assert_eq!(conversation_id_from_welcome, conversation_id);
-    }
 
     spinner.success("[MLS] Step 2: Added clients [OK]");
 

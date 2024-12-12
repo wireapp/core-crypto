@@ -14,6 +14,8 @@
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see http://www.gnu.org/licenses/.
 
+use core_crypto::prelude::MlsCommitBundle;
+use core_crypto::{CryptoResult, MlsTransport, MlsTransportResponse};
 use spinoff::Spinner;
 
 pub(crate) struct RunningProcess {
@@ -70,5 +72,20 @@ impl RunningProcess {
         } else {
             log::info!("{msg}");
         }
+    }
+}
+
+#[derive(Debug, Default)]
+pub struct CoreCryptoTransportSuccessProvider;
+
+#[cfg_attr(target_family = "wasm", async_trait::async_trait(?Send))]
+#[cfg_attr(not(target_family = "wasm"), async_trait::async_trait)]
+impl MlsTransport for CoreCryptoTransportSuccessProvider {
+    async fn send_commit_bundle(&self, _commit_bundle: MlsCommitBundle) -> CryptoResult<MlsTransportResponse> {
+        Ok(MlsTransportResponse::Success)
+    }
+
+    async fn send_message(&self, _mls_message: Vec<u8>) -> CryptoResult<MlsTransportResponse> {
+        Ok(MlsTransportResponse::Success)
     }
 }
