@@ -32,7 +32,7 @@ multiple-versions = "allow"
 [licenses]
 version = 2
 allow = ["Apache-2.0", "MIT", "MPL-2.0", "GPL-3.0", "CC0-1.0", "BSD-3-Clause",
-         "Apache-2.0 WITH LLVM-exception", "ISC", "Zlib"]
+         "Apache-2.0 WITH LLVM-exception", "ISC", "Zlib", "Unicode-3.0"]
 exceptions = [
     { allow = ["Unicode-DFS-2016"], name = "unicode-ident" },
 ]
