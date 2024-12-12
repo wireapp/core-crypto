@@ -14,11 +14,30 @@
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see http://www.gnu.org/licenses/.
 
+use crate::group_store::GroupStore;
+use crate::prelude::{MlsCommitBundle, MlsGroupInfoBundle, WelcomeBundle};
+use crate::test_utils::ClientContext;
+use crate::{
+    e2e_identity::{
+        device_status::DeviceStatus,
+        id::{QualifiedE2eiClientId, WireQualifiedClientId},
+    },
+    mls::credential::{ext::CredentialExt, CredentialBundle},
+    prelude::{
+        CertificateBundle, Client, ClientId, ConversationId, MlsCiphersuite, MlsConversation,
+        MlsConversationConfiguration, MlsConversationDecryptMessage, MlsCredentialType, MlsCustomConfiguration,
+        MlsError, WireIdentity,
+    },
+    test_utils::{x509::X509Certificate, MessageExt, TestCase},
+};
+use crate::{CryptoError, CryptoResult};
 use core_crypto_keystore::connection::FetchFromDatabase;
 use core_crypto_keystore::entities::{
     EntityFindParams, MlsCredential, MlsEncryptionKeyPair, MlsHpkePrivateKey, MlsKeyPackage, MlsSignatureKeyPair,
 };
+use core_crypto_keystore::CryptoKeystoreMls;
 use mls_crypto_provider::MlsCryptoProvider;
+use openmls::group::MlsGroup;
 use openmls::prelude::{
     group_info::VerifiableGroupInfo, Credential, CredentialWithKey, CryptoConfig, ExternalSender, HpkePublicKey,
     KeyPackage, KeyPackageIn, LeafNodeIndex, Lifetime, MlsMessageIn, QueuedProposal, SignaturePublicKey, StagedCommit,
@@ -30,24 +49,13 @@ use tls_codec::{Deserialize, Serialize};
 use wire_e2e_identity::prelude::WireIdentityReader;
 use x509_cert::der::Encode;
 
-use crate::group_store::GroupStore;
-use crate::test_utils::ClientContext;
-use crate::{
-    e2e_identity::{
-        device_status::DeviceStatus,
-        id::{QualifiedE2eiClientId, WireQualifiedClientId},
-    },
-    mls::credential::{ext::CredentialExt, CredentialBundle},
-    prelude::{
-        CertificateBundle, Client, ClientId, ConversationId, CryptoError, CryptoResult, MlsCiphersuite,
-        MlsConversation, MlsConversationConfiguration, MlsConversationDecryptMessage, MlsConversationInitBundle,
-        MlsCredentialType, MlsCustomConfiguration, MlsError, WireIdentity,
-    },
-    test_utils::{x509::X509Certificate, MessageExt, TestCase},
-};
-
 #[allow(clippy::redundant_static_lifetimes)]
 pub const TEAM: &'static str = "world";
+
+pub struct RotateAllResult {
+    pub(crate) conversation_ids_and_commits: Vec<(ConversationId, MlsCommitBundle)>,
+    pub(crate) new_key_packages: Vec<KeyPackage>,
+}
 
 impl ClientContext {
     pub async fn get_one_key_package(&self, case: &TestCase) -> KeyPackage {
@@ -180,7 +188,8 @@ impl ClientContext {
         let size_before = self.get_conversation_unchecked(id).await.members().len();
 
         let kps = others.iter().map(|(_, kp)| kp).cloned().collect::<Vec<_>>();
-        let welcome = self.context.add_members_to_conversation(id, kps).await?.welcome;
+        self.context.add_members_to_conversation(id, kps).await?;
+        let welcome = self.mls_transport.latest_commit_bundle().await.welcome.unwrap();
 
         for (other, ..) in &others {
             other
@@ -189,7 +198,6 @@ impl ClientContext {
                 .await?;
         }
 
-        self.context.commit_accepted(id).await?;
         assert_eq!(
             self.get_conversation_unchecked(id).await.members().len(),
             size_before + N
@@ -215,17 +223,15 @@ impl ClientContext {
     ) -> CryptoResult<()> {
         use tls_codec::Serialize as _;
 
-        let MlsConversationInitBundle {
-            conversation_id,
-            commit,
-            ..
+        let WelcomeBundle {
+            id: conversation_id, ..
         } = self
             .context
             .join_by_external_commit(group_info, case.custom_cfg(), case.credential_type)
             .await?;
-        self.context
-            .merge_pending_group_from_external_commit(&conversation_id)
-            .await?;
+
+        let commit = self.mls_transport.latest_commit().await;
+
         assert_eq!(conversation_id.as_slice(), id.as_slice());
         for other in others {
             let commit = commit.tls_serialize_detached().map_err(MlsError::from)?;
@@ -476,7 +482,7 @@ impl ClientContext {
             .unwrap()
     }
 
-    pub async fn rotate_credential(
+    pub async fn save_new_credential(
         &self,
         case: &TestCase,
         handle: &str,
@@ -499,6 +505,134 @@ impl ClientContext {
                 case.signature_scheme(),
                 new_cert,
             )
+            .await
+            .unwrap()
+    }
+
+    pub(crate) async fn create_key_packages_and_update_credential_in_all_conversations(
+        &self,
+        cb: &CredentialBundle,
+        cipher_suite: MlsCiphersuite,
+        key_package_count: usize,
+    ) -> CryptoResult<RotateAllResult> {
+        let keystore = self.context.keystore().await?;
+        let all_conversations = self.context.mls_groups().await?.get_fetch_all(&keystore).await?;
+        let mut conversation_ids_and_commits = Vec::with_capacity(all_conversations.len());
+        for conv in all_conversations {
+            let id = conv.read().await.id().clone();
+            self.context.e2ei_rotate(&id, None).await?;
+            let commit = self.mls_transport.latest_commit_bundle().await;
+            conversation_ids_and_commits.push((id, commit));
+        }
+        let new_key_packages = self
+            .client()
+            .await
+            .generate_new_keypackages(&self.central.mls_backend, cipher_suite, cb, key_package_count)
+            .await?;
+        Ok(RotateAllResult {
+            conversation_ids_and_commits,
+            new_key_packages,
+        })
+    }
+
+    /// Creates a commit but don't merge it immediately (e.g, because the app crashes before he receives the success response from the ds via MlsTransport api)
+    pub(crate) async fn create_unmerged_commit(&self, id: &ConversationId) -> MlsCommitBundle {
+        self.context
+            .get_conversation(&id)
+            .await
+            .unwrap()
+            .write()
+            .await
+            .update_keying_material(&self.client().await, &self.central.mls_backend, None, None)
+            .await
+            .unwrap()
+    }
+
+    pub(crate) async fn commit_pending_proposals_unmerged(&self, id: &ConversationId) -> MlsCommitBundle {
+        self.context
+            .get_conversation(&id)
+            .await
+            .unwrap()
+            .write()
+            .await
+            .commit_pending_proposals(&self.client().await, &self.central.mls_backend)
+            .await
+            .expect("comitting pending proposals")
+            .expect("expect committing pending proposals to produce a commit")
+    }
+
+    pub(crate) async fn create_unmerged_external_commit(
+        &self,
+        group_info: VerifiableGroupInfo,
+        custom_cfg: MlsCustomConfiguration,
+        credential_type: MlsCredentialType,
+    ) -> MlsCommitBundle {
+        let client = self.client().await;
+
+        let cs: MlsCiphersuite = group_info.ciphersuite().into();
+        let mls_provider = &self.central.mls_backend;
+        let cb = client
+            .get_most_recent_or_create_credential_bundle(&mls_provider, cs.signature_algorithm(), credential_type)
+            .await
+            .unwrap();
+
+        let serialized_cfg = serde_json::to_vec(&custom_cfg).unwrap();
+
+        let configuration = MlsConversationConfiguration {
+            ciphersuite: cs,
+            custom: custom_cfg,
+            ..Default::default()
+        };
+
+        let (group, commit, group_info) = MlsGroup::join_by_external_commit(
+            mls_provider,
+            &cb.signature_key,
+            None,
+            group_info,
+            &configuration.as_openmls_default_configuration().unwrap(),
+            &[],
+            cb.to_mls_credential_with_key(),
+        )
+        .await
+        .unwrap();
+
+        // We should always have ratchet tree extension turned on hence GroupInfo should always be present
+        let group_info = group_info.unwrap();
+        let group_info = MlsGroupInfoBundle::try_new_full_plaintext(group_info).unwrap();
+
+        let new_group_id = group.group_id().to_vec();
+
+        mls_provider
+            .key_store()
+            .mls_pending_groups_save(
+                new_group_id.as_slice(),
+                &core_crypto_keystore::ser(&group).unwrap(),
+                &serialized_cfg,
+                None,
+            )
+            .await
+            .unwrap();
+
+        let commit_bundle = MlsCommitBundle {
+            welcome: None,
+            commit,
+            group_info,
+        };
+
+        commit_bundle
+    }
+
+    /// Creates a commit but don't merge it immediately (e.g, because the app crashes before he receives the success response from the ds via MlsTransport api)
+    pub(crate) async fn create_unmerged_e2ei_rotate_commit(
+        &self,
+        id: &ConversationId,
+        cb: &CredentialBundle,
+    ) -> MlsCommitBundle {
+        let client = self.client().await;
+        let conversation = self.context.get_conversation(id).await.unwrap();
+        let mut conversation_guard = conversation.write().await;
+        conversation_guard
+            .e2ei_rotate(&self.central.mls_backend, &client, Some(cb))
             .await
             .unwrap()
     }

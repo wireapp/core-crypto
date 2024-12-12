@@ -19,6 +19,8 @@ use crate::{
     test_utils::x509::{CertificateParams, X509TestChain, X509TestChainActorArg, X509TestChainArgs},
     CoreCrypto, CryptoResult, MlsTransport, MlsTransportResponse,
 };
+use async_lock::RwLock;
+use openmls::framing::MlsMessageOut;
 pub use openmls_traits::types::SignatureScheme;
 pub use rstest::*;
 pub use rstest_reuse::{self, *};
@@ -35,7 +37,7 @@ pub mod proteus_utils;
 
 use crate::context::CentralContext;
 use crate::e2e_identity::id::{QualifiedE2eiClientId, WireQualifiedClientId};
-use crate::prelude::{Client, MlsCommitBundle};
+use crate::prelude::{Client, MlsCommitBundle, MlsGroupInfoBundle};
 pub use crate::prelude::{ClientIdentifier, MlsCredentialType, INITIAL_KEYING_MATERIAL_COUNT};
 pub use fixtures::{TestCase, *};
 pub use message::*;
@@ -46,6 +48,7 @@ pub const GROUP_SAMPLE_SIZE: usize = 9;
 pub struct ClientContext {
     pub context: CentralContext,
     pub central: MlsCentral,
+    pub mls_transport: Arc<dyn MlsTransportTestExt>,
     pub x509_test_chain: std::sync::Arc<Option<X509TestChain>>,
 }
 
@@ -211,8 +214,10 @@ pub async fn run_cross_signed_tests_with_client_ids<const N: usize, const F: usi
             let (chain1, chain2) =
                 init_cross_signed_x509_test_chains(&case, client_ids, other_client_ids, (params1, params2), &[]);
 
-            let centrals1 = create_centrals(&case, paths1, Some(&chain1)).await;
-            let centrals2 = create_centrals(&case, paths2, Some(&chain2)).await;
+            let transport1 = Arc::<CoreCryptoTransportSuccessProvider>::default();
+            let transport2 = Arc::<CoreCryptoTransportSuccessProvider>::default();
+            let centrals1 = create_centrals(&case, paths1, Some(&chain1), transport1.clone()).await;
+            let centrals2 = create_centrals(&case, paths2, Some(&chain2), transport2.clone()).await;
             let mut contexts1 = Vec::new();
             for central in centrals1 {
                 let cc = CoreCrypto::from(central);
@@ -221,6 +226,7 @@ pub async fn run_cross_signed_tests_with_client_ids<const N: usize, const F: usi
                 contexts1.push(ClientContext {
                     context,
                     central,
+                    mls_transport: transport1.clone(),
                     x509_test_chain: Arc::new(None),
                 });
             }
@@ -233,6 +239,7 @@ pub async fn run_cross_signed_tests_with_client_ids<const N: usize, const F: usi
                 contexts2.push(ClientContext {
                     context,
                     central,
+                    mls_transport: transport2.clone(),
                     x509_test_chain: Arc::new(None),
                 });
             }
@@ -257,7 +264,9 @@ async fn create_centrals<const N: usize>(
     case: &TestCase,
     paths: [String; N],
     chain: Option<&X509TestChain>,
+    transport: Arc<dyn MlsTransport>,
 ) -> [MlsCentral; N] {
+    let transport = &transport.clone();
     let stream = paths.into_iter().enumerate().map(|(i, p)| {
         async move {
             let configuration = MlsCentralConfiguration::try_new(
@@ -310,9 +319,7 @@ async fn create_centrals<const N: usize>(
                 .await
                 .unwrap();
             context.finish().await.unwrap();
-            central
-                .provide_transport(Arc::<CoreCryptoTransportSuccessProvider>::default())
-                .await;
+            central.provide_transport(transport.clone()).await;
             central
         }
     });
@@ -366,25 +373,29 @@ pub async fn run_test_with_deterministic_client_ids_and_revocation<const N: usiz
                 _ => (None, None),
             };
 
-            let centrals = create_centrals(&case, paths1, chain1.as_ref()).await;
+            let transport = Arc::<CoreCryptoTransportSuccessProvider>::default();
+            let centrals = create_centrals(&case, paths1, chain1.as_ref(), transport.clone()).await;
             let mut centrals1 = Vec::new();
             for (index, mls_central) in centrals.into_iter().enumerate() {
                 let cc = CoreCrypto::from(mls_central);
                 let context = ClientContext {
                     context: cc.new_transaction().await.unwrap(),
                     central: cc.mls,
-                    x509_test_chain: std::sync::Arc::new(chain1.clone()),
+                    mls_transport: transport.clone(),
+                    x509_test_chain: Arc::new(chain1.clone()),
                 };
                 centrals1.insert(index, context);
             }
-            let centrals = create_centrals(&case, paths2, chain2.as_ref()).await;
+            let transport = Arc::<CoreCryptoTransportSuccessProvider>::default();
+            let centrals = create_centrals(&case, paths2, chain2.as_ref(), transport.clone()).await;
             let mut centrals2 = Vec::new();
             for (index, mls_central) in centrals.into_iter().enumerate() {
                 let cc = CoreCrypto::from(mls_central);
                 let context = ClientContext {
                     context: cc.new_transaction().await.unwrap(),
                     central: cc.mls,
-                    x509_test_chain: std::sync::Arc::new(chain2.clone()),
+                    mls_transport: transport.clone(),
+                    x509_test_chain: Arc::new(chain2.clone()),
                 };
                 centrals2.insert(index, context);
             }
@@ -426,14 +437,14 @@ pub async fn run_test_wo_clients(
             )
             .unwrap();
             let central = MlsCentral::try_new(configuration).await.unwrap();
-            central
-                .provide_transport(std::sync::Arc::<CoreCryptoTransportSuccessProvider>::default())
-                .await;
+            let transport = Arc::<CoreCryptoTransportSuccessProvider>::default();
+            central.provide_transport(transport.clone()).await;
             let cc = CoreCrypto::from(central);
             let context = cc.new_transaction().await.unwrap();
             test(ClientContext {
                 context: context.clone(),
                 central: cc.mls,
+                mls_transport: transport.clone(),
                 x509_test_chain: None.into(),
             })
             .await;
@@ -502,20 +513,88 @@ pub fn conversation_id() -> ConversationId {
     ConversationId::from(format!("{}@conversations.wire.com", uuid.hyphenated()))
 }
 
+#[cfg_attr(target_family = "wasm", async_trait::async_trait(?Send))]
+#[cfg_attr(not(target_family = "wasm"), async_trait::async_trait)]
+pub trait MlsTransportTestExt: MlsTransport {
+    async fn latest_commit_bundle(&self) -> MlsCommitBundle;
+    async fn latest_welcome_message(&self) -> MlsMessageOut {
+        self.latest_commit_bundle().await.welcome.unwrap().clone()
+    }
+
+    async fn latest_commit(&self) -> MlsMessageOut {
+        self.latest_commit_bundle().await.commit.clone()
+    }
+
+    async fn latest_group_info(&self) -> MlsGroupInfoBundle {
+        self.latest_commit_bundle().await.group_info.clone()
+    }
+
+    async fn latest_message(&self) -> Vec<u8>;
+}
+
 #[derive(Debug, Default)]
-pub struct CoreCryptoTransportSuccessProvider;
+pub struct CoreCryptoTransportSuccessProvider {
+    latest_commit_bundle: RwLock<Option<MlsCommitBundle>>,
+    latest_message: RwLock<Option<Vec<u8>>>,
+}
 
 #[cfg_attr(target_family = "wasm", async_trait::async_trait(?Send))]
 #[cfg_attr(not(target_family = "wasm"), async_trait::async_trait)]
 impl MlsTransport for CoreCryptoTransportSuccessProvider {
-    async fn send_commit_bundle(
-        &self,
-        _commit_bundle: MlsCommitBundle,
-    ) -> Result<MlsTransportResponse, Box<dyn std::error::Error>> {
+    async fn send_commit_bundle(&self, commit_bundle: MlsCommitBundle) -> CryptoResult<MlsTransportResponse> {
+        self.latest_commit_bundle.write().await.replace(commit_bundle);
         Ok(MlsTransportResponse::Success)
     }
 
-    async fn send_message(&self, _mls_message: Vec<u8>) -> Result<MlsTransportResponse, Box<dyn std::error::Error>> {
+    async fn send_message(&self, mls_message: Vec<u8>) -> CryptoResult<MlsTransportResponse> {
+        self.latest_message.write().await.replace(mls_message);
         Ok(MlsTransportResponse::Success)
+    }
+}
+
+#[cfg_attr(target_family = "wasm", async_trait::async_trait(?Send))]
+#[cfg_attr(not(target_family = "wasm"), async_trait::async_trait)]
+impl MlsTransportTestExt for CoreCryptoTransportSuccessProvider {
+    async fn latest_commit_bundle(&self) -> MlsCommitBundle {
+        self.latest_commit_bundle
+            .read()
+            .await
+            .clone()
+            .expect("latest_commit_bundle")
+    }
+
+    async fn latest_message(&self) -> Vec<u8> {
+        self.latest_message.read().await.clone().expect("latest_message")
+    }
+}
+
+#[derive(Debug, Default)]
+pub struct CoreCryptoTransportAbortProvider;
+
+#[cfg_attr(target_family = "wasm", async_trait::async_trait(?Send))]
+#[cfg_attr(not(target_family = "wasm"), async_trait::async_trait)]
+impl MlsTransport for CoreCryptoTransportAbortProvider {
+    async fn send_commit_bundle(&self, _commit_bundle: MlsCommitBundle) -> CryptoResult<MlsTransportResponse> {
+        Ok(MlsTransportResponse::Abort {
+            reason: "abort provider always aborts!".to_string(),
+        })
+    }
+
+    async fn send_message(&self, _mls_message: Vec<u8>) -> CryptoResult<MlsTransportResponse> {
+        Ok(MlsTransportResponse::Abort {
+            reason: "abort provider always aborts!".to_string(),
+        })
+    }
+}
+
+#[cfg_attr(target_family = "wasm", async_trait::async_trait(?Send))]
+#[cfg_attr(not(target_family = "wasm"), async_trait::async_trait)]
+impl MlsTransportTestExt for CoreCryptoTransportAbortProvider {
+    async fn latest_commit_bundle(&self) -> MlsCommitBundle {
+        unreachable!("abort provider never stores a commit bundle")
+    }
+
+    async fn latest_message(&self) -> Vec<u8> {
+        unreachable!("abort provider never stores a message")
     }
 }
