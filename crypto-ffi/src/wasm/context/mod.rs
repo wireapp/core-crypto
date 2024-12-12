@@ -1,21 +1,22 @@
-use crate::wasm::{lower_ciphersuites, InternalError};
 use crate::{
+    wasm::{lower_ciphersuites, InternalError},
     BufferedDecryptedMessage, Ciphersuite, CommitBundle, ConversationConfiguration, ConversationInitBundle, CoreCrypto,
     CoreCryptoError, CoreCryptoResult, CredentialType, CustomConfiguration, DecryptedMessage, FfiClientId,
     MemberAddedMessages, ProposalBundle, WasmCryptoResult, WelcomeBundle,
 };
-use core_crypto::context::CentralContext;
-use core_crypto::prelude::{
-    CiphersuiteName, ClientId, ClientIdentifier, ConversationId, KeyPackageIn, KeyPackageRef,
-    MlsConversationConfiguration, VerifiableGroupInfo,
+use core_crypto::{
+    context::CentralContext,
+    prelude::{
+        CiphersuiteName, ClientId, ClientIdentifier, ConversationId, KeyPackageIn, KeyPackageRef,
+        MlsConversationConfiguration, VerifiableGroupInfo,
+    },
+    RecursiveError,
 };
-use core_crypto::{CryptoError, CryptoResult, MlsError};
 use futures_util::TryFutureExt;
 use js_sys::{Promise, Uint8Array};
 use std::sync::Arc;
 use tls_codec::{Deserialize, Serialize};
-use wasm_bindgen::prelude::wasm_bindgen;
-use wasm_bindgen::JsValue;
+use wasm_bindgen::{prelude::wasm_bindgen, JsValue};
 use wasm_bindgen_futures::future_to_promise;
 
 pub mod e2ei;
@@ -107,7 +108,7 @@ impl CoreCryptoContext {
                 let nb_key_package = nb_key_package
                     .map(usize::try_from)
                     .transpose()
-                    .map_err(CryptoError::from)?;
+                    .expect("we never run corecrypto on systems with architectures narrower than 32 bits");
                 context
                     .mls_init(
                         ClientIdentifier::Basic(client_id.clone().into()),
@@ -212,16 +213,13 @@ impl CoreCryptoContext {
                         credential_type.into(),
                         amount_requested as usize,
                     )
-                    .await?
+                    .await
+                    .map_err(RecursiveError::mls_client("getting or creating client keypackage"))?
                     .into_iter()
-                    .map(|kpb| {
-                        kpb.tls_serialize_detached()
-                            .map_err(MlsError::from)
-                            .map_err(CryptoError::from)
-                            .map(Into::into)
-                    })
-                    .collect::<CryptoResult<Vec<Vec<u8>>>>()
-                    .map_err(CoreCryptoError::from)?;
+                    .map(|kpb| kpb.tls_serialize_detached())
+                    .collect::<Result<Vec<Vec<u8>>, _>>()
+                    .map_err(core_crypto::mls::conversation::Error::tls_serialize("keypackages"))
+                    .map_err(RecursiveError::mls_conversation("serializing client keypackages"))?;
 
                 let js_kps = js_sys::Array::from_iter(
                     kps.into_iter()
@@ -245,7 +243,7 @@ impl CoreCryptoContext {
                 let count = context
                     .client_valid_key_packages_count(ciphersuite.into(), credential_type.into())
                     .await
-                    .map_err(CoreCryptoError::from)?;
+                    .map_err(RecursiveError::mls_client("counting valid client keypackages"))?;
                 WasmCryptoResult::Ok(count.into())
             }
             .err_into(),
@@ -269,7 +267,7 @@ impl CoreCryptoContext {
                 context
                     .delete_keypackages(&refs[..])
                     .await
-                    .map_err(CoreCryptoError::from)?;
+                    .map_err(RecursiveError::mls_client("deleting keypackages"))?;
                 WasmCryptoResult::Ok(JsValue::UNDEFINED)
             }
             .err_into(),
@@ -564,9 +562,8 @@ impl CoreCryptoContext {
         future_to_promise(
             async move {
                 let kp = KeyPackageIn::tls_deserialize(&mut keypackage.as_ref())
-                    .map_err(MlsError::from)
-                    .map_err(CryptoError::from)
-                    .map_err(CoreCryptoError::from)?;
+                    .map_err(core_crypto::mls::conversation::Error::tls_deserialize("keypackage"))
+                    .map_err(RecursiveError::mls_conversation("creating new add proposal"))?;
 
                 let proposal: ProposalBundle = context
                     .new_add_proposal(&conversation_id.to_vec(), kp.into())
@@ -640,9 +637,8 @@ impl CoreCryptoContext {
                     .map_err(CoreCryptoError::from)?
                     .to_bytes()
                     .map(|bytes| Uint8Array::from(bytes.as_slice()))
-                    .map_err(MlsError::from)
-                    .map_err(CryptoError::from)
-                    .map_err(CoreCryptoError::from)?;
+                    .map_err(core_crypto::MlsError::wrap("creating new external add proposal"))
+                    .map_err(core_crypto::Error::Mls)?;
 
                 WasmCryptoResult::Ok(proposal_bytes.into())
             }
@@ -664,9 +660,10 @@ impl CoreCryptoContext {
         future_to_promise(
             async move {
                 let group_info = VerifiableGroupInfo::tls_deserialize(&mut group_info.as_ref())
-                    .map_err(MlsError::from)
-                    .map_err(CryptoError::from)
-                    .map_err(CoreCryptoError::from)?;
+                    .map_err(core_crypto::mls::conversation::Error::tls_deserialize(
+                        "verifiable group info",
+                    ))
+                    .map_err(RecursiveError::mls_conversation("joining by external commit"))?;
 
                 let result: ConversationInitBundle = context
                     .join_by_external_commit(group_info, custom_configuration.into(), credential_type.into())

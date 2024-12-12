@@ -28,7 +28,7 @@ pub use keystore::KeystoreError;
 pub use leaf::LeafError;
 pub use mls::{MlsError, MlsErrorKind};
 pub use proteus::{ProteusError, ProteusErrorKind};
-pub use recursive::RecursiveError;
+pub use recursive::{RecursiveError, ToRecursiveError};
 pub(crate) use wrapper::WrappedContextualError;
 
 /// A module-specific [Result][core::result::Result] type with a default error variant.
@@ -58,4 +58,40 @@ pub enum Error {
     /// A crate-internal operation failed
     #[error(transparent)]
     Recursive(#[from] RecursiveError),
+}
+
+/// Produce the error message from the innermost wrapped error.
+///
+/// We produce arbitrarily nested errors which are very helpful
+/// at capturing relevant context, and very bad at surfacing the
+/// root error cause in a default `.to_string()` call.
+///
+/// This trait, automatically implemented for all standard errors,
+/// rectifies this problem.
+pub trait InnermostErrorMessage {
+    /// Produce the error message from the innermost wrapped error.
+    fn innermost_error_message(&self) -> String;
+}
+
+impl<E: std::error::Error> InnermostErrorMessage for E {
+    fn innermost_error_message(&self) -> String {
+        let mut err: &dyn std::error::Error = self;
+        while let Some(source) = err.source() {
+            err = source;
+        }
+        err.to_string()
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn can_unpack_wrapped_error() {
+        let inner = Error::InvalidContext;
+        let outer = RecursiveError::root("wrapping the inner for test purposes")(inner);
+        let message = outer.innermost_error_message();
+        assert_eq!(message, Error::InvalidContext.to_string());
+    }
 }
