@@ -109,7 +109,7 @@ impl EmulatedMlsClient for CoreCryptoNativeClient {
         Ok(kp.tls_serialize_detached()?)
     }
 
-    async fn add_client(&self, conversation_id: &[u8], kp: &[u8]) -> Result<Vec<u8>> {
+    async fn add_client(&self, conversation_id: &[u8], kp: &[u8]) -> Result<()> {
         let conversation_id = conversation_id.to_vec();
         let transaction = self.cc.new_transaction().await?;
         if !transaction.conversation_exists(&conversation_id).await? {
@@ -125,22 +125,22 @@ impl EmulatedMlsClient for CoreCryptoNativeClient {
         use tls_codec::Deserialize as _;
 
         let kp = KeyPackageIn::tls_deserialize(&mut &kp[..])?;
-        let welcome = transaction
+        transaction
             .add_members_to_conversation(&conversation_id, vec![kp])
             .await?;
         transaction.finish().await?;
 
-        Ok(welcome.welcome.tls_serialize_detached()?)
+        Ok(())
     }
 
-    async fn kick_client(&self, conversation_id: &[u8], client_id: &[u8]) -> Result<Vec<u8>> {
+    async fn kick_client(&self, conversation_id: &[u8], client_id: &[u8]) -> Result<()> {
         let transaction = self.cc.new_transaction().await?;
-        let commit = transaction
+        transaction
             .remove_members_from_conversation(&conversation_id.to_vec(), &[client_id.to_vec().into()])
             .await?;
         transaction.finish().await?;
 
-        Ok(commit.commit.to_bytes()?)
+        Ok(())
     }
 
     async fn process_welcome(&self, welcome: &[u8]) -> Result<Vec<u8>> {
