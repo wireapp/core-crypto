@@ -1,17 +1,7 @@
-use std::collections::HashMap;
-
-use openmls::prelude::{KeyPackage, KeyPackageRef, MlsCredentialType as OpenMlsCredential};
-use openmls_traits::OpenMlsCryptoProvider;
-
-use core_crypto_keystore::connection::FetchFromDatabase;
-use core_crypto_keystore::{entities::MlsKeyPackage, CryptoKeystoreMls};
-use mls_crypto_provider::MlsCryptoProvider;
-
-use crate::context::CentralContext;
-use crate::e2e_identity::init_certificates::NewCrlDistributionPoint;
 #[cfg(not(target_family = "wasm"))]
 use crate::e2e_identity::refresh_token::RefreshToken;
 use crate::{
+    context::CentralContext,
     mls::credential::{ext::CredentialExt, x509::CertificatePrivateKey, CredentialBundle},
     prelude::{
         CertificateBundle, Client, ConversationId, CryptoError, CryptoResult, E2eIdentityError, E2eiEnrollment,
@@ -19,13 +9,20 @@ use crate::{
     },
     MlsError,
 };
+use core_crypto_keystore::{connection::FetchFromDatabase, entities::MlsKeyPackage, CryptoKeystoreMls};
+use mls_crypto_provider::MlsCryptoProvider;
+use openmls::prelude::{KeyPackage, KeyPackageRef};
+use openmls_traits::OpenMlsCryptoProvider;
+use std::collections::HashMap;
+
+use super::init_certificates::NewCrlDistributionPoint;
 
 impl CentralContext {
     /// Generates an E2EI enrollment instance for a "regular" client (with a Basic credential)
     /// willing to migrate to E2EI. As a consequence, this method does not support changing the
     /// ClientId which should remain the same as the Basic one.
-    /// Once the enrollment is finished, use the instance in [CentralContext::e2ei_rotate_all] to do
-    /// the rotation.
+    /// Once the enrollment is finished, use the instance in [CentralContext::save_x509_credential]
+    /// to save the new credential.
     pub async fn e2ei_new_activation_enrollment(
         &self,
         display_name: String,
@@ -64,7 +61,7 @@ impl CentralContext {
     /// having to change/rotate their credential, either because the former one is expired or it
     /// has been revoked. As a consequence, this method does not support changing neither ClientId which
     /// should remain the same as the previous one. It lets you change the DisplayName or the handle
-    /// if you need to. Once the enrollment is finished, use the instance in [CentralContext::e2ei_rotate_all] to do the rotation.
+    /// if you need to. Once the enrollment is finished, use the instance in [CentralContext::save_x509_credential] to do the rotation.
     pub async fn e2ei_new_rotate_enrollment(
         &self,
         display_name: Option<String>,
@@ -106,15 +103,22 @@ impl CentralContext {
         )
     }
 
-    /// Creates a commit in all local conversations for changing the credential. Requires first
+    /// Saves a new X509 credential. Requires first
     /// having enrolled a new X509 certificate with either [CentralContext::e2ei_new_activation_enrollment]
-    /// or [CentralContext::e2ei_new_rotate_enrollment]
-    pub async fn e2ei_rotate_all(
+    /// or [CentralContext::e2ei_new_rotate_enrollment].
+    ///
+    /// # Expected actions to perform after this function (in this order)
+    /// 1. Rotate credentials for each conversation in [Self::e2ei_rotate]
+    /// 2. Generate new key packages with [Client::generate_new_keypackages]
+    /// 3. Use these to replace the stale ones the in the backend
+    /// 4. Delete the stale ones locally using [Self::retain_only_key_packages_of_most_recent_x509_credentials]
+    ///     * This is the last step because you might still need the old key packages to avoid
+    ///       an orphan welcome message
+    pub async fn save_x509_credential(
         &self,
         enrollment: &mut E2eiEnrollment,
         certificate_chain: String,
-        new_key_packages_count: usize,
-    ) -> CryptoResult<MlsRotateBundle> {
+    ) -> CryptoResult<NewCrlDistributionPoint> {
         let sk = enrollment.get_sign_key_for_mls()?;
         let cs = enrollment.ciphersuite;
         let certificate_chain = enrollment
@@ -143,7 +147,7 @@ impl CentralContext {
         };
         let client = &self.mls_client().await?;
 
-        let new_cb = client
+        client
             .save_new_x509_credential_bundle(
                 &self.mls_provider().await?.keystore(),
                 cs.signature_algorithm(),
@@ -151,26 +155,24 @@ impl CentralContext {
             )
             .await?;
 
-        let commits = self.e2ei_update_all(client, &new_cb).await?;
-
-        let key_package_refs_to_remove = self.find_key_packages_to_remove(&new_cb).await?;
-
-        let new_key_packages = client
-            .generate_new_keypackages(&self.mls_provider().await?, cs, &new_cb, new_key_packages_count)
-            .await?;
-
-        Ok(MlsRotateBundle {
-            commits,
-            new_key_packages,
-            key_package_refs_to_remove,
-            crl_new_distribution_points,
-        })
+        Ok(crl_new_distribution_points)
     }
 
-    async fn find_key_packages_to_remove(&self, cb: &CredentialBundle) -> CryptoResult<Vec<KeyPackageRef>> {
-        let transaction = self.keystore().await?;
-        let nb_kp = transaction.count::<MlsKeyPackage>().await?;
-        let kps: Vec<KeyPackage> = transaction.mls_fetch_keypackages(nb_kp as u32).await?;
+    /// Deletes all key packages whose leaf node's credential does not match the most recently
+    /// saved x509 credential with the provided signature scheme.
+    pub async fn retain_only_key_packages_of_most_recent_x509_credentials(
+        &self,
+        cipher_suite: MlsCiphersuite,
+    ) -> CryptoResult<()> {
+        let signature_scheme = cipher_suite.signature_algorithm();
+        let keystore = self.keystore().await?;
+        let nb_kp = keystore.count::<MlsKeyPackage>().await?;
+        let kps: Vec<KeyPackage> = keystore.mls_fetch_keypackages(nb_kp as u32).await?;
+        let client = self.mls_client().await?;
+
+        let cb = client
+            .find_most_recent_credential_bundle(signature_scheme, MlsCredentialType::X509)
+            .await?;
 
         let mut kp_refs = vec![];
 
@@ -178,56 +180,26 @@ impl CentralContext {
         for kp in kps {
             let kp_cred = kp.leaf_node().credential().mls_credential();
             let local_cred = cb.credential().mls_credential();
-            let mut push_kpr = || {
+            if kp_cred != local_cred {
                 let kpr = kp.hash_ref(provider.crypto()).map_err(MlsError::from)?;
                 kp_refs.push(kpr);
-                CryptoResult::Ok(())
             };
-
-            match (kp_cred, local_cred) {
-                (_, OpenMlsCredential::Basic(_)) => return Err(CryptoError::ImplementationError),
-                (OpenMlsCredential::X509(kp_cert), OpenMlsCredential::X509(local_cert)) if kp_cert != local_cert => {
-                    push_kpr()?
-                }
-                (OpenMlsCredential::Basic(_), _) => push_kpr()?,
-                _ => {}
-            }
         }
-        Ok(kp_refs)
+        self.delete_keypackages(&kp_refs).await?;
+        Ok(())
     }
 
-    async fn e2ei_update_all(
-        &self,
-        client: &Client,
-        cb: &CredentialBundle,
-    ) -> CryptoResult<HashMap<ConversationId, MlsCommitBundle>> {
-        let all_conversations = self.get_all_conversations().await?;
-
-        let mut commits = HashMap::with_capacity(all_conversations.len());
-        for conv in all_conversations {
-            let mut conv = conv.write().await;
-            let id = conv.id().clone();
-            let commit = conv.e2ei_rotate(&self.mls_provider().await?, client, Some(cb)).await?;
-            let _ = commits.insert(id, commit);
-        }
-        Ok(commits)
-    }
-
-    /// Creates a commit in a conversation for changing the credential. Requires first
+    /// Send a commit in a conversation for changing the credential. Requires first
     /// having enrolled a new X509 certificate with either [CentralContext::e2ei_new_activation_enrollment]
-    /// or [CentralContext::e2ei_new_rotate_enrollment]
-    pub async fn e2ei_rotate(
-        &self,
-        id: &crate::prelude::ConversationId,
-        cb: Option<&CredentialBundle>,
-    ) -> CryptoResult<MlsCommitBundle> {
+    /// or [CentralContext::e2ei_new_rotate_enrollment] and having saved it with [Self::save_x509_credential].
+    pub async fn e2ei_rotate(&self, id: &ConversationId, cb: Option<&CredentialBundle>) -> CryptoResult<()> {
         let client = &self.mls_client().await?;
-        self.get_conversation(id)
-            .await?
-            .write()
-            .await
+        let conversation = self.get_conversation(id).await?;
+        let mut conversation_guard = conversation.write().await;
+        let commit = conversation_guard
             .e2ei_rotate(&self.mls_provider().await?, client, cb)
-            .await
+            .await?;
+        self.send_and_merge_commit(&mut conversation_guard, commit).await
     }
 }
 
@@ -434,9 +406,23 @@ pub(crate) mod tests {
                         .await
                         .unwrap();
 
-                        let rotate_bundle = alice_central
+                        alice_central
                             .context
-                            .e2ei_rotate_all(&mut enrollment, cert, NB_KEY_PACKAGE)
+                            .save_x509_credential(&mut enrollment, cert)
+                            .await
+                            .unwrap();
+
+                        let cb = alice_central
+                            .find_most_recent_credential_bundle(case.signature_scheme(), MlsCredentialType::X509)
+                            .await
+                            .unwrap();
+
+                        let result = alice_central
+                            .create_key_packages_and_update_credential_in_all_conversations(
+                                &cb,
+                                enrollment.ciphersuite,
+                                NB_KEY_PACKAGE,
+                            )
                             .await
                             .unwrap();
 
@@ -447,7 +433,7 @@ pub(crate) mod tests {
                         // and a new Credential has been persisted in the keystore
                         assert_eq!(after_rotate.credential - before_rotate.credential, 1);
 
-                        for (id, commit) in rotate_bundle.commits.into_iter() {
+                        for (id, commit) in result.conversation_ids_and_commits.into_iter() {
                             let decrypted = bob_central
                                 .context
                                 .decrypt_message(&id, commit.commit.to_bytes().unwrap())
@@ -455,14 +441,13 @@ pub(crate) mod tests {
                                 .unwrap();
                             alice_central.verify_sender_identity(&case, &decrypted).await;
 
-                            alice_central.context.commit_accepted(&id).await.unwrap();
                             alice_central
                                 .verify_local_credential_rotated(&id, NEW_HANDLE, NEW_DISPLAY_NAME)
                                 .await;
                         }
 
                         // Verify that all the new KeyPackages contain the new identity
-                        let new_credentials = rotate_bundle
+                        let new_credentials = result
                             .new_key_packages
                             .iter()
                             .map(|kp| kp.leaf_node().to_credential_with_key());
@@ -508,7 +493,7 @@ pub(crate) mod tests {
                         // This should have the consequence to purge the previous credential material as well.
                         alice_central
                             .context
-                            .delete_keypackages(&rotate_bundle.key_package_refs_to_remove[..])
+                            .retain_only_key_packages_of_most_recent_x509_credentials(case.ciphersuite())
                             .await
                             .unwrap();
 
@@ -605,11 +590,9 @@ pub(crate) mod tests {
 
                     alice_central
                         .context
-                        .e2ei_rotate_all(&mut enrollment, cert, 10)
+                        .save_x509_credential(&mut enrollment, cert)
                         .await
                         .unwrap();
-
-                    alice_central.context.commit_accepted(&id).await.unwrap();
 
                     // So alice has a new Credential as expected
                     let cb = alice_central
@@ -757,13 +740,14 @@ pub(crate) mod tests {
                         .await
                         .unwrap();
 
-                        let rotate_bundle = alice_central
+                        alice_central
                             .context
-                            .e2ei_rotate_all(&mut enrollment, cert, 10)
+                            .save_x509_credential(&mut enrollment, cert)
                             .await
                             .unwrap();
+                        alice_central.context.e2ei_rotate(&id, None).await.unwrap();
 
-                        let commit = &rotate_bundle.commits.get(&id).unwrap().commit;
+                        let commit = alice_central.mls_transport.latest_commit().await;
 
                         let decrypted = bob_central
                             .context
@@ -772,7 +756,6 @@ pub(crate) mod tests {
                             .unwrap();
                         alice_central.verify_sender_identity(&case, &decrypted).await;
 
-                        alice_central.context.commit_accepted(&id).await.unwrap();
                         alice_central
                             .verify_local_credential_rotated(&id, ALICE_NEW_HANDLE, ALICE_NEW_DISPLAY_NAME)
                             .await;
@@ -823,13 +806,15 @@ pub(crate) mod tests {
                         .await
                         .unwrap();
 
-                        let rotate_bundle = bob_central
+                        bob_central
                             .context
-                            .e2ei_rotate_all(&mut enrollment, cert, 10)
+                            .save_x509_credential(&mut enrollment, cert)
                             .await
                             .unwrap();
 
-                        let commit = &rotate_bundle.commits.get(&id).unwrap().commit;
+                        bob_central.context.e2ei_rotate(&id, None).await.unwrap();
+
+                        let commit = bob_central.mls_transport.latest_commit().await;
 
                         let decrypted = alice_central
                             .context
@@ -838,7 +823,6 @@ pub(crate) mod tests {
                             .unwrap();
                         bob_central.verify_sender_identity(&case, &decrypted).await;
 
-                        bob_central.context.commit_accepted(&id).await.unwrap();
                         bob_central
                             .verify_local_credential_rotated(&id, BOB_NEW_HANDLE, BOB_NEW_DISPLAY_NAME)
                             .await;
@@ -882,7 +866,7 @@ pub(crate) mod tests {
                         let alice_cid = alice_central.get_client_id().await;
                         let (new_handle, new_display_name) = ("new_alice_wire", "New Alice Smith");
                         let cb = alice_central
-                            .rotate_credential(&case, new_handle, new_display_name, alice_og_cert, intermediate_ca)
+                            .save_new_credential(&case, new_handle, new_display_name, alice_og_cert, intermediate_ca)
                             .await;
 
                         // Verify old identity is still there in the MLS group
@@ -902,19 +886,19 @@ pub(crate) mod tests {
                         );
 
                         // Alice issues an Update commit to replace her current identity
-                        let commit = alice_central.context.e2ei_rotate(&id, Some(&cb)).await.unwrap();
+                        alice_central.context.e2ei_rotate(&id, Some(&cb)).await.unwrap();
+                        let commit = alice_central.mls_transport.latest_commit().await;
 
                         // Bob decrypts the commit...
                         let decrypted = bob_central
                             .context
-                            .decrypt_message(&id, commit.commit.to_bytes().unwrap())
+                            .decrypt_message(&id, commit.to_bytes().unwrap())
                             .await
                             .unwrap();
                         // ...and verifies that now Alice is represented with her new identity
                         alice_central.verify_sender_identity(&case, &decrypted).await;
 
                         // Finally, Alice merges her commit and verifies her new identity gets applied
-                        alice_central.context.commit_accepted(&id).await.unwrap();
                         alice_central
                             .verify_local_credential_rotated(&id, new_handle, new_display_name)
                             .await;
@@ -935,95 +919,91 @@ pub(crate) mod tests {
         #[apply(all_cred_cipher)]
         #[wasm_bindgen_test]
         pub async fn rotate_should_be_renewable_when_commit_denied(case: TestCase) {
-            if case.is_x509() {
-                run_test_with_client_ids(case.clone(), ["alice", "bob"], move |[alice_central, bob_central]| {
-                    Box::pin(async move {
-                        let id = conversation_id();
-                        alice_central
-                            .context
-                            .new_conversation(&id, case.credential_type, case.cfg.clone())
-                            .await
-                            .unwrap();
-
-                        alice_central.invite_all(&case, &id, [&bob_central]).await.unwrap();
-
-                        let init_count = alice_central.context.count_entities().await;
-
-                        let x509_test_chain = alice_central.x509_test_chain.as_ref().as_ref().unwrap();
-
-                        let intermediate_ca = x509_test_chain.find_local_intermediate_ca();
-
-                        // In this case Alice will try to rotate her credential but her commit will be denied
-                        // by the backend (because another commit from Bob had precedence)
-
-                        // Alice creates a new Credential, updating her handle/display_name
-                        let (new_handle, new_display_name) = ("new_alice_wire", "New Alice Smith");
-                        let cb = alice_central
-                            .rotate_credential(
-                                &case,
-                                new_handle,
-                                new_display_name,
-                                x509_test_chain.find_certificate_for_actor("alice").unwrap(),
-                                intermediate_ca,
-                            )
-                            .await;
-
-                        // Alice issues an Update commit to replace her current identity
-                        let _rotate_commit = alice_central.context.e2ei_rotate(&id, Some(&cb)).await.unwrap();
-
-                        // Meanwhile, Bob creates a simple commit
-                        let bob_commit = bob_central.context.update_keying_material(&id).await.unwrap();
-                        // accepted by the backend
-                        bob_central.context.commit_accepted(&id).await.unwrap();
-
-                        // Alice decrypts the commit...
-                        let decrypted = alice_central
-                            .context
-                            .decrypt_message(&id, bob_commit.commit.to_bytes().unwrap())
-                            .await
-                            .unwrap();
-
-                        // Alice's previous rotate commit should have been renewed so that she can re-commit it
-                        assert_eq!(decrypted.proposals.len(), 1);
-                        let renewed_proposal = decrypted.proposals.first().unwrap();
-                        bob_central
-                            .context
-                            .decrypt_message(&id, renewed_proposal.proposal.to_bytes().unwrap())
-                            .await
-                            .unwrap();
-
-                        let rotate_commit = alice_central
-                            .context
-                            .commit_pending_proposals(&id)
-                            .await
-                            .unwrap()
-                            .unwrap();
-
-                        // Finally, Alice merges her commit and verifies her new identity gets applied
-                        alice_central.context.commit_accepted(&id).await.unwrap();
-                        alice_central
-                            .verify_local_credential_rotated(&id, new_handle, new_display_name)
-                            .await;
-
-                        // Bob verifies that now Alice is represented with her new identity
-                        let decrypted = bob_central
-                            .context
-                            .decrypt_message(&id, rotate_commit.commit.to_bytes().unwrap())
-                            .await
-                            .unwrap();
-                        alice_central.verify_sender_identity(&case, &decrypted).await;
-
-                        let final_count = alice_central.context.count_entities().await;
-                        assert_eq!(init_count.encryption_keypair, final_count.encryption_keypair);
-                        // TODO: there is no efficient way to clean a credential when alice merges her pending commit. Tracking issue: WPB-9594
-                        // One option would be to fetch all conversations and see if Alice is never represented with the said Credential
-                        // but let's be honest this is not very efficient.
-                        // The other option would be to get rid of having an implicit KeyPackage for the creator of a conversation
-                        // assert_eq!(init_count.credential, final_count.credential);
-                    })
-                })
-                .await
+            if !case.is_x509() {
+                return;
             }
+            run_test_with_client_ids(case.clone(), ["alice", "bob"], move |[alice_central, bob_central]| {
+                Box::pin(async move {
+                    let id = conversation_id();
+                    alice_central
+                        .context
+                        .new_conversation(&id, case.credential_type, case.cfg.clone())
+                        .await
+                        .unwrap();
+
+                    alice_central.invite_all(&case, &id, [&bob_central]).await.unwrap();
+
+                    let init_count = alice_central.context.count_entities().await;
+
+                    let x509_test_chain = alice_central.x509_test_chain.as_ref().as_ref().unwrap();
+
+                    let intermediate_ca = x509_test_chain.find_local_intermediate_ca();
+
+                    // In this case Alice will try to rotate her credential but her commit will be denied
+                    // by the backend (because another commit from Bob had precedence)
+
+                    // Alice creates a new Credential, updating her handle/display_name
+                    let (new_handle, new_display_name) = ("new_alice_wire", "New Alice Smith");
+                    let cb = alice_central
+                        .save_new_credential(
+                            &case,
+                            new_handle,
+                            new_display_name,
+                            x509_test_chain.find_certificate_for_actor("alice").unwrap(),
+                            intermediate_ca,
+                        )
+                        .await;
+
+                    // Alice issues an Update commit to replace her current identity
+                    let _rotate_commit = alice_central.create_unmerged_e2ei_rotate_commit(&id, &cb).await;
+
+                    // Meanwhile, Bob creates a simple commit
+                    bob_central.context.update_keying_material(&id).await.unwrap();
+                    // accepted by the backend
+                    let bob_commit = bob_central.mls_transport.latest_commit().await;
+
+                    // Alice decrypts the commit...
+                    let decrypted = alice_central
+                        .context
+                        .decrypt_message(&id, bob_commit.to_bytes().unwrap())
+                        .await
+                        .unwrap();
+
+                    // Alice's previous rotate commit should have been renewed so that she can re-commit it
+                    assert_eq!(decrypted.proposals.len(), 1);
+                    let renewed_proposal = decrypted.proposals.first().unwrap();
+                    bob_central
+                        .context
+                        .decrypt_message(&id, renewed_proposal.proposal.to_bytes().unwrap())
+                        .await
+                        .unwrap();
+
+                    alice_central.context.commit_pending_proposals(&id).await.unwrap();
+
+                    // Finally, Alice merges her commit and verifies her new identity gets applied
+                    alice_central
+                        .verify_local_credential_rotated(&id, new_handle, new_display_name)
+                        .await;
+
+                    let rotate_commit = alice_central.mls_transport.latest_commit().await;
+                    // Bob verifies that now Alice is represented with her new identity
+                    let decrypted = bob_central
+                        .context
+                        .decrypt_message(&id, rotate_commit.to_bytes().unwrap())
+                        .await
+                        .unwrap();
+                    alice_central.verify_sender_identity(&case, &decrypted).await;
+
+                    let final_count = alice_central.context.count_entities().await;
+                    assert_eq!(init_count.encryption_keypair, final_count.encryption_keypair);
+                    // TODO: there is no efficient way to clean a credential when alice merges her pending commit. Tracking issue: WPB-9594
+                    // One option would be to fetch all conversations and see if Alice is never represented with the said Credential
+                    // but let's be honest this is not very efficient.
+                    // The other option would be to get rid of having an implicit KeyPackage for the creator of a conversation
+                    // assert_eq!(init_count.credential, final_count.credential);
+                })
+            })
+            .await
         }
 
         #[apply(all_cred_cipher)]
@@ -1054,7 +1034,7 @@ pub(crate) mod tests {
                         let alice_cid = alice_central.get_client_id().await;
                         let (new_handle, new_display_name) = ("new_alice_wire", "New Alice Smith");
                         alice_central
-                            .rotate_credential(&case, new_handle, new_display_name, alice_og_cert, intermediate_ca)
+                            .save_new_credential(&case, new_handle, new_display_name, alice_og_cert, intermediate_ca)
                             .await;
 
                         // Verify old identity is a basic identity in the MLS group
@@ -1068,19 +1048,19 @@ pub(crate) mod tests {
                         assert_eq!(alice_old_identity.x509_identity, None);
 
                         // Alice issues an Update commit to replace her current identity
-                        let commit = alice_central.context.e2ei_rotate(&id, None).await.unwrap();
+                        alice_central.context.e2ei_rotate(&id, None).await.unwrap();
+                        let commit = alice_central.mls_transport.latest_commit().await;
 
                         // Bob decrypts the commit...
                         let decrypted = bob_central
                             .context
-                            .decrypt_message(&id, commit.commit.to_bytes().unwrap())
+                            .decrypt_message(&id, commit.to_bytes().unwrap())
                             .await
                             .unwrap();
                         // ...and verifies that now Alice is represented with her new identity
                         alice_central.verify_sender_identity(&case, &decrypted).await;
 
                         // Finally, Alice merges her commit and verifies her new identity gets applied
-                        alice_central.context.commit_accepted(&id).await.unwrap();
                         alice_central
                             .verify_local_credential_rotated(&id, new_handle, new_display_name)
                             .await;

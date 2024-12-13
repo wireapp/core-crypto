@@ -381,8 +381,8 @@ mod tests {
                     .find_local_intermediate_ca();
                 let cert = CertificateBundle::new_with_default_values(intermediate_ca, Some(expiration_time));
                 let cb = Client::new_x509_credential_bundle(cert.clone()).unwrap();
-                let commit = alice_central.context.e2ei_rotate(&id, Some(&cb)).await.unwrap().commit;
-                alice_central.context.commit_accepted(&id).await.unwrap();
+                alice_central.context.e2ei_rotate(&id, Some(&cb)).await.unwrap();
+                let commit = alice_central.mls_transport.latest_commit().await;
                 bob_central
                     .context
                     .decrypt_message(&id, commit.to_bytes().unwrap())
@@ -453,7 +453,6 @@ mod tests {
                         CertificateBundle::from_certificate_and_issuer(&alice_cert.certificate, alice_intermediate_ca);
                     let cb = Client::new_x509_credential_bundle(cert_bundle.clone()).unwrap();
                     alice_central.context.e2ei_rotate(&id, Some(&cb)).await.unwrap();
-                    alice_central.context.commit_accepted(&id).await.unwrap();
 
                     let alice_client = alice_central.client().await;
                     let alice_provider = alice_central.context.mls_provider().await.unwrap();
