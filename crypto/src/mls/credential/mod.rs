@@ -303,7 +303,7 @@ mod tests {
             let mut x509_test_chain = X509TestChain::init_empty(case.signature_scheme());
 
             let expiration_time = core::time::Duration::from_secs(14);
-            let start = fluvio_wasm_timer::Instant::now();
+            let start = web_time::Instant::now();
 
             let (alice_identifier, _) = x509_test_chain.issue_simple_certificate_bundle("alice", None);
             let (bob_identifier, _) = x509_test_chain.issue_simple_certificate_bundle("bob", Some(expiration_time));
@@ -480,8 +480,8 @@ mod tests {
     // }
 
     pub(crate) fn now_std() -> std::time::Duration {
-        let now = fluvio_wasm_timer::SystemTime::now();
-        now.duration_since(fluvio_wasm_timer::UNIX_EPOCH).unwrap()
+        let now = web_time::SystemTime::now();
+        now.duration_since(web_time::UNIX_EPOCH).unwrap()
     }
 
     async fn try_talk(

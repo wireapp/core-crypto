@@ -480,8 +480,8 @@ impl PkiKeypair {
         revoked_cert_serial_numbers: Vec<Vec<u8>>,
     ) -> MlsProviderResult<x509_cert::crl::CertificateList> {
         let signature_algorithm = self.signature_algorithm();
-        let now = fluvio_wasm_timer::SystemTime::now()
-            .duration_since(fluvio_wasm_timer::UNIX_EPOCH)
+        let now = web_time::SystemTime::now()
+            .duration_since(web_time::UNIX_EPOCH)
             .map_err(|_| MlsProviderError::CertificateGenerationError)?;
         let now = x509_cert::der::asn1::GeneralizedTime::from_unix_duration(now)
             .map_err(|_| MlsProviderError::CertificateGenerationError)?;
@@ -632,8 +632,8 @@ impl PkiKeypair {
         let validity_start = if let Some(validity_start) = args.validity_start {
             validity_start
         } else {
-            fluvio_wasm_timer::SystemTime::now()
-                .duration_since(fluvio_wasm_timer::UNIX_EPOCH)
+            web_time::SystemTime::now()
+                .duration_since(web_time::UNIX_EPOCH)
                 .map_err(|_| MlsProviderError::CertificateGenerationError)?
         } - std::time::Duration::from_secs(1); // to prevent time clipping
 
