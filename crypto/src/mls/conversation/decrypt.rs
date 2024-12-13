@@ -128,17 +128,11 @@ impl MlsConversation {
     ) -> Result<MlsConversationDecryptMessage> {
         let message = match self.parse_message(backend, message.clone()).await {
             // Handles the case where we receive our own commits.
-            Err(err)
-                if matches!(
-                    err,
-                    Error::Mls(crate::MlsError {
-                        source: crate::MlsErrorKind::MlsMessageError(ProcessMessageError::InvalidCommit(
-                            StageCommitError::OwnCommit
-                        )),
-                        ..
-                    })
-                ) =>
-            {
+            Err(Error::Mls(crate::MlsError {
+                source:
+                    crate::MlsErrorKind::MlsMessageError(ProcessMessageError::InvalidCommit(StageCommitError::OwnCommit)),
+                ..
+            })) => {
                 let ct = self.extract_confirmation_tag_from_own_commit(&message)?;
                 return self.handle_own_commit(backend, ct).await;
             }

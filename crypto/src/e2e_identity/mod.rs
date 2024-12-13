@@ -592,17 +592,16 @@ pub(crate) mod tests {
     use serde_json::json;
     use wasm_bindgen_test::*;
 
-    #[cfg(not(target_family = "wasm"))]
-    use crate::e2e_identity::refresh_token::RefreshToken;
-    use crate::{context::CentralContext, RecursiveError};
     use crate::{
-        e2e_identity::{
-            error::{Error, Result},
-            id::QualifiedE2eiClientId,
-            tests::x509::X509TestChain,
-        },
+        context::CentralContext,
+        e2e_identity::{id::QualifiedE2eiClientId, tests::x509::X509TestChain, Result},
         prelude::*,
         test_utils::{context::TEAM, *},
+    };
+    #[cfg(not(target_family = "wasm"))]
+    use crate::{
+        e2e_identity::{refresh_token::RefreshToken, Error},
+        RecursiveError,
     };
 
     wasm_bindgen_test_configure!(run_in_browser);
