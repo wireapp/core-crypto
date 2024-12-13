@@ -381,7 +381,8 @@ mod tests {
                     .find_local_intermediate_ca();
                 let cert = CertificateBundle::new_with_default_values(intermediate_ca, Some(expiration_time));
                 let cb = Client::new_x509_credential_bundle(cert.clone()).unwrap();
-                let commit = alice_central.context.e2ei_rotate(&id, Some(&cb)).await.unwrap().commit;
+                alice_central.context.e2ei_rotate(&id, Some(&cb)).await.unwrap();
+                let commit = alice_central.mls_transport.latest_commit().await;
                 alice_central.context.commit_accepted(&id).await.unwrap();
                 bob_central
                     .context
