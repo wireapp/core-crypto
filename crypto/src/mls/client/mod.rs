@@ -29,7 +29,7 @@ use crate::{
     },
     KeystoreError, LeafError, MlsError, RecursiveError,
 };
-pub use error::{Error, Result};
+pub(crate) use error::{Error, Result};
 
 use async_lock::RwLock;
 use core_crypto_keystore::{connection::FetchFromDatabase, Connection, CryptoKeystoreError};
