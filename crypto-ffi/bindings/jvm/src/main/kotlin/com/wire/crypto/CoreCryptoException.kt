@@ -127,6 +127,8 @@ sealed class CoreCryptoException: kotlin.Exception() {
     class ClientException(
         override val message: String
     ) : CoreCryptoException()
+
+    class Other(override val message: String) : CoreCryptoException()
 }
 
 fun com.wire.crypto.uniffi.CoreCryptoException.lift() =
@@ -135,6 +137,7 @@ fun com.wire.crypto.uniffi.CoreCryptoException.lift() =
         is com.wire.crypto.uniffi.CoreCryptoException.E2eiException -> CoreCryptoException.E2eiException(this.v1)
         is com.wire.crypto.uniffi.CoreCryptoException.Mls -> CoreCryptoException.Mls(this.v1.lift())
         is com.wire.crypto.uniffi.CoreCryptoException.Proteus -> CoreCryptoException.Proteus(this.v1.lift())
+        is com.wire.crypto.uniffi.CoreCryptoException.Other -> CoreCryptoException.Other(this.v1)
     }
 
 fun com.wire.crypto.uniffi.MlsException.lift() =
