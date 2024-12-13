@@ -14,7 +14,7 @@ pub(crate) mod x509;
 
 use crate::prelude::{CertificateBundle, Client, ClientId};
 use crate::MlsError;
-pub use error::{Error, Result};
+pub(crate) use error::{Error, Result};
 
 #[derive(Debug)]
 pub struct CredentialBundle {
