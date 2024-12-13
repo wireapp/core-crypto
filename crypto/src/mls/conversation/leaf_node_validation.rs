@@ -5,7 +5,7 @@ mod tests {
     use openmls::prelude::Lifetime;
     use wasm_bindgen_test::*;
 
-    use crate::{mls, test_utils::*, MlsError, MlsErrorKind};
+    use crate::{test_utils::*, MlsErrorKind};
 
     use openmls::prelude::{AddMembersError, KeyPackageVerifyError};
 
@@ -46,9 +46,14 @@ mod tests {
                         }
 
                         let proposal_creation = alice_central.context.new_add_proposal(&id, invalid_kp).await;
+                        let error = proposal_creation.unwrap_err();
                         assert!(innermost_source_matches!(
-                            proposal_creation.unwrap_err(),
-                            KeyPackageVerifyError::InvalidLeafNode(_)
+                            error,
+                            MlsErrorKind::ProposeAddMemberError(
+                                openmls::prelude::ProposeAddMemberError::KeyPackageVerifyError(
+                                    KeyPackageVerifyError::InvalidLeafNode(_)
+                                )
+                            ),
                         ));
                         assert!(alice_central.pending_proposals(&id).await.is_empty());
 
@@ -72,14 +77,11 @@ mod tests {
                             .await;
 
                         let error = commit_creation.unwrap_err();
-                        assert!(matches!(
+                        assert!(innermost_source_matches!(
                             error,
-                            mls::conversation::Error::Mls(MlsError {
-                                source: MlsErrorKind::MlsAddMembersError(AddMembersError::KeyPackageVerifyError(
-                                    KeyPackageVerifyError::InvalidLeafNode(_)
-                                )),
-                                ..
-                            })
+                            MlsErrorKind::MlsAddMembersError(AddMembersError::KeyPackageVerifyError(
+                                KeyPackageVerifyError::InvalidLeafNode(_)
+                            )),
                         ));
                         assert!(alice_central.pending_proposals(&id).await.is_empty());
                         assert!(alice_central.pending_commit(&id).await.is_none());
