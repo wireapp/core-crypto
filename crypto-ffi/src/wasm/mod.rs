@@ -2377,7 +2377,7 @@ impl TryFrom<NewAcmeOrder> for core_crypto::prelude::E2eiNewAcmeOrder {
             .authorizations
             .0
             .into_iter()
-            .map(|a| String::from_utf8(a))
+            .map(String::from_utf8)
             .collect::<Result<Vec<String>, _>>()
             .map_err(|_| InternalError::Other("invalid authorization string: not utf8".into()))?;
         Ok(Self {

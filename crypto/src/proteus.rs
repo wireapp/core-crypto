@@ -1690,7 +1690,10 @@ mod tests {
                 let _ = wasm_bindgen_futures::JsFuture::from(run_cryptobox(alice)).await.unwrap();
                 let mut keystore = core_crypto_keystore::Connection::open_with_key(&format!("{CRYPTOBOX_JS_DBNAME}-imported"), "test").await.unwrap();
                 keystore.new_transaction().await.unwrap();
-                let Err(crate::Error::CryptoboxMigrationError(crate::CryptoboxMigrationError::ProvidedPathDoesNotExist(_))) = ProteusCentral::cryptobox_migrate(&keystore, "invalid path").await else {
+                let Err(crate::Error::CryptoboxMigration(crate::CryptoboxMigrationError{
+                    source: crate::CryptoboxMigrationErrorKind::ProvidedPathDoesNotExist(_),
+                    ..
+                })) = ProteusCentral::cryptobox_migrate(&keystore, "invalid path").await else {
                     panic!("ProteusCentral::cryptobox_migrate did not throw an error on invalid path");
                 };
 
