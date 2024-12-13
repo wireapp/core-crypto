@@ -43,6 +43,9 @@ pub enum Error {
     /// The proteus client has been called but has not been initialized yet
     #[error("Proteus client hasn't been initialized")]
     ProteusNotInitialized,
+    /// This item requires a feature that the core-crypto library was built without
+    #[error("This item requires a feature that the core-crypto library was built without: {0}")]
+    FeatureDisabled(&'static str),
     /// A key store operation failed
     #[error(transparent)]
     Keystore(#[from] KeystoreError),

@@ -131,8 +131,6 @@ impl From<core_crypto::MlsError> for MlsError {
 #[cfg(feature = "proteus")]
 #[derive(Debug, thiserror::Error, uniffi::Error)]
 pub enum ProteusError {
-    #[error("Proteus was not initialized")]
-    NotInitialized,
     #[error("The requested session was not found")]
     SessionNotFound,
     #[error("We already decrypted this message once")]
@@ -156,7 +154,6 @@ impl ProteusError {
 
     pub fn error_code(&self) -> u16 {
         match self {
-            Self::NotInitialized => 5, // OtherSystemError
             Self::SessionNotFound => 102,
             Self::RemoteIdentityChanged => 204,
             Self::DuplicateMessage => 209,
@@ -285,14 +282,14 @@ impl From<core_crypto::Error> for CoreCryptoError {
             }
         }
         match error {
-            #[cfg(feature = "proteus")]
-            core_crypto::Error::ProteusNotInitialized => Self::Proteus(ProteusError::NotInitialized),
+            core_crypto::Error::ProteusNotInitialized => Self::Other("proteus not initialized".to_string()),
             core_crypto::Error::Proteus(proteus) => Self::Other(proteus.innermost_error_message()),
             core_crypto::Error::Mls(mls) => Self::Mls(MlsError::from(mls)),
             core_crypto::Error::InvalidContext => Self::Other(error.to_string()),
             core_crypto::Error::Keystore(keystore_error) => Self::Other(keystore_error.innermost_error_message()),
             core_crypto::Error::CryptoboxMigration(cryptobox) => Self::Other(cryptobox.innermost_error_message()),
             core_crypto::Error::Recursive(recursive_error) => recursive_error.into(),
+            core_crypto::Error::FeatureDisabled(_) => Self::Other(error.to_string()),
         }
     }
 }
