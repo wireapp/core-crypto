@@ -23,7 +23,7 @@ macro_rules! proteus_impl {
                 #[allow(clippy::redundant_closure_call)]
                 $body
             } else {
-                return <$err_type>::Err(core_crypto::CryptoError::ProteusSupportNotEnabled("proteus".into()).into());
+                return <$err_type>::Err(core_crypto::Error::FeatureDisabled("proteus").into());
             }
         }
         }

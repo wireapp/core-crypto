@@ -783,7 +783,7 @@ impl ProteusCentral {
                 Self::cryptobox_migrate_impl(keystore, path).await?;
                 Ok(())
             } else {
-                Err(Error::ProteusSupportNotEnabled("cryptobox-migrate".into()))
+                Err(Error::FeatureDisabled("cryptobox-migrate"))
             }
         }
     }
