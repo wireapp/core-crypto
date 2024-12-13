@@ -21,8 +21,8 @@ use crate::{
     },
     CryptoKeystoreError, CryptoKeystoreResult, MissingKeyErrorKind,
 };
-use fluvio_wasm_timer::SystemTime;
 use wasm_bindgen::JsValue;
+use web_time::SystemTime;
 
 #[async_trait::async_trait(?Send)]
 impl EntityBase for MlsCredential {

@@ -371,7 +371,7 @@ mod tests {
                 alice_central.invite_all(&case, &id, [&bob_central]).await.unwrap();
 
                 let expiration_time = core::time::Duration::from_secs(14);
-                let start = fluvio_wasm_timer::Instant::now();
+                let start = web_time::Instant::now();
 
                 let intermediate_ca = alice_central
                     .x509_test_chain
@@ -437,7 +437,7 @@ mod tests {
                         .unwrap();
 
                     let expiration_time = core::time::Duration::from_secs(14);
-                    let start = fluvio_wasm_timer::Instant::now();
+                    let start = web_time::Instant::now();
                     let alice_test_chain = alice_central.x509_test_chain.as_ref().as_ref().unwrap();
 
                     let alice_intermediate_ca = alice_test_chain.find_local_intermediate_ca();

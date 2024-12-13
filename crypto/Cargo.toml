@@ -91,7 +91,7 @@ futures-util = { workspace = true, features = ["std", "alloc"] }
 proteus-traits = { workspace = true }
 async-trait.workspace = true
 wire-e2e-identity = { workspace = true, features = ["builder"] }
-fluvio-wasm-timer = "0.2"
+web-time = "1.1.0"
 time = { version = "0.3", features = ["wasm-bindgen"] }
 core-crypto-keystore = { workspace = true, features = ["dummy-entity"] }
 core-crypto-attributes = { workspace = true }

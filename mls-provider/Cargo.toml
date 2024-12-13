@@ -34,7 +34,7 @@ hkdf = "0.12"
 spki = { version = "0.7", features = ["pem", "fingerprint"] }
 x509-cert = { workspace = true, features = ["builder", "hazmat"] }
 wire-e2e-identity = { workspace = true }
-fluvio-wasm-timer = "0.2"
+web-time = "1.1.0"
 rand = { workspace = true, features = ["getrandom"] }
 getrandom = { version = "0.2", features = ["js"] }
 rand_core = "0.6"

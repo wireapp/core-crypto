@@ -25,7 +25,7 @@ mod tests {
                 move |[mut alice_central, bob_central]| {
                     Box::pin(async move {
                         let expiration_time = 14;
-                        let start = fluvio_wasm_timer::Instant::now();
+                        let start = web_time::Instant::now();
                         let id = conversation_id();
                         alice_central
                             .context
@@ -55,7 +55,7 @@ mod tests {
 
                         // should fail when creating Add commits
                         let expiration_time = 14;
-                        let start = fluvio_wasm_timer::Instant::now();
+                        let start = web_time::Instant::now();
 
                         let invalid_kp = bob_central.new_keypackage(&case, Lifetime::new(expiration_time)).await;
 
@@ -97,7 +97,7 @@ mod tests {
                 move |[alice_central, bob_central, charlie_central]| {
                     Box::pin(async move {
                         let expiration_time = 14;
-                        let start = fluvio_wasm_timer::Instant::now();
+                        let start = web_time::Instant::now();
                         let id = conversation_id();
                         alice_central
                             .context
@@ -150,7 +150,7 @@ mod tests {
                 move |[alice_central, bob_central, charlie_central]| {
                     Box::pin(async move {
                         let expiration_time = 14;
-                        let start = fluvio_wasm_timer::Instant::now();
+                        let start = web_time::Instant::now();
                         let id = conversation_id();
                         alice_central
                             .context
@@ -203,7 +203,7 @@ mod tests {
             run_test_with_client_ids(case.clone(), ["alice", "bob"], move |[alice_central, bob_central]| {
                 Box::pin(async move {
                     let expiration_time = 14;
-                    let start = fluvio_wasm_timer::Instant::now();
+                    let start = web_time::Instant::now();
                     let id = conversation_id();
                     alice_central
                         .context
