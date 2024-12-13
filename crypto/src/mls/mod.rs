@@ -64,21 +64,21 @@ pub(crate) mod config {
         /// * `entropy` - External source of entropy for platforms where default source insufficient
         ///
         /// # Errors
-        /// Any empty string parameter will result in a [CryptoError::MalformedIdentifier] error.
+        /// Any empty string parameter will result in a [Error::MalformedIdentifier] error.
         ///
         /// # Examples
         ///
         /// This should fail:
         /// ```
-        /// use core_crypto::{prelude::MlsCentralConfiguration, CryptoError};
+        /// use core_crypto::{prelude::MlsCentralConfiguration, mls::Error};
         ///
         /// let result = MlsCentralConfiguration::try_new(String::new(), String::new(), Some(b"".to_vec().into()), vec![], None, Some(100));
-        /// assert!(matches!(result.unwrap_err(), CryptoError::MalformedIdentifier(_)));
+        /// assert!(matches!(result.unwrap_err(), Error::MalformedIdentifier(_)));
         /// ```
         ///
         /// This should work:
         /// ```
-        /// use core_crypto::prelude::{MlsCentralConfiguration, CryptoError, MlsCiphersuite};
+        /// use core_crypto::prelude::{MlsCentralConfiguration, MlsCiphersuite};
         ///
         /// let result = MlsCentralConfiguration::try_new(
         ///     "/tmp/crypto".to_string(),
