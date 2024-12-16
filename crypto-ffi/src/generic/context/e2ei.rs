@@ -2,9 +2,8 @@ use std::{collections::HashMap, ops::DerefMut};
 
 use crate::generic::{
     context::CoreCryptoContext, Ciphersuite, ClientId, CoreCryptoResult, CrlRegistration, E2eiConversationState,
-    E2eiDumpedPkiEnv, E2eiEnrollment, MlsCredentialType, RotateBundle, WireIdentity,
+    E2eiDumpedPkiEnv, E2eiEnrollment, MlsCredentialType, WireIdentity,
 };
-use crate::CommitBundle;
 use core_crypto::{prelude::VerifiableGroupInfo, CryptoError, MlsError};
 use tls_codec::Deserialize;
 
@@ -116,25 +115,21 @@ impl CoreCryptoContext {
     }
 
     /// See [core_crypto::context::CentralContext::e2ei_rotate]
-    pub async fn e2ei_rotate(&self, conversation_id: Vec<u8>) -> CoreCryptoResult<CommitBundle> {
-        self.context.e2ei_rotate(&conversation_id, None).await?.try_into()
+    pub async fn e2ei_rotate(&self, conversation_id: Vec<u8>) -> CoreCryptoResult<()> {
+        Ok(self.context.e2ei_rotate(&conversation_id, None).await?)
     }
 
-    /// See [core_crypto::context::CentralContext::e2ei_rotate_all]
+    /// See [core_crypto::context::CentralContext::save_x509_credential]
     pub async fn e2ei_rotate_all(
         &self,
         enrollment: std::sync::Arc<E2eiEnrollment>,
         certificate_chain: String,
-        new_key_packages_count: u32,
-    ) -> CoreCryptoResult<RotateBundle> {
-        self.context
-            .e2ei_rotate_all(
-                enrollment.0.write().await.deref_mut(),
-                certificate_chain,
-                new_key_packages_count as usize,
-            )
+    ) -> CoreCryptoResult<Option<Vec<String>>> {
+        Ok(self
+            .context
+            .save_x509_credential(enrollment.0.write().await.deref_mut(), certificate_chain)
             .await?
-            .try_into()
+            .into())
     }
 
     /// See [core_crypto::context::CentralContext::e2ei_enrollment_stash]
