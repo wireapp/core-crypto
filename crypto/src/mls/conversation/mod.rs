@@ -285,11 +285,6 @@ impl CentralContext {
         }
     }
 
-    pub(crate) async fn get_all_conversations(&self) -> CryptoResult<Vec<GroupStoreValue<MlsConversation>>> {
-        let keystore = self.mls_provider().await?.keystore();
-        self.mls_groups().await?.get_fetch_all(&keystore).await
-    }
-
     /// Mark a conversation as child of another one
     /// This will affect the behavior of callbacks in particular
     #[cfg_attr(test, crate::idempotent)]
