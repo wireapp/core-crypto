@@ -1734,21 +1734,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "fluvio-wasm-timer"
-version = "0.2.5"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b768c170dc045fa587a8f948c91f9bcfb87f774930477c6215addf54317f137f"
-dependencies = [
- "futures",
- "js-sys",
- "parking_lot 0.11.2",
- "pin-utils",
- "wasm-bindgen",
- "wasm-bindgen-futures",
- "web-sys",
-]
-
-[[package]]
 name = "fnv"
 version = "1.0.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2040,9 +2025,9 @@ dependencies = [
 
 [[package]]
 name = "hashbrown"
-version = "0.15.0"
+version = "0.15.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1e087f84d4f86bf4b218b927129862374b72199ae7d8657835f1e89000eea4fb"
+checksum = "bf151400ff0baff5465007dd2f3e717f3fe502074ca563069ce3a6629d07b289"
 
 [[package]]
 name = "hashlink"
@@ -2551,7 +2536,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "707907fe3c25f5424cce2cb7e1cbcafee6bdbe735ca90ef77c29e84591e5b9da"
 dependencies = [
  "equivalent",
- "hashbrown 0.15.0",
+ "hashbrown 0.15.2",
  "serde",
 ]
 
@@ -2575,18 +2560,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a0c10553d664a4d0bcff9f4215d0aac67a639cc68ef660840afe309b807bc9f5"
 dependencies = [
  "generic-array",
-]
-
-[[package]]
-name = "instant"
-version = "0.1.13"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e0242819d153cba4b4b05a5a8f2a7e9bbf97b6055b2a002b395c96b5ff3c0222"
-dependencies = [
- "cfg-if",
- "js-sys",
- "wasm-bindgen",
- "web-sys",
 ]
 
 [[package]]
@@ -2810,7 +2783,7 @@ checksum = "c0ff37bd590ca25063e35af745c343cb7a0271906fb7b37e4813e8f79f00268d"
 dependencies = [
  "bitflags 2.6.0",
  "libc",
- "redox_syscall 0.5.3",
+ "redox_syscall",
 ]
 
 [[package]]
@@ -3137,11 +3110,10 @@ checksum = "c08d65885ee38876c4f86fa503fb49d7b507c2b62552df7c70b2fce627e06381"
 [[package]]
 name = "openmls"
 version = "1.0.0"
-source = "git+https://github.com/wireapp/openmls?rev=6d2f5a2046fc12aca602af207e650b94848f09ff#6d2f5a2046fc12aca602af207e650b94848f09ff"
+source = "git+https://github.com/wireapp/openmls?rev=54ee2f6a8a149a2a864a57fa83a616c03263ca61#54ee2f6a8a149a2a864a57fa83a616c03263ca61"
 dependencies = [
  "async-trait",
  "backtrace",
- "fluvio-wasm-timer",
  "hex",
  "indexmap 2.6.0",
  "itertools 0.12.1",
@@ -3153,13 +3125,14 @@ dependencies = [
  "subtle",
  "thiserror 1.0.69",
  "tls_codec",
+ "web-time",
  "x509-cert",
 ]
 
 [[package]]
 name = "openmls_basic_credential"
 version = "0.2.0"
-source = "git+https://github.com/wireapp/openmls?rev=6d2f5a2046fc12aca602af207e650b94848f09ff#6d2f5a2046fc12aca602af207e650b94848f09ff"
+source = "git+https://github.com/wireapp/openmls?rev=54ee2f6a8a149a2a864a57fa83a616c03263ca61#54ee2f6a8a149a2a864a57fa83a616c03263ca61"
 dependencies = [
  "async-trait",
  "ed25519-dalek",
@@ -3177,7 +3150,7 @@ dependencies = [
 [[package]]
 name = "openmls_traits"
 version = "0.2.0"
-source = "git+https://github.com/wireapp/openmls?rev=6d2f5a2046fc12aca602af207e650b94848f09ff#6d2f5a2046fc12aca602af207e650b94848f09ff"
+source = "git+https://github.com/wireapp/openmls?rev=54ee2f6a8a149a2a864a57fa83a616c03263ca61#54ee2f6a8a149a2a864a57fa83a616c03263ca61"
 dependencies = [
  "async-trait",
  "ed25519-dalek",
@@ -3194,12 +3167,11 @@ dependencies = [
 [[package]]
 name = "openmls_x509_credential"
 version = "0.2.0"
-source = "git+https://github.com/wireapp/openmls?rev=6d2f5a2046fc12aca602af207e650b94848f09ff#6d2f5a2046fc12aca602af207e650b94848f09ff"
+source = "git+https://github.com/wireapp/openmls?rev=54ee2f6a8a149a2a864a57fa83a616c03263ca61#54ee2f6a8a149a2a864a57fa83a616c03263ca61"
 dependencies = [
  "async-trait",
  "base64 0.21.7",
  "const-oid",
- "fluvio-wasm-timer",
  "openmls_basic_credential",
  "openmls_traits",
  "percent-encoding",
@@ -3207,6 +3179,7 @@ dependencies = [
  "serde",
  "tls_codec",
  "uuid",
+ "web-time",
  "x509-cert",
 ]
 
@@ -3333,37 +3306,12 @@ checksum = "bb813b8af86854136c6922af0598d719255ecb2179515e6e7730d468f05c9cae"
 
 [[package]]
 name = "parking_lot"
-version = "0.11.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7d17b78036a60663b797adeaee46f5c9dfebb86948d1255007a1d6be0271ff99"
-dependencies = [
- "instant",
- "lock_api",
- "parking_lot_core 0.8.6",
-]
-
-[[package]]
-name = "parking_lot"
 version = "0.12.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f1bf18183cf54e8d6059647fc3063646a1801cf30896933ec2311622cc4b9a27"
 dependencies = [
  "lock_api",
- "parking_lot_core 0.9.10",
-]
-
-[[package]]
-name = "parking_lot_core"
-version = "0.8.6"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "60a2cfe6f0ad2bfc16aefa463b497d5c7a5ecd44a23efa72aa342d90177356dc"
-dependencies = [
- "cfg-if",
- "instant",
- "libc",
- "redox_syscall 0.2.16",
- "smallvec",
- "winapi",
+ "parking_lot_core",
 ]
 
 [[package]]
@@ -3374,7 +3322,7 @@ checksum = "1e401f977ab385c9e4e3ab30627d6f26d00e2c73eef317493c4ec6d468726cf8"
 dependencies = [
  "cfg-if",
  "libc",
- "redox_syscall 0.5.3",
+ "redox_syscall",
  "smallvec",
  "windows-targets 0.52.6",
 ]
@@ -3769,15 +3717,6 @@ dependencies = [
 
 [[package]]
 name = "redox_syscall"
-version = "0.2.16"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "fb5a58c1855b4b6819d59012155603f0b22ad30cad752600aadfcb695265519a"
-dependencies = [
- "bitflags 1.3.2",
-]
-
-[[package]]
-name = "redox_syscall"
 version = "0.5.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "2a908a6e00f1fdd0dfd9c0eb08ce85126f6d8bbda50017e74bc4a4b7d4a926a4"
@@ -4037,14 +3976,13 @@ checksum = "0e819f2bc632f285be6d7cd36e25940d45b2391dd6d9b939e79de557f7014248"
 
 [[package]]
 name = "rusty-acme"
-version = "0.11.0"
-source = "git+https://github.com/wireapp/rusty-jwt-tools?tag=v0.11.0#8e95b38867ef631925cb34aabee0b4e6a42f6ace"
+version = "0.12.0"
+source = "git+https://github.com/wireapp/rusty-jwt-tools?tag=v0.12.0#c979ba61da14c7511167efedd3ffe8914c44ab84"
 dependencies = [
  "base64 0.22.1",
  "const-oid",
  "ecdsa",
  "ed25519-dalek",
- "fluvio-wasm-timer",
  "getrandom",
  "hex",
  "jwt-simple",
@@ -4060,13 +3998,14 @@ dependencies = [
  "thiserror 1.0.69",
  "time",
  "url",
+ "web-time",
  "x509-cert",
 ]
 
 [[package]]
 name = "rusty-jwt-tools"
-version = "0.11.0"
-source = "git+https://github.com/wireapp/rusty-jwt-tools?tag=v0.11.0#8e95b38867ef631925cb34aabee0b4e6a42f6ace"
+version = "0.12.0"
+source = "git+https://github.com/wireapp/rusty-jwt-tools?tag=v0.12.0#c979ba61da14c7511167efedd3ffe8914c44ab84"
 dependencies = [
  "base64 0.22.1",
  "const_format",
@@ -4093,16 +4032,16 @@ dependencies = [
 
 [[package]]
 name = "rusty-x509-check"
-version = "0.11.0"
-source = "git+https://github.com/wireapp/rusty-jwt-tools?tag=v0.11.0#8e95b38867ef631925cb34aabee0b4e6a42f6ace"
+version = "0.12.0"
+source = "git+https://github.com/wireapp/rusty-jwt-tools?tag=v0.12.0#c979ba61da14c7511167efedd3ffe8914c44ab84"
 dependencies = [
  "certval",
  "const-oid",
  "der",
  "flagset",
- "fluvio-wasm-timer",
  "hex",
  "thiserror 1.0.69",
+ "web-time",
  "x509-cert",
 ]
 
@@ -4895,7 +4834,7 @@ dependencies = [
  "bytes",
  "libc",
  "mio",
- "parking_lot 0.12.3",
+ "parking_lot",
  "pin-project-lite",
  "signal-hook-registry",
  "socket2",
@@ -6072,8 +6011,8 @@ dependencies = [
 
 [[package]]
 name = "wire-e2e-identity"
-version = "0.11.0"
-source = "git+https://github.com/wireapp/rusty-jwt-tools?tag=v0.11.0#8e95b38867ef631925cb34aabee0b4e6a42f6ace"
+version = "0.12.0"
+source = "git+https://github.com/wireapp/rusty-jwt-tools?tag=v0.12.0#c979ba61da14c7511167efedd3ffe8914c44ab84"
 dependencies = [
  "derive_more",
  "jwt-simple",
