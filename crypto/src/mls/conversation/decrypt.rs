@@ -132,7 +132,14 @@ impl MlsConversation {
                 StageCommitError::OwnCommit,
             )))) => {
                 let ct = self.extract_confirmation_tag_from_own_commit(&message)?;
-                return self.handle_own_commit(backend, ct).await;
+                let mut decrypted_message = self.handle_own_commit(backend, ct).await?;
+                decrypted_message.buffered_messages = if !restore_pending {
+                    None
+                } else {
+                    self.decrypt_and_clear_pending_messages(client, backend, parent_conv)
+                        .await?
+                };
+                return Ok(decrypted_message);
             }
             Ok(processed_message) => Ok(processed_message),
             Err(e) => Err(e),
@@ -239,18 +246,11 @@ impl MlsConversation {
                     .renew_proposals_for_current_epoch(client, backend, proposals_to_renew.into_iter(), needs_update)
                     .await?;
 
-                let buffered_messages = if restore_pending {
-                    if let Some(pm) = self
-                        .restore_pending_messages(client, backend, parent_conv, false)
-                        .await?
-                    {
-                        backend.key_store().remove::<MlsPendingMessage, _>(self.id()).await?;
-                        Some(pm)
-                    } else {
-                        None
-                    }
-                } else {
+                let buffered_messages = if !restore_pending {
                     None
+                } else {
+                    self.decrypt_and_clear_pending_messages(client, backend, parent_conv)
+                        .await?
                 };
 
                 info!(
@@ -300,6 +300,23 @@ impl MlsConversation {
         self.persist_group_when_changed(&backend.keystore(), false).await?;
 
         Ok(decrypted)
+    }
+
+    async fn decrypt_and_clear_pending_messages(
+        &mut self,
+        client: &Client,
+        backend: &MlsCryptoProvider,
+        parent_conv: Option<&GroupStoreValue<MlsConversation>>,
+    ) -> CryptoResult<Option<Vec<MlsBufferedConversationDecryptMessage>>> {
+        if let Some(pm) = self
+            .restore_pending_messages(client, backend, parent_conv, false)
+            .await?
+        {
+            backend.key_store().remove::<MlsPendingMessage, _>(self.id()).await?;
+            Ok(Some(pm))
+        } else {
+            Ok(None)
+        }
     }
 
     async fn parse_message(
