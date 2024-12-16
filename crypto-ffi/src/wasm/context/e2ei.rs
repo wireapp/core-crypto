@@ -15,8 +15,8 @@ use wasm_bindgen_futures::future_to_promise;
 
 use crate::{
     wasm::{context::CoreCryptoContext, E2eiConversationState},
-    Ciphersuite, CommitBundle, CoreCryptoError, CredentialType, CrlRegistration, E2eiDumpedPkiEnv, E2eiEnrollment,
-    InternalError, RotateBundle, WasmCryptoResult, WireIdentity,
+    Ciphersuite, CoreCryptoError, CredentialType, CrlRegistration, E2eiDumpedPkiEnv, E2eiEnrollment, InternalError,
+    WasmCryptoResult, WireIdentity,
 };
 
 #[wasm_bindgen]
@@ -208,40 +208,48 @@ impl CoreCryptoContext {
         )
     }
 
-    /// Returns: [`WasmCryptoResult<CommitBundle>`]
+    /// Returns: [`WasmCryptoResult<()>`]
     ///
     /// see [core_crypto::context::CentralContext::e2ei_rotate]
     pub fn e2ei_rotate(&self, conversation_id: ConversationId) -> Promise {
         let context = self.inner.clone();
         future_to_promise(
             async move {
-                let commit = context.e2ei_rotate(&conversation_id, None).await?;
-                let commit: CommitBundle = commit.try_into()?;
-                WasmCryptoResult::Ok(serde_wasm_bindgen::to_value(&commit)?)
+                context.e2ei_rotate(&conversation_id, None).await?;
+                WasmCryptoResult::Ok(JsValue::UNDEFINED)
             }
             .err_into(),
         )
     }
 
-    /// see [core_crypto::mls::context::CentralContext::e2ei_rotate_all]
-    pub fn e2ei_rotate_all(
-        &self,
-        enrollment: E2eiEnrollment,
-        certificate_chain: String,
-        new_key_packages_count: u32,
-    ) -> Promise {
+    /// Returns: [`WasmCryptoResult<Option<Vec<String>>>`]
+    ///
+    /// see [core_crypto::mls::context::CentralContext::save_x509_credential]
+    pub fn save_x509_credential(&self, enrollment: E2eiEnrollment, certificate_chain: String) -> Promise {
         let context = self.inner.clone();
         future_to_promise(
             async move {
-                let rotate_bundle: RotateBundle = context
-                    .e2ei_rotate_all(
-                        enrollment.0.write().await.deref_mut(),
-                        certificate_chain,
-                        new_key_packages_count as usize,
-                    )
+                let new_crl_distribution_point: Option<Vec<String>> = context
+                    .save_x509_credential(enrollment.0.write().await.deref_mut(), certificate_chain)
                     .await?
-                    .try_into()?;
-                WasmCryptoResult::Ok(serde_wasm_bindgen::to_value(&rotate_bundle)?)
+                    .into();
+                WasmCryptoResult::Ok(serde_wasm_bindgen::to_value(&new_crl_distribution_point)?)
+            }
+            .err_into(),
+        )
+    }
+
+    /// Returns: [`WasmCryptoResult<()>`]
+    ///
+    /// see [core_crypto::mls::context::CentralContext::retain_only_key_packages_of_most_recent_x509_credentials]
+    pub fn retain_only_key_packages_of_most_recent_x509_credentials(&self, cipher_suite: Ciphersuite) -> Promise {
+        let context = self.inner.clone();
+        future_to_promise(
+            async move {
+                context
+                    .retain_only_key_packages_of_most_recent_x509_credentials(cipher_suite.into())
+                    .await?;
+                WasmCryptoResult::Ok(JsValue::UNDEFINED)
             }
             .err_into(),
         )
