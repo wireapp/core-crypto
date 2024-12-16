@@ -121,12 +121,9 @@ pub enum MlsTransportResponse {
 #[cfg_attr(not(target_family = "wasm"), async_trait::async_trait)]
 pub trait MlsTransport: std::fmt::Debug + Send + Sync {
     /// Send a commit bundle to the corresponding endpoint.
-    async fn send_commit_bundle(
-        &self,
-        commit_bundle: MlsCommitBundle,
-    ) -> Result<MlsTransportResponse, Box<dyn std::error::Error>>;
+    async fn send_commit_bundle(&self, commit_bundle: MlsCommitBundle) -> Result<MlsTransportResponse>;
     /// Send a message to the corresponding endpoint.
-    async fn send_message(&self, mls_message: Vec<u8>) -> Result<MlsTransportResponse, Box<dyn std::error::Error>>;
+    async fn send_message(&self, mls_message: Vec<u8>) -> Result<MlsTransportResponse>;
 }
 
 #[derive(Debug)]
