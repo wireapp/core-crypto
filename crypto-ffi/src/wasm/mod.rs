@@ -542,56 +542,6 @@ impl From<core_crypto::prelude::MlsCredentialType> for CredentialType {
 pub type FfiClientId = Box<[u8]>;
 
 #[wasm_bindgen]
-#[derive(Debug, serde::Serialize, serde::Deserialize)]
-/// see [core_crypto::prelude::MlsConversationCreationMessage]
-pub struct MemberAddedMessages {
-    welcome: Vec<u8>,
-    commit: Vec<u8>,
-    group_info: GroupInfoBundle,
-    crl_new_distribution_points: Option<Vec<String>>,
-}
-
-#[wasm_bindgen]
-impl MemberAddedMessages {
-    #[wasm_bindgen(getter)]
-    pub fn welcome(&self) -> Uint8Array {
-        Uint8Array::from(&*self.welcome)
-    }
-
-    #[wasm_bindgen(getter)]
-    pub fn commit(&self) -> Uint8Array {
-        Uint8Array::from(&*self.commit)
-    }
-
-    #[wasm_bindgen(getter)]
-    pub fn group_info(&self) -> GroupInfoBundle {
-        self.group_info.clone()
-    }
-
-    #[wasm_bindgen(getter)]
-    pub fn crl_new_distribution_points(&self) -> Option<js_sys::Array> {
-        self.crl_new_distribution_points
-            .clone()
-            .map(|crl_dp| crl_dp.iter().cloned().map(JsValue::from).collect::<js_sys::Array>())
-    }
-}
-
-impl TryFrom<MlsConversationCreationMessage> for MemberAddedMessages {
-    type Error = CoreCryptoError;
-
-    fn try_from(msg: MlsConversationCreationMessage) -> Result<Self, Self::Error> {
-        let (welcome, commit, pgs, crl_new_distribution_points) = msg.to_bytes()?;
-
-        Ok(Self {
-            welcome,
-            commit,
-            group_info: pgs.into(),
-            crl_new_distribution_points: crl_new_distribution_points.into(),
-        })
-    }
-}
-
-#[wasm_bindgen]
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct ProteusAutoPrekeyBundle {
     pub id: u16,
@@ -672,76 +622,6 @@ impl From<MlsGroupInfoBundle> for GroupInfoBundle {
             ratchet_tree_type: gi.ratchet_tree_type as u8,
             payload: gi.payload.bytes(),
         }
-    }
-}
-
-#[wasm_bindgen]
-#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
-pub struct RotateBundle {
-    commits: HashMap<String, CommitBundle>,
-    new_key_packages: Vec<Vec<u8>>,
-    key_package_refs_to_remove: Vec<Vec<u8>>,
-    /// New CRL Distribution of members of this group
-    crl_new_distribution_points: Option<Vec<String>>,
-}
-
-#[wasm_bindgen]
-impl RotateBundle {
-    #[wasm_bindgen(getter)]
-    pub fn commits(&self) -> js_sys::Map {
-        let commits = js_sys::Map::new();
-        for (id, c) in &self.commits {
-            commits.set(&JsValue::from(id), &JsValue::from(c.clone()));
-        }
-        commits
-    }
-
-    #[wasm_bindgen(getter)]
-    pub fn new_key_packages(&self) -> Vec<Uint8Array> {
-        self.new_key_packages
-            .iter()
-            .cloned()
-            .map(|jsv| jsv.as_slice().into())
-            .collect()
-    }
-
-    #[wasm_bindgen(getter)]
-    pub fn key_package_refs_to_remove(&self) -> Vec<Uint8Array> {
-        self.key_package_refs_to_remove
-            .iter()
-            .cloned()
-            .map(|jsv| jsv.as_slice().into())
-            .collect()
-    }
-
-    #[wasm_bindgen(getter)]
-    pub fn crl_new_distribution_points(&self) -> Option<js_sys::Array> {
-        self.crl_new_distribution_points
-            .clone()
-            .map(|crl_dp| crl_dp.iter().cloned().map(JsValue::from).collect::<js_sys::Array>())
-    }
-}
-
-impl TryFrom<MlsRotateBundle> for RotateBundle {
-    type Error = CoreCryptoError;
-
-    fn try_from(msg: MlsRotateBundle) -> Result<Self, Self::Error> {
-        let (commits, new_key_packages, key_package_refs_to_remove, crl_new_distribution_points) = msg.to_bytes()?;
-
-        let commits_size = commits.len();
-        let commits = commits
-            .into_iter()
-            .try_fold(HashMap::with_capacity(commits_size), |mut acc, (id, c)| {
-                let _ = acc.insert(id, c.try_into()?);
-                WasmCryptoResult::Ok(acc)
-            })?;
-
-        Ok(Self {
-            commits,
-            new_key_packages,
-            key_package_refs_to_remove,
-            crl_new_distribution_points: crl_new_distribution_points.into(),
-        })
     }
 }
 
@@ -1545,34 +1425,26 @@ unsafe impl Sync for CoreCryptoWasmLogger {}
 
 #[async_trait::async_trait(?Send)]
 impl MlsTransport for MlsTransportProvider {
-    async fn send_commit_bundle(
-        &self,
-        commit_bundle: MlsCommitBundle,
-    ) -> Result<MlsTransportResponse, Box<dyn std::error::Error>> {
+    async fn send_commit_bundle(&self, commit_bundle: MlsCommitBundle) -> CryptoResult<MlsTransportResponse> {
         let send_commit_bundle = self.send_commit_bundle.read().await;
         let this = self.ctx.read().await;
-        let commit_bundle = CommitBundle::try_from(commit_bundle)?;
+        let commit_bundle =
+            CommitBundle::try_from(commit_bundle).map_err(|e| CryptoError::ErrorDuringMlsTransport(e.to_string()))?;
         Ok(
             Self::drive_js_func_call(send_commit_bundle.call1(&this, &commit_bundle.into()))
                 .await
-                .map_err(|e| InternalError::TransportError {
-                    attempted_operation: "send_message".into(),
-                    error: e,
-                })?
+                .map_err(|e| CryptoError::ErrorDuringMlsTransport(format!("JsError: {e:?}")))?
                 .into(),
         )
     }
 
-    async fn send_message(&self, mls_message: Vec<u8>) -> Result<MlsTransportResponse, Box<dyn std::error::Error>> {
+    async fn send_message(&self, mls_message: Vec<u8>) -> CryptoResult<MlsTransportResponse> {
         let send_message = self.send_message.read().await;
         let this = self.ctx.read().await;
         let mls_message = js_sys::Uint8Array::from(mls_message.as_slice());
         Ok(Self::drive_js_func_call(send_message.call1(&this, &mls_message))
             .await
-            .map_err(|e| InternalError::TransportError {
-                attempted_operation: "send_message".into(),
-                error: e,
-            })?
+            .map_err(|e| CryptoError::ErrorDuringMlsTransport(format!("JsError: {e:?}")))?
             .into())
     }
 }
