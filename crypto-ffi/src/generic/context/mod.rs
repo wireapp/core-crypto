@@ -1,7 +1,6 @@
 use super::{
-    BufferedDecryptedMessage, Ciphersuite, Ciphersuites, ClientId, CommitBundle, ConversationConfiguration,
-    ConversationInitBundle, CoreCrypto, CoreCryptoError, CoreCryptoResult, CustomConfiguration, DecryptedMessage,
-    MemberAddedMessages, MlsCredentialType, ProposalBundle, WelcomeBundle,
+    Ciphersuite, Ciphersuites, ClientId, ConversationConfiguration, CoreCrypto, CoreCryptoError, CoreCryptoResult,
+    CustomConfiguration, DecryptedMessage, MlsCredentialType, ProposalBundle, WelcomeBundle,
 };
 use async_lock::{Mutex, OnceCell};
 use core_crypto::context::CentralContext;
@@ -409,7 +408,7 @@ impl CoreCryptoContext {
         &self,
         conversation_id: Vec<u8>,
         key_packages: Vec<Vec<u8>>,
-    ) -> CoreCryptoResult<MemberAddedMessages> {
+    ) -> CoreCryptoResult<Option<Vec<String>>> {
         let key_packages = key_packages
             .into_iter()
             .map(|kp| {
@@ -418,12 +417,11 @@ impl CoreCryptoContext {
             })
             .collect::<CoreCryptoResult<Vec<_>>>()?;
 
-        let result = self
+        Ok(self
             .context
             .add_members_to_conversation(&conversation_id, key_packages)
             .await?
-            .try_into()?;
-        Ok(result)
+            .into())
     }
 
     /// See [core_crypto::context::CentralContext::remove_members_from_conversation]
@@ -431,15 +429,12 @@ impl CoreCryptoContext {
         &self,
         conversation_id: Vec<u8>,
         clients: Vec<ClientId>,
-    ) -> CoreCryptoResult<CommitBundle> {
+    ) -> CoreCryptoResult<()> {
         let clients: Vec<core_crypto::prelude::ClientId> = clients.into_iter().map(|c| c.0).collect();
-        let result = self
+        Ok(self
             .context
             .remove_members_from_conversation(&conversation_id, &clients)
-            .await?
-            .try_into()?;
-
-        Ok(result)
+            .await?)
     }
 
     /// See [core_crypto::context::CentralContext::mark_conversation_as_child_of]
@@ -451,18 +446,13 @@ impl CoreCryptoContext {
     }
 
     /// See [core_crypto::context::CentralContext::update_keying_material]
-    pub async fn update_keying_material(&self, conversation_id: Vec<u8>) -> CoreCryptoResult<CommitBundle> {
-        self.context.update_keying_material(&conversation_id).await?.try_into()
+    pub async fn update_keying_material(&self, conversation_id: Vec<u8>) -> CoreCryptoResult<()> {
+        Ok(self.context.update_keying_material(&conversation_id).await?)
     }
 
     /// See [core_crypto::context::CentralContext::commit_pending_proposals]
-    pub async fn commit_pending_proposals(&self, conversation_id: Vec<u8>) -> CoreCryptoResult<Option<CommitBundle>> {
-        self.context
-            .commit_pending_proposals(&conversation_id)
-            .await
-            .transpose()
-            .map(|r| r?.try_into())
-            .transpose()
+    pub async fn commit_pending_proposals(&self, conversation_id: Vec<u8>) -> CoreCryptoResult<()> {
+        Ok(self.context.commit_pending_proposals(&conversation_id).await?)
     }
 
     /// see [core_crypto::context::CentralContext::wipe_conversation]
@@ -549,58 +539,15 @@ impl CoreCryptoContext {
         group_info: Vec<u8>,
         custom_configuration: CustomConfiguration,
         credential_type: MlsCredentialType,
-    ) -> CoreCryptoResult<ConversationInitBundle> {
+    ) -> CoreCryptoResult<WelcomeBundle> {
         let group_info = VerifiableGroupInfo::tls_deserialize(&mut group_info.as_slice())
             .map_err(MlsError::from)
             .map_err(CryptoError::from)?;
-        self.context
+        Ok(self
+            .context
             .join_by_external_commit(group_info, custom_configuration.into(), credential_type.into())
             .await?
-            .try_into()
-    }
-
-    /// See [core_crypto::context::CentralContext::merge_pending_group_from_external_commit]
-    pub async fn merge_pending_group_from_external_commit(
-        &self,
-        conversation_id: Vec<u8>,
-    ) -> CoreCryptoResult<Option<Vec<BufferedDecryptedMessage>>> {
-        if let Some(decrypted_messages) = self
-            .context
-            .merge_pending_group_from_external_commit(&conversation_id)
-            .await?
-        {
-            let result = decrypted_messages
-                .into_iter()
-                .map(TryInto::try_into)
-                .collect::<CoreCryptoResult<Vec<_>>>()?;
-            return Ok(Some(result));
-        }
-
-        Ok(None)
-    }
-
-    /// See [core_crypto::context::CentralContext::clear_pending_group_from_external_commit]
-    pub async fn clear_pending_group_from_external_commit(&self, conversation_id: Vec<u8>) -> CoreCryptoResult<()> {
-        self.context
-            .clear_pending_group_from_external_commit(&conversation_id)
-            .await?;
-        Ok(())
-    }
-
-    /// See [core_crypto::context::CentralContext::commit_accepted]
-    pub async fn commit_accepted(
-        &self,
-        conversation_id: Vec<u8>,
-    ) -> CoreCryptoResult<Option<Vec<BufferedDecryptedMessage>>> {
-        if let Some(decrypted_messages) = self.context.commit_accepted(&conversation_id).await? {
-            let result = decrypted_messages
-                .into_iter()
-                .map(TryInto::try_into)
-                .collect::<CoreCryptoResult<Vec<_>>>()?;
-            return Ok(Some(result));
-        }
-
-        Ok(None)
+            .into())
     }
 
     /// See [core_crypto::context::CentralContext::clear_pending_proposal]
@@ -612,12 +559,6 @@ impl CoreCryptoContext {
         self.context
             .clear_pending_proposal(&conversation_id, proposal_ref.into())
             .await?;
-        Ok(())
-    }
-
-    /// See [core_crypto::context::CentralContext::clear_pending_commit]
-    pub async fn clear_pending_commit(&self, conversation_id: Vec<u8>) -> CoreCryptoResult<()> {
-        self.context.clear_pending_commit(&conversation_id).await?;
         Ok(())
     }
 }
