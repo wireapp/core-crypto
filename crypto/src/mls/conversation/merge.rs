@@ -11,7 +11,7 @@
 //! | 1+ pend. Proposal | ❌              | ✅              |
 //!
 
-use core_crypto_keystore::entities::{MlsEncryptionKeyPair, MlsPendingMessage};
+use core_crypto_keystore::entities::MlsEncryptionKeyPair;
 use openmls::prelude::MlsGroupStateError;
 use openmls_traits::OpenMlsCryptoProvider;
 
@@ -20,7 +20,7 @@ use mls_crypto_provider::MlsCryptoProvider;
 use crate::context::CentralContext;
 use crate::{
     mls::{ConversationId, MlsConversation},
-    prelude::{decrypt::MlsBufferedConversationDecryptMessage, MlsProposalRef},
+    prelude::MlsProposalRef,
     CryptoError, CryptoResult, MlsError,
 };
 
@@ -28,7 +28,7 @@ use crate::{
 impl MlsConversation {
     /// see [CentralContext::commit_accepted]
     #[cfg_attr(test, crate::durable)]
-    pub async fn commit_accepted(&mut self, backend: &MlsCryptoProvider) -> CryptoResult<()> {
+    pub(crate) async fn commit_accepted(&mut self, backend: &MlsCryptoProvider) -> CryptoResult<()> {
         // openmls stores here all the encryption keypairs used for update proposals..
         let previous_own_leaf_nodes = self.group.own_leaf_nodes.clone();
 
@@ -64,7 +64,7 @@ impl MlsConversation {
 
     /// see [CentralContext::clear_pending_commit]
     #[cfg_attr(test, crate::durable)]
-    pub async fn clear_pending_commit(&mut self, backend: &MlsCryptoProvider) -> CryptoResult<()> {
+    pub(crate) async fn clear_pending_commit(&mut self, backend: &MlsCryptoProvider) -> CryptoResult<()> {
         if self.group.pending_commit().is_some() {
             self.group.clear_pending_commit();
             self.persist_group_when_changed(&backend.keystore(), true).await?;
@@ -140,7 +140,7 @@ impl CentralContext {
     /// # Errors
     /// When the conversation is not found or there is no pending commit
     #[cfg_attr(test, crate::idempotent)]
-    pub async fn clear_pending_commit(&self, conversation_id: &ConversationId) -> CryptoResult<()> {
+    pub(crate) async fn clear_pending_commit(&self, conversation_id: &ConversationId) -> CryptoResult<()> {
         self.get_conversation(conversation_id)
             .await?
             .write()
