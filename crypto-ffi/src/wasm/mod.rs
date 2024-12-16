@@ -108,6 +108,12 @@ pub enum MlsError {
     /// with an External Commit instead
     #[error("Although this Welcome seems valid, the local KeyPackage it references has already been deleted locally. Join this group with an external commit")]
     OrphanWelcome,
+    /// Message rejected by the delivery service
+    #[error("Message rejected by the delivery service. Reason: {reason}")]
+    MessageRejected {
+        /// Why was the message rejected by the delivery service?
+        reason: String,
+    },
     #[error("{0}")]
     Other(String),
 }
@@ -196,13 +202,6 @@ pub(crate) enum InternalError {
     UnknownCiphersuite,
     #[error("Transaction rolled back. Uncaught JsError: {uncaught_error:?}")]
     TransactionFailed { uncaught_error: JsValue },
-    #[error(
-        "Error during transport callback execution. Attempted operation: {attempted_operation:?}. JsError: {error:?}"
-    )]
-    TransportError {
-        attempted_operation: String,
-        error: JsValue,
-    },
     #[error("{0}")]
     Other(String),
 }
@@ -269,6 +268,7 @@ impl From<RecursiveError> for InternalError {
             core_crypto::mls::conversation::Error::StaleCommit => MlsError::StaleCommit.into(),
             core_crypto::mls::conversation::Error::StaleProposal => MlsError::StaleProposal.into(),
             core_crypto::mls::conversation::Error::UnbufferedFarFutureMessage => MlsError::WrongEpoch.into(),
+            core_crypto::mls::conversation::Error::MessageRejected { reason } => MlsError::MessageRejected { reason: reason.clone() }.into(),
             core_crypto::mls::conversation::Error::OrphanWelcome => MlsError::OrphanWelcome.into(),
             core_crypto::mls::Error::UnmergedPendingGroup => MlsError::UnmergedPendingGroup.into(),
             ||=> MlsError::Other(error.innermost_error_message()).into(),
@@ -300,6 +300,8 @@ impl From<core_crypto::Error> for InternalError {
             core_crypto::Error::Proteus(proteus) => Self::Other(proteus.innermost_error_message()),
             core_crypto::Error::Mls(mls) => Self::MlsError(MlsError::from(mls)),
             core_crypto::Error::InvalidContext => Self::Other(error.to_string()),
+            core_crypto::Error::MlsTransportNotProvided => Self::Other(error.to_string()),
+            core_crypto::Error::ErrorDuringMlsTransport(error_message) => Self::Other(error_message),
             core_crypto::Error::Keystore(keystore_error) => Self::Other(keystore_error.innermost_error_message()),
             core_crypto::Error::CryptoboxMigration(cryptobox) => Self::Other(cryptobox.innermost_error_message()),
             core_crypto::Error::Recursive(recursive_error) => recursive_error.into(),
@@ -542,56 +544,6 @@ impl From<core_crypto::prelude::MlsCredentialType> for CredentialType {
 pub type FfiClientId = Box<[u8]>;
 
 #[wasm_bindgen]
-#[derive(Debug, serde::Serialize, serde::Deserialize)]
-/// see [core_crypto::prelude::MlsConversationCreationMessage]
-pub struct MemberAddedMessages {
-    welcome: Vec<u8>,
-    commit: Vec<u8>,
-    group_info: GroupInfoBundle,
-    crl_new_distribution_points: Option<Vec<String>>,
-}
-
-#[wasm_bindgen]
-impl MemberAddedMessages {
-    #[wasm_bindgen(getter)]
-    pub fn welcome(&self) -> Uint8Array {
-        Uint8Array::from(&*self.welcome)
-    }
-
-    #[wasm_bindgen(getter)]
-    pub fn commit(&self) -> Uint8Array {
-        Uint8Array::from(&*self.commit)
-    }
-
-    #[wasm_bindgen(getter)]
-    pub fn group_info(&self) -> GroupInfoBundle {
-        self.group_info.clone()
-    }
-
-    #[wasm_bindgen(getter)]
-    pub fn crl_new_distribution_points(&self) -> Option<js_sys::Array> {
-        self.crl_new_distribution_points
-            .clone()
-            .map(|crl_dp| crl_dp.iter().cloned().map(JsValue::from).collect::<js_sys::Array>())
-    }
-}
-
-impl TryFrom<MlsConversationCreationMessage> for MemberAddedMessages {
-    type Error = CoreCryptoError;
-
-    fn try_from(msg: MlsConversationCreationMessage) -> Result<Self, Self::Error> {
-        let (welcome, commit, pgs, crl_new_distribution_points) = msg.to_bytes()?;
-
-        Ok(Self {
-            welcome,
-            commit,
-            group_info: pgs.into(),
-            crl_new_distribution_points: crl_new_distribution_points.into(),
-        })
-    }
-}
-
-#[wasm_bindgen]
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct ProteusAutoPrekeyBundle {
     pub id: u16,
@@ -672,76 +624,6 @@ impl From<MlsGroupInfoBundle> for GroupInfoBundle {
             ratchet_tree_type: gi.ratchet_tree_type as u8,
             payload: gi.payload.bytes(),
         }
-    }
-}
-
-#[wasm_bindgen]
-#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
-pub struct RotateBundle {
-    commits: HashMap<String, CommitBundle>,
-    new_key_packages: Vec<Vec<u8>>,
-    key_package_refs_to_remove: Vec<Vec<u8>>,
-    /// New CRL Distribution of members of this group
-    crl_new_distribution_points: Option<Vec<String>>,
-}
-
-#[wasm_bindgen]
-impl RotateBundle {
-    #[wasm_bindgen(getter)]
-    pub fn commits(&self) -> js_sys::Map {
-        let commits = js_sys::Map::new();
-        for (id, c) in &self.commits {
-            commits.set(&JsValue::from(id), &JsValue::from(c.clone()));
-        }
-        commits
-    }
-
-    #[wasm_bindgen(getter)]
-    pub fn new_key_packages(&self) -> Vec<Uint8Array> {
-        self.new_key_packages
-            .iter()
-            .cloned()
-            .map(|jsv| jsv.as_slice().into())
-            .collect()
-    }
-
-    #[wasm_bindgen(getter)]
-    pub fn key_package_refs_to_remove(&self) -> Vec<Uint8Array> {
-        self.key_package_refs_to_remove
-            .iter()
-            .cloned()
-            .map(|jsv| jsv.as_slice().into())
-            .collect()
-    }
-
-    #[wasm_bindgen(getter)]
-    pub fn crl_new_distribution_points(&self) -> Option<js_sys::Array> {
-        self.crl_new_distribution_points
-            .clone()
-            .map(|crl_dp| crl_dp.iter().cloned().map(JsValue::from).collect::<js_sys::Array>())
-    }
-}
-
-impl TryFrom<MlsRotateBundle> for RotateBundle {
-    type Error = CoreCryptoError;
-
-    fn try_from(msg: MlsRotateBundle) -> Result<Self, Self::Error> {
-        let (commits, new_key_packages, key_package_refs_to_remove, crl_new_distribution_points) = msg.to_bytes()?;
-
-        let commits_size = commits.len();
-        let commits = commits
-            .into_iter()
-            .try_fold(HashMap::with_capacity(commits_size), |mut acc, (id, c)| {
-                let _ = acc.insert(id, c.try_into()?);
-                WasmCryptoResult::Ok(acc)
-            })?;
-
-        Ok(Self {
-            commits,
-            new_key_packages,
-            key_package_refs_to_remove,
-            crl_new_distribution_points: crl_new_distribution_points.into(),
-        })
     }
 }
 
@@ -1438,20 +1320,39 @@ impl log::Log for CoreCryptoWasmLogger {
     fn flush(&self) {}
 }
 
-#[derive(serde::Serialize, serde::Deserialize)]
-#[wasm_bindgen(inspectable)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, serde::Serialize, serde::Deserialize, strum::FromRepr)]
+#[repr(u8)]
+#[serde(from = "u8")]
+#[wasm_bindgen]
 pub enum MlsTransportResponseVariant {
-    Success,
-    Retry,
-    Abort,
+    Success = 1,
+    Retry = 2,
+    Abort = 3,
 }
 
-#[derive(serde::Serialize, serde::Deserialize)]
+impl From<u8> for MlsTransportResponseVariant {
+    fn from(value: u8) -> Self {
+        match Self::from_repr(value) {
+            Some(variant) => variant,
+            // This is unreachable because deserialization is only done on a value that was
+            // serialized directly from our type (this happens in js_sys::Function::call1, where the
+            // constructed and returned MlsTransportResponse is serialized to a JsValue).
+            // In drive_js_func_call(), we deserialize it without any transformations.
+            // Hence, we can never have a u8 value other than the ones assigned to a variant.
+            None => unreachable!("{} is not member of enum MlsTransportResponseVariant", value),
+        }
+    }
+}
+
+#[derive(serde::Serialize, serde::Deserialize, Debug)]
 #[serde(rename_all = "camelCase")]
-#[wasm_bindgen(inspectable)]
+#[wasm_bindgen(getter_with_clone)]
 pub struct WasmMlsTransportResponse {
-    variant: MlsTransportResponseVariant,
-    abort_reason: Option<String>,
+    #[wasm_bindgen(readonly)]
+    pub variant: MlsTransportResponseVariant,
+    #[wasm_bindgen(readonly)]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub abort_reason: Option<String>,
 }
 
 #[wasm_bindgen]
@@ -1516,24 +1417,24 @@ impl MlsTransportProvider {
 }
 
 impl MlsTransportProvider {
-    async fn drive_js_func_call(result: Result<JsValue, JsValue>) -> Result<WasmMlsTransportResponse, JsValue> {
-        let value = result?;
-        let promise: Promise = match value.dyn_into() {
+    async fn drive_js_func_call(
+        function_return_value: Result<JsValue, JsValue>,
+    ) -> Result<WasmMlsTransportResponse, JsValue> {
+        let promise: Promise = match function_return_value?.dyn_into() {
             Ok(promise) => promise,
             Err(e) => {
-                web_sys::console::warn_1(&js_sys::JsString::from(
+                web_sys::console::error_1(&js_sys::JsString::from(
                     r#"
 [CoreCrypto] One or more transport functions are not returning a `Promise`
-Please make all callbacks `async` or manually return a `Promise` via `Promise.resolve(boolean)`"#,
+Please make all callbacks `async` or manually return a `Promise` via `Promise.resolve()`"#,
                 ));
                 return Err(e);
             }
         };
-        let fut = wasm_bindgen_futures::JsFuture::from(promise);
-        let result = fut.await?;
-        let result = serde_wasm_bindgen::from_value(result)?;
-
-        Ok(result)
+        let js_future = wasm_bindgen_futures::JsFuture::from(promise);
+        let serialized_response = js_future.await?;
+        let response = serde_wasm_bindgen::from_value(serialized_response)?;
+        Ok(response)
     }
 }
 
@@ -1548,31 +1449,26 @@ impl MlsTransport for MlsTransportProvider {
     async fn send_commit_bundle(
         &self,
         commit_bundle: MlsCommitBundle,
-    ) -> Result<MlsTransportResponse, Box<dyn std::error::Error>> {
+    ) -> core_crypto::Result<core_crypto::MlsTransportResponse> {
         let send_commit_bundle = self.send_commit_bundle.read().await;
         let this = self.ctx.read().await;
-        let commit_bundle = CommitBundle::try_from(commit_bundle)?;
+        let commit_bundle = CommitBundle::try_from(commit_bundle)
+            .map_err(|e| core_crypto::Error::ErrorDuringMlsTransport(e.to_string()))?;
         Ok(
             Self::drive_js_func_call(send_commit_bundle.call1(&this, &commit_bundle.into()))
                 .await
-                .map_err(|e| InternalError::TransportError {
-                    attempted_operation: "send_message".into(),
-                    error: e,
-                })?
+                .map_err(|e| core_crypto::Error::ErrorDuringMlsTransport(format!("JsError: {e:?}")))?
                 .into(),
         )
     }
 
-    async fn send_message(&self, mls_message: Vec<u8>) -> Result<MlsTransportResponse, Box<dyn std::error::Error>> {
+    async fn send_message(&self, mls_message: Vec<u8>) -> core_crypto::Result<MlsTransportResponse> {
         let send_message = self.send_message.read().await;
         let this = self.ctx.read().await;
         let mls_message = js_sys::Uint8Array::from(mls_message.as_slice());
         Ok(Self::drive_js_func_call(send_message.call1(&this, &mls_message))
             .await
-            .map_err(|e| InternalError::TransportError {
-                attempted_operation: "send_message".into(),
-                error: e,
-            })?
+            .map_err(|e| Error::ErrorDuringMlsTransport(format!("JsError: {e:?}")))?
             .into())
     }
 }
