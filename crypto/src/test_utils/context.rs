@@ -14,24 +14,8 @@
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see http://www.gnu.org/licenses/.
 
-use core_crypto_keystore::connection::FetchFromDatabase;
-use core_crypto_keystore::entities::{
-    EntityFindParams, MlsCredential, MlsEncryptionKeyPair, MlsHpkePrivateKey, MlsKeyPackage, MlsSignatureKeyPair,
-};
-use mls_crypto_provider::MlsCryptoProvider;
-use openmls::prelude::{
-    group_info::VerifiableGroupInfo, Credential, CredentialWithKey, CryptoConfig, ExternalSender, HpkePublicKey,
-    KeyPackage, KeyPackageIn, LeafNodeIndex, Lifetime, MlsMessageIn, QueuedProposal, SignaturePublicKey, StagedCommit,
-};
-use openmls_traits::crypto::OpenMlsCrypto;
-use openmls_traits::{types::SignatureScheme, OpenMlsCryptoProvider};
-use std::sync::Arc;
-use tls_codec::{Deserialize, Serialize};
-use wire_e2e_identity::prelude::WireIdentityReader;
-use x509_cert::der::Encode;
-
 use crate::group_store::GroupStore;
-use crate::prelude::{MlsCommitBundle, WelcomeBundle};
+use crate::prelude::{MlsCommitBundle, MlsGroupInfoBundle, WelcomeBundle};
 use crate::test_utils::ClientContext;
 use crate::{
     e2e_identity::{
@@ -46,6 +30,23 @@ use crate::{
     },
     test_utils::{x509::X509Certificate, MessageExt, TestCase},
 };
+use core_crypto_keystore::connection::FetchFromDatabase;
+use core_crypto_keystore::entities::{
+    EntityFindParams, MlsCredential, MlsEncryptionKeyPair, MlsHpkePrivateKey, MlsKeyPackage, MlsSignatureKeyPair,
+};
+use core_crypto_keystore::CryptoKeystoreMls;
+use mls_crypto_provider::MlsCryptoProvider;
+use openmls::group::MlsGroup;
+use openmls::prelude::{
+    group_info::VerifiableGroupInfo, Credential, CredentialWithKey, CryptoConfig, ExternalSender, HpkePublicKey,
+    KeyPackage, KeyPackageIn, LeafNodeIndex, Lifetime, MlsMessageIn, QueuedProposal, SignaturePublicKey, StagedCommit,
+};
+use openmls_traits::crypto::OpenMlsCrypto;
+use openmls_traits::{types::SignatureScheme, OpenMlsCryptoProvider};
+use std::sync::Arc;
+use tls_codec::{Deserialize, Serialize};
+use wire_e2e_identity::prelude::WireIdentityReader;
+use x509_cert::der::Encode;
 
 #[allow(clippy::redundant_static_lifetimes)]
 pub const TEAM: &'static str = "world";
@@ -513,7 +514,8 @@ impl ClientContext {
         cipher_suite: MlsCiphersuite,
         key_package_count: usize,
     ) -> CryptoResult<RotateAllResult> {
-        let all_conversations = self.context.get_all_conversations().await?;
+        let keystore = self.context.keystore().await?;
+        let all_conversations = self.context.mls_groups().await?.get_fetch_all(&keystore).await?;
         let mut conversation_ids_and_commits = Vec::with_capacity(all_conversations.len());
         for conv in all_conversations {
             let conv = conv.read().await;
@@ -533,7 +535,7 @@ impl ClientContext {
         })
     }
 
-    /// Bob creates a commit but won't merge it immediately (e.g, because his app crashes before he receives the success response from the ds via MlsTransport api)
+    /// Creates a commit but don't merge it immediately (e.g, because the app crashes before he receives the success response from the ds via MlsTransport api)
     pub(crate) async fn create_unmerged_commit(&self, id: &ConversationId) -> MlsCommitBundle {
         self.context
             .get_conversation(&id)
@@ -542,6 +544,84 @@ impl ClientContext {
             .write()
             .await
             .update_keying_material(&self.client().await, &self.central.mls_backend, None, None)
+            .await
+            .unwrap()
+    }
+
+    pub(crate) async fn create_unmerged_external_commit(
+        &self,
+        group_info: VerifiableGroupInfo,
+        custom_cfg: MlsCustomConfiguration,
+        credential_type: MlsCredentialType,
+    ) -> MlsCommitBundle {
+        let client = self.client().await;
+
+        let cs: MlsCiphersuite = group_info.ciphersuite().into();
+        let mls_provider = &self.central.mls_backend;
+        let cb = client
+            .get_most_recent_or_create_credential_bundle(&mls_provider, cs.signature_algorithm(), credential_type)
+            .await
+            .unwrap();
+
+        let serialized_cfg = serde_json::to_vec(&custom_cfg)
+            .map_err(MlsError::MlsKeystoreSerializationError)
+            .unwrap();
+
+        let configuration = MlsConversationConfiguration {
+            ciphersuite: cs,
+            ..Default::default()
+        };
+
+        let (group, commit, group_info) = MlsGroup::join_by_external_commit(
+            mls_provider,
+            &cb.signature_key,
+            None,
+            group_info,
+            &configuration.as_openmls_default_configuration().unwrap(),
+            &[],
+            cb.to_mls_credential_with_key(),
+        )
+        .await
+        .map_err(MlsError::from)
+        .unwrap();
+
+        // We should always have ratchet tree extension turned on hence GroupInfo should always be present
+        let group_info = group_info.unwrap();
+        let group_info = MlsGroupInfoBundle::try_new_full_plaintext(group_info).unwrap();
+
+        let new_group_id = group.group_id().to_vec();
+
+        mls_provider
+            .key_store()
+            .mls_pending_groups_save(
+                new_group_id.as_slice(),
+                &core_crypto_keystore::ser(&group).unwrap(),
+                &serialized_cfg,
+                None,
+            )
+            .await
+            .unwrap();
+
+        let commit_bundle = MlsCommitBundle {
+            welcome: None,
+            commit,
+            group_info,
+        };
+
+        commit_bundle
+    }
+
+    /// Creates a commit but don't merge it immediately (e.g, because the app crashes before he receives the success response from the ds via MlsTransport api)
+    pub(crate) async fn create_unmerged_e2ei_rotate_commit(
+        &self,
+        id: &ConversationId,
+        cb: &CredentialBundle,
+    ) -> MlsCommitBundle {
+        let client = self.client().await;
+        let conversation = self.context.get_conversation(id).await.unwrap();
+        let mut conversation_guard = conversation.write().await;
+        conversation_guard
+            .e2ei_rotate(&self.central.mls_backend, &client, Some(cb))
             .await
             .unwrap()
     }
