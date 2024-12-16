@@ -15,7 +15,9 @@
 // along with this program. If not, see http://www.gnu.org/licenses/.
 
 use crate::{prelude::MlsConversation, KeystoreError, ProteusError, RecursiveError, Result};
-use core_crypto_keystore::{connection::FetchFromDatabase, entities::EntityFindParams};
+use core_crypto_keystore::connection::FetchFromDatabase;
+#[cfg(test)]
+use core_crypto_keystore::entities::EntityFindParams;
 
 #[cfg_attr(target_family = "wasm", async_trait::async_trait(?Send))]
 #[cfg_attr(not(target_family = "wasm"), async_trait::async_trait)]
@@ -23,6 +25,7 @@ pub(crate) trait GroupStoreEntity: std::fmt::Debug {
     type RawStoreValue: core_crypto_keystore::entities::Entity;
     type IdentityType;
 
+    #[cfg(test)]
     fn id(&self) -> &[u8];
 
     async fn fetch_from_id(
@@ -33,6 +36,7 @@ pub(crate) trait GroupStoreEntity: std::fmt::Debug {
     where
         Self: Sized;
 
+    #[cfg(test)]
     async fn fetch_all(keystore: &impl FetchFromDatabase) -> Result<Vec<Self>>
     where
         Self: Sized;
@@ -44,6 +48,7 @@ impl GroupStoreEntity for MlsConversation {
     type RawStoreValue = core_crypto_keystore::entities::PersistedMlsGroup;
     type IdentityType = ();
 
+    #[cfg(test)]
     fn id(&self) -> &[u8] {
         self.id().as_slice()
     }
@@ -67,6 +72,7 @@ impl GroupStoreEntity for MlsConversation {
         Ok(conversation.group.is_active().then_some(conversation))
     }
 
+    #[cfg(test)]
     async fn fetch_all(keystore: &impl FetchFromDatabase) -> Result<Vec<Self>> {
         let all_conversations = keystore
             .find_all::<Self::RawStoreValue>(EntityFindParams::default())
@@ -89,6 +95,7 @@ impl GroupStoreEntity for crate::proteus::ProteusConversationSession {
     type RawStoreValue = core_crypto_keystore::entities::ProteusSession;
     type IdentityType = std::sync::Arc<proteus_wasm::keys::IdentityKeyPair>;
 
+    #[cfg(test)]
     fn id(&self) -> &[u8] {
         unreachable!()
     }
@@ -119,6 +126,7 @@ impl GroupStoreEntity for crate::proteus::ProteusConversationSession {
         }))
     }
 
+    #[cfg(test)]
     async fn fetch_all(_keystore: &impl FetchFromDatabase) -> Result<Vec<Self>>
     where
         Self: Sized,
@@ -230,6 +238,7 @@ impl<V: GroupStoreEntity> GroupStore<V> {
         V::fetch_from_id(k, identity, keystore).await
     }
 
+    #[cfg(test)]
     pub(crate) async fn get_fetch_all(&mut self, keystore: &impl FetchFromDatabase) -> Result<Vec<GroupStoreValue<V>>> {
         let all = V::fetch_all(keystore)
             .await?
@@ -375,6 +384,7 @@ mod tests {
             Ok(Some(id.into()))
         }
 
+        #[cfg(test)]
         async fn fetch_all(_keystore: &impl FetchFromDatabase) -> Result<Vec<Self>> {
             unreachable!()
         }

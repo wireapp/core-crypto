@@ -300,21 +300,6 @@ impl CentralContext {
         }
     }
 
-    pub(crate) async fn get_all_conversations(&self) -> Result<Vec<GroupStoreValue<MlsConversation>>> {
-        let keystore = self
-            .mls_provider()
-            .await
-            .map_err(RecursiveError::root("getting mls provider"))?
-            .keystore();
-        self.mls_groups()
-            .await
-            .map_err(RecursiveError::root("getting mls groups"))?
-            .get_fetch_all(&keystore)
-            .await
-            .map_err(KeystoreError::wrap("fetching all mls groups from keystore"))
-            .map_err(Into::into)
-    }
-
     /// Mark a conversation as child of another one
     /// This will affect the behavior of callbacks in particular
     #[cfg_attr(test, crate::idempotent)]
