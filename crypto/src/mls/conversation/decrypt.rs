@@ -325,7 +325,8 @@ impl MlsConversation {
         msg_in: MlsMessageIn,
     ) -> CryptoResult<ProcessedMessage> {
         let mut is_duplicate = false;
-        let (protocol_message, content_type) = match msg_in.extract() {
+        let extracted_message_result = msg_in.extract();
+        let (protocol_message, content_type) = match extracted_message_result {
             MlsMessageInBody::PublicMessage(m) => {
                 is_duplicate = self.is_duplicate_message(backend, &m)?;
                 let ct = m.content_type();

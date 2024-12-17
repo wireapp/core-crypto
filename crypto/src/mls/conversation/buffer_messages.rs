@@ -15,6 +15,7 @@ use core_crypto_keystore::{
     connection::FetchFromDatabase,
     entities::{EntityFindParams, MlsPendingMessage},
 };
+use itertools::enumerate;
 use log::{error, info, trace};
 use mls_crypto_provider::MlsCryptoProvider;
 use openmls::prelude::{MlsMessageIn, MlsMessageInBody};
@@ -99,14 +100,19 @@ impl MlsConversation {
             // We want to restore application messages first, then Proposals & finally Commits
             // luckily for us that's the exact same order as the [ContentType] enum
             pending_messages.sort_by(|(a, _), (b, _)| a.cmp(b));
+            for (i, message) in enumerate(pending_messages.iter()) {
+                let (ct, _) = message;
+                error!("Pending message of type {:#?} at index {}", ct, i);
+            }
 
             let mut decrypted_messages = Vec::with_capacity(pending_messages.len());
-            for (_, m) in pending_messages {
+            for (ct, m) in pending_messages {
                 let parent_conversation = match &self.parent_id {
                     Some(_) => Some(parent_conversation.ok_or(CryptoError::ParentGroupNotFound)?),
                     _ => None,
                 };
                 let restore_pending = false; // to prevent infinite recursion
+                error!("Decrypting pending message of type {:#?}", ct);
                 let decrypted = self
                     .decrypt_message(m, parent_conversation, client, backend, restore_pending)
                     .await?;
