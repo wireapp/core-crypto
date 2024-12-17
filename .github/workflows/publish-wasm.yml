@@ -48,11 +48,13 @@ jobs:
       - name: Build WASM package
         run: |
           cd crypto-ffi
-          bun install
           cargo make wasm
+          cd bindings/js
+          bun run build
 
       - name: Publishes package to NPM
         uses: JS-DevTools/npm-publish@v3
         with:
           token: ${{ secrets.NPM_TOKEN }}
           access: public
+          package: "crypto-ffi/bindings/js/package.json"
