@@ -923,8 +923,6 @@ export function setMaxLogLevel(level: CoreCryptoLogLevel): void {
  */
 export class CoreCrypto {
     /** @hidden */
-    static #module: typeof CoreCryptoFfiTypes;
-    /** @hidden */
     #cc: CoreCryptoFfiTypes.CoreCrypto;
 
     /**
@@ -934,31 +932,11 @@ export class CoreCrypto {
         return this.#cc as CoreCryptoFfiTypes.CoreCrypto;
     }
 
-    /** @hidden */
-    static #assertModuleLoaded() {
-        if (!this.#module) {
-            throw new Error(
-                "Internal module hasn't been initialized. Please use `await CoreCrypto.init(params)` or `await CoreCrypto.deferredInit(params)` !"
-            );
-        }
-    }
-
-    /** @hidden */
-    static async #loadModule(wasmFilePath?: string) {
-        if (!this.#module) {
-            this.#module = (await initWasm(
-                wasmFilePath
-            )) as unknown as typeof CoreCryptoFfiTypes;
-        }
-    }
-
     static setLogger(logger: CoreCryptoWasmLogger) {
-        this.#assertModuleLoaded();
         CoreCryptoFfi.set_logger(logger);
     }
 
     static setMaxLogLevel(level: CoreCryptoLogLevel) {
-        this.#assertModuleLoaded();
         CoreCryptoFfi.set_max_log_level(level);
     }
 
@@ -999,13 +977,12 @@ export class CoreCrypto {
         databaseName,
         key,
         clientId,
-        wasmFilePath,
+        // @ts-expect-error TS6133: 'wasmFilePath' is declared but its value is never read.
+        wasmFilePath, // eslint-disable-line @typescript-eslint/no-unused-vars
         ciphersuites,
         entropySeed,
         nbKeyPackage,
     }: CoreCryptoParams): Promise<CoreCrypto> {
-        await this.#loadModule(wasmFilePath);
-
         const cs = ciphersuites.map((cs) => cs.valueOf());
         const cc = await CoreCryptoError.asyncMapErr(
             CoreCryptoFfi._internal_new(
@@ -1031,10 +1008,9 @@ export class CoreCrypto {
         databaseName,
         key,
         entropySeed,
-        wasmFilePath,
+        // @ts-expect-error TS6133: 'wasmFilePath' is declared but its value is never read.
+        wasmFilePath, // eslint-disable-line @typescript-eslint/no-unused-vars
     }: CoreCryptoDeferredParams): Promise<CoreCrypto> {
-        await this.#loadModule(wasmFilePath);
-
         const cc = await CoreCryptoError.asyncMapErr(
             CoreCryptoFfi.deferred_init(databaseName, key, entropySeed)
         );
@@ -1866,7 +1842,6 @@ export class CoreCrypto {
      * @returns The last resort PreKey id
      */
     static proteusLastResortPrekeyId(): number {
-        this.#assertModuleLoaded();
         return CoreCryptoFfi.proteus_last_resort_prekey_id();
     }
 
@@ -2231,10 +2206,8 @@ export class CoreCrypto {
      * @returns The `core-crypto-ffi` version as defined in its `Cargo.toml` file
      */
     static version(): string {
-        this.#assertModuleLoaded();
         return CoreCryptoFfi.version();
     }
-
 }
 
 /**
