@@ -112,6 +112,8 @@ Build:
 ```ignore
 cd crypto-ffi
 cargo make wasm
+cd bindings/js
+bun run build
 ```
 
 ### Bindings
@@ -204,30 +206,34 @@ core-crypto/crypto-ffi/bindings$ ./gradlew android:build -x lint -x lintRelease
 
 *No E2E testing is available as of now on Swift.*
 
-### Platform-spcecific tests for WASM/Web
+### Platform-specific tests for WASM/Web
 
 Install TS dependencies on first go, and each time they change:
 
 ```sh
-bun install
+core-crypto/crypto-ffi/bindings/js$ bun install
 ```
 
-Build the WASM target every timee the Rust code changes:
+Build the WASM target every time the Rust code changes:
 
 ```sh
 core-crypto/crypto-ffi$ cargo make wasm
 ```
 
-Then run the tests each time the wrapper or wrapper tests change
-
+Compile Typescript code into Javascript and integrate with the auto-generated wasm bindings:
 ```sh
-core-crypto/crypto-ffi$ bun run test
+core-crypto/crypto-ffi/bindings/js$ bun run build
+```
+
+Run tests:
+```sh
+core-crypto/crypto-ffi/bindings/js$ bun run test
 ```
 
 Note that CI will fail if it doesn't like your formatting. This can typically be automtically adjusted with
 
 ```sh
-core-crypto/crypto-ffi$ bun eslinst bindings/js --max-warnings=0 --fix
+core-crypto/crypto-ffi/bindings/js$ bun eslint --max-warnings=0 --fix
 ```
 
 ## Benchmarks
