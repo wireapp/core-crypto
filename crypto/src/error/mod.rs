@@ -79,9 +79,22 @@ pub trait InnermostErrorMessage {
 impl<E: std::error::Error> InnermostErrorMessage for E {
     fn innermost_error_message(&self) -> String {
         let mut err: &dyn std::error::Error = self;
-        while let Some(source) = self.source() {
+        while let Some(source) = err.source() {
             err = source;
         }
         err.to_string()
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn can_unpack_wrapped_error() {
+        let inner = Error::InvalidContext;
+        let outer = RecursiveError::root("wrapping the inner for test purposes")(inner);
+        let message = outer.innermost_error_message();
+        assert_eq!(message, Error::InvalidContext.to_string());
     }
 }
