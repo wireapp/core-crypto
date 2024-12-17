@@ -13,9 +13,17 @@ use crate::{
 use core_crypto_keystore::{
     connection::FetchFromDatabase,
     entities::{MlsPendingMessage, PersistedMlsPendingGroup},
+    CryptoKeystoreMls,
 };
+use openmls::group::MlsGroup;
+use openmls::prelude::{CredentialWithKey, MlsMessageIn, MlsMessageInBody};
+use openmls_traits::OpenMlsCryptoProvider;
+use tls_codec::Deserialize;
 
 use crate::context::CentralContext;
+use crate::mls::credential::crl::{extract_crl_uris_from_group, get_new_crl_distribution_points};
+use crate::mls::credential::ext::CredentialExt;
+use crate::MlsError;
 
 impl CentralContext {
     pub(crate) async fn handle_when_group_is_pending(
@@ -35,6 +43,11 @@ impl CentralContext {
             return Err(LeafError::ConversationNotFound(id.clone()).into());
         };
 
+        // If the confirmation tag of the pending group and this incoming message are identical, we can merge the pending group.
+        if self.incoming_message_is_own_join_commit(id, message.as_ref()).await? {
+            return self.merge_pending_group_and_build_decrypted_message_instance(id).await;
+        }
+
         let pending_msg = MlsPendingMessage {
             foreign_id: pending_group.id.clone(),
             message: message.as_ref().to_vec(),
@@ -45,10 +58,98 @@ impl CentralContext {
             .map_err(KeystoreError::wrap("saving mls pending message"))?;
         Err(Error::UnmergedPendingGroup)
     }
+
+    /// If the message confirmation tag and the group confirmation tag are the same, it means that
+    /// the external join commit has been accepted by the DS and the pending group can be merged.
+    async fn incoming_message_is_own_join_commit(
+        &self,
+        id: &ConversationId,
+        message: impl AsRef<[u8]>,
+    ) -> Result<bool> {
+        let backend = self
+            .mls_provider()
+            .await
+            .map_err(RecursiveError::root("getting mls provider"))?;
+        // Instantiate the pending group
+        let (group, _cfg) = backend
+            .key_store()
+            .mls_pending_groups_load(id)
+            .await
+            .map_err(KeystoreError::wrap("loading mls pending groups"))?;
+        let mut mls_group = core_crypto_keystore::deser::<MlsGroup>(&group)
+            .map_err(KeystoreError::wrap("deserializing mls pending groups"))?;
+
+        // The commit is only merged on this temporary instance of the pending group, to enable
+        // calculation of the confirmation tag.
+        mls_group
+            .merge_pending_commit(&backend)
+            .await
+            .map_err(MlsError::wrap("merging pending commit"))?;
+        let message_in = MlsMessageIn::tls_deserialize(&mut message.as_ref())
+            .map_err(MlsError::wrap("deserializing mls message"))?;
+        let MlsMessageInBody::PublicMessage(public_message) = message_in.extract() else {
+            return Ok(false);
+        };
+        let Some(msg_ct) = public_message.confirmation_tag() else {
+            return Ok(false);
+        };
+        let group_ct = mls_group
+            .compute_confirmation_tag(&backend)
+            .map_err(MlsError::wrap("computing confirmation tag"))?;
+        Ok(*msg_ct == group_ct)
+    }
+
+    async fn merge_pending_group_and_build_decrypted_message_instance(
+        &self,
+        id: &ConversationId,
+    ) -> Result<MlsConversationDecryptMessage> {
+        let backend = self
+            .mls_provider()
+            .await
+            .map_err(RecursiveError::root("getting mls provider"))?;
+        let buffered_messages = self.merge_pending_group_from_external_commit(id).await?;
+        let conversation = self
+            .get_conversation(id)
+            .await
+            .map_err(RecursiveError::mls_conversation("getting conversation by id"))?;
+        let conversation = conversation.read().await;
+
+        let own_leaf = conversation.group.own_leaf().ok_or(LeafError::InternalMlsError)?;
+
+        // We return self identity here, probably not necessary to check revocation
+        let own_leaf_credential_with_key = CredentialWithKey {
+            credential: own_leaf.credential().clone(),
+            signature_key: own_leaf.signature_key().clone(),
+        };
+        let identity = own_leaf_credential_with_key
+            .extract_identity(conversation.ciphersuite(), None)
+            .map_err(RecursiveError::mls_credential("extracting identity"))?;
+
+        let crl_new_distribution_points = get_new_crl_distribution_points(
+            &backend,
+            extract_crl_uris_from_group(&conversation.group)
+                .map_err(RecursiveError::mls_credential("extracting crl uris from group"))?,
+        )
+        .await
+        .map_err(RecursiveError::mls_credential("getting new crl distribution points"))?;
+
+        Ok(MlsConversationDecryptMessage {
+            app_msg: None,
+            proposals: vec![],
+            is_active: conversation.group.is_active(),
+            delay: conversation.compute_next_commit_delay(),
+            sender_client_id: None,
+            has_epoch_changed: true,
+            identity,
+            buffered_messages,
+            crl_new_distribution_points,
+        })
+    }
 }
 
 #[cfg(test)]
 mod tests {
+    use crate::prelude::MlsConversationDecryptMessage;
     use crate::test_utils::*;
     use wasm_bindgen_test::*;
 
@@ -73,10 +174,8 @@ mod tests {
                     // Bob tries to join Alice's group with an external commit
                     let gi = alice_central.get_group_info(&id).await;
                     let external_commit = bob_central
-                        .context
-                        .join_by_external_commit(gi, case.custom_cfg(), case.credential_type)
-                        .await
-                        .unwrap();
+                        .create_unmerged_external_commit(gi, case.custom_cfg(), case.credential_type)
+                        .await;
 
                     // Alice decrypts the external commit...
                     alice_central
@@ -106,20 +205,20 @@ mod tests {
                         .await
                         .unwrap();
                     let charlie = charlie_central.rand_key_package(&case).await;
-                    let commit = alice_central
+                    alice_central
                         .context
                         .add_members_to_conversation(&id, vec![charlie])
                         .await
                         .unwrap();
-                    alice_central.context.commit_accepted(&id).await.unwrap();
+                    let commit = alice_central.mls_transport.latest_commit_bundle().await;
                     charlie_central
                         .context
-                        .process_welcome_message(commit.welcome.clone().into(), case.custom_cfg())
+                        .process_welcome_message(commit.welcome.clone().unwrap().into(), case.custom_cfg())
                         .await
                         .unwrap();
                     debbie_central
                         .context
-                        .process_welcome_message(commit.welcome.clone().into(), case.custom_cfg())
+                        .process_welcome_message(commit.welcome.clone().unwrap().into(), case.custom_cfg())
                         .await
                         .unwrap();
 
@@ -148,9 +247,12 @@ mod tests {
                     assert_eq!(bob_central.context.count_entities().await.pending_messages, 4);
 
                     // Finally, Bob receives the green light from the DS and he can merge the external commit
-                    let Some(restored_messages) = bob_central
+                    let MlsConversationDecryptMessage {
+                        buffered_messages: Some(restored_messages),
+                        ..
+                    } = bob_central
                         .context
-                        .merge_pending_group_from_external_commit(&id)
+                        .decrypt_message(&id, external_commit.commit.to_bytes().unwrap())
                         .await
                         .unwrap()
                     else {
@@ -230,16 +332,13 @@ mod tests {
                     assert_eq!(alice_central.context.count_entities().await.pending_messages, 2);
 
                     let gi = bob_central.get_group_info(&id).await;
-                    let ext_commit = alice_central
+                    alice_central
                         .context
                         .join_by_external_commit(gi, case.custom_cfg(), case.credential_type)
                         .await
                         .unwrap();
-                    alice_central
-                        .context
-                        .merge_pending_group_from_external_commit(&id)
-                        .await
-                        .unwrap();
+
+                    let ext_commit = alice_central.mls_transport.latest_commit_bundle().await;
 
                     bob_central
                         .context
