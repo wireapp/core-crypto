@@ -19,6 +19,7 @@ use core_crypto_ffi::{
     context::TransactionHelper, ClientId, CoreCrypto, CustomConfiguration, MlsCredentialType, UniffiCustomTypeConverter,
 };
 use std::cell::Cell;
+use tempfile::NamedTempFile;
 
 use crate::{
     clients::{EmulatedClient, EmulatedClientProtocol, EmulatedClientType, EmulatedMlsClient},
@@ -29,12 +30,16 @@ use crate::{
 pub(crate) struct CoreCryptoFfiClient {
     cc: CoreCrypto,
     client_id: Vec<u8>,
+    // We will create a NamedTempFile which we will immediately use to get the path.
+    // Once we get the path, we don't need to read from it anymore, but the compiler
+    // will rightly point out that the value we store in the CoreCryptoFfiClient
+    // struct is never read. However, we need to store the NamedTempFile instance in
+    // the struct, so that the temporary file is not cleaned up prematurely.
+    // So mark the field as unused to silence the compiler here.
+    _temp_file: NamedTempFile,
     #[cfg(feature = "proteus")]
     prekey_last_id: Cell<u16>,
 }
-
-const KEY_STORE_PATH: &str = "ffi_keystore";
-const KEY_STORE_KEY: &str = "key";
 
 impl CoreCryptoFfiClient {
     pub(crate) async fn new() -> Result<CoreCryptoFfiClient> {
@@ -42,9 +47,11 @@ impl CoreCryptoFfiClient {
         let client_id_bytes: Vec<u8> = client_id.as_hyphenated().to_string().as_bytes().into();
         let client_id = ClientId::into_custom(client_id_bytes.clone()).unwrap();
         let ciphersuite = CIPHERSUITE_IN_USE;
+        let temp_file = NamedTempFile::with_prefix("interop-ffi-keystore-")?;
+
         let cc = CoreCrypto::new(
-            KEY_STORE_PATH.into(),
-            KEY_STORE_KEY.into(),
+            temp_file.path().to_string_lossy().into_owned(),
+            "key".to_string(),
             Some(client_id),
             Some(vec![ciphersuite].into()),
             None,
@@ -52,6 +59,7 @@ impl CoreCryptoFfiClient {
         .await?;
         Ok(Self {
             cc,
+            _temp_file: temp_file,
             client_id: client_id_bytes,
             #[cfg(feature = "proteus")]
             prekey_last_id: Cell::new(0),
@@ -79,7 +87,7 @@ impl EmulatedClient for CoreCryptoFfiClient {
 
     async fn wipe(mut self) -> Result<()> {
         drop(self.cc);
-        Ok(async_fs::remove_file(KEY_STORE_PATH).await?)
+        Ok(())
     }
 }
 
