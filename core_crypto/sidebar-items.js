@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"constant":["BUILD_METADATA"],"enum":["CryptoError","CryptoboxMigrationError","MlsError","MlsTransportResponse","ProteusError"],"mod":["context","e2e_identity","mls","prelude","proteus"],"struct":["BuildMetadata","CoreCrypto"],"trait":["MlsTransport"],"type":["CryptoResult"]};

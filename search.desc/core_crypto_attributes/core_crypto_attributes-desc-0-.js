@@ -1,0 +1,1 @@
+searchState.loadedDescShard("core_crypto_attributes", 0, "Neologism to mean the opposite of idempotent. Methods of …\nWill drop current MLS group in memory and replace it with …\n!!! Not literally idempotent !!!")
