@@ -194,8 +194,8 @@ jobs:
       - name: Build & test WASM / JS package
         run: |
           cd crypto-ffi
-          bun install
           cargo make wasm
-          bun run test
           cd bindings/js
           bun eslint . --max-warnings=0
+          bun run build
+          bun run test
