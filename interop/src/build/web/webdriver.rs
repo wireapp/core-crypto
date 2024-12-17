@@ -52,7 +52,7 @@ pub(crate) async fn start_webdriver_chrome(addr: &std::net::SocketAddr) -> Resul
 }
 
 pub(crate) async fn setup_browser(addr: &std::net::SocketAddr, folder: &str) -> Result<fantoccini::Client> {
-    // let spinner = RunningProcess::new("Starting Fantoccini remote browser...", false);
+    let spinner = RunningProcess::new("Starting Fantoccini remote browser...", false);
     let mut caps_json = serde_json::json!({
         "goog:chromeOptions": {
             "args": [
@@ -77,7 +77,6 @@ pub(crate) async fn setup_browser(addr: &std::net::SocketAddr, folder: &str) -> 
         .await?;
     browser.goto(&format!("{TEST_SERVER_URI}/{folder}/index.html")).await?;
 
-    // spinner.success("Browser [OK]");
-
+    spinner.success("Browser [OK]");
     Ok(browser)
 }

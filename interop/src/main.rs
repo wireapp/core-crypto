@@ -70,6 +70,7 @@ fn run_test() -> Result<()> {
         log::info!("cwd was {current_dir:?}; setting it to {new_cwd:?}");
         std::env::set_current_dir(new_cwd)?;
     }
+    let tempdir = tempfile::tempdir()?;
 
     // because cannot use `#[tokio::main]` on wasm target because tokio does not compile on this target
     let runtime = tokio::runtime::Builder::new_multi_thread()
@@ -80,10 +81,10 @@ fn run_test() -> Result<()> {
     runtime.block_on(async {
         build::web::webdriver::setup_webdriver(force_webdriver_install).await?;
 
-        build::web::wasm::build_wasm().await?;
+        build::web::wasm::build_wasm(tempdir.path().to_path_buf()).await?;
 
         let spinner = util::RunningProcess::new("Starting HTTP server...", false);
-        let http_server_hwnd = tokio::task::spawn(build::web::wasm::spawn_http_server());
+        let http_server_hwnd = tokio::task::spawn(build::web::wasm::spawn_http_server(tempdir.path().to_path_buf()));
         spinner.success(format!("HTTP server started at 0.0.0.0:{TEST_SERVER_PORT} [OK]"));
 
         let mut spinner = util::RunningProcess::new("Starting WebDriver [ChromeDriver & GeckoDriver]...", false);
