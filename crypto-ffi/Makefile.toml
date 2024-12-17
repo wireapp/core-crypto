@@ -83,7 +83,7 @@ args = ["doc", "--no-deps", "--target=wasm32-unknown-unknown"]
 
 [tasks.bun-deps]
 command = "bun"
-args = ["install"]
+args = ["install", "--cwd", "bindings/js"]
 
 [tasks.docs-ts]
 dependencies = ["wasm", "bun-deps"]
@@ -119,7 +119,7 @@ script = "cargo make wasm-build --dev"
 [tasks.wasm]
 dependencies = ["wasm-build", "bun-deps"]
 command = "bun"
-args = ["run", "build_ts.ts"]
+args = ["run", "--cwd", "bindings/js", "build"]
 
 ##################################### FFI #####################################
 
