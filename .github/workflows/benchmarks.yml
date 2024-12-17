@@ -61,7 +61,7 @@ jobs:
         with:
           bencher-api-token: ${{ secrets.BENCHER_API_TOKEN }}
           github-token: ${{ secrets.GITHUB_TOKEN }}
-          directory: ${{ github.workspace }}/crypto-ffi
+          directory: ${{ github.workspace }}/crypto-ffi/bindings/js
           adapter: json
           # No bench command, as we run the bench before calling bencher CLI.
           bench-command:
