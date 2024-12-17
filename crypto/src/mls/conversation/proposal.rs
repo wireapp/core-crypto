@@ -159,7 +159,7 @@ mod tests {
     use openmls::prelude::SignaturePublicKey;
     use wasm_bindgen_test::*;
 
-    use crate::{prelude::MlsCommitBundle, test_utils::*};
+    use crate::test_utils::*;
 
     use super::*;
 
@@ -198,12 +198,9 @@ mod tests {
                             .decrypt_message(&id, proposal.to_bytes().unwrap())
                             .await
                             .unwrap();
-                        let MlsCommitBundle { commit, welcome, .. } = bob_central
-                            .context
-                            .commit_pending_proposals(&id)
-                            .await
-                            .unwrap()
-                            .unwrap();
+                        bob_central.context.commit_pending_proposals(&id).await.unwrap();
+                        let commit = bob_central.mls_transport.latest_commit().await;
+                        let welcome = bob_central.mls_transport.latest_welcome_message().await;
                         bob_central.context.commit_accepted(&id).await.unwrap();
                         assert_eq!(bob_central.get_conversation_unchecked(&id).await.members().len(), 3);
 
@@ -219,7 +216,7 @@ mod tests {
                         charlie_central
                             .try_join_from_welcome(
                                 &id,
-                                welcome.unwrap().into(),
+                                welcome.into(),
                                 case.custom_cfg(),
                                 vec![&alice_central, &bob_central],
                             )
@@ -268,13 +265,8 @@ mod tests {
                             .decrypt_message(&id, proposal.to_bytes().unwrap())
                             .await
                             .unwrap();
-                        let commit = bob_central
-                            .context
-                            .commit_pending_proposals(&id)
-                            .await
-                            .unwrap()
-                            .unwrap()
-                            .commit;
+                        bob_central.context.commit_pending_proposals(&id).await.unwrap();
+                        let commit = bob_central.mls_transport.latest_commit().await;
                         bob_central.context.commit_accepted(&id).await.unwrap();
                         assert_eq!(bob_central.get_conversation_unchecked(&id).await.members().len(), 2);
 
@@ -330,13 +322,8 @@ mod tests {
                         .decrypt_message(&id, proposal.to_bytes().unwrap())
                         .await
                         .unwrap();
-                    let commit = bob_central
-                        .context
-                        .commit_pending_proposals(&id)
-                        .await
-                        .unwrap()
-                        .unwrap()
-                        .commit;
+                    bob_central.context.commit_pending_proposals(&id).await.unwrap();
+                    let commit = bob_central.mls_transport.latest_commit().await;
 
                     // before merging, commit is not applied
                     assert!(bob_central

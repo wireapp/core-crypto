@@ -65,11 +65,11 @@ mod tests {
                     alice_central.invite_all(&case, &id, [&bob_central]).await.unwrap();
 
                     // an commit to verify that we can still detect wrong epoch correctly
-                    let unknown_commit = alice_central.context.update_keying_material(&id).await.unwrap().commit;
+                    let unknown_commit = alice_central.create_unmerged_commit(&id).await.commit;
                     alice_central.context.clear_pending_commit(&id).await.unwrap();
 
-                    let commit = alice_central.context.update_keying_material(&id).await.unwrap().commit;
-                    alice_central.context.commit_accepted(&id).await.unwrap();
+                    alice_central.context.update_keying_material(&id).await.unwrap();
+                    let commit = alice_central.mls_transport.latest_commit().await;
 
                     // decrypt once ... ok
                     bob_central
@@ -112,29 +112,19 @@ mod tests {
                 let gi = alice_central.get_group_info(&id).await;
 
                 // an external commit to verify that we can still detect wrong epoch correctly
-                let unknown_ext_commit = bob_central
-                    .context
-                    .join_by_external_commit(gi.clone(), case.custom_cfg(), case.credential_type)
-                    .await
-                    .unwrap()
-                    .commit;
+                let unknown_ext_commit = bob_central.create_unmerged_commit(&id).await.commit;
                 bob_central
                     .context
                     .clear_pending_group_from_external_commit(&id)
                     .await
                     .unwrap();
 
-                let ext_commit = bob_central
+                bob_central
                     .context
                     .join_by_external_commit(gi, case.custom_cfg(), case.credential_type)
                     .await
-                    .unwrap()
-                    .commit;
-                bob_central
-                    .context
-                    .merge_pending_group_from_external_commit(&id)
-                    .await
                     .unwrap();
+                let ext_commit = bob_central.mls_transport.latest_commit().await;
 
                 // decrypt once ... ok
                 alice_central

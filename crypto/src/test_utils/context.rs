@@ -187,7 +187,8 @@ impl ClientContext {
         let size_before = self.get_conversation_unchecked(id).await.members().len();
 
         let kps = others.iter().map(|(_, kp)| kp).cloned().collect::<Vec<_>>();
-        let welcome = self.context.add_members_to_conversation(id, kps).await?.welcome;
+        self.context.add_members_to_conversation(id, kps).await?;
+        let welcome = self.mls_transport.latest_commit_bundle().await.welcome.unwrap();
 
         for (other, ..) in &others {
             other
@@ -196,7 +197,6 @@ impl ClientContext {
                 .await?;
         }
 
-        self.context.commit_accepted(id).await?;
         assert_eq!(
             self.get_conversation_unchecked(id).await.members().len(),
             size_before + N

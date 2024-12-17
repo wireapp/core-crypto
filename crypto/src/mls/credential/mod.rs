@@ -407,6 +407,7 @@ mod tests {
             let charlie_context = ClientContext {
                 context: charlie_transaction,
                 central: charlie_central,
+                mls_transport: Arc::<CoreCryptoTransportSuccessProvider>::default(),
                 x509_test_chain: Arc::new(Some(x509_test_chain)),
             };
 
@@ -514,6 +515,8 @@ mod tests {
         )?;
 
         let creator_central = MlsCentral::try_new(creator_cfg).await?;
+        let creator_transport = Arc::<CoreCryptoTransportSuccessProvider>::default();
+        creator_central.provide_transport(creator_transport.clone()).await;
         let cc = CoreCrypto::from(creator_central);
         let creator_transaction = cc.new_transaction().await?;
         let creator_central = cc.mls;
@@ -524,6 +527,7 @@ mod tests {
         let creator_client_context = ClientContext {
             context: creator_transaction.clone(),
             central: creator_central,
+            mls_transport: creator_transport.clone(),
             x509_test_chain: Arc::new(x509_test_chain.cloned()),
         };
 
@@ -546,6 +550,8 @@ mod tests {
         )?;
 
         let guest_central = MlsCentral::try_new(guest_cfg).await?;
+        let guest_transport = Arc::<CoreCryptoTransportSuccessProvider>::default();
+        guest_central.provide_transport(guest_transport.clone()).await;
         let cc = CoreCrypto::from(guest_central);
         let guest_transaction = cc.new_transaction().await?;
         let guest_central = cc.mls;
@@ -567,6 +573,7 @@ mod tests {
         let guest_client_context = ClientContext {
             context: guest_transaction.clone(),
             central: guest_central,
+            mls_transport: guest_transport.clone(),
             x509_test_chain: Arc::new(x509_test_chain.cloned()),
         };
 

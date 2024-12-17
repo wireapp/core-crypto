@@ -91,7 +91,7 @@ impl MlsConversation {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{prelude::MlsConversationCreationMessage, test_utils::*};
+    use crate::test_utils::*;
     use tls_codec::Serialize as _;
     use wasm_bindgen_test::*;
 
@@ -181,15 +181,12 @@ mod tests {
                         .unwrap();
 
                     let bob = bob_central.rand_key_package(&case).await;
-                    let MlsConversationCreationMessage {
-                        welcome: bob_welcome, ..
-                    } = alice_central
+                    alice_central
                         .context
                         .add_members_to_conversation(&id, vec![bob])
                         .await
                         .unwrap();
-                    assert_eq!(alice_central.get_conversation_unchecked(&id).await.members().len(), 1);
-                    alice_central.context.commit_accepted(&id).await.unwrap();
+                    let bob_welcome = alice_central.mls_transport.latest_welcome_message().await;
                     assert_eq!(alice_central.get_conversation_unchecked(&id).await.members().len(), 2);
 
                     bob_central
@@ -199,28 +196,23 @@ mod tests {
                         .unwrap();
 
                     let charlie = charlie_central.rand_key_package(&case).await;
-                    let MlsConversationCreationMessage {
-                        welcome: charlie_welcome,
-                        commit,
-                        ..
-                    } = alice_central
+                    alice_central
                         .context
                         .add_members_to_conversation(&id, vec![charlie])
                         .await
                         .unwrap();
-                    assert_eq!(alice_central.get_conversation_unchecked(&id).await.members().len(), 2);
-                    alice_central.context.commit_accepted(&id).await.unwrap();
+                    let charlie_welcome_bundle = alice_central.mls_transport.latest_commit_bundle().await;
                     assert_eq!(alice_central.get_conversation_unchecked(&id).await.members().len(), 3);
 
                     let _ = bob_central
                         .context
-                        .decrypt_message(&id, &commit.tls_serialize_detached().unwrap())
+                        .decrypt_message(&id, &charlie_welcome_bundle.commit.tls_serialize_detached().unwrap())
                         .await
                         .unwrap();
 
                     charlie_central
                         .context
-                        .process_welcome_message(charlie_welcome.into(), case.custom_cfg())
+                        .process_welcome_message(charlie_welcome_bundle.welcome.unwrap().into(), case.custom_cfg())
                         .await
                         .unwrap();
 

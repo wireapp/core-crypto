@@ -130,6 +130,7 @@ impl MlsConversation {
 
 #[cfg(test)]
 mod tests {
+    use crate::prelude::MlsConversationDecryptMessage;
     use crate::{test_utils::*, CryptoError};
     use wasm_bindgen_test::*;
 
@@ -151,8 +152,8 @@ mod tests {
                         .unwrap();
                     alice_central.invite_all(&case, &id, [&bob_central]).await.unwrap();
 
-                    // Bob creates a commit but won't merge it immediately
-                    let unmerged_commit = bob_central.context.update_keying_material(&id).await.unwrap();
+                    // Bob creates a commit but won't merge it immediately (e.g, because his app crashes before he receives the success response from the ds)
+                    let unmerged_commit = bob_central.create_unmerged_commit(&id).await;
 
                     // Alice decrypts the commit...
                     alice_central
@@ -182,20 +183,20 @@ mod tests {
                         .await
                         .unwrap();
                     let charlie = charlie_central.rand_key_package(&case).await;
-                    let commit = alice_central
+                    alice_central
                         .context
                         .add_members_to_conversation(&id, vec![charlie])
                         .await
                         .unwrap();
-                    alice_central.context.commit_accepted(&id).await.unwrap();
+                    let commit = alice_central.mls_transport.latest_commit_bundle().await;
                     charlie_central
                         .context
-                        .process_welcome_message(commit.welcome.clone().into(), case.custom_cfg())
+                        .process_welcome_message(commit.welcome.clone().unwrap().into(), case.custom_cfg())
                         .await
                         .unwrap();
                     debbie_central
                         .context
-                        .process_welcome_message(commit.welcome.clone().into(), case.custom_cfg())
+                        .process_welcome_message(commit.welcome.clone().unwrap().into(), case.custom_cfg())
                         .await
                         .unwrap();
 
@@ -216,7 +217,15 @@ mod tests {
                     assert_eq!(bob_central.context.count_entities().await.pending_messages, 4);
 
                     // Finally, Bob receives the green light from the DS and he can merge the external commit
-                    let Some(restored_messages) = bob_central.context.commit_accepted(&id).await.unwrap() else {
+                    let MlsConversationDecryptMessage {
+                        buffered_messages: Some(restored_messages),
+                        ..
+                    } = bob_central
+                        .context
+                        .decrypt_message(&id, unmerged_commit.commit.to_bytes().unwrap())
+                        .await
+                        .unwrap()
+                    else {
                         panic!("Alice's messages should have been restored at this point");
                     };
                     for (i, m) in restored_messages.into_iter().enumerate() {
@@ -272,16 +281,13 @@ mod tests {
 
                         // Bob joins the group with an external commit...
                         let gi = alice_central.get_group_info(&id).await;
-                        let ext_commit = bob_central
+                        bob_central
                             .context
                             .join_by_external_commit(gi, case.custom_cfg(), case.credential_type)
                             .await
                             .unwrap();
-                        bob_central
-                            .context
-                            .merge_pending_group_from_external_commit(&id)
-                            .await
-                            .unwrap();
+
+                        let ext_commit = bob_central.mls_transport.latest_commit_bundle().await;
 
                         // And before others had the chance to get the commit, Bob will create & send messages in the next epoch
                         // which Alice will have to buffer until she receives the commit.
@@ -309,20 +315,20 @@ mod tests {
                             .await
                             .unwrap();
                         let debbie = debbie_central.rand_key_package(&case).await;
-                        let commit = bob_central
+                        bob_central
                             .context
                             .add_members_to_conversation(&id, vec![debbie])
                             .await
                             .unwrap();
-                        bob_central.context.commit_accepted(&id).await.unwrap();
+                        let commit = bob_central.mls_transport.latest_commit_bundle().await;
                         charlie_central
                             .context
-                            .process_welcome_message(commit.welcome.clone().into(), case.custom_cfg())
+                            .process_welcome_message(commit.welcome.clone().unwrap().into(), case.custom_cfg())
                             .await
                             .unwrap();
                         debbie_central
                             .context
-                            .process_welcome_message(commit.welcome.clone().into(), case.custom_cfg())
+                            .process_welcome_message(commit.welcome.clone().unwrap().into(), case.custom_cfg())
                             .await
                             .unwrap();
 
