@@ -1,7 +1,7 @@
 [package]
 name = "wire-e2e-identity"
 description = "Public API for Wire end to end identity"
-version = "0.11.0"
+version = "0.12.0"
 edition = "2021"
 repository = "https://github.com/wireapp/rusty-jwt-tools"
 license = "MPL-2.0"
@@ -11,8 +11,8 @@ publish = false
 crate-type = ["cdylib", "rlib"]
 
 [dependencies]
-rusty-acme = { version = "0.11.0", path = "../acme" }
-rusty-jwt-tools = { version = "0.11.0", path = "../jwt" }
+rusty-acme = { version = "0.12.0", path = "../acme" }
+rusty-jwt-tools = { version = "0.12.0", path = "../jwt" }
 serde = { workspace = true }
 serde_json = { workspace = true }
 thiserror = { workspace = true }
@@ -29,8 +29,8 @@ ed25519-dalek = { workspace = true, optional = true }
 signature = { workspace = true, optional = true }
 
 [dev-dependencies]
-wire-e2e-identity = { version = "0.11.0", path = ".", features = ["builder"] }
-rusty-jwt-tools = { version = "0.11.0", path = "../jwt", features = ["test-utils", "rsa"] }
+wire-e2e-identity = { version = "0.12.0", path = ".", features = ["builder"] }
+rusty-jwt-tools = { version = "0.12.0", path = "../jwt", features = ["test-utils", "rsa"] }
 base64 = { workspace = true }
 url = { workspace = true }
 itertools = { workspace = true }
