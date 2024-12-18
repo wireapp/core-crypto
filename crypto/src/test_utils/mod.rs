@@ -52,19 +52,42 @@ pub const GROUP_SAMPLE_SIZE: usize = 9;
 /// Trace up the error's source chain, and return whether the innermost matches the
 /// provided pattern, and guard if supplied.
 ///
-/// Syntax matches that of [std::matches].
+/// Basic syntax matches that of [`std::matches`].
+///
+/// In case the innermost error of your type is wrapped in a `Box` or similar, you can use
+/// an expanded syntax: after the pattern or guard expression, a third argument like
+/// `deref Box<ExpectedType>: *`. If you have a more deeply nested type, you can add as
+/// many deref operations (stars) as you need.
 ///
 /// We can't write `fn innermost_source` because Rust can't prove that the innermost
 /// error lives as long as the original error, and demands that it live as long as
 /// `'static`, which is unhelpful. But we can inline the whole thing with a macro, as here.
 macro_rules! innermost_source_matches {
+    // sure would be nice if we didn't have to write the whole body of this macro twice here.
+    // doesn't work though: pass the `matches!` line as a simple `matches!` expression, and
+    // `err` is out of scope in the outer context.
+    // pass it as a lambda expression taking `err` as a function, and rustc decides that somehow
+    // we're causing borrowed data to escape from a closure's scope.
     ($err:expr, $pattern:pat $(if $guard:expr)? $(,)?) => {{
         let mut err: &dyn std::error::Error = &$err;
         while let Some(inner) = err.source() {
             err = inner;
         }
 
-        let outcome = matches!(err.downcast_ref(), Some($pattern) $($guard)?);
+        let outcome = matches!(err.downcast_ref(), Some($pattern) $(if $guard)?);
+        if !outcome {
+            eprintln!("{err:?}: {err}");
+        }
+
+        outcome
+    }};
+    ($err:expr, $pattern:pat $(if $guard:expr)?, deref $t:ty : $($deref:tt)* $(,)?) => {{
+        let mut err: &dyn std::error::Error = &$err;
+        while let Some(inner) = err.source() {
+            err = inner;
+        }
+
+        let outcome = matches!(err.downcast_ref::<$t>().map(|t| &*$($deref)* t), Some($pattern) $(if $guard)?);
         if !outcome {
             eprintln!("{err:?}: {err}");
         }

@@ -233,27 +233,7 @@ mod tests {
         let err = try_talk(&case, Some(&x509_test_chain), alice_identifier, bob_identifier)
             .await
             .unwrap_err();
-        // assert!(innermost_source_matches!(err, Error::InvalidIdentity));
-        //
-        // The above should work, in this case. But it fails
-        // for mysterious reasons that I do not understand.
-        // Digging into it, the `downcast_ref` internal to the `innermost_source_matches`
-        // macro produces `None`, so Rust thinks that it's a different error internally.
-        // But changing the debug/display implementations on `Error::InvalidIdentity`
-        // also changes the implementations on the inner type; I'm reasonably confident
-        // that it is in fact this enum and variant.
-        //
-        // So let's abuse the debug implementation, on the assumption
-        // that nobody is going to make a different unrelated error
-        // which just happens to share the same debug name.
-        assert!({
-            let mut err: &dyn std::error::Error = &err;
-            while let Some(inner) = err.source() {
-                err = inner;
-            }
-
-            format!("{err:?}") == "InvalidIdentity"
-        })
+        assert!(innermost_source_matches!(err, Error::InvalidIdentity, deref Box<Error>: *));
     }
 
     #[apply(all_cred_cipher)]
