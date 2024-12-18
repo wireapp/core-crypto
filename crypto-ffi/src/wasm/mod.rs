@@ -269,6 +269,7 @@ impl From<RecursiveError> for InternalError {
             core_crypto::mls::conversation::Error::StaleCommit => MlsError::StaleCommit.into(),
             core_crypto::mls::conversation::Error::StaleProposal => MlsError::StaleProposal.into(),
             core_crypto::mls::conversation::Error::UnbufferedFarFutureMessage => MlsError::WrongEpoch.into(),
+            core_crypto::mls::conversation::Error::OrphanWelcome => MlsError::OrphanWelcome.into(),
             core_crypto::mls::Error::UnmergedPendingGroup => MlsError::UnmergedPendingGroup.into(),
             ||=> MlsError::Other(error.innermost_error_message()).into(),
         })
