@@ -50,7 +50,7 @@ pub enum Error {
     #[error("Tried to decrypt a commit created by self which is likely to have been replayed by the DS")]
     SelfCommitIgnored,
     #[error("This proposal variant cannot be renewed")]
-    PropopsalVariantCannotBeRenewed,
+    ProposalVariantCannotBeRenewed,
     #[error("caller error: {0}")]
     CallerError(&'static str),
     /// This happens when the DS cannot flag KeyPackages as claimed or not. It this scenario, a client
