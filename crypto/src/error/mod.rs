@@ -17,7 +17,6 @@
 mod cryptobox_migration;
 mod keystore;
 mod leaf;
-mod legacy;
 mod mls;
 mod proteus;
 mod recursive;
