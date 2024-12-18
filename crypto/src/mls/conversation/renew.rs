@@ -114,7 +114,7 @@ impl MlsConversation {
                 Proposal::Add(add) => self.propose_add_member(client, backend, add.key_package.into()).await?,
                 Proposal::Remove(remove) => self.propose_remove_member(client, backend, remove.removed()).await?,
                 Proposal::Update(update) => self.renew_update(client, backend, Some(update.leaf_node())).await?,
-                _ => return Err(Error::PropopsalVariantCannotBeRenewed),
+                _ => return Err(Error::ProposalVariantCannotBeRenewed),
             };
             bundle.push(msg);
         }

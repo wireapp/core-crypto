@@ -167,7 +167,7 @@ impl Client {
             .key_store()
             .find_all(EntityFindParams::default())
             .await
-            .map_err(KeystoreError::wrap("finding all key stores"))?;
+            .map_err(KeystoreError::wrap("finding all key packages"))?;
 
         let mut valid_count = 0;
         for kp in kps
