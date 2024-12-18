@@ -241,7 +241,7 @@ mod tests {
         // macro produces `None`, so Rust thinks that it's a different error internally.
         // But changing the debug/display implementations on `Error::InvalidIdentity`
         // also changes the implementations on the inner type; I'm reasonably confident
-        // that it is in fact this enum and variaint.
+        // that it is in fact this enum and variant.
         //
         // So let's abuse the debug implementation, on the assumption
         // that nobody is going to make a different unrelated error
