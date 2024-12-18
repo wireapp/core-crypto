@@ -366,7 +366,7 @@ impl MlsConversationCreationMessage {
         let msg = self
             .commit
             .tls_serialize_detached()
-            .map_err(Error::tls_serialize("serialize welcome"))?;
+            .map_err(Error::tls_serialize("serialize commit"))?;
         Ok((welcome, msg, self.group_info, self.crl_new_distribution_points))
     }
 }
