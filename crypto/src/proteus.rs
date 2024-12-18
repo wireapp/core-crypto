@@ -663,7 +663,7 @@ impl ProteusCentral {
         let prekey = PreKey::new(prekey_id);
         let keystore_prekey = core_crypto_keystore::entities::ProteusPrekey::from_raw(
             id,
-            prekey.serialise().map_err(ProteusError::wrap("serialsing prekey"))?,
+            prekey.serialise().map_err(ProteusError::wrap("serialising prekey"))?,
         );
         let bundle = PreKeyBundle::new(self.proteus_identity.as_ref().public_key.clone(), &prekey);
         let bundle = bundle
