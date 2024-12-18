@@ -17,7 +17,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: actions-rust-lang/setup-rust-toolchain@v1  # this implicitly caches Rust tools and build artifacts
-      - uses: actions/checkout@v1
+      - uses: actions/checkout@v4
       - name: Run bencher CLI
         uses: ./.github/actions/run-bencher
         with:
@@ -52,7 +52,7 @@ jobs:
           bun install
           bun run build
           bun run bench
-      - uses: actions/checkout@v1
+      - uses: actions/checkout@v4
         with:
           # Keep result file
           clean: 'false'
