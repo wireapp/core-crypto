@@ -16,12 +16,6 @@ pub enum Error {
     /// The ciphersuite identifier presented does not map to a known ciphersuite.
     #[error("Unknown ciphersuite")]
     UnknownCiphersuite,
-    #[error("The callbacks needed for CoreCrypto to operate were not set")]
-    CallbacksNotSet,
-    #[error("External add proposal validation failed: only users already in the group are allowed")]
-    UnauthorizedExternalAddProposal,
-    #[error("External Commit sender was not authorized to perform such")]
-    UnauthorizedExternalCommit,
     #[error("Malformed or empty identifier found: {0}")]
     MalformedIdentifier(&'static str),
     #[error(transparent)]
