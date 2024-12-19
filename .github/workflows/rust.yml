@@ -43,15 +43,6 @@ jobs:
       - run: cargo check --tests
       - run: cargo check --tests --target wasm32-unknown-unknown
 
-  build:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions-rust-lang/setup-rust-toolchain@v1  # this implicitly caches Rust tools and build artifacts
-        with:
-          rustflags: ''
-      - run: cargo build --verbose
-
   test:
     runs-on: ubuntu-latest
     steps:
@@ -92,25 +83,6 @@ jobs:
       - uses: taiki-e/install-action@nextest
       - name: "Test CoreCrypto's proteus implementation"
         run: cargo nextest run --verbose --features proteus,cryptobox-migrate,proteus-keystore proteus
-
-  wasm-build:
-    runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        workspace: [ "crypto", "keystore", "mls-provider" ]
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions-rust-lang/setup-rust-toolchain@v1  # this implicitly caches Rust tools and build artifacts
-        with:
-          target: wasm32-unknown-unknown
-          rustflags: ''
-      - name: Install wasm-pack
-        uses: taiki-e/install-action@v2
-        with:
-          tool: wasm-pack
-      - name: WASM build
-        run: wasm-pack build --dev --target web ${{ matrix.workspace }}
-
 
   wasm-test:
     runs-on: ubuntu-latest
