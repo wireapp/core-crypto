@@ -1,12 +1,10 @@
-name: Publish docs
+name: Documentation
 
 concurrency:
   group: "${{ github.workflow }}-${{ github.ref }}"
 
 on:
   push:
-    branches:
-    - main
 
 env:
   CARGO_INCREMENTAL: 0
@@ -17,8 +15,32 @@ env:
   CARGO_REGISTRIES_CRATES_IO_PROTOCOL: sparse
 
 jobs:
-  docgen:
-    if: github.repository == 'wireapp/core-crypto'
+  rustdoc:
+    name: Rust
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - uses: actions-rust-lang/setup-rust-toolchain@v1  # this implicitly caches Rust tools and build artifacts
+      with:
+        rustflags: ''
+
+    - name: Build Rust documentation
+      run: cargo doc --all --no-deps
+
+    - uses: actions/upload-artifact@v4.5.0
+      with:
+        name: rustdoc
+        path: target/doc
+        retention-days: 1
+        overwrite: true
+        include-hidden-files: true
+
+
+  tsdoc:
+    name: Typescript
     runs-on: ubuntu-latest
 
     steps:
@@ -40,19 +62,70 @@ jobs:
       with:
         tool: wasm-pack
 
-    - name: Build Rust documentation
-      run: cargo doc --all --no-deps
-
     - name: Setup bun
       uses: oven-sh/setup-bun@v2
       with:
         bun-version: latest
 
-    - name: Build TypeScript and Kotlin docs
+    - name: Make TS Docs
       run: |
         cd crypto-ffi
         cargo make docs-ts
+
+    - uses: actions/upload-artifact@v4.5.0
+      with:
+        name: tsdoc
+        path: target/doc
+        retention-days: 1
+        overwrite: true
+        include-hidden-files: true
+
+
+  ktdoc:
+    name: Kotlin
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - uses: actions-rust-lang/setup-rust-toolchain@v1  # this implicitly caches Rust tools and build artifacts
+      with:
+        rustflags: '' # note that this is _not_ the default
+
+    - name: Setup cargo-make
+      uses: davidB/rust-cargo-make@v1
+
+    - name: Make Kotlin Docs
+      run: |
+        mkdir -p target/doc/core_crypto_ffi/bindings/kotlin
+        cd crypto-ffi
         cargo make docs-kotlin
+
+    - uses: actions/upload-artifact@v4.5.0
+      with:
+        name: ktdoc
+        path: target/doc
+        retention-days: 1
+        overwrite: true
+        include-hidden-files: true
+
+
+  deploy:
+    name: Deploy
+    runs-on: ubuntu-latest
+    if: github.repository == 'wireapp/core-crypto' && github.ref_name == 'main'
+    needs:
+      - rustdoc
+      - tsdoc
+      - ktdoc
+
+    steps:
+    - uses: actions/download-artifact@v4.1.8
+      with:
+        pattern: "*doc"
+        path: target/doc
+        merge-multiple: true
 
     - name: Deploy Docs
       uses: peaceiris/actions-gh-pages@v4
