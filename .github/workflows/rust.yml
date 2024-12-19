@@ -1,4 +1,4 @@
-name: Rust compile & test
+name: Rust
 
 concurrency:
   group: "${{ github.workflow }}-${{ github.ref }}"
@@ -30,6 +30,21 @@ jobs:
 
   check:
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        tool:
+          - name: fmt
+            trailer: --all -- --check
+          - name: clippy
+            trailer: -- -D warnings
+          - name: check
+            trailer: --tests
+        target: ["", "--target wasm32-unknown-unknown"]
+        exclude:
+          - {tool: {name: fmt},
+             target: "--target wasm32-unknown-unknown"}
+
     steps:
       - uses: actions/checkout@v4
       - uses: actions-rust-lang/setup-rust-toolchain@v1  # this implicitly caches Rust tools and build artifacts
@@ -37,11 +52,7 @@ jobs:
           components: rustfmt, clippy
           rustflags: ''
           target: wasm32-unknown-unknown
-      - run: cargo fmt --all -- --check
-      - run: cargo clippy -- -D warnings
-      - run: cargo clippy --target wasm32-unknown-unknown -- -D warnings
-      - run: cargo check --tests
-      - run: cargo check --tests --target wasm32-unknown-unknown
+      - run: cargo ${{ matrix.tool.name }} ${{ matrix.target }} ${{ matrix.tool.trailer }}
 
   test:
     runs-on: ubuntu-latest
