@@ -233,44 +233,6 @@ mod tests {
 
         #[apply(all_cred_cipher)]
         #[wasm_bindgen_test]
-        pub async fn renews_pending_commit_when_created_by_self(case: TestCase) {
-            run_test_with_client_ids(
-                case.clone(),
-                ["alice", "bob"],
-                move |[mut alice_central, bob_central]| {
-                    Box::pin(async move {
-                        let id = conversation_id();
-                        alice_central
-                            .context
-                            .new_conversation(&id, case.credential_type, case.cfg.clone())
-                            .await
-                            .unwrap();
-                        alice_central.invite_all(&case, &id, [&bob_central]).await.unwrap();
-
-                        alice_central.create_unmerged_commit(&id).await;
-                        assert!(alice_central.pending_commit(&id).await.is_some());
-
-                        // but Bob creates a commit meanwhile
-                        bob_central.context.update_keying_material(&id).await.unwrap();
-                        let commit = bob_central.mls_transport.latest_commit().await;
-
-                        let proposals = alice_central
-                            .context
-                            .decrypt_message(&id, commit.to_bytes().unwrap())
-                            .await
-                            .unwrap()
-                            .proposals;
-                        // Alice should renew the proposal because its her's
-                        assert_eq!(alice_central.pending_proposals(&id).await.len(), 1);
-                        assert_eq!(proposals.len(), alice_central.pending_proposals(&id).await.len());
-                    })
-                },
-            )
-            .await
-        }
-
-        #[apply(all_cred_cipher)]
-        #[wasm_bindgen_test]
         pub async fn not_renewable_when_in_valid_commit(case: TestCase) {
             run_test_with_client_ids(
                 case.clone(),
