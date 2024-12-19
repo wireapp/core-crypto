@@ -472,7 +472,7 @@ impl ProteusCentral {
         key: &[u8],
     ) -> Result<GroupStoreValue<ProteusConversationSession>> {
         let prekey = PreKeyBundle::deserialise(key).map_err(ProteusError::wrap("deserializing prekey bundle"))?;
-        // Note on the `::<Error>` turbofish below:
+        // Note on the `::<>` turbofish below:
         //
         // `init_from_prekey` returns an error type which is parametric over some wrapped `E`,
         // because one variant (not relevant to this particular operation) wraps an error type based
@@ -493,13 +493,21 @@ impl ProteusCentral {
         //    it avoids parametric virality. (`init_from_prekey` is itself only generic because it returns
         //    this error type with a type-parametric variant, which the function never returns.)
         //
-        // In this case, we could in principle use the unit type, because we never construct the error variant
-        // in question. But of course, that doesn't implement `Display`, which is required for deriving the
-        // wrapper's `Error` implementation.
+        // In this case, we have the out of band knowledge that `ProteusErrorKind` has a `#[from]` implementation
+        // for `proteus_wasm::session::Error<core_crypto_keystore::CryptoKeystoreError>` and for no other kinds
+        // of session error. So we can safely say that the type of error we are meant to catch here, and
+        // therefore pass in that otherwise-irrelevant type, to ensure that error handling works properly.
         //
-        // So instead we use our own error type, which is recursive and silly, but gets the job done.
-        let proteus_session = Session::init_from_prekey::<Error>(self.proteus_identity.clone(), prekey)
-            .map_err(KeystoreError::wrap("initializing session from prekey"))?;
+        // Some people say that if it's stupid but it works, it's not stupid. I disagree. If it's stupid but
+        // it works, that's our cue to seek out even better, non-stupid ways to get things done. I reiterate:
+        // the actual type referred to in this turbofish is nothing but a magic incantation to make error
+        // handling work; it has no bearing on the error retured from this function. How much better would it
+        // have been if `session::Error` were not parametric and we could have avoided the turbofish entirely?
+        let proteus_session = Session::init_from_prekey::<core_crypto_keystore::CryptoKeystoreError>(
+            self.proteus_identity.clone(),
+            prekey,
+        )
+        .map_err(ProteusError::wrap("initializing session from prekey"))?;
 
         let proteus_conversation = ProteusConversationSession {
             identifier: session_id.into(),
