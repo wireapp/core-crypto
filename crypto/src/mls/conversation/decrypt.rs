@@ -9,13 +9,12 @@
 //! | 1+ pend. Proposal | ✅              | ✅              |
 
 use log::{debug, info};
-use openmls::prelude::StageCommitError;
 use openmls::{
     framing::errors::{MessageDecryptionError, SecretTreeError},
     group::StagedCommit,
     prelude::{
         ContentType, CredentialType, MlsMessageIn, MlsMessageInBody, ProcessMessageError, ProcessedMessage,
-        ProcessedMessageContent, Proposal, ProtocolMessage, ValidationError,
+        ProcessedMessageContent, Proposal, ProtocolMessage, StageCommitError, ValidationError,
     },
 };
 use openmls_traits::OpenMlsCryptoProvider;
@@ -25,9 +24,9 @@ use tls_codec::Deserialize;
 use core_crypto_keystore::entities::MlsPendingMessage;
 use mls_crypto_provider::MlsCryptoProvider;
 
-use crate::context::CentralContext;
-use crate::obfuscate::Obfuscated;
+use super::{Error, Result};
 use crate::{
+    context::CentralContext,
     e2e_identity::{conversation_state::compute_state, init_certificates::NewCrlDistributionPoint},
     group_store::GroupStoreValue,
     mls::{
@@ -41,8 +40,9 @@ use crate::{
         },
         ClientId, ConversationId, MlsConversation,
     },
+    obfuscate::Obfuscated,
     prelude::{E2eiConversationState, MlsProposalBundle, WireIdentity},
-    CryptoError, CryptoResult, MlsError,
+    KeystoreError, MlsError, RecursiveError,
 };
 
 /// Represents the potential items a consumer might require after passing us an encrypted message we
@@ -125,12 +125,14 @@ impl MlsConversation {
         client: &Client,
         backend: &MlsCryptoProvider,
         restore_pending: bool,
-    ) -> CryptoResult<MlsConversationDecryptMessage> {
+    ) -> Result<MlsConversationDecryptMessage> {
         let message = match self.parse_message(backend, message.clone()).await {
             // Handles the case where we receive our own commits.
-            Err(CryptoError::MlsError(MlsError::MlsMessageError(ProcessMessageError::InvalidCommit(
-                StageCommitError::OwnCommit,
-            )))) => {
+            Err(Error::Mls(crate::MlsError {
+                source:
+                    crate::MlsErrorKind::MlsMessageError(ProcessMessageError::InvalidCommit(StageCommitError::OwnCommit)),
+                ..
+            })) => {
                 let ct = self.extract_confirmation_tag_from_own_commit(&message)?;
                 return self.handle_own_commit(backend, ct).await;
             }
@@ -141,10 +143,12 @@ impl MlsConversation {
         let credential = message.credential();
         let epoch = message.epoch();
 
-        let identity = credential.extract_identity(
-            self.ciphersuite(),
-            backend.authentication_service().borrow().await.as_ref(),
-        )?;
+        let identity = credential
+            .extract_identity(
+                self.ciphersuite(),
+                backend.authentication_service().borrow().await.as_ref(),
+            )
+            .map_err(RecursiveError::mls_credential("extracting identity"))?;
 
         let sender_client_id: ClientId = credential.credential.identity().into();
 
@@ -170,8 +174,11 @@ impl MlsConversation {
                 }
             }
             ProcessedMessageContent::ProposalMessage(proposal) => {
-                let crl_dps = extract_crl_uris_from_proposals(&[proposal.proposal().clone()])?;
-                let crl_new_distribution_points = get_new_crl_distribution_points(backend, crl_dps).await?;
+                let crl_dps = extract_crl_uris_from_proposals(&[proposal.proposal().clone()])
+                    .map_err(RecursiveError::mls_credential("extracting crl urls from proposals"))?;
+                let crl_new_distribution_points = get_new_crl_distribution_points(backend, crl_dps)
+                    .await
+                    .map_err(RecursiveError::mls_credential("getting new crl distribution points"))?;
 
                 info!(
                     group_id = Obfuscated::from(&self.id),
@@ -216,10 +223,16 @@ impl MlsConversation {
                     .collect();
 
                 // - This requires a change in OpenMLS to get access to it
-                let mut crl_dps = extract_crl_uris_from_proposals(&proposal_refs)?;
-                crl_dps.extend(extract_crl_uris_from_update_path(&staged_commit)?);
+                let mut crl_dps = extract_crl_uris_from_proposals(&proposal_refs)
+                    .map_err(RecursiveError::mls_credential("extracting crl urls from proposals"))?;
+                crl_dps.extend(
+                    extract_crl_uris_from_update_path(&staged_commit)
+                        .map_err(RecursiveError::mls_credential("extracting crl urls from update path"))?,
+                );
 
-                let crl_new_distribution_points = get_new_crl_distribution_points(backend, crl_dps).await?;
+                let crl_new_distribution_points = get_new_crl_distribution_points(backend, crl_dps)
+                    .await
+                    .map_err(RecursiveError::mls_credential("getting new crl distribution points"))?;
 
                 // getting the pending has to be done before `merge_staged_commit` otherwise it's wiped out
                 let pending_commit = self.group.pending_commit().cloned();
@@ -227,7 +240,7 @@ impl MlsConversation {
                 self.group
                     .merge_staged_commit(backend, *staged_commit.clone())
                     .await
-                    .map_err(MlsError::from)?;
+                    .map_err(MlsError::wrap("merge staged commit"))?;
 
                 let (proposals_to_renew, needs_update) = Renew::renew(
                     &self.group.own_leaf_index(),
@@ -244,7 +257,11 @@ impl MlsConversation {
                         .restore_pending_messages(client, backend, parent_conv, false)
                         .await?
                     {
-                        backend.key_store().remove::<MlsPendingMessage, _>(self.id()).await?;
+                        backend
+                            .key_store()
+                            .remove::<MlsPendingMessage, _>(self.id())
+                            .await
+                            .map_err(KeystoreError::wrap("removing pending message"))?;
                         Some(pm)
                     } else {
                         None
@@ -279,8 +296,11 @@ impl MlsConversation {
                     "Received external join proposal"
                 );
 
-                let crl_dps = extract_crl_uris_from_proposals(&[proposal.proposal().clone()])?;
-                let crl_new_distribution_points = get_new_crl_distribution_points(backend, crl_dps).await?;
+                let crl_dps = extract_crl_uris_from_proposals(&[proposal.proposal().clone()])
+                    .map_err(RecursiveError::mls_credential("extracting crl uris from proposals"))?;
+                let crl_new_distribution_points = get_new_crl_distribution_points(backend, crl_dps)
+                    .await
+                    .map_err(RecursiveError::mls_credential("getting new crl distribution points"))?;
                 self.group.store_pending_proposal(*proposal);
 
                 MlsConversationDecryptMessage {
@@ -302,11 +322,7 @@ impl MlsConversation {
         Ok(decrypted)
     }
 
-    async fn parse_message(
-        &mut self,
-        backend: &MlsCryptoProvider,
-        msg_in: MlsMessageIn,
-    ) -> CryptoResult<ProcessedMessage> {
+    async fn parse_message(&mut self, backend: &MlsCryptoProvider, msg_in: MlsMessageIn) -> Result<ProcessedMessage> {
         let mut is_duplicate = false;
         let (protocol_message, content_type) = match msg_in.extract() {
             MlsMessageInBody::PublicMessage(m) => {
@@ -319,9 +335,9 @@ impl MlsConversation {
                 (ProtocolMessage::PrivateMessage(m), ct)
             }
             _ => {
-                return Err(CryptoError::MlsError(
-                    ProcessMessageError::IncompatibleWireFormat.into(),
-                ))
+                return Err(
+                    MlsError::wrap("parsing inbound message")(ProcessMessageError::IncompatibleWireFormat).into(),
+                )
             }
         };
         let msg_epoch = protocol_message.epoch().as_u64();
@@ -333,39 +349,39 @@ impl MlsConversation {
             .map_err(|e| match e {
                 ProcessMessageError::ValidationError(ValidationError::UnableToDecrypt(
                     MessageDecryptionError::GenerationOutOfBound,
-                )) => CryptoError::DuplicateMessage,
+                )) => Error::DuplicateMessage,
                 ProcessMessageError::ValidationError(ValidationError::WrongEpoch) => {
                     if is_duplicate {
-                        CryptoError::DuplicateMessage
+                        Error::DuplicateMessage
                     } else if msg_epoch == group_epoch + 1 {
                         // limit to next epoch otherwise if we were buffering a commit for epoch + 2
                         // we would fail when trying to decrypt it in [MlsCentral::commit_accepted]
-                        CryptoError::BufferedFutureMessage
+                        Error::BufferedFutureMessage
                     } else if msg_epoch < group_epoch {
                         match content_type {
-                            ContentType::Application => CryptoError::StaleMessage,
-                            ContentType::Commit => CryptoError::StaleCommit,
-                            ContentType::Proposal => CryptoError::StaleProposal,
+                            ContentType::Application => Error::StaleMessage,
+                            ContentType::Commit => Error::StaleCommit,
+                            ContentType::Proposal => Error::StaleProposal,
                         }
                     } else {
-                        CryptoError::WrongEpoch
+                        Error::UnbufferedFarFutureMessage
                     }
                 }
                 ProcessMessageError::ValidationError(ValidationError::UnableToDecrypt(
                     MessageDecryptionError::AeadError,
-                )) => CryptoError::DecryptionError,
+                )) => Error::DecryptionError,
                 ProcessMessageError::ValidationError(ValidationError::UnableToDecrypt(
                     MessageDecryptionError::SecretTreeError(SecretTreeError::TooDistantInThePast),
-                )) => CryptoError::MessageEpochTooOld,
-                _ => CryptoError::from(MlsError::from(e)),
+                )) => Error::MessageEpochTooOld,
+                _ => MlsError::wrap("processing message")(e).into(),
             })?;
         if is_duplicate {
-            return Err(CryptoError::DuplicateMessage);
+            return Err(Error::DuplicateMessage);
         }
         Ok(processed_msg)
     }
 
-    async fn validate_commit(&self, commit: &StagedCommit, backend: &MlsCryptoProvider) -> CryptoResult<()> {
+    async fn validate_commit(&self, commit: &StagedCommit, backend: &MlsCryptoProvider) -> Result<()> {
         if backend.authentication_service().is_env_setup().await {
             let credentials: Vec<_> = commit
                 .add_proposals()
@@ -384,7 +400,7 @@ impl MlsConversation {
             .await;
             if state != E2eiConversationState::Verified {
                 // FIXME: Uncomment when PKI env can be seeded - the computation is still done to assess performance and impact of the validations. Tracking issue: WPB-9665
-                // return Err(CryptoError::InvalidCertificateChain);
+                // return Err(Error::InvalidCertificateChain);
             }
         }
         Ok(())
@@ -411,13 +427,21 @@ impl CentralContext {
         &self,
         id: &ConversationId,
         message: impl AsRef<[u8]>,
-    ) -> CryptoResult<MlsConversationDecryptMessage> {
-        let msg = MlsMessageIn::tls_deserialize(&mut message.as_ref()).map_err(MlsError::from)?;
+    ) -> Result<MlsConversationDecryptMessage> {
+        let msg =
+            MlsMessageIn::tls_deserialize(&mut message.as_ref()).map_err(Error::tls_deserialize("mls message in"))?;
         let Ok(conversation) = self.get_conversation(id).await else {
-            return self.handle_when_group_is_pending(id, message).await;
+            return self
+                .handle_when_group_is_pending(id, message)
+                .await
+                .map_err(RecursiveError::mls("handling when group is pending"))
+                .map_err(Into::into);
         };
         let parent_conversation = self.get_parent_conversation(&conversation).await?;
-        let client = &self.mls_client().await?;
+        let client = &self
+            .mls_client()
+            .await
+            .map_err(RecursiveError::root("getting mls client"))?;
         let decrypt_message = conversation
             .write()
             .await
@@ -425,13 +449,16 @@ impl CentralContext {
                 msg,
                 parent_conversation.as_ref(),
                 client,
-                &self.mls_provider().await?,
+                &self
+                    .mls_provider()
+                    .await
+                    .map_err(RecursiveError::root("getting mls provider"))?,
                 true,
             )
             .await;
 
         let decrypt_message = match decrypt_message {
-            Err(CryptoError::BufferedFutureMessage) => self.handle_future_message(id, message).await?,
+            Err(Error::BufferedFutureMessage) => self.handle_future_message(id, message).await?,
             _ => decrypt_message?,
         };
 
@@ -446,7 +473,11 @@ impl CentralContext {
 mod tests {
     use wasm_bindgen_test::*;
 
-    use crate::{mls::conversation::config::MAX_PAST_EPOCHS, prelude::MlsCommitBundle, test_utils::*, CryptoError};
+    use crate::{
+        mls::conversation::{config::MAX_PAST_EPOCHS, error::Error},
+        prelude::MlsCommitBundle,
+        test_utils::*,
+    };
 
     use super::*;
 
@@ -1145,7 +1176,7 @@ mod tests {
 
                     // fails because of Forward Secrecy
                     let decrypt = bob_central.context.decrypt_message(&id, &encrypted).await;
-                    assert!(matches!(decrypt.unwrap_err(), CryptoError::DecryptionError));
+                    assert!(matches!(decrypt.unwrap_err(), Error::DecryptionError));
                 })
             })
             .await
@@ -1174,7 +1205,7 @@ mod tests {
 
                     // which Bob cannot decrypt because of Post CompromiseSecurity
                     let decrypt = bob_central.context.decrypt_message(&id, &encrypted).await;
-                    assert!(matches!(decrypt.unwrap_err(), CryptoError::BufferedFutureMessage));
+                    assert!(matches!(decrypt.unwrap_err(), Error::BufferedFutureMessage));
 
                     let decrypted_commit = bob_central
                         .context
@@ -1224,7 +1255,7 @@ mod tests {
                             let decrypted = decrypt.unwrap().app_msg.unwrap();
                             assert_eq!(decrypted, original.as_bytes());
                         } else {
-                            assert!(matches!(decrypt.unwrap_err(), CryptoError::DuplicateMessage))
+                            assert!(matches!(decrypt.unwrap_err(), Error::DuplicateMessage))
                         }
                     }
                 })
@@ -1312,7 +1343,7 @@ mod tests {
                         .unwrap();
 
                     let decrypt = bob_central.context.decrypt_message(&id, &bob_message2).await;
-                    assert!(matches!(decrypt.unwrap_err(), CryptoError::MessageEpochTooOld));
+                    assert!(matches!(decrypt.unwrap_err(), Error::MessageEpochTooOld));
                 })
             })
             .await
@@ -1372,11 +1403,11 @@ mod tests {
                         .await
                         .unwrap_err();
 
-                    assert!(matches!(decrypt_err, CryptoError::StaleProposal));
+                    assert!(matches!(decrypt_err, Error::StaleProposal));
 
                     let decrypt_err = bob_central.context.decrypt_message(&id, &old_commit).await.unwrap_err();
 
-                    assert!(matches!(decrypt_err, CryptoError::StaleCommit));
+                    assert!(matches!(decrypt_err, Error::StaleCommit));
                 })
             })
             .await

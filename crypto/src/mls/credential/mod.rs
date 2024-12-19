@@ -1,21 +1,20 @@
-use openmls::prelude::{CredentialWithKey, OpenMlsCrypto};
-use openmls_traits::OpenMlsCryptoProvider;
+use mls_crypto_provider::MlsCryptoProvider;
+use openmls::prelude::{Credential, CredentialWithKey, OpenMlsCrypto};
+use openmls_basic_credential::SignatureKeyPair;
+use openmls_traits::{types::SignatureScheme, OpenMlsCryptoProvider};
+use openmls_x509_credential::CertificateKeyPair;
 use std::cmp::Ordering;
 use std::hash::{Hash, Hasher};
 
 pub(crate) mod crl;
+mod error;
 pub(crate) mod ext;
 pub(crate) mod typ;
 pub(crate) mod x509;
 
-use openmls::prelude::Credential;
-use openmls_basic_credential::SignatureKeyPair;
-use openmls_traits::types::SignatureScheme;
-use openmls_x509_credential::CertificateKeyPair;
-
-use mls_crypto_provider::MlsCryptoProvider;
-
-use crate::prelude::{CertificateBundle, Client, ClientId, CryptoResult, MlsError};
+use crate::prelude::{CertificateBundle, Client, ClientId};
+use crate::MlsError;
+pub(crate) use error::{Error, Result};
 
 #[derive(Debug)]
 pub struct CredentialBundle {
@@ -105,8 +104,11 @@ impl Client {
         id: &ClientId,
         sc: SignatureScheme,
         backend: &MlsCryptoProvider,
-    ) -> CryptoResult<CredentialBundle> {
-        let (sk, pk) = backend.crypto().signature_key_gen(sc).map_err(MlsError::from)?;
+    ) -> Result<CredentialBundle> {
+        let (sk, pk) = backend
+            .crypto()
+            .signature_key_gen(sc)
+            .map_err(MlsError::wrap("generating a signature key"))?;
 
         let signature_key = SignatureKeyPair::from_raw(sc, sk, pk);
         let credential = Credential::new_basic(id.to_vec());
@@ -119,14 +121,14 @@ impl Client {
         Ok(cb)
     }
 
-    pub(crate) fn new_x509_credential_bundle(cert: CertificateBundle) -> CryptoResult<CredentialBundle> {
+    pub(crate) fn new_x509_credential_bundle(cert: CertificateBundle) -> Result<CredentialBundle> {
         let created_at = cert.get_created_at()?;
         let (sk, ..) = cert.private_key.into_parts();
         let chain = cert.certificate_chain;
 
-        let kp = CertificateKeyPair::new(sk, chain.clone()).map_err(MlsError::from)?;
+        let kp = CertificateKeyPair::new(sk, chain.clone()).map_err(MlsError::wrap("creating certificate key pair"))?;
 
-        let credential = Credential::new_x509(chain).map_err(MlsError::from)?;
+        let credential = Credential::new_x509(chain).map_err(MlsError::wrap("creating x509 credential"))?;
 
         let cb = CredentialBundle {
             credential,
@@ -149,14 +151,14 @@ mod tests {
     use crate::{
         mls::credential::x509::CertificatePrivateKey,
         prelude::{
-            ClientIdentifier, ConversationId, CryptoError, E2eiConversationState, MlsCentral, MlsCentralConfiguration,
+            ClientIdentifier, ConversationId, E2eiConversationState, MlsCentral, MlsCentralConfiguration,
             MlsCredentialType, INITIAL_KEYING_MATERIAL_COUNT,
         },
         test_utils::{
             x509::{CertificateParams, X509TestChain},
             *,
         },
-        CoreCrypto,
+        CoreCrypto, RecursiveError,
     };
 
     use super::*;
@@ -228,17 +230,17 @@ mod tests {
         let alice_identifier = ClientIdentifier::X509(HashMap::from([(case.signature_scheme(), certs)]));
 
         let (bob_identifier, _) = x509_test_chain.issue_simple_certificate_bundle("bob", None);
-        assert!(matches!(
-            try_talk(&case, Some(&x509_test_chain), alice_identifier, bob_identifier)
-                .await
-                .unwrap_err(),
-            CryptoError::InvalidIdentity
-        ));
+        let err = try_talk(&case, Some(&x509_test_chain), alice_identifier, bob_identifier)
+            .await
+            .unwrap_err();
+        assert!(innermost_source_matches!(err, Error::InvalidIdentity, deref Box<Error>: *));
     }
 
     #[apply(all_cred_cipher)]
     #[wasm_bindgen_test]
     async fn should_fail_when_certificate_chain_has_a_single_self_signed(case: TestCase) {
+        use crate::MlsErrorKind;
+
         if case.is_x509() {
             let mut x509_test_chain = X509TestChain::init_empty(case.signature_scheme());
 
@@ -254,12 +256,10 @@ mod tests {
             let alice_identifier = ClientIdentifier::X509([(case.signature_scheme(), cb)].into());
 
             let (bob_identifier, _) = x509_test_chain.issue_simple_certificate_bundle("bob", None);
-            assert!(matches!(
-                try_talk(&case, Some(&x509_test_chain), bob_identifier, alice_identifier)
-                    .await
-                    .unwrap_err(),
-                CryptoError::InvalidIdentity
-            ));
+            let err = try_talk(&case, Some(&x509_test_chain), bob_identifier, alice_identifier)
+                .await
+                .unwrap_err();
+            assert!(innermost_source_matches!(err, MlsErrorKind::MlsAddMembersError(_)));
         }
     }
 
@@ -284,11 +284,12 @@ mod tests {
             let alice_identifier = ClientIdentifier::X509(HashMap::from([(case.signature_scheme(), cb)]));
 
             let (bob_identifier, _) = x509_test_chain.issue_simple_certificate_bundle("bob", None);
-            assert!(matches!(
-                try_talk(&case, Some(&x509_test_chain), alice_identifier, bob_identifier)
-                    .await
-                    .unwrap_err(),
-                CryptoError::MlsError(MlsError::MlsCryptoError(openmls::prelude::CryptoError::MismatchKeypair))
+            let err = try_talk(&case, Some(&x509_test_chain), alice_identifier, bob_identifier)
+                .await
+                .unwrap_err();
+            assert!(innermost_source_matches!(
+                err,
+                crate::MlsErrorKind::MlsCryptoError(openmls::prelude::CryptoError::MismatchKeypair),
             ));
         }
     }
@@ -437,6 +438,8 @@ mod tests {
     #[apply(all_cred_cipher)]
     #[wasm_bindgen_test]
     async fn should_fail_when_certificate_not_valid_yet(case: TestCase) {
+        use crate::MlsErrorKind;
+
         if case.is_x509() {
             let mut x509_test_chain = X509TestChain::init_empty(case.signature_scheme());
 
@@ -463,13 +466,14 @@ mod tests {
 
             let (bob_identifier, _) = x509_test_chain.issue_simple_certificate_bundle("bob", None);
 
-            match try_talk(&case, Some(&x509_test_chain), alice_identifier, bob_identifier)
+            let err = try_talk(&case, Some(&x509_test_chain), alice_identifier, bob_identifier)
                 .await
-                .unwrap_err()
-            {
-                CryptoError::MlsError(MlsError::MlsCryptoError(openmls::prelude::CryptoError::ExpiredCertificate)) => {}
-                e => panic!("Unexpected error: {e:?}"),
-            }
+                .unwrap_err();
+
+            assert!(innermost_source_matches!(
+                err,
+                MlsErrorKind::MlsCryptoError(openmls::prelude::CryptoError::ExpiredCertificate),
+            ))
         }
     }
 
@@ -478,7 +482,6 @@ mod tests {
     //     let now_since_epoch = now_std().as_secs() as i64;
     //     wire_e2e_identity::prelude::OffsetDateTime::from_unix_timestamp(now_since_epoch).unwrap()
     // }
-
     pub(crate) fn now_std() -> std::time::Duration {
         let now = web_time::SystemTime::now();
         now.duration_since(web_time::UNIX_EPOCH).unwrap()
@@ -489,7 +492,7 @@ mod tests {
         x509_test_chain: Option<&X509TestChain>,
         creator_identifier: ClientIdentifier,
         guest_identifier: ClientIdentifier,
-    ) -> CryptoResult<(ClientContext, ClientContext, ConversationId)> {
+    ) -> Result<(ClientContext, ClientContext, ConversationId)> {
         let id = conversation_id();
         let ciphersuites = vec![case.ciphersuite()];
 
@@ -511,11 +514,17 @@ mod tests {
             ciphersuites.clone(),
             None,
             Some(INITIAL_KEYING_MATERIAL_COUNT),
-        )?;
+        )
+        .map_err(RecursiveError::mls("making creator config"))?;
 
-        let creator_central = MlsCentral::try_new(creator_cfg).await?;
+        let creator_central = MlsCentral::try_new(creator_cfg)
+            .await
+            .map_err(RecursiveError::mls("creating mls central"))?;
         let cc = CoreCrypto::from(creator_central);
-        let creator_transaction = cc.new_transaction().await?;
+        let creator_transaction = cc
+            .new_transaction()
+            .await
+            .map_err(RecursiveError::root("creating new transaction"))?;
         let creator_central = cc.mls;
 
         if let Some(x509_test_chain) = &x509_test_chain {
@@ -533,7 +542,8 @@ mod tests {
                 ciphersuites.clone(),
                 Some(INITIAL_KEYING_MATERIAL_COUNT),
             )
-            .await?;
+            .await
+            .map_err(RecursiveError::mls("initializing mls"))?;
 
         let guest_path = tmp_db_file();
         let guest_cfg = MlsCentralConfiguration::try_new(
@@ -543,11 +553,17 @@ mod tests {
             ciphersuites.clone(),
             None,
             Some(INITIAL_KEYING_MATERIAL_COUNT),
-        )?;
+        )
+        .map_err(RecursiveError::mls("creating mls config"))?;
 
-        let guest_central = MlsCentral::try_new(guest_cfg).await?;
+        let guest_central = MlsCentral::try_new(guest_cfg)
+            .await
+            .map_err(RecursiveError::mls("creating mls central"))?;
         let cc = CoreCrypto::from(guest_central);
-        let guest_transaction = cc.new_transaction().await?;
+        let guest_transaction = cc
+            .new_transaction()
+            .await
+            .map_err(RecursiveError::root("creating new transaction"))?;
         let guest_central = cc.mls;
         if let Some(x509_test_chain) = &x509_test_chain {
             x509_test_chain.register_with_central(&guest_transaction).await;
@@ -558,11 +574,13 @@ mod tests {
                 ciphersuites.clone(),
                 Some(INITIAL_KEYING_MATERIAL_COUNT),
             )
-            .await?;
+            .await
+            .map_err(RecursiveError::mls("initializing mls guest transaction"))?;
 
         creator_transaction
             .new_conversation(&id, creator_ct, case.cfg.clone())
-            .await?;
+            .await
+            .map_err(RecursiveError::mls("creating new transaction"))?;
 
         let guest_client_context = ClientContext {
             context: guest_transaction.clone(),
@@ -573,9 +591,13 @@ mod tests {
         let guest = guest_client_context.rand_key_package_of_type(case, guest_ct).await;
         creator_client_context
             .invite_all_members(case, &id, [(&guest_client_context, guest)])
-            .await?;
+            .await
+            .map_err(RecursiveError::test())?;
 
-        creator_client_context.try_talk_to(&id, &guest_client_context).await?;
+        creator_client_context
+            .try_talk_to(&id, &guest_client_context)
+            .await
+            .map_err(RecursiveError::test())?;
         Ok((creator_client_context, guest_client_context, id))
     }
 }

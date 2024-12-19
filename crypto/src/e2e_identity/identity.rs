@@ -5,14 +5,15 @@ use itertools::Itertools;
 use openmls_traits::OpenMlsCryptoProvider;
 use x509_cert::der::pem::LineEnding;
 
-use crate::context::CentralContext;
-use crate::e2e_identity::id::WireQualifiedClientId;
-use crate::mls::credential::ext::CredentialExt;
-use crate::prelude::MlsCredentialType;
 use crate::{
-    e2e_identity::device_status::DeviceStatus,
-    prelude::{user_id::UserId, ClientId, ConversationId, CryptoError, CryptoResult, MlsCentral, MlsConversation},
+    context::CentralContext,
+    e2e_identity::{device_status::DeviceStatus, id::WireQualifiedClientId},
+    mls::credential::ext::CredentialExt,
+    prelude::{user_id::UserId, ClientId, ConversationId, MlsCentral, MlsConversation, MlsCredentialType},
+    RecursiveError,
 };
+
+use super::{Error, Result};
 
 /// Represents the identity claims identifying a client
 /// Those claims are verifiable by any member in the group
@@ -53,9 +54,9 @@ pub struct X509Identity {
 }
 
 impl<'a> TryFrom<(wire_e2e_identity::prelude::WireIdentity, &'a [u8])> for WireIdentity {
-    type Error = CryptoError;
+    type Error = Error;
 
-    fn try_from((i, cert): (wire_e2e_identity::prelude::WireIdentity, &'a [u8])) -> CryptoResult<Self> {
+    fn try_from((i, cert): (wire_e2e_identity::prelude::WireIdentity, &'a [u8])) -> Result<Self> {
         use x509_cert::der::Decode as _;
         let document = x509_cert::der::Document::from_der(cert)?;
         let certificate = document.to_pem("CERTIFICATE", LineEnding::LF)?;
@@ -86,12 +87,18 @@ impl CentralContext {
         &self,
         conversation_id: &ConversationId,
         client_ids: &[ClientId],
-    ) -> CryptoResult<Vec<WireIdentity>> {
-        let mls_provider = self.mls_provider().await?;
+    ) -> Result<Vec<WireIdentity>> {
+        let mls_provider = self
+            .mls_provider()
+            .await
+            .map_err(RecursiveError::root("getting mls provider"))?;
         let auth_service = mls_provider.authentication_service();
         auth_service.refresh_time_of_interest().await;
         let auth_service = auth_service.borrow().await;
-        let conversation = self.get_conversation(conversation_id).await?;
+        let conversation = self
+            .get_conversation(conversation_id)
+            .await
+            .map_err(RecursiveError::mls_conversation("getting conversation by id"))?;
         let conversation_guard = conversation.read().await;
         conversation_guard.get_device_identities(client_ids, auth_service.as_ref())
     }
@@ -101,12 +108,18 @@ impl CentralContext {
         &self,
         conversation_id: &ConversationId,
         user_ids: &[String],
-    ) -> CryptoResult<HashMap<String, Vec<WireIdentity>>> {
-        let mls_provider = self.mls_provider().await?;
+    ) -> Result<HashMap<String, Vec<WireIdentity>>> {
+        let mls_provider = self
+            .mls_provider()
+            .await
+            .map_err(RecursiveError::root("getting mls provider"))?;
         let auth_service = mls_provider.authentication_service();
         auth_service.refresh_time_of_interest().await;
         let auth_service = auth_service.borrow().await;
-        let conversation = self.get_conversation(conversation_id).await?;
+        let conversation = self
+            .get_conversation(conversation_id)
+            .await
+            .map_err(RecursiveError::mls_conversation("getting conversation by id"))?;
         let conversation_guard = conversation.read().await;
         conversation_guard.get_user_identities(user_ids, auth_service.as_ref())
     }
@@ -120,15 +133,15 @@ impl MlsCentral {
         &self,
         conversation_id: &ConversationId,
         client_ids: &[ClientId],
-    ) -> CryptoResult<Vec<WireIdentity>> {
+    ) -> Result<Vec<WireIdentity>> {
         self.mls_backend
             .authentication_service()
             .refresh_time_of_interest()
             .await;
-        let conversation = self.get_conversation(conversation_id).await?;
-        let Some(conversation) = conversation else {
-            return Err(CryptoError::ConversationNotFound(conversation_id.clone()));
-        };
+        let conversation = self
+            .get_conversation(conversation_id)
+            .await
+            .map_err(RecursiveError::mls_conversation("getting conversation by id"))?;
         conversation.get_device_identities(
             client_ids,
             self.mls_backend.authentication_service().borrow().await.as_ref(),
@@ -145,14 +158,15 @@ impl MlsCentral {
         &self,
         conversation_id: &ConversationId,
         user_ids: &[String],
-    ) -> CryptoResult<HashMap<String, Vec<WireIdentity>>> {
+    ) -> Result<HashMap<String, Vec<WireIdentity>>> {
         self.mls_backend
             .authentication_service()
             .refresh_time_of_interest()
             .await;
-        let Some(conversation) = self.get_conversation(conversation_id).await? else {
-            return Err(CryptoError::ConversationNotFound(conversation_id.clone()));
-        };
+        let conversation = self
+            .get_conversation(conversation_id)
+            .await
+            .map_err(RecursiveError::mls_conversation("getting conversation by id"))?;
         conversation.get_user_identities(
             user_ids,
             self.mls_backend.authentication_service().borrow().await.as_ref(),
@@ -165,24 +179,28 @@ impl MlsConversation {
         &self,
         device_ids: &[ClientId],
         env: Option<&wire_e2e_identity::prelude::x509::revocation::PkiEnvironment>,
-    ) -> CryptoResult<Vec<WireIdentity>> {
+    ) -> Result<Vec<WireIdentity>> {
         if device_ids.is_empty() {
-            return Err(CryptoError::ConsumerError);
+            return Err(Error::EmptyInputIdList);
         }
         self.members_with_key()
             .into_iter()
             .filter(|(id, _)| device_ids.contains(&ClientId::from(id.as_slice())))
-            .map(|(_, c)| c.extract_identity(self.ciphersuite(), env))
-            .collect::<CryptoResult<Vec<_>>>()
+            .map(|(_, c)| {
+                c.extract_identity(self.ciphersuite(), env)
+                    .map_err(RecursiveError::mls_credential("extracting identity"))
+            })
+            .collect::<Result<Vec<_>, _>>()
+            .map_err(Into::into)
     }
 
     fn get_user_identities(
         &self,
         user_ids: &[String],
         env: Option<&wire_e2e_identity::prelude::x509::revocation::PkiEnvironment>,
-    ) -> CryptoResult<HashMap<String, Vec<WireIdentity>>> {
+    ) -> Result<HashMap<String, Vec<WireIdentity>>> {
         if user_ids.is_empty() {
-            return Err(CryptoError::ConsumerError);
+            return Err(Error::EmptyInputIdList);
         }
         let user_ids = user_ids.iter().map(|uid| uid.as_bytes()).collect::<Vec<_>>();
 
@@ -190,11 +208,12 @@ impl MlsConversation {
             .iter()
             .filter_map(|(id, c)| UserId::try_from(id.as_slice()).ok().zip(Some(c)))
             .filter(|(uid, _)| user_ids.contains(uid))
-            .map(|(uid, c)| (uid, c.extract_identity(self.ciphersuite(), env)))
-            .map(|(uid, identity)| {
-                let uid = String::try_from(uid);
-                // could be simplified if `Result::zip` was available
-                uid.and_then(|uid| identity.map(|id| (uid, id)))
+            .map(|(uid, c)| {
+                let uid = String::try_from(uid).map_err(RecursiveError::mls_client("getting user identities"))?;
+                let identity = c
+                    .extract_identity(self.ciphersuite(), env)
+                    .map_err(RecursiveError::mls_credential("extracting identity"))?;
+                Ok((uid, identity))
             })
             .process_results(|iter| iter.into_group_map())
     }
@@ -205,11 +224,11 @@ mod tests {
     use wasm_bindgen_test::*;
 
     use crate::context::CentralContext;
+    use crate::e2e_identity::error::Error;
     use crate::prelude::{ClientId, ConversationId, MlsCredentialType};
     use crate::{
         prelude::{DeviceStatus, E2eiConversationState},
         test_utils::*,
-        CryptoError,
     };
 
     wasm_bindgen_test_configure!(run_in_browser);
@@ -235,7 +254,7 @@ mod tests {
 
         // Invalid usage
         let invalid = central.get_user_identities(id, &[]).await;
-        assert!(matches!(invalid.unwrap_err(), CryptoError::ConsumerError));
+        assert!(matches!(invalid.unwrap_err(), Error::EmptyInputIdList));
     }
 
     async fn check_identities_device_status<const N: usize>(
@@ -328,7 +347,7 @@ mod tests {
                     );
 
                     let invalid = alice_android_central.context.get_device_identities(&id, &[]).await;
-                    assert!(matches!(invalid.unwrap_err(), CryptoError::ConsumerError));
+                    assert!(matches!(invalid.unwrap_err(), Error::EmptyInputIdList));
                 })
             },
         )

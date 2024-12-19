@@ -9,15 +9,19 @@ use openmls::prelude::{KeyPackageIn, LeafNode, LeafNodeIndex, MlsMessageOut};
 
 use mls_crypto_provider::MlsCryptoProvider;
 
-use super::MlsConversation;
-use crate::context::CentralContext;
+use super::{Error, Result};
 use crate::{
+    context::CentralContext,
     e2e_identity::init_certificates::NewCrlDistributionPoint,
-    mls::credential::{
-        crl::{extract_crl_uris_from_credentials, get_new_crl_distribution_points},
-        CredentialBundle,
+    mls::{
+        credential::{
+            crl::{extract_crl_uris_from_credentials, get_new_crl_distribution_points},
+            CredentialBundle,
+        },
+        MlsConversation,
     },
-    prelude::{Client, ClientId, ConversationId, CryptoError, CryptoResult, MlsError, MlsGroupInfoBundle},
+    prelude::{Client, ClientId, ConversationId, MlsGroupInfoBundle},
+    LeafError, MlsError, RecursiveError,
 };
 
 impl CentralContext {
@@ -40,13 +44,23 @@ impl CentralContext {
         &self,
         id: &ConversationId,
         key_packages: Vec<KeyPackageIn>,
-    ) -> CryptoResult<MlsConversationCreationMessage> {
-        let client = self.mls_client().await?;
+    ) -> Result<MlsConversationCreationMessage> {
+        let client = self
+            .mls_client()
+            .await
+            .map_err(RecursiveError::root("getting mls client"))?;
         self.get_conversation(id)
             .await?
             .write()
             .await
-            .add_members(&client, key_packages, &self.mls_provider().await?)
+            .add_members(
+                &client,
+                key_packages,
+                &self
+                    .mls_provider()
+                    .await
+                    .map_err(RecursiveError::root("getting mls provider"))?,
+            )
             .await
     }
 
@@ -68,13 +82,23 @@ impl CentralContext {
         &self,
         id: &ConversationId,
         clients: &[ClientId],
-    ) -> CryptoResult<MlsCommitBundle> {
-        let client = self.mls_client().await?;
+    ) -> Result<MlsCommitBundle> {
+        let client = self
+            .mls_client()
+            .await
+            .map_err(RecursiveError::root("getting mls client"))?;
         self.get_conversation(id)
             .await?
             .write()
             .await
-            .remove_members(&client, clients, &self.mls_provider().await?)
+            .remove_members(
+                &client,
+                clients,
+                &self
+                    .mls_provider()
+                    .await
+                    .map_err(RecursiveError::root("getting mls provider"))?,
+            )
             .await
     }
 
@@ -92,13 +116,24 @@ impl CentralContext {
     /// If the conversation can't be found, an error will be returned. Other errors are originating
     /// from OpenMls and the KeyStore
     #[cfg_attr(test, crate::idempotent)]
-    pub async fn update_keying_material(&self, id: &ConversationId) -> CryptoResult<MlsCommitBundle> {
-        let client = self.mls_client().await?;
+    pub async fn update_keying_material(&self, id: &ConversationId) -> Result<MlsCommitBundle> {
+        let client = self
+            .mls_client()
+            .await
+            .map_err(RecursiveError::root("getting mls client"))?;
         self.get_conversation(id)
             .await?
             .write()
             .await
-            .update_keying_material(&client, &self.mls_provider().await?, None, None)
+            .update_keying_material(
+                &client,
+                &self
+                    .mls_provider()
+                    .await
+                    .map_err(RecursiveError::root("getting mls provider"))?,
+                None,
+                None,
+            )
             .await
     }
 
@@ -113,13 +148,22 @@ impl CentralContext {
     /// # Errors
     /// Errors can be originating from the KeyStore and OpenMls
     #[cfg_attr(test, crate::idempotent)]
-    pub async fn commit_pending_proposals(&self, id: &ConversationId) -> CryptoResult<Option<MlsCommitBundle>> {
-        let client = self.mls_client().await?;
+    pub async fn commit_pending_proposals(&self, id: &ConversationId) -> Result<Option<MlsCommitBundle>> {
+        let client = self
+            .mls_client()
+            .await
+            .map_err(RecursiveError::root("getting mls client"))?;
         self.get_conversation(id)
             .await?
             .write()
             .await
-            .commit_pending_proposals(&client, &self.mls_provider().await?)
+            .commit_pending_proposals(
+                &client,
+                &self
+                    .mls_provider()
+                    .await
+                    .map_err(RecursiveError::root("getting mls provider"))?,
+            )
             .await
     }
 }
@@ -134,8 +178,12 @@ impl MlsConversation {
         client: &Client,
         key_packages: Vec<KeyPackageIn>,
         backend: &MlsCryptoProvider,
-    ) -> CryptoResult<MlsConversationCreationMessage> {
-        let signer = &self.find_most_recent_credential_bundle(client).await?.signature_key;
+    ) -> Result<MlsConversationCreationMessage> {
+        let signer = &self
+            .find_most_recent_credential_bundle(client)
+            .await
+            .map_err(RecursiveError::mls_client("finding most recent credential bundle"))?
+            .signature_key;
 
         // No need to also check pending proposals since they should already have been scanned while decrypting the proposal message
         let crl_new_distribution_points = get_new_crl_distribution_points(
@@ -147,18 +195,20 @@ impl MlsConversation {
                 } else {
                     None
                 }
-            }))?,
+            }))
+            .map_err(RecursiveError::mls_credential("extracting crl uris from credentials"))?,
         )
-        .await?;
+        .await
+        .map_err(RecursiveError::mls_credential("getting new crl distribution points"))?;
 
         let (commit, welcome, gi) = self
             .group
             .add_members(backend, signer, key_packages)
             .await
-            .map_err(MlsError::from)?;
+            .map_err(MlsError::wrap("group add members"))?;
 
         // SAFETY: This should be safe as adding members always generates a new commit
-        let gi = gi.ok_or(CryptoError::ImplementationError)?;
+        let gi = gi.ok_or(LeafError::MissingGroupInfo)?;
         let group_info = MlsGroupInfoBundle::try_new_full_plaintext(gi)?;
 
         self.persist_group_when_changed(&backend.keystore(), false).await?;
@@ -179,7 +229,7 @@ impl MlsConversation {
         client: &Client,
         clients: &[ClientId],
         backend: &MlsCryptoProvider,
-    ) -> CryptoResult<MlsCommitBundle> {
+    ) -> Result<MlsCommitBundle> {
         let member_kps = self
             .group
             .members()
@@ -188,21 +238,25 @@ impl MlsConversation {
                     .iter()
                     .any(move |client_id| client_id.as_slice() == kp.credential.identity())
             })
-            .try_fold(vec![], |mut acc, kp| -> CryptoResult<Vec<LeafNodeIndex>> {
+            .try_fold(vec![], |mut acc, kp| -> Result<Vec<LeafNodeIndex>> {
                 acc.push(kp.index);
                 Ok(acc)
             })?;
 
-        let signer = &self.find_most_recent_credential_bundle(client).await?.signature_key;
+        let signer = &self
+            .find_most_recent_credential_bundle(client)
+            .await
+            .map_err(RecursiveError::mls_client("finding most recent credential bundle"))?
+            .signature_key;
 
         let (commit, welcome, gi) = self
             .group
             .remove_members(backend, signer, &member_kps)
             .await
-            .map_err(MlsError::from)?;
+            .map_err(MlsError::wrap("group remove members"))?;
 
         // SAFETY: This should be safe as removing members always generates a new commit
-        let gi = gi.ok_or(CryptoError::ImplementationError)?;
+        let gi = gi.ok_or(LeafError::MissingGroupInfo)?;
         let group_info = MlsGroupInfoBundle::try_new_full_plaintext(gi)?;
 
         self.persist_group_when_changed(&backend.keystore(), false).await?;
@@ -222,19 +276,22 @@ impl MlsConversation {
         backend: &MlsCryptoProvider,
         cb: Option<&CredentialBundle>,
         leaf_node: Option<LeafNode>,
-    ) -> CryptoResult<MlsCommitBundle> {
+    ) -> Result<MlsCommitBundle> {
         let cb = match cb {
-            None => &self.find_most_recent_credential_bundle(client).await?,
+            None => &self
+                .find_most_recent_credential_bundle(client)
+                .await
+                .map_err(RecursiveError::mls_client("finding most recent credential bundle"))?,
             Some(cb) => cb,
         };
         let (commit, welcome, group_info) = self
             .group
             .explicit_self_update(backend, &cb.signature_key, leaf_node)
             .await
-            .map_err(MlsError::from)?;
+            .map_err(MlsError::wrap("group self update"))?;
 
         // We should always have ratchet tree extension turned on hence GroupInfo should always be present
-        let group_info = group_info.ok_or(CryptoError::ImplementationError)?;
+        let group_info = group_info.ok_or(LeafError::MissingGroupInfo)?;
         let group_info = MlsGroupInfoBundle::try_new_full_plaintext(group_info)?;
 
         self.persist_group_when_changed(&backend.keystore(), false).await?;
@@ -252,15 +309,19 @@ impl MlsConversation {
         &mut self,
         client: &Client,
         backend: &MlsCryptoProvider,
-    ) -> CryptoResult<Option<MlsCommitBundle>> {
+    ) -> Result<Option<MlsCommitBundle>> {
         if self.group.pending_proposals().count() > 0 {
-            let signer = &self.find_most_recent_credential_bundle(client).await?.signature_key;
+            let signer = &self
+                .find_most_recent_credential_bundle(client)
+                .await
+                .map_err(RecursiveError::mls_client("finding most recent credential bundle"))?
+                .signature_key;
 
             let (commit, welcome, gi) = self
                 .group
                 .commit_to_pending_proposals(backend, signer)
                 .await
-                .map_err(MlsError::from)?;
+                .map_err(MlsError::wrap("group commit to pending proposals"))?;
             let group_info = MlsGroupInfoBundle::try_new_full_plaintext(gi.unwrap())?;
 
             self.persist_group_when_changed(&backend.keystore(), false).await?;
@@ -296,10 +357,16 @@ impl MlsConversationCreationMessage {
     /// 1 -> commit
     /// 2 -> group_info
     #[allow(clippy::type_complexity)]
-    pub fn to_bytes(self) -> CryptoResult<(Vec<u8>, Vec<u8>, MlsGroupInfoBundle, NewCrlDistributionPoint)> {
+    pub fn to_bytes(self) -> Result<(Vec<u8>, Vec<u8>, MlsGroupInfoBundle, NewCrlDistributionPoint)> {
         use openmls::prelude::TlsSerializeTrait as _;
-        let welcome = self.welcome.tls_serialize_detached().map_err(MlsError::from)?;
-        let msg = self.commit.tls_serialize_detached().map_err(MlsError::from)?;
+        let welcome = self
+            .welcome
+            .tls_serialize_detached()
+            .map_err(Error::tls_serialize("serialize welcome"))?;
+        let msg = self
+            .commit
+            .tls_serialize_detached()
+            .map_err(Error::tls_serialize("serialize commit"))?;
         Ok((welcome, msg, self.group_info, self.crl_new_distribution_points))
     }
 }
@@ -321,14 +388,20 @@ impl MlsCommitBundle {
     /// 1 -> message
     /// 2 -> public group state
     #[allow(clippy::type_complexity)]
-    pub fn to_bytes_triple(self) -> CryptoResult<(Option<Vec<u8>>, Vec<u8>, MlsGroupInfoBundle)> {
+    pub fn to_bytes_triple(self) -> Result<(Option<Vec<u8>>, Vec<u8>, MlsGroupInfoBundle)> {
         use openmls::prelude::TlsSerializeTrait as _;
         let welcome = self
             .welcome
             .as_ref()
-            .map(|w| w.tls_serialize_detached().map_err(MlsError::from))
+            .map(|w| {
+                w.tls_serialize_detached()
+                    .map_err(Error::tls_serialize("serialize welcome"))
+            })
             .transpose()?;
-        let commit = self.commit.tls_serialize_detached().map_err(MlsError::from)?;
+        let commit = self
+            .commit
+            .tls_serialize_detached()
+            .map_err(Error::tls_serialize("serialize commit"))?;
         Ok((welcome, commit, self.group_info))
     }
 }
@@ -341,7 +414,7 @@ mod tests {
 
     use crate::test_utils::*;
 
-    use super::*;
+    use super::{Error, *};
 
     wasm_bindgen_test_configure!(run_in_browser);
 
@@ -472,6 +545,8 @@ mod tests {
         #[apply(all_cred_cipher)]
         #[wasm_bindgen_test]
         async fn alice_can_remove_bob_from_conversation(case: TestCase) {
+            use crate::mls;
+
             run_test_with_client_ids(case.clone(), ["alice", "bob"], move |[alice_central, bob_central]| {
                 Box::pin(async move {
                     let id = conversation_id();
@@ -504,7 +579,7 @@ mod tests {
                     // But has been removed from the conversation
                     assert!(matches!(
                        bob_central.context.get_conversation(&id).await.unwrap_err(),
-                        CryptoError::ConversationNotFound(conv_id) if conv_id == id
+                        mls::conversation::error::Error::Leaf(LeafError::ConversationNotFound(conv_id)) if conv_id == id
                     ));
                     assert!(alice_central.try_talk_to(&id, &bob_central).await.is_err());
                 })
@@ -1100,7 +1175,7 @@ mod tests {
 
                     // fails when a commit is skipped
                     let out_of_order = bob_central.context.decrypt_message(&id, &commit2).await;
-                    assert!(matches!(out_of_order.unwrap_err(), CryptoError::BufferedFutureMessage));
+                    assert!(matches!(out_of_order.unwrap_err(), Error::BufferedFutureMessage));
 
                     // works in the right order though
                     // NB: here 'commit2' has been buffered so it is also applied when we decrypt commit1
@@ -1108,7 +1183,7 @@ mod tests {
 
                     // and then fails again when trying to decrypt a commit with an epoch in the past
                     let past_commit = bob_central.context.decrypt_message(&id, &commit1).await;
-                    assert!(matches!(past_commit.unwrap_err(), CryptoError::StaleCommit));
+                    assert!(matches!(past_commit.unwrap_err(), Error::StaleCommit));
                 })
             })
             .await;
@@ -1178,7 +1253,7 @@ mod tests {
                                 .decrypt_message(&id, proposal2.to_bytes().unwrap())
                                 .await
                                 .unwrap_err(),
-                            CryptoError::DuplicateMessage
+                            Error::DuplicateMessage
                         ));
                         bob_central
                             .get_conversation_unchecked(&id)
@@ -1198,7 +1273,7 @@ mod tests {
                                 .decrypt_message(&id, commit2.to_bytes().unwrap())
                                 .await
                                 .unwrap_err(),
-                            CryptoError::StaleCommit
+                            Error::StaleCommit
                         ));
                     })
                 })

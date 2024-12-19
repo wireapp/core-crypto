@@ -2,12 +2,13 @@ use log::trace;
 use openmls::prelude::{GroupEpoch, GroupId, JoinProposal, LeafNodeIndex, MlsMessageOut, Proposal};
 use std::collections::HashSet;
 
+use super::Result;
 use crate::{
-    mls::{credential::typ::MlsCredentialType, ClientId, ConversationId},
-    prelude::{CryptoError, CryptoResult, MlsCiphersuite, MlsConversation, MlsError},
+    context::CentralContext,
+    mls::{self, credential::typ::MlsCredentialType, ClientId, ConversationId},
+    prelude::{MlsCiphersuite, MlsConversation},
+    LeafError, MlsError, RecursiveError,
 };
-
-use crate::context::CentralContext;
 
 impl MlsConversation {
     /// Get actual group members and subtract pending remove proposals
@@ -64,36 +65,53 @@ impl CentralContext {
         epoch: GroupEpoch,
         ciphersuite: MlsCiphersuite,
         credential_type: MlsCredentialType,
-    ) -> CryptoResult<MlsMessageOut> {
-        let group_id = GroupId::from_slice(&conversation_id[..]);
-        let mls_provider = self.mls_provider().await?;
+    ) -> Result<MlsMessageOut> {
+        let group_id = GroupId::from_slice(conversation_id.as_slice());
+        let mls_provider = self
+            .mls_provider()
+            .await
+            .map_err(RecursiveError::root("getting mls provider"))?;
 
-        let client = self.mls_client().await?;
+        let client = self
+            .mls_client()
+            .await
+            .map_err(RecursiveError::root("getting mls client"))?;
         let cb = client
             .find_most_recent_credential_bundle(ciphersuite.signature_algorithm(), credential_type)
             .await;
         let cb = match (cb, credential_type) {
             (Ok(cb), _) => cb,
-            (Err(CryptoError::CredentialNotFound(_)), MlsCredentialType::Basic) => {
+            (Err(mls::client::Error::CredentialNotFound(_)), MlsCredentialType::Basic) => {
                 // If a Basic CredentialBundle does not exist, just create one instead of failing
                 client
                     .init_basic_credential_bundle_if_missing(&mls_provider, ciphersuite.signature_algorithm())
-                    .await?;
+                    .await
+                    .map_err(RecursiveError::mls_client(
+                        "initializing basic credential bundle if missing",
+                    ))?;
 
                 client
                     .find_most_recent_credential_bundle(ciphersuite.signature_algorithm(), credential_type)
-                    .await?
+                    .await
+                    .map_err(RecursiveError::mls_client(
+                        "finding most recent credential bundle (which we just created)",
+                    ))?
             }
-            (Err(CryptoError::CredentialNotFound(_)), MlsCredentialType::X509) => {
-                return Err(CryptoError::E2eiEnrollmentNotDone)
+            (Err(mls::client::Error::CredentialNotFound(_)), MlsCredentialType::X509) => {
+                return Err(LeafError::E2eiEnrollmentNotDone.into())
             }
-            (Err(e), _) => return Err(e),
+            (Err(e), _) => return Err(RecursiveError::mls_client("finding most recent credential bundle")(e).into()),
         };
         let kp = client
             .generate_one_keypackage_from_credential_bundle(&mls_provider, ciphersuite, &cb)
-            .await?;
+            .await
+            .map_err(RecursiveError::mls_client(
+                "generating one keypackage from credential bundle",
+            ))?;
 
-        Ok(JoinProposal::new(kp, group_id, epoch, &cb.signature_key).map_err(MlsError::from)?)
+        JoinProposal::new(kp, group_id, epoch, &cb.signature_key)
+            .map_err(MlsError::wrap("creating join proposal"))
+            .map_err(Into::into)
     }
 }
 
@@ -171,7 +189,10 @@ mod tests {
 
     mod remove {
         use super::*;
-        use crate::prelude::{CryptoError, MlsConversationCreationMessage, MlsConversationInitBundle, MlsError};
+        use crate::{
+            prelude::{MlsConversationCreationMessage, MlsConversationInitBundle, MlsError},
+            MlsErrorKind,
+        };
         use openmls::prelude::{
             ExternalProposal, GroupId, MlsMessageIn, ProcessMessageError, SenderExtensionIndex, ValidationError,
         };
@@ -244,6 +265,8 @@ mod tests {
         #[apply(all_cred_cipher)]
         #[wasm_bindgen_test]
         async fn should_fail_when_invalid_external_sender(case: TestCase) {
+            use crate::mls;
+
             run_test_with_client_ids(
                 case.clone(),
                 ["owner", "guest", "ds", "attacker"],
@@ -283,17 +306,23 @@ mod tests {
 
                         assert!(matches!(
                             owner_decrypt.unwrap_err(),
-                            CryptoError::MlsError(MlsError::MlsMessageError(ProcessMessageError::ValidationError(
-                                ValidationError::UnauthorizedExternalSender
-                            )))
+                            mls::conversation::Error::Mls(MlsError {
+                                source: MlsErrorKind::MlsMessageError(ProcessMessageError::ValidationError(
+                                    ValidationError::UnauthorizedExternalSender
+                                )),
+                                ..
+                            })
                         ));
 
                         let guest_decrypt = owner.context.decrypt_message(&id, proposal.to_bytes().unwrap()).await;
                         assert!(matches!(
                             guest_decrypt.unwrap_err(),
-                            CryptoError::MlsError(MlsError::MlsMessageError(ProcessMessageError::ValidationError(
-                                ValidationError::UnauthorizedExternalSender
-                            )))
+                            mls::conversation::Error::Mls(MlsError {
+                                source: MlsErrorKind::MlsMessageError(ProcessMessageError::ValidationError(
+                                    ValidationError::UnauthorizedExternalSender
+                                )),
+                                ..
+                            })
                         ));
                     })
                 },
@@ -304,6 +333,8 @@ mod tests {
         #[apply(all_cred_cipher)]
         #[wasm_bindgen_test]
         async fn should_fail_when_wrong_signature_key(case: TestCase) {
+            use crate::mls;
+
             run_test_with_client_ids(case.clone(), ["owner", "guest", "ds"], move |[owner, guest, ds]| {
                 Box::pin(async move {
                     let id = conversation_id();
@@ -343,13 +374,19 @@ mod tests {
                     let owner_decrypt = owner.context.decrypt_message(&id, proposal.to_bytes().unwrap()).await;
                     assert!(matches!(
                         owner_decrypt.unwrap_err(),
-                        CryptoError::MlsError(MlsError::MlsMessageError(ProcessMessageError::InvalidSignature))
+                        mls::conversation::Error::Mls(MlsError {
+                            source: MlsErrorKind::MlsMessageError(ProcessMessageError::InvalidSignature),
+                            ..
+                        })
                     ));
 
                     let guest_decrypt = owner.context.decrypt_message(&id, proposal.to_bytes().unwrap()).await;
                     assert!(matches!(
                         guest_decrypt.unwrap_err(),
-                        CryptoError::MlsError(MlsError::MlsMessageError(ProcessMessageError::InvalidSignature))
+                        mls::conversation::Error::Mls(MlsError {
+                            source: MlsErrorKind::MlsMessageError(ProcessMessageError::InvalidSignature),
+                            ..
+                        })
                     ));
                 })
             })
