@@ -223,7 +223,6 @@ impl CentralContext {
     ///
     /// # Errors
     /// Errors resulting from the KeyStore calls
-    #[cfg_attr(test, crate::dispotent)]
     pub(crate) async fn clear_pending_group_from_external_commit(&self, id: &ConversationId) -> CryptoResult<()> {
         Ok(self.keystore().await?.mls_pending_groups_delete(id).await?)
     }
