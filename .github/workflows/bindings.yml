@@ -16,6 +16,9 @@ env:
   CARGO_REGISTRIES_CRATES_IO_PROTOCOL: sparse
 
 jobs:
+  prepare_wasm:
+    uses: ./.github/workflows/rust-build.yml
+
   build-and-test-android:
     if: github.repository == 'wireapp/core-crypto'
     runs-on: ubuntu-latest
@@ -169,33 +172,27 @@ jobs:
     env:
       # ensures we have same flags as when publishing
       RUSTFLAGS: "-D warnings -W unreachable-pub"
+    needs: prepare_wasm
     steps:
       - uses: actions/checkout@v4
       - uses: browser-actions/setup-chrome@latest
         id: setup-chrome
         with:
           chrome-version: stable
-      - uses: actions-rust-lang/setup-rust-toolchain@v1  # this implicitly caches Rust tools and build artifacts
-        with:
-          rustflags: ''
-          target: wasm32-unknown-unknown
       - uses: oven-sh/setup-bun@v2
         with:
           bun-version: latest
       - uses: actions/setup-node@v4
         with:
           node-version: 18
-      - name: Setup cargo-make
-        uses: davidB/rust-cargo-make@v1
-      - name: Install wasm-pack
-        uses: taiki-e/install-action@v2
+      - name: retrieve artifacts
+        uses: actions/download-artifact@v4
         with:
-          tool: wasm-pack
+          name: build-wasm-${{ github.run_id }}
+          path: crypto-ffi/bindings/js
       - name: Build & test WASM / JS package
         run: |
-          cd crypto-ffi
-          cargo make wasm
-          cd bindings/js
+          cd crypto-ffi/bindings/js
           bun eslint . --max-warnings=0
           bun run build
           bun run test

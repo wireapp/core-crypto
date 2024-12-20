@@ -17,9 +17,14 @@ env:
   CARGO_REGISTRIES_CRATES_IO_PROTOCOL: sparse
 
 jobs:
+  prepare_wasm:
+    if: github.repository == 'wireapp/core-crypto'
+    uses: ./.github/workflows/rust-build.yml
+
   publish-wasm:
     if: github.repository == 'wireapp/core-crypto'
     runs-on: ubuntu-latest
+    needs: prepare_wasm
     steps:
       - uses: actions/checkout@v4
 
@@ -31,25 +36,15 @@ jobs:
         with:
           bun-version: latest
 
-      - uses: actions-rust-lang/setup-rust-toolchain@v1  # this implicitly caches Rust tools and build artifacts
+      - name: retrieve artifacts
+        uses: actions/download-artifact@v4
         with:
-          rustflags: ''
-          target: wasm32-unknown-unknown
-
-
-      - name: Setup cargo-make
-        uses: davidB/rust-cargo-make@v1
-
-      - name: Install wasm-pack
-        uses: taiki-e/install-action@v2
-        with:
-          tool: wasm-pack
+          name: build-wasm-${{ github.run_id }}
+          path: crypto-ffi/bindings/js
 
       - name: Build WASM package
         run: |
-          cd crypto-ffi
-          cargo make wasm
-          cd bindings/js
+          cd crypto-ffi/bindings/js
           bun run build
 
       - name: Publishes package to NPM
