@@ -42,6 +42,12 @@ pub enum Error {
     /// The proteus client has been called but has not been initialized yet
     #[error("Proteus client hasn't been initialized")]
     ProteusNotInitialized,
+    /// Mls Transport Callbacks were not provided
+    #[error("The mls transport callbacks needed for CoreCrypto to operate were not set")]
+    MlsTransportNotProvided,
+    /// Any error that occurs during mls transport.
+    #[error("Error during mls transport: {0}")]
+    ErrorDuringMlsTransport(String),
     /// This item requires a feature that the core-crypto library was built without
     #[error("This item requires a feature that the core-crypto library was built without: {0}")]
     FeatureDisabled(&'static str),
