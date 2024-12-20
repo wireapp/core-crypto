@@ -107,6 +107,13 @@ sealed class MlsException: Exception() {
             get() = ""
     }
 
+    class MessageRejected(
+        private val reason: kotlin.String
+    ) : MlsException() {
+        override val message
+            get() = "reason=${reason}"
+    }
+
     class Other(override val message: String) : MlsException()
 }
 
@@ -152,6 +159,7 @@ fun com.wire.crypto.uniffi.MlsException.lift() =
         is com.wire.crypto.uniffi.MlsException.UnmergedPendingGroup -> MlsException.UnmergedPendingGroup()
         is com.wire.crypto.uniffi.MlsException.WrongEpoch -> MlsException.WrongEpoch()
         is com.wire.crypto.uniffi.MlsException.OrphanWelcome -> MlsException.OrphanWelcome()
+        is com.wire.crypto.uniffi.MlsException.MessageRejected -> MlsException.MessageRejected(this.reason)
         is com.wire.crypto.uniffi.MlsException.Other -> MlsException.Other(this.v1)
     }
 

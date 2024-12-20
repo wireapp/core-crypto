@@ -15,28 +15,6 @@ fun com.wire.crypto.uniffi.E2eiDumpedPkiEnv.lift() =
         crls = crls
     )
 
-@JvmInline
-value class RotateBundle(private val value: com.wire.crypto.uniffi.RotateBundle) {
-    val commits: Map<ClientId, CommitBundle>
-        get() =
-            value.commits
-                .asSequence()
-                .map { (clientId, commit) -> clientId.toClientId() to commit.lift() }
-                .toMap()
-
-    val newKeyPackages: List<MLSKeyPackage>
-        get() = value.newKeyPackages.map { MLSKeyPackage(it) }
-
-    val keyPackageRefsToRemove: List<MLSKeyPackageRef>
-        get() = value.keyPackageRefsToRemove.map { MLSKeyPackageRef(it) }
-
-    /** New CRL distribution points that appeared by the introduction of a new credential */
-    val crlNewDistributionPoints: CrlDistributionPoints?
-        get() = value.crlNewDistributionPoints?.toCrlDistributionPoint()
-}
-
-fun com.wire.crypto.uniffi.RotateBundle.toRotateBundle() = RotateBundle(this)
-
 /** Supporting struct for CRL registration result */
 data class CRLRegistration(
     /** Whether this CRL modifies the old CRL (i.e. has a different revocated cert list) */

@@ -20,7 +20,9 @@ import initWasm, {
     ConversationConfiguration as ConversationConfigurationFfi,
     CoreCrypto as CoreCryptoFfi,
     CoreCryptoContext as CoreCryptoContextFfi,
-    WasmMlsTransportResponse,
+    CommitBundle as CommitBundleFfi,
+    WasmMlsTransportResponse as MlsTransportResponseFfi,
+    MlsTransportResponseVariant,
     CoreCryptoWasmLogger,
     CustomConfiguration as CustomConfigurationFfi,
     E2eiDumpedPkiEnv,
@@ -264,34 +266,6 @@ export interface ProteusAutoPrekeyBundle {
 }
 
 /**
- * Data shape for the returned MLS commit & welcome message tuple upon adding clients to a conversation
- */
-export interface MemberAddedMessages {
-    /**
-     * TLS-serialized MLS Commit that needs to be fanned out to other (existing) members of the conversation
-     *
-     * @readonly
-     */
-    commit: Uint8Array;
-    /**
-     * TLS-serialized MLS Welcome message that needs to be fanned out to the clients newly added to the conversation
-     *
-     * @readonly
-     */
-    welcome: Uint8Array;
-    /**
-     * MLS GroupInfo which is required for joining a group by external commit
-     *
-     * @readonly
-     */
-    groupInfo: GroupInfoBundle;
-    /**
-     * New CRL distribution points that appeared by the introduction of a new credential
-     */
-    crlNewDistributionPoints?: string[];
-}
-
-/**
  * Data shape for a MLS generic commit + optional bundle (aka stapled commit & welcome)
  */
 export interface CommitBundle {
@@ -313,6 +287,18 @@ export interface CommitBundle {
      * @readonly
      */
     groupInfo: GroupInfoBundle;
+}
+
+function commitBundleFromFfi(commitBundle: CommitBundleFfi): CommitBundle {
+    return {
+        commit: commitBundle.commit,
+        welcome: commitBundle.welcome,
+        groupInfo: {
+            encryptionType: commitBundle.group_info.encryption_type,
+            ratchetTreeType: commitBundle.group_info.ratchet_tree_type,
+            payload: commitBundle.group_info.payload,
+        },
+    };
 }
 
 /**
@@ -366,34 +352,6 @@ export enum RatchetTreeType {
      * To define (not yet implemented)
      */
     ByRef = 0x03,
-}
-
-/**
- * Result returned after rotating the Credential of the current client in all the local conversations
- */
-export interface RotateBundle {
-    /**
-     * An Update commit for each conversation
-     *
-     * @readonly
-     */
-    commits: Map<string, CommitBundle>;
-    /**
-     * Fresh KeyPackages with the new Credential
-     *
-     * @readonly
-     */
-    newKeyPackages: Uint8Array[];
-    /**
-     * All the now deprecated KeyPackages. Once deleted remotely, delete them locally with {@link CoreCrypto.deleteKeyPackages}
-     *
-     * @readonly
-     */
-    keyPackageRefsToRemove: Uint8Array[];
-    /**
-     * New CRL distribution points that appeared by the introduction of a new credential
-     */
-    crlNewDistributionPoints?: string[];
 }
 
 /**
@@ -833,23 +791,63 @@ export interface ExternalAddProposalArgs extends ExternalProposalArgs {
     credentialType: CredentialType;
 }
 
+/**
+ * Returned by {@link MlsTransport} callbacks.
+ */
+export type MlsTransportResponse =
+    | "success"
+    | "retry"
+    | {
+          /**
+           * The message was rejected by the delivery service and there's no recovery.
+           * One special case is when the reason is `mls-client-mismatch`, where you should return Abort and then retry the whole operation.
+           * For example, when adding a user to a conversation fails with `mls-client-mismatch`, then `Abort("mls-client-mismatch")`, should be returned.
+           * The resulting `MessageRejected` error returned by core crypto should be caught and discarded before the operation is retried.
+           */
+          abort: { reason: string };
+      };
+
+function mapTransportResponseToFfi(
+    response: MlsTransportResponse
+): MlsTransportResponseFfi {
+    if (response === "success") {
+        return new MlsTransportResponseFfi(MlsTransportResponseVariant.Success);
+    }
+    if (response === "retry") {
+        return new MlsTransportResponseFfi(MlsTransportResponseVariant.Retry);
+    }
+    if (response?.abort?.reason !== undefined) {
+        return new MlsTransportResponseFfi(
+            MlsTransportResponseVariant.Abort,
+            response.abort.reason
+        );
+    }
+    throw new Error(
+        `Invalid MlsTransportResponse returned from callback: ${response}
+         Not a member of the MlsTransportResponse type.`
+    );
+}
+
+/**
+ * An interface that must be implemented and provided to CoreCrypto via {@link provideTransport}.
+ */
 export interface MlsTransport {
     /**
      * This callback is called by CoreCrypto to send a commit bundle to the delivery service.
      *
      * @param commitBundle - the commit bundle
-     * @returns a promise resolving to a {@link WasmMlsTransportResponse}
+     * @returns a promise resolving to a {@link MlsTransportResponse}
      */
     sendCommitBundle: (
         commitBundle: CommitBundle
-    ) => Promise<WasmMlsTransportResponse>;
+    ) => Promise<MlsTransportResponse>;
 
     /**
      *  This callback is called by CoreCrypto to send a regular message to the delivery service.
      * @param message
      * @returns a promise resolving to a {@link WasmMlsTransportResponse}
      */
-    sendMessage: (message: Uint8Array) => Promise<WasmMlsTransportResponse>;
+    sendMessage: (message: Uint8Array) => Promise<MlsTransportResponse>;
 }
 
 /**
@@ -1141,7 +1139,7 @@ export class CoreCrypto {
      * Registers the transport callbacks for core crypto to give it access to backend endpoints for sending
      * a commit bundle or a message, respectively.
      *
-     * @param transportProvider - Any interface following the {@link MlsTransport} interface
+     * @param transportProvider - Any implementor of the {@link MlsTransport} interface
      */
     async provideTransport(
         transportProvider: MlsTransport,
@@ -1150,8 +1148,17 @@ export class CoreCrypto {
         try {
             await this.#cc.provide_transport(
                 new MlsTransportProvider(
-                    transportProvider.sendCommitBundle,
-                    transportProvider.sendMessage,
+                    async (commitBundle: CommitBundleFfi) => {
+                        const result = await transportProvider.sendCommitBundle(
+                            commitBundleFromFfi(commitBundle)
+                        );
+                        return mapTransportResponseToFfi(result);
+                    },
+                    async (message: Uint8Array) => {
+                        const result =
+                            await transportProvider.sendMessage(message);
+                        return mapTransportResponseToFfi(result);
+                    },
                     ctx
                 )
             );
@@ -1372,7 +1379,7 @@ export class CoreCrypto {
     async addClientsToConversation(
         conversationId: ConversationId,
         keyPackages: Uint8Array[]
-    ): Promise<MemberAddedMessages> {
+    ): Promise<string[] | undefined> {
         return await this.transaction(
             async (ctx) =>
                 await ctx.addClientsToConversation(conversationId, keyPackages)
@@ -1413,23 +1420,12 @@ export class CoreCrypto {
     }
 
     /**
-     * Creates an update commit which replaces your leaf containing basic credentials with a leaf node containing x509 credentials in the conversation.
-     *
-     * NOTE: you can only call this after you've completed the enrollment for an end-to-end identity, calling this without
-     * a valid end-to-end identity will result in an error.
-     *
-     * **CAUTION**: {@link CoreCrypto.commitAccepted} **HAS TO** be called afterward **ONLY IF** the Delivery Service responds
-     * '200 OK' to the {@link CommitBundle} upload. It will "merge" the commit locally i.e. increment the local group
-     * epoch, use new encryption secrets etc...
-     *
-     * @param conversationId - The ID of the conversation
-     *
-     * @returns A {@link CommitBundle}
+     * See {@link CoreCryptoContext.e2eiRotate}.
      *
      * @deprecated Create a transaction with {@link CoreCrypto.transaction}
      * and use {@link CoreCryptoContext.e2eiRotate} instead.
      */
-    async e2eiRotate(conversationId: ConversationId): Promise<CommitBundle> {
+    async e2eiRotate(conversationId: ConversationId): Promise<void> {
         return await this.transaction(
             async (ctx) => await ctx.e2eiRotate(conversationId)
         );
@@ -1502,50 +1498,6 @@ export class CoreCrypto {
     }
 
     /**
-     * See {@link CoreCryptoContext.mergePendingGroupFromExternalCommit}.
-     *
-     * @deprecated Create a transaction with {@link CoreCrypto.transaction}
-     * and use {@link CoreCryptoContext.mergePendingGroupFromExternalCommit} instead.
-     */
-    async mergePendingGroupFromExternalCommit(
-        conversationId: ConversationId
-    ): Promise<BufferedDecryptedMessage[] | undefined> {
-        return await this.transaction(
-            async (ctx) =>
-                await ctx.mergePendingGroupFromExternalCommit(conversationId)
-        );
-    }
-
-    /**
-     * See {@link CoreCryptoContext.clearPendingGroupFromExternalCommit}.
-     *
-     * @deprecated Create a transaction with {@link CoreCrypto.transaction}
-     * and use {@link CoreCryptoContext.clearPendingGroupFromExternalCommit} instead.
-     */
-    async clearPendingGroupFromExternalCommit(
-        conversationId: ConversationId
-    ): Promise<void> {
-        return await this.transaction(
-            async (ctx) =>
-                await ctx.clearPendingGroupFromExternalCommit(conversationId)
-        );
-    }
-
-    /**
-     * See {@link CoreCryptoContext.commitAccepted}.
-     *
-     * @deprecated Create a transaction with {@link CoreCrypto.transaction}
-     * and use {@link CoreCryptoContext.commitAccepted} instead.
-     */
-    async commitAccepted(
-        conversationId: ConversationId
-    ): Promise<BufferedDecryptedMessage[] | undefined> {
-        return await this.transaction(
-            async (ctx) => await ctx.commitAccepted(conversationId)
-        );
-    }
-
-    /**
      * See {@link CoreCryptoContext.clearPendingProposal}.
      *
      * @deprecated Create a transaction with {@link CoreCrypto.transaction}
@@ -1558,18 +1510,6 @@ export class CoreCrypto {
         return await this.transaction(
             async (ctx) =>
                 await ctx.clearPendingProposal(conversationId, proposalRef)
-        );
-    }
-
-    /**
-     * See {@link CoreCryptoContext.clearPendingCommit}.
-     *
-     * @deprecated Create a transaction with {@link CoreCrypto.transaction}
-     * and use {@link CoreCryptoContext.clearPendingCommit} instead.
-     */
-    async clearPendingCommit(conversationId: ConversationId): Promise<void> {
-        return await this.transaction(
-            async (ctx) => await ctx.clearPendingCommit(conversationId)
         );
     }
 
@@ -2066,23 +2006,18 @@ export class CoreCrypto {
     }
 
     /**
-     * See {@link CoreCryptoContext.e2eiRotateAll}.
+     * See {@link CoreCryptoContext.saveX509Credential}.
      *
      * @deprecated Create a transaction with {@link CoreCrypto.transaction}
-     * and use {@link CoreCryptoContext.e2eiRotateAll} instead.
+     * and use {@link CoreCryptoContext.saveX509Credential} instead.
      */
-    async e2eiRotateAll(
+    async saveX509Credential(
         enrollment: E2eiEnrollment,
-        certificateChain: string,
-        newKeyPackageCount: number
-    ): Promise<RotateBundle> {
+        certificateChain: string
+    ): Promise<string[] | undefined> {
         return await this.transaction(
             async (ctx) =>
-                await ctx.e2eiRotateAll(
-                    enrollment,
-                    certificateChain,
-                    newKeyPackageCount
-                )
+                await ctx.saveX509Credential(enrollment, certificateChain)
         );
     }
 
