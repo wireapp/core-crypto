@@ -164,12 +164,13 @@ mod tests {
                             .new_keypackage(&case, Lifetime::new(expiration_time))
                             .await;
 
-                        let commit = alice_central
+                        alice_central
                             .context
                             .add_members_to_conversation(&id, vec![invalid_kp.into()])
                             .await
                             .unwrap();
-                        let commit = commit.commit.to_bytes().unwrap();
+                        let commit = alice_central.mls_transport.latest_commit().await;
+                        let commit = commit.to_bytes().unwrap();
 
                         let elapsed = start.elapsed();
                         // Give time to the certificate to expire
@@ -212,12 +213,11 @@ mod tests {
                         .unwrap();
 
                     let invalid_kp = bob_central.new_keypackage(&case, Lifetime::new(expiration_time)).await;
-                    let commit = alice_central
+                    alice_central
                         .context
                         .add_members_to_conversation(&id, vec![invalid_kp.into()])
                         .await
                         .unwrap();
-                    alice_central.context.commit_accepted(&id).await.unwrap();
 
                     let elapsed = start.elapsed();
                     // Give time to the certificate to expire
@@ -228,7 +228,10 @@ mod tests {
 
                     let process_welcome = bob_central
                         .context
-                        .process_welcome_message(commit.welcome.into(), case.custom_cfg())
+                        .process_welcome_message(
+                            alice_central.mls_transport.latest_welcome_message().await.into(),
+                            case.custom_cfg(),
+                        )
                         .await;
 
                     // TODO: currently succeeds as we don't anymore validate KeyPackage lifetime upon reception: find another way to craft an invalid KeyPackage. Tracking issue number: WPB-9623

@@ -125,7 +125,6 @@ mod tests {
     use wasm_bindgen_test::*;
 
     wasm_bindgen_test_configure!(run_in_browser);
-
     // If there’s a pending commit & it matches the incoming commit: mark pending commit as accepted
     #[apply(all_cred_cipher)]
     #[wasm_bindgen_test]
@@ -148,36 +147,39 @@ mod tests {
 
                     assert!(alice_central.pending_commit(&id).await.is_none());
 
-                    let alice_og_cert = &x509_test_chain
-                        .actors
-                        .iter()
-                        .find(|actor| actor.name == "alice")
-                        .unwrap()
-                        .certificate;
+                    let intermediate_ca = x509_test_chain.find_local_intermediate_ca();
 
-                    // change credential to verify later what we return in the decrypt message
+                    // In this case Alice will try to rotate her credential but her commit will be denied
+                    // by the backend (because another commit from Bob had precedence)
+
+                    // Alice creates a new Credential, updating her handle/display_name
                     let (new_handle, new_display_name) = ("new_alice_wire", "New Alice Smith");
                     let cb = alice_central
-                        .rotate_credential(
+                        .save_new_credential(
                             &case,
                             new_handle,
                             new_display_name,
-                            alice_og_cert,
-                            x509_test_chain.find_local_intermediate_ca(),
+                            x509_test_chain.find_certificate_for_actor("alice").unwrap(),
+                            intermediate_ca,
                         )
                         .await;
 
                     // create a commit. This will also store it in the store
-                    let commit = alice_central.context.e2ei_rotate(&id, Some(&cb)).await.unwrap().commit;
+                    let commit = alice_central.create_unmerged_e2ei_rotate_commit(&id, &cb).await;
                     assert!(alice_central.pending_commit(&id).await.is_some());
+
+                    let epoch = alice_central.context.conversation_epoch(&id).await.unwrap();
 
                     // since the pending commit is the same as the incoming one, it should succeed
                     let decrypt_self = alice_central
                         .context
-                        .decrypt_message(&id, &commit.to_bytes().unwrap())
+                        .decrypt_message(&id, &commit.commit.to_bytes().unwrap())
                         .await;
                     assert!(decrypt_self.is_ok());
                     let decrypt_self = decrypt_self.unwrap();
+
+                    let epoch_after_decrypt = alice_central.context.conversation_epoch(&id).await.unwrap();
+                    assert_eq!(epoch + 1, epoch_after_decrypt);
 
                     // there is no proposals to renew here since it's our own commit we merge
                     assert!(decrypt_self.proposals.is_empty());
@@ -198,50 +200,34 @@ mod tests {
     #[wasm_bindgen_test]
     pub async fn should_succeed_when_incoming_commit_mismatches_pending_commit(case: TestCase) {
         if !case.is_pure_ciphertext() {
-            run_test_with_client_ids(
-                case.clone(),
-                ["alice", "bob", "charlie"],
-                move |[alice_central, bob_central, charlie_central]| {
-                    Box::pin(async move {
-                        let id = conversation_id();
-                        alice_central
-                            .context
-                            .new_conversation(&id, case.credential_type, case.cfg.clone())
-                            .await
-                            .unwrap();
+            run_test_with_client_ids(case.clone(), ["alice"], move |[alice_central]| {
+                Box::pin(async move {
+                    let id = conversation_id();
+                    alice_central
+                        .context
+                        .new_conversation(&id, case.credential_type, case.cfg.clone())
+                        .await
+                        .unwrap();
 
-                        assert!(alice_central.pending_commit(&id).await.is_none());
+                    assert!(alice_central.pending_commit(&id).await.is_none());
 
-                        let bob = bob_central.rand_key_package(&case).await;
-                        let charlie = charlie_central.rand_key_package(&case).await;
+                    // create a first commit then discard it from the store to be able to create a second one
+                    let unmerged_commit = alice_central.create_unmerged_commit(&id).await.commit;
+                    assert!(alice_central.pending_commit(&id).await.is_some());
+                    alice_central.context.clear_pending_commit(&id).await.unwrap();
+                    assert!(alice_central.pending_commit(&id).await.is_none());
 
-                        // create a first commit then discard it from the store to be able to create a second one
-                        let add_bob = alice_central
-                            .context
-                            .add_members_to_conversation(&id, vec![bob])
-                            .await
-                            .unwrap();
-                        assert!(alice_central.pending_commit(&id).await.is_some());
-                        alice_central.context.clear_pending_commit(&id).await.unwrap();
-                        assert!(alice_central.pending_commit(&id).await.is_none());
+                    // create another commit for the sole purpose of having it in the store
+                    let unmerged_commit2 = alice_central.create_unmerged_commit(&id).await.commit;
+                    assert_ne!(unmerged_commit, unmerged_commit2);
 
-                        // create another commit for the sole purpose of having it in the store
-                        let add_charlie = alice_central
-                            .context
-                            .add_members_to_conversation(&id, vec![charlie])
-                            .await
-                            .unwrap();
-                        assert!(alice_central.pending_commit(&id).await.is_some());
-                        assert_ne!(add_bob.commit, add_charlie.commit);
-
-                        let decrypt = alice_central
-                            .context
-                            .decrypt_message(&id, &add_bob.commit.to_bytes().unwrap())
-                            .await;
-                        assert!(matches!(decrypt.unwrap_err(), CryptoError::ClearingPendingCommitError));
-                    })
-                },
-            )
+                    let decrypt = alice_central
+                        .context
+                        .decrypt_message(&id, &unmerged_commit.to_bytes().unwrap())
+                        .await;
+                    assert!(matches!(decrypt.unwrap_err(), CryptoError::ClearingPendingCommitError));
+                })
+            })
             .await
         }
     }
@@ -263,7 +249,7 @@ mod tests {
                     assert!(alice_central.pending_commit(&id).await.is_none());
 
                     // create a commit, have it in store...
-                    let commit = alice_central.context.update_keying_material(&id).await.unwrap().commit;
+                    let commit = alice_central.create_unmerged_commit(&id).await.commit;
                     assert!(alice_central.pending_commit(&id).await.is_some());
 
                     // then delete the pending commit
@@ -286,9 +272,11 @@ mod tests {
     #[wasm_bindgen_test]
     pub async fn should_fail_when_tampering_with_incoming_own_commit_same_as_pending(case: TestCase) {
         if case.is_pure_ciphertext() {
+            // The use case tested here requires inspecting your own commit.
+            // Openmls does not support this currently when protocol messages are encrypted.
             return;
-        };
-        run_test_with_client_ids(case.clone(), ["alice", "bob"], move |[alice_central, bob_central]| {
+        }
+        run_test_with_client_ids(case.clone(), ["alice"], move |[alice_central]| {
             Box::pin(async move {
                 let conversation_id = conversation_id();
                 alice_central
@@ -300,19 +288,13 @@ mod tests {
                 // No pending commit yet.
                 assert!(alice_central.pending_commit(&conversation_id).await.is_none());
 
-                let bob_key_package = bob_central.rand_key_package(&case).await;
-
                 // Create the commit that we're going to tamper with.
-                let add_bob_message = alice_central
-                    .context
-                    .add_members_to_conversation(&conversation_id, vec![bob_key_package])
-                    .await
-                    .unwrap();
+                let add_bob_message = alice_central.create_unmerged_commit(&conversation_id).await.commit;
 
                 // Now there is a pending commit.
                 assert!(alice_central.pending_commit(&conversation_id).await.is_some());
 
-                let commit_serialized = &mut add_bob_message.commit.to_bytes().unwrap();
+                let commit_serialized = &mut add_bob_message.to_bytes().unwrap();
 
                 // Tamper with the commit; this is the signature region, however,
                 // the membership tag covers the signature, so this will result in an
@@ -336,7 +318,7 @@ mod tests {
                 // Positive case: Alice decrypts the commit...
                 assert!(alice_central
                     .context
-                    .decrypt_message(&conversation_id, &add_bob_message.commit.to_bytes().unwrap())
+                    .decrypt_message(&conversation_id, &add_bob_message.to_bytes().unwrap())
                     .await
                     .is_ok());
 

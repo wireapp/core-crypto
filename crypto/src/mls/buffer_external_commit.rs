@@ -185,7 +185,6 @@ mod tests {
 
                     // Alice will never see this commit
                     bob_central.context.update_keying_material(&id).await.unwrap();
-                    bob_central.context.commit_accepted(&id).await.unwrap();
 
                     let msg1 = bob_central.context.encrypt_message(&id, "A").await.unwrap();
                     let msg2 = bob_central.context.encrypt_message(&id, "B").await.unwrap();

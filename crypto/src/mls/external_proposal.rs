@@ -101,7 +101,7 @@ impl CentralContext {
 mod tests {
     use wasm_bindgen_test::*;
 
-    use crate::{prelude::MlsCommitBundle, test_utils::*};
+    use crate::test_utils::*;
 
     wasm_bindgen_test_configure!(run_in_browser);
 
@@ -144,19 +144,14 @@ mod tests {
                         guest_central.verify_sender_identity(&case, &decrypted).await;
 
                         // simulate commit message reception from server
-                        let MlsCommitBundle { welcome, .. } = owner_central
-                            .context
-                            .commit_pending_proposals(&id)
-                            .await
-                            .unwrap()
-                            .unwrap();
-                        owner_central.context.commit_accepted(&id).await.unwrap();
+                        owner_central.context.commit_pending_proposals(&id).await.unwrap();
                         // guest joined the group
                         assert_eq!(owner_central.get_conversation_unchecked(&id).await.members().len(), 2);
 
+                        let welcome = guest_central.mls_transport.latest_welcome_message().await;
                         guest_central
                             .context
-                            .process_welcome_message(welcome.unwrap().into(), case.custom_cfg())
+                            .process_welcome_message(welcome.into(), case.custom_cfg())
                             .await
                             .unwrap();
                         assert_eq!(guest_central.get_conversation_unchecked(&id).await.members().len(), 2);
@@ -171,7 +166,7 @@ mod tests {
 
     mod remove {
         use super::*;
-        use crate::prelude::{CryptoError, MlsConversationCreationMessage, MlsConversationInitBundle, MlsError};
+        use crate::prelude::{CryptoError, MlsError};
         use openmls::prelude::{
             ExternalProposal, GroupId, MlsMessageIn, ProcessMessageError, SenderExtensionIndex, ValidationError,
         };
@@ -221,12 +216,9 @@ mod tests {
                         .decrypt_message(&id, proposal.to_bytes().unwrap())
                         .await
                         .unwrap();
-                    let MlsCommitBundle { commit, .. } =
-                        owner_central.commit_pending_proposals(&id).await.unwrap().unwrap();
+                    owner_central.commit_pending_proposals(&id).await.unwrap();
+                    let commit = owner.mls_transport.latest_commit().await;
 
-                    // before merging, commit is not applied
-                    assert_eq!(owner.get_conversation_unchecked(&id).await.members().len(), 2);
-                    owner_central.commit_accepted(&id).await.unwrap();
                     assert_eq!(owner.get_conversation_unchecked(&id).await.members().len(), 1);
 
                     // guest can no longer participate
@@ -387,11 +379,12 @@ mod tests {
                         // Charlie joins through a Welcome and should get external_senders from Welcome
                         // message and not from configuration
                         let charlie_kp = charlie.rand_key_package(&case).await;
-                        let MlsConversationCreationMessage { welcome, commit, .. } = alice_central
+                        alice_central
                             .add_members_to_conversation(&id, vec![charlie_kp])
                             .await
                             .unwrap();
-                        alice_central.commit_accepted(&id).await.unwrap();
+                        let welcome = alice.mls_transport.latest_welcome_message().await;
+                        let commit = alice.mls_transport.latest_commit().await;
                         bob_central
                             .decrypt_message(&id, commit.to_bytes().unwrap())
                             .await
@@ -432,13 +425,8 @@ mod tests {
                             .await
                             .unwrap();
 
-                        let commit = charlie_central
-                            .commit_pending_proposals(&id)
-                            .await
-                            .unwrap()
-                            .unwrap()
-                            .commit;
-                        charlie_central.commit_accepted(&id).await.unwrap();
+                        charlie_central.commit_pending_proposals(&id).await.unwrap();
+                        let commit = charlie.mls_transport.latest_commit().await;
                         assert_eq!(charlie.get_conversation_unchecked(&id).await.members().len(), 2);
 
                         alice_central
@@ -489,16 +477,13 @@ mod tests {
                         // Charlie joins through an external commit and should get external_senders
                         // from PGS and not from configuration
                         let public_group_state = alice.get_group_info(&id).await;
-                        let MlsConversationInitBundle { commit, .. } = charlie_central
+                        charlie_central
                             .join_by_external_commit(public_group_state, case.custom_cfg(), case.credential_type)
                             .await
                             .unwrap();
+                        let commit = charlie.mls_transport.latest_commit().await;
 
                         // Purposely have a configuration without `external_senders`
-                        charlie_central
-                            .merge_pending_group_from_external_commit(&id)
-                            .await
-                            .unwrap();
                         alice_central
                             .decrypt_message(&id, commit.to_bytes().unwrap())
                             .await
@@ -539,15 +524,10 @@ mod tests {
                             .await
                             .unwrap();
 
-                        let commit = charlie_central
-                            .commit_pending_proposals(&id)
-                            .await
-                            .unwrap()
-                            .unwrap()
-                            .commit;
-                        charlie_central.commit_accepted(&id).await.unwrap();
+                        charlie_central.commit_pending_proposals(&id).await.unwrap();
                         assert_eq!(charlie.get_conversation_unchecked(&id).await.members().len(), 2);
 
+                        let commit = charlie.mls_transport.latest_commit().await;
                         alice_central
                             .decrypt_message(&id, commit.to_bytes().unwrap())
                             .await

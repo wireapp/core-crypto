@@ -367,7 +367,7 @@ impl CentralContext {
     }
 
     /// Prunes local KeyPackages after making sure they also have been deleted on the backend side
-    /// You should only use this after [CentralContext::e2ei_rotate_all]
+    /// You should only use this after [CentralContext::save_x509_credential]
     #[cfg_attr(test, crate::dispotent)]
     pub async fn delete_keypackages(&self, refs: &[KeyPackageRef]) -> CryptoResult<()> {
         if refs.is_empty() {
@@ -472,7 +472,7 @@ mod tests {
 
                 let _rotate_bundle = client_context
                     .context
-                    .e2ei_rotate_all(&mut enrollment, cert_chain, 5)
+                    .save_x509_credential(&mut enrollment, cert_chain)
                     .await
                     .unwrap();
 
