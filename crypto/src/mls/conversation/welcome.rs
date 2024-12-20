@@ -155,7 +155,7 @@ impl MlsConversation {
 mod tests {
     use wasm_bindgen_test::*;
 
-    use crate::{prelude::MlsConversationCreationMessage, test_utils::*};
+    use crate::test_utils::*;
 
     use super::*;
 
@@ -179,12 +179,13 @@ mod tests {
                     .await
                     .unwrap();
 
-                let MlsConversationCreationMessage { welcome, .. } = alice_central
+                alice_central
                     .context
                     .add_members_to_conversation(&id, vec![bob])
                     .await
                     .unwrap();
 
+                let welcome = alice_central.mls_transport.latest_welcome_message().await;
                 // Bob accepts the welcome message, and as such, it should prune the used keypackage from the store
                 bob_central
                     .context
@@ -214,13 +215,13 @@ mod tests {
                     .await
                     .unwrap();
                 let bob = bob_central.rand_key_package(&case).await;
-                let welcome = alice_central
+                alice_central
                     .context
                     .add_members_to_conversation(&id, vec![bob])
                     .await
-                    .unwrap()
-                    .welcome;
+                    .unwrap();
 
+                let welcome = alice_central.mls_transport.latest_welcome_message().await;
                 // Meanwhile Bob creates a conversation with the exact same id as the one he's trying to join
                 bob_central
                     .context

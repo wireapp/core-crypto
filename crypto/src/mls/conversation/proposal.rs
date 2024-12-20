@@ -166,7 +166,7 @@ mod tests {
     use openmls::prelude::SignaturePublicKey;
     use wasm_bindgen_test::*;
 
-    use crate::{prelude::MlsCommitBundle, test_utils::*};
+    use crate::test_utils::*;
 
     use super::*;
 
@@ -205,13 +205,9 @@ mod tests {
                             .decrypt_message(&id, proposal.to_bytes().unwrap())
                             .await
                             .unwrap();
-                        let MlsCommitBundle { commit, welcome, .. } = bob_central
-                            .context
-                            .commit_pending_proposals(&id)
-                            .await
-                            .unwrap()
-                            .unwrap();
-                        bob_central.context.commit_accepted(&id).await.unwrap();
+                        bob_central.context.commit_pending_proposals(&id).await.unwrap();
+                        let commit = bob_central.mls_transport.latest_commit().await;
+                        let welcome = bob_central.mls_transport.latest_welcome_message().await;
                         assert_eq!(bob_central.get_conversation_unchecked(&id).await.members().len(), 3);
 
                         // if 'new_proposal' wasn't durable this would fail because proposal would
@@ -226,7 +222,7 @@ mod tests {
                         charlie_central
                             .try_join_from_welcome(
                                 &id,
-                                welcome.unwrap().into(),
+                                welcome.into(),
                                 case.custom_cfg(),
                                 vec![&alice_central, &bob_central],
                             )
@@ -275,14 +271,8 @@ mod tests {
                             .decrypt_message(&id, proposal.to_bytes().unwrap())
                             .await
                             .unwrap();
-                        let commit = bob_central
-                            .context
-                            .commit_pending_proposals(&id)
-                            .await
-                            .unwrap()
-                            .unwrap()
-                            .commit;
-                        bob_central.context.commit_accepted(&id).await.unwrap();
+                        bob_central.context.commit_pending_proposals(&id).await.unwrap();
+                        let commit = bob_central.mls_transport.latest_commit().await;
                         assert_eq!(bob_central.get_conversation_unchecked(&id).await.members().len(), 2);
 
                         // if 'new_proposal' wasn't durable this would fail because proposal would
@@ -337,21 +327,9 @@ mod tests {
                         .decrypt_message(&id, proposal.to_bytes().unwrap())
                         .await
                         .unwrap();
-                    let commit = bob_central
-                        .context
-                        .commit_pending_proposals(&id)
-                        .await
-                        .unwrap()
-                        .unwrap()
-                        .commit;
+                    bob_central.context.commit_pending_proposals(&id).await.unwrap();
+                    let commit = bob_central.mls_transport.latest_commit().await;
 
-                    // before merging, commit is not applied
-                    assert!(bob_central
-                        .get_conversation_unchecked(&id)
-                        .await
-                        .encryption_keys()
-                        .contains(&alice_key));
-                    bob_central.context.commit_accepted(&id).await.unwrap();
                     assert!(!bob_central
                         .get_conversation_unchecked(&id)
                         .await
@@ -409,7 +387,6 @@ mod tests {
                         .unwrap();
                     bob_central.context.commit_pending_proposals(&id).await.unwrap();
                     // epoch++
-                    bob_central.context.commit_accepted(&id).await.unwrap();
 
                     // fails when we try to decrypt a proposal for past epoch
                     let past_proposal = bob_central
