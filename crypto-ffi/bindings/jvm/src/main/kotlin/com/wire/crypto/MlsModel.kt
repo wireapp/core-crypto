@@ -241,14 +241,6 @@ fun com.wire.crypto.uniffi.ConversationInitBundle.lift() =
         crlNewDistributionPoints?.toCrlDistributionPoint(),
     )
 
-fun com.wire.crypto.uniffi.MemberAddedMessages.lift() =
-    CommitBundle(
-        commit.toMlsMessage(),
-        welcome.toWelcome(),
-        groupInfo.lift(),
-        crlNewDistributionPoints?.toCrlDistributionPoint(),
-    )
-
 /** Returned when a Proposal is created. Helps roll backing a local proposal */
 data class ProposalBundle(
     /** The proposal message to send to the DS */
