@@ -343,13 +343,12 @@ impl CentralContext {
 #[cfg(test)]
 mod tests {
     use crate::e2e_identity::rotate::tests::all::failsafe_ctx;
+    use std::sync::Arc;
 
     use wasm_bindgen_test::*;
 
     use crate::{
-        prelude::{
-            ClientIdentifier, MlsCentralConfiguration, MlsConversationCreationMessage, INITIAL_KEYING_MATERIAL_COUNT,
-        },
+        prelude::{ClientIdentifier, MlsCentralConfiguration, INITIAL_KEYING_MATERIAL_COUNT},
         test_utils::*,
         CoreCrypto,
     };
@@ -401,14 +400,11 @@ mod tests {
                     .unwrap();
 
                 let bob = bob_central.rand_key_package(&case).await;
-                let MlsConversationCreationMessage { welcome, .. } = alice_central
+                alice_central
                     .context
                     .add_members_to_conversation(&id, vec![bob])
                     .await
                     .unwrap();
-                // before merging, commit is not applied
-                assert_eq!(alice_central.get_conversation_unchecked(&id).await.members().len(), 1);
-                alice_central.context.commit_accepted(&id).await.unwrap();
 
                 assert_eq!(alice_central.get_conversation_unchecked(&id).await.id, id);
                 assert_eq!(
@@ -422,6 +418,7 @@ mod tests {
                 );
                 assert_eq!(alice_central.get_conversation_unchecked(&id).await.members().len(), 2);
 
+                let welcome = alice_central.mls_transport.latest_welcome_message().await;
                 bob_central
                     .context
                     .process_welcome_message(welcome.into(), case.custom_cfg())
@@ -502,6 +499,7 @@ mod tests {
                     let context = ClientContext {
                         context: friend_context,
                         central,
+                        mls_transport: Arc::<CoreCryptoTransportSuccessProvider>::default(),
                         x509_test_chain: x509_test_chain_arc.clone(),
                     };
                     bob_and_friends.push(context);
@@ -514,14 +512,12 @@ mod tests {
                     bob_and_friends_kps.push(c.rand_key_package(&case).await);
                 }
 
-                let MlsConversationCreationMessage { welcome, .. } = alice_central
+                alice_central
                     .context
                     .add_members_to_conversation(&id, bob_and_friends_kps)
                     .await
                     .unwrap();
-                // before merging, commit is not applied
-                assert_eq!(alice_central.get_conversation_unchecked(&id).await.members().len(), 1);
-                alice_central.context.commit_accepted(&id).await.unwrap();
+                let welcome = alice_central.mls_transport.latest_welcome_message().await;
 
                 assert_eq!(alice_central.get_conversation_unchecked(&id).await.id, id);
                 assert_eq!(
