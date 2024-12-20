@@ -19,6 +19,10 @@ env:
   CARGO_REGISTRIES_CRATES_IO_PROTOCOL: sparse
 
 jobs:
+  prepare_wasm:
+    if: github.repository == 'wireapp/core-crypto'
+    uses: ./.github/workflows/rust-build.yml
+
   check:
     runs-on: ubuntu-latest
     strategy:
@@ -157,34 +161,24 @@ jobs:
 
   e2e-interop-test:
     runs-on: ubuntu-latest
+    needs: prepare_wasm
     steps:
       - uses: actions/checkout@v4
       - uses: actions-rust-lang/setup-rust-toolchain@v1  # this implicitly caches Rust tools and build artifacts
         with:
           target: wasm32-unknown-unknown
           rustflags: ''
-      - name: Setup cargo-make
-        uses: davidB/rust-cargo-make@v1
-      - name: Install wasm-pack
-        uses: taiki-e/install-action@v2
-        with:
-          tool: wasm-pack
       - uses: browser-actions/setup-chrome@latest
         id: setup-chrome
         with:
           chrome-version: stable
-      - uses: oven-sh/setup-bun@v2
-        with:
-          bun-version: latest
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 18
       - run: |
           echo "CHROME_PATH=${{ steps.setup-chrome.outputs.chrome-path }}" >> $GITHUB_ENV
-      - name: Build Wasm artifacts
-        run: |
-          cd crypto-ffi
-          cargo make wasm
+      - name: retrieve artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: build-wasm-${{ github.run_id }}
+          path: crypto-ffi/bindings/js
       - name: Run E2E interop test
         run: cargo run --bin interop
 

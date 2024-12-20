@@ -1,0 +1,40 @@
+name: Reusable Builds
+
+on:
+  workflow_call:
+
+env:
+  RUST_BACKTRACE: 1
+  CARGO_TERM_COLOR: always
+  CARGO_NET_GIT_FETCH_WITH_CLI: true
+  CARGO_REGISTRIES_CRATES_IO_PROTOCOL: sparse
+
+jobs:
+  wasm:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions-rust-lang/setup-rust-toolchain@v1
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+      - name: install wasm-pack
+        uses: taiki-e/install-action@v2
+        with:
+          tool: wasm-pack
+      - uses: davidB/rust-cargo-make@v1
+      - name: Build WASM / JS
+        run: |
+          cd crypto-ffi
+          cargo make wasm
+          cd bindings/js
+          bun install
+      - name: export artifact name
+        id: artifact-name
+        run: echo "artifact-name=build-wasm-${{ github.run_id }}" >> $GITHUB_OUTPUT
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ steps.artifact-name.outputs.artifact-name }}
+          path: crypto-ffi/bindings/js
+          retention-days: 1
