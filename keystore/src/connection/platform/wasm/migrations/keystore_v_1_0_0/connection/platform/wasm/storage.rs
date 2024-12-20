@@ -253,8 +253,7 @@ impl WasmEncryptedStorage {
             WasmStorageWrapper::InMemory(map) => {
                 map.entry(collection.into()).and_modify(|store| {
                     for k in ids {
-                        let result = store.remove(k.as_ref());
-                        debug_assert!(result.is_some());
+                        store.remove(k.as_ref());
                     }
                 });
             }
