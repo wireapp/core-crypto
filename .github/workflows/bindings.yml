@@ -175,9 +175,8 @@ jobs:
         id: setup-chrome
         with:
           chrome-version: stable
-      - uses: actions-rust-lang/setup-rust-toolchain@v1  # this implicitly caches Rust tools and build artifacts
+      - uses: actions-rust-lang/setup-rust-toolchain@v1
         with:
-          rustflags: ''
           target: wasm32-unknown-unknown
       - uses: oven-sh/setup-bun@v2
         with:
@@ -185,21 +184,29 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 18
-      - name: Setup cargo-make
-        uses: davidB/rust-cargo-make@v1
       - name: Install wasm-pack
         uses: taiki-e/install-action@v2
         with:
           tool: wasm-pack
-      - name: Build & test WASM / JS package
+      - uses: davidB/rust-cargo-make@v1
+      - name: build WASM
         run: |
           cd crypto-ffi
           cargo make wasm
-          cd bindings/js
-          bun eslint . --max-warnings=0
-
-          # check all Typescript files (wdio.conf.ts, benches)
-          bunx tsc --noEmit
-
+      - name: build ts
+        run: |
+          cd crypto-ffi/bindings/js
+          bun install
           bun run build
+      - name: Lint
+        run: |
+          cd crypto-ffi/bindings/js
+          bun eslint . --max-warnings=0
+      - name: check all TS files
+        run: |
+          cd crypto-ffi/bindings/js
+          bun tsc --noEmit
+      - name: Test
+        run: |
+          cd crypto-ffi/bindings/js
           bun run test
