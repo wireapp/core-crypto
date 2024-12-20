@@ -1372,7 +1372,7 @@ export class CoreCrypto {
     async addClientsToConversation(
         conversationId: ConversationId,
         keyPackages: Uint8Array[]
-    ): Promise<MemberAddedMessages> {
+    ): Promise<string[] | undefined> {
         return await this.transaction(
             async (ctx) =>
                 await ctx.addClientsToConversation(conversationId, keyPackages)
@@ -1413,23 +1413,12 @@ export class CoreCrypto {
     }
 
     /**
-     * Creates an update commit which replaces your leaf containing basic credentials with a leaf node containing x509 credentials in the conversation.
-     *
-     * NOTE: you can only call this after you've completed the enrollment for an end-to-end identity, calling this without
-     * a valid end-to-end identity will result in an error.
-     *
-     * **CAUTION**: {@link CoreCrypto.commitAccepted} **HAS TO** be called afterward **ONLY IF** the Delivery Service responds
-     * '200 OK' to the {@link CommitBundle} upload. It will "merge" the commit locally i.e. increment the local group
-     * epoch, use new encryption secrets etc...
-     *
-     * @param conversationId - The ID of the conversation
-     *
-     * @returns A {@link CommitBundle}
+     * See {@link CoreCryptoContext.e2eiRotate}.
      *
      * @deprecated Create a transaction with {@link CoreCrypto.transaction}
      * and use {@link CoreCryptoContext.e2eiRotate} instead.
      */
-    async e2eiRotate(conversationId: ConversationId): Promise<CommitBundle> {
+    async e2eiRotate(conversationId: ConversationId): Promise<void> {
         return await this.transaction(
             async (ctx) => await ctx.e2eiRotate(conversationId)
         );
@@ -1502,50 +1491,6 @@ export class CoreCrypto {
     }
 
     /**
-     * See {@link CoreCryptoContext.mergePendingGroupFromExternalCommit}.
-     *
-     * @deprecated Create a transaction with {@link CoreCrypto.transaction}
-     * and use {@link CoreCryptoContext.mergePendingGroupFromExternalCommit} instead.
-     */
-    async mergePendingGroupFromExternalCommit(
-        conversationId: ConversationId
-    ): Promise<BufferedDecryptedMessage[] | undefined> {
-        return await this.transaction(
-            async (ctx) =>
-                await ctx.mergePendingGroupFromExternalCommit(conversationId)
-        );
-    }
-
-    /**
-     * See {@link CoreCryptoContext.clearPendingGroupFromExternalCommit}.
-     *
-     * @deprecated Create a transaction with {@link CoreCrypto.transaction}
-     * and use {@link CoreCryptoContext.clearPendingGroupFromExternalCommit} instead.
-     */
-    async clearPendingGroupFromExternalCommit(
-        conversationId: ConversationId
-    ): Promise<void> {
-        return await this.transaction(
-            async (ctx) =>
-                await ctx.clearPendingGroupFromExternalCommit(conversationId)
-        );
-    }
-
-    /**
-     * See {@link CoreCryptoContext.commitAccepted}.
-     *
-     * @deprecated Create a transaction with {@link CoreCrypto.transaction}
-     * and use {@link CoreCryptoContext.commitAccepted} instead.
-     */
-    async commitAccepted(
-        conversationId: ConversationId
-    ): Promise<BufferedDecryptedMessage[] | undefined> {
-        return await this.transaction(
-            async (ctx) => await ctx.commitAccepted(conversationId)
-        );
-    }
-
-    /**
      * See {@link CoreCryptoContext.clearPendingProposal}.
      *
      * @deprecated Create a transaction with {@link CoreCrypto.transaction}
@@ -1558,18 +1503,6 @@ export class CoreCrypto {
         return await this.transaction(
             async (ctx) =>
                 await ctx.clearPendingProposal(conversationId, proposalRef)
-        );
-    }
-
-    /**
-     * See {@link CoreCryptoContext.clearPendingCommit}.
-     *
-     * @deprecated Create a transaction with {@link CoreCrypto.transaction}
-     * and use {@link CoreCryptoContext.clearPendingCommit} instead.
-     */
-    async clearPendingCommit(conversationId: ConversationId): Promise<void> {
-        return await this.transaction(
-            async (ctx) => await ctx.clearPendingCommit(conversationId)
         );
     }
 
@@ -2066,23 +1999,18 @@ export class CoreCrypto {
     }
 
     /**
-     * See {@link CoreCryptoContext.e2eiRotateAll}.
+     * See {@link CoreCryptoContext.saveX509Credential}.
      *
      * @deprecated Create a transaction with {@link CoreCrypto.transaction}
-     * and use {@link CoreCryptoContext.e2eiRotateAll} instead.
+     * and use {@link CoreCryptoContext.saveX509Credential} instead.
      */
-    async e2eiRotateAll(
+    async saveX509Credential(
         enrollment: E2eiEnrollment,
-        certificateChain: string,
-        newKeyPackageCount: number
-    ): Promise<RotateBundle> {
+        certificateChain: string
+    ): Promise<string[] | undefined> {
         return await this.transaction(
             async (ctx) =>
-                await ctx.e2eiRotateAll(
-                    enrollment,
-                    certificateChain,
-                    newKeyPackageCount
-                )
+                await ctx.saveX509Credential(enrollment, certificateChain)
         );
     }
 
