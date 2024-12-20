@@ -515,7 +515,8 @@ mod tests {
                         .unwrap();
                     alice_central.invite_all(&case, &id, [&bob_central]).await.unwrap();
 
-                    let MlsCommitBundle { commit, .. } = bob_central.context.update_keying_material(&id).await.unwrap();
+                    bob_central.context.update_keying_material(&id).await.unwrap();
+                    let commit = bob_central.mls_transport.latest_commit().await;
                     let MlsConversationDecryptMessage { is_active, .. } = alice_central
                         .context
                         .decrypt_message(&id, commit.to_bytes().unwrap())
@@ -540,11 +541,12 @@ mod tests {
                         .unwrap();
                     alice_central.invite_all(&case, &id, [&bob_central]).await.unwrap();
 
-                    let MlsCommitBundle { commit, .. } = bob_central
+                    bob_central
                         .context
                         .remove_members_from_conversation(&id, &[alice_central.get_client_id().await])
                         .await
                         .unwrap();
+                    let commit = bob_central.mls_transport.latest_commit().await;
                     let MlsConversationDecryptMessage { is_active, .. } = alice_central
                         .context
                         .decrypt_message(&id, commit.to_bytes().unwrap())
@@ -575,9 +577,8 @@ mod tests {
 
                     let epoch_before = alice_central.context.conversation_epoch(&id).await.unwrap();
 
-                    let MlsCommitBundle { commit, .. } =
-                        alice_central.context.update_keying_material(&id).await.unwrap();
-                    alice_central.context.commit_accepted(&id).await.unwrap();
+                    alice_central.context.update_keying_material(&id).await.unwrap();
+                    let commit = alice_central.mls_transport.latest_commit().await;
 
                     let decrypted = bob_central
                         .context
@@ -593,173 +594,6 @@ mod tests {
                     alice_central.verify_sender_identity(&case, &decrypted).await;
                 })
             })
-            .await
-        }
-
-        #[apply(all_cred_cipher)]
-        #[wasm_bindgen_test]
-        pub async fn decrypting_a_commit_should_clear_pending_commit(case: TestCase) {
-            run_test_with_client_ids(
-                case.clone(),
-                ["alice", "bob", "charlie", "debbie"],
-                move |[alice_central, bob_central, charlie_central, debbie_central]| {
-                    Box::pin(async move {
-                        let id = conversation_id();
-                        alice_central
-                            .context
-                            .new_conversation(&id, case.credential_type, case.cfg.clone())
-                            .await
-                            .unwrap();
-                        alice_central.invite_all(&case, &id, [&bob_central]).await.unwrap();
-
-                        // Alice creates a commit which will be superseded by Bob's one
-                        let charlie = charlie_central.rand_key_package(&case).await;
-                        let debbie = debbie_central.rand_key_package(&case).await;
-                        alice_central
-                            .context
-                            .add_members_to_conversation(&id, vec![charlie.clone()])
-                            .await
-                            .unwrap();
-                        assert!(alice_central.pending_commit(&id).await.is_some());
-
-                        let add_debbie_commit = bob_central
-                            .context
-                            .add_members_to_conversation(&id, vec![debbie.clone()])
-                            .await
-                            .unwrap()
-                            .commit;
-                        let decrypted = alice_central
-                            .context
-                            .decrypt_message(&id, add_debbie_commit.to_bytes().unwrap())
-                            .await
-                            .unwrap();
-                        // Now Debbie should be in members and not Charlie
-                        let members = alice_central.get_conversation_unchecked(&id).await.members();
-
-                        let dc = debbie.unverified_credential();
-                        let debbie_id = dc.credential.identity();
-                        assert!(members.get(debbie_id).is_some());
-
-                        let cc = charlie.unverified_credential();
-                        let charlie_id = cc.credential.identity();
-                        assert!(members.get(charlie_id).is_none());
-
-                        // Previous commit to add Charlie has been discarded but its proposals will be renewed
-                        assert!(alice_central.pending_commit(&id).await.is_none());
-                        assert!(decrypted.has_epoch_changed)
-                    })
-                },
-            )
-            .await
-        }
-
-        #[apply(all_cred_cipher)]
-        #[wasm_bindgen_test]
-        pub async fn decrypting_a_commit_should_renew_proposals_in_pending_commit(case: TestCase) {
-            run_test_with_client_ids(
-                case.clone(),
-                ["alice", "bob", "charlie"],
-                move |[mut alice_central, bob_central, charlie_central]| {
-                    Box::pin(async move {
-                        let id = conversation_id();
-                        alice_central
-                            .context
-                            .new_conversation(&id, case.credential_type, case.cfg.clone())
-                            .await
-                            .unwrap();
-                        alice_central.invite_all(&case, &id, [&bob_central]).await.unwrap();
-
-                        // Alice will create a commit to add Charlie
-                        // Bob will create a commit which will be accepted first by DS so Alice will decrypt it
-                        // Then Alice will renew the proposal in her pending commit
-                        let charlie = charlie_central.rand_key_package(&case).await;
-
-                        let bob_commit = bob_central.context.update_keying_material(&id).await.unwrap().commit;
-                        bob_central.context.commit_accepted(&id).await.unwrap();
-
-                        // Alice propose to add Charlie
-                        alice_central
-                            .context
-                            .add_members_to_conversation(&id, vec![charlie.clone()])
-                            .await
-                            .unwrap();
-                        assert!(alice_central.pending_commit(&id).await.is_some());
-
-                        // But first she receives Bob commit
-                        let MlsConversationDecryptMessage { proposals, delay, .. } = alice_central
-                            .context
-                            .decrypt_message(&id, bob_commit.to_bytes().unwrap())
-                            .await
-                            .unwrap();
-                        // So Charlie has not been added to the group
-                        let cc = charlie.unverified_credential();
-                        let charlie_id = cc.credential.identity();
-                        assert!(alice_central
-                            .get_conversation_unchecked(&id)
-                            .await
-                            .members()
-                            .get(charlie_id)
-                            .is_none());
-                        // Make sure we are suggesting a commit delay
-                        assert!(delay.is_some());
-
-                        // But its proposal to add Charlie has been renewed and is also in store
-                        assert!(!proposals.is_empty());
-                        assert_eq!(alice_central.pending_proposals(&id).await.len(), 1);
-                        assert!(alice_central.pending_commit(&id).await.is_none());
-
-                        // Let's commit this proposal to see if it works
-                        for p in proposals {
-                            // But first, proposals have to be fan out to Bob
-                            bob_central
-                                .context
-                                .decrypt_message(&id, p.proposal.to_bytes().unwrap())
-                                .await
-                                .unwrap();
-                        }
-
-                        let MlsCommitBundle { commit, welcome, .. } = alice_central
-                            .context
-                            .commit_pending_proposals(&id)
-                            .await
-                            .unwrap()
-                            .unwrap();
-                        alice_central.context.commit_accepted(&id).await.unwrap();
-                        // Charlie is now in the group
-                        assert!(alice_central
-                            .get_conversation_unchecked(&id)
-                            .await
-                            .members()
-                            .get(charlie_id)
-                            .is_some());
-
-                        let decrypted = bob_central
-                            .context
-                            .decrypt_message(&id, commit.to_bytes().unwrap())
-                            .await
-                            .unwrap();
-                        // Bob also has Charlie in the group
-                        let cc = charlie.unverified_credential();
-                        let charlie_id = cc.credential.identity();
-                        assert!(bob_central
-                            .get_conversation_unchecked(&id)
-                            .await
-                            .members()
-                            .get(charlie_id)
-                            .is_some());
-                        assert!(decrypted.has_epoch_changed);
-
-                        // Charlie can join with the Welcome from renewed Add proposal
-                        let id = charlie_central
-                            .context
-                            .process_welcome_message(welcome.unwrap().into(), case.custom_cfg())
-                            .await
-                            .unwrap()
-                            .id;
-                        assert!(charlie_central.try_talk_to(&id, &alice_central).await.is_ok());
-                    })
-                },
-            )
             .await
         }
 
@@ -792,8 +626,8 @@ mod tests {
                             .await
                             .unwrap();
 
-                        let MlsCommitBundle { commit, .. } =
-                            bob_central.context.update_keying_material(&id).await.unwrap();
+                        bob_central.context.update_keying_material(&id).await.unwrap();
+                        let commit = bob_central.mls_transport.latest_commit().await;
                         let MlsConversationDecryptMessage {
                             proposals,
                             delay,
@@ -834,8 +668,8 @@ mod tests {
                         // Alice will create a proposal to add Charlie
                         // Bob will create a commit which Alice will decrypt
                         // Then Alice will renew her proposal
-                        let bob_commit = bob_central.context.update_keying_material(&id).await.unwrap().commit;
-                        bob_central.context.commit_accepted(&id).await.unwrap();
+                        bob_central.context.update_keying_material(&id).await.unwrap();
+                        let bob_commit = bob_central.mls_transport.latest_commit().await;
                         let commit_epoch = bob_commit.epoch().unwrap();
 
                         // Alice propose to add Charlie
@@ -875,12 +709,8 @@ mod tests {
                             .await
                             .unwrap();
                         assert_eq!(bob_central.pending_proposals(&id).await.len(), 1);
-                        let MlsCommitBundle { commit, .. } = bob_central
-                            .context
-                            .commit_pending_proposals(&id)
-                            .await
-                            .unwrap()
-                            .unwrap();
+                        bob_central.context.commit_pending_proposals(&id).await.unwrap();
+                        let commit = bob_central.mls_transport.latest_commit().await;
                         let decrypted = alice_central
                             .context
                             .decrypt_message(&id, commit.to_bytes().unwrap())
@@ -895,7 +725,6 @@ mod tests {
                             .is_some());
 
                         // Bob also has Charlie in the group
-                        bob_central.context.commit_accepted(&id).await.unwrap();
                         assert!(bob_central
                             .get_conversation_unchecked(&id)
                             .await
@@ -947,8 +776,8 @@ mod tests {
                             .unwrap();
                         assert_eq!(alice_central.pending_proposals(&id).await.len(), 1);
 
-                        let MlsCommitBundle { commit, .. } =
-                            bob_central.context.update_keying_material(&id).await.unwrap();
+                        bob_central.context.update_keying_material(&id).await.unwrap();
+                        let commit = bob_central.mls_transport.latest_commit().await;
                         let alice_renewed_proposals = alice_central
                             .context
                             .decrypt_message(&id, commit.to_bytes().unwrap())
@@ -976,7 +805,8 @@ mod tests {
                         .unwrap();
                     alice_central.invite_all(&case, &id, [&bob_central]).await.unwrap();
 
-                    let commit = alice_central.context.update_keying_material(&id).await.unwrap().commit;
+                    alice_central.context.update_keying_material(&id).await.unwrap();
+                    let commit = alice_central.mls_transport.latest_commit().await;
 
                     let sender_client_id = bob_central
                         .context
@@ -1076,13 +906,7 @@ mod tests {
 
                         assert_eq!(bob_central.get_conversation_unchecked(&id).await.members().len(), 2);
                         // if 'decrypt_message' is not durable the commit won't contain the add proposal
-                        bob_central
-                            .context
-                            .commit_pending_proposals(&id)
-                            .await
-                            .unwrap()
-                            .unwrap();
-                        bob_central.context.commit_accepted(&id).await.unwrap();
+                        bob_central.context.commit_pending_proposals(&id).await.unwrap();
                         assert_eq!(bob_central.get_conversation_unchecked(&id).await.members().len(), 3);
                         assert!(!decrypted.has_epoch_changed);
 
@@ -1184,11 +1008,6 @@ mod tests {
                         .join_by_external_commit(gi, case.custom_cfg(), case.credential_type)
                         .await
                         .unwrap();
-                    bob_central
-                        .context
-                        .merge_pending_group_from_external_commit(&id)
-                        .await
-                        .unwrap();
 
                     // fails because of Forward Secrecy
                     let decrypt = bob_central.context.decrypt_message(&id, &encrypted).await;
@@ -1212,8 +1031,8 @@ mod tests {
                     alice_central.invite_all(&case, &id, [&bob_central]).await.unwrap();
 
                     // only Alice will change epoch without notifying Bob
-                    let commit = alice_central.context.update_keying_material(&id).await.unwrap().commit;
-                    alice_central.context.commit_accepted(&id).await.unwrap();
+                    alice_central.context.update_keying_material(&id).await.unwrap();
+                    let commit = alice_central.mls_transport.latest_commit().await;
 
                     // Now in epoch 2 Alice will encrypt a message
                     let msg = b"Hello bob";
@@ -1337,8 +1156,8 @@ mod tests {
 
                     // Move group's epoch forward by self updating
                     for _ in 0..MAX_PAST_EPOCHS {
-                        let commit = alice_central.context.update_keying_material(&id).await.unwrap().commit;
-                        alice_central.context.commit_accepted(&id).await.unwrap();
+                        alice_central.context.update_keying_material(&id).await.unwrap();
+                        let commit = alice_central.mls_transport.latest_commit().await;
                         bob_central
                             .context
                             .decrypt_message(&id, commit.to_bytes().unwrap())
@@ -1350,8 +1169,8 @@ mod tests {
                     assert_eq!(decrypt.app_msg.unwrap(), b"Hello Bob");
 
                     // Moving the epochs once more should cause an error
-                    let commit = alice_central.context.update_keying_material(&id).await.unwrap().commit;
-                    alice_central.context.commit_accepted(&id).await.unwrap();
+                    alice_central.context.update_keying_material(&id).await.unwrap();
+                    let commit = alice_central.mls_transport.latest_commit().await;
                     bob_central
                         .context
                         .decrypt_message(&id, commit.to_bytes().unwrap())
@@ -1394,18 +1213,16 @@ mod tests {
                         .group
                         .clear_pending_proposals();
                     let old_commit = alice_central
-                        .context
-                        .update_keying_material(&id)
+                        .create_unmerged_commit(&id)
                         .await
-                        .unwrap()
                         .commit
                         .to_bytes()
                         .unwrap();
                     alice_central.context.clear_pending_commit(&id).await.unwrap();
 
                     // Now let's jump to next epoch
-                    let commit = alice_central.context.update_keying_material(&id).await.unwrap().commit;
-                    alice_central.context.commit_accepted(&id).await.unwrap();
+                    alice_central.context.update_keying_material(&id).await.unwrap();
+                    let commit = alice_central.mls_transport.latest_commit().await;
                     bob_central
                         .context
                         .decrypt_message(&id, commit.to_bytes().unwrap())

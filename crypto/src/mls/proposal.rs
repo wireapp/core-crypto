@@ -161,7 +161,7 @@ impl CentralContext {
 mod tests {
     use wasm_bindgen_test::*;
 
-    use crate::{prelude::MlsCommitBundle, prelude::*, test_utils::*};
+    use crate::{prelude::*, test_utils::*};
 
     wasm_bindgen_test_configure!(run_in_browser);
 
@@ -181,17 +181,12 @@ mod tests {
                         .unwrap();
                     let bob_kp = bob_central.get_one_key_package(&case).await;
                     alice_central.context.new_add_proposal(&id, bob_kp).await.unwrap();
-                    let MlsCommitBundle { welcome, .. } = alice_central
-                        .context
-                        .commit_pending_proposals(&id)
-                        .await
-                        .unwrap()
-                        .unwrap();
-                    alice_central.context.commit_accepted(&id).await.unwrap();
+                    alice_central.context.commit_pending_proposals(&id).await.unwrap();
+                    let welcome = alice_central.mls_transport.latest_welcome_message().await;
                     assert_eq!(alice_central.get_conversation_unchecked(&id).await.members().len(), 2);
                     let new_id = bob_central
                         .context
-                        .process_welcome_message(welcome.unwrap().into(), case.custom_cfg())
+                        .process_welcome_message(welcome.into(), case.custom_cfg())
                         .await
                         .unwrap()
                         .id;
@@ -226,7 +221,6 @@ mod tests {
                         .unwrap();
                     central.context.new_update_proposal(&id).await.unwrap();
                     central.context.commit_pending_proposals(&id).await.unwrap();
-                    central.context.commit_accepted(&id).await.unwrap();
                     let after = central
                         .get_conversation_unchecked(&id)
                         .await
@@ -270,15 +264,10 @@ mod tests {
                         .decrypt_message(&id, remove_proposal.proposal.to_bytes().unwrap())
                         .await
                         .unwrap();
-                    let MlsCommitBundle { commit, .. } = alice_central
-                        .context
-                        .commit_pending_proposals(&id)
-                        .await
-                        .unwrap()
-                        .unwrap();
-                    alice_central.context.commit_accepted(&id).await.unwrap();
+                    alice_central.context.commit_pending_proposals(&id).await.unwrap();
                     assert_eq!(alice_central.get_conversation_unchecked(&id).await.members().len(), 1);
 
+                    let commit = alice_central.mls_transport.latest_commit().await;
                     bob_central
                         .context
                         .decrypt_message(&id, commit.to_bytes().unwrap())
