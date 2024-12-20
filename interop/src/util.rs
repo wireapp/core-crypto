@@ -15,7 +15,7 @@
 // along with this program. If not, see http://www.gnu.org/licenses/.
 
 use core_crypto::prelude::MlsCommitBundle;
-use core_crypto::{CryptoResult, MlsTransport, MlsTransportResponse};
+use core_crypto::{MlsTransport, MlsTransportResponse};
 use spinoff::Spinner;
 
 pub(crate) struct RunningProcess {
@@ -81,11 +81,11 @@ pub struct CoreCryptoTransportSuccessProvider;
 #[cfg_attr(target_family = "wasm", async_trait::async_trait(?Send))]
 #[cfg_attr(not(target_family = "wasm"), async_trait::async_trait)]
 impl MlsTransport for CoreCryptoTransportSuccessProvider {
-    async fn send_commit_bundle(&self, _commit_bundle: MlsCommitBundle) -> CryptoResult<MlsTransportResponse> {
+    async fn send_commit_bundle(&self, _commit_bundle: MlsCommitBundle) -> core_crypto::Result<MlsTransportResponse> {
         Ok(MlsTransportResponse::Success)
     }
 
-    async fn send_message(&self, _mls_message: Vec<u8>) -> CryptoResult<MlsTransportResponse> {
+    async fn send_message(&self, _mls_message: Vec<u8>) -> core_crypto::Result<MlsTransportResponse> {
         Ok(MlsTransportResponse::Success)
     }
 }
