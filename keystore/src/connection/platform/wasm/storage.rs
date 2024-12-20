@@ -72,8 +72,7 @@ impl<'a> WasmStorageTransaction<'a> {
             }
             WasmStorageTransaction::InMemory { db, cipher: _cipher } => {
                 db.borrow_mut().entry(collection_name.into()).and_modify(|store| {
-                    let result = store.remove(id.as_ref());
-                    debug_assert!(result.is_some());
+                    store.remove(id.as_ref());
                 });
             }
         }
@@ -404,8 +403,7 @@ impl WasmEncryptedStorage {
                 let mut map = map.borrow_mut();
                 map.entry(collection.into()).and_modify(|store| {
                     for k in ids {
-                        let result = store.remove(k.as_ref());
-                        debug_assert!(result.is_some());
+                        store.remove(k.as_ref());
                     }
                 });
             }
