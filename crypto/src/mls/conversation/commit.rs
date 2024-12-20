@@ -95,7 +95,6 @@ impl CentralContext {
     /// # Errors
     /// If the authorisation callback is set, an error can be caused when the authorization fails.
     /// Other errors are KeyStore and OpenMls errors:
-    // #[cfg_attr(test, crate::dispotent)]
     pub async fn add_members_to_conversation(
         &self,
         id: &ConversationId,
@@ -144,7 +143,6 @@ impl CentralContext {
     ///
     /// # Errors
     /// If the authorisation callback is set, an error can be caused when the authorization fails. Other errors are KeyStore and OpenMls errors.
-    #[cfg_attr(test, crate::idempotent)]
     pub async fn remove_members_from_conversation(&self, id: &ConversationId, clients: &[ClientId]) -> Result<()> {
         let client = self
             .mls_client()
@@ -209,7 +207,6 @@ impl CentralContext {
     ///
     /// # Errors
     /// Errors can be originating from the KeyStore and OpenMls
-    // #[cfg_attr(test, crate::dispotent)]
     pub async fn commit_pending_proposals(&self, id: &ConversationId) -> Result<()> {
         let client = self
             .mls_client()
