@@ -18,6 +18,8 @@
 
 package com.wire.crypto
 
+import com.wire.crypto.uniffi.CommitBundle
+import com.wire.crypto.uniffi.MlsTransportResponse
 import kotlinx.coroutines.*
 import kotlinx.coroutines.test.runTest
 import org.assertj.core.api.AssertionsForInterfaceTypes.assertThat
@@ -34,6 +36,12 @@ class MLSTest {
         internal val aliceId2 = "alice2"
         internal val bobId = "bob"
         internal val carolId = "carol"
+        internal lateinit var mockDeliveryService: MockDeliveryService
+    }
+
+    @BeforeTest
+    fun setup() {
+        mockDeliveryService = MockMlsTransportSuccessProvider()
     }
 
     @Test
@@ -184,11 +192,11 @@ class MLSTest {
         bob.transaction { it.createConversation(id) }
 
         val aliceKp = alice.transaction { it.generateKeyPackages(1U).first() }
-        val welcome = bob.transaction { it.addMember(id, listOf(aliceKp)).welcome!! }
-        bob.transaction {  it.commitAccepted(id) }
-
+        bob.transaction { it.addMember(id, listOf(aliceKp)) }
+        val welcome = mockDeliveryService.getLatestWelcome()
         val groupId = alice.transaction { it.processWelcomeMessage(welcome).id }
-        val commit = bob.transaction { it.updateKeyingMaterial(id).commit }
+        bob.transaction { it.updateKeyingMaterial(id) }
+        val commit = mockDeliveryService.getLatestCommit()
 
         val decrypted = alice.transaction { it.decryptMessage(groupId, commit) }
         assertThat(decrypted.message).isNull()
@@ -204,7 +212,8 @@ class MLSTest {
         bob.transaction { it.createConversation(id) }
 
         val aliceKp = alice.transaction { it.generateKeyPackages(1U).first() }
-        val welcome = bob.transaction { it.addMember(id, listOf(aliceKp)).welcome!! }
+        bob.transaction { it.addMember(id, listOf(aliceKp)) }
+        val welcome = mockDeliveryService.getLatestWelcome()
         val groupId = alice.transaction { it.processWelcomeMessage(welcome) }
 
         // FIXME: simplify when https://youtrack.jetbrains.com/issue/KT-24874 fixed
@@ -220,14 +229,13 @@ class MLSTest {
         val alice1Kp = alice1.transaction { it.generateKeyPackages(1U).first() }
         bob.transaction {
             it.addMember(id, listOf(alice1Kp))
-            it.commitAccepted(id)
             Unit
         }
 
         val proposal = alice2.transaction { it.joinConversation(id, 1UL, Ciphersuite.DEFAULT, CredentialType.DEFAULT) }
         bob.transaction { it.decryptMessage(id, proposal) }
-        val welcome = bob.transaction { it.commitPendingProposals(id)?.welcome!! }
-        bob.transaction { it.commitAccepted(id) }
+        bob.transaction { it.commitPendingProposals(id) }
+        val welcome = mockDeliveryService.getLatestWelcome()
         val groupId = alice2.transaction { it.processWelcomeMessage(welcome) }
 
         // FIXME: simplify when https://youtrack.jetbrains.com/issue/KT-24874 fixed
@@ -241,8 +249,8 @@ class MLSTest {
         bob.transaction { it.createConversation(id) }
 
         val aliceKp = alice.transaction { it.generateKeyPackages(1U).first() }
-        val welcome = bob.transaction { it.addMember(id, listOf(aliceKp)).welcome!! }
-        bob.transaction { it.commitAccepted(id) }
+        bob.transaction { it.addMember(id, listOf(aliceKp)) }
+        val welcome = mockDeliveryService.getLatestWelcome()
         val groupId = alice.transaction { it.processWelcomeMessage(welcome).id }
 
         val msg = "Hello World !"
@@ -262,13 +270,14 @@ class MLSTest {
 
         bob.transaction { it.createConversation(id) }
         val aliceKp = alice.transaction { it.generateKeyPackages(1U).first() }
-        val welcome = bob.transaction { it.addMember(id, listOf(aliceKp)).welcome!! }
-        bob.transaction { it.commitAccepted(id) }
+        bob.transaction { it.addMember(id, listOf(aliceKp)) }
+        val welcome = mockDeliveryService.getLatestWelcome()
 
         alice.transaction { it.processWelcomeMessage(welcome) }
 
         val carolKp = carol.transaction { it.generateKeyPackages(1U).first() }
-        val commit = bob.transaction { it.addMember(id, listOf(carolKp)).commit }
+        bob.transaction { it.addMember(id, listOf(carolKp)) }
+        val commit = mockDeliveryService.getLatestCommit()
 
         val decrypted = alice.transaction { it.decryptMessage(id, commit) }
         assertThat(decrypted.message).isNull()
@@ -286,8 +295,8 @@ class MLSTest {
         bob.transaction { it.createConversation(id) }
 
         val aliceKp = alice.transaction { it.generateKeyPackages(1U).first() }
-        val welcome = bob.transaction { it.addMember(id, listOf(aliceKp)).welcome!! }
-        bob.transaction { it.commitAccepted((id)) }
+        bob.transaction { it.addMember(id, listOf(aliceKp)) }
+        val welcome = mockDeliveryService.getLatestWelcome()
 
         val groupId = alice.transaction { it.processWelcomeMessage(welcome) }
         // FIXME: simplify when https://youtrack.jetbrains.com/issue/KT-24874 fixed
@@ -302,12 +311,13 @@ class MLSTest {
 
         val aliceKp = alice.transaction { it.generateKeyPackages(1U).first() }
         val carolKp = carol.transaction { it.generateKeyPackages(1U).first() }
-        val welcome = bob.transaction { it.addMember(id, listOf(aliceKp, carolKp)).welcome!! }
-        bob.transaction { it.commitAccepted(id) }
+        bob.transaction { it.addMember(id, listOf(aliceKp, carolKp)) }
+        val welcome = mockDeliveryService.getLatestWelcome()
         val conversationId = alice.transaction { it.processWelcomeMessage(welcome).id }
 
         val carolMember = listOf(carolId.toClientId())
-        val commit = bob.transaction { it.removeMember(conversationId, carolMember).commit }
+        bob.transaction { it.removeMember(conversationId, carolMember) }
+        val commit = mockDeliveryService.getLatestCommit()
 
         val decrypted = alice.transaction { it.decryptMessage(conversationId, commit) }
         assertThat(decrypted.message).isNull()
@@ -323,8 +333,8 @@ class MLSTest {
 
         // Add proposal
         alice.transaction { it.newAddProposal(id, bobKp) }
-        val welcome = alice.transaction { it.commitPendingProposals(id)!!.welcome!! }
-        alice.transaction { it.commitAccepted(id) }
+        alice.transaction { it.commitPendingProposals(id) }
+        val welcome = mockDeliveryService.getLatestWelcome()
 
         bob.transaction { it.processWelcomeMessage(welcome) }
 
@@ -338,21 +348,13 @@ class MLSTest {
         proposals.forEach { proposal ->
             alice.transaction { it.clearPendingProposal(id, proposal.proposalRef) }
         }
-        // should be null since we cleared all proposals
-        assertThat(alice.transaction { it.commitPendingProposals(id) }).isNull()
-    }
 
-    @Test
-    fun clearPendingCommit_should_clear_the_pending_commit() = runTest {
-        val (alice) = newClients(aliceId)
-
-        alice.transaction {
-            it.createConversation(id)
-            it.updateKeyingMaterial(id)
-            it.clearPendingCommit(id)
-        }
-        // encrypting a message would have failed if there was a pending commit
-        assertThat(alice.transaction { it.encryptMessage(id, "Hello".toPlaintextMessage()) })
+        val commitBefore = mockDeliveryService.getLatestCommit()
+        // Since all proposals were cleared, this should not produce/send a commit
+        alice.transaction { it.commitPendingProposals(id) }
+        val commitAfter = mockDeliveryService.getLatestCommit()
+        // So this is still the same
+        assertThat(commitBefore).isEqualTo(commitAfter)
     }
 
     @Test
@@ -389,7 +391,9 @@ fun newClients(vararg clientIds: String) = runBlocking {
 fun initCc(): CoreCrypto = runBlocking {
     val root = Files.createTempDirectory("mls").toFile()
     val keyStore = root.resolve("keystore-${randomIdentifier()}")
-    CoreCrypto(keyStore.absolutePath, "secret")
+    val cc = CoreCrypto(keyStore.absolutePath, "secret")
+    cc.provideTransport(MLSTest.mockDeliveryService)
+    cc
 }
 
 fun randomIdentifier(n: Int = 12): String {
@@ -397,4 +401,31 @@ fun randomIdentifier(n: Int = 12): String {
     return (1..n)
         .map { kotlin.random.Random.nextInt(0, charPool.size).let { charPool[it] } }
         .joinToString("")
+}
+
+interface MockDeliveryService : MlsTransport {
+    suspend fun getLatestCommitBundle(): CommitBundle
+
+    suspend fun getLatestWelcome(): Welcome
+
+    suspend fun getLatestCommit(): MlsMessage
+}
+
+class  MockMlsTransportSuccessProvider : MockDeliveryService {
+
+    private var latestCommitBundle: CommitBundle? = null
+
+    override suspend fun sendMessage(mlsMessage: ByteArray): MlsTransportResponse =
+        MlsTransportResponse.Success
+
+    override suspend fun sendCommitBundle(commitBundle: CommitBundle): MlsTransportResponse {
+        latestCommitBundle = commitBundle
+        return MlsTransportResponse.Success
+    }
+
+    override suspend fun getLatestCommitBundle(): CommitBundle = latestCommitBundle!!
+
+    override suspend fun getLatestWelcome(): Welcome = getLatestCommitBundle().welcome!!.toWelcome()
+
+    override suspend fun getLatestCommit(): MlsMessage = getLatestCommitBundle().commit.toMlsMessage()
 }
