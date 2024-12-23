@@ -1,5 +1,11 @@
 import { browser } from "@wdio/globals";
-import { Ciphersuite, CoreCrypto, GroupInfoBundle } from "../src/CoreCrypto.js";
+import {
+    Ciphersuite,
+    CommitBundle,
+    CoreCrypto,
+    GroupInfoBundle,
+    MlsTransport,
+} from "../src/CoreCrypto.js";
 
 type ccModuleType = typeof import("../src/CoreCrypto.js");
 
@@ -13,6 +19,8 @@ declare global {
         ccModule: ccModuleType;
         cc: { [key: string]: CoreCrypto | undefined };
         defaultCipherSuite: Ciphersuite;
+        deliveryService: DeliveryService;
+        _latestCommitBundle: CommitBundle;
 
         // Helper functions that are used inside the browser context
         /**
@@ -29,6 +37,10 @@ declare global {
     }
 }
 
+interface DeliveryService extends MlsTransport {
+    getLatestCommitBundle: () => Promise<CommitBundle>;
+}
+
 export async function setup() {
     if ((await browser.getUrl()) === "about:blank") {
         await browser.url("/");
@@ -43,6 +55,19 @@ export async function setup() {
             window.defaultCipherSuite =
                 window.ccModule.Ciphersuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519;
         }
+
+        window.deliveryService = {
+            async sendCommitBundle(commitBundle: CommitBundle) {
+                window._latestCommitBundle = commitBundle;
+                return "success";
+            },
+            async sendMessage() {
+                return "success";
+            },
+            async getLatestCommitBundle() {
+                return window._latestCommitBundle;
+            },
+        };
 
         window.ensureCcDefined = (clientName: string) => {
             const cc = window.cc[clientName];
@@ -95,6 +120,7 @@ export async function ccInit(clientName: string): Promise<void> {
             clientId: encoder.encode(clientName),
         };
         const instance = await window.ccModule.CoreCrypto.init(clientConfig);
+        await instance.provideTransport(window.deliveryService);
 
         if (window.cc === undefined) {
             window.cc = {};
@@ -164,11 +190,11 @@ export async function invite(
             );
             const encoder = new TextEncoder();
             const conversationIdBytes = encoder.encode(conversationId);
-            const { groupInfo: groupInfo, welcome: welcome } =
-                await cc1.addClientsToConversation(conversationIdBytes, [kp]);
+            await cc1.addClientsToConversation(conversationIdBytes, [kp]);
+            const { groupInfo, welcome } =
+                await window.deliveryService.getLatestCommitBundle();
 
-            await cc1.commitAccepted(conversationIdBytes);
-            await cc2.processWelcomeMessage(welcome);
+            await cc2.processWelcomeMessage(welcome!);
 
             return groupInfo;
         },

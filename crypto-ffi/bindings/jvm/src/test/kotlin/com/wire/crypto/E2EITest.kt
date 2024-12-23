@@ -24,9 +24,15 @@ import com.wire.crypto.MLSTest.Companion.id
 import kotlinx.coroutines.test.runTest
 import org.assertj.core.api.AssertionsForInterfaceTypes.assertThat
 import java.nio.file.Files
+import kotlin.test.BeforeTest
 import kotlin.test.Test
 
 internal class E2EITest {
+
+    @BeforeTest
+    fun setup() {
+        MLSTest.mockDeliveryService = MockMlsTransportSuccessProvider()
+    }
 
     @Test
     fun sample_e2ei_enrollment_should_succeed() = runTest {
@@ -223,8 +229,8 @@ internal class E2EITest {
         bob.transaction { it.createConversation(id) }
 
         val aliceKp = alice.transaction { it.generateKeyPackages(1U, Ciphersuite.DEFAULT, CredentialType.DEFAULT).first() }
-        val welcome = bob.transaction { it.addMember(id, listOf(aliceKp)).welcome!! }
-        bob.transaction { it.commitAccepted(id) }
+        bob.transaction { it.addMember(id, listOf(aliceKp)) }
+        val welcome = MLSTest.mockDeliveryService.getLatestWelcome()
         val groupId = alice.transaction { it.processWelcomeMessage(welcome).id }
 
         assertThat(alice.transaction { it.e2eiConversationState(groupId) }).isEqualTo(E2eiConversationState.NotEnabled)
