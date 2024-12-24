@@ -13,7 +13,7 @@ import {
     SESSION_ID,
     setup,
     teardown,
-} from "./utils";
+} from "./utils.js";
 import { afterEach, beforeEach, describe } from "mocha";
 import {
     CoreCryptoError,
@@ -21,8 +21,8 @@ import {
     E2eiConversationState,
     GroupInfoEncryptionType,
     RatchetTreeType,
-} from "../src/CoreCrypto";
-import CoreCryptoContext from "../src/CoreCryptoContext";
+} from "../src/CoreCrypto.js";
+import CoreCryptoContext from "../src/CoreCryptoContext.js";
 
 beforeEach(async () => {
     await setup();
