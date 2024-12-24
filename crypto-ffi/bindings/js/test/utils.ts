@@ -1,7 +1,7 @@
 import { browser } from "@wdio/globals";
-import { Ciphersuite, CoreCrypto, GroupInfoBundle } from "../src/CoreCrypto";
+import { Ciphersuite, CoreCrypto, GroupInfoBundle } from "../src/CoreCrypto.js";
 
-type ccModuleType = typeof import("../src/CoreCrypto");
+type ccModuleType = typeof import("../src/CoreCrypto.js");
 
 export const ALICE_ID = "alice";
 export const BOB_ID = "bob";
