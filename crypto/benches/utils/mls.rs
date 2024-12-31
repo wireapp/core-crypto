@@ -1,14 +1,16 @@
+use async_lock::RwLock;
+use criterion::BenchmarkId;
 use rand::distributions::{Alphanumeric, DistString};
 use std::fmt::{Display, Formatter};
-
-use criterion::BenchmarkId;
+use std::sync::Arc;
 
 use core_crypto::prelude::{
-    CertificateBundle, ClientId, ConversationId, MlsCentral, MlsCentralConfiguration, MlsCiphersuite,
-    MlsConversationConfiguration, MlsCredentialType, MlsCustomConfiguration,
+    CertificateBundle, ClientId, ConversationId, MlsCentral, MlsCentralConfiguration, MlsCiphersuite, MlsCommitBundle,
+    MlsConversationConfiguration, MlsCredentialType, MlsCustomConfiguration, MlsGroupInfoBundle,
 };
-use core_crypto::CoreCrypto;
+use core_crypto::{CoreCrypto, MlsTransport, MlsTransportResponse};
 use mls_crypto_provider::MlsCryptoProvider;
+use openmls::framing::MlsMessageOut;
 use openmls::{
     framing::MlsMessageInBody,
     prelude::{
@@ -121,8 +123,8 @@ pub async fn setup_mls(
     ciphersuite: MlsCiphersuite,
     credential: Option<&CertificateBundle>,
     in_memory: bool,
-) -> (CoreCrypto, ConversationId) {
-    let (central, _) = new_central(ciphersuite, credential, in_memory).await;
+) -> (CoreCrypto, ConversationId, Arc<dyn MlsTransportTestExt>) {
+    let (central, _, delivery_service) = new_central(ciphersuite, credential, in_memory).await;
     let core_crypto = central;
     let context = core_crypto.new_transaction().await.unwrap();
     let id = conversation_id();
@@ -139,7 +141,7 @@ pub async fn setup_mls(
         .unwrap();
 
     context.finish().await.unwrap();
-    (core_crypto, id)
+    (core_crypto, id, delivery_service)
 }
 
 pub async fn new_central(
@@ -147,7 +149,7 @@ pub async fn new_central(
     // TODO: always None for the moment. Need to update the benches with some realistic certificates. Tracking issue: WPB-9589
     _credential: Option<&CertificateBundle>,
     in_memory: bool,
-) -> (CoreCrypto, tempfile::TempDir) {
+) -> (CoreCrypto, tempfile::TempDir, Arc<dyn MlsTransportTestExt>) {
     let (path, tmp_file) = tmp_db_file();
     let client_id = Alphanumeric.sample_string(&mut rand::thread_rng(), 10);
     let secret = Alphanumeric.sample_string(&mut rand::thread_rng(), 10);
@@ -166,7 +168,10 @@ pub async fn new_central(
     } else {
         MlsCentral::try_new(cfg).await.unwrap()
     };
-    (CoreCrypto::from(central), tmp_file)
+    let cc = CoreCrypto::from(central);
+    let delivery_service = Arc::<CoreCryptoTransportSuccessProvider>::default();
+    cc.provide_transport(delivery_service.clone()).await;
+    (cc, tmp_file, delivery_service.clone())
 }
 
 pub(crate) fn tmp_db_file() -> (String, tempfile::TempDir) {
@@ -187,6 +192,7 @@ pub async fn add_clients(
     id: &ConversationId,
     ciphersuite: MlsCiphersuite,
     nb_clients: usize,
+    main_client_delivery_service: Arc<dyn MlsTransportTestExt>,
 ) -> (Vec<ClientId>, VerifiableGroupInfo) {
     let mut client_ids = vec![];
 
@@ -199,7 +205,8 @@ pub async fn add_clients(
 
     let core_crypto = CoreCrypto::from(central.clone());
     let context = core_crypto.new_transaction().await.unwrap();
-    let commit_bundle = context.add_members_to_conversation(id, key_packages).await.unwrap();
+    context.add_members_to_conversation(id, key_packages).await.unwrap();
+    let commit_bundle = main_client_delivery_service.latest_commit_bundle().await;
 
     let group_info = commit_bundle.group_info.payload.bytes();
     let group_info = openmls::prelude::MlsMessageIn::tls_deserialize(&mut group_info.as_slice()).unwrap();
@@ -207,10 +214,32 @@ pub async fn add_clients(
         panic!("error")
     };
 
-    context.commit_accepted(id).await.unwrap();
-
     context.finish().await.unwrap();
     (client_ids, group_info)
+}
+
+pub async fn setup_mls_and_add_clients(
+    cipher_suite: MlsCiphersuite,
+    credential: Option<&CertificateBundle>,
+    in_memory: bool,
+    client_count: usize,
+) -> (
+    CoreCrypto,
+    ConversationId,
+    Vec<ClientId>,
+    VerifiableGroupInfo,
+    Arc<dyn MlsTransportTestExt>,
+) {
+    let (core_crypto, id, delivery_service) = setup_mls(cipher_suite, credential, in_memory).await;
+    let (client_ids, group_info) = add_clients(
+        &mut core_crypto.clone(),
+        &id,
+        cipher_suite,
+        client_count,
+        delivery_service.clone(),
+    )
+    .await;
+    (core_crypto, id, client_ids, group_info, delivery_service)
 }
 
 pub async fn rand_key_package(ciphersuite: MlsCiphersuite) -> (KeyPackage, ClientId) {
@@ -243,7 +272,13 @@ pub async fn rand_key_package(ciphersuite: MlsCiphersuite) -> (KeyPackage, Clien
     (kp, client_id.into())
 }
 
-pub async fn invite(from: &mut MlsCentral, other: &mut MlsCentral, id: &ConversationId, ciphersuite: MlsCiphersuite) {
+pub async fn invite(
+    from: &mut MlsCentral,
+    other: &mut MlsCentral,
+    id: &ConversationId,
+    ciphersuite: MlsCiphersuite,
+    delivery_service: Arc<dyn MlsTransportTestExt>,
+) {
     let core_crypto = CoreCrypto::from(from.clone());
     let from_context = core_crypto.new_transaction().await.unwrap();
     let core_crypto = CoreCrypto::from(other.clone());
@@ -253,16 +288,67 @@ pub async fn invite(from: &mut MlsCentral, other: &mut MlsCentral, id: &Conversa
         .await
         .unwrap();
     let other_kp = other_kps.first().unwrap().clone();
-    let welcome = from_context
+    from_context
         .add_members_to_conversation(id, vec![other_kp.into()])
         .await
-        .unwrap()
-        .welcome;
+        .unwrap();
+    let welcome = delivery_service.latest_welcome_message().await;
     other_context
         .process_welcome_message(welcome.into(), MlsCustomConfiguration::default())
         .await
         .unwrap();
-    from_context.commit_accepted(id).await.unwrap();
     from_context.finish().await.unwrap();
     other_context.finish().await.unwrap();
+}
+
+#[async_trait::async_trait]
+pub trait MlsTransportTestExt: MlsTransport {
+    async fn latest_commit_bundle(&self) -> MlsCommitBundle;
+    async fn latest_welcome_message(&self) -> MlsMessageOut {
+        self.latest_commit_bundle().await.welcome.unwrap().clone()
+    }
+
+    async fn latest_commit(&self) -> MlsMessageOut {
+        self.latest_commit_bundle().await.commit.clone()
+    }
+
+    async fn latest_group_info(&self) -> MlsGroupInfoBundle {
+        self.latest_commit_bundle().await.group_info.clone()
+    }
+
+    async fn latest_message(&self) -> Vec<u8>;
+}
+
+#[derive(Debug, Default)]
+pub struct CoreCryptoTransportSuccessProvider {
+    latest_commit_bundle: RwLock<Option<MlsCommitBundle>>,
+    latest_message: RwLock<Option<Vec<u8>>>,
+}
+
+#[async_trait::async_trait]
+impl MlsTransport for CoreCryptoTransportSuccessProvider {
+    async fn send_commit_bundle(&self, commit_bundle: MlsCommitBundle) -> core_crypto::Result<MlsTransportResponse> {
+        self.latest_commit_bundle.write().await.replace(commit_bundle);
+        Ok(MlsTransportResponse::Success)
+    }
+
+    async fn send_message(&self, mls_message: Vec<u8>) -> core_crypto::Result<MlsTransportResponse> {
+        self.latest_message.write().await.replace(mls_message);
+        Ok(MlsTransportResponse::Success)
+    }
+}
+
+#[async_trait::async_trait]
+impl MlsTransportTestExt for CoreCryptoTransportSuccessProvider {
+    async fn latest_commit_bundle(&self) -> MlsCommitBundle {
+        self.latest_commit_bundle
+            .read()
+            .await
+            .clone()
+            .expect("latest_commit_bundle")
+    }
+
+    async fn latest_message(&self) -> Vec<u8> {
+        self.latest_message.read().await.clone().expect("latest_message")
+    }
 }
