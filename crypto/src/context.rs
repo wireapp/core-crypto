@@ -90,9 +90,7 @@ impl CentralContext {
         }
     }
 
-    // This is going to be needed soon.
-    #[expect(dead_code)]
-    pub(crate) async fn transport(&self) -> Result<RwLockReadGuardArc<Option<Arc<dyn MlsTransport + 'static>>>> {
+    pub(crate) async fn mls_transport(&self) -> Result<RwLockReadGuardArc<Option<Arc<dyn MlsTransport + 'static>>>> {
         match self.state.read().await.deref() {
             ContextState::Valid {
                 transport: callbacks, ..
@@ -101,8 +99,6 @@ impl CentralContext {
         }
     }
 
-    // This is going to be needed soon.
-    #[expect(dead_code)]
     #[cfg(test)]
     pub(crate) async fn set_transport_callbacks(
         &self,
