@@ -20,7 +20,7 @@ fn generate_key_package_bench(c: &mut Criterion) {
             group.bench_with_input(case.benchmark_id(i + 1, in_memory), &i, |b, i| {
                 b.to_async(FuturesExecutor).iter_batched(
                     || async_std::task::block_on(setup_mls(ciphersuite, credential.as_ref(), in_memory)),
-                    |(central, _)| async move {
+                    |(central, _, _)| async move {
                         let context = central.new_transaction().await.unwrap();
                         black_box(
                             context

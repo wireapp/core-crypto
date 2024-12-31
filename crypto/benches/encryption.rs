@@ -17,8 +17,8 @@ fn encryption_bench_var_group_size(c: &mut Criterion) {
                 b.to_async(FuturesExecutor).iter_batched(
                     || {
                         async_std::task::block_on(async {
-                            let (mut central, id) = setup_mls(ciphersuite, credential.as_ref(), in_memory).await;
-                            add_clients(&mut central, &id, ciphersuite, *i).await;
+                            let (central, id, ..) =
+                                setup_mls_and_add_clients(ciphersuite, credential.as_ref(), in_memory, *i).await;
                             let text = Alphanumeric.sample_string(&mut rand::thread_rng(), MSG_MAX);
                             (central, id, text)
                         })
@@ -44,8 +44,8 @@ fn encryption_bench_var_msg_size(c: &mut Criterion) {
                 b.to_async(FuturesExecutor).iter_batched(
                     || {
                         async_std::task::block_on(async {
-                            let (mut central, id) = setup_mls(ciphersuite, credential.as_ref(), in_memory).await;
-                            add_clients(&mut central, &id, ciphersuite, GROUP_MAX).await;
+                            let (central, id, ..) =
+                                setup_mls_and_add_clients(ciphersuite, credential.as_ref(), in_memory, GROUP_MAX).await;
                             let text = Alphanumeric.sample_string(&mut rand::thread_rng(), *i);
                             (central, id, text)
                         })
@@ -71,9 +71,10 @@ fn decryption_bench_var_msg_size(c: &mut Criterion) {
                 b.to_async(FuturesExecutor).iter_batched(
                     || {
                         async_std::task::block_on(async {
-                            let (mut alice_central, id) = setup_mls(ciphersuite, credential.as_ref(), in_memory).await;
+                            let (mut alice_central, id, delivery_service) =
+                                setup_mls(ciphersuite, credential.as_ref(), in_memory).await;
                             let (mut bob_central, ..) = new_central(ciphersuite, credential.as_ref(), in_memory).await;
-                            invite(&mut alice_central, &mut bob_central, &id, ciphersuite).await;
+                            invite(&mut alice_central, &mut bob_central, &id, ciphersuite, delivery_service).await;
 
                             let context = alice_central.new_transaction().await.unwrap();
                             let text = Alphanumeric.sample_string(&mut rand::thread_rng(), *i);
