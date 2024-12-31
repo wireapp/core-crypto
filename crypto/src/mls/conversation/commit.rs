@@ -20,11 +20,67 @@ use crate::{
         },
         MlsConversation,
     },
-    prelude::{Client, ClientId, ConversationId, MlsGroupInfoBundle},
-    LeafError, MlsError, RecursiveError,
+    prelude::{Client, ClientId, ConversationId, MlsError, MlsGroupInfoBundle},
+    LeafError, MlsTransportResponse, RecursiveError,
 };
 
 impl CentralContext {
+    pub(crate) async fn send_and_merge_commit(
+        &self,
+        conversation: &mut MlsConversation,
+        commit: MlsCommitBundle,
+    ) -> Result<()> {
+        match self.send_commit(commit).await {
+            Ok(()) => {
+                conversation
+                    .commit_accepted(
+                        &self
+                            .mls_provider()
+                            .await
+                            .map_err(RecursiveError::root("getting mls provider"))?,
+                    )
+                    .await
+            }
+            Err(e @ Error::MessageRejected { .. }) => {
+                conversation
+                    .clear_pending_commit(
+                        &self
+                            .mls_provider()
+                            .await
+                            .map_err(RecursiveError::root("getting mls provider"))?,
+                    )
+                    .await?;
+                Err(e)
+            }
+            Err(e) => Err(e),
+        }
+    }
+
+    pub(crate) async fn send_commit(&self, commit: MlsCommitBundle) -> Result<()> {
+        let guard = self
+            .mls_transport()
+            .await
+            .map_err(RecursiveError::root("getting mls transport"))?;
+        let transport = guard.as_ref().ok_or::<Error>(
+            RecursiveError::root("getting mls transport")(crate::Error::MlsTransportNotProvided).into(),
+        )?;
+        loop {
+            match transport
+                .send_commit_bundle(commit.clone())
+                .await
+                .map_err(RecursiveError::root("sending commit bundle"))?
+            {
+                MlsTransportResponse::Success => {
+                    return Ok(());
+                }
+                MlsTransportResponse::Abort { reason } => {
+                    return Err(Error::MessageRejected { reason });
+                }
+                MlsTransportResponse::Retry => {}
+            }
+        }
+    }
+
     /// Adds new members to the group/conversation
     ///
     /// # Arguments
@@ -44,15 +100,15 @@ impl CentralContext {
         &self,
         id: &ConversationId,
         key_packages: Vec<KeyPackageIn>,
-    ) -> Result<MlsConversationCreationMessage> {
+    ) -> Result<NewCrlDistributionPoint> {
         let client = self
             .mls_client()
             .await
             .map_err(RecursiveError::root("getting mls client"))?;
-        self.get_conversation(id)
-            .await?
-            .write()
-            .await
+        let conversation = self.get_conversation(id).await?;
+        let mut conversation_guard = conversation.write().await;
+
+        let message = conversation_guard
             .add_members(
                 &client,
                 key_packages,
@@ -61,7 +117,18 @@ impl CentralContext {
                     .await
                     .map_err(RecursiveError::root("getting mls provider"))?,
             )
-            .await
+            .await?;
+
+        let commit = MlsCommitBundle {
+            commit: message.commit,
+            welcome: Some(message.welcome),
+            group_info: message.group_info,
+        };
+
+        self.send_and_merge_commit(&mut conversation_guard, commit.clone())
+            .await?;
+
+        Ok(message.crl_new_distribution_points)
     }
 
     /// Removes clients from the group/conversation.
@@ -78,19 +145,14 @@ impl CentralContext {
     /// # Errors
     /// If the authorisation callback is set, an error can be caused when the authorization fails. Other errors are KeyStore and OpenMls errors.
     #[cfg_attr(test, crate::idempotent)]
-    pub async fn remove_members_from_conversation(
-        &self,
-        id: &ConversationId,
-        clients: &[ClientId],
-    ) -> Result<MlsCommitBundle> {
+    pub async fn remove_members_from_conversation(&self, id: &ConversationId, clients: &[ClientId]) -> Result<()> {
         let client = self
             .mls_client()
             .await
             .map_err(RecursiveError::root("getting mls client"))?;
-        self.get_conversation(id)
-            .await?
-            .write()
-            .await
+        let conversation = self.get_conversation(id).await?;
+        let mut conversation_guard = conversation.write().await;
+        let commit = conversation_guard
             .remove_members(
                 &client,
                 clients,
@@ -99,7 +161,8 @@ impl CentralContext {
                     .await
                     .map_err(RecursiveError::root("getting mls provider"))?,
             )
-            .await
+            .await?;
+        self.send_and_merge_commit(&mut conversation_guard, commit).await
     }
 
     /// Self updates the KeyPackage and automatically commits. Pending proposals will be commited
@@ -116,15 +179,14 @@ impl CentralContext {
     /// If the conversation can't be found, an error will be returned. Other errors are originating
     /// from OpenMls and the KeyStore
     #[cfg_attr(test, crate::idempotent)]
-    pub async fn update_keying_material(&self, id: &ConversationId) -> Result<MlsCommitBundle> {
+    pub async fn update_keying_material(&self, id: &ConversationId) -> Result<()> {
         let client = self
             .mls_client()
             .await
             .map_err(RecursiveError::root("getting mls client"))?;
-        self.get_conversation(id)
-            .await?
-            .write()
-            .await
+        let conversation = self.get_conversation(id).await?;
+        let mut conversation_guard = conversation.write().await;
+        let commit = conversation_guard
             .update_keying_material(
                 &client,
                 &self
@@ -134,7 +196,8 @@ impl CentralContext {
                 None,
                 None,
             )
-            .await
+            .await?;
+        self.send_and_merge_commit(&mut conversation_guard, commit).await
     }
 
     /// Commits all pending proposals of the group
@@ -148,15 +211,14 @@ impl CentralContext {
     /// # Errors
     /// Errors can be originating from the KeyStore and OpenMls
     #[cfg_attr(test, crate::idempotent)]
-    pub async fn commit_pending_proposals(&self, id: &ConversationId) -> Result<Option<MlsCommitBundle>> {
+    pub async fn commit_pending_proposals(&self, id: &ConversationId) -> Result<()> {
         let client = self
             .mls_client()
             .await
             .map_err(RecursiveError::root("getting mls client"))?;
-        self.get_conversation(id)
-            .await?
-            .write()
-            .await
+        let conversation = self.get_conversation(id).await?;
+        let mut conversation_guard = conversation.write().await;
+        let commit = conversation_guard
             .commit_pending_proposals(
                 &client,
                 &self
@@ -164,7 +226,11 @@ impl CentralContext {
                     .await
                     .map_err(RecursiveError::root("getting mls provider"))?,
             )
-            .await
+            .await?;
+        let Some(commit) = commit else {
+            return Ok(());
+        };
+        self.send_and_merge_commit(&mut conversation_guard, commit).await
     }
 }
 
@@ -310,7 +376,9 @@ impl MlsConversation {
         client: &Client,
         backend: &MlsCryptoProvider,
     ) -> Result<Option<MlsCommitBundle>> {
-        if self.group.pending_proposals().count() > 0 {
+        if self.group.pending_proposals().count() == 0 {
+            Ok(None)
+        } else {
             let signer = &self
                 .find_most_recent_credential_bundle(client)
                 .await
@@ -331,8 +399,6 @@ impl MlsConversation {
                 commit,
                 group_info,
             }))
-        } else {
-            Ok(None)
         }
     }
 }
@@ -420,6 +486,7 @@ mod tests {
 
     mod add_members {
         use super::*;
+        use std::sync::Arc;
 
         #[apply(all_cred_cipher)]
         #[wasm_bindgen_test]
@@ -434,15 +501,32 @@ mod tests {
                         .await
                         .unwrap();
                     let bob = bob_central.rand_key_package(&case).await;
-                    let MlsConversationCreationMessage { welcome, .. } = alice_central
+                    // First, abort commit transport
+                    alice_central
+                        .context
+                        .set_transport_callbacks(Some(Arc::<CoreCryptoTransportAbortProvider>::default()))
+                        .await
+                        .unwrap();
+                    alice_central
+                        .context
+                        .add_members_to_conversation(&id, vec![bob.clone()])
+                        .await
+                        .unwrap_err();
+
+                    // commit is not applied
+                    assert_eq!(alice_central.get_conversation_unchecked(&id).await.members().len(), 1);
+
+                    let success_provider = Arc::<CoreCryptoTransportSuccessProvider>::default();
+                    alice_central
+                        .context
+                        .set_transport_callbacks(Some(success_provider.clone()))
+                        .await
+                        .unwrap();
+                    alice_central
                         .context
                         .add_members_to_conversation(&id, vec![bob])
                         .await
                         .unwrap();
-
-                    // before merging, commit is not applied
-                    assert_eq!(alice_central.get_conversation_unchecked(&id).await.members().len(), 1);
-                    alice_central.context.commit_accepted(&id).await.unwrap();
 
                     assert_eq!(alice_central.get_conversation_unchecked(&id).await.id, id);
                     assert_eq!(
@@ -455,10 +539,10 @@ mod tests {
                         id
                     );
                     assert_eq!(alice_central.get_conversation_unchecked(&id).await.members().len(), 2);
-
+                    let commit = success_provider.latest_commit_bundle().await;
                     bob_central
                         .context
-                        .process_welcome_message(welcome.into(), case.custom_cfg())
+                        .process_welcome_message(commit.welcome.unwrap().into(), case.custom_cfg())
                         .await
                         .unwrap();
                     assert_eq!(
@@ -485,13 +569,18 @@ mod tests {
                         .unwrap();
 
                     let bob = bob_central.rand_key_package(&case).await;
-                    let welcome = alice_central
+                    alice_central
                         .context
                         .add_members_to_conversation(&id, vec![bob])
                         .await
-                        .unwrap()
-                        .welcome;
-                    alice_central.context.commit_accepted(&id).await.unwrap();
+                        .unwrap();
+
+                    let welcome = alice_central
+                        .mls_transport
+                        .latest_commit_bundle()
+                        .await
+                        .welcome
+                        .unwrap();
 
                     bob_central
                         .context
@@ -520,13 +609,13 @@ mod tests {
                             .unwrap();
 
                         let bob = bob_central.rand_key_package(&case).await;
-                        let commit_bundle = alice_central
+                        alice_central
                             .context
                             .add_members_to_conversation(&id, vec![bob])
                             .await
                             .unwrap();
+                        let commit_bundle = alice_central.mls_transport.latest_commit_bundle().await;
                         let group_info = commit_bundle.group_info.get_group_info();
-                        alice_central.context.commit_accepted(&id).await.unwrap();
 
                         assert!(guest_central
                             .try_join_from_group_info(&case, &id, group_info, vec![&alice_central])
@@ -558,16 +647,15 @@ mod tests {
                         .unwrap();
                     alice_central.invite_all(&case, &id, [&bob_central]).await.unwrap();
 
-                    let MlsCommitBundle { commit, welcome, .. } = alice_central
+                    alice_central
                         .context
                         .remove_members_from_conversation(&id, &[bob_central.get_client_id().await])
                         .await
                         .unwrap();
+                    let MlsCommitBundle { commit, welcome, .. } =
+                        alice_central.mls_transport.latest_commit_bundle().await;
                     assert!(welcome.is_none());
 
-                    // before merging, commit is not applied
-                    assert_eq!(alice_central.get_conversation_unchecked(&id).await.members().len(), 2);
-                    alice_central.context.commit_accepted(&id).await.unwrap();
                     assert_eq!(alice_central.get_conversation_unchecked(&id).await.members().len(), 1);
 
                     bob_central
@@ -615,21 +703,16 @@ mod tests {
                             .await
                             .unwrap();
 
-                        let welcome = alice_central
+                        alice_central
                             .context
                             .remove_members_from_conversation(&id, &[bob_central.get_client_id().await])
                             .await
-                            .unwrap()
-                            .welcome;
-                        alice_central.context.commit_accepted(&id).await.unwrap();
+                            .unwrap();
+
+                        let welcome = alice_central.mls_transport.latest_welcome_message().await;
 
                         assert!(guest_central
-                            .try_join_from_welcome(
-                                &id,
-                                welcome.unwrap().into(),
-                                case.custom_cfg(),
-                                vec![&alice_central]
-                            )
+                            .try_join_from_welcome(&id, welcome.into(), case.custom_cfg(), vec![&alice_central])
                             .await
                             .is_ok());
                         // because Bob has been removed from the group
@@ -657,13 +740,14 @@ mod tests {
                             .unwrap();
                         alice_central.invite_all(&case, &id, [&bob_central]).await.unwrap();
 
-                        let commit_bundle = alice_central
+                        alice_central
                             .context
                             .remove_members_from_conversation(&id, &[bob_central.get_client_id().await])
                             .await
                             .unwrap();
 
-                        alice_central.context.commit_accepted(&id).await.unwrap();
+                        let commit_bundle = alice_central.mls_transport.latest_commit_bundle().await;
+
                         let group_info = commit_bundle.group_info.get_group_info();
 
                         assert!(guest_central
@@ -714,18 +798,10 @@ mod tests {
                         .await;
 
                     // proposing the key update for alice
+                    alice_central.context.update_keying_material(&id).await.unwrap();
                     let MlsCommitBundle { commit, welcome, .. } =
-                        alice_central.context.update_keying_material(&id).await.unwrap();
+                        alice_central.mls_transport.latest_commit_bundle().await;
                     assert!(welcome.is_none());
-
-                    // before merging, commit is not applied
-                    assert!(alice_central
-                        .get_conversation_unchecked(&id)
-                        .await
-                        .encryption_keys()
-                        .contains(&alice_key));
-
-                    alice_central.context.commit_accepted(&id).await.unwrap();
 
                     assert!(!alice_central
                         .get_conversation_unchecked(&id)
@@ -812,16 +888,17 @@ mod tests {
                             .await
                             .unwrap();
 
-                        // performing an update on Alice's key. this should generate a welcome for Charlie
-                        let MlsCommitBundle { commit, welcome, .. } =
-                            alice_central.context.update_keying_material(&id).await.unwrap();
-                        assert!(welcome.is_some());
                         assert!(alice_central
                             .get_conversation_unchecked(&id)
                             .await
                             .encryption_keys()
                             .contains(&alice_key));
-                        alice_central.context.commit_accepted(&id).await.unwrap();
+
+                        // performing an update on Alice's key. this should generate a welcome for Charlie
+                        alice_central.context.update_keying_material(&id).await.unwrap();
+                        let MlsCommitBundle { commit, welcome, .. } =
+                            alice_central.mls_transport.latest_commit_bundle().await;
+                        assert!(welcome.is_some());
                         assert!(!alice_central
                             .get_conversation_unchecked(&id)
                             .await
@@ -900,9 +977,9 @@ mod tests {
                             .await
                             .unwrap();
 
+                        alice_central.context.update_keying_material(&id).await.unwrap();
                         let MlsCommitBundle { commit, welcome, .. } =
-                            alice_central.context.update_keying_material(&id).await.unwrap();
-                        alice_central.context.commit_accepted(&id).await.unwrap();
+                            alice_central.mls_transport.latest_commit_bundle().await;
 
                         bob_central
                             .context
@@ -941,9 +1018,9 @@ mod tests {
                             .unwrap();
                         alice_central.invite_all(&case, &id, [&bob_central]).await.unwrap();
 
-                        let commit_bundle = alice_central.context.update_keying_material(&id).await.unwrap();
-                        let group_info = commit_bundle.group_info.get_group_info();
-                        alice_central.context.commit_accepted(&id).await.unwrap();
+                        alice_central.context.update_keying_material(&id).await.unwrap();
+                        let group_info = alice_central.mls_transport.latest_group_info().await;
+                        let group_info = group_info.get_group_info();
 
                         assert!(guest_central
                             .try_join_from_group_info(&case, &id, group_info, vec![&alice_central])
@@ -980,15 +1057,10 @@ mod tests {
                             .unwrap();
                         assert!(!alice_central.pending_proposals(&id).await.is_empty());
                         assert_eq!(alice_central.get_conversation_unchecked(&id).await.members().len(), 1);
-                        let MlsCommitBundle { welcome, .. } = alice_central
-                            .context
-                            .commit_pending_proposals(&id)
-                            .await
-                            .unwrap()
-                            .unwrap();
-                        alice_central.context.commit_accepted(&id).await.unwrap();
+                        alice_central.context.commit_pending_proposals(&id).await.unwrap();
                         assert_eq!(alice_central.get_conversation_unchecked(&id).await.members().len(), 2);
 
+                        let welcome = alice_central.mls_transport.latest_commit_bundle().await.welcome;
                         bob_central
                             .context
                             .process_welcome_message(welcome.unwrap().into(), case.custom_cfg())
@@ -998,29 +1070,6 @@ mod tests {
                     })
                 },
             )
-            .await;
-        }
-
-        #[apply(all_cred_cipher)]
-        #[wasm_bindgen_test]
-        async fn should_return_none_when_there_are_no_pending_proposals(case: TestCase) {
-            run_test_with_client_ids(case.clone(), ["alice"], move |[mut alice_central]| {
-                Box::pin(async move {
-                    let id = conversation_id();
-                    alice_central
-                        .context
-                        .new_conversation(&id, case.credential_type, case.cfg.clone())
-                        .await
-                        .unwrap();
-                    assert!(alice_central.pending_proposals(&id).await.is_empty());
-                    assert!(alice_central
-                        .context
-                        .commit_pending_proposals(&id)
-                        .await
-                        .unwrap()
-                        .is_none());
-                })
-            })
             .await;
         }
 
@@ -1052,13 +1101,8 @@ mod tests {
                             .await
                             .unwrap();
 
-                        let MlsCommitBundle { commit, .. } = alice_central
-                            .context
-                            .commit_pending_proposals(&id)
-                            .await
-                            .unwrap()
-                            .unwrap();
-                        alice_central.context.commit_accepted(&id).await.unwrap();
+                        alice_central.context.commit_pending_proposals(&id).await.unwrap();
+                        let commit = alice_central.mls_transport.latest_commit_bundle().await.commit;
                         assert_eq!(alice_central.get_conversation_unchecked(&id).await.members().len(), 3);
 
                         bob_central
@@ -1090,13 +1134,9 @@ mod tests {
                         .new_add_proposal(&id, bob_central.get_one_key_package(&case).await)
                         .await
                         .unwrap();
-                    let MlsCommitBundle { welcome, .. } = alice_central
-                        .context
-                        .commit_pending_proposals(&id)
-                        .await
-                        .unwrap()
-                        .unwrap();
-                    alice_central.context.commit_accepted(&id).await.unwrap();
+                    alice_central.context.commit_pending_proposals(&id).await.unwrap();
+
+                    let welcome = alice_central.mls_transport.latest_commit_bundle().await.welcome;
 
                     bob_central
                         .context
@@ -1128,14 +1168,9 @@ mod tests {
                             .new_add_proposal(&id, bob_central.get_one_key_package(&case).await)
                             .await
                             .unwrap();
-                        let commit_bundle = alice_central
-                            .context
-                            .commit_pending_proposals(&id)
-                            .await
-                            .unwrap()
-                            .unwrap();
+                        alice_central.context.commit_pending_proposals(&id).await.unwrap();
+                        let commit_bundle = alice_central.mls_transport.latest_commit_bundle().await;
                         let group_info = commit_bundle.group_info.get_group_info();
-                        alice_central.context.commit_accepted(&id).await.unwrap();
 
                         assert!(guest_central
                             .try_join_from_group_info(&case, &id, group_info, vec![&alice_central])
@@ -1149,8 +1184,6 @@ mod tests {
     }
 
     mod delivery_semantics {
-        use crate::prelude::MlsWirePolicy;
-
         use super::*;
 
         #[apply(all_cred_cipher)]
@@ -1166,12 +1199,12 @@ mod tests {
                         .unwrap();
                     alice_central.invite_all(&case, &id, [&bob_central]).await.unwrap();
 
-                    let commit1 = alice_central.context.update_keying_material(&id).await.unwrap().commit;
+                    alice_central.context.update_keying_material(&id).await.unwrap();
+                    let commit1 = alice_central.mls_transport.latest_commit().await;
                     let commit1 = commit1.to_bytes().unwrap();
-                    alice_central.context.commit_accepted(&id).await.unwrap();
-                    let commit2 = alice_central.context.update_keying_material(&id).await.unwrap().commit;
+                    alice_central.context.update_keying_material(&id).await.unwrap();
+                    let commit2 = alice_central.mls_transport.latest_commit().await;
                     let commit2 = commit2.to_bytes().unwrap();
-                    alice_central.context.commit_accepted(&id).await.unwrap();
 
                     // fails when a commit is skipped
                     let out_of_order = bob_central.context.decrypt_message(&id, &commit2).await;
@@ -1191,7 +1224,10 @@ mod tests {
 
         #[apply(all_cred_cipher)]
         #[wasm_bindgen_test]
-        async fn should_allow_dropped_commits(case: TestCase) {
+        async fn should_prevent_replayed_encrypted_handshake_messages(case: TestCase) {
+            if !case.is_pure_ciphertext() {
+                return;
+            }
             run_test_with_client_ids(case.clone(), ["alice", "bob"], move |[alice_central, bob_central]| {
                 Box::pin(async move {
                     let id = conversation_id();
@@ -1202,83 +1238,55 @@ mod tests {
                         .unwrap();
                     alice_central.invite_all(&case, &id, [&bob_central]).await.unwrap();
 
-                    let _alice_commit = alice_central.context.update_keying_material(&id).await.unwrap().commit;
-                    let bob_commit = bob_central.context.update_keying_material(&id).await.unwrap().commit;
-                    // Bob commit arrives first and has precedence hence Alice's commit is dropped
+                    let proposal1 = alice_central.context.new_update_proposal(&id).await.unwrap().proposal;
+                    let proposal2 = proposal1.clone();
                     alice_central
+                        .get_conversation_unchecked(&id)
+                        .await
+                        .group
+                        .clear_pending_proposals();
+
+                    alice_central.context.update_keying_material(&id).await.unwrap();
+                    let commit1 = alice_central.mls_transport.latest_commit().await;
+                    let commit2 = commit1.clone();
+
+                    // replayed encrypted proposal should fail
+                    bob_central
                         .context
-                        .decrypt_message(&id, bob_commit.to_bytes().unwrap())
+                        .decrypt_message(&id, proposal1.to_bytes().unwrap())
                         .await
                         .unwrap();
-                    bob_central.context.commit_accepted(&id).await.unwrap();
+                    assert!(matches!(
+                        bob_central
+                            .context
+                            .decrypt_message(&id, proposal2.to_bytes().unwrap())
+                            .await
+                            .unwrap_err(),
+                        Error::DuplicateMessage
+                    ));
+                    bob_central
+                        .get_conversation_unchecked(&id)
+                        .await
+                        .group
+                        .clear_pending_proposals();
+
+                    // replayed encrypted commit should fail
+                    bob_central
+                        .context
+                        .decrypt_message(&id, commit1.to_bytes().unwrap())
+                        .await
+                        .unwrap();
+                    assert!(matches!(
+                        bob_central
+                            .context
+                            .decrypt_message(&id, commit2.to_bytes().unwrap())
+                            .await
+                            .unwrap_err(),
+                        Error::StaleCommit
+                    ));
                 })
             })
             .await;
-        }
-
-        #[apply(all_cred_cipher)]
-        #[wasm_bindgen_test]
-        async fn should_prevent_replayed_encrypted_handshake_messages(case: TestCase) {
-            if case.custom_cfg().wire_policy == MlsWirePolicy::Ciphertext {
-                run_test_with_client_ids(case.clone(), ["alice", "bob"], move |[alice_central, bob_central]| {
-                    Box::pin(async move {
-                        let id = conversation_id();
-                        alice_central
-                            .context
-                            .new_conversation(&id, case.credential_type, case.cfg.clone())
-                            .await
-                            .unwrap();
-                        alice_central.invite_all(&case, &id, [&bob_central]).await.unwrap();
-
-                        let proposal1 = alice_central.context.new_update_proposal(&id).await.unwrap().proposal;
-                        let proposal2 = proposal1.clone();
-                        alice_central
-                            .get_conversation_unchecked(&id)
-                            .await
-                            .group
-                            .clear_pending_proposals();
-
-                        let commit1 = alice_central.context.update_keying_material(&id).await.unwrap().commit;
-                        let commit2 = commit1.clone();
-
-                        // replayed encrypted proposal should fail
-                        bob_central
-                            .context
-                            .decrypt_message(&id, proposal1.to_bytes().unwrap())
-                            .await
-                            .unwrap();
-                        assert!(matches!(
-                            bob_central
-                                .context
-                                .decrypt_message(&id, proposal2.to_bytes().unwrap())
-                                .await
-                                .unwrap_err(),
-                            Error::DuplicateMessage
-                        ));
-                        bob_central
-                            .get_conversation_unchecked(&id)
-                            .await
-                            .group
-                            .clear_pending_proposals();
-
-                        // replayed encrypted commit should fail
-                        bob_central
-                            .context
-                            .decrypt_message(&id, commit1.to_bytes().unwrap())
-                            .await
-                            .unwrap();
-                        assert!(matches!(
-                            bob_central
-                                .context
-                                .decrypt_message(&id, commit2.to_bytes().unwrap())
-                                .await
-                                .unwrap_err(),
-                            Error::StaleCommit
-                        ));
-                    })
-                })
-                .await;
-            }
         }
     }
 }
