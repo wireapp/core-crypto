@@ -11,7 +11,7 @@
 //! | 1+ pend. Proposal | ❌              | ✅              |
 //!
 
-use core_crypto_keystore::entities::{MlsEncryptionKeyPair, MlsPendingMessage};
+use core_crypto_keystore::entities::MlsEncryptionKeyPair;
 use openmls::prelude::MlsGroupStateError;
 use openmls_traits::OpenMlsCryptoProvider;
 
@@ -28,7 +28,7 @@ use crate::{
 impl MlsConversation {
     /// see [CentralContext::commit_accepted]
     #[cfg_attr(test, crate::durable)]
-    pub async fn commit_accepted(&mut self, backend: &MlsCryptoProvider) -> CryptoResult<()> {
+    pub(crate) async fn commit_accepted(&mut self, backend: &MlsCryptoProvider) -> CryptoResult<()> {
         // openmls stores here all the encryption keypairs used for update proposals..
         let previous_own_leaf_nodes = self.group.own_leaf_nodes.clone();
 
@@ -64,7 +64,7 @@ impl MlsConversation {
 
     /// see [CentralContext::clear_pending_commit]
     #[cfg_attr(test, crate::durable)]
-    pub async fn clear_pending_commit(&mut self, backend: &MlsCryptoProvider) -> CryptoResult<()> {
+    pub(crate) async fn clear_pending_commit(&mut self, backend: &MlsCryptoProvider) -> CryptoResult<()> {
         if self.group.pending_commit().is_some() {
             self.group.clear_pending_commit();
             self.persist_group_when_changed(&backend.keystore(), true).await?;
@@ -88,25 +88,6 @@ impl MlsConversation {
 ///     * 409 CONFLICT --> do nothing. [CentralContext::decrypt_message] will restore the proposals not committed
 ///     * 5xx --> retry
 impl CentralContext {
-    /// The commit we created has been accepted by the Delivery Service. Hence it is guaranteed
-    /// to be used for the new epoch.
-    /// We can now safely "merge" it (effectively apply the commit to the group) and update it
-    /// in the keystore. The previous can be discarded to respect Forward Secrecy.
-    pub async fn commit_accepted(
-        &self,
-        id: &ConversationId,
-    ) -> CryptoResult<Option<Vec<MlsBufferedConversationDecryptMessage>>> {
-        let conv = self.get_conversation(id).await?;
-        let mut conv = conv.write().await;
-        conv.commit_accepted(&self.mls_provider().await?).await?;
-
-        let pending_messages = self.restore_pending_messages(&mut conv, false).await?;
-        if pending_messages.is_some() {
-            self.keystore().await?.remove::<MlsPendingMessage, _>(id).await?;
-        }
-        Ok(pending_messages)
-    }
-
     /// Allows to remove a pending (uncommitted) proposal. Use this when backend rejects the proposal
     /// you just sent e.g. if permissions have changed meanwhile.
     ///
@@ -147,8 +128,9 @@ impl CentralContext {
     ///
     /// # Errors
     /// When the conversation is not found or there is no pending commit
+    #[cfg(test)]
     #[cfg_attr(test, crate::idempotent)]
-    pub async fn clear_pending_commit(&self, conversation_id: &ConversationId) -> CryptoResult<()> {
+    pub(crate) async fn clear_pending_commit(&self, conversation_id: &ConversationId) -> CryptoResult<()> {
         self.get_conversation(conversation_id)
             .await?
             .write()
@@ -190,8 +172,6 @@ mod tests {
                         .remove_members_from_conversation(&id, &[bob_central.get_client_id().await])
                         .await
                         .unwrap();
-                    assert_eq!(alice_central.get_conversation_unchecked(&id).await.members().len(), 2);
-                    alice_central.context.commit_accepted(&id).await.unwrap();
                     assert_eq!(alice_central.get_conversation_unchecked(&id).await.members().len(), 1);
                 })
             })
@@ -201,32 +181,28 @@ mod tests {
         #[apply(all_cred_cipher)]
         #[wasm_bindgen_test]
         async fn should_clear_pending_commit_and_proposals(case: TestCase) {
-            run_test_with_client_ids(
-                case.clone(),
-                ["alice", "bob"],
-                move |[mut alice_central, bob_central]| {
-                    Box::pin(async move {
-                        let id = conversation_id();
-                        alice_central
-                            .context
-                            .new_conversation(&id, case.credential_type, case.cfg.clone())
-                            .await
-                            .unwrap();
-                        alice_central.context.new_update_proposal(&id).await.unwrap();
-                        let bob = bob_central.rand_key_package(&case).await;
-                        alice_central
-                            .context
-                            .add_members_to_conversation(&id, vec![bob])
-                            .await
-                            .unwrap();
-                        assert!(!alice_central.pending_proposals(&id).await.is_empty());
-                        assert!(alice_central.pending_commit(&id).await.is_some());
-                        alice_central.context.commit_accepted(&id).await.unwrap();
-                        assert!(alice_central.pending_commit(&id).await.is_none());
-                        assert!(alice_central.pending_proposals(&id).await.is_empty());
-                    })
-                },
-            )
+            run_test_with_client_ids(case.clone(), ["alice"], move |[mut alice_central]| {
+                Box::pin(async move {
+                    let id = conversation_id();
+                    alice_central
+                        .context
+                        .new_conversation(&id, case.credential_type, case.cfg.clone())
+                        .await
+                        .unwrap();
+                    alice_central.context.new_update_proposal(&id).await.unwrap();
+                    alice_central.create_unmerged_commit(&id).await;
+                    assert!(!alice_central.pending_proposals(&id).await.is_empty());
+                    assert!(alice_central.pending_commit(&id).await.is_some());
+                    alice_central
+                        .get_conversation_unchecked(&id)
+                        .await
+                        .commit_accepted(&alice_central.central.mls_backend)
+                        .await
+                        .unwrap();
+                    assert!(alice_central.pending_commit(&id).await.is_none());
+                    assert!(alice_central.pending_proposals(&id).await.is_empty());
+                })
+            })
             .await
         }
 
@@ -252,7 +228,6 @@ mod tests {
                     );
 
                     alice_central.context.commit_pending_proposals(&id).await.unwrap();
-                    alice_central.context.commit_accepted(&id).await.unwrap();
 
                     let final_count = alice_central.context.count_entities().await;
                     assert_eq!(initial_count, final_count);
@@ -426,7 +401,7 @@ mod tests {
                         .unwrap();
                     assert!(alice_central.pending_commit(&id).await.is_none());
 
-                    alice_central.context.update_keying_material(&id).await.unwrap();
+                    alice_central.create_unmerged_commit(&id).await;
                     assert!(alice_central.pending_commit(&id).await.is_some());
                     alice_central.context.clear_pending_commit(&id).await.unwrap();
                     assert!(alice_central.pending_commit(&id).await.is_none());
@@ -481,7 +456,7 @@ mod tests {
 
                     let init = cc.context.count_entities().await;
 
-                    cc.context.update_keying_material(&id).await.unwrap();
+                    cc.create_unmerged_commit(&id).await;
                     assert!(cc.pending_commit(&id).await.is_some());
 
                     cc.context.clear_pending_commit(&id).await.unwrap();
