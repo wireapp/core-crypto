@@ -16,8 +16,8 @@ fn proposal_add_bench(c: &mut Criterion) {
                 b.to_async(FuturesExecutor).iter_batched(
                     || {
                         async_std::task::block_on(async {
-                            let (mut central, id) = setup_mls(ciphersuite, credential.as_ref(), in_memory).await;
-                            add_clients(&mut central, &id, ciphersuite, *i).await;
+                            let (central, id, ..) =
+                                setup_mls_and_add_clients(ciphersuite, credential.as_ref(), in_memory, *i).await;
                             let (kp, ..) = rand_key_package(ciphersuite).await;
                             (central, id, kp)
                         })
@@ -43,8 +43,8 @@ fn proposal_remove_bench(c: &mut Criterion) {
                 b.to_async(FuturesExecutor).iter_batched(
                     || {
                         async_std::task::block_on(async {
-                            let (mut central, id) = setup_mls(ciphersuite, credential.as_ref(), in_memory).await;
-                            let (client_ids, ..) = add_clients(&mut central, &id, ciphersuite, *i).await;
+                            let (central, id, client_ids, ..) =
+                                setup_mls_and_add_clients(ciphersuite, credential.as_ref(), in_memory, *i).await;
                             (central, id, client_ids.first().unwrap().clone())
                         })
                     },
@@ -69,8 +69,8 @@ fn proposal_update_bench(c: &mut Criterion) {
                 b.to_async(FuturesExecutor).iter_batched(
                     || {
                         async_std::task::block_on(async {
-                            let (mut central, id) = setup_mls(ciphersuite, credential.as_ref(), in_memory).await;
-                            add_clients(&mut central, &id, ciphersuite, *i).await;
+                            let (central, id, ..) =
+                                setup_mls_and_add_clients(ciphersuite, credential.as_ref(), in_memory, *i).await;
                             (central, id)
                         })
                     },

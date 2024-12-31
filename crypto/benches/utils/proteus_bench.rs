@@ -7,7 +7,7 @@ use proteus_wasm::{
 };
 
 pub async fn setup_proteus(in_memory: bool) -> CoreCrypto {
-    let (core_crypto, _) = setup_mls(Default::default(), Default::default(), in_memory).await;
+    let (core_crypto, ..) = setup_mls(Default::default(), Default::default(), in_memory).await;
     let transaction = core_crypto.new_transaction().await.unwrap();
     transaction.proteus_init().await.unwrap();
     transaction.finish().await.unwrap();
