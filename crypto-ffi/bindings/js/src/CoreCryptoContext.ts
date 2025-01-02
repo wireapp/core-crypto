@@ -21,6 +21,7 @@ import {
     ExternalProposalType,
     mapWireIdentity,
     normalizeEnum,
+    NewCrlDistributionPoints,
     ProposalArgs,
     ProposalBundle,
     ProposalRef,
@@ -441,7 +442,7 @@ export default class CoreCryptoContext {
     async addClientsToConversation(
         conversationId: ConversationId,
         keyPackages: Uint8Array[]
-    ): Promise<string[] | undefined> {
+    ): Promise<NewCrlDistributionPoints> {
         return await CoreCryptoError.asyncMapErr(
             this.#ctx.add_clients_to_conversation(conversationId, keyPackages)
         );
@@ -1110,7 +1111,7 @@ export default class CoreCryptoContext {
         enrollment: E2eiEnrollment,
         certificateChain: string,
         nbKeyPackage?: number
-    ): Promise<string[] | undefined> {
+    ): Promise<NewCrlDistributionPoints> {
         return await this.#ctx.e2ei_mls_init_only(
             enrollment.inner() as CoreCryptoFfiTypes.FfiWireE2EIdentity,
             certificateChain,
@@ -1156,7 +1157,7 @@ export default class CoreCryptoContext {
      */
     async e2eiRegisterIntermediateCA(
         certPEM: string
-    ): Promise<string[] | undefined> {
+    ): Promise<NewCrlDistributionPoints> {
         return await this.#ctx.e2ei_register_intermediate_ca(certPEM);
     }
 
@@ -1215,7 +1216,7 @@ export default class CoreCryptoContext {
     async saveX509Credential(
         enrollment: E2eiEnrollment,
         certificateChain: string
-    ): Promise<string[] | undefined> {
+    ): Promise<NewCrlDistributionPoints> {
         return await CoreCryptoError.asyncMapErr(
             this.#ctx.save_x509_credential(
                 enrollment.inner() as CoreCryptoFfiTypes.FfiWireE2EIdentity,
