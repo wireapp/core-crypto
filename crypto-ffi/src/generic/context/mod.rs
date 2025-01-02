@@ -2,6 +2,7 @@ use super::{
     Ciphersuite, Ciphersuites, ClientId, ConversationConfiguration, CoreCrypto, CoreCryptoError, CoreCryptoResult,
     CustomConfiguration, DecryptedMessage, MlsCredentialType, ProposalBundle, WelcomeBundle,
 };
+use crate::NewCrlDistributionPoints;
 use async_lock::{Mutex, OnceCell};
 use core_crypto::{
     context::CentralContext,
@@ -413,7 +414,7 @@ impl CoreCryptoContext {
         &self,
         conversation_id: Vec<u8>,
         key_packages: Vec<Vec<u8>>,
-    ) -> CoreCryptoResult<Option<Vec<String>>> {
+    ) -> CoreCryptoResult<NewCrlDistributionPoints> {
         let key_packages = key_packages
             .into_iter()
             .map(|kp| {
@@ -427,7 +428,8 @@ impl CoreCryptoContext {
         Ok(self
             .context
             .add_members_to_conversation(&conversation_id, key_packages)
-            .await?
+            .await
+            .map(|new_crl_distribution_point| -> Option<Vec<_>> { new_crl_distribution_point.into() })?
             .into())
     }
 

@@ -365,6 +365,11 @@ impl UniffiCustomTypeConverter for ClientId {
     }
 }
 
+#[derive(Debug, Clone, derive_more::From, derive_more::Into)]
+pub struct NewCrlDistributionPoints(Option<Vec<String>>);
+
+uniffi::custom_newtype!(NewCrlDistributionPoints, Option<Vec<String>>);
+
 #[allow(non_camel_case_types)]
 #[derive(Debug, Clone, Copy, PartialEq, Eq, uniffi::Enum)]
 #[repr(u16)]
@@ -1358,7 +1363,7 @@ impl CoreCrypto {
         &self,
         conversation_id: Vec<u8>,
         key_packages: Vec<Vec<u8>>,
-    ) -> CoreCryptoResult<Option<Vec<String>>> {
+    ) -> CoreCryptoResult<NewCrlDistributionPoints> {
         let key_packages = key_packages
             .into_iter()
             .map(|kp| KeyPackageIn::tls_deserialize(&mut kp.as_slice()).map_err(CoreCryptoError::generic()))
@@ -1371,7 +1376,8 @@ impl CoreCrypto {
                     .await
                     .map_err(RecursiveError::mls_conversation("adding members to conversation"))
             })
-            .await?
+            .await
+            .map(|new_crl_distribution_point| -> Option<Vec<_>> { new_crl_distribution_point.into() })?
             .into())
     }
 
@@ -1921,11 +1927,12 @@ impl CoreCrypto {
 
     /// See [core_crypto::context::CentralContext::e2ei_register_intermediate_ca_pem]
     #[deprecated = "Please create a transaction in Core Crypto and call this method from it."]
-    pub async fn e2ei_register_intermediate_ca(&self, cert_pem: String) -> CoreCryptoResult<Option<Vec<String>>> {
+    pub async fn e2ei_register_intermediate_ca(&self, cert_pem: String) -> CoreCryptoResult<NewCrlDistributionPoints> {
         self.deprecated_transaction(|context| async move {
             context
                 .e2ei_register_intermediate_ca_pem(cert_pem)
                 .await
+                .map(|new_crl_distribution_point| -> Option<Vec<_>> { new_crl_distribution_point.into() })
                 .map(Into::into)
                 .map_err(RecursiveError::e2e_identity("registering intermediate ca"))
         })
@@ -1952,7 +1959,7 @@ impl CoreCrypto {
         enrollment: std::sync::Arc<E2eiEnrollment>,
         certificate_chain: String,
         nb_key_package: Option<u32>,
-    ) -> CoreCryptoResult<Option<Vec<String>>> {
+    ) -> CoreCryptoResult<NewCrlDistributionPoints> {
         let nb_key_package = nb_key_package
             .map(usize::try_from)
             .transpose()
@@ -1966,6 +1973,7 @@ impl CoreCrypto {
                     nb_key_package,
                 )
                 .await
+                .map(|new_crl_distribution_point| -> Option<Vec<_>> { new_crl_distribution_point.into() })
                 .map(Into::into)
                 .map_err(RecursiveError::e2e_identity("doing mls init only"))
         })
@@ -1990,16 +1998,16 @@ impl CoreCrypto {
         &self,
         enrollment: Arc<E2eiEnrollment>,
         certificate_chain: String,
-    ) -> CoreCryptoResult<Option<Vec<String>>> {
-        Ok(self
-            .deprecated_transaction(|context| async move {
-                context
-                    .save_x509_credential(enrollment.0.write().await.deref_mut(), certificate_chain)
-                    .await
-                    .map_err(RecursiveError::e2e_identity("rotating all"))
-            })
-            .await?
-            .into())
+    ) -> CoreCryptoResult<NewCrlDistributionPoints> {
+        self.deprecated_transaction(|context| async move {
+            context
+                .save_x509_credential(enrollment.0.write().await.deref_mut(), certificate_chain)
+                .await
+                .map(|new_crl_distribution_point| -> Option<Vec<_>> { new_crl_distribution_point.into() })
+                .map(Into::into)
+                .map_err(RecursiveError::e2e_identity("rotating all"))
+        })
+        .await
     }
 
     /// See [core_crypto::context::CentralContext::e2ei_enrollment_stash]

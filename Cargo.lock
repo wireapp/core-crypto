@@ -985,6 +985,7 @@ dependencies = [
  "cfg-if",
  "core-crypto",
  "core-crypto-keystore",
+ "derive_more",
  "futures-util",
  "js-sys",
  "log",

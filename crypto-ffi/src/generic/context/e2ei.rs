@@ -5,7 +5,7 @@ use crate::{
         context::CoreCryptoContext, Ciphersuite, ClientId, CoreCryptoResult, CrlRegistration, E2eiConversationState,
         E2eiDumpedPkiEnv, E2eiEnrollment, MlsCredentialType, WireIdentity,
     },
-    CoreCryptoError,
+    CoreCryptoError, NewCrlDistributionPoints,
 };
 use core_crypto::{prelude::VerifiableGroupInfo, RecursiveError};
 use tls_codec::Deserialize;
@@ -81,12 +81,13 @@ impl CoreCryptoContext {
     }
 
     /// See [core_crypto::context::CentralContext::e2ei_register_intermediate_ca_pem]
-    pub async fn e2ei_register_intermediate_ca(&self, cert_pem: String) -> CoreCryptoResult<Option<Vec<String>>> {
+    pub async fn e2ei_register_intermediate_ca(&self, cert_pem: String) -> CoreCryptoResult<NewCrlDistributionPoints> {
         Ok(self
             .context
             .e2ei_register_intermediate_ca_pem(cert_pem)
             .await
-            .map(Into::into)?)
+            .map(|new_crl_distribution_point| -> Option<Vec<_>> { new_crl_distribution_point.into() })?
+            .into())
     }
 
     /// See [core_crypto::context::CentralContext::e2ei_register_crl]
@@ -100,7 +101,7 @@ impl CoreCryptoContext {
         enrollment: std::sync::Arc<E2eiEnrollment>,
         certificate_chain: String,
         nb_key_package: Option<u32>,
-    ) -> CoreCryptoResult<Option<Vec<String>>> {
+    ) -> CoreCryptoResult<NewCrlDistributionPoints> {
         let nb_key_package = nb_key_package
             .map(usize::try_from)
             .transpose()
@@ -114,7 +115,8 @@ impl CoreCryptoContext {
                 nb_key_package,
             )
             .await
-            .map(Into::into)?)
+            .map(|new_crl_distribution_point| -> Option<Vec<_>> { new_crl_distribution_point.into() })?
+            .into())
     }
 
     /// See [core_crypto::context::CentralContext::e2ei_rotate]
@@ -127,11 +129,12 @@ impl CoreCryptoContext {
         &self,
         enrollment: std::sync::Arc<E2eiEnrollment>,
         certificate_chain: String,
-    ) -> CoreCryptoResult<Option<Vec<String>>> {
+    ) -> CoreCryptoResult<NewCrlDistributionPoints> {
         Ok(self
             .context
             .save_x509_credential(enrollment.0.write().await.deref_mut(), certificate_chain)
-            .await?
+            .await
+            .map(|new_crl_distribution_point| -> Option<Vec<_>> { new_crl_distribution_point.into() })?
             .into())
     }
 
