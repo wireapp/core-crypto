@@ -3,9 +3,9 @@ use std::{collections::HashMap, ops::DerefMut};
 use crate::{
     generic::{
         context::CoreCryptoContext, Ciphersuite, ClientId, CoreCryptoResult, CrlRegistration, E2eiConversationState,
-        E2eiDumpedPkiEnv, E2eiEnrollment, MlsCredentialType, RotateBundle, WireIdentity,
+        E2eiDumpedPkiEnv, E2eiEnrollment, MlsCredentialType, WireIdentity,
     },
-    CommitBundle, CoreCryptoError,
+    CoreCryptoError, NewCrlDistributionPoints,
 };
 use core_crypto::{prelude::VerifiableGroupInfo, RecursiveError};
 use tls_codec::Deserialize;
@@ -81,12 +81,13 @@ impl CoreCryptoContext {
     }
 
     /// See [core_crypto::context::CentralContext::e2ei_register_intermediate_ca_pem]
-    pub async fn e2ei_register_intermediate_ca(&self, cert_pem: String) -> CoreCryptoResult<Option<Vec<String>>> {
+    pub async fn e2ei_register_intermediate_ca(&self, cert_pem: String) -> CoreCryptoResult<NewCrlDistributionPoints> {
         Ok(self
             .context
             .e2ei_register_intermediate_ca_pem(cert_pem)
             .await
-            .map(Into::into)?)
+            .map(|new_crl_distribution_point| -> Option<Vec<_>> { new_crl_distribution_point.into() })?
+            .into())
     }
 
     /// See [core_crypto::context::CentralContext::e2ei_register_crl]
@@ -100,7 +101,7 @@ impl CoreCryptoContext {
         enrollment: std::sync::Arc<E2eiEnrollment>,
         certificate_chain: String,
         nb_key_package: Option<u32>,
-    ) -> CoreCryptoResult<Option<Vec<String>>> {
+    ) -> CoreCryptoResult<NewCrlDistributionPoints> {
         let nb_key_package = nb_key_package
             .map(usize::try_from)
             .transpose()
@@ -114,29 +115,38 @@ impl CoreCryptoContext {
                 nb_key_package,
             )
             .await
-            .map(Into::into)?)
+            .map(|new_crl_distribution_point| -> Option<Vec<_>> { new_crl_distribution_point.into() })?
+            .into())
     }
 
     /// See [core_crypto::context::CentralContext::e2ei_rotate]
-    pub async fn e2ei_rotate(&self, conversation_id: Vec<u8>) -> CoreCryptoResult<CommitBundle> {
-        self.context.e2ei_rotate(&conversation_id, None).await?.try_into()
+    pub async fn e2ei_rotate(&self, conversation_id: Vec<u8>) -> CoreCryptoResult<()> {
+        Ok(self.context.e2ei_rotate(&conversation_id, None).await?)
     }
 
-    /// See [core_crypto::context::CentralContext::e2ei_rotate_all]
-    pub async fn e2ei_rotate_all(
+    /// See [core_crypto::context::CentralContext::save_x509_credential]
+    pub async fn save_x509_credential(
         &self,
         enrollment: std::sync::Arc<E2eiEnrollment>,
         certificate_chain: String,
-        new_key_packages_count: u32,
-    ) -> CoreCryptoResult<RotateBundle> {
-        self.context
-            .e2ei_rotate_all(
-                enrollment.0.write().await.deref_mut(),
-                certificate_chain,
-                new_key_packages_count as usize,
-            )
-            .await?
-            .try_into()
+    ) -> CoreCryptoResult<NewCrlDistributionPoints> {
+        Ok(self
+            .context
+            .save_x509_credential(enrollment.0.write().await.deref_mut(), certificate_chain)
+            .await
+            .map(|new_crl_distribution_point| -> Option<Vec<_>> { new_crl_distribution_point.into() })?
+            .into())
+    }
+
+    /// See [core_crypto::context::CentralContext::retain_only_key_packages_of_most_recent_x509_credentials]
+    pub async fn retain_only_key_packages_of_most_recent_x509_credentials(
+        &self,
+        ciphersuite: Ciphersuite,
+    ) -> CoreCryptoResult<()> {
+        Ok(self
+            .context
+            .retain_only_key_packages_of_most_recent_x509_credentials(ciphersuite.into())
+            .await?)
     }
 
     /// See [core_crypto::context::CentralContext::e2ei_enrollment_stash]

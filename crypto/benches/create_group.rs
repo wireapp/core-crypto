@@ -3,9 +3,7 @@ use criterion::{
     BenchmarkId, Criterion,
 };
 
-use core_crypto::prelude::{
-    MlsConversationConfiguration, MlsConversationInitBundle, MlsCredentialType, MlsCustomConfiguration,
-};
+use core_crypto::prelude::{MlsConversationConfiguration, MlsCredentialType, MlsCustomConfiguration};
 
 use crate::utils::*;
 
@@ -58,8 +56,8 @@ fn join_from_welcome_bench(c: &mut Criterion) {
                 b.to_async(FuturesExecutor).iter_batched(
                     || {
                         async_std::task::block_on(async {
-                            let (mut alice_central, id) = setup_mls(ciphersuite, credential.as_ref(), in_memory).await;
-                            add_clients(&mut alice_central, &id, ciphersuite, *i).await;
+                            let (alice_central, id, _, _, delivery_service) =
+                                setup_mls_and_add_clients(ciphersuite, credential.as_ref(), in_memory, *i).await;
 
                             let (bob_central, ..) = new_central(ciphersuite, credential.as_ref(), in_memory).await;
                             let bob_context = bob_central.new_transaction().await.unwrap();
@@ -70,11 +68,11 @@ fn join_from_welcome_bench(c: &mut Criterion) {
                             let bob_kp = bob_kpbs.first().unwrap().clone();
                             bob_context.finish().await.unwrap();
                             let alice_context = alice_central.new_transaction().await.unwrap();
-                            let welcome = alice_context
+                            alice_context
                                 .add_members_to_conversation(&id, vec![bob_kp.into()])
                                 .await
-                                .unwrap()
-                                .welcome;
+                                .unwrap();
+                            let welcome = delivery_service.latest_welcome_message().await;
                             alice_context.finish().await.unwrap();
                             (bob_central, welcome)
                         })
@@ -106,15 +104,15 @@ fn join_from_group_info_bench(c: &mut Criterion) {
                 b.to_async(FuturesExecutor).iter_batched(
                     || {
                         async_std::task::block_on(async {
-                            let (mut alice_central, id) = setup_mls(ciphersuite, credential.as_ref(), in_memory).await;
-                            let (_, group_info) = add_clients(&mut alice_central, &id, ciphersuite, *i).await;
+                            let (_, _, _, group_info, ..) =
+                                setup_mls_and_add_clients(ciphersuite, credential.as_ref(), in_memory, *i).await;
                             let (bob_central, ..) = new_central(ciphersuite, credential.as_ref(), in_memory).await;
                             (bob_central, group_info)
                         })
                     },
                     |(central, group_info)| async move {
                         let context = central.new_transaction().await.unwrap();
-                        let MlsConversationInitBundle { conversation_id, .. } = black_box(
+                        black_box(
                             context
                                 .join_by_external_commit(
                                     group_info,
@@ -124,10 +122,6 @@ fn join_from_group_info_bench(c: &mut Criterion) {
                                 .await
                                 .unwrap(),
                         );
-                        context
-                            .merge_pending_group_from_external_commit(&conversation_id)
-                            .await
-                            .unwrap();
                         context.finish().await.unwrap();
                         black_box(());
                     },

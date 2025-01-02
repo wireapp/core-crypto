@@ -46,8 +46,9 @@ fn encrypt_message_bench(c: &mut Criterion) {
                 b.to_async(FuturesExecutor).iter_batched(
                     || {
                         async_std::task::block_on(async {
-                            let (mut central, id) = setup_mls(ciphersuite, credential.as_ref(), in_memory).await;
-                            add_clients(&mut central, &id, ciphersuite, *i).await;
+                            let (mut central, id, delivery_service) =
+                                setup_mls(ciphersuite, credential.as_ref(), in_memory).await;
+                            add_clients(&mut central, &id, ciphersuite, *i, delivery_service).await;
                             let text = Alphanumeric.sample_string(&mut rand::thread_rng(), MSG_MAX);
                             (central, id, text)
                         })
@@ -104,8 +105,9 @@ fn add_client_bench(c: &mut Criterion) {
                 b.to_async(FuturesExecutor).iter_batched(
                     || {
                         async_std::task::block_on(async {
-                            let (mut central, id) = setup_mls(ciphersuite, credential.as_ref(), in_memory).await;
-                            add_clients(&mut central, &id, ciphersuite, *i).await;
+                            let (mut central, id, delivery_service) =
+                                setup_mls(ciphersuite, credential.as_ref(), in_memory).await;
+                            add_clients(&mut central, &id, ciphersuite, *i, delivery_service).await;
                             let (kp, _) = rand_key_package(ciphersuite).await;
                             (central, id, vec![kp.into()])
                         })
@@ -113,7 +115,6 @@ fn add_client_bench(c: &mut Criterion) {
                     |(central, id, kps)| async move {
                         let context = central.new_transaction().await.unwrap();
                         black_box(context.add_members_to_conversation(&id, kps).await.unwrap());
-                        context.commit_accepted(&id).await.unwrap();
                         context.finish().await.unwrap();
                         black_box(());
                     },
@@ -160,8 +161,10 @@ fn remove_client_bench(c: &mut Criterion) {
                 b.to_async(FuturesExecutor).iter_batched(
                     || {
                         async_std::task::block_on(async {
-                            let (mut central, id) = setup_mls(ciphersuite, credential.as_ref(), in_memory).await;
-                            let (client_ids, ..) = add_clients(&mut central, &id, ciphersuite, GROUP_MAX_PROTEUS).await;
+                            let (mut central, id, delivery_service) =
+                                setup_mls(ciphersuite, credential.as_ref(), in_memory).await;
+                            let (client_ids, ..) =
+                                add_clients(&mut central, &id, ciphersuite, GROUP_MAX_PROTEUS, delivery_service).await;
                             let to_remove = client_ids[..*i].to_vec();
                             (central, id, to_remove)
                         })
@@ -174,7 +177,6 @@ fn remove_client_bench(c: &mut Criterion) {
                                 .await
                                 .unwrap(),
                         );
-                        context.commit_accepted(&id).await.unwrap();
                         context.finish().await.unwrap();
                         black_box(());
                     },
@@ -227,15 +229,15 @@ fn update_client_bench(c: &mut Criterion) {
                 b.to_async(FuturesExecutor).iter_batched(
                     || {
                         async_std::task::block_on(async {
-                            let (mut central, id) = setup_mls(ciphersuite, credential.as_ref(), in_memory).await;
-                            add_clients(&mut central, &id, ciphersuite, *i).await;
+                            let (mut central, id, delivery_service) =
+                                setup_mls(ciphersuite, credential.as_ref(), in_memory).await;
+                            add_clients(&mut central, &id, ciphersuite, *i, delivery_service).await;
                             (central, id)
                         })
                     },
                     |(central, id)| async move {
                         let context = central.new_transaction().await.unwrap();
                         black_box(context.update_keying_material(&id).await.unwrap());
-                        context.commit_accepted(&id).await.unwrap();
                         context.finish().await.unwrap();
                         black_box(());
                     },

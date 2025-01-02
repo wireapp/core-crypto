@@ -14,17 +14,17 @@
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see http://www.gnu.org/licenses/.
 
+use crate::{
+    clients::{EmulatedClient, EmulatedClientProtocol, EmulatedClientType, EmulatedMlsClient},
+    CIPHERSUITE_IN_USE,
+};
 use color_eyre::eyre::Result;
 use core_crypto_ffi::{
     context::TransactionHelper, ClientId, CoreCrypto, CustomConfiguration, MlsCredentialType, UniffiCustomTypeConverter,
 };
 use std::cell::Cell;
+use std::sync::Arc;
 use tempfile::NamedTempFile;
-
-use crate::{
-    clients::{EmulatedClient, EmulatedClientProtocol, EmulatedClientType, EmulatedMlsClient},
-    CIPHERSUITE_IN_USE,
-};
 
 #[derive(Debug)]
 pub(crate) struct CoreCryptoFfiClient {
@@ -57,6 +57,10 @@ impl CoreCryptoFfiClient {
             None,
         )
         .await?;
+
+        cc.provide_transport(Arc::new(crate::MlsTransportSuccessProvider::default()))
+            .await?;
+
         Ok(Self {
             cc,
             _temp_file: temp_file,
@@ -108,7 +112,7 @@ impl EmulatedMlsClient for CoreCryptoFfiClient {
         Ok(kp)
     }
 
-    async fn add_client(&self, conversation_id: &[u8], kp: &[u8]) -> Result<Vec<u8>> {
+    async fn add_client(&self, conversation_id: &[u8], kp: &[u8]) -> Result<()> {
         if !self.cc.conversation_exists(conversation_id.to_vec()).await? {
             let cfg = core_crypto_ffi::ConversationConfiguration {
                 ciphersuite: CIPHERSUITE_IN_USE.into(),
@@ -135,12 +139,10 @@ impl EmulatedMlsClient for CoreCryptoFfiClient {
             context.add_clients_to_conversation(conversation_id, key_packages).await
         });
         self.cc.transaction(extractor.clone()).await?;
-        let welcome = extractor.into_return_value();
-
-        Ok(welcome.welcome)
+        Ok(())
     }
 
-    async fn kick_client(&self, conversation_id: &[u8], client_id: &[u8]) -> Result<Vec<u8>> {
+    async fn kick_client(&self, conversation_id: &[u8], client_id: &[u8]) -> Result<()> {
         let client_id = ClientId::into_custom(client_id.to_vec()).unwrap();
         let conversation_id = conversation_id.to_vec();
         let extractor = TransactionHelper::new(move |context| async move {
@@ -149,9 +151,7 @@ impl EmulatedMlsClient for CoreCryptoFfiClient {
                 .await
         });
         self.cc.transaction(extractor.clone()).await?;
-        let commit = extractor.into_return_value();
-
-        Ok(commit.commit)
+        Ok(())
     }
 
     async fn process_welcome(&self, welcome: &[u8]) -> Result<Vec<u8>> {

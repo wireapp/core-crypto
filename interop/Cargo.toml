@@ -21,6 +21,7 @@ femme = "2.2"
 dirs = "5.0"
 core-crypto = { path = "../crypto" }
 core-crypto-ffi = { path = "../crypto-ffi" }
+openmls.workspace = true
 tls_codec.workspace = true
 
 # Utils

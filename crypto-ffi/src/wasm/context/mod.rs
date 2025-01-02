@@ -1,8 +1,7 @@
+use crate::wasm::{lower_ciphersuites, InternalError};
 use crate::{
-    wasm::{lower_ciphersuites, InternalError},
-    BufferedDecryptedMessage, Ciphersuite, CommitBundle, ConversationConfiguration, ConversationInitBundle, CoreCrypto,
-    CoreCryptoError, CoreCryptoResult, CredentialType, CustomConfiguration, DecryptedMessage, FfiClientId,
-    MemberAddedMessages, ProposalBundle, WasmCryptoResult, WelcomeBundle,
+    Ciphersuite, ConversationConfiguration, CoreCrypto, CoreCryptoError, CoreCryptoResult, CredentialType,
+    CustomConfiguration, DecryptedMessage, FfiClientId, ProposalBundle, WasmCryptoResult, WelcomeBundle,
 };
 use core_crypto::{
     context::CentralContext,
@@ -389,7 +388,7 @@ impl CoreCryptoContext {
         )
     }
 
-    /// Returns: [`WasmCryptoResult<Option<MemberAddedMessages>>`]
+    /// Returns: [`WasmCryptoResult<Option<Vec<String>>>`]
     ///
     /// see [core_crypto::mls::context::CentralContext::add_members_to_conversation]
     pub fn add_clients_to_conversation(
@@ -408,17 +407,17 @@ impl CoreCryptoContext {
                     })
                     .collect::<CoreCryptoResult<Vec<_>>>()?;
 
-                let commit = context
+                let new_crl_distribution_point = context
                     .add_members_to_conversation(&conversation_id, key_packages)
                     .await?;
-                let commit: MemberAddedMessages = commit.try_into()?;
-                WasmCryptoResult::Ok(serde_wasm_bindgen::to_value(&commit)?)
+                let new_crl_distribution_point: Option<Vec<String>> = new_crl_distribution_point.into();
+                WasmCryptoResult::Ok(serde_wasm_bindgen::to_value(&new_crl_distribution_point)?)
             }
             .err_into(),
         )
     }
 
-    /// Returns: [`WasmCryptoResult<Option<js_sys::Uint8Array>>`]
+    /// Returns: [`WasmCryptoResult<()>`]
     ///
     /// see [core_crypto::mls::context::CentralContext::remove_members_from_conversation]
     pub fn remove_clients_from_conversation(
@@ -435,14 +434,12 @@ impl CoreCryptoContext {
                     .map(|c| c.to_vec().into())
                     .collect::<Vec<ClientId>>();
 
-                let commit = context
+                context
                     .remove_members_from_conversation(&conversation_id, &clients)
                     .await
                     .map_err(CoreCryptoError::from)?;
 
-                let commit: CommitBundle = commit.try_into()?;
-
-                WasmCryptoResult::Ok(serde_wasm_bindgen::to_value(&commit)?)
+                WasmCryptoResult::Ok(JsValue::UNDEFINED)
             }
             .err_into(),
         )
@@ -465,36 +462,32 @@ impl CoreCryptoContext {
         )
     }
 
-    /// Returns: [`WasmCryptoResult<CommitBundle>`]
+    /// Returns: [`WasmCryptoResult()`]
     ///
     /// see [core_crypto::mls::context::CentralContext::update_keying_material]
     pub fn update_keying_material(&self, conversation_id: ConversationId) -> Promise {
         let context = self.inner.clone();
         future_to_promise(
             async move {
-                let commit = context
+                context
                     .update_keying_material(&conversation_id)
                     .await
                     .map_err(CoreCryptoError::from)?;
-
-                let commit: CommitBundle = commit.try_into()?;
-                WasmCryptoResult::Ok(serde_wasm_bindgen::to_value(&commit)?)
+                WasmCryptoResult::Ok(JsValue::UNDEFINED)
             }
             .err_into(),
         )
     }
 
+    /// Returns: [`WasmCryptoResult()`]
+    ///
     /// see [core_crypto::mls::context::CentralContext::commit_pending_proposals]
     pub fn commit_pending_proposals(&self, conversation_id: ConversationId) -> Promise {
         let context = self.inner.clone();
         future_to_promise(
             async move {
-                let commit: Option<CommitBundle> = context
-                    .commit_pending_proposals(&conversation_id)
-                    .await?
-                    .map(|c| c.try_into())
-                    .transpose()?;
-                WasmCryptoResult::Ok(serde_wasm_bindgen::to_value(&commit)?)
+                context.commit_pending_proposals(&conversation_id).await?;
+                WasmCryptoResult::Ok(JsValue::UNDEFINED)
             }
             .err_into(),
         )
@@ -647,7 +640,7 @@ impl CoreCryptoContext {
     }
 
     #[allow(clippy::boxed_local)]
-    /// Returns: [`WasmCryptoResult<ConversationInitBundle>`]
+    /// Returns: [`WasmCryptoResult<WelcomeBundle>`]
     ///
     /// see [core_crypto::mls::context::CentralContext::join_by_external_commit]
     pub fn join_by_external_commit(
@@ -665,80 +658,13 @@ impl CoreCryptoContext {
                     ))
                     .map_err(RecursiveError::mls_conversation("joining by external commit"))?;
 
-                let result: ConversationInitBundle = context
+                let result: WelcomeBundle = context
                     .join_by_external_commit(group_info, custom_configuration.into(), credential_type.into())
                     .await
                     .map_err(CoreCryptoError::from)?
-                    .try_into()?;
+                    .into();
 
                 WasmCryptoResult::Ok(serde_wasm_bindgen::to_value(&result)?)
-            }
-            .err_into(),
-        )
-    }
-
-    /// Returns: [`WasmCryptoResult<()>`]
-    ///
-    /// see [core_crypto::mls::context::CentralContext::merge_pending_group_from_external_commit]
-    pub fn merge_pending_group_from_external_commit(&self, conversation_id: ConversationId) -> Promise {
-        let context = self.inner.clone();
-        future_to_promise(
-            async move {
-                if let Some(decrypted_messages) = context
-                    .merge_pending_group_from_external_commit(&conversation_id)
-                    .await
-                    .map_err(CoreCryptoError::from)?
-                {
-                    let messages = decrypted_messages
-                        .into_iter()
-                        .map(TryInto::try_into)
-                        .collect::<WasmCryptoResult<Vec<BufferedDecryptedMessage>>>()?;
-
-                    return WasmCryptoResult::Ok(serde_wasm_bindgen::to_value(&messages)?);
-                }
-
-                WasmCryptoResult::Ok(JsValue::UNDEFINED)
-            }
-            .err_into(),
-        )
-    }
-
-    /// Returns: [`WasmCryptoResult<()>`]
-    ///
-    /// see [core_crypto::mls::context::CentralContext::clear_pending_group_from_external_commit]
-    pub fn clear_pending_group_from_external_commit(&self, conversation_id: ConversationId) -> Promise {
-        let context = self.inner.clone();
-        future_to_promise(
-            async move {
-                context
-                    .clear_pending_group_from_external_commit(&conversation_id)
-                    .await
-                    .map_err(CoreCryptoError::from)?;
-
-                WasmCryptoResult::Ok(JsValue::UNDEFINED)
-            }
-            .err_into(),
-        )
-    }
-
-    /// see [core_crypto::mls::context::CentralContext::commit_accepted]
-    pub fn commit_accepted(&self, conversation_id: ConversationId) -> Promise {
-        let context = self.inner.clone();
-        future_to_promise(
-            async move {
-                if let Some(decrypted_messages) = context
-                    .commit_accepted(&conversation_id)
-                    .await
-                    .map_err(CoreCryptoError::from)?
-                {
-                    let messages = decrypted_messages
-                        .into_iter()
-                        .map(TryInto::try_into)
-                        .collect::<WasmCryptoResult<Vec<BufferedDecryptedMessage>>>()?;
-
-                    return WasmCryptoResult::Ok(serde_wasm_bindgen::to_value(&messages)?);
-                }
-                WasmCryptoResult::Ok(JsValue::UNDEFINED)
             }
             .err_into(),
         )
@@ -751,21 +677,6 @@ impl CoreCryptoContext {
             async move {
                 context
                     .clear_pending_proposal(&conversation_id.to_vec(), proposal_ref.to_vec().into())
-                    .await
-                    .map_err(CoreCryptoError::from)?;
-                WasmCryptoResult::Ok(JsValue::UNDEFINED)
-            }
-            .err_into(),
-        )
-    }
-
-    /// see [core_crypto::mls::context::CentralContext::clear_pending_commit]
-    pub fn clear_pending_commit(&self, conversation_id: ConversationId) -> Promise {
-        let context = self.inner.clone();
-        future_to_promise(
-            async move {
-                context
-                    .clear_pending_commit(&conversation_id.to_vec())
                     .await
                     .map_err(CoreCryptoError::from)?;
                 WasmCryptoResult::Ok(JsValue::UNDEFINED)
