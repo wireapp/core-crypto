@@ -917,6 +917,11 @@ export function setMaxLogLevel(level: CoreCryptoLogLevel): void {
 }
 
 /**
+ * Returned by APIs whose code paths potentially discover new certificate revocation list distribution URLs.
+ */
+export type NewCrlDistributionPoints = string[] | undefined;
+
+/**
  * Wrapper for the WASM-compiled version of CoreCrypto
  */
 export class CoreCrypto {
@@ -1379,7 +1384,7 @@ export class CoreCrypto {
     async addClientsToConversation(
         conversationId: ConversationId,
         keyPackages: Uint8Array[]
-    ): Promise<string[] | undefined> {
+    ): Promise<NewCrlDistributionPoints> {
         return await this.transaction(
             async (ctx) =>
                 await ctx.addClientsToConversation(conversationId, keyPackages)
@@ -1936,7 +1941,7 @@ export class CoreCrypto {
         enrollment: E2eiEnrollment,
         certificateChain: string,
         nbKeyPackage?: number
-    ): Promise<string[] | undefined> {
+    ): Promise<NewCrlDistributionPoints> {
         return await this.transaction(
             async (ctx) =>
                 await ctx.e2eiMlsInitOnly(
@@ -1984,7 +1989,7 @@ export class CoreCrypto {
      */
     async e2eiRegisterIntermediateCA(
         certPEM: string
-    ): Promise<string[] | undefined> {
+    ): Promise<NewCrlDistributionPoints> {
         return await this.transaction(
             async (ctx) => await ctx.e2eiRegisterIntermediateCA(certPEM)
         );
@@ -2014,7 +2019,7 @@ export class CoreCrypto {
     async saveX509Credential(
         enrollment: E2eiEnrollment,
         certificateChain: string
-    ): Promise<string[] | undefined> {
+    ): Promise<NewCrlDistributionPoints> {
         return await this.transaction(
             async (ctx) =>
                 await ctx.saveX509Credential(enrollment, certificateChain)
