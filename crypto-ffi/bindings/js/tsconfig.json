@@ -18,8 +18,19 @@
     "moduleResolution": "nodenext",
     "allowSyntheticDefaultImports": true,
     "esModuleInterop": true,
-    "types": ["node", "@wdio/globals/types", "@types/mocha"],
+    "types": [
+      "node",
+      "@wdio/globals/types",
+      "@types/mocha"
+    ],
     "skipLibCheck": true,
-    "forceConsistentCasingInFileNames": true,
-  }
+    "forceConsistentCasingInFileNames": true
+  },
+  "exclude": [
+    "*.conf.ts",
+    "test",
+    "*.test.ts",
+    "benches",
+    "*.bench.ts"
+  ]
 }

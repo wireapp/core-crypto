@@ -6,6 +6,9 @@ on:
   pull_request:
 
 jobs:
+  prepare_wasm:
+    uses: ./.github/workflows/rust-build.yml
+
   benchmarks_with_bencher:
     name: Rust Benchmarks with Bencher
     permissions:
@@ -31,31 +34,24 @@ jobs:
     permissions:
       pull-requests: write
     runs-on: ubuntu-latest
+    needs: prepare_wasm
     steps:
       - uses: actions/checkout@v4
-      - uses: actions-rust-lang/setup-rust-toolchain@v1  # this implicitly caches Rust tools and build artifacts
-      - name: Setup bun (web)
-        uses: oven-sh/setup-bun@v2
+        with:
+          clean: false
+      - uses: oven-sh/setup-bun@v2
         with:
           bun-version: latest
-      - name: Install wasm-pack (web)
-        uses: taiki-e/install-action@v2
+      - name: retrieve artifacts
+        uses: actions/download-artifact@v4
         with:
-          tool: wasm-pack
-      - name: Setup cargo-make (web)
-        uses: davidB/rust-cargo-make@v1
+          name: build-wasm-${{ github.run_id }}
+          path: crypto-ffi/bindings/js
       - name: Build & test WASM / JS package (web)
         run: |
-          cd crypto-ffi
-          cargo make wasm
-          cd bindings/js
-          bun install
+          cd crypto-ffi/bindings/js
           bun run build
           bun run bench
-      - uses: actions/checkout@v4
-        with:
-          # Keep result file
-          clean: 'false'
       - name: Run bencher CLI
         uses: ./.github/actions/run-bencher
         with:
