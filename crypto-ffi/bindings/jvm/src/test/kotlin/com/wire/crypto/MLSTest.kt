@@ -139,6 +139,14 @@ class MLSTest {
     }
 
     @Test
+    fun errorTypeMapping_should_work() = runTest {
+        val (alice) = newClients(aliceId)
+        alice.transaction { it.createConversation(id) }
+        val expectedException = assertFailsWith<CoreCryptoException.Mls> { alice.transaction { it.createConversation(id) } }
+        assertIs<MlsException.ConversationAlreadyExists>(expectedException.exception)
+    }
+
+    @Test
     fun getPublicKey_should_return_non_empty_result() = runTest {
         val (alice) = newClients(aliceId)
         assertThat(alice.transaction { it.getPublicKey(Ciphersuite.DEFAULT).value }).isNotEmpty()
@@ -243,6 +251,9 @@ class MLSTest {
 
         val plaintextMsg = bob.transaction { it.decryptMessage(groupId, ciphertextMsg).message!! }
         assertThat(String(plaintextMsg)).isNotEmpty().isEqualTo(msg)
+
+        val expectedException = assertFailsWith<CoreCryptoException.Mls>{ bob.transaction { it.decryptMessage(groupId, ciphertextMsg) } }
+        assertIs<MlsException.DuplicateMessage>(expectedException.exception)
     }
 
     @Test
