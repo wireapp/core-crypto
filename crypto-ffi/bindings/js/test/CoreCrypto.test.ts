@@ -877,3 +877,18 @@ describe("build", () => {
         ).resolves.toMatchObject({ gitDescribe: expect.anything() });
     });
 });
+
+describe("Error type mapping", () => {
+    it("should work for conversation already exists", async () => {
+        await ccInit(ALICE_ID);
+        await createConversation(ALICE_ID, CONV_ID);
+
+        const expectedErrorMessage = "Conversation already exists";
+
+        await expect(
+            createConversation(ALICE_ID, CONV_ID)
+            // wdio wraps the error and prepends the original message with
+            // the error type as prefix
+        ).rejects.toThrowError(new Error(`Error: ${expectedErrorMessage}`));
+    });
+});
