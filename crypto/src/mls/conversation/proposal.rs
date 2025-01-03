@@ -5,16 +5,16 @@
 //! | 0 pend. Proposal       | ✅              | ❌              |
 //! | 1+ pend. Proposal      | ✅              | ❌              |
 
+use mls_crypto_provider::MlsCryptoProvider;
 use openmls::{binary_tree::LeafNodeIndex, framing::MlsMessageOut, key_packages::KeyPackageIn, prelude::LeafNode};
 
-use mls_crypto_provider::MlsCryptoProvider;
-
 use super::{Error, Result};
+use crate::context::CentralContext;
 use crate::{
     e2e_identity::init_certificates::NewCrlDistributionPoint,
     mls::credential::crl::{extract_crl_uris_from_credentials, get_new_crl_distribution_points},
-    prelude::{Client, MlsConversation, MlsProposalRef},
-    MlsError, RecursiveError,
+    prelude::{Client, MlsConversation},
+    MlsError, MlsTransportResponse, RecursiveError,
 };
 
 /// Sending proposals
@@ -93,12 +93,12 @@ impl CentralContext {
 impl MlsConversation {
     /// see [openmls::group::MlsGroup::propose_add_member]
     #[cfg_attr(test, crate::durable)]
-    pub async fn propose_add_member(
+    pub(crate) async fn propose_add_member(
         &mut self,
         client: &Client,
         backend: &MlsCryptoProvider,
         key_package: KeyPackageIn,
-    ) -> Result<MlsProposalBundle> {
+    ) -> Result<(MlsMessageOut, NewCrlDistributionPoint)> {
         let signer = &self
             .find_current_credential_bundle(client)
             .await
@@ -113,67 +113,61 @@ impl MlsConversation {
         .await
         .map_err(RecursiveError::mls_credential("getting new crl distribution points"))?;
 
-        let (proposal, proposal_ref) = self
+        let (proposal, _) = self
             .group
             .propose_add_member(backend, signer, key_package)
             .await
             .map_err(MlsError::wrap("propose add member"))?;
-        let proposal = MlsProposalBundle {
-            proposal,
-            proposal_ref: proposal_ref.into(),
-            crl_new_distribution_points,
-        };
         self.persist_group_when_changed(&backend.keystore(), false).await?;
-        Ok(proposal)
+        Ok((proposal, crl_new_distribution_points))
     }
 
     /// see [openmls::group::MlsGroup::propose_remove_member]
     #[cfg_attr(test, crate::durable)]
-    pub async fn propose_remove_member(
+    pub(crate) async fn propose_remove_member(
         &mut self,
         client: &Client,
         backend: &MlsCryptoProvider,
         member: LeafNodeIndex,
-    ) -> Result<MlsProposalBundle> {
+    ) -> Result<MlsMessageOut> {
         let signer = &self
             .find_current_credential_bundle(client)
             .await
             .map_err(|_| Error::IdentityInitializationError)?
             .signature_key;
-        let proposal = self
+        let (proposal, _) = self
             .group
             .propose_remove_member(backend, signer, member)
-            .map_err(MlsError::wrap("propose remove member"))
-            .map(MlsProposalBundle::from)?;
+            .map_err(MlsError::wrap("propose remove member"))?;
         self.persist_group_when_changed(&backend.keystore(), false).await?;
         Ok(proposal)
     }
 
     /// see [openmls::group::MlsGroup::propose_self_update]
     #[cfg_attr(test, crate::durable)]
-    pub async fn propose_self_update(
+    pub(crate) async fn propose_self_update(
         &mut self,
         client: &Client,
         backend: &MlsCryptoProvider,
-    ) -> Result<MlsProposalBundle> {
+    ) -> Result<MlsMessageOut> {
         self.propose_explicit_self_update(client, backend, None).await
     }
 
     /// see [openmls::group::MlsGroup::propose_self_update]
     #[cfg_attr(test, crate::durable)]
-    pub async fn propose_explicit_self_update(
+    pub(crate) async fn propose_explicit_self_update(
         &mut self,
         client: &Client,
         backend: &MlsCryptoProvider,
         leaf_node: Option<LeafNode>,
-    ) -> Result<MlsProposalBundle> {
+    ) -> Result<MlsMessageOut> {
         let msg_signer = &self
             .find_current_credential_bundle(client)
             .await
             .map_err(|_| Error::IdentityInitializationError)?
             .signature_key;
 
-        let proposal = if let Some(leaf_node) = leaf_node {
+        let (proposal, _) = if let Some(leaf_node) = leaf_node {
             let leaf_node_signer = &self
                 .find_most_recent_credential_bundle(client)
                 .await
@@ -186,49 +180,10 @@ impl MlsConversation {
         } else {
             self.group.propose_self_update(backend, msg_signer).await
         }
-        .map(MlsProposalBundle::from)
         .map_err(MlsError::wrap("proposing self update"))?;
 
         self.persist_group_when_changed(&backend.keystore(), false).await?;
         Ok(proposal)
-    }
-}
-
-/// Returned when a Proposal is created. Helps roll backing a local proposal
-#[derive(Debug)]
-pub struct MlsProposalBundle {
-    /// The proposal message
-    pub proposal: MlsMessageOut,
-    /// A unique identifier of the proposal to rollback it later if required
-    pub proposal_ref: MlsProposalRef,
-    /// New CRL distribution points that appeared by the introduction of a new credential
-    pub crl_new_distribution_points: NewCrlDistributionPoint,
-}
-
-impl From<(MlsMessageOut, openmls::prelude::hash_ref::ProposalRef)> for MlsProposalBundle {
-    fn from((proposal, proposal_ref): (MlsMessageOut, openmls::prelude::hash_ref::ProposalRef)) -> Self {
-        Self {
-            proposal,
-            proposal_ref: proposal_ref.into(),
-            crl_new_distribution_points: None.into(),
-        }
-    }
-}
-
-impl MlsProposalBundle {
-    /// Serializes both wrapped objects into TLS and return them as a tuple of byte arrays.
-    /// 0 -> proposal
-    /// 1 -> proposal reference
-    #[allow(clippy::type_complexity)]
-    pub fn to_bytes(self) -> Result<(Vec<u8>, Vec<u8>, NewCrlDistributionPoint)> {
-        use openmls::prelude::TlsSerializeTrait as _;
-        let proposal = self
-            .proposal
-            .tls_serialize_detached()
-            .map_err(Error::tls_serialize("proposal"))?;
-        let proposal_ref = self.proposal_ref.to_bytes();
-
-        Ok((proposal, proposal_ref, self.crl_new_distribution_points))
     }
 }
 
@@ -265,18 +220,10 @@ mod tests {
                         let charlie_kp = charlie_central.get_one_key_package(&case).await;
 
                         assert!(alice_central.pending_proposals(&id).await.is_empty());
-                        let proposal = alice_central
-                            .context
-                            .new_add_proposal(&id, charlie_kp)
-                            .await
-                            .unwrap()
-                            .proposal;
+                        alice_central.context.new_add_proposal(&id, charlie_kp).await.unwrap();
                         assert_eq!(alice_central.pending_proposals(&id).await.len(), 1);
-                        bob_central
-                            .context
-                            .decrypt_message(&id, proposal.to_bytes().unwrap())
-                            .await
-                            .unwrap();
+                        let proposal = alice_central.mls_transport.latest_message().await;
+                        bob_central.context.decrypt_message(&id, proposal).await.unwrap();
                         bob_central.context.commit_pending_proposals(&id).await.unwrap();
                         let commit = bob_central.mls_transport.latest_commit().await;
                         let welcome = bob_central.mls_transport.latest_welcome_message().await;
@@ -331,18 +278,14 @@ mod tests {
                             .unwrap();
 
                         assert!(alice_central.pending_proposals(&id).await.is_empty());
-                        let proposal = alice_central
+                        alice_central
                             .context
                             .new_remove_proposal(&id, charlie_central.get_client_id().await)
                             .await
-                            .unwrap()
-                            .proposal;
-                        assert_eq!(alice_central.pending_proposals(&id).await.len(), 1);
-                        bob_central
-                            .context
-                            .decrypt_message(&id, proposal.to_bytes().unwrap())
-                            .await
                             .unwrap();
+                        let proposal = alice_central.mls_transport.latest_message().await;
+                        assert_eq!(alice_central.pending_proposals(&id).await.len(), 1);
+                        bob_central.context.decrypt_message(&id, &proposal).await.unwrap();
                         bob_central.context.commit_pending_proposals(&id).await.unwrap();
                         let commit = bob_central.mls_transport.latest_commit().await;
                         assert_eq!(bob_central.get_conversation_unchecked(&id).await.members().len(), 2);
@@ -393,12 +336,9 @@ mod tests {
                         .encryption_key_of(&id, alice_central.get_client_id().await)
                         .await;
 
-                    let proposal = alice_central.context.new_update_proposal(&id).await.unwrap().proposal;
-                    bob_central
-                        .context
-                        .decrypt_message(&id, proposal.to_bytes().unwrap())
-                        .await
-                        .unwrap();
+                    alice_central.context.new_update_proposal(&id).await.unwrap();
+                    let proposal = alice_central.mls_transport.latest_message().await;
+                    bob_central.context.decrypt_message(&id, proposal).await.unwrap();
                     bob_central.context.commit_pending_proposals(&id).await.unwrap();
                     let commit = bob_central.mls_transport.latest_commit().await;
 
@@ -450,21 +390,15 @@ mod tests {
                         .unwrap();
                     alice_central.invite_all(&case, &id, [&bob_central]).await.unwrap();
 
-                    let proposal = alice_central.context.new_update_proposal(&id).await.unwrap().proposal;
+                    alice_central.context.new_update_proposal(&id).await.unwrap();
+                    let proposal = alice_central.mls_transport.latest_message().await;
 
-                    bob_central
-                        .context
-                        .decrypt_message(&id, &proposal.to_bytes().unwrap())
-                        .await
-                        .unwrap();
+                    bob_central.context.decrypt_message(&id, &proposal).await.unwrap();
                     bob_central.context.commit_pending_proposals(&id).await.unwrap();
                     // epoch++
 
                     // fails when we try to decrypt a proposal for past epoch
-                    let past_proposal = bob_central
-                        .context
-                        .decrypt_message(&id, &proposal.to_bytes().unwrap())
-                        .await;
+                    let past_proposal = bob_central.context.decrypt_message(&id, &proposal).await;
                     assert!(matches!(past_proposal.unwrap_err(), Error::StaleProposal));
                 })
             })
