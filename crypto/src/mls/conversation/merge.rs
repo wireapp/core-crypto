@@ -12,18 +12,14 @@
 //!
 
 use core_crypto_keystore::entities::MlsEncryptionKeyPair;
-use openmls::prelude::MlsGroupStateError;
 use openmls_traits::OpenMlsCryptoProvider;
 
 use mls_crypto_provider::MlsCryptoProvider;
 
 use super::{Error, Result};
-use crate::{
-    context::CentralContext,
-    mls::{ConversationId, MlsConversation},
-    prelude::MlsProposalRef,
-    MlsError, RecursiveError,
-};
+#[cfg(test)]
+use crate::mls::{ConversationId, RecursiveError};
+use crate::{context::CentralContext, mls::MlsConversation, MlsError};
 
 /// Abstraction over a MLS group capable of merging a commit
 impl MlsConversation {
@@ -45,24 +41,6 @@ impl MlsConversation {
             let _ = backend.key_store().remove::<MlsEncryptionKeyPair, _>(ek).await;
         }
 
-        Ok(())
-    }
-
-    /// see [CentralContext::clear_pending_proposal]
-    #[cfg_attr(test, crate::durable)]
-    pub async fn clear_pending_proposal(
-        &mut self,
-        proposal_ref: MlsProposalRef,
-        backend: &MlsCryptoProvider,
-    ) -> Result<()> {
-        self.group
-            .remove_pending_proposal(backend.key_store(), &proposal_ref)
-            .await
-            .map_err(|e| match e {
-                MlsGroupStateError::PendingProposalNotFound => Error::PendingProposalNotFound(proposal_ref),
-                _ => MlsError::wrap("removing pending proposal")(e).into(),
-            })?;
-        self.persist_group_when_changed(&backend.keystore(), true).await?;
         Ok(())
     }
 
@@ -92,39 +70,6 @@ impl MlsConversation {
 ///     * 409 CONFLICT --> do nothing. [CentralContext::decrypt_message] will restore the proposals not committed
 ///     * 5xx --> retry
 impl CentralContext {
-    /// Allows to remove a pending (uncommitted) proposal. Use this when backend rejects the proposal
-    /// you just sent e.g. if permissions have changed meanwhile.
-    ///
-    /// **CAUTION**: only use this when you had an explicit response from the Delivery Service
-    /// e.g. 403 or 409. Do not use otherwise e.g. 5xx responses, timeout etc..
-    ///
-    /// # Arguments
-    /// * `conversation_id` - the group/conversation id
-    /// * `proposal_ref` - unique proposal identifier which is present in [crate::prelude::MlsProposalBundle]
-    ///   and returned from all operation creating a proposal
-    ///
-    /// # Errors
-    /// When the conversation is not found or the proposal reference does not identify a proposal
-    /// in the local pending proposal store
-    pub async fn clear_pending_proposal(
-        &self,
-        conversation_id: &ConversationId,
-        proposal_ref: MlsProposalRef,
-    ) -> Result<()> {
-        self.get_conversation(conversation_id)
-            .await?
-            .write()
-            .await
-            .clear_pending_proposal(
-                proposal_ref,
-                &self
-                    .mls_provider()
-                    .await
-                    .map_err(RecursiveError::root("getting mls provider"))?,
-            )
-            .await
-    }
-
     /// Allows to remove a pending commit. Use this when backend rejects the commit
     /// you just sent e.g. if permissions have changed meanwhile.
     ///
@@ -157,7 +102,6 @@ impl CentralContext {
 
 #[cfg(test)]
 mod tests {
-    use openmls::prelude::Proposal;
     use wasm_bindgen_test::*;
 
     use crate::test_utils::*;
@@ -254,6 +198,7 @@ mod tests {
 
     mod clear_pending_proposal {
         use super::*;
+        use std::sync::Arc;
 
         #[apply(all_cred_cipher)]
         #[wasm_bindgen_test]
@@ -273,104 +218,27 @@ mod tests {
                         assert!(alice_central.pending_proposals(&id).await.is_empty());
 
                         let charlie_kp = charlie_central.get_one_key_package(&case).await;
-                        let add_ref = alice_central
-                            .context
-                            .new_add_proposal(&id, charlie_kp)
-                            .await
-                            .unwrap()
-                            .proposal_ref;
+                        alice_central.context.new_add_proposal(&id, charlie_kp).await.unwrap();
 
-                        let remove_ref = alice_central
+                        alice_central
                             .context
                             .new_remove_proposal(&id, bob_central.get_client_id().await)
                             .await
-                            .unwrap()
-                            .proposal_ref;
+                            .unwrap();
 
-                        let update_ref = alice_central
-                            .context
-                            .new_update_proposal(&id)
-                            .await
-                            .unwrap()
-                            .proposal_ref;
+                        alice_central.context.new_update_proposal(&id).await.unwrap();
 
                         assert_eq!(alice_central.pending_proposals(&id).await.len(), 3);
+                        // rejecting the next proposal will clear all proposals
                         alice_central
-                            .context
-                            .clear_pending_proposal(&id, add_ref)
-                            .await
-                            .unwrap();
-                        assert_eq!(alice_central.pending_proposals(&id).await.len(), 2);
-                        assert!(!alice_central
-                            .pending_proposals(&id)
-                            .await
-                            .into_iter()
-                            .any(|p| matches!(p.proposal(), Proposal::Add(_))));
-
-                        alice_central
-                            .context
-                            .clear_pending_proposal(&id, remove_ref)
-                            .await
-                            .unwrap();
-                        assert_eq!(alice_central.pending_proposals(&id).await.len(), 1);
-                        assert!(!alice_central
-                            .pending_proposals(&id)
-                            .await
-                            .into_iter()
-                            .any(|p| matches!(p.proposal(), Proposal::Remove(_))));
-
-                        alice_central
-                            .context
-                            .clear_pending_proposal(&id, update_ref)
-                            .await
-                            .unwrap();
+                            .central
+                            .provide_transport(Arc::new(CoreCryptoTransportAbortProvider::default()))
+                            .await;
+                        alice_central.context.new_update_proposal(&id).await.unwrap_err();
                         assert!(alice_central.pending_proposals(&id).await.is_empty());
-                        assert!(!alice_central
-                            .pending_proposals(&id)
-                            .await
-                            .into_iter()
-                            .any(|p| matches!(p.proposal(), Proposal::Update(_))));
                     })
                 },
             )
-            .await
-        }
-
-        #[apply(all_cred_cipher)]
-        #[wasm_bindgen_test]
-        pub async fn should_fail_when_conversation_not_found(case: TestCase) {
-            use crate::{mls, LeafError};
-
-            run_test_with_client_ids(case.clone(), ["alice"], move |[alice_central]| {
-                Box::pin(async move {
-                    let id = conversation_id();
-                    let simple_ref = MlsProposalRef::from(vec![0; case.ciphersuite().hash_length()]);
-                    let clear = alice_central.context.clear_pending_proposal(&id, simple_ref).await;
-                    assert!(matches!(clear.unwrap_err(), mls::conversation::error::Error::Leaf(LeafError::ConversationNotFound(conv_id)) if conv_id == id))
-                })
-            })
-            .await
-        }
-
-        #[apply(all_cred_cipher)]
-        #[wasm_bindgen_test]
-        pub async fn should_fail_when_proposal_ref_not_found(case: TestCase) {
-            run_test_with_client_ids(case.clone(), ["alice"], move |[mut alice_central]| {
-                Box::pin(async move {
-                    let id = conversation_id();
-                    alice_central
-                        .context
-                        .new_conversation(&id, case.credential_type, case.cfg.clone())
-                        .await
-                        .unwrap();
-                    assert!(alice_central.pending_proposals(&id).await.is_empty());
-                    let any_ref = MlsProposalRef::from(vec![0; case.ciphersuite().hash_length()]);
-                    let clear = alice_central.context.clear_pending_proposal(&id, any_ref.clone()).await;
-                    assert!(
-                        matches!(clear.unwrap_err(), Error::PendingProposalNotFound(prop_ref) if prop_ref == any_ref)
-                    )
-                })
-            })
             .await
         }
 
@@ -388,10 +256,14 @@ mod tests {
 
                     let init = cc.context.count_entities().await;
 
-                    let proposal_ref = cc.context.new_update_proposal(&id).await.unwrap().proposal_ref;
+                    cc.context.new_update_proposal(&id).await.unwrap();
                     assert_eq!(cc.pending_proposals(&id).await.len(), 1);
 
-                    cc.context.clear_pending_proposal(&id, proposal_ref).await.unwrap();
+                    // rejecting the next proposal will clear all proposals
+                    cc.central
+                        .provide_transport(Arc::new(CoreCryptoTransportAbortProvider::default()))
+                        .await;
+                    cc.context.new_update_proposal(&id).await.unwrap_err();
                     assert!(cc.pending_proposals(&id).await.is_empty());
 
                     // This whole flow should be idempotent.
