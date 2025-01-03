@@ -13,7 +13,7 @@ import {
     SESSION_ID,
     setup,
     teardown,
-} from "./utils";
+} from "./utils.js";
 import { afterEach, beforeEach, describe } from "mocha";
 import {
     CoreCryptoError,
@@ -21,8 +21,8 @@ import {
     E2eiConversationState,
     GroupInfoEncryptionType,
     RatchetTreeType,
-} from "../src/CoreCrypto";
-import CoreCryptoContext from "../src/CoreCryptoContext";
+} from "../src/CoreCrypto.js";
+import CoreCryptoContext from "../src/CoreCryptoContext.js";
 
 beforeEach(async () => {
     await setup();
@@ -875,5 +875,20 @@ describe("build", () => {
                 window.ccModule.buildMetadata().toJSON()
             )
         ).resolves.toMatchObject({ gitDescribe: expect.anything() });
+    });
+});
+
+describe("Error type mapping", () => {
+    it("should work for conversation already exists", async () => {
+        await ccInit(ALICE_ID);
+        await createConversation(ALICE_ID, CONV_ID);
+
+        const expectedErrorMessage = "Conversation already exists";
+
+        await expect(
+            createConversation(ALICE_ID, CONV_ID)
+            // wdio wraps the error and prepends the original message with
+            // the error type as prefix
+        ).rejects.toThrowError(new Error(`Error: ${expectedErrorMessage}`));
     });
 });
