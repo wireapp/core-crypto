@@ -338,16 +338,36 @@ class MLSTest {
 
         bob.transaction { it.processWelcomeMessage(welcome) }
 
-        // Now creating & clearing proposal
         val carolKp = carol.transaction { it.generateKeyPackages(1U).first() }
-        val addProposal = alice.transaction { it.newAddProposal(id, carolKp) }
-        val removeProposal = alice.transaction { it.newRemoveProposal(id, bobId.toClientId()) }
-        val updateProposal = alice.transaction { it.newUpdateProposal(id) }
 
-        val proposals = listOf(addProposal, removeProposal, updateProposal)
-        proposals.forEach { proposal ->
-            alice.transaction { it.clearPendingProposal(id, proposal.proposalRef) }
+        // Now creating & clearing proposal (indirectly through abort response from delivery service)
+        alice.provideTransport(MockMlsTransportAbortProvider())
+
+        val expectedException1 = assertFailsWith<CoreCryptoException.Mls> {
+            alice.transaction {
+                it.newAddProposal(
+                    id,
+                    carolKp
+                )
+            }
         }
+        assertIs<MlsException.MessageRejected>(expectedException1.exception)
+
+        val expectedException2 = assertFailsWith<CoreCryptoException.Mls> {
+            alice.transaction {
+                it.newRemoveProposal(
+                    id,
+                    bobId.toClientId()
+                )
+            }
+        }
+        assertIs<MlsException.MessageRejected>(expectedException2.exception)
+
+        val expectedException3 =
+            assertFailsWith<CoreCryptoException.Mls> { alice.transaction { it.newUpdateProposal(id) } }
+        assertIs<MlsException.MessageRejected>(expectedException3.exception)
+
+        alice.provideTransport(mockDeliveryService)
 
         val commitBefore = mockDeliveryService.getLatestCommit()
         // Since all proposals were cleared, this should not produce/send a commit
@@ -428,4 +448,23 @@ class  MockMlsTransportSuccessProvider : MockDeliveryService {
     override suspend fun getLatestWelcome(): Welcome = getLatestCommitBundle().welcome!!.toWelcome()
 
     override suspend fun getLatestCommit(): MlsMessage = getLatestCommitBundle().commit.toMlsMessage()
+}
+
+class MockMlsTransportAbortProvider : MockDeliveryService {
+
+    override suspend fun sendMessage(mlsMessage: ByteArray): MlsTransportResponse =
+        MlsTransportResponse.Abort("Abort provider always aborts")
+
+    override suspend fun sendCommitBundle(commitBundle: CommitBundle): MlsTransportResponse =
+        MlsTransportResponse.Abort("Abort provider always aborts")
+
+
+    override suspend fun getLatestCommitBundle(): CommitBundle =
+        throw Exception("Abort provider never stores commit bundles")
+
+    override suspend fun getLatestWelcome(): Welcome =
+        throw Exception("Abort provider never stores commit bundles")
+
+    override suspend fun getLatestCommit(): MlsMessage =
+        throw Exception("Abort provider never stores commit bundles")
 }
