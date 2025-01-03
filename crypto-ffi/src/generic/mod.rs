@@ -2503,3 +2503,16 @@ impl From<AcmeChallenge> for core_crypto::prelude::E2eiAcmeChallenge {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    #[test]
+    fn test_error_mapping() {
+        let duplicate_message_error = RecursiveError::mls_conversation("test duplicate message error")(
+            core_crypto::mls::conversation::Error::DuplicateMessage,
+        );
+        let mapped_error = CoreCryptoError::from(duplicate_message_error);
+        assert!(matches!(mapped_error, CoreCryptoError::Mls(MlsError::DuplicateMessage)));
+    }
+}
