@@ -225,31 +225,25 @@ mod tests {
                         alice_central.get_conversation_unchecked(&id).await.id()
                     );
 
-                    let proposal_bundle = alice_central
+                    alice_central
                         .context
                         .new_remove_proposal(&id, alice_central.get_client_id().await)
                         .await
                         .unwrap();
+                    let proposal = alice_central.mls_transport.latest_message().await;
 
                     let bob_hypothetical_position = 0;
                     let charlie_hypothetical_position = 1;
 
-                    let bob_decrypted_message = bob_central
-                        .context
-                        .decrypt_message(&id, &proposal_bundle.proposal.tls_serialize_detached().unwrap())
-                        .await
-                        .unwrap();
+                    let bob_decrypted_message = bob_central.context.decrypt_message(&id, &proposal).await.unwrap();
 
                     assert_eq!(
                         bob_decrypted_message.delay,
                         Some(DELAY_POS_LINEAR_INCR * bob_hypothetical_position)
                     );
 
-                    let charlie_decrypted_message = charlie_central
-                        .context
-                        .decrypt_message(&id, &proposal_bundle.proposal.tls_serialize_detached().unwrap())
-                        .await
-                        .unwrap();
+                    let charlie_decrypted_message =
+                        charlie_central.context.decrypt_message(&id, proposal).await.unwrap();
 
                     assert_eq!(
                         charlie_decrypted_message.delay,

@@ -1026,7 +1026,7 @@ pub(crate) mod tests {
                     let renewed_proposal = decrypted.proposals.first().unwrap();
                     bob_central
                         .context
-                        .decrypt_message(&id, renewed_proposal.proposal.to_bytes().unwrap())
+                        .decrypt_message(&id, renewed_proposal.to_bytes().unwrap())
                         .await
                         .unwrap();
 

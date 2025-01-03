@@ -206,7 +206,8 @@ mod tests {
                         .encrypt_message(&id, b"Hello Bob !")
                         .await
                         .unwrap();
-                    let proposal = alice_central.context.new_update_proposal(&id).await.unwrap().proposal;
+                    alice_central.context.new_update_proposal(&id).await.unwrap();
+                    let proposal = alice_central.mls_transport.latest_message().await;
                     alice_central
                         .context
                         .decrypt_message(&id, external_proposal.to_bytes().unwrap())
@@ -233,9 +234,12 @@ mod tests {
                     // And now Bob will have to decrypt those messages while he hasn't yet merged its commit
                     // To add more fun, he will buffer the messages in exactly the wrong order (to make
                     // sure he reapplies them in the right order afterwards)
-                    let messages = vec![commit.commit, external_proposal, proposal]
-                        .into_iter()
-                        .map(|m| m.to_bytes().unwrap());
+                    let messages = vec![
+                        commit.commit.to_bytes().unwrap(),
+                        external_proposal.to_bytes().unwrap(),
+                        proposal,
+                    ]
+                    .into_iter();
                     for m in messages {
                         let decrypt = bob_central.context.decrypt_message(&id, m).await;
                         assert!(matches!(decrypt.unwrap_err(), Error::BufferedFutureMessage));
@@ -337,7 +341,8 @@ mod tests {
                         .encrypt_message(&id, b"Hello Alice !")
                         .await
                         .unwrap();
-                    let proposal = bob_central.context.new_update_proposal(&id).await.unwrap().proposal;
+                    bob_central.context.new_update_proposal(&id).await.unwrap();
+                    let proposal = bob_central.mls_transport.latest_message().await;
                     bob_central
                         .context
                         .decrypt_message(&id, external_proposal.to_bytes().unwrap())
@@ -364,9 +369,12 @@ mod tests {
                     // And now Alice will have to decrypt those messages while he hasn't yet merged the commit
                     // To add more fun, he will buffer the messages in exactly the wrong order (to make
                     // sure he reapplies them in the right order afterwards)
-                    let messages = vec![commit.commit, external_proposal, proposal]
-                        .into_iter()
-                        .map(|m| m.to_bytes().unwrap());
+                    let messages = vec![
+                        commit.commit.to_bytes().unwrap(),
+                        external_proposal.to_bytes().unwrap(),
+                        proposal,
+                    ]
+                    .into_iter();
                     for m in messages {
                         let decrypt = alice_central.context.decrypt_message(&id, m).await;
                         assert!(matches!(decrypt.unwrap_err(), Error::BufferedFutureMessage));

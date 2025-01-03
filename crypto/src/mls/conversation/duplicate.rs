@@ -169,30 +169,21 @@ mod tests {
                     .unwrap();
                 alice_central.invite_all(&case, &id, [&bob_central]).await.unwrap();
 
-                let proposal = alice_central.context.new_update_proposal(&id).await.unwrap().proposal;
+                alice_central.context.new_update_proposal(&id).await.unwrap();
+                let proposal = alice_central.mls_transport.latest_message().await;
 
                 // decrypt once ... ok
-                bob_central
-                    .context
-                    .decrypt_message(&id, &proposal.to_bytes().unwrap())
-                    .await
-                    .unwrap();
+                bob_central.context.decrypt_message(&id, &proposal).await.unwrap();
 
                 // decrypt twice ... not ok
-                let decryption = bob_central
-                    .context
-                    .decrypt_message(&id, &proposal.to_bytes().unwrap())
-                    .await;
+                let decryption = bob_central.context.decrypt_message(&id, &proposal).await;
                 assert!(matches!(decryption.unwrap_err(), Error::DuplicateMessage));
 
                 // advance Bob's epoch to trigger failure
                 bob_central.context.commit_pending_proposals(&id).await.unwrap();
 
                 // Epoch has advanced so we cannot detect duplicates anymore
-                let decryption = bob_central
-                    .context
-                    .decrypt_message(&id, &proposal.to_bytes().unwrap())
-                    .await;
+                let decryption = bob_central.context.decrypt_message(&id, &proposal).await;
                 assert!(matches!(decryption.unwrap_err(), Error::StaleProposal));
             })
         })
