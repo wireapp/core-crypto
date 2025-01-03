@@ -14,46 +14,21 @@
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see http://www.gnu.org/licenses/.
 
-use openmls::prelude::{hash_ref::ProposalRef, KeyPackage};
+use openmls::framing::MlsMessageOut;
+use openmls::prelude::KeyPackage;
+use std::ops::DerefMut;
 
 use mls_crypto_provider::MlsCryptoProvider;
 
 use super::{Error, Result};
 use crate::{
     mls::{ClientId, ConversationId, MlsConversation},
-    prelude::{Client, MlsProposalBundle},
+    prelude::Client,
     RecursiveError,
 };
 
 use crate::context::CentralContext;
-
-/// Abstraction over a [openmls::prelude::hash_ref::ProposalRef] to deal with conversions
-#[derive(Debug, Clone, Eq, PartialEq, derive_more::From, derive_more::Deref, derive_more::Display)]
-pub struct MlsProposalRef(ProposalRef);
-
-impl From<Vec<u8>> for MlsProposalRef {
-    fn from(value: Vec<u8>) -> Self {
-        Self(ProposalRef::from_slice(value.as_slice()))
-    }
-}
-
-impl MlsProposalRef {
-    /// Duh
-    pub fn into_inner(self) -> ProposalRef {
-        self.0
-    }
-
-    pub(crate) fn to_bytes(&self) -> Vec<u8> {
-        self.0.as_slice().to_vec()
-    }
-}
-
-#[cfg(test)]
-impl From<MlsProposalRef> for Vec<u8> {
-    fn from(prop_ref: MlsProposalRef) -> Self {
-        prop_ref.0.as_slice().to_vec()
-    }
-}
+use crate::e2e_identity::init_certificates::NewCrlDistributionPoint;
 
 /// Internal representation of proposal to ease further additions
 // To solve the clippy issue we'd need to box the `KeyPackage`, but we can't because we need an
@@ -76,17 +51,20 @@ impl MlsProposal {
         self,
         client: &Client,
         backend: &MlsCryptoProvider,
-        mut conversation: impl std::ops::DerefMut<Target = MlsConversation>,
-    ) -> Result<MlsProposalBundle> {
+        conversation: &mut MlsConversation,
+    ) -> Result<(MlsMessageOut, NewCrlDistributionPoint)> {
         let proposal = match self {
             MlsProposal::Add(key_package) => (*conversation)
                 .propose_add_member(client, backend, key_package.into())
                 .await
                 .map_err(RecursiveError::mls_conversation("proposing to add member"))?,
-            MlsProposal::Update => (*conversation)
-                .propose_self_update(client, backend)
-                .await
-                .map_err(RecursiveError::mls_conversation("proposing self update"))?,
+            MlsProposal::Update => (
+                conversation
+                    .propose_self_update(client, backend)
+                    .await
+                    .map_err(RecursiveError::mls_conversation("proposing self update"))?,
+                None.into(),
+            ),
             MlsProposal::Remove(client_id) => {
                 let index = conversation
                     .group
@@ -94,10 +72,13 @@ impl MlsProposal {
                     .find(|kp| kp.credential.identity() == client_id.as_slice())
                     .ok_or(Error::ClientNotFound(client_id))
                     .map(|kp| kp.index)?;
-                (*conversation)
-                    .propose_remove_member(client, backend, index)
-                    .await
-                    .map_err(RecursiveError::mls_conversation("proposing to remove member"))?
+                (
+                    conversation
+                        .propose_remove_member(client, backend, index)
+                        .await
+                        .map_err(RecursiveError::mls_conversation("proposing to remove member"))?,
+                    None.into(),
+                )
             }
         };
         Ok(proposal)
@@ -107,20 +88,26 @@ impl MlsProposal {
 impl CentralContext {
     /// Creates a new Add proposal
     #[cfg_attr(test, crate::idempotent)]
-    pub async fn new_add_proposal(&self, id: &ConversationId, key_package: KeyPackage) -> Result<MlsProposalBundle> {
+    pub async fn new_add_proposal(
+        &self,
+        id: &ConversationId,
+        key_package: KeyPackage,
+    ) -> Result<NewCrlDistributionPoint> {
         self.new_proposal(id, MlsProposal::Add(key_package)).await
     }
 
     /// Creates a new Add proposal
     #[cfg_attr(test, crate::idempotent)]
-    pub async fn new_remove_proposal(&self, id: &ConversationId, client_id: ClientId) -> Result<MlsProposalBundle> {
-        self.new_proposal(id, MlsProposal::Remove(client_id)).await
+    pub async fn new_remove_proposal(&self, id: &ConversationId, client_id: ClientId) -> Result<()> {
+        self.new_proposal(id, MlsProposal::Remove(client_id)).await?;
+        Ok(())
     }
 
     /// Creates a new Add proposal
     #[cfg_attr(test, crate::dispotent)]
-    pub async fn new_update_proposal(&self, id: &ConversationId) -> Result<MlsProposalBundle> {
-        self.new_proposal(id, MlsProposal::Update).await
+    pub async fn new_update_proposal(&self, id: &ConversationId) -> Result<()> {
+        self.new_proposal(id, MlsProposal::Update).await?;
+        Ok(())
     }
 
     /// Creates a new proposal within a group
@@ -135,7 +122,7 @@ impl CentralContext {
     /// # Errors
     /// If the conversation is not found, an error will be returned. Errors from OpenMls can be
     /// returned as well, when for example there's a commit pending to be merged
-    async fn new_proposal(&self, id: &ConversationId, proposal: MlsProposal) -> Result<MlsProposalBundle> {
+    async fn new_proposal(&self, id: &ConversationId, proposal: MlsProposal) -> Result<NewCrlDistributionPoint> {
         let conversation = self
             .get_conversation(id)
             .await
@@ -144,18 +131,21 @@ impl CentralContext {
             .mls_client()
             .await
             .map_err(RecursiveError::root("getting mls client"))?;
-        proposal
+        let mut conversation = conversation.write().await;
+        let (proposal, new_crl_distribution_point) = proposal
             .create(
                 client,
                 &self
                     .mls_provider()
                     .await
                     .map_err(RecursiveError::root("getting mls provider"))?,
-                conversation.write().await,
+                conversation.deref_mut(),
             )
             .await?;
         self.send_and_merge_or_discard_proposal(conversation.deref_mut(), proposal)
             .await
+            .map_err(RecursiveError::mls_conversation("sending proposal"))?;
+        Ok(new_crl_distribution_point)
     }
 }
 
@@ -256,16 +246,13 @@ mod tests {
                     assert_eq!(alice_central.get_conversation_unchecked(&id).await.members().len(), 2);
                     assert_eq!(bob_central.get_conversation_unchecked(&id).await.members().len(), 2);
 
-                    let remove_proposal = alice_central
+                    alice_central
                         .context
                         .new_remove_proposal(&id, bob_central.get_client_id().await)
                         .await
                         .unwrap();
-                    bob_central
-                        .context
-                        .decrypt_message(&id, remove_proposal.proposal.to_bytes().unwrap())
-                        .await
-                        .unwrap();
+                    let remove_proposal = alice_central.mls_transport.latest_message().await;
+                    bob_central.context.decrypt_message(&id, remove_proposal).await.unwrap();
                     alice_central.context.commit_pending_proposals(&id).await.unwrap();
                     assert_eq!(alice_central.get_conversation_unchecked(&id).await.members().len(), 1);
 

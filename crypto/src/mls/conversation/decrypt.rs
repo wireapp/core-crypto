@@ -9,6 +9,7 @@
 //! | 1+ pend. Proposal | ✅              | ✅              |
 
 use log::{debug, info};
+use openmls::framing::MlsMessageOut;
 use openmls::{
     framing::errors::{MessageDecryptionError, SecretTreeError},
     group::StagedCommit,
@@ -41,7 +42,7 @@ use crate::{
         ClientId, ConversationId, MlsConversation,
     },
     obfuscate::Obfuscated,
-    prelude::{E2eiConversationState, MlsProposalBundle, WireIdentity},
+    prelude::{E2eiConversationState, WireIdentity},
     KeystoreError, MlsError, RecursiveError,
 };
 
@@ -55,7 +56,7 @@ pub struct MlsConversationDecryptMessage {
     /// This will contain either:
     /// * local pending proposal not in the accepted commit
     /// * If there is a pending commit, its proposals which are not in the accepted commit
-    pub proposals: Vec<MlsProposalBundle>,
+    pub proposals: Vec<MlsMessageOut>,
     /// Is the conversation still active after receiving this commit aka has the user been removed from the group
     pub is_active: bool,
     /// Delay time in seconds to feed caller timer for committing
@@ -81,7 +82,7 @@ pub struct MlsBufferedConversationDecryptMessage {
     /// see [MlsConversationDecryptMessage]
     pub app_msg: Option<Vec<u8>>,
     /// see [MlsConversationDecryptMessage]
-    pub proposals: Vec<MlsProposalBundle>,
+    pub proposals: Vec<MlsMessageOut>,
     /// see [MlsConversationDecryptMessage]
     pub is_active: bool,
     /// see [MlsConversationDecryptMessage]
@@ -619,12 +620,9 @@ mod tests {
                         // Alice will decrypt the commit but musn't renew the proposal to add Charlie
                         let charlie_kp = charlie_central.get_one_key_package(&case).await;
 
-                        let add_charlie_proposal = bob_central.context.new_add_proposal(&id, charlie_kp).await.unwrap();
-                        alice_central
-                            .context
-                            .decrypt_message(&id, add_charlie_proposal.proposal.to_bytes().unwrap())
-                            .await
-                            .unwrap();
+                        bob_central.context.new_add_proposal(&id, charlie_kp).await.unwrap();
+                        let proposal = bob_central.mls_transport.latest_message().await;
+                        alice_central.context.decrypt_message(&id, proposal).await.unwrap();
 
                         bob_central.context.update_keying_material(&id).await.unwrap();
                         let commit = bob_central.mls_transport.latest_commit().await;
@@ -697,15 +695,12 @@ mod tests {
                         assert!(!proposals.is_empty());
                         assert_eq!(alice_central.pending_proposals(&id).await.len(), 1);
                         let renewed_proposal = proposals.first().unwrap();
-                        assert_eq!(
-                            commit_epoch.as_u64() + 1,
-                            renewed_proposal.proposal.epoch().unwrap().as_u64()
-                        );
+                        assert_eq!(commit_epoch.as_u64() + 1, renewed_proposal.epoch().unwrap().as_u64());
 
                         // Let's use this proposal to see if it works
                         bob_central
                             .context
-                            .decrypt_message(&id, renewed_proposal.proposal.to_bytes().unwrap())
+                            .decrypt_message(&id, renewed_proposal.to_bytes().unwrap())
                             .await
                             .unwrap();
                         assert_eq!(bob_central.pending_proposals(&id).await.len(), 1);
@@ -891,18 +886,10 @@ mod tests {
                         alice_central.invite_all(&case, &id, [&bob_central]).await.unwrap();
 
                         let charlie_kp = charlie_central.get_one_key_package(&case).await;
-                        let proposal = alice_central
-                            .context
-                            .new_add_proposal(&id, charlie_kp)
-                            .await
-                            .unwrap()
-                            .proposal;
+                        alice_central.context.new_add_proposal(&id, charlie_kp).await.unwrap();
+                        let proposal = alice_central.mls_transport.latest_message().await;
 
-                        let decrypted = bob_central
-                            .context
-                            .decrypt_message(&id, proposal.to_bytes().unwrap())
-                            .await
-                            .unwrap();
+                        let decrypted = bob_central.context.decrypt_message(&id, proposal).await.unwrap();
 
                         assert_eq!(bob_central.get_conversation_unchecked(&id).await.members().len(), 2);
                         // if 'decrypt_message' is not durable the commit won't contain the add proposal
@@ -930,11 +917,12 @@ mod tests {
                         .unwrap();
                     alice_central.invite_all(&case, &id, [&bob_central]).await.unwrap();
 
-                    let proposal = alice_central.context.new_update_proposal(&id).await.unwrap().proposal;
+                    alice_central.context.new_update_proposal(&id).await.unwrap();
+                    let proposal = alice_central.mls_transport.latest_message().await;
 
                     let sender_client_id = bob_central
                         .context
-                        .decrypt_message(&id, proposal.to_bytes().unwrap())
+                        .decrypt_message(&id, proposal)
                         .await
                         .unwrap()
                         .sender_client_id;
@@ -1199,14 +1187,9 @@ mod tests {
                     alice_central.invite_all(&case, &id, [&bob_central]).await.unwrap();
 
                     // Alice generates a bunch of soon to be outdated messages
-                    let old_proposal = alice_central
-                        .context
-                        .new_update_proposal(&id)
-                        .await
-                        .unwrap()
-                        .proposal
-                        .to_bytes()
-                        .unwrap();
+                    alice_central.context.new_update_proposal(&id).await.unwrap();
+
+                    let old_proposal = alice_central.mls_transport.latest_message().await;
                     alice_central
                         .get_conversation_unchecked(&id)
                         .await

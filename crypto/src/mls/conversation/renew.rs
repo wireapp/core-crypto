@@ -1,12 +1,12 @@
 use core_crypto_keystore::entities::MlsEncryptionKeyPair;
-use openmls::prelude::{LeafNode, LeafNodeIndex, Proposal, QueuedProposal, Sender, StagedCommit};
+use openmls::prelude::{LeafNode, LeafNodeIndex, MlsMessageOut, Proposal, QueuedProposal, Sender, StagedCommit};
 use openmls_traits::OpenMlsCryptoProvider;
 
 use mls_crypto_provider::MlsCryptoProvider;
 
 use super::{Error, Result};
 use crate::{
-    prelude::{Client, MlsConversation, MlsProposalBundle},
+    prelude::{Client, MlsConversation},
     KeystoreError, RecursiveError,
 };
 
@@ -103,26 +103,30 @@ impl MlsConversation {
         &mut self,
         client: &Client,
         backend: &MlsCryptoProvider,
-        proposals: impl Iterator<Item = QueuedProposal>,
+        queued_proposals: impl Iterator<Item = QueuedProposal>,
         needs_update: bool,
-    ) -> Result<Vec<MlsProposalBundle>> {
-        let mut bundle = vec![];
+    ) -> Result<Vec<MlsMessageOut>> {
+        let mut renewed_proposals: Vec<MlsMessageOut> = vec![];
         let is_external = |p: &QueuedProposal| matches!(p.sender(), Sender::External(_) | Sender::NewMemberProposal);
-        let proposals = proposals.filter(|p| !is_external(p));
-        for proposal in proposals {
-            let msg = match proposal.proposal {
-                Proposal::Add(add) => self.propose_add_member(client, backend, add.key_package.into()).await?,
+        let queued_proposals = queued_proposals.filter(|p| !is_external(p));
+        for proposal in queued_proposals {
+            let renewed_proposal = match proposal.proposal {
+                Proposal::Add(add) => {
+                    self.propose_add_member(client, backend, add.key_package.into())
+                        .await?
+                        .0
+                }
                 Proposal::Remove(remove) => self.propose_remove_member(client, backend, remove.removed()).await?,
                 Proposal::Update(update) => self.renew_update(client, backend, Some(update.leaf_node())).await?,
                 _ => return Err(Error::ProposalVariantCannotBeRenewed),
             };
-            bundle.push(msg);
+            renewed_proposals.push(renewed_proposal);
         }
         if needs_update {
             let proposal = self.renew_update(client, backend, None).await?;
-            bundle.push(proposal);
+            renewed_proposals.push(proposal);
         }
-        Ok(bundle)
+        Ok(renewed_proposals)
     }
 
     /// Renews an update proposal by considering the explicit LeafNode supplied in the proposal
@@ -133,7 +137,7 @@ impl MlsConversation {
         client: &Client,
         backend: &MlsCryptoProvider,
         leaf_node: Option<&LeafNode>,
-    ) -> Result<MlsProposalBundle> {
+    ) -> Result<MlsMessageOut> {
         if let Some(leaf_node) = leaf_node {
             // Creating an update rekeys the LeafNode everytime. Hence we need to clear the previous
             // encryption key from the keystore otherwise we would have a leak
@@ -248,15 +252,12 @@ mod tests {
                         alice_central.invite_all(&case, &id, [&bob_central]).await.unwrap();
 
                         assert!(alice_central.pending_proposals(&id).await.is_empty());
-                        let proposal = alice_central.context.new_update_proposal(&id).await.unwrap().proposal;
+                        alice_central.context.new_update_proposal(&id).await.unwrap();
+                        let proposal = alice_central.mls_transport.latest_message().await;
                         assert_eq!(alice_central.pending_proposals(&id).await.len(), 1);
 
                         // Bob has Alice's update proposal
-                        bob_central
-                            .context
-                            .decrypt_message(&id, proposal.to_bytes().unwrap())
-                            .await
-                            .unwrap();
+                        bob_central.context.decrypt_message(&id, proposal).await.unwrap();
 
                         bob_central.context.update_keying_material(&id).await.unwrap();
                         let commit = bob_central.mls_transport.latest_commit().await;
@@ -272,12 +273,9 @@ mod tests {
                         assert!(alice_central.pending_proposals(&id).await.is_empty());
                         assert_eq!(proposals.len(), alice_central.pending_proposals(&id).await.len());
 
-                        let proposal = alice_central.context.new_update_proposal(&id).await.unwrap().proposal;
-                        bob_central
-                            .context
-                            .decrypt_message(&id, proposal.to_bytes().unwrap())
-                            .await
-                            .unwrap();
+                        alice_central.context.new_update_proposal(&id).await.unwrap();
+                        let proposal = alice_central.mls_transport.latest_message().await;
+                        bob_central.context.decrypt_message(&id, proposal).await.unwrap();
                         bob_central.context.update_keying_material(&id).await.unwrap();
                         let commit = bob_central.mls_transport.latest_commit().await;
                         let proposals = alice_central
@@ -314,13 +312,10 @@ mod tests {
                             .await
                             .unwrap();
 
-                        let proposal = bob_central.context.new_update_proposal(&id).await.unwrap().proposal;
+                        bob_central.context.new_update_proposal(&id).await.unwrap();
+                        let proposal = bob_central.mls_transport.latest_message().await;
                         assert!(alice_central.pending_proposals(&id).await.is_empty());
-                        alice_central
-                            .context
-                            .decrypt_message(&id, proposal.to_bytes().unwrap())
-                            .await
-                            .unwrap();
+                        alice_central.context.decrypt_message(&id, proposal).await.unwrap();
                         assert_eq!(alice_central.pending_proposals(&id).await.len(), 1);
 
                         // Charlie does not have other proposals, it creates a commit
@@ -456,17 +451,9 @@ mod tests {
 
                         // Bob will propose adding Debbie
                         let debbie_kp = debbie_central.get_one_key_package(&case).await;
-                        let proposal = bob_central
-                            .context
-                            .new_add_proposal(&id, debbie_kp)
-                            .await
-                            .unwrap()
-                            .proposal;
-                        alice_central
-                            .context
-                            .decrypt_message(&id, proposal.to_bytes().unwrap())
-                            .await
-                            .unwrap();
+                        bob_central.context.new_add_proposal(&id, debbie_kp).await.unwrap();
+                        let proposal = bob_central.mls_transport.latest_message().await;
+                        alice_central.context.decrypt_message(&id, proposal).await.unwrap();
                         assert_eq!(alice_central.pending_proposals(&id).await.len(), 1);
 
                         // But Charlie will commit meanwhile
@@ -652,18 +639,14 @@ mod tests {
                             .await
                             .unwrap();
 
-                        let proposal = bob_central
+                        bob_central
                             .context
                             .new_remove_proposal(&id, charlie_central.get_client_id().await)
                             .await
-                            .unwrap()
-                            .proposal;
-                        assert!(alice_central.pending_proposals(&id).await.is_empty());
-                        alice_central
-                            .context
-                            .decrypt_message(&id, proposal.to_bytes().unwrap())
-                            .await
                             .unwrap();
+                        let proposal = bob_central.mls_transport.latest_message().await;
+                        assert!(alice_central.pending_proposals(&id).await.is_empty());
+                        alice_central.context.decrypt_message(&id, proposal).await.unwrap();
                         assert_eq!(alice_central.pending_proposals(&id).await.len(), 1);
 
                         charlie_central.context.update_keying_material(&id).await.unwrap();
