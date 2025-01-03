@@ -688,16 +688,13 @@ mod tests {
                             .unwrap();
                         alice_central.invite_all(&case, &id, [&bob_central]).await.unwrap();
 
-                        let proposal = alice_central
+                        alice_central
                             .context
                             .new_add_proposal(&id, guest_central.get_one_key_package(&case).await)
                             .await
                             .unwrap();
-                        bob_central
-                            .context
-                            .decrypt_message(&id, proposal.proposal.to_bytes().unwrap())
-                            .await
-                            .unwrap();
+                        let proposal = alice_central.mls_transport.latest_message().await;
+                        bob_central.context.decrypt_message(&id, proposal).await.unwrap();
 
                         alice_central
                             .context
@@ -874,13 +871,13 @@ mod tests {
 
                         // proposing adding charlie
                         let charlie_kp = charlie_central.get_one_key_package(&case).await;
-                        let add_charlie_proposal =
-                            alice_central.context.new_add_proposal(&id, charlie_kp).await.unwrap();
+                        alice_central.context.new_add_proposal(&id, charlie_kp).await.unwrap();
+                        let add_charlie_proposal = alice_central.mls_transport.latest_message().await;
 
                         // receiving the proposal on Bob's side
                         bob_central
                             .context
-                            .decrypt_message(&id, add_charlie_proposal.proposal.to_bytes().unwrap())
+                            .decrypt_message(&id, add_charlie_proposal)
                             .await
                             .unwrap();
 
@@ -961,17 +958,13 @@ mod tests {
                             .unwrap();
                         alice_central.invite_all(&case, &id, [&bob_central]).await.unwrap();
 
-                        let proposal = alice_central
+                        alice_central
                             .context
                             .new_add_proposal(&id, guest_central.get_one_key_package(&case).await)
                             .await
-                            .unwrap()
-                            .proposal;
-                        bob_central
-                            .context
-                            .decrypt_message(&id, proposal.to_bytes().unwrap())
-                            .await
                             .unwrap();
+                        let proposal = alice_central.mls_transport.latest_message().await;
+                        bob_central.context.decrypt_message(&id, proposal).await.unwrap();
 
                         alice_central.context.update_keying_material(&id).await.unwrap();
                         let MlsCommitBundle { commit, welcome, .. } =
@@ -1084,18 +1077,15 @@ mod tests {
                             .await
                             .unwrap();
                         alice_central.invite_all(&case, &id, [&bob_central]).await.unwrap();
-                        let proposal = bob_central
+                        bob_central
                             .context
                             .new_add_proposal(&id, charlie_central.get_one_key_package(&case).await)
                             .await
                             .unwrap();
+                        let proposal = bob_central.mls_transport.latest_message().await;
                         assert!(!bob_central.pending_proposals(&id).await.is_empty());
                         assert_eq!(bob_central.get_conversation_unchecked(&id).await.members().len(), 2);
-                        alice_central
-                            .context
-                            .decrypt_message(&id, proposal.proposal.to_bytes().unwrap())
-                            .await
-                            .unwrap();
+                        alice_central.context.decrypt_message(&id, proposal).await.unwrap();
 
                         alice_central.context.commit_pending_proposals(&id).await.unwrap();
                         let commit = alice_central.mls_transport.latest_commit_bundle().await.commit;
@@ -1234,7 +1224,8 @@ mod tests {
                         .unwrap();
                     alice_central.invite_all(&case, &id, [&bob_central]).await.unwrap();
 
-                    let proposal1 = alice_central.context.new_update_proposal(&id).await.unwrap().proposal;
+                    alice_central.context.new_update_proposal(&id).await.unwrap();
+                    let proposal1 = alice_central.mls_transport.latest_message().await;
                     let proposal2 = proposal1.clone();
                     alice_central
                         .get_conversation_unchecked(&id)
@@ -1247,17 +1238,9 @@ mod tests {
                     let commit2 = commit1.clone();
 
                     // replayed encrypted proposal should fail
-                    bob_central
-                        .context
-                        .decrypt_message(&id, proposal1.to_bytes().unwrap())
-                        .await
-                        .unwrap();
+                    bob_central.context.decrypt_message(&id, proposal1).await.unwrap();
                     assert!(matches!(
-                        bob_central
-                            .context
-                            .decrypt_message(&id, proposal2.to_bytes().unwrap())
-                            .await
-                            .unwrap_err(),
+                        bob_central.context.decrypt_message(&id, proposal2).await.unwrap_err(),
                         Error::DuplicateMessage
                     ));
                     bob_central
