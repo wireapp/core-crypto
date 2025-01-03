@@ -20,12 +20,22 @@ package com.wire.crypto
 
 import com.wire.crypto.uniffi.CommitBundle
 import com.wire.crypto.uniffi.MlsTransportResponse
-import kotlinx.coroutines.*
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.joinAll
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.withContext
 import org.assertj.core.api.AssertionsForInterfaceTypes.assertThat
 import org.assertj.core.api.AssertionsForInterfaceTypes.assertThatNoException
 import java.nio.file.Files
-import kotlin.test.*
+import kotlin.test.BeforeTest
+import kotlin.test.Test
+import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
+import kotlin.test.assertIs
 import kotlin.time.Duration.Companion.milliseconds
 
 class MLSTest {
@@ -327,16 +337,39 @@ class MLSTest {
 
         bob.transaction { it.processWelcomeMessage(welcome) }
 
-        // Now creating & clearing proposal
         val carolKp = carol.transaction { it.generateKeyPackages(1U).first() }
-        val addProposal = alice.transaction { it.newAddProposal(id, carolKp) }
-        val removeProposal = alice.transaction { it.newRemoveProposal(id, bobId.toClientId()) }
-        val updateProposal = alice.transaction { it.newUpdateProposal(id) }
 
-        val proposals = listOf(addProposal, removeProposal, updateProposal)
-        proposals.forEach { proposal ->
-            alice.transaction { it.clearPendingProposal(id, proposal.proposalRef) }
+        // Now creating & clearing proposal (indirectly through abort response from delivery service)
+        alice.provideTransport(MockMlsTransportAbortProvider())
+
+        val expectedException1 = assertFailsWith<CoreCryptoException.Mls> {
+            alice.transaction {
+                it.newAddProposal(
+                    id,
+                    carolKp
+                )
+            }
         }
+        //FIXME(SimonThormeyer) this should be MlsException.MessageRejected
+        assertIs<MlsException.Other>(expectedException1.exception)
+
+        val expectedException2 = assertFailsWith<CoreCryptoException.Mls> {
+            alice.transaction {
+                it.newRemoveProposal(
+                    id,
+                    bobId.toClientId()
+                )
+            }
+        }
+        //FIXME(SimonThormeyer) this should be MlsException.MessageRejected
+        assertIs<MlsException.Other>(expectedException2.exception)
+
+        val expectedException3 =
+            assertFailsWith<CoreCryptoException.Mls> { alice.transaction { it.newUpdateProposal(id) } }
+        //FIXME(SimonThormeyer) this should be MlsException.MessageRejected
+        assertIs<MlsException.Other>(expectedException3.exception)
+
+        alice.provideTransport(mockDeliveryService)
 
         val commitBefore = mockDeliveryService.getLatestCommit()
         // Since all proposals were cleared, this should not produce/send a commit
@@ -417,4 +450,23 @@ class  MockMlsTransportSuccessProvider : MockDeliveryService {
     override suspend fun getLatestWelcome(): Welcome = getLatestCommitBundle().welcome!!.toWelcome()
 
     override suspend fun getLatestCommit(): MlsMessage = getLatestCommitBundle().commit.toMlsMessage()
+}
+
+class MockMlsTransportAbortProvider : MockDeliveryService {
+
+    override suspend fun sendMessage(mlsMessage: ByteArray): MlsTransportResponse =
+        MlsTransportResponse.Abort("Abort provider always aborts")
+
+    override suspend fun sendCommitBundle(commitBundle: CommitBundle): MlsTransportResponse =
+        MlsTransportResponse.Abort("Abort provider always aborts")
+
+
+    override suspend fun getLatestCommitBundle(): CommitBundle =
+        throw Exception("Abort provider never stores commit bundles")
+
+    override suspend fun getLatestWelcome(): Welcome =
+        throw Exception("Abort provider never stores commit bundles")
+
+    override suspend fun getLatestCommit(): MlsMessage =
+        throw Exception("Abort provider never stores commit bundles")
 }
