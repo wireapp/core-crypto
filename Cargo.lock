@@ -990,6 +990,7 @@ dependencies = [
  "js-sys",
  "log",
  "log-reload",
+ "openmls",
  "proteus-wasm",
  "serde",
  "serde-wasm-bindgen",

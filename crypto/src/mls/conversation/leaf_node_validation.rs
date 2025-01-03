@@ -115,8 +115,8 @@ mod tests {
                             .new_keypackage(&case, Lifetime::new(expiration_time))
                             .await;
 
-                        let proposal = alice_central.context.new_add_proposal(&id, invalid_kp).await.unwrap();
-                        let proposal = proposal.proposal.to_bytes().unwrap();
+                        alice_central.context.new_add_proposal(&id, invalid_kp).await.unwrap();
+                        let proposal = alice_central.mls_transport.latest_message().await;
 
                         let elapsed = start.elapsed();
                         // Give time to the certificate to expire

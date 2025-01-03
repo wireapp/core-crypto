@@ -36,7 +36,7 @@ use core_crypto::{
         ClientIdentifier, EntropySeed, KeyPackageIn, KeyPackageRef, MlsBufferedConversationDecryptMessage, MlsCentral,
         MlsCentralConfiguration, MlsCiphersuite, MlsCommitBundle, MlsConversationConfiguration,
         MlsConversationDecryptMessage, MlsConversationInitBundle, MlsCustomConfiguration, MlsGroupInfoBundle,
-        MlsProposalBundle, VerifiableGroupInfo,
+        VerifiableGroupInfo,
     },
     InnermostErrorMessage, RecursiveError,
 };
@@ -604,23 +604,20 @@ impl From<MlsGroupInfoBundle> for GroupInfoBundle {
     }
 }
 
-#[derive(Debug, uniffi::Record)]
-pub struct ProposalBundle {
-    pub proposal: Vec<u8>,
-    pub proposal_ref: Vec<u8>,
-    pub crl_new_distribution_points: Option<Vec<String>>,
-}
+#[derive(Debug, Clone, derive_more::From, derive_more::Into)]
+pub struct Proposal(Vec<u8>);
 
-impl TryFrom<MlsProposalBundle> for ProposalBundle {
+uniffi::custom_newtype!(Proposal, Vec<u8>);
+
+impl TryFrom<openmls::prelude::MlsMessageOut> for Proposal {
     type Error = CoreCryptoError;
 
-    fn try_from(msg: MlsProposalBundle) -> Result<Self, Self::Error> {
-        let (proposal, proposal_ref, crl_new_distribution_points) = msg.to_bytes()?;
-        Ok(Self {
-            proposal,
-            proposal_ref,
-            crl_new_distribution_points: crl_new_distribution_points.into(),
-        })
+    fn try_from(msg: openmls::prelude::MlsMessageOut) -> Result<Self, Self::Error> {
+        let proposal = msg
+            .to_bytes()
+            .map_err(core_crypto::MlsError::wrap("converting proposal mls message to bytes"))
+            .map_err(core_crypto::Error::from)?;
+        Ok(proposal.into())
     }
 }
 
@@ -651,7 +648,7 @@ impl TryFrom<MlsConversationInitBundle> for ConversationInitBundle {
 /// See [core_crypto::prelude::decrypt::MlsConversationDecryptMessage]
 pub struct DecryptedMessage {
     pub message: Option<Vec<u8>>,
-    pub proposals: Vec<ProposalBundle>,
+    pub proposals: Vec<Proposal>,
     pub is_active: bool,
     pub commit_delay: Option<u64>,
     pub sender_client_id: Option<ClientId>,
@@ -665,7 +662,7 @@ pub struct DecryptedMessage {
 /// because Uniffi does not support recursive structs
 pub struct BufferedDecryptedMessage {
     pub message: Option<Vec<u8>>,
-    pub proposals: Vec<ProposalBundle>,
+    pub proposals: Vec<Proposal>,
     pub is_active: bool,
     pub commit_delay: Option<u64>,
     pub sender_client_id: Option<ClientId>,
@@ -681,7 +678,14 @@ impl TryFrom<MlsConversationDecryptMessage> for DecryptedMessage {
         let proposals = from
             .proposals
             .into_iter()
-            .map(ProposalBundle::try_from)
+            .map(|mls_message| {
+                mls_message
+                    .to_bytes()
+                    .map(Proposal::from)
+                    .map_err(core_crypto::MlsError::wrap("converting mls message to bytes"))
+                    .map_err(core_crypto::Error::from)
+                    .map_err(CoreCryptoError::from)
+            })
             .collect::<CoreCryptoResult<Vec<_>>>()?;
 
         let buffered_messages = if let Some(bm) = from.buffered_messages {
@@ -715,7 +719,7 @@ impl TryFrom<MlsBufferedConversationDecryptMessage> for BufferedDecryptedMessage
         let proposals = from
             .proposals
             .into_iter()
-            .map(ProposalBundle::try_from)
+            .map(Proposal::try_from)
             .collect::<CoreCryptoResult<Vec<_>>>()?;
 
         Ok(Self {
@@ -1486,7 +1490,7 @@ impl CoreCrypto {
         &self,
         conversation_id: Vec<u8>,
         keypackage: Vec<u8>,
-    ) -> CoreCryptoResult<ProposalBundle> {
+    ) -> CoreCryptoResult<NewCrlDistributionPoints> {
         let kp = KeyPackageIn::tls_deserialize(&mut keypackage.as_slice())
             .map_err(core_crypto::mls::conversation::Error::tls_deserialize("keypackage"))
             .map_err(RecursiveError::mls_conversation("deserializing keypackage from tls"))?;
@@ -1496,38 +1500,33 @@ impl CoreCrypto {
                 .await
                 .map_err(RecursiveError::mls("creating new add proposal"))
         })
-        .await?
-        .try_into()
+        .await
+        .map(|new_crl_distribution_point| -> Option<Vec<_>> { new_crl_distribution_point.into() })
+        .map(Into::into)
     }
 
     /// See [core_crypto::context::CentralContext::new_update_proposal]
     #[deprecated = "Please create a transaction in Core Crypto and call this method from it."]
-    pub async fn new_update_proposal(&self, conversation_id: Vec<u8>) -> CoreCryptoResult<ProposalBundle> {
+    pub async fn new_update_proposal(&self, conversation_id: Vec<u8>) -> CoreCryptoResult<()> {
         self.deprecated_transaction(|context| async move {
             context
                 .new_update_proposal(&conversation_id)
                 .await
                 .map_err(RecursiveError::mls("creating new update proposal"))
         })
-        .await?
-        .try_into()
+        .await
     }
 
     /// See [core_crypto::context::CentralContext::new_remove_proposal]
     #[deprecated = "Please create a transaction in Core Crypto and call this method from it."]
-    pub async fn new_remove_proposal(
-        &self,
-        conversation_id: Vec<u8>,
-        client_id: ClientId,
-    ) -> CoreCryptoResult<ProposalBundle> {
+    pub async fn new_remove_proposal(&self, conversation_id: Vec<u8>, client_id: ClientId) -> CoreCryptoResult<()> {
         self.deprecated_transaction(|context| async move {
             context
                 .new_remove_proposal(&conversation_id, client_id.0)
                 .await
                 .map_err(RecursiveError::mls("creating new remove proposal"))
         })
-        .await?
-        .try_into()
+        .await
     }
 
     /// See [core_crypto::context::CentralContext::new_external_add_proposal]
@@ -1593,22 +1592,6 @@ impl CoreCrypto {
         self.central.reseed(Some(seed)).await?;
 
         Ok(())
-    }
-
-    /// See [core_crypto::context::CentralContext::clear_pending_proposal]
-    #[deprecated = "Please create a transaction in Core Crypto and call this method from it."]
-    pub async fn clear_pending_proposal(
-        &self,
-        conversation_id: Vec<u8>,
-        proposal_ref: Vec<u8>,
-    ) -> CoreCryptoResult<()> {
-        self.deprecated_transaction(|context| async move {
-            context
-                .clear_pending_proposal(&conversation_id, proposal_ref.into())
-                .await
-                .map_err(RecursiveError::mls_conversation("clearing pending proposal"))
-        })
-        .await
     }
 
     /// See [core_crypto::mls::MlsCentral::get_client_ids]

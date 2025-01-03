@@ -457,7 +457,7 @@ export interface DecryptedMessage {
      *   * local pending proposal not in the accepted commit
      *   * If there is a pending commit, its proposals which are not in the accepted commit
      */
-    proposals: ProposalBundle[];
+    proposals: Uint8Array[];
     /**
      * It is set to false if ingesting this MLS message has resulted in the client being removed from the group (i.e. a Remove commit)
      */
@@ -503,7 +503,7 @@ export interface BufferedDecryptedMessage {
     /**
      * see {@link DecryptedMessage.proposals}
      */
-    proposals: ProposalBundle[];
+    proposals: Uint8Array[];
     /**
      * see {@link DecryptedMessage.isActive}
      */
@@ -668,30 +668,6 @@ export enum DeviceStatus {
      * The Credential's certificate is revoked
      */
     Revoked = 3,
-}
-
-/**
- * Returned by all methods creating proposals. Contains a proposal message and an identifier to roll back the proposal
- */
-export interface ProposalBundle {
-    /**
-     * TLS-serialized MLS proposal that needs to be fanned out to other (existing) members of the conversation
-     *
-     * @readonly
-     */
-    proposal: Uint8Array;
-    /**
-     * Unique identifier of a proposal. Use this in {@link CoreCrypto.clearPendingProposal} to roll back (delete) the proposal
-     *
-     * @readonly
-     */
-    proposalRef: ProposalRef;
-    /**
-     *  New CRL Distribution of members of this group
-     *
-     * @readonly
-     */
-    crlNewDistributionPoints?: string[];
 }
 
 export interface WelcomeBundle {
@@ -1459,7 +1435,7 @@ export class CoreCrypto {
     async newProposal(
         proposalType: ProposalType,
         args: ProposalArgs | AddProposalArgs | RemoveProposalArgs
-    ): Promise<ProposalBundle> {
+    ): Promise<NewCrlDistributionPoints> {
         return await this.transaction(
             async (ctx) => await ctx.newProposal(proposalType, args)
         );
@@ -1499,22 +1475,6 @@ export class CoreCrypto {
                     credentialType,
                     configuration
                 )
-        );
-    }
-
-    /**
-     * See {@link CoreCryptoContext.clearPendingProposal}.
-     *
-     * @deprecated Create a transaction with {@link CoreCrypto.transaction}
-     * and use {@link CoreCryptoContext.clearPendingProposal} instead.
-     */
-    async clearPendingProposal(
-        conversationId: ConversationId,
-        proposalRef: ProposalRef
-    ): Promise<void> {
-        return await this.transaction(
-            async (ctx) =>
-                await ctx.clearPendingProposal(conversationId, proposalRef)
         );
     }
 

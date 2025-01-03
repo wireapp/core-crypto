@@ -23,8 +23,6 @@ import {
     normalizeEnum,
     NewCrlDistributionPoints,
     ProposalArgs,
-    ProposalBundle,
-    ProposalRef,
     ProposalType,
     ProteusAutoPrekeyBundle,
     RemoveProposalArgs,
@@ -572,12 +570,13 @@ export default class CoreCryptoContext {
      * @param proposalType - The type of proposal, see {@link ProposalType}
      * @param args - The arguments of the proposal, see {@link ProposalArgs}, {@link AddProposalArgs} or {@link RemoveProposalArgs}
      *
-     * @returns A {@link ProposalBundle} containing the Proposal and its reference in order to roll it back if necessary
+     * @returns A {@link NewCrlDistributionPoints} (will contain a value if an add proposal was created and a new
+     * distribution point for certificate revocation lists was discovered)
      */
     async newProposal(
         proposalType: ProposalType,
         args: ProposalArgs | AddProposalArgs | RemoveProposalArgs
-    ): Promise<ProposalBundle> {
+    ): Promise<NewCrlDistributionPoints> {
         switch (proposalType) {
             case ProposalType.Add: {
                 if (!(args as AddProposalArgs).kp) {
@@ -692,24 +691,6 @@ export default class CoreCryptoContext {
         } catch (e) {
             throw CoreCryptoError.fromStdError(e as Error);
         }
-    }
-
-    /**
-     * Allows to remove a pending proposal (rollback). Use this when backend rejects the proposal you just sent e.g. if permissions have changed meanwhile.
-     *
-     * **CAUTION**: only use this when you had an explicit response from the Delivery Service
-     * e.g. 403 or 409. Do not use otherwise e.g. 5xx responses, timeout etc…
-     *
-     * @param conversationId - The group's ID
-     * @param proposalRef - A reference to the proposal to delete. You get one when using {@link CoreCryptoContext.newProposal}
-     */
-    async clearPendingProposal(
-        conversationId: ConversationId,
-        proposalRef: ProposalRef
-    ): Promise<void> {
-        return await CoreCryptoError.asyncMapErr(
-            this.#ctx.clear_pending_proposal(conversationId, proposalRef)
-        );
     }
 
     /**

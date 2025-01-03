@@ -31,6 +31,7 @@ log.workspace = true
 log-reload.workspace = true
 serde_json.workspace = true
 derive_more.workspace = true
+openmls.workspace = true
 proteus-wasm = { workspace = true, optional = true }
 core-crypto-keystore = { workspace = true, optional = true}
 
