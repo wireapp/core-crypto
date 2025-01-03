@@ -153,6 +153,8 @@ impl CentralContext {
                     .map_err(RecursiveError::root("getting mls provider"))?,
                 conversation.write().await,
             )
+            .await?;
+        self.send_and_merge_or_discard_proposal(conversation.deref_mut(), proposal)
             .await
     }
 }

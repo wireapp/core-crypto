@@ -17,6 +17,78 @@ use crate::{
     MlsError, RecursiveError,
 };
 
+/// Sending proposals
+impl CentralContext {
+    pub(crate) async fn send_and_merge_or_discard_proposal(
+        &self,
+        conversation: &mut MlsConversation,
+        proposal: MlsMessageOut,
+    ) -> Result<()> {
+        let guard = self
+            .mls_transport()
+            .await
+            .map_err(RecursiveError::root("getting mls transport"))?;
+        let transport = guard.as_ref().ok_or::<Error>(
+            RecursiveError::root("getting mls transport")(crate::Error::MlsTransportNotProvided).into(),
+        )?;
+        match transport
+            .send_message(
+                proposal
+                    .to_bytes()
+                    .map_err(MlsError::wrap("constructing byte vector of proposal"))?,
+            )
+            .await
+            .map_err(RecursiveError::root("sending mls message"))?
+        {
+            MlsTransportResponse::Success => Ok(()),
+            MlsTransportResponse::Abort { reason } => {
+                self.clear_all_pending_proposals(conversation).await?;
+                Err(Error::MessageRejected { reason })
+            }
+            MlsTransportResponse::Retry => self.commit_pending_proposals(conversation.id()).await,
+        }
+    }
+
+    /// If there was a proper way to clear all proposals at once, this wouldn't be needed.
+    /// However, `group.clear_pending_proposals()` in openmls doesn't delete the encryption keys of update proposals.
+    /// So we have to delete them one by one.
+    async fn clear_all_pending_proposals(&self, conversation: &mut MlsConversation) -> Result<()> {
+        let proposal_refs: Vec<_> = {
+            // clone the refs here to avoid borrowing `conversation` for the whole scope,
+            // because we need a mutable reference to the group below.
+            conversation
+                .group
+                .pending_proposals()
+                .map(|p| p.proposal_reference())
+                .cloned()
+                .collect()
+        };
+
+        let keystore = &self
+            .keystore()
+            .await
+            .map_err(RecursiveError::root("getting keystore"))?;
+
+        for proposal_ref in proposal_refs {
+            conversation
+                .group
+                .remove_pending_proposal(keystore, &proposal_ref)
+                .await
+                .map_err(MlsError::wrap("removing pending proposal"))?;
+        }
+
+        conversation
+            .persist_group_when_changed(
+                &self
+                    .keystore()
+                    .await
+                    .map_err(RecursiveError::root("getting keystore"))?,
+                true,
+            )
+            .await
+    }
+}
+
 /// Creating proposals
 impl MlsConversation {
     /// see [openmls::group::MlsGroup::propose_add_member]
