@@ -341,54 +341,35 @@ class CoreCryptoContext(private val cc: com.wire.crypto.uniffi.CoreCryptoContext
     }
 
     /**
-     * Creates a new proposal for adding a client to the MLS group
+     * Creates a new proposal for adding a client to the MLS group and sends it to the DS.
      *
      * @param id conversation identifier
      * @param keyPackage (TLS serialized) fetched from the DS
-     * @return a [ProposalBundle] which allows to roll back this proposal with
-     *   [clearPendingProposal] in case the DS rejects it
+     * @return [CrlDistributionPoints] if new ones were discovered.
      */
-    suspend fun newAddProposal(id: MLSGroupId, keyPackage: MLSKeyPackage): ProposalBundle {
-        return wrapException { cc.newAddProposal(id.lower(), keyPackage.lower()).lift() }
+    suspend fun newAddProposal(id: MLSGroupId, keyPackage: MLSKeyPackage): CrlDistributionPoints? {
+        val crlDps = wrapException { cc.newAddProposal(id.lower(), keyPackage.lower()) }
+        return crlDps?.toCrlDistributionPoint()
     }
 
     /**
-     * Creates a new proposal for removing a client from the MLS group
+     * Creates a new proposal for removing a client from the MLS group and sends it to the DS.
      *
      * @param id conversation identifier
      * @param clientId of the client to remove
-     * @return a [ProposalBundle] which allows to roll back this proposal with
-     *   [clearPendingProposal] in case the DS rejects it
      */
-    suspend fun newRemoveProposal(id: MLSGroupId, clientId: ClientId): ProposalBundle {
-        return wrapException { cc.newRemoveProposal(id.lower(), clientId.lower()).lift() }
-    }
+    suspend fun newRemoveProposal(id: MLSGroupId, clientId: ClientId) =
+        wrapException { cc.newRemoveProposal(id.lower(), clientId.lower()) }
 
     /**
      * Creates a new proposal to update the current client LeafNode key material within the MLS
-     * group
+     * group and sends it to the DS.
      *
      * @param id conversation identifier
-     * @return a [ProposalBundle] which allows to roll back this proposal with
-     *   [clearPendingProposal] in case the DS rejects it
      */
-    suspend fun newUpdateProposal(id: MLSGroupId): ProposalBundle {
-        return wrapException { cc.newUpdateProposal(id.lower()).lift() }
-    }
+    suspend fun newUpdateProposal(id: MLSGroupId) =
+        wrapException { cc.newUpdateProposal(id.lower()) }
 
-    /**
-     * Allows to remove a pending proposal (rollback). Use this when backend rejects the proposal
-     * you just sent e.g. if permissions have changed meanwhile.
-     *
-     * **CAUTION**: only use this when you had an explicit response from the Delivery Service e.g.
-     * 403 or 409. Do not use otherwise e.g. 5xx responses, timeout etc…
-     *
-     * @param id conversation identifier
-     * @param proposalRef you get from a [ProposalBundle]
-     */
-    suspend fun clearPendingProposal(id: MLSGroupId, proposalRef: ProposalRef) {
-        wrapException { cc.clearPendingProposal(id.lower(), proposalRef.lower()) }
-    }
 
     /**
      * Returns all clients from group's members

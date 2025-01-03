@@ -241,26 +241,6 @@ fun com.wire.crypto.uniffi.ConversationInitBundle.lift() =
         crlNewDistributionPoints?.toCrlDistributionPoint(),
     )
 
-/** Returned when a Proposal is created. Helps roll backing a local proposal */
-data class ProposalBundle(
-    /** The proposal message to send to the DS */
-    val proposal: MlsMessage,
-    /**
-     * A unique identifier of the proposal to rollback it later if required with
-     * [MlsClient.clearPendingProposal]
-     */
-    val proposalRef: ProposalRef,
-    /** New CRL distribution points that appeared by the introduction of a new credential */
-    val crlNewDistributionPoints: CrlDistributionPoints?,
-)
-
-fun com.wire.crypto.uniffi.ProposalBundle.lift() =
-    ProposalBundle(
-        proposal.toMlsMessage(),
-        proposalRef.toProposalRef(),
-        crlNewDistributionPoints?.toCrlDistributionPoint(),
-    )
-
 /** Contains everything client needs to know after decrypting an (encrypted) Welcome message */
 data class WelcomeBundle(
     /** MLS Group Id */
@@ -303,7 +283,7 @@ data class DecryptedMessage(
      * - local pending proposal not in the accepted commit
      * - If there is a pending commit, its proposals which are not in the accepted commit
      */
-    val proposals: Set<ProposalBundle>,
+    val proposals: Set<MlsMessage>,
     /**
      * Is the conversation still active after receiving this commit aka has the user been removed
      * from the group
@@ -369,7 +349,7 @@ data class DecryptedMessage(
 fun com.wire.crypto.uniffi.DecryptedMessage.lift() =
     DecryptedMessage(
         message,
-        proposals.asSequence().map { it.lift() }.toSet(),
+        proposals.asSequence().map { it.toMlsMessage() }.toSet(),
         isActive,
         commitDelay?.toLong(),
         senderClientId?.toClientId(),
@@ -384,7 +364,7 @@ data class BufferedDecryptedMessage(
     /** @see DecryptedMessage.message */
     val message: ByteArray?,
     /** @see DecryptedMessage.proposals */
-    val proposals: Set<ProposalBundle>,
+    val proposals: Set<MlsMessage>,
     /** @see DecryptedMessage.isActive */
     val isActive: Boolean,
     /** @see DecryptedMessage.commitDelay */
@@ -436,7 +416,7 @@ data class BufferedDecryptedMessage(
 fun com.wire.crypto.uniffi.BufferedDecryptedMessage.lift() =
     BufferedDecryptedMessage(
         message,
-        proposals.asSequence().map { it.lift() }.toSet(),
+        proposals.asSequence().map { it.toMlsMessage() }.toSet(),
         isActive,
         commitDelay?.toLong(),
         senderClientId?.toClientId(),
