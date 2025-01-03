@@ -627,51 +627,6 @@ impl From<MlsGroupInfoBundle> for GroupInfoBundle {
     }
 }
 
-#[wasm_bindgen]
-#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
-pub struct ProposalBundle {
-    /// TLS-serialized MLS proposal that needs to be fanned out to other (existing) members of the conversation
-    proposal: Vec<u8>,
-    /// Unique identifier of a proposal. Use this in {@link CoreCrypto.clearPendingProposal} to roll back (delete) the proposal
-    proposal_ref: Vec<u8>,
-    /// New CRL Distribution of members of this group
-    crl_new_distribution_points: Option<Vec<String>>,
-}
-
-#[wasm_bindgen]
-impl ProposalBundle {
-    #[wasm_bindgen(getter)]
-    pub fn proposal(&self) -> Uint8Array {
-        Uint8Array::from(&*self.proposal)
-    }
-
-    #[wasm_bindgen(getter)]
-    pub fn proposal_ref(&self) -> Uint8Array {
-        Uint8Array::from(&*self.proposal_ref)
-    }
-
-    #[wasm_bindgen(getter)]
-    pub fn crl_new_distribution_points(&self) -> Option<js_sys::Array> {
-        self.crl_new_distribution_points
-            .clone()
-            .map(|crl_dp| crl_dp.iter().cloned().map(JsValue::from).collect::<js_sys::Array>())
-    }
-}
-
-impl TryFrom<MlsProposalBundle> for ProposalBundle {
-    type Error = CoreCryptoError;
-
-    fn try_from(msg: MlsProposalBundle) -> Result<Self, Self::Error> {
-        let (proposal, proposal_ref, crl_new_distribution_points) = msg.to_bytes()?;
-
-        Ok(Self {
-            proposal,
-            proposal_ref,
-            crl_new_distribution_points: crl_new_distribution_points.into(),
-        })
-    }
-}
-
 #[wasm_bindgen(skip_jsdoc, getter_with_clone)]
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct ConversationInitBundle {
@@ -762,7 +717,7 @@ impl From<core_crypto::prelude::WelcomeBundle> for WelcomeBundle {
 /// see [core_crypto::prelude::decrypt::MlsConversationDecryptMessage]
 pub struct DecryptedMessage {
     message: Option<Vec<u8>>,
-    proposals: Vec<ProposalBundle>,
+    proposals: Vec<Vec<u8>>,
     /// It is set to false if ingesting this MLS message has resulted in the client being removed from the group (i.e. a Remove commit)
     is_active: bool,
     /// Commit delay hint (in milliseconds) to prevent clients from hammering the server with epoch changes
@@ -783,7 +738,12 @@ impl TryFrom<MlsConversationDecryptMessage> for DecryptedMessage {
         let proposals = from
             .proposals
             .into_iter()
-            .map(ProposalBundle::try_from)
+            .map(|msg| {
+                msg.to_bytes()
+                    .map_err(core_crypto::MlsError::wrap("converting mls message to bytes"))
+                    .map_err(core_crypto::Error::from)
+                    .map_err(CoreCryptoError::from)
+            })
             .collect::<WasmCryptoResult<Vec<_>>>()?;
 
         let buffered_messages = if let Some(bm) = from.buffered_messages {
@@ -885,7 +845,7 @@ impl DecryptedMessage {
 /// to avoid recursion
 pub struct BufferedDecryptedMessage {
     message: Option<Vec<u8>>,
-    proposals: Vec<ProposalBundle>,
+    proposals: Vec<Vec<u8>>,
     is_active: bool,
     commit_delay: Option<u32>,
     sender_client_id: Option<Vec<u8>>,
@@ -902,7 +862,12 @@ impl TryFrom<MlsBufferedConversationDecryptMessage> for BufferedDecryptedMessage
         let proposals = from
             .proposals
             .into_iter()
-            .map(TryInto::try_into)
+            .map(|msg| {
+                msg.to_bytes()
+                    .map_err(core_crypto::MlsError::wrap("converting mls message to bytes"))
+                    .map_err(core_crypto::Error::from)
+                    .map_err(CoreCryptoError::from)
+            })
             .collect::<WasmCryptoResult<Vec<_>>>()?;
 
         let commit_delay = from

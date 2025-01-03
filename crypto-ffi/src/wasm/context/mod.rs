@@ -1,7 +1,7 @@
 use crate::wasm::{lower_ciphersuites, InternalError};
 use crate::{
     Ciphersuite, ConversationConfiguration, CoreCrypto, CoreCryptoError, CoreCryptoResult, CredentialType,
-    CustomConfiguration, DecryptedMessage, FfiClientId, ProposalBundle, WasmCryptoResult, WelcomeBundle,
+    CustomConfiguration, DecryptedMessage, FfiClientId, WasmCryptoResult, WelcomeBundle,
 };
 use core_crypto::{
     context::CentralContext,
@@ -547,7 +547,7 @@ impl CoreCryptoContext {
         )
     }
 
-    /// Returns: [`WasmCryptoResult<js_sys::Uint8Array>`]
+    /// Returns: [`WasmCryptoResult<Option<Vec<String>>>`]
     ///
     /// see [core_crypto::mls::context::CentralContext::new_add_proposal]
     pub fn new_add_proposal(&self, conversation_id: ConversationId, keypackage: Box<[u8]>) -> Promise {
@@ -558,48 +558,40 @@ impl CoreCryptoContext {
                     .map_err(core_crypto::mls::conversation::Error::tls_deserialize("keypackage"))
                     .map_err(RecursiveError::mls_conversation("creating new add proposal"))?;
 
-                let proposal: ProposalBundle = context
-                    .new_add_proposal(&conversation_id.to_vec(), kp.into())
-                    .await
-                    .map_err(CoreCryptoError::from)?
-                    .try_into()?;
+                let new_crl_distribution_point = context.new_add_proposal(&conversation_id.to_vec(), kp.into()).await?;
+                let new_crl_distribution_point: Option<Vec<String>> = new_crl_distribution_point.into();
 
-                WasmCryptoResult::Ok(serde_wasm_bindgen::to_value(&proposal)?)
+                WasmCryptoResult::Ok(serde_wasm_bindgen::to_value(&new_crl_distribution_point)?)
             }
             .err_into(),
         )
     }
 
-    /// Returns: [`WasmCryptoResult<js_sys::Uint8Array>`]
+    /// Returns: [`WasmCryptoResult<()>`]
     ///
     /// see [core_crypto::mls::context::CentralContext::new_update_proposal]
     pub fn new_update_proposal(&self, conversation_id: ConversationId) -> Promise {
         let context = self.inner.clone();
         future_to_promise(
             async move {
-                let proposal: ProposalBundle = context
-                    .new_update_proposal(&conversation_id.to_vec())
-                    .await?
-                    .try_into()?;
-                WasmCryptoResult::Ok(serde_wasm_bindgen::to_value(&proposal)?)
+                context.new_update_proposal(&conversation_id.to_vec()).await?;
+                WasmCryptoResult::Ok(JsValue::UNDEFINED)
             }
             .err_into(),
         )
     }
 
-    /// Returns: [`WasmCryptoResult<js_sys::Uint8Array>`]
+    /// Returns: [`WasmCryptoResult<()>`]
     ///
     /// see [core_crypto::mls::context::CentralContext::new_remove_proposal]
     pub fn new_remove_proposal(&self, conversation_id: ConversationId, client_id: FfiClientId) -> Promise {
         let context = self.inner.clone();
         future_to_promise(
             async move {
-                let proposal: ProposalBundle = context
+                context
                     .new_remove_proposal(&conversation_id.to_vec(), client_id.into())
-                    .await
-                    .map_err(CoreCryptoError::from)?
-                    .try_into()?;
-                WasmCryptoResult::Ok(serde_wasm_bindgen::to_value(&proposal)?)
+                    .await?;
+                WasmCryptoResult::Ok(JsValue::UNDEFINED)
             }
             .err_into(),
         )
@@ -665,21 +657,6 @@ impl CoreCryptoContext {
                     .into();
 
                 WasmCryptoResult::Ok(serde_wasm_bindgen::to_value(&result)?)
-            }
-            .err_into(),
-        )
-    }
-
-    /// see [core_crypto::mls::context::CentralContext::clear_pending_proposal]
-    pub fn clear_pending_proposal(&self, conversation_id: ConversationId, proposal_ref: Box<[u8]>) -> Promise {
-        let context = self.inner.clone();
-        future_to_promise(
-            async move {
-                context
-                    .clear_pending_proposal(&conversation_id.to_vec(), proposal_ref.to_vec().into())
-                    .await
-                    .map_err(CoreCryptoError::from)?;
-                WasmCryptoResult::Ok(JsValue::UNDEFINED)
             }
             .err_into(),
         )

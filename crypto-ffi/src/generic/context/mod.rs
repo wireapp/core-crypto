@@ -1,6 +1,6 @@
 use super::{
     Ciphersuite, Ciphersuites, ClientId, ConversationConfiguration, CoreCrypto, CoreCryptoError, CoreCryptoResult,
-    CustomConfiguration, DecryptedMessage, MlsCredentialType, ProposalBundle, WelcomeBundle,
+    CustomConfiguration, DecryptedMessage, MlsCredentialType, WelcomeBundle,
 };
 use crate::NewCrlDistributionPoints;
 use async_lock::{Mutex, OnceCell};
@@ -493,31 +493,32 @@ impl CoreCryptoContext {
         &self,
         conversation_id: Vec<u8>,
         keypackage: Vec<u8>,
-    ) -> CoreCryptoResult<ProposalBundle> {
+    ) -> CoreCryptoResult<NewCrlDistributionPoints> {
         let kp = KeyPackageIn::tls_deserialize(&mut keypackage.as_slice())
             .map_err(core_crypto::mls::conversation::Error::tls_deserialize("keypackage"))
             .map_err(RecursiveError::mls_conversation("creating new add proposal"))?;
-        self.context
+        Ok(self
+            .context
             .new_add_proposal(&conversation_id, kp.into())
-            .await?
-            .try_into()
+            .await
+            .map(|new_crl_distribution_point| -> Option<Vec<_>> { new_crl_distribution_point.into() })?
+            .into())
     }
 
     /// See [core_crypto::context::CentralContext::new_update_proposal]
-    pub async fn new_update_proposal(&self, conversation_id: Vec<u8>) -> CoreCryptoResult<ProposalBundle> {
-        self.context.new_update_proposal(&conversation_id).await?.try_into()
+    pub async fn new_update_proposal(&self, conversation_id: Vec<u8>) -> CoreCryptoResult<()> {
+        self.context
+            .new_update_proposal(&conversation_id)
+            .await
+            .map_err(Into::into)
     }
 
     /// See [core_crypto::context::CentralContext::new_remove_proposal]
-    pub async fn new_remove_proposal(
-        &self,
-        conversation_id: Vec<u8>,
-        client_id: ClientId,
-    ) -> CoreCryptoResult<ProposalBundle> {
+    pub async fn new_remove_proposal(&self, conversation_id: Vec<u8>, client_id: ClientId) -> CoreCryptoResult<()> {
         self.context
             .new_remove_proposal(&conversation_id, client_id.0)
-            .await?
-            .try_into()
+            .await
+            .map_err(Into::into)
     }
 
     /// See [core_crypto::context::CentralContext::new_external_add_proposal]
@@ -559,17 +560,5 @@ impl CoreCryptoContext {
             .join_by_external_commit(group_info, custom_configuration.into(), credential_type.into())
             .await?
             .into())
-    }
-
-    /// See [core_crypto::context::CentralContext::clear_pending_proposal]
-    pub async fn clear_pending_proposal(
-        &self,
-        conversation_id: Vec<u8>,
-        proposal_ref: Vec<u8>,
-    ) -> CoreCryptoResult<()> {
-        self.context
-            .clear_pending_proposal(&conversation_id, proposal_ref.into())
-            .await?;
-        Ok(())
     }
 }
