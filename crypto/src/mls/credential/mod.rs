@@ -233,7 +233,7 @@ mod tests {
         let err = try_talk(&case, Some(&x509_test_chain), alice_identifier, bob_identifier)
             .await
             .unwrap_err();
-        assert!(innermost_source_matches!(err, Error::InvalidIdentity, deref Box<Error>: *));
+        assert!(innermost_source_matches!(err, Error::InvalidIdentity));
     }
 
     #[apply(all_cred_cipher)]

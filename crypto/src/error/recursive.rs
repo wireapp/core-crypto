@@ -18,66 +18,53 @@
 ///
 /// The goal here is to reduce the need to redeclare each of these error
 /// types as an individual variant of a module-specific error type.
-#[derive(Debug, thiserror::Error)]
+#[derive(Debug)]
 pub enum RecursiveError {
     /// Wrap a [crate::Error] for recursion.
-    #[error("{context}")]
     Root {
         /// What was happening in the caller
         context: &'static str,
         /// What happened
-        #[source]
         source: Box<crate::Error>,
     },
     /// Wrap a [crate::e2e_identity::Error] for recursion.
-    #[error("{context}")]
     E2e {
         /// What was happening in the caller
         context: &'static str,
         /// What happened
-        #[source]
         source: Box<crate::e2e_identity::Error>,
     },
     /// Wrap a [crate::mls::Error] for recursion.
-    #[error("{context}")]
     Mls {
         /// What was happening in the caller
         context: &'static str,
         /// What happened
-        #[source]
         source: Box<crate::mls::Error>,
     },
     /// Wrap a [crate::mls::client::Error] for recursion.
-    #[error("{context}")]
     MlsClient {
         /// What was happening in the caller
         context: &'static str,
         /// What happened
-        #[source]
         source: Box<crate::mls::client::Error>,
     },
     /// Wrap a [crate::mls::conversation::Error] for recursion.
-    #[error("{context}")]
     MlsConversation {
         /// What was happening in the caller
         context: &'static str,
         /// What happened
-        #[source]
         source: Box<crate::mls::conversation::Error>,
     },
     /// Wrap a [crate::mls::credential::Error] for recursion.
-    #[error("{context}")]
     MlsCredential {
         /// What was happening in the caller
         context: &'static str,
         /// What happened
-        #[source]
         source: Box<crate::mls::credential::Error>,
     },
     /// Wrap a [crate::test_utils::TestError] for recursion.
     #[cfg(test)]
-    #[error(transparent)]
-    Test(#[from] Box<crate::test_utils::TestError>),
+    Test(Box<crate::test_utils::TestError>),
 }
 
 impl RecursiveError {
@@ -132,6 +119,40 @@ impl RecursiveError {
     #[cfg(test)]
     pub(crate) fn test<E: Into<crate::test_utils::TestError>>() -> impl FnOnce(E) -> Self {
         move |into_source| Self::Test(Box::new(into_source.into()))
+    }
+}
+
+impl std::fmt::Display for RecursiveError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        #[cfg(test)]
+        use std::ops::Deref;
+
+        let context = match self {
+            RecursiveError::Root { context, .. } => context,
+            RecursiveError::E2e { context, .. } => context,
+            RecursiveError::Mls { context, .. } => context,
+            RecursiveError::MlsClient { context, .. } => context,
+            RecursiveError::MlsConversation { context, .. } => context,
+            RecursiveError::MlsCredential { context, .. } => context,
+            #[cfg(test)]
+            RecursiveError::Test(e) => return e.deref().fmt(f),
+        };
+        write!(f, "{}", context)
+    }
+}
+
+impl std::error::Error for RecursiveError {
+    fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
+        match self {
+            RecursiveError::Root { source, .. } => Some(source.as_ref()),
+            RecursiveError::E2e { source, .. } => Some(source.as_ref()),
+            RecursiveError::Mls { source, .. } => Some(source.as_ref()),
+            RecursiveError::MlsClient { source, .. } => Some(source.as_ref()),
+            RecursiveError::MlsConversation { source, .. } => Some(source.as_ref()),
+            RecursiveError::MlsCredential { source, .. } => Some(source.as_ref()),
+            #[cfg(test)]
+            RecursiveError::Test(source) => Some(source.as_ref()),
+        }
     }
 }
 
