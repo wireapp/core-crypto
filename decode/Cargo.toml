@@ -5,6 +5,6 @@ edition = "2021"
 license = "GPL-3.0-only"
 
 [dependencies]
-clap = { version = "4.5.22", features = ["derive"] }
+clap = { version = "4.5.23", features = ["derive"] }
 proteus-wasm = { workspace = true,  features = ["serde"]}
 base64 = { workspace = true }
