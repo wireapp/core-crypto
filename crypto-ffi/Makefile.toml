@@ -1,6 +1,6 @@
 [env]
 ANDROID_NDK_PREFER_VERSION = "25.2"
-LIBRARY_EXTENSION = { source = "${CARGO_MAKE_RUST_TARGET_OS}", default_value = "so", mapping = { "linux" = "so", "macos" = "dylib", "windows" = "dll", "openbsd" = "so" } }
+LIBRARY_EXTENSION = { source = "${CARGO_MAKE_RUST_TARGET_OS}", default_value = "so", mapping = { "linux" = "so", "macos" = "dylib", "windows" = "dll" } }
 
 [tasks.clean]
 command = "cargo"
