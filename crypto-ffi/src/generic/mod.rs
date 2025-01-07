@@ -2507,6 +2507,7 @@ impl From<AcmeChallenge> for core_crypto::prelude::E2eiAcmeChallenge {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use core_crypto::LeafError;
     #[test]
     fn test_error_mapping() {
         let duplicate_message_error = RecursiveError::mls_conversation("test duplicate message error")(
@@ -2514,5 +2515,16 @@ mod tests {
         );
         let mapped_error = CoreCryptoError::from(duplicate_message_error);
         assert!(matches!(mapped_error, CoreCryptoError::Mls(MlsError::DuplicateMessage)));
+
+        let conversation_exists_error = RecursiveError::mls_conversation("test conversation exists error")(
+            core_crypto::mls::conversation::Error::Leaf(LeafError::ConversationAlreadyExists(
+                "test conversation id".into(),
+            )),
+        );
+        let mapped_error = CoreCryptoError::from(conversation_exists_error);
+        assert!(matches!(
+            mapped_error,
+            CoreCryptoError::Mls(MlsError::ConversationAlreadyExists(_))
+        ));
     }
 }
