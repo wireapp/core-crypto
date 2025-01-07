@@ -100,7 +100,6 @@ args = [
 
 [tasks.wasm-build]
 command = "wasm-pack"
-# env = { "WASM_BINDGEN_WEAKREF" = 1, "WASM_BINDGEN_EXTERNREF" = 1 }
 args = [
     "build",
     "--locked",
