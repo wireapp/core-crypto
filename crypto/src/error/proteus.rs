@@ -38,7 +38,7 @@ pub enum ProteusErrorKind {
     ProteusSessionError(#[from] proteus_wasm::session::Error<core_crypto_keystore::CryptoKeystoreError>),
     /// Common errors we generate
     #[cfg(feature = "proteus")]
-    #[error(transparent)]
+    #[error("{0}")]
     Leaf(#[from] crate::LeafError),
 }
 

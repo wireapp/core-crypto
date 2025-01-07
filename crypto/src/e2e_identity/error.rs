@@ -54,7 +54,7 @@ pub enum Error {
     Mls(#[from] crate::MlsError),
     #[error(transparent)]
     Keystore(#[from] crate::KeystoreError),
-    #[error(transparent)]
+    #[error("{0}")]
     Leaf(#[from] crate::LeafError),
     #[error(transparent)]
     Recursive(#[from] crate::RecursiveError),
