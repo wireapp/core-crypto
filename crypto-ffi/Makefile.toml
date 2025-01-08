@@ -78,7 +78,7 @@ command = "bunx"
 args = [
     "typedoc",
     "--basePath", "./bindings/js",
-    "--entryPoints", "./bindings/js/CoreCrypto.ts",
+    "--entryPoints", "./bindings/js/src/CoreCrypto.ts",
     "--tsconfig", "./bindings/js/tsconfig.json",
     "--out", "../target/doc/core_crypto_ffi/bindings/typescript"
 ]
