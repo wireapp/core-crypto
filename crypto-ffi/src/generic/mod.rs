@@ -1480,56 +1480,6 @@ impl CoreCrypto {
         Ok(self.central.conversation_exists(&conversation_id).await?)
     }
 
-    /// See [core_crypto::context::CentralContext::new_add_proposal]
-    #[deprecated = "Please create a transaction in Core Crypto and call this method from it."]
-    pub async fn new_add_proposal(
-        &self,
-        conversation_id: Vec<u8>,
-        keypackage: Vec<u8>,
-    ) -> CoreCryptoResult<ProposalBundle> {
-        let kp = KeyPackageIn::tls_deserialize(&mut keypackage.as_slice())
-            .map_err(core_crypto::mls::conversation::Error::tls_deserialize("keypackage"))
-            .map_err(RecursiveError::mls_conversation("deserializing keypackage from tls"))?;
-        self.deprecated_transaction(|context| async move {
-            context
-                .new_add_proposal(&conversation_id, kp.into())
-                .await
-                .map_err(RecursiveError::mls("creating new add proposal"))
-        })
-        .await?
-        .try_into()
-    }
-
-    /// See [core_crypto::context::CentralContext::new_update_proposal]
-    #[deprecated = "Please create a transaction in Core Crypto and call this method from it."]
-    pub async fn new_update_proposal(&self, conversation_id: Vec<u8>) -> CoreCryptoResult<ProposalBundle> {
-        self.deprecated_transaction(|context| async move {
-            context
-                .new_update_proposal(&conversation_id)
-                .await
-                .map_err(RecursiveError::mls("creating new update proposal"))
-        })
-        .await?
-        .try_into()
-    }
-
-    /// See [core_crypto::context::CentralContext::new_remove_proposal]
-    #[deprecated = "Please create a transaction in Core Crypto and call this method from it."]
-    pub async fn new_remove_proposal(
-        &self,
-        conversation_id: Vec<u8>,
-        client_id: ClientId,
-    ) -> CoreCryptoResult<ProposalBundle> {
-        self.deprecated_transaction(|context| async move {
-            context
-                .new_remove_proposal(&conversation_id, client_id.0)
-                .await
-                .map_err(RecursiveError::mls("creating new remove proposal"))
-        })
-        .await?
-        .try_into()
-    }
-
     /// See [core_crypto::context::CentralContext::new_external_add_proposal]
     #[deprecated = "Please create a transaction in Core Crypto and call this method from it."]
     pub async fn new_external_add_proposal(
@@ -1593,22 +1543,6 @@ impl CoreCrypto {
         self.central.reseed(Some(seed)).await?;
 
         Ok(())
-    }
-
-    /// See [core_crypto::context::CentralContext::clear_pending_proposal]
-    #[deprecated = "Please create a transaction in Core Crypto and call this method from it."]
-    pub async fn clear_pending_proposal(
-        &self,
-        conversation_id: Vec<u8>,
-        proposal_ref: Vec<u8>,
-    ) -> CoreCryptoResult<()> {
-        self.deprecated_transaction(|context| async move {
-            context
-                .clear_pending_proposal(&conversation_id, proposal_ref.into())
-                .await
-                .map_err(RecursiveError::mls_conversation("clearing pending proposal"))
-        })
-        .await
     }
 
     /// See [core_crypto::mls::MlsCentral::get_client_ids]
