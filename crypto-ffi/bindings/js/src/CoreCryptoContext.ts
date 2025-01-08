@@ -1,5 +1,4 @@
 import {
-    AddProposalArgs,
     Ciphersuite,
     ClientId,
     CommitBundle,
@@ -17,17 +16,10 @@ import {
     E2eiConversationState,
     E2eiDumpedPkiEnv,
     E2eiEnrollment,
-    ExternalAddProposalArgs,
-    ExternalProposalType,
     mapWireIdentity,
     normalizeEnum,
     NewCrlDistributionPoints,
-    ProposalArgs,
-    ProposalBundle,
-    ProposalRef,
-    ProposalType,
     ProteusAutoPrekeyBundle,
-    RemoveProposalArgs,
     WelcomeBundle,
     WireIdentity,
 } from "./CoreCrypto.js";
@@ -567,79 +559,6 @@ export default class CoreCryptoContext {
     }
 
     /**
-     * Creates a new proposal for the provided Conversation ID
-     *
-     * @param proposalType - The type of proposal, see {@link ProposalType}
-     * @param args - The arguments of the proposal, see {@link ProposalArgs}, {@link AddProposalArgs} or {@link RemoveProposalArgs}
-     *
-     * @returns A {@link ProposalBundle} containing the Proposal and its reference in order to roll it back if necessary
-     */
-    async newProposal(
-        proposalType: ProposalType,
-        args: ProposalArgs | AddProposalArgs | RemoveProposalArgs
-    ): Promise<ProposalBundle> {
-        switch (proposalType) {
-            case ProposalType.Add: {
-                if (!(args as AddProposalArgs).kp) {
-                    throw new Error(
-                        "kp is not contained in the proposal arguments"
-                    );
-                }
-                return await CoreCryptoError.asyncMapErr(
-                    this.#ctx.new_add_proposal(
-                        args.conversationId,
-                        (args as AddProposalArgs).kp
-                    )
-                );
-            }
-            case ProposalType.Remove: {
-                if (!(args as RemoveProposalArgs).clientId) {
-                    throw new Error(
-                        "clientId is not contained in the proposal arguments"
-                    );
-                }
-                return await CoreCryptoError.asyncMapErr(
-                    this.#ctx.new_remove_proposal(
-                        args.conversationId,
-                        (args as RemoveProposalArgs).clientId
-                    )
-                );
-            }
-            case ProposalType.Update: {
-                return await CoreCryptoError.asyncMapErr(
-                    this.#ctx.new_update_proposal(args.conversationId)
-                );
-            }
-            default:
-                throw new Error("Invalid proposal type!");
-        }
-    }
-
-    /**
-     * Creates a new external Add proposal for self client to join a conversation.
-     */
-    async newExternalProposal(
-        externalProposalType: ExternalProposalType,
-        args: ExternalAddProposalArgs
-    ): Promise<Uint8Array> {
-        switch (externalProposalType) {
-            case ExternalProposalType.Add: {
-                const addArgs = args as ExternalAddProposalArgs;
-                return await CoreCryptoError.asyncMapErr(
-                    this.#ctx.new_external_add_proposal(
-                        args.conversationId,
-                        args.epoch,
-                        addArgs.ciphersuite,
-                        addArgs.credentialType
-                    )
-                );
-            }
-            default:
-                throw new Error("Invalid external proposal type!");
-        }
-    }
-
-    /**
      * Allows to create an external commit to "apply" to join a group through its GroupInfo.
      *
      * If the Delivery Service accepts the external commit, you have to {@link CoreCryptoContext.mergePendingGroupFromExternalCommit}
@@ -692,24 +611,6 @@ export default class CoreCryptoContext {
         } catch (e) {
             throw CoreCryptoError.fromStdError(e as Error);
         }
-    }
-
-    /**
-     * Allows to remove a pending proposal (rollback). Use this when backend rejects the proposal you just sent e.g. if permissions have changed meanwhile.
-     *
-     * **CAUTION**: only use this when you had an explicit response from the Delivery Service
-     * e.g. 403 or 409. Do not use otherwise e.g. 5xx responses, timeout etc…
-     *
-     * @param conversationId - The group's ID
-     * @param proposalRef - A reference to the proposal to delete. You get one when using {@link CoreCryptoContext.newProposal}
-     */
-    async clearPendingProposal(
-        conversationId: ConversationId,
-        proposalRef: ProposalRef
-    ): Promise<void> {
-        return await CoreCryptoError.asyncMapErr(
-            this.#ctx.clear_pending_proposal(conversationId, proposalRef)
-        );
     }
 
     /**

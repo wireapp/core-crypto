@@ -710,24 +710,6 @@ export interface WelcomeBundle {
 }
 
 /**
- * MLS Proposal type
- */
-export enum ProposalType {
-    /**
-     * This allows to propose the addition of other clients to the MLS group/conversation
-     */
-    Add,
-    /**
-     * This allows to propose the removal of clients from the MLS group/conversation
-     */
-    Remove,
-    /**
-     * This allows to propose to update the client keying material (i.e. keypackage rotation) and the group root key
-     */
-    Update,
-}
-
-/**
  * Common arguments for proposals
  */
 export interface ProposalArgs {
@@ -1451,37 +1433,6 @@ export class CoreCrypto {
     }
 
     /**
-     * See {@link CoreCryptoContext.newProposal}.
-     *
-     * @deprecated Create a transaction with {@link CoreCrypto.transaction}
-     * and use {@link CoreCryptoContext.newProposal} instead.
-     */
-    async newProposal(
-        proposalType: ProposalType,
-        args: ProposalArgs | AddProposalArgs | RemoveProposalArgs
-    ): Promise<ProposalBundle> {
-        return await this.transaction(
-            async (ctx) => await ctx.newProposal(proposalType, args)
-        );
-    }
-
-    /**
-     * See {@link CoreCryptoContext.newExternalProposal}.
-     *
-     * @deprecated Create a transaction with {@link CoreCrypto.transaction}
-     * and use {@link CoreCryptoContext.newExternalProposal} instead.
-     */
-    async newExternalProposal(
-        externalProposalType: ExternalProposalType,
-        args: ExternalAddProposalArgs
-    ): Promise<Uint8Array> {
-        return await this.transaction(
-            async (ctx) =>
-                await ctx.newExternalProposal(externalProposalType, args)
-        );
-    }
-
-    /**
      * See {@link CoreCryptoContext.joinByExternalCommit}.
      *
      * @deprecated Create a transaction with {@link CoreCrypto.transaction}
@@ -1499,22 +1450,6 @@ export class CoreCrypto {
                     credentialType,
                     configuration
                 )
-        );
-    }
-
-    /**
-     * See {@link CoreCryptoContext.clearPendingProposal}.
-     *
-     * @deprecated Create a transaction with {@link CoreCrypto.transaction}
-     * and use {@link CoreCryptoContext.clearPendingProposal} instead.
-     */
-    async clearPendingProposal(
-        conversationId: ConversationId,
-        proposalRef: ProposalRef
-    ): Promise<void> {
-        return await this.transaction(
-            async (ctx) =>
-                await ctx.clearPendingProposal(conversationId, proposalRef)
         );
     }
 
