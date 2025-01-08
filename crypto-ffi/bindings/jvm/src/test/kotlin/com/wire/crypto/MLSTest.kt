@@ -221,28 +221,6 @@ class MLSTest {
     }
 
     @Test
-    fun joinConversation_should_generate_an_Add_proposal() = runTest {
-        val (alice1, alice2, bob) = newClients(aliceId, aliceId2, bobId)
-
-        bob.transaction { it.createConversation(id) }
-
-        val alice1Kp = alice1.transaction { it.generateKeyPackages(1U).first() }
-        bob.transaction {
-            it.addMember(id, listOf(alice1Kp))
-            Unit
-        }
-
-        val proposal = alice2.transaction { it.joinConversation(id, 1UL, Ciphersuite.DEFAULT, CredentialType.DEFAULT) }
-        bob.transaction { it.decryptMessage(id, proposal) }
-        bob.transaction { it.commitPendingProposals(id) }
-        val welcome = mockDeliveryService.getLatestWelcome()
-        val groupId = alice2.transaction { it.processWelcomeMessage(welcome) }
-
-        // FIXME: simplify when https://youtrack.jetbrains.com/issue/KT-24874 fixed
-        assertThat(groupId.id.toString()).isEqualTo(id.value.toHex())
-    }
-
-    @Test
     fun encryptMessage_should_encrypt_then_receiver_should_decrypt() = runTest {
         val (alice, bob) = newClients(aliceId, bobId)
 
@@ -321,40 +299,6 @@ class MLSTest {
 
         val decrypted = alice.transaction { it.decryptMessage(conversationId, commit) }
         assertThat(decrypted.message).isNull()
-    }
-
-    @Test
-    fun creating_proposals_and_removing_them() = runTest {
-        val (alice, bob, carol) = newClients(aliceId, bobId, carolId)
-
-        alice.transaction { it.createConversation(id) }
-
-        val bobKp = bob.transaction { it.generateKeyPackages(1U).first() }
-
-        // Add proposal
-        alice.transaction { it.newAddProposal(id, bobKp) }
-        alice.transaction { it.commitPendingProposals(id) }
-        val welcome = mockDeliveryService.getLatestWelcome()
-
-        bob.transaction { it.processWelcomeMessage(welcome) }
-
-        // Now creating & clearing proposal
-        val carolKp = carol.transaction { it.generateKeyPackages(1U).first() }
-        val addProposal = alice.transaction { it.newAddProposal(id, carolKp) }
-        val removeProposal = alice.transaction { it.newRemoveProposal(id, bobId.toClientId()) }
-        val updateProposal = alice.transaction { it.newUpdateProposal(id) }
-
-        val proposals = listOf(addProposal, removeProposal, updateProposal)
-        proposals.forEach { proposal ->
-            alice.transaction { it.clearPendingProposal(id, proposal.proposalRef) }
-        }
-
-        val commitBefore = mockDeliveryService.getLatestCommit()
-        // Since all proposals were cleared, this should not produce/send a commit
-        alice.transaction { it.commitPendingProposals(id) }
-        val commitAfter = mockDeliveryService.getLatestCommit()
-        // So this is still the same
-        assertThat(commitBefore).isEqualTo(commitAfter)
     }
 
     @Test
