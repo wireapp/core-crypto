@@ -172,31 +172,6 @@ class CoreCryptoContext(private val cc: com.wire.crypto.uniffi.CoreCryptoContext
     suspend fun conversationEpoch(id: MLSGroupId): ULong = wrapException { cc.conversationEpoch(id.lower()) }
 
     /**
-     * Creates a new external Add proposal for self client to join a conversation.
-     *
-     * @param id conversation identifier
-     * @param epoch conversation epoch
-     * @param ciphersuite of the conversation to join
-     * @param ciphersuite to join the conversation with
-     */
-    suspend fun joinConversation(
-        id: MLSGroupId,
-        epoch: ULong,
-        ciphersuite: Ciphersuite = Ciphersuite.DEFAULT,
-        credentialType: CredentialType = CredentialType.DEFAULT,
-    ): MlsMessage {
-        return wrapException {
-            cc.newExternalAddProposal(
-                id.lower(),
-                epoch,
-                ciphersuite.lower(),
-                credentialType.lower(),
-            )
-                .toMlsMessage()
-        }
-    }
-
-    /**
      * Allows to create an external commit to "apply" to join a group through its GroupInfo.
      *
      * If the DS accepts the external commit, you have to [mergePendingGroupFromExternalCommit] in
@@ -338,56 +313,6 @@ class CoreCryptoContext(private val cc: com.wire.crypto.uniffi.CoreCryptoContext
      */
     suspend fun commitPendingProposals(id: MLSGroupId) {
         return wrapException { cc.commitPendingProposals(id.lower()) }
-    }
-
-    /**
-     * Creates a new proposal for adding a client to the MLS group
-     *
-     * @param id conversation identifier
-     * @param keyPackage (TLS serialized) fetched from the DS
-     * @return a [ProposalBundle] which allows to roll back this proposal with
-     *   [clearPendingProposal] in case the DS rejects it
-     */
-    suspend fun newAddProposal(id: MLSGroupId, keyPackage: MLSKeyPackage): ProposalBundle {
-        return wrapException { cc.newAddProposal(id.lower(), keyPackage.lower()).lift() }
-    }
-
-    /**
-     * Creates a new proposal for removing a client from the MLS group
-     *
-     * @param id conversation identifier
-     * @param clientId of the client to remove
-     * @return a [ProposalBundle] which allows to roll back this proposal with
-     *   [clearPendingProposal] in case the DS rejects it
-     */
-    suspend fun newRemoveProposal(id: MLSGroupId, clientId: ClientId): ProposalBundle {
-        return wrapException { cc.newRemoveProposal(id.lower(), clientId.lower()).lift() }
-    }
-
-    /**
-     * Creates a new proposal to update the current client LeafNode key material within the MLS
-     * group
-     *
-     * @param id conversation identifier
-     * @return a [ProposalBundle] which allows to roll back this proposal with
-     *   [clearPendingProposal] in case the DS rejects it
-     */
-    suspend fun newUpdateProposal(id: MLSGroupId): ProposalBundle {
-        return wrapException { cc.newUpdateProposal(id.lower()).lift() }
-    }
-
-    /**
-     * Allows to remove a pending proposal (rollback). Use this when backend rejects the proposal
-     * you just sent e.g. if permissions have changed meanwhile.
-     *
-     * **CAUTION**: only use this when you had an explicit response from the Delivery Service e.g.
-     * 403 or 409. Do not use otherwise e.g. 5xx responses, timeout etc…
-     *
-     * @param id conversation identifier
-     * @param proposalRef you get from a [ProposalBundle]
-     */
-    suspend fun clearPendingProposal(id: MLSGroupId, proposalRef: ProposalRef) {
-        wrapException { cc.clearPendingProposal(id.lower(), proposalRef.lower()) }
     }
 
     /**
