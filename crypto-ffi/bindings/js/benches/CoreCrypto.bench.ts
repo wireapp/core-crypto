@@ -7,7 +7,7 @@ import {
     invite,
     setup,
     teardown,
-} from "../test/utils";
+} from "../test/utils.js";
 import { afterEach, beforeEach, describe } from "mocha";
 import { browser, expect } from "@wdio/globals";
 import { writeFile } from "fs/promises";
@@ -21,11 +21,11 @@ afterEach(async () => {
 });
 
 async function measureDecryption(
-    client1,
-    client2,
-    conversationId,
-    message,
-    messageCount
+    client1: string,
+    client2: string,
+    conversationId: string,
+    message: string,
+    messageCount: number
 ) {
     const cc1 = window.ensureCcDefined(client1);
     const encoder = new TextEncoder();
