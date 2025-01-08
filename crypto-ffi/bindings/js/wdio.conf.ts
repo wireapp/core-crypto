@@ -9,7 +9,7 @@ const log = logger("wdio.conf.ts");
 // This file is imported both by the main wdio process and the worker process(es).
 // Since only the main wdio process needs to create the static path for static-server
 // service, only create the temporary directory if we're not a worker.
-let staticPath;
+let staticPath: string | undefined;
 if (process.env.WDIO_WORKER_ID === undefined) {
     staticPath = await fs.mkdtemp(
         path.join(tmpdir(), "core-crypto-wdio-test-")
@@ -177,9 +177,11 @@ export const config: WebdriverIO.Config = {
     },
 
     async onPrepare() {
+        if (staticPath === undefined) return;
+
         const dir = process.cwd();
 
-        async function copyFile(src, destdir) {
+        async function copyFile(src: string, destdir: string) {
             const destName = path.join(destdir, path.basename(src));
             await fs.copyFile(src, destName);
         }
@@ -194,7 +196,9 @@ export const config: WebdriverIO.Config = {
     },
 
     async onComplete() {
-        await fs.rm(staticPath, { recursive: true, force: true });
-        log.info("Cleaning up temporary dir:", staticPath);
+        if (staticPath !== undefined) {
+            await fs.rm(staticPath, { recursive: true, force: true });
+            log.info("Cleaning up temporary dir:", staticPath);
+        }
     },
 };
