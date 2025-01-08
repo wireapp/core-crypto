@@ -197,5 +197,9 @@ jobs:
           cargo make wasm
           cd bindings/js
           bun eslint . --max-warnings=0
+
+          # check all Typescript files (wdio.conf.ts, benches)
+          bunx tsc --noEmit
+
           bun run build
           bun run test
