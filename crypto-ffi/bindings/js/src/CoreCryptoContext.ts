@@ -411,7 +411,7 @@ export default class CoreCryptoContext {
 
     /**
      * Prunes local KeyPackages after making sure they also have been deleted on the backend side
-     * You should only use this after {@link CoreCryptoContext.e2eiRotateAll}
+     * You should only use this after calling {@link CoreCryptoContext.e2eiRotate} on all conversations.
      *
      * @param refs - KeyPackage references to delete obtained from a {RotateBundle}
      */
@@ -443,10 +443,6 @@ export default class CoreCryptoContext {
     /**
      * Removes the provided clients from a conversation; Assuming those clients exist and the current client is allowed
      * to do so, otherwise this operation does nothing.
-     *
-     * **CAUTION**: {@link CoreCryptoContext.commitAccepted} **HAS TO** be called afterward **ONLY IF** the Delivery Service responds
-     * '200 OK' to the {@link CommitBundle} upload. It will "merge" the commit locally i.e. increment the local group
-     * epoch, use new encryption secrets etc...
      *
      * @param conversationId - The ID of the conversation
      * @param clientIds - Array of Client IDs to remove.
@@ -485,10 +481,6 @@ export default class CoreCryptoContext {
     /**
      * Creates an update commit which forces every client to update their LeafNode in the conversation
      *
-     * **CAUTION**: {@link CoreCryptoContext.commitAccepted} **HAS TO** be called afterward **ONLY IF** the Delivery Service responds
-     * '200 OK' to the {@link CommitBundle} upload. It will "merge" the commit locally i.e. increment the local group
-     * epoch, use new encryption secrets etc...
-     *
      * @param conversationId - The ID of the conversation
      *
      * @returns A {@link CommitBundle}
@@ -520,10 +512,6 @@ export default class CoreCryptoContext {
 
     /**
      * Commits the local pending proposals and returns the {@link CommitBundle} object containing what can result from this operation.
-     *
-     * **CAUTION**: {@link CoreCryptoContext.commitAccepted} **HAS TO** be called afterwards **ONLY IF** the Delivery Service responds
-     * '200 OK' to the {@link CommitBundle} upload. It will "merge" the commit locally i.e. increment the local group
-     * epoch, use new encryption secrets etc...
      *
      * @param conversationId - The ID of the conversation
      *
@@ -561,12 +549,8 @@ export default class CoreCryptoContext {
     /**
      * Allows to create an external commit to "apply" to join a group through its GroupInfo.
      *
-     * If the Delivery Service accepts the external commit, you have to {@link CoreCryptoContext.mergePendingGroupFromExternalCommit}
-     * in order to get back a functional MLS group. On the opposite, if it rejects it, you can either retry by just
-     * calling again {@link CoreCryptoContext.joinByExternalCommit}, no need to {@link CoreCryptoContext.clearPendingGroupFromExternalCommit}.
-     * If you want to abort the operation (too many retries or the user decided to abort), you can use
-     * {@link CoreCryptoContext.clearPendingGroupFromExternalCommit} in order not to bloat the user's storage but nothing
-     * bad can happen if you forget to except some storage space wasted.
+     * If the Delivery Service rejects it, you can retry by just
+     * calling again the function again.
      *
      * @param groupInfo - a TLS encoded GroupInfo fetched from the Delivery Service
      * @param credentialType - kind of Credential to use for joining this group. If {@link CredentialType.Basic} is
@@ -662,7 +646,8 @@ export default class CoreCryptoContext {
 
     /**
      * Allows {@link CoreCryptoContext} to act as a CSPRNG provider
-     * @note The underlying CSPRNG algorithm is ChaCha20 and takes in account the external seed provider.
+     *
+     * The underlying CSPRNG algorithm is ChaCha20 and takes in account the external seed provider.
      *
      * @param length - The number of bytes to be returned in the `Uint8Array`
      *
@@ -939,14 +924,14 @@ export default class CoreCryptoContext {
 
     /**
      * Generates an E2EI enrollment instance for a "regular" client (with a Basic credential) willing to migrate to E2EI.
-     * Once the enrollment is finished, use the instance in {@link CoreCryptoContext.e2eiRotateAll} to do the rotation.
+     * Once the enrollment is finished, use {@link CoreCryptoContext.e2eiRotate} to do key rotation.
      *
      * @param displayName - human-readable name displayed in the application e.g. `Smith, Alice M (QA)`
      * @param handle - user handle e.g. `alice.smith.qa@example.com`
      * @param expirySec - generated x509 certificate expiry
      * @param ciphersuite - for generating signing key material
      * @param team - name of the Wire team a user belongs to
-     * @returns The new {@link E2eiEnrollment} enrollment instance to use with {@link CoreCryptoContext.e2eiRotateAll}
+     * @returns The new {@link E2eiEnrollment} enrollment instance to use with {@link CoreCryptoContext.e2eiRotate}
      */
     async e2eiNewActivationEnrollment(
         displayName: string,
@@ -971,14 +956,15 @@ export default class CoreCryptoContext {
      * Generates an E2EI enrollment instance for a E2EI client (with a X509 certificate credential)
      * having to change/rotate their credential, either because the former one is expired or it
      * has been revoked. It lets you change the DisplayName or the handle
-     * if you need to. Once the enrollment is finished, use the instance in {@link CoreCryptoContext.e2eiRotateAll} to do the rotation.
+     * if you need to. Once the enrollment is finished, use {@link CoreCryptoContext.e2eiRotate}
+     * to do key rotation.
      *
      * @param expirySec - generated x509 certificate expiry
      * @param ciphersuite - for generating signing key material
      * @param displayName - human-readable name displayed in the application e.g. `Smith, Alice M (QA)`
      * @param handle - user handle e.g. `alice.smith.qa@example.com`
      * @param team - name of the Wire team a user belongs to
-     * @returns The new {@link E2eiEnrollment} enrollment instance to use with {@link CoreCryptoContext.e2eiRotateAll}
+     * @returns The new {@link E2eiEnrollment} enrollment instance to use with {@link CoreCryptoContext.e2eiRotate}
      */
     async e2eiNewRotateEnrollment(
         expirySec: number,
@@ -1103,7 +1089,7 @@ export default class CoreCryptoContext {
      * or {@link CoreCryptoContext.e2eiNewRotateEnrollment}
      *
      * # Expected actions to perform after this function (in this order)
-     * 1. Rotate credentials for each conversation in {@link CoreCryptoContext.e2eiRotate}
+     * 1. Rotate credentials for each conversation using {@link CoreCryptoContext.e2eiRotate}
      * 2. Generate new key packages with {@link CoreCryptoContext.clientKeypackages}
      * 3. Use these to replace the stale ones the in the backend
      * 4. Delete the stale ones locally using {@link CoreCryptoContext.retainOnlyKeyPackagesMatchingMostRecentX509Credentials}
