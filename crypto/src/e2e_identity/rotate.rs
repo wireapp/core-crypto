@@ -247,7 +247,7 @@ impl CentralContext {
                 cb,
             )
             .await?;
-        self.send_and_merge_commit(&mut conversation_guard, commit)
+        self.send_and_merge_commit(conversation_guard, commit)
             .await
             .map_err(|e| Error::from(RecursiveError::mls_conversation("sending and merging commit")(e)))
     }

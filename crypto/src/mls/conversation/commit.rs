@@ -27,12 +27,16 @@ use crate::{
 impl CentralContext {
     pub(crate) async fn send_and_merge_commit(
         &self,
-        conversation: &mut MlsConversation,
+        mut conversation: async_lock::RwLockWriteGuard<'_, MlsConversation>,
         commit: MlsCommitBundle,
     ) -> Result<()> {
-        match self.send_commit(commit).await {
-            Ok(()) => {
-                conversation
+        let conv_id = conversation.id().clone();
+        match self.send_commit(commit, Some(conversation)).await {
+            Ok(false) => Ok(()),
+            Ok(true) => {
+                let conversation = self.get_conversation(&conv_id).await?;
+                let mut conversation_guard = conversation.write().await;
+                conversation_guard
                     .commit_accepted(
                         &self
                             .mls_provider()
@@ -42,7 +46,9 @@ impl CentralContext {
                     .await
             }
             Err(e @ Error::MessageRejected { .. }) => {
-                conversation
+                let conversation = self.get_conversation(&conv_id).await?;
+                let mut conversation_guard = conversation.write().await;
+                conversation_guard
                     .clear_pending_commit(
                         &self
                             .mls_provider()
@@ -56,7 +62,14 @@ impl CentralContext {
         }
     }
 
-    pub(crate) async fn send_commit(&self, commit: MlsCommitBundle) -> Result<()> {
+    /// Send the commit via mls transport and handle the response.
+    /// Return `Ok(true)` if the commit should be accepted and merged,
+    /// `Ok(false)` if commit transport was successful and the commit can be discarded.
+    pub(crate) async fn send_commit(
+        &self,
+        mut commit: MlsCommitBundle,
+        conversation: Option<async_lock::RwLockWriteGuard<'_, MlsConversation>>,
+    ) -> Result<bool> {
         let guard = self
             .mls_transport()
             .await
@@ -64,6 +77,21 @@ impl CentralContext {
         let transport = guard.as_ref().ok_or::<Error>(
             RecursiveError::root("getting mls transport")(crate::Error::MlsTransportNotProvided).into(),
         )?;
+        let client = self
+            .mls_client()
+            .await
+            .map_err(RecursiveError::root("getting mls client"))?;
+        let backend = self
+            .mls_provider()
+            .await
+            .map_err(RecursiveError::root("getting mls provider"))?;
+
+        let conversation_id_and_epoch = conversation
+            .as_ref()
+            .map(|c| (c.id().clone(), c.group.epoch().as_u64()));
+
+        // Release lock here, so the callback can do processing on the conversation (e.g., process commits before returning retry).
+        drop(conversation);
         loop {
             match transport
                 .send_commit_bundle(commit.clone())
@@ -71,12 +99,36 @@ impl CentralContext {
                 .map_err(RecursiveError::root("sending commit bundle"))?
             {
                 MlsTransportResponse::Success => {
-                    return Ok(());
+                    return Ok(true);
                 }
                 MlsTransportResponse::Abort { reason } => {
                     return Err(Error::MessageRejected { reason });
                 }
-                MlsTransportResponse::Retry => {}
+                MlsTransportResponse::Retry => {
+                    let Some((ref conversation_id, ref epoch_before_sending)) = conversation_id_and_epoch else {
+                        return Err(Error::CannotRetryWithoutConversation);
+                    };
+                    let conversation = self.get_conversation(conversation_id).await?;
+                    let mut conversation_guard = conversation.write().await;
+                    if *epoch_before_sending == conversation_guard.group.epoch().as_u64() {
+                        // No intermediate commits have been processed before returning retry.
+                        // This will be the case, e.g., on network failure.
+                        // We can just send the exact same commit again.
+                        continue;
+                    }
+                    // The epoch has changed. I.e., a client originally tried sending a commit for an old epoch,
+                    // which was rejected by the DS.
+                    // Before returning `Retry`, the API consumer has fetched and merged all commits,
+                    // so the group state is up-to-date.
+                    // The original commit has been `renewed` to a pending proposal, unless the
+                    // intended operation was already done in one of the merged commits.
+                    let Some(commit_to_retry) = conversation_guard.commit_pending_proposals(&client, &backend).await?
+                    else {
+                        // The intended operation was already done in one of the merged commits.
+                        return Ok(false);
+                    };
+                    commit = commit_to_retry;
+                }
             }
         }
     }
@@ -124,8 +176,7 @@ impl CentralContext {
             group_info: message.group_info,
         };
 
-        self.send_and_merge_commit(&mut conversation_guard, commit.clone())
-            .await?;
+        self.send_and_merge_commit(conversation_guard, commit.clone()).await?;
 
         Ok(message.crl_new_distribution_points)
     }
@@ -160,7 +211,7 @@ impl CentralContext {
                     .map_err(RecursiveError::root("getting mls provider"))?,
             )
             .await?;
-        self.send_and_merge_commit(&mut conversation_guard, commit).await
+        self.send_and_merge_commit(conversation_guard, commit).await
     }
 
     /// Self updates the KeyPackage and automatically commits. Pending proposals will be commited
@@ -194,7 +245,7 @@ impl CentralContext {
                 None,
             )
             .await?;
-        self.send_and_merge_commit(&mut conversation_guard, commit).await
+        self.send_and_merge_commit(conversation_guard, commit).await
     }
 
     /// Commits all pending proposals of the group
@@ -226,7 +277,7 @@ impl CentralContext {
         let Some(commit) = commit else {
             return Ok(());
         };
-        self.send_and_merge_commit(&mut conversation_guard, commit).await
+        self.send_and_merge_commit(conversation_guard, commit).await
     }
 }
 
@@ -373,29 +424,28 @@ impl MlsConversation {
         backend: &MlsCryptoProvider,
     ) -> Result<Option<MlsCommitBundle>> {
         if self.group.pending_proposals().count() == 0 {
-            Ok(None)
-        } else {
-            let signer = &self
-                .find_most_recent_credential_bundle(client)
-                .await
-                .map_err(RecursiveError::mls_client("finding most recent credential bundle"))?
-                .signature_key;
-
-            let (commit, welcome, gi) = self
-                .group
-                .commit_to_pending_proposals(backend, signer)
-                .await
-                .map_err(MlsError::wrap("group commit to pending proposals"))?;
-            let group_info = MlsGroupInfoBundle::try_new_full_plaintext(gi.unwrap())?;
-
-            self.persist_group_when_changed(&backend.keystore(), false).await?;
-
-            Ok(Some(MlsCommitBundle {
-                welcome,
-                commit,
-                group_info,
-            }))
+            return Ok(None);
         }
+        let signer = &self
+            .find_most_recent_credential_bundle(client)
+            .await
+            .map_err(RecursiveError::mls_client("finding most recent credential bundle"))?
+            .signature_key;
+
+        let (commit, welcome, gi) = self
+            .group
+            .commit_to_pending_proposals(backend, signer)
+            .await
+            .map_err(MlsError::wrap("group commit to pending proposals"))?;
+        let group_info = MlsGroupInfoBundle::try_new_full_plaintext(gi.unwrap())?;
+
+        self.persist_group_when_changed(&backend.keystore(), false).await?;
+
+        Ok(Some(MlsCommitBundle {
+            welcome,
+            commit,
+            group_info,
+        }))
     }
 }
 

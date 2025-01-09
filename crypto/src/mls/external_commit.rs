@@ -171,8 +171,14 @@ impl CentralContext {
             group_info,
         };
 
-        match self.send_commit(commit_bundle).await {
-            Ok(()) => self.merge_pending_group_from_external_commit(&new_group_id).await?,
+        match self.send_commit(commit_bundle, None).await {
+            Ok(need_to_merge_commit) => {
+                debug_assert!(
+                    need_to_merge_commit,
+                    "If sending the external commit was successful, we should always need to merge it"
+                );
+                self.merge_pending_group_from_external_commit(&new_group_id).await?
+            }
             Err(e @ mls::conversation::Error::MessageRejected { .. }) => {
                 self.clear_pending_group_from_external_commit(&new_group_id).await?;
                 return Err(RecursiveError::mls_conversation("sending commit")(e).into());
