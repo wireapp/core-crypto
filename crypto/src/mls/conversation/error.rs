@@ -21,6 +21,9 @@ pub enum Error {
         /// Why was the message rejected by the delivery service?
         reason: String,
     },
+    /// This is thrown when a client wants to retry sending an external join commit.
+    #[error("Cannot recreate a commit for retry without being in the conversation. Restart the operation from the beginning.")]
+    CannotRetryWithoutConversation,
     #[error("We already decrypted this message once")]
     DuplicateMessage,
     #[error("The epoch in which message was encrypted is older than {MAX_PAST_EPOCHS}")]
