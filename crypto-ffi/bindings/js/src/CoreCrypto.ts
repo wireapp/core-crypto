@@ -15,6 +15,7 @@
 // along with this program. If not, see http://www.gnu.org/licenses/.
 
 import * as CoreCryptoFfiTypes from "./core-crypto-ffi.d.js";
+export { BuildMetadata } from "./core-crypto-ffi.d.js";
 import initWasm, {
     AcmeChallenge,
     ConversationConfiguration as ConversationConfigurationFfi,
@@ -413,8 +414,8 @@ export interface ConversationInitBundle {
      */
     commit: Uint8Array;
     /**
-     * MLS Public Group State (aka Group Info) which becomes valid when the external commit is accepted by the Delivery Service
-     * with {@link CoreCrypto.mergePendingGroupFromExternalCommit}
+     * MLS Public Group State (aka Group Info) which becomes valid when the external commit
+     * is accepted by the Delivery Service
      *
      * @readonly
      */
@@ -768,7 +769,7 @@ export interface ExternalAddProposalArgs extends ExternalProposalArgs {
     ciphersuite: Ciphersuite;
     /**
      * Fails when it is {@link CredentialType.X509} and no Credential has been created
-     * for it beforehand with {@link CoreCrypto.e2eiMlsInit} or variants.
+     * for it beforehand with {@link CoreCryptoContext.e2eiMlsInitOnly}.
      */
     credentialType: CredentialType;
 }
@@ -811,7 +812,8 @@ function mapTransportResponseToFfi(
 }
 
 /**
- * An interface that must be implemented and provided to CoreCrypto via {@link provideTransport}.
+ * An interface that must be implemented and provided to CoreCrypto via
+ * {@link CoreCrypto.provideTransport}.
  */
 export interface MlsTransport {
     /**
@@ -827,7 +829,7 @@ export interface MlsTransport {
     /**
      *  This callback is called by CoreCrypto to send a regular message to the delivery service.
      * @param message
-     * @returns a promise resolving to a {@link WasmMlsTransportResponse}
+     * @returns a promise resolving to a {@link MlsTransportResponse}
      */
     sendMessage: (message: Uint8Array) => Promise<MlsTransportResponse>;
 }
@@ -1104,10 +1106,10 @@ export class CoreCrypto {
     }
 
     /**
-     * If this returns `true` you **cannot** call {@link CoreCrypto.wipe} or {@link CoreCrypto.close} as they will produce an error because of the
+     * If this returns `true` you **cannot** call {@link CoreCrypto.close} as it will produce an error because of the
      * outstanding references that were detected.
      *
-     * @returns the count of strong refs for this CoreCrypto instance
+     * @returns whether the CoreCrypto instance is locked
      */
     isLocked(): boolean {
         return this.#cc.has_outstanding_refs();
@@ -2094,7 +2096,7 @@ export function buildMetadata(): CoreCryptoFfiTypes.BuildMetadata {
     return CoreCryptoFfi.build_metadata();
 }
 
-type JsonRawData = Uint8Array;
+export type JsonRawData = Uint8Array;
 
 export class E2eiEnrollment {
     /** @hidden */
@@ -2285,7 +2287,6 @@ export class E2eiEnrollment {
     /**
      * Parses the response from `POST /acme/{provisioner-name}/challenge/{challenge-id}` for the OIDC challenge.
      *
-     * @param cc the CoreCrypto instance
      * @param challenge HTTP response body
      * @see https://www.rfc-editor.org/rfc/rfc8555.html#section-7.5.1
      */
