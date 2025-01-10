@@ -1,32 +1,38 @@
 import {
+    CoreCryptoContext as CoreCryptoContextFfi,
+    ConversationConfiguration as ConversationConfigurationFfi,
+    CustomConfiguration as CustomConfigurationFfi,
+    E2eiDumpedPkiEnv,
+} from "./core-crypto-ffi.js";
+import * as CoreCryptoFfiTypes from "./core-crypto-ffi.d.js";
+
+import { CoreCryptoError } from "./CoreCryptoError.js";
+import {
     Ciphersuite,
     ClientId,
     CommitBundle,
     ConversationConfiguration,
-    ConversationConfigurationFfi,
+    CustomConfiguration,
     ConversationId,
     ConversationInitBundle,
-    CoreCryptoContextFfi,
-    CoreCryptoError,
     CredentialType,
-    CRLRegistration,
-    CustomConfiguration,
-    CustomConfigurationFfi,
     DecryptedMessage,
+    WelcomeBundle,
+    WireIdentity,
+} from "./CoreCryptoMLS.js";
+
+import {
     E2eiConversationState,
-    E2eiDumpedPkiEnv,
     E2eiEnrollment,
     mapWireIdentity,
     normalizeEnum,
+    CRLRegistration,
     NewCrlDistributionPoints,
-    ProteusAutoPrekeyBundle,
-    WelcomeBundle,
-    WireIdentity,
-} from "./CoreCrypto.js";
+} from "./CoreCryptoE2EI.js";
 
-import * as CoreCryptoFfiTypes from "./core-crypto-ffi.d.js";
+import { ProteusAutoPrekeyBundle } from "./CoreCryptoProteus.js";
 
-export default class CoreCryptoContext {
+export class CoreCryptoContext {
     /** @hidden */
     #ctx: CoreCryptoFfiTypes.CoreCryptoContext;
 
