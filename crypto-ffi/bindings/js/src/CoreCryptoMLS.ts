@@ -2,6 +2,7 @@ import {
     MlsTransportResponseVariant,
     WasmMlsTransportResponse as MlsTransportResponseFfi,
     CommitBundle as CommitBundleFfi,
+    X509Identity
 } from "./core-crypto-ffi.js";
 
 /**
@@ -358,40 +359,6 @@ export interface WireIdentity {
      * In case {@link credentialType} is {@link CredentialType.X509} this is populated
      */
     x509Identity?: X509Identity;
-}
-
-/**
- * Represents the parts of {@link WireIdentity} that are specific to a X509 certificate (and not a Basic one).
- */
-export interface X509Identity {
-    /**
-     * User handle e.g. `john_wire`
-     */
-    handle: string;
-    /**
-     * Name as displayed in the messaging application e.g. `John Fitzgerald Kennedy`
-     */
-    displayName: string;
-    /**
-     * DNS domain for which this identity proof was generated e.g. `whitehouse.gov`
-     */
-    domain: string;
-    /**
-     * X509 certificate identifying this client in the MLS group ; PEM encoded
-     */
-    certificate: string;
-    /**
-     * X509 certificate serial number
-     */
-    serialNumber: string;
-    /**
-     * X509 certificate not before as Unix timestamp
-     */
-    notBefore: bigint;
-    /**
-     * X509 certificate not after as Unix timestamp
-     */
-    notAfter: bigint;
 }
 
 /**

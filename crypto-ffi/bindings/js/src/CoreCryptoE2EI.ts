@@ -7,7 +7,6 @@ import {
     CredentialType,
     DeviceStatus,
     WireIdentity,
-    X509Identity,
 } from "./CoreCryptoMLS.js";
 
 /**
@@ -48,24 +47,7 @@ export const mapWireIdentity = (
             CredentialType,
             ffiIdentity.credential_type
         ),
-        x509Identity: mapX509Identity(ffiIdentity.x509_identity),
-    };
-};
-
-const mapX509Identity = (
-    ffiIdentity?: CoreCryptoFfiTypes.X509Identity
-): X509Identity | undefined => {
-    if (!ffiIdentity) {
-        return undefined;
-    }
-    return {
-        handle: ffiIdentity.handle,
-        displayName: ffiIdentity.display_name,
-        domain: ffiIdentity.domain,
-        certificate: ffiIdentity.certificate,
-        serialNumber: ffiIdentity.serial_number,
-        notBefore: ffiIdentity.not_before,
-        notAfter: ffiIdentity.not_after,
+        x509Identity: ffiIdentity.x509_identity,
     };
 };
 
