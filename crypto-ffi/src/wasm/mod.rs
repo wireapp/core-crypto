@@ -1036,25 +1036,32 @@ impl WireIdentity {
     }
 }
 
-#[wasm_bindgen]
+#[wasm_bindgen(getter_with_clone)]
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 /// Represents the identity claims identifying a client
 /// Those claims are verifiable by any member in the group
 pub struct X509Identity {
     /// user handle e.g. `john_wire`
-    handle: String,
+    #[wasm_bindgen(readonly)]
+    pub handle: String,
     /// Name as displayed in the messaging application e.g. `John Fitzgerald Kennedy`
-    display_name: String,
+    #[wasm_bindgen(readonly, js_name = displayName)]
+    pub display_name: String,
     /// DNS domain for which this identity proof was generated e.g. `whitehouse.gov`
-    domain: String,
+    #[wasm_bindgen(readonly)]
+    pub domain: String,
     /// X509 certificate identifying this client in the MLS group ; PEM encoded
-    certificate: String,
+    #[wasm_bindgen(readonly)]
+    pub certificate: String,
     /// X509 certificate serial number
-    serial_number: String,
+    #[wasm_bindgen(readonly, js_name = serialNumber)]
+    pub serial_number: String,
     /// X509 certificate not before as Unix timestamp
-    not_before: u64,
+    #[wasm_bindgen(readonly, js_name = notBefore)]
+    pub not_before: u64,
     /// X509 certificate not after as Unix timestamp
-    not_after: u64,
+    #[wasm_bindgen(readonly, js_name = notAfter)]
+    pub not_after: u64,
 }
 
 impl From<core_crypto::prelude::X509Identity> for X509Identity {
@@ -1068,44 +1075,6 @@ impl From<core_crypto::prelude::X509Identity> for X509Identity {
             not_before: i.not_before,
             not_after: i.not_after,
         }
-    }
-}
-
-#[wasm_bindgen]
-impl X509Identity {
-    #[wasm_bindgen(getter)]
-    pub fn handle(&self) -> String {
-        self.handle.clone()
-    }
-
-    #[wasm_bindgen(getter)]
-    pub fn display_name(&self) -> String {
-        self.display_name.clone()
-    }
-
-    #[wasm_bindgen(getter)]
-    pub fn domain(&self) -> String {
-        self.domain.clone()
-    }
-
-    #[wasm_bindgen(getter)]
-    pub fn certificate(&self) -> String {
-        self.certificate.clone()
-    }
-
-    #[wasm_bindgen(getter)]
-    pub fn serial_number(&self) -> String {
-        self.serial_number.clone()
-    }
-
-    #[wasm_bindgen(getter)]
-    pub fn not_before(&self) -> u64 {
-        self.not_before
-    }
-
-    #[wasm_bindgen(getter)]
-    pub fn not_after(&self) -> u64 {
-        self.not_after
     }
 }
 
