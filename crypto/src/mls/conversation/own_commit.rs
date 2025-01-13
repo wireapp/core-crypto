@@ -49,7 +49,7 @@ impl MlsConversation {
         }
     }
 
-    pub(crate) async fn handle_own_commit<'a>(
+    pub(crate) async fn handle_own_commit(
         &mut self,
         backend: &MlsCryptoProvider,
         ct: &ConfirmationTag,
