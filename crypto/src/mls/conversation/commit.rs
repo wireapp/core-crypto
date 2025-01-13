@@ -27,7 +27,7 @@ use crate::{
 impl CentralContext {
     pub(crate) async fn send_and_merge_commit(
         &self,
-        mut conversation: async_lock::RwLockWriteGuard<'_, MlsConversation>,
+        conversation: async_lock::RwLockWriteGuard<'_, MlsConversation>,
         commit: MlsCommitBundle,
     ) -> Result<()> {
         let conv_id = conversation.id().clone();
@@ -529,6 +529,93 @@ mod tests {
     use super::{Error, *};
 
     wasm_bindgen_test_configure!(run_in_browser);
+
+    mod transport {
+        use super::*;
+        use std::sync::Arc;
+
+        #[apply(all_cred_cipher)]
+        #[wasm_bindgen_test]
+        async fn retry_should_work(case: TestCase) {
+            run_test_with_client_ids(
+                case.clone(),
+                ["alice", "bob", "charlie"],
+                move |[alice_central, bob_central, charlie_central]| {
+                    Box::pin(async move {
+                        // Create conversation
+                        let id = conversation_id();
+                        alice_central
+                            .context
+                            .new_conversation(&id, case.credential_type, case.cfg.clone())
+                            .await
+                            .unwrap();
+                        // Add bob
+                        alice_central.invite_all(&case, &id, [&bob_central]).await.unwrap();
+
+                        // Bob produces a commit that Alice will receive only after she tried sending a commit
+                        bob_central.context.update_keying_material(&id).await.unwrap();
+                        let bob_epoch = bob_central.get_conversation_unchecked(&id).await.group.epoch().as_u64();
+                        assert_eq!(2, bob_epoch);
+                        let alice_epoch = alice_central
+                            .get_conversation_unchecked(&id)
+                            .await
+                            .group
+                            .epoch()
+                            .as_u64();
+                        assert_eq!(1, alice_epoch);
+                        let intermediate_commit = bob_central.mls_transport.latest_commit().await;
+
+                        // Next time a commit is sent, process the intermediate commit and return retry, success the second time
+                        let retry_provider = Arc::new(
+                            CoreCryptoTransportRetrySuccessProvider::default().with_intermediate_commits(
+                                alice_central.clone(),
+                                &[intermediate_commit],
+                                &id,
+                            ),
+                        );
+
+                        alice_central
+                            .context
+                            .set_transport_callbacks(Some(retry_provider.clone()))
+                            .await
+                            .unwrap();
+
+                        // Send two commits and process them on bobs side
+                        alice_central.context.update_keying_material(&id).await.unwrap();
+                        let commit = retry_provider.latest_commit().await;
+                        bob_central
+                            .context
+                            .decrypt_message(&id, &commit.to_bytes().unwrap())
+                            .await
+                            .unwrap();
+
+                        // For this second commit, the retry provider will first return retry and
+                        // then success, but now without an intermediate commit
+                        alice_central
+                            .context
+                            .add_members_to_conversation(&id, vec![charlie_central.rand_key_package(&case).await])
+                            .await
+                            .unwrap();
+                        let commit = retry_provider.latest_commit().await;
+                        bob_central
+                            .context
+                            .decrypt_message(&id, &commit.to_bytes().unwrap())
+                            .await
+                            .unwrap();
+
+                        // Retry should have been returned twice
+                        assert_eq!(retry_provider.retry_count().await, 2);
+                        // Success should have been returned twice
+                        assert_eq!(retry_provider.success_count().await, 2);
+
+                        // Group is still in valid state
+                        assert!(alice_central.try_talk_to(&id, &bob_central).await.is_ok());
+                    })
+                },
+            )
+            .await;
+        }
+    }
 
     mod add_members {
         use super::*;
