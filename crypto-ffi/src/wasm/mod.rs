@@ -981,19 +981,24 @@ impl BufferedDecryptedMessage {
     }
 }
 
-#[wasm_bindgen]
+#[wasm_bindgen(getter_with_clone)]
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 /// Represents the identity claims identifying a client
 /// Those claims are verifiable by any member in the group
 pub struct WireIdentity {
     /// Unique client identifier e.g. `T4Coy4vdRzianwfOgXpn6A:6add501bacd1d90e@whitehouse.gov`
-    client_id: String,
-    /// Status of the Credential at the moment T when this object is created
-    status: u8,
+    #[wasm_bindgen(readonly, js_name = clientId)]
+    pub client_id: String,
+    /// Status of the Credential at the moment this object is created
+    #[wasm_bindgen(readonly)]
+    pub status: u8,
     /// MLS thumbprint
-    thumbprint: String,
-    credential_type: u8,
-    x509_identity: Option<X509Identity>,
+    #[wasm_bindgen(readonly)]
+    pub thumbprint: String,
+    #[wasm_bindgen(readonly, js_name = credentialType)]
+    pub credential_type: u8,
+    #[wasm_bindgen(readonly, js_name = x509Identity)]
+    pub x509_identity: Option<X509Identity>,
 }
 
 impl From<core_crypto::prelude::WireIdentity> for WireIdentity {
@@ -1005,34 +1010,6 @@ impl From<core_crypto::prelude::WireIdentity> for WireIdentity {
             credential_type: i.credential_type as u8,
             x509_identity: i.x509_identity.map(Into::into),
         }
-    }
-}
-
-#[wasm_bindgen]
-impl WireIdentity {
-    #[wasm_bindgen(getter)]
-    pub fn client_id(&self) -> String {
-        self.client_id.clone()
-    }
-
-    #[wasm_bindgen(getter)]
-    pub fn status(&self) -> u8 {
-        self.status
-    }
-
-    #[wasm_bindgen(getter)]
-    pub fn thumbprint(&self) -> String {
-        self.thumbprint.clone()
-    }
-
-    #[wasm_bindgen(getter)]
-    pub fn credential_type(&self) -> u8 {
-        self.credential_type
-    }
-
-    #[wasm_bindgen(getter)]
-    pub fn x509_identity(&self) -> Option<X509Identity> {
-        self.x509_identity.clone()
     }
 }
 

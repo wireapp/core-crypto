@@ -3,11 +3,6 @@ import * as CoreCryptoFfiTypes from "./core-crypto-ffi.d.js";
 import { NewAcmeAuthz, NewAcmeOrder } from "./core-crypto-ffi.js";
 
 import { CoreCryptoError } from "./CoreCryptoError.js";
-import {
-    CredentialType,
-    DeviceStatus,
-    WireIdentity,
-} from "./CoreCryptoMLS.js";
 
 /**
  *  Supporting struct for CRL registration result
@@ -32,24 +27,6 @@ export function normalizeEnum<T>(enumType: T, value: number): T[keyof T] {
     const enumAsDiscriminant = enumType[enumAsString as unknown as keyof T];
     return enumAsDiscriminant;
 }
-
-export const mapWireIdentity = (
-    ffiIdentity?: CoreCryptoFfiTypes.WireIdentity
-): WireIdentity | undefined => {
-    if (!ffiIdentity) {
-        return undefined;
-    }
-    return {
-        clientId: ffiIdentity.client_id,
-        status: normalizeEnum(DeviceStatus, ffiIdentity.status),
-        thumbprint: ffiIdentity.thumbprint,
-        credentialType: normalizeEnum(
-            CredentialType,
-            ffiIdentity.credential_type
-        ),
-        x509Identity: ffiIdentity.x509_identity,
-    };
-};
 
 export interface AcmeDirectory {
     /**

@@ -23,6 +23,7 @@ import {
     CoreCryptoWasmLogger,
     E2eiDumpedPkiEnv,
     MlsTransportProvider,
+    WireIdentity,
 } from "./core-crypto-ffi.js";
 
 import { CoreCryptoError } from "./CoreCryptoError.js";
@@ -30,7 +31,6 @@ import {
     commitBundleFromFfi,
     mapTransportResponseToFfi,
     CredentialType,
-    WireIdentity,
     ConversationId,
     ClientId,
     Ciphersuite,
@@ -51,7 +51,6 @@ import {
     NewCrlDistributionPoints,
     CRLRegistration,
     normalizeEnum,
-    mapWireIdentity,
 } from "./CoreCryptoE2EI.js";
 
 import { ProteusAutoPrekeyBundle } from "./CoreCryptoProteus.js";
@@ -1294,11 +1293,9 @@ export class CoreCrypto {
         conversationId: ConversationId,
         deviceIds: ClientId[]
     ): Promise<WireIdentity[]> {
-        return (
-            await CoreCryptoError.asyncMapErr(
-                this.#cc.get_device_identities(conversationId, deviceIds)
-            )
-        ).map(mapWireIdentity);
+        return await CoreCryptoError.asyncMapErr(
+            this.#cc.get_device_identities(conversationId, deviceIds)
+        );
     }
 
     /**
@@ -1320,11 +1317,12 @@ export class CoreCrypto {
         const mapFixed: Map<string, WireIdentity[]> = new Map();
 
         for (const [userId, identities] of map) {
-            const mappedIdentities = identities.flatMap((identity) => {
-                const mappedIdentity = mapWireIdentity(identity);
-                return mappedIdentity ? [mappedIdentity] : [];
-            });
-            mapFixed.set(userId, mappedIdentities);
+            mapFixed.set(
+                userId,
+                identities.flatMap((identity) => {
+                    return identity ? [identity] : [];
+                })
+            );
         }
 
         return mapFixed;
