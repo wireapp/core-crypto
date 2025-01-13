@@ -45,7 +45,7 @@ pub enum WasmStorageTransaction<'a> {
     },
 }
 
-impl<'a> WasmStorageTransaction<'a> {
+impl WasmStorageTransaction<'_> {
     pub(crate) async fn commit_tx(self) -> CryptoKeystoreResult<()> {
         let Self::Persistent {
             tx: transaction,
