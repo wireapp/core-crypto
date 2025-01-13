@@ -3,6 +3,7 @@ import {
     ConversationConfiguration as ConversationConfigurationFfi,
     CustomConfiguration as CustomConfigurationFfi,
     E2eiDumpedPkiEnv,
+    WireIdentity,
 } from "./core-crypto-ffi.js";
 import * as CoreCryptoFfiTypes from "./core-crypto-ffi.d.js";
 
@@ -18,16 +19,14 @@ import {
     CredentialType,
     DecryptedMessage,
     WelcomeBundle,
-    WireIdentity,
 } from "./CoreCryptoMLS.js";
 
 import {
     E2eiConversationState,
     E2eiEnrollment,
-    mapWireIdentity,
-    normalizeEnum,
     CRLRegistration,
     NewCrlDistributionPoints,
+    normalizeEnum,
 } from "./CoreCryptoE2EI.js";
 
 import { ProteusAutoPrekeyBundle } from "./CoreCryptoProteus.js";
@@ -277,7 +276,7 @@ export class CoreCryptoContext {
                 commitDelay = ffiCommitDelay * 1000;
             }
 
-            const identity = mapWireIdentity(ffiDecryptedMessage.identity);
+            const identity = ffiDecryptedMessage.identity;
 
             return {
                 message: ffiDecryptedMessage.message,
@@ -294,7 +293,7 @@ export class CoreCryptoContext {
                         isActive: m.is_active,
                         senderClientId: m.sender_client_id,
                         commitDelay: m.commit_delay,
-                        identity: mapWireIdentity(m.identity),
+                        identity: m.identity,
                         hasEpochChanged: m.has_epoch_changed,
                         crlNewDistributionPoints: m.crl_new_distribution_points,
                     })
@@ -1202,11 +1201,9 @@ export class CoreCryptoContext {
         conversationId: ConversationId,
         deviceIds: ClientId[]
     ): Promise<WireIdentity[]> {
-        return (
-            await CoreCryptoError.asyncMapErr(
-                this.#ctx.get_device_identities(conversationId, deviceIds)
-            )
-        ).map(mapWireIdentity);
+        return await CoreCryptoError.asyncMapErr(
+            this.#ctx.get_device_identities(conversationId, deviceIds)
+        );
     }
 
     /**
@@ -1230,11 +1227,12 @@ export class CoreCryptoContext {
         const mapFixed: Map<string, WireIdentity[]> = new Map();
 
         for (const [userId, identities] of map) {
-            const mappedIdentities = identities.flatMap((identity) => {
-                const mappedIdentity = mapWireIdentity(identity);
-                return mappedIdentity ? [mappedIdentity] : [];
-            });
-            mapFixed.set(userId, mappedIdentities);
+            mapFixed.set(
+                userId,
+                identities.flatMap((identity) => {
+                    return identity ? [identity] : [];
+                })
+            );
         }
 
         return mapFixed;

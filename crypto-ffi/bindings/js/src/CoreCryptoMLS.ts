@@ -2,7 +2,7 @@ import {
     MlsTransportResponseVariant,
     WasmMlsTransportResponse as MlsTransportResponseFfi,
     CommitBundle as CommitBundleFfi,
-    X509Identity
+    WireIdentity,
 } from "./core-crypto-ffi.js";
 
 /**
@@ -332,33 +332,6 @@ export interface BufferedDecryptedMessage {
      * see {@link DecryptedMessage.crlNewDistributionPoints}
      */
     crlNewDistributionPoints?: string[];
-}
-
-/**
- * Represents the identity claims identifying a client
- * Those claims are verifiable by any member in the group
- */
-export interface WireIdentity {
-    /**
-     * Unique client identifier
-     */
-    clientId: string;
-    /**
-     * Status of the Credential at the moment T when this object is created
-     */
-    status: DeviceStatus;
-    /**
-     * MLS thumbprint
-     */
-    thumbprint: string;
-    /**
-     * Indicates whether the credential is Basic or X509
-     */
-    credentialType: CredentialType;
-    /**
-     * In case {@link credentialType} is {@link CredentialType.X509} this is populated
-     */
-    x509Identity?: X509Identity;
 }
 
 /**
