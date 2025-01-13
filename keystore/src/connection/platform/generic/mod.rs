@@ -32,7 +32,7 @@ pub struct SqlCipherConnection {
 pub struct TransactionWrapper<'conn> {
     transaction: Transaction<'conn>,
 }
-impl<'conn> TransactionWrapper<'conn> {
+impl TransactionWrapper<'_> {
     // this is async just to conform with the wasm impl
     pub(crate) async fn commit_tx(self) -> CryptoKeystoreResult<()> {
         Ok(self.transaction.commit()?)
