@@ -18,6 +18,7 @@ export class CoreCryptoError extends Error {
     errorStack: string[];
     proteusErrorCode: number | null;
 
+    /* eslint @typescript-eslint/no-explicit-any: off */
     private constructor(richError: CoreCryptoRichError, ...params: any[]) {
         super(richError.message, ...params);
         Object.setPrototypeOf(this, new.target.prototype);
