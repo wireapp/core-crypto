@@ -29,6 +29,7 @@ pub use openmls_traits::types::SignatureScheme;
 pub use rstest::*;
 pub use rstest_reuse::{self, *};
 use std::collections::HashMap;
+use std::ops::Deref;
 use std::sync::Arc;
 
 pub mod context;
@@ -651,5 +652,117 @@ impl MlsTransportTestExt for CoreCryptoTransportAbortProvider {
 
     async fn latest_message(&self) -> Vec<u8> {
         unreachable!("abort provider never stores a message")
+    }
+}
+
+/// This alternates between retry and success responses (starts with retry).
+#[derive(Debug, Default)]
+pub struct CoreCryptoTransportRetrySuccessProvider {
+    latest_commit_bundle: RwLock<Option<MlsCommitBundle>>,
+    latest_message: RwLock<Option<Vec<u8>>>,
+    just_returned_retry: RwLock<bool>,
+    retry_count: RwLock<u32>,
+    success_count: RwLock<u32>,
+    intermediate_commits: RwLock<Option<IntermediateCommits>>,
+}
+
+#[derive(Debug, Clone)]
+struct IntermediateCommits {
+    receiver: ClientContext,
+    conversation_id: ConversationId,
+    commits: Arc<[MlsMessageOut]>,
+}
+
+impl CoreCryptoTransportRetrySuccessProvider {
+    /// Adds intermediate commits that will be consumed and processed before the next time `Retry` is returned.
+    pub fn with_intermediate_commits(
+        mut self,
+        receiver: ClientContext,
+        commits: &[MlsMessageOut],
+        conversation_id: &ConversationId,
+    ) -> Self {
+        self.intermediate_commits = Some(IntermediateCommits {
+            receiver,
+            commits: commits.into(),
+            conversation_id: conversation_id.clone(),
+        })
+        .into();
+        self
+    }
+
+    pub async fn retry_count(&self) -> u32 {
+        *self.retry_count.read().await
+    }
+
+    pub async fn success_count(&self) -> u32 {
+        *self.success_count.read().await
+    }
+}
+
+#[cfg_attr(target_family = "wasm", async_trait::async_trait(?Send))]
+#[cfg_attr(not(target_family = "wasm"), async_trait::async_trait)]
+impl MlsTransport for CoreCryptoTransportRetrySuccessProvider {
+    async fn send_commit_bundle(&self, commit_bundle: MlsCommitBundle) -> crate::Result<MlsTransportResponse> {
+        let mut just_returned_retry = self.just_returned_retry.write().await;
+        if *just_returned_retry {
+            *just_returned_retry = false;
+            *self.success_count.write().await += 1;
+            self.latest_commit_bundle.write().await.replace(commit_bundle);
+            Ok(MlsTransportResponse::Success)
+        } else {
+            *just_returned_retry = true;
+            *self.retry_count.write().await += 1;
+            let mut intermediate_commits = self.intermediate_commits.write().await;
+            let Some(IntermediateCommits {
+                receiver,
+                conversation_id,
+                commits,
+            }) = intermediate_commits.deref()
+            else {
+                return Ok(MlsTransportResponse::Retry);
+            };
+            for commit in commits.iter() {
+                receiver
+                    .context
+                    .decrypt_message(
+                        conversation_id,
+                        commit.to_bytes().expect("reading bytes from intermediate commit"),
+                    )
+                    .await
+                    .expect("processed intermediate commit");
+            }
+            *intermediate_commits = None;
+            Ok(MlsTransportResponse::Retry)
+        }
+    }
+
+    async fn send_message(&self, mls_message: Vec<u8>) -> crate::Result<MlsTransportResponse> {
+        let mut just_returned_retry = self.just_returned_retry.write().await;
+        if *just_returned_retry {
+            self.latest_message.write().await.replace(mls_message);
+            *just_returned_retry = false;
+            *self.success_count.write().await += 1;
+            Ok(MlsTransportResponse::Success)
+        } else {
+            *just_returned_retry = true;
+            *self.retry_count.write().await += 1;
+            Ok(MlsTransportResponse::Retry)
+        }
+    }
+}
+
+#[cfg_attr(target_family = "wasm", async_trait::async_trait(?Send))]
+#[cfg_attr(not(target_family = "wasm"), async_trait::async_trait)]
+impl MlsTransportTestExt for CoreCryptoTransportRetrySuccessProvider {
+    async fn latest_commit_bundle(&self) -> MlsCommitBundle {
+        self.latest_commit_bundle
+            .read()
+            .await
+            .clone()
+            .expect("latest_commit_bundle")
+    }
+
+    async fn latest_message(&self) -> Vec<u8> {
+        self.latest_message.read().await.clone().expect("latest_message")
     }
 }
