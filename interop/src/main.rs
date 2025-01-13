@@ -129,12 +129,17 @@ async fn run_mls_test(chrome_driver_addr: &std::net::SocketAddr) -> Result<()> {
 
     let spinner = util::RunningProcess::new("[MLS] Step 0: Initializing clients & env...", true);
 
+    let ios_client = Rc::new(clients::corecrypto::ios::CoreCryptoIosClient::new().await?);
     let native_client = Rc::new(clients::corecrypto::native::CoreCryptoNativeClient::new().await?);
     let ffi_client = Rc::new(clients::corecrypto::ffi::CoreCryptoFfiClient::new().await?);
     let web_client = Rc::new(clients::corecrypto::web::CoreCryptoWebClient::new(chrome_driver_addr).await?);
 
-    let mut clients: Vec<Rc<dyn clients::EmulatedMlsClient>> =
-        vec![native_client.clone(), ffi_client.clone(), web_client.clone()];
+    let mut clients: Vec<Rc<dyn clients::EmulatedMlsClient>> = vec![
+        native_client.clone(),
+        ffi_client.clone(),
+        web_client.clone(),
+        ios_client.clone(),
+    ];
 
     let ciphersuites = vec![CIPHERSUITE_IN_USE.into()];
     let configuration = MlsCentralConfiguration::try_new(
@@ -265,6 +270,10 @@ async fn run_mls_test(chrome_driver_addr: &std::net::SocketAddr) -> Result<()> {
 
     let spinner = util::RunningProcess::new("[MLS] Step 4: Deleting clients...", true);
 
+    Rc::into_inner(ios_client)
+        .expect("Only one strong reference to the interop client")
+        .wipe()
+        .await?;
     Rc::into_inner(native_client)
         .expect("Only one strong reference to the interop client")
         .wipe()
@@ -289,18 +298,21 @@ async fn run_proteus_test(chrome_driver_addr: &std::net::SocketAddr) -> Result<(
 
     let spinner = util::RunningProcess::new("[Proteus] Step 0: Initializing clients & env...", true);
 
+    let mut ios_client = clients::corecrypto::ios::CoreCryptoIosClient::new().await?;
     let mut native_client = clients::corecrypto::native::CoreCryptoNativeClient::new().await?;
     let mut ffi_client = clients::corecrypto::ffi::CoreCryptoFfiClient::new().await?;
     let mut web_client = clients::corecrypto::web::CoreCryptoWebClient::new(chrome_driver_addr).await?;
     let mut cryptobox_native_client = clients::cryptobox::native::CryptoboxNativeClient::new();
     let mut cryptobox_web_client = clients::cryptobox::web::CryptoboxWebClient::new(chrome_driver_addr).await?;
 
+    ios_client.init().await?;
     native_client.init().await?;
     ffi_client.init().await?;
     web_client.init().await?;
     cryptobox_native_client.init().await?;
     cryptobox_web_client.init().await?;
 
+    let ios_client = Rc::new(ios_client);
     let native_client = Rc::new(native_client);
     let ffi_client = Rc::new(ffi_client);
     let web_client = Rc::new(web_client);
@@ -308,6 +320,7 @@ async fn run_proteus_test(chrome_driver_addr: &std::net::SocketAddr) -> Result<(
     let cryptobox_web_client = Rc::new(cryptobox_web_client);
 
     let mut clients: Vec<Rc<dyn clients::EmulatedProteusClient>> = vec![
+        ios_client.clone(),
         native_client.clone(),
         ffi_client.clone(),
         web_client.clone(),
@@ -433,6 +446,10 @@ async fn run_proteus_test(chrome_driver_addr: &std::net::SocketAddr) -> Result<(
 
     let spinner = util::RunningProcess::new("[Proteus] Step 4: Deleting clients...", true);
 
+    Rc::into_inner(ios_client)
+        .expect("Only one strong reference to the interop client")
+        .wipe()
+        .await?;
     Rc::into_inner(native_client)
         .expect("Only one strong reference to the interop client")
         .wipe()

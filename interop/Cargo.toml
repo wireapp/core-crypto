@@ -38,6 +38,8 @@ tempfile = { version = "3.15" }
 # Terminal support
 xshell = "0.2"
 spinoff = { version = "0.8", features = ["aesthetic"], default-features = false }
+serde = { workspace = true, features = ["derive"] }
+thiserror = { workspace = true }
 
 [target.'cfg(not(target_family = "wasm"))'.dependencies]
 async-fs = "2.1"
