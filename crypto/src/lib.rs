@@ -25,7 +25,7 @@
 
 use async_lock::Mutex;
 #[cfg(test)]
-pub use core_crypto_attributes::{dispotent, durable, idempotent};
+pub use core_crypto_macros::{dispotent, durable, idempotent};
 use std::sync::Arc;
 
 pub use self::error::*;

@@ -2,7 +2,7 @@
 members = [
     "crypto",
     "crypto-ffi",
-    "crypto-attributes",
+    "crypto-macros",
     "keystore",
     "keystore-dump",
     "mls-provider",
@@ -25,7 +25,7 @@ cfg-if = "1.0"
 const_format = "0.2"
 core-crypto = { path = "crypto" }
 core-crypto-keystore = { path = "keystore" }
-core-crypto-attributes = { path = "crypto-attributes" }
+core-crypto-macros = { path = "crypto-macros" }
 derive_more = { version = "0.99", features = ["from", "into", "deref", "deref_mut"] }
 futures-util = "0.3"
 hex = "0.4"

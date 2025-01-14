@@ -916,8 +916,8 @@ dependencies = [
  "async-trait",
  "base64 0.22.1",
  "cfg-if",
- "core-crypto-attributes",
  "core-crypto-keystore",
+ "core-crypto-macros",
  "criterion",
  "cryptobox",
  "derive_more",
@@ -968,15 +968,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "core-crypto-attributes"
-version = "2.0.0"
-dependencies = [
- "proc-macro2",
- "quote",
- "syn 2.0.93",
-]
-
-[[package]]
 name = "core-crypto-ffi"
 version = "2.0.0"
 dependencies = [
@@ -1017,6 +1008,7 @@ dependencies = [
  "blocking",
  "cfg-if",
  "core-crypto-keystore",
+ "core-crypto-macros",
  "core-foundation 0.10.0",
  "criterion",
  "futures-lite",
@@ -1056,6 +1048,16 @@ dependencies = [
  "web-sys",
  "web-time",
  "zeroize",
+]
+
+[[package]]
+name = "core-crypto-macros"
+version = "2.0.0"
+dependencies = [
+ "heck 0.5.0",
+ "proc-macro2",
+ "quote",
+ "syn 2.0.93",
 ]
 
 [[package]]

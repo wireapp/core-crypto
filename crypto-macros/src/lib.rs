@@ -1,11 +1,24 @@
 extern crate proc_macro;
 
+use crate::entity_derive::KeyStoreEntity;
 use proc_macro::TokenStream;
 use proc_macro2::Ident;
-use syn::{punctuated::Punctuated, token::Comma, Attribute, Block, FnArg, ItemFn, ReturnType, Visibility};
+use quote::quote;
+use syn::{
+    parse_macro_input, punctuated::Punctuated, token::Comma, Attribute, Block, FnArg, ItemFn, ReturnType, Visibility,
+};
 
 mod durable;
+mod entity_derive;
 mod idempotent;
+
+/// Implements the `Entity` trait for the given struct.
+/// To be used internally inside the `core-crypto-keystore` crate only.
+#[proc_macro_derive(Entity, attributes(entity, id))]
+pub fn derive_entity(input: TokenStream) -> TokenStream {
+    let parsed = parse_macro_input!(input as KeyStoreEntity).flatten();
+    TokenStream::from(quote! { #parsed })
+}
 
 /// Will drop current MLS group in memory and replace it with the one in the keystore.
 /// This simulates an application crash. Once restarted, everything has to be loaded from the
