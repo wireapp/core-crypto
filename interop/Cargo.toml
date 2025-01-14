@@ -18,7 +18,7 @@ proteus = [
 color-eyre = "0.6"
 log = "0.4"
 femme = "2.2"
-dirs = "5.0"
+dirs = "6.0"
 core-crypto = { path = "../crypto" }
 core-crypto-ffi = { path = "../crypto-ffi" }
 openmls.workspace = true
