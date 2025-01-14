@@ -653,7 +653,7 @@ export class CoreCrypto {
     async removeClientsFromConversation(
         conversationId: ConversationId,
         clientIds: ClientId[]
-    ): Promise<CommitBundle> {
+    ): Promise<void> {
         return await this.transaction(
             async (ctx) =>
                 await ctx.removeClientsFromConversation(

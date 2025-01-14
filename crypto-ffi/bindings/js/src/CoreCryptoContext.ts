@@ -451,36 +451,17 @@ export class CoreCryptoContext {
      *
      * @param conversationId - The ID of the conversation
      * @param clientIds - Array of Client IDs to remove.
-     *
-     * @returns A {@link CommitBundle}
      */
     async removeClientsFromConversation(
         conversationId: ConversationId,
         clientIds: ClientId[]
-    ): Promise<CommitBundle> {
-        try {
-            const ffiRet: CoreCryptoFfiTypes.CommitBundle =
-                await CoreCryptoError.asyncMapErr(
-                    this.#ctx.remove_clients_from_conversation(
-                        conversationId,
-                        clientIds
-                    )
-                );
-
-            const gi = ffiRet.group_info;
-
-            return {
-                welcome: ffiRet.welcome,
-                commit: ffiRet.commit,
-                groupInfo: {
-                    encryptionType: gi.encryption_type,
-                    ratchetTreeType: gi.ratchet_tree_type,
-                    payload: gi.payload,
-                },
-            };
-        } catch (e) {
-            throw CoreCryptoError.fromStdError(e as Error);
-        }
+    ): Promise<void> {
+        return await CoreCryptoError.asyncMapErr(
+            this.#ctx.remove_clients_from_conversation(
+                conversationId,
+                clientIds
+            )
+        );
     }
 
     /**
