@@ -94,7 +94,7 @@ wire-e2e-identity = { workspace = true, features = ["builder"] }
 fluvio-wasm-timer = "0.2"
 time = { version = "0.3", features = ["wasm-bindgen"] }
 core-crypto-keystore = { workspace = true, features = ["dummy-entity"] }
-core-crypto-attributes = { workspace = true }
+core-crypto-macros = { workspace = true }
 
 [target.'cfg(not(target_family = "wasm"))'.dev-dependencies]
 cryptobox = { git = "https://github.com/wireapp/cryptobox" }

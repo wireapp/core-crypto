@@ -916,8 +916,8 @@ dependencies = [
  "async-trait",
  "base64 0.22.1",
  "cfg-if",
- "core-crypto-attributes",
  "core-crypto-keystore",
+ "core-crypto-macros",
  "criterion",
  "cryptobox",
  "derive_more",
@@ -965,15 +965,6 @@ dependencies = [
  "wire-e2e-identity",
  "x509-cert",
  "zeroize",
-]
-
-[[package]]
-name = "core-crypto-attributes"
-version = "3.0.2"
-dependencies = [
- "proc-macro2",
- "quote",
- "syn 2.0.87",
 ]
 
 [[package]]
@@ -1055,6 +1046,16 @@ dependencies = [
  "wasm-bindgen-test",
  "web-sys",
  "zeroize",
+]
+
+[[package]]
+name = "core-crypto-macros"
+version = "3.0.2"
+dependencies = [
+ "heck 0.5.0",
+ "proc-macro2",
+ "quote",
+ "syn 2.0.87",
 ]
 
 [[package]]
