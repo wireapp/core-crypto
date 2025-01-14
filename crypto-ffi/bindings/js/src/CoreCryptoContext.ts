@@ -1,6 +1,6 @@
 import {
     CoreCryptoContext as CoreCryptoContextFfi,
-    ConversationConfiguration as ConversationConfigurationFfi,
+    ConversationConfiguration,
     CustomConfiguration as CustomConfigurationFfi,
     E2eiDumpedPkiEnv,
     WireIdentity,
@@ -12,7 +12,6 @@ import {
     Ciphersuite,
     ClientId,
     CommitBundle,
-    ConversationConfiguration,
     CustomConfiguration,
     ConversationId,
     ConversationInitBundle,
@@ -216,7 +215,7 @@ export class CoreCryptoContext {
     async createConversation(
         conversationId: ConversationId,
         creatorCredentialType: CredentialType,
-        configuration: ConversationConfiguration = {}
+        configuration: Partial<ConversationConfiguration> = {}
     ) {
         try {
             const {
@@ -224,11 +223,11 @@ export class CoreCryptoContext {
                 externalSenders,
                 custom = {},
             } = configuration || {};
-            const config = new ConversationConfigurationFfi(
+            const config = new ConversationConfiguration(
                 ciphersuite,
                 externalSenders,
-                custom?.keyRotationSpan,
-                custom?.wirePolicy
+                (custom as CustomConfiguration)?.keyRotationSpan,
+                (custom as CustomConfiguration)?.wirePolicy
             );
             return await CoreCryptoError.asyncMapErr(
                 this.#ctx.create_conversation(
