@@ -51,24 +51,6 @@ export enum CredentialType {
 }
 
 /**
- * Configuration object for new conversations
- */
-export interface ConversationConfiguration {
-    /**
-     * Conversation ciphersuite
-     */
-    ciphersuite?: Ciphersuite;
-    /**
-     * List of client IDs that are allowed to be external senders of commits
-     */
-    externalSenders?: Uint8Array[];
-    /**
-     * Implementation specific configuration
-     */
-    custom?: CustomConfiguration;
-}
-
-/**
  * see [core_crypto::prelude::MlsWirePolicy]
  */
 export enum WirePolicy {

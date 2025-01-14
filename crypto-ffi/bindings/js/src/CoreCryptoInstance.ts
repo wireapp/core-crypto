@@ -24,6 +24,7 @@ import {
     E2eiDumpedPkiEnv,
     MlsTransportProvider,
     WireIdentity,
+    ConversationConfiguration,
 } from "./core-crypto-ffi.js";
 
 import { CoreCryptoError } from "./CoreCryptoError.js";
@@ -39,7 +40,6 @@ import {
     WelcomeBundle,
     CommitBundle,
     DecryptedMessage,
-    ConversationConfiguration,
     MlsTransport,
 } from "./CoreCryptoMLS.js";
 
@@ -502,7 +502,7 @@ export class CoreCrypto {
     async createConversation(
         conversationId: ConversationId,
         creatorCredentialType: CredentialType,
-        configuration: ConversationConfiguration = {}
+        configuration: Partial<ConversationConfiguration> = {}
     ) {
         return await this.transaction(
             async (ctx) =>

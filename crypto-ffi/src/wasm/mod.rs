@@ -1082,11 +1082,16 @@ impl From<core_crypto::e2e_identity::E2eiDumpedPkiEnv> for E2eiDumpedPkiEnv {
 
 #[wasm_bindgen]
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+/// Configuration object for new conversations
 /// see [core_crypto::prelude::MlsConversationConfiguration]
 pub struct ConversationConfiguration {
-    ciphersuite: Option<Ciphersuite>,
+    #[wasm_bindgen(readonly)]
+    /// Conversation ciphersuite
+    pub ciphersuite: Option<Ciphersuite>,
     external_senders: Vec<Vec<u8>>,
-    custom: CustomConfiguration,
+    #[wasm_bindgen(readonly)]
+    /// Additional configuration
+    pub custom: CustomConfiguration,
 }
 
 #[wasm_bindgen]
@@ -1106,6 +1111,16 @@ impl ConversationConfiguration {
             external_senders,
             custom: CustomConfiguration::new(key_rotation_span, wire_policy),
         })
+    }
+
+    /// List of client IDs that are allowed to be external senders
+    #[wasm_bindgen(getter, js_name = externalSenders)]
+    pub fn external_senders(&self) -> js_sys::Array {
+        self.external_senders
+            .iter()
+            .cloned()
+            .map(JsValue::from)
+            .collect::<js_sys::Array>()
     }
 }
 
