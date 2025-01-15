@@ -25,6 +25,7 @@ import {
     MlsTransportProvider,
     WireIdentity,
     ConversationConfiguration,
+    CustomConfiguration,
 } from "./core-crypto-ffi.js";
 
 import { CoreCryptoError } from "./CoreCryptoError.js";
@@ -36,7 +37,6 @@ import {
     ClientId,
     Ciphersuite,
     ConversationInitBundle,
-    CustomConfiguration,
     WelcomeBundle,
     CommitBundle,
     DecryptedMessage,
@@ -552,7 +552,7 @@ export class CoreCrypto {
      */
     async processWelcomeMessage(
         welcomeMessage: Uint8Array,
-        configuration: CustomConfiguration = {}
+        configuration: Partial<CustomConfiguration> = {}
     ): Promise<WelcomeBundle> {
         return await this.transaction(
             async (ctx) =>
@@ -712,7 +712,7 @@ export class CoreCrypto {
     async joinByExternalCommit(
         groupInfo: Uint8Array,
         credentialType: CredentialType,
-        configuration: CustomConfiguration = {}
+        configuration: Partial<CustomConfiguration> = {}
     ): Promise<ConversationInitBundle> {
         return await this.transaction(
             async (ctx) =>

@@ -1,7 +1,7 @@
 import {
     CoreCryptoContext as CoreCryptoContextFfi,
     ConversationConfiguration,
-    CustomConfiguration as CustomConfigurationFfi,
+    CustomConfiguration,
     E2eiDumpedPkiEnv,
     WireIdentity,
 } from "./core-crypto-ffi.js";
@@ -12,7 +12,6 @@ import {
     Ciphersuite,
     ClientId,
     CommitBundle,
-    CustomConfiguration,
     ConversationId,
     ConversationInitBundle,
     CredentialType,
@@ -335,14 +334,11 @@ export class CoreCryptoContext {
      */
     async processWelcomeMessage(
         welcomeMessage: Uint8Array,
-        configuration: CustomConfiguration = {}
+        configuration: Partial<CustomConfiguration> = {}
     ): Promise<WelcomeBundle> {
         try {
             const { keyRotationSpan, wirePolicy } = configuration || {};
-            const config = new CustomConfigurationFfi(
-                keyRotationSpan,
-                wirePolicy
-            );
+            const config = new CustomConfiguration(keyRotationSpan, wirePolicy);
             const ffiRet: CoreCryptoFfiTypes.WelcomeBundle =
                 await CoreCryptoError.asyncMapErr(
                     this.#ctx.process_welcome_message(welcomeMessage, config)
@@ -547,14 +543,11 @@ export class CoreCryptoContext {
     async joinByExternalCommit(
         groupInfo: Uint8Array,
         credentialType: CredentialType,
-        configuration: CustomConfiguration = {}
+        configuration: Partial<CustomConfiguration> = {}
     ): Promise<ConversationInitBundle> {
         try {
             const { keyRotationSpan, wirePolicy } = configuration || {};
-            const config = new CustomConfigurationFfi(
-                keyRotationSpan,
-                wirePolicy
-            );
+            const config = new CustomConfiguration(keyRotationSpan, wirePolicy);
             const ffiInitMessage: CoreCryptoFfiTypes.ConversationInitBundle =
                 await CoreCryptoError.asyncMapErr(
                     this.#ctx.join_by_external_commit(
