@@ -54,7 +54,6 @@ export type {
     BufferedDecryptedMessage,
     CommitBundle,
     ConversationInitBundle,
-    CustomConfiguration,
     DecryptedMessage,
 } from "./CoreCryptoMLS.js";
 
@@ -68,7 +67,10 @@ export type {
 
 export type { ProteusAutoPrekeyBundle } from "./CoreCryptoProteus.js";
 
-export { ConversationConfiguration } from "./core-crypto-ffi.js";
+export {
+    ConversationConfiguration,
+    CustomConfiguration,
+} from "./core-crypto-ffi.js";
 import initWasm from "./core-crypto-ffi.js";
 
 if (typeof window !== "undefined") {

@@ -1128,8 +1128,14 @@ impl ConversationConfiguration {
 #[derive(Debug, Copy, Clone, serde::Serialize, serde::Deserialize)]
 /// see [core_crypto::prelude::MlsCustomConfiguration]
 pub struct CustomConfiguration {
-    key_rotation_span: Option<u32>,
-    wire_policy: Option<WirePolicy>,
+    ///  Duration in seconds after which we will automatically force a self-update commit
+    ///  Note: This isn't currently implemented
+    #[wasm_bindgen(js_name = keyRotationSpan)]
+    pub key_rotation_span: Option<u32>,
+    /// Defines if handshake messages are encrypted or not
+    /// Note: encrypted handshake messages are not supported by wire-server
+    #[wasm_bindgen(js_name = wirePolicy)]
+    pub wire_policy: Option<WirePolicy>,
 }
 
 #[wasm_bindgen]

@@ -65,22 +65,6 @@ export enum WirePolicy {
 }
 
 /**
- * Implementation specific configuration object for a conversation
- */
-export interface CustomConfiguration {
-    /**
-     * Duration in seconds after which we will automatically force a self_update commit
-     * Note: This isn't currently implemented
-     */
-    keyRotationSpan?: number;
-    /**
-     * Defines if handshake messages are encrypted or not
-     * Note: Ciphertext is not currently supported by wire-server
-     */
-    wirePolicy?: WirePolicy;
-}
-
-/**
  * Alias for conversation IDs.
  * This is a freeform, uninspected buffer.
  */
