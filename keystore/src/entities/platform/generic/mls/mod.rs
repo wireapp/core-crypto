@@ -16,10 +16,7 @@
 
 pub mod credential;
 pub mod e2ei_acme_ca;
-pub mod e2ei_crl;
-pub mod e2ei_intermediate_cert;
 pub mod encryption_keypair;
-pub mod enrollment;
 pub mod epoch_encryption_keypair;
 pub mod group;
 pub mod hpke_private_key;

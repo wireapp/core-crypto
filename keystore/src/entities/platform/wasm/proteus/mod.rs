@@ -16,4 +16,3 @@
 
 pub(crate) mod identity;
 pub mod prekey;
-pub mod session;

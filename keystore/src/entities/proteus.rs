@@ -106,7 +106,7 @@ impl ProteusPrekey {
     }
 }
 
-#[derive(Debug, Clone, Zeroize, PartialEq, Eq)]
+#[derive(Debug, Clone, Zeroize, PartialEq, Eq, core_crypto_macros::Entity)]
 #[zeroize(drop)]
 #[cfg_attr(
     any(target_family = "wasm", feature = "serde"),

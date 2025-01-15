@@ -192,8 +192,9 @@ pub struct MlsKeyPackage {
 
 /// Entity representing an enrollment instance used to fetch a x509 certificate and persisted when
 /// context switches and the memory it lives in is about to be erased
-#[derive(Debug, Clone, PartialEq, Eq, Zeroize)]
+#[derive(Debug, Clone, PartialEq, Eq, Zeroize, core_crypto_macros::Entity)]
 #[zeroize(drop)]
+#[entity(collection_name = "e2ei_enrollment", no_upsert)]
 #[cfg_attr(
     any(target_family = "wasm", feature = "serde"),
     derive(serde::Serialize, serde::Deserialize)
@@ -387,7 +388,7 @@ pub struct E2eiAcmeCA {
     pub content: Vec<u8>,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Zeroize)]
+#[derive(Debug, Clone, PartialEq, Eq, Zeroize, core_crypto_macros::Entity)]
 #[zeroize(drop)]
 #[cfg_attr(
     any(target_family = "wasm", feature = "serde"),
@@ -395,17 +396,19 @@ pub struct E2eiAcmeCA {
 )]
 pub struct E2eiIntermediateCert {
     // key to identify the CA cert; Using a combination of SKI & AKI extensions concatenated like so is suitable: `SKI[+AKI]`
+    #[id]
     pub ski_aki_pair: String,
     pub content: Vec<u8>,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Zeroize)]
+#[derive(Debug, Clone, PartialEq, Eq, Zeroize, core_crypto_macros::Entity)]
 #[zeroize(drop)]
 #[cfg_attr(
     any(target_family = "wasm", feature = "serde"),
     derive(serde::Serialize, serde::Deserialize)
 )]
 pub struct E2eiCrl {
+    #[id]
     pub distribution_point: String,
     pub content: Vec<u8>,
 }

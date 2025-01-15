@@ -38,6 +38,7 @@ async-lock.workspace = true
 postcard = { version = "1.1", default-features = false, features = ["use-std"] }
 sha2.workspace = true
 serde_json.workspace = true
+core-crypto-macros.workspace = true
 
 # iOS specific things
 security-framework = { version = "3.0", optional = true }
