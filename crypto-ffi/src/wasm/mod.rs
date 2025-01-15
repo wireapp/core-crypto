@@ -1110,7 +1110,7 @@ impl ConversationConfiguration {
 }
 
 #[wasm_bindgen]
-#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Copy, Clone, serde::Serialize, serde::Deserialize)]
 /// see [core_crypto::prelude::MlsCustomConfiguration]
 pub struct CustomConfiguration {
     key_rotation_span: Option<u32>,
@@ -1125,13 +1125,6 @@ impl CustomConfiguration {
             key_rotation_span,
             wire_policy,
         }
-    }
-}
-
-impl Drop for CustomConfiguration {
-    fn drop(&mut self) {
-        let _ = self.key_rotation_span.take();
-        let _ = self.wire_policy.take();
     }
 }
 
