@@ -17,28 +17,8 @@ env:
   CARGO_REGISTRIES_CRATES_IO_PROTOCOL: sparse
 
 jobs:
-  build-linux-artifacts:
-    if: github.repository == 'wireapp/core-crypto'
-    name: Build Linux Artifacts
-    runs-on: ubuntu-22.04
-    steps:
-      - uses: actions/checkout@v4
-      - name: "Setup rust"
-        uses: actions-rust-lang/setup-rust-toolchain@v1  # this implicitly caches Rust tools and build artifacts
-        with:
-          rustflags: ''
-          targets: "x86_64-unknown-linux-gnu"
-      - name: Setup cargo-make
-        uses: davidB/rust-cargo-make@v1
-      - name: Build Artifacts
-        run: |
-          cd crypto-ffi
-          cargo make jvm-linux
-      - name: Upload x86_64-unknown-linux-gnu artifacts
-        uses: actions/upload-artifact@v4
-        with:
-            name: x86_64-unknown-linux-gnu
-            path: target/x86_64-unknown-linux-gnu/release/*.so
+  build-linux:
+    uses: ./.github/workflows/build-jvm-linux.yml
 
   build-darwin-artifacts:
     if: github.repository == 'wireapp/core-crypto'
@@ -71,7 +51,7 @@ jobs:
   publish-jvm:
     if: github.repository == 'wireapp/core-crypto'
     name: Publish JVM Package
-    needs: [build-linux-artifacts, build-darwin-artifacts]
+    needs: [build-linux, build-darwin-artifacts]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -96,7 +76,7 @@ jobs:
       - name: Download x86_64 Linux Artifact
         uses: actions/download-artifact@v4
         with:
-          name: x86_64-unknown-linux-gnu
+          name: jvm-linux-so-file-${{ github.run_id }}
           path: target/x86_64-unknown-linux-gnu/release
       - name: Download x86_64 Apple Darwin Artifact
         uses: actions/download-artifact@v4
