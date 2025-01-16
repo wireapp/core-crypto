@@ -19,6 +19,9 @@ jobs:
   build-android:
     uses: ./.github/workflows/build-android.yml
 
+  build-jvm-linux:
+    uses: ./.github/workflows/build-jvm-linux.yml
+
   test-android:
     if: github.repository == 'wireapp/core-crypto'
     runs-on: ubuntu-latest
@@ -58,6 +61,7 @@ jobs:
   build-and-test-jvm:
     if: github.repository == 'wireapp/core-crypto'
     runs-on: ubuntu-latest
+    needs: build-jvm-linux
     steps:
       - uses: actions/checkout@v4
       - name: Set up JDK 17
@@ -69,14 +73,16 @@ jobs:
         uses: gradle/actions/setup-gradle@v4
       - name: Validate Gradle wrapper
         uses: gradle/actions/wrapper-validation@v4
-      - name: "Setup rust"
-        uses: actions-rust-lang/setup-rust-toolchain@v1  # this implicitly caches Rust tools and build artifacts
-      - name: Setup cargo-make
-        uses: davidB/rust-cargo-make@v1
-      - name: Build JVM rust binaries
-        run: |
-          cd crypto-ffi
-          cargo make jvm-linux
+      - name: download linux library
+        uses: actions/download-artifact@v4
+        with:
+          name: jvm-linux-so-file-${{ github.run_id }}
+          path: target/x86_64-unknown-linux-gnu/release
+      - name: download linux bindings
+        uses: actions/download-artifact@v4
+        with:
+          name: jvm-linux-bindings-${{ github.run_id }}
+          path: crypto-ffi/bindings
       - name: Build and test JVM package
         run: |
           cd crypto-ffi/bindings

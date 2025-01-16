@@ -1,0 +1,38 @@
+concurrency:
+  group: "${{ github.workflow }}-${{ github.ref }}-build-jvm-linux"
+  cancel-in-progress: true
+
+on:
+  workflow_call:
+
+env:
+  CARGO_TERM_COLOR: always
+  CARGO_NET_GIT_FETCH_WITH_CLI: true
+  CARGO_REGISTRIES_CRATES_IO_PROTOCOL: sparse
+
+jobs:
+  build-jvm:
+    if: github.repository == 'wireapp/core-crypto'
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions-rust-lang/setup-rust-toolchain@v1
+        with:
+          target: "x86_64-unknown-linux-gnu"
+      - uses: davidB/rust-cargo-make@v1
+      - name: build jvm-linux
+        run: |
+          cd crypto-ffi
+          cargo make jvm-linux
+      - name: upload static rust library
+        uses: actions/upload-artifact@v4
+        with:
+            name: jvm-linux-so-file-${{ github.run_id }}
+            path: target/x86_64-unknown-linux-gnu/release/*.so
+            retention-days: 1
+      - name: upload bindings
+        uses: actions/upload-artifact@v4
+        with:
+          name: jvm-linux-bindings-${{ github.run_id }}
+          path: crypto-ffi/bindings
+          retention-days: 1
