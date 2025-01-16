@@ -147,7 +147,7 @@ export class E2eiEnrollment {
     /**
      * Creates a new authorization request.
      *
-     * @param url one of the URL in new order's authorizations (use {@link NewAcmeOrder.authorizations} from {@link newOrderResponse})
+     * @param url one of the URL in new order's authorizations from {@link newOrderResponse})
      * @param previousNonce `replay-nonce` response header from `POST /acme/{provisioner-name}/new-order` (or from the
      * previous to this method if you are creating the second authorization)
      * @see https://www.rfc-editor.org/rfc/rfc8555.html#section-7.5
