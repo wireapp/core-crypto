@@ -632,7 +632,7 @@ impl From<MlsGroupInfoBundle> for GroupInfoBundle {
 pub struct ProposalBundle {
     /// TLS-serialized MLS proposal that needs to be fanned out to other (existing) members of the conversation
     proposal: Vec<u8>,
-    /// Unique identifier of a proposal. Use this in {@link CoreCrypto.clearPendingProposal} to roll back (delete) the proposal
+    /// Unique identifier of a proposal.
     proposal_ref: Vec<u8>,
     /// New CRL Distribution of members of this group
     crl_new_distribution_points: Option<Vec<String>>,
