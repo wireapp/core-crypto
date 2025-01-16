@@ -330,7 +330,7 @@ export interface ProposalBundle {
      */
     proposal: Uint8Array;
     /**
-     * Unique identifier of a proposal. Use this in {@link CoreCrypto.clearPendingProposal} to roll back (delete) the proposal
+     * Unique identifier of a proposal.
      *
      * @readonly
      */
