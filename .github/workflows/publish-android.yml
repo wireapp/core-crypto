@@ -17,9 +17,13 @@ env:
   CARGO_REGISTRIES_CRATES_IO_PROTOCOL: sparse
 
 jobs:
+  build-android:
+    uses: ./.github/workflows/build-android.yml
+
   publish-android:
     if: github.repository == 'wireapp/core-crypto'
     runs-on: ubuntu-latest
+    needs: build-android
     steps:
       - uses: actions/checkout@v4
       - name: Set up JDK 17
@@ -31,23 +35,18 @@ jobs:
         uses: gradle/actions/setup-gradle@v4
       - name: Validate Gradle wrapper
         uses: gradle/actions/wrapper-validation@v4
-      - name: "Setup rust"
-        uses: actions-rust-lang/setup-rust-toolchain@v1  # this implicitly caches Rust tools and build artifacts
-        with:
-          rustflags: ''
-          target: "armv7-linux-androideabi,aarch64-linux-android,x86_64-linux-android"
-      - name: Setup cargo-make
-        uses: davidB/rust-cargo-make@v1
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
       - name: Install NDK 25
         run: echo "y" | sdkmanager --install "ndk;25.2.9519653"
-      - name: Build Android package
-        env:
-          ANDROID_NDK_HOME: /usr/local/lib/android/sdk/ndk/25.2.9519653
-        run: |
-          cd crypto-ffi
-          cargo make android
+      - uses: actions/download-artifact@v4
+        with:
+          name: android-target-${{ github.run_id }}
+          path: target
+      - uses: actions/download-artifact@v4
+        with:
+          name: android-${{ github.run_id }}
+          path: crypto-ffi/bindings
       - name: Publish package
         run: |
           cd crypto-ffi/bindings
