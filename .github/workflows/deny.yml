@@ -1,4 +1,4 @@
-name: Check License, sources
+name: check license, sources
 
 concurrency:
   group: "${{ github.workflow }}-${{ github.ref }}"
@@ -24,9 +24,9 @@ jobs:
         with:
           rustflags: ''
       - uses: taiki-e/install-action@cargo-deny
-      - name: "Check Licenses / Supply Chain"
+      - name: "check licenses / supply chain"
         run: |
           cargo deny --all-features check >> $GITHUB_STEP_SUMMARY
-      - name: "Build a dependency licenses inventory and post it to Summary"
+      - name: "build a dependency licenses inventory and post it to summary"
         run: |
           cargo deny --all-features list --layout crate --format json | jq -r 'to_entries[] | "* \(.key)", "    * \(.value.licenses[])"' >> $GITHUB_STEP_SUMMARY
