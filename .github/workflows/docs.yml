@@ -1,4 +1,4 @@
-name: Documentation
+name: documentation
 
 concurrency:
   group: "${{ github.workflow }}-${{ github.ref }}"
@@ -16,7 +16,7 @@ env:
 
 jobs:
   rustdoc:
-    name: Rust
+    name: rust
     runs-on: ubuntu-latest
 
     steps:
@@ -36,11 +36,11 @@ jobs:
 
 
   tsdoc:
-    name: Typescript
+    name: typescript
     runs-on: ubuntu-latest
 
     steps:
-    - name: Checkout repository
+    - name: checkout repository
       uses: actions/checkout@v4
 
     - uses: actions-rust-lang/setup-rust-toolchain@v1  # this implicitly caches Rust tools and build artifacts
@@ -50,20 +50,20 @@ jobs:
           wasm32-unknown-unknown
           x86_64-unknown-linux-gnu
 
-    - name: Setup cargo-make
+    - name: setup cargo-make
       uses: davidB/rust-cargo-make@v1
 
-    - name: Install wasm-pack
+    - name: install wasm-pack
       uses: taiki-e/install-action@v2
       with:
         tool: wasm-pack
 
-    - name: Setup bun
+    - name: setup bun
       uses: oven-sh/setup-bun@v2
       with:
         bun-version: latest
 
-    - name: Make TS Docs
+    - name: make ts docs
       run: |
         cd crypto-ffi
         cargo make docs-ts
@@ -78,21 +78,21 @@ jobs:
 
 
   ktdoc:
-    name: Kotlin
+    name: kotlin
     runs-on: ubuntu-latest
 
     steps:
-    - name: Checkout repository
+    - name: checkout repository
       uses: actions/checkout@v4
 
     - uses: actions-rust-lang/setup-rust-toolchain@v1  # this implicitly caches Rust tools and build artifacts
       with:
         rustflags: '' # note that this is _not_ the default
 
-    - name: Setup cargo-make
+    - name: setup cargo-make
       uses: davidB/rust-cargo-make@v1
 
-    - name: Make Kotlin Docs
+    - name: make kotlin docs
       run: |
         mkdir -p target/doc/core_crypto_ffi/bindings/kotlin
         cd crypto-ffi
@@ -108,7 +108,7 @@ jobs:
 
 
   deploy:
-    name: Deploy
+    name: deploy
     runs-on: ubuntu-latest
     if: github.repository == 'wireapp/core-crypto' && github.ref_name == 'main'
     needs:
@@ -123,7 +123,7 @@ jobs:
         path: target/doc
         merge-multiple: true
 
-    - name: Deploy Docs
+    - name: deploy docs
       uses: peaceiris/actions-gh-pages@v4
       with:
         github_token: ${{ secrets.GITHUB_TOKEN }}

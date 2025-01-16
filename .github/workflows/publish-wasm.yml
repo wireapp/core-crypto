@@ -1,4 +1,4 @@
-name: Publish Node packages
+name: publish node packages
 
 concurrency:
   group: "${{ github.workflow }}-${{ github.ref }}"
@@ -28,18 +28,18 @@ jobs:
       - uses: oven-sh/setup-bun@v2
         with:
           bun-version: latest
-      - name: Install wasm-pack
+      - name: install wasm-pack
         uses: taiki-e/install-action@v2
         with:
           tool: wasm-pack
       - uses: davidB/rust-cargo-make@v1
-      - name: build WASM
+      - name: build wasm
         run: |
           cd crypto-ffi
           cargo make wasm
           cd bindings/js
           bun run build
-      - name: Publishes package to NPM
+      - name: publishes package to npm
         uses: JS-DevTools/npm-publish@v3
         with:
           token: ${{ secrets.NPM_TOKEN }}

@@ -1,4 +1,4 @@
-name: Test coverage
+name: test coverage
 
 concurrency:
   group: "${{ github.workflow }}-${{ github.ref }}"
@@ -20,17 +20,17 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Install rust toolchain
+      - name: install rust toolchain
         uses: actions-rust-lang/setup-rust-toolchain@v1  # this implicitly caches Rust tools and build artifacts
         with:
           rustflags: ''
-      - name: Install cargo-llvm-cov
+      - name: install cargo-llvm-cov
         uses: taiki-e/install-action@cargo-llvm-cov
-      - name: Install cargo-nextest
+      - name: install cargo-nextest
         uses: taiki-e/install-action@nextest
-      - name: Generate code coverage
+      - name: generate code coverage
         run: cargo llvm-cov nextest --workspace --lcov --exclude interop --output-path lcov.info
-      - name: Upload to codecov.io
+      - name: upload to codecov.io
         uses: codecov/codecov-action@v5
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
