@@ -17,6 +17,7 @@
 use crate::util::RunningProcess;
 use crate::TEST_SERVER_URI;
 use color_eyre::eyre::Result;
+use log::info;
 
 pub(crate) async fn setup_webdriver(force: bool) -> Result<()> {
     let mut spinner = RunningProcess::new("Setting up WebDriver & co...", false);
@@ -46,8 +47,10 @@ pub(crate) async fn start_webdriver_chrome(addr: &std::net::SocketAddr) -> Resul
 
     Ok(tokio::process::Command::new(wd_dir.join("chromedriver"))
         .arg(format!("--port={}", addr.port()))
-        .stdout(std::process::Stdio::null())
-        .stderr(std::process::Stdio::null())
+        .arg("--disable-dev-shm-usage ")
+        .arg("--verbose")
+        // .stdout(std::process::Stdio::null())
+        // .stderr(std::process::Stdio::null())
         .spawn()?)
 }
 
@@ -70,6 +73,8 @@ pub(crate) async fn setup_browser(addr: &std::net::SocketAddr, folder: &str) -> 
     let serde_json::Value::Object(caps) = caps_json else {
         unreachable!("`serde_json::json!()` did not produce an object when provided an object. Something is broken.")
     };
+
+    info!("caps_json: ${:?}", caps);
 
     let browser = fantoccini::ClientBuilder::native()
         .capabilities(caps)

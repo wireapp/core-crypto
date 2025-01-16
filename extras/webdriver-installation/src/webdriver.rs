@@ -222,7 +222,7 @@ impl WebdriverKind {
                     .take()
                     .unwrap()
                     .channels
-                    .remove(&ChromeDriverReleaseDetailsChannel::Stable)
+                    .remove(&ChromeDriverReleaseDetailsChannel::Canary)
                     .unwrap();
 
                 let download_url = channel

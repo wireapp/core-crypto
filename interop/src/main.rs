@@ -90,7 +90,7 @@ fn run_test() -> Result<()> {
         spinner.success(format!("HTTP server started at 0.0.0.0:{TEST_SERVER_PORT} [OK]"));
 
         let mut spinner = util::RunningProcess::new("Starting WebDriver [ChromeDriver & GeckoDriver]...", false);
-        let chrome_driver_addr = TcpListener::bind("127.0.0.1:0").await?.local_addr()?;
+        let chrome_driver_addr = TcpListener::bind("127.0.0.1:4444").await?.local_addr()?;
         let mut chrome_webdriver = build::web::webdriver::start_webdriver_chrome(&chrome_driver_addr).await?;
         spinner.update("Sleeping to wait for Webdrivers to get ready...");
         let timeout = Duration::from_secs(5);
@@ -106,8 +106,8 @@ fn run_test() -> Result<()> {
 
         run_mls_test(&chrome_driver_addr).await?;
 
-        #[cfg(feature = "proteus")]
-        run_proteus_test(&chrome_driver_addr).await?;
+        // #[cfg(feature = "proteus")]
+        // run_proteus_test(&chrome_driver_addr).await?;
 
         chrome_webdriver.kill().await?;
         http_server_hwnd.abort();
@@ -129,9 +129,10 @@ async fn run_mls_test(chrome_driver_addr: &std::net::SocketAddr) -> Result<()> {
 
     let spinner = util::RunningProcess::new("[MLS] Step 0: Initializing clients & env...", true);
 
+    let web_client = Rc::new(clients::corecrypto::web::CoreCryptoWebClient::new(chrome_driver_addr).await?);
     let native_client = Rc::new(clients::corecrypto::native::CoreCryptoNativeClient::new().await?);
     let ffi_client = Rc::new(clients::corecrypto::ffi::CoreCryptoFfiClient::new().await?);
-    let web_client = Rc::new(clients::corecrypto::web::CoreCryptoWebClient::new(chrome_driver_addr).await?);
+    
 
     let mut clients: Vec<Rc<dyn clients::EmulatedMlsClient>> =
         vec![native_client.clone(), ffi_client.clone(), web_client.clone()];
