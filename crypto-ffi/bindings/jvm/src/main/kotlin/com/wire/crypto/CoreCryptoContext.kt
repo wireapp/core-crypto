@@ -148,9 +148,7 @@ class CoreCryptoContext(private val cc: com.wire.crypto.uniffi.CoreCryptoContext
 
     /**
      * Prunes local KeyPackages after making sure they also have been deleted on the backend side.
-     * You should only use this after [CoreCryptoCentral.e2eiRotateAll]
-     *
-     * @param refs KeyPackage references from the [RotateBundle]
+     * You should only use this after calling [e2eiRotate] on all conversations.
      */
     suspend fun deleteKeyPackages(refs: List<MLSKeyPackageRef>) {
         // cannot be tested with the current API & helpers
@@ -172,18 +170,14 @@ class CoreCryptoContext(private val cc: com.wire.crypto.uniffi.CoreCryptoContext
     suspend fun conversationEpoch(id: MLSGroupId): ULong = wrapException { cc.conversationEpoch(id.lower()) }
 
     /**
-     * Allows to create an external commit to "apply" to join a group through its GroupInfo.
+     * "Apply" to join a group through its GroupInfo.
      *
-     * If the DS accepts the external commit, you have to [mergePendingGroupFromExternalCommit] in
-     * order to get back a functional MLS group. On the opposite, if it rejects it, you can either
-     * retry by just calling again [joinByExternalCommit], no need to
-     * [clearPendingGroupFromExternalCommit]. If you want to abort the operation (too many retries
-     * or the user decided to abort), you can use [clearPendingGroupFromExternalCommit] in order not
-     * to bloat the user's storage but nothing bad can happen if you forget to except some storage
-     * space wasted.
+     * Sends the corresponding commit via [MlsTransport.sendCommitBundle]
+     * and creates the group if the call is successful.
      *
      * @param groupInfo a TLS encoded GroupInfo fetched from the Delivery Service
      * @param credentialType to join the group with
+     * @param configuration configuration of the MLS group
      */
     suspend fun joinByExternalCommit(
         groupInfo: GroupInfo,
@@ -274,7 +268,7 @@ class CoreCryptoContext(private val cc: com.wire.crypto.uniffi.CoreCryptoContext
      *
      * @param id conversation identifier
      * @param keyPackages of the new clients to add
-     * @return a [CommitBundle] to upload to the backend and if it succeeds call [commitAccepted]
+     * @return the potentially newly discovered certificate revocation list distribution points
      */
     suspend fun addMember(id: MLSGroupId, keyPackages: List<MLSKeyPackage>): List<String>? {
         return wrapException { cc.addClientsToConversation(id.lower(), keyPackages.map { it.lower() }) }
@@ -286,7 +280,6 @@ class CoreCryptoContext(private val cc: com.wire.crypto.uniffi.CoreCryptoContext
      *
      * @param id conversation identifier
      * @param members client identifier to delete
-     * @return a [CommitBundle] to upload to the backend and if it succeeds call [commitAccepted]
      */
     suspend fun removeMember(id: MLSGroupId, members: List<ClientId>) {
         return wrapException {
@@ -300,16 +293,13 @@ class CoreCryptoContext(private val cc: com.wire.crypto.uniffi.CoreCryptoContext
      * conversation.
      *
      * @param id conversation identifier
-     * @return a [CommitBundle] to upload to the backend and if it succeeds call [commitAccepted]
      */
     suspend fun updateKeyingMaterial(id: MLSGroupId) = wrapException { cc.updateKeyingMaterial(id.lower()) }
 
     /**
-     * Commits the local pending proposals and returns the {@link CommitBundle} object containing
-     * what can result from this operation.
+     * Commits the local pending proposals.
      *
      * @param id conversation identifier
-     * @return a [CommitBundle] to upload to the backend and if it succeeds call [commitAccepted]
      */
     suspend fun commitPendingProposals(id: MLSGroupId) {
         return wrapException { cc.commitPendingProposals(id.lower()) }
@@ -341,8 +331,6 @@ class CoreCryptoContext(private val cc: com.wire.crypto.uniffi.CoreCryptoContext
      * be used to initialize a subconversation
      *
      * @param id conversation identifier
-     * @param keyLength the length of the key to be derived. If the value is higher than the bounds
-     *   of `u16` or the context hash * 255, an error will be returned
      */
     suspend fun getExternalSender(id: MLSGroupId): ExternalSenderKey {
         return wrapException { cc.getExternalSender(id.lower()).toExternalSenderKey() }
@@ -579,14 +567,14 @@ class CoreCryptoContext(private val cc: com.wire.crypto.uniffi.CoreCryptoContext
     }
 
     /**
-     * Creates an update commit which replaces your leaf containing basic credentials with a leaf
+     * Replaces your leaf containing basic credentials with a leaf
      * node containing x509 credentials in the conversation.
      *
-     * NOTE: you can only call this after you've completed the enrollment for an end-to-end
-     * identity, calling this without a valid end-to-end identity will result in an error.
+     * NOTE: you can only call this after you've completed the enrollment for an end-to-end identity, and saved the
+     * resulting credential with [saveX509Credential].
+     * Calling this without a valid end-to-end identity will result in an error.
      *
      * @param id conversation identifier
-     * @return a [CommitBundle] to upload to the backend and if it succeeds call [commitAccepted]
      */
     suspend fun e2eiRotate(id: MLSGroupId) = wrapException { cc.e2eiRotate(id.lower()) }
 
@@ -605,7 +593,8 @@ class CoreCryptoContext(private val cc: com.wire.crypto.uniffi.CoreCryptoContext
      *
      * @param enrollment - the enrollment instance used to fetch the certificates
      * @param certificateChain - the raw response from ACME server
-     * @return Potentially a list of new crl distribution points discovered in the certificate chain
+     * @return Potentially a list of new certificate revocation list distribution points discovered in the certificate
+     * chain
      */
     suspend fun saveX509Credential(
         enrollment: E2EIEnrollment,
