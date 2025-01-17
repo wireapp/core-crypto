@@ -889,6 +889,10 @@ describe("Error type mapping", () => {
             createConversation(ALICE_ID, CONV_ID)
             // wdio wraps the error and prepends the original message with
             // the error type as prefix
-        ).rejects.toThrowError(new Error(`Error: ${expectedErrorMessage}`));
+        ).rejects.toThrowError(
+            new Error(
+                `MlsErrorConversationAlreadyExists: ${expectedErrorMessage}`
+            )
+        );
     });
 });
