@@ -11,7 +11,6 @@ import { CoreCryptoError } from "./CoreCryptoError.js";
 import {
     Ciphersuite,
     ClientId,
-    CommitBundle,
     ConversationId,
     CredentialType,
     DecryptedMessage,
@@ -449,119 +448,56 @@ export class CoreCryptoContext {
     }
 
     /**
-     * Creates an update commit which forces every client to update their LeafNode in the conversation
+     * Update the keying material of the conversation.
      *
      * @param conversationId - The ID of the conversation
-     *
-     * @returns A {@link CommitBundle}
      */
-    async updateKeyingMaterial(
-        conversationId: ConversationId
-    ): Promise<CommitBundle> {
-        try {
-            const ffiRet: CoreCryptoFfiTypes.CommitBundle =
-                await CoreCryptoError.asyncMapErr(
-                    this.#ctx.update_keying_material(conversationId)
-                );
-
-            const gi = ffiRet.group_info;
-
-            return {
-                welcome: ffiRet.welcome,
-                commit: ffiRet.commit,
-                groupInfo: {
-                    encryptionType: gi.encryption_type,
-                    ratchetTreeType: gi.ratchet_tree_type,
-                    payload: gi.payload,
-                },
-            };
-        } catch (e) {
-            throw CoreCryptoError.fromStdError(e as Error);
-        }
+    async updateKeyingMaterial(conversationId: ConversationId): Promise<void> {
+        return await CoreCryptoError.asyncMapErr(
+            this.#ctx.update_keying_material(conversationId)
+        );
     }
 
     /**
-     * Commits the local pending proposals and returns the {@link CommitBundle} object containing what can result from this operation.
+     * Commits the local pending proposals.
+     *
+     * Sends the corresponding commit via {@link MlsTransport.sendCommitBundle}
+     * and merges it if the call is successful.
      *
      * @param conversationId - The ID of the conversation
-     *
-     * @returns A {@link CommitBundle} or `undefined` when there was no pending proposal to commit
      */
     async commitPendingProposals(
         conversationId: ConversationId
-    ): Promise<CommitBundle | undefined> {
-        try {
-            const ffiCommitBundle: CoreCryptoFfiTypes.CommitBundle | undefined =
-                await CoreCryptoError.asyncMapErr(
-                    this.#ctx.commit_pending_proposals(conversationId)
-                );
-
-            if (!ffiCommitBundle) {
-                return undefined;
-            }
-
-            const gi = ffiCommitBundle.group_info;
-
-            return {
-                welcome: ffiCommitBundle.welcome,
-                commit: ffiCommitBundle.commit,
-                groupInfo: {
-                    encryptionType: gi.encryption_type,
-                    ratchetTreeType: gi.ratchet_tree_type,
-                    payload: gi.payload,
-                },
-            };
-        } catch (e) {
-            throw CoreCryptoError.fromStdError(e as Error);
-        }
+    ): Promise<void> {
+        return await CoreCryptoError.asyncMapErr(
+            this.#ctx.commit_pending_proposals(conversationId)
+        );
     }
 
     /**
-     * Allows to create an external commit to "apply" to join a group through its GroupInfo.
+     * "Apply" to join a group through its GroupInfo.
      *
-     * If the Delivery Service rejects it, you can retry by just
-     * calling again the function again.
+     * Sends the corresponding commit via {@link MlsTransport.sendCommitBundle}
+     * and creates the group if the call is successful.
      *
      * @param groupInfo - a TLS encoded GroupInfo fetched from the Delivery Service
      * @param credentialType - kind of Credential to use for joining this group. If {@link CredentialType.Basic} is
      * chosen and no Credential has been created yet for it, a new one will be generated.
      * @param configuration - configuration of the MLS group
      * When {@link CredentialType.X509} is chosen, it fails when no Credential has been created for the given {@link Ciphersuite}.
-     * @returns see {@link ConversationInitBundle}
+     *
+     * @return see {@link WelcomeBundle}
      */
     async joinByExternalCommit(
         groupInfo: Uint8Array,
         credentialType: CredentialType,
         configuration: Partial<CustomConfiguration> = {}
-    ): Promise<ConversationInitBundle> {
-        try {
-            const { keyRotationSpan, wirePolicy } = configuration || {};
-            const config = new CustomConfiguration(keyRotationSpan, wirePolicy);
-            const ffiInitMessage: CoreCryptoFfiTypes.ConversationInitBundle =
-                await CoreCryptoError.asyncMapErr(
-                    this.#ctx.join_by_external_commit(
-                        groupInfo,
-                        config,
-                        credentialType
-                    )
-                );
-
-            const gi = ffiInitMessage.group_info;
-
-            return {
-                conversationId: ffiInitMessage.conversation_id,
-                commit: ffiInitMessage.commit,
-                groupInfo: {
-                    encryptionType: gi.encryption_type,
-                    ratchetTreeType: gi.ratchet_tree_type,
-                    payload: gi.payload,
-                },
-                crlNewDistributionPoints:
-                    ffiInitMessage.crl_new_distribution_points,
-            };
-        } catch (e) {
-            throw CoreCryptoError.fromStdError(e as Error);
-        }
+    ): Promise<WelcomeBundle> {
+        const { keyRotationSpan, wirePolicy } = configuration || {};
+        const config = new CustomConfiguration(keyRotationSpan, wirePolicy);
+        return await CoreCryptoError.asyncMapErr(
+            this.#ctx.join_by_external_commit(groupInfo, config, credentialType)
+        );
     }
 
     /**

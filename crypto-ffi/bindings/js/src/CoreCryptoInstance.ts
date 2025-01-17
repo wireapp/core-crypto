@@ -26,6 +26,7 @@ import {
     WireIdentity,
     ConversationConfiguration,
     CustomConfiguration,
+    WelcomeBundle,
 } from "./core-crypto-ffi.js";
 
 import { CoreCryptoError } from "./CoreCryptoError.js";
@@ -36,8 +37,6 @@ import {
     ConversationId,
     ClientId,
     Ciphersuite,
-    WelcomeBundle,
-    CommitBundle,
     DecryptedMessage,
     MlsTransport,
 } from "./CoreCryptoMLS.js";
@@ -668,9 +667,7 @@ export class CoreCrypto {
      * @deprecated Create a transaction with {@link CoreCrypto.transaction}
      * and use {@link CoreCryptoContext.updateKeyingMaterial} instead.
      */
-    async updateKeyingMaterial(
-        conversationId: ConversationId
-    ): Promise<CommitBundle> {
+    async updateKeyingMaterial(conversationId: ConversationId): Promise<void> {
         return await this.transaction(
             async (ctx) => await ctx.updateKeyingMaterial(conversationId)
         );
@@ -696,7 +693,7 @@ export class CoreCrypto {
      */
     async commitPendingProposals(
         conversationId: ConversationId
-    ): Promise<CommitBundle | undefined> {
+    ): Promise<void> {
         return await this.transaction(
             async (ctx) => await ctx.commitPendingProposals(conversationId)
         );
@@ -712,7 +709,7 @@ export class CoreCrypto {
         groupInfo: Uint8Array,
         credentialType: CredentialType,
         configuration: Partial<CustomConfiguration> = {}
-    ): Promise<ConversationInitBundle> {
+    ): Promise<WelcomeBundle> {
         return await this.transaction(
             async (ctx) =>
                 await ctx.joinByExternalCommit(

@@ -48,7 +48,6 @@ export type {
     MlsTransportResponse,
     ConversationId,
     ClientId,
-    WelcomeBundle,
     ProposalBundle,
     MlsTransport,
     GroupInfoBundle,
