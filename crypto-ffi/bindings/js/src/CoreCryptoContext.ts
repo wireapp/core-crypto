@@ -214,28 +214,24 @@ export class CoreCryptoContext {
         creatorCredentialType: CredentialType,
         configuration: Partial<ConversationConfiguration> = {}
     ) {
-        try {
-            const {
-                ciphersuite,
-                externalSenders,
-                custom = {},
-            } = configuration || {};
-            const config = new ConversationConfiguration(
-                ciphersuite,
-                externalSenders,
-                (custom as CustomConfiguration)?.keyRotationSpan,
-                (custom as CustomConfiguration)?.wirePolicy
-            );
-            return await CoreCryptoError.asyncMapErr(
-                this.#ctx.create_conversation(
-                    conversationId,
-                    creatorCredentialType,
-                    config
-                )
-            );
-        } catch (e) {
-            throw CoreCryptoError.fromStdError(e as Error);
-        }
+        const {
+            ciphersuite,
+            externalSenders,
+            custom = {},
+        } = configuration || {};
+        const config = new ConversationConfiguration(
+            ciphersuite,
+            externalSenders,
+            (custom as CustomConfiguration)?.keyRotationSpan,
+            (custom as CustomConfiguration)?.wirePolicy
+        );
+        return await CoreCryptoError.asyncMapErr(
+            this.#ctx.create_conversation(
+                conversationId,
+                creatorCredentialType,
+                config
+            )
+        );
     }
 
     /**
