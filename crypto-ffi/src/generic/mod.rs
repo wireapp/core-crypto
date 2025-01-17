@@ -2353,4 +2353,24 @@ mod tests {
             CoreCryptoError::Mls(MlsError::ConversationAlreadyExists(_))
         ));
     }
+
+    #[tokio::test]
+    async fn test_error_is_logged() {
+        testing_logger::setup();
+        // we shouldn't be able to create a SQLite DB in `/root` unless we are running this test as root
+        // Don't do that!
+        let result = CoreCrypto::new("/root/asdf".into(), "key".into(), None, None, None).await;
+        assert!(
+            result.is_err(),
+            "result must be an error in order to verify that something was logged"
+        );
+        testing_logger::validate(|captured_logs| {
+            assert!(
+                captured_logs.iter().any(|log| log.level == Level::Warn
+                    && log.target == "core-crypto"
+                    && log.body.contains("returning this error across ffi")),
+                "log message did not appear within the captured logs"
+            )
+        });
+    }
 }
