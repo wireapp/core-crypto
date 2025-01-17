@@ -13,7 +13,6 @@ import {
     ClientId,
     CommitBundle,
     ConversationId,
-    ConversationInitBundle,
     CredentialType,
     DecryptedMessage,
     WelcomeBundle,

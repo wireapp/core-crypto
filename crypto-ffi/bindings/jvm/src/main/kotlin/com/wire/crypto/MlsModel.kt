@@ -233,14 +233,6 @@ data class CommitBundle(
 fun com.wire.crypto.uniffi.CommitBundle.lift() =
     CommitBundle(commit.toMlsMessage(), welcome?.toWelcome(), groupInfo.lift(), null)
 
-fun com.wire.crypto.uniffi.ConversationInitBundle.lift() =
-    CommitBundle(
-        commit.toMlsMessage(),
-        null,
-        groupInfo.lift(),
-        crlNewDistributionPoints?.toCrlDistributionPoint(),
-    )
-
 /** Returned when a Proposal is created. Helps roll backing a local proposal */
 data class ProposalBundle(
     /** The proposal message to send to the DS */

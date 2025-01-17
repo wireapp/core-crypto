@@ -36,7 +36,6 @@ import {
     ConversationId,
     ClientId,
     Ciphersuite,
-    ConversationInitBundle,
     WelcomeBundle,
     CommitBundle,
     DecryptedMessage,

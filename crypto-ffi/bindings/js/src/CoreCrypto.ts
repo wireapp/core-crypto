@@ -53,7 +53,6 @@ export type {
     GroupInfoBundle,
     BufferedDecryptedMessage,
     CommitBundle,
-    ConversationInitBundle,
     DecryptedMessage,
 } from "./CoreCryptoMLS.js";
 

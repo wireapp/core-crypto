@@ -672,57 +672,6 @@ impl TryFrom<MlsProposalBundle> for ProposalBundle {
     }
 }
 
-#[wasm_bindgen(skip_jsdoc, getter_with_clone)]
-#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
-pub struct ConversationInitBundle {
-    conversation_id: ConversationId,
-    commit: Vec<u8>,
-    group_info: GroupInfoBundle,
-    /// New CRL Distribution of members of this group
-    crl_new_distribution_points: Option<Vec<String>>,
-}
-
-#[wasm_bindgen]
-impl ConversationInitBundle {
-    #[wasm_bindgen(getter)]
-    pub fn conversation_id(&self) -> Uint8Array {
-        Uint8Array::from(&*self.conversation_id)
-    }
-
-    #[wasm_bindgen(getter)]
-    pub fn commit(&self) -> Uint8Array {
-        Uint8Array::from(&*self.commit)
-    }
-
-    #[wasm_bindgen(getter)]
-    pub fn group_info(&self) -> GroupInfoBundle {
-        self.group_info.clone()
-    }
-
-    #[wasm_bindgen(getter)]
-    pub fn crl_new_distribution_points(&self) -> Option<js_sys::Array> {
-        self.crl_new_distribution_points
-            .clone()
-            .map(|crl_dp| crl_dp.iter().cloned().map(JsValue::from).collect::<js_sys::Array>())
-    }
-}
-
-impl TryFrom<MlsConversationInitBundle> for ConversationInitBundle {
-    type Error = CoreCryptoError;
-
-    fn try_from(mut from: MlsConversationInitBundle) -> Result<Self, Self::Error> {
-        let conversation_id = std::mem::take(&mut from.conversation_id);
-        let (commit, pgs, crl_new_distribution_points) = from.to_bytes()?;
-
-        Ok(Self {
-            conversation_id,
-            commit,
-            group_info: pgs.into(),
-            crl_new_distribution_points: crl_new_distribution_points.into(),
-        })
-    }
-}
-
 #[wasm_bindgen]
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 /// see [core_crypto::prelude::WelcomeBundle]

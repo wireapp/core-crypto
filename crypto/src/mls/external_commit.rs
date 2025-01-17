@@ -14,9 +14,8 @@
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see http://www.gnu.org/licenses/.
 
-use openmls::prelude::{group_info::VerifiableGroupInfo, MlsGroup, MlsMessageOut};
+use openmls::prelude::{group_info::VerifiableGroupInfo, MlsGroup};
 use openmls_traits::OpenMlsCryptoProvider;
-use tls_codec::Serialize;
 
 use core_crypto_keystore::{
     connection::FetchFromDatabase,
@@ -27,7 +26,6 @@ use core_crypto_keystore::{
 use super::Result;
 use crate::{
     context::CentralContext,
-    e2e_identity::init_certificates::NewCrlDistributionPoint,
     mls,
     mls::credential::crl::{extract_crl_uris_from_group, get_new_crl_distribution_points},
     prelude::{
@@ -38,33 +36,6 @@ use crate::{
 };
 
 use crate::prelude::{MlsCommitBundle, WelcomeBundle};
-
-/// Returned when a commit is created
-#[derive(Debug)]
-pub struct MlsConversationInitBundle {
-    /// Identifier of the conversation joined by external commit
-    pub conversation_id: ConversationId,
-    /// The external commit message
-    pub commit: MlsMessageOut,
-    /// `GroupInfo` which becomes valid when the external commit is accepted by the Delivery Service
-    pub group_info: MlsGroupInfoBundle,
-    /// New CRL distribution points that appeared by the introduction of a new credential
-    pub crl_new_distribution_points: NewCrlDistributionPoint,
-}
-
-impl MlsConversationInitBundle {
-    /// Serializes both wrapped objects into TLS and return them as a tuple of byte arrays.
-    /// 0 -> external commit
-    /// 1 -> public group state
-    #[allow(clippy::type_complexity)]
-    pub fn to_bytes(self) -> Result<(Vec<u8>, MlsGroupInfoBundle, NewCrlDistributionPoint)> {
-        let commit = self
-            .commit
-            .tls_serialize_detached()
-            .map_err(MlsError::wrap("serializing detached commit"))?;
-        Ok((commit, self.group_info, self.crl_new_distribution_points))
-    }
-}
 
 impl CentralContext {
     /// Issues an external commit and stores the group in a temporary table. This method is

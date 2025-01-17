@@ -94,7 +94,6 @@ pub mod prelude {
                 ConversationId, MlsConversation,
             },
             credential::{typ::MlsCredentialType, x509::CertificateBundle},
-            external_commit::MlsConversationInitBundle,
             proposal::{MlsProposal, MlsProposalRef},
             MlsCentral,
         },

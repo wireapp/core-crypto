@@ -35,8 +35,8 @@ use core_crypto::{
     prelude::{
         ClientIdentifier, EntropySeed, KeyPackageIn, KeyPackageRef, MlsBufferedConversationDecryptMessage, MlsCentral,
         MlsCentralConfiguration, MlsCiphersuite, MlsCommitBundle, MlsConversationConfiguration,
-        MlsConversationDecryptMessage, MlsConversationInitBundle, MlsCustomConfiguration, MlsGroupInfoBundle,
-        MlsProposalBundle, VerifiableGroupInfo,
+        MlsConversationDecryptMessage, MlsCustomConfiguration, MlsGroupInfoBundle, MlsProposalBundle,
+        VerifiableGroupInfo,
     },
     InnermostErrorMessage, RecursiveError,
 };
@@ -619,29 +619,6 @@ impl TryFrom<MlsProposalBundle> for ProposalBundle {
         Ok(Self {
             proposal,
             proposal_ref,
-            crl_new_distribution_points: crl_new_distribution_points.into(),
-        })
-    }
-}
-
-#[derive(Debug, uniffi::Record)]
-pub struct ConversationInitBundle {
-    pub conversation_id: Vec<u8>,
-    pub commit: Vec<u8>,
-    pub group_info: GroupInfoBundle,
-    pub crl_new_distribution_points: Option<Vec<String>>,
-}
-
-impl TryFrom<MlsConversationInitBundle> for ConversationInitBundle {
-    type Error = CoreCryptoError;
-
-    fn try_from(mut from: MlsConversationInitBundle) -> Result<Self, Self::Error> {
-        let conversation_id = std::mem::take(&mut from.conversation_id);
-        let (commit, gi, crl_new_distribution_points) = from.to_bytes()?;
-        Ok(Self {
-            conversation_id,
-            commit,
-            group_info: gi.into(),
             crl_new_distribution_points: crl_new_distribution_points.into(),
         })
     }

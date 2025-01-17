@@ -172,32 +172,6 @@ export enum RatchetTreeType {
     ByRef = 0x03,
 }
 
-export interface ConversationInitBundle {
-    /**
-     * Conversation ID of the conversation created
-     *
-     * @readonly
-     */
-    conversationId: ConversationId;
-    /**
-     * TLS-serialized MLS External Commit that needs to be fanned out
-     *
-     * @readonly
-     */
-    commit: Uint8Array;
-    /**
-     * MLS Public Group State (aka Group Info) which becomes valid when the external commit
-     * is accepted by the Delivery Service
-     *
-     * @readonly
-     */
-    groupInfo: GroupInfoBundle;
-    /**
-     * New CRL distribution points that appeared by the introduction of a new credential
-     */
-    crlNewDistributionPoints?: string[];
-}
-
 export interface WelcomeBundle {
     /**
      * Conversation ID
