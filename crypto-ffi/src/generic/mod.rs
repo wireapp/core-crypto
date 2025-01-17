@@ -22,7 +22,7 @@ use std::{
 };
 
 use log::{
-    kv::{self, Key, Value, Visitor},
+    kv::{self, Key, Value, VisitSource},
     Level, LevelFilter, Metadata, Record,
 };
 use log_reload::ReloadLog;
@@ -981,7 +981,7 @@ pub trait CoreCryptoLogger: std::fmt::Debug + Send + Sync {
 
 struct KeyValueVisitor<'kvs>(BTreeMap<Key<'kvs>, Value<'kvs>>);
 
-impl<'kvs> Visitor<'kvs> for KeyValueVisitor<'kvs> {
+impl<'kvs> VisitSource<'kvs> for KeyValueVisitor<'kvs> {
     #[inline]
     fn visit_pair(&mut self, key: Key<'kvs>, value: Value<'kvs>) -> Result<(), kv::Error> {
         self.0.insert(key, value);

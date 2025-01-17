@@ -32,7 +32,7 @@ hex = "0.4"
 idb = "0.6"
 indexmap = "2"
 itertools = "0.13"
-log = { version = "0.4", features = ["kv_unstable_serde"] }
+log = { version = "0.4", features = ["kv_serde"] }
 log-reload = "0.1.0"
 mls-crypto-provider = { path = "mls-provider" }
 pem = "3.0"
