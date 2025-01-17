@@ -41,6 +41,7 @@ export {
     GroupInfoEncryptionType,
     RatchetTreeType,
     DeviceStatus,
+    WelcomeBundle,
 } from "./CoreCryptoMLS.js";
 export type {
     ProposalRef,

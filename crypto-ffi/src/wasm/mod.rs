@@ -674,7 +674,6 @@ impl TryFrom<MlsProposalBundle> for ProposalBundle {
 
 #[wasm_bindgen]
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
-/// see [core_crypto::prelude::WelcomeBundle]
 pub struct WelcomeBundle {
     /// Identifier of the joined conversation
     id: ConversationId,
@@ -684,12 +683,15 @@ pub struct WelcomeBundle {
 
 #[wasm_bindgen]
 impl WelcomeBundle {
+    /// Identifier of the joined conversation
     #[wasm_bindgen(getter)]
     pub fn id(&self) -> Uint8Array {
         Uint8Array::from(&*self.id)
     }
 
+    /// New CRL Distribution of members of this group
     #[wasm_bindgen(getter)]
+    #[wasm_bindgen(js_name = "crlNewDistributionPoints")]
     pub fn crl_new_distribution_points(&self) -> Option<js_sys::Array> {
         self.crl_new_distribution_points
             .clone()

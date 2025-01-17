@@ -323,9 +323,9 @@ export class CoreCryptoContext {
     /**
      * Ingest a TLS-serialized MLS welcome message to join an existing MLS group
      *
-     * Important: you have to catch the error with this reason "Although this Welcome seems valid, the local KeyPackage
-     * it references has already been deleted locally. Join this group with an external commit", ignore it and then try
-     * to join this group with an external commit.
+     * You have to catch the error with this reason "Although this Welcome seems valid, the local KeyPackage
+     * it references has already been deleted locally. Join this group with an external commit", ignore it and then
+     * join this group via {@link CoreCryptoContext.joinByExternalCommit}.
      *
      * @param welcomeMessage - TLS-serialized MLS Welcome message
      * @param configuration - configuration of the MLS group
@@ -335,21 +335,11 @@ export class CoreCryptoContext {
         welcomeMessage: Uint8Array,
         configuration: Partial<CustomConfiguration> = {}
     ): Promise<WelcomeBundle> {
-        try {
-            const { keyRotationSpan, wirePolicy } = configuration || {};
-            const config = new CustomConfiguration(keyRotationSpan, wirePolicy);
-            const ffiRet: CoreCryptoFfiTypes.WelcomeBundle =
-                await CoreCryptoError.asyncMapErr(
-                    this.#ctx.process_welcome_message(welcomeMessage, config)
-                );
-
-            return {
-                id: ffiRet.id,
-                crlNewDistributionPoints: ffiRet.crl_new_distribution_points,
-            };
-        } catch (e) {
-            throw CoreCryptoError.fromStdError(e as Error);
-        }
+        const { keyRotationSpan, wirePolicy } = configuration || {};
+        const config = new CustomConfiguration(keyRotationSpan, wirePolicy);
+        return await CoreCryptoError.asyncMapErr(
+            this.#ctx.process_welcome_message(welcomeMessage, config)
+        );
     }
 
     /**

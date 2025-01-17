@@ -5,6 +5,8 @@ import {
     WireIdentity,
 } from "./core-crypto-ffi.js";
 
+export { WelcomeBundle } from "./core-crypto-ffi.js";
+
 /**
  * see [core_crypto::prelude::CiphersuiteName]
  */
@@ -170,21 +172,6 @@ export enum RatchetTreeType {
      * To define (not yet implemented)
      */
     ByRef = 0x03,
-}
-
-export interface WelcomeBundle {
-    /**
-     * Conversation ID
-     *
-     * @readonly
-     */
-    id: Uint8Array;
-    /**
-     *  New CRL Distribution of members of this group
-     *
-     * @readonly
-     */
-    crlNewDistributionPoints?: string[];
 }
 
 /**
