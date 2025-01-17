@@ -64,3 +64,6 @@ async-std = { workspace = true, features = ["attributes"] }
 cfg-if.workspace = true
 hex-literal = "0.4"
 mls-crypto-provider = { workspace = true, features = ["raw-rand-access"] }
+
+[lints.rust]
+unexpected_cfgs = { level = "warn", check-cfg = ['cfg(wasm_bindgen_unstable_test_coverage)'] }

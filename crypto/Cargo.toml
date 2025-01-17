@@ -141,3 +141,6 @@ anyhow = "1.0.94"
 # is available on the command line. If not, we should replace this with
 # `vergen-gix` or `vergen-git2`.
 vergen-gitcl = { version = "1.0.2", features = ["build", "cargo"] }
+
+[lints.rust]
+unexpected_cfgs = { level = "warn", check-cfg = ['cfg(wasm_bindgen_unstable_test_coverage)'] }
