@@ -206,8 +206,40 @@ pub(crate) enum InternalError {
     Other(String),
 }
 
+/// Prepare and dispatch a log message reporting this error.
+///
+/// We want to ensure consistent logging every time we pass a log message across the FFI boundary,
+/// as we cannot guarantee the method, format, or existence of error logging once the result crosses.
+/// In this case there is a single point at which we convert internal errors to trans-ffi
+/// errors, but it was still convenient to extract the logging procedure, because that point is
+/// within a macro-generated `From` impl.
+///
+/// This has the further disadvantage that we have very little context information at the point of
+/// logging. We'll try this out for now anyway; if it turns out that we need to add more tracing
+/// in the future, we can figure out our techniques then.
+fn log_error(error: &dyn std::error::Error) {
+    // we exclude the original error message from the chain
+    let chain = {
+        let mut error = error;
+        let mut chain = Vec::new();
+        while let Some(inner) = error.source() {
+            chain.push(inner.to_string());
+            error = inner;
+        }
+        chain
+    };
+    let msg = error.to_string();
+    let err = serde_json::json!({"msg": msg, "chain": chain});
+    // even though there exists a `:err` formatter, it only captures the top-level
+    // message from the error, so it's still worth building our own inner error formatter
+    // and using serde here
+    log::warn!(target: "core-crypto", err:serde; "core-crypto returning this error across ffi; see recent log messages for context");
+}
+
 impl From<RecursiveError> for InternalError {
     fn from(error: RecursiveError) -> Self {
+        log_error(&error);
+
         // check if the innermost error is any kind of e2e error
         let innermost = {
             let mut err: &dyn std::error::Error = &error;
@@ -283,6 +315,8 @@ impl From<RecursiveError> for InternalError {
 // When we redesign the errors in `core-crypto`, these ambiguities should disappear anyway.
 impl From<core_crypto::Error> for InternalError {
     fn from(error: core_crypto::Error) -> Self {
+        log_error(&error);
+
         // we can take care of the _simple_ error-mapping up here.
         #[cfg(feature = "proteus")]
         if let core_crypto::Error::Proteus(proteus) = &error {
