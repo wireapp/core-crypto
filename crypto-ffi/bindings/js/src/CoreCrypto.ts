@@ -26,6 +26,7 @@ export {
     CoreCryptoLogLevel,
     setMaxLogLevel,
     buildMetadata,
+    version,
     CoreCrypto,
 } from "./CoreCryptoInstance.js";
 export type {

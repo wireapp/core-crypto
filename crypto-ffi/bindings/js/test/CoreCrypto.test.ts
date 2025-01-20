@@ -878,6 +878,19 @@ describe("build", () => {
     });
 });
 
+describe("build", () => {
+    it("version can be retrieved and is a semantic version number", async () => {
+        await expect(
+            browser.execute(async () => window.ccModule.version())
+        ).resolves.toMatch(
+            RegExp(
+                // Regex for matching semantic versions from https://semver.org
+                "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-((?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?$"
+            )
+        );
+    });
+});
+
 describe("Error type mapping", () => {
     it("should work for conversation already exists", async () => {
         await ccInit(ALICE_ID);
