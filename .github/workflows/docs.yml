@@ -28,7 +28,7 @@ jobs:
 
     - uses: actions/upload-artifact@v4.5.0
       with:
-        name: rustdoc
+        name: rustdocs
         path: target/doc
         retention-days: 1
         overwrite: true
@@ -117,6 +117,12 @@ jobs:
       - ktdoc
 
     steps:
+    - uses: actions/download-artifact@v4.1.8
+      with:
+        pattern: "rustdocs"
+        path: target/doc
+        merge-multiple: true
+
     - uses: actions/download-artifact@v4.1.8
       with:
         pattern: "*doc"
