@@ -24,9 +24,6 @@ import {
     E2eiDumpedPkiEnv,
     MlsTransportProvider,
     WireIdentity,
-    ConversationConfiguration,
-    CustomConfiguration,
-    WelcomeBundle,
 } from "./core-crypto-ffi.js";
 
 import { CoreCryptoError } from "./CoreCryptoError.js";
@@ -37,21 +34,12 @@ import {
     ConversationId,
     ClientId,
     Ciphersuite,
-    DecryptedMessage,
     MlsTransport,
 } from "./CoreCryptoMLS.js";
 
 import { CoreCryptoContext } from "./CoreCryptoContext.js";
 
-import {
-    E2eiConversationState,
-    E2eiEnrollment,
-    NewCrlDistributionPoints,
-    CRLRegistration,
-    normalizeEnum,
-} from "./CoreCryptoE2EI.js";
-
-import { ProteusAutoPrekeyBundle } from "./CoreCryptoProteus.js";
+import { E2eiConversationState, normalizeEnum } from "./CoreCryptoE2EI.js";
 
 /**
  * Params for CoreCrypto deferred initialization
@@ -96,26 +84,6 @@ export interface CoreCryptoParams extends CoreCryptoDeferredParams {
      * Number of initial KeyPackage to create when initializing the client
      */
     nbKeyPackage?: number;
-}
-
-/**
- * Initializes the global logger for Core Crypto and registers the callback.
- *
- * **NOTE:** you must call this after `await CoreCrypto.init(params)` or `await CoreCrypto.deferredInit(params)`.
- *
- * @deprecated use {@link CoreCrypto.setLogger} instead.
- *
- * @param logger - the interface to be called when something is going to be logged
- * @param level - the max level that should be logged
- **/
-export function initLogger(
-    logger: CoreCryptoLogger,
-    level: CoreCryptoLogLevel,
-    ctx: unknown = null
-): void {
-    const wasmLogger = new CoreCryptoWasmLogger(logger.log, ctx);
-    CoreCrypto.setLogger(wasmLogger);
-    CoreCrypto.setMaxLogLevel(level);
 }
 
 /**
@@ -265,7 +233,7 @@ export class CoreCrypto {
      * Almost identical to {@link CoreCrypto.init} but allows a 2 phase initialization of MLS.
      * First, calling this will set up the keystore and will allow generating proteus prekeys.
      * Then, those keys can be traded for a clientId.
-     * Use this clientId to initialize MLS with {@link CoreCrypto.mlsInit}.
+     * Use this clientId to initialize MLS with {@link CoreCryptoContext.mlsInit}.
      * @param params - {@link CoreCryptoDeferredParams}
      */
     static async deferredInit({
@@ -323,58 +291,6 @@ export class CoreCrypto {
             throw error;
         }
         return result;
-    }
-
-    /**
-     * See {@link CoreCryptoContext.mlsInit}.
-     *
-     * @deprecated Create a transaction with {@link CoreCrypto.transaction}
-     * and use {@link CoreCryptoContext.mlsInit} instead.
-     */
-    async mlsInit(
-        clientId: ClientId,
-        ciphersuites: Ciphersuite[],
-        nbKeyPackage?: number
-    ): Promise<void> {
-        return await this.transaction(
-            async (ctx) =>
-                await ctx.mlsInit(clientId, ciphersuites, nbKeyPackage)
-        );
-    }
-
-    /**
-     * See {@link CoreCryptoContext.mlsGenerateKeypair}.
-     *
-     * @deprecated Create a transaction with {@link CoreCrypto.transaction}
-     * and use {@link CoreCryptoContext.mlsGenerateKeypair} instead.
-     */
-    async mlsGenerateKeypair(
-        ciphersuites: Ciphersuite[]
-    ): Promise<Uint8Array[]> {
-        return await this.transaction(
-            async (ctx) => await ctx.mlsGenerateKeypair(ciphersuites)
-        );
-    }
-
-    /**
-     * See {@link CoreCryptoContext.mlsInitWithClientId}.
-     *
-     * @deprecated Create a transaction with {@link CoreCrypto.transaction}
-     * and use {@link CoreCryptoContext.mlsInitWithClientId} instead.
-     */
-    async mlsInitWithClientId(
-        clientId: ClientId,
-        signaturePublicKeys: Uint8Array[],
-        ciphersuites: Ciphersuite[]
-    ): Promise<void> {
-        return await this.transaction(
-            async (ctx) =>
-                await ctx.mlsInitWithClientId(
-                    clientId,
-                    signaturePublicKeys,
-                    ciphersuites
-                )
-        );
     }
 
     /** @hidden */
@@ -443,22 +359,6 @@ export class CoreCrypto {
     }
 
     /**
-     * See {@link CoreCryptoContext.markConversationAsChildOf}.
-     *
-     * @deprecated Create a transaction with {@link CoreCrypto.transaction}
-     * and use {@link CoreCryptoContext.markConversationAsChildOf} instead.
-     */
-    async markConversationAsChildOf(
-        childId: ConversationId,
-        parentId: ConversationId
-    ): Promise<void> {
-        return await this.transaction(
-            async (ctx) =>
-                await ctx.markConversationAsChildOf(childId, parentId)
-        );
-    }
-
-    /**
      * See {@link CoreCryptoContext.conversationEpoch}.
      *
      * @returns the epoch of the conversation
@@ -490,85 +390,6 @@ export class CoreCrypto {
     }
 
     /**
-     * See {@link CoreCryptoContext.wipeConversation}.
-     *
-     * @deprecated Create a transaction with {@link CoreCrypto.transaction}
-     * and use {@link CoreCryptoContext.wipeConversation} instead.
-     */
-    async wipeConversation(conversationId: ConversationId): Promise<void> {
-        return await this.transaction(
-            async (ctx) => await ctx.wipeConversation(conversationId)
-        );
-    }
-
-    /**
-     * See {@link CoreCryptoContext.createConversation}.
-     *
-     * @deprecated Create a transaction with {@link transaction}
-     * and use {@link CoreCryptoContext.createConversation} instead.
-     */
-    async createConversation(
-        conversationId: ConversationId,
-        creatorCredentialType: CredentialType,
-        configuration: Partial<ConversationConfiguration> = {}
-    ) {
-        return await this.transaction(
-            async (ctx) =>
-                await ctx.createConversation(
-                    conversationId,
-                    creatorCredentialType,
-                    configuration
-                )
-        );
-    }
-
-    /**
-     * See {@link CoreCryptoContext.decryptMessage}.
-     *
-     * @deprecated Create a transaction with {@link CoreCrypto.transaction}
-     * and use {@link CoreCryptoContext.decryptMessage} instead.
-     */
-    async decryptMessage(
-        conversationId: ConversationId,
-        payload: Uint8Array
-    ): Promise<DecryptedMessage> {
-        return await this.transaction(
-            async (ctx) => await ctx.decryptMessage(conversationId, payload)
-        );
-    }
-
-    /**
-     * See {@link CoreCryptoContext.encryptMessage}.
-     *
-     * @deprecated Create a transaction with {@link CoreCrypto.transaction}
-     * and use {@link CoreCryptoContext.encryptMessage} instead.
-     */
-    async encryptMessage(
-        conversationId: ConversationId,
-        message: Uint8Array
-    ): Promise<Uint8Array> {
-        return await this.transaction(
-            async (ctx) => await ctx.encryptMessage(conversationId, message)
-        );
-    }
-
-    /**
-     * See {@link CoreCryptoContext.processWelcomeMessage}.
-     *
-     * @deprecated Create a transaction with {@link CoreCrypto.transaction}
-     * and use {@link CoreCryptoContext.processWelcomeMessage} instead.
-     */
-    async processWelcomeMessage(
-        welcomeMessage: Uint8Array,
-        configuration: Partial<CustomConfiguration> = {}
-    ): Promise<WelcomeBundle> {
-        return await this.transaction(
-            async (ctx) =>
-                await ctx.processWelcomeMessage(welcomeMessage, configuration)
-        );
-    }
-
-    /**
      * See {@link CoreCryptoContext.clientPublicKey}.
      *
      * @param ciphersuite - of the signature key to get
@@ -581,152 +402,6 @@ export class CoreCrypto {
     ): Promise<Uint8Array> {
         return await CoreCryptoError.asyncMapErr(
             this.#cc.client_public_key(ciphersuite, credentialType)
-        );
-    }
-
-    /**
-     * See {@link CoreCryptoContext.clientValidKeypackagesCount}.
-     *
-     * @deprecated Create a transaction with {@link CoreCrypto.transaction}
-     * and use {@link CoreCryptoContext.clientValidKeypackagesCount} instead.
-     */
-    async clientValidKeypackagesCount(
-        ciphersuite: Ciphersuite,
-        credentialType: CredentialType
-    ): Promise<number> {
-        return await this.transaction(
-            async (ctx) =>
-                await ctx.clientValidKeypackagesCount(
-                    ciphersuite,
-                    credentialType
-                )
-        );
-    }
-
-    /**
-     * See {@link CoreCryptoContext.clientKeypackages}.
-     *
-     * @deprecated Create a transaction with {@link CoreCrypto.transaction}
-     * and use {@link CoreCryptoContext.clientKeypackages} instead.
-     */
-    async clientKeypackages(
-        ciphersuite: Ciphersuite,
-        credentialType: CredentialType,
-        amountRequested: number
-    ): Promise<Array<Uint8Array>> {
-        return await this.transaction(
-            async (ctx) =>
-                await ctx.clientKeypackages(
-                    ciphersuite,
-                    credentialType,
-                    amountRequested
-                )
-        );
-    }
-
-    /**
-     * See {@link CoreCryptoContext.deleteKeypackages}.
-     *
-     * @deprecated Create a transaction with {@link CoreCrypto.transaction}
-     * and use {@link CoreCryptoContext.deleteKeypackages} instead.
-     */
-    async deleteKeypackages(refs: Uint8Array[]): Promise<void> {
-        return await this.transaction(
-            async (ctx) => await ctx.deleteKeypackages(refs)
-        );
-    }
-
-    /**
-     * See {@link CoreCryptoContext.addClientsToConversation}.
-     *
-     * @deprecated Create a transaction with {@link CoreCrypto.transaction}
-     * and use {@link CoreCryptoContext.addClientsToConversation} instead.
-     */
-    async addClientsToConversation(
-        conversationId: ConversationId,
-        keyPackages: Uint8Array[]
-    ): Promise<NewCrlDistributionPoints> {
-        return await this.transaction(
-            async (ctx) =>
-                await ctx.addClientsToConversation(conversationId, keyPackages)
-        );
-    }
-
-    /**
-     * See {@link CoreCryptoContext.removeClientsFromConversation}.
-     *
-     * @deprecated Create a transaction with {@link CoreCrypto.transaction}
-     * and use {@link CoreCryptoContext.removeClientsFromConversation} instead.
-     */
-    async removeClientsFromConversation(
-        conversationId: ConversationId,
-        clientIds: ClientId[]
-    ): Promise<void> {
-        return await this.transaction(
-            async (ctx) =>
-                await ctx.removeClientsFromConversation(
-                    conversationId,
-                    clientIds
-                )
-        );
-    }
-
-    /**
-     * See {@link CoreCryptoContext.updateKeyingMaterial}.
-     *
-     * @deprecated Create a transaction with {@link CoreCrypto.transaction}
-     * and use {@link CoreCryptoContext.updateKeyingMaterial} instead.
-     */
-    async updateKeyingMaterial(conversationId: ConversationId): Promise<void> {
-        return await this.transaction(
-            async (ctx) => await ctx.updateKeyingMaterial(conversationId)
-        );
-    }
-
-    /**
-     * See {@link CoreCryptoContext.e2eiRotate}.
-     *
-     * @deprecated Create a transaction with {@link CoreCrypto.transaction}
-     * and use {@link CoreCryptoContext.e2eiRotate} instead.
-     */
-    async e2eiRotate(conversationId: ConversationId): Promise<void> {
-        return await this.transaction(
-            async (ctx) => await ctx.e2eiRotate(conversationId)
-        );
-    }
-
-    /**
-     * See {@link CoreCryptoContext.commitPendingProposals}.
-     *
-     * @deprecated Create a transaction with {@link CoreCrypto.transaction}
-     * and use {@link CoreCryptoContext.commitPendingProposals} instead.
-     */
-    async commitPendingProposals(
-        conversationId: ConversationId
-    ): Promise<void> {
-        return await this.transaction(
-            async (ctx) => await ctx.commitPendingProposals(conversationId)
-        );
-    }
-
-    /**
-     * See {@link CoreCryptoContext.joinByExternalCommit}.
-     *
-     * @deprecated Create a transaction with {@link CoreCrypto.transaction}
-     * and use {@link CoreCryptoContext.joinByExternalCommit} instead.
-     */
-    async joinByExternalCommit(
-        groupInfo: Uint8Array,
-        credentialType: CredentialType,
-        configuration: Partial<CustomConfiguration> = {}
-    ): Promise<WelcomeBundle> {
-        return await this.transaction(
-            async (ctx) =>
-                await ctx.joinByExternalCommit(
-                    groupInfo,
-                    credentialType,
-                    configuration
-                )
         );
     }
 
@@ -803,86 +478,6 @@ export class CoreCrypto {
     }
 
     /**
-     * Initializes the proteus client
-     *
-     * @deprecated Create a transaction with {@link CoreCrypto.transaction}
-     * and use {@link CoreCryptoContext.proteusInit} instead.
-     */
-    async proteusInit(): Promise<void> {
-        return await this.transaction(async (ctx) => await ctx.proteusInit());
-    }
-
-    /**
-     * Create a Proteus session using a prekey
-     *
-     * @param sessionId - ID of the Proteus session
-     * @param prekey - CBOR-encoded Proteus prekey of the other client
-     *
-     * @deprecated Create a transaction with {@link CoreCrypto.transaction}
-     * and use {@link CoreCryptoContext.proteusSessionFromPrekey} instead.
-     */
-    async proteusSessionFromPrekey(
-        sessionId: string,
-        prekey: Uint8Array
-    ): Promise<void> {
-        return await this.transaction(
-            async (ctx) => await ctx.proteusSessionFromPrekey(sessionId, prekey)
-        );
-    }
-
-    /**
-     * Create a Proteus session from a handshake message
-     *
-     * @param sessionId - ID of the Proteus session
-     * @param envelope - CBOR-encoded Proteus message
-     *
-     * @returns A `Uint8Array` containing the message that was sent along with the session handshake
-     *
-     * @deprecated Create a transaction with {@link CoreCrypto.transaction}
-     * and use {@link CoreCryptoContext.proteusSessionFromMessage} instead.
-     */
-    async proteusSessionFromMessage(
-        sessionId: string,
-        envelope: Uint8Array
-    ): Promise<Uint8Array> {
-        return await this.transaction(
-            async (ctx) =>
-                await ctx.proteusSessionFromMessage(sessionId, envelope)
-        );
-    }
-
-    /**
-     * Locally persists a session to the keystore
-     *
-     * **Note**: This isn't usually needed as persisting sessions happens automatically when decrypting/encrypting messages and initializing Sessions
-     *
-     * @param sessionId - ID of the Proteus session
-     *
-     * @deprecated Create a transaction with {@link CoreCrypto.transaction}
-     * and use {@link CoreCryptoContext.proteusSessionSave} instead.
-     */
-    async proteusSessionSave(sessionId: string): Promise<void> {
-        return await this.transaction(
-            async (ctx) => await ctx.proteusSessionSave(sessionId)
-        );
-    }
-
-    /**
-     * Deletes a session
-     * Note: this also deletes the persisted data within the keystore
-     *
-     * @param sessionId - ID of the Proteus session
-     *
-     * @deprecated Create a transaction with {@link CoreCrypto.transaction}
-     * and use {@link CoreCryptoContext.proteusSessionDelete} instead.
-     */
-    async proteusSessionDelete(sessionId: string): Promise<void> {
-        return await this.transaction(
-            async (ctx) => await ctx.proteusSessionDelete(sessionId)
-        );
-    }
-
-    /**
      * Checks if a session exists
      *
      * @param sessionId - ID of the Proteus session
@@ -892,106 +487,6 @@ export class CoreCrypto {
     async proteusSessionExists(sessionId: string): Promise<boolean> {
         return await CoreCryptoError.asyncMapErr(
             this.#cc.proteus_session_exists(sessionId)
-        );
-    }
-
-    /**
-     * Decrypt an incoming message for an existing Proteus session
-     *
-     * @param sessionId - ID of the Proteus session
-     * @param ciphertext - CBOR encoded, encrypted proteus message
-     * @returns The decrypted payload contained within the message
-     *
-     * @deprecated Create a transaction with {@link CoreCrypto.transaction}
-     * and use {@link CoreCryptoContext.proteusDecrypt} instead.
-     */
-    async proteusDecrypt(
-        sessionId: string,
-        ciphertext: Uint8Array
-    ): Promise<Uint8Array> {
-        return await this.transaction(
-            async (ctx) => await ctx.proteusDecrypt(sessionId, ciphertext)
-        );
-    }
-
-    /**
-     * Encrypt a message for a given Proteus session
-     *
-     * @param sessionId - ID of the Proteus session
-     * @param plaintext - payload to encrypt
-     * @returns The CBOR-serialized encrypted message
-     *
-     * @deprecated Create a transaction with {@link CoreCrypto.transaction}
-     * and use {@link CoreCryptoContext.proteusEncrypt} instead.
-     */
-    async proteusEncrypt(
-        sessionId: string,
-        plaintext: Uint8Array
-    ): Promise<Uint8Array> {
-        return await this.transaction(
-            async (ctx) => await ctx.proteusEncrypt(sessionId, plaintext)
-        );
-    }
-
-    /**
-     * Batch encryption for proteus messages
-     * This is used to minimize FFI roundtrips when used in the context of a multi-client session (i.e. conversation)
-     *
-     * @param sessions - List of Proteus session IDs to encrypt the message for
-     * @param plaintext - payload to encrypt
-     * @returns A map indexed by each session ID and the corresponding CBOR-serialized encrypted message for this session
-     * @deprecated Create a transaction with {@link CoreCrypto.transaction}
-     * and use {@link CoreCryptoContext.proteusEncryptBatched} instead.
-     */
-    async proteusEncryptBatched(
-        sessions: string[],
-        plaintext: Uint8Array
-    ): Promise<Map<string, Uint8Array>> {
-        return await this.transaction(
-            async (ctx) => await ctx.proteusEncryptBatched(sessions, plaintext)
-        );
-    }
-
-    /**
-     * Creates a new prekey with the requested ID.
-     *
-     * @param prekeyId - ID of the PreKey to generate. This cannot be bigger than a u16
-     * @returns: A CBOR-serialized version of the PreKeyBundle corresponding to the newly generated and stored PreKey
-     *
-     * @deprecated Create a transaction with {@link CoreCrypto.transaction}
-     * and use {@link CoreCryptoContext.proteusNewPrekey} instead.
-     */
-    async proteusNewPrekey(prekeyId: number): Promise<Uint8Array> {
-        return await this.transaction(
-            async (ctx) => await ctx.proteusNewPrekey(prekeyId)
-        );
-    }
-
-    /**
-     * Creates a new prekey with an automatically generated ID..
-     *
-     * @returns A CBOR-serialized version of the PreKeyBundle corresponding to the newly generated and stored PreKey accompanied by its ID
-     *
-     * @deprecated Create a transaction with {@link CoreCrypto.transaction}
-     * and use {@link CoreCryptoContext.proteusNewPrekeyAuto} instead.
-     */
-    async proteusNewPrekeyAuto(): Promise<ProteusAutoPrekeyBundle> {
-        return await this.transaction(
-            async (ctx) => await ctx.proteusNewPrekeyAuto()
-        );
-    }
-
-    /**
-     * Proteus last resort prekey stuff
-     *
-     * @returns A CBOR-serialize version of the PreKeyBundle associated with the last resort PreKey (holding the last resort prekey id)
-     *
-     * @deprecated Create a transaction with {@link CoreCrypto.transaction}
-     * and use {@link CoreCryptoContext.proteusLastResortPrekey} instead.
-     */
-    async proteusLastResortPrekey(): Promise<Uint8Array> {
-        return await this.transaction(
-            async (ctx) => await ctx.proteusLastResortPrekey()
         );
     }
 
@@ -1053,118 +548,6 @@ export class CoreCrypto {
     }
 
     /**
-     * Imports all the data stored by Cryptobox into the CoreCrypto keystore
-     *
-     * @param storeName - The name of the IndexedDB store where the data is stored
-     *
-     * @deprecated Create a transaction with {@link CoreCrypto.transaction}
-     * and use {@link CoreCryptoContext.proteusCryptoboxMigrate} instead.
-     */
-    async proteusCryptoboxMigrate(storeName: string): Promise<void> {
-        return await this.transaction(
-            async (ctx) => await ctx.proteusCryptoboxMigrate(storeName)
-        );
-    }
-
-    /**
-     * See {@link CoreCryptoContext.e2eiNewEnrollment}.
-     *
-     * @deprecated Create a transaction with {@link CoreCrypto.transaction}
-     * and use {@link CoreCryptoContext.e2eiNewEnrollment} instead.
-     */
-    async e2eiNewEnrollment(
-        clientId: string,
-        displayName: string,
-        handle: string,
-        expirySec: number,
-        ciphersuite: Ciphersuite,
-        team?: string
-    ): Promise<E2eiEnrollment> {
-        return await this.transaction(
-            async (ctx) =>
-                await ctx.e2eiNewEnrollment(
-                    clientId,
-                    displayName,
-                    handle,
-                    expirySec,
-                    ciphersuite,
-                    team
-                )
-        );
-    }
-
-    /**
-     * See {@link CoreCryptoContext.e2eiNewActivationEnrollment}.
-     *
-     * @deprecated Create a transaction with {@link CoreCrypto.transaction}
-     * and use {@link CoreCryptoContext.e2eiNewActivationEnrollment} instead.
-     */
-    async e2eiNewActivationEnrollment(
-        displayName: string,
-        handle: string,
-        expirySec: number,
-        ciphersuite: Ciphersuite,
-        team?: string
-    ): Promise<E2eiEnrollment> {
-        return await this.transaction(
-            async (ctx) =>
-                await ctx.e2eiNewActivationEnrollment(
-                    displayName,
-                    handle,
-                    expirySec,
-                    ciphersuite,
-                    team
-                )
-        );
-    }
-
-    /**
-     * See {@link CoreCryptoContext.e2eiNewRotateEnrollment}.
-     *
-     * @deprecated Create a transaction with {@link CoreCrypto.transaction}
-     * and use {@link CoreCryptoContext.e2eiNewRotateEnrollment} instead.
-     */
-    async e2eiNewRotateEnrollment(
-        expirySec: number,
-        ciphersuite: Ciphersuite,
-        displayName?: string,
-        handle?: string,
-        team?: string
-    ): Promise<E2eiEnrollment> {
-        return await this.transaction(
-            async (ctx) =>
-                await ctx.e2eiNewRotateEnrollment(
-                    expirySec,
-                    ciphersuite,
-                    displayName,
-                    handle,
-                    team
-                )
-        );
-    }
-
-    /**
-     * See {@link CoreCryptoContext.e2eiMlsInitOnly}.
-     *
-     * @deprecated Create a transaction with {@link CoreCrypto.transaction}
-     * and use {@link CoreCryptoContext.e2eiMlsInitOnly} instead.
-     */
-    async e2eiMlsInitOnly(
-        enrollment: E2eiEnrollment,
-        certificateChain: string,
-        nbKeyPackage?: number
-    ): Promise<NewCrlDistributionPoints> {
-        return await this.transaction(
-            async (ctx) =>
-                await ctx.e2eiMlsInitOnly(
-                    enrollment,
-                    certificateChain,
-                    nbKeyPackage
-                )
-        );
-    }
-
-    /**
      * See {@link CoreCryptoContext.e2eiDumpPKIEnv}.
      *
      * @returns a struct with different fields representing the PKI environment as PEM strings
@@ -1179,101 +562,6 @@ export class CoreCrypto {
      */
     async e2eiIsPKIEnvSetup(): Promise<boolean> {
         return await this.#cc.e2ei_is_pki_env_setup();
-    }
-
-    /**
-     * See {@link CoreCryptoContext.e2eiRegisterAcmeCA}.
-     *
-     * @deprecated Create a transaction with {@link CoreCrypto.transaction}
-     * and use {@link CoreCryptoContext.e2eiRegisterAcmeCA} instead.
-     */
-    async e2eiRegisterAcmeCA(trustAnchorPEM: string): Promise<void> {
-        return await this.transaction(
-            async (ctx) => await ctx.e2eiRegisterAcmeCA(trustAnchorPEM)
-        );
-    }
-
-    /**
-     * See {@link CoreCryptoContext.e2eiRegisterIntermediateCA}.
-     *
-     * @deprecated Create a transaction with {@link CoreCrypto.transaction}
-     * and use {@link CoreCryptoContext.e2eiRegisterIntermediateCA} instead.
-     */
-    async e2eiRegisterIntermediateCA(
-        certPEM: string
-    ): Promise<NewCrlDistributionPoints> {
-        return await this.transaction(
-            async (ctx) => await ctx.e2eiRegisterIntermediateCA(certPEM)
-        );
-    }
-
-    /**
-     * See {@link CoreCryptoContext.e2eiRegisterCRL}.
-     *
-     * @deprecated Create a transaction with {@link CoreCrypto.transaction}
-     * and use {@link CoreCryptoContext.e2eiRegisterCRL} instead.
-     */
-    async e2eiRegisterCRL(
-        crlDP: string,
-        crlDER: Uint8Array
-    ): Promise<CRLRegistration> {
-        return await this.transaction(
-            async (ctx) => await ctx.e2eiRegisterCRL(crlDP, crlDER)
-        );
-    }
-
-    /**
-     * See {@link CoreCryptoContext.saveX509Credential}.
-     *
-     * @deprecated Create a transaction with {@link CoreCrypto.transaction}
-     * and use {@link CoreCryptoContext.saveX509Credential} instead.
-     */
-    async saveX509Credential(
-        enrollment: E2eiEnrollment,
-        certificateChain: string
-    ): Promise<NewCrlDistributionPoints> {
-        return await this.transaction(
-            async (ctx) =>
-                await ctx.saveX509Credential(enrollment, certificateChain)
-        );
-    }
-
-    /**
-     * See {@link CoreCryptoContext.e2eiEnrollmentStash}.
-     *
-     * @deprecated Create a transaction with {@link CoreCrypto.transaction}
-     * and use {@link CoreCryptoContext.e2eiEnrollmentStash} instead.
-     */
-    async e2eiEnrollmentStash(enrollment: E2eiEnrollment): Promise<Uint8Array> {
-        return await this.transaction(
-            async (ctx) => await ctx.e2eiEnrollmentStash(enrollment)
-        );
-    }
-
-    /**
-     * See {@link CoreCryptoContext.e2eiEnrollmentStashPop}.
-     *
-     * @deprecated Create a transaction with {@link CoreCrypto.transaction}
-     * and use {@link CoreCryptoContext.e2eiEnrollmentStashPop} instead.
-     */
-    async e2eiEnrollmentStashPop(handle: Uint8Array): Promise<E2eiEnrollment> {
-        return await this.transaction(
-            async (ctx) => await ctx.e2eiEnrollmentStashPop(handle)
-        );
-    }
-
-    /**
-     * See {@link CoreCryptoContext.e2eiConversationState}.
-     *
-     * @deprecated Create a transaction with {@link CoreCrypto.transaction}
-     * and use {@link CoreCryptoContext.e2eiConversationState} instead.
-     */
-    async e2eiConversationState(
-        conversationId: ConversationId
-    ): Promise<E2eiConversationState> {
-        return await this.transaction(
-            async (ctx) => await ctx.e2eiConversationState(conversationId)
-        );
     }
 
     /**

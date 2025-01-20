@@ -231,20 +231,6 @@ class E2EIEnrollment(private val delegate: com.wire.crypto.uniffi.E2eiEnrollment
 
     /**
      * Parses the response from `POST /acme/{provisioner-name}/challenge/{challenge-id}` for OIDC
-     * challenge.
-     *
-     * @param cc CoreCrypto instance
-     * @param challenge HTTP response body
-     * @see https://www.rfc-editor.org/rfc/rfc8555.html#section-7.5.1
-     */
-    @Deprecated(
-        "Use contextOidcChallengeResponse() with the CoreCryptoContext object created from a CoreCryptoCentral.transaction call"
-    )
-    suspend fun oidcChallengeResponse(cc: CoreCrypto, challenge: JsonRawData) =
-        delegate.newOidcChallengeResponse(cc.lower(), challenge)
-
-    /**
-     * Parses the response from `POST /acme/{provisioner-name}/challenge/{challenge-id}` for OIDC
      * challenge within a CoreCryptoContext.
      *
      * @param cc CoreCrypto instance
