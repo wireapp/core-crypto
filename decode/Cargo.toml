@@ -8,3 +8,4 @@ license = "GPL-3.0-only"
 clap = { version = "4.5.26", features = ["derive"] }
 proteus-wasm = { workspace = true,  features = ["serde"]}
 base64 = { workspace = true }
+openmls = { workspace = true }
