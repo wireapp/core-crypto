@@ -149,9 +149,11 @@ export async function createConversation(
         async (clientName, conversationId) => {
             const cc = window.ensureCcDefined(clientName);
             const encoder = new TextEncoder();
-            await cc.createConversation(
-                encoder.encode(conversationId),
-                window.ccModule.CredentialType.Basic
+            await cc.transaction((ctx) =>
+                ctx.createConversation(
+                    encoder.encode(conversationId),
+                    window.ccModule.CredentialType.Basic
+                )
             );
         },
         clientName,
@@ -183,18 +185,23 @@ export async function invite(
             const cc1 = window.ensureCcDefined(client1);
             const cc2 = window.ensureCcDefined(client2);
 
-            const [kp] = await cc2.clientKeypackages(
-                window.defaultCipherSuite,
-                window.ccModule.CredentialType.Basic,
-                1
+            const [kp] = await cc2.transaction((ctx) =>
+                ctx.clientKeypackages(
+                    window.defaultCipherSuite,
+                    window.ccModule.CredentialType.Basic,
+                    1
+                )
             );
+
             const encoder = new TextEncoder();
             const conversationIdBytes = encoder.encode(conversationId);
-            await cc1.addClientsToConversation(conversationIdBytes, [kp]);
+            await cc1.transaction((ctx) =>
+                ctx.addClientsToConversation(conversationIdBytes, [kp])
+            );
             const { groupInfo, welcome } =
                 await window.deliveryService.getLatestCommitBundle();
 
-            await cc2.processWelcomeMessage(welcome!);
+            await cc2.transaction((ctx) => ctx.processWelcomeMessage(welcome!));
 
             return groupInfo;
         },
@@ -304,7 +311,7 @@ export async function proteusInit(clientName: string): Promise<void> {
         };
         const instance =
             await window.ccModule.CoreCrypto.deferredInit(clientConfig);
-        await instance.proteusInit();
+        await instance.transaction((ctx) => ctx.proteusInit());
 
         if (window.cc === undefined) {
             window.cc = {};
