@@ -22,6 +22,9 @@ jobs:
   build-jvm-linux:
     uses: ./.github/workflows/build-jvm-linux.yml
 
+  build-ios:
+    uses: ./.github/workflows/build-ios.yml
+
   test-android:
     if: github.repository == 'wireapp/core-crypto'
     runs-on: ubuntu-latest
@@ -88,59 +91,8 @@ jobs:
           cd crypto-ffi/bindings
           ./gradlew jvm:build -x lint -x lintRelease
 
-  build-swift:
-    runs-on: macos-latest
-    strategy:
-      matrix:
-        task:
-          - ios-device
-          - ios-simulator-x86
-          - ios-simulator-arm
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: determine rust target
-        id: rust-target
-        run: |
-          if [[ "${{ matrix.task }}" == "ios-device" ]]; then
-            echo "target=aarch64-apple-ios" >> $GITHUB_ENV
-          elif [[ "${{ matrix.task }}" == "ios-simulator-x86" ]]; then
-            echo "target=x86_64-apple-ios" >> $GITHUB_ENV
-          elif [[ "${{ matrix.task }}" == "ios-simulator-arm" ]]; then
-            echo "target=aarch64-apple-ios-sim" >> $GITHUB_ENV
-          fi
-
-      - uses: actions-rust-lang/setup-rust-toolchain@v1
-        with:
-          target: ${{ env.target }}
-
-      - name: setup cargo-make
-        uses: davidB/rust-cargo-make@v1
-
-      - name: build ${{ matrix.task }}
-        run: |
-          cd crypto-ffi
-          cargo make ${{ matrix.task }}
-
-      - name: upload artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: ${{github.event.number}}-${{ matrix.task }}
-          path: target
-          retention-days: 1
-          overwrite: 'true'
-      # Only needs to be uploaded once, this step finishes fastest.
-      - name: upload ffi artifact
-        if: startsWith(matrix.task, 'ios-simulator-arm')
-        uses: actions/upload-artifact@v4
-        with:
-          name: ${{github.event.number}}-swift-ffi
-          path: crypto-ffi/bindings/swift/WireCoreCrypto
-          retention-days: 1
-          overwrite: 'true'
-
   create-xcframework:
-    needs: build-swift
+    needs: build-ios
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@v4
@@ -160,6 +112,59 @@ jobs:
           cd crypto-ffi/bindings/swift
           ./build-xcframework.sh
 
+  e2e-interop-test:
+    runs-on: macos-latest
+    needs: build-ios
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions-rust-lang/setup-rust-toolchain@v1  # this implicitly caches Rust tools and build artifacts
+        with:
+          target: "wasm32-unknown-unknown,aarch64-apple-ios,x86_64-apple-ios,aarch64-apple-ios-sim"
+          rustflags: ''
+      - uses: davidB/rust-cargo-make@v1
+      - name: setup Xcode
+        uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: '16.1.0'
+      - name: setup wasm-pack
+        uses: taiki-e/install-action@v2
+        with:
+          tool: wasm-pack
+      - uses: browser-actions/setup-chrome@latest
+        id: setup-chrome
+        with:
+          chrome-version: stable
+      - run: |
+          echo "CHROME_PATH=${{ steps.setup-chrome.outputs.chrome-path }}" >> $GITHUB_ENV
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 18
+      - name: build wasm artifacts
+        run: |
+          cd crypto-ffi
+          cargo make wasm
+      - name: download artifacts for ios
+        uses: actions/download-artifact@v4
+        with:
+          path: target
+          pattern: ${{github.event.number}}-ios-*
+          merge-multiple: 'true'
+      - name: download ffi artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: ${{github.event.number}}-swift-ffi
+          path: crypto-ffi/bindings/swift/WireCoreCrypto
+      - name: build & install iOS Interop client
+        run: |
+          cd interop/src/clients/InteropClient
+          xcodebuild -scheme InteropClient -sdk iphonesimulator -destination 'platform=iOS Simulator,name=iPhone 15' clean build install  DSTROOT=./Products
+          ./install_app.sh "iPhone 16"
+          ./grant_permissions.sh "iPhone 16"
+      - name: run e2e interop test
+        run: cargo run --bin interop
 
   build-and-test-wasm:
     runs-on: ubuntu-latest

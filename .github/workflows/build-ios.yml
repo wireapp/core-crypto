@@ -1,0 +1,63 @@
+concurrency:
+  group: "${{ github.workflow }}-${{ github.ref }}-build-ios"
+  cancel-in-progress: true
+
+on:
+  workflow_call:
+
+env:
+  CARGO_TERM_COLOR: always
+  CARGO_NET_GIT_FETCH_WITH_CLI: true
+  CARGO_REGISTRIES_CRATES_IO_PROTOCOL: sparse
+
+jobs:
+  build-ios:
+    runs-on: macos-latest
+    strategy:
+      matrix:
+        task:
+          - ios-device
+          - ios-simulator-x86
+          - ios-simulator-arm
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: determine rust target
+        id: rust-target
+        run: |
+          if [[ "${{ matrix.task }}" == "ios-device" ]]; then
+            echo "target=aarch64-apple-ios" >> $GITHUB_ENV
+          elif [[ "${{ matrix.task }}" == "ios-simulator-x86" ]]; then
+            echo "target=x86_64-apple-ios" >> $GITHUB_ENV
+          elif [[ "${{ matrix.task }}" == "ios-simulator-arm" ]]; then
+            echo "target=aarch64-apple-ios-sim" >> $GITHUB_ENV
+          fi
+
+      - uses: actions-rust-lang/setup-rust-toolchain@v1
+        with:
+          target: ${{ env.target }}
+
+      - name: setup cargo-make
+        uses: davidB/rust-cargo-make@v1
+
+      - name: build ${{ matrix.task }}
+        run: |
+          cd crypto-ffi
+          cargo make ${{ matrix.task }}
+
+      - name: upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{github.event.number}}-${{ matrix.task }}
+          path: target
+          retention-days: 1
+          overwrite: 'true'
+      # Only needs to be uploaded once, this step finishes fastest.
+      - name: upload ffi artifact
+        if: startsWith(matrix.task, 'ios-simulator-arm')
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{github.event.number}}-swift-ffi
+          path: crypto-ffi/bindings/swift/WireCoreCrypto
+          retention-days: 1
+          overwrite: 'true'

@@ -155,38 +155,6 @@ jobs:
           wasm-pack test --headless --chrome ./keystore -F "proteus-keystore" -- proteus
           wasm-pack test --headless --chrome ./crypto -F "proteus,cryptobox-migrate" -- proteus
 
-  e2e-interop-test:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions-rust-lang/setup-rust-toolchain@v1  # this implicitly caches Rust tools and build artifacts
-        with:
-          target: wasm32-unknown-unknown
-          rustflags: ''
-      - uses: davidB/rust-cargo-make@v1
-      - name: setup wasm-pack
-        uses: taiki-e/install-action@v2
-        with:
-          tool: wasm-pack
-      - uses: browser-actions/setup-chrome@latest
-        id: setup-chrome
-        with:
-          chrome-version: stable
-      - run: |
-          echo "CHROME_PATH=${{ steps.setup-chrome.outputs.chrome-path }}" >> $GITHUB_ENV
-      - uses: oven-sh/setup-bun@v2
-        with:
-          bun-version: latest
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 18
-      - name: build wasm artifacts
-        run: |
-          cd crypto-ffi
-          cargo make wasm
-      - name: run e2e interop test
-        run: cargo run --bin interop
-
   hack:
     runs-on: ubuntu-latest
     steps:
