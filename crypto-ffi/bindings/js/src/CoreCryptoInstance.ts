@@ -172,6 +172,16 @@ export function setMaxLogLevel(level: CoreCryptoLogLevel): void {
 export function buildMetadata(): CoreCryptoFfiTypes.BuildMetadata {
     return CoreCryptoFfi.build_metadata();
 }
+
+/**
+ * Returns the current version of {@link CoreCrypto}
+ *
+ * @returns the CoreCrypto version as a string (e.g. "3.1.2")
+ */
+export function version(): string {
+    return CoreCryptoFfi.version();
+}
+
 /**
  * Wrapper for the WASM-compiled version of CoreCrypto
  */
@@ -1339,14 +1349,5 @@ export class CoreCrypto {
             this.#cc.get_credential_in_use(groupInfo, credentialType)
         );
         return normalizeEnum(E2eiConversationState, state);
-    }
-
-    /**
-     * Returns the current version of {@link CoreCrypto}
-     *
-     * @returns The `core-crypto-ffi` version as defined in its `Cargo.toml` file
-     */
-    static version(): string {
-        return CoreCryptoFfi.version();
     }
 }
