@@ -188,28 +188,6 @@ impl CoreCrypto {
         }
     }
 }
-impl CoreCrypto {
-    /// For internal use in deprecated functions.
-    pub(crate) async fn deprecated_transaction<F, Fut, R, E>(&self, callback: F) -> CoreCryptoResult<R>
-    where
-        F: FnOnce(CentralContext) -> Fut,
-        Fut: Future<Output = Result<R, E>>,
-        E: Into<core_crypto::Error>,
-    {
-        let context = self.central.new_transaction().await?;
-        let result = callback(context.clone()).await;
-        match result {
-            Ok(result) => {
-                context.finish().await?;
-                Ok(result)
-            }
-            Err(err) => {
-                context.abort().await?;
-                Err(<E as Into<core_crypto::Error>>::into(err).into())
-            }
-        }
-    }
-}
 
 #[uniffi::export]
 impl CoreCryptoContext {
