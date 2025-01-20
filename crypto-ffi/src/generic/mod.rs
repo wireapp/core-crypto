@@ -1,4 +1,3 @@
-#![allow(deprecated)]
 // Wire
 // Copyright (C) 2022 Wire Swiss GmbH
 
@@ -17,7 +16,7 @@
 
 use std::{
     collections::{BTreeMap, HashMap},
-    ops::{Deref, DerefMut},
+    ops::Deref,
     sync::{Arc, LazyLock, Once},
 };
 
@@ -26,16 +25,15 @@ use log::{
     Level, LevelFilter, Metadata, Record,
 };
 use log_reload::ReloadLog;
-use tls_codec::{Deserialize, Serialize};
+use tls_codec::Deserialize;
 
 use self::context::CoreCryptoContext;
 use crate::{proteus_impl, UniffiCustomTypeConverter};
 pub use core_crypto::prelude::ConversationId;
 use core_crypto::{
     prelude::{
-        ClientIdentifier, EntropySeed, KeyPackageIn, KeyPackageRef, MlsBufferedConversationDecryptMessage, MlsCentral,
-        MlsCentralConfiguration, MlsCiphersuite, MlsCommitBundle, MlsConversationConfiguration,
-        MlsConversationDecryptMessage, MlsCustomConfiguration, MlsGroupInfoBundle, MlsProposalBundle,
+        EntropySeed, MlsBufferedConversationDecryptMessage, MlsCentral, MlsCentralConfiguration, MlsCiphersuite,
+        MlsCommitBundle, MlsConversationDecryptMessage, MlsCustomConfiguration, MlsGroupInfoBundle, MlsProposalBundle,
         VerifiableGroupInfo,
     },
     InnermostErrorMessage, RecursiveError,
@@ -961,8 +959,8 @@ impl core_crypto::prelude::MlsTransport for MlsTransportWrapper {
     }
 }
 
-/// This is needed instead of the original trait ([core_crypto::CoreCryptoTransport]) to use types
-/// that we export via uniffi.
+/// Used by core crypto to send commits or application messages to the delivery service.
+/// This trait must be implemented before calling any functions that produce commits.
 #[uniffi::export(with_foreign)]
 #[async_trait::async_trait]
 pub trait MlsTransport: std::fmt::Debug + Send + Sync {
@@ -1126,7 +1124,7 @@ pub async fn core_crypto_new(
 
 #[uniffi::export]
 /// Similar to [core_crypto_new] but defers MLS initialization. It can be initialized later
-/// with [CoreCrypto::mls_init].
+/// with [CoreCryptoContext::mls_init].
 pub async fn core_crypto_deferred_init(path: String, key: String) -> CoreCryptoResult<CoreCrypto> {
     CoreCrypto::new(path, key, None, None, None).await
 }
@@ -1161,78 +1159,6 @@ impl CoreCrypto {
         Ok(CoreCrypto { central })
     }
 
-    /// See [core_crypto::context::CentralContext::mls_init]
-    #[deprecated = "Please create a transaction in Core Crypto and call this method from it."]
-    pub async fn mls_init(
-        &self,
-        client_id: ClientId,
-        ciphersuites: Ciphersuites,
-        nb_key_package: Option<u32>,
-    ) -> CoreCryptoResult<()> {
-        self.deprecated_transaction(|context| async move {
-            let nb_key_package = nb_key_package
-                .map(usize::try_from)
-                .transpose()
-                .expect("we never run corecrypto on systems with architectures narrower than 32 bits");
-            context
-                .mls_init(
-                    ClientIdentifier::Basic(client_id.0),
-                    (&ciphersuites).into(),
-                    nb_key_package,
-                )
-                .await
-                .map_err(RecursiveError::mls("doing mls init"))
-        })
-        .await
-    }
-
-    /// See [core_crypto::context::CentralContext::mls_generate_keypairs]
-    #[deprecated = "Please create a transaction in Core Crypto and call this method from it."]
-    pub async fn mls_generate_keypairs(&self, ciphersuites: Ciphersuites) -> CoreCryptoResult<Vec<ClientId>> {
-        self.deprecated_transaction(|context| async move {
-            context
-                .mls_generate_keypairs((&ciphersuites).into())
-                .await
-                .map(|cids| cids.into_iter().map(ClientId).collect())
-                .map_err(RecursiveError::mls("generating mls keypairs"))
-        })
-        .await
-    }
-
-    /// See [core_crypto::context::CentralContext::mls_init_with_client_id]
-    #[deprecated = "Please create a transaction in Core Crypto and call this method from it."]
-    pub async fn mls_init_with_client_id(
-        &self,
-        client_id: ClientId,
-        tmp_client_ids: Vec<ClientId>,
-        ciphersuites: Ciphersuites,
-    ) -> CoreCryptoResult<()> {
-        self.deprecated_transaction(|context| async move {
-            context
-                .mls_init_with_client_id(
-                    client_id.0,
-                    tmp_client_ids.into_iter().map(|cid| cid.0).collect(),
-                    (&ciphersuites).into(),
-                )
-                .await
-                .map_err(RecursiveError::mls("initing mls with client id"))
-        })
-        .await
-    }
-
-    /// See [core_crypto::context::CentralContext::proteus_reload_sessions]
-    #[deprecated = "Please create a transaction in Core Crypto and call this method from it."]
-    pub async fn restore_from_disk(&self) -> CoreCryptoResult<()> {
-        cfg_if::cfg_if! {
-            if #[cfg(feature = "proteus")] {
-                self.deprecated_transaction(|context| async move {
-                    context.proteus_reload_sessions().await
-                }).await?
-            }
-        }
-        Ok(())
-    }
-
     /// See [core_crypto::mls::MlsCentral::provide_transport]
     pub async fn provide_transport(&self, callbacks: Arc<dyn MlsTransport>) -> CoreCryptoResult<()> {
         self.central
@@ -1253,92 +1179,6 @@ impl CoreCrypto {
             .await?)
     }
 
-    /// See [core_crypto::context::CentralContext::get_or_create_client_keypackages]
-    #[deprecated = "Please create a transaction in Core Crypto and call this method from it."]
-    pub async fn client_keypackages(
-        &self,
-        ciphersuite: Ciphersuite,
-        credential_type: MlsCredentialType,
-        amount_requested: u32,
-    ) -> CoreCryptoResult<Vec<Vec<u8>>> {
-        self.deprecated_transaction(|context| async move {
-            let kps = context
-                .get_or_create_client_keypackages(ciphersuite.into(), credential_type.into(), amount_requested as usize)
-                .await
-                .map_err(RecursiveError::mls_client("getting or creating client keypackages"))?;
-            kps.into_iter()
-                .map(|kp| {
-                    kp.tls_serialize_detached()
-                        .map_err(core_crypto::mls::conversation::Error::tls_serialize("keypackage"))
-                        .map_err(RecursiveError::mls_conversation("serializing keypackage"))
-                        .map_err(Into::into)
-                })
-                .collect::<core_crypto::Result<Vec<Vec<u8>>>>()
-        })
-        .await
-    }
-
-    /// See [core_crypto::context::CentralContext::client_valid_key_packages_count]
-    #[deprecated = "Please create a transaction in Core Crypto and call this method from it."]
-    pub async fn client_valid_keypackages_count(
-        &self,
-        ciphersuite: Ciphersuite,
-        credential_type: MlsCredentialType,
-    ) -> CoreCryptoResult<u64> {
-        self.deprecated_transaction(|context| async move {
-            context
-                .client_valid_key_packages_count(ciphersuite.into(), credential_type.into())
-                .await
-                .map(|count| count.try_into().unwrap_or(0))
-                .map_err(RecursiveError::mls_client("counting valid key packages"))
-        })
-        .await
-    }
-
-    /// See [core_crypto::context::CentralContext::delete_keypackages]
-    #[deprecated = "Please create a transaction in Core Crypto and call this method from it."]
-    pub async fn delete_keypackages(&self, refs: Vec<Vec<u8>>) -> CoreCryptoResult<()> {
-        let refs = refs
-            .into_iter()
-            .map(|r| KeyPackageRef::from_slice(&r))
-            .collect::<Vec<_>>();
-
-        self.deprecated_transaction(|context| async move {
-            context
-                .delete_keypackages(&refs[..])
-                .await
-                .map_err(RecursiveError::mls_client("deleting keypackages"))
-        })
-        .await
-    }
-
-    /// See [core_crypto::context::CentralContext::new_conversation]
-    #[deprecated = "Please create a transaction in Core Crypto and call this method from it."]
-    pub async fn create_conversation(
-        &self,
-        conversation_id: Vec<u8>,
-        creator_credential_type: MlsCredentialType,
-        config: ConversationConfiguration,
-    ) -> CoreCryptoResult<()> {
-        let mut lower_cfg = MlsConversationConfiguration {
-            custom: config.custom.into(),
-            ciphersuite: config.ciphersuite.into(),
-            ..Default::default()
-        };
-
-        self.deprecated_transaction(|context| async move {
-            context
-                .set_raw_external_senders(&mut lower_cfg, config.external_senders)
-                .await
-                .map_err(RecursiveError::mls_conversation("setting raw external senders"))?;
-            context
-                .new_conversation(&conversation_id, creator_credential_type.into(), lower_cfg)
-                .await
-                .map_err(RecursiveError::mls("creating new conversation"))
-        })
-        .await
-    }
-
     /// See [core_crypto::mls::MlsCentral::conversation_epoch]
     pub async fn conversation_epoch(&self, conversation_id: Vec<u8>) -> CoreCryptoResult<u64> {
         Ok(self.central.conversation_epoch(&conversation_id).await?)
@@ -1350,194 +1190,9 @@ impl CoreCrypto {
         Ok(Ciphersuite::from(core_crypto::prelude::CiphersuiteName::from(cs)))
     }
 
-    /// See [core_crypto::context::CentralContext::process_raw_welcome_message]
-    #[deprecated = "Please create a transaction in Core Crypto and call this method from it."]
-    pub async fn process_welcome_message(
-        &self,
-        welcome_message: Vec<u8>,
-        custom_configuration: CustomConfiguration,
-    ) -> CoreCryptoResult<WelcomeBundle> {
-        self.deprecated_transaction(|context| async move {
-            context
-                .process_raw_welcome_message(welcome_message, custom_configuration.into())
-                .await
-                .map(Into::into)
-                .map_err(RecursiveError::mls_conversation("processing welcome message"))
-        })
-        .await
-    }
-
-    /// See [core_crypto::context::CentralContext::add_members_to_conversation]
-    #[deprecated = "Please create a transaction in Core Crypto and call this method from it."]
-    pub async fn add_clients_to_conversation(
-        &self,
-        conversation_id: Vec<u8>,
-        key_packages: Vec<Vec<u8>>,
-    ) -> CoreCryptoResult<NewCrlDistributionPoints> {
-        let key_packages = key_packages
-            .into_iter()
-            .map(|kp| KeyPackageIn::tls_deserialize(&mut kp.as_slice()).map_err(CoreCryptoError::generic()))
-            .collect::<CoreCryptoResult<Vec<_>>>()?;
-
-        Ok(self
-            .deprecated_transaction(|context| async move {
-                context
-                    .add_members_to_conversation(&conversation_id, key_packages)
-                    .await
-                    .map_err(RecursiveError::mls_conversation("adding members to conversation"))
-            })
-            .await
-            .map(|new_crl_distribution_point| -> Option<Vec<_>> { new_crl_distribution_point.into() })?
-            .into())
-    }
-
-    /// See [core_crypto::context::CentralContext::remove_members_from_conversation]
-    #[deprecated = "Please create a transaction in Core Crypto and call this method from it."]
-    pub async fn remove_clients_from_conversation(
-        &self,
-        conversation_id: Vec<u8>,
-        clients: Vec<ClientId>,
-    ) -> CoreCryptoResult<()> {
-        let clients: Vec<core_crypto::prelude::ClientId> = clients.into_iter().map(|c| c.0).collect();
-        self.deprecated_transaction(|context| async move {
-            context
-                .remove_members_from_conversation(&conversation_id, &clients)
-                .await
-                .map_err(RecursiveError::mls_conversation("removing members from conversation"))
-        })
-        .await
-    }
-
-    /// See [core_crypto::context::CentralContext::mark_conversation_as_child_of]
-    #[deprecated = "Please create a transaction in Core Crypto and call this method from it."]
-    pub async fn mark_conversation_as_child_of(&self, child_id: Vec<u8>, parent_id: Vec<u8>) -> CoreCryptoResult<()> {
-        self.deprecated_transaction(|context| async move {
-            context
-                .mark_conversation_as_child_of(&child_id, &parent_id)
-                .await
-                .map_err(RecursiveError::mls_conversation("marking conversation as child"))
-        })
-        .await
-    }
-
-    /// See [core_crypto::context::CentralContext::update_keying_material]
-    #[deprecated = "Please create a transaction in Core Crypto and call this method from it."]
-    pub async fn update_keying_material(&self, conversation_id: Vec<u8>) -> CoreCryptoResult<()> {
-        self.deprecated_transaction(|context| async move {
-            context
-                .update_keying_material(&conversation_id)
-                .await
-                .map_err(RecursiveError::mls_conversation("updating keying material"))
-        })
-        .await
-    }
-
-    /// See [core_crypto::context::CentralContext::commit_pending_proposals]
-    #[deprecated = "Please create a transaction in Core Crypto and call this method from it."]
-    pub async fn commit_pending_proposals(&self, conversation_id: Vec<u8>) -> CoreCryptoResult<()> {
-        self.deprecated_transaction(|context| async move {
-            context
-                .commit_pending_proposals(&conversation_id)
-                .await
-                .map_err(RecursiveError::mls_conversation("commiting pending proposals"))
-        })
-        .await
-    }
-
-    /// see [core_crypto::context::CentralContext::wipe_conversation]
-    #[deprecated = "Please create a transaction in Core Crypto and call this method from it."]
-    pub async fn wipe_conversation(&self, conversation_id: Vec<u8>) -> CoreCryptoResult<()> {
-        self.deprecated_transaction(|context| async move {
-            context
-                .wipe_conversation(&conversation_id)
-                .await
-                .map_err(RecursiveError::mls_conversation("wiping conversation"))
-        })
-        .await
-    }
-
-    /// See [core_crypto::context::CentralContext::decrypt_message]
-    #[deprecated = "Please create a transaction in Core Crypto and call this method from it."]
-    pub async fn decrypt_message(
-        &self,
-        conversation_id: Vec<u8>,
-        payload: Vec<u8>,
-    ) -> CoreCryptoResult<DecryptedMessage> {
-        self.deprecated_transaction(|context| async move {
-            context
-                .decrypt_message(&conversation_id, payload)
-                .await
-                .map_err(RecursiveError::mls_conversation("decrypting message"))
-        })
-        .await?
-        .try_into()
-    }
-
-    /// See [core_crypto::context::CentralContext::encrypt_message]
-    #[deprecated = "Please create a transaction in Core Crypto and call this method from it."]
-    pub async fn encrypt_message(&self, conversation_id: Vec<u8>, message: Vec<u8>) -> CoreCryptoResult<Vec<u8>> {
-        self.deprecated_transaction(|context| async move {
-            context
-                .encrypt_message(&conversation_id, message)
-                .await
-                .map_err(RecursiveError::mls_conversation("encrypting message"))
-        })
-        .await
-    }
-
     /// See [core_crypto::mls::MlsCentral::conversation_exists]
     pub async fn conversation_exists(&self, conversation_id: Vec<u8>) -> CoreCryptoResult<bool> {
         Ok(self.central.conversation_exists(&conversation_id).await?)
-    }
-
-    /// See [core_crypto::context::CentralContext::new_external_add_proposal]
-    #[deprecated = "Please create a transaction in Core Crypto and call this method from it."]
-    pub async fn new_external_add_proposal(
-        &self,
-        conversation_id: Vec<u8>,
-        epoch: u64,
-        ciphersuite: Ciphersuite,
-        credential_type: MlsCredentialType,
-    ) -> CoreCryptoResult<Vec<u8>> {
-        self.deprecated_transaction(|context| async move {
-            context
-                .new_external_add_proposal(
-                    conversation_id,
-                    epoch.into(),
-                    ciphersuite.into(),
-                    credential_type.into(),
-                )
-                .await
-                .map_err(RecursiveError::mls("creating new external add proposal"))?
-                .to_bytes()
-                .map_err(core_crypto::MlsError::wrap(
-                    "converting new external add proposal to bytes",
-                ))
-                .map_err(core_crypto::Error::from)
-        })
-        .await
-    }
-
-    /// See [core_crypto::context::CentralContext::join_by_external_commit]
-    #[deprecated = "Please create a transaction in Core Crypto and call this method from it."]
-    pub async fn join_by_external_commit(
-        &self,
-        group_info: Vec<u8>,
-        custom_configuration: CustomConfiguration,
-        credential_type: MlsCredentialType,
-    ) -> CoreCryptoResult<WelcomeBundle> {
-        let group_info = VerifiableGroupInfo::tls_deserialize(&mut group_info.as_slice())
-            .map_err(core_crypto::MlsError::wrap("deserializing group info"))
-            .map_err(core_crypto::Error::from)?;
-        Ok(self
-            .deprecated_transaction(|context| async move {
-                context
-                    .join_by_external_commit(group_info, custom_configuration.into(), credential_type.into())
-                    .await
-                    .map_err(RecursiveError::mls("joining by external commit"))
-            })
-            .await?
-            .into())
     }
 
     /// See [core_crypto::mls::MlsCentral::random_bytes]
@@ -1602,136 +1257,9 @@ impl From<core_crypto::prelude::E2eiConversationState> for E2eiConversationState
 #[cfg_attr(not(feature = "proteus"), allow(unused_variables))]
 #[uniffi::export]
 impl CoreCrypto {
-    /// See [core_crypto::proteus::ProteusCentral::try_new]
-    #[deprecated = "Please create a transaction in Core Crypto and call this method from it."]
-    pub async fn proteus_init(&self) -> CoreCryptoResult<()> {
-        proteus_impl!({
-            self.deprecated_transaction(|context| async move { context.proteus_init().await })
-                .await
-        })
-    }
-
-    /// See [core_crypto::proteus::ProteusCentral::session_from_prekey]
-    #[deprecated = "Please create a transaction in Core Crypto and call this method from it."]
-    pub async fn proteus_session_from_prekey(&self, session_id: String, prekey: Vec<u8>) -> CoreCryptoResult<()> {
-        proteus_impl!({
-            self.deprecated_transaction(|context| async move {
-                context
-                    .proteus_session_from_prekey(&session_id, &prekey)
-                    .await
-                    .map(|_| ())
-            })
-            .await
-        })
-    }
-
-    /// See [core_crypto::proteus::ProteusCentral::session_from_message]
-    #[deprecated = "Please create a transaction in Core Crypto and call this method from it."]
-    pub async fn proteus_session_from_message(
-        &self,
-        session_id: String,
-        envelope: Vec<u8>,
-    ) -> CoreCryptoResult<Vec<u8>> {
-        proteus_impl!({
-            self.deprecated_transaction(|context| async move {
-                context
-                    .proteus_session_from_message(&session_id, &envelope)
-                    .await
-                    .map(|(_, payload)| payload)
-            })
-            .await
-        })
-    }
-
-    /// See [core_crypto::proteus::ProteusCentral::session_save]
-    /// **Note**: This isn't usually needed as persisting sessions happens automatically when decrypting/encrypting messages and initializing Sessions
-    #[deprecated = "Please create a transaction in Core Crypto and call this method from it."]
-    pub async fn proteus_session_save(&self, session_id: String) -> CoreCryptoResult<()> {
-        proteus_impl!({
-            self.deprecated_transaction(|context| async move { context.proteus_session_save(&session_id).await })
-                .await
-        })
-    }
-
-    /// See [core_crypto::proteus::ProteusCentral::session_delete]
-    #[deprecated = "Please create a transaction in Core Crypto and call this method from it."]
-    pub async fn proteus_session_delete(&self, session_id: String) -> CoreCryptoResult<()> {
-        proteus_impl!({
-            self.deprecated_transaction(|context| async move { context.proteus_session_delete(&session_id).await })
-                .await
-        })
-    }
-
     /// See [core_crypto::proteus::ProteusCentral::session_exists]
     pub async fn proteus_session_exists(&self, session_id: String) -> CoreCryptoResult<bool> {
         proteus_impl!({ Ok(self.central.proteus_session_exists(&session_id).await?) })
-    }
-
-    /// See [core_crypto::proteus::ProteusCentral::decrypt]
-    #[deprecated = "Please create a transaction in Core Crypto and call this method from it."]
-    pub async fn proteus_decrypt(&self, session_id: String, ciphertext: Vec<u8>) -> CoreCryptoResult<Vec<u8>> {
-        proteus_impl!({
-            self.deprecated_transaction(
-                |context| async move { context.proteus_decrypt(&session_id, &ciphertext).await },
-            )
-            .await
-        })
-    }
-
-    /// See [core_crypto::proteus::ProteusCentral::encrypt]
-    #[deprecated = "Please create a transaction in Core Crypto and call this method from it."]
-    pub async fn proteus_encrypt(&self, session_id: String, plaintext: Vec<u8>) -> CoreCryptoResult<Vec<u8>> {
-        proteus_impl!({
-            self.deprecated_transaction(|context| async move { context.proteus_encrypt(&session_id, &plaintext).await })
-                .await
-        })
-    }
-
-    /// See [core_crypto::proteus::ProteusCentral::encrypt_batched]
-    #[deprecated = "Please create a transaction in Core Crypto and call this method from it."]
-    pub async fn proteus_encrypt_batched(
-        &self,
-        sessions: Vec<String>,
-        plaintext: Vec<u8>,
-    ) -> CoreCryptoResult<std::collections::HashMap<String, Vec<u8>>> {
-        proteus_impl!({
-            self.deprecated_transaction(|context| async move {
-                context.proteus_encrypt_batched(&sessions, &plaintext).await
-            })
-            .await
-        })
-    }
-
-    /// See [core_crypto::proteus::ProteusCentral::new_prekey]
-    #[deprecated = "Please create a transaction in Core Crypto and call this method from it."]
-    pub async fn proteus_new_prekey(&self, prekey_id: u16) -> CoreCryptoResult<Vec<u8>> {
-        proteus_impl!({
-            self.deprecated_transaction(|context| async move { context.proteus_new_prekey(prekey_id).await })
-                .await
-        })
-    }
-
-    /// See [core_crypto::proteus::ProteusCentral::new_prekey_auto]
-    #[deprecated = "Please create a transaction in Core Crypto and call this method from it."]
-    pub async fn proteus_new_prekey_auto(&self) -> CoreCryptoResult<ProteusAutoPrekeyBundle> {
-        proteus_impl!({
-            self.deprecated_transaction(|context| async move {
-                context
-                    .proteus_new_prekey_auto()
-                    .await
-                    .map(|(id, pkb)| ProteusAutoPrekeyBundle { id, pkb })
-            })
-            .await
-        })
-    }
-
-    /// See [core_crypto::proteus::ProteusCentral::last_resort_prekey]
-    #[deprecated = "Please create a transaction in Core Crypto and call this method from it."]
-    pub async fn proteus_last_resort_prekey(&self) -> CoreCryptoResult<Vec<u8>> {
-        proteus_impl!({
-            self.deprecated_transaction(|context| async move { context.proteus_last_resort_prekey().await })
-                .await
-        })
     }
 
     /// See [core_crypto::proteus::ProteusCentral::last_resort_prekey_id]
@@ -1759,95 +1287,12 @@ impl CoreCrypto {
     pub fn proteus_fingerprint_prekeybundle(&self, prekey: Vec<u8>) -> CoreCryptoResult<String> {
         proteus_impl!({ Ok(core_crypto::proteus::ProteusCentral::fingerprint_prekeybundle(&prekey)?) })
     }
-
-    /// See [core_crypto::proteus::ProteusCentral::cryptobox_migrate]
-    #[deprecated = "Please create a transaction in Core Crypto and call this method from it."]
-    pub async fn proteus_cryptobox_migrate(&self, path: String) -> CoreCryptoResult<()> {
-        proteus_impl!({
-            self.deprecated_transaction(|context| async move { context.proteus_cryptobox_migrate(&path).await })
-                .await
-        })
-    }
 }
 
 // End-to-end identity methods
 #[allow(dead_code, unused_variables)]
 #[uniffi::export]
 impl CoreCrypto {
-    /// See [core_crypto::context::CentralContext::e2ei_new_enrollment]
-    #[deprecated = "Please create a transaction in Core Crypto and call this method from it."]
-    pub async fn e2ei_new_enrollment(
-        &self,
-        client_id: String,
-        display_name: String,
-        handle: String,
-        team: Option<String>,
-        expiry_sec: u32,
-        ciphersuite: Ciphersuite,
-    ) -> CoreCryptoResult<E2eiEnrollment> {
-        self.deprecated_transaction(|context| async move {
-            context
-                .e2ei_new_enrollment(
-                    client_id.into_bytes().into(),
-                    display_name,
-                    handle,
-                    team,
-                    expiry_sec,
-                    ciphersuite.into(),
-                )
-                .await
-                .map(async_lock::RwLock::new)
-                .map(std::sync::Arc::new)
-                .map(E2eiEnrollment)
-                .map_err(RecursiveError::e2e_identity("creating new e2ei enrollment"))
-        })
-        .await
-    }
-
-    /// See [core_crypto::context::CentralContext::e2ei_new_activation_enrollment]
-    #[deprecated = "Please create a transaction in Core Crypto and call this method from it."]
-    pub async fn e2ei_new_activation_enrollment(
-        &self,
-        display_name: String,
-        handle: String,
-        team: Option<String>,
-        expiry_sec: u32,
-        ciphersuite: Ciphersuite,
-    ) -> CoreCryptoResult<E2eiEnrollment> {
-        self.deprecated_transaction(|context| async move {
-            context
-                .e2ei_new_activation_enrollment(display_name, handle, team, expiry_sec, ciphersuite.into())
-                .await
-                .map(async_lock::RwLock::new)
-                .map(std::sync::Arc::new)
-                .map(E2eiEnrollment)
-                .map_err(RecursiveError::e2e_identity("creating new e2ei activation enrollment"))
-        })
-        .await
-    }
-
-    /// See [core_crypto::context::CentralContext::e2ei_new_rotate_enrollment]
-    #[deprecated = "Please create a transaction in Core Crypto and call this method from it."]
-    pub async fn e2ei_new_rotate_enrollment(
-        &self,
-        display_name: Option<String>,
-        handle: Option<String>,
-        team: Option<String>,
-        expiry_sec: u32,
-        ciphersuite: Ciphersuite,
-    ) -> CoreCryptoResult<E2eiEnrollment> {
-        self.deprecated_transaction(|context| async move {
-            context
-                .e2ei_new_rotate_enrollment(display_name, handle, team, expiry_sec, ciphersuite.into())
-                .await
-                .map(async_lock::RwLock::new)
-                .map(std::sync::Arc::new)
-                .map(E2eiEnrollment)
-                .map_err(RecursiveError::e2e_identity("creating new rotate enrollment"))
-        })
-        .await
-    }
-
     pub async fn e2ei_dump_pki_env(&self) -> CoreCryptoResult<Option<E2eiDumpedPkiEnv>> {
         Ok(self.central.e2ei_dump_pki_env().await?.map(Into::into))
     }
@@ -1855,156 +1300,6 @@ impl CoreCrypto {
     /// See [core_crypto::mls::MlsCentral::e2ei_is_pki_env_setup]
     pub async fn e2ei_is_pki_env_setup(&self) -> bool {
         self.central.e2ei_is_pki_env_setup().await
-    }
-
-    /// See [core_crypto::context::CentralContext::e2ei_register_acme_ca]
-    #[deprecated = "Please create a transaction in Core Crypto and call this method from it."]
-    pub async fn e2ei_register_acme_ca(&self, trust_anchor_pem: String) -> CoreCryptoResult<()> {
-        self.deprecated_transaction(|context| async move {
-            context
-                .e2ei_register_acme_ca(trust_anchor_pem)
-                .await
-                .map_err(RecursiveError::e2e_identity("registering acme ca"))
-        })
-        .await
-    }
-
-    /// See [core_crypto::context::CentralContext::e2ei_register_intermediate_ca_pem]
-    #[deprecated = "Please create a transaction in Core Crypto and call this method from it."]
-    pub async fn e2ei_register_intermediate_ca(&self, cert_pem: String) -> CoreCryptoResult<NewCrlDistributionPoints> {
-        self.deprecated_transaction(|context| async move {
-            context
-                .e2ei_register_intermediate_ca_pem(cert_pem)
-                .await
-                .map(|new_crl_distribution_point| -> Option<Vec<_>> { new_crl_distribution_point.into() })
-                .map(Into::into)
-                .map_err(RecursiveError::e2e_identity("registering intermediate ca"))
-        })
-        .await
-    }
-
-    /// See [core_crypto::context::CentralContext::e2ei_register_crl]
-    #[deprecated = "Please create a transaction in Core Crypto and call this method from it."]
-    pub async fn e2ei_register_crl(&self, crl_dp: String, crl_der: Vec<u8>) -> CoreCryptoResult<CrlRegistration> {
-        self.deprecated_transaction(|context| async move {
-            context
-                .e2ei_register_crl(crl_dp, crl_der)
-                .await
-                .map(Into::into)
-                .map_err(RecursiveError::e2e_identity("registering crl"))
-        })
-        .await
-    }
-
-    /// See [core_crypto::context::CentralContext::e2ei_mls_init_only]
-    #[deprecated = "Please create a transaction in Core Crypto and call this method from it."]
-    pub async fn e2ei_mls_init_only(
-        &self,
-        enrollment: std::sync::Arc<E2eiEnrollment>,
-        certificate_chain: String,
-        nb_key_package: Option<u32>,
-    ) -> CoreCryptoResult<NewCrlDistributionPoints> {
-        let nb_key_package = nb_key_package
-            .map(usize::try_from)
-            .transpose()
-            .expect("we never run corecrypto on systems with architectures narrower than 32 bits");
-
-        self.deprecated_transaction(|context| async move {
-            context
-                .e2ei_mls_init_only(
-                    enrollment.0.write().await.deref_mut(),
-                    certificate_chain,
-                    nb_key_package,
-                )
-                .await
-                .map(|new_crl_distribution_point| -> Option<Vec<_>> { new_crl_distribution_point.into() })
-                .map(Into::into)
-                .map_err(RecursiveError::e2e_identity("doing mls init only"))
-        })
-        .await
-    }
-
-    /// See [core_crypto::context::CentralContext::e2ei_rotate]
-    #[deprecated = "Please create a transaction in Core Crypto and call this method from it."]
-    pub async fn e2ei_rotate(&self, conversation_id: Vec<u8>) -> CoreCryptoResult<()> {
-        self.deprecated_transaction(|context| async move {
-            context
-                .e2ei_rotate(&conversation_id, None)
-                .await
-                .map_err(RecursiveError::e2e_identity("rotating"))
-        })
-        .await
-    }
-
-    /// See [core_crypto::context::CentralContext::save_x509_credential]
-    #[deprecated = "Please create a transaction in Core Crypto and call this method from it."]
-    pub async fn save_x509_credential(
-        &self,
-        enrollment: Arc<E2eiEnrollment>,
-        certificate_chain: String,
-    ) -> CoreCryptoResult<NewCrlDistributionPoints> {
-        self.deprecated_transaction(|context| async move {
-            context
-                .save_x509_credential(enrollment.0.write().await.deref_mut(), certificate_chain)
-                .await
-                .map(|new_crl_distribution_point| -> Option<Vec<_>> { new_crl_distribution_point.into() })
-                .map(Into::into)
-                .map_err(RecursiveError::e2e_identity("rotating all"))
-        })
-        .await
-    }
-
-    /// See [core_crypto::context::CentralContext::e2ei_enrollment_stash]
-    #[deprecated = "Please create a transaction in Core Crypto and call this method from it."]
-    pub async fn e2ei_enrollment_stash(&self, enrollment: std::sync::Arc<E2eiEnrollment>) -> CoreCryptoResult<Vec<u8>> {
-        let enrollment = std::sync::Arc::into_inner(enrollment).ok_or_else(|| {
-            CoreCryptoError::Other(
-                "enrollmemnt had more than one strong pointer and could not be removed from arc".into(),
-            )
-        })?;
-        let enrollment = std::sync::Arc::into_inner(enrollment.0)
-            .ok_or_else(|| {
-                CoreCryptoError::Other(
-                    "enrollmemnt.0 had more than one strong pointer and could not be removed from arc".into(),
-                )
-            })?
-            .into_inner();
-
-        self.deprecated_transaction(|context| async move {
-            context
-                .e2ei_enrollment_stash(enrollment)
-                .await
-                .map_err(RecursiveError::e2e_identity("stashing enrollment"))
-        })
-        .await
-    }
-
-    /// See [core_crypto::context::CentralContext::e2ei_enrollment_stash_pop]
-    #[deprecated = "Please create a transaction in Core Crypto and call this method from it."]
-    pub async fn e2ei_enrollment_stash_pop(&self, handle: Vec<u8>) -> CoreCryptoResult<E2eiEnrollment> {
-        self.deprecated_transaction(|context| async move {
-            context
-                .e2ei_enrollment_stash_pop(handle)
-                .await
-                .map(async_lock::RwLock::new)
-                .map(std::sync::Arc::new)
-                .map(E2eiEnrollment)
-                .map_err(RecursiveError::e2e_identity("popping enrollment stash"))
-        })
-        .await
-    }
-
-    /// See [core_crypto::context::CentralContext::e2ei_conversation_state]
-    #[deprecated = "Please create a transaction in Core Crypto and call this method from it."]
-    pub async fn e2ei_conversation_state(&self, conversation_id: Vec<u8>) -> CoreCryptoResult<E2eiConversationState> {
-        self.deprecated_transaction(|context| async move {
-            context
-                .e2ei_conversation_state(&conversation_id)
-                .await
-                .map(Into::into)
-                .map_err(RecursiveError::e2e_identity("getting conversation state"))
-        })
-        .await
     }
 
     /// See [core_crypto::mls::MlsCentral::e2ei_is_enabled]
@@ -2147,30 +1442,6 @@ impl E2eiEnrollment {
             .write()
             .await
             .new_oidc_challenge_request(id_token, refresh_token, previous_nonce)?)
-    }
-
-    /// See [core_crypto::e2e_identity::E2eiEnrollment::new_oidc_challenge_response]
-    #[deprecated = "Please create a transaction in Core Crypto and call Self::context_newoidc_challenge_response."]
-    pub async fn new_oidc_challenge_response(
-        &self,
-        cc: std::sync::Arc<CoreCrypto>,
-        challenge: Vec<u8>,
-    ) -> CoreCryptoResult<()> {
-        cc.deprecated_transaction(|context| async move {
-            self.0
-                .write()
-                .await
-                .new_oidc_challenge_response(
-                    &context
-                        .mls_provider()
-                        .await
-                        .map_err(RecursiveError::root("getting mls provider"))?,
-                    challenge,
-                )
-                .await
-                .map_err(RecursiveError::e2e_identity("creating new oidc challenge response"))
-        })
-        .await
     }
 
     /// See [core_crypto::e2e_identity::E2eiEnrollment::new_oidc_challenge_response]
