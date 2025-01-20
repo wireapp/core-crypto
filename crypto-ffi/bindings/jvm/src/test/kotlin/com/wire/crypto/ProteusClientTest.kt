@@ -36,7 +36,7 @@ internal class ProteusClientTest {
         val root = Files.createTempDirectory("mls").toFile()
         val keyStore = root.resolve("keystore-$clientId")
         val cc = CoreCrypto(keyStore.absolutePath, "secret")
-        cc.proteusInit()
+        cc.transaction { it.proteusInit() }
         cc
     }
 
