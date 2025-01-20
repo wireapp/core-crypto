@@ -45,10 +45,7 @@ impl CentralContext {
     ///
     /// If the Delivery Service accepts the external commit, you have to [CentralContext::merge_pending_group_from_external_commit]
     /// in order to get back a functional MLS group. On the opposite, if it rejects it, you can either
-    /// retry by just calling again [CentralContext::join_by_external_commit], no need to [CentralContext::clear_pending_group_from_external_commit].
-    /// If you want to abort the operation (too many retries or the user decided to abort), you can use
-    /// [CentralContext::clear_pending_group_from_external_commit] in order not to bloat the user's storage but nothing
-    /// bad can happen if you forget to except some storage space wasted.
+    /// retry by just calling again [CentralContext::join_by_external_commit].
     ///
     /// # Arguments
     /// * `group_info` - a GroupInfo wrapped in a MLS message. it can be obtained by deserializing a TLS serialized `GroupInfo` object

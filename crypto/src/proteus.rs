@@ -84,7 +84,7 @@ impl ProteusConversationSession {
 impl CoreCrypto {
     /// Proteus session accessor
     ///
-    /// Warning: The Proteus client **MUST** be initialized with [CoreCrypto::proteus_init] first or an error will be returned
+    /// Warning: The Proteus client **MUST** be initialized with [CentralContext::proteus_init] first or an error will be returned
     pub async fn proteus_session(
         &self,
         session_id: &str,
@@ -97,7 +97,7 @@ impl CoreCrypto {
 
     /// Proteus session exists
     ///
-    /// Warning: The Proteus client **MUST** be initialized with [CoreCrypto::proteus_init] first or an error will be returned
+    /// Warning: The Proteus client **MUST** be initialized with [CentralContext::proteus_init] first or an error will be returned
     pub async fn proteus_session_exists(&self, session_id: &str) -> Result<bool> {
         let mut mutex = self.proteus.lock().await;
         let proteus = mutex.as_mut().ok_or(Error::ProteusNotInitialized)?;
@@ -112,7 +112,7 @@ impl CoreCrypto {
 
     /// Returns the proteus identity's public key fingerprint
     ///
-    /// Warning: The Proteus client **MUST** be initialized with [CoreCrypto::proteus_init] first or an error will be returned
+    /// Warning: The Proteus client **MUST** be initialized with [CentralContext::proteus_init] first or an error will be returned
     pub async fn proteus_fingerprint(&self) -> Result<String> {
         let mutex = self.proteus.lock().await;
         let proteus = mutex.as_ref().ok_or(Error::ProteusNotInitialized)?;
@@ -121,7 +121,7 @@ impl CoreCrypto {
 
     /// Returns the proteus identity's public key fingerprint
     ///
-    /// Warning: The Proteus client **MUST** be initialized with [CoreCrypto::proteus_init] first or an error will be returned
+    /// Warning: The Proteus client **MUST** be initialized with [CentralContext::proteus_init] first or an error will be returned
     pub async fn proteus_fingerprint_local(&self, session_id: &str) -> Result<String> {
         let mut mutex = self.proteus.lock().await;
         let proteus = mutex.as_mut().ok_or(Error::ProteusNotInitialized)?;
@@ -131,7 +131,7 @@ impl CoreCrypto {
 
     /// Returns the proteus identity's public key fingerprint
     ///
-    /// Warning: The Proteus client **MUST** be initialized with [CoreCrypto::proteus_init] first or an error will be returned
+    /// Warning: The Proteus client **MUST** be initialized with [CentralContext::proteus_init] first or an error will be returned
     pub async fn proteus_fingerprint_remote(&self, session_id: &str) -> Result<String> {
         let mut mutex = self.proteus.lock().await;
         let proteus = mutex.as_mut().ok_or(Error::ProteusNotInitialized)?;
@@ -157,7 +157,7 @@ impl CentralContext {
 
     /// Reloads the sessions from the key store
     ///
-    /// Warning: The Proteus client **MUST** be initialized with [CoreCrypto::proteus_init] first or it will do nothing
+    /// Warning: The Proteus client **MUST** be initialized with [CentralContext::proteus_init] first or it will do nothing
     pub async fn proteus_reload_sessions(&self) -> Result<()> {
         let arc = self.proteus_central().await?;
         let mut mutex = arc.lock().await;
@@ -168,7 +168,7 @@ impl CentralContext {
 
     /// Creates a proteus session from a prekey
     ///
-    /// Warning: The Proteus client **MUST** be initialized with [CoreCrypto::proteus_init] first or an error will be returned
+    /// Warning: The Proteus client **MUST** be initialized with [CentralContext::proteus_init] first or an error will be returned
     pub async fn proteus_session_from_prekey(
         &self,
         session_id: &str,
@@ -186,7 +186,7 @@ impl CentralContext {
 
     /// Creates a proteus session from a Proteus message envelope
     ///
-    /// Warning: The Proteus client **MUST** be initialized with [CoreCrypto::proteus_init] first or an error will be returned
+    /// Warning: The Proteus client **MUST** be initialized with [CentralContext::proteus_init] first or an error will be returned
     pub async fn proteus_session_from_message(
         &self,
         session_id: &str,
@@ -206,7 +206,7 @@ impl CentralContext {
 
     /// Saves a proteus session in the keystore
     ///
-    /// Warning: The Proteus client **MUST** be initialized with [CoreCrypto::proteus_init] first or an error will be returned
+    /// Warning: The Proteus client **MUST** be initialized with [CentralContext::proteus_init] first or an error will be returned
     pub async fn proteus_session_save(&self, session_id: &str) -> Result<()> {
         let arc = self.proteus_central().await?;
         let mut mutex = arc.lock().await;
@@ -217,7 +217,7 @@ impl CentralContext {
 
     /// Deletes a proteus session from the keystore
     ///
-    /// Warning: The Proteus client **MUST** be initialized with [CoreCrypto::proteus_init] first or an error will be returned
+    /// Warning: The Proteus client **MUST** be initialized with [CentralContext::proteus_init] first or an error will be returned
     pub async fn proteus_session_delete(&self, session_id: &str) -> Result<()> {
         let arc = self.proteus_central().await?;
         let mut mutex = arc.lock().await;
@@ -228,7 +228,7 @@ impl CentralContext {
 
     /// Proteus session accessor
     ///
-    /// Warning: The Proteus client **MUST** be initialized with [CoreCrypto::proteus_init] first or an error will be returned
+    /// Warning: The Proteus client **MUST** be initialized with [CentralContext::proteus_init] first or an error will be returned
     pub async fn proteus_session(
         &self,
         session_id: &str,
@@ -242,7 +242,7 @@ impl CentralContext {
 
     /// Proteus session exists
     ///
-    /// Warning: The Proteus client **MUST** be initialized with [CoreCrypto::proteus_init] first or an error will be returned
+    /// Warning: The Proteus client **MUST** be initialized with [CentralContext::proteus_init] first or an error will be returned
     pub async fn proteus_session_exists(&self, session_id: &str) -> Result<bool> {
         let arc = self.proteus_central().await?;
         let mut mutex = arc.lock().await;
@@ -253,7 +253,7 @@ impl CentralContext {
 
     /// Decrypts a proteus message envelope
     ///
-    /// Warning: The Proteus client **MUST** be initialized with [CoreCrypto::proteus_init] first or an error will be returned
+    /// Warning: The Proteus client **MUST** be initialized with [CentralContext::proteus_init] first or an error will be returned
     pub async fn proteus_decrypt(&self, session_id: &str, ciphertext: &[u8]) -> Result<Vec<u8>> {
         let arc = self.proteus_central().await?;
         let mut mutex = arc.lock().await;
@@ -264,7 +264,7 @@ impl CentralContext {
 
     /// Encrypts proteus message for a given session ID
     ///
-    /// Warning: The Proteus client **MUST** be initialized with [CoreCrypto::proteus_init] first or an error will be returned
+    /// Warning: The Proteus client **MUST** be initialized with [CentralContext::proteus_init] first or an error will be returned
     pub async fn proteus_encrypt(&self, session_id: &str, plaintext: &[u8]) -> Result<Vec<u8>> {
         let arc = self.proteus_central().await?;
         let mut mutex = arc.lock().await;
@@ -276,7 +276,7 @@ impl CentralContext {
     /// Encrypts a proteus message for several sessions ID. This is more efficient than other methods as the calls are batched.
     /// This also reduces the rountrips when crossing over the FFI
     ///
-    /// Warning: The Proteus client **MUST** be initialized with [CoreCrypto::proteus_init] first or an error will be returned
+    /// Warning: The Proteus client **MUST** be initialized with [CentralContext::proteus_init] first or an error will be returned
     pub async fn proteus_encrypt_batched(
         &self,
         sessions: &[impl AsRef<str>],
@@ -291,7 +291,7 @@ impl CentralContext {
 
     /// Creates a new Proteus prekey and returns the CBOR-serialized version of the prekey bundle
     ///
-    /// Warning: The Proteus client **MUST** be initialized with [CoreCrypto::proteus_init] first or an error will be returned
+    /// Warning: The Proteus client **MUST** be initialized with [CentralContext::proteus_init] first or an error will be returned
     pub async fn proteus_new_prekey(&self, prekey_id: u16) -> Result<Vec<u8>> {
         let arc = self.proteus_central().await?;
         let mut mutex = arc.lock().await;
@@ -302,7 +302,7 @@ impl CentralContext {
 
     /// Creates a new Proteus prekey with an automatically incremented ID and returns the CBOR-serialized version of the prekey bundle
     ///
-    /// Warning: The Proteus client **MUST** be initialized with [CoreCrypto::proteus_init] first or an error will be returned
+    /// Warning: The Proteus client **MUST** be initialized with [CentralContext::proteus_init] first or an error will be returned
     pub async fn proteus_new_prekey_auto(&self) -> Result<(u16, Vec<u8>)> {
         let arc = self.proteus_central().await?;
         let mut mutex = arc.lock().await;
@@ -328,7 +328,7 @@ impl CentralContext {
 
     /// Returns the proteus identity's public key fingerprint
     ///
-    /// Warning: The Proteus client **MUST** be initialized with [CoreCrypto::proteus_init] first or an error will be returned
+    /// Warning: The Proteus client **MUST** be initialized with [CentralContext::proteus_init] first or an error will be returned
     pub async fn proteus_fingerprint(&self) -> Result<String> {
         let arc = self.proteus_central().await?;
         let mut mutex = arc.lock().await;
@@ -338,7 +338,7 @@ impl CentralContext {
 
     /// Returns the proteus identity's public key fingerprint
     ///
-    /// Warning: The Proteus client **MUST** be initialized with [CoreCrypto::proteus_init] first or an error will be returned
+    /// Warning: The Proteus client **MUST** be initialized with [CentralContext::proteus_init] first or an error will be returned
     pub async fn proteus_fingerprint_local(&self, session_id: &str) -> Result<String> {
         let arc = self.proteus_central().await?;
         let mut mutex = arc.lock().await;
@@ -349,7 +349,7 @@ impl CentralContext {
 
     /// Returns the proteus identity's public key fingerprint
     ///
-    /// Warning: The Proteus client **MUST** be initialized with [CoreCrypto::proteus_init] first or an error will be returned
+    /// Warning: The Proteus client **MUST** be initialized with [CentralContext::proteus_init] first or an error will be returned
     pub async fn proteus_fingerprint_remote(&self, session_id: &str) -> Result<String> {
         let arc = self.proteus_central().await?;
         let mut mutex = arc.lock().await;
@@ -360,7 +360,7 @@ impl CentralContext {
 
     /// Migrates an existing Cryptobox data store (whether a folder or an IndexedDB database) located at `path` to the keystore.
     ///
-    ///The client can then be initialized with [CoreCrypto::proteus_init]
+    ///The client can then be initialized with [CentralContext::proteus_init]
     pub async fn proteus_cryptobox_migrate(&self, path: &str) -> Result<()> {
         let keystore = self.keystore().await?;
         ProteusCentral::cryptobox_migrate(&keystore, path).await
