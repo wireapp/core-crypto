@@ -106,16 +106,6 @@ class CoreCrypto(private val cc: com.wire.crypto.uniffi.CoreCrypto) {
         return result as R
     }
 
-    /**
-     * Initialise [CoreCrypto] to be used with proteus.
-     *
-     * All proteus related methods will fail until this function is called.
-     */
-    @Deprecated("Use the method inside a transaction on the CoreCryptoContext object.")
-    suspend fun proteusInit() {
-        this.transaction { ctx -> ctx.proteusInit() }
-    }
-
     suspend fun provideTransport(transport: MlsTransport) {
         cc.provideTransport(transport)
     }

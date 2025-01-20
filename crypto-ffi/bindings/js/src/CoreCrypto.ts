@@ -21,7 +21,6 @@ export { CoreCryptoContext } from "./CoreCryptoContext.js";
 
 export {
     BuildMetadata,
-    initLogger,
     setLogger,
     CoreCryptoLogLevel,
     setMaxLogLevel,
