@@ -1,4 +1,4 @@
-use crate::entity_derive::{Column, ColumnType, Columns, IdColumn, KeyStoreEntity};
+use crate::entity_derive::{Column, ColumnType, Columns, IdColumn, IdColumnType, IdTransformation, KeyStoreEntity};
 use heck::ToSnakeCase;
 use proc_macro2::{Ident, Span};
 use quote::ToTokens;
@@ -74,28 +74,79 @@ impl IdColumn {
     fn parse(named_fields: &FieldsNamed) -> syn::Result<Self> {
         let mut id = None;
         let mut implicit_id = None;
-        for field in named_fields.named.iter() {
+
+        for field in &named_fields.named {
             let name = field
                 .ident
                 .as_ref()
                 .expect("named fields always have identifiers")
                 .clone();
-            let column_type = ColumnType::parse(&field.ty)?;
 
-            if field.attrs.iter().any(|attr| attr.path().is_ident("id")) {
-                if id.is_some() {
+            if let Some(attr) = field.attrs.iter().find(|a| a.path().is_ident("id")) {
+                let mut column_name = None;
+                let mut transformation = None;
+                let column_type = IdColumnType::parse(&field.ty)?;
+
+                if let Ok(list) = attr.meta.require_list() {
+                    list.parse_nested_meta(|meta| {
+                        match meta.path.require_ident()?.to_string().as_str() {
+                            "column" => {
+                                meta.input.parse::<Token![=]>()?;
+                                column_name = Some(meta.input.parse::<syn::LitStr>()?.value());
+                            }
+                            "hex" => transformation = Some(IdTransformation::Hex),
+                            _ => return Err(syn::Error::new_spanned(meta.path, "unknown argument")),
+                        }
+                        Ok(())
+                    })?;
+                }
+
+                if id
+                    .replace(IdColumn {
+                        name,
+                        column_type,
+                        column_name,
+                        transformation,
+                    })
+                    .is_some()
+                {
                     return Err(syn::Error::new_spanned(
                         field,
-                        "Ambiguous `#[id] attributes. Provide exactly one.",
+                        "Ambiguous `#[id]` attributes. Provide exactly one.",
                     ));
                 }
-                id = Some(IdColumn { name, column_type });
             } else if name == "id" {
-                implicit_id = Some(IdColumn { name, column_type });
+                let column_type = IdColumnType::parse(&field.ty)?;
+                implicit_id = Some(IdColumn {
+                    name,
+                    column_type,
+                    column_name: None,
+                    transformation: None,
+                });
             }
         }
-        id = id.or(implicit_id);
-        id.ok_or(syn::Error::new_spanned(named_fields, "No `#[id]` attribute provided."))
+
+        id.or(implicit_id).ok_or_else(|| {
+            syn::Error::new_spanned(
+                named_fields,
+                "No field named `id` or annotated `#[id]` attribute provided.",
+            )
+        })
+    }
+}
+
+impl IdColumnType {
+    fn parse(ty: &Type) -> Result<Self, syn::Error> {
+        let mut type_string = ty.to_token_stream().to_string();
+        type_string.retain(|c| !c.is_whitespace());
+        match type_string.as_str() {
+            "String" | "std::string::String" => Ok(Self::String),
+            "Vec<u8>" | "std::vec::Vec<u8>" => Ok(Self::Bytes),
+            type_string => Err(syn::Error::new_spanned(
+                ty,
+                format!("Expected `String` or `Vec<u8>`, not `{type_string}`."),
+            )),
+        }
     }
 }
 
@@ -137,9 +188,15 @@ impl ColumnType {
         match type_string.as_str() {
             "String" | "std::string::String" => Ok(Self::String),
             "Vec<u8>" | "std::vec::Vec<u8>" => Ok(Self::Bytes),
+            "Option<Vec<u8>>"
+            | "Option<std::vec::Vec<u8>>"
+            | "core::option::Option<Vec<u8>>"
+            | "core::option::Option<std::vec::Vec<u8>>"
+            | "std::option::Option<Vec<u8>>"
+            | "std::option::Option<std::vec::Vec<u8>>" => Ok(Self::OptionalBytes),
             type_string => Err(syn::Error::new_spanned(
                 ty,
-                format!("Expected `String` or `Vec<u8>`, not `{type_string}`."),
+                format!("Expected `String`, `Vec<u8>`, or `Option<Vec<u8>>` not `{type_string}`."),
             )),
         }
     }

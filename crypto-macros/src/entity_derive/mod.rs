@@ -35,11 +35,20 @@ impl KeyStoreEntity {
             .map(|column| column.name.clone())
             .collect::<Vec<_>>();
 
-        let blob_column_names = blob_columns.iter().map(ToString::to_string).collect();
+        let optional_blob_columns = self
+            .columns
+            .0
+            .iter()
+            .filter(|column| column.column_type == ColumnType::OptionalBytes)
+            .map(|column| column.name.clone())
+            .collect::<Vec<_>>();
+
         let all_column_names = all_columns.iter().map(ToString::to_string).collect();
+        let blob_column_names = blob_columns.iter().map(ToString::to_string).collect();
+        let optional_blob_column_names = optional_blob_columns.iter().map(ToString::to_string).collect();
 
         let id = self.id.name;
-        let id_name = id.to_string();
+        let id_name = self.id.column_name.unwrap_or_else(|| id.to_string());
         let id_type = self.id.column_type;
 
         KeyStoreEntityFlattened {
@@ -49,10 +58,13 @@ impl KeyStoreEntity {
             id,
             id_type,
             id_name,
+            id_transformation: self.id.transformation,
             all_columns,
             all_column_names,
             blob_columns,
             blob_column_names,
+            optional_blob_columns,
+            optional_blob_column_names,
         }
     }
 }
@@ -64,19 +76,36 @@ pub(super) struct KeyStoreEntityFlattened {
     collection_name: String,
     id: Ident,
     id_name: String,
-    id_type: ColumnType,
+    id_type: IdColumnType,
+    id_transformation: Option<IdTransformation>,
     all_columns: Vec<Ident>,
     all_column_names: Vec<String>,
     blob_columns: Vec<Ident>,
     blob_column_names: Vec<String>,
+    optional_blob_columns: Vec<Ident>,
+    optional_blob_column_names: Vec<String>,
     no_upsert: bool,
 }
 
-// Now identical to column, but
-// subject to change once more diverse entities are supported.
+#[derive(PartialEq, Eq)]
+enum IdColumnType {
+    String,
+    Bytes,
+}
+
 struct IdColumn {
     name: Ident,
-    column_type: ColumnType,
+    column_type: IdColumnType,
+    /// Only present if it differs from the name
+    column_name: Option<String>,
+    /// If the ID cannot be stored as-is because of indexing limitations
+    transformation: Option<IdTransformation>,
+}
+
+enum IdTransformation {
+    Hex,
+    #[expect(dead_code)]
+    Sha256,
 }
 
 struct Columns(Vec<Column>);
@@ -90,4 +119,5 @@ struct Column {
 enum ColumnType {
     String,
     Bytes,
+    OptionalBytes,
 }
