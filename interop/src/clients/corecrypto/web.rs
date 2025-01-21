@@ -129,7 +129,9 @@ impl EmulatedMlsClient for CoreCryptoWebClient {
             .execute_async(
                 r#"
 const [ciphersuite, callback] = arguments;
-window.cc.clientKeypackages(ciphersuite, window.credentialType, 1).then(([kp]) => callback(kp));"#,
+window.cc.transaction((ctx) => 
+    ctx.clientKeypackages(ciphersuite, window.credentialType, 1)
+).then(([kp]) => callback(kp));"#,
                 vec![serde_json::json!(ciphersuite)],
             )
             .await
@@ -156,10 +158,13 @@ const [cId, kp, callback] = arguments;
 const conversationId = Uint8Array.from(Object.values(cId));
 const keyPackage = Uint8Array.from(Object.values(kp));
 if (!window.cc.conversationExists(conversationId)) {
-    await window.cc.createConversation(conversationId);
+    await window.cc.transaction((ctx) =>
+        ctx.createConversation(conversationId)
+    );
 }
-window.cc.addClientsToConversation(conversationId, [{ kp: keyPackage }])
-    .then(({ welcome }) => callback(welcome));"#,
+window.cc.transaction((ctx) =>
+    ctx.addClientsToConversation(conversationId, [{ kp: keyPackage }]))
+.then(({ welcome }) => callback(welcome));"#,
                 vec![conversation_id.into(), kp.into()],
             )
             .await?;
@@ -174,8 +179,9 @@ window.cc.addClientsToConversation(conversationId, [{ kp: keyPackage }])
 const [cId, clId, callback] = arguments;
 const conversationId = Uint8Array.from(Object.values(cId));
 const clientId = Uint8Array.from(Object.values(clId));
-window.cc.removeClientsFromConversation(conversationId, [clientId])
-    .then(({ commit }) => callback(commit));"#,
+window.cc.transaction((ctx) =>
+    ctx.removeClientsFromConversation(conversationId, [clientId]))
+.then(({ commit }) => callback(commit));"#,
                 vec![conversation_id.into(), client_id.into()],
             )
             .await
@@ -189,8 +195,9 @@ window.cc.removeClientsFromConversation(conversationId, [clientId])
                 r#"
 const [welcome, callback] = arguments;
 const welcomeMessage = Uint8Array.from(Object.values(welcome));
-window.cc.processWelcomeMessage(welcomeMessage)
-    .then(({ id }) => callback(id));"#,
+window.cc.transaction((ctx) =>
+    ctx.processWelcomeMessage(welcomeMessage))
+.then(({ id }) => callback(id));"#,
                 vec![welcome.into()],
             )
             .await
@@ -205,8 +212,9 @@ window.cc.processWelcomeMessage(welcomeMessage)
 const [cId, cleartext, callback] = arguments;
 const conversationId = Uint8Array.from(Object.values(cId));
 const message = Uint8Array.from(Object.values(cleartext));
-window.cc.encryptMessage(conversationId, message)
-    .then(callback);"#,
+window.cc.transaction((ctx) =>
+    ctx.encryptMessage(conversationId, message))
+.then(callback);"#,
                 vec![conversation_id.into(), message.into()],
             )
             .await
@@ -221,8 +229,9 @@ window.cc.encryptMessage(conversationId, message)
 const [cId, encMessage, callback] = arguments;
 const conversationId = Uint8Array.from(Object.values(cId));
 const encryptedMessage = Uint8Array.from(Object.values(encMessage));
-window.cc.decryptMessage(conversationId, encryptedMessage)
-    .then(({ message }) => callback(message));"#,
+window.cc.transaction((ctx) =>
+    ctx.decryptMessage(conversationId, encryptedMessage)
+).then(({ message }) => callback(message));"#,
                 vec![conversation_id.into(), message.into()],
             )
             .await?;
@@ -243,7 +252,9 @@ impl crate::clients::EmulatedProteusClient for CoreCryptoWebClient {
             .execute_async(
                 r#"
 const [callback] = arguments;
-window.cc.proteusInit().then(callback);"#,
+window.cc.transaction((ctx) =>
+    ctx.proteusInit()
+).then(callback);"#,
                 vec![],
             )
             .await?;
@@ -259,7 +270,9 @@ window.cc.proteusInit().then(callback);"#,
             .execute_async(
                 r#"
 const [prekeyId, callback] = arguments;
-window.cc.proteusNewPrekey(prekeyId).then(callback);"#,
+window.cc.transaction((ctx) =>
+    ctx.proteusNewPrekey(prekeyId)
+).then(callback);"#,
                 vec![prekey_last_id.into()],
             )
             .await
@@ -274,7 +287,9 @@ window.cc.proteusNewPrekey(prekeyId).then(callback);"#,
                 r#"
 const [sessionId, prekey, callback] = arguments;
 const prekeyBuffer = Uint8Array.from(Object.values(prekey));
-window.cc.proteusSessionFromPrekey(sessionId, prekeyBuffer).then(callback);"#,
+window.cc.transaction((ctx) =>
+    ctx.proteusSessionFromPrekey(sessionId, prekeyBuffer)
+).then(callback);"#,
                 vec![session_id.into(), prekey.into()],
             )
             .await?;
@@ -288,7 +303,9 @@ window.cc.proteusSessionFromPrekey(sessionId, prekeyBuffer).then(callback);"#,
                 r#"
 const [sessionId, message, callback] = arguments;
 const messageBuffer = Uint8Array.from(Object.values(message));
-window.cc.proteusSessionFromMessage(sessionId, messageBuffer).then(callback);"#,
+window.cc.transaction((ctx) =>
+    ctx.proteusSessionFromMessage(sessionId, messageBuffer)
+).then(callback);"#,
                 vec![session_id.into(), message.into()],
             )
             .await
@@ -303,7 +320,9 @@ window.cc.proteusSessionFromMessage(sessionId, messageBuffer).then(callback);"#,
                 r#"
 const [sessionId, plaintext, callback] = arguments;
 const plaintextBuffer = Uint8Array.from(Object.values(plaintext));
-window.cc.proteusEncrypt(sessionId, plaintextBuffer).then(callback);"#,
+window.cc.transaction((ctx) =>
+    ctx.proteusEncrypt(sessionId, plaintextBuffer)
+).then(callback);"#,
                 vec![session_id.into(), plaintext.into()],
             )
             .await
@@ -319,7 +338,9 @@ window.cc.proteusEncrypt(sessionId, plaintextBuffer).then(callback);"#,
                 r#"
 const [sessionId, ciphertext, callback] = arguments;
 const ciphertextBuffer = Uint8Array.from(Object.values(ciphertext));
-window.cc.proteusDecrypt(sessionId, ciphertextBuffer).then(callback);"#,
+window.cc.transaction((ctx) =>
+    ctx.proteusDecrypt(sessionId, ciphertextBuffer)
+).then(callback);"#,
                 vec![session_id.into(), ciphertext.into()],
             )
             .await
