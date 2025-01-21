@@ -14,9 +14,7 @@ set -e -o pipefail
 function bail() {
     msg="$1"
     if [ -n "$msg" ]; then
-        # we do want to emit to stderr here
-        #shellcheck disable=SC2210
-        echo >2 "$msg"
+        >&2 printf "%b\n" "$msg"
     fi
     exit 1
 }
