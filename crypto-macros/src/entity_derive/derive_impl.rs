@@ -1,4 +1,4 @@
-use crate::entity_derive::{ColumnType, KeyStoreEntityFlattened};
+use crate::entity_derive::{ColumnType, IdColumnType, IdTransformation, KeyStoreEntityFlattened};
 use quote::quote;
 
 impl quote::ToTokens for KeyStoreEntityFlattened {
@@ -50,30 +50,54 @@ impl KeyStoreEntityFlattened {
             id,
             id_type,
             id_name,
+            id_transformation,
             blob_columns,
             blob_column_names,
             all_columns,
+            optional_blob_columns,
+            optional_blob_column_names,
             ..
         } = self;
 
-        let string_id_conversion = matches!(id_type, ColumnType::String).then(|| {
+        let string_id_conversion = matches!(id_type, IdColumnType::String).then(|| {
             quote! { let #id: String = id.try_into()?; }
         });
 
         let id_to_byte_slice = match id_type {
-            ColumnType::String => quote! {self.#id.as_bytes() },
-            ColumnType::Bytes => quote! { &self.#id[..] },
+            IdColumnType::String => quote! {self.#id.as_bytes() },
+            IdColumnType::Bytes => quote! { &self.#id.as_slice() },
         };
 
-        let id_field_construct_self = match id_type {
-            ColumnType::String => quote! { #id, },
-            ColumnType::Bytes => quote! { #id: id.to_bytes(), },
+        let id_field_find_one = match id_type {
+            IdColumnType::String => quote! { #id, },
+            IdColumnType::Bytes => quote! { #id: id.to_bytes(), },
         };
 
         let id_slice = match id_type {
-            ColumnType::String => quote! { #id.as_str() },
-            ColumnType::Bytes => quote! { #id.as_slice() },
+            IdColumnType::String => quote! { #id.as_str() },
+            IdColumnType::Bytes => quote! { #id.as_slice() },
         };
+
+        let id_input_transformed = match id_transformation {
+            Some(IdTransformation::Hex) => quote! { id.as_hex_string() },
+            Some(IdTransformation::Sha256) => todo!(),
+            None => id_slice,
+        };
+
+        let destructure_row = match id_transformation {
+            Some(IdTransformation::Hex) => quote! { let (rowid, #id): (_, String) = row?; },
+            Some(IdTransformation::Sha256) => todo!(),
+            None => quote! { let (rowid, #id) = row?; },
+        };
+
+        let id_from_transformed = match id_transformation {
+            Some(IdTransformation::Hex) => {
+                quote! { let #id = <Self as crate::entities::EntityIdStringExt>::id_from_hex(&#id)?; }
+            }
+            Some(IdTransformation::Sha256) => todo!(),
+            None => quote! {},
+        };
+
         let find_all_query = format!("SELECT rowid, {id_name} FROM {collection_name} ");
 
         let find_one_query = format!("SELECT rowid FROM {collection_name} WHERE {id_name} = ?");
@@ -100,13 +124,28 @@ impl KeyStoreEntityFlattened {
                     let mut rows = stmt.query_map([], |r| Ok((r.get(0)?, r.get(1)?)))?;
                     use std::io::Read as _;
                     rows.map(|row| {
-                        let (rowid, #id) = row?;
+                        #destructure_row
+                        #id_from_transformed
 
                         #(
-                            let mut blob = transaction.blob_open(rusqlite::DatabaseName::Main, #collection_name, #blob_column_names, rowid, false)?;
-                            let mut #blob_columns = vec![];
+                            let mut blob = transaction.blob_open(rusqlite::DatabaseName::Main, #collection_name, #blob_column_names, rowid, true)?;
+                            let mut #blob_columns = Vec::with_capacity(blob.len());
                             blob.read_to_end(&mut #blob_columns)?;
                             blob.close()?;
+                        )*
+
+                        #(
+                            let mut #optional_blob_columns = None;
+                            if let Ok(mut blob) =
+                                transaction.blob_open(rusqlite::DatabaseName::Main, #collection_name, #optional_blob_column_names, rowid, true)
+                            {
+                                if !blob.is_empty() {
+                                    let mut blob_data = Vec::with_capacity(blob.len());
+                                    blob.read_to_end(&mut blob_data)?;
+                                    #optional_blob_columns.replace(blob_data);
+                                }
+                                blob.close()?;
+                            }
                         )*
 
                         Ok(Self { #id
@@ -127,25 +166,42 @@ impl KeyStoreEntityFlattened {
 
                    #string_id_conversion
 
-                    let mut row_id = transaction
-                        .query_row(&#find_one_query, [#id_slice], |r| {
+                    let mut rowid: Option<i64> = transaction
+                        .query_row(&#find_one_query, [#id_input_transformed], |r| {
                             r.get::<_, i64>(0)
                         })
                         .optional()?;
 
-                    if let Some(rowid) = row_id.take() {
+                    use std::io::Read as _;
+                    if let Some(rowid) = rowid.take() {
                         #(
                             let mut blob = transaction.blob_open(rusqlite::DatabaseName::Main, #collection_name, #blob_column_names, rowid, true)?;
-                            use std::io::Read as _;
                             let mut #blob_columns = Vec::with_capacity(blob.len());
                             blob.read_to_end(&mut #blob_columns)?;
                             blob.close()?;
                         )*
 
+                        #(
+                            let mut #optional_blob_columns = None;
+                            if let Ok(mut blob) =
+                                transaction.blob_open(rusqlite::DatabaseName::Main, #collection_name, #optional_blob_column_names, rowid, true)
+                            {
+                                if !blob.is_empty() {
+                                    let mut blob_data = Vec::with_capacity(blob.len());
+                                    blob.read_to_end(&mut blob_data)?;
+                                    #optional_blob_columns.replace(blob_data);
+                                }
+                                blob.close()?;
+                            }
+                        )*
+
                         Ok(Some(Self {
-                            #id_field_construct_self
+                            #id_field_find_one
                             #(
                                 #blob_columns,
+                            )*
+                            #(
+                                #optional_blob_columns,
                             )*
                         }))
                     } else {
@@ -172,8 +228,8 @@ impl KeyStoreEntityFlattened {
         } = self;
 
         let id_to_byte_slice = match id_type {
-            ColumnType::String => quote! {self.#id.as_bytes() },
-            ColumnType::Bytes => quote! { self.#id.as_slice() },
+            IdColumnType::String => quote! {self.#id.as_bytes() },
+            IdColumnType::Bytes => quote! { self.#id.as_slice() },
         };
 
         quote! {
@@ -226,6 +282,9 @@ impl KeyStoreEntityFlattened {
             all_column_names,
             blob_columns,
             blob_column_names,
+            optional_blob_columns,
+            optional_blob_column_names,
+            id_transformation,
             no_upsert,
             id_type,
             ..
@@ -246,16 +305,34 @@ impl KeyStoreEntityFlattened {
             .collect::<Vec<_>>()
             .join(", ");
 
+        let import_id_string_ext = match id_transformation {
+            Some(IdTransformation::Hex) => quote! { use crate::entities::EntityIdStringExt as _; },
+            Some(IdTransformation::Sha256) => todo!(),
+            None => quote! {},
+        };
+
         let upsert_query = format!(
             "INSERT INTO {collection_name} ({id_name}, {column_list}) VALUES (?{}){upsert_postfix} RETURNING rowid",
             ", ?".repeat(self.all_columns.len()),
         );
 
+        let self_id_transformed = match id_transformation {
+            Some(IdTransformation::Hex) => quote! { self.id_hex() },
+            Some(IdTransformation::Sha256) => todo!(),
+            None => quote! { self.#id },
+        };
+
         let delete_query = format!("DELETE FROM {collection_name} WHERE {id_name} = ?");
 
         let id_slice_delete = match id_type {
-            ColumnType::String => quote! { id.try_as_str()? },
-            ColumnType::Bytes => quote! { id.as_slice() },
+            IdColumnType::String => quote! { id.try_as_str()? },
+            IdColumnType::Bytes => quote! { id.as_slice() },
+        };
+
+        let id_input_transformed_delete = match id_transformation {
+            Some(IdTransformation::Hex) => quote! { id.as_hex_string() },
+            Some(IdTransformation::Sha256) => todo!(),
+            None => id_slice_delete,
         };
 
         quote! {
@@ -274,31 +351,50 @@ impl KeyStoreEntityFlattened {
                     #(
                         crate::connection::KeystoreDatabaseConnection::check_buffer_size(self.#blob_columns.len())?;
                     )*
+                    #(
+                      crate::connection::KeystoreDatabaseConnection::check_buffer_size(
+                            self.#optional_blob_columns.as_ref().map(|v| v.len()).unwrap_or_default()
+                      )?;
+                    )*
+
+                    #import_id_string_ext
 
                     let sql = #upsert_query;
 
-                    let row_id_result: Result<i64, rusqlite::Error> =
+                    let rowid_result: Result<i64, rusqlite::Error> =
                         transaction.query_row(&sql, [
-                        self.#id.to_sql()?
+                        #self_id_transformed.to_sql()?
                         #(
                             ,
                             rusqlite::blob::ZeroBlob(self.#blob_columns.len() as i32).to_sql()?
                         )*
+                        #(
+                            ,
+                            rusqlite::blob::ZeroBlob(self.#optional_blob_columns.as_ref().map(|v| v.len() as i32).unwrap_or_default()).to_sql()?
+                        )*
                     ], |r| r.get(0));
 
                     use std::io::Write as _;
-                    match row_id_result {
-                        Ok(row_id) => {
+                    match rowid_result {
+                        Ok(rowid) => {
                             #(
                                 let mut blob = transaction.blob_open(
                                     rusqlite::DatabaseName::Main,
                                     #collection_name,
                                     #blob_column_names,
-                                    row_id,
+                                    rowid,
                                     false,
                                 )?;
 
                                 blob.write_all(&self.#blob_columns)?;
+                                blob.close()?;
+                            )*
+
+                            #(
+                                let mut blob = transaction.blob_open(rusqlite::DatabaseName::Main, #collection_name, #optional_blob_column_names, rowid, false)?;
+                                if let Some(#optional_blob_columns) = self.#optional_blob_columns.as_ref() {
+                                    blob.write_all(#optional_blob_columns)?;
+                                }
                                 blob.close()?;
                             )*
 
@@ -316,9 +412,9 @@ impl KeyStoreEntityFlattened {
                     id: crate::entities::StringEntityId<'_>,
                 ) -> crate::CryptoKeystoreResult<()> {
                     use crate::entities::EntityBase as _;
-                    let updated = transaction.execute(&#delete_query, [#id_slice_delete])?;
+                    let deleted = transaction.execute(&#delete_query, [#id_input_transformed_delete])?;
 
-                    if updated > 0 {
+                    if deleted > 0 {
                         Ok(())
                     } else {
                         Err(Self::to_missing_key_err_kind().into())
