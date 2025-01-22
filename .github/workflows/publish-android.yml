@@ -27,7 +27,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: ensure the tag is signed
-        run: git cat-file -p ${{ github.ref_name }} | grep -q -- '-----BEGIN PGP SIGNATURE-----'
+        run: git cat-file tag ${{ github.ref_name }} | grep -q -- '-----BEGIN PGP SIGNATURE-----'
       - name: set up jdk 17
         uses: actions/setup-java@v4
         with:
