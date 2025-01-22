@@ -65,4 +65,13 @@ fi
 # we can now actually merge this to main without breaking anything
 git checkout main
 git merge "$branch" --ff-only
-git push
+
+# In principle we can just push now, because we're just updating `main` to the tip of an approved branch.
+# Github has magic to detect that!
+# Unfortunately, the magic is sometimes laggy.
+# So let's give it a shot, and if it doesn't work, we'll try again a few seconds later;
+# that should minimize overall waiting.
+if ! git push; then
+    sleep 2.5s
+    git push
+fi
