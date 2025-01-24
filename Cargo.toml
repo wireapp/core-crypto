@@ -48,7 +48,7 @@ thiserror = "2.0"
 tls_codec = "0.4.1"
 uniffi = "0.28"
 url = "2.5"
-uuid = "1.11"
+uuid = "1.12"
 x509-cert = "0.2"
 zeroize = "1.8"
 
