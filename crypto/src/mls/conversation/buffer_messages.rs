@@ -4,6 +4,7 @@
 //! Feel free to delete all of this when the issue is fixed on the DS side !
 
 use crate::context::CentralContext;
+use crate::obfuscate::Obfuscated;
 use crate::{
     group_store::GroupStoreValue,
     prelude::{
@@ -73,7 +74,6 @@ impl MlsConversation {
         is_rejoin: bool,
     ) -> CryptoResult<Option<Vec<MlsBufferedConversationDecryptMessage>>> {
         // using the macro produces a clippy warning
-        info!("restore_pending_messages");
         let result = async move {
             let keystore = backend.keystore();
             let group_id = self.id().as_slice();
@@ -108,6 +108,8 @@ impl MlsConversation {
             // We want to restore application messages first, then Proposals & finally Commits
             // luckily for us that's the exact same order as the [ContentType] enum
             pending_messages.sort_by(|(a, _), (b, _)| a.cmp(b));
+
+            info!(group_id = Obfuscated::from(&self.id); "Attempting to restore {} buffered messages", pending_messages.len());
 
             let mut decrypted_messages = Vec::with_capacity(pending_messages.len());
             for (_, m) in pending_messages {

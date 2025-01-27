@@ -248,6 +248,7 @@ impl MlsConversation {
                         .restore_pending_messages(client, backend, callbacks, parent_conv, false)
                         .await?
                     {
+                        info!(group_id = Obfuscated::from(&self.id); "Clearing all buffered messages for conversation");
                         backend.key_store().remove::<MlsPendingMessage, _>(self.id()).await?;
                         Some(pm)
                     } else {
@@ -442,10 +443,13 @@ impl CentralContext {
             )
             .await;
 
-        let decrypt_message = match decrypt_message {
-            Err(CryptoError::BufferedFutureMessage) => self.handle_future_message(id, message).await?,
-            _ => decrypt_message?,
-        };
+        if let Err(CryptoError::BufferedFutureMessage { message_epoch }) = decrypt_message {
+            self.handle_future_message(id, message).await?;
+            info!(group_id = Obfuscated::from(id); "Buffered future message from epoch {message_epoch}");
+            return decrypt_message;
+        }
+
+        let decrypt_message = decrypt_message?;
 
         if !decrypt_message.is_active {
             self.wipe_conversation(id).await?;
