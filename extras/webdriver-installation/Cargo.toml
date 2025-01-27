@@ -38,3 +38,6 @@ zip = "0.6"
 flate2 = "1.0"
 tar = "0.4"
 tracing = "0.1"
+
+[lints.rust]
+unexpected_cfgs = { level = "warn", check-cfg = ['cfg(trick_rust_analyzer_into_highlighting_interpolated_bits)'] }
