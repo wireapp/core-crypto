@@ -192,9 +192,15 @@ mod tests {
 
                     // Since Alice missed Bob's commit she should buffer this message
                     let decrypt = alice_central.context.decrypt_message(&id, msg1).await;
-                    assert!(matches!(decrypt.unwrap_err(), CryptoError::BufferedFutureMessage));
+                    assert!(matches!(
+                        decrypt.unwrap_err(),
+                        CryptoError::BufferedFutureMessage { .. }
+                    ));
                     let decrypt = alice_central.context.decrypt_message(&id, msg2).await;
-                    assert!(matches!(decrypt.unwrap_err(), CryptoError::BufferedFutureMessage));
+                    assert!(matches!(
+                        decrypt.unwrap_err(),
+                        CryptoError::BufferedFutureMessage { .. }
+                    ));
                     assert_eq!(alice_central.context.count_entities().await.pending_messages, 2);
 
                     let gi = bob_central.get_group_info(&id).await;

@@ -211,7 +211,7 @@ impl From<CryptoError> for InternalError {
         match value {
             CryptoError::ConversationAlreadyExists(id) => MlsError::ConversationAlreadyExists(id).into(),
             CryptoError::DuplicateMessage => MlsError::DuplicateMessage.into(),
-            CryptoError::BufferedFutureMessage => MlsError::BufferedFutureMessage.into(),
+            CryptoError::BufferedFutureMessage { .. } => MlsError::BufferedFutureMessage.into(),
             CryptoError::WrongEpoch => MlsError::WrongEpoch.into(),
             CryptoError::MessageEpochTooOld => MlsError::MessageEpochTooOld.into(),
             CryptoError::SelfCommitIgnored => MlsError::SelfCommitIgnored.into(),

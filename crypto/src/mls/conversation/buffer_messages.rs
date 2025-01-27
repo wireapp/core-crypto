@@ -216,10 +216,16 @@ mod tests {
                         .map(|m| m.to_bytes().unwrap());
                     for m in messages {
                         let decrypt = bob_central.context.decrypt_message(&id, m).await;
-                        assert!(matches!(decrypt.unwrap_err(), CryptoError::BufferedFutureMessage));
+                        assert!(matches!(
+                            decrypt.unwrap_err(),
+                            CryptoError::BufferedFutureMessage { .. }
+                        ));
                     }
                     let decrypt = bob_central.context.decrypt_message(&id, app_msg).await;
-                    assert!(matches!(decrypt.unwrap_err(), CryptoError::BufferedFutureMessage));
+                    assert!(matches!(
+                        decrypt.unwrap_err(),
+                        CryptoError::BufferedFutureMessage { .. }
+                    ));
 
                     // Bob should have buffered the messages
                     assert_eq!(bob_central.context.count_entities().await.pending_messages, 4);
@@ -343,10 +349,16 @@ mod tests {
                             .map(|m| m.to_bytes().unwrap());
                         for m in messages {
                             let decrypt = alice_central.context.decrypt_message(&id, m).await;
-                            assert!(matches!(decrypt.unwrap_err(), CryptoError::BufferedFutureMessage));
+                            assert!(matches!(
+                                decrypt.unwrap_err(),
+                                CryptoError::BufferedFutureMessage { .. }
+                            ));
                         }
                         let decrypt = alice_central.context.decrypt_message(&id, app_msg).await;
-                        assert!(matches!(decrypt.unwrap_err(), CryptoError::BufferedFutureMessage));
+                        assert!(matches!(
+                            decrypt.unwrap_err(),
+                            CryptoError::BufferedFutureMessage { .. }
+                        ));
 
                         // Alice should have buffered the messages
                         assert_eq!(alice_central.context.count_entities().await.pending_messages, 4);
