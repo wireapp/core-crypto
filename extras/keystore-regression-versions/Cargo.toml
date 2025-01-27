@@ -13,4 +13,3 @@ rand = "0.8"
 clap = { version = "4", features = ["derive"] }
 cfg-if = "1"
 indicatif = { version = "0.17", features = ["futures"] }
-

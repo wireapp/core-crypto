@@ -11,6 +11,9 @@ publish = false
 name = "mls_crypto_provider"
 crate-type = ["lib", "cdylib"]
 
+[lints]
+workspace = true
+
 [features]
 default = []
 raw-rand-access = [] # TESTING ONLY
@@ -64,6 +67,3 @@ async-std = { workspace = true, features = ["attributes"] }
 cfg-if.workspace = true
 hex-literal = "0.4"
 mls-crypto-provider = { workspace = true, features = ["raw-rand-access"] }
-
-[lints.rust]
-unexpected_cfgs = { level = "warn", check-cfg = ['cfg(wasm_bindgen_unstable_test_coverage)'] }

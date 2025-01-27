@@ -4,8 +4,11 @@ version = "0.1.0"
 edition = "2021"
 license = "GPL-3.0-only"
 
+[lints]
+workspace = true
+
 [dependencies]
 clap = { version = "4.5.27", features = ["derive"] }
-proteus-wasm = { workspace = true,  features = ["serde"]}
+proteus-wasm = { workspace = true, features = ["serde"] }
 base64 = { workspace = true }
 openmls = { workspace = true }

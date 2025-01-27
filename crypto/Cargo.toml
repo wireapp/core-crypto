@@ -11,10 +11,25 @@ publish = false
 name = "core_crypto"
 crate-type = ["lib", "cdylib"]
 
+[lints]
+workspace = true
+
 [features]
 default = ["proteus", "cryptobox-migrate"]
-proteus = ["dep:proteus-wasm", "dep:proteus-traits", "core-crypto-keystore/proteus-keystore"]
-cryptobox-migrate = ["proteus", "proteus-wasm?/cryptobox-identity", "dep:async-fs", "dep:futures-lite", "dep:rexie", "dep:idb", "dep:base64"]
+proteus = [
+    "dep:proteus-wasm",
+    "dep:proteus-traits",
+    "core-crypto-keystore/proteus-keystore",
+]
+cryptobox-migrate = [
+    "proteus",
+    "proteus-wasm?/cryptobox-identity",
+    "dep:async-fs",
+    "dep:futures-lite",
+    "dep:rexie",
+    "dep:idb",
+    "dep:base64",
+]
 # for test/bench all ciphersuites
 test-all-cipher = []
 # execute benches with also real db to better see overhead
@@ -58,7 +73,10 @@ proteus-traits = { workspace = true, optional = true }
 sha2 = "0.10.8"
 
 [target.'cfg(not(target_family = "wasm"))'.dependencies]
-sysinfo = { version = "0.32", default-features = false, features = ["apple-app-store", "system"] }
+sysinfo = { version = "0.32", default-features = false, features = [
+    "apple-app-store",
+    "system",
+] }
 async-fs = { version = "2.1", optional = true }
 futures-lite = { version = "2.6", optional = true }
 
@@ -105,7 +123,12 @@ version = "0.5"
 features = ["async_std", "html_reports"]
 
 [package.metadata.wasm-pack.profile.release]
-wasm-opt = ["-Os", "--enable-mutable-globals", "--enable-threads", "--detect-features"]
+wasm-opt = [
+    "-Os",
+    "--enable-mutable-globals",
+    "--enable-threads",
+    "--detect-features",
+]
 
 [[bench]]
 name = "key_package"
@@ -141,6 +164,3 @@ anyhow = "1.0.95"
 # is available on the command line. If not, we should replace this with
 # `vergen-gix` or `vergen-git2`.
 vergen-gitcl = { version = "1.0.2", features = ["build", "cargo"] }
-
-[lints.rust]
-unexpected_cfgs = { level = "warn", check-cfg = ['cfg(wasm_bindgen_unstable_test_coverage)'] }

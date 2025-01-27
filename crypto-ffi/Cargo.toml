@@ -16,6 +16,9 @@ name = "uniffi-bindgen"
 path = "uniffi-bindgen.rs"
 required-features = ["uniffi/cli"]
 
+[lints]
+workspace = true
+
 [features]
 default = ["proteus"]
 proteus = [
@@ -81,11 +84,9 @@ wasm-opt = [
     "--detect-features",
 ]
 
-[lints.rust]
-unexpected_cfgs = { level = "warn", check-cfg = [
-    'cfg(wasm_bindgen_unstable_test_coverage)',
-] }
-
 [dev-dependencies]
 testing_logger = "0.1.1"
-tokio = { version = "1.43.0", default-features = false, features = ["macros", "rt"] }
+tokio = { version = "1.43.0", default-features = false, features = [
+    "macros",
+    "rt",
+] }
