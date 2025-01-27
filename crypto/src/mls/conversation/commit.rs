@@ -1341,7 +1341,7 @@ mod tests {
 
                     // fails when a commit is skipped
                     let out_of_order = bob_central.context.decrypt_message(&id, &commit2).await;
-                    assert!(matches!(out_of_order.unwrap_err(), Error::BufferedFutureMessage));
+                    assert!(matches!(out_of_order.unwrap_err(), Error::BufferedFutureMessage { .. }));
 
                     // works in the right order though
                     // NB: here 'commit2' has been buffered so it is also applied when we decrypt commit1

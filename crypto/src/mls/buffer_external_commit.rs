@@ -321,12 +321,12 @@ mod tests {
                     let decrypt = alice_central.context.decrypt_message(&id, msg1).await;
                     assert!(matches!(
                         decrypt.unwrap_err(),
-                        mls::conversation::Error::BufferedFutureMessage
+                        mls::conversation::Error::BufferedFutureMessage { .. }
                     ));
                     let decrypt = alice_central.context.decrypt_message(&id, msg2).await;
                     assert!(matches!(
                         decrypt.unwrap_err(),
-                        mls::conversation::Error::BufferedFutureMessage
+                        mls::conversation::Error::BufferedFutureMessage { .. }
                     ));
                     assert_eq!(alice_central.context.count_entities().await.pending_messages, 2);
 

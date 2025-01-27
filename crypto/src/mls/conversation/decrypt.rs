@@ -373,7 +373,9 @@ impl MlsConversation {
                     } else if msg_epoch == group_epoch + 1 {
                         // limit to next epoch otherwise if we were buffering a commit for epoch + 2
                         // we would fail when trying to decrypt it in [MlsCentral::commit_accepted]
-                        Error::BufferedFutureMessage
+                        Error::BufferedFutureMessage {
+                            message_epoch: msg_epoch,
+                        }
                     } else if msg_epoch < group_epoch {
                         match content_type {
                             ContentType::Application => Error::StaleMessage,
@@ -1040,7 +1042,7 @@ mod tests {
 
                     // which Bob cannot decrypt because of Post CompromiseSecurity
                     let decrypt = bob_central.context.decrypt_message(&id, &encrypted).await;
-                    assert!(matches!(decrypt.unwrap_err(), Error::BufferedFutureMessage));
+                    assert!(matches!(decrypt.unwrap_err(), Error::BufferedFutureMessage { .. }));
 
                     let decrypted_commit = bob_central
                         .context

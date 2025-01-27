@@ -31,7 +31,7 @@ pub enum Error {
     #[error("Incoming message is from a prior epoch")]
     StaleMessage,
     #[error("Incoming message is for a future epoch. We will buffer it until the commit for that epoch arrives")]
-    BufferedFutureMessage,
+    BufferedFutureMessage { message_epoch: u64 },
     #[error("Incoming message is from an epoch too far in the future to buffer.")]
     UnbufferedFarFutureMessage,
     #[error("The received commit is deemed stale and is from an older epoch.")]
