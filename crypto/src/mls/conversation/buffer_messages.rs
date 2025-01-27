@@ -8,7 +8,7 @@ use crate::{
     group_store::GroupStoreValue,
     prelude::{
         decrypt::MlsBufferedConversationDecryptMessage, Client, ConversationId, CoreCryptoCallbacks, CryptoError,
-        CryptoResult, MlsConversation, MlsConversationDecryptMessage, MlsError,
+        CryptoResult, MlsConversation, MlsError,
     },
 };
 use core_crypto_keystore::{
@@ -25,7 +25,7 @@ impl CentralContext {
         &self,
         id: &ConversationId,
         message: impl AsRef<[u8]>,
-    ) -> CryptoResult<MlsConversationDecryptMessage> {
+    ) -> CryptoResult<()> {
         let keystore = self.keystore().await?;
 
         let pending_msg = MlsPendingMessage {
@@ -33,7 +33,7 @@ impl CentralContext {
             message: message.as_ref().to_vec(),
         };
         keystore.save::<MlsPendingMessage>(pending_msg).await?;
-        Err(CryptoError::BufferedFutureMessage)
+        Ok(())
     }
 
     pub(crate) async fn restore_pending_messages(
