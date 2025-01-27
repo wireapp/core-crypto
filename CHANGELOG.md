@@ -1,5 +1,11 @@
 # Changelog
 
+## v3.0.1 - 2025-01-27
+
+### Highlights
+
+- Emit info log with context when buffering, restoring, or clearing buffered messages
+
 ## v3.0.0 - 2024-12-11
 
 ### Highlights
