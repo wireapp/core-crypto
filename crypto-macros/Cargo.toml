@@ -9,6 +9,9 @@ license = "GPL-3.0-only"
 [lib]
 proc-macro = true
 
+[lints]
+workspace = true
+
 [dependencies]
 syn = { version = "2", features = ["full"] }
 quote = "1"

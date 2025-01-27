@@ -6,13 +6,19 @@ members = [
     "keystore",
     "keystore-dump",
     "mls-provider",
-    "interop"
-, "decode"]
+    "interop",
+    "decode",
+]
 exclude = [
     "extras/webdriver-installation",
-    "extras/keystore-regression-versions"
+    "extras/keystore-regression-versions",
 ]
 resolver = "2"
+
+[workspace.lints.rust]
+unexpected_cfgs = { level = "warn", check-cfg = [
+    'cfg(wasm_bindgen_unstable_test_coverage)',
+] }
 
 [workspace.dependencies]
 async-lock = "3.4"
@@ -26,7 +32,12 @@ const_format = "0.2"
 core-crypto = { path = "crypto" }
 core-crypto-keystore = { path = "keystore" }
 core-crypto-macros = { path = "crypto-macros" }
-derive_more = { version = "0.99", features = ["from", "into", "deref", "deref_mut"] }
+derive_more = { version = "0.99", features = [
+    "from",
+    "into",
+    "deref",
+    "deref_mut",
+] }
 futures-util = "0.3"
 hex = "0.4"
 idb = "0.6"
@@ -37,7 +48,7 @@ log-reload = "0.1.0"
 mls-crypto-provider = { path = "mls-provider" }
 pem = "3.0"
 rand = { version = "0.8", features = ["getrandom"] }
-rexie = "0.6.1"  # TODO: remove once migration tests have been moved to rexie
+rexie = "0.6.1" # TODO: remove once migration tests have been moved to rexie
 schnellru = "0.2"
 serde = "1.0"
 serde_json = "1.0"

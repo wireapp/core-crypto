@@ -16,9 +16,17 @@ name = "uniffi-bindgen"
 path = "uniffi-bindgen.rs"
 required-features = ["uniffi/cli"]
 
+[lints]
+workspace = true
+
 [features]
 default = ["proteus"]
-proteus = ["core-crypto/proteus", "core-crypto/cryptobox-migrate", "dep:proteus-wasm", "dep:core-crypto-keystore"]
+proteus = [
+    "core-crypto/proteus",
+    "core-crypto/cryptobox-migrate",
+    "dep:proteus-wasm",
+    "dep:core-crypto-keystore",
+]
 
 [dependencies]
 thiserror.workspace = true
@@ -31,7 +39,7 @@ log.workspace = true
 log-reload.workspace = true
 serde_json.workspace = true
 proteus-wasm = { workspace = true, optional = true }
-core-crypto-keystore = { workspace = true, optional = true}
+core-crypto-keystore = { workspace = true, optional = true }
 
 # see https://github.com/RustCrypto/hashes/issues/404
 [target.'cfg(not(any(target_arch = "aarch64", target_arch = "x86_64", target_arch = "x86")))'.dependencies]
@@ -68,7 +76,9 @@ wasm-bindgen-test = "0.3"
 wasm-opt = false
 
 [package.metadata.wasm-pack.profile.release]
-wasm-opt = ["-Os", "--enable-mutable-globals", "--enable-threads", "--detect-features"]
-
-[lints.rust]
-unexpected_cfgs = { level = "warn", check-cfg = ['cfg(wasm_bindgen_unstable_test_coverage)'] }
+wasm-opt = [
+    "-Os",
+    "--enable-mutable-globals",
+    "--enable-threads",
+    "--detect-features",
+]

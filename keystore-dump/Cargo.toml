@@ -5,10 +5,12 @@ version = "3.0.2"
 edition = "2021"
 license = "GPL-3.0-only"
 
+[lints]
+workspace = true
+
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 [dependencies]
 color-eyre = "0.6"
-
 
 [target.'cfg(not(target_family = "wasm"))'.dependencies]
 core-crypto-keystore = { workspace = true, features = ["serde"] }
@@ -28,7 +30,11 @@ openmls_basic_credential.workspace = true
 openmls_x509_credential.workspace = true
 tls_codec.workspace = true
 
-chrono = { version = "0.4", default-features = false, features = ["clock", "std", "serde"] }
+chrono = { version = "0.4", default-features = false, features = [
+    "clock",
+    "std",
+    "serde",
+] }
 
 [target.'cfg(not(target_family = "wasm"))'.dependencies.proteus-wasm]
 workspace = true

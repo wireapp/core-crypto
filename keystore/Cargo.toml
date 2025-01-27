@@ -19,10 +19,17 @@ harness = false
 name = "write"
 harness = false
 
+[lints]
+workspace = true
+
 [features]
 default = ["proteus-keystore"]
 proteus-keystore = ["dep:proteus-traits"]
-ios-wal-compat = ["dep:security-framework", "dep:security-framework-sys", "dep:core-foundation"]
+ios-wal-compat = [
+    "dep:security-framework",
+    "dep:security-framework-sys",
+    "dep:core-foundation",
+]
 idb-regression-test = []
 log-queries = ["rusqlite/trace"]
 serde = ["dep:serde"]
@@ -65,7 +72,7 @@ features = [
     "limits",
     "unlock_notify",
     "uuid",
-    "functions"
+    "functions",
 ]
 
 [target.'cfg(not(target_family = "wasm"))'.dependencies.refinery]

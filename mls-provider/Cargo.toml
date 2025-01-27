@@ -11,6 +11,9 @@ publish = false
 name = "mls_crypto_provider"
 crate-type = ["lib", "cdylib"]
 
+[lints]
+workspace = true
+
 [features]
 default = []
 raw-rand-access = [] # TESTING ONLY

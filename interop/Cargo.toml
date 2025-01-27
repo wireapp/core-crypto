@@ -12,8 +12,11 @@ proteus = [
     "dep:proteus-wasm",
     "dep:tempfile",
     "core-crypto/cryptobox-migrate",
-    "core-crypto/proteus"
+    "core-crypto/proteus",
 ]
+
+[lints]
+workspace = true
 
 [dependencies]
 color-eyre = "0.6"
@@ -49,4 +52,3 @@ warp = { version = "0.3", default-features = false }
 webdriver-installation = { path = "../extras/webdriver-installation" }
 fantoccini = "0.21"
 proteus-wasm = { workspace = true, optional = true }
-
