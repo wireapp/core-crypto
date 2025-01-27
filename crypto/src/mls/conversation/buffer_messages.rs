@@ -7,10 +7,7 @@ use super::{Error, Result};
 use crate::{
     context::CentralContext,
     group_store::GroupStoreValue,
-    prelude::{
-        decrypt::MlsBufferedConversationDecryptMessage, Client, ConversationId, MlsConversation,
-        MlsConversationDecryptMessage,
-    },
+    prelude::{decrypt::MlsBufferedConversationDecryptMessage, Client, ConversationId, MlsConversation},
     KeystoreError, RecursiveError,
 };
 use core_crypto_keystore::{
@@ -23,11 +20,7 @@ use openmls::prelude::{MlsMessageIn, MlsMessageInBody};
 use tls_codec::Deserialize;
 
 impl CentralContext {
-    pub(crate) async fn handle_future_message(
-        &self,
-        id: &ConversationId,
-        message: impl AsRef<[u8]>,
-    ) -> Result<MlsConversationDecryptMessage> {
+    pub(crate) async fn handle_future_message(&self, id: &ConversationId, message: impl AsRef<[u8]>) -> Result<()> {
         let keystore = self
             .keystore()
             .await
@@ -41,7 +34,7 @@ impl CentralContext {
             .save::<MlsPendingMessage>(pending_msg)
             .await
             .map_err(KeystoreError::wrap("saving pending mls message"))?;
-        Err(Error::BufferedFutureMessage)
+        Ok(())
     }
 
     pub(crate) async fn restore_pending_messages(
