@@ -1183,6 +1183,13 @@ pub struct CoreCryptoWasmLogger {
     ctx: JsValue,
 }
 
+// SAFETY: WASM only ever runs in a single-threaded context, so this is intrinsically thread-safe.
+// If that invariant ever varies, we may need to rethink this (but more likely that would be addressed
+// upstream where the types are defined).
+unsafe impl Send for CoreCryptoWasmLogger {}
+// SAFETY: WASM only ever runs in a single-threaded context, so this is intrinsically thread-safe.
+unsafe impl Sync for CoreCryptoWasmLogger {}
+
 #[wasm_bindgen]
 #[derive(Debug, Clone, Copy)]
 #[repr(u8)]
@@ -1385,9 +1392,8 @@ Please make all callbacks `async` or manually return a `Promise` via `Promise.re
 
 // SAFETY: All callback instances are wrapped into Arc<RwLock> so this is safe to mark
 unsafe impl Send for MlsTransportProvider {}
+// SAFETY: All callback instances are wrapped into Arc<RwLock> so this is safe to mark
 unsafe impl Sync for MlsTransportProvider {}
-unsafe impl Send for CoreCryptoWasmLogger {}
-unsafe impl Sync for CoreCryptoWasmLogger {}
 
 #[async_trait::async_trait(?Send)]
 impl MlsTransport for MlsTransportProvider {
