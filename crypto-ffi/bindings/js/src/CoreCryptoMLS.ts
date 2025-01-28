@@ -313,9 +313,6 @@ export type MlsTransportResponse =
     | {
           /**
            * The message was rejected by the delivery service and there's no recovery.
-           * One special case is when the reason is `mls-client-mismatch`, where you should return Abort and then retry the whole operation.
-           * For example, when adding a user to a conversation fails with `mls-client-mismatch`, then `Abort("mls-client-mismatch")`, should be returned.
-           * The resulting `MessageRejected` error returned by core crypto should be caught and discarded before the operation is retried.
            */
           abort: { reason: string };
       };
