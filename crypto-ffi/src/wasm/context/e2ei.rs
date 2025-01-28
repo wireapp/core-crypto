@@ -241,14 +241,12 @@ impl CoreCryptoContext {
 
     /// Returns: [`WasmCryptoResult<()>`]
     ///
-    /// see [core_crypto::mls::context::CentralContext::retain_only_key_packages_of_most_recent_x509_credentials]
-    pub fn retain_only_key_packages_of_most_recent_x509_credentials(&self, cipher_suite: Ciphersuite) -> Promise {
+    /// see [core_crypto::context::CentralContext::delete_stale_key_packages]
+    pub fn delete_stale_key_packages(&self, cipher_suite: Ciphersuite) -> Promise {
         let context = self.inner.clone();
         future_to_promise(
             async move {
-                context
-                    .retain_only_key_packages_of_most_recent_x509_credentials(cipher_suite.into())
-                    .await?;
+                context.delete_stale_key_packages(cipher_suite.into()).await?;
                 WasmCryptoResult::Ok(JsValue::UNDEFINED)
             }
             .err_into(),

@@ -587,7 +587,7 @@ class CoreCryptoContext(private val cc: com.wire.crypto.uniffi.CoreCryptoContext
      * 1. Rotate credentials for each conversation in [e2eiRotate]
      * 2. Generate new key packages with [generateKeyPackages]
      * 3. Use these to replace the stale ones the in the backend
-     * 4. Delete the stale ones locally using [retainOnlyKeyPackagesMatchingMostRecentX509Credentials]
+     * 4. Delete the stale ones locally using [deleteStaleKeyPackages]
      *      * This is the last step because you might still need the old key packages to avoid
      *        an orphan welcome message
      *
@@ -610,9 +610,9 @@ class CoreCryptoContext(private val cc: com.wire.crypto.uniffi.CoreCryptoContext
      * saved x509 credential and the provided signature scheme.
      * @param cipherSuite the cipher suite with the signature scheme used for the credential
      */
-    suspend fun retainOnlyKeyPackagesMatchingMostRecentX509Credentials(cipherSuite: Ciphersuite) {
+    suspend fun deleteStaleKeyPackages(cipherSuite: Ciphersuite) {
         return wrapException {
-            cc.retainOnlyKeyPackagesOfMostRecentX509Credentials(cipherSuite.lower())
+            cc.deleteStaleKeyPackages(cipherSuite.lower())
         }
     }
 

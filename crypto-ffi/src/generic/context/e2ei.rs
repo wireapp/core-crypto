@@ -138,15 +138,12 @@ impl CoreCryptoContext {
             .into())
     }
 
-    /// See [core_crypto::context::CentralContext::retain_only_key_packages_of_most_recent_x509_credentials]
-    pub async fn retain_only_key_packages_of_most_recent_x509_credentials(
-        &self,
-        ciphersuite: Ciphersuite,
-    ) -> CoreCryptoResult<()> {
-        Ok(self
-            .context
-            .retain_only_key_packages_of_most_recent_x509_credentials(ciphersuite.into())
-            .await?)
+    /// See [core_crypto::context::CentralContext::delete_stale_key_packages]
+    pub async fn delete_stale_key_packages(&self, ciphersuite: Ciphersuite) -> CoreCryptoResult<()> {
+        self.context
+            .delete_stale_key_packages(ciphersuite.into())
+            .await
+            .map_err(Into::into)
     }
 
     /// See [core_crypto::context::CentralContext::e2ei_enrollment_stash]

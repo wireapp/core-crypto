@@ -120,7 +120,7 @@ impl CentralContext {
     /// 1. Rotate credentials for each conversation in [Self::e2ei_rotate]
     /// 2. Generate new key packages with [Client::generate_new_keypackages]
     /// 3. Use these to replace the stale ones the in the backend
-    /// 4. Delete the stale ones locally using [Self::retain_only_key_packages_of_most_recent_x509_credentials]
+    /// 4. Delete the stale ones locally using [Self::delete_stale_key_packages]
     ///     * This is the last step because you might still need the old key packages to avoid
     ///       an orphan welcome message
     pub async fn save_x509_credential(
@@ -181,10 +181,7 @@ impl CentralContext {
 
     /// Deletes all key packages whose leaf node's credential does not match the most recently
     /// saved x509 credential with the provided signature scheme.
-    pub async fn retain_only_key_packages_of_most_recent_x509_credentials(
-        &self,
-        cipher_suite: MlsCiphersuite,
-    ) -> Result<()> {
+    pub async fn delete_stale_key_packages(&self, cipher_suite: MlsCiphersuite) -> Result<()> {
         let signature_scheme = cipher_suite.signature_algorithm();
         let keystore = self
             .keystore()
@@ -545,7 +542,7 @@ pub(crate) mod tests {
                         // This should have the consequence to purge the previous credential material as well.
                         alice_central
                             .context
-                            .retain_only_key_packages_of_most_recent_x509_credentials(case.ciphersuite())
+                            .delete_stale_key_packages(case.ciphersuite())
                             .await
                             .unwrap();
 

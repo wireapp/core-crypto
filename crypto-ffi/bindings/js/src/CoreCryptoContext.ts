@@ -991,7 +991,7 @@ export class CoreCryptoContext {
      * 1. Rotate credentials for each conversation using {@link CoreCryptoContext.e2eiRotate}
      * 2. Generate new key packages with {@link CoreCryptoContext.clientKeypackages}
      * 3. Use these to replace the stale ones the in the backend
-     * 4. Delete the stale ones locally using {@link CoreCryptoContext.retainOnlyKeyPackagesMatchingMostRecentX509Credentials}
+     * 4. Delete the stale ones locally using {@link CoreCryptoContext.deleteStaleKeyPackages}
      *      * This is the last step because you might still need the old key packages to avoid
      *        an orphan welcome message
      *
@@ -1016,13 +1016,9 @@ export class CoreCryptoContext {
      * saved x509 credential and the provided signature scheme.
      * @param cipherSuite
      */
-    async retainOnlyKeyPackagesMatchingMostRecentX509Credentials(
-        cipherSuite: Ciphersuite
-    ): Promise<void> {
+    async deleteStaleKeyPackages(cipherSuite: Ciphersuite): Promise<void> {
         return await CoreCryptoError.asyncMapErr(
-            this.#ctx.retain_only_key_packages_of_most_recent_x509_credentials(
-                cipherSuite
-            )
+            this.#ctx.delete_stale_key_packages(cipherSuite)
         );
     }
 
