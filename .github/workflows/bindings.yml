@@ -160,7 +160,7 @@ jobs:
       - name: build & install iOS Interop client
         run: |
           cd interop/src/clients/InteropClient
-          xcodebuild -scheme InteropClient -sdk iphonesimulator -destination 'platform=iOS Simulator,name=iPhone 15' clean build install  DSTROOT=./Products
+          xcodebuild -scheme InteropClient -sdk iphonesimulator -destination 'platform=iOS Simulator,name=iPhone 16' clean build install  DSTROOT=./Products
           ./install_app.sh "iPhone 16"
           ./grant_permissions.sh "iPhone 16"
       - name: run e2e interop test
