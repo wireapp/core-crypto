@@ -32,10 +32,21 @@ pub struct SqlCipherConnection {
 pub struct TransactionWrapper<'conn> {
     transaction: Transaction<'conn>,
 }
+
 impl TransactionWrapper<'_> {
     // this is async just to conform with the wasm impl
     pub(crate) async fn commit_tx(self) -> CryptoKeystoreResult<()> {
-        Ok(self.transaction.commit()?)
+        // It's really not ideal to do potentially-heavy IO such as committing a transaction
+        // within the async context, because Rust async depends on inserting cooperative yields
+        // in appropriate places, and blocking functions simply do not have those. This is going
+        // to bind up the whole async executor every time we try to commit the transaction, for
+        // the entire duration of the execution of the transaction.
+        //
+        // We can't even do `unblock(|| transaction.commit())` here becase `Transaction: !Send`.
+        //
+        // Hopefully either WPB-14326, WPB-14327, or WPB-15766 will open a path to a unified
+        // async database which can give us better performance characteristics than this.
+        self.transaction.commit().map_err(Into::into)
     }
 }
 
@@ -47,12 +58,20 @@ impl<'conn> Deref for TransactionWrapper<'conn> {
     }
 }
 
+// SAFETY: This is **UNSAFE**. Transactions are intentionally `!Send`,
+// and we do nothing to provide guarantees which would make them safe to share between threads.
+// See https://github.com/rusqlite/rusqlite/issues/697 for discussion on this.
+//
+// Unfortunately, everything breaks for now if we simply remove this. This is going to take
+// non-trivial work to fix. See https://wearezeta.atlassian.net/browse/WPB-15767.
+unsafe impl Send for TransactionWrapper<'_> {}
+// SAFETY: This is **UNSAFE**. See above.
+unsafe impl Sync for TransactionWrapper<'_> {}
+
 // Safety: Both these structs are properly being locked with a RwLock and for the transaction it is created
 // and dropped in a single call.
 unsafe impl Send for SqlCipherConnection {}
 unsafe impl Sync for SqlCipherConnection {}
-unsafe impl Send for TransactionWrapper<'_> {}
-unsafe impl Sync for TransactionWrapper<'_> {}
 
 impl std::ops::Deref for SqlCipherConnection {
     type Target = rusqlite::Connection;
