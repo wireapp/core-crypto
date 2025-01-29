@@ -26,6 +26,9 @@ jobs:
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-tags: true
+
       - name: ensure the tag is signed
         run: git cat-file tag ${{ github.ref_name }} | grep -q -- '-----BEGIN PGP SIGNATURE-----'
       - name: setup rust
