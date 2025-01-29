@@ -26,9 +26,8 @@ jobs:
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@v4
-        with:
-          fetch-tags: true
-
+      - name: force-fetch the tag to work around actions/checkout#290
+        run: git fetch -f origin ${{ github.ref }}
       - name: ensure the tag is signed
         run: git cat-file tag ${{ github.ref_name }} | grep -q -- '-----BEGIN PGP SIGNATURE-----'
       - name: setup rust
