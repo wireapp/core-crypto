@@ -46,6 +46,7 @@ impl Entity for ProteusIdentity {
         conn: &mut Self::ConnectionType,
         _id: &StringEntityId,
     ) -> crate::CryptoKeystoreResult<Option<Self>> {
+        let mut conn = conn.conn().await;
         let transaction = conn.transaction()?;
 
         let mut row_id: Option<i64> = transaction
@@ -91,6 +92,7 @@ impl Entity for ProteusIdentity {
     }
 
     async fn count(conn: &mut Self::ConnectionType) -> crate::CryptoKeystoreResult<usize> {
+        let conn = conn.conn().await;
         let count = conn.query_row("SELECT COUNT(*) FROM proteus_identities", [], |r| r.get(0))?;
         // This should always be less or equal 1
         debug_assert!(count <= 1);

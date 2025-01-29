@@ -38,6 +38,7 @@ impl Entity for PersistedMlsPendingGroup {
         use rusqlite::OptionalExtension as _;
         use std::io::Read as _;
 
+        let mut conn = conn.conn().await;
         let transaction = conn.transaction()?;
         let rowid: Option<i64> = transaction
             .query_row(
@@ -96,6 +97,7 @@ impl Entity for PersistedMlsPendingGroup {
         conn: &mut Self::ConnectionType,
         params: EntityFindParams,
     ) -> crate::CryptoKeystoreResult<Vec<Self>> {
+        let mut conn = conn.conn().await;
         let transaction = conn.transaction()?;
         let query: String = format!("SELECT rowid FROM mls_pending_groups {}", params.to_sql());
 
@@ -154,6 +156,8 @@ impl Entity for PersistedMlsPendingGroup {
         conn: &mut Self::ConnectionType,
         _ids: &[StringEntityId],
     ) -> crate::CryptoKeystoreResult<Vec<Self>> {
+        let mut conn = conn.conn().await;
+
         // Plot twist: we always select ALL the persisted groups. Unsure if we want to make it a real API with selection
         let mut stmt = conn.prepare_cached("SELECT rowid FROM mls_pending_groups ORDER BY rowid ASC")?;
         let rowids: Vec<i64> = stmt
@@ -220,7 +224,9 @@ impl Entity for PersistedMlsPendingGroup {
     }
 
     async fn count(conn: &mut Self::ConnectionType) -> crate::CryptoKeystoreResult<usize> {
-        Ok(conn.query_row("SELECT COUNT(*) FROM mls_pending_groups", [], |r| r.get(0))?)
+        let conn = conn.conn().await;
+        conn.query_row("SELECT COUNT(*) FROM mls_pending_groups", [], |r| r.get(0))
+            .map_err(Into::into)
     }
 }
 

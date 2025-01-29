@@ -41,13 +41,20 @@ impl WasmConnection {
     pub fn storage_mut(&mut self) -> &mut WasmEncryptedStorage {
         &mut self.conn
     }
+
+    // for compatibility with the uniffi version
+    pub async fn conn(&self) -> TransactionCreator {
+        TransactionCreator { conn: &self.conn }
+    }
 }
 
 impl DatabaseConnectionRequirements for WasmConnection {}
 
 #[cfg_attr(target_family = "wasm", async_trait::async_trait(?Send))]
 #[cfg_attr(not(target_family = "wasm"), async_trait::async_trait)]
-impl DatabaseConnection for WasmConnection {
+impl<'a> DatabaseConnection<'a> for WasmConnection {
+    type Connection = &'a WasmEncryptedStorage;
+
     async fn open(name: &str, key: &str) -> CryptoKeystoreResult<Self> {
         let name = name.to_string();
         // ? Maybe find a cleaner way to define the schema
@@ -85,10 +92,19 @@ impl DatabaseConnection for WasmConnection {
 
         Ok(())
     }
+}
 
-    async fn new_transaction<T: AsRef<str>>(
+/// A connection reference which can create a new transaction.
+///
+/// This is kind of weird but it's necessary for interop with the generic/uniffi side.
+pub struct TransactionCreator<'a> {
+    conn: &'a WasmEncryptedStorage,
+}
+
+impl TransactionCreator<'_> {
+    pub async fn new_transaction(
         &mut self,
-        tables: &[T],
+        tables: &[impl AsRef<str>],
     ) -> CryptoKeystoreResult<WasmStorageTransaction<'_>> {
         match &self.conn.storage {
             WasmStorageWrapper::Persistent(db) => Ok(WasmStorageTransaction::Persistent {

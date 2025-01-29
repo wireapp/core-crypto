@@ -32,6 +32,7 @@ impl Entity for ProteusPrekey {
         conn: &mut Self::ConnectionType,
         params: EntityFindParams,
     ) -> crate::CryptoKeystoreResult<Vec<Self>> {
+        let mut conn = conn.conn().await;
         let transaction = conn.transaction()?;
         let query: String = format!("SELECT rowid, id FROM proteus_prekeys {}", params.to_sql());
 
@@ -61,6 +62,7 @@ impl Entity for ProteusPrekey {
     ) -> crate::CryptoKeystoreResult<Option<Self>> {
         let id = ProteusPrekey::id_from_slice(id.as_slice());
 
+        let mut conn = conn.conn().await;
         let transaction = conn.transaction()?;
 
         use rusqlite::OptionalExtension as _;
@@ -86,6 +88,7 @@ impl Entity for ProteusPrekey {
     }
 
     async fn count(conn: &mut Self::ConnectionType) -> crate::CryptoKeystoreResult<usize> {
+        let conn = conn.conn().await;
         Ok(conn.query_row("SELECT COUNT(*) FROM proteus_prekeys", [], |r| r.get(0))?)
     }
 }

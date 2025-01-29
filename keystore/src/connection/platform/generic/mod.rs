@@ -18,16 +18,11 @@ use std::ops::Deref;
 
 use crate::connection::{DatabaseConnection, DatabaseConnectionRequirements};
 use crate::CryptoKeystoreResult;
+use async_lock::{Mutex, MutexGuard};
 use blocking::unblock;
 use rusqlite::{functions::FunctionFlags, Transaction};
 
 refinery::embed_migrations!("src/connection/platform/generic/migrations");
-
-#[derive(Debug)]
-pub struct SqlCipherConnection {
-    conn: rusqlite::Connection,
-    path: String,
-}
 
 pub struct TransactionWrapper<'conn> {
     transaction: Transaction<'conn>,
@@ -50,6 +45,12 @@ impl TransactionWrapper<'_> {
     }
 }
 
+impl<'conn> From<Transaction<'conn>> for TransactionWrapper<'conn> {
+    fn from(transaction: Transaction<'conn>) -> Self {
+        TransactionWrapper { transaction }
+    }
+}
+
 impl<'conn> Deref for TransactionWrapper<'conn> {
     type Target = Transaction<'conn>;
 
@@ -68,24 +69,18 @@ unsafe impl Send for TransactionWrapper<'_> {}
 // SAFETY: This is **UNSAFE**. See above.
 unsafe impl Sync for TransactionWrapper<'_> {}
 
-// Safety: Both these structs are properly being locked with a RwLock and for the transaction it is created
-// and dropped in a single call.
+#[derive(Debug)]
+pub struct SqlCipherConnection {
+    conn: Mutex<rusqlite::Connection>,
+    path: String,
+}
+
+// SAFETY: An `Arc` is unnecessary as `SqlCipherConnection: !Clone`, and there is a `Mutex`
+// internally which ensures unique access.
 unsafe impl Send for SqlCipherConnection {}
+// SAFETY: An `Arc` is unnecessary as `SqlCipherConnection: !Clone`, and there is a `Mutex`
+// internally which ensures unique access.
 unsafe impl Sync for SqlCipherConnection {}
-
-impl std::ops::Deref for SqlCipherConnection {
-    type Target = rusqlite::Connection;
-
-    fn deref(&self) -> &Self::Target {
-        &self.conn
-    }
-}
-
-impl std::ops::DerefMut for SqlCipherConnection {
-    fn deref_mut(&mut self) -> &mut Self::Target {
-        &mut self.conn
-    }
-}
 
 impl SqlCipherConnection {
     fn init_with_key(path: &str, key: &str) -> CryptoKeystoreResult<Self> {
@@ -113,6 +108,8 @@ impl SqlCipherConnection {
         // Disable FOREIGN KEYs - The 2 step blob writing process invalidates foreign key checks unfortunately
         conn.pragma_update(None, "foreign_keys", "OFF")?;
 
+        let conn = Mutex::new(conn);
+
         let mut conn = Self {
             path: path.into(),
             conn,
@@ -139,12 +136,22 @@ impl SqlCipherConnection {
         // Disable FOREIGN KEYs - The 2 step blob writing process invalidates foreign key checks unfortunately
         conn.pragma_update(None, "foreign_keys", "OFF")?;
 
+        let conn = Mutex::new(conn);
+
         let mut conn = Self { path: "".into(), conn };
 
         // Need to run migrations also in memory to make sure expected tables exist.
         conn.run_migrations()?;
 
         Ok(conn)
+    }
+
+    pub async fn conn(&self) -> MutexGuard<rusqlite::Connection> {
+        self.conn.lock().await
+    }
+
+    pub fn conn_blocking(&self) -> MutexGuard<rusqlite::Connection> {
+        self.conn.lock_blocking()
     }
 
     pub async fn wipe(self) -> CryptoKeystoreResult<()> {
@@ -160,7 +167,8 @@ impl SqlCipherConnection {
     }
 
     fn close(self) -> CryptoKeystoreResult<()> {
-        Ok(self.conn.close().map_err(|(_, e)| e)?)
+        let conn = self.conn.into_inner();
+        conn.close().map_err(|(_, e)| e.into())
     }
 
     /// To prevent iOS from killing backgrounded apps using a WAL-journaled file,
@@ -275,14 +283,14 @@ impl SqlCipherConnection {
     }
 
     fn run_migrations(&mut self) -> CryptoKeystoreResult<()> {
-        self.conn
-            .create_scalar_function("sha256_blob", 1, FunctionFlags::SQLITE_DETERMINISTIC, |ctx| {
-                let input_blob = ctx.get::<Vec<u8>>(0)?;
-                Ok(crate::sha256(&input_blob))
-            })?;
-        let report = migrations::runner().run(&mut self.conn).map_err(Box::new)?;
+        let mut conn = self.conn_blocking();
+        conn.create_scalar_function("sha256_blob", 1, FunctionFlags::SQLITE_DETERMINISTIC, |ctx| {
+            let input_blob = ctx.get::<Vec<u8>>(0)?;
+            Ok(crate::sha256(&input_blob))
+        })?;
+        let report = migrations::runner().run(&mut *conn).map_err(Box::new)?;
         if let Some(version) = report.applied_migrations().iter().map(|m| m.version()).max() {
-            self.conn.pragma_update(None, "schema_version", version)?;
+            conn.pragma_update(None, "schema_version", version)?;
         }
 
         Ok(())
@@ -293,7 +301,9 @@ impl DatabaseConnectionRequirements for SqlCipherConnection {}
 
 #[cfg_attr(target_family = "wasm", async_trait::async_trait(?Send))]
 #[cfg_attr(not(target_family = "wasm"), async_trait::async_trait)]
-impl DatabaseConnection for SqlCipherConnection {
+impl<'a> DatabaseConnection<'a> for SqlCipherConnection {
+    type Connection = MutexGuard<'a, rusqlite::Connection>;
+
     async fn open(name: &str, key: &str) -> CryptoKeystoreResult<Self> {
         let name = name.to_string();
         let key = key.to_string();
@@ -313,10 +323,5 @@ impl DatabaseConnection for SqlCipherConnection {
     async fn wipe(self) -> CryptoKeystoreResult<()> {
         self.wipe().await?;
         Ok(())
-    }
-    async fn new_transaction(&mut self) -> CryptoKeystoreResult<TransactionWrapper<'_>> {
-        Ok(TransactionWrapper {
-            transaction: self.conn.transaction()?,
-        })
     }
 }

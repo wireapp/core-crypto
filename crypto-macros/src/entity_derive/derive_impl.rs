@@ -92,6 +92,7 @@ impl KeyStoreEntityFlattened {
                     conn: &mut Self::ConnectionType,
                     params: crate::entities::EntityFindParams,
                 ) -> crate::CryptoKeystoreResult<Vec<Self>> {
+                    let mut conn = conn.conn().await;
                     let transaction = conn.transaction()?;
                     let query = #find_all_query.to_string() + &params.to_sql();
 
@@ -120,6 +121,7 @@ impl KeyStoreEntityFlattened {
                     conn: &mut Self::ConnectionType,
                     id: &crate::entities::StringEntityId,
                 ) -> crate::CryptoKeystoreResult<Option<Self>> {
+                    let mut conn = conn.conn().await;
                     let transaction = conn.transaction()?;
                     use rusqlite::OptionalExtension as _;
 
@@ -152,7 +154,8 @@ impl KeyStoreEntityFlattened {
                 }
 
                 async fn count(conn: &mut Self::ConnectionType) -> crate::CryptoKeystoreResult<usize> {
-                    Ok(conn.query_row(&#count_query, [], |r| r.get(0))?)
+                    let conn = conn.conn().await;
+                    conn.query_row(&#count_query, [], |r| r.get(0)).map_err(Into::into)
                 }
             }
         }

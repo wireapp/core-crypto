@@ -6,7 +6,7 @@ use crate::entities::proteus::*;
 use crate::entities::{ConsumerData, EntityBase, EntityFindParams, EntityTransactionExt, UniqueEntity};
 use crate::transaction::dynamic_dispatch::EntityId;
 use crate::{
-    connection::{Connection, DatabaseConnection, FetchFromDatabase, KeystoreDatabaseConnection},
+    connection::{Connection, FetchFromDatabase, KeystoreDatabaseConnection},
     CryptoKeystoreError, CryptoKeystoreResult,
 };
 use async_lock::{RwLock, SemaphoreGuardArc};
@@ -43,11 +43,12 @@ impl KeystoreTransaction {
         mut entity: E,
     ) -> CryptoKeystoreResult<E> {
         entity.pre_save().await?;
-        let mut conn = self.cache.borrow_conn().await?;
+        let conn = self.cache.borrow_conn().await?;
+        let mut conn = conn.conn().await;
         #[cfg(target_family = "wasm")]
         let transaction = conn.new_transaction(&[E::COLLECTION_NAME]).await?;
         #[cfg(not(target_family = "wasm"))]
-        let transaction = conn.new_transaction().await?;
+        let transaction = conn.transaction()?.into();
         entity.save(&transaction).await?;
         transaction.commit_tx().await?;
         Ok(entity)
@@ -60,11 +61,12 @@ impl KeystoreTransaction {
         &self,
         id: S,
     ) -> CryptoKeystoreResult<()> {
-        let mut conn = self.cache.borrow_conn().await?;
+        let conn = self.cache.borrow_conn().await?;
+        let mut conn = conn.conn().await;
         #[cfg(target_family = "wasm")]
         let transaction = conn.new_transaction(&[E::COLLECTION_NAME]).await?;
         #[cfg(not(target_family = "wasm"))]
-        let transaction = conn.new_transaction().await?;
+        let transaction = conn.transaction()?.into();
         E::delete(&transaction, id.as_ref().into()).await?;
         transaction.commit_tx().await?;
         let mut deleted_list = self.deleted.write().await;
@@ -87,11 +89,12 @@ impl KeystoreTransaction {
     }
 
     pub(crate) async fn cred_delete_by_credential(&self, cred: Vec<u8>) -> CryptoKeystoreResult<()> {
-        let mut conn = self.cache.borrow_conn().await?;
+        let conn = self.cache.borrow_conn().await?;
+        let mut conn = conn.conn().await;
         #[cfg(target_family = "wasm")]
         let transaction = conn.new_transaction(&[MlsCredential::COLLECTION_NAME]).await?;
         #[cfg(not(target_family = "wasm"))]
-        let transaction = conn.new_transaction().await?;
+        let transaction = conn.transaction()?.into();
         MlsCredential::delete_by_credential(&transaction, cred.clone()).await?;
         transaction.commit_tx().await?;
         let mut deleted_list = self.deleted_credentials.write().await;
@@ -272,7 +275,8 @@ macro_rules! commit_transaction {
 
              let ( $( $( $records, )* )* ) = cached_collections;
 
-            let mut conn = $db.borrow_conn().await?;
+            let conn = $db.borrow_conn().await?;
+            let mut conn = conn.conn().await;
             let deleted_ids = $keystore_transaction.deleted.read().await;
 
             let mut tables = Vec::new();
@@ -294,7 +298,7 @@ macro_rules! commit_transaction {
             #[cfg(target_family = "wasm")]
             let tx = conn.new_transaction(&tables).await?;
             #[cfg(not(target_family = "wasm"))]
-            let tx = conn.new_transaction().await?;
+            let tx = conn.transaction()?.into();
 
              $( $(
                 if !$records.is_empty() {

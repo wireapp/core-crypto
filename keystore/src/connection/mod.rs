@@ -58,7 +58,9 @@ pub trait DatabaseConnectionRequirements: Sized {}
 
 #[cfg_attr(target_family = "wasm", async_trait::async_trait(?Send))]
 #[cfg_attr(not(target_family = "wasm"), async_trait::async_trait)]
-pub trait DatabaseConnection: DatabaseConnectionRequirements {
+pub trait DatabaseConnection<'a>: DatabaseConnectionRequirements {
+    type Connection: 'a;
+
     async fn open(name: &str, key: &str) -> CryptoKeystoreResult<Self>;
 
     async fn open_in_memory(name: &str, key: &str) -> CryptoKeystoreResult<Self>;
@@ -82,13 +84,6 @@ pub trait DatabaseConnection: DatabaseConnectionRequirements {
 
         Ok(())
     }
-    #[cfg(not(target_family = "wasm"))]
-    async fn new_transaction(&mut self) -> CryptoKeystoreResult<TransactionWrapper<'_>>;
-    #[cfg(target_family = "wasm")]
-    async fn new_transaction<T: AsRef<str>>(
-        &mut self,
-        tables: &[T],
-    ) -> CryptoKeystoreResult<crate::connection::TransactionWrapper<'_>>;
 }
 
 #[derive(Debug, Clone)]

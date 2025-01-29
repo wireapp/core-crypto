@@ -36,6 +36,7 @@ impl Entity for MlsEncryptionKeyPair {
         conn: &mut Self::ConnectionType,
         params: EntityFindParams,
     ) -> crate::CryptoKeystoreResult<Vec<Self>> {
+        let mut conn = conn.conn().await;
         let transaction = conn.transaction()?;
         let query: String = format!("SELECT rowid FROM mls_encryption_keypairs {}", params.to_sql());
 
@@ -81,6 +82,7 @@ impl Entity for MlsEncryptionKeyPair {
         conn: &mut Self::ConnectionType,
         id: &StringEntityId,
     ) -> crate::CryptoKeystoreResult<Option<Self>> {
+        let mut conn = conn.conn().await;
         let transaction = conn.transaction()?;
         use rusqlite::OptionalExtension as _;
         let maybe_rowid = transaction
@@ -123,7 +125,9 @@ impl Entity for MlsEncryptionKeyPair {
     }
 
     async fn count(conn: &mut Self::ConnectionType) -> crate::CryptoKeystoreResult<usize> {
-        Ok(conn.query_row("SELECT COUNT(*) FROM mls_encryption_keypairs", [], |r| r.get(0))?)
+        let conn = conn.conn().await;
+        conn.query_row("SELECT COUNT(*) FROM mls_encryption_keypairs", [], |r| r.get(0))
+            .map_err(Into::into)
     }
 }
 

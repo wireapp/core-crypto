@@ -39,6 +39,7 @@ impl Entity for MlsPendingMessage {
         use rusqlite::OptionalExtension as _;
         use std::io::Read as _;
 
+        let mut conn = conn.conn().await;
         let transaction = conn.transaction()?;
         let rowid: Option<i64> = transaction
             .query_row(
@@ -79,6 +80,7 @@ impl Entity for MlsPendingMessage {
         conn: &mut Self::ConnectionType,
         params: EntityFindParams,
     ) -> crate::CryptoKeystoreResult<Vec<Self>> {
+        let mut conn = conn.conn().await;
         let transaction = conn.transaction()?;
         let query: String = format!("SELECT rowid FROM mls_pending_messages {}", params.to_sql());
 
@@ -123,7 +125,9 @@ impl Entity for MlsPendingMessage {
     }
 
     async fn count(conn: &mut Self::ConnectionType) -> crate::CryptoKeystoreResult<usize> {
-        Ok(conn.query_row("SELECT COUNT(*) FROM mls_pending_messages", [], |r| r.get(0))?)
+        let conn = conn.conn().await;
+        conn.query_row("SELECT COUNT(*) FROM mls_pending_messages", [], |r| r.get(0))
+            .map_err(Into::into)
     }
 }
 

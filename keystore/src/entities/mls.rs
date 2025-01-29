@@ -261,6 +261,7 @@ pub trait UniqueEntity: EntityBase<ConnectionType = crate::connection::KeystoreD
     fn new(content: Vec<u8>) -> Self;
 
     async fn find_unique(conn: &mut Self::ConnectionType) -> CryptoKeystoreResult<Self> {
+        let mut conn = conn.conn().await;
         let transaction = conn.transaction()?;
         use rusqlite::OptionalExtension as _;
 
@@ -296,11 +297,11 @@ pub trait UniqueEntity: EntityBase<ConnectionType = crate::connection::KeystoreD
     }
 
     async fn count(conn: &mut Self::ConnectionType) -> CryptoKeystoreResult<usize> {
-        Ok(
-            conn.query_row(&format!("SELECT COUNT(*) FROM {}", Self::COLLECTION_NAME), [], |r| {
-                r.get(0)
-            })?,
-        )
+        let conn = conn.conn().await;
+        conn.query_row(&format!("SELECT COUNT(*) FROM {}", Self::COLLECTION_NAME), [], |r| {
+            r.get(0)
+        })
+        .map_err(Into::into)
     }
 
     fn content(&self) -> &[u8];

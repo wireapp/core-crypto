@@ -30,6 +30,7 @@ impl Entity for PersistedMlsGroup {
         self.id.as_slice()
     }
     async fn find_all(conn: &mut Self::ConnectionType, params: EntityFindParams) -> CryptoKeystoreResult<Vec<Self>> {
+        let mut conn = conn.conn().await;
         let transaction = conn.transaction()?;
         let query: String = format!("SELECT rowid, id_hex FROM mls_groups {}", params.to_sql());
 
@@ -74,6 +75,7 @@ impl Entity for PersistedMlsGroup {
         id: &StringEntityId,
     ) -> crate::CryptoKeystoreResult<Option<Self>> {
         use rusqlite::OptionalExtension as _;
+        let mut conn = conn.conn().await;
         let transaction = conn.transaction()?;
         let mut rowid: Option<i64> = transaction
             .query_row(
@@ -119,7 +121,9 @@ impl Entity for PersistedMlsGroup {
     }
 
     async fn count(conn: &mut Self::ConnectionType) -> crate::CryptoKeystoreResult<usize> {
-        Ok(conn.query_row("SELECT COUNT(*) FROM mls_groups", [], |r| r.get(0))?)
+        let conn = conn.conn().await;
+        conn.query_row("SELECT COUNT(*) FROM mls_groups", [], |r| r.get(0))
+            .map_err(Into::into)
     }
 }
 
@@ -200,6 +204,7 @@ impl PersistedMlsGroupExt for PersistedMlsGroup {
 
     async fn child_groups(&self, conn: &mut <Self as EntityBase>::ConnectionType) -> CryptoKeystoreResult<Vec<Self>> {
         let id = self.id_raw();
+        let mut conn = conn.conn().await;
         let transaction = conn.transaction()?;
         let mut query = transaction.prepare_cached("SELECT rowid FROM mls_groups WHERE parent_id = ?")?;
         let mut rows = query.query_map([id], |r| r.get(0))?;
