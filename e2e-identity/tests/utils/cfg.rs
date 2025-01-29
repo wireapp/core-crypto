@@ -69,10 +69,6 @@ pub enum OidcProvider {
     Google,
 }
 
-unsafe impl Send for E2eTest {}
-
-unsafe impl Sync for E2eTest {}
-
 impl E2eTest {
     const STEPCA_HOST: &'static str = "stepca";
     const LDAP_HOST: &'static str = "ldap";
