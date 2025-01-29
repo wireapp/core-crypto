@@ -635,6 +635,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "clap-stdin"
+version = "0.6.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1101d998d15574d862ee282bcb93e0cf2d192c2fb12338dec35daa91425769a9"
+dependencies = [
+ "thiserror 2.0.4",
+]
+
+[[package]]
 name = "clap_builder"
 version = "4.5.40"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1180,6 +1189,7 @@ version = "0.1.0"
 dependencies = [
  "base64 0.22.1",
  "clap",
+ "clap-stdin",
  "openmls",
  "proteus-wasm",
 ]

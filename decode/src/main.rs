@@ -1,11 +1,14 @@
+extern crate core;
+
 use base64::Engine;
 use clap::{Parser, Subcommand};
-use openmls::prelude::{MlsMessageIn, TlsDeserializeTrait};
+use openmls::prelude::{MlsMessageIn, TlsDeserializeTrait, group_info::VerifiableGroupInfo };
 use proteus_wasm::internal::message::SessionTag;
 use proteus_wasm::internal::util::fmt_hex;
 use proteus_wasm::keys::{PreKeyBundle, Signature};
 use proteus_wasm::message::{CipherMessage, Envelope, Message, PreKeyMessage};
 use std::ops::Deref;
+use clap_stdin::MaybeStdin;
 
 #[derive(Debug)]
 #[allow(dead_code)]
@@ -116,21 +119,28 @@ pub struct App {
 #[derive(Debug, Subcommand)]
 enum Command {
     /// Decode a proteus prekey bundle
-    PrekeyBundle { bundle: String },
+    PrekeyBundle { bundle: MaybeStdin<String> },
     /// Decode a proteus message
     ProteusMessage {
         /// Base64 encoded proteus message
         message: String,
     },
     /// Decode a MLS message
-    MlsMessage { message: String },
+    MlsMessage { message: MaybeStdin<String> },
+
+    /// Decode an MLS GroupInfo object
+    GroupInfo { data: MaybeStdin<String> },
+
+    // /// Decode an MLS GroupInfo object
+    // GroupInfoBinary { data: MaybeStdin<Vec<u8>> },
 }
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let app = App::parse();
     match app.command {
         Command::PrekeyBundle { bundle } => {
-            let bytes = base64::prelude::BASE64_STANDARD.decode(bundle)?;
+            let input: String = bundle.parse()?;
+            let bytes = base64::prelude::BASE64_STANDARD.decode(input)?;
             let bundle = PreKeyBundle::deserialise(&bytes)?;
             println!("{:#?}", ProteusPreKeyBundle::from(bundle));
             Ok(())
@@ -142,9 +152,17 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             Ok(())
         }
         Command::MlsMessage { message } => {
-            let bytes = base64::prelude::BASE64_STANDARD.decode(message)?;
+            let input: String = message.parse()?;
+            let bytes = base64::prelude::BASE64_STANDARD.decode(input)?;
             let message = MlsMessageIn::tls_deserialize(&mut bytes.as_slice())?;
             println!("{message:#?}");
+            Ok(())
+        }
+        Command::GroupInfo { data } => {
+            let input: String = data.parse()?;
+            let bytes = base64::prelude::BASE64_STANDARD.decode(input)?;
+            let group_info = VerifiableGroupInfo::tls_deserialize(&mut bytes.as_slice())?;
+            println!("{group_info:#?}");
             Ok(())
         }
     }
