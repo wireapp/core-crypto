@@ -76,8 +76,9 @@ pub struct Connection {
     pub(crate) conn: Arc<Mutex<KeystoreDatabaseConnection>>,
 }
 
-// * SAFETY: this has mutexes and atomics protecting underlying data so this is safe to share between threads
+// SAFETY: this has mutexes and atomics protecting underlying data so this is safe to share between threads
 unsafe impl Send for Connection {}
+// SAFETY: this has mutexes and atomics protecting underlying data so this is safe to share between threads
 unsafe impl Sync for Connection {}
 
 impl Connection {

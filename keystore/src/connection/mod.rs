@@ -121,8 +121,9 @@ pub trait FetchFromDatabase: Send + Sync {
     async fn count<E: Entity<ConnectionType = KeystoreDatabaseConnection>>(&self) -> CryptoKeystoreResult<usize>;
 }
 
-// * SAFETY: this has mutexes and atomics protecting underlying data so this is safe to share between threads
+// SAFETY: this has mutexes and atomics protecting underlying data so this is safe to share between threads
 unsafe impl Send for Connection {}
+// SAFETY: this has mutexes and atomics protecting underlying data so this is safe to share between threads
 unsafe impl Sync for Connection {}
 
 impl Connection {
