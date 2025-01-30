@@ -768,6 +768,7 @@ impl E2eTest {
     }
 
     pub async fn fetch_id_token_from_google(&mut self) -> TestResult<String> {
+        // SAFETY: safe because there is one codepath using these variables and we are just unconditionally setting them here.
         unsafe {
             let (tx, rx) = std::sync::mpsc::channel();
             GOOGLE_SND = Some(std::sync::Mutex::new(tx));
@@ -810,6 +811,8 @@ impl E2eTest {
             .url();
         webbrowser::open(authz_url.as_str()).unwrap();
 
+        // SAFETY: We initialized the reference earlier in this function, and the worst case if
+        // someone has mutated it under us is that one of the unwraps causes a test to panic.
         let id_token = unsafe {
             let rx = GOOGLE_RECV.as_ref().unwrap().lock().unwrap();
             rx.recv().unwrap()

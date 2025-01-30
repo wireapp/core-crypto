@@ -29,6 +29,11 @@ pub async fn wire_api(req: Request<Incoming>) -> http::Result<Response<Full<Byte
         (&Method::GET, ["clients", "token", "nonce"]) => {
             let nonce = rand_base64_str(32);
             let previous_nonce = Box::leak(Box::new(nonce.clone()));
+            // SAFETY: this sort of mutable-static thing is safe if and only if there is never more than
+            // one test accessing this wire server simultaneously. It's pretty bad design; there is already
+            // a `struct WireServer` which could store this kind of data without needing any unsafety at all.
+            // But it would take non-trivial work to refactor all this code, and ultimately as test code
+            // this is not critical.
             unsafe {
                 PREVIOUS_NONCE = previous_nonce;
             }
@@ -39,6 +44,8 @@ pub async fn wire_api(req: Request<Incoming>) -> http::Result<Response<Full<Byte
         (&Method::POST, ["clients", device_id, "access-token"]) => {
             let dpop = header("dpop");
             // fetch back the nonce we have generated at previous state
+            // SAFETY: this is safe if and only if there is never more than one test accessing this
+            // wire server simultaneously. See previous safety note.
             let backend_nonce: BackendNonce = unsafe { PREVIOUS_NONCE.into() };
 
             let client_id = ctx_get("client-id").unwrap();

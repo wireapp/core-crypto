@@ -135,18 +135,21 @@ pub async fn handle_callback_google(mut req: Request<Incoming>) -> http::Result<
         .await
         .unwrap();
     let id_token = id_token.id_token().unwrap().to_string();
-    unsafe {
-        // for google oidc test
-        if let Some(tx) = GOOGLE_SND.as_ref() {
-            let tx = tx.lock().unwrap().clone();
-            tx.send(id_token.clone()).unwrap();
-            let id_token_url = format!("https://jwt.io/#id_token={id_token}");
-            let resp = Response::builder()
-                .status(StatusCode::TEMPORARY_REDIRECT)
-                .header("location", id_token_url)
-                .body(Default::default())?;
-            return Ok(resp);
-        }
+
+    // for google oidc test
+    //
+    // SAFETY: it's probably fine, this is in a test context anyway.
+    // It's hard but not impossible to really mess with this struct... but it's just in the tests.
+    // If we're using it wrong, it's meant to crash.
+    if let Some(tx) = unsafe { GOOGLE_SND.as_ref() } {
+        let tx = tx.lock().unwrap().clone();
+        tx.send(id_token.clone()).unwrap();
+        let id_token_url = format!("https://jwt.io/#id_token={id_token}");
+        let resp = Response::builder()
+            .status(StatusCode::TEMPORARY_REDIRECT)
+            .header("location", id_token_url)
+            .body(Default::default())?;
+        return Ok(resp);
     }
 
     ctx_store("id-token", &id_token);
