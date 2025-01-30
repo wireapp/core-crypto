@@ -53,7 +53,7 @@ mod tests {
 
         assert_eq!(
             PersistedMlsGroup::to_missing_key_err_kind(),
-            MissingKeyErrorKind::MlsGroup
+            MissingKeyErrorKind::PersistedMlsGroup
         );
 
         assert_eq!(
