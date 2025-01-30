@@ -22,7 +22,7 @@ pub enum MissingKeyErrorKind {
     #[error("Consumer Data")]
     ConsumerData,
     #[error("MLS KeyPackageBundle")]
-    MlsKeyPackageBundle,
+    MlsKeyPackage,
     #[error("MLS SignatureKeyPair")]
     MlsSignatureKeyPair,
     #[error("MLS HpkePrivateKey")]
