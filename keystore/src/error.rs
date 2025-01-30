@@ -21,8 +21,8 @@ use crate::keystore_v_1_0_0;
 pub enum MissingKeyErrorKind {
     #[error("Consumer Data")]
     ConsumerData,
-    #[error("MLS KeyPackageBundle")]
-    MlsKeyPackageBundle,
+    #[error("MLS KeyPackage")]
+    MlsKeyPackage,
     #[error("MLS SignatureKeyPair")]
     MlsSignatureKeyPair,
     #[error("MLS HpkePrivateKey")]

@@ -48,7 +48,7 @@ mod tests {
 
         assert_eq!(
             MlsKeyPackage::to_missing_key_err_kind(),
-            MissingKeyErrorKind::MlsKeyPackageBundle
+            MissingKeyErrorKind::MlsKeyPackage
         );
 
         assert_eq!(
