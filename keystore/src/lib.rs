@@ -58,7 +58,7 @@ pub mod dummy_entity {
         const COLLECTION_NAME: &'static str = "";
 
         fn to_missing_key_err_kind() -> MissingKeyErrorKind {
-            MissingKeyErrorKind::MlsGroup
+            MissingKeyErrorKind::PersistedMlsGroup
         }
 
         fn to_transaction_entity(self) -> crate::transaction::dynamic_dispatch::Entity {

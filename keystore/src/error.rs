@@ -36,7 +36,7 @@ pub enum MissingKeyErrorKind {
     #[error("MLS CredentialBundle")]
     MlsCredential,
     #[error("MLS Persisted Group")]
-    MlsGroup,
+    PersistedMlsGroup,
     #[error("MLS Persisted Pending Group")]
     MlsPendingGroup,
     #[error("MLS Pending Messages")]
