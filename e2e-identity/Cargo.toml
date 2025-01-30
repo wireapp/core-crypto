@@ -10,6 +10,9 @@ publish = false
 [lib]
 crate-type = ["cdylib", "rlib"]
 
+[lints]
+workspace = true
+
 [dependencies]
 rusty-acme = { version = "0.12.0", path = "../acme" }
 rusty-jwt-tools = { version = "0.12.0", path = "../jwt" }
