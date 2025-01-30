@@ -20,13 +20,15 @@ use openmls_traits::types::SignatureScheme;
 use zeroize::Zeroize;
 
 /// Entity representing a persisted `MlsGroup`
-#[derive(Debug, Clone, PartialEq, Eq, Zeroize)]
+#[derive(Debug, Clone, PartialEq, Eq, Zeroize, core_crypto_macros::Entity)]
 #[zeroize(drop)]
+#[entity(collection_name = "mls_groups")]
 #[cfg_attr(
     any(target_family = "wasm", feature = "serde"),
     derive(serde::Serialize, serde::Deserialize)
 )]
 pub struct PersistedMlsGroup {
+    #[id(hex, column = "id_hex")]
     pub id: Vec<u8>,
     pub state: Vec<u8>,
     pub parent_id: Option<Vec<u8>>,
@@ -158,10 +160,12 @@ pub struct MlsEncryptionKeyPair {
 }
 
 /// Entity representing a list of [MlsEncryptionKeyPair]
-#[derive(Debug, Clone, PartialEq, Eq, Zeroize)]
+#[derive(Debug, Clone, PartialEq, Eq, Zeroize, core_crypto_macros::Entity)]
 #[zeroize(drop)]
+#[entity(collection_name = "mls_epoch_encryption_keypairs")]
 #[cfg_attr(target_family = "wasm", derive(serde::Serialize, serde::Deserialize))]
 pub struct MlsEpochEncryptionKeyPair {
+    #[id(hex, column = "id_hex")]
     pub id: Vec<u8>,
     pub keypairs: Vec<u8>,
 }
@@ -179,13 +183,15 @@ pub struct MlsPskBundle {
 }
 
 /// Entity representing a persisted `KeyPackage`
-#[derive(Debug, Clone, PartialEq, Eq, Zeroize)]
+#[derive(Debug, Clone, PartialEq, Eq, Zeroize, core_crypto_macros::Entity)]
 #[zeroize(drop)]
+#[entity(collection_name = "mls_keypackages")]
 #[cfg_attr(
     any(target_family = "wasm", feature = "serde"),
     derive(serde::Serialize, serde::Deserialize)
 )]
 pub struct MlsKeyPackage {
+    #[id(hex, column = "keypackage_ref_hex")]
     pub keypackage_ref: Vec<u8>,
     pub keypackage: Vec<u8>,
 }
