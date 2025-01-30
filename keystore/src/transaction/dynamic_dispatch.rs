@@ -17,10 +17,10 @@ pub enum Entity {
     ConsumerData(ConsumerData),
     SignatureKeyPair(MlsSignatureKeyPair),
     HpkePrivateKey(MlsHpkePrivateKey),
-    KeyPackage(MlsKeyPackage),
+    MlsKeyPackage(MlsKeyPackage),
     PskBundle(MlsPskBundle),
     EncryptionKeyPair(MlsEncryptionKeyPair),
-    EpochEncryptionKeyPair(MlsEpochEncryptionKeyPair),
+    MlsEpochEncryptionKeyPair(MlsEpochEncryptionKeyPair),
     MlsCredential(MlsCredential),
     PersistedMlsGroup(PersistedMlsGroup),
     PersistedMlsPendingGroup(PersistedMlsPendingGroup),
@@ -149,10 +149,12 @@ pub async fn execute_save(tx: &TransactionWrapper<'_>, entity: &Entity) -> Crypt
         Entity::ConsumerData(consumer_data) => consumer_data.replace(tx).await,
         Entity::SignatureKeyPair(mls_signature_key_pair) => mls_signature_key_pair.save(tx).await,
         Entity::HpkePrivateKey(mls_hpke_private_key) => mls_hpke_private_key.save(tx).await,
-        Entity::KeyPackage(mls_key_package) => mls_key_package.save(tx).await,
+        Entity::MlsKeyPackage(mls_key_package) => mls_key_package.save(tx).await,
         Entity::PskBundle(mls_psk_bundle) => mls_psk_bundle.save(tx).await,
         Entity::EncryptionKeyPair(mls_encryption_key_pair) => mls_encryption_key_pair.save(tx).await,
-        Entity::EpochEncryptionKeyPair(mls_epoch_encryption_key_pair) => mls_epoch_encryption_key_pair.save(tx).await,
+        Entity::MlsEpochEncryptionKeyPair(mls_epoch_encryption_key_pair) => {
+            mls_epoch_encryption_key_pair.save(tx).await
+        }
         Entity::MlsCredential(mls_credential) => mls_credential.save(tx).await,
         Entity::PersistedMlsGroup(persisted_mls_group) => persisted_mls_group.save(tx).await,
         Entity::PersistedMlsPendingGroup(persisted_mls_pending_group) => persisted_mls_pending_group.save(tx).await,
