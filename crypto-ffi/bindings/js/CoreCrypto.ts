@@ -100,6 +100,9 @@ export class CoreCryptoError extends Error {
     }
 
     static fromStdError(e: Error): CoreCryptoError | Error {
+        if (e instanceof CoreCryptoError) {
+            return e;
+        }
         const opts = {
             cause: e.cause || undefined,
             stack: e.stack || undefined,
