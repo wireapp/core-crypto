@@ -125,7 +125,6 @@ script = '''
     mv ./bindings/swift/WireCoreCrypto/WireCoreCrypto/core_crypto_ffi.swift ./bindings/swift/WireCoreCrypto/WireCoreCrypto/CoreCrypto.swift
 '''
 
-
 [tasks.compile-ffi-kotlin-android]
 dependencies = ["release-build"]
 command = "cargo"
@@ -141,15 +140,6 @@ args = [
     "--library", "../target/release/libcore_crypto_ffi.${LIBRARY_EXTENSION}"
 ]
 
-[tasks.ffi-kotlin-android]
-dependencies = ["compile-ffi-kotlin-android"]
-script = '''
-    perl -i \
-        -pe 's/\bCryptoException\b/CryptoError/g;' \
-        -pe 's/\bE2eIdentityException\b/E2eIdentityError/g;' \
-        ./bindings/uniffi-android/src/main/kotlin/uniffi/core_crypto/core_crypto.kt
-'''
-
 [tasks.compile-ffi-kotlin-jvm]
 dependencies = ["release-build"]
 command = "cargo"
@@ -164,14 +154,8 @@ args = [
     "--library", "../target/release/libcore_crypto_ffi.${LIBRARY_EXTENSION}"
 ]
 
-[tasks.ffi-kotlin-jvm]
-dependencies = ["compile-ffi-kotlin-jvm"]
-script = '''
-    perl -i \
-        -pe 's/\bCryptoException\b/CryptoError/g;' \
-        -pe 's/\bE2eIdentityException\b/E2eIdentityError/g;' \
-        ./bindings/uniffi-jvm/src/main/kotlin/uniffi/core_crypto/core_crypto.kt
-'''
+[tasks.ffi-kotlin]
+dependencies = ["compile-ffi-kotlin-android", "compile-ffi-kotlin-jvm"]
 
 [tasks.ffi]
 dependencies = ["ffi-swift", "ffi-kotlin"]
@@ -250,7 +234,7 @@ args = [
     "--",
     "-C", "strip=symbols"
 ]
-dependencies = ["ffi-kotlin-android", "android-env"]
+dependencies = ["compile-ffi-kotlin-android", "android-env"]
 
 [tasks.android-armv8]
 command = "cargo"
@@ -264,7 +248,7 @@ args = [
     "--",
     "-C", "strip=symbols"
 ]
-dependencies = ["ffi-kotlin-android", "android-env"]
+dependencies = ["compile-ffi-kotlin-android", "android-env"]
 
 [tasks.android-x86]
 command = "cargo"
@@ -280,7 +264,7 @@ args = [
     "-l", "static=clang_rt.builtins-x86_64-android",
     "-L", "${CLANG_RT_DIR}"
 ]
-dependencies = ["ffi-kotlin-android", "android-env"]
+dependencies = ["compile-ffi-kotlin-android", "android-env"]
 
 [tasks.android]
 dependencies = ["android-armv7", "android-armv8", "android-x86"]
@@ -299,7 +283,7 @@ args = [
     "--",
     "-C", "strip=symbols"
 ]
-dependencies = ["ffi-kotlin-jvm"]
+dependencies = ["compile-ffi-kotlin-jvm"]
 condition = { platforms = ["mac"] }
 
 [tasks.jvm-aarch64-darwin]
@@ -314,7 +298,7 @@ args = [
     "--",
     "-C", "strip=symbols"
 ]
-dependencies = ["ffi-kotlin-jvm"]
+dependencies = ["compile-ffi-kotlin-jvm"]
 condition = { platforms = ["mac"] }
 
 [tasks.jvm-x86-linux]
@@ -329,7 +313,7 @@ args = [
     "--",
     "-C", "strip=symbols"
 ]
-dependencies = ["ffi-kotlin-jvm"]
+dependencies = ["compile-ffi-kotlin-jvm"]
 condition = { platforms = ["linux"] }
 
 [tasks.jvm-darwin]
