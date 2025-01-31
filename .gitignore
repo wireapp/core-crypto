@@ -70,6 +70,7 @@ out/
 
 ### Bun ###
 bun.lockb
+bun.lock
 
 ### Node ###
 package-lock.json
