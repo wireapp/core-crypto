@@ -1,5 +1,13 @@
 # Changelog
 
+## v3.0.2 - 2025-01-31
+
+### Highlights
+
+- Fix a bug which could cause certain errors to generate spurious log lines of the form
+
+    > Cannot build CoreCryptoError, falling back to standard Error! ctx: Incoming message is from an epoch too far in the future to buffer.
+
 ## v3.0.1 - 2025-01-27
 
 ### Highlights
@@ -43,8 +51,8 @@
 
 - Dropped support for `i686-linux-android` target.
 - `CoreCryptoLogger` takes an additional `context` parameter.
-- `CoreCryptoError` and its child errors have been refactored to reduce the amount of error we expose and provide explicit 
-   errors for Proteus errors. The errors we have removed will appear under the `Other` case.  
+- `CoreCryptoError` and its child errors have been refactored to reduce the amount of error we expose and provide explicit
+   errors for Proteus errors. The errors we have removed will appear under the `Other` case.
    ```
    enum ProteusError {
        SessionNotFound,
@@ -52,7 +60,7 @@
        RemoteIdentityChanged,
        Other(Int),
    }
-  
+
    pub enum MlsError {
        ConversationAlreadyExists,
        DuplicateMessage,
@@ -1369,5 +1377,3 @@
 - clippy + fmt pass on core-crypto (a230b95)
 - fmt + clippy pass (e979a2f)
 - Migrations were incorrectly defined (d9a43a6)
-
-
