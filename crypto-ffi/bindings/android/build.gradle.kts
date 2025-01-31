@@ -1,11 +1,12 @@
 import org.gradle.api.tasks.testing.logging.TestExceptionFormat
 import org.gradle.api.tasks.testing.logging.TestLogEvent
 import org.gradle.jvm.tasks.Jar
+import com.vanniktech.maven.publish.AndroidSingleVariantLibrary
 
 plugins {
     id("com.android.library")
     kotlin("android")
-    id("com.vanniktech.maven.publish")
+    id("com.vanniktech.maven.publish.base")
 }
 
 val kotlinSources = projectDir.resolve("../jvm/src")
@@ -34,6 +35,15 @@ dependencies {
     androidTestImplementation(libs.espresso)
     androidTestImplementation(libs.coroutines.test)
     androidTestImplementation(libs.assertj.core)
+}
+
+mavenPublishing {
+    pomFromGradleProperties()
+    configure(AndroidSingleVariantLibrary(
+        variant = "release",
+        sourcesJar = true,
+        publishJavadocJar = false,
+    ))
 }
 
 android {
