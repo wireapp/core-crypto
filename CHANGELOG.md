@@ -138,6 +138,7 @@
 
 ### Bug Fixes
 
+- publishing android artifact by disabling javadoc generation (68af2b3)
 - emit output when bailing out (821de8e)
 - chrome webdriver crashing when running on macos-latest runner (54f9a86)
 - broken error type mapping in try/catch patterns. (9d0dc59)
@@ -166,6 +167,8 @@
 
 ### Documentation
 
+- add a _correct_ safety comment for `CoreCryptoWasmLogger` (67e9f27)
+- update CHANGELOG for 4.0.0 (a961df7)
 - some minor docs cleanup (1fd0f46)
 - add MLS decoding example (910ae58)
 - fix github pages deployment (0aac074)
