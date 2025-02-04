@@ -86,7 +86,7 @@ impl Entity for PersistedMlsPendingGroup {
                     id,
                     state,
                     parent_id,
-                    custom_configuration,
+                    cfg: custom_configuration,
                 }))
             }
             None => Ok(None),
@@ -144,7 +144,7 @@ impl Entity for PersistedMlsPendingGroup {
                 id,
                 state,
                 parent_id,
-                custom_configuration,
+                cfg: custom_configuration,
             });
             crate::CryptoKeystoreResult::Ok(acc)
         })?;
@@ -214,7 +214,7 @@ impl Entity for PersistedMlsPendingGroup {
                 id,
                 state,
                 parent_id,
-                custom_configuration,
+                cfg: custom_configuration,
             });
         }
 
@@ -256,7 +256,7 @@ impl EntityTransactionExt for PersistedMlsPendingGroup {
         Self::ConnectionType::check_buffer_size(self.id.len())?;
         Self::ConnectionType::check_buffer_size(parent_id.map(Vec::len).unwrap_or_default())?;
 
-        let zcfg = rusqlite::blob::ZeroBlob(self.custom_configuration.len() as i32);
+        let zcfg = rusqlite::blob::ZeroBlob(self.cfg.len() as i32);
         let zpid = rusqlite::blob::ZeroBlob(parent_id.map(Vec::len).unwrap_or_default() as i32);
         let zb = rusqlite::blob::ZeroBlob(self.state.len() as i32);
         let zid = rusqlite::blob::ZeroBlob(self.id.len() as i32);
@@ -307,7 +307,7 @@ impl EntityTransactionExt for PersistedMlsPendingGroup {
 
         let mut blob =
             transaction.blob_open(rusqlite::DatabaseName::Main, "mls_pending_groups", "cfg", rowid, false)?;
-        blob.write_all(&self.custom_configuration)?;
+        blob.write_all(&self.cfg)?;
         blob.close()?;
 
         let mut blob = transaction.blob_open(

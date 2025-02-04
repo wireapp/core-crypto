@@ -76,7 +76,7 @@ pub struct PersistedMlsPendingGroup {
     pub id: Vec<u8>,
     pub state: Vec<u8>,
     pub parent_id: Option<Vec<u8>>,
-    pub custom_configuration: Vec<u8>,
+    pub cfg: Vec<u8>,
 }
 
 /// Entity representing a buffered message

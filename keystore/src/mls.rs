@@ -203,7 +203,7 @@ impl CryptoKeystoreMls for crate::Connection {
         self.save(PersistedMlsPendingGroup {
             id: group_id.into(),
             state: mls_group.into(),
-            custom_configuration: custom_configuration.into(),
+            cfg: custom_configuration.into(),
             parent_id: parent_group_id.map(Into::into),
         })
         .await?;
@@ -213,7 +213,7 @@ impl CryptoKeystoreMls for crate::Connection {
     async fn mls_pending_groups_load(&self, group_id: &[u8]) -> CryptoKeystoreResult<(Vec<u8>, Vec<u8>)> {
         self.find(group_id)
             .await?
-            .map(|r: PersistedMlsPendingGroup| (r.state.clone(), r.custom_configuration.clone()))
+            .map(|r: PersistedMlsPendingGroup| (r.state.clone(), r.cfg.clone()))
             .ok_or(CryptoKeystoreError::MissingKeyInStore(
                 MissingKeyErrorKind::MlsPendingGroup,
             ))
