@@ -345,7 +345,7 @@ mod tests {
                         .await;
                     assert!(matches!(
                         error.unwrap_err(),
-                        CryptoKeystoreError::MissingKeyInStore(MissingKeyErrorKind::MlsPendingGroup)
+                        CryptoKeystoreError::MissingKeyInStore(MissingKeyErrorKind::PersistedMlsPendingGroup)
                     ));
 
                     // Ensure it's durable i.e. MLS group has been persisted
@@ -487,7 +487,7 @@ mod tests {
                     mls::error::Error::Keystore(KeystoreError { source, .. })
                     if matches!(
                         source.downcast_ref(),
-                        Some(&CryptoKeystoreError::MissingKeyInStore(MissingKeyErrorKind::MlsPendingGroup))
+                        Some(&CryptoKeystoreError::MissingKeyInStore(MissingKeyErrorKind::PersistedMlsPendingGroup))
                     )
                 ));
             })
@@ -612,7 +612,7 @@ mod tests {
                     mls::error::Error::Keystore(KeystoreError { source, .. })
                     if matches!(
                         source.downcast_ref(),
-                        Some(&CryptoKeystoreError::MissingKeyInStore(MissingKeyErrorKind::MlsPendingGroup))
+                        Some(&CryptoKeystoreError::MissingKeyInStore(MissingKeyErrorKind::PersistedMlsPendingGroup))
                     )
                 ))
             })

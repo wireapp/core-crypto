@@ -237,7 +237,7 @@ impl EntityBase for PersistedMlsPendingGroup {
     const COLLECTION_NAME: &'static str = "mls_pending_groups";
 
     fn to_missing_key_err_kind() -> MissingKeyErrorKind {
-        MissingKeyErrorKind::MlsPendingGroup
+        MissingKeyErrorKind::PersistedMlsPendingGroup
     }
 
     fn to_transaction_entity(self) -> crate::transaction::dynamic_dispatch::Entity {

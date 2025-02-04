@@ -38,7 +38,7 @@ pub enum MissingKeyErrorKind {
     #[error("MLS Persisted Group")]
     PersistedMlsGroup,
     #[error("MLS Persisted Pending Group")]
-    MlsPendingGroup,
+    PersistedMlsPendingGroup,
     #[error("MLS Pending Messages")]
     MlsPendingMessages,
     #[error("End-to-end identity enrollment")]

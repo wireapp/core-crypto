@@ -215,7 +215,7 @@ impl CryptoKeystoreMls for crate::Connection {
             .await?
             .map(|r: PersistedMlsPendingGroup| (r.state.clone(), r.cfg.clone()))
             .ok_or(CryptoKeystoreError::MissingKeyInStore(
-                MissingKeyErrorKind::MlsPendingGroup,
+                MissingKeyErrorKind::PersistedMlsPendingGroup,
             ))
     }
 
