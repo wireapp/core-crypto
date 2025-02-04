@@ -65,17 +65,17 @@ impl KeyStoreEntityFlattened {
 
         let id_to_byte_slice = match id_type {
             IdColumnType::String => quote! {self.#id.as_bytes() },
-            IdColumnType::Bytes => quote! { &self.#id.as_slice() },
+            IdColumnType::Bytes | IdColumnType::Blob => quote! { &self.#id.as_slice() },
         };
 
         let id_field_find_one = match id_type {
-            IdColumnType::String => quote! { #id, },
+            IdColumnType::String | IdColumnType::Blob => quote! { #id, },
             IdColumnType::Bytes => quote! { #id: id.to_bytes(), },
         };
 
         let id_slice = match id_type {
             IdColumnType::String => quote! { #id.as_str() },
-            IdColumnType::Bytes => quote! { #id.as_slice() },
+            IdColumnType::Bytes | IdColumnType::Blob => quote! { #id.as_slice() },
         };
 
         let id_input_transformed = match id_transformation {
@@ -229,7 +229,7 @@ impl KeyStoreEntityFlattened {
 
         let id_to_byte_slice = match id_type {
             IdColumnType::String => quote! {self.#id.as_bytes() },
-            IdColumnType::Bytes => quote! { self.#id.as_slice() },
+            IdColumnType::Bytes | IdColumnType::Blob => quote! { self.#id.as_slice() },
         };
 
         quote! {
@@ -326,7 +326,7 @@ impl KeyStoreEntityFlattened {
 
         let id_slice_delete = match id_type {
             IdColumnType::String => quote! { id.try_as_str()? },
-            IdColumnType::Bytes => quote! { id.as_slice() },
+            IdColumnType::Bytes | IdColumnType::Blob => quote! { id.as_slice() },
         };
 
         let id_input_transformed_delete = match id_transformation {

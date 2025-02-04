@@ -86,7 +86,7 @@ impl IdColumn {
             if let Some(attr) = field.attrs.iter().find(|a| a.path().is_ident("id")) {
                 let mut column_name = None;
                 let mut transformation = None;
-                let column_type = IdColumnType::parse(&field.ty)?;
+                let mut column_type = IdColumnType::parse(&field.ty)?;
 
                 if let Ok(list) = attr.meta.require_list() {
                     list.parse_nested_meta(|meta| {
@@ -96,6 +96,7 @@ impl IdColumn {
                                 column_name = Some(meta.input.parse::<syn::LitStr>()?.value());
                             }
                             "hex" => transformation = Some(IdTransformation::Hex),
+                            "blob" => column_type = IdColumnType::Blob,
                             _ => return Err(syn::Error::new_spanned(meta.path, "unknown argument")),
                         }
                         Ok(())

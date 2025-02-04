@@ -33,6 +33,7 @@ impl KeyStoreEntity {
             .iter()
             .filter(|column| column.column_type == ColumnType::Bytes)
             .map(|column| column.name.clone())
+            .chain((self.id.column_type == IdColumnType::Blob).then_some(self.id.name.clone()))
             .collect::<Vec<_>>();
 
         let optional_blob_columns = self
@@ -87,9 +88,11 @@ pub(super) struct KeyStoreEntityFlattened {
     no_upsert: bool,
 }
 
+#[derive(PartialEq, Eq)]
 enum IdColumnType {
     String,
     Bytes,
+    Blob,
 }
 
 struct IdColumn {
@@ -126,22 +129,22 @@ fn test_parsing() {
     // Example struct to test parsing
     let parsed: KeyStoreEntity = syn::parse_quote! {
         #[derive(Entity)]
-        #[entity(collection_name = "mls_groups")]
-        pub struct PersistedMlsGroup {
-            #[id(hex, column = "id_hex")]
+        #[entity(collection_name = "mls_pending_groups")]
+        pub struct PersistedMlsPendingGroup {
+            #[id(blob)]
             pub id: Vec<u8>,
             pub state: Vec<u8>,
             pub parent_id: Option<Vec<u8>>,
+            pub cfg: Vec<u8>,
         }
     };
 
     // Parse the DeriveInput into KeyStoreEntity
-    assert_eq!(parsed.collection_name, "mls_groups");
-    assert!(matches!(parsed.id.transformation, Some(IdTransformation::Hex)));
-    assert_eq!(parsed.id.column_name, Some("id_hex".to_string()));
-    assert_eq!(parsed.columns.0.len(), 2);
+    assert_eq!(parsed.columns.0.len(), 3);
 
     let parsed = parsed.flatten();
+
+    assert!(parsed.blob_column_names.contains(&"id".to_string()));
 
     let code = parsed.to_token_stream().to_string();
     // write code to file for testing
