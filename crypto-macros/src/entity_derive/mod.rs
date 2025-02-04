@@ -44,9 +44,20 @@ impl KeyStoreEntity {
             .map(|column| column.name.clone())
             .collect::<Vec<_>>();
 
+        let non_blob_columns = self
+            .columns
+            .0
+            .iter()
+            .filter(|column| {
+                !(column.column_type == ColumnType::Bytes || column.column_type == ColumnType::OptionalBytes)
+            })
+            .map(|column| column.name.clone())
+            .collect::<Vec<_>>();
+
         let all_column_names = all_columns.iter().map(ToString::to_string).collect();
         let blob_column_names = blob_columns.iter().map(ToString::to_string).collect();
         let optional_blob_column_names = optional_blob_columns.iter().map(ToString::to_string).collect();
+        let non_blob_column_names = non_blob_columns.iter().map(ToString::to_string).collect();
 
         let id = self.id.name;
         let id_name = self.id.column_name.unwrap_or_else(|| id.to_string());
@@ -66,6 +77,8 @@ impl KeyStoreEntity {
             blob_column_names,
             optional_blob_columns,
             optional_blob_column_names,
+            non_blob_columns,
+            non_blob_column_names,
         }
     }
 }
@@ -85,6 +98,8 @@ pub(super) struct KeyStoreEntityFlattened {
     blob_column_names: Vec<String>,
     optional_blob_columns: Vec<Ident>,
     optional_blob_column_names: Vec<String>,
+    non_blob_columns: Vec<Ident>,
+    non_blob_column_names: Vec<String>,
     no_upsert: bool,
 }
 
@@ -119,6 +134,7 @@ struct Column {
 #[derive(PartialEq, Eq)]
 enum ColumnType {
     String,
+    U16,
     Bytes,
     OptionalBytes,
 }
@@ -129,13 +145,13 @@ fn test_parsing() {
     // Example struct to test parsing
     let parsed: KeyStoreEntity = syn::parse_quote! {
         #[derive(Entity)]
-        #[entity(collection_name = "mls_pending_groups")]
-        pub struct PersistedMlsPendingGroup {
+        #[entity(collection_name = "mls_signature_keypairs")]
+        pub struct MlsSignatureKeyPair {
+            pub signature_scheme: u16,
             #[id(blob)]
-            pub id: Vec<u8>,
-            pub state: Vec<u8>,
-            pub parent_id: Option<Vec<u8>>,
-            pub cfg: Vec<u8>,
+            pub pk: Vec<u8>,
+            pub keypair: Vec<u8>,
+            pub credential_id: Vec<u8>,
         }
     };
 
@@ -144,7 +160,7 @@ fn test_parsing() {
 
     let parsed = parsed.flatten();
 
-    assert!(parsed.blob_column_names.contains(&"id".to_string()));
+    assert!(parsed.blob_column_names.contains(&"pk".to_string()));
 
     let code = parsed.to_token_stream().to_string();
     // write code to file for testing

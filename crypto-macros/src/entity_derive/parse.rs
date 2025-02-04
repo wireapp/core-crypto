@@ -189,11 +189,12 @@ impl ColumnType {
         type_string.retain(|c| !c.is_whitespace());
         match type_string.as_str() {
             "String" | "std::string::String" => Ok(Self::String),
+            "u16" => Ok(Self::U16),
             "Vec<u8>" | "std::vec::Vec<u8>" => Ok(Self::Bytes),
             "Option<Vec<u8>>" | "Option<std::vec::Vec<u8>>" => Ok(Self::OptionalBytes),
             type_string => Err(syn::Error::new_spanned(
                 ty,
-                format!("Expected `String`, `Vec<u8>`, or `Option<Vec<u8>>` not `{type_string}`."),
+                format!("Expected `String`, u16, `Vec<u8>`, or `Option<Vec<u8>>` not `{type_string}`."),
             )),
         }
     }

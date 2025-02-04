@@ -1,5 +1,5 @@
 use crate::entity_derive::{ColumnType, IdColumnType, IdTransformation, KeyStoreEntityFlattened};
-use quote::quote;
+use quote::{quote, ToTokens};
 
 impl quote::ToTokens for KeyStoreEntityFlattened {
     fn to_tokens(&self, tokens: &mut proc_macro2::TokenStream) {
@@ -56,6 +56,8 @@ impl KeyStoreEntityFlattened {
             all_columns,
             optional_blob_columns,
             optional_blob_column_names,
+            non_blob_columns,
+            non_blob_column_names,
             ..
         } = self;
 
@@ -84,10 +86,17 @@ impl KeyStoreEntityFlattened {
             None => id_slice,
         };
 
+        let non_blob_column_types = ", _".repeat(non_blob_columns.len());
+
+        // let columns_find_all = format!("rowid, {} {}", non_blob_column_names.join(", "), (*id_type != IdColumnType::Blob).then(|| id_name.to_string()).unwrap_or_default()).to_token_stream();
+        let columns_find_all = quote! { rowid, #(#non_blob_columns, )* #id_name };
+
         let destructure_row = match id_transformation {
-            Some(IdTransformation::Hex) => quote! { let (rowid, #id): (_, String) = row?; },
+            Some(IdTransformation::Hex) => {
+                quote! { let (#columns_find_all): (_, #non_blob_column_types, String) = row?; }
+            }
             Some(IdTransformation::Sha256) => todo!(),
-            None => quote! { let (rowid, #id) = row?; },
+            None => quote! { let (#columns_find_all) = row?; },
         };
 
         let id_from_transformed = match id_transformation {
@@ -98,7 +107,7 @@ impl KeyStoreEntityFlattened {
             None => quote! {},
         };
 
-        let find_all_query = format!("SELECT rowid, {id_name} FROM {collection_name} ");
+        let find_all_query = format!("SELECT {columns_find_all} FROM {collection_name} ");
 
         let find_one_query = format!("SELECT rowid FROM {collection_name} WHERE {id_name} = ?");
 
