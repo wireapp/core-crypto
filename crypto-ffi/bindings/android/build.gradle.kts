@@ -6,7 +6,7 @@ import com.vanniktech.maven.publish.AndroidSingleVariantLibrary
 plugins {
     id("com.android.library")
     kotlin("android")
-    id("com.vanniktech.maven.publish.base")
+    id("com.vanniktech.maven.publish")
 }
 
 val kotlinSources = projectDir.resolve("../jvm/src")
@@ -38,7 +38,6 @@ dependencies {
 }
 
 mavenPublishing {
-    pomFromGradleProperties()
     configure(AndroidSingleVariantLibrary(
         variant = "release",
         sourcesJar = true,
