@@ -134,6 +134,11 @@ pub enum CryptoError {
     /// Incoming message is from a prior epoch
     #[error("Incoming message is from a prior epoch")]
     StaleMessage,
+    /// Incoming message is a commit for which we have not yet received all the proposals.
+    ///
+    /// Buffering until all proposals have arrived.
+    #[error("Incoming message is a commit for which we have not yet received all the proposals. Buffering until all proposals have arrived.")]
+    BufferedCommit,
     /// Incoming message is from an epoch too far in the future to buffer.
     #[error("Incoming message is from an epoch too far in the future to buffer.")]
     WrongEpoch,
