@@ -418,4 +418,217 @@ mod tests {
         )
         .await
     }
+
+    /// Replicating [WPB-15810]
+    ///
+    /// [WPB-15810]: https://wearezeta.atlassian.net/browse/WPB-15810
+    #[apply(all_cred_cipher)]
+    async fn wpb_15810(case: TestCase) {
+        use openmls::{
+            group::GroupId,
+            prelude::{ExternalProposal, SenderExtensionIndex},
+        };
+
+        use crate::mls;
+
+        if case.is_pure_ciphertext() {
+            // The use case tested here requires inspecting your own commit.
+            // Openmls does not support this currently when protocol messages are encrypted.
+            return;
+        }
+        run_test_with_client_ids(
+            case.clone(),
+            ["external_0", "new_member", "member_27", "observer", "114", "115"],
+            move |[external_0, new_member, member_27, observer, member_114, member_115]| {
+                Box::pin(async move {
+                    // scenario start: everyone except "new_member" is in the conversation
+                    let conv_id = conversation_id();
+
+                    // set up external_0 as the backend / delivery service
+                    let signature_key = external_0.client_signature_key(&case).await.as_slice().to_vec();
+                    let mut config = case.cfg.clone();
+                    observer
+                        .context
+                        .set_raw_external_senders(&mut config, vec![signature_key])
+                        .await
+                        .unwrap();
+
+                    // create and initialize the conversation
+                    observer
+                        .context
+                        .new_conversation(&conv_id, case.credential_type, config)
+                        .await
+                        .unwrap();
+
+                    // everyone else except new_member joins (also except observer, who created it)
+                    observer
+                        .invite_all(&case, &conv_id, [&member_114, &member_115, &member_27])
+                        .await
+                        .unwrap();
+
+                    // Everyone should agree on the overall state here, to wit: the group consists of everyone
+                    // except "new_member", and "external_0", and no messages have been sent.
+                    // At this point only the observer is going to receive messages, because that shouldn't impact group state.
+
+                    // external 0 sends a proposal to remove 114
+                    let leaf_of_114 = observer.index_of(&conv_id, member_114.get_client_id().await).await;
+                    let sender_index = SenderExtensionIndex::new(0);
+                    let sc = case.signature_scheme();
+                    let ct = case.credential_type;
+                    let cb = external_0.find_most_recent_credential_bundle(sc, ct).await.unwrap();
+                    let group_id = GroupId::from_slice(&conv_id[..]);
+                    let epoch = observer.get_conversation_unchecked(&conv_id).await.group.epoch();
+                    let proposal_remove_114_1 = ExternalProposal::new_remove(
+                        leaf_of_114,
+                        group_id.clone(),
+                        epoch,
+                        &cb.signature_key,
+                        sender_index,
+                    )
+                    .unwrap();
+
+                    // now bump the epoch in external_0: the new member has joined
+                    let new_member_join_commit = new_member
+                        .create_unmerged_external_commit(
+                            observer.get_group_info(&conv_id).await,
+                            case.custom_cfg(),
+                            case.credential_type,
+                        )
+                        .await
+                        .commit;
+
+                    new_member
+                        .context
+                        .merge_pending_group_from_external_commit(&conv_id)
+                        .await
+                        .unwrap();
+
+                    // also create the same proposal with the epoch increased by 1
+                    let leaf_of_114 = new_member.index_of(&conv_id, member_114.get_client_id().await).await;
+                    let proposal_remove_114_2 = ExternalProposal::new_remove(
+                        leaf_of_114,
+                        group_id.clone(),
+                        (epoch.as_u64() + 1).into(),
+                        &cb.signature_key,
+                        sender_index,
+                    )
+                    .unwrap();
+
+                    // now our observer receives these messages out of order
+                    println!("observer executing first proposal");
+                    observer
+                        .context
+                        .decrypt_message(&conv_id, &proposal_remove_114_1.to_bytes().unwrap())
+                        .await
+                        .unwrap();
+                    println!("observer executing second proposal");
+                    let result = observer
+                        .context
+                        .decrypt_message(&conv_id, &proposal_remove_114_2.to_bytes().unwrap())
+                        .await;
+                    dbg!(&result);
+                    result.unwrap_err(); // todo verify error
+                    println!("executing commit adding new user");
+                    observer
+                        .context
+                        .decrypt_message(&conv_id, &new_member_join_commit.to_bytes().unwrap())
+                        .await
+                        .unwrap();
+
+                    // observer.context.commit_pending_proposals(&conv_id).await.unwrap();
+                    // let commit = observer.mls_transport.latest_commit().await;
+
+                    // now the new member receives the messages in order
+                    // now our observer receives these messages out of order
+                    println!("new_member executing first proposal");
+                    assert!(matches!(
+                        new_member
+                            .context
+                            .decrypt_message(&conv_id, &proposal_remove_114_1.to_bytes().unwrap())
+                            .await
+                            .unwrap_err(),
+                        mls::conversation::Error::StaleProposal,
+                    ));
+                    println!("new_member executing second proposal");
+                    new_member
+                        .context
+                        .decrypt_message(&conv_id, &proposal_remove_114_2.to_bytes().unwrap())
+                        .await
+                        .unwrap();
+
+                    // new_member
+                    //     .context
+                    //     .decrypt_message(&conv_id, new_member_join_commit.to_bytes().unwrap())
+                    //     .await
+                    //     .unwrap();
+                    // observer.try_talk_to(&conv_id, &new_member).await.unwrap();
+
+                    // now let's switch to the perspective of member 27
+                    // they have observed exactly one of the "remove 114" proposals,
+                    // plus a "remove 115" proposal. We can assume that they observe the 2nd
+                    // "remove 114" proposal because they advanced the epoch correctly when
+                    // the new member was added.
+                    let leaf_of_115 = observer.index_of(&conv_id, member_115.get_client_id().await).await;
+                    let epoch = observer.get_conversation_unchecked(&conv_id).await.group.epoch();
+                    let proposal_remove_115 =
+                        ExternalProposal::new_remove(leaf_of_115, group_id, epoch, &cb.signature_key, sender_index)
+                            .unwrap();
+
+                    member_27
+                        .context
+                        .decrypt_message(&conv_id, &proposal_remove_114_1.to_bytes().unwrap())
+                        .await
+                        .unwrap();
+                    let result = member_27
+                        .context
+                        .decrypt_message(&conv_id, &proposal_remove_114_2.to_bytes().unwrap())
+                        .await;
+                    dbg!(&result);
+                    result.unwrap_err();
+                    member_27
+                        .context
+                        .decrypt_message(&conv_id, &new_member_join_commit.to_bytes().unwrap())
+                        .await
+                        .unwrap();
+                    member_27
+                        .context
+                        .decrypt_message(&conv_id, &proposal_remove_115.to_bytes().unwrap())
+                        .await
+                        .unwrap();
+
+                    member_27.context.commit_pending_proposals(&conv_id).await.unwrap();
+                    let remove_two_members_commit = member_27.mls_transport.latest_commit().await;
+
+                    // if anyone receives the proposal _after_ the commit, it will fail
+                    // can we mitigate/harden this somehow?
+                    observer
+                        .context
+                        .decrypt_message(&conv_id, &proposal_remove_115.to_bytes().unwrap())
+                        .await
+                        .unwrap();
+                    observer
+                        .context
+                        .decrypt_message(&conv_id, &remove_two_members_commit.to_bytes().unwrap())
+                        .await
+                        .unwrap();
+
+                    new_member
+                        .context
+                        .decrypt_message(&conv_id, &remove_two_members_commit.to_bytes().unwrap())
+                        .await
+                        .unwrap();
+                    new_member
+                        .context
+                        .decrypt_message(&conv_id, &proposal_remove_115.to_bytes().unwrap())
+                        .await
+                        .unwrap();
+
+                    observer.try_talk_to(&conv_id, &new_member).await.unwrap();
+                    observer.try_talk_to(&conv_id, &member_27).await.unwrap();
+                    new_member.try_talk_to(&conv_id, &member_27).await.unwrap();
+                })
+            },
+        )
+        .await
+    }
 }
