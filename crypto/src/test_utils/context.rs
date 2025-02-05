@@ -147,12 +147,12 @@ impl ClientContext {
             .context
             .encrypt_message(id, msg)
             .await
-            .map_err(RecursiveError::mls_conversation("encrypting message"))?;
+            .map_err(RecursiveError::mls_conversation("encrypting message; self -> other"))?;
         let decrypted = other
             .context
             .decrypt_message(id, encrypted)
             .await
-            .map_err(RecursiveError::mls_conversation("decrypting message"))?
+            .map_err(RecursiveError::mls_conversation("decrypting message; other <- self"))?
             .app_msg
             .ok_or(TestError::ImplementationError)?;
         assert_eq!(&msg[..], &decrypted[..]);
@@ -162,12 +162,12 @@ impl ClientContext {
             .context
             .encrypt_message(id, msg)
             .await
-            .map_err(RecursiveError::mls_conversation("encrypting message"))?;
+            .map_err(RecursiveError::mls_conversation("encrypting message; other -> self"))?;
         let decrypted = self
             .context
             .decrypt_message(id, encrypted)
             .await
-            .map_err(RecursiveError::mls_conversation("decrypting message"))?
+            .map_err(RecursiveError::mls_conversation("decrypting message; self <- other"))?
             .app_msg
             .ok_or(TestError::ImplementationError)?;
         assert_eq!(&msg[..], &decrypted[..]);
