@@ -1,5 +1,12 @@
 # Changelog
 
+## v4.0.1 - 2025-02-05
+
+### Features
+
+- support entity derive for tables with hex ids (0bd3676)
+
+
 ## v4.0.0 - 2025-01-28
 
 ### Highlights
