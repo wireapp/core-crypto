@@ -33,6 +33,7 @@ val copyBinariesTasks = listOf(
 tasks.withType<ProcessResources> { dependsOn(copyBinariesTasks) }
 
 tasks.withType<Test> { dependsOn(copyBinariesTasks) }
+tasks.withType<Jar> { dependsOn(copyBinariesTasks) }
 
 sourceSets { main { resources { srcDir(processedResourcesDir) } } }
 
