@@ -4,9 +4,9 @@ use crate::connection::storage::{WasmEncryptedStorage, WasmStorageWrapper};
 use crate::connection::KeystoreDatabaseConnection;
 use crate::entities::{
     ConsumerData, E2eiAcmeCA, E2eiCrl, E2eiEnrollment, E2eiIntermediateCert, E2eiRefreshToken, Entity, EntityBase,
-    MlsCredential, MlsEncryptionKeyPair, MlsEpochEncryptionKeyPair, MlsHpkePrivateKey, MlsKeyPackage,
-    MlsPendingMessage, MlsPskBundle, MlsSignatureKeyPair, PersistedMlsGroup, PersistedMlsPendingGroup, ProteusIdentity,
-    ProteusPrekey, ProteusSession, UniqueEntity,
+    MlsBufferedCommit, MlsCredential, MlsEncryptionKeyPair, MlsEpochEncryptionKeyPair, MlsHpkePrivateKey,
+    MlsKeyPackage, MlsPendingMessage, MlsPskBundle, MlsSignatureKeyPair, PersistedMlsGroup, PersistedMlsPendingGroup,
+    ProteusIdentity, ProteusPrekey, ProteusSession, UniqueEntity,
 };
 use crate::{CryptoKeystoreError, CryptoKeystoreResult};
 use idb::builder::{DatabaseBuilder, IndexBuilder, ObjectStoreBuilder};
@@ -37,11 +37,12 @@ const fn db_version_number(counter: u32) -> u32 {
 const DB_VERSION_0: u32 = db_version_number(0);
 const DB_VERSION_1: u32 = db_version_number(1);
 const DB_VERSION_2: u32 = db_version_number(2);
+const DB_VERSION_3: u32 = db_version_number(3);
 
 /// Open an existing idb database with the given name and key, and migrate it if needed.
 pub(crate) async fn open_and_migrate(name: &str, key: &str) -> CryptoKeystoreResult<Database> {
     /// Increment when adding a new migration.
-    const TARGET_VERSION: u32 = DB_VERSION_2;
+    const TARGET_VERSION: u32 = DB_VERSION_3;
     let factory = Factory::new()?;
 
     let open_existing = factory.open(name, None)?;
@@ -79,8 +80,28 @@ async fn do_migration_step(from: u32, name: &str, key: &str) -> CryptoKeystoreRe
         //      to ensure convergence of the while loop this is called from.
         0..=DB_VERSION_0 => migrate_to_version_1(name, key).await,
         DB_VERSION_1 => migrate_to_version_2(name).await,
+        DB_VERSION_2 => migrate_to_version_3(name).await,
         _ => Err(CryptoKeystoreError::MigrationNotSupported(from)),
     }
+}
+
+/// Open IDB once with the new builder and close it, this will add the new object store.
+async fn migrate_to_version_3(name: &str) -> CryptoKeystoreResult<u32> {
+    let migrated_idb = get_builder_v3(name).build().await?;
+    migrated_idb.close();
+    Ok(DB_VERSION_3)
+}
+
+/// Add a new object store for the MlsBufferedCommit struct.
+fn get_builder_v3(name: &str) -> DatabaseBuilder {
+    let previous_builder = get_builder_v2(name);
+    previous_builder.version(DB_VERSION_3).add_object_store(
+        ObjectStoreBuilder::new(MlsBufferedCommit::COLLECTION_NAME)
+            .auto_increment(false)
+            .add_index(
+                IndexBuilder::new("conversation_id".into(), KeyPath::new_single("conversation_id")).unique(true),
+            ),
+    )
 }
 
 /// Open IDB once with the new builder and close it, this will add the new object store.
