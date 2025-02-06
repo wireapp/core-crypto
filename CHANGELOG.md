@@ -200,6 +200,14 @@
 - parallel transactions are performed serially (20d47c1)
 
 
+## v3.0.2 - 2025-01-31
+
+### Highlights
+
+- Fix a bug which could cause certain errors to generate spurious log lines of the form
+
+    > Cannot build CoreCryptoError, falling back to standard Error! ctx: Incoming message is from an epoch too far in the future to buffer.
+
 ## v3.0.1 - 2025-01-27
 
 ### Highlights
@@ -1569,5 +1577,3 @@
 - clippy + fmt pass on core-crypto (a230b95)
 - fmt + clippy pass (e979a2f)
 - Migrations were incorrectly defined (d9a43a6)
-
-
