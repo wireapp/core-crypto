@@ -45,6 +45,7 @@ async-lock.workspace = true
 postcard = { version = "1.0", default-features = false, features = ["use-std"] }
 sha2.workspace = true
 serde_json.workspace = true
+core-crypto-macros.workspace = true
 
 # iOS specific things
 security-framework = { version = "3.0", optional = true }
@@ -111,7 +112,10 @@ rstest = "0.23"
 rstest_reuse = "0.7"
 async-std = { workspace = true, features = ["attributes"] }
 futures-lite = "2.3"
-core-crypto-keystore = { path = ".", features = ["idb-regression-test", "log-queries"] }
+core-crypto-keystore = { path = ".", features = [
+    "idb-regression-test",
+    "log-queries",
+] }
 pretty_env_logger = "0.5"
 proteus-wasm = { workspace = true }
 
@@ -120,4 +124,9 @@ version = "0.5"
 features = ["async_futures", "html_reports"]
 
 [package.metadata.wasm-pack.profile.release]
-wasm-opt = ["-Os", "--enable-mutable-globals", "--enable-threads", "--detect-features"]
+wasm-opt = [
+    "-Os",
+    "--enable-mutable-globals",
+    "--enable-threads",
+    "--detect-features",
+]

@@ -1007,6 +1007,7 @@ dependencies = [
  "blocking",
  "cfg-if",
  "core-crypto-keystore",
+ "core-crypto-macros",
  "core-foundation 0.10.0",
  "criterion",
  "fluvio-wasm-timer",
