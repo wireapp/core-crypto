@@ -35,6 +35,8 @@ pub enum MissingKeyErrorKind {
     MlsPskBundle,
     #[error("MLS CredentialBundle")]
     MlsCredential,
+    #[error("MLS Buffered Commit")]
+    MlsBufferedCommit,
     #[error("MLS Persisted Group")]
     PersistedMlsGroup,
     #[error("MLS Persisted Pending Group")]

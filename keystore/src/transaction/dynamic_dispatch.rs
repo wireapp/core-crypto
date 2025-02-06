@@ -4,9 +4,9 @@
 use crate::connection::TransactionWrapper;
 use crate::entities::{
     ConsumerData, E2eiAcmeCA, E2eiCrl, E2eiEnrollment, E2eiIntermediateCert, E2eiRefreshToken, EntityBase,
-    EntityTransactionExt, MlsCredential, MlsEncryptionKeyPair, MlsEpochEncryptionKeyPair, MlsHpkePrivateKey,
-    MlsKeyPackage, MlsPendingMessage, MlsPskBundle, MlsSignatureKeyPair, PersistedMlsGroup, PersistedMlsPendingGroup,
-    StringEntityId, UniqueEntity,
+    EntityTransactionExt, MlsBufferedCommit, MlsCredential, MlsEncryptionKeyPair, MlsEpochEncryptionKeyPair,
+    MlsHpkePrivateKey, MlsKeyPackage, MlsPendingMessage, MlsPskBundle, MlsSignatureKeyPair, PersistedMlsGroup,
+    PersistedMlsPendingGroup, StringEntityId, UniqueEntity,
 };
 #[cfg(feature = "proteus-keystore")]
 use crate::entities::{ProteusIdentity, ProteusPrekey, ProteusSession};
@@ -22,6 +22,7 @@ pub enum Entity {
     EncryptionKeyPair(MlsEncryptionKeyPair),
     MlsEpochEncryptionKeyPair(MlsEpochEncryptionKeyPair),
     MlsCredential(MlsCredential),
+    MlsBufferedCommit(MlsBufferedCommit),
     PersistedMlsGroup(PersistedMlsGroup),
     PersistedMlsPendingGroup(PersistedMlsPendingGroup),
     MlsPendingMessage(MlsPendingMessage),
@@ -47,6 +48,7 @@ pub enum EntityId {
     EncryptionKeyPair(Vec<u8>),
     EpochEncryptionKeyPair(Vec<u8>),
     MlsCredential(Vec<u8>),
+    MlsBufferedCommit(Vec<u8>),
     PersistedMlsGroup(Vec<u8>),
     PersistedMlsPendingGroup(Vec<u8>),
     MlsPendingMessage(Vec<u8>),
@@ -73,6 +75,7 @@ impl EntityId {
             EntityId::EncryptionKeyPair(vec) => vec.as_slice().into(),
             EntityId::EpochEncryptionKeyPair(vec) => vec.as_slice().into(),
             EntityId::MlsCredential(vec) => vec.as_slice().into(),
+            EntityId::MlsBufferedCommit(vec) => vec.as_slice().into(),
             EntityId::PersistedMlsGroup(vec) => vec.as_slice().into(),
             EntityId::PersistedMlsPendingGroup(vec) => vec.as_slice().into(),
             EntityId::MlsPendingMessage(vec) => vec.as_slice().into(),
@@ -98,6 +101,7 @@ impl EntityId {
             MlsPskBundle::COLLECTION_NAME => Ok(Self::PskBundle(id.into())),
             MlsEncryptionKeyPair::COLLECTION_NAME => Ok(Self::EncryptionKeyPair(id.into())),
             MlsEpochEncryptionKeyPair::COLLECTION_NAME => Ok(Self::EpochEncryptionKeyPair(id.into())),
+            MlsBufferedCommit::COLLECTION_NAME => Ok(Self::MlsBufferedCommit(id.into())),
             PersistedMlsGroup::COLLECTION_NAME => Ok(Self::PersistedMlsGroup(id.into())),
             PersistedMlsPendingGroup::COLLECTION_NAME => Ok(Self::PersistedMlsPendingGroup(id.into())),
             MlsCredential::COLLECTION_NAME => Ok(Self::MlsCredential(id.into())),
@@ -125,6 +129,7 @@ impl EntityId {
             EntityId::EncryptionKeyPair(_) => MlsEncryptionKeyPair::COLLECTION_NAME,
             EntityId::EpochEncryptionKeyPair(_) => MlsEpochEncryptionKeyPair::COLLECTION_NAME,
             EntityId::MlsCredential(_) => MlsCredential::COLLECTION_NAME,
+            EntityId::MlsBufferedCommit(_) => MlsBufferedCommit::COLLECTION_NAME,
             EntityId::PersistedMlsGroup(_) => PersistedMlsGroup::COLLECTION_NAME,
             EntityId::PersistedMlsPendingGroup(_) => PersistedMlsPendingGroup::COLLECTION_NAME,
             EntityId::MlsPendingMessage(_) => MlsPendingMessage::COLLECTION_NAME,
@@ -156,6 +161,7 @@ pub async fn execute_save(tx: &TransactionWrapper<'_>, entity: &Entity) -> Crypt
             mls_epoch_encryption_key_pair.save(tx).await
         }
         Entity::MlsCredential(mls_credential) => mls_credential.save(tx).await,
+        Entity::MlsBufferedCommit(mls_pending_commit) => mls_pending_commit.save(tx).await,
         Entity::PersistedMlsGroup(persisted_mls_group) => persisted_mls_group.save(tx).await,
         Entity::PersistedMlsPendingGroup(persisted_mls_pending_group) => persisted_mls_pending_group.save(tx).await,
         Entity::MlsPendingMessage(mls_pending_message) => mls_pending_message.save(tx).await,
@@ -182,6 +188,7 @@ pub async fn execute_delete(tx: &TransactionWrapper<'_>, entity_id: &EntityId) -
         id @ EntityId::EncryptionKeyPair(_) => MlsEncryptionKeyPair::delete(tx, id.as_id()).await,
         id @ EntityId::EpochEncryptionKeyPair(_) => MlsEpochEncryptionKeyPair::delete(tx, id.as_id()).await,
         id @ EntityId::MlsCredential(_) => MlsCredential::delete(tx, id.as_id()).await,
+        id @ EntityId::MlsBufferedCommit(_) => MlsBufferedCommit::delete(tx, id.as_id()).await,
         id @ EntityId::PersistedMlsGroup(_) => PersistedMlsGroup::delete(tx, id.as_id()).await,
         id @ EntityId::PersistedMlsPendingGroup(_) => PersistedMlsPendingGroup::delete(tx, id.as_id()).await,
         id @ EntityId::MlsPendingMessage(_) => MlsPendingMessage::delete(tx, id.as_id()).await,

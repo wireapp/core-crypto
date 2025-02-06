@@ -91,6 +91,84 @@ pub struct MlsPendingMessage {
     pub message: Vec<u8>,
 }
 
+#[derive(Debug, thiserror::Error)]
+pub enum BufferedCommitError {
+    #[error("proposal reference was too large for its size to be represented as u32")]
+    ProposalReferenceSizeOverflow,
+    #[error("failed to split concatenated proposal references")]
+    SplitFail,
+}
+
+/// Entity representing a buffered commit.
+///
+/// There should always exist either 0 or 1 of these in the store per conversation.
+/// Commits are buffered if not all proposals
+#[derive(Debug, Clone, PartialEq, Eq, Zeroize, core_crypto_macros::Entity)]
+#[zeroize(drop)]
+#[cfg_attr(
+    any(target_family = "wasm", feature = "serde"),
+    derive(serde::Serialize, serde::Deserialize)
+)]
+pub struct MlsBufferedCommit {
+    // we'd ideally just call this field `conversation_id`, but as of right now the
+    // Entity macro does not yet support id columns not named `id`
+    #[id(hex, column = "id_hex")]
+    id: Vec<u8>,
+    concatenated_proposal_references: Vec<u8>,
+}
+
+impl MlsBufferedCommit {
+    // this is kind of terrible, but it enables us to use the entity derive macro
+    // perfect world, we wouldn't have to do this kind of serialization, but here we are
+    fn concatenate_proposal_references(proposal_references: Vec<Vec<u8>>) -> Result<Vec<u8>, BufferedCommitError> {
+        let mut out = Vec::new();
+        for reference in proposal_references {
+            dbg!(&reference);
+            out.reserve(4 + reference.len());
+            let len: u32 = reference
+                .len()
+                .try_into()
+                .map_err(|_| BufferedCommitError::ProposalReferenceSizeOverflow)?;
+            out.extend(len.to_be_bytes());
+            out.extend(reference);
+        }
+        Ok(out)
+    }
+
+    fn split_proposal_references(mut data: &[u8]) -> Result<Vec<Vec<u8>>, BufferedCommitError> {
+        let mut proposal_references = Vec::new();
+
+        while !data.is_empty() {
+            let (len, remaining) = data.split_at_checked(4).ok_or(BufferedCommitError::SplitFail)?;
+            let len: usize = u32::from_be_bytes(len.try_into().expect("we split four bytes"))
+                .try_into()
+                .expect("we never build CoreCrypto for an arch narrower than 32 bits");
+            let (proposal_ref, remaining) = remaining.split_at_checked(len).ok_or(BufferedCommitError::SplitFail)?;
+            proposal_references.push(proposal_ref.to_owned());
+            data = remaining;
+        }
+
+        Ok(proposal_references)
+    }
+
+    /// Create a new `Self` from conversation id and a list of `ProposalRef`.
+    pub fn new(conversation_id: Vec<u8>, proposal_references: Vec<Vec<u8>>) -> Result<Self, BufferedCommitError> {
+        let concatenated_proposal_references = Self::concatenate_proposal_references(proposal_references)?;
+        Ok(Self {
+            id: conversation_id,
+            concatenated_proposal_references,
+        })
+    }
+
+    pub fn conversation_id(&self) -> &[u8] {
+        &self.id
+    }
+
+    pub fn proposal_references(&self) -> Result<Vec<Vec<u8>>, BufferedCommitError> {
+        Self::split_proposal_references(&self.concatenated_proposal_references)
+    }
+}
+
 /// Entity representing a persisted `Credential`
 #[derive(Debug, Clone, PartialEq, Eq, Zeroize)]
 #[zeroize(drop)]
@@ -418,4 +496,29 @@ pub struct E2eiCrl {
     #[id]
     pub distribution_point: String,
     pub content: Vec<u8>,
+}
+
+#[cfg(test)]
+mod tests {
+    mod mls_buffered_commit {
+        use super::super::*;
+        use rstest::rstest;
+
+        #[rstest]
+        #[case(vec![])]
+        #[case(vec![vec![]])]
+        #[case(vec![vec![0]])]
+        #[case(vec![vec![0], vec![0]])]
+        #[case(vec![vec![0], vec![0], vec![0]])]
+        #[case(vec![vec![0], vec![0, 0]])]
+        #[case(vec![vec![0, 0], vec![0]])]
+        #[case(vec![vec![0, 0, 0]])]
+        fn roundtrip_serialize_deserialize_pending_proposals(#[case] data: Vec<Vec<u8>>) {
+            let id = vec![1];
+            let buffered_commit = MlsBufferedCommit::new(id.clone(), data.clone()).unwrap();
+            dbg!(&buffered_commit.concatenated_proposal_references);
+            assert_eq!(buffered_commit.conversation_id(), &id);
+            assert_eq!(buffered_commit.proposal_references().unwrap(), data);
+        }
+    }
 }
