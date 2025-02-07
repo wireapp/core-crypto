@@ -19,10 +19,12 @@ use openmls::{
     },
 };
 use openmls_traits::OpenMlsCryptoProvider;
-use std::fmt::Debug;
 use tls_codec::Deserialize;
 
-use core_crypto_keystore::entities::MlsPendingMessage;
+use core_crypto_keystore::{
+    connection::FetchFromDatabase,
+    entities::{MlsBufferedCommit, MlsPendingMessage},
+};
 use mls_crypto_provider::MlsCryptoProvider;
 
 use crate::context::CentralContext;
@@ -111,6 +113,12 @@ impl From<MlsConversationDecryptMessage> for MlsBufferedConversationDecryptMessa
     }
 }
 
+struct ParsedMessage {
+    is_duplicate: bool,
+    protocol_message: ProtocolMessage,
+    content_type: ContentType,
+}
+
 /// Abstraction over a MLS group capable of decrypting a MLS message
 impl MlsConversation {
     /// see [CentralContext::decrypt_message]
@@ -127,17 +135,42 @@ impl MlsConversation {
         callbacks: Option<&dyn CoreCryptoCallbacks>,
         restore_pending: bool,
     ) -> CryptoResult<MlsConversationDecryptMessage> {
-        let message = match self.parse_message(backend, message.clone()).await {
-            // Handles the case where we receive our own commits.
-            Err(CryptoError::MlsError(MlsError::MlsMessageError(ProcessMessageError::InvalidCommit(
-                StageCommitError::OwnCommit,
-            )))) => {
-                let ct = self.extract_confirmation_tag_from_own_commit(&message)?;
-                return self.handle_own_commit(backend, ct).await;
+        let parsed_message = self.parse_message(backend, message.clone())?;
+
+        let message_result = self.process_message(backend, parsed_message).await;
+
+        // Handles the case where we receive our own commits.
+        if let Err(CryptoError::MlsError(MlsError::MlsMessageError(ProcessMessageError::InvalidCommit(
+            StageCommitError::OwnCommit,
+        )))) = message_result
+        {
+            let ct = self.extract_confirmation_tag_from_own_commit(&message)?;
+            let mut decrypted_message = self.handle_own_commit(backend, ct).await?;
+            // can't use `.then` because async
+            debug_assert!(
+                decrypted_message.buffered_messages.is_none(),
+                "decrypted message should be constructed with empty buffer"
+            );
+            if restore_pending {
+                decrypted_message.buffered_messages = self
+                    .decrypt_and_clear_pending_messages(client, backend, parent_conv, callbacks)
+                    .await?;
             }
-            Ok(processed_message) => Ok(processed_message),
-            Err(e) => Err(e),
-        }?;
+
+            return Ok(decrypted_message);
+        }
+
+        // In this error case, we have a missing proposal, so we need to buffer the commit.
+        // We can't do that here--we don't have the appropriate data in scope--but we can at least
+        // produce the proper error and return that, so our caller can handle it.
+        if let Err(CryptoError::MlsError(MlsError::MlsMessageError(ProcessMessageError::InvalidCommit(
+            StageCommitError::MissingProposal,
+        )))) = message_result
+        {
+            return Err(CryptoError::BufferedCommit);
+        }
+
+        let message = message_result?;
 
         let credential = message.credential();
         let epoch = message.epoch();
@@ -183,6 +216,26 @@ impl MlsConversation {
 
                 self.group.store_pending_proposal(*proposal);
 
+                if let Some(commit) = self.retrieve_buffered_commit(backend).await? {
+                    let process_result = self
+                        .try_process_buffered_commit(commit, parent_conv, client, backend, restore_pending)
+                        .await;
+
+                    if process_result.is_ok() {
+                        self.clear_buffered_commit(backend).await?;
+                    }
+                    // If we got back a buffered commit error, then we still don't have enough proposals.
+                    // In that case, we want to just proceed as normal for this proposal.
+                    //
+                    // In any other case, the result from the commit overrides the result from the proposal.
+                    if !matches!(process_result, Err(CryptoError::BufferedCommit)) {
+                        // either the commit applied successfully, in which case its return value
+                        // should override the return value from the proposal, or it raised some kind
+                        // of error, in which case the caller needs to know about that.
+                        return process_result;
+                    }
+                }
+
                 MlsConversationDecryptMessage {
                     app_msg: None,
                     proposals: vec![],
@@ -201,7 +254,6 @@ impl MlsConversation {
 
                 self.validate_commit(&staged_commit, backend).await?;
 
-                #[allow(clippy::needless_collect)] // false positive
                 let pending_proposals = self.self_pending_proposals().cloned().collect::<Vec<_>>();
 
                 let proposal_refs: Vec<Proposal> = pending_proposals
@@ -243,20 +295,13 @@ impl MlsConversation {
                     .renew_proposals_for_current_epoch(client, backend, proposals_to_renew.into_iter(), needs_update)
                     .await?;
 
-                let buffered_messages = if restore_pending {
-                    if let Some(pm) = self
-                        .restore_pending_messages(client, backend, callbacks, parent_conv, false)
-                        .await?
-                    {
-                        info!(group_id = Obfuscated::from(&self.id); "Clearing all buffered messages for conversation");
-                        backend.key_store().remove::<MlsPendingMessage, _>(self.id()).await?;
-                        Some(pm)
-                    } else {
-                        None
-                    }
-                } else {
-                    None
-                };
+                // can't use `.then` because async
+                let mut buffered_messages = None;
+                if restore_pending {
+                    buffered_messages = self
+                        .decrypt_and_clear_pending_messages(client, backend, parent_conv, callbacks)
+                        .await?;
+                }
 
                 info!(
                     group_id = Obfuscated::from(&self.id),
@@ -310,11 +355,83 @@ impl MlsConversation {
         Ok(decrypted)
     }
 
-    async fn parse_message(
+    /// Cache the bytes of a pending commit in the backend.
+    ///
+    /// By storing the raw commit bytes and doing deserialization/decryption from scratch, we preserve all
+    /// security guarantees. When we do restore, it's as though the commit had simply been received later.
+    async fn buffer_pending_commit(&self, backend: &MlsCryptoProvider, commit: impl AsRef<[u8]>) -> CryptoResult<()> {
+        info!(group_id = Obfuscated::from(&self.id); "buffering pending commit");
+
+        let pending_commit = MlsBufferedCommit::new(self.id.clone(), commit.as_ref().to_owned());
+
+        backend.key_store().save(pending_commit).await?;
+        Ok(())
+    }
+
+    /// Retrieve the bytes of a pending commit.
+    async fn retrieve_buffered_commit(&self, backend: &MlsCryptoProvider) -> CryptoResult<Option<Vec<u8>>> {
+        info!(group_id = Obfuscated::from(&self.id); "attempting to retrieve pending commit");
+
+        backend
+            .keystore()
+            .find::<MlsBufferedCommit>(&self.id)
+            .await
+            .map(|option| option.map(MlsBufferedCommit::into_commit_data))
+            .map_err(Into::into)
+    }
+
+    /// Try to apply a buffered commit.
+    ///
+    /// This is largely a convenience function which handles deserializing the message, and
+    /// gives a convenient point around which we can add context to errors. However, it's also
+    /// a place where we can introduce a pin, given that we're otherwise doing a recursive
+    /// async call, which would result in an infinitely-sized future.
+    async fn try_process_buffered_commit(
         &mut self,
+        commit: impl AsRef<[u8]>,
+        parent_conv: Option<&GroupStoreValue<MlsConversation>>,
+        client: &Client,
         backend: &MlsCryptoProvider,
-        msg_in: MlsMessageIn,
-    ) -> CryptoResult<ProcessedMessage> {
+        restore_pending: bool,
+    ) -> CryptoResult<MlsConversationDecryptMessage> {
+        info!(group_id = Obfuscated::from(&self.id); "attempting to process pending commit");
+
+        let message = MlsMessageIn::tls_deserialize(&mut commit.as_ref()).map_err(MlsError::from)?;
+
+        Box::pin(self.decrypt_message(message, parent_conv, client, backend, None, restore_pending)).await
+    }
+
+    /// Remove the buffered commit for this conversation; it has been applied.
+    async fn clear_buffered_commit(&self, backend: &MlsCryptoProvider) -> CryptoResult<()> {
+        info!(group_id = Obfuscated::from(&self.id); "attempting to delete pending commit");
+
+        backend
+            .keystore()
+            .remove::<MlsBufferedCommit, _>(&self.id)
+            .await
+            .map_err(Into::into)
+    }
+
+    async fn decrypt_and_clear_pending_messages(
+        &mut self,
+        client: &Client,
+        backend: &MlsCryptoProvider,
+        parent_conv: Option<&GroupStoreValue<MlsConversation>>,
+        callbacks: Option<&dyn CoreCryptoCallbacks>,
+    ) -> CryptoResult<Option<Vec<MlsBufferedConversationDecryptMessage>>> {
+        let pending_messages = self
+            .restore_pending_messages(client, backend, callbacks, parent_conv, false)
+            .await?;
+
+        if pending_messages.is_some() {
+            info!(group_id = Obfuscated::from(&self.id); "Clearing all buffered messages for conversation");
+            backend.key_store().remove::<MlsPendingMessage, _>(self.id()).await?;
+        }
+
+        Ok(pending_messages)
+    }
+
+    fn parse_message(&self, backend: &MlsCryptoProvider, msg_in: MlsMessageIn) -> CryptoResult<ParsedMessage> {
         let mut is_duplicate = false;
         let (protocol_message, content_type) = match msg_in.extract() {
             MlsMessageInBody::PublicMessage(m) => {
@@ -332,6 +449,22 @@ impl MlsConversation {
                 ))
             }
         };
+        Ok(ParsedMessage {
+            is_duplicate,
+            protocol_message,
+            content_type,
+        })
+    }
+
+    async fn process_message(
+        &mut self,
+        backend: &MlsCryptoProvider,
+        ParsedMessage {
+            is_duplicate,
+            protocol_message,
+            content_type,
+        }: ParsedMessage,
+    ) -> CryptoResult<ProcessedMessage> {
         let msg_epoch = protocol_message.epoch().as_u64();
         let group_epoch = self.group.epoch().as_u64();
         let processed_msg = self
@@ -428,28 +561,32 @@ impl CentralContext {
         };
         let parent_conversation = self.get_parent_conversation(&conversation).await?;
         let guard = self.callbacks().await?;
-        let callbacks = guard.as_ref().map(|boxed| boxed.as_ref());
+        let callbacks = guard.as_ref().map(AsRef::as_ref);
         let client = &self.mls_client().await?;
-        let decrypt_message = conversation
+        let backend = &self.mls_provider().await?;
+
+        let decrypt_message_result = conversation
             .write()
             .await
-            .decrypt_message(
-                msg,
-                parent_conversation.as_ref(),
-                client,
-                &self.mls_provider().await?,
-                callbacks,
-                true,
-            )
+            .decrypt_message(msg, parent_conversation.as_ref(), client, backend, callbacks, true)
             .await;
 
-        if let Err(CryptoError::BufferedFutureMessage { message_epoch }) = decrypt_message {
-            self.handle_future_message(id, message).await?;
+        if let Err(CryptoError::BufferedFutureMessage { message_epoch }) = decrypt_message_result {
+            self.handle_future_message(id, message.as_ref()).await?;
             info!(group_id = Obfuscated::from(id); "Buffered future message from epoch {message_epoch}");
-            return decrypt_message;
         }
 
-        let decrypt_message = decrypt_message?;
+        // In the inner `decrypt_message` above, we raise the `BufferedCommit` error, but we only handle it here.
+        // That's because in that scope we don't have access to the raw message bytes; here, we do.
+        if let Err(CryptoError::BufferedCommit) = decrypt_message_result {
+            conversation
+                .read()
+                .await
+                .buffer_pending_commit(backend, message)
+                .await?;
+        }
+
+        let decrypt_message = decrypt_message_result?;
 
         if !decrypt_message.is_active {
             self.wipe_conversation(id).await?;
