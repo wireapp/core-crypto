@@ -77,6 +77,11 @@ sealed class MlsException: Exception() {
             get() = ""
     }
 
+    class BufferedCommit() : MlsException() {
+        override val message
+            get() = ""
+    }
+
     class MessageEpochTooOld() : MlsException() {
         override val message
             get() = ""
@@ -158,6 +163,7 @@ fun com.wire.crypto.uniffi.MlsException.lift() =
         is com.wire.crypto.uniffi.MlsException.StaleProposal -> MlsException.StaleProposal()
         is com.wire.crypto.uniffi.MlsException.UnmergedPendingGroup -> MlsException.UnmergedPendingGroup()
         is com.wire.crypto.uniffi.MlsException.WrongEpoch -> MlsException.WrongEpoch()
+        is com.wire.crypto.uniffi.MlsException.BufferedCommit -> MlsException.BufferedCommit()
         is com.wire.crypto.uniffi.MlsException.OrphanWelcome -> MlsException.OrphanWelcome()
         is com.wire.crypto.uniffi.MlsException.MessageRejected -> MlsException.MessageRejected(this.reason)
         is com.wire.crypto.uniffi.MlsException.Other -> MlsException.Other(this.v1)

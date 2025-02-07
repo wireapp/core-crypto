@@ -97,6 +97,8 @@ pub enum MlsError {
     BufferedFutureMessage,
     #[error("Incoming message is from an epoch too far in the future to buffer.")]
     WrongEpoch,
+    #[error("Incoming message is a commit for which we have not yet received all the proposals. Buffering until all proposals have arrived.")]
+    BufferedCommit,
     #[error("The epoch in which message was encrypted is older than allowed")]
     MessageEpochTooOld,
     #[error("Tried to decrypt a commit created by self which is likely to have been replayed by the DS")]
@@ -293,6 +295,7 @@ impl From<RecursiveError> for CoreCryptoError {
             core_crypto::mls::conversation::Error::StaleCommit => MlsError::StaleCommit.into(),
             core_crypto::mls::conversation::Error::StaleProposal => MlsError::StaleProposal.into(),
             core_crypto::mls::conversation::Error::UnbufferedFarFutureMessage => MlsError::WrongEpoch.into(),
+            core_crypto::mls::conversation::Error::BufferedCommit => MlsError::BufferedCommit.into(),
             core_crypto::mls::conversation::Error::MessageRejected { reason } => MlsError::MessageRejected { reason: reason.clone() }.into(),
             core_crypto::mls::conversation::Error::OrphanWelcome => MlsError::OrphanWelcome.into(),
             core_crypto::mls::Error::UnmergedPendingGroup => MlsError::UnmergedPendingGroup.into(),
