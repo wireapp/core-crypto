@@ -690,12 +690,11 @@ mod tests {
                             .await
                             .unwrap();
                         // So Charlie has not been added to the group
-                        assert!(alice_central
+                        assert!(!alice_central
                             .get_conversation_unchecked(&id)
                             .await
                             .members()
-                            .get(&b"charlie".to_vec())
-                            .is_none());
+                            .contains_key(b"charlie".as_slice()));
                         // Make sure we are suggesting a commit delay
                         assert!(delay.is_some());
 
@@ -727,16 +726,14 @@ mod tests {
                             .get_conversation_unchecked(&id)
                             .await
                             .members()
-                            .get::<Vec<u8>>(&charlie_central.get_client_id().await.to_vec())
-                            .is_some());
+                            .contains_key::<Vec<u8>>(&charlie_central.get_client_id().await.to_vec()));
 
                         // Bob also has Charlie in the group
                         assert!(bob_central
                             .get_conversation_unchecked(&id)
                             .await
                             .members()
-                            .get::<Vec<u8>>(&charlie_central.get_client_id().await.to_vec())
-                            .is_some());
+                            .contains_key::<Vec<u8>>(&charlie_central.get_client_id().await.to_vec()));
                         assert!(decrypted.has_epoch_changed);
                     })
                 },

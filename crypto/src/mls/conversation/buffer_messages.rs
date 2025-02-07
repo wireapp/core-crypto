@@ -137,13 +137,10 @@ impl MlsConversation {
             Ok(decrypted_messages)
         }
         .await;
-        match result {
-            Ok(r) => Ok(r),
-            Err(e) => {
-                error!(error:% = e; "Error restoring pending messages");
-                Err(e)
-            }
+        if let Err(e) = &result {
+            error!(error:% = e; "Error restoring pending messages");
         }
+        result
     }
 }
 
