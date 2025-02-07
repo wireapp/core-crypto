@@ -545,7 +545,7 @@ dependencies = [
  "semver",
  "serde",
  "serde_json",
- "thiserror 2.0.4",
+ "thiserror 2.0.11",
 ]
 
 [[package]]
@@ -951,7 +951,7 @@ dependencies = [
  "strum",
  "sysinfo",
  "tempfile",
- "thiserror 2.0.4",
+ "thiserror 2.0.11",
  "time",
  "tls_codec",
  "uniffi",
@@ -988,7 +988,7 @@ dependencies = [
  "sha2",
  "strum",
  "testing_logger",
- "thiserror 2.0.4",
+ "thiserror 2.0.11",
  "tls_codec",
  "tokio",
  "uniffi",
@@ -1042,7 +1042,7 @@ dependencies = [
  "serde-wasm-bindgen",
  "serde_json",
  "sha2",
- "thiserror 2.0.4",
+ "thiserror 2.0.11",
  "uuid",
  "wasm-bindgen",
  "wasm-bindgen-futures",
@@ -2619,7 +2619,7 @@ dependencies = [
  "sha2",
  "spinoff",
  "tempfile",
- "thiserror 2.0.4",
+ "thiserror 2.0.11",
  "tls_codec",
  "tokio",
  "uuid",
@@ -2988,7 +2988,7 @@ dependencies = [
  "sha2",
  "signature",
  "spki",
- "thiserror 2.0.4",
+ "thiserror 2.0.11",
  "tls_codec",
  "uuid",
  "wasm-bindgen-test",
@@ -3776,7 +3776,7 @@ checksum = "dd6f9d3d47bdd2ad6945c5015a226ec6155d0bcdfd8f7cd29f86b71f8de99d2b"
 dependencies = [
  "getrandom",
  "libredox",
- "thiserror 2.0.4",
+ "thiserror 2.0.11",
 ]
 
 [[package]]
@@ -4763,11 +4763,11 @@ dependencies = [
 
 [[package]]
 name = "thiserror"
-version = "2.0.4"
+version = "2.0.11"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2f49a1853cf82743e3b7950f77e0f4d622ca36cf4317cba00c767838bac8d490"
+checksum = "d452f284b73e6d76dd36758a0c8684b1d5be31f92b89d07fd5822175732206fc"
 dependencies = [
- "thiserror-impl 2.0.4",
+ "thiserror-impl 2.0.11",
 ]
 
 [[package]]
@@ -4783,9 +4783,9 @@ dependencies = [
 
 [[package]]
 name = "thiserror-impl"
-version = "2.0.4"
+version = "2.0.11"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8381894bb3efe0c4acac3ded651301ceee58a15d47c2e34885ed1908ad667061"
+checksum = "26afc1baea8a989337eeb52b6e72a039780ce45c3edfcc9c5b9d112feeb173c2"
 dependencies = [
  "proc-macro2",
  "quote",
