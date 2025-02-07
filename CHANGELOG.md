@@ -1,5 +1,25 @@
 # Changelog
 
+## v4.1.0 - 2025-02-07
+
+### Highlights
+
+- Add the capability to handle the case where a proposal-referencing commit arrives before the proposals
+it references.
+
+### (Semi-) Breaking changes
+
+- For the case mentioned above, the corresponding error type `BufferedCommit` has been added.
+  - Depending on the error model, this can be a breaking change.
+
+### Features
+
+- implement commit buffering (3737e97)
+
+### Testing
+
+- add test case for the first part of 15810 (258aa23)
+
 ## v4.0.1 - 2025-02-05
 
 ### Features
