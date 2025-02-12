@@ -649,6 +649,51 @@ describe("end to end identity", () => {
         );
         expect(conversationState).toBe(E2eiConversationState.NotEnabled);
     });
+
+    it("identities can be queried by client id", async () => {
+        await ccInit(ALICE_ID);
+        await createConversation(ALICE_ID, CONV_ID);
+        const identities = await browser.execute(
+            async (clientName, conversationId) => {
+                const cc = window.ensureCcDefined(clientName);
+                const encoder = new TextEncoder();
+                const identities = await cc.transaction(async (ctx) => {
+                    return await ctx.getDeviceIdentities(
+                        encoder.encode(conversationId),
+                        [encoder.encode(clientName)]
+                    );
+                });
+
+                return identities.pop()?.clientId;
+            },
+            ALICE_ID,
+            CONV_ID
+        );
+        expect(identities).toBe(ALICE_ID);
+    });
+
+    it("identities can be queried by user id", async () => {
+        const ALICE_ID = "LcksJb74Tm6N12cDjFy7lQ:8e6424430d3b28be@world.com";
+        await ccInit(ALICE_ID);
+        await createConversation(ALICE_ID, CONV_ID);
+        const identities = await browser.execute(
+            async (clientName, conversationId) => {
+                const cc = window.ensureCcDefined(clientName);
+                const encoder = new TextEncoder();
+                const identities = await cc.transaction(async (ctx) => {
+                    return await ctx.getUserIdentities(
+                        encoder.encode(conversationId),
+                        ["LcksJb74Tm6N12cDjFy7lQ"]
+                    );
+                });
+
+                return identities.values().next().value?.pop()?.clientId;
+            },
+            ALICE_ID,
+            CONV_ID
+        );
+        expect(identities).toBe(ALICE_ID);
+    });
 });
 
 describe("logger", () => {
