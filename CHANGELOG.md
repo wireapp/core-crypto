@@ -1,5 +1,33 @@
 # Changelog
 
+## v3.1.0 - 2025-02-12
+
+### Highlights
+
+- Add a test case mimicking a real life bug ([WPB-15810]), demonstrating that in some cases it was possible to generate errors by swapping the ordering of two messages.
+- Add a new layer of buffering to handle that situation.
+
+  > [!NOTE]
+  > Decrypting a message can now potentially return a `MlsError::Other` variant with the message
+  >
+  >> Incoming message is a commit for which we have not yet received all the proposals.
+  >> Buffering until all proposals have arrived.
+  >
+  > Clients do not need to take any action in response to this message.
+  > This error simply indicates that the commit has been buffered, and will be automatically unbuffered when possible.
+
+  If the required proposal is never delivered, however, the client will eventually desync as the commit will never be processed. Clients should be on the lookout for this case and trigger their rejoin protocol in that event.
+
+### Features
+
+- implement commit buffering (e98f0a6)
+- support entity derive for tables with hex ids (235730c)
+- implement basic derive macro for entity trait [WPB-14952] (7add536)
+
+### Testing
+
+- add test case for the first part of 15810 (3b41175)
+
 ## v3.0.2 - 2025-01-31
 
 ### Highlights
