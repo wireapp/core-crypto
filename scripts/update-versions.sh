@@ -1,6 +1,6 @@
 # Update version numbers of various core-crypto components.
 new_version=$1
-for crate in crypto-attributes \
+for crate in crypto-macros \
              crypto-ffi \
              crypto \
              interop \
