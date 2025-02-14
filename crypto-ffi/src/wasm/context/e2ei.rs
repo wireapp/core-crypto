@@ -336,7 +336,7 @@ impl CoreCryptoContext {
                     .into_iter()
                     .map(Into::into)
                     .collect::<Vec<WireIdentity>>();
-                WasmCryptoResult::Ok(serde_wasm_bindgen::to_value(&identities)?)
+                WasmCryptoResult::Ok(identities.into())
             }
             .err_into(),
         )
@@ -359,7 +359,7 @@ impl CoreCryptoContext {
                 let js_obj = js_sys::Map::new();
                 for (uid, identities) in identities.into_iter() {
                     let uid = js_sys::JsString::from(uid).into();
-                    let identities = serde_wasm_bindgen::to_value(&identities)?;
+                    let identities = JsValue::from(identities);
                     js_obj.set(&uid, &identities);
                 }
                 WasmCryptoResult::Ok(js_obj.into())
