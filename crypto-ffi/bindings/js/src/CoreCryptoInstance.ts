@@ -15,7 +15,11 @@
 // along with this program. If not, see http://www.gnu.org/licenses/.
 
 import * as CoreCryptoFfiTypes from "./core-crypto-ffi.d.js";
-export { BuildMetadata } from "./core-crypto-ffi.d.js";
+export {
+    BuildMetadata,
+    WireIdentity,
+    X509Identity,
+} from "./core-crypto-ffi.d.js";
 
 import {
     CoreCrypto as CoreCryptoFfi,
