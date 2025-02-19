@@ -260,7 +260,16 @@ impl MlsConversation {
 }
 
 impl MlsCentral {
-    pub(crate) async fn get_conversation(&self, id: &ConversationId) -> Result<MlsConversation> {
+    /// Get a raw `MlsConversation`.
+    ///
+    /// <div class="warning">
+    /// This does _not_ return a [`GroupStoreValue`] and does not support mutating operations on the `MlsConversation`.
+    /// They may appear to work, but changes will not be persisted!
+    /// </div>
+    ///
+    /// Because it operates on the raw conversation type, this may be faster than [`CentralContext::get_conversation`]
+    /// for transient and immutable purposes. For long-lived or mutable purposes, prefer the other method.
+    pub(crate) async fn get_raw_conversation(&self, id: &ConversationId) -> Result<MlsConversation> {
         GroupStore::fetch_from_keystore(id, &self.mls_backend.keystore(), None)
             .await
             .map_err(RecursiveError::root("getting conversation by id"))?

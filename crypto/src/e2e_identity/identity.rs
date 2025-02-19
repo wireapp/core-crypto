@@ -139,7 +139,7 @@ impl MlsCentral {
             .refresh_time_of_interest()
             .await;
         let conversation = self
-            .get_conversation(conversation_id)
+            .get_raw_conversation(conversation_id)
             .await
             .map_err(RecursiveError::mls_conversation("getting conversation by id"))?;
         conversation.get_device_identities(
@@ -164,7 +164,7 @@ impl MlsCentral {
             .refresh_time_of_interest()
             .await;
         let conversation = self
-            .get_conversation(conversation_id)
+            .get_raw_conversation(conversation_id)
             .await
             .map_err(RecursiveError::mls_conversation("getting conversation by id"))?;
         conversation.get_user_identities(

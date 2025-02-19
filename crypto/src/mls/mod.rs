@@ -277,11 +277,11 @@ impl MlsCentral {
 
     /// Checks if a given conversation id exists locally
     pub async fn conversation_exists(&self, id: &ConversationId) -> Result<bool> {
-        match self.get_conversation(id).await {
+        match self.get_raw_conversation(id).await {
             Ok(_) => Ok(true),
             Err(conversation::Error::Leaf(LeafError::ConversationNotFound(_))) => Ok(false),
             Err(e) => {
-                Err(RecursiveError::mls_conversation("getting confersation by id to check for existence")(e).into())
+                Err(RecursiveError::mls_conversation("getting conversation by id to check for existence")(e).into())
             }
         }
     }
@@ -292,13 +292,14 @@ impl MlsCentral {
     /// If the conversation can't be found
     #[cfg_attr(test, crate::idempotent)]
     pub async fn conversation_epoch(&self, id: &ConversationId) -> Result<u64> {
-        Ok(self
-            .get_conversation(id)
+        let epoch = self
+            .get_raw_conversation(id)
             .await
             .map_err(RecursiveError::mls_conversation("getting conversation"))?
             .group
             .epoch()
-            .as_u64())
+            .as_u64();
+        Ok(epoch)
     }
 
     /// Returns the ciphersuite of a given conversation
@@ -308,7 +309,7 @@ impl MlsCentral {
     #[cfg_attr(test, crate::idempotent)]
     pub async fn conversation_ciphersuite(&self, id: &ConversationId) -> Result<MlsCiphersuite> {
         Ok(self
-            .get_conversation(id)
+            .get_raw_conversation(id)
             .await
             .map_err(RecursiveError::mls_conversation("getting conversation"))?
             .ciphersuite())

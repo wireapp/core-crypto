@@ -89,7 +89,7 @@ impl MlsCentral {
     /// OpenMls secret generation error or conversation not found
     #[cfg_attr(test, crate::idempotent)]
     pub async fn export_secret_key(&self, conversation_id: &ConversationId, key_length: usize) -> Result<Vec<u8>> {
-        self.get_conversation(conversation_id)
+        self.get_raw_conversation(conversation_id)
             .await?
             .export_secret_key(&self.mls_backend, key_length)
     }
@@ -103,7 +103,7 @@ impl MlsCentral {
     /// if the conversation can't be found
     #[cfg_attr(test, crate::idempotent)]
     pub async fn get_client_ids(&self, conversation_id: &ConversationId) -> Result<Vec<ClientId>> {
-        Ok(self.get_conversation(conversation_id).await?.get_client_ids())
+        Ok(self.get_raw_conversation(conversation_id).await?.get_client_ids())
     }
 }
 
