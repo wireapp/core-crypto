@@ -2,10 +2,6 @@
 ANDROID_NDK_PREFER_VERSION = "25.2"
 LIBRARY_EXTENSION = { source = "${CARGO_MAKE_RUST_TARGET_OS}", default_value = "so", mapping = { "linux" = "so", "macos" = "dylib", "windows" = "dll" } }
 
-[tasks.release-build]
-command = "cargo"
-args = ["build", "--release", "--locked"]
-
 ##################################### DOCS ####################################
 
 [tasks.docs-rust-generic]
@@ -106,17 +102,17 @@ args = ["run", "--cwd", "bindings/js", "build"]
 ##################################### FFI #####################################
 
 [tasks.compile-ffi-swift]
-dependencies = ["release-build"]
 command = "cargo"
 args = [
     "run",
     "--locked",
+    "--release",
     "--features", "uniffi/cli",
     "--bin", "uniffi-bindgen",
     "generate",
     "--language", "swift",
     "--out-dir", "./bindings/swift/WireCoreCrypto/WireCoreCrypto",
-    "--library", "../target/release/libcore_crypto_ffi.${LIBRARY_EXTENSION}"
+    "--library", "../target/release/deps/libcore_crypto_ffi.${LIBRARY_EXTENSION}"
 ]
 
 [tasks.ffi-swift]
@@ -126,32 +122,32 @@ script = '''
 '''
 
 [tasks.compile-ffi-kotlin-android]
-dependencies = ["release-build"]
 command = "cargo"
 args = [
     "run",
     "--locked",
+    "--release",
     "--features", "uniffi/cli",
     "--bin", "uniffi-bindgen",
     "generate",
     "--config", "uniffi-android.toml",
     "--language", "kotlin",
     "--out-dir", "./bindings/uniffi-android/src/main/kotlin/",
-    "--library", "../target/release/libcore_crypto_ffi.${LIBRARY_EXTENSION}"
+    "--library", "../target/release/deps/libcore_crypto_ffi.${LIBRARY_EXTENSION}"
 ]
 
 [tasks.compile-ffi-kotlin-jvm]
-dependencies = ["release-build"]
 command = "cargo"
 args = [
     "run",
     "--locked",
+    "--release",
     "--features", "uniffi/cli",
     "--bin", "uniffi-bindgen",
     "generate",
     "--language", "kotlin",
     "--out-dir", "./bindings/uniffi-jvm/src/main/kotlin/",
-    "--library", "../target/release/libcore_crypto_ffi.${LIBRARY_EXTENSION}"
+    "--library", "../target/release/deps/libcore_crypto_ffi.${LIBRARY_EXTENSION}"
 ]
 
 [tasks.ffi-kotlin]
