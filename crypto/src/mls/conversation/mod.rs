@@ -29,6 +29,7 @@
 
 use std::collections::HashMap;
 
+use conversation_guard::ConversationGuard;
 use openmls::{
     group::MlsGroup,
     prelude::{Credential, CredentialWithKey, SignaturePublicKey},
@@ -53,6 +54,7 @@ mod buffer_messages;
 pub(crate) mod commit;
 mod commit_delay;
 pub(crate) mod config;
+pub(crate) mod conversation_guard;
 #[cfg(test)]
 mod db_count;
 pub mod decrypt;
@@ -291,6 +293,25 @@ impl CentralContext {
             .await
             .map_err(RecursiveError::root("fetching conversation from mls groups by id"))?
             .ok_or_else(|| LeafError::ConversationNotFound(id.clone()).into())
+    }
+
+    // temporary; we'll get rid of this the first time we use this helper (next PR)
+    #[expect(dead_code)]
+    pub(crate) async fn conversation_guard(&self, id: &ConversationId) -> Result<ConversationGuard> {
+        let keystore = self
+            .mls_provider()
+            .await
+            .map_err(RecursiveError::root("getting mls provider"))?
+            .keystore();
+        let inner = self
+            .mls_groups()
+            .await
+            .map_err(RecursiveError::root("getting mls groups"))?
+            .get_fetch(id, &keystore, None)
+            .await
+            .map_err(RecursiveError::root("fetching conversation from mls groups by id"))?
+            .ok_or_else(|| LeafError::ConversationNotFound(id.clone()))?;
+        Ok(ConversationGuard::new(inner, self.clone()))
     }
 
     pub(crate) async fn get_parent_conversation(
