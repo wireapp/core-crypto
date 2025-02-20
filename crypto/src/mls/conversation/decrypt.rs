@@ -695,7 +695,10 @@ mod tests {
 
                     bob_central
                         .context
-                        .remove_members_from_conversation(&id, &[alice_central.get_client_id().await])
+                        .conversation_guard(&id)
+                        .await
+                        .unwrap()
+                        .remove_members(&[alice_central.get_client_id().await])
                         .await
                         .unwrap();
                     let commit = bob_central.mls_transport.latest_commit().await;

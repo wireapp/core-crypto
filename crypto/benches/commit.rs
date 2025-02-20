@@ -106,7 +106,10 @@ fn commit_remove_bench(c: &mut Criterion) {
                         let context = central.new_transaction().await.unwrap();
                         black_box(
                             context
-                                .remove_members_from_conversation(&id, client_ids.as_slice())
+                                .conversation_guard(&id)
+                                .await
+                                .unwrap()
+                                .remove_members(&client_ids)
                                 .await
                                 .unwrap(),
                         );
@@ -141,7 +144,10 @@ fn commit_remove_n_clients_bench(c: &mut Criterion) {
                         let context = central.new_transaction().await.unwrap();
                         black_box(
                             context
-                                .remove_members_from_conversation(&id, client_ids.as_slice())
+                                .conversation_guard(&id)
+                                .await
+                                .unwrap()
+                                .remove_members(client_ids.as_slice())
                                 .await
                                 .unwrap(),
                         );

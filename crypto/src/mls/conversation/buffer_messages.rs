@@ -343,7 +343,7 @@ mod tests {
                         .context
                         .conversation_guard(&id)
                         .await
-                        .unwrap
+                        .unwrap()
                         .add_members(vec![debbie])
                         .await
                         .unwrap();

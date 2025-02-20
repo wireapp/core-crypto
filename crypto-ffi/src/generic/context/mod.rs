@@ -420,10 +420,12 @@ impl CoreCryptoContext {
         clients: Vec<ClientId>,
     ) -> CoreCryptoResult<()> {
         let clients: Vec<core_crypto::prelude::ClientId> = clients.into_iter().map(|c| c.0).collect();
-        Ok(self
-            .context
-            .remove_members_from_conversation(&conversation_id, &clients)
-            .await?)
+        self.context
+            .conversation_guard(&conversation_id)
+            .await?
+            .remove_members(&clients)
+            .await
+            .map_err(Into::into)
     }
 
     /// See [core_crypto::context::CentralContext::mark_conversation_as_child_of]

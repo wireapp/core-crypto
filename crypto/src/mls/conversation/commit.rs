@@ -5,7 +5,7 @@
 //! | 0 pend. Proposal       | ✅              | ❌              |
 //! | 1+ pend. Proposal      | ✅              | ❌              |
 
-use openmls::prelude::{LeafNode, LeafNodeIndex, MlsMessageOut};
+use openmls::prelude::{LeafNode, MlsMessageOut};
 
 use mls_crypto_provider::MlsCryptoProvider;
 
@@ -14,7 +14,7 @@ use crate::{
     context::CentralContext,
     e2e_identity::init_certificates::NewCrlDistributionPoint,
     mls::{credential::CredentialBundle, MlsConversation},
-    prelude::{Client, ClientId, ConversationId, MlsError, MlsGroupInfoBundle},
+    prelude::{Client, ConversationId, MlsError, MlsGroupInfoBundle},
     LeafError, MlsTransportResponse, RecursiveError,
 };
 
@@ -127,39 +127,6 @@ impl CentralContext {
         }
     }
 
-    /// Removes clients from the group/conversation.
-    ///
-    /// # Arguments
-    /// * `id` - group/conversation id
-    /// * `clients` - list of client ids to be removed from the group
-    ///
-    /// # Return type
-    /// An struct containing a welcome(optional, will be present only if there's pending add
-    /// proposals in the store), a message with the commit to fan out to other clients and
-    /// the group info will be returned on successful call.
-    ///
-    /// # Errors
-    /// If the authorisation callback is set, an error can be caused when the authorization fails. Other errors are KeyStore and OpenMls errors.
-    pub async fn remove_members_from_conversation(&self, id: &ConversationId, clients: &[ClientId]) -> Result<()> {
-        let client = self
-            .mls_client()
-            .await
-            .map_err(RecursiveError::root("getting mls client"))?;
-        let conversation = self.get_conversation(id).await?;
-        let mut conversation_guard = conversation.write().await;
-        let commit = conversation_guard
-            .remove_members(
-                &client,
-                clients,
-                &self
-                    .mls_provider()
-                    .await
-                    .map_err(RecursiveError::root("getting mls provider"))?,
-            )
-            .await?;
-        self.send_and_merge_commit(conversation_guard, commit).await
-    }
-
     /// Self updates the KeyPackage and automatically commits. Pending proposals will be commited
     ///
     /// # Arguments
@@ -229,53 +196,6 @@ impl CentralContext {
 
 /// Creating commit
 impl MlsConversation {
-    /// see [MlsCentral::remove_members_from_conversation]
-    /// Note: this is not exposed publicly because authorization isn't handled at this level
-    #[cfg_attr(test, crate::durable)]
-    pub(crate) async fn remove_members(
-        &mut self,
-        client: &Client,
-        clients: &[ClientId],
-        backend: &MlsCryptoProvider,
-    ) -> Result<MlsCommitBundle> {
-        let member_kps = self
-            .group
-            .members()
-            .filter(|kp| {
-                clients
-                    .iter()
-                    .any(move |client_id| client_id.as_slice() == kp.credential.identity())
-            })
-            .try_fold(vec![], |mut acc, kp| -> Result<Vec<LeafNodeIndex>> {
-                acc.push(kp.index);
-                Ok(acc)
-            })?;
-
-        let signer = &self
-            .find_most_recent_credential_bundle(client)
-            .await
-            .map_err(RecursiveError::mls_client("finding most recent credential bundle"))?
-            .signature_key;
-
-        let (commit, welcome, gi) = self
-            .group
-            .remove_members(backend, signer, &member_kps)
-            .await
-            .map_err(MlsError::wrap("group remove members"))?;
-
-        // SAFETY: This should be safe as removing members always generates a new commit
-        let gi = gi.ok_or(LeafError::MissingGroupInfo)?;
-        let group_info = MlsGroupInfoBundle::try_new_full_plaintext(gi)?;
-
-        self.persist_group_when_changed(&backend.keystore(), false).await?;
-
-        Ok(MlsCommitBundle {
-            commit,
-            welcome,
-            group_info,
-        })
-    }
-
     /// see [MlsCentral::update_keying_material]
     #[cfg_attr(test, crate::durable)]
     pub(crate) async fn update_keying_material(
@@ -692,7 +612,10 @@ mod tests {
 
                     alice_central
                         .context
-                        .remove_members_from_conversation(&id, &[bob_central.get_client_id().await])
+                        .conversation_guard(&id)
+                        .await
+                        .unwrap()
+                        .remove_members(&[bob_central.get_client_id().await])
                         .await
                         .unwrap();
                     let MlsCommitBundle { commit, welcome, .. } =
@@ -748,7 +671,10 @@ mod tests {
 
                         alice_central
                             .context
-                            .remove_members_from_conversation(&id, &[bob_central.get_client_id().await])
+                            .conversation_guard(&id)
+                            .await
+                            .unwrap()
+                            .remove_members(&[bob_central.get_client_id().await])
                             .await
                             .unwrap();
 
@@ -785,7 +711,10 @@ mod tests {
 
                         alice_central
                             .context
-                            .remove_members_from_conversation(&id, &[bob_central.get_client_id().await])
+                            .conversation_guard(&id)
+                            .await
+                            .unwrap()
+                            .remove_members(&[bob_central.get_client_id().await])
                             .await
                             .unwrap();
 

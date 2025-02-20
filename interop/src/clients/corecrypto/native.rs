@@ -143,7 +143,9 @@ impl EmulatedMlsClient for CoreCryptoNativeClient {
     async fn kick_client(&self, conversation_id: &[u8], client_id: &[u8]) -> Result<()> {
         let transaction = self.cc.new_transaction().await?;
         transaction
-            .remove_members_from_conversation(&conversation_id.to_vec(), &[client_id.to_vec().into()])
+            .conversation_guard(&conversation_id.to_owned())
+            .await?
+            .remove_members(&[client_id.to_owned().into()])
             .await?;
         transaction.finish().await?;
 

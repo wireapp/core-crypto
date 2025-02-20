@@ -7,7 +7,7 @@ use crate::{
     e2e_identity::init_certificates::NewCrlDistributionPoint,
     group_store::GroupStoreValue,
     mls::credential::crl::{extract_crl_uris_from_credentials, get_new_crl_distribution_points},
-    prelude::{Client, MlsGroupInfoBundle},
+    prelude::{Client, ClientId, MlsGroupInfoBundle},
     LeafError, MlsError, RecursiveError,
 };
 
@@ -130,5 +130,58 @@ impl ConversationGuard {
         self.send_and_merge_commit(commit).await?;
 
         Ok(crl_new_distribution_points)
+    }
+
+    /// Removes clients from the group/conversation.
+    ///
+    /// # Arguments
+    /// * `id` - group/conversation id
+    /// * `clients` - list of client ids to be removed from the group
+    pub async fn remove_members(&mut self, clients: &[ClientId]) -> Result<()> {
+        let client = self.mls_client().await?;
+        let backend = self.mls_provider().await?;
+        let mut conversation = self.inner.write().await;
+        // let commit = conversation.remove_members(&client, clients, &backend).await?;
+
+        let members = conversation
+            .group
+            .members()
+            .filter_map(|kp| {
+                clients
+                    .iter()
+                    .any(move |client_id| client_id.as_slice() == kp.credential.identity())
+                    .then_some(kp.index)
+            })
+            .collect::<Vec<_>>();
+
+        let signer = &conversation
+            .find_most_recent_credential_bundle(&client)
+            .await
+            .map_err(RecursiveError::mls_client("finding most recent credential bundle"))?
+            .signature_key;
+
+        let (commit, welcome, group_info) = conversation
+            .group
+            .remove_members(&backend, signer, &members)
+            .await
+            .map_err(MlsError::wrap("group remove members"))?;
+
+        // we expect this to always work as removing a member should always generate a new commit
+        let group_info = group_info.ok_or(LeafError::MissingGroupInfo)?;
+        let group_info = MlsGroupInfoBundle::try_new_full_plaintext(group_info)?;
+
+        conversation
+            .persist_group_when_changed(&backend.keystore(), false)
+            .await?;
+
+        // we don't need the conversation anymore, but we do need to mutably borrow `self` again
+        drop(conversation);
+
+        self.send_and_merge_commit(MlsCommitBundle {
+            commit,
+            welcome,
+            group_info,
+        })
+        .await
     }
 }

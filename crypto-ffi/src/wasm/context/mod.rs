@@ -437,7 +437,10 @@ impl CoreCryptoContext {
                     .collect::<Vec<ClientId>>();
 
                 context
-                    .remove_members_from_conversation(&conversation_id, &clients)
+                    .conversation_guard(&conversation_id)
+                    .await
+                    .map_err(CoreCryptoError::from)?
+                    .remove_members(&clients)
                     .await
                     .map_err(CoreCryptoError::from)?;
 

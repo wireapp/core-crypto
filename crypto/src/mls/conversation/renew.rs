@@ -620,7 +620,10 @@ mod tests {
 
                         bob_central
                             .context
-                            .remove_members_from_conversation(&id, &[charlie_central.get_client_id().await])
+                            .conversation_guard(&id)
+                            .await
+                            .unwrap()
+                            .remove_members(&[charlie_central.get_client_id().await])
                             .await
                             .unwrap();
                         let commit = bob_central.mls_transport.latest_commit().await;
@@ -720,7 +723,10 @@ mod tests {
                         // Whereas Bob wants to remove Debbie
                         bob_central
                             .context
-                            .remove_members_from_conversation(&id, &[debbie_central.get_client_id().await])
+                            .conversation_guard(&id)
+                            .await
+                            .unwrap()
+                            .remove_members(&[debbie_central.get_client_id().await])
                             .await
                             .unwrap();
                         let commit = bob_central.mls_transport.latest_commit().await;
@@ -770,7 +776,10 @@ mod tests {
                         // Whereas Bob wants to remove Debbie
                         bob_central
                             .context
-                            .remove_members_from_conversation(&id, &[debbie_central.get_client_id().await])
+                            .conversation_guard(&id)
+                            .await
+                            .unwrap()
+                            .remove_members(&[debbie_central.get_client_id().await])
                             .await
                             .unwrap();
                         let commit = bob_central.mls_transport.latest_commit().await;
@@ -819,7 +828,10 @@ mod tests {
                         // Whereas Bob wants to remove Debbie
                         bob_central
                             .context
-                            .remove_members_from_conversation(&id, &[debbie_central.get_client_id().await])
+                            .conversation_guard(&id)
+                            .await
+                            .unwrap()
+                            .remove_members(&[debbie_central.get_client_id().await])
                             .await
                             .unwrap();
                         let commit = bob_central.mls_transport.latest_commit().await;

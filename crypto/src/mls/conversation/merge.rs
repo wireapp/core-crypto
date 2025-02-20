@@ -184,7 +184,10 @@ mod tests {
                     assert_eq!(alice_central.get_conversation_unchecked(&id).await.members().len(), 2);
                     alice_central
                         .context
-                        .remove_members_from_conversation(&id, &[bob_central.get_client_id().await])
+                        .conversation_guard(&id)
+                        .await
+                        .unwrap()
+                        .remove_members(&[bob_central.get_client_id().await])
                         .await
                         .unwrap();
                     assert_eq!(alice_central.get_conversation_unchecked(&id).await.members().len(), 1);
