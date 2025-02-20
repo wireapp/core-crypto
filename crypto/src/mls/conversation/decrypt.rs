@@ -46,6 +46,7 @@ use crate::{
     prelude::{E2eiConversationState, MlsProposalBundle, WireIdentity},
     KeystoreError, MlsError, RecursiveError,
 };
+use crate::prelude::DeviceStatus;
 
 /// Represents the potential items a consumer might require after passing us an encrypted message we
 /// have decrypted for him
@@ -614,22 +615,63 @@ impl CentralContext {
             .decrypt_message(msg, parent_conversation.as_ref(), client, backend, true)
             .await;
 
-        if let Err(Error::BufferedFutureMessage { message_epoch }) = decrypt_message_result {
-            self.handle_future_message(id, message.as_ref()).await?;
-            info!(group_id = Obfuscated::from(id); "Buffered future message from epoch {message_epoch}");
-        }
 
-        // In the inner `decrypt_message` above, we raise the `BufferedCommit` error, but we only handle it here.
-        // That's because in that scope we don't have access to the raw message bytes; here, we do.
-        if let Err(Error::BufferedCommit) = decrypt_message_result {
-            conversation
-                .read()
-                .await
-                .buffer_pending_commit(backend, message)
-                .await?;
-        }
+        let foo:Result<MlsConversationDecryptMessage, Error> = match decrypt_message_result {
+            Ok(result) => { Ok(result) }
+            Err(error) => {
+                if let Error::BufferedFutureMessage { message_epoch } = error {
+                    self.handle_future_message(id, message.as_ref()).await.unwrap();
+                    info!(group_id = Obfuscated::from(id); "Buffered future message from epoch {message_epoch}");
+                    return Ok(MlsConversationDecryptMessage {
+                        app_msg: None,
+                        proposals: vec![],
+                        is_active: true,
+                        delay: None,
+                        sender_client_id: None,
+                        has_epoch_changed: false,
+                        identity: WireIdentity {
+                            client_id: "".to_string(),
+                            thumbprint: "".to_string(),
+                            status: DeviceStatus::Valid,
+                            credential_type: Default::default(),
+                            x509_identity: None,
+                        },
+                        buffered_messages: None,
+                        crl_new_distribution_points: None.into(),
+                    })
+                }
 
-        let decrypt_message = decrypt_message_result?;
+                // In the inner `decrypt_message` above, we raise the `BufferedCommit` error, but we only handle it here.
+                // That's because in that scope we don't have access to the raw message bytes; here, we do.
+                if let Error::BufferedCommit = error {
+                    conversation
+                        .read()
+                        .await
+                        .buffer_pending_commit(backend, message)
+                        .await.unwrap();
+                    return Ok(MlsConversationDecryptMessage {
+                        app_msg: None,
+                        proposals: vec![],
+                        is_active: true,
+                        delay: None,
+                        sender_client_id: None,
+                        has_epoch_changed: false,
+                        identity: WireIdentity {
+                            client_id: "".to_string(),
+                            thumbprint: "".to_string(),
+                            status: DeviceStatus::Valid,
+                            credential_type: Default::default(),
+                            x509_identity: None,
+                        },
+                        buffered_messages: None,
+                        crl_new_distribution_points: None.into(),
+                    })
+                }
+                return Err(error);
+            }
+        };
+
+        let decrypt_message = foo?;
 
         if !decrypt_message.is_active {
             self.wipe_conversation(id).await?;

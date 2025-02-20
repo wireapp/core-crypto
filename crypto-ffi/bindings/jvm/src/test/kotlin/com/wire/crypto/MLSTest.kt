@@ -322,6 +322,31 @@ class MLSTest {
         }.toSet()
         assertThat(secrets).hasSize(n)
     }
+
+    @Test
+    fun message_from_future_epoch_should_be_buffered_until_commit_arrives() = runTest {
+        val (alice, bob) = newClients(aliceId, bobId)
+
+        bob.transaction { it.createConversation(id) }
+
+        val aliceKp = alice.transaction { it.generateKeyPackages(1U).first() }
+        bob.transaction { it.addMember(id, listOf(aliceKp)) }
+        val welcome = mockDeliveryService.getLatestWelcome()
+        val groupId = alice.transaction { it.processWelcomeMessage(welcome).id }
+        bob.transaction { it.updateKeyingMaterial(id) }
+        val commit = mockDeliveryService.getLatestCommit()
+        val message = bob.transaction { it.encryptMessage(id, PlaintextMessage("Hello".encodeToByteArray())) }
+
+        alice.transaction { it.decryptMessage(id, message) }
+        val decrypted = alice.transaction { it.decryptMessage(groupId, commit) }
+
+        assertThat(decrypted.message).isNull()
+        assertThat(decrypted.commitDelay).isNull()
+        assertThat(decrypted.senderClientId).isNull()
+        assertThat(decrypted.hasEpochChanged).isTrue()
+        assertThat(decrypted.bufferedMessages?.size).isNotNull()
+
+    }
 }
 
 fun newClients(vararg clientIds: String) = runBlocking {
