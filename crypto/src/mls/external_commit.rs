@@ -683,7 +683,10 @@ mod tests {
                 let bob = bob_central.rand_key_package(&case).await;
                 alice_central
                     .context
-                    .add_members_to_conversation(&id, vec![bob])
+                    .conversation_guard(&id)
+                    .await
+                    .unwrap()
+                    .add_members(vec![bob])
                     .await
                     .unwrap();
 
@@ -724,7 +727,10 @@ mod tests {
                     let invalid_kp = bob_central.new_keypackage(&case, Lifetime::new(expiration_time)).await;
                     alice_central
                         .context
-                        .add_members_to_conversation(&id, vec![invalid_kp.into()])
+                        .conversation_guard(&id)
+                        .await
+                        .unwrap()
+                        .add_members(vec![invalid_kp.into()])
                         .await
                         .unwrap();
 

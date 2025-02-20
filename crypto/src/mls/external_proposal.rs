@@ -414,7 +414,10 @@ mod tests {
                         // message and not from configuration
                         let charlie_kp = charlie.rand_key_package(&case).await;
                         alice_central
-                            .add_members_to_conversation(&id, vec![charlie_kp])
+                            .conversation_guard(&id)
+                            .await
+                            .unwrap()
+                            .add_members(vec![charlie_kp])
                             .await
                             .unwrap();
                         let welcome = alice.mls_transport.latest_welcome_message().await;

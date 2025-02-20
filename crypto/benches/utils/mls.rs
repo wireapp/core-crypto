@@ -205,7 +205,13 @@ pub async fn add_clients(
 
     let core_crypto = CoreCrypto::from(central.clone());
     let context = core_crypto.new_transaction().await.unwrap();
-    context.add_members_to_conversation(id, key_packages).await.unwrap();
+    context
+        .conversation_guard(id)
+        .await
+        .unwrap()
+        .add_members(key_packages)
+        .await
+        .unwrap();
     let commit_bundle = main_client_delivery_service.latest_commit_bundle().await;
 
     let group_info = commit_bundle.group_info.payload.bytes();
@@ -289,7 +295,10 @@ pub async fn invite(
         .unwrap();
     let other_kp = other_kps.first().unwrap().clone();
     from_context
-        .add_members_to_conversation(id, vec![other_kp.into()])
+        .conversation_guard(id)
+        .await
+        .unwrap()
+        .add_members(vec![other_kp.into()])
         .await
         .unwrap();
     let welcome = delivery_service.latest_welcome_message().await;

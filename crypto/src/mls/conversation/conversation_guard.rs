@@ -1,11 +1,15 @@
-// this isssue is about creating this helper struct,
-// but we'll see the dead code warning until we actually use it in follow-up work
-#![expect(dead_code)]
-
 use async_lock::{RwLockReadGuard, RwLockWriteGuard};
 use mls_crypto_provider::MlsCryptoProvider;
+use openmls::prelude::KeyPackageIn;
 
-use crate::{context::CentralContext, group_store::GroupStoreValue, RecursiveError};
+use crate::{
+    context::CentralContext,
+    e2e_identity::init_certificates::NewCrlDistributionPoint,
+    group_store::GroupStoreValue,
+    mls::credential::crl::{extract_crl_uris_from_credentials, get_new_crl_distribution_points},
+    prelude::{Client, MlsGroupInfoBundle},
+    LeafError, MlsError, RecursiveError,
+};
 
 use super::{commit::MlsCommitBundle, Error, MlsConversation, Result};
 
@@ -14,7 +18,7 @@ use super::{commit::MlsCommitBundle, Error, MlsConversation, Result};
 /// By doing so, it permits mutable accesses to the conversation. This in turn
 /// means that we don't have to duplicate the entire `MlsConversation` API
 /// on `CentralContext`.
-pub(crate) struct ConversationGuard {
+pub struct ConversationGuard {
     inner: GroupStoreValue<MlsConversation>,
     central_context: CentralContext,
 }
@@ -24,12 +28,22 @@ impl ConversationGuard {
         Self { inner, central_context }
     }
 
+    // This is dead code for now but we expect it to come alive in near-future work.
+    #[expect(dead_code)]
     pub(crate) async fn conversation(&self) -> RwLockReadGuard<MlsConversation> {
         self.inner.read().await
     }
 
     pub(crate) async fn conversation_mut(&mut self) -> RwLockWriteGuard<MlsConversation> {
         self.inner.write().await
+    }
+
+    async fn mls_client(&self) -> Result<Client> {
+        self.central_context
+            .mls_client()
+            .await
+            .map_err(RecursiveError::root("getting mls client"))
+            .map_err(Into::into)
     }
 
     async fn mls_provider(&self) -> Result<MlsCryptoProvider> {
@@ -59,5 +73,62 @@ impl ConversationGuard {
             }
             Err(e) => Err(e),
         }
+    }
+
+    /// Adds new members to the group/conversation
+    ///
+    /// # Arguments
+    /// * `id` - group/conversation id
+    /// * `members` - members to be added to the group
+    pub async fn add_members(&mut self, key_packages: Vec<KeyPackageIn>) -> Result<NewCrlDistributionPoint> {
+        let client = self.mls_client().await?;
+        let backend = self.mls_provider().await?;
+        let mut conversation = self.conversation_mut().await;
+
+        let signer = &conversation
+            .find_current_credential_bundle(&client)
+            .await
+            .map_err(RecursiveError::mls_client("finding most recent credential bundle"))?
+            .signature_key;
+
+        // No need to also check pending proposals since they should already have been scanned while decrypting the proposal message
+        let crl_dps = extract_crl_uris_from_credentials(key_packages.iter().filter_map(|kp| {
+            let mls_credential = kp.credential().mls_credential();
+            matches!(mls_credential, openmls::prelude::MlsCredentialType::X509(_)).then_some(mls_credential)
+        }))
+        .map_err(RecursiveError::mls_credential("extracting crl uris from credentials"))?;
+        let crl_new_distribution_points = get_new_crl_distribution_points(&backend, crl_dps)
+            .await
+            .map_err(RecursiveError::mls_credential("getting new crl distribution points"))?;
+
+        let (commit, welcome, group_info) = conversation
+            .group
+            .add_members(&backend, signer, key_packages)
+            .await
+            .map_err(MlsError::wrap("group add members"))?;
+
+        // commit requires an optional welcome
+        let welcome = Some(welcome);
+        // commit requires non-optional group info
+        // but should be fine as adding members always generates a new commit
+        let group_info = group_info.ok_or(LeafError::MissingGroupInfo)?;
+        let group_info = MlsGroupInfoBundle::try_new_full_plaintext(group_info)?;
+
+        conversation
+            .persist_group_when_changed(&backend.keystore(), false)
+            .await?;
+
+        // we don't need the conversation anymore, but we do need to mutably borrow `self` again
+        drop(conversation);
+
+        let commit = MlsCommitBundle {
+            commit,
+            welcome,
+            group_info,
+        };
+
+        self.send_and_merge_commit(commit).await?;
+
+        Ok(crl_new_distribution_points)
     }
 }

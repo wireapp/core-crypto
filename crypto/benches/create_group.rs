@@ -69,7 +69,10 @@ fn join_from_welcome_bench(c: &mut Criterion) {
                             bob_context.finish().await.unwrap();
                             let alice_context = alice_central.new_transaction().await.unwrap();
                             alice_context
-                                .add_members_to_conversation(&id, vec![bob_kp.into()])
+                                .conversation_guard(&id)
+                                .await
+                                .unwrap()
+                                .add_members(vec![bob_kp.into()])
                                 .await
                                 .unwrap();
                             let welcome = delivery_service.latest_welcome_message().await;

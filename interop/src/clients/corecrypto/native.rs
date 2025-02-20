@@ -131,7 +131,9 @@ impl EmulatedMlsClient for CoreCryptoNativeClient {
 
         let kp = KeyPackageIn::tls_deserialize(&mut &kp[..])?;
         transaction
-            .add_members_to_conversation(&conversation_id, vec![kp])
+            .conversation_guard(&conversation_id)
+            .await?
+            .add_members(vec![kp])
             .await?;
         transaction.finish().await?;
 

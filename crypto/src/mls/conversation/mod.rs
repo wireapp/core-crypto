@@ -295,9 +295,10 @@ impl CentralContext {
             .ok_or_else(|| LeafError::ConversationNotFound(id.clone()).into())
     }
 
-    // temporary; we'll get rid of this the first time we use this helper (next PR)
-    #[expect(dead_code)]
-    pub(crate) async fn conversation_guard(&self, id: &ConversationId) -> Result<ConversationGuard> {
+    /// Acquire a conversation guard.
+    ///
+    /// This helper struct permits mutations on a conversation.
+    pub async fn conversation_guard(&self, id: &ConversationId) -> Result<ConversationGuard> {
         let keystore = self
             .mls_provider()
             .await
@@ -417,7 +418,10 @@ mod tests {
                 let bob = bob_central.rand_key_package(&case).await;
                 alice_central
                     .context
-                    .add_members_to_conversation(&id, vec![bob])
+                    .conversation_guard(&id)
+                    .await
+                    .unwrap()
+                    .add_members(vec![bob])
                     .await
                     .unwrap();
 
@@ -529,7 +533,10 @@ mod tests {
 
                 alice_central
                     .context
-                    .add_members_to_conversation(&id, bob_and_friends_kps)
+                    .conversation_guard(&id)
+                    .await
+                    .unwrap()
+                    .add_members(bob_and_friends_kps)
                     .await
                     .unwrap();
                 let welcome = alice_central.mls_transport.latest_welcome_message().await;

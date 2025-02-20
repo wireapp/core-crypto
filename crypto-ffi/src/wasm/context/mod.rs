@@ -390,7 +390,7 @@ impl CoreCryptoContext {
 
     /// Returns: [`WasmCryptoResult<Option<Vec<String>>>`]
     ///
-    /// see [core_crypto::mls::context::CentralContext::add_members_to_conversation]
+    /// see [core_crypto::mls::conversation::conversation_guard::ConversationGuard::add_members]
     pub fn add_clients_to_conversation(
         &self,
         conversation_id: ConversationId,
@@ -408,7 +408,9 @@ impl CoreCryptoContext {
                     .collect::<CoreCryptoResult<Vec<_>>>()?;
 
                 let new_crl_distribution_point = context
-                    .add_members_to_conversation(&conversation_id, key_packages)
+                    .conversation_guard(&conversation_id)
+                    .await?
+                    .add_members(key_packages)
                     .await?;
                 let new_crl_distribution_point: Option<Vec<String>> = new_crl_distribution_point.into();
                 WasmCryptoResult::Ok(serde_wasm_bindgen::to_value(&new_crl_distribution_point)?)

@@ -200,7 +200,10 @@ impl ClientContext {
 
         let kps = others.iter().map(|(_, kp)| kp).cloned().collect::<Vec<_>>();
         self.context
-            .add_members_to_conversation(id, kps)
+            .conversation_guard(&id)
+            .await
+            .map_err(RecursiveError::mls_conversation("getting conversation by id"))?
+            .add_members(kps)
             .await
             .map_err(RecursiveError::mls_conversation("adding members"))?;
         let welcome = self.mls_transport.latest_commit_bundle().await.welcome.unwrap();

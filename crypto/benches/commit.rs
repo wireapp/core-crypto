@@ -27,7 +27,15 @@ fn commit_add_bench(c: &mut Criterion) {
                     },
                     |(central, id, kps)| async move {
                         let context = central.new_transaction().await.unwrap();
-                        black_box(context.add_members_to_conversation(&id, kps).await.unwrap());
+                        black_box(
+                            context
+                                .conversation_guard(&id)
+                                .await
+                                .unwrap()
+                                .add_members(kps)
+                                .await
+                                .unwrap(),
+                        );
                         context.finish().await.unwrap();
                         black_box(());
                     },
@@ -59,7 +67,15 @@ fn commit_add_n_clients_bench(c: &mut Criterion) {
                     },
                     |(central, id, kps)| async move {
                         let context = central.new_transaction().await.unwrap();
-                        black_box(context.add_members_to_conversation(&id, kps).await.unwrap());
+                        black_box(
+                            context
+                                .conversation_guard(&id)
+                                .await
+                                .unwrap()
+                                .add_members(kps)
+                                .await
+                                .unwrap(),
+                        );
                         context.finish().await.unwrap();
                         black_box(());
                     },

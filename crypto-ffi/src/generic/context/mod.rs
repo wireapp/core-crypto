@@ -387,7 +387,7 @@ impl CoreCryptoContext {
         Ok(result)
     }
 
-    /// See [core_crypto::context::CentralContext::add_members_to_conversation]
+    /// See [core_crypto::mls::conversation::conversation_guard::ConversationGuard::add_members]
     pub async fn add_clients_to_conversation(
         &self,
         conversation_id: Vec<u8>,
@@ -403,12 +403,14 @@ impl CoreCryptoContext {
             })
             .collect::<CoreCryptoResult<Vec<_>>>()?;
 
-        Ok(self
+        let distribution_points: Option<Vec<_>> = self
             .context
-            .add_members_to_conversation(&conversation_id, key_packages)
-            .await
-            .map(|new_crl_distribution_point| -> Option<Vec<_>> { new_crl_distribution_point.into() })?
-            .into())
+            .conversation_guard(&conversation_id)
+            .await?
+            .add_members(key_packages)
+            .await?
+            .into();
+        Ok(distribution_points.into())
     }
 
     /// See [core_crypto::context::CentralContext::remove_members_from_conversation]

@@ -369,7 +369,10 @@ mod tests {
                         let charlie = charlie_central.rand_key_package(&case).await;
                         bob_central
                             .context
-                            .add_members_to_conversation(&id, vec![charlie])
+                            .conversation_guard(&id)
+                            .await
+                            .unwrap()
+                            .add_members(vec![charlie])
                             .await
                             .unwrap();
                         let commit = bob_central.mls_transport.latest_commit().await;
@@ -416,7 +419,10 @@ mod tests {
                         let charlie = charlie_central.rand_key_package(&case).await;
                         bob_central
                             .context
-                            .add_members_to_conversation(&id, vec![charlie])
+                            .conversation_guard(&id)
+                            .await
+                            .unwrap()
+                            .add_members(vec![charlie])
                             .await
                             .unwrap();
                         let commit = bob_central.mls_transport.latest_commit().await;

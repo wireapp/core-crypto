@@ -207,7 +207,10 @@ mod tests {
                     let charlie = charlie_central.rand_key_package(&case).await;
                     alice_central
                         .context
-                        .add_members_to_conversation(&id, vec![charlie])
+                        .conversation_guard(&id)
+                        .await
+                        .unwrap()
+                        .add_members(vec![charlie])
                         .await
                         .unwrap();
                     let commit = alice_central.mls_transport.latest_commit_bundle().await;

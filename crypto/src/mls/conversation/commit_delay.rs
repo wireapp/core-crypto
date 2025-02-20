@@ -182,7 +182,10 @@ mod tests {
                     let bob = bob_central.rand_key_package(&case).await;
                     alice_central
                         .context
-                        .add_members_to_conversation(&id, vec![bob])
+                        .conversation_guard(&id)
+                        .await
+                        .unwrap
+                        .add_members(vec![bob])
                         .await
                         .unwrap();
                     let bob_welcome = alice_central.mls_transport.latest_welcome_message().await;
@@ -197,7 +200,10 @@ mod tests {
                     let charlie = charlie_central.rand_key_package(&case).await;
                     alice_central
                         .context
-                        .add_members_to_conversation(&id, vec![charlie])
+                        .conversation_guard(&id)
+                        .await
+                        .unwrap()
+                        .add_members(vec![charlie])
                         .await
                         .unwrap();
                     let charlie_welcome_bundle = alice_central.mls_transport.latest_commit_bundle().await;

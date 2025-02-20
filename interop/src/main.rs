@@ -184,7 +184,9 @@ async fn run_mls_test(chrome_driver_addr: &std::net::SocketAddr) -> Result<()> {
     let spinner = util::RunningProcess::new("[MLS] Step 2: Adding clients to conversation...", true);
 
     transaction
-        .add_members_to_conversation(&conversation_id, key_packages)
+        .conversation_guard(&conversation_id)
+        .await?
+        .add_members(key_packages)
         .await?;
 
     let conversation_add_msg = success_provider.latest_welcome_message().await;

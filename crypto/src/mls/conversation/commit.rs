@@ -5,7 +5,7 @@
 //! | 0 pend. Proposal       | ✅              | ❌              |
 //! | 1+ pend. Proposal      | ✅              | ❌              |
 
-use openmls::prelude::{KeyPackageIn, LeafNode, LeafNodeIndex, MlsMessageOut};
+use openmls::prelude::{LeafNode, LeafNodeIndex, MlsMessageOut};
 
 use mls_crypto_provider::MlsCryptoProvider;
 
@@ -13,13 +13,7 @@ use super::{Error, Result};
 use crate::{
     context::CentralContext,
     e2e_identity::init_certificates::NewCrlDistributionPoint,
-    mls::{
-        credential::{
-            crl::{extract_crl_uris_from_credentials, get_new_crl_distribution_points},
-            CredentialBundle,
-        },
-        MlsConversation,
-    },
+    mls::{credential::CredentialBundle, MlsConversation},
     prelude::{Client, ClientId, ConversationId, MlsError, MlsGroupInfoBundle},
     LeafError, MlsTransportResponse, RecursiveError,
 };
@@ -133,54 +127,6 @@ impl CentralContext {
         }
     }
 
-    /// Adds new members to the group/conversation
-    ///
-    /// # Arguments
-    /// * `id` - group/conversation id
-    /// * `members` - members to be added to the group
-    ///
-    /// # Return type
-    /// An optional struct containing a welcome and a message will be returned on successful call.
-    /// The value will be `None` only if the group can't be found locally (no error will be returned
-    /// in this case).
-    ///
-    /// # Errors
-    /// If the authorisation callback is set, an error can be caused when the authorization fails.
-    /// Other errors are KeyStore and OpenMls errors:
-    pub async fn add_members_to_conversation(
-        &self,
-        id: &ConversationId,
-        key_packages: Vec<KeyPackageIn>,
-    ) -> Result<NewCrlDistributionPoint> {
-        let client = self
-            .mls_client()
-            .await
-            .map_err(RecursiveError::root("getting mls client"))?;
-        let conversation = self.get_conversation(id).await?;
-        let mut conversation_guard = conversation.write().await;
-
-        let message = conversation_guard
-            .add_members(
-                &client,
-                key_packages,
-                &self
-                    .mls_provider()
-                    .await
-                    .map_err(RecursiveError::root("getting mls provider"))?,
-            )
-            .await?;
-
-        let commit = MlsCommitBundle {
-            commit: message.commit,
-            welcome: Some(message.welcome),
-            group_info: message.group_info,
-        };
-
-        self.send_and_merge_commit(conversation_guard, commit.clone()).await?;
-
-        Ok(message.crl_new_distribution_points)
-    }
-
     /// Removes clients from the group/conversation.
     ///
     /// # Arguments
@@ -283,57 +229,6 @@ impl CentralContext {
 
 /// Creating commit
 impl MlsConversation {
-    /// see [MlsCentral::add_members_to_conversation]
-    /// Note: this is not exposed publicly because authorization isn't handled at this level
-    #[cfg_attr(test, crate::durable)]
-    pub(crate) async fn add_members(
-        &mut self,
-        client: &Client,
-        key_packages: Vec<KeyPackageIn>,
-        backend: &MlsCryptoProvider,
-    ) -> Result<MlsConversationCreationMessage> {
-        let signer = &self
-            .find_most_recent_credential_bundle(client)
-            .await
-            .map_err(RecursiveError::mls_client("finding most recent credential bundle"))?
-            .signature_key;
-
-        // No need to also check pending proposals since they should already have been scanned while decrypting the proposal message
-        let crl_new_distribution_points = get_new_crl_distribution_points(
-            backend,
-            extract_crl_uris_from_credentials(key_packages.iter().filter_map(|kp| {
-                let mls_credential = kp.credential().mls_credential();
-                if matches!(mls_credential, openmls::prelude::MlsCredentialType::X509(_)) {
-                    Some(mls_credential)
-                } else {
-                    None
-                }
-            }))
-            .map_err(RecursiveError::mls_credential("extracting crl uris from credentials"))?,
-        )
-        .await
-        .map_err(RecursiveError::mls_credential("getting new crl distribution points"))?;
-
-        let (commit, welcome, gi) = self
-            .group
-            .add_members(backend, signer, key_packages)
-            .await
-            .map_err(MlsError::wrap("group add members"))?;
-
-        // SAFETY: This should be safe as adding members always generates a new commit
-        let gi = gi.ok_or(LeafError::MissingGroupInfo)?;
-        let group_info = MlsGroupInfoBundle::try_new_full_plaintext(gi)?;
-
-        self.persist_group_when_changed(&backend.keystore(), false).await?;
-
-        Ok(MlsConversationCreationMessage {
-            welcome,
-            commit,
-            group_info,
-            crl_new_distribution_points,
-        })
-    }
-
     /// see [MlsCentral::remove_members_from_conversation]
     /// Note: this is not exposed publicly because authorization isn't handled at this level
     #[cfg_attr(test, crate::durable)]
@@ -593,7 +488,10 @@ mod tests {
                         // then success, but now without an intermediate commit
                         alice_central
                             .context
-                            .add_members_to_conversation(&id, vec![charlie_central.rand_key_package(&case).await])
+                            .conversation_guard(&id)
+                            .await
+                            .unwrap()
+                            .add_members(vec![charlie_central.rand_key_package(&case).await])
                             .await
                             .unwrap();
                         let commit = retry_provider.latest_commit().await;
@@ -642,7 +540,10 @@ mod tests {
                         .unwrap();
                     alice_central
                         .context
-                        .add_members_to_conversation(&id, vec![bob.clone()])
+                        .conversation_guard(&id)
+                        .await
+                        .unwrap()
+                        .add_members(vec![bob.clone()])
                         .await
                         .unwrap_err();
 
@@ -657,7 +558,10 @@ mod tests {
                         .unwrap();
                     alice_central
                         .context
-                        .add_members_to_conversation(&id, vec![bob])
+                        .conversation_guard(&id)
+                        .await
+                        .unwrap()
+                        .add_members(vec![bob])
                         .await
                         .unwrap();
 
@@ -704,7 +608,10 @@ mod tests {
                     let bob = bob_central.rand_key_package(&case).await;
                     alice_central
                         .context
-                        .add_members_to_conversation(&id, vec![bob])
+                        .conversation_guard(&id)
+                        .await
+                        .unwrap()
+                        .add_members(vec![bob])
                         .await
                         .unwrap();
 
@@ -744,7 +651,10 @@ mod tests {
                         let bob = bob_central.rand_key_package(&case).await;
                         alice_central
                             .context
-                            .add_members_to_conversation(&id, vec![bob])
+                            .conversation_guard(&id)
+                            .await
+                            .unwrap()
+                            .add_members(vec![bob])
                             .await
                             .unwrap();
                         let commit_bundle = alice_central.mls_transport.latest_commit_bundle().await;

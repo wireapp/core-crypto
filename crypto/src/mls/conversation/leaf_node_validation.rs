@@ -73,7 +73,10 @@ mod tests {
 
                         let commit_creation = alice_central
                             .context
-                            .add_members_to_conversation(&id, vec![invalid_kp.into()])
+                            .conversation_guard(&id)
+                            .await
+                            .unwrap()
+                            .add_members(vec![invalid_kp.into()])
                             .await;
 
                         let error = commit_creation.unwrap_err();
@@ -171,7 +174,10 @@ mod tests {
 
                         alice_central
                             .context
-                            .add_members_to_conversation(&id, vec![invalid_kp.into()])
+                            .conversation_guard(&id)
+                            .await
+                            .unwrap()
+                            .add_members(vec![invalid_kp.into()])
                             .await
                             .unwrap();
                         let commit = alice_central.mls_transport.latest_commit().await;
@@ -220,7 +226,10 @@ mod tests {
                     let invalid_kp = bob_central.new_keypackage(&case, Lifetime::new(expiration_time)).await;
                     alice_central
                         .context
-                        .add_members_to_conversation(&id, vec![invalid_kp.into()])
+                        .conversation_guard(&id)
+                        .await
+                        .unwrap()
+                        .add_members(vec![invalid_kp.into()])
                         .await
                         .unwrap();
 
