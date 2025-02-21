@@ -3,12 +3,15 @@ use itertools::Itertools;
 use jwt_simple::prelude::*;
 use oauth2::{ClientSecret, CsrfToken, PkceCodeChallenge, RedirectUrl, RefreshToken, Scope};
 use openidconnect::{
-    core::{CoreAuthenticationFlow, CoreClient, CoreProviderMetadata},
     IssuerUrl, Nonce,
+    core::{CoreAuthenticationFlow, CoreClient, CoreProviderMetadata},
 };
 use reqwest::StatusCode;
-use serde_json::{json, Value};
-use std::collections::{hash_map::RandomState, HashMap};
+use serde_json::{Value, json};
+use std::{
+    collections::{HashMap, hash_map::RandomState},
+    sync::{Mutex, mpsc},
+};
 use url::Url;
 use x509_cert::der::{DecodePem, Encode};
 
@@ -21,6 +24,7 @@ use rusty_jwt_tools::{
 };
 
 use crate::utils::{
+    TestError, TestResult,
     cfg::{E2eTest, EnrollmentFlow, OidcProvider},
     ctx::*,
     display::Actor,
@@ -28,12 +32,12 @@ use crate::utils::{
     helpers::{AcmeAsserter, ClientHelper, RespHelper},
     rand_base64_str,
     wire_server::oidc::{scrap_grant, scrap_login},
-    TestError, TestResult,
 };
 
-// unsafe static mutable channels for the Google OIDC login since it requires tester interaction in browser
-pub(crate) static mut GOOGLE_SND: Option<std::sync::Mutex<std::sync::mpsc::Sender<String>>> = None;
-static mut GOOGLE_RECV: Option<std::sync::Mutex<std::sync::mpsc::Receiver<String>>> = None;
+// These tests require tester interaction to handle Google OIDC login, and the way we're
+// accommodating that under the hood is with these channels.
+pub(crate) static GOOGLE_SND: Mutex<Option<mpsc::Sender<String>>> = Mutex::new(None);
+static GOOGLE_RECV: Mutex<Option<mpsc::Receiver<String>>> = Mutex::new(None);
 
 fn keypair_to_pubkey(alg: JwsAlgorithm, keypair: &Pem) -> Pem {
     match alg {
@@ -768,12 +772,9 @@ impl E2eTest {
     }
 
     pub async fn fetch_id_token_from_google(&mut self) -> TestResult<String> {
-        // SAFETY: safe because there is one codepath using these variables and we are just unconditionally setting them here.
-        unsafe {
-            let (tx, rx) = std::sync::mpsc::channel();
-            GOOGLE_SND = Some(std::sync::Mutex::new(tx));
-            GOOGLE_RECV = Some(std::sync::Mutex::new(rx));
-        }
+        let (tx, rx) = mpsc::channel();
+        *GOOGLE_SND.lock().unwrap() = Some(tx);
+        *GOOGLE_RECV.lock().unwrap() = Some(rx);
 
         // hack to pass args to wire-server
         ctx_store("domain", &self.domain);
@@ -811,10 +812,9 @@ impl E2eTest {
             .url();
         webbrowser::open(authz_url.as_str()).unwrap();
 
-        // SAFETY: We initialized the reference earlier in this function, and the worst case if
-        // someone has mutated it under us is that one of the unwraps causes a test to panic.
-        let id_token = unsafe {
-            let rx = GOOGLE_RECV.as_ref().unwrap().lock().unwrap();
+        let id_token = {
+            let rx = GOOGLE_RECV.lock().unwrap();
+            let rx = rx.as_ref().unwrap();
             rx.recv().unwrap()
         };
         Ok(id_token)

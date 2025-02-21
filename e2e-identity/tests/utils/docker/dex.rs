@@ -2,9 +2,9 @@ use std::{collections::HashMap, net::SocketAddr};
 
 use testcontainers::core::{ContainerPort, Mount};
 use testcontainers::runners::AsyncRunner;
-use testcontainers::{core::WaitFor, ContainerAsync, Image, ImageExt};
+use testcontainers::{ContainerAsync, Image, ImageExt, core::WaitFor};
 
-use crate::utils::docker::{ldap::LdapCfg, rand_str, SHM};
+use crate::utils::docker::{SHM, ldap::LdapCfg, rand_str};
 
 pub struct DexServer {
     pub uri: String,

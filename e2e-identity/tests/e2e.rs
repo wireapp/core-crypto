@@ -1,17 +1,17 @@
 #![cfg(not(target_family = "wasm"))]
 
 use jwt_simple::prelude::*;
-use serde_json::{json, Value};
+use serde_json::{Value, json};
 
 use rusty_acme::prelude::*;
 use rusty_jwt_tools::prelude::*;
 use utils::{
+    TestError,
     cfg::{E2eTest, EnrollmentFlow, OidcProvider},
     docker::{stepca::CaCfg, wiremock::WiremockImage},
     id_token::resign_id_token,
     rand_base64_str, rand_client_id,
     wire_server::OauthCfg,
-    TestError,
 };
 
 #[path = "utils/mod.rs"]
@@ -133,10 +133,10 @@ mod alg {
 #[cfg(not(ci))]
 mod acme_server {
     use super::*;
+    use rusty_acme::prelude::x509::RustyX509CheckError;
     use rusty_acme::prelude::x509::reexports::certval;
     use rusty_acme::prelude::x509::reexports::certval::PathValidationStatus;
     use rusty_acme::prelude::x509::revocation::{PkiEnvironment, PkiEnvironmentParams};
-    use rusty_acme::prelude::x509::RustyX509CheckError;
     use x509_cert::der::Decode;
 
     /// Acme server has been man-in-middle:ed and returns untrusted certificates

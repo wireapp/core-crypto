@@ -1,6 +1,6 @@
 use crate::utils::TestResult;
 use http::header::AsHeaderName;
-use http::{header, HeaderName, HeaderValue};
+use http::{HeaderName, HeaderValue, header};
 use itertools::Itertools;
 
 pub trait ClientHelper {
@@ -84,10 +84,11 @@ impl AcmeAsserter for reqwest::Response {
         self
     }
     fn expect_content_type_json(&mut self) -> &mut Self {
-        assert!(self
-            .headers()
-            .iter()
-            .contains(&(&header::CONTENT_TYPE, &HeaderValue::from_static("application/json"))));
+        assert!(
+            self.headers()
+                .iter()
+                .contains(&(&header::CONTENT_TYPE, &HeaderValue::from_static("application/json")))
+        );
         self
     }
     fn has_replay_nonce(&mut self) -> &mut Self {

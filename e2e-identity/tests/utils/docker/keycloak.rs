@@ -4,14 +4,14 @@ use std::sync::OnceLock;
 use std::{collections::HashMap, env, net::SocketAddr};
 
 use keycloak::{
+    KeycloakAdmin, KeycloakAdminToken,
     types::ProtocolMapperRepresentation,
     types::{ClientRepresentation, CredentialRepresentation, UserRepresentation},
-    KeycloakAdmin, KeycloakAdminToken,
 };
 
 use testcontainers::core::{ContainerPort, IntoContainerPort, Mount};
 use testcontainers::runners::AsyncRunner;
-use testcontainers::{core::WaitFor, ContainerAsync, Image, ImageExt};
+use testcontainers::{ContainerAsync, Image, ImageExt, core::WaitFor};
 
 use crate::utils::docker::SHM;
 

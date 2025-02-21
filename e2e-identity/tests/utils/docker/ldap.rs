@@ -1,9 +1,9 @@
-use crate::utils::docker::{rand_str, SHM};
+use crate::utils::docker::{SHM, rand_str};
 use std::borrow::Cow;
 use std::{collections::HashMap, net::SocketAddr};
 use testcontainers::core::{ContainerPort, Mount};
 use testcontainers::runners::AsyncRunner;
-use testcontainers::{core::WaitFor, ContainerAsync, Image, ImageExt};
+use testcontainers::{ContainerAsync, Image, ImageExt, core::WaitFor};
 
 pub struct LdapServer {
     pub node: ContainerAsync<LdapImage>,

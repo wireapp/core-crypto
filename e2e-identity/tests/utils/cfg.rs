@@ -1,5 +1,5 @@
 use std::{
-    collections::{hash_map::RandomState, HashMap},
+    collections::{HashMap, hash_map::RandomState},
     net::SocketAddr,
 };
 
@@ -11,6 +11,7 @@ use rusty_acme::prelude::{AcmeAccount, AcmeAuthz, AcmeChallenge, AcmeDirectory, 
 use rusty_jwt_tools::{jwk::TryIntoJwk, prelude::*};
 
 use crate::utils::{
+    TestResult,
     ctx::ctx_store_http_client,
     display::TestDisplay,
     docker::{
@@ -21,8 +22,7 @@ use crate::utils::{
         stepca::{AcmeServer, CaCfg},
     },
     rand_base64_str, rand_str,
-    wire_server::{oidc::OidcCfg, OauthCfg, WireServer},
-    TestResult,
+    wire_server::{OauthCfg, WireServer, oidc::OidcCfg},
 };
 
 pub struct E2eTest {

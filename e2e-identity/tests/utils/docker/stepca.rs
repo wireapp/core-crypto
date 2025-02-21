@@ -4,9 +4,9 @@ use std::path::Path;
 
 use serde_json::json;
 use testcontainers::core::{CmdWaitFor, ContainerPort, ExecCommand, Mount};
-use testcontainers::{runners::AsyncRunner, ContainerAsync, GenericImage, ImageExt};
+use testcontainers::{ContainerAsync, GenericImage, ImageExt, runners::AsyncRunner};
 
-use crate::utils::docker::{rand_str, NETWORK, SHM};
+use crate::utils::docker::{NETWORK, SHM, rand_str};
 
 pub struct AcmeServer {
     pub uri: String,

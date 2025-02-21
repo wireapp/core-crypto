@@ -17,21 +17,21 @@ mod types;
 pub mod prelude {
     pub use rusty_acme::prelude::x509;
     pub use rusty_acme::prelude::{
-        compute_raw_key_thumbprint, x509::IdentityStatus, AcmeDirectory, RustyAcme, RustyAcmeError, WireIdentity,
-        WireIdentityReader,
+        AcmeDirectory, RustyAcme, RustyAcmeError, WireIdentity, WireIdentityReader, compute_raw_key_thumbprint,
+        x509::IdentityStatus,
     };
     pub use rusty_jwt_tools::prelude::{
-        parse_json_jwk, ClientId as E2eiClientId, Handle, HashAlgorithm, JwsAlgorithm, RustyJwtError,
+        ClientId as E2eiClientId, Handle, HashAlgorithm, JwsAlgorithm, RustyJwtError, parse_json_jwk,
     };
 
     #[cfg(feature = "builder")]
     pub use rusty_jwt_tools::prelude::generate_jwk;
 
+    pub use super::RustyE2eIdentity;
     pub use super::error::{E2eIdentityError, E2eIdentityResult};
     pub use super::types::{
         E2eiAcmeAccount, E2eiAcmeAuthorization, E2eiAcmeChallenge, E2eiAcmeFinalize, E2eiAcmeOrder, E2eiNewAcmeOrder,
     };
-    pub use super::RustyE2eIdentity;
 }
 
 pub type Json = serde_json::Value;

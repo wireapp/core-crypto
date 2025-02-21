@@ -2,7 +2,7 @@
 name = "wire-e2e-identity"
 description = "Public API for Wire end to end identity"
 version = "0.12.0"
-edition = "2021"
+edition = "2024"
 repository = "https://github.com/wireapp/rusty-jwt-tools"
 license = "MPL-2.0"
 publish = false

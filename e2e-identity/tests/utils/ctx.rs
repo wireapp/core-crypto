@@ -3,7 +3,7 @@
 
 use std::net::SocketAddr;
 use std::{
-    collections::{hash_map::RandomState, HashMap},
+    collections::{HashMap, hash_map::RandomState},
     str::FromStr,
 };
 

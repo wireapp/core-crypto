@@ -3,8 +3,8 @@ use http_body_util::Full;
 use hyper::body::{Bytes, Incoming};
 use hyper::{Request, Response, StatusCode};
 use openidconnect::{
-    core::{CoreAuthenticationFlow, CoreClient, CoreProviderMetadata},
     ClientSecret, CsrfToken, IssuerUrl, Nonce, PkceCodeChallenge, PkceCodeVerifier, RedirectUrl, Scope, TokenResponse,
+    core::{CoreAuthenticationFlow, CoreClient, CoreProviderMetadata},
 };
 use scraper::Html;
 
@@ -51,10 +51,10 @@ pub async fn handle_login(_req: Request<Incoming>) -> http::Result<Response<Full
         .set_pkce_challenge(pkce_challenge)
         .url();
 
-    Ok(Response::builder()
+    Response::builder()
         .status(StatusCode::PERMANENT_REDIRECT)
         .header("location", auth_url.as_str())
-        .body(Default::default())?)
+        .body(Default::default())
 }
 
 pub fn scrap_login(html: String) -> String {
@@ -137,12 +137,7 @@ pub async fn handle_callback_google(mut req: Request<Incoming>) -> http::Result<
     let id_token = id_token.id_token().unwrap().to_string();
 
     // for google oidc test
-    //
-    // SAFETY: it's probably fine, this is in a test context anyway.
-    // It's hard but not impossible to really mess with this struct... but it's just in the tests.
-    // If we're using it wrong, it's meant to crash.
-    if let Some(tx) = unsafe { GOOGLE_SND.as_ref() } {
-        let tx = tx.lock().unwrap().clone();
+    if let Some(tx) = GOOGLE_SND.lock().unwrap().as_ref() {
         tx.send(id_token.clone()).unwrap();
         let id_token_url = format!("https://jwt.io/#id_token={id_token}");
         let resp = Response::builder()

@@ -3,7 +3,7 @@ use std::borrow::Cow;
 use std::{collections::HashMap, path::PathBuf};
 use testcontainers::core::{ContainerPort, Mount};
 use testcontainers::runners::AsyncRunner;
-use testcontainers::{core::WaitFor, ContainerAsync, Image, ImageExt};
+use testcontainers::{ContainerAsync, Image, ImageExt, core::WaitFor};
 
 /// Allows to run WireMock in Docker. Uses stubs to mock responses to predefined requests.
 /// The stubs are generated in [crate::E2eTest::new_jwks_uri_mock].
