@@ -5,8 +5,8 @@ use openmls_traits::{
     authentication_service::{CredentialAuthenticationStatus, CredentialRef},
     types::SignatureScheme,
 };
-use spki::der::referenced::RefToOwned;
 use spki::SignatureAlgorithmIdentifier;
+use spki::der::referenced::RefToOwned;
 use std::sync::Arc;
 
 #[derive(Debug, Clone, Default)]
@@ -95,8 +95,8 @@ impl openmls_traits::authentication_service::AuthenticationServiceDelegate for P
 
                 if let Err(validation_error) = pki_env.validate_cert_and_revocation(&cert) {
                     use wire_e2e_identity::prelude::x509::{
-                        reexports::certval::{Error as CertvalError, PathValidationStatus},
                         RustyX509CheckError,
+                        reexports::certval::{Error as CertvalError, PathValidationStatus},
                     };
 
                     if let RustyX509CheckError::CertValError(CertvalError::PathValidation(

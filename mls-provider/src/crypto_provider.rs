@@ -5,8 +5,8 @@ use signature::digest::typenum::Unsigned;
 use std::sync::{Arc, RwLock, RwLockWriteGuard};
 
 use aes_gcm::{
-    aead::{Aead, Payload},
     Aes128Gcm, Aes256Gcm, KeyInit,
+    aead::{Aead, Payload},
 };
 use chacha20poly1305::ChaCha20Poly1305;
 use hkdf::Hkdf;

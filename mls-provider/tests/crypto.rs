@@ -24,13 +24,13 @@ mod fixtures;
 
 #[cfg(test)]
 mod tests {
-    use crate::fixtures::*;
     use crate::LEN_RANGE;
+    use crate::fixtures::*;
     use hex_literal::hex;
     use mls_crypto_provider::{EntropySeed, MlsCryptoProvider};
     use openmls::prelude::Ciphersuite;
     use openmls_traits::types::HpkeKeyPair;
-    use openmls_traits::{crypto::OpenMlsCrypto, random::OpenMlsRand, OpenMlsCryptoProvider};
+    use openmls_traits::{OpenMlsCryptoProvider, crypto::OpenMlsCrypto, random::OpenMlsRand};
     use rand::Rng;
 
     use wasm_bindgen_test::*;
