@@ -1,6 +1,6 @@
 [env]
 ANDROID_NDK_PREFER_VERSION = "25.2"
-LIBRARY_EXTENSION = { source = "${CARGO_MAKE_RUST_TARGET_OS}", default_value = "so", mapping = { "linux" = "so", "macos" = "dylib", "windows" = "dll" } }
+LIBRARY_EXTENSION = { source = "${CARGO_MAKE_RUST_TARGET_OS}", mapping = { "linux" = "so", "macos" = "dylib" } }
 
 ##################################### DOCS ####################################
 
@@ -338,9 +338,7 @@ exit_on_error true
 
 fn update_android_env
     platform = os_family
-    if eq ${platform} "windows"
-        platform_dir = set "windows-x86_64"
-    elseif eq ${platform} "linux"
+    if eq ${platform} "linux"
         platform_dir = set "linux-x86_64"
     elseif eq ${platform} "mac"
         platform_dir = set "darwin-x86_64"
@@ -380,10 +378,7 @@ fn autodetect_android_env
         platform = os_family
         sdk_folder = set "Sdk"
 
-        if eq ${platform} "windows"
-            platform_dir = get_home_dir
-            platform_dir = set "${platform_dir}/AppData/Local"
-        elseif eq ${platform} "linux"
+        if eq ${platform} "linux"
             platform_dir = get_home_dir
         elseif eq ${platform} "mac"
             platform_dir = get_home_dir
