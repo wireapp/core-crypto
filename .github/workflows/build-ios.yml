@@ -16,27 +16,18 @@ jobs:
     runs-on: self-hosted
     strategy:
       matrix:
-        task:
-          - ios-device
-          - ios-simulator-x86
-          - ios-simulator-arm
+        include:
+          - task: ios-device
+            target: aarch64-apple-ios
+          - task: ios-simulator-x86
+            target: x86_64-apple-ios
+          - task: ios-simulator-arm
+            target: aarch64-apple-ios-sim
     steps:
       - uses: actions/checkout@v4
-
-      - name: determine rust target
-        id: rust-target
-        run: |
-          if [[ "${{ matrix.task }}" == "ios-device" ]]; then
-            echo "target=aarch64-apple-ios" >> $GITHUB_ENV
-          elif [[ "${{ matrix.task }}" == "ios-simulator-x86" ]]; then
-            echo "target=x86_64-apple-ios" >> $GITHUB_ENV
-          elif [[ "${{ matrix.task }}" == "ios-simulator-arm" ]]; then
-            echo "target=aarch64-apple-ios-sim" >> $GITHUB_ENV
-          fi
-
       - uses: actions-rust-lang/setup-rust-toolchain@v1
         with:
-          target: ${{ env.target }}
+          target: ${{ matrix.target }}
 
       - name: setup cargo-make
         uses: davidB/rust-cargo-make@v1
