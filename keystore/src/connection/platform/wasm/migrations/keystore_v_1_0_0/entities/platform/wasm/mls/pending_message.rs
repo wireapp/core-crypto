@@ -1,7 +1,7 @@
 use crate::keystore_v_1_0_0::{
+    CryptoKeystoreResult, MissingKeyErrorKind,
     connection::KeystoreDatabaseConnection,
     entities::{Entity, EntityBase, EntityFindParams, MlsPendingMessage, StringEntityId},
-    CryptoKeystoreResult, MissingKeyErrorKind,
 };
 
 #[cfg_attr(target_family = "wasm", async_trait::async_trait(?Send))]

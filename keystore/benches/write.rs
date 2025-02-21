@@ -17,10 +17,10 @@
 #![cfg(not(target_family = "wasm"))]
 
 use criterion::{
-    async_executor::FuturesExecutor, black_box, criterion_group, criterion_main, BatchSize, Criterion, Throughput,
+    BatchSize, Criterion, Throughput, async_executor::FuturesExecutor, black_box, criterion_group, criterion_main,
 };
 use openmls::prelude::Ciphersuite;
-use openmls_traits::{key_store::OpenMlsKeyStore, random::OpenMlsRand, OpenMlsCryptoProvider};
+use openmls_traits::{OpenMlsCryptoProvider, key_store::OpenMlsKeyStore, random::OpenMlsRand};
 
 use core_crypto_keystore::Connection as CryptoKeystore;
 use futures_lite::future::block_on;
@@ -42,7 +42,7 @@ fn benchmark_writes_proteus(c: &mut Criterion) {
     group.bench_with_input("Writes", &store, |b, store| {
         b.to_async(FuturesExecutor).iter_batched(
             || {
-                let pk = PreKey::new(PreKeyId::new(u16::from_le_bytes(prng.gen())));
+                let pk = PreKey::new(PreKeyId::new(u16::from_le_bytes(prng.r#gen())));
                 (pk.key_id.value(), pk.serialise().unwrap())
             },
             |(pk_id, pk_ser)| async move {

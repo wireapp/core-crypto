@@ -1,7 +1,7 @@
 use crate::{
+    MissingKeyErrorKind,
     connection::KeystoreDatabaseConnection,
     entities::{ConsumerData, EntityBase, UniqueEntity},
-    MissingKeyErrorKind,
 };
 
 #[async_trait::async_trait(?Send)]

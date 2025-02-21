@@ -15,12 +15,12 @@
 // along with this program. If not, see http://www.gnu.org/licenses/.
 
 use crate::keystore_v_1_0_0::{
+    CryptoKeystoreResult, MissingKeyErrorKind,
     connection::{DatabaseConnection, KeystoreDatabaseConnection},
     entities::{
         Entity, EntityBase, EntityFindParams, PersistedMlsGroup, PersistedMlsGroupExt, PersistedMlsPendingGroup,
         StringEntityId,
     },
-    CryptoKeystoreResult, MissingKeyErrorKind,
 };
 
 #[cfg_attr(target_family = "wasm", async_trait::async_trait(?Send))]

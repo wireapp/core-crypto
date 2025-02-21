@@ -19,10 +19,10 @@ use openmls_traits::key_store::{MlsEntity, MlsEntityId};
 
 use super::entities::MlsEpochEncryptionKeyPair;
 use crate::keystore_v_1_0_0::{
+    CryptoKeystoreError,
     entities::{
         MlsEncryptionKeyPair, MlsHpkePrivateKey, MlsKeyPackage, MlsPskBundle, MlsSignatureKeyPair, PersistedMlsGroup,
     },
-    CryptoKeystoreError,
 };
 
 #[inline(always)]

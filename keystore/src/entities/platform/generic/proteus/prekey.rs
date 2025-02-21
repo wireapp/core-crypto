@@ -17,9 +17,9 @@
 use crate::connection::TransactionWrapper;
 use crate::entities::{EntityFindParams, EntityTransactionExt, ProteusPrekey, StringEntityId};
 use crate::{
+    MissingKeyErrorKind,
     connection::KeystoreDatabaseConnection,
     entities::{Entity, EntityBase},
-    MissingKeyErrorKind,
 };
 
 #[async_trait::async_trait]

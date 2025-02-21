@@ -1,7 +1,7 @@
 use crate::{
+    CryptoKeystoreResult, MissingKeyErrorKind,
     connection::KeystoreDatabaseConnection,
     entities::{Entity, EntityBase, EntityFindParams, EntityTransactionExt, MlsPendingMessage, StringEntityId},
-    CryptoKeystoreResult, MissingKeyErrorKind,
 };
 
 #[async_trait::async_trait(?Send)]

@@ -16,8 +16,8 @@
 
 use crate::connection::platform::wasm::migrations::db_version_number;
 use crate::keystore_v_1_0_0::{
-    connection::{DatabaseConnection, DatabaseConnectionRequirements},
     CryptoKeystoreResult,
+    connection::{DatabaseConnection, DatabaseConnectionRequirements},
 };
 use rexie::{Index, ObjectStore};
 

@@ -140,7 +140,7 @@ macro_rules! test_migration_to_db_v1_for_entity {
 #[cfg(test)]
 mod tests_impl {
     use super::common::*;
-    use crate::{utils::EntityRandomUpdateExt, ENTITY_COUNT};
+    use crate::{ENTITY_COUNT, utils::EntityRandomUpdateExt};
     use core_crypto_keystore::entities::EntityTransactionExt;
     use core_crypto_keystore::{
         connection::{FetchFromDatabase, KeystoreDatabaseConnection},
@@ -334,7 +334,7 @@ pub mod utils {
                     ]
                     $(, additional_fields=[
                         $((
-                            $additional_field_ident:ident: $additional_field_value:expr
+                            $additional_field_ident:ident: $additional_field_value:expr_2021
                         ),)+
                     ])?
                 ) => {
@@ -373,7 +373,7 @@ pub mod utils {
                     ]
                     $(, additional_fields=[
                         $((
-                            $additional_field_ident:ident: $additional_field_value:expr
+                            $additional_field_ident:ident: $additional_field_value:expr_2021
                             $(; auto-generated:$equalize:literal)?
                         ),)+
                     ])?
@@ -520,7 +520,7 @@ pub mod utils {
                     use rand::Rng as _;
                     let mut rng = rand::thread_rng();
 
-                    let id: u16 = rng.gen();
+                    let id: u16 = rng.r#gen();
                     let mut prekey = vec![0u8; rng.gen_range(MAX_BLOB_SIZE)];
                     rng.fill(&mut prekey[..]);
 
@@ -534,7 +534,7 @@ pub mod utils {
                     use rand::Rng as _;
                     let mut rng = rand::thread_rng();
 
-                    let id: u16 = rng.gen();
+                    let id: u16 = rng.r#gen();
                     let mut prekey = vec![0u8; rng.gen_range(MAX_BLOB_SIZE)];
                     rng.fill(&mut prekey[..]);
 

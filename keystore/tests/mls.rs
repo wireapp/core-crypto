@@ -30,11 +30,11 @@ mod tests {
 
     use mls_crypto_provider::MlsCryptoProvider;
 
+    use core_crypto_keystore::MissingKeyErrorKind;
     use core_crypto_keystore::entities::{
         EntityBase, MlsCredential, MlsHpkePrivateKey, MlsKeyPackage, MlsPskBundle, MlsSignatureKeyPair,
         PersistedMlsGroup, PersistedMlsPendingGroup,
     };
-    use core_crypto_keystore::MissingKeyErrorKind;
     use openmls::prelude::TlsSerializeTrait as _;
     use openmls_traits::OpenMlsCryptoProvider as _;
 

@@ -16,8 +16,8 @@
 
 use crate::connection::platform::wasm::migrations::open_and_migrate;
 use crate::{
-    connection::{DatabaseConnection, DatabaseConnectionRequirements},
     CryptoKeystoreResult,
+    connection::{DatabaseConnection, DatabaseConnectionRequirements},
 };
 use idb::{Factory, TransactionMode};
 

@@ -14,13 +14,13 @@
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see http://www.gnu.org/licenses/.
 
+use crate::CryptoKeystoreError;
 use crate::connection::TransactionWrapper;
 use crate::entities::{EntityFindParams, EntityTransactionExt, ProteusIdentity, StringEntityId};
-use crate::CryptoKeystoreError;
 use crate::{
+    MissingKeyErrorKind,
     connection::KeystoreDatabaseConnection,
     entities::{Entity, EntityBase},
-    MissingKeyErrorKind,
 };
 use rusqlite::OptionalExtension;
 

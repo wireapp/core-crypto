@@ -15,14 +15,14 @@
 // along with this program. If not, see http://www.gnu.org/licenses/.
 
 use crate::{
+    CryptoKeystoreResult,
     connection::TransactionWrapper,
     entities::{EntityIdStringExt, EntityTransactionExt},
-    CryptoKeystoreResult,
 };
 use crate::{
+    MissingKeyErrorKind,
     connection::{DatabaseConnection, KeystoreDatabaseConnection},
     entities::{Entity, EntityBase, EntityFindParams, MlsHpkePrivateKey, StringEntityId},
-    MissingKeyErrorKind,
 };
 use rusqlite::ToSql;
 use std::io::{Read, Write};

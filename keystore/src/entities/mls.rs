@@ -15,7 +15,7 @@
 // along with this program. If not, see http://www.gnu.org/licenses/.
 
 use super::{Entity, EntityBase, EntityFindParams, EntityTransactionExt, StringEntityId};
-use crate::{connection::TransactionWrapper, CryptoKeystoreError, CryptoKeystoreResult};
+use crate::{CryptoKeystoreError, CryptoKeystoreResult, connection::TransactionWrapper};
 use openmls_traits::types::SignatureScheme;
 use zeroize::Zeroize;
 

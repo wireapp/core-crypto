@@ -1,7 +1,7 @@
 pub mod keystore_v_1_0_0;
 
-use crate::connection::storage::{WasmEncryptedStorage, WasmStorageWrapper};
 use crate::connection::KeystoreDatabaseConnection;
+use crate::connection::storage::{WasmEncryptedStorage, WasmStorageWrapper};
 use crate::entities::{
     ConsumerData, E2eiAcmeCA, E2eiCrl, E2eiEnrollment, E2eiIntermediateCert, E2eiRefreshToken, Entity, EntityBase,
     MlsBufferedCommit, MlsCredential, MlsEncryptionKeyPair, MlsEpochEncryptionKeyPair, MlsHpkePrivateKey,
@@ -11,6 +11,7 @@ use crate::entities::{
 use crate::{CryptoKeystoreError, CryptoKeystoreResult};
 use idb::builder::{DatabaseBuilder, IndexBuilder, ObjectStoreBuilder};
 use idb::{Database, Factory, KeyPath, TransactionMode};
+use keystore_v_1_0_0::CryptoKeystoreError as CryptoKeystoreErrorV1_0_0;
 use keystore_v_1_0_0::connection::KeystoreDatabaseConnection as KeystoreDatabaseConnectionV1_0_0;
 use keystore_v_1_0_0::entities::{
     E2eiAcmeCA as E2eiAcmeCAV1_0_0, E2eiCrl as E2eiCrlV1_0_0, E2eiEnrollment as E2eiEnrollmentV1_0_0,
@@ -23,7 +24,6 @@ use keystore_v_1_0_0::entities::{
     ProteusIdentity as ProteusIdentityV1_0_0, ProteusPrekey as ProteusPrekeyV1_0_0,
     ProteusSession as ProteusSessionV1_0_0, UniqueEntity as UniqueEntityV1_0_0,
 };
-use keystore_v_1_0_0::CryptoKeystoreError as CryptoKeystoreErrorV1_0_0;
 use serde::ser::Serialize;
 
 const fn db_version_number(counter: u32) -> u32 {

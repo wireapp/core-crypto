@@ -15,9 +15,9 @@
 // along with this program. If not, see http://www.gnu.org/licenses/.
 
 use crate::{
+    CryptoKeystoreResult, MissingKeyErrorKind,
     connection::{DatabaseConnection, KeystoreDatabaseConnection, TransactionWrapper},
     entities::{Entity, EntityBase, EntityFindParams, EntityTransactionExt, MlsSignatureKeyPair, StringEntityId},
-    CryptoKeystoreResult, MissingKeyErrorKind,
 };
 use std::io::{Read, Write};
 

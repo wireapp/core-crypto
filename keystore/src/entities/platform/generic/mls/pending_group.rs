@@ -15,14 +15,14 @@
 // along with this program. If not, see http://www.gnu.org/licenses/.
 
 use crate::{
+    CryptoKeystoreError, MissingKeyErrorKind,
     connection::KeystoreDatabaseConnection,
     entities::{Entity, EntityBase, EntityFindParams, PersistedMlsPendingGroup, StringEntityId},
-    CryptoKeystoreError, MissingKeyErrorKind,
 };
 use crate::{
+    CryptoKeystoreResult,
     connection::{DatabaseConnection, TransactionWrapper},
     entities::EntityTransactionExt,
-    CryptoKeystoreResult,
 };
 
 #[async_trait::async_trait]
@@ -261,7 +261,7 @@ impl EntityTransactionExt for PersistedMlsPendingGroup {
         let zb = rusqlite::blob::ZeroBlob(self.state.len() as i32);
         let zid = rusqlite::blob::ZeroBlob(self.id.len() as i32);
 
-        let rowid: i64 = if let Some(rowid) = transaction
+        let rowid: i64 = match transaction
             .query_row(
                 "SELECT rowid FROM mls_pending_groups WHERE id = ?",
                 [self.id.as_slice()],
@@ -269,29 +269,32 @@ impl EntityTransactionExt for PersistedMlsPendingGroup {
             )
             .optional()?
         {
-            use rusqlite::ToSql as _;
-            transaction.execute(
-                "UPDATE mls_pending_groups SET state = ?, parent_id = ?, cfg = ? WHERE id = ?",
-                [&zb.to_sql()?, &zpid.to_sql()?, &zcfg.to_sql()?, &self.id.to_sql()?],
-            )?;
-            rowid
-        } else {
-            let id_bytes = &self.id;
+            Some(rowid) => {
+                use rusqlite::ToSql as _;
+                transaction.execute(
+                    "UPDATE mls_pending_groups SET state = ?, parent_id = ?, cfg = ? WHERE id = ?",
+                    [&zb.to_sql()?, &zpid.to_sql()?, &zcfg.to_sql()?, &self.id.to_sql()?],
+                )?;
+                rowid
+            }
+            _ => {
+                let id_bytes = &self.id;
 
-            use rusqlite::ToSql as _;
-            transaction.execute(
-                "INSERT INTO mls_pending_groups (id, state, cfg, parent_id) VALUES(?, ?, ?, ?)",
-                [&zid.to_sql()?, &zb.to_sql()?, &zcfg.to_sql()?, &zpid.to_sql()?],
-            )?;
-            let rowid = transaction.last_insert_rowid();
+                use rusqlite::ToSql as _;
+                transaction.execute(
+                    "INSERT INTO mls_pending_groups (id, state, cfg, parent_id) VALUES(?, ?, ?, ?)",
+                    [&zid.to_sql()?, &zb.to_sql()?, &zcfg.to_sql()?, &zpid.to_sql()?],
+                )?;
+                let rowid = transaction.last_insert_rowid();
 
-            let mut blob =
-                transaction.blob_open(rusqlite::DatabaseName::Main, "mls_pending_groups", "id", rowid, false)?;
-            use std::io::Write as _;
-            blob.write_all(id_bytes)?;
-            blob.close()?;
+                let mut blob =
+                    transaction.blob_open(rusqlite::DatabaseName::Main, "mls_pending_groups", "id", rowid, false)?;
+                use std::io::Write as _;
+                blob.write_all(id_bytes)?;
+                blob.close()?;
 
-            rowid
+                rowid
+            }
         };
 
         let mut blob = transaction.blob_open(

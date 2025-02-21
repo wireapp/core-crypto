@@ -17,10 +17,10 @@
 #![cfg(not(target_family = "wasm"))]
 
 use criterion::{
-    async_executor::FuturesExecutor, black_box, criterion_group, criterion_main, BenchmarkId, Criterion, Throughput,
+    BenchmarkId, Criterion, Throughput, async_executor::FuturesExecutor, black_box, criterion_group, criterion_main,
 };
 use openmls::prelude::Ciphersuite;
-use openmls_traits::{key_store::OpenMlsKeyStore, random::OpenMlsRand, OpenMlsCryptoProvider};
+use openmls_traits::{OpenMlsCryptoProvider, key_store::OpenMlsKeyStore, random::OpenMlsRand};
 
 use core_crypto_keystore::Connection as CryptoKeystore;
 use futures_lite::future::block_on;

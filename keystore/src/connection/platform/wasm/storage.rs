@@ -20,8 +20,8 @@ use std::{cell::RefCell, collections::HashMap, rc::Rc};
 use wasm_bindgen::JsValue;
 
 use crate::{
-    entities::{Entity, EntityFindParams},
     CryptoKeystoreError, CryptoKeystoreResult,
+    entities::{Entity, EntityFindParams},
 };
 
 use super::WasmConnection;

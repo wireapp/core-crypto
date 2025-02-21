@@ -15,14 +15,14 @@
 // along with this program. If not, see http://www.gnu.org/licenses/.
 
 use crate::{
+    CryptoKeystoreError,
     connection::TransactionWrapper,
     entities::{EntityTransactionExt, MlsCredentialExt},
-    CryptoKeystoreError,
 };
 use crate::{
+    CryptoKeystoreResult, MissingKeyErrorKind,
     connection::{DatabaseConnection, KeystoreDatabaseConnection},
     entities::{Entity, EntityBase, EntityFindParams, MlsCredential, StringEntityId},
-    CryptoKeystoreResult, MissingKeyErrorKind,
 };
 use std::{
     io::{Read, Write},

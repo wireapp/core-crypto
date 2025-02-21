@@ -15,12 +15,12 @@
 // along with this program. If not, see http://www.gnu.org/licenses/.
 
 use crate::{
+    CryptoKeystoreResult, MissingKeyErrorKind,
     connection::KeystoreDatabaseConnection,
     entities::{
         Entity, EntityBase, EntityFindParams, EntityTransactionExt, PersistedMlsGroup, PersistedMlsGroupExt,
         PersistedMlsPendingGroup, StringEntityId,
     },
-    CryptoKeystoreResult, MissingKeyErrorKind,
 };
 
 #[async_trait::async_trait(?Send)]

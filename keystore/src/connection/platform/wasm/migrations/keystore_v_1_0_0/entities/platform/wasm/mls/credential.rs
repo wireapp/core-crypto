@@ -15,9 +15,9 @@
 // along with this program. If not, see http://www.gnu.org/licenses/.
 
 use crate::keystore_v_1_0_0::{
-    connection::{storage::WasmStorageWrapper, DatabaseConnection, KeystoreDatabaseConnection},
-    entities::{Entity, EntityBase, EntityFindParams, MlsCredential, MlsCredentialExt, StringEntityId},
     CryptoKeystoreError, CryptoKeystoreResult, MissingKeyErrorKind,
+    connection::{DatabaseConnection, KeystoreDatabaseConnection, storage::WasmStorageWrapper},
+    entities::{Entity, EntityBase, EntityFindParams, MlsCredential, MlsCredentialExt, StringEntityId},
 };
 use rexie::TransactionMode;
 

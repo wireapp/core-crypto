@@ -16,11 +16,11 @@
 
 use std::ops::Deref;
 
-use crate::connection::{DatabaseConnection, DatabaseConnectionRequirements};
 use crate::CryptoKeystoreResult;
+use crate::connection::{DatabaseConnection, DatabaseConnectionRequirements};
 use async_lock::{Mutex, MutexGuard};
 use blocking::unblock;
-use rusqlite::{functions::FunctionFlags, Transaction};
+use rusqlite::{Transaction, functions::FunctionFlags};
 
 refinery::embed_migrations!("src/connection/platform/generic/migrations");
 
@@ -203,7 +203,9 @@ impl SqlCipherConnection {
             };
 
             // Import raw symbols from CoreFoundation
-            extern "C" {
+            //
+            // SAFETY: we promise that these symbols will appear when we link this
+            unsafe extern "C" {
                 pub static kSecAttrAccessibleAfterFirstUnlock: CFStringRef;
                 pub static kSecAttrAccessible: CFStringRef;
             }

@@ -22,8 +22,8 @@ pub use connection::Connection;
 #[cfg(feature = "dummy-entity")]
 pub mod dummy_entity {
     use super::{
-        entities::{Entity, EntityBase, EntityFindParams, StringEntityId},
         CryptoKeystoreResult, MissingKeyErrorKind,
+        entities::{Entity, EntityBase, EntityFindParams, StringEntityId},
     };
 
     #[derive(Debug, Eq, Clone, PartialEq, serde::Serialize, serde::Deserialize)]

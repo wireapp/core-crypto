@@ -15,9 +15,9 @@
 // along with this program. If not, see http://www.gnu.org/licenses/.
 
 use crate::{
+    MissingKeyErrorKind,
     connection::KeystoreDatabaseConnection,
     entities::{E2eiAcmeCA, EntityBase, UniqueEntity},
-    MissingKeyErrorKind,
 };
 
 #[async_trait::async_trait(?Send)]

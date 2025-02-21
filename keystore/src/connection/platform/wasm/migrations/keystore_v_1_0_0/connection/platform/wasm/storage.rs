@@ -20,8 +20,8 @@ use std::collections::HashMap;
 use wasm_bindgen::JsValue;
 
 use crate::keystore_v_1_0_0::{
-    entities::{Entity, EntityFindParams},
     CryptoKeystoreResult,
+    entities::{Entity, EntityFindParams},
 };
 
 use super::WasmConnection;

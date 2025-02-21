@@ -15,8 +15,8 @@
 // along with this program. If not, see http://www.gnu.org/licenses/.
 
 use crate::{
-    entities::{Entity, EntityBase, PersistedMlsGroup, PersistedMlsGroupExt},
     CryptoKeystoreResult,
+    entities::{Entity, EntityBase, PersistedMlsGroup, PersistedMlsGroupExt},
 };
 
 #[async_trait::async_trait]

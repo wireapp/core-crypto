@@ -44,8 +44,8 @@ use sha2::{Digest, Sha256};
 #[cfg(feature = "dummy-entity")]
 pub mod dummy_entity {
     use crate::{
-        entities::{Entity, EntityBase, EntityFindParams, StringEntityId},
         CryptoKeystoreResult, MissingKeyErrorKind,
+        entities::{Entity, EntityBase, EntityFindParams, StringEntityId},
     };
 
     #[derive(Debug, Eq, Clone, PartialEq, serde::Serialize, serde::Deserialize)]

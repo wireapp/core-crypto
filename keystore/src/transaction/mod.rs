@@ -6,8 +6,8 @@ use crate::entities::proteus::*;
 use crate::entities::{ConsumerData, EntityBase, EntityFindParams, EntityTransactionExt, UniqueEntity};
 use crate::transaction::dynamic_dispatch::EntityId;
 use crate::{
-    connection::{Connection, FetchFromDatabase, KeystoreDatabaseConnection},
     CryptoKeystoreError, CryptoKeystoreResult,
+    connection::{Connection, FetchFromDatabase, KeystoreDatabaseConnection},
 };
 use async_lock::{RwLock, SemaphoreGuardArc};
 use itertools::Itertools;
@@ -111,14 +111,15 @@ impl KeystoreTransaction {
         E: crate::entities::Entity<ConnectionType = KeystoreDatabaseConnection>,
     {
         let cache_result = self.cache.find(id).await?;
-        if let Some(cache_result) = cache_result {
-            Ok(Some(Some(cache_result)))
-        } else {
-            let deleted_list = self.deleted.read().await;
-            if deleted_list.contains(&EntityId::from_collection_name(E::COLLECTION_NAME, id)?) {
-                Ok(Some(None))
-            } else {
-                Ok(None)
+        match cache_result {
+            Some(cache_result) => Ok(Some(Some(cache_result))),
+            _ => {
+                let deleted_list = self.deleted.read().await;
+                if deleted_list.contains(&EntityId::from_collection_name(E::COLLECTION_NAME, id)?) {
+                    Ok(Some(None))
+                } else {
+                    Ok(None)
+                }
             }
         }
     }
@@ -127,12 +128,13 @@ impl KeystoreTransaction {
         &self,
     ) -> CryptoKeystoreResult<Option<U>> {
         let cache_result = self.cache.find_unique().await;
-        if let Ok(cache_result) = cache_result {
-            Ok(Some(cache_result))
-        } else {
-            // The deleted list doesn't have to be checked because unique entities don't implement
-            // deletion, just replace. So we can directly return None.
-            Ok(None)
+        match cache_result {
+            Ok(cache_result) => Ok(Some(cache_result)),
+            _ => {
+                // The deleted list doesn't have to be checked because unique entities don't implement
+                // deletion, just replace. So we can directly return None.
+                Ok(None)
+            }
         }
     }
 
@@ -261,14 +263,14 @@ impl KeystoreTransaction {
 /// );
 ///```
 macro_rules! commit_transaction {
-    ($keystore_transaction:expr, $db:expr, [ $( ($records:ident, $entity:ty) ),*], proteus_types: [ $( ($conditional_records:ident, $conditional_entity:ty) ),*]) => {
+    ($keystore_transaction:expr_2021, $db:expr_2021, [ $( ($records:ident, $entity:ty) ),*], proteus_types: [ $( ($conditional_records:ident, $conditional_entity:ty) ),*]) => {
         #[cfg(feature = "proteus-keystore")]
         commit_transaction!($keystore_transaction, $db, [ $( ($records, $entity) ),*], [ $( ($conditional_records, $conditional_entity) ),*]);
 
         #[cfg(not(feature = "proteus-keystore"))]
         commit_transaction!($keystore_transaction, $db, [ $( ($records, $entity) ),*]);
     };
-     ($keystore_transaction:expr, $db:expr, $([ $( ($records:ident, $entity:ty) ),*]),*) => {
+     ($keystore_transaction:expr_2021, $db:expr_2021, $([ $( ($records:ident, $entity:ty) ),*]),*) => {
             let cached_collections = ( $( $(
             $keystore_transaction.cache.find_all::<$entity>(Default::default()).await?,
                 )* )* );
