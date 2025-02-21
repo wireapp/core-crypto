@@ -14,22 +14,20 @@ jobs:
   build-android:
     if: github.repository == 'wireapp/core-crypto'
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+          - task: android-armv7
+            target: armv7-linux-androideabi
+          - task: android-armv8
+            target: aarch64-linux-android
+          - task: android-x86
+            target: x86_64-linux-android
     steps:
       - uses: actions/checkout@v4
-      - name: set up jdk 17
-        uses: actions/setup-java@v4
+      - uses: actions-rust-lang/setup-rust-toolchain@v1
         with:
-          java-version: "17"
-          distribution: "adopt"
-      - name: gradle setup
-        uses: gradle/actions/setup-gradle@v4
-      - name: validate gradle wrapper
-        uses: gradle/actions/wrapper-validation@v4
-      - name: "setup rust"
-        uses: actions-rust-lang/setup-rust-toolchain@v1  # this implicitly caches Rust tools and build artifacts
-        with:
-          rustflags: ''
-          target: "armv7-linux-androideabi,aarch64-linux-android,x86_64-linux-android"
+          target: ${{ matrix.target }}
       - name: setup cargo-make
         uses: davidB/rust-cargo-make@v1
       - name: setup android sdk
@@ -41,18 +39,65 @@ jobs:
           ANDROID_NDK_HOME: /usr/local/lib/android/sdk/ndk/25.2.9519653
         run: |
           cd crypto-ffi
-          cargo make android
+          cargo make ${{ matrix.task }}
+      - uses: actions/upload-artifact@v4
+        with:
+          name: android-target-${{ matrix.target }}
+          path: target/${{ matrix.target }}/release/libcore_crypto_ffi.*
+          retention-days: 1
+
+  package-android:
+    if: github.repository == 'wireapp/core-crypto'
+    runs-on: ubuntu-latest
+    needs: build-android
+    steps:
+      - uses: actions/checkout@v4
+      - name: set up jdk 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: "17"
+          distribution: "adopt"
+      - name: gradle setup
+        uses: gradle/actions/setup-gradle@v4
+      - name: validate gradle wrapper
+        uses: gradle/actions/wrapper-validation@v4
+      - name: setup cargo-make
+        uses: davidB/rust-cargo-make@v1
+      - name: setup android sdk
+        uses: android-actions/setup-android@v3
+      - name: install ndk 25
+        run: echo "y" | sdkmanager --install "ndk;25.2.9519653"
+
+      - name: download armv7-linux-androideabi binaries
+        uses: actions/download-artifact@v4
+        with:
+          name: android-target-armv7-linux-androideabi
+          path: target/armv7-linux-androideabi/release
+
+      - name: download aarch64-linux-android binaries
+        uses: actions/download-artifact@v4
+        with:
+          name: android-target-aarch64-linux-android
+          path: target/aarch64-linux-android/release
+
+      - name: download x86_64-linux-android binaries
+        uses: actions/download-artifact@v4
+        with:
+          name: android-target-x86_64-linux-android
+          path: target/x86_64-linux-android/release
+
+      - name: generate bindings
+        run: |
+          cd crypto-ffi
+          cargo make bindings-kotlin-android
       - name: build package
         run: |
           cd crypto-ffi/bindings
           ./gradlew android:build -x lint -x lintRelease
       - uses: actions/upload-artifact@v4
         with:
-          name: android-target-${{ github.run_id }}
-          path: target/*android*
-          retention-days: 1
-      - uses: actions/upload-artifact@v4
-        with:
-          name: android-${{ github.run_id }}
-          path: crypto-ffi/bindings
+          name: android
+          path: |
+            crypto-ffi/bindings
+            target/*android*
           retention-days: 1

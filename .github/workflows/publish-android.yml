@@ -45,12 +45,7 @@ jobs:
         run: echo "y" | sdkmanager --install "ndk;25.2.9519653"
       - uses: actions/download-artifact@v4
         with:
-          name: android-target-${{ github.run_id }}
-          path: target
-      - uses: actions/download-artifact@v4
-        with:
-          name: android-${{ github.run_id }}
-          path: crypto-ffi/bindings
+          name: android
       - name: publish package
         run: |
           cd crypto-ffi/bindings

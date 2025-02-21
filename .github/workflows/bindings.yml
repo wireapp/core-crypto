@@ -42,12 +42,7 @@ jobs:
         uses: gradle/actions/wrapper-validation@v4
       - uses: actions/download-artifact@v4
         with:
-          name: android-target-${{ github.run_id }}
-          path: target
-      - uses: actions/download-artifact@v4
-        with:
-          name: android-${{ github.run_id }}
-          path: crypto-ffi/bindings
+          name: android
       - name: enable kvm group perms
         run: |
           echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
