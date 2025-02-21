@@ -24,7 +24,7 @@ jobs:
         run: |
           cd crypto-ffi
           cargo make jvm-linux
-      - name: upload static rust library
+      - name: upload dynamic library
         uses: actions/upload-artifact@v4
         with:
             name: jvm-linux-so-file-${{ github.run_id }}
