@@ -232,7 +232,7 @@ impl CoreCryptoContext {
         let context = self.inner.clone();
 
         proteus_impl! {{
-            context.proteus_fingerprint().await.map_err(CoreCryptoError::from).map(Into::into)
+            context.proteus_fingerprint().await.map_err(CoreCryptoError::from)
         } or throw WasmCryptoResult<_> }
     }
 
@@ -247,7 +247,6 @@ impl CoreCryptoContext {
                 .proteus_fingerprint_local(&session_id)
                 .await
                 .map_err(CoreCryptoError::from)
-                .map(Into::into)
         } or throw WasmCryptoResult<_> }
     }
 
@@ -259,7 +258,7 @@ impl CoreCryptoContext {
 
         proteus_impl! {{
             context.proteus_fingerprint_remote(&session_id).await
-                .map_err(CoreCryptoError::from).map(Into::into)
+                .map_err(CoreCryptoError::from)
         } or throw WasmCryptoResult<_> }
     }
 
@@ -269,7 +268,7 @@ impl CoreCryptoContext {
     pub fn proteus_fingerprint_prekeybundle(prekey: Box<[u8]>) -> WasmCryptoResult<String> {
         proteus_impl!({
             core_crypto::proteus::ProteusCentral::fingerprint_prekeybundle(&prekey)
-                .map_err(Into::into).map(Into::into)
+                .map_err(Into::into)
         } or throw WasmCryptoResult<_>)
     }
 
