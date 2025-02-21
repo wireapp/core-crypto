@@ -101,7 +101,7 @@ args = ["run", "--cwd", "bindings/js", "build"]
 
 ##################################### FFI #####################################
 
-[tasks.compile-ffi-swift]
+[tasks._bindings-swift]
 command = "cargo"
 args = [
     "run",
@@ -115,13 +115,13 @@ args = [
     "--library", "../target/release/deps/libcore_crypto_ffi.${LIBRARY_EXTENSION}"
 ]
 
-[tasks.ffi-swift]
-dependencies = ["compile-ffi-swift"]
+[tasks.bindings-swift]
+dependencies = ["_bindings-swift"]
 script = '''
     mv ./bindings/swift/WireCoreCrypto/WireCoreCrypto/core_crypto_ffi.swift ./bindings/swift/WireCoreCrypto/WireCoreCrypto/CoreCrypto.swift
 '''
 
-[tasks.compile-ffi-kotlin-android]
+[tasks.bindings-kotlin-android]
 command = "cargo"
 args = [
     "run",
@@ -136,7 +136,7 @@ args = [
     "--library", "../target/release/deps/libcore_crypto_ffi.${LIBRARY_EXTENSION}"
 ]
 
-[tasks.compile-ffi-kotlin-jvm]
+[tasks.bindings-kotlin-jvm]
 command = "cargo"
 args = [
     "run",
@@ -150,11 +150,11 @@ args = [
     "--library", "../target/release/deps/libcore_crypto_ffi.${LIBRARY_EXTENSION}"
 ]
 
-[tasks.ffi-kotlin]
-dependencies = ["compile-ffi-kotlin-android", "compile-ffi-kotlin-jvm"]
+[tasks.bindings-kotlin]
+dependencies = ["bindings-kotlin-android", "bindings-kotlin-jvm"]
 
-[tasks.ffi]
-dependencies = ["ffi-swift", "ffi-kotlin"]
+[tasks.bindings]
+dependencies = ["bindings-swift", "bindings-kotlin"]
 
 ##################################### iOS #####################################
 
@@ -162,14 +162,14 @@ dependencies = ["ffi-swift", "ffi-kotlin"]
 plugin = "detect-release"
 
 [tasks.ios-device]
-dependencies = ["ffi-swift"]
+dependencies = ["bindings-swift"]
 env = { "IPHONEOS_DEPLOYMENT_TARGET"="16.0" }
 condition = { platforms = ["mac"] }
 command = "cargo"
 args = ["rustc", "--target", "aarch64-apple-ios", "--crate-type=cdylib", "--crate-type=staticlib", "--release", "--locked", "--", "-C", "strip=symbols"]
 
 [tasks.ios-simulator-x86]
-dependencies = ["ffi-swift"]
+dependencies = ["bindings-swift"]
 condition = { platforms = ["mac"] }
 command = "cargo"
 args = [
@@ -184,7 +184,7 @@ args = [
 ]
 
 [tasks.ios-simulator-arm]
-dependencies = ["ffi-swift"]
+dependencies = ["bindings-swift"]
 # override CFLAGS to fix ring compilation
 env = { "CRATE_CC_NO_DEFAULTS" = 1, "TARGET_CFLAGS" = { script = ["echo \"--target=arm64-apple-ios14.0.0-simulator -mios-simulator-version-min=14.0 -isysroot `xcrun --show-sdk-path --sdk iphonesimulator`\""] } }
 condition = { platforms = ["mac"] }
@@ -230,7 +230,7 @@ args = [
     "--",
     "-C", "strip=symbols"
 ]
-dependencies = ["compile-ffi-kotlin-android", "android-env"]
+dependencies = ["bindings-kotlin-android", "android-env"]
 
 [tasks.android-armv8]
 command = "cargo"
@@ -244,7 +244,7 @@ args = [
     "--",
     "-C", "strip=symbols"
 ]
-dependencies = ["compile-ffi-kotlin-android", "android-env"]
+dependencies = ["bindings-kotlin-android", "android-env"]
 
 [tasks.android-x86]
 command = "cargo"
@@ -260,7 +260,7 @@ args = [
     "-l", "static=clang_rt.builtins-x86_64-android",
     "-L", "${CLANG_RT_DIR}"
 ]
-dependencies = ["compile-ffi-kotlin-android", "android-env"]
+dependencies = ["bindings-kotlin-android", "android-env"]
 
 [tasks.android]
 dependencies = ["android-armv7", "android-armv8", "android-x86"]
@@ -279,7 +279,7 @@ args = [
     "--",
     "-C", "strip=symbols"
 ]
-dependencies = ["compile-ffi-kotlin-jvm"]
+dependencies = ["bindings-kotlin-jvm"]
 condition = { platforms = ["mac"] }
 
 [tasks.jvm-aarch64-darwin]
@@ -294,7 +294,7 @@ args = [
     "--",
     "-C", "strip=symbols"
 ]
-dependencies = ["compile-ffi-kotlin-jvm"]
+dependencies = ["bindings-kotlin-jvm"]
 condition = { platforms = ["mac"] }
 
 [tasks.jvm-x86-linux]
@@ -309,7 +309,7 @@ args = [
     "--",
     "-C", "strip=symbols"
 ]
-dependencies = ["compile-ffi-kotlin-jvm"]
+dependencies = ["bindings-kotlin-jvm"]
 condition = { platforms = ["linux"] }
 
 [tasks.jvm-darwin]
