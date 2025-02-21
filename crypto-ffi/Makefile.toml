@@ -162,7 +162,16 @@ dependencies = ["bindings-swift"]
 env = { "IPHONEOS_DEPLOYMENT_TARGET"="16.0" }
 condition = { platforms = ["mac"] }
 command = "cargo"
-args = ["rustc", "--target", "aarch64-apple-ios", "--crate-type=cdylib", "--crate-type=staticlib", "--release", "--locked", "--", "-C", "strip=symbols"]
+args = [
+    "rustc",
+    "--locked",
+    "--target", "aarch64-apple-ios",
+    "--crate-type=cdylib",
+    "--crate-type=staticlib",
+    "--release",
+    "--",
+    "-C", "strip=symbols"
+]
 
 [tasks.ios-simulator-x86]
 dependencies = ["bindings-swift"]
