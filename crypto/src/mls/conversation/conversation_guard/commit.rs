@@ -1,3 +1,5 @@
+//! The methods in this module all produce commits.
+
 use openmls::prelude::KeyPackageIn;
 
 use crate::{
