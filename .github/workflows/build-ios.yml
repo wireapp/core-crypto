@@ -12,6 +12,7 @@ env:
 
 jobs:
   build-ios:
+    if: github.repository == 'wireapp/core-crypto'
     runs-on: self-hosted
     strategy:
       matrix:
