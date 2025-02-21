@@ -475,7 +475,10 @@ impl CoreCryptoContext {
         future_to_promise(
             async move {
                 context
-                    .update_keying_material(&conversation_id)
+                    .conversation_guard(&conversation_id)
+                    .await
+                    .map_err(CoreCryptoError::from)?
+                    .update_key_material()
                     .await
                     .map_err(CoreCryptoError::from)?;
                 WasmCryptoResult::Ok(JsValue::UNDEFINED)

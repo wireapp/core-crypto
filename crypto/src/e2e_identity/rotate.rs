@@ -1007,7 +1007,14 @@ pub(crate) mod tests {
                     let _rotate_commit = alice_central.create_unmerged_e2ei_rotate_commit(&id, &cb).await;
 
                     // Meanwhile, Bob creates a simple commit
-                    bob_central.context.update_keying_material(&id).await.unwrap();
+                    bob_central
+                        .context
+                        .conversation_guard(&id)
+                        .await
+                        .unwrap()
+                        .update_key_material()
+                        .await
+                        .unwrap();
                     // accepted by the backend
                     let bob_commit = bob_central.mls_transport.latest_commit().await;
 

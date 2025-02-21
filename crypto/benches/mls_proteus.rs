@@ -248,7 +248,15 @@ fn update_client_bench(c: &mut Criterion) {
                     },
                     |(central, id)| async move {
                         let context = central.new_transaction().await.unwrap();
-                        black_box(context.update_keying_material(&id).await.unwrap());
+                        black_box(
+                            context
+                                .conversation_guard(&id)
+                                .await
+                                .unwrap()
+                                .update_key_material()
+                                .await
+                                .unwrap(),
+                        );
                         context.finish().await.unwrap();
                         black_box(());
                     },

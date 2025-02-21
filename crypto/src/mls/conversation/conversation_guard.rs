@@ -1,6 +1,6 @@
 use async_lock::{RwLockReadGuard, RwLockWriteGuard};
 use mls_crypto_provider::MlsCryptoProvider;
-use openmls::prelude::KeyPackageIn;
+use openmls::prelude::{group_info::GroupInfo, KeyPackageIn};
 
 use crate::{
     context::CentralContext,
@@ -75,6 +75,11 @@ impl ConversationGuard {
         }
     }
 
+    fn group_info(group_info: Option<GroupInfo>) -> Result<MlsGroupInfoBundle> {
+        let group_info = group_info.ok_or(LeafError::MissingGroupInfo)?;
+        MlsGroupInfoBundle::try_new_full_plaintext(group_info).map_err(Into::into)
+    }
+
     /// Adds new members to the group/conversation
     ///
     /// # Arguments
@@ -109,10 +114,7 @@ impl ConversationGuard {
 
         // commit requires an optional welcome
         let welcome = Some(welcome);
-        // commit requires non-optional group info
-        // but should be fine as adding members always generates a new commit
-        let group_info = group_info.ok_or(LeafError::MissingGroupInfo)?;
-        let group_info = MlsGroupInfoBundle::try_new_full_plaintext(group_info)?;
+        let group_info = Self::group_info(group_info)?;
 
         conversation
             .persist_group_when_changed(&backend.keystore(), false)
@@ -141,7 +143,6 @@ impl ConversationGuard {
         let client = self.mls_client().await?;
         let backend = self.mls_provider().await?;
         let mut conversation = self.inner.write().await;
-        // let commit = conversation.remove_members(&client, clients, &backend).await?;
 
         let members = conversation
             .group
@@ -166,9 +167,7 @@ impl ConversationGuard {
             .await
             .map_err(MlsError::wrap("group remove members"))?;
 
-        // we expect this to always work as removing a member should always generate a new commit
-        let group_info = group_info.ok_or(LeafError::MissingGroupInfo)?;
-        let group_info = MlsGroupInfoBundle::try_new_full_plaintext(group_info)?;
+        let group_info = Self::group_info(group_info)?;
 
         conversation
             .persist_group_when_changed(&backend.keystore(), false)
@@ -183,5 +182,22 @@ impl ConversationGuard {
             group_info,
         })
         .await
+    }
+
+    /// Self updates the KeyPackage and automatically commits. Pending proposals will be commited.
+    ///
+    /// # Arguments
+    /// * `conversation_id` - the group/conversation id
+    ///
+    /// see [MlsCentral::update_keying_material]
+    pub async fn update_key_material(&mut self) -> Result<()> {
+        let client = self.mls_client().await?;
+        let backend = self.mls_provider().await?;
+        let mut conversation = self.inner.write().await;
+        let commit = conversation
+            .update_keying_material(&client, &backend, None, None)
+            .await?;
+        drop(conversation);
+        self.send_and_merge_commit(commit).await
     }
 }

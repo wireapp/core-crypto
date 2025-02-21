@@ -667,7 +667,14 @@ mod tests {
                         .unwrap();
                     alice_central.invite_all(&case, &id, [&bob_central]).await.unwrap();
 
-                    bob_central.context.update_keying_material(&id).await.unwrap();
+                    bob_central
+                        .context
+                        .conversation_guard(&id)
+                        .await
+                        .unwrap()
+                        .update_key_material()
+                        .await
+                        .unwrap();
                     let commit = bob_central.mls_transport.latest_commit().await;
                     let MlsConversationDecryptMessage { is_active, .. } = alice_central
                         .context
@@ -732,7 +739,14 @@ mod tests {
 
                     let epoch_before = alice_central.context.conversation_epoch(&id).await.unwrap();
 
-                    alice_central.context.update_keying_material(&id).await.unwrap();
+                    alice_central
+                        .context
+                        .conversation_guard(&id)
+                        .await
+                        .unwrap()
+                        .update_key_material()
+                        .await
+                        .unwrap();
                     let commit = alice_central.mls_transport.latest_commit().await;
 
                     let decrypted = bob_central
@@ -781,7 +795,14 @@ mod tests {
                             .await
                             .unwrap();
 
-                        bob_central.context.update_keying_material(&id).await.unwrap();
+                        bob_central
+                            .context
+                            .conversation_guard(&id)
+                            .await
+                            .unwrap()
+                            .update_key_material()
+                            .await
+                            .unwrap();
                         let commit = bob_central.mls_transport.latest_commit().await;
                         let MlsConversationDecryptMessage {
                             proposals,
@@ -823,7 +844,14 @@ mod tests {
                         // Alice will create a proposal to add Charlie
                         // Bob will create a commit which Alice will decrypt
                         // Then Alice will renew her proposal
-                        bob_central.context.update_keying_material(&id).await.unwrap();
+                        bob_central
+                            .context
+                            .conversation_guard(&id)
+                            .await
+                            .unwrap()
+                            .update_key_material()
+                            .await
+                            .unwrap();
                         let bob_commit = bob_central.mls_transport.latest_commit().await;
                         let commit_epoch = bob_commit.epoch().unwrap();
 
@@ -928,7 +956,14 @@ mod tests {
                             .unwrap();
                         assert_eq!(alice_central.pending_proposals(&id).await.len(), 1);
 
-                        bob_central.context.update_keying_material(&id).await.unwrap();
+                        bob_central
+                            .context
+                            .conversation_guard(&id)
+                            .await
+                            .unwrap()
+                            .update_key_material()
+                            .await
+                            .unwrap();
                         let commit = bob_central.mls_transport.latest_commit().await;
                         let alice_renewed_proposals = alice_central
                             .context
@@ -957,7 +992,14 @@ mod tests {
                         .unwrap();
                     alice_central.invite_all(&case, &id, [&bob_central]).await.unwrap();
 
-                    alice_central.context.update_keying_material(&id).await.unwrap();
+                    alice_central
+                        .context
+                        .conversation_guard(&id)
+                        .await
+                        .unwrap()
+                        .update_key_material()
+                        .await
+                        .unwrap();
                     let commit = alice_central.mls_transport.latest_commit().await;
 
                     let sender_client_id = bob_central
@@ -1183,7 +1225,14 @@ mod tests {
                     alice_central.invite_all(&case, &id, [&bob_central]).await.unwrap();
 
                     // only Alice will change epoch without notifying Bob
-                    alice_central.context.update_keying_material(&id).await.unwrap();
+                    alice_central
+                        .context
+                        .conversation_guard(&id)
+                        .await
+                        .unwrap()
+                        .update_key_material()
+                        .await
+                        .unwrap();
                     let commit = alice_central.mls_transport.latest_commit().await;
 
                     // Now in epoch 2 Alice will encrypt a message
@@ -1308,7 +1357,14 @@ mod tests {
 
                     // Move group's epoch forward by self updating
                     for _ in 0..MAX_PAST_EPOCHS {
-                        alice_central.context.update_keying_material(&id).await.unwrap();
+                        alice_central
+                            .context
+                            .conversation_guard(&id)
+                            .await
+                            .unwrap()
+                            .update_key_material()
+                            .await
+                            .unwrap();
                         let commit = alice_central.mls_transport.latest_commit().await;
                         bob_central
                             .context
@@ -1321,7 +1377,14 @@ mod tests {
                     assert_eq!(decrypt.app_msg.unwrap(), b"Hello Bob");
 
                     // Moving the epochs once more should cause an error
-                    alice_central.context.update_keying_material(&id).await.unwrap();
+                    alice_central
+                        .context
+                        .conversation_guard(&id)
+                        .await
+                        .unwrap()
+                        .update_key_material()
+                        .await
+                        .unwrap();
                     let commit = alice_central.mls_transport.latest_commit().await;
                     bob_central
                         .context
@@ -1373,7 +1436,14 @@ mod tests {
                     alice_central.context.clear_pending_commit(&id).await.unwrap();
 
                     // Now let's jump to next epoch
-                    alice_central.context.update_keying_material(&id).await.unwrap();
+                    alice_central
+                        .context
+                        .conversation_guard(&id)
+                        .await
+                        .unwrap()
+                        .update_key_material()
+                        .await
+                        .unwrap();
                     let commit = alice_central.mls_transport.latest_commit().await;
                     bob_central
                         .context

@@ -433,7 +433,14 @@ mod tests {
                 let external_commit = bob_central.mls_transport.latest_commit().await;
 
                 // Alice creates a new commit before receiving the external join
-                alice_central.context.update_keying_material(&id).await.unwrap();
+                alice_central
+                    .context
+                    .conversation_guard(&id)
+                    .await
+                    .unwrap()
+                    .update_key_material()
+                    .await
+                    .unwrap();
 
                 // receiving the external join with outdated epoch should fail because of
                 // the wrong epoch

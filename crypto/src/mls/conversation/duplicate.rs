@@ -70,7 +70,14 @@ mod tests {
                     let unknown_commit = alice_central.create_unmerged_commit(&id).await.commit;
                     alice_central.context.clear_pending_commit(&id).await.unwrap();
 
-                    alice_central.context.update_keying_material(&id).await.unwrap();
+                    alice_central
+                        .context
+                        .conversation_guard(&id)
+                        .await
+                        .unwrap()
+                        .update_key_material()
+                        .await
+                        .unwrap();
                     let commit = alice_central.mls_transport.latest_commit().await;
 
                     // decrypt once ... ok

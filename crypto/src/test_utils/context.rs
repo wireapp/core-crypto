@@ -577,10 +577,10 @@ impl ClientContext {
     /// Creates a commit but don't merge it immediately (e.g, because the app crashes before he receives the success response from the ds via MlsTransport api)
     pub(crate) async fn create_unmerged_commit(&self, id: &ConversationId) -> MlsCommitBundle {
         self.context
-            .get_conversation(&id)
+            .conversation_guard(&id)
             .await
             .unwrap()
-            .write()
+            .conversation_mut()
             .await
             .update_keying_material(&self.client().await, &self.central.mls_backend, None, None)
             .await
@@ -589,10 +589,10 @@ impl ClientContext {
 
     pub(crate) async fn commit_pending_proposals_unmerged(&self, id: &ConversationId) -> MlsCommitBundle {
         self.context
-            .get_conversation(&id)
+            .conversation_guard(&id)
             .await
             .unwrap()
-            .write()
+            .conversation_mut()
             .await
             .commit_pending_proposals(&self.client().await, &self.central.mls_backend)
             .await

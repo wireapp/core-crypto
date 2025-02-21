@@ -127,40 +127,6 @@ impl CentralContext {
         }
     }
 
-    /// Self updates the KeyPackage and automatically commits. Pending proposals will be commited
-    ///
-    /// # Arguments
-    /// * `conversation_id` - the group/conversation id
-    ///
-    /// # Return type
-    /// An struct containing a welcome(optional, will be present only if there's pending add
-    /// proposals in the store), a message with the commit to fan out to other clients and
-    /// the group info will be returned on successful call.
-    ///
-    /// # Errors
-    /// If the conversation can't be found, an error will be returned. Other errors are originating
-    /// from OpenMls and the KeyStore
-    pub async fn update_keying_material(&self, id: &ConversationId) -> Result<()> {
-        let client = self
-            .mls_client()
-            .await
-            .map_err(RecursiveError::root("getting mls client"))?;
-        let conversation = self.get_conversation(id).await?;
-        let mut conversation_guard = conversation.write().await;
-        let commit = conversation_guard
-            .update_keying_material(
-                &client,
-                &self
-                    .mls_provider()
-                    .await
-                    .map_err(RecursiveError::root("getting mls provider"))?,
-                None,
-                None,
-            )
-            .await?;
-        self.send_and_merge_commit(conversation_guard, commit).await
-    }
-
     /// Commits all pending proposals of the group
     ///
     /// # Arguments
@@ -368,7 +334,14 @@ mod tests {
                         alice_central.invite_all(&case, &id, [&bob_central]).await.unwrap();
 
                         // Bob produces a commit that Alice will receive only after she tried sending a commit
-                        bob_central.context.update_keying_material(&id).await.unwrap();
+                        bob_central
+                            .context
+                            .conversation_guard(&id)
+                            .await
+                            .unwrap()
+                            .update_key_material()
+                            .await
+                            .unwrap();
                         let bob_epoch = bob_central.get_conversation_unchecked(&id).await.group.epoch().as_u64();
                         assert_eq!(2, bob_epoch);
                         let alice_epoch = alice_central
@@ -396,7 +369,14 @@ mod tests {
                             .unwrap();
 
                         // Send two commits and process them on bobs side
-                        alice_central.context.update_keying_material(&id).await.unwrap();
+                        alice_central
+                            .context
+                            .conversation_guard(&id)
+                            .await
+                            .unwrap()
+                            .update_key_material()
+                            .await
+                            .unwrap();
                         let commit = retry_provider.latest_commit().await;
                         bob_central
                             .context
@@ -770,7 +750,14 @@ mod tests {
                         .await;
 
                     // proposing the key update for alice
-                    alice_central.context.update_keying_material(&id).await.unwrap();
+                    alice_central
+                        .context
+                        .conversation_guard(&id)
+                        .await
+                        .unwrap()
+                        .update_key_material()
+                        .await
+                        .unwrap();
                     let MlsCommitBundle { commit, welcome, .. } =
                         alice_central.mls_transport.latest_commit_bundle().await;
                     assert!(welcome.is_none());
@@ -867,7 +854,14 @@ mod tests {
                             .contains(&alice_key));
 
                         // performing an update on Alice's key. this should generate a welcome for Charlie
-                        alice_central.context.update_keying_material(&id).await.unwrap();
+                        alice_central
+                            .context
+                            .conversation_guard(&id)
+                            .await
+                            .unwrap()
+                            .update_key_material()
+                            .await
+                            .unwrap();
                         let MlsCommitBundle { commit, welcome, .. } =
                             alice_central.mls_transport.latest_commit_bundle().await;
                         assert!(welcome.is_some());
@@ -949,7 +943,14 @@ mod tests {
                             .await
                             .unwrap();
 
-                        alice_central.context.update_keying_material(&id).await.unwrap();
+                        alice_central
+                            .context
+                            .conversation_guard(&id)
+                            .await
+                            .unwrap()
+                            .update_key_material()
+                            .await
+                            .unwrap();
                         let MlsCommitBundle { commit, welcome, .. } =
                             alice_central.mls_transport.latest_commit_bundle().await;
 
@@ -990,7 +991,14 @@ mod tests {
                             .unwrap();
                         alice_central.invite_all(&case, &id, [&bob_central]).await.unwrap();
 
-                        alice_central.context.update_keying_material(&id).await.unwrap();
+                        alice_central
+                            .context
+                            .conversation_guard(&id)
+                            .await
+                            .unwrap()
+                            .update_key_material()
+                            .await
+                            .unwrap();
                         let group_info = alice_central.mls_transport.latest_group_info().await;
                         let group_info = group_info.get_group_info();
 
@@ -1171,10 +1179,24 @@ mod tests {
                         .unwrap();
                     alice_central.invite_all(&case, &id, [&bob_central]).await.unwrap();
 
-                    alice_central.context.update_keying_material(&id).await.unwrap();
+                    alice_central
+                        .context
+                        .conversation_guard(&id)
+                        .await
+                        .unwrap()
+                        .update_key_material()
+                        .await
+                        .unwrap();
                     let commit1 = alice_central.mls_transport.latest_commit().await;
                     let commit1 = commit1.to_bytes().unwrap();
-                    alice_central.context.update_keying_material(&id).await.unwrap();
+                    alice_central
+                        .context
+                        .conversation_guard(&id)
+                        .await
+                        .unwrap()
+                        .update_key_material()
+                        .await
+                        .unwrap();
                     let commit2 = alice_central.mls_transport.latest_commit().await;
                     let commit2 = commit2.to_bytes().unwrap();
 
@@ -1218,7 +1240,14 @@ mod tests {
                         .group
                         .clear_pending_proposals();
 
-                    alice_central.context.update_keying_material(&id).await.unwrap();
+                    alice_central
+                        .context
+                        .conversation_guard(&id)
+                        .await
+                        .unwrap()
+                        .update_key_material()
+                        .await
+                        .unwrap();
                     let commit1 = alice_central.mls_transport.latest_commit().await;
                     let commit2 = commit1.clone();
 

@@ -438,7 +438,12 @@ impl CoreCryptoContext {
 
     /// See [core_crypto::context::CentralContext::update_keying_material]
     pub async fn update_keying_material(&self, conversation_id: Vec<u8>) -> CoreCryptoResult<()> {
-        Ok(self.context.update_keying_material(&conversation_id).await?)
+        self.context
+            .conversation_guard(&conversation_id)
+            .await?
+            .update_key_material()
+            .await
+            .map_err(Into::into)
     }
 
     /// See [core_crypto::context::CentralContext::commit_pending_proposals]

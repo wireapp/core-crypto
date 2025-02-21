@@ -315,7 +315,14 @@ mod tests {
                     alice_central.invite_all(&case, &id, [&mut bob_central]).await.unwrap();
 
                     // Alice will never see this commit
-                    bob_central.context.update_keying_material(&id).await.unwrap();
+                    bob_central
+                        .context
+                        .conversation_guard(&id)
+                        .await
+                        .unwrap()
+                        .update_key_material()
+                        .await
+                        .unwrap();
 
                     let msg1 = bob_central.context.encrypt_message(&id, "A").await.unwrap();
                     let msg2 = bob_central.context.encrypt_message(&id, "B").await.unwrap();

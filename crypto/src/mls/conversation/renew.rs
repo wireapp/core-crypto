@@ -199,7 +199,14 @@ mod tests {
                         assert_eq!(alice_central.pending_proposals(&id).await.len(), 1);
 
                         // Bob hasn't Alice's proposal but creates a commit
-                        bob_central.context.update_keying_material(&id).await.unwrap();
+                        bob_central
+                            .context
+                            .conversation_guard(&id)
+                            .await
+                            .unwrap()
+                            .update_key_material()
+                            .await
+                            .unwrap();
                         let commit = bob_central.mls_transport.latest_commit().await;
 
                         let proposals = alice_central
@@ -213,7 +220,14 @@ mod tests {
                         assert_eq!(proposals.len(), alice_central.pending_proposals(&id).await.len());
 
                         // It should also renew the proposal when in pending_commit
-                        bob_central.context.update_keying_material(&id).await.unwrap();
+                        bob_central
+                            .context
+                            .conversation_guard(&id)
+                            .await
+                            .unwrap()
+                            .update_key_material()
+                            .await
+                            .unwrap();
                         let commit = bob_central.mls_transport.latest_commit().await;
                         let proposals = alice_central
                             .context
@@ -258,7 +272,14 @@ mod tests {
                             .await
                             .unwrap();
 
-                        bob_central.context.update_keying_material(&id).await.unwrap();
+                        bob_central
+                            .context
+                            .conversation_guard(&id)
+                            .await
+                            .unwrap()
+                            .update_key_material()
+                            .await
+                            .unwrap();
                         let commit = bob_central.mls_transport.latest_commit().await;
 
                         // Bob's commit has Alice's proposal
@@ -278,7 +299,14 @@ mod tests {
                             .decrypt_message(&id, proposal.to_bytes().unwrap())
                             .await
                             .unwrap();
-                        bob_central.context.update_keying_material(&id).await.unwrap();
+                        bob_central
+                            .context
+                            .conversation_guard(&id)
+                            .await
+                            .unwrap()
+                            .update_key_material()
+                            .await
+                            .unwrap();
                         let commit = bob_central.mls_transport.latest_commit().await;
                         let proposals = alice_central
                             .context
@@ -324,7 +352,14 @@ mod tests {
                         assert_eq!(alice_central.pending_proposals(&id).await.len(), 1);
 
                         // Charlie does not have other proposals, it creates a commit
-                        charlie_central.context.update_keying_material(&id).await.unwrap();
+                        charlie_central
+                            .context
+                            .conversation_guard(&id)
+                            .await
+                            .unwrap()
+                            .update_key_material()
+                            .await
+                            .unwrap();
                         let commit = charlie_central.mls_transport.latest_commit().await;
                         let proposals = alice_central
                             .context
@@ -476,7 +511,14 @@ mod tests {
                         assert_eq!(alice_central.pending_proposals(&id).await.len(), 1);
 
                         // But Charlie will commit meanwhile
-                        charlie_central.context.update_keying_material(&id).await.unwrap();
+                        charlie_central
+                            .context
+                            .conversation_guard(&id)
+                            .await
+                            .unwrap()
+                            .update_key_material()
+                            .await
+                            .unwrap();
                         let commit = charlie_central.mls_transport.latest_commit().await;
                         let proposals = alice_central
                             .context
@@ -516,7 +558,14 @@ mod tests {
                         assert_eq!(alice_central.pending_proposals(&id).await.len(), 1);
 
                         // But meanwhile Bob will create a commit without Alice's proposal
-                        bob_central.context.update_keying_material(&id).await.unwrap();
+                        bob_central
+                            .context
+                            .conversation_guard(&id)
+                            .await
+                            .unwrap()
+                            .update_key_material()
+                            .await
+                            .unwrap();
                         let commit = bob_central.mls_transport.latest_commit().await;
                         let proposals = alice_central
                             .context
@@ -531,7 +580,14 @@ mod tests {
                         // And same should happen when proposal is in pending commit
                         alice_central.commit_pending_proposals_unmerged(&id).await;
                         assert!(alice_central.pending_commit(&id).await.is_some());
-                        bob_central.context.update_keying_material(&id).await.unwrap();
+                        bob_central
+                            .context
+                            .conversation_guard(&id)
+                            .await
+                            .unwrap()
+                            .update_key_material()
+                            .await
+                            .unwrap();
                         let commit = bob_central.mls_transport.latest_commit().await;
                         let proposals = alice_central
                             .context
@@ -570,7 +626,14 @@ mod tests {
                         assert!(alice_central.pending_commit(&id).await.is_some());
 
                         // But meanwhile Bob will create a commit
-                        bob_central.context.update_keying_material(&id).await.unwrap();
+                        bob_central
+                            .context
+                            .conversation_guard(&id)
+                            .await
+                            .unwrap()
+                            .update_key_material()
+                            .await
+                            .unwrap();
                         let commit = bob_central.mls_transport.latest_commit().await;
                         let proposals = alice_central
                             .context
@@ -675,7 +738,14 @@ mod tests {
                             .unwrap();
                         assert_eq!(alice_central.pending_proposals(&id).await.len(), 1);
 
-                        charlie_central.context.update_keying_material(&id).await.unwrap();
+                        charlie_central
+                            .context
+                            .conversation_guard(&id)
+                            .await
+                            .unwrap()
+                            .update_key_material()
+                            .await
+                            .unwrap();
                         let commit = charlie_central.mls_transport.latest_commit().await;
                         let proposals = alice_central
                             .context
