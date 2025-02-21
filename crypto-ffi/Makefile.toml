@@ -297,7 +297,7 @@ args = [
 dependencies = ["bindings-kotlin-jvm"]
 condition = { platforms = ["mac"] }
 
-[tasks.jvm-x86-linux]
+[tasks.jvm-linux]
 command = "cargo"
 args = [
     "rustc",
@@ -314,9 +314,6 @@ condition = { platforms = ["linux"] }
 
 [tasks.jvm-darwin]
 dependencies = ["jvm-aarch64-darwin", "jvm-x86-darwin"]
-
-[tasks.jvm-linux]
-dependencies = ["jvm-x86-linux"]
 
 [tasks.jvm]
 dependencies = ["jvm-darwin", "jvm-linux"]
