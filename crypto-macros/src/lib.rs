@@ -5,7 +5,7 @@ use proc_macro::TokenStream;
 use proc_macro2::Ident;
 use quote::quote;
 use syn::{
-    parse_macro_input, punctuated::Punctuated, token::Comma, Attribute, Block, FnArg, ItemFn, ReturnType, Visibility,
+    Attribute, Block, FnArg, ItemFn, ReturnType, Visibility, parse_macro_input, punctuated::Punctuated, token::Comma,
 };
 
 mod durable;
