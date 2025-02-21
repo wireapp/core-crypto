@@ -77,7 +77,7 @@ impl ConversationGuard {
 
     fn group_info(group_info: Option<GroupInfo>) -> Result<MlsGroupInfoBundle> {
         let group_info = group_info.ok_or(LeafError::MissingGroupInfo)?;
-        MlsGroupInfoBundle::try_new_full_plaintext(group_info).map_err(Into::into)
+        MlsGroupInfoBundle::try_new_full_plaintext(group_info)
     }
 
     /// Adds new members to the group/conversation
