@@ -157,10 +157,6 @@ dependencies = ["bindings-kotlin-android", "bindings-kotlin-jvm"]
 dependencies = ["bindings-swift", "bindings-kotlin"]
 
 ##################################### iOS #####################################
-
-[tasks.ios-env]
-plugin = "detect-release"
-
 [tasks.ios-device]
 dependencies = ["bindings-swift"]
 env = { "IPHONEOS_DEPLOYMENT_TARGET"="16.0" }
@@ -327,25 +323,6 @@ dependencies = ["android", "ios"]
 dependencies = ["mobile", "wasm"]
 
 ################################### Plugins ###################################
-[plugins.impl.detect-release]
-script = '''
-index = array_contains ${task.args} "--release"
-if index
-    set_env IS_RELEASE_BUILD "release"
-    println -c bright_blue "Release mode detected!"
-end
-
-release_path = set IS_RELEASE_BUILD or "debug"
-
-# index_target = array_contains ${task.args} "--target"
-# if index_target
-#     target = array_get ${task.args} ${${index_target} + 1}
-#     set_env CORECRYPTO_TARGET_FOLDER "../target/${target}/${release_path}"
-# else
-#     set_env CORECRYPTO_TARGET_FOLDER "../target/${release_path}"
-# end
-'''
-
 [plugins.impl.android-env]
 script = '''
 exit_on_error true
