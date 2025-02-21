@@ -1,11 +1,11 @@
 use super::error::*;
-use crate::{prelude::MlsCiphersuite, MlsError};
+use crate::{MlsError, prelude::MlsCiphersuite};
 use mls_crypto_provider::{MlsCryptoProvider, PkiKeypair, RustCrypto};
 use openmls_basic_credential::SignatureKeyPair as OpenMlsSignatureKeyPair;
 use openmls_traits::{
+    OpenMlsCryptoProvider,
     crypto::OpenMlsCrypto,
     types::{Ciphersuite, SignatureScheme},
-    OpenMlsCryptoProvider,
 };
 use wire_e2e_identity::prelude::JwsAlgorithm;
 use zeroize::Zeroize;

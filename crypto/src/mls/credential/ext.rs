@@ -1,12 +1,12 @@
 use super::{Error, Result};
 use crate::{
-    prelude::{DeviceStatus, MlsCiphersuite, MlsCredentialType, WireIdentity},
     RecursiveError,
+    prelude::{DeviceStatus, MlsCiphersuite, MlsCredentialType, WireIdentity},
 };
 use openmls::prelude::{Credential, CredentialType, CredentialWithKey};
 use openmls_traits::types::{HashType, SignatureScheme};
-use wire_e2e_identity::prelude::{compute_raw_key_thumbprint, HashAlgorithm, JwsAlgorithm};
-use x509_cert::{der::Decode, Certificate};
+use wire_e2e_identity::prelude::{HashAlgorithm, JwsAlgorithm, compute_raw_key_thumbprint};
+use x509_cert::{Certificate, der::Decode};
 
 #[allow(dead_code)]
 pub(crate) trait CredentialExt {

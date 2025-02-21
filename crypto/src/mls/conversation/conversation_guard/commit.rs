@@ -3,13 +3,13 @@
 use openmls::prelude::KeyPackageIn;
 
 use crate::{
+    MlsError, RecursiveError,
     e2e_identity::init_certificates::NewCrlDistributionPoint,
     mls::{
-        conversation::{commit::MlsCommitBundle, ConversationGuard, Result},
+        conversation::{ConversationGuard, Result, commit::MlsCommitBundle},
         credential::crl::{extract_crl_uris_from_credentials, get_new_crl_distribution_points},
     },
     prelude::ClientId,
-    MlsError, RecursiveError,
 };
 
 impl ConversationGuard {

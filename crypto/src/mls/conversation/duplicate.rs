@@ -3,7 +3,7 @@
 //! with a DS guaranteeing exactly once delivery semantics since the following degrades the performances
 
 use super::{Error, Result};
-use crate::{prelude::MlsConversation, MlsError};
+use crate::{MlsError, prelude::MlsConversation};
 use mls_crypto_provider::MlsCryptoProvider;
 use openmls::prelude::{ContentType, FramedContentBodyIn, Proposal, PublicMessageIn, Sender};
 

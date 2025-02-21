@@ -19,32 +19,33 @@ use crate::group_store::GroupStore;
 use crate::prelude::{MlsCommitBundle, MlsGroupInfoBundle, WelcomeBundle};
 use crate::test_utils::{ClientContext, TestError};
 use crate::{
+    RecursiveError,
     e2e_identity::{
         device_status::DeviceStatus,
         id::{QualifiedE2eiClientId, WireQualifiedClientId},
     },
-    mls::credential::{ext::CredentialExt, CredentialBundle},
+    mls::credential::{CredentialBundle, ext::CredentialExt},
     prelude::{
         CertificateBundle, Client, ClientId, ConversationId, MlsCiphersuite, MlsConversation,
         MlsConversationConfiguration, MlsConversationDecryptMessage, MlsCredentialType, MlsCustomConfiguration,
         MlsError, WireIdentity,
     },
-    test_utils::{x509::X509Certificate, MessageExt, TestCase},
-    RecursiveError,
+    test_utils::{MessageExt, TestCase, x509::X509Certificate},
 };
+use core_crypto_keystore::CryptoKeystoreMls;
 use core_crypto_keystore::connection::FetchFromDatabase;
 use core_crypto_keystore::entities::{
     EntityFindParams, MlsCredential, MlsEncryptionKeyPair, MlsHpkePrivateKey, MlsKeyPackage, MlsSignatureKeyPair,
 };
-use core_crypto_keystore::CryptoKeystoreMls;
 use mls_crypto_provider::MlsCryptoProvider;
 use openmls::group::MlsGroup;
 use openmls::prelude::{
-    group_info::VerifiableGroupInfo, Credential, CredentialWithKey, CryptoConfig, ExternalSender, HpkePublicKey,
-    KeyPackage, KeyPackageIn, LeafNodeIndex, Lifetime, MlsMessageIn, QueuedProposal, SignaturePublicKey, StagedCommit,
+    Credential, CredentialWithKey, CryptoConfig, ExternalSender, HpkePublicKey, KeyPackage, KeyPackageIn,
+    LeafNodeIndex, Lifetime, MlsMessageIn, QueuedProposal, SignaturePublicKey, StagedCommit,
+    group_info::VerifiableGroupInfo,
 };
 use openmls_traits::crypto::OpenMlsCrypto;
-use openmls_traits::{types::SignatureScheme, OpenMlsCryptoProvider};
+use openmls_traits::{OpenMlsCryptoProvider, types::SignatureScheme};
 use std::sync::Arc;
 use tls_codec::{Deserialize, Serialize};
 use wire_e2e_identity::prelude::WireIdentityReader;
@@ -783,12 +784,16 @@ impl ClientContext {
             assert_eq!(decrypted_x509_identity.domain, x509_identity.domain);
             assert_eq!(decrypted_identity.status, identity.status);
             assert_eq!(decrypted_identity.thumbprint, identity.thumbprint);
-            assert!(decrypted_x509_identity
-                .certificate
-                .starts_with("-----BEGIN CERTIFICATE-----"));
-            assert!(decrypted_x509_identity
-                .certificate
-                .ends_with("-----END CERTIFICATE-----\n"));
+            assert!(
+                decrypted_x509_identity
+                    .certificate
+                    .starts_with("-----BEGIN CERTIFICATE-----")
+            );
+            assert!(
+                decrypted_x509_identity
+                    .certificate
+                    .ends_with("-----END CERTIFICATE-----\n")
+            );
             let chain = x509_cert::Certificate::load_pem_chain(decrypted_x509_identity.certificate.as_bytes()).unwrap();
             let leaf = chain.first().unwrap();
             let cert_identity = leaf.extract_identity(None, case.ciphersuite().e2ei_hash_alg()).unwrap();

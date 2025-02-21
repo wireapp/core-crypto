@@ -22,7 +22,9 @@ pub enum Error {
         reason: String,
     },
     /// This is thrown when a client wants to retry sending an external join commit.
-    #[error("Cannot recreate a commit for retry without being in the conversation. Restart the operation from the beginning.")]
+    #[error(
+        "Cannot recreate a commit for retry without being in the conversation. Restart the operation from the beginning."
+    )]
     CannotRetryWithoutConversation,
     #[error("We already decrypted this message once")]
     DuplicateMessage,
@@ -30,7 +32,9 @@ pub enum Error {
     MessageEpochTooOld,
     #[error("Incoming message is from a prior epoch")]
     StaleMessage,
-    #[error("Incoming message is a commit for which we have not yet received all the proposals. Buffering until all proposals have arrived.")]
+    #[error(
+        "Incoming message is a commit for which we have not yet received all the proposals. Buffering until all proposals have arrived."
+    )]
     BufferedCommit,
     #[error("Incoming message is for a future epoch. We will buffer it until the commit for that epoch arrives")]
     BufferedFutureMessage { message_epoch: u64 },
@@ -54,9 +58,11 @@ pub enum Error {
     PendingProposalNotFound(crate::mls::proposal::MlsProposalRef),
     #[error("Couldn't find pending commit")]
     PendingCommitNotFound,
-    #[error("Happens when a client creates a commit, sends it to the DS which accepts it but then client \
+    #[error(
+        "Happens when a client creates a commit, sends it to the DS which accepts it but then client \
     clears this pending commit and creates another commit. This is triggered when the client tries to decrypt the original commit.\
-    This means something is very wrong in the client's code and has to be fixed immediately")]
+    This means something is very wrong in the client's code and has to be fixed immediately"
+    )]
     ClearingPendingCommitError,
     #[error("Tried to decrypt a commit created by self which is likely to have been replayed by the DS")]
     SelfCommitIgnored,
@@ -68,7 +74,9 @@ pub enum Error {
     /// requests their old KeyPackages to be deleted but one has already been claimed by another client to create a Welcome.
     /// In that case the only solution is that the client receiving such a Welcome tries to join the group
     /// with an External Commit instead
-    #[error("Although this Welcome seems valid, the local KeyPackage it references has already been deleted locally. Join this group with an external commit")]
+    #[error(
+        "Although this Welcome seems valid, the local KeyPackage it references has already been deleted locally. Join this group with an external commit"
+    )]
     OrphanWelcome,
     #[error("Serializing {item} for TLS")]
     TlsSerialize {

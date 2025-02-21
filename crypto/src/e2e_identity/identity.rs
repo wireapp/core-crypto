@@ -6,11 +6,11 @@ use openmls_traits::OpenMlsCryptoProvider;
 use x509_cert::der::pem::LineEnding;
 
 use crate::{
+    RecursiveError,
     context::CentralContext,
     e2e_identity::{device_status::DeviceStatus, id::WireQualifiedClientId},
     mls::credential::ext::CredentialExt,
-    prelude::{user_id::UserId, ClientId, ConversationId, MlsCentral, MlsConversation, MlsCredentialType},
-    RecursiveError,
+    prelude::{ClientId, ConversationId, MlsCentral, MlsConversation, MlsCredentialType, user_id::UserId},
 };
 
 use super::{Error, Result};
@@ -631,7 +631,11 @@ mod tests {
                 [alice_ios, "alice_wire", "Alice Smith"],
                 [bob_android, "bob_wire", "Bob Doe"],
             ],
-            move |[mut alice_android_central, mut alice_ios_central, mut bob_android_central]| {
+            move |[
+                mut alice_android_central,
+                mut alice_ios_central,
+                mut bob_android_central,
+            ]| {
                 Box::pin(async move {
                     let id = conversation_id();
                     alice_android_central
@@ -719,8 +723,16 @@ mod tests {
                 [bobt_android, "bob_zeta", "Bob Tables"],
             ],
             ("wire.com", "zeta.com"),
-            move |[mut alices_android_central, mut alices_ios_central, mut bob_android_central],
-                  [mut alicem_android_central, mut alicem_ios_central, mut bobt_android_central]| {
+            move |[
+                mut alices_android_central,
+                mut alices_ios_central,
+                mut bob_android_central,
+            ],
+                  [
+                mut alicem_android_central,
+                mut alicem_ios_central,
+                mut bobt_android_central,
+            ]| {
                 Box::pin(async move {
                     let id = conversation_id();
                     alices_ios_central

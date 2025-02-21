@@ -1,9 +1,9 @@
 use super::{
-    error::{Error, Result},
     E2eiEnrollment,
+    error::{Error, Result},
 };
 use core_crypto_keystore::connection::FetchFromDatabase;
-use core_crypto_keystore::{entities::E2eiRefreshToken, CryptoKeystoreResult};
+use core_crypto_keystore::{CryptoKeystoreResult, entities::E2eiRefreshToken};
 use mls_crypto_provider::MlsCryptoProvider;
 use zeroize::Zeroize;
 

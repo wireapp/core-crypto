@@ -20,7 +20,9 @@ pub enum Error {
     OutOfOrderEnrollment(&'static str),
     #[error("Invalid OIDC RefreshToken supplied")]
     InvalidRefreshToken,
-    #[error("We already have an ACME Root Trust Anchor registered. Cannot proceed but this is usually indicative of double registration and can be ignored")]
+    #[error(
+        "We already have an ACME Root Trust Anchor registered. Cannot proceed but this is usually indicative of double registration and can be ignored"
+    )]
     TrustAnchorAlreadyRegistered,
     #[error("The encountered ClientId does not match Wire's definition")]
     InvalidClientId,

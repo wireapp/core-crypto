@@ -22,21 +22,21 @@ pub(crate) mod key_package;
 pub(crate) mod user_id;
 
 use crate::{
-    mls::credential::{ext::CredentialExt, CredentialBundle},
-    prelude::{
-        identifier::ClientIdentifier, key_package::KEYPACKAGE_DEFAULT_LIFETIME, CertificateBundle, ClientId,
-        MlsCiphersuite, MlsCredentialType,
-    },
     KeystoreError, LeafError, MlsError, RecursiveError,
+    mls::credential::{CredentialBundle, ext::CredentialExt},
+    prelude::{
+        CertificateBundle, ClientId, MlsCiphersuite, MlsCredentialType, identifier::ClientIdentifier,
+        key_package::KEYPACKAGE_DEFAULT_LIFETIME,
+    },
 };
 pub(crate) use error::{Error, Result};
 
 use async_lock::RwLock;
-use core_crypto_keystore::{connection::FetchFromDatabase, Connection, CryptoKeystoreError};
+use core_crypto_keystore::{Connection, CryptoKeystoreError, connection::FetchFromDatabase};
 use log::debug;
 use openmls::prelude::{Credential, CredentialType};
 use openmls_basic_credential::SignatureKeyPair;
-use openmls_traits::{crypto::OpenMlsCrypto, types::SignatureScheme, OpenMlsCryptoProvider};
+use openmls_traits::{OpenMlsCryptoProvider, crypto::OpenMlsCrypto, types::SignatureScheme};
 use std::collections::HashSet;
 use std::ops::{Deref, DerefMut};
 use std::sync::Arc;

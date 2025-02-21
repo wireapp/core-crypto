@@ -7,23 +7,23 @@
 
 use super::{Error, Result};
 use crate::{
-    prelude::{ConversationId, MlsConversationDecryptMessage},
     KeystoreError, LeafError, RecursiveError,
+    prelude::{ConversationId, MlsConversationDecryptMessage},
 };
 use core_crypto_keystore::{
+    CryptoKeystoreMls,
     connection::FetchFromDatabase,
     entities::{MlsPendingMessage, PersistedMlsPendingGroup},
-    CryptoKeystoreMls,
 };
 use openmls::group::MlsGroup;
 use openmls::prelude::{CredentialWithKey, MlsMessageIn, MlsMessageInBody};
 use openmls_traits::OpenMlsCryptoProvider;
 use tls_codec::Deserialize;
 
+use crate::MlsError;
 use crate::context::CentralContext;
 use crate::mls::credential::crl::{extract_crl_uris_from_group, get_new_crl_distribution_points};
 use crate::mls::credential::ext::CredentialExt;
-use crate::MlsError;
 
 impl CentralContext {
     pub(crate) async fn handle_when_group_is_pending(
@@ -158,7 +158,7 @@ mod tests {
     #[apply(all_cred_cipher)]
     #[wasm_bindgen_test]
     async fn should_buffer_and_reapply_messages_after_external_commit_merged(case: TestCase) {
-        use crate::{mls, RecursiveError};
+        use crate::{RecursiveError, mls};
 
         run_test_with_client_ids(
             case.clone(),

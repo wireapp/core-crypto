@@ -6,10 +6,10 @@
 use super::{Error, Result};
 use crate::obfuscate::Obfuscated;
 use crate::{
+    KeystoreError, RecursiveError,
     context::CentralContext,
     group_store::GroupStoreValue,
-    prelude::{decrypt::MlsBufferedConversationDecryptMessage, Client, ConversationId, MlsConversation},
-    KeystoreError, RecursiveError,
+    prelude::{Client, ConversationId, MlsConversation, decrypt::MlsBufferedConversationDecryptMessage},
 };
 use core_crypto_keystore::{
     connection::FetchFromDatabase,

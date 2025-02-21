@@ -4,10 +4,10 @@ use std::collections::HashSet;
 
 use super::Result;
 use crate::{
-    context::CentralContext,
-    mls::{self, credential::typ::MlsCredentialType, ClientId, ConversationId},
-    prelude::{MlsCiphersuite, MlsConversation},
     LeafError, MlsError, RecursiveError,
+    context::CentralContext,
+    mls::{self, ClientId, ConversationId, credential::typ::MlsCredentialType},
+    prelude::{MlsCiphersuite, MlsConversation},
 };
 
 impl MlsConversation {
@@ -34,7 +34,7 @@ impl MlsConversation {
         self.group
             .pending_proposals()
             .filter_map(|proposal| match proposal.proposal() {
-                Proposal::Remove(ref remove) => Some(remove.removed()),
+                Proposal::Remove(remove) => Some(remove.removed()),
                 _ => None,
             })
             .collect::<Vec<_>>()
@@ -98,7 +98,7 @@ impl CentralContext {
                     ))?
             }
             (Err(mls::client::Error::CredentialNotFound(_)), MlsCredentialType::X509) => {
-                return Err(LeafError::E2eiEnrollmentNotDone.into())
+                return Err(LeafError::E2eiEnrollmentNotDone.into());
             }
             (Err(e), _) => return Err(RecursiveError::mls_client("finding most recent credential bundle")(e).into()),
         };
@@ -191,7 +191,7 @@ mod tests {
 
     mod remove {
         use super::*;
-        use crate::{prelude::MlsError, MlsErrorKind};
+        use crate::{MlsErrorKind, prelude::MlsError};
         use openmls::prelude::{
             ExternalProposal, GroupId, MlsMessageIn, ProcessMessageError, SenderExtensionIndex, ValidationError,
         };

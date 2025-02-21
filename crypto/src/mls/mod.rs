@@ -4,12 +4,12 @@ use async_lock::RwLock;
 use log::trace;
 
 use crate::{
-    prelude::{
-        identifier::ClientIdentifier, key_package::INITIAL_KEYING_MATERIAL_COUNT, Client, ClientId, ConversationId,
-        MlsCentralConfiguration, MlsCiphersuite, MlsConversation, MlsConversationConfiguration, MlsCredentialType,
-        MlsTransport,
-    },
     CoreCrypto, LeafError, MlsError, RecursiveError,
+    prelude::{
+        Client, ClientId, ConversationId, MlsCentralConfiguration, MlsCiphersuite, MlsConversation,
+        MlsConversationConfiguration, MlsCredentialType, MlsTransport, identifier::ClientIdentifier,
+        key_package::INITIAL_KEYING_MATERIAL_COUNT,
+    },
 };
 use mls_crypto_provider::{EntropySeed, MlsCryptoProvider, MlsCryptoProviderConfiguration};
 use openmls_traits::OpenMlsCryptoProvider;
@@ -580,11 +580,11 @@ impl CentralContext {
 mod tests {
     use wasm_bindgen_test::*;
 
-    use crate::prelude::{CertificateBundle, ClientIdentifier, MlsCredentialType, INITIAL_KEYING_MATERIAL_COUNT};
+    use crate::prelude::{CertificateBundle, ClientIdentifier, INITIAL_KEYING_MATERIAL_COUNT, MlsCredentialType};
     use crate::{
+        CoreCrypto,
         mls::{MlsCentral, MlsCentralConfiguration},
         test_utils::{x509::X509TestChain, *},
-        CoreCrypto,
     };
 
     wasm_bindgen_test_configure!(run_in_browser);
@@ -632,7 +632,7 @@ mod tests {
         #[apply(all_cred_cipher)]
         #[wasm_bindgen_test]
         async fn conversation_not_found(case: TestCase) {
-            use crate::{mls, LeafError, RecursiveError};
+            use crate::{LeafError, RecursiveError, mls};
             use std::ops::Deref as _;
 
             run_test_with_central(case.clone(), move |[central]| {
@@ -749,7 +749,7 @@ mod tests {
     #[apply(all_cred_cipher)]
     #[wasm_bindgen_test]
     async fn create_conversation_should_fail_when_already_exists(case: TestCase) {
-        use crate::{mls, LeafError};
+        use crate::{LeafError, mls};
 
         run_test_with_client_ids(case.clone(), ["alice"], move |[alice_central]| {
             Box::pin(async move {

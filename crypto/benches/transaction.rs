@@ -1,5 +1,5 @@
 use criterion::async_executor::FuturesExecutor;
-use criterion::{criterion_group, criterion_main, BatchSize, Criterion};
+use criterion::{BatchSize, Criterion, criterion_group, criterion_main};
 use openmls_traits::types::Ciphersuite;
 use rand::distributions::{Alphanumeric, DistString};
 

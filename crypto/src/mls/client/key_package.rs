@@ -27,13 +27,13 @@ use core_crypto_keystore::{
 use mls_crypto_provider::{CryptoKeystore, MlsCryptoProvider};
 
 use super::{Error, Result};
+use crate::{KeystoreError, MlsError};
 use crate::{
+    RecursiveError,
     context::CentralContext,
     mls::{client::ClientInner, credential::CredentialBundle},
     prelude::{Client, MlsCiphersuite, MlsConversationConfiguration, MlsCredentialType},
-    RecursiveError,
 };
-use crate::{KeystoreError, MlsError};
 
 /// Default number of KeyPackages a client generates the first time it's created
 #[cfg(not(test))]
@@ -335,8 +335,7 @@ impl Client {
         match self.state.write().await.deref_mut() {
             None => Err(Error::MlsNotInitialized),
             Some(ClientInner {
-                ref mut keypackage_lifetime,
-                ..
+                keypackage_lifetime, ..
             }) => {
                 *keypackage_lifetime = duration;
                 Ok(())
@@ -431,15 +430,15 @@ impl CentralContext {
 #[cfg(test)]
 mod tests {
     use openmls::prelude::{KeyPackage, KeyPackageIn, KeyPackageRef, ProtocolVersion};
-    use openmls_traits::types::VerifiableCiphersuite;
     use openmls_traits::OpenMlsCryptoProvider;
+    use openmls_traits::types::VerifiableCiphersuite;
     use wasm_bindgen_test::*;
 
     use mls_crypto_provider::MlsCryptoProvider;
 
     use crate::e2e_identity::tests::{e2ei_enrollment, init_activation_or_rotation, noop_restore};
-    use crate::prelude::key_package::INITIAL_KEYING_MATERIAL_COUNT;
     use crate::prelude::MlsConversationConfiguration;
+    use crate::prelude::key_package::INITIAL_KEYING_MATERIAL_COUNT;
     use crate::test_utils::*;
 
     use super::Client;

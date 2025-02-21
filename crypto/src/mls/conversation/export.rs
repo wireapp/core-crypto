@@ -18,9 +18,9 @@
 
 use super::Result;
 use crate::{
-    context::CentralContext,
-    mls::{client::id::ClientId, ConversationId, MlsCentral, MlsConversation},
     MlsError, RecursiveError,
+    context::CentralContext,
+    mls::{ConversationId, MlsCentral, MlsConversation, client::id::ClientId},
 };
 
 impl MlsConversation {
@@ -109,7 +109,7 @@ impl MlsCentral {
 
 #[cfg(test)]
 mod tests {
-    use crate::{mls, test_utils::*, LeafError, MlsErrorKind};
+    use crate::{LeafError, MlsErrorKind, mls, test_utils::*};
     use openmls::prelude::ExportSecretError;
 
     use wasm_bindgen_test::*;

@@ -6,8 +6,8 @@ use mls_crypto_provider::MlsCryptoProvider;
 
 use super::{Error, Result};
 use crate::{
-    prelude::{Client, MlsConversation, MlsProposalBundle},
     KeystoreError, RecursiveError,
+    prelude::{Client, MlsConversation, MlsProposalBundle},
 };
 
 /// Marker struct holding methods responsible for restoring (renewing) proposals (or pending commit)
@@ -71,24 +71,20 @@ impl Renew {
     fn is_proposal_renewable(proposal: QueuedProposal, commit: Option<&StagedCommit>) -> Option<QueuedProposal> {
         if let Some(commit) = commit {
             let in_commit = match proposal.proposal() {
-                Proposal::Add(ref add) => commit.add_proposals().any(|p| {
+                Proposal::Add(add) => commit.add_proposals().any(|p| {
                     let commits_identity = p.add_proposal().key_package().leaf_node().credential().identity();
                     let proposal_identity = add.key_package().leaf_node().credential().identity();
                     commits_identity == proposal_identity
                 }),
-                Proposal::Remove(ref remove) => commit
+                Proposal::Remove(remove) => commit
                     .remove_proposals()
                     .any(|p| p.remove_proposal().removed() == remove.removed()),
-                Proposal::Update(ref update) => commit
+                Proposal::Update(update) => commit
                     .update_proposals()
                     .any(|p| p.update_proposal().leaf_node() == update.leaf_node()),
                 _ => true,
             };
-            if in_commit {
-                None
-            } else {
-                Some(proposal)
-            }
+            if in_commit { None } else { Some(proposal) }
         } else {
             // if proposal is orphan (not present in commit)
             Some(proposal)

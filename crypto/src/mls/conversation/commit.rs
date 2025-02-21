@@ -11,11 +11,11 @@ use mls_crypto_provider::MlsCryptoProvider;
 
 use super::{Error, Result};
 use crate::{
+    LeafError, MlsTransportResponse, RecursiveError,
     context::CentralContext,
     e2e_identity::init_certificates::NewCrlDistributionPoint,
-    mls::{credential::CredentialBundle, MlsConversation},
+    mls::{MlsConversation, credential::CredentialBundle},
     prelude::{Client, MlsError, MlsGroupInfoBundle},
-    LeafError, MlsTransportResponse, RecursiveError,
 };
 
 impl CentralContext {
@@ -528,10 +528,12 @@ mod tests {
                         let commit_bundle = alice_central.mls_transport.latest_commit_bundle().await;
                         let group_info = commit_bundle.group_info.get_group_info();
 
-                        assert!(guest_central
-                            .try_join_from_group_info(&case, &id, group_info, vec![&alice_central])
-                            .await
-                            .is_ok());
+                        assert!(
+                            guest_central
+                                .try_join_from_group_info(&case, &id, group_info, vec![&alice_central])
+                                .await
+                                .is_ok()
+                        );
                     })
                 },
             )
@@ -628,10 +630,12 @@ mod tests {
 
                         let welcome = alice_central.mls_transport.latest_welcome_message().await;
 
-                        assert!(guest_central
-                            .try_join_from_welcome(&id, welcome.into(), case.custom_cfg(), vec![&alice_central])
-                            .await
-                            .is_ok());
+                        assert!(
+                            guest_central
+                                .try_join_from_welcome(&id, welcome.into(), case.custom_cfg(), vec![&alice_central])
+                                .await
+                                .is_ok()
+                        );
                         // because Bob has been removed from the group
                         assert!(guest_central.try_talk_to(&id, &bob_central).await.is_err());
                     })
@@ -670,10 +674,12 @@ mod tests {
 
                         let group_info = commit_bundle.group_info.get_group_info();
 
-                        assert!(guest_central
-                            .try_join_from_group_info(&case, &id, group_info, vec![&alice_central])
-                            .await
-                            .is_ok());
+                        assert!(
+                            guest_central
+                                .try_join_from_group_info(&case, &id, group_info, vec![&alice_central])
+                                .await
+                                .is_ok()
+                        );
                         // because Bob has been removed from the group
                         assert!(guest_central.try_talk_to(&id, &bob_central).await.is_err());
                     })
@@ -730,11 +736,13 @@ mod tests {
                         alice_central.mls_transport.latest_commit_bundle().await;
                     assert!(welcome.is_none());
 
-                    assert!(!alice_central
-                        .get_conversation_unchecked(&id)
-                        .await
-                        .encryption_keys()
-                        .contains(&alice_key));
+                    assert!(
+                        !alice_central
+                            .get_conversation_unchecked(&id)
+                            .await
+                            .encryption_keys()
+                            .contains(&alice_key)
+                    );
 
                     let alice_new_keys = alice_central
                         .get_conversation_unchecked(&id)
@@ -815,11 +823,13 @@ mod tests {
                             .await
                             .unwrap();
 
-                        assert!(alice_central
-                            .get_conversation_unchecked(&id)
-                            .await
-                            .encryption_keys()
-                            .contains(&alice_key));
+                        assert!(
+                            alice_central
+                                .get_conversation_unchecked(&id)
+                                .await
+                                .encryption_keys()
+                                .contains(&alice_key)
+                        );
 
                         // performing an update on Alice's key. this should generate a welcome for Charlie
                         alice_central
@@ -833,11 +843,13 @@ mod tests {
                         let MlsCommitBundle { commit, welcome, .. } =
                             alice_central.mls_transport.latest_commit_bundle().await;
                         assert!(welcome.is_some());
-                        assert!(!alice_central
-                            .get_conversation_unchecked(&id)
-                            .await
-                            .encryption_keys()
-                            .contains(&alice_key));
+                        assert!(
+                            !alice_central
+                                .get_conversation_unchecked(&id)
+                                .await
+                                .encryption_keys()
+                                .contains(&alice_key)
+                        );
 
                         // create the group on charlie's side
                         charlie_central
@@ -928,15 +940,17 @@ mod tests {
                             .await
                             .unwrap();
 
-                        assert!(guest_central
-                            .try_join_from_welcome(
-                                &id,
-                                welcome.unwrap().into(),
-                                case.custom_cfg(),
-                                vec![&alice_central, &bob_central]
-                            )
-                            .await
-                            .is_ok());
+                        assert!(
+                            guest_central
+                                .try_join_from_welcome(
+                                    &id,
+                                    welcome.unwrap().into(),
+                                    case.custom_cfg(),
+                                    vec![&alice_central, &bob_central]
+                                )
+                                .await
+                                .is_ok()
+                        );
                     })
                 },
             )
@@ -970,10 +984,12 @@ mod tests {
                         let group_info = alice_central.mls_transport.latest_group_info().await;
                         let group_info = group_info.get_group_info();
 
-                        assert!(guest_central
-                            .try_join_from_group_info(&case, &id, group_info, vec![&alice_central])
-                            .await
-                            .is_ok());
+                        assert!(
+                            guest_central
+                                .try_join_from_group_info(&case, &id, group_info, vec![&alice_central])
+                                .await
+                                .is_ok()
+                        );
                     })
                 },
             )
@@ -1148,10 +1164,12 @@ mod tests {
                         let commit_bundle = alice_central.mls_transport.latest_commit_bundle().await;
                         let group_info = commit_bundle.group_info.get_group_info();
 
-                        assert!(guest_central
-                            .try_join_from_group_info(&case, &id, group_info, vec![&alice_central])
-                            .await
-                            .is_ok());
+                        assert!(
+                            guest_central
+                                .try_join_from_group_info(&case, &id, group_info, vec![&alice_central])
+                                .await
+                                .is_ok()
+                        );
                     })
                 },
             )

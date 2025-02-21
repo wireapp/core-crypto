@@ -1,10 +1,10 @@
 use super::{
-    error::{Error, Result},
     CredentialBundle,
+    error::{Error, Result},
 };
 use crate::{
-    prelude::{CertificateBundle, Client, ClientId},
     RecursiveError,
+    prelude::{CertificateBundle, Client, ClientId},
 };
 use mls_crypto_provider::MlsCryptoProvider;
 use openmls_traits::types::SignatureScheme;

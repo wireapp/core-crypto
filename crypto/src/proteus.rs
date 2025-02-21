@@ -15,14 +15,14 @@
 // along with this program. If not, see http://www.gnu.org/licenses/.
 
 use crate::{
+    CoreCrypto, Error, KeystoreError, LeafError, ProteusError, Result,
     context::CentralContext,
     group_store::{GroupStore, GroupStoreValue},
-    CoreCrypto, Error, KeystoreError, LeafError, ProteusError, Result,
 };
 use core_crypto_keystore::{
+    Connection as CryptoKeystore,
     connection::FetchFromDatabase,
     entities::{ProteusIdentity, ProteusSession},
-    Connection as CryptoKeystore,
 };
 use proteus_wasm::{
     keys::{IdentityKeyPair, PreKeyBundle},
@@ -398,21 +398,21 @@ impl ProteusCentral {
     /// This function will try to load a proteus Identity from our keystore; If it cannot, it will create a new one
     /// This means this function doesn't fail except in cases of deeper errors (such as in the Keystore and other crypto errors)
     async fn load_or_create_identity(keystore: &CryptoKeystore) -> Result<IdentityKeyPair> {
-        let keypair = if let Some(identity) = keystore
+        let Some(identity) = keystore
             .find::<ProteusIdentity>(&[])
             .await
             .map_err(KeystoreError::wrap("finding proteus identity"))?
-        {
-            let sk = identity.sk_raw();
-            let pk = identity.pk_raw();
-            // SAFETY: Byte lengths are ensured at the keystore level so this function is safe to call, despite being cursed
-
-            IdentityKeyPair::from_raw_key_pair(*sk, *pk).map_err(ProteusError::wrap("constructing identity keypair"))?
-        } else {
-            Self::create_identity(keystore).await?
+        else {
+            return Self::create_identity(keystore).await;
         };
 
-        Ok(keypair)
+        let sk = identity.sk_raw();
+        let pk = identity.pk_raw();
+
+        // SAFETY: Byte lengths are ensured at the keystore level so this function is safe to call, despite being cursed
+        IdentityKeyPair::from_raw_key_pair(*sk, *pk)
+            .map_err(ProteusError::wrap("constructing identity keypair"))
+            .map_err(Into::into)
     }
 
     /// Internal function to create and save a new Proteus Identity
@@ -814,74 +814,72 @@ impl ProteusCentral {
         let session_dir = root_dir.join("sessions");
         let prekey_dir = root_dir.join("prekeys");
 
-        let mut identity = if let Some(store_kp) = keystore
+        // return early any time we can't figure out some part of the identity
+        let missing_identity = Err(CryptoboxMigrationError::wrap("taking identity keypair")(
+            crate::CryptoboxMigrationErrorKind::IdentityNotFound(path.into()),
+        )
+        .into());
+
+        let identity = if let Some(store_kp) = keystore
             .find::<ProteusIdentity>(&[])
             .await
             .map_err(KeystoreError::wrap("finding proteus identity"))?
         {
-            Some(Box::new(
+            Box::new(
                 IdentityKeyPair::from_raw_key_pair(*store_kp.sk_raw(), *store_kp.pk_raw())
                     .map_err(ProteusError::wrap("constructing identity keypair from raw keypair"))?,
-            ))
+            )
         } else {
             let identity_dir = root_dir.join("identities");
 
             let identity = identity_dir.join("local");
             let legacy_identity = identity_dir.join("local_identity");
             // Old "local_identity" migration step
-            let identity_check = if legacy_identity.exists() {
+            let kp = if legacy_identity.exists() {
                 let kp_cbor = async_fs::read(&legacy_identity)
                     .await
                     .map_err(CryptoboxMigrationError::wrap("reading legacy identity from filesystem"))?;
                 let kp = IdentityKeyPair::deserialise(&kp_cbor)
                     .map_err(ProteusError::wrap("deserialising identity keypair"))?;
-                Some((Box::new(kp), true))
+
+                Box::new(kp)
             } else if identity.exists() {
                 let kp_cbor = async_fs::read(&identity)
                     .await
                     .map_err(CryptoboxMigrationError::wrap("reading identity from filesystem"))?;
                 let kp = proteus_wasm::identity::Identity::deserialise(&kp_cbor)
                     .map_err(ProteusError::wrap("deserialising identity"))?;
+
                 if let proteus_wasm::identity::Identity::Sec(kp) = kp {
-                    Some((kp.into_owned(), false))
+                    kp.into_owned()
                 } else {
-                    None
+                    return missing_identity;
                 }
             } else {
-                None
+                return missing_identity;
             };
 
-            if let Some((kp, delete)) = identity_check {
-                let pk = kp.public_key.public_key.as_slice().into();
+            let pk = kp.public_key.public_key.as_slice().into();
 
-                let ks_identity = ProteusIdentity {
-                    sk: kp.secret_key.to_keypair_bytes().into(),
-                    pk,
-                };
+            let ks_identity = ProteusIdentity {
+                sk: kp.secret_key.to_keypair_bytes().into(),
+                pk,
+            };
 
-                keystore
-                    .save(ks_identity)
+            keystore
+                .save(ks_identity)
+                .await
+                .map_err(KeystoreError::wrap("saving proteus identity"))?;
+
+            if legacy_identity.exists() {
+                async_fs::remove_file(legacy_identity)
                     .await
-                    .map_err(KeystoreError::wrap("saving proteus identity"))?;
-
-                if delete && legacy_identity.exists() {
-                    async_fs::remove_file(legacy_identity)
-                        .await
-                        .map_err(CryptoboxMigrationError::wrap("removing legacy identity"))?;
-                }
-
-                Some(kp)
-            } else {
-                None
+                    .map_err(CryptoboxMigrationError::wrap("removing legacy identity"))?;
             }
+
+            kp
         };
 
-        let Some(identity) = identity.take() else {
-            return Err(CryptoboxMigrationError::wrap("taking identity keypair")(
-                crate::CryptoboxMigrationErrorKind::IdentityNotFound(path.into()),
-            )
-            .into());
-        };
         let identity = *identity;
 
         use futures_lite::stream::StreamExt as _;

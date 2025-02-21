@@ -42,10 +42,10 @@ use mls_crypto_provider::{CryptoKeystore, MlsCryptoProvider};
 use config::MlsConversationConfiguration;
 
 use crate::{
-    group_store::{GroupStore, GroupStoreValue},
-    mls::{client::Client, MlsCentral},
-    prelude::{MlsCiphersuite, MlsCredentialType},
     KeystoreError, LeafError, MlsError, RecursiveError,
+    group_store::{GroupStore, GroupStoreValue},
+    mls::{MlsCentral, client::Client},
+    prelude::{MlsCiphersuite, MlsCredentialType},
 };
 
 use crate::context::CentralContext;
@@ -319,15 +319,13 @@ impl CentralContext {
         conversation: &GroupStoreValue<MlsConversation>,
     ) -> Result<Option<GroupStoreValue<MlsConversation>>> {
         let conversation_lock = conversation.read().await;
-        if let Some(parent_id) = conversation_lock.parent_id.as_ref() {
-            Ok(Some(
-                self.get_conversation(parent_id)
-                    .await
-                    .map_err(|_| Error::ParentGroupNotFound)?,
-            ))
-        } else {
-            Ok(None)
-        }
+        let Some(parent_id) = conversation_lock.parent_id.as_ref() else {
+            return Ok(None);
+        };
+        self.get_conversation(parent_id)
+            .await
+            .map(Some)
+            .map_err(|_| Error::ParentGroupNotFound)
     }
 
     /// Mark a conversation as child of another one
@@ -363,9 +361,9 @@ mod tests {
     use wasm_bindgen_test::*;
 
     use crate::{
-        prelude::{ClientIdentifier, MlsCentralConfiguration, INITIAL_KEYING_MATERIAL_COUNT},
-        test_utils::*,
         CoreCrypto,
+        prelude::{ClientIdentifier, INITIAL_KEYING_MATERIAL_COUNT, MlsCentralConfiguration},
+        test_utils::*,
     };
 
     use super::*;

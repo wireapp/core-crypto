@@ -5,7 +5,7 @@ mod tests {
     use openmls::prelude::Lifetime;
     use wasm_bindgen_test::*;
 
-    use crate::{test_utils::*, MlsErrorKind};
+    use crate::{MlsErrorKind, test_utils::*};
 
     use openmls::prelude::{AddMembersError, KeyPackageVerifyError};
 

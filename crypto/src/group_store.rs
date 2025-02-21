@@ -14,7 +14,9 @@
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see http://www.gnu.org/licenses/.
 
-use crate::{prelude::MlsConversation, KeystoreError, ProteusError, RecursiveError, Result};
+use std::sync::Arc;
+
+use crate::{KeystoreError, ProteusError, RecursiveError, Result, prelude::MlsConversation};
 use core_crypto_keystore::connection::FetchFromDatabase;
 #[cfg(test)]
 use core_crypto_keystore::entities::EntityFindParams;
@@ -93,7 +95,7 @@ impl GroupStoreEntity for MlsConversation {
 #[cfg_attr(not(target_family = "wasm"), async_trait::async_trait)]
 impl GroupStoreEntity for crate::proteus::ProteusConversationSession {
     type RawStoreValue = core_crypto_keystore::entities::ProteusSession;
-    type IdentityType = std::sync::Arc<proteus_wasm::keys::IdentityKeyPair>;
+    type IdentityType = Arc<proteus_wasm::keys::IdentityKeyPair>;
 
     #[cfg(test)]
     fn id(&self) -> &[u8] {
@@ -135,7 +137,7 @@ impl GroupStoreEntity for crate::proteus::ProteusConversationSession {
     }
 }
 
-pub(crate) type GroupStoreValue<V> = std::sync::Arc<async_lock::RwLock<V>>;
+pub(crate) type GroupStoreValue<V> = Arc<async_lock::RwLock<V>>;
 
 pub(crate) type LruMap<V> = schnellru::LruMap<Vec<u8>, GroupStoreValue<V>, HybridMemoryLimiter>;
 
@@ -216,15 +218,12 @@ impl<V: GroupStoreEntity> GroupStore<V> {
         }
 
         // Not in store, fetch the thing in the keystore
-        let mut value = V::fetch_from_id(k, identity, keystore).await?;
-        if let Some(value) = value.take() {
-            let value_to_insert = std::sync::Arc::new(async_lock::RwLock::new(value));
+        let inserted_value = V::fetch_from_id(k, identity, keystore).await?.map(|value| {
+            let value_to_insert = Arc::new(async_lock::RwLock::new(value));
             self.insert_prepped(k.to_vec(), value_to_insert.clone());
-
-            Ok(Some(value_to_insert))
-        } else {
-            Ok(None)
-        }
+            value_to_insert
+        });
+        Ok(inserted_value)
     }
 
     /// Returns the value from the keystore.
@@ -245,7 +244,7 @@ impl<V: GroupStoreEntity> GroupStore<V> {
             .into_iter()
             .map(|g| {
                 let id = g.id().to_vec();
-                let to_insert = std::sync::Arc::new(async_lock::RwLock::new(g));
+                let to_insert = Arc::new(async_lock::RwLock::new(g));
                 self.insert_prepped(id, to_insert.clone());
                 to_insert
             })
@@ -258,18 +257,18 @@ impl<V: GroupStoreEntity> GroupStore<V> {
     }
 
     pub(crate) fn insert(&mut self, k: Vec<u8>, entity: V) {
-        let value_to_insert = std::sync::Arc::new(async_lock::RwLock::new(entity));
+        let value_to_insert = Arc::new(async_lock::RwLock::new(entity));
         self.insert_prepped(k, value_to_insert)
     }
 
     pub(crate) fn try_insert(&mut self, k: Vec<u8>, entity: V) -> Result<(), V> {
-        let value_to_insert = std::sync::Arc::new(async_lock::RwLock::new(entity));
+        let value_to_insert = Arc::new(async_lock::RwLock::new(entity));
 
         if self.0.insert(k, value_to_insert.clone()) {
             Ok(())
         } else {
             // This is safe because we just built the value
-            Err(std::sync::Arc::into_inner(value_to_insert).unwrap().into_inner())
+            Err(Arc::into_inner(value_to_insert).unwrap().into_inner())
         }
     }
 
@@ -415,9 +414,11 @@ mod tests {
         let mut store = TestGroupStore::new(Some(u32::MAX), Some(usize::MAX));
         for i in 1..=3 {
             let i_str = i.to_string();
-            assert!(store
-                .try_insert(i_str.as_bytes().to_vec(), i_str.as_str().into())
-                .is_ok());
+            assert!(
+                store
+                    .try_insert(i_str.as_bytes().to_vec(), i_str.as_str().into())
+                    .is_ok()
+            );
             assert_eq!(store.len(), i);
         }
         for i in 4..=6 {

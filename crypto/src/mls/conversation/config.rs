@@ -21,20 +21,20 @@
 
 use mls_crypto_provider::MlsCryptoProvider;
 use openmls::prelude::{
-    Capabilities, Credential, CredentialType, ExternalSender, OpenMlsSignaturePublicKey, ProtocolVersion,
-    RequiredCapabilitiesExtension, SenderRatchetConfiguration, WireFormatPolicy, PURE_CIPHERTEXT_WIRE_FORMAT_POLICY,
-    PURE_PLAINTEXT_WIRE_FORMAT_POLICY,
+    Capabilities, Credential, CredentialType, ExternalSender, OpenMlsSignaturePublicKey,
+    PURE_CIPHERTEXT_WIRE_FORMAT_POLICY, PURE_PLAINTEXT_WIRE_FORMAT_POLICY, ProtocolVersion,
+    RequiredCapabilitiesExtension, SenderRatchetConfiguration, WireFormatPolicy,
 };
 use openmls_traits::{
+    OpenMlsCryptoProvider,
     crypto::OpenMlsCrypto,
     types::{Ciphersuite, SignatureScheme},
-    OpenMlsCryptoProvider,
 };
 use serde::{Deserialize, Serialize};
 use wire_e2e_identity::prelude::parse_json_jwk;
 
 use super::Result;
-use crate::{context::CentralContext, prelude::MlsCiphersuite, MlsError, RecursiveError};
+use crate::{MlsError, RecursiveError, context::CentralContext, prelude::MlsCiphersuite};
 
 /// Sets the config in OpenMls for the oldest possible epoch(past current) that a message can be decrypted
 pub(crate) const MAX_PAST_EPOCHS: usize = 3;
@@ -232,9 +232,9 @@ impl From<MlsWirePolicy> for WireFormatPolicy {
 mod tests {
     use openmls::prelude::ProtocolVersion;
     use openmls_traits::{
+        OpenMlsCryptoProvider,
         crypto::OpenMlsCrypto,
         types::{SignatureScheme, VerifiableCiphersuite},
-        OpenMlsCryptoProvider,
     };
     use wasm_bindgen_test::*;
     use wire_e2e_identity::prelude::JwsAlgorithm;
@@ -330,11 +330,12 @@ mod tests {
                     .signature_key_gen(case.signature_scheme())
                     .unwrap();
 
-                assert!(cc
-                    .context
-                    .set_raw_external_senders(&mut case.cfg.clone(), vec![pk])
-                    .await
-                    .is_ok());
+                assert!(
+                    cc.context
+                        .set_raw_external_senders(&mut case.cfg.clone(), vec![pk])
+                        .await
+                        .is_ok()
+                );
             })
         })
         .await

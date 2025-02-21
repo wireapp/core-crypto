@@ -1,7 +1,7 @@
 use core_crypto::prelude::MlsCredentialType;
 use criterion::{
-    async_executor::AsyncStdExecutor as FuturesExecutor, black_box, criterion_group, criterion_main, BatchSize,
-    Criterion,
+    BatchSize, Criterion, async_executor::AsyncStdExecutor as FuturesExecutor, black_box, criterion_group,
+    criterion_main,
 };
 
 use crate::utils::*;

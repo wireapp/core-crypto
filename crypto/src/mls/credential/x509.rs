@@ -10,7 +10,7 @@ use openmls_traits::types::SignatureScheme;
 use wire_e2e_identity::prelude::{HashAlgorithm, WireIdentityReader};
 use zeroize::Zeroize;
 
-use crate::{e2e_identity::id::WireQualifiedClientId, prelude::ClientId, RecursiveError};
+use crate::{RecursiveError, e2e_identity::id::WireQualifiedClientId, prelude::ClientId};
 
 #[derive(Debug, Clone, Zeroize)]
 #[zeroize(drop)]

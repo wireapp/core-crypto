@@ -53,31 +53,33 @@ mod obfuscate;
 
 mod build_metadata;
 use crate::prelude::MlsCommitBundle;
-pub use build_metadata::{BuildMetadata, BUILD_METADATA};
+pub use build_metadata::{BUILD_METADATA, BuildMetadata};
 
 /// Common imports that should be useful for most uses of the crate
 pub mod prelude {
     pub use openmls::{
         group::{MlsGroup, MlsGroupConfig},
         prelude::{
-            group_info::VerifiableGroupInfo, Ciphersuite as CiphersuiteName, Credential, GroupEpoch, KeyPackage,
-            KeyPackageIn, KeyPackageRef, MlsMessageIn, Node,
+            Ciphersuite as CiphersuiteName, Credential, GroupEpoch, KeyPackage, KeyPackageIn, KeyPackageRef,
+            MlsMessageIn, Node, group_info::VerifiableGroupInfo,
         },
     };
 
     pub use mls_crypto_provider::{EntropySeed, MlsCryptoProvider, RawEntropySeed};
 
     pub use crate::{
+        CoreCrypto, MlsTransport,
         e2e_identity::{
+            E2eiEnrollment,
             conversation_state::E2eiConversationState,
             device_status::DeviceStatus,
             identity::{WireIdentity, X509Identity},
             rotate::MlsRotateBundle,
             types::{E2eiAcmeChallenge, E2eiAcmeDirectory, E2eiNewAcmeAuthz, E2eiNewAcmeOrder},
-            E2eiEnrollment,
         },
         error::{CryptoboxMigrationError, Error, KeystoreError, LeafError, MlsError, ProteusError, RecursiveError},
         mls::{
+            MlsCentral,
             ciphersuite::MlsCiphersuite,
             client::id::ClientId,
             client::identifier::ClientIdentifier,
@@ -85,19 +87,17 @@ pub mod prelude {
             client::*,
             config::MlsCentralConfiguration,
             conversation::{
+                ConversationId, MlsConversation,
                 commit::{MlsCommitBundle, MlsConversationCreationMessage},
                 config::{MlsConversationConfiguration, MlsCustomConfiguration, MlsWirePolicy},
                 decrypt::{self, MlsBufferedConversationDecryptMessage, MlsConversationDecryptMessage},
                 group_info::{GroupInfoPayload, MlsGroupInfoBundle, MlsGroupInfoEncryptionType, MlsRatchetTreeType},
                 proposal::MlsProposalBundle,
                 welcome::WelcomeBundle,
-                ConversationId, MlsConversation,
             },
             credential::{typ::MlsCredentialType, x509::CertificateBundle},
             proposal::{MlsProposal, MlsProposalRef},
-            MlsCentral,
         },
-        CoreCrypto, MlsTransport,
     };
 }
 

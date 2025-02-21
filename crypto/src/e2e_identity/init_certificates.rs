@@ -1,5 +1,5 @@
 use super::{Error, Result};
-use crate::{context::CentralContext, e2e_identity::CrlRegistration, prelude::MlsCentral, MlsError, RecursiveError};
+use crate::{MlsError, RecursiveError, context::CentralContext, e2e_identity::CrlRegistration, prelude::MlsCentral};
 use core_crypto_keystore::{
     connection::FetchFromDatabase,
     entities::{E2eiAcmeCA, E2eiCrl, E2eiIntermediateCert},
@@ -10,7 +10,7 @@ use wire_e2e_identity::prelude::x509::{
     extract_crl_uris, extract_expiration_from_crl,
     revocation::{PkiEnvironment, PkiEnvironmentParams},
 };
-use x509_cert::der::{pem::LineEnding, Decode, EncodePem};
+use x509_cert::der::{Decode, EncodePem, pem::LineEnding};
 
 #[derive(Debug, Clone, derive_more::From, derive_more::Into, derive_more::Deref, derive_more::DerefMut)]
 pub struct NewCrlDistributionPoint(Option<HashSet<String>>);
@@ -232,13 +232,17 @@ impl CentralContext {
             .await
             .map_err(RecursiveError::root("getting keystore"))?;
 
-        let dirty = if let Some(existing_crl) = ks.find::<E2eiCrl>(crl_dp.as_bytes()).await.ok().flatten() {
-            let old_crl = PkiEnvironment::decode_der_crl(existing_crl.content.clone())?;
-
-            old_crl.tbs_cert_list.revoked_certificates != crl.tbs_cert_list.revoked_certificates
-        } else {
-            false
-        };
+        let dirty = ks
+            .find::<E2eiCrl>(crl_dp.as_bytes())
+            .await
+            .ok()
+            .flatten()
+            .map(|existing_crl| {
+                PkiEnvironment::decode_der_crl(existing_crl.content.clone())
+                    .map(|old_crl| old_crl.tbs_cert_list.revoked_certificates != crl.tbs_cert_list.revoked_certificates)
+            })
+            .transpose()?
+            .unwrap_or_default();
 
         // Save DER repr in keystore
         let crl_data = E2eiCrl {
@@ -355,7 +359,6 @@ pub(crate) async fn restore_pki_env(data_provider: &impl FetchFromDatabase) -> R
 #[cfg(test)]
 mod tests {
     use wasm_bindgen_test::*;
-    use x509_cert::der::pem::LineEnding;
     use x509_cert::der::EncodePem;
 
     use crate::test_utils::*;
@@ -367,6 +370,8 @@ mod tests {
     #[apply(all_cred_cipher)]
     #[wasm_bindgen_test]
     async fn register_acme_ca_should_fail_when_already_set(case: TestCase) {
+        use x509_cert::der::pem::LineEnding;
+
         if !case.is_x509() {
             return;
         }

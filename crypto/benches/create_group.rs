@@ -1,6 +1,6 @@
 use criterion::{
-    async_executor::AsyncStdExecutor as FuturesExecutor, black_box, criterion_group, criterion_main, BatchSize,
-    BenchmarkId, Criterion,
+    BatchSize, BenchmarkId, Criterion, async_executor::AsyncStdExecutor as FuturesExecutor, black_box, criterion_group,
+    criterion_main,
 };
 
 use core_crypto::prelude::{MlsConversationConfiguration, MlsCredentialType, MlsCustomConfiguration};

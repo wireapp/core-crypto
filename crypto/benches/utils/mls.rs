@@ -14,11 +14,11 @@ use openmls::framing::MlsMessageOut;
 use openmls::{
     framing::MlsMessageInBody,
     prelude::{
-        group_info::VerifiableGroupInfo, Credential, CredentialWithKey, CryptoConfig, KeyPackage, SignaturePublicKey,
+        Credential, CredentialWithKey, CryptoConfig, KeyPackage, SignaturePublicKey, group_info::VerifiableGroupInfo,
     },
 };
 use openmls_basic_credential::SignatureKeyPair;
-use openmls_traits::{random::OpenMlsRand, types::Ciphersuite, OpenMlsCryptoProvider};
+use openmls_traits::{OpenMlsCryptoProvider, random::OpenMlsRand, types::Ciphersuite};
 use tls_codec::Deserialize;
 
 #[derive(Copy, Clone, Eq, PartialEq)]

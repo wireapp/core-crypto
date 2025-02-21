@@ -1,4 +1,4 @@
-use openmls_traits::{random::OpenMlsRand, OpenMlsCryptoProvider};
+use openmls_traits::{OpenMlsCryptoProvider, random::OpenMlsRand};
 
 use super::Result;
 use crate::context::CentralContext;
@@ -115,11 +115,12 @@ mod tests {
                 .await
                 .unwrap();
 
-                assert!(cc
-                    .context
-                    .e2ei_mls_init_only(&mut enrollment, cert, Some(INITIAL_KEYING_MATERIAL_COUNT))
-                    .await
-                    .is_ok());
+                assert!(
+                    cc.context
+                        .e2ei_mls_init_only(&mut enrollment, cert, Some(INITIAL_KEYING_MATERIAL_COUNT))
+                        .await
+                        .is_ok()
+                );
             })
         })
         .await

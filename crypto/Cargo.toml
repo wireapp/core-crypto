@@ -3,7 +3,7 @@ name = "core-crypto"
 description = "Abstraction over OpenMLS with persistent keystore"
 repository = "https://github.com/wireapp/core-crypto"
 version = "4.1.0"
-edition = "2021"
+edition = "2024"
 license = "GPL-3.0-only"
 publish = false
 

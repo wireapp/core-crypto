@@ -14,25 +14,25 @@
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see http://www.gnu.org/licenses/.
 
-use openmls::prelude::{group_info::VerifiableGroupInfo, MlsGroup};
+use openmls::prelude::{MlsGroup, group_info::VerifiableGroupInfo};
 use openmls_traits::OpenMlsCryptoProvider;
 
 use core_crypto_keystore::{
+    CryptoKeystoreMls,
     connection::FetchFromDatabase,
     entities::{MlsPendingMessage, PersistedMlsPendingGroup},
-    CryptoKeystoreMls,
 };
 
 use super::Result;
 use crate::{
+    KeystoreError, LeafError, MlsError, RecursiveError,
     context::CentralContext,
     mls,
     mls::credential::crl::{extract_crl_uris_from_group, get_new_crl_distribution_points},
     prelude::{
-        decrypt::MlsBufferedConversationDecryptMessage, ConversationId, MlsCiphersuite, MlsConversation,
-        MlsConversationConfiguration, MlsCredentialType, MlsCustomConfiguration, MlsGroupInfoBundle,
+        ConversationId, MlsCiphersuite, MlsConversation, MlsConversationConfiguration, MlsCredentialType,
+        MlsCustomConfiguration, MlsGroupInfoBundle, decrypt::MlsBufferedConversationDecryptMessage,
     },
-    KeystoreError, LeafError, MlsError, RecursiveError,
 };
 
 use crate::prelude::{MlsCommitBundle, WelcomeBundle};
@@ -280,9 +280,9 @@ mod tests {
     use core_crypto_keystore::{CryptoKeystoreError, CryptoKeystoreMls, MissingKeyErrorKind};
 
     use crate::{
+        LeafError,
         prelude::{MlsConversationConfiguration, WelcomeBundle},
         test_utils::*,
-        LeafError,
     };
 
     wasm_bindgen_test_configure!(run_in_browser);
@@ -481,7 +481,7 @@ mod tests {
     #[apply(all_cred_cipher)]
     #[wasm_bindgen_test]
     async fn should_fail_when_no_pending_external_commit(case: TestCase) {
-        use crate::{mls, KeystoreError};
+        use crate::{KeystoreError, mls};
 
         run_test_with_central(case.clone(), move |[central]| {
             Box::pin(async move {
@@ -579,7 +579,7 @@ mod tests {
     #[apply(all_cred_cipher)]
     #[wasm_bindgen_test]
     async fn clear_pending_group_should_succeed(case: TestCase) {
-        use crate::{mls, KeystoreError};
+        use crate::{KeystoreError, mls};
 
         run_test_with_client_ids(case.clone(), ["alice", "bob"], move |[alice_central, bob_central]| {
             Box::pin(async move {

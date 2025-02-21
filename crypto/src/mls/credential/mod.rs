@@ -1,7 +1,7 @@
 use mls_crypto_provider::MlsCryptoProvider;
 use openmls::prelude::{Credential, CredentialWithKey, OpenMlsCrypto};
 use openmls_basic_credential::SignatureKeyPair;
-use openmls_traits::{types::SignatureScheme, OpenMlsCryptoProvider};
+use openmls_traits::{OpenMlsCryptoProvider, types::SignatureScheme};
 use openmls_x509_credential::CertificateKeyPair;
 use std::cmp::Ordering;
 use std::hash::{Hash, Hasher};
@@ -12,8 +12,8 @@ pub(crate) mod ext;
 pub(crate) mod typ;
 pub(crate) mod x509;
 
-use crate::prelude::{CertificateBundle, Client, ClientId};
 use crate::MlsError;
+use crate::prelude::{CertificateBundle, Client, ClientId};
 pub(crate) use error::{Error, Result};
 
 #[derive(Debug)]
@@ -153,16 +153,16 @@ mod tests {
     use wasm_bindgen_test::*;
 
     use crate::{
+        CoreCrypto, RecursiveError,
         mls::credential::x509::CertificatePrivateKey,
         prelude::{
-            ClientIdentifier, ConversationId, E2eiConversationState, MlsCentral, MlsCentralConfiguration,
-            MlsCredentialType, INITIAL_KEYING_MATERIAL_COUNT,
+            ClientIdentifier, ConversationId, E2eiConversationState, INITIAL_KEYING_MATERIAL_COUNT, MlsCentral,
+            MlsCentralConfiguration, MlsCredentialType,
         },
         test_utils::{
             x509::{CertificateParams, X509TestChain},
             *,
         },
-        CoreCrypto, RecursiveError,
     };
 
     use super::*;

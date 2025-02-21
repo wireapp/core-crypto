@@ -122,11 +122,12 @@ impl proteus_traits::PreKeyStore for PrekeyStore {
         &mut self,
         id: proteus_traits::RawPreKeyId,
     ) -> Result<Option<proteus_traits::RawPreKey>, Self::Error> {
-        if let Some(prekey) = self.0.iter().find(|k| k.key_id.value() == id) {
-            Ok(Some(prekey.serialise().unwrap()))
-        } else {
-            Ok(None)
-        }
+        let raw_prekey = self
+            .0
+            .iter()
+            .find(|k| k.key_id.value() == id)
+            .map(|prekey| prekey.serialise().unwrap());
+        Ok(raw_prekey)
     }
 
     async fn remove(&mut self, id: proteus_traits::RawPreKeyId) -> Result<(), Self::Error> {

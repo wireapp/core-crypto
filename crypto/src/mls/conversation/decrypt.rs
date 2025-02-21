@@ -28,10 +28,12 @@ use mls_crypto_provider::MlsCryptoProvider;
 
 use super::{Error, Result};
 use crate::{
+    KeystoreError, MlsError, RecursiveError,
     context::CentralContext,
     e2e_identity::{conversation_state::compute_state, init_certificates::NewCrlDistributionPoint},
     group_store::GroupStoreValue,
     mls::{
+        ClientId, ConversationId, MlsConversation,
         client::Client,
         conversation::renew::Renew,
         credential::{
@@ -40,11 +42,9 @@ use crate::{
             },
             ext::CredentialExt,
         },
-        ClientId, ConversationId, MlsConversation,
     },
     obfuscate::Obfuscated,
     prelude::{E2eiConversationState, MlsProposalBundle, WireIdentity},
-    KeystoreError, MlsError, RecursiveError,
 };
 
 /// Represents the potential items a consumer might require after passing us an encrypted message we
@@ -479,7 +479,7 @@ impl MlsConversation {
             _ => {
                 return Err(
                     MlsError::wrap("parsing inbound message")(ProcessMessageError::IncompatibleWireFormat).into(),
-                )
+                );
             }
         };
         Ok(ParsedMessage {
@@ -867,11 +867,13 @@ mod tests {
                             .await
                             .unwrap();
                         // So Charlie has not been added to the group
-                        assert!(!alice_central
-                            .get_conversation_unchecked(&id)
-                            .await
-                            .members()
-                            .contains_key(b"charlie".as_slice()));
+                        assert!(
+                            !alice_central
+                                .get_conversation_unchecked(&id)
+                                .await
+                                .members()
+                                .contains_key(b"charlie".as_slice())
+                        );
                         // Make sure we are suggesting a commit delay
                         assert!(delay.is_some());
 
@@ -906,18 +908,22 @@ mod tests {
                             .await
                             .unwrap();
                         // Charlie is now in the group
-                        assert!(alice_central
-                            .get_conversation_unchecked(&id)
-                            .await
-                            .members()
-                            .contains_key::<Vec<u8>>(&charlie_central.get_client_id().await.to_vec()));
+                        assert!(
+                            alice_central
+                                .get_conversation_unchecked(&id)
+                                .await
+                                .members()
+                                .contains_key::<Vec<u8>>(&charlie_central.get_client_id().await.to_vec())
+                        );
 
                         // Bob also has Charlie in the group
-                        assert!(bob_central
-                            .get_conversation_unchecked(&id)
-                            .await
-                            .members()
-                            .contains_key::<Vec<u8>>(&charlie_central.get_client_id().await.to_vec()));
+                        assert!(
+                            bob_central
+                                .get_conversation_unchecked(&id)
+                                .await
+                                .members()
+                                .contains_key::<Vec<u8>>(&charlie_central.get_client_id().await.to_vec())
+                        );
                         assert!(decrypted.has_epoch_changed);
                     })
                 },

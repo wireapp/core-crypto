@@ -2,16 +2,16 @@ use super::{Error, Result};
 #[cfg(not(target_family = "wasm"))]
 use crate::e2e_identity::refresh_token::RefreshToken;
 use crate::{
+    LeafError, MlsError, RecursiveError,
     context::CentralContext,
     e2e_identity::init_certificates::NewCrlDistributionPoint,
-    mls::credential::{ext::CredentialExt, x509::CertificatePrivateKey, CredentialBundle},
+    mls::credential::{CredentialBundle, ext::CredentialExt, x509::CertificatePrivateKey},
     prelude::{
         CertificateBundle, Client, ConversationId, E2eiEnrollment, MlsCiphersuite, MlsCommitBundle, MlsConversation,
         MlsCredentialType,
     },
-    LeafError, MlsError, RecursiveError,
 };
-use core_crypto_keystore::{connection::FetchFromDatabase, entities::MlsKeyPackage, CryptoKeystoreMls};
+use core_crypto_keystore::{CryptoKeystoreMls, connection::FetchFromDatabase, entities::MlsKeyPackage};
 use mls_crypto_provider::MlsCryptoProvider;
 use openmls::prelude::{KeyPackage, KeyPackageRef};
 use openmls_traits::OpenMlsCryptoProvider;
@@ -513,14 +513,16 @@ pub(crate) mod tests {
                         // Alice has to delete her old KeyPackages
 
                         // But first let's verify the previous credential material is present
-                        assert!(alice_central
-                            .find_credential_bundle(
-                                case.signature_scheme(),
-                                case.credential_type,
-                                &old_credential.signature_key.public().into()
-                            )
-                            .await
-                            .is_some());
+                        assert!(
+                            alice_central
+                                .find_credential_bundle(
+                                    case.signature_scheme(),
+                                    case.credential_type,
+                                    &old_credential.signature_key.public().into()
+                                )
+                                .await
+                                .is_some()
+                        );
 
                         // we also have generated the right amount of private encryption keys
                         let before_delete = alice_central.context.count_entities().await;
@@ -533,10 +535,12 @@ pub(crate) mod tests {
                         assert_eq!(before_delete.key_package - before_rotate.key_package, NB_KEY_PACKAGE);
 
                         // and the signature keypair is still present
-                        assert!(alice_central
-                            .find_signature_keypair_from_keystore(old_credential.signature_key.public())
-                            .await
-                            .is_some());
+                        assert!(
+                            alice_central
+                                .find_signature_keypair_from_keystore(old_credential.signature_key.public())
+                                .await
+                                .is_some()
+                        );
 
                         // Checks are done, now let's delete ALL the deprecated KeyPackages.
                         // This should have the consequence to purge the previous credential material as well.
@@ -562,10 +566,12 @@ pub(crate) mod tests {
                         // Also the old Credential has been removed from the keystore
                         let after_delete = alice_central.context.count_entities().await;
                         assert_eq!(after_delete.credential, 1);
-                        assert!(alice_central
-                            .find_credential_from_keystore(&old_credential)
-                            .await
-                            .is_none());
+                        assert!(
+                            alice_central
+                                .find_credential_from_keystore(&old_credential)
+                                .await
+                                .is_none()
+                        );
 
                         // and all her Private HPKE keys...
                         assert_eq!(after_delete.hpke_private_key, NB_KEY_PACKAGE);

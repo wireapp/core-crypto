@@ -11,10 +11,10 @@ use mls_crypto_provider::MlsCryptoProvider;
 
 use super::{Error, Result};
 use crate::{
+    MlsError, RecursiveError,
     e2e_identity::init_certificates::NewCrlDistributionPoint,
     mls::credential::crl::{extract_crl_uris_from_credentials, get_new_crl_distribution_points},
     prelude::{Client, MlsConversation, MlsProposalRef},
-    MlsError, RecursiveError,
 };
 
 /// Creating proposals
@@ -351,17 +351,21 @@ mod tests {
                         .unwrap();
                     let commit = bob_central.mls_transport.latest_commit().await;
 
-                    assert!(!bob_central
-                        .get_conversation_unchecked(&id)
-                        .await
-                        .encryption_keys()
-                        .contains(&alice_key));
+                    assert!(
+                        !bob_central
+                            .get_conversation_unchecked(&id)
+                            .await
+                            .encryption_keys()
+                            .contains(&alice_key)
+                    );
 
-                    assert!(alice_central
-                        .get_conversation_unchecked(&id)
-                        .await
-                        .encryption_keys()
-                        .contains(&alice_key));
+                    assert!(
+                        alice_central
+                            .get_conversation_unchecked(&id)
+                            .await
+                            .encryption_keys()
+                            .contains(&alice_key)
+                    );
                     // if 'new_proposal' wasn't durable this would fail because proposal would
                     // not be referenced in commit
                     alice_central
@@ -369,11 +373,13 @@ mod tests {
                         .decrypt_message(&id, commit.to_bytes().unwrap())
                         .await
                         .unwrap();
-                    assert!(!alice_central
-                        .get_conversation_unchecked(&id)
-                        .await
-                        .encryption_keys()
-                        .contains(&alice_key));
+                    assert!(
+                        !alice_central
+                            .get_conversation_unchecked(&id)
+                            .await
+                            .encryption_keys()
+                            .contains(&alice_key)
+                    );
 
                     // ensuring both can encrypt messages
                     assert!(alice_central.try_talk_to(&id, &bob_central).await.is_ok());

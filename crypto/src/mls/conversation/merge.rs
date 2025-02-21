@@ -19,10 +19,10 @@ use mls_crypto_provider::MlsCryptoProvider;
 
 use super::{Error, Result};
 use crate::{
+    MlsError, RecursiveError,
     context::CentralContext,
     mls::{ConversationId, MlsConversation},
     prelude::MlsProposalRef,
-    MlsError, RecursiveError,
 };
 
 /// Abstraction over a MLS group capable of merging a commit
@@ -311,11 +311,13 @@ mod tests {
                             .await
                             .unwrap();
                         assert_eq!(alice_central.pending_proposals(&id).await.len(), 2);
-                        assert!(!alice_central
-                            .pending_proposals(&id)
-                            .await
-                            .into_iter()
-                            .any(|p| matches!(p.proposal(), Proposal::Add(_))));
+                        assert!(
+                            !alice_central
+                                .pending_proposals(&id)
+                                .await
+                                .into_iter()
+                                .any(|p| matches!(p.proposal(), Proposal::Add(_)))
+                        );
 
                         alice_central
                             .context
@@ -323,11 +325,13 @@ mod tests {
                             .await
                             .unwrap();
                         assert_eq!(alice_central.pending_proposals(&id).await.len(), 1);
-                        assert!(!alice_central
-                            .pending_proposals(&id)
-                            .await
-                            .into_iter()
-                            .any(|p| matches!(p.proposal(), Proposal::Remove(_))));
+                        assert!(
+                            !alice_central
+                                .pending_proposals(&id)
+                                .await
+                                .into_iter()
+                                .any(|p| matches!(p.proposal(), Proposal::Remove(_)))
+                        );
 
                         alice_central
                             .context
@@ -335,11 +339,13 @@ mod tests {
                             .await
                             .unwrap();
                         assert!(alice_central.pending_proposals(&id).await.is_empty());
-                        assert!(!alice_central
-                            .pending_proposals(&id)
-                            .await
-                            .into_iter()
-                            .any(|p| matches!(p.proposal(), Proposal::Update(_))));
+                        assert!(
+                            !alice_central
+                                .pending_proposals(&id)
+                                .await
+                                .into_iter()
+                                .any(|p| matches!(p.proposal(), Proposal::Update(_)))
+                        );
                     })
                 },
             )
@@ -349,7 +355,7 @@ mod tests {
         #[apply(all_cred_cipher)]
         #[wasm_bindgen_test]
         pub async fn should_fail_when_conversation_not_found(case: TestCase) {
-            use crate::{mls, LeafError};
+            use crate::{LeafError, mls};
 
             run_test_with_client_ids(case.clone(), ["alice"], move |[alice_central]| {
                 Box::pin(async move {

@@ -6,13 +6,13 @@ use mls_crypto_provider::MlsCryptoProvider;
 use openmls::prelude::group_info::GroupInfo;
 use std::sync::Arc;
 
-use super::{commit::MlsCommitBundle, Error, MlsConversation, Result};
+use super::{Error, MlsConversation, Result, commit::MlsCommitBundle};
 use crate::mls::credential::CredentialBundle;
 use crate::{
+    LeafError, RecursiveError,
     context::CentralContext,
     group_store::GroupStoreValue,
     prelude::{Client, MlsGroupInfoBundle},
-    LeafError, RecursiveError,
 };
 
 /// A Conversation Guard wraps a `GroupStoreValue<MlsConversation>`.

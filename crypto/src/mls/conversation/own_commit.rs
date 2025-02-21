@@ -1,11 +1,11 @@
 use super::{Error, Result};
 use crate::{
+    RecursiveError,
     mls::credential::{
         crl::{extract_crl_uris_from_group, get_new_crl_distribution_points},
         ext::CredentialExt,
     },
     prelude::{MlsConversation, MlsConversationDecryptMessage},
-    RecursiveError,
 };
 use mls_crypto_provider::MlsCryptoProvider;
 use openmls::prelude::{
@@ -330,11 +330,13 @@ mod tests {
                 assert!(alice_central.pending_commit(&conversation_id).await.is_some());
 
                 // Positive case: Alice decrypts the commit...
-                assert!(alice_central
-                    .context
-                    .decrypt_message(&conversation_id, &add_bob_message.to_bytes().unwrap())
-                    .await
-                    .is_ok());
+                assert!(
+                    alice_central
+                        .context
+                        .decrypt_message(&conversation_id, &add_bob_message.to_bytes().unwrap())
+                        .await
+                        .is_ok()
+                );
 
                 // ...and has cleared the pending commit.
                 assert!(alice_central.pending_commit(&conversation_id).await.is_none());

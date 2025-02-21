@@ -1,4 +1,4 @@
-use openmls::prelude::{group_info::GroupInfo, MlsMessageOut};
+use openmls::prelude::{MlsMessageOut, group_info::GroupInfo};
 use serde::{Deserialize, Serialize};
 
 use super::{Error, Result};

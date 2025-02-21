@@ -19,9 +19,9 @@
 #![allow(missing_docs)]
 
 use crate::{
+    CoreCrypto, MlsTransport, MlsTransportResponse,
     prelude::{ClientId, ConversationId, MlsCentral, MlsCentralConfiguration},
     test_utils::x509::{CertificateParams, X509TestChain, X509TestChainActorArg, X509TestChainArgs},
-    CoreCrypto, MlsTransport, MlsTransportResponse,
 };
 use async_lock::RwLock;
 use openmls::framing::MlsMessageOut;
@@ -44,7 +44,7 @@ pub mod proteus_utils;
 use crate::context::CentralContext;
 use crate::e2e_identity::id::{QualifiedE2eiClientId, WireQualifiedClientId};
 use crate::prelude::{Client, MlsCommitBundle, MlsGroupInfoBundle};
-pub use crate::prelude::{ClientIdentifier, MlsCredentialType, INITIAL_KEYING_MATERIAL_COUNT};
+pub use crate::prelude::{ClientIdentifier, INITIAL_KEYING_MATERIAL_COUNT, MlsCredentialType};
 pub use error::Error as TestError;
 use error::Result;
 pub use fixtures::{TestCase, *};
@@ -200,10 +200,10 @@ pub async fn run_test_with_client_ids_and_revocation<const N: usize, const F: us
     other_client_ids: [&'static str; F],
     revoked_display_names: &'static [&'static str],
     test: impl FnOnce(
-            [ClientContext; N],
-            [ClientContext; F],
-        ) -> std::pin::Pin<Box<dyn std::future::Future<Output = ()> + 'static>>
-        + 'static,
+        [ClientContext; N],
+        [ClientContext; F],
+    ) -> std::pin::Pin<Box<dyn std::future::Future<Output = ()> + 'static>>
+    + 'static,
 ) {
     run_test_with_deterministic_client_ids_and_revocation(
         case,
@@ -246,10 +246,10 @@ pub async fn run_cross_signed_tests_with_client_ids<const N: usize, const F: usi
     other_client_ids: [[&'static str; 3]; F],
     (domain1, domain2): (&'static str, &'static str),
     test: impl FnOnce(
-            [ClientContext; N],
-            [ClientContext; F],
-        ) -> std::pin::Pin<Box<dyn std::future::Future<Output = ()> + 'static>>
-        + 'static,
+        [ClientContext; N],
+        [ClientContext; F],
+    ) -> std::pin::Pin<Box<dyn std::future::Future<Output = ()> + 'static>>
+    + 'static,
 ) {
     assert!(case.is_x509(), "This is only supported for x509 test cases");
     run_cross_tests(move |paths1: [String; N], paths2: [String; F]| {
@@ -388,10 +388,10 @@ pub async fn run_test_with_deterministic_client_ids_and_revocation<const N: usiz
     cross_signed_client_ids: [[&'static str; 3]; F],
     revoked_display_names: &'static [&'static str],
     test: impl FnOnce(
-            [ClientContext; N],
-            [ClientContext; F],
-        ) -> std::pin::Pin<Box<dyn std::future::Future<Output = ()> + 'static>>
-        + 'static,
+        [ClientContext; N],
+        [ClientContext; F],
+    ) -> std::pin::Pin<Box<dyn std::future::Future<Output = ()> + 'static>>
+    + 'static,
 ) {
     run_cross_tests(move |paths1: [String; N], paths2: [String; F]| {
         Box::pin(async move {
@@ -528,7 +528,7 @@ pub async fn run_tests<const N: usize>(
 
 pub async fn run_cross_tests<const N: usize, const F: usize>(
     test: impl FnOnce([String; N], [String; F]) -> std::pin::Pin<Box<dyn std::future::Future<Output = ()> + 'static>>
-        + 'static,
+    + 'static,
 ) {
     let _ = pretty_env_logger::try_init();
     let paths1: [(String, _); N] = (0..N).map(|_| tmp_db_file()).collect::<Vec<_>>().try_into().unwrap();

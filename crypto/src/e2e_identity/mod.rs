@@ -7,13 +7,13 @@ use zeroize::Zeroize;
 use mls_crypto_provider::MlsCryptoProvider;
 
 use crate::{
+    RecursiveError,
     context::CentralContext,
     e2e_identity::{
         crypto::E2eiSignatureKeypair, id::QualifiedE2eiClientId, init_certificates::NewCrlDistributionPoint,
     },
     mls::credential::x509::CertificatePrivateKey,
-    prelude::{id::ClientId, identifier::ClientIdentifier, CertificateBundle, MlsCiphersuite},
-    RecursiveError,
+    prelude::{CertificateBundle, MlsCiphersuite, id::ClientId, identifier::ClientIdentifier},
 };
 
 pub(crate) mod conversation_state;
@@ -592,16 +592,16 @@ pub(crate) mod tests {
     use serde_json::json;
     use wasm_bindgen_test::*;
 
-    use crate::{
-        context::CentralContext,
-        e2e_identity::{id::QualifiedE2eiClientId, tests::x509::X509TestChain, Result},
-        prelude::*,
-        test_utils::{context::TEAM, *},
-    };
     #[cfg(not(target_family = "wasm"))]
     use crate::{
-        e2e_identity::{refresh_token::RefreshToken, Error},
         RecursiveError,
+        e2e_identity::{Error, refresh_token::RefreshToken},
+    };
+    use crate::{
+        context::CentralContext,
+        e2e_identity::{Result, id::QualifiedE2eiClientId, tests::x509::X509TestChain},
+        prelude::*,
+        test_utils::{context::TEAM, *},
     };
 
     wasm_bindgen_test_configure!(run_in_browser);
@@ -808,7 +808,9 @@ pub(crate) mod tests {
             None => ctx.get_e2ei_client_id().await.to_uri(),
             Some(client_id) => format!("{}{client_id}", wire_e2e_identity::prelude::E2eiClientId::URI_SCHEME),
         };
-        let device_identifier = format!("{{\"name\":\"{display_name}\",\"domain\":\"world.com\",\"client-id\":\"{client_id}\",\"handle\":\"wireapp://%40{handle}@world.com\"}}");
+        let device_identifier = format!(
+            "{{\"name\":\"{display_name}\",\"domain\":\"world.com\",\"client-id\":\"{client_id}\",\"handle\":\"wireapp://%40{handle}@world.com\"}}"
+        );
         let user_identifier = format!(
             "{{\"name\":\"{display_name}\",\"domain\":\"world.com\",\"handle\":\"wireapp://%40{handle}@world.com\"}}"
         );

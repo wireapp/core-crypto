@@ -4,13 +4,13 @@
 #[cfg(feature = "proteus")]
 use crate::proteus::ProteusCentral;
 use crate::{
+    CoreCrypto, Error, KeystoreError, MlsError, MlsTransport, Result,
     group_store::GroupStore,
     mls::MlsCentral,
     prelude::{Client, MlsConversation},
-    CoreCrypto, Error, KeystoreError, MlsError, MlsTransport, Result,
 };
 use async_lock::{Mutex, RwLock, RwLockReadGuardArc, RwLockWriteGuardArc};
-use core_crypto_keystore::{connection::FetchFromDatabase, entities::ConsumerData, CryptoKeystoreError};
+use core_crypto_keystore::{CryptoKeystoreError, connection::FetchFromDatabase, entities::ConsumerData};
 use mls_crypto_provider::{CryptoKeystore, MlsCryptoProvider};
 use std::{ops::Deref, sync::Arc};
 

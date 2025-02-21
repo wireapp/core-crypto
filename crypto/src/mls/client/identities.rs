@@ -1,12 +1,12 @@
 use crate::{
-    mls::client::{
-        error::{Error, Result},
-        ClientInner,
-    },
     LeafError, RecursiveError,
+    mls::client::{
+        ClientInner,
+        error::{Error, Result},
+    },
 };
 use crate::{
-    mls::credential::{typ::MlsCredentialType, CredentialBundle},
+    mls::credential::{CredentialBundle, typ::MlsCredentialType},
     prelude::{Client, MlsConversation},
 };
 use openmls::prelude::{Credential, SignaturePublicKey};
