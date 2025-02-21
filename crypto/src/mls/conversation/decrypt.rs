@@ -891,7 +891,14 @@ mod tests {
                             .await
                             .unwrap();
                         assert_eq!(bob_central.pending_proposals(&id).await.len(), 1);
-                        bob_central.context.commit_pending_proposals(&id).await.unwrap();
+                        bob_central
+                            .context
+                            .conversation_guard(&id)
+                            .await
+                            .unwrap()
+                            .commit_pending_proposals()
+                            .await
+                            .unwrap();
                         let commit = bob_central.mls_transport.latest_commit().await;
                         let decrypted = alice_central
                             .context
@@ -1100,7 +1107,14 @@ mod tests {
 
                         assert_eq!(bob_central.get_conversation_unchecked(&id).await.members().len(), 2);
                         // if 'decrypt_message' is not durable the commit won't contain the add proposal
-                        bob_central.context.commit_pending_proposals(&id).await.unwrap();
+                        bob_central
+                            .context
+                            .conversation_guard(&id)
+                            .await
+                            .unwrap()
+                            .commit_pending_proposals()
+                            .await
+                            .unwrap();
                         assert_eq!(bob_central.get_conversation_unchecked(&id).await.members().len(), 3);
                         assert!(!decrypted.has_epoch_changed);
 

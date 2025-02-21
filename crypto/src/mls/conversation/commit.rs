@@ -14,7 +14,7 @@ use crate::{
     context::CentralContext,
     e2e_identity::init_certificates::NewCrlDistributionPoint,
     mls::{credential::CredentialBundle, MlsConversation},
-    prelude::{Client, ConversationId, MlsError, MlsGroupInfoBundle},
+    prelude::{Client, MlsError, MlsGroupInfoBundle},
     LeafError, MlsTransportResponse, RecursiveError,
 };
 
@@ -125,38 +125,6 @@ impl CentralContext {
                 }
             }
         }
-    }
-
-    /// Commits all pending proposals of the group
-    ///
-    /// # Arguments
-    /// * `backend` - the KeyStore to persist group changes
-    ///
-    /// # Return type
-    /// A tuple containing the commit message and a possible welcome (in the case `Add` proposals were pending within the internal MLS Group)
-    ///
-    /// # Errors
-    /// Errors can be originating from the KeyStore and OpenMls
-    pub async fn commit_pending_proposals(&self, id: &ConversationId) -> Result<()> {
-        let client = self
-            .mls_client()
-            .await
-            .map_err(RecursiveError::root("getting mls client"))?;
-        let conversation = self.get_conversation(id).await?;
-        let mut conversation_guard = conversation.write().await;
-        let commit = conversation_guard
-            .commit_pending_proposals(
-                &client,
-                &self
-                    .mls_provider()
-                    .await
-                    .map_err(RecursiveError::root("getting mls provider"))?,
-            )
-            .await?;
-        let Some(commit) = commit else {
-            return Ok(());
-        };
-        self.send_and_merge_commit(conversation_guard, commit).await
     }
 }
 
@@ -1037,7 +1005,14 @@ mod tests {
                             .unwrap();
                         assert!(!alice_central.pending_proposals(&id).await.is_empty());
                         assert_eq!(alice_central.get_conversation_unchecked(&id).await.members().len(), 1);
-                        alice_central.context.commit_pending_proposals(&id).await.unwrap();
+                        alice_central
+                            .context
+                            .conversation_guard(&id)
+                            .await
+                            .unwrap()
+                            .commit_pending_proposals()
+                            .await
+                            .unwrap();
                         assert_eq!(alice_central.get_conversation_unchecked(&id).await.members().len(), 2);
 
                         let welcome = alice_central.mls_transport.latest_commit_bundle().await.welcome;
@@ -1081,7 +1056,14 @@ mod tests {
                             .await
                             .unwrap();
 
-                        alice_central.context.commit_pending_proposals(&id).await.unwrap();
+                        alice_central
+                            .context
+                            .conversation_guard(&id)
+                            .await
+                            .unwrap()
+                            .commit_pending_proposals()
+                            .await
+                            .unwrap();
                         let commit = alice_central.mls_transport.latest_commit_bundle().await.commit;
                         assert_eq!(alice_central.get_conversation_unchecked(&id).await.members().len(), 3);
 
@@ -1114,7 +1096,14 @@ mod tests {
                         .new_add_proposal(&id, bob_central.get_one_key_package(&case).await)
                         .await
                         .unwrap();
-                    alice_central.context.commit_pending_proposals(&id).await.unwrap();
+                    alice_central
+                        .context
+                        .conversation_guard(&id)
+                        .await
+                        .unwrap()
+                        .commit_pending_proposals()
+                        .await
+                        .unwrap();
 
                     let welcome = alice_central.mls_transport.latest_commit_bundle().await.welcome;
 
@@ -1148,7 +1137,14 @@ mod tests {
                             .new_add_proposal(&id, bob_central.get_one_key_package(&case).await)
                             .await
                             .unwrap();
-                        alice_central.context.commit_pending_proposals(&id).await.unwrap();
+                        alice_central
+                            .context
+                            .conversation_guard(&id)
+                            .await
+                            .unwrap()
+                            .commit_pending_proposals()
+                            .await
+                            .unwrap();
                         let commit_bundle = alice_central.mls_transport.latest_commit_bundle().await;
                         let group_info = commit_bundle.group_info.get_group_info();
 

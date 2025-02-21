@@ -223,7 +223,15 @@ fn commit_pending_proposals_bench_var_n_proposals(c: &mut Criterion) {
                     },
                     |(central, id)| async move {
                         let context = central.new_transaction().await.unwrap();
-                        black_box(context.commit_pending_proposals(&id).await.unwrap());
+                        black_box(
+                            context
+                                .conversation_guard(&id)
+                                .await
+                                .unwrap()
+                                .commit_pending_proposals()
+                                .await
+                                .unwrap(),
+                        );
                         context.finish().await.unwrap();
                         black_box(());
                     },
@@ -258,7 +266,15 @@ fn commit_pending_proposals_bench_var_group_size(c: &mut Criterion) {
                     },
                     |(central, id)| async move {
                         let context = central.new_transaction().await.unwrap();
-                        black_box(context.commit_pending_proposals(&id).await.unwrap());
+                        black_box(
+                            context
+                                .conversation_guard(&id)
+                                .await
+                                .unwrap()
+                                .commit_pending_proposals()
+                                .await
+                                .unwrap(),
+                        );
                         context.finish().await.unwrap();
                         black_box(());
                     },

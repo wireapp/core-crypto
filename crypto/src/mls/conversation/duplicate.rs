@@ -193,7 +193,14 @@ mod tests {
                 assert!(matches!(decryption.unwrap_err(), Error::DuplicateMessage));
 
                 // advance Bob's epoch to trigger failure
-                bob_central.context.commit_pending_proposals(&id).await.unwrap();
+                bob_central
+                    .context
+                    .conversation_guard(&id)
+                    .await
+                    .unwrap()
+                    .commit_pending_proposals()
+                    .await
+                    .unwrap();
 
                 // Epoch has advanced so we cannot detect duplicates anymore
                 let decryption = bob_central
@@ -241,7 +248,14 @@ mod tests {
                 assert!(matches!(decryption.unwrap_err(), Error::DuplicateMessage));
 
                 // advance alice's epoch
-                alice_central.context.commit_pending_proposals(&id).await.unwrap();
+                alice_central
+                    .context
+                    .conversation_guard(&id)
+                    .await
+                    .unwrap()
+                    .commit_pending_proposals()
+                    .await
+                    .unwrap();
 
                 // Epoch has advanced so we cannot detect duplicates anymore
                 let decryption = alice_central

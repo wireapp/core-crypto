@@ -181,7 +181,14 @@ mod tests {
                         .unwrap();
                     let bob_kp = bob_central.get_one_key_package(&case).await;
                     alice_central.context.new_add_proposal(&id, bob_kp).await.unwrap();
-                    alice_central.context.commit_pending_proposals(&id).await.unwrap();
+                    alice_central
+                        .context
+                        .conversation_guard(&id)
+                        .await
+                        .unwrap()
+                        .commit_pending_proposals()
+                        .await
+                        .unwrap();
                     let welcome = alice_central.mls_transport.latest_welcome_message().await;
                     assert_eq!(alice_central.get_conversation_unchecked(&id).await.members().len(), 2);
                     let new_id = bob_central
@@ -220,7 +227,14 @@ mod tests {
                         .find_or_first(|_| true)
                         .unwrap();
                     central.context.new_update_proposal(&id).await.unwrap();
-                    central.context.commit_pending_proposals(&id).await.unwrap();
+                    central
+                        .context
+                        .conversation_guard(&id)
+                        .await
+                        .unwrap()
+                        .commit_pending_proposals()
+                        .await
+                        .unwrap();
                     let after = central
                         .get_conversation_unchecked(&id)
                         .await
@@ -264,7 +278,14 @@ mod tests {
                         .decrypt_message(&id, remove_proposal.proposal.to_bytes().unwrap())
                         .await
                         .unwrap();
-                    alice_central.context.commit_pending_proposals(&id).await.unwrap();
+                    alice_central
+                        .context
+                        .conversation_guard(&id)
+                        .await
+                        .unwrap()
+                        .commit_pending_proposals()
+                        .await
+                        .unwrap();
                     assert_eq!(alice_central.get_conversation_unchecked(&id).await.members().len(), 1);
 
                     let commit = alice_central.mls_transport.latest_commit().await;

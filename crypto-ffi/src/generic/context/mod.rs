@@ -446,9 +446,14 @@ impl CoreCryptoContext {
             .map_err(Into::into)
     }
 
-    /// See [core_crypto::context::CentralContext::commit_pending_proposals]
+    /// See [core_crypto::mls::conversation::conversation_guard::ConversationGuard::commit_pending_proposals]
     pub async fn commit_pending_proposals(&self, conversation_id: Vec<u8>) -> CoreCryptoResult<()> {
-        Ok(self.context.commit_pending_proposals(&conversation_id).await?)
+        self.context
+            .conversation_guard(&conversation_id)
+            .await?
+            .commit_pending_proposals()
+            .await
+            .map_err(Into::into)
     }
 
     /// see [core_crypto::context::CentralContext::wipe_conversation]

@@ -1034,7 +1034,14 @@ pub(crate) mod tests {
                         .await
                         .unwrap();
 
-                    alice_central.context.commit_pending_proposals(&id).await.unwrap();
+                    alice_central
+                        .context
+                        .conversation_guard(&id)
+                        .await
+                        .unwrap()
+                        .commit_pending_proposals()
+                        .await
+                        .unwrap();
 
                     // Finally, Alice merges her commit and verifies her new identity gets applied
                     alice_central

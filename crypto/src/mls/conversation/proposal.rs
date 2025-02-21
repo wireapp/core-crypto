@@ -205,7 +205,14 @@ mod tests {
                             .decrypt_message(&id, proposal.to_bytes().unwrap())
                             .await
                             .unwrap();
-                        bob_central.context.commit_pending_proposals(&id).await.unwrap();
+                        bob_central
+                            .context
+                            .conversation_guard(&id)
+                            .await
+                            .unwrap()
+                            .commit_pending_proposals()
+                            .await
+                            .unwrap();
                         let commit = bob_central.mls_transport.latest_commit().await;
                         let welcome = bob_central.mls_transport.latest_welcome_message().await;
                         assert_eq!(bob_central.get_conversation_unchecked(&id).await.members().len(), 3);
@@ -271,7 +278,14 @@ mod tests {
                             .decrypt_message(&id, proposal.to_bytes().unwrap())
                             .await
                             .unwrap();
-                        bob_central.context.commit_pending_proposals(&id).await.unwrap();
+                        bob_central
+                            .context
+                            .conversation_guard(&id)
+                            .await
+                            .unwrap()
+                            .commit_pending_proposals()
+                            .await
+                            .unwrap();
                         let commit = bob_central.mls_transport.latest_commit().await;
                         assert_eq!(bob_central.get_conversation_unchecked(&id).await.members().len(), 2);
 
@@ -327,7 +341,14 @@ mod tests {
                         .decrypt_message(&id, proposal.to_bytes().unwrap())
                         .await
                         .unwrap();
-                    bob_central.context.commit_pending_proposals(&id).await.unwrap();
+                    bob_central
+                        .context
+                        .conversation_guard(&id)
+                        .await
+                        .unwrap()
+                        .commit_pending_proposals()
+                        .await
+                        .unwrap();
                     let commit = bob_central.mls_transport.latest_commit().await;
 
                     assert!(!bob_central
@@ -385,7 +406,14 @@ mod tests {
                         .decrypt_message(&id, &proposal.to_bytes().unwrap())
                         .await
                         .unwrap();
-                    bob_central.context.commit_pending_proposals(&id).await.unwrap();
+                    bob_central
+                        .context
+                        .conversation_guard(&id)
+                        .await
+                        .unwrap()
+                        .commit_pending_proposals()
+                        .await
+                        .unwrap();
                     // epoch++
 
                     // fails when we try to decrypt a proposal for past epoch

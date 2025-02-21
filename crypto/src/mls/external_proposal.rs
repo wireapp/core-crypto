@@ -162,7 +162,14 @@ mod tests {
                         guest_central.verify_sender_identity(&case, &decrypted).await;
 
                         // simulate commit message reception from server
-                        owner_central.context.commit_pending_proposals(&id).await.unwrap();
+                        owner_central
+                            .context
+                            .conversation_guard(&id)
+                            .await
+                            .unwrap()
+                            .commit_pending_proposals()
+                            .await
+                            .unwrap();
                         // guest joined the group
                         assert_eq!(owner_central.get_conversation_unchecked(&id).await.members().len(), 2);
 
@@ -234,7 +241,13 @@ mod tests {
                         .decrypt_message(&id, proposal.to_bytes().unwrap())
                         .await
                         .unwrap();
-                    owner_central.commit_pending_proposals(&id).await.unwrap();
+                    owner_central
+                        .conversation_guard(&id)
+                        .await
+                        .unwrap()
+                        .commit_pending_proposals()
+                        .await
+                        .unwrap();
                     let commit = owner.mls_transport.latest_commit().await;
 
                     assert_eq!(owner.get_conversation_unchecked(&id).await.members().len(), 1);
@@ -462,7 +475,13 @@ mod tests {
                             .await
                             .unwrap();
 
-                        charlie_central.commit_pending_proposals(&id).await.unwrap();
+                        charlie_central
+                            .conversation_guard(&id)
+                            .await
+                            .unwrap()
+                            .commit_pending_proposals()
+                            .await
+                            .unwrap();
                         let commit = charlie.mls_transport.latest_commit().await;
                         assert_eq!(charlie.get_conversation_unchecked(&id).await.members().len(), 2);
 
@@ -561,7 +580,13 @@ mod tests {
                             .await
                             .unwrap();
 
-                        charlie_central.commit_pending_proposals(&id).await.unwrap();
+                        charlie_central
+                            .conversation_guard(&id)
+                            .await
+                            .unwrap()
+                            .commit_pending_proposals()
+                            .await
+                            .unwrap();
                         assert_eq!(charlie.get_conversation_unchecked(&id).await.members().len(), 2);
 
                         let commit = charlie.mls_transport.latest_commit().await;

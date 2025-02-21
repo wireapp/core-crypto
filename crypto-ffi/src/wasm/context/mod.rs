@@ -494,7 +494,11 @@ impl CoreCryptoContext {
         let context = self.inner.clone();
         future_to_promise(
             async move {
-                context.commit_pending_proposals(&conversation_id).await?;
+                context
+                    .conversation_guard(&conversation_id)
+                    .await?
+                    .commit_pending_proposals()
+                    .await?;
                 WasmCryptoResult::Ok(JsValue::UNDEFINED)
             }
             .err_into(),

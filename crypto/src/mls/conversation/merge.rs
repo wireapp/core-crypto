@@ -245,7 +245,14 @@ mod tests {
                         initial_count.encryption_keypair + 1
                     );
 
-                    alice_central.context.commit_pending_proposals(&id).await.unwrap();
+                    alice_central
+                        .context
+                        .conversation_guard(&id)
+                        .await
+                        .unwrap()
+                        .commit_pending_proposals()
+                        .await
+                        .unwrap();
 
                     let final_count = alice_central.context.count_entities().await;
                     assert_eq!(initial_count, final_count);

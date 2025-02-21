@@ -592,7 +592,14 @@ mod tests {
                         .await
                         .unwrap();
 
-                    member_27.context.commit_pending_proposals(&conv_id).await.unwrap();
+                    member_27
+                        .context
+                        .conversation_guard(&conv_id)
+                        .await
+                        .unwrap()
+                        .commit_pending_proposals()
+                        .await
+                        .unwrap();
                     let remove_two_members_commit = member_27.mls_transport.latest_commit().await;
 
                     // In this case, note that observer receives the proposal before the commit.

@@ -200,4 +200,17 @@ impl ConversationGuard {
         drop(conversation);
         self.send_and_merge_commit(commit).await
     }
+
+    /// Commits all pending proposals of the group
+    pub async fn commit_pending_proposals(&mut self) -> Result<()> {
+        let client = self.mls_client().await?;
+        let backend = self.mls_provider().await?;
+        let mut conversation = self.inner.write().await;
+        let commit = conversation.commit_pending_proposals(&client, &backend).await?;
+        drop(conversation);
+        let Some(commit) = commit else {
+            return Ok(());
+        };
+        self.send_and_merge_commit(commit).await
+    }
 }
