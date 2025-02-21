@@ -20,7 +20,7 @@ async fn main() -> Result<()> {
     use chrono::TimeZone;
     use clap::Parser as _;
     use color_eyre::eyre::eyre;
-    use core_crypto_keystore::{connection::FetchFromDatabase, entities::*, Connection as Keystore};
+    use core_crypto_keystore::{Connection as Keystore, connection::FetchFromDatabase, entities::*};
     use openmls::prelude::TlsDeserializeTrait;
     use serde::ser::{SerializeMap, Serializer};
 
