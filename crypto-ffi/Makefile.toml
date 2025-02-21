@@ -230,7 +230,7 @@ args = [
     "--",
     "-C", "strip=symbols"
 ]
-dependencies = ["bindings-kotlin-android", "android-env"]
+dependencies = ["android-env"]
 
 [tasks.android-armv8]
 command = "cargo"
@@ -244,7 +244,7 @@ args = [
     "--",
     "-C", "strip=symbols"
 ]
-dependencies = ["bindings-kotlin-android", "android-env"]
+dependencies = ["android-env"]
 
 [tasks.android-x86]
 command = "cargo"
@@ -260,7 +260,7 @@ args = [
     "-l", "static=clang_rt.builtins-x86_64-android",
     "-L", "${CLANG_RT_DIR}"
 ]
-dependencies = ["bindings-kotlin-android", "android-env"]
+dependencies = ["android-env"]
 
 [tasks.android]
 dependencies = ["android-armv7", "android-armv8", "android-x86"]
