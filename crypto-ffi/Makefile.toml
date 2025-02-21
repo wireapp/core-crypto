@@ -366,7 +366,6 @@ fn update_android_env
     set_env CARGO_TARGET_ARMV7_LINUX_ANDROIDEABI_ANDROID_NDK "${base_ndk_path}"
     set_env CARGO_TARGET_AARCH64_LINUX_ANDROID_ANDROID_NDK "${base_ndk_path}"
     set_env CARGO_TARGET_X86_64_LINUX_ANDROID_ANDROID_NDK "${base_ndk_path}"
-    set_env CARGO_TARGET_I686_LINUX_ANDROID_ANDROID_NDK "${base_ndk_path}"
 end
 
 fn autodetect_android_env
