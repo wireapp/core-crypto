@@ -27,9 +27,9 @@ jobs:
         tool:
           - name: fmt
             trailer: --all -- --check
-          - name: clippy
+          - name: clippy --locked
             trailer: -- -D warnings
-          - name: check
+          - name: check --locked
             trailer: --tests
         target: ["", "--target wasm32-unknown-unknown"]
         exclude:
@@ -54,9 +54,9 @@ jobs:
           rustflags: ''
       - uses: taiki-e/install-action@nextest
       - name: "test corecrypto"
-        run: cargo nextest run --verbose
+        run: cargo nextest run --verbose --locked
       - name: "test corecrypto documentation"
-        run: cargo test --doc
+        run: cargo test --doc --locked
       - name: "upload test results"
         if: startsWith(github.ref, 'refs/tags/')
         uses: softprops/action-gh-release@v2
@@ -73,7 +73,7 @@ jobs:
       - name: "test keystore regressions"
         run: |
           cd extras/keystore-regression-versions
-          cargo run
+          cargo run --locked
 
   proteus-test:
     runs-on: ubuntu-latest
@@ -84,7 +84,7 @@ jobs:
           rustflags: ''
       - uses: taiki-e/install-action@nextest
       - name: "test corecrypto's proteus implementation"
-        run: cargo nextest run --verbose --features proteus,cryptobox-migrate,proteus-keystore proteus
+        run: cargo nextest run --locked --verbose --features proteus,cryptobox-migrate,proteus-keystore proteus
 
   wasm-test:
     runs-on: ubuntu-latest

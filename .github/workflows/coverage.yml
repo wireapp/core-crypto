@@ -29,7 +29,7 @@ jobs:
       - name: install cargo-nextest
         uses: taiki-e/install-action@nextest
       - name: generate code coverage
-        run: cargo llvm-cov nextest --workspace --lcov --exclude interop --output-path lcov.info
+        run: cargo llvm-cov nextest --locked --workspace --lcov --exclude interop --output-path lcov.info
       - name: upload to codecov.io
         uses: codecov/codecov-action@v5
         with:

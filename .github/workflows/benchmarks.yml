@@ -24,7 +24,7 @@ jobs:
           bencher-api-token: ${{ secrets.BENCHER_API_TOKEN }}
           github-token: ${{ secrets.GITHUB_TOKEN }}
           adapter: rust_criterion
-          bench-command: cargo bench --bench ${{ matrix.rust_bench }} -- --quick
+          bench-command: cargo bench --locked --bench ${{ matrix.rust_bench }} -- --quick
 
   web_benchmarks_with_bencher:
     name: web benchmarks with bencher
