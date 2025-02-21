@@ -14,8 +14,8 @@
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see http://www.gnu.org/licenses/.
 
-use core_crypto::prelude::MlsCommitBundle;
 use core_crypto::MlsTransport;
+use core_crypto::prelude::MlsCommitBundle;
 use core_crypto_ffi::CommitBundle;
 use openmls::prelude::MlsMessageOut;
 use spinoff::Spinner;

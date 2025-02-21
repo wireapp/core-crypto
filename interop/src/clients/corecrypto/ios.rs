@@ -15,10 +15,10 @@
 // along with this program. If not, see http://www.gnu.org/licenses/.
 
 use crate::{
-    clients::{EmulatedClient, EmulatedClientProtocol, EmulatedClientType, EmulatedMlsClient},
     CIPHERSUITE_IN_USE,
+    clients::{EmulatedClient, EmulatedClientProtocol, EmulatedClientType, EmulatedMlsClient},
 };
-use base64::{engine::general_purpose, Engine as _};
+use base64::{Engine as _, engine::general_purpose};
 use color_eyre::eyre::Result;
 use core_crypto::prelude::{KeyPackage, KeyPackageIn};
 use std::cell::{Cell, RefCell};

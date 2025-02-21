@@ -23,8 +23,8 @@ use core_crypto::prelude::*;
 
 use crate::util::MlsTransportSuccessProvider;
 use crate::{
-    clients::{EmulatedClient, EmulatedClientProtocol, EmulatedClientType, EmulatedMlsClient},
     CIPHERSUITE_IN_USE,
+    clients::{EmulatedClient, EmulatedClientProtocol, EmulatedClientType, EmulatedMlsClient},
 };
 
 #[derive(Debug)]

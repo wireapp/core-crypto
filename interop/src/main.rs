@@ -20,7 +20,7 @@
 use crate::clients::{EmulatedClient, EmulatedProteusClient};
 #[cfg(not(target_family = "wasm"))]
 use crate::util::{MlsTransportSuccessProvider, MlsTransportTestExt};
-use color_eyre::eyre::{eyre, Result};
+use color_eyre::eyre::{Result, eyre};
 use core_crypto::prelude::CiphersuiteName;
 use std::rc::Rc;
 use std::sync::Arc;
