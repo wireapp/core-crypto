@@ -1,4 +1,5 @@
 mod commit;
+mod encrypt;
 
 use async_lock::{RwLockReadGuard, RwLockWriteGuard};
 use mls_crypto_provider::MlsCryptoProvider;
