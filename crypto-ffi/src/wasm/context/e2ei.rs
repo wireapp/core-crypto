@@ -4,19 +4,19 @@ use std::{
 };
 
 use core_crypto::{
-    prelude::{CiphersuiteName, ClientId, ConversationId, MlsCiphersuite, VerifiableGroupInfo},
     RecursiveError,
+    prelude::{CiphersuiteName, ClientId, ConversationId, MlsCiphersuite, VerifiableGroupInfo},
 };
 use futures_util::TryFutureExt;
 use js_sys::{Promise, Uint8Array};
 use tls_codec::Deserialize;
-use wasm_bindgen::{prelude::wasm_bindgen, JsValue};
+use wasm_bindgen::{JsValue, prelude::wasm_bindgen};
 use wasm_bindgen_futures::future_to_promise;
 
 use crate::{
-    wasm::{context::CoreCryptoContext, E2eiConversationState},
     Ciphersuite, CoreCryptoError, CredentialType, CrlRegistration, E2eiDumpedPkiEnv, E2eiEnrollment, InternalError,
     WasmCryptoResult, WireIdentity,
+    wasm::{E2eiConversationState, context::CoreCryptoContext},
 };
 
 #[wasm_bindgen]

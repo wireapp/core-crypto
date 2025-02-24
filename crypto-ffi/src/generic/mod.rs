@@ -21,22 +21,22 @@ use std::{
 };
 
 use log::{
-    kv::{self, Key, Value, VisitSource},
     Level, LevelFilter, Metadata, Record,
+    kv::{self, Key, Value, VisitSource},
 };
 use log_reload::ReloadLog;
 use tls_codec::Deserialize;
 
 use self::context::CoreCryptoContext;
-use crate::{proteus_impl, UniffiCustomTypeConverter};
+use crate::{UniffiCustomTypeConverter, proteus_impl};
 pub use core_crypto::prelude::ConversationId;
 use core_crypto::{
+    InnermostErrorMessage, RecursiveError,
     prelude::{
         EntropySeed, MlsBufferedConversationDecryptMessage, MlsCentral, MlsCentralConfiguration, MlsCiphersuite,
         MlsCommitBundle, MlsConversationDecryptMessage, MlsCustomConfiguration, MlsGroupInfoBundle, MlsProposalBundle,
         VerifiableGroupInfo,
     },
-    InnermostErrorMessage, RecursiveError,
 };
 
 pub mod context;
@@ -97,7 +97,9 @@ pub enum MlsError {
     BufferedFutureMessage,
     #[error("Incoming message is from an epoch too far in the future to buffer.")]
     WrongEpoch,
-    #[error("Incoming message is a commit for which we have not yet received all the proposals. Buffering until all proposals have arrived.")]
+    #[error(
+        "Incoming message is a commit for which we have not yet received all the proposals. Buffering until all proposals have arrived."
+    )]
     BufferedCommit,
     #[error("The epoch in which message was encrypted is older than allowed")]
     MessageEpochTooOld,
@@ -115,7 +117,9 @@ pub enum MlsError {
     /// requests their old KeyPackages to be deleted but one has already been claimed by another client to create a Welcome.
     /// In that case the only solution is that the client receiving such a Welcome tries to join the group
     /// with an External Commit instead
-    #[error("Although this Welcome seems valid, the local KeyPackage it references has already been deleted locally. Join this group with an external commit")]
+    #[error(
+        "Although this Welcome seems valid, the local KeyPackage it references has already been deleted locally. Join this group with an external commit"
+    )]
     OrphanWelcome,
     /// Message rejected by the delivery service
     #[error("Message rejected by the delivery service. Reason: {reason}")]
@@ -695,15 +699,14 @@ impl TryFrom<MlsConversationDecryptMessage> for DecryptedMessage {
             .map(ProposalBundle::try_from)
             .collect::<CoreCryptoResult<Vec<_>>>()?;
 
-        let buffered_messages = if let Some(bm) = from.buffered_messages {
-            let bm = bm
-                .into_iter()
-                .map(TryInto::try_into)
-                .collect::<CoreCryptoResult<Vec<_>>>()?;
-            Some(bm)
-        } else {
-            None
-        };
+        let buffered_messages = from
+            .buffered_messages
+            .map(|bm| {
+                bm.into_iter()
+                    .map(TryInto::try_into)
+                    .collect::<CoreCryptoResult<Vec<_>>>()
+            })
+            .transpose()?;
 
         Ok(Self {
             message: from.app_msg,

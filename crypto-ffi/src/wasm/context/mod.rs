@@ -1,21 +1,21 @@
-use crate::wasm::{lower_ciphersuites, InternalError};
+use crate::wasm::{InternalError, lower_ciphersuites};
 use crate::{
     Ciphersuite, ConversationConfiguration, CoreCrypto, CoreCryptoError, CoreCryptoResult, CredentialType,
     CustomConfiguration, DecryptedMessage, FfiClientId, WasmCryptoResult, WelcomeBundle,
 };
 use core_crypto::{
+    RecursiveError,
     context::CentralContext,
     prelude::{
         CiphersuiteName, ClientId, ClientIdentifier, ConversationId, KeyPackageIn, KeyPackageRef,
         MlsConversationConfiguration, VerifiableGroupInfo,
     },
-    RecursiveError,
 };
 use futures_util::TryFutureExt;
 use js_sys::{Promise, Uint8Array};
 use std::sync::Arc;
 use tls_codec::{Deserialize, Serialize};
-use wasm_bindgen::{prelude::wasm_bindgen, JsValue};
+use wasm_bindgen::{JsValue, prelude::wasm_bindgen};
 use wasm_bindgen_futures::future_to_promise;
 
 pub mod e2ei;
