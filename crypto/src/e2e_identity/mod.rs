@@ -691,7 +691,13 @@ pub(crate) mod tests {
                     .new_conversation(&id, MlsCredentialType::X509, case.cfg.clone())
                     .await
                     .unwrap();
-                cc.context.encrypt_message(&id, "Hello e2e identity !").await.unwrap();
+                cc.context
+                    .conversation_guard(&id)
+                    .await
+                    .unwrap()
+                    .encrypt_message("Hello e2e identity !")
+                    .await
+                    .unwrap();
                 assert_eq!(
                     cc.context.e2ei_conversation_state(&id).await.unwrap(),
                     E2eiConversationState::Verified

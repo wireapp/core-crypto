@@ -145,7 +145,10 @@ impl ClientContext {
         let msg = b"Hello other";
         let encrypted = self
             .context
-            .encrypt_message(id, msg)
+            .conversation_guard(id)
+            .await
+            .map_err(RecursiveError::mls_conversation("getting conversation by id"))?
+            .encrypt_message(msg)
             .await
             .map_err(RecursiveError::mls_conversation("encrypting message; self -> other"))?;
         let decrypted = other
@@ -160,7 +163,10 @@ impl ClientContext {
         let msg = b"Hello self";
         let encrypted = other
             .context
-            .encrypt_message(id, msg)
+            .conversation_guard(id)
+            .await
+            .map_err(RecursiveError::mls_conversation("getting conversation by id"))?
+            .encrypt_message(msg)
             .await
             .map_err(RecursiveError::mls_conversation("encrypting message; other -> self"))?;
         let decrypted = self

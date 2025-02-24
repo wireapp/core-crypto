@@ -55,7 +55,15 @@ fn encrypt_message_bench(c: &mut Criterion) {
                     },
                     |(central, id, text)| async move {
                         let context = central.new_transaction().await.unwrap();
-                        black_box(context.encrypt_message(&id, text).await.unwrap());
+                        black_box(
+                            context
+                                .conversation_guard(&id)
+                                .await
+                                .unwrap()
+                                .encrypt_message(text)
+                                .await
+                                .unwrap(),
+                        );
                         context.finish().await.unwrap();
                     },
                     BatchSize::SmallInput,

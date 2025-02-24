@@ -25,7 +25,15 @@ fn encryption_bench_var_group_size(c: &mut Criterion) {
                     },
                     |(central, id, text)| async move {
                         let context = central.new_transaction().await.unwrap();
-                        black_box(context.encrypt_message(&id, text).await.unwrap());
+                        black_box(
+                            context
+                                .conversation_guard(&id)
+                                .await
+                                .unwrap()
+                                .encrypt_message(text)
+                                .await
+                                .unwrap(),
+                        );
                         context.finish().await.unwrap();
                     },
                     BatchSize::SmallInput,
@@ -52,7 +60,15 @@ fn encryption_bench_var_msg_size(c: &mut Criterion) {
                     },
                     |(central, id, text)| async move {
                         let context = central.new_transaction().await.unwrap();
-                        black_box(context.encrypt_message(&id, text).await.unwrap());
+                        black_box(
+                            context
+                                .conversation_guard(&id)
+                                .await
+                                .unwrap()
+                                .encrypt_message(text)
+                                .await
+                                .unwrap(),
+                        );
                         context.finish().await.unwrap();
                     },
                     BatchSize::SmallInput,
@@ -78,7 +94,13 @@ fn decryption_bench_var_msg_size(c: &mut Criterion) {
 
                             let context = alice_central.new_transaction().await.unwrap();
                             let text = Alphanumeric.sample_string(&mut rand::thread_rng(), *i);
-                            let encrypted = context.encrypt_message(&id, text).await.unwrap();
+                            let encrypted = context
+                                .conversation_guard(&id)
+                                .await
+                                .unwrap()
+                                .encrypt_message(text)
+                                .await
+                                .unwrap();
                             context.finish().await.unwrap();
                             (bob_central, id, encrypted)
                         })

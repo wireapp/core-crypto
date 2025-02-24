@@ -36,7 +36,15 @@ fn decrypt_transaction(c: &mut Criterion) {
                         let mut encrypted_messages: Vec<Vec<u8>> = vec![];
                         for _ in 0..MESSAGE_COUNT {
                             let text = Alphanumeric.sample_string(&mut rand::thread_rng(), MESSAGE_LENGTH);
-                            encrypted_messages.push(context.encrypt_message(&id, text).await.unwrap());
+                            encrypted_messages.push(
+                                context
+                                    .conversation_guard(&id)
+                                    .await
+                                    .unwrap()
+                                    .encrypt_message(text)
+                                    .await
+                                    .unwrap(),
+                            );
                         }
                         context.finish().await.unwrap();
                         (bob_central, id, encrypted_messages, transactional)

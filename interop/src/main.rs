@@ -215,7 +215,11 @@ async fn run_mls_test(chrome_driver_addr: &std::net::SocketAddr) -> Result<()> {
             message
         );
 
-        let mut message_to_decrypt = transaction.encrypt_message(&conversation_id, &message).await?;
+        let mut message_to_decrypt = transaction
+            .conversation_guard(&conversation_id)
+            .await?
+            .encrypt_message(&message)
+            .await?;
 
         for c in clients.iter_mut() {
             let decrypted_message_raw = c

@@ -475,9 +475,14 @@ impl CoreCryptoContext {
         Ok(decrypted_message)
     }
 
-    /// See [core_crypto::context::CentralContext::encrypt_message]
+    /// See [core_crypto::mls::conversation::conversation_guard::ConversationGuard::encrypt_message]
     pub async fn encrypt_message(&self, conversation_id: Vec<u8>, message: Vec<u8>) -> CoreCryptoResult<Vec<u8>> {
-        Ok(self.context.encrypt_message(&conversation_id, message).await?)
+        self.context
+            .conversation_guard(&conversation_id)
+            .await?
+            .encrypt_message(message)
+            .await
+            .map_err(Into::into)
     }
 
     /// See [core_crypto::context::CentralContext::join_by_external_commit]

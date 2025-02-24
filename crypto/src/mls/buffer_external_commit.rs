@@ -195,7 +195,10 @@ mod tests {
                     // ...then Alice generates new messages for this epoch
                     let app_msg = alice_central
                         .context
-                        .encrypt_message(&id, b"Hello Bob !")
+                        .conversation_guard(&id)
+                        .await
+                        .unwrap()
+                        .encrypt_message(b"Hello Bob !")
                         .await
                         .unwrap();
                     let proposal = alice_central.context.new_update_proposal(&id).await.unwrap().proposal;
@@ -324,8 +327,22 @@ mod tests {
                         .await
                         .unwrap();
 
-                    let msg1 = bob_central.context.encrypt_message(&id, "A").await.unwrap();
-                    let msg2 = bob_central.context.encrypt_message(&id, "B").await.unwrap();
+                    let msg1 = bob_central
+                        .context
+                        .conversation_guard(&id)
+                        .await
+                        .unwrap()
+                        .encrypt_message("A")
+                        .await
+                        .unwrap();
+                    let msg2 = bob_central
+                        .context
+                        .conversation_guard(&id)
+                        .await
+                        .unwrap()
+                        .encrypt_message("B")
+                        .await
+                        .unwrap();
 
                     // Since Alice missed Bob's commit she should buffer this message
                     let decrypt = alice_central.context.decrypt_message(&id, msg1).await;

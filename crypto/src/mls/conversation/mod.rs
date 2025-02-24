@@ -395,7 +395,13 @@ mod tests {
                     id
                 );
                 assert_eq!(alice_central.get_conversation_unchecked(&id).await.members().len(), 1);
-                let alice_can_send_message = alice_central.context.encrypt_message(&id, b"me").await;
+                let alice_can_send_message = alice_central
+                    .context
+                    .conversation_guard(&id)
+                    .await
+                    .unwrap()
+                    .encrypt_message(b"me")
+                    .await;
                 assert!(alice_can_send_message.is_ok());
             })
         })

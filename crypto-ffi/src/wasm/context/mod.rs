@@ -543,13 +543,15 @@ impl CoreCryptoContext {
 
     /// Returns: [`WasmCryptoResult<Uint8Array>`]
     ///
-    /// see [core_crypto::mls::context::CentralContext::encrypt_message]
+    /// see [core_crypto::mls::conversation::conversation_guard::ConversationGuard::encrypt_message]
     pub fn encrypt_message(&self, conversation_id: ConversationId, message: Box<[u8]>) -> Promise {
         let context = self.inner.clone();
         future_to_promise(
             async move {
                 let ciphertext = context
-                    .encrypt_message(&conversation_id.to_vec(), message)
+                    .conversation_guard(&conversation_id)
+                    .await?
+                    .encrypt_message(message)
                     .await
                     .map(|ciphertext| Uint8Array::from(ciphertext.as_slice()))
                     .map_err(CoreCryptoError::from)?;

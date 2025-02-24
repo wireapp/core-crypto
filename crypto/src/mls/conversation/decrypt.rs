@@ -1170,7 +1170,14 @@ mod tests {
                     alice_central.invite_all(&case, &id, [&bob_central]).await.unwrap();
 
                     let msg = b"Hello bob";
-                    let encrypted = alice_central.context.encrypt_message(&id, msg).await.unwrap();
+                    let encrypted = alice_central
+                        .context
+                        .conversation_guard(&id)
+                        .await
+                        .unwrap()
+                        .encrypt_message(msg)
+                        .await
+                        .unwrap();
                     assert_ne!(&msg[..], &encrypted[..]);
                     let decrypted = bob_central.context.decrypt_message(&id, encrypted).await.unwrap();
                     let dec_msg = decrypted.app_msg.as_ref().unwrap().as_slice();
@@ -1179,7 +1186,14 @@ mod tests {
                     alice_central.verify_sender_identity(&case, &decrypted).await;
 
                     let msg = b"Hello alice";
-                    let encrypted = bob_central.context.encrypt_message(&id, msg).await.unwrap();
+                    let encrypted = bob_central
+                        .context
+                        .conversation_guard(&id)
+                        .await
+                        .unwrap()
+                        .encrypt_message(msg)
+                        .await
+                        .unwrap();
                     assert_ne!(&msg[..], &encrypted[..]);
                     let decrypted = alice_central.context.decrypt_message(&id, encrypted).await.unwrap();
                     let dec_msg = decrypted.app_msg.as_ref().unwrap().as_slice();
@@ -1206,7 +1220,14 @@ mod tests {
 
                     // encrypt a message in epoch 1
                     let msg = b"Hello bob";
-                    let encrypted = alice_central.context.encrypt_message(&id, msg).await.unwrap();
+                    let encrypted = alice_central
+                        .context
+                        .conversation_guard(&id)
+                        .await
+                        .unwrap()
+                        .encrypt_message(msg)
+                        .await
+                        .unwrap();
 
                     // Now Bob will rejoin the group and try to decrypt Alice's message
                     // in epoch 2 which should fail
@@ -1251,7 +1272,14 @@ mod tests {
 
                     // Now in epoch 2 Alice will encrypt a message
                     let msg = b"Hello bob";
-                    let encrypted = alice_central.context.encrypt_message(&id, msg).await.unwrap();
+                    let encrypted = alice_central
+                        .context
+                        .conversation_guard(&id)
+                        .await
+                        .unwrap()
+                        .encrypt_message(msg)
+                        .await
+                        .unwrap();
 
                     // which Bob cannot decrypt because of Post CompromiseSecurity
                     let decrypt = bob_central.context.decrypt_message(&id, &encrypted).await;
@@ -1293,7 +1321,14 @@ mod tests {
                     // stack up encrypted messages..
                     for i in 0..nb_messages {
                         let msg = format!("Hello {i}");
-                        let encrypted = alice_central.context.encrypt_message(&id, &msg).await.unwrap();
+                        let encrypted = alice_central
+                            .context
+                            .conversation_guard(&id)
+                            .await
+                            .unwrap()
+                            .encrypt_message(&msg)
+                            .await
+                            .unwrap();
                         messages.push((msg, encrypted));
                     }
 
@@ -1327,7 +1362,14 @@ mod tests {
                     alice_central.invite_all(&case, &id, [&bob_central]).await.unwrap();
 
                     let msg = b"Hello bob";
-                    let encrypted = alice_central.context.encrypt_message(&id, msg).await.unwrap();
+                    let encrypted = alice_central
+                        .context
+                        .conversation_guard(&id)
+                        .await
+                        .unwrap()
+                        .encrypt_message(msg)
+                        .await
+                        .unwrap();
                     assert_ne!(&msg[..], &encrypted[..]);
 
                     let sender_client_id = bob_central
@@ -1362,10 +1404,20 @@ mod tests {
                     alice_central.invite_all(&case, &id, [&bob_central]).await.unwrap();
 
                     // Alice encrypts a message to Bob
-                    let bob_message1 = alice_central.context.encrypt_message(&id, b"Hello Bob").await.unwrap();
+                    let bob_message1 = alice_central
+                        .context
+                        .conversation_guard(&id)
+                        .await
+                        .unwrap()
+                        .encrypt_message(b"Hello Bob")
+                        .await
+                        .unwrap();
                     let bob_message2 = alice_central
                         .context
-                        .encrypt_message(&id, b"Hello again Bob")
+                        .conversation_guard(&id)
+                        .await
+                        .unwrap()
+                        .encrypt_message(b"Hello again Bob")
                         .await
                         .unwrap();
 

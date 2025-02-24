@@ -283,7 +283,14 @@ mod tests {
                 alice_central.invite_all(&case, &id, [&bob_central]).await.unwrap();
 
                 let msg = b"Hello bob";
-                let encrypted = alice_central.context.encrypt_message(&id, msg).await.unwrap();
+                let encrypted = alice_central
+                    .context
+                    .conversation_guard(&id)
+                    .await
+                    .unwrap()
+                    .encrypt_message(msg)
+                    .await
+                    .unwrap();
 
                 // decrypt once .. ok
                 bob_central.context.decrypt_message(&id, &encrypted).await.unwrap();
