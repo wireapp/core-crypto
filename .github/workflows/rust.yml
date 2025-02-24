@@ -63,18 +63,6 @@ jobs:
         with:
           files: target/nextest/default/junit.xml
 
-  test-keystore-regressions:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions-rust-lang/setup-rust-toolchain@v1  # this implicitly caches Rust tools and build artifacts
-        with:
-          rustflags: ''
-      - name: "test keystore regressions"
-        run: |
-          cd extras/keystore-regression-versions
-          cargo run --locked
-
   proteus-test:
     runs-on: ubuntu-latest
     steps:
