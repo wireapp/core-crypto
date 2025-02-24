@@ -52,7 +52,8 @@ uniffi.workspace = true
 core-crypto = { workspace = true, features = ["uniffi"] }
 
 [target.wasm32-unknown-unknown.dependencies]
-wasm-bindgen = "0.2"
+# caution! wasm-bindgen v0.2.100 causes our CI to fail
+wasm-bindgen = "=0.2.99"
 wasm-bindgen-futures = "0.4"
 serde-wasm-bindgen = "0.6"
 serde_json.workspace = true
