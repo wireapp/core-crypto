@@ -61,7 +61,6 @@ pub mod decrypt;
 mod duplicate;
 #[cfg(test)]
 mod durability;
-pub(crate) mod encrypt;
 mod error;
 pub(crate) mod export;
 pub(crate) mod external_sender;
