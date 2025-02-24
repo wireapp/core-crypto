@@ -78,10 +78,26 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        crate_paths: [ "keystore", "mls-provider" ]
+        config:
+          - crate: keystore
+          - crate: mls-provider
+          - crate: crypto
+            module: -- e2e_identiy
+          - crate: crypto
+            module: -- mls
+          - crate: crypto
+            module: -- group_store
+          - crate: crypto
+            module: -- proteus
+          - crate: keystore
+            feature: --features proteus-keystore
+            module: -- proteus
+          - crate: crypto
+            feature: --features proteus,cryptobox-migrate
+            module: -- proteus
     steps:
       - uses: actions/checkout@v4
-      - uses: actions-rust-lang/setup-rust-toolchain@v1  # this implicitly caches Rust tools and build artifacts
+      - uses: actions-rust-lang/setup-rust-toolchain@v1
         with:
           target: wasm32-unknown-unknown
           rustflags: ''
@@ -89,59 +105,12 @@ jobs:
         id: setup-chrome
         with:
           chrome-version: stable
-      - run: |
-          echo "CHROME_PATH=${{ steps.setup-chrome.outputs.chrome-path }}" >> $GITHUB_ENV
+      - run: echo "CHROME_PATH=${{ steps.setup-chrome.outputs.chrome-path }}" >> $GITHUB_ENV
       - name: install wasm-pack
         uses: taiki-e/install-action@v2
         with:
           tool: wasm-pack
-      - name: run tests (wasm)
-        run: wasm-pack test --headless --chrome ./${{ matrix.crate_paths }}
-
-  # TODO: pending a proper solution to fix the size limit for WASM tests. Tracking issue: WPB-9581
-  wasm-core-test:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions-rust-lang/setup-rust-toolchain@v1  # this implicitly caches Rust tools and build artifacts
-        with:
-          target: wasm32-unknown-unknown
-          rustflags: ''
-      - uses: browser-actions/setup-chrome@latest
-        id: setup-chrome
-        with:
-          chrome-version: stable
-      - run: |
-          echo "CHROME_PATH=${{ steps.setup-chrome.outputs.chrome-path }}" >> $GITHUB_ENV
-      - name: install wasm-pack
-        uses: taiki-e/install-action@v2
-        with:
-          tool: wasm-pack
-      - name: run core tests (wasm)
-        run: sh crypto-ffi/bindings/js/test/wasm-tests.sh
-
-  proteus-wasm-test:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions-rust-lang/setup-rust-toolchain@v1  # this implicitly caches Rust tools and build artifacts
-        with:
-          target: wasm32-unknown-unknown
-          rustflags: ''
-      - uses: browser-actions/setup-chrome@latest
-        id: setup-chrome
-        with:
-          chrome-version: stable
-      - run: |
-          echo "CHROME_PATH=${{ steps.setup-chrome.outputs.chrome-path }}" >> $GITHUB_ENV
-      - name: install wasm-pack
-        uses: taiki-e/install-action@v2
-        with:
-          tool: wasm-pack
-      - name: run tests (wasm)
-        run: |
-          wasm-pack test --headless --chrome ./keystore -F "proteus-keystore" -- proteus
-          wasm-pack test --headless --chrome ./crypto -F "proteus,cryptobox-migrate" -- proteus
+      - run: wasm-pack test --headless --chrome ./${{ matrix.config.crate }} ${{ matrix.config.feature }} ${{ matrix.config.module }}
 
   hack:
     runs-on: ubuntu-latest
