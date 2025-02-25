@@ -76,6 +76,8 @@ jobs:
 
   wasm-test:
     runs-on: ubuntu-latest
+    env:
+      WASM_BINDGEN_TEST_TIMEOUT: "1200" # if our test takes over 20m, it probably _should_ fail
     strategy:
       matrix:
         config:
