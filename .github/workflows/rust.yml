@@ -82,7 +82,7 @@ jobs:
           - crate: keystore
           - crate: mls-provider
           - crate: crypto
-            module: -- e2e_identiy
+            module: -- e2e_identity
           - crate: crypto
             module: -- mls
           - crate: crypto
