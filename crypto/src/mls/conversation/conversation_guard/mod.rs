@@ -4,15 +4,16 @@ mod encrypt;
 use async_lock::{RwLockReadGuard, RwLockWriteGuard};
 use mls_crypto_provider::MlsCryptoProvider;
 use openmls::prelude::group_info::GroupInfo;
+use std::sync::Arc;
 
+use super::{commit::MlsCommitBundle, Error, MlsConversation, Result};
+use crate::mls::credential::CredentialBundle;
 use crate::{
     context::CentralContext,
     group_store::GroupStoreValue,
     prelude::{Client, MlsGroupInfoBundle},
     LeafError, RecursiveError,
 };
-
-use super::{commit::MlsCommitBundle, Error, MlsConversation, Result};
 
 /// A Conversation Guard wraps a `GroupStoreValue<MlsConversation>`.
 ///
@@ -29,8 +30,6 @@ impl ConversationGuard {
         Self { inner, central_context }
     }
 
-    // This is dead code for now but we expect it to come alive in near-future work.
-    #[expect(dead_code)]
     pub(crate) async fn conversation(&self) -> RwLockReadGuard<MlsConversation> {
         self.inner.read().await
     }
@@ -53,6 +52,15 @@ impl ConversationGuard {
             .await
             .map_err(RecursiveError::root("getting mls provider"))
             .map_err(Into::into)
+    }
+
+    async fn credential_bundle(&self) -> Result<Arc<CredentialBundle>> {
+        let client = self.mls_client().await?;
+        let inner = self.conversation().await;
+        inner
+            .find_current_credential_bundle(&client)
+            .await
+            .map_err(|_| Error::IdentityInitializationError)
     }
 
     pub(crate) async fn send_and_merge_commit(&mut self, commit: MlsCommitBundle) -> Result<()> {

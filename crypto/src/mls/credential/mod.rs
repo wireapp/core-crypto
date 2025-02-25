@@ -28,6 +28,10 @@ impl CredentialBundle {
         &self.credential
     }
 
+    pub(crate) fn signature_key(&self) -> &SignatureKeyPair {
+        &self.signature_key
+    }
+
     pub fn to_mls_credential_with_key(&self) -> CredentialWithKey {
         CredentialWithKey {
             credential: self.credential.clone(),
