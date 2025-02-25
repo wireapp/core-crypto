@@ -15,9 +15,11 @@ sdk-min = "26"
 gradle = "8.8"
 vanniktech-publish = "0.30.0"
 kotlin-gradle = "1.9.21"
+dokka = "2.0.0"
 
 [plugins]
 vanniktech-publish = { id = "com.vanniktech.maven.publish", version.ref = "vanniktech-publish" }
+dokka = { id = "org.jetbrains.dokka", version.ref = "dokka" }
 
 [libraries]
 kotlin-plugin = { group = "org.jetbrains.kotlin", name = "kotlin-gradle-plugin", version.ref = "kotlin" }

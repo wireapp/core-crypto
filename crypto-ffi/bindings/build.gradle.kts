@@ -14,6 +14,11 @@ buildscript {
 
 plugins {
     id(libs.plugins.vanniktech.publish.get().pluginId) version libs.versions.vanniktech.publish
+    id(libs.plugins.dokka.get().pluginId) version  libs.versions.dokka
+}
+
+subprojects {
+    apply(plugin = "org.jetbrains.dokka")
 }
 
 allprojects {
