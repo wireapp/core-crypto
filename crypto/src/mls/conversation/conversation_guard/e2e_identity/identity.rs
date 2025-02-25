@@ -115,7 +115,13 @@ mod tests {
         assert!(identities.is_empty());
 
         assert_eq!(
-            central.e2ei_conversation_state(id).await.unwrap(),
+            central
+                .conversation_guard(id)
+                .await
+                .unwrap()
+                .e2ei_conversation_state()
+                .await
+                .unwrap(),
             E2eiConversationState::NotVerified
         );
     }

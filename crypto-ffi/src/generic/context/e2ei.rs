@@ -171,11 +171,13 @@ impl CoreCryptoContext {
             .map(E2eiEnrollment)?)
     }
 
-    /// See [core_crypto::context::CentralContext::e2ei_conversation_state]
+    /// See [core_crypto::mls::conversation::conversation_guard::ConversationGuard::e2ei_conversation_state]
     pub async fn e2ei_conversation_state(&self, conversation_id: Vec<u8>) -> CoreCryptoResult<E2eiConversationState> {
         Ok(self
             .context
-            .e2ei_conversation_state(&conversation_id)
+            .conversation_guard(&conversation_id)
+            .await?
+            .e2ei_conversation_state()
             .await
             .map(Into::into)?)
     }
