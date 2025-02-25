@@ -2,7 +2,6 @@
 
 use super::ConversationGuard;
 use super::Result;
-use crate::mls::conversation::Error;
 use crate::MlsError;
 use openmls::prelude::MlsMessageOutBody;
 
@@ -20,14 +19,10 @@ impl ConversationGuard {
     /// If the conversation can't be found, an error will be returned. Other errors are originating
     /// from OpenMls and the KeyStore
     pub async fn encrypt_message(&mut self, message: impl AsRef<[u8]>) -> Result<Vec<u8>> {
-        let client = self.mls_client().await?;
         let backend = self.mls_provider().await?;
+        let credential = self.credential_bundle().await?;
+        let signer = credential.signature_key();
         let mut inner = self.conversation_mut().await;
-        let signer = &inner
-            .find_current_credential_bundle(&client)
-            .await
-            .map_err(|_| Error::IdentityInitializationError)?
-            .signature_key;
         let encrypted = inner
             .group
             .create_message(&backend, signer, message.as_ref())

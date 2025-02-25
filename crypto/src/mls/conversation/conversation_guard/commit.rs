@@ -15,15 +15,10 @@ use crate::{
 impl ConversationGuard {
     /// Adds new members to the group/conversation
     pub async fn add_members(&mut self, key_packages: Vec<KeyPackageIn>) -> Result<NewCrlDistributionPoint> {
-        let client = self.mls_client().await?;
         let backend = self.mls_provider().await?;
+        let credential = self.credential_bundle().await?;
+        let signer = credential.signature_key();
         let mut conversation = self.conversation_mut().await;
-
-        let signer = &conversation
-            .find_current_credential_bundle(&client)
-            .await
-            .map_err(RecursiveError::mls_client("finding most recent credential bundle"))?
-            .signature_key;
 
         // No need to also check pending proposals since they should already have been scanned while decrypting the proposal message
         let crl_dps = extract_crl_uris_from_credentials(key_packages.iter().filter_map(|kp| {
@@ -69,8 +64,9 @@ impl ConversationGuard {
     /// * `id` - group/conversation id
     /// * `clients` - list of client ids to be removed from the group
     pub async fn remove_members(&mut self, clients: &[ClientId]) -> Result<()> {
-        let client = self.mls_client().await?;
         let backend = self.mls_provider().await?;
+        let credential = self.credential_bundle().await?;
+        let signer = credential.signature_key();
         let mut conversation = self.inner.write().await;
 
         let members = conversation
@@ -83,12 +79,6 @@ impl ConversationGuard {
                     .then_some(kp.index)
             })
             .collect::<Vec<_>>();
-
-        let signer = &conversation
-            .find_most_recent_credential_bundle(&client)
-            .await
-            .map_err(RecursiveError::mls_client("finding most recent credential bundle"))?
-            .signature_key;
 
         let (commit, welcome, group_info) = conversation
             .group
