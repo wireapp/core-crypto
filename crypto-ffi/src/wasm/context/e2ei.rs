@@ -335,7 +335,9 @@ impl CoreCryptoContext {
             async move {
                 let device_ids = device_ids.iter().map(|c| c.to_vec().into()).collect::<Vec<ClientId>>();
                 let identities = context
-                    .get_device_identities(&conversation_id, &device_ids[..])
+                    .conversation_guard(&conversation_id)
+                    .await?
+                    .get_device_identities(&device_ids[..])
                     .await
                     .map_err(CoreCryptoError::from)?
                     .into_iter()
@@ -355,7 +357,9 @@ impl CoreCryptoContext {
         future_to_promise(
             async move {
                 let identities = context
-                    .get_user_identities(&conversation_id, user_ids.deref())
+                    .conversation_guard(&conversation_id)
+                    .await?
+                    .get_user_identities(user_ids.deref())
                     .await
                     .map_err(CoreCryptoError::from)?
                     .into_iter()

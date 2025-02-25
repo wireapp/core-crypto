@@ -212,7 +212,9 @@ impl CoreCryptoContext {
         let device_ids = device_ids.into_iter().map(|cid| cid.0).collect::<Vec<_>>();
         Ok(self
             .context
-            .get_device_identities(&conversation_id, &device_ids[..])
+            .conversation_guard(&conversation_id)
+            .await?
+            .get_device_identities(&device_ids[..])
             .await?
             .into_iter()
             .map(Into::into)
@@ -227,7 +229,9 @@ impl CoreCryptoContext {
     ) -> CoreCryptoResult<HashMap<String, Vec<WireIdentity>>> {
         Ok(self
             .context
-            .get_user_identities(&conversation_id, &user_ids[..])
+            .conversation_guard(&conversation_id)
+            .await?
+            .get_user_identities(&user_ids[..])
             .await?
             .into_iter()
             .map(|(k, v)| (k, v.into_iter().map(Into::into).collect()))

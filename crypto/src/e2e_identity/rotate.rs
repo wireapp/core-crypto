@@ -913,7 +913,10 @@ pub(crate) mod tests {
                         // Verify old identity is still there in the MLS group
                         let alice_old_identities = alice_central
                             .context
-                            .get_device_identities(&id, &[alice_cid])
+                            .conversation_guard(&id)
+                            .await
+                            .unwrap()
+                            .get_device_identities(&[alice_cid])
                             .await
                             .unwrap();
                         let alice_old_identity = alice_old_identities.first().unwrap();
@@ -1102,7 +1105,10 @@ pub(crate) mod tests {
                         // Verify old identity is a basic identity in the MLS group
                         let alice_old_identities = alice_central
                             .context
-                            .get_device_identities(&id, &[alice_cid])
+                            .conversation_guard(&id)
+                            .await
+                            .unwrap()
+                            .get_device_identities(&[alice_cid])
                             .await
                             .unwrap();
                         let alice_old_identity = alice_old_identities.first().unwrap();
