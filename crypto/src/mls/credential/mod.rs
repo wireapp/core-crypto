@@ -320,7 +320,14 @@ mod tests {
                     .unwrap();
 
             assert_eq!(
-                alice_central.context.e2ei_conversation_state(&id).await.unwrap(),
+                alice_central
+                    .context
+                    .conversation_guard(&id)
+                    .await
+                    .unwrap()
+                    .e2ei_conversation_state()
+                    .await
+                    .unwrap(),
                 E2eiConversationState::Verified
             );
 
@@ -332,7 +339,14 @@ mod tests {
 
             alice_central.try_talk_to(&id, &bob_central).await.unwrap();
             assert_eq!(
-                alice_central.context.e2ei_conversation_state(&id).await.unwrap(),
+                alice_central
+                    .context
+                    .conversation_guard(&id)
+                    .await
+                    .unwrap()
+                    .e2ei_conversation_state()
+                    .await
+                    .unwrap(),
                 E2eiConversationState::NotVerified
             );
         })
@@ -358,23 +372,51 @@ mod tests {
                     .unwrap();
 
             assert_eq!(
-                alice_central.context.e2ei_conversation_state(&id).await.unwrap(),
+                alice_central
+                    .context
+                    .conversation_guard(&id)
+                    .await
+                    .unwrap()
+                    .e2ei_conversation_state()
+                    .await
+                    .unwrap(),
                 E2eiConversationState::Verified
             );
 
             assert_eq!(
-                bob_central.context.e2ei_conversation_state(&id).await.unwrap(),
+                bob_central
+                    .context
+                    .conversation_guard(&id)
+                    .await
+                    .unwrap()
+                    .e2ei_conversation_state()
+                    .await
+                    .unwrap(),
                 E2eiConversationState::Verified
             );
 
             alice_central.try_talk_to(&id, &bob_central).await.unwrap();
             assert_eq!(
-                alice_central.context.e2ei_conversation_state(&id).await.unwrap(),
+                alice_central
+                    .context
+                    .conversation_guard(&id)
+                    .await
+                    .unwrap()
+                    .e2ei_conversation_state()
+                    .await
+                    .unwrap(),
                 E2eiConversationState::Verified
             );
 
             assert_eq!(
-                bob_central.context.e2ei_conversation_state(&id).await.unwrap(),
+                bob_central
+                    .context
+                    .conversation_guard(&id)
+                    .await
+                    .unwrap()
+                    .e2ei_conversation_state()
+                    .await
+                    .unwrap(),
                 E2eiConversationState::Verified
             );
 
@@ -426,14 +468,28 @@ mod tests {
                 .unwrap();
 
             assert_eq!(
-                alice_central.context.e2ei_conversation_state(&id).await.unwrap(),
+                alice_central
+                    .context
+                    .conversation_guard(&id)
+                    .await
+                    .unwrap()
+                    .e2ei_conversation_state()
+                    .await
+                    .unwrap(),
                 E2eiConversationState::NotVerified
             );
 
             alice_central.try_talk_to(&id, &charlie_context).await.unwrap();
 
             assert_eq!(
-                alice_central.context.e2ei_conversation_state(&id).await.unwrap(),
+                alice_central
+                    .context
+                    .conversation_guard(&id)
+                    .await
+                    .unwrap()
+                    .e2ei_conversation_state()
+                    .await
+                    .unwrap(),
                 E2eiConversationState::NotVerified
             );
         })

@@ -290,15 +290,16 @@ impl CoreCryptoContext {
 
     /// Returns [`WasmCryptoResult<u8>`]
     ///
-    /// see [core_crypto::mls::context::CentralContext::e2ei_conversation_state]
+    /// see [core_crypto::mls::conversation::ImmutableConversation::e2ei_conversation_state]
     pub fn e2ei_conversation_state(&self, conversation_id: ConversationId) -> Promise {
         let context = self.inner.clone();
         future_to_promise(
             async move {
                 let state: E2eiConversationState = context
-                    .e2ei_conversation_state(&conversation_id)
-                    .await
-                    .map_err(CoreCryptoError::from)?
+                    .conversation_guard(&conversation_id)
+                    .await?
+                    .e2ei_conversation_state()
+                    .await?
                     .into();
                 WasmCryptoResult::Ok((state as u8).into())
             }

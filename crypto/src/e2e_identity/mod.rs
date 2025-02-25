@@ -699,7 +699,13 @@ pub(crate) mod tests {
                     .await
                     .unwrap();
                 assert_eq!(
-                    cc.context.e2ei_conversation_state(&id).await.unwrap(),
+                    cc.context
+                        .conversation_guard(&id)
+                        .await
+                        .unwrap()
+                        .e2ei_conversation_state()
+                        .await
+                        .unwrap(),
                     E2eiConversationState::Verified
                 );
                 assert!(cc.context.e2ei_is_enabled(case.signature_scheme()).await.unwrap());
