@@ -77,7 +77,13 @@ mod tests {
         user_ids: &[String; N],
         expected_sizes: [usize; N],
     ) {
-        let all_identities = central.get_user_identities(id, user_ids).await.unwrap();
+        let all_identities = central
+            .conversation_guard(id)
+            .await
+            .unwrap()
+            .get_user_identities(user_ids)
+            .await
+            .unwrap();
         assert_eq!(all_identities.len(), N);
         for (expected_size, user_id) in expected_sizes.into_iter().zip(user_ids.iter()) {
             let alice_identities = all_identities.get(user_id).unwrap();
@@ -85,13 +91,21 @@ mod tests {
         }
         // Not found
         let not_found = central
-            .get_user_identities(id, &["aaaaaaaaaaaaa".to_string()])
+            .conversation_guard(id)
+            .await
+            .unwrap()
+            .get_user_identities(&["aaaaaaaaaaaaa".to_string()])
             .await
             .unwrap();
         assert!(not_found.is_empty());
 
         // Invalid usage
-        let invalid = central.get_user_identities(id, &[]).await;
+        let invalid = central
+            .conversation_guard(id)
+            .await
+            .unwrap()
+            .get_user_identities(&[])
+            .await;
         assert!(matches!(invalid.unwrap_err(), Error::CallerError(_)));
     }
 
@@ -101,7 +115,13 @@ mod tests {
         client_ids: &[ClientId; N],
         name_status: &[(&'static str, DeviceStatus); N],
     ) {
-        let mut identities = central.get_device_identities(id, client_ids).await.unwrap();
+        let mut identities = central
+            .conversation_guard(id)
+            .await
+            .unwrap()
+            .get_device_identities(client_ids)
+            .await
+            .unwrap();
 
         for j in 0..N {
             let client_identity = identities.remove(
@@ -153,14 +173,20 @@ mod tests {
 
                     let mut android_ids = alice_android_central
                         .context
-                        .get_device_identities(&id, &[android_id.clone(), ios_id.clone()])
+                        .conversation_guard(&id)
+                        .await
+                        .unwrap()
+                        .get_device_identities(&[android_id.clone(), ios_id.clone()])
                         .await
                         .unwrap();
                     android_ids.sort_by(|a, b| a.client_id.cmp(&b.client_id));
                     assert_eq!(android_ids.len(), 2);
                     let mut ios_ids = alice_ios_central
                         .context
-                        .get_device_identities(&id, &[android_id.clone(), ios_id.clone()])
+                        .conversation_guard(&id)
+                        .await
+                        .unwrap()
+                        .get_device_identities(&[android_id.clone(), ios_id.clone()])
                         .await
                         .unwrap();
                     ios_ids.sort_by(|a, b| a.client_id.cmp(&b.client_id));
@@ -170,7 +196,10 @@ mod tests {
 
                     let android_identities = alice_android_central
                         .context
-                        .get_device_identities(&id, &[android_id])
+                        .conversation_guard(&id)
+                        .await
+                        .unwrap()
+                        .get_device_identities(&[android_id])
                         .await
                         .unwrap();
                     let android_id = android_identities.first().unwrap();
@@ -181,7 +210,10 @@ mod tests {
 
                     let ios_identities = alice_android_central
                         .context
-                        .get_device_identities(&id, &[ios_id])
+                        .conversation_guard(&id)
+                        .await
+                        .unwrap()
+                        .get_device_identities(&[ios_id])
                         .await
                         .unwrap();
                     let ios_id = ios_identities.first().unwrap();
@@ -190,7 +222,13 @@ mod tests {
                         alice_ios_central.context.client_id().await.unwrap().0.as_slice()
                     );
 
-                    let invalid = alice_android_central.context.get_device_identities(&id, &[]).await;
+                    let invalid = alice_android_central
+                        .context
+                        .conversation_guard(&id)
+                        .await
+                        .unwrap()
+                        .get_device_identities(&[])
+                        .await;
                     assert!(matches!(invalid.unwrap_err(), Error::CallerError(_)));
                 })
             },
@@ -321,14 +359,20 @@ mod tests {
 
                     let mut android_ids = alice_android_central
                         .context
-                        .get_device_identities(&id, &[android_id.clone(), ios_id.clone()])
+                        .conversation_guard(&id)
+                        .await
+                        .unwrap()
+                        .get_device_identities(&[android_id.clone(), ios_id.clone()])
                         .await
                         .unwrap();
                     android_ids.sort();
 
                     let mut ios_ids = alice_ios_central
                         .context
-                        .get_device_identities(&id, &[android_id, ios_id])
+                        .conversation_guard(&id)
+                        .await
+                        .unwrap()
+                        .get_device_identities(&[android_id, ios_id])
                         .await
                         .unwrap();
                     ios_ids.sort();
@@ -423,7 +467,10 @@ mod tests {
                     let alice_user_id = alice_android_central.get_user_id().await;
                     let alice_identities = alice_android_central
                         .context
-                        .get_user_identities(&id, &[alice_user_id.clone()])
+                        .conversation_guard(&id)
+                        .await
+                        .unwrap()
+                        .get_user_identities(&[alice_user_id.clone()])
                         .await
                         .unwrap();
                     assert_eq!(alice_identities.len(), 1);
@@ -434,7 +481,10 @@ mod tests {
                     let bob_user_id = bob_android_central.get_user_id().await;
                     let bob_identities = alice_android_central
                         .context
-                        .get_user_identities(&id, &[bob_user_id.clone()])
+                        .conversation_guard(&id)
+                        .await
+                        .unwrap()
+                        .get_user_identities(&[bob_user_id.clone()])
                         .await
                         .unwrap();
                     assert_eq!(bob_identities.len(), 1);
@@ -508,7 +558,10 @@ mod tests {
                     let alice_user_id = alice_android_central.get_user_id().await;
                     let alice_identities = alice_android_central
                         .context
-                        .get_user_identities(&id, &[alice_user_id.clone()])
+                        .conversation_guard(&id)
+                        .await
+                        .unwrap()
+                        .get_user_identities(&[alice_user_id.clone()])
                         .await
                         .unwrap();
                     assert_eq!(alice_identities.len(), 1);
@@ -519,7 +572,10 @@ mod tests {
                     let bob_user_id = bob_android_central.get_user_id().await;
                     let bob_identities = alice_android_central
                         .context
-                        .get_user_identities(&id, &[bob_user_id.clone()])
+                        .conversation_guard(&id)
+                        .await
+                        .unwrap()
+                        .get_user_identities(&[bob_user_id.clone()])
                         .await
                         .unwrap();
                     assert_eq!(bob_identities.len(), 1);

@@ -708,7 +708,14 @@ impl ClientContext {
         // verify the identity in..
         // the MLS group
         let cid = self.get_client_id().await;
-        let group_identities = self.context.get_device_identities(id, &[cid.clone()]).await.unwrap();
+        let group_identities = self
+            .context
+            .conversation_guard(id)
+            .await
+            .unwrap()
+            .get_device_identities(&[cid.clone()])
+            .await
+            .unwrap();
         let group_identity = group_identities.first().unwrap();
         assert_eq!(group_identity.client_id.as_bytes(), cid.0.as_slice());
         assert_eq!(
