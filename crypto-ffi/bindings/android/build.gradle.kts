@@ -1,22 +1,17 @@
-import org.gradle.api.tasks.testing.logging.TestExceptionFormat
-import org.gradle.api.tasks.testing.logging.TestLogEvent
-import org.gradle.jvm.tasks.Jar
-import com.vanniktech.maven.publish.AndroidSingleVariantLibrary
+import org.gradle.api.tasks.bundling.Jar
+import com.vanniktech.maven.publish.SonatypeHost
 
 plugins {
     id("com.android.library")
     kotlin("android")
-    id("com.vanniktech.maven.publish")
+    id("com.vanniktech.maven.publish.base")
 }
 
 val kotlinSources = projectDir.resolve("../jvm/src")
-val generatedDir = buildDir.resolve("generated").resolve("uniffi")
-
-val copyBindings by tasks.register<Copy>("copyBindings") {
-    group = "uniffi"
-    from(kotlinSources)
-    include("**/*")
-    into(generatedDir)
+val dokkaHtmlJar = tasks.register<Jar>("dokkaHtmlJar") {
+    dependsOn(tasks.dokkaHtml)
+    from(tasks.dokkaHtml)
+    archiveClassifier.set("html-docs")
 }
 
 dependencies {
@@ -38,11 +33,9 @@ dependencies {
 }
 
 mavenPublishing {
-    configure(AndroidSingleVariantLibrary(
-        variant = "release",
-        sourcesJar = true,
-        publishJavadocJar = false,
-    ))
+    publishToMavenCentral(SonatypeHost.DEFAULT, automaticRelease = true)
+    pomFromGradleProperties()
+    signAllPublications()
 }
 
 android {
@@ -62,6 +55,18 @@ android {
 
     kotlin {
         jvmToolchain(17)
+        sourceSets["main"].apply {
+            kotlin.srcDir(kotlinSources.resolve("main"))
+        }
+        sourceSets["androidTest"].apply {
+            kotlin.srcDir(kotlinSources.resolve("test"))
+        }
+    }
+
+    publishing {
+        singleVariant("release") {
+            withSourcesJar()
+        }
     }
 
     buildTypes {
@@ -72,25 +77,22 @@ android {
     }
 }
 
-tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile> {
-    dependsOn(copyBindings)
-}
-
-tasks.withType<Jar> {
-    dependsOn(copyBindings)
-}
-
-kotlin.sourceSets.getByName("main").apply {
-    kotlin.srcDir(generatedDir.resolve("main"))
-}
-
-kotlin.sourceSets.getByName("androidTest").apply {
-    kotlin.srcDir(generatedDir.resolve("test"))
-}
-
 // Allows skipping signing jars published to 'MavenLocal' repository
 tasks.withType<Sign>().configureEach {
     if (System.getenv("CI") == null) { // i.e. not in Github Action runner
         enabled = false
+    }
+}
+
+afterEvaluate {
+    publishing {
+        publications {
+            create<MavenPublication>("library") {
+                from(components["release"])
+                // We replace regular javadoc with dokka html docs since we are running into this bug:
+                // https://youtrack.jetbrains.com/issue/KT-60197/Dokka-JDK-17-PermittedSubclasses-requires-ASM9-during-compilation
+                artifact(tasks.named("dokkaHtmlJar"))
+            }
+        }
     }
 }
