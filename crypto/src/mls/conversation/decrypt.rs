@@ -737,7 +737,13 @@ mod tests {
                         .unwrap();
                     alice_central.invite_all(&case, &id, [&bob_central]).await.unwrap();
 
-                    let epoch_before = alice_central.context.conversation_epoch(&id).await.unwrap();
+                    let epoch_before = alice_central
+                        .context
+                        .conversation_guard(&id)
+                        .await
+                        .unwrap()
+                        .epoch()
+                        .await;
 
                     alice_central
                         .context
@@ -754,7 +760,7 @@ mod tests {
                         .decrypt_message(&id, commit.to_bytes().unwrap())
                         .await
                         .unwrap();
-                    let epoch_after = bob_central.context.conversation_epoch(&id).await.unwrap();
+                    let epoch_after = bob_central.context.conversation_guard(&id).await.unwrap().epoch().await;
                     assert_eq!(epoch_after, epoch_before + 1);
                     assert!(decrypted.has_epoch_changed);
                     assert!(decrypted.delay.is_none());

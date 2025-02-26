@@ -260,14 +260,19 @@ impl CoreCryptoContext {
             .await?)
     }
 
-    /// See [core_crypto::mls::MlsCentral::conversation_epoch]
+    /// See [core_crypto::mls::conversation::ConversationGuard::epoch]
     pub async fn conversation_epoch(&self, conversation_id: Vec<u8>) -> CoreCryptoResult<u64> {
-        Ok(self.context.conversation_epoch(&conversation_id).await?)
+        Ok(self.context.conversation_guard(&conversation_id).await?.epoch().await)
     }
 
-    /// See [core_crypto::mls::MlsCentral::conversation_ciphersuite]
+    /// See [core_crypto::mls::conversation::ConversationGuard::ciphersuite]
     pub async fn conversation_ciphersuite(&self, conversation_id: &ConversationId) -> CoreCryptoResult<Ciphersuite> {
-        let cs = self.context.conversation_ciphersuite(conversation_id).await?;
+        let cs = self
+            .context
+            .conversation_guard(conversation_id)
+            .await?
+            .ciphersuite()
+            .await;
         Ok(Ciphersuite::from(core_crypto::prelude::CiphersuiteName::from(cs)))
     }
 

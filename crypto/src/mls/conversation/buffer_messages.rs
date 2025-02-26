@@ -185,7 +185,13 @@ mod tests {
                         .unwrap();
 
                     // Meanwhile Debbie joins the party by creating an external proposal
-                    let epoch = alice_central.context.conversation_epoch(&id).await.unwrap();
+                    let epoch = alice_central
+                        .context
+                        .conversation_guard(&id)
+                        .await
+                        .unwrap()
+                        .epoch()
+                        .await;
                     let external_proposal = debbie_central
                         .context
                         .new_external_add_proposal(id.clone(), epoch.into(), case.ciphersuite(), case.credential_type)
@@ -324,7 +330,7 @@ mod tests {
                     // And before others had the chance to get the commit, Bob will create & send messages in the next epoch
                     // which Alice will have to buffer until she receives the commit.
                     // This simulates what the DS does with unordered messages
-                    let epoch = bob_central.context.conversation_epoch(&id).await.unwrap();
+                    let epoch = bob_central.context.conversation_guard(&id).await.unwrap().epoch().await;
                     let external_proposal = charlie_central
                         .context
                         .new_external_add_proposal(id.clone(), epoch.into(), case.ciphersuite(), case.credential_type)
