@@ -658,6 +658,10 @@ class CoreCryptoContext(private val cc: com.wire.crypto.uniffi.CoreCryptoContext
         return wrapException { cc.proteusFingerprintRemote(sessionId).toByteArray() }
     }
 
+    suspend fun proteusGetPrekeyFingerprint(prekey: ByteArray): ByteArray {
+        return wrapException { cc.proteusFingerprintPrekeybundle(prekey).toByteArray() }
+    }
+
     suspend fun proteusNewPreKeys(from: Int, count: Int): ArrayList<PreKey> {
         return wrapException {
             from.until(from + count).map {
