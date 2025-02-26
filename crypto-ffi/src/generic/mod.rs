@@ -1312,7 +1312,7 @@ impl CoreCrypto {
         Ok(self.central.e2ei_is_enabled(sc).await?)
     }
 
-    /// See [core_crypto::mls::MlsCentral::get_device_identities]
+    /// See [core_crypto::mls::conversation::ConversationGuard::get_device_identities]
     pub async fn get_device_identities(
         &self,
         conversation_id: Vec<u8>,
@@ -1321,14 +1321,16 @@ impl CoreCrypto {
         let device_ids = device_ids.into_iter().map(|cid| cid.0).collect::<Vec<_>>();
         Ok(self
             .central
-            .get_device_identities(&conversation_id, &device_ids[..])
+            .get_raw_conversation(&conversation_id)
+            .await?
+            .get_device_identities(&device_ids[..])
             .await?
             .into_iter()
             .map(Into::into)
             .collect::<Vec<_>>())
     }
 
-    /// See [core_crypto::mls::MlsCentral::get_user_identities]
+    /// See [core_crypto::mls::conversation::ConversationGuard::get_user_identities]
     pub async fn get_user_identities(
         &self,
         conversation_id: Vec<u8>,
@@ -1336,7 +1338,9 @@ impl CoreCrypto {
     ) -> CoreCryptoResult<HashMap<String, Vec<WireIdentity>>> {
         Ok(self
             .central
-            .get_user_identities(&conversation_id, &user_ids[..])
+            .get_raw_conversation(&conversation_id)
+            .await?
+            .get_user_identities(&user_ids[..])
             .await?
             .into_iter()
             .map(|(k, v)| (k, v.into_iter().map(Into::into).collect()))

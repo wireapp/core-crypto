@@ -2,14 +2,13 @@ use std::collections::HashMap;
 use std::str::FromStr;
 
 use itertools::Itertools;
-use openmls_traits::OpenMlsCryptoProvider;
 use x509_cert::der::pem::LineEnding;
 
 use crate::{
     RecursiveError,
     e2e_identity::{device_status::DeviceStatus, id::WireQualifiedClientId},
     mls::credential::ext::CredentialExt,
-    prelude::{ClientId, ConversationId, MlsCentral, MlsConversation, MlsCredentialType, user_id::UserId},
+    prelude::{ClientId, MlsConversation, MlsCredentialType, user_id::UserId},
 };
 
 use super::{Error, Result};
@@ -77,55 +76,6 @@ impl<'a> TryFrom<(wire_e2e_identity::prelude::WireIdentity, &'a [u8])> for WireI
                 not_after: i.not_after,
             }),
         })
-    }
-}
-
-impl MlsCentral {
-    /// From a given conversation, get the identity of the members supplied. Identity is only present for
-    /// members with a Certificate Credential (after turning on end-to-end identity).
-    /// If no member has a x509 certificate, it will return an empty Vec
-    pub async fn get_device_identities(
-        &self,
-        conversation_id: &ConversationId,
-        client_ids: &[ClientId],
-    ) -> Result<Vec<WireIdentity>> {
-        self.mls_backend
-            .authentication_service()
-            .refresh_time_of_interest()
-            .await;
-        let conversation = self
-            .get_raw_conversation(conversation_id)
-            .await
-            .map_err(RecursiveError::mls_conversation("getting conversation by id"))?;
-        conversation.get_device_identities(
-            client_ids,
-            self.mls_backend.authentication_service().borrow().await.as_ref(),
-        )
-    }
-
-    /// From a given conversation, get the identity of the users (device holders) supplied.
-    /// Identity is only present for devices with a Certificate Credential (after turning on end-to-end identity).
-    /// If no member has a x509 certificate, it will return an empty Vec.
-    ///
-    /// Returns a Map with all the identities for a given users. Consumers are then recommended to
-    /// reduce those identities to determine the actual status of a user.
-    pub async fn get_user_identities(
-        &self,
-        conversation_id: &ConversationId,
-        user_ids: &[String],
-    ) -> Result<HashMap<String, Vec<WireIdentity>>> {
-        self.mls_backend
-            .authentication_service()
-            .refresh_time_of_interest()
-            .await;
-        let conversation = self
-            .get_raw_conversation(conversation_id)
-            .await
-            .map_err(RecursiveError::mls_conversation("getting conversation by id"))?;
-        conversation.get_user_identities(
-            user_ids,
-            self.mls_backend.authentication_service().borrow().await.as_ref(),
-        )
     }
 }
 

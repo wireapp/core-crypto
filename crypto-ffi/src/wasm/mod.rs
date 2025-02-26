@@ -1843,14 +1843,16 @@ impl CoreCrypto {
 
     /// Returns [`WasmCryptoResult<Vec<WireIdentity>>`]
     ///
-    /// see [core_crypto::mls::context::CentralContext::get_device_identities]
+    /// see [core_crypto::mls::conversation::ConversationGuard::get_device_identities]
     pub fn get_device_identities(&self, conversation_id: ConversationId, device_ids: Box<[Uint8Array]>) -> Promise {
         let central = self.inner.clone();
         future_to_promise(
             async move {
                 let device_ids = device_ids.iter().map(|c| c.to_vec().into()).collect::<Vec<ClientId>>();
                 let identities = central
-                    .get_device_identities(&conversation_id, &device_ids[..])
+                    .get_raw_conversation(&conversation_id)
+                    .await?
+                    .get_device_identities(&device_ids[..])
                     .await
                     .map_err(CoreCryptoError::from)?
                     .into_iter()
@@ -1864,13 +1866,15 @@ impl CoreCrypto {
 
     /// Returns [`WasmCryptoResult<HashMap<String, Vec<WireIdentity>>>`]
     ///
-    /// see [core_crypto::mls::context::CentralContext::get_user_identities]
+    /// see [core_crypto::mls::conversation::ConversationGuard::get_user_identities]
     pub fn get_user_identities(&self, conversation_id: ConversationId, user_ids: Box<[String]>) -> Promise {
         let central = self.inner.clone();
         future_to_promise(
             async move {
                 let identities = central
-                    .get_user_identities(&conversation_id, user_ids.deref())
+                    .get_raw_conversation(&conversation_id)
+                    .await?
+                    .get_user_identities(user_ids.deref())
                     .await
                     .map_err(CoreCryptoError::from)?
                     .into_iter()
