@@ -74,7 +74,7 @@ macro_rules! test_migration_to_db_v1_for_entity {
             let _ = env_logger::try_init();
             let name = store_name();
 
-            let old_storage = core_crypto_keystore::keystore_v_1_0_0::Connection::open_with_key(&name, TEST_ENCRYPTION_KEY)
+            let old_storage = core_crypto_keystore::keystore_v_1_0_0::Connection::open_with_key(&name, "test1234")
                 .await
                 .unwrap();
             let old_record = <$old_entity>::random();
@@ -94,7 +94,7 @@ macro_rules! test_migration_to_db_v1_for_entity {
 
             old_storage.close().await.unwrap();
 
-            let new_storage = core_crypto_keystore::Connection::open_with_key(&name, TEST_ENCRYPTION_KEY)
+            let new_storage = core_crypto_keystore::Connection::open_with_key(&name, &TEST_ENCRYPTION_KEY)
                 .await
                 .unwrap();
             let mut new_connection = new_storage.borrow_conn().await.unwrap();

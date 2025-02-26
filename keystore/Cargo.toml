@@ -42,6 +42,8 @@ postcard = { version = "1.1", default-features = false, features = ["use-std"] }
 sha2.workspace = true
 serde_json.workspace = true
 core-crypto-macros.workspace = true
+rand = { workspace = true, features = ["getrandom"] }
+getrandom = { version = "0.2", features = ["js"] }
 openmls_traits = { workspace = true }
 openmls_basic_credential = { workspace = true }
 openmls_x509_credential = { workspace = true }
@@ -88,8 +90,6 @@ serde-wasm-bindgen = "0.6"
 wasm-bindgen-futures = "0.4"
 # Crypto stuff
 aes-gcm = "0.10"
-rand.workspace = true
-getrandom = { version = "0.2", features = ["js"] }
 web-time = "1.1.0"
 # Old keystore versions for idb migrations
 rexie.workspace = true
@@ -99,8 +99,6 @@ rexie.workspace = true
 serde = { version = "1.0", features = ["derive"] }
 wasm-bindgen-test = "0.3"
 uuid = { workspace = true, features = ["v4", "js"] }
-rand = { workspace = true, features = ["getrandom"] }
-getrandom = { version = "0.2", features = ["js"] }
 openmls = { workspace = true, features = ["crypto-subtle"] }
 mls-crypto-provider.workspace = true
 rstest = "0.24"
