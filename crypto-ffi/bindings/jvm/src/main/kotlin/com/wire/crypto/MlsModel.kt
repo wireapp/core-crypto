@@ -564,3 +564,49 @@ fun MlsWirePolicy.lower() =
         MlsWirePolicy.PLAINTEXT -> com.wire.crypto.uniffi.MlsWirePolicy.PLAINTEXT
         MlsWirePolicy.CIPHERTEXT -> com.wire.crypto.uniffi.MlsWirePolicy.CIPHERTEXT
     }
+
+sealed class MlsTransportResponse {
+
+    /**
+     * The message was accepted by the distribution service
+     */
+    object Success : MlsTransportResponse()
+
+
+    /**
+     * A client should have consumed all incoming messages before re-trying.
+     */
+    object Retry : MlsTransportResponse()
+
+
+    /**
+     * The message was rejected by the delivery service and there's no recovery.
+     */
+    data class Abort(
+        val `reason`: kotlin.String) : MlsTransportResponse() {
+        companion object
+    }
+}
+
+fun MlsTransportResponse.lower() =
+    when (this) {
+        MlsTransportResponse.Success -> com.wire.crypto.uniffi.MlsTransportResponse.Success
+        MlsTransportResponse.Retry -> com.wire.crypto.uniffi.MlsTransportResponse.Retry
+        is MlsTransportResponse.Abort -> com.wire.crypto.uniffi.MlsTransportResponse.Abort(reason)
+    }
+
+/**
+ * You must implement this interface and pass the implementing object to [CoreCrypto.provideTransport].
+ * CoreCrypto uses it to communicate with the delivery service.
+ */
+interface MlsTransport {
+    /**
+     * Send a message to the delivery service.
+     */
+    suspend fun sendMessage(mlsMessage: ByteArray): MlsTransportResponse
+
+    /**
+     * Send a commit bundle to the delivery service.
+     */
+    suspend fun sendCommitBundle(commitBundle: CommitBundle): MlsTransportResponse
+}

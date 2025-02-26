@@ -1,9 +1,5 @@
 package com.wire.crypto
 
-import com.wire.crypto.uniffi.CommitBundle
-import com.wire.crypto.uniffi.CoreCryptoLogLevel
-import com.wire.crypto.uniffi.MlsTransportResponse
-
 typealias EnrollmentHandle = ByteArray
 
 /**
@@ -27,12 +23,21 @@ internal fun CoreCryptoLogLevel.lower() = when (this) {
     CoreCryptoLogLevel.ERROR -> com.wire.crypto.uniffi.CoreCryptoLogLevel.ERROR
 }
 
-interface CoreCryptoLogger: com.wire.crypto.uniffi.CoreCryptoLogger {
+internal fun com.wire.crypto.uniffi.CoreCryptoLogLevel.lift() = when (this) {
+    com.wire.crypto.uniffi.CoreCryptoLogLevel.OFF -> CoreCryptoLogLevel.OFF
+    com.wire.crypto.uniffi.CoreCryptoLogLevel.TRACE -> CoreCryptoLogLevel.TRACE
+    com.wire.crypto.uniffi.CoreCryptoLogLevel.DEBUG -> CoreCryptoLogLevel.DEBUG
+    com.wire.crypto.uniffi.CoreCryptoLogLevel.INFO -> CoreCryptoLogLevel.INFO
+    com.wire.crypto.uniffi.CoreCryptoLogLevel.WARN -> CoreCryptoLogLevel.WARN
+    com.wire.crypto.uniffi.CoreCryptoLogLevel.ERROR -> CoreCryptoLogLevel.ERROR
+}
+
+interface CoreCryptoLogger {
 
     /**
      *  Core Crypto will call this method whenever it needs to log a message.
      */
-    override fun log(level: CoreCryptoLogLevel, message: String, `context`: String?)
+    fun log(level: CoreCryptoLogLevel, message: String, `context`: String?)
 }
 
 /**
@@ -41,7 +46,12 @@ interface CoreCryptoLogger: com.wire.crypto.uniffi.CoreCryptoLogger {
  * @param logger a callback to implement the platform specific logging. It will receive the string with the log text from Core Crypto
  **/
 fun setLogger(logger: CoreCryptoLogger) {
-    com.wire.crypto.uniffi.setLoggerOnly(logger)
+    com.wire.crypto.uniffi.setLoggerOnly(object: com.wire.crypto.uniffi.CoreCryptoLogger {
+        override fun log(level: com.wire.crypto.uniffi.CoreCryptoLogLevel, message: String, context: String?) {
+            logger.log(level.lift(), message, context)
+        }
+
+    })
 }
 
 /**
@@ -107,7 +117,15 @@ class CoreCrypto(private val cc: com.wire.crypto.uniffi.CoreCrypto) {
     }
 
     suspend fun provideTransport(transport: MlsTransport) {
-        cc.provideTransport(transport)
+        cc.provideTransport(object : com.wire.crypto.uniffi.MlsTransport {
+            override suspend fun sendCommitBundle(commitBundle: com.wire.crypto.uniffi.CommitBundle): com.wire.crypto.uniffi.MlsTransportResponse {
+                return transport.sendCommitBundle(commitBundle.lift()).lower()
+            }
+
+            override suspend fun sendMessage(mlsMessage: ByteArray): com.wire.crypto.uniffi.MlsTransportResponse {
+                return transport.sendMessage(mlsMessage).lower()
+            }
+        })
     }
 
     /**
@@ -120,22 +138,3 @@ class CoreCrypto(private val cc: com.wire.crypto.uniffi.CoreCrypto) {
     }
 
 }
-
-
-
-/**
- * You must implement this interface and pass the implementing object to [CoreCrypto.provideTransport].
- * CoreCrypto uses it to communicate with the delivery service.
- */
-interface MlsTransport : com.wire.crypto.uniffi.MlsTransport {
-    /**
-     * Send a message to the delivery service.
-     */
-    override suspend fun sendMessage(mlsMessage: ByteArray): MlsTransportResponse
-
-    /**
-     * Send a commit bundle to the delivery service.
-     */
-    override suspend fun sendCommitBundle(commitBundle: CommitBundle): MlsTransportResponse
-}
-

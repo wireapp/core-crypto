@@ -18,8 +18,6 @@
 
 package com.wire.crypto
 
-import com.wire.crypto.uniffi.CommitBundle
-import com.wire.crypto.uniffi.MlsTransportResponse
 import kotlinx.coroutines.*
 import kotlinx.coroutines.test.runTest
 import org.assertj.core.api.AssertionsForInterfaceTypes.assertThat
@@ -369,7 +367,7 @@ class  MockMlsTransportSuccessProvider : MockDeliveryService {
 
     override suspend fun getLatestCommitBundle(): CommitBundle = latestCommitBundle!!
 
-    override suspend fun getLatestWelcome(): Welcome = getLatestCommitBundle().welcome!!.toWelcome()
+    override suspend fun getLatestWelcome(): Welcome = getLatestCommitBundle().welcome!!
 
-    override suspend fun getLatestCommit(): MlsMessage = getLatestCommitBundle().commit.toMlsMessage()
+    override suspend fun getLatestCommit(): MlsMessage = getLatestCommitBundle().commit
 }
