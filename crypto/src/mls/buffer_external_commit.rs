@@ -185,7 +185,13 @@ mod tests {
                         .unwrap();
 
                     // Meanwhile Debbie joins the party by creating an external proposal
-                    let epoch = alice_central.context.conversation_epoch(&id).await.unwrap();
+                    let epoch = alice_central
+                        .context
+                        .conversation_guard(&id)
+                        .await
+                        .unwrap()
+                        .epoch()
+                        .await;
                     let external_proposal = debbie_central
                         .context
                         .new_external_add_proposal(id.clone(), epoch.into(), case.ciphersuite(), case.credential_type)

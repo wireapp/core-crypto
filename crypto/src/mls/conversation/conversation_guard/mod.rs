@@ -9,6 +9,7 @@ use std::sync::Arc;
 
 use super::{Error, MlsConversation, Result, commit::MlsCommitBundle};
 use crate::mls::credential::CredentialBundle;
+use crate::prelude::MlsCiphersuite;
 use crate::{
     LeafError, RecursiveError,
     context::CentralContext,
@@ -88,5 +89,17 @@ impl ConversationGuard {
     fn group_info(group_info: Option<GroupInfo>) -> Result<MlsGroupInfoBundle> {
         let group_info = group_info.ok_or(LeafError::MissingGroupInfo)?;
         MlsGroupInfoBundle::try_new_full_plaintext(group_info)
+    }
+
+    /// Returns the epoch of a given conversation
+    pub async fn epoch(&self) -> u64 {
+        let conversation = self.inner.read().await;
+        conversation.group.epoch().as_u64()
+    }
+
+    /// Returns the ciphersuite of a given conversation
+    pub async fn ciphersuite(&self) -> MlsCiphersuite {
+        let conversation = self.inner.read().await;
+        conversation.ciphersuite()
     }
 }

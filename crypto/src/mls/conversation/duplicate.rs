@@ -225,7 +225,13 @@ mod tests {
                     .await
                     .unwrap();
 
-                let epoch = alice_central.context.conversation_epoch(&id).await.unwrap();
+                let epoch = alice_central
+                    .context
+                    .conversation_guard(&id)
+                    .await
+                    .unwrap()
+                    .epoch()
+                    .await;
 
                 let ext_proposal = bob_central
                     .context

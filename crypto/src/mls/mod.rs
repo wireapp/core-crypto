@@ -286,35 +286,6 @@ impl MlsCentral {
         }
     }
 
-    /// Returns the epoch of a given conversation
-    ///
-    /// # Errors
-    /// If the conversation can't be found
-    #[cfg_attr(test, crate::idempotent)]
-    pub async fn conversation_epoch(&self, id: &ConversationId) -> Result<u64> {
-        let epoch = self
-            .get_raw_conversation(id)
-            .await
-            .map_err(RecursiveError::mls_conversation("getting conversation"))?
-            .group
-            .epoch()
-            .as_u64();
-        Ok(epoch)
-    }
-
-    /// Returns the ciphersuite of a given conversation
-    ///
-    /// # Errors
-    /// If the conversation can't be found
-    #[cfg_attr(test, crate::idempotent)]
-    pub async fn conversation_ciphersuite(&self, id: &ConversationId) -> Result<MlsCiphersuite> {
-        Ok(self
-            .get_raw_conversation(id)
-            .await
-            .map_err(RecursiveError::mls_conversation("getting conversation"))?
-            .ciphersuite())
-    }
-
     /// Generates a random byte array of the specified size
     pub fn random_bytes(&self, len: usize) -> Result<Vec<u8>> {
         use openmls_traits::random::OpenMlsRand as _;
@@ -603,7 +574,7 @@ mod tests {
                         .new_conversation(&id, case.credential_type, case.cfg.clone())
                         .await
                         .unwrap();
-                    let epoch = central.context.conversation_epoch(&id).await.unwrap();
+                    let epoch = central.context.conversation_guard(&id).await.unwrap().epoch().await;
                     assert_eq!(epoch, 0);
                 })
             })
@@ -622,7 +593,13 @@ mod tests {
                         .await
                         .unwrap();
                     alice_central.invite_all(&case, &id, [&bob_central]).await.unwrap();
-                    let epoch = alice_central.context.conversation_epoch(&id).await.unwrap();
+                    let epoch = alice_central
+                        .context
+                        .conversation_guard(&id)
+                        .await
+                        .unwrap()
+                        .epoch()
+                        .await;
                     assert_eq!(epoch, 1);
                 })
             })
@@ -632,21 +609,15 @@ mod tests {
         #[apply(all_cred_cipher)]
         #[wasm_bindgen_test]
         async fn conversation_not_found(case: TestCase) {
-            use crate::{LeafError, RecursiveError, mls};
-            use std::ops::Deref as _;
+            use crate::{LeafError, mls};
 
             run_test_with_central(case.clone(), move |[central]| {
                 Box::pin(async move {
                     let id = conversation_id();
-                    let err = central.context.conversation_epoch(&id).await.unwrap_err();
+                    let err = central.context.conversation_guard(&id).await.unwrap_err();
                     assert!(matches!(
                         err,
-                        mls::Error::Recursive(RecursiveError::MlsConversation{source, ..})
-                        if matches!(
-                            source.deref(),
-                            mls::conversation::Error::Leaf(LeafError::ConversationNotFound(conv_id))
-                            if *conv_id == id
-                        )
+                        mls::conversation::Error::Leaf(LeafError::ConversationNotFound(i)) if i == id
                     ));
                 })
             })

@@ -176,7 +176,13 @@ mod tests {
                     let commit = alice_central.create_unmerged_e2ei_rotate_commit(&id, &cb).await;
                     assert!(alice_central.pending_commit(&id).await.is_some());
 
-                    let epoch = alice_central.context.conversation_epoch(&id).await.unwrap();
+                    let epoch = alice_central
+                        .context
+                        .conversation_guard(&id)
+                        .await
+                        .unwrap()
+                        .epoch()
+                        .await;
 
                     // since the pending commit is the same as the incoming one, it should succeed
                     let decrypt_self = alice_central
@@ -186,7 +192,13 @@ mod tests {
                     assert!(decrypt_self.is_ok());
                     let decrypt_self = decrypt_self.unwrap();
 
-                    let epoch_after_decrypt = alice_central.context.conversation_epoch(&id).await.unwrap();
+                    let epoch_after_decrypt = alice_central
+                        .context
+                        .conversation_guard(&id)
+                        .await
+                        .unwrap()
+                        .epoch()
+                        .await;
                     assert_eq!(epoch + 1, epoch_after_decrypt);
 
                     // there is no proposals to renew here since it's our own commit we merge
