@@ -1,7 +1,7 @@
 pub mod keystore_v_1_0_0;
 
-use crate::connection::KeystoreDatabaseConnection;
 use crate::connection::storage::{WasmEncryptedStorage, WasmStorageWrapper};
+use crate::connection::{DatabaseKey, KeystoreDatabaseConnection};
 use crate::entities::{
     ConsumerData, E2eiAcmeCA, E2eiCrl, E2eiEnrollment, E2eiIntermediateCert, E2eiRefreshToken, Entity, EntityBase,
     MlsBufferedCommit, MlsCredential, MlsEncryptionKeyPair, MlsEpochEncryptionKeyPair, MlsHpkePrivateKey,
@@ -40,7 +40,7 @@ const DB_VERSION_2: u32 = db_version_number(2);
 const DB_VERSION_3: u32 = db_version_number(3);
 
 /// Open an existing idb database with the given name and key, and migrate it if needed.
-pub(crate) async fn open_and_migrate(name: &str, key: &str) -> CryptoKeystoreResult<Database> {
+pub(crate) async fn open_and_migrate(name: &str, key: &DatabaseKey) -> CryptoKeystoreResult<Database> {
     /// Increment when adding a new migration.
     const TARGET_VERSION: u32 = DB_VERSION_3;
     let factory = Factory::new()?;
@@ -74,7 +74,7 @@ pub(crate) async fn open_and_migrate(name: &str, key: &str) -> CryptoKeystoreRes
 ///
 /// However, do not use the constant but hardcode the value into the function.
 /// This way it will keep working once a new migration is added after it.
-async fn do_migration_step(from: u32, name: &str, key: &str) -> CryptoKeystoreResult<u32> {
+async fn do_migration_step(from: u32, name: &str, key: &DatabaseKey) -> CryptoKeystoreResult<u32> {
     match from {
         // The version that results from the latest migration must match TARGET_VERSION
         //      to ensure convergence of the while loop this is called from.
@@ -131,7 +131,6 @@ fn get_builder_v2(name: &str) -> DatabaseBuilder {
 macro_rules! migrate_entities_to_version_1 {
     ($name:expr, $key:expr, [ $( ($records:ident, $entity:ty) ),* ]) => {
         {
-
             let old_storage = keystore_v_1_0_0::Connection::open_with_key($name, $key).await?;
             let mut old_connection = old_storage.borrow_conn().await?;
 
@@ -193,7 +192,7 @@ macro_rules! migrate_entities_to_version_1 {
 /// Migrates from any old DB version to DB version 1.
 ///
 /// _**Assumption**_: the entire storage fits into memory
-async fn migrate_to_version_1(name: &str, key: &str) -> CryptoKeystoreResult<u32> {
+async fn migrate_to_version_1(name: &str, key: &DatabaseKey) -> CryptoKeystoreResult<u32> {
     migrate_entities_to_version_1!(
         name,
         key,
