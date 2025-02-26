@@ -72,16 +72,6 @@ pub struct BuildMetadata {
     pub git_dirty: &'static str,
 }
 
-// This is intended to hotfix this import:
-// ❯ wasmer inspect bindings/js/wasm/core-crypto-ffi_bg.wasm | grep env
-//    "env"."__stack_chk_fail": [] -> []
-//
-// SAFETY: This symbol is globally unique.
-#[unsafe(no_mangle)]
-pub extern "C" fn __stack_chk_fail() {
-    panic!("Stack overflow detected");
-}
-
 #[derive(Debug, thiserror::Error, strum::AsRefStr)]
 pub enum MlsError {
     #[error("Conversation already exists")]
