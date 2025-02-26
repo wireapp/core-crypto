@@ -14,6 +14,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see http://www.gnu.org/licenses/.
 
+use crate::DatabaseKey;
 use crate::connection::platform::wasm::migrations::db_version_number;
 use crate::keystore_v_1_0_0::{
     CryptoKeystoreResult,
@@ -45,7 +46,7 @@ impl DatabaseConnectionRequirements for WasmConnection {}
 #[cfg_attr(target_family = "wasm", async_trait::async_trait(?Send))]
 #[cfg_attr(not(target_family = "wasm"), async_trait::async_trait)]
 impl DatabaseConnection for WasmConnection {
-    async fn open(name: &str, key: &str) -> CryptoKeystoreResult<Self> {
+    async fn open(name: &str, key: &DatabaseKey) -> CryptoKeystoreResult<Self> {
         let name = name.to_string();
         let version = db_version_number(0);
 
@@ -155,7 +156,7 @@ impl DatabaseConnection for WasmConnection {
         Ok(Self { name, conn })
     }
 
-    async fn open_in_memory(name: &str, key: &str) -> CryptoKeystoreResult<Self> {
+    async fn open_in_memory(name: &str, key: &DatabaseKey) -> CryptoKeystoreResult<Self> {
         let name = name.to_string();
         let storage = WasmStorageWrapper::InMemory(Default::default());
         let conn = WasmEncryptedStorage::new(key, storage);
