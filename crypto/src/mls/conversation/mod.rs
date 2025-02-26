@@ -29,7 +29,6 @@
 
 use std::collections::HashMap;
 
-use conversation_guard::ConversationGuard;
 use openmls::{
     group::MlsGroup,
     prelude::{Credential, CredentialWithKey, SignaturePublicKey},
@@ -65,6 +64,7 @@ mod error;
 pub(crate) mod export;
 pub(crate) mod external_sender;
 pub(crate) mod group_info;
+mod immutable_conversation;
 mod leaf_node_validation;
 pub(crate) mod merge;
 mod orphan_welcome;
@@ -74,7 +74,9 @@ mod renew;
 pub(crate) mod welcome;
 mod wipe;
 
+pub use conversation_guard::ConversationGuard;
 pub use error::{Error, Result};
+pub use immutable_conversation::ImmutableConversation;
 
 /// A unique identifier for a group/conversation. The identifier must be unique within a client.
 pub type ConversationId = Vec<u8>;
@@ -261,20 +263,16 @@ impl MlsConversation {
 }
 
 impl MlsCentral {
-    /// Get a raw `MlsConversation`.
-    ///
-    /// <div class="warning">
-    /// This does _not_ return a [`GroupStoreValue`] and does not support mutating operations on the `MlsConversation`.
-    /// They may appear to work, but changes will not be persisted!
-    /// </div>
+    /// Get an immutable view of an `MlsConversation`.
     ///
     /// Because it operates on the raw conversation type, this may be faster than [`CentralContext::get_conversation`]
     /// for transient and immutable purposes. For long-lived or mutable purposes, prefer the other method.
-    pub(crate) async fn get_raw_conversation(&self, id: &ConversationId) -> Result<MlsConversation> {
-        GroupStore::fetch_from_keystore(id, &self.mls_backend.keystore(), None)
+    pub(crate) async fn get_raw_conversation(&self, id: &ConversationId) -> Result<ImmutableConversation> {
+        let raw_conversation = GroupStore::fetch_from_keystore(id, &self.mls_backend.keystore(), None)
             .await
             .map_err(RecursiveError::root("getting conversation by id"))?
-            .ok_or_else(|| LeafError::ConversationNotFound(id.clone()).into())
+            .ok_or_else(|| LeafError::ConversationNotFound(id.clone()))?;
+        Ok(ImmutableConversation::new(raw_conversation, self.mls_backend.clone()))
     }
 }
 
