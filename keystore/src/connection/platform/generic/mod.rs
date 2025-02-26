@@ -1,7 +1,9 @@
 use std::ops::Deref;
 
+use zeroize::Zeroize as _;
+
 use crate::CryptoKeystoreResult;
-use crate::connection::{DatabaseConnection, DatabaseConnectionRequirements};
+use crate::connection::{DatabaseConnection, DatabaseConnectionRequirements, DatabaseKey};
 use async_lock::{Mutex, MutexGuard};
 use blocking::unblock;
 use rusqlite::{Transaction, functions::FunctionFlags};
@@ -70,7 +72,7 @@ unsafe impl Send for SqlCipherConnection {}
 unsafe impl Sync for SqlCipherConnection {}
 
 impl SqlCipherConnection {
-    fn init_with_key(path: &str, key: &str) -> CryptoKeystoreResult<Self> {
+    fn init_with_key(path: &str, key: &DatabaseKey) -> CryptoKeystoreResult<Self> {
         #[allow(unused_mut)]
         let mut conn = rusqlite::Connection::open(path)?;
         cfg_if::cfg_if! {
@@ -83,7 +85,7 @@ impl SqlCipherConnection {
             }
         }
 
-        conn.pragma_update(None, "key", key)?;
+        Self::set_key(&mut conn, key)?;
 
         // ? iOS WAL journaling fix; see details here: https://github.com/sqlcipher/sqlcipher/issues/255
         #[cfg(target_os = "ios")]
@@ -106,7 +108,16 @@ impl SqlCipherConnection {
         Ok(conn)
     }
 
-    fn init_with_key_in_memory(_path: &str, key: &str) -> CryptoKeystoreResult<Self> {
+    fn set_key(conn: &mut rusqlite::Connection, key: &DatabaseKey) -> CryptoKeystoreResult<()> {
+        // Make sqlite use raw key data, without key derivation. Also make sure to zeroize
+        // the string containing the key after the call.
+        let mut key = format!("x'{}'", hex::encode(key));
+        let result = conn.pragma_update(None, "key", &key);
+        key.zeroize();
+        result.map_err(Into::into)
+    }
+
+    fn init_with_key_in_memory(_path: &str, key: &DatabaseKey) -> CryptoKeystoreResult<Self> {
         #[allow(unused_mut)]
         let mut conn = rusqlite::Connection::open("")?;
         cfg_if::cfg_if! {
@@ -118,7 +129,8 @@ impl SqlCipherConnection {
                 conn.trace(Some(log_query));
             }
         }
-        conn.pragma_update(None, "key", key)?;
+
+        Self::set_key(&mut conn, key)?;
 
         // Disable FOREIGN KEYs - The 2 step blob writing process invalidates foreign key checks unfortunately
         conn.pragma_update(None, "foreign_keys", "OFF")?;
@@ -180,15 +192,15 @@ impl DatabaseConnectionRequirements for SqlCipherConnection {}
 impl<'a> DatabaseConnection<'a> for SqlCipherConnection {
     type Connection = MutexGuard<'a, rusqlite::Connection>;
 
-    async fn open(name: &str, key: &str) -> CryptoKeystoreResult<Self> {
+    async fn open(name: &str, key: &DatabaseKey) -> CryptoKeystoreResult<Self> {
         let name = name.to_string();
-        let key = key.to_string();
+        let key = key.clone();
         Ok(unblock(move || Self::init_with_key(&name, &key)).await?)
     }
 
-    async fn open_in_memory(name: &str, key: &str) -> CryptoKeystoreResult<Self> {
+    async fn open_in_memory(name: &str, key: &DatabaseKey) -> CryptoKeystoreResult<Self> {
         let name = name.to_string();
-        let key = key.to_string();
+        let key = key.clone();
         Ok(unblock(move || Self::init_with_key_in_memory(&name, &key)).await?)
     }
 

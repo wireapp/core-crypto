@@ -1,13 +1,14 @@
 #![allow(dead_code, unused_macros, unused_imports)]
 
-pub(crate) use core_crypto_keystore::Connection as CryptoKeystore;
-use std::sync::Arc;
+pub(crate) use core_crypto_keystore::{Connection as CryptoKeystore, DatabaseKey};
+use std::array;
+use std::sync::{Arc, LazyLock};
 
 use core_crypto_keystore::connection::{DatabaseConnection, KeystoreDatabaseConnection};
 pub(crate) use rstest::*;
 pub(crate) use rstest_reuse::{self, *};
 
-pub(crate) const TEST_ENCRYPTION_KEY: &str = "test1234";
+pub(crate) static TEST_ENCRYPTION_KEY: LazyLock<DatabaseKey> = LazyLock::new(|| DatabaseKey::generate());
 
 #[fixture]
 pub fn store_name() -> String {
@@ -28,9 +29,9 @@ pub fn store_name() -> String {
 #[fixture(name = store_name(), in_memory = false)]
 pub async fn setup(name: impl AsRef<str>, in_memory: bool) -> KeystoreTestContext {
     let store = if !in_memory {
-        core_crypto_keystore::Connection::open_with_key(name, TEST_ENCRYPTION_KEY).await
+        core_crypto_keystore::Connection::open_with_key(name, &TEST_ENCRYPTION_KEY).await
     } else {
-        core_crypto_keystore::Connection::open_in_memory_with_key(name, TEST_ENCRYPTION_KEY).await
+        core_crypto_keystore::Connection::open_in_memory_with_key(name, &TEST_ENCRYPTION_KEY).await
     }
     .expect("Could not open keystore");
     store.new_transaction().await.expect("Could not create transaction");

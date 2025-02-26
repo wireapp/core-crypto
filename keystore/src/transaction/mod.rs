@@ -7,7 +7,7 @@ use crate::entities::{ConsumerData, EntityBase, EntityFindParams, EntityTransact
 use crate::transaction::dynamic_dispatch::EntityId;
 use crate::{
     CryptoKeystoreError, CryptoKeystoreResult,
-    connection::{Connection, FetchFromDatabase, KeystoreDatabaseConnection},
+    connection::{Connection, DatabaseKey, FetchFromDatabase, KeystoreDatabaseConnection},
 };
 use async_lock::{RwLock, SemaphoreGuardArc};
 use itertools::Itertools;
@@ -26,10 +26,10 @@ pub(crate) struct KeystoreTransaction {
 
 impl KeystoreTransaction {
     pub(crate) async fn new(semaphore_guard: SemaphoreGuardArc) -> CryptoKeystoreResult<Self> {
+        // We don't really care about the key and we're not going to store it anywhere.
+        let key = DatabaseKey::from([0u8; 32]);
         Ok(Self {
-            // We're not using a proper key because we're not using the DB for security (memory is unencrypted).
-            // We're using it for its API.
-            cache: Connection::open_in_memory_with_key("core_crypto_transaction_cache", "").await?,
+            cache: Connection::open_in_memory_with_key("core_crypto_transaction_cache", &key).await?,
             deleted: Arc::new(Default::default()),
             deleted_credentials: Arc::new(Default::default()),
             _semaphore_guard: Arc::new(semaphore_guard),

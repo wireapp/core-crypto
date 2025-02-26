@@ -5,6 +5,7 @@ use wasm_bindgen::JsValue;
 
 use crate::{
     CryptoKeystoreError, CryptoKeystoreResult,
+    connection::DatabaseKey,
     entities::{Entity, EntityFindParams},
 };
 
@@ -120,11 +121,11 @@ impl std::fmt::Debug for WasmEncryptedStorage {
 }
 
 impl WasmEncryptedStorage {
-    pub fn new(key: impl AsRef<str>, storage: WasmStorageWrapper) -> Self {
+    pub fn new(key: &DatabaseKey, storage: WasmStorageWrapper) -> Self {
         let hashed_key: aes_gcm::Key<aes_gcm::Aes256Gcm> = {
             use sha2::Digest as _;
             let mut hasher = sha2::Sha256::new();
-            hasher.update(key.as_ref().as_bytes());
+            hasher.update(key);
             hasher.finalize()
         };
 

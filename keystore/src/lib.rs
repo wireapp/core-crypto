@@ -5,7 +5,7 @@ mod error;
 pub use error::*;
 
 pub mod connection;
-pub use connection::Connection;
+pub use connection::{Connection, DatabaseKey};
 pub mod entities;
 pub mod transaction;
 

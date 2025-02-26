@@ -1,3 +1,9 @@
+use std::fmt;
+use std::ops::Deref;
+
+use sha2::{Digest as _, Sha256};
+use zeroize::{Zeroize, ZeroizeOnDrop};
+
 pub mod platform {
     cfg_if::cfg_if! {
         if #[cfg(target_family = "wasm")] {
@@ -40,14 +46,65 @@ pub trait DatabaseConnectionRequirements: Sized + Send {}
 // ? On the other hand, things cannot be Send on WASM because of platform restrictions (all things are copied across the FFI)
 pub trait DatabaseConnectionRequirements: Sized {}
 
+/// The key used to encrypt the database.
+#[derive(Clone, Zeroize, ZeroizeOnDrop, derive_more::From)]
+pub struct DatabaseKey([u8; Self::LEN]);
+
+impl DatabaseKey {
+    pub const LEN: usize = 32;
+
+    pub fn generate() -> DatabaseKey {
+        DatabaseKey(rand::random::<[u8; Self::LEN]>())
+    }
+}
+
+impl fmt::Debug for DatabaseKey {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> Result<(), fmt::Error> {
+        f.write_str("DatabaseKey(hash=")?;
+        for x in Sha256::digest(self).as_slice().iter().take(10) {
+            fmt::LowerHex::fmt(x, f)?
+        }
+        f.write_str("...)")
+    }
+}
+
+impl AsRef<[u8]> for DatabaseKey {
+    fn as_ref(&self) -> &[u8] {
+        &self.0
+    }
+}
+
+impl Deref for DatabaseKey {
+    type Target = [u8];
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
+impl TryFrom<&[u8]> for DatabaseKey {
+    type Error = CryptoKeystoreError;
+
+    fn try_from(buf: &[u8]) -> Result<Self, Self::Error> {
+        if buf.len() != Self::LEN {
+            Err(CryptoKeystoreError::InvalidDbKeySize {
+                expected: Self::LEN,
+                actual: buf.len(),
+            })
+        } else {
+            Ok(Self(buf.try_into().unwrap()))
+        }
+    }
+}
+
 #[cfg_attr(target_family = "wasm", async_trait::async_trait(?Send))]
 #[cfg_attr(not(target_family = "wasm"), async_trait::async_trait)]
 pub trait DatabaseConnection<'a>: DatabaseConnectionRequirements {
     type Connection: 'a;
 
-    async fn open(name: &str, key: &str) -> CryptoKeystoreResult<Self>;
+    async fn open(name: &str, key: &DatabaseKey) -> CryptoKeystoreResult<Self>;
 
-    async fn open_in_memory(name: &str, key: &str) -> CryptoKeystoreResult<Self>;
+    async fn open_in_memory(name: &str, key: &DatabaseKey) -> CryptoKeystoreResult<Self>;
 
     async fn close(self) -> CryptoKeystoreResult<()>;
 
@@ -111,10 +168,8 @@ unsafe impl Send for Connection {}
 unsafe impl Sync for Connection {}
 
 impl Connection {
-    pub async fn open_with_key(name: impl AsRef<str>, key: impl AsRef<str>) -> CryptoKeystoreResult<Self> {
-        let conn = KeystoreDatabaseConnection::open(name.as_ref(), key.as_ref())
-            .await?
-            .into();
+    pub async fn open_with_key(name: impl AsRef<str>, key: &DatabaseKey) -> CryptoKeystoreResult<Self> {
+        let conn = KeystoreDatabaseConnection::open(name.as_ref(), key).await?.into();
         #[allow(clippy::arc_with_non_send_sync)] // see https://github.com/rustwasm/wasm-bindgen/pull/955
         let conn = Arc::new(conn);
         Ok(Self {
@@ -124,8 +179,8 @@ impl Connection {
         })
     }
 
-    pub async fn open_in_memory_with_key(name: impl AsRef<str>, key: impl AsRef<str>) -> CryptoKeystoreResult<Self> {
-        let conn = KeystoreDatabaseConnection::open_in_memory(name.as_ref(), key.as_ref())
+    pub async fn open_in_memory_with_key(name: impl AsRef<str>, key: &DatabaseKey) -> CryptoKeystoreResult<Self> {
+        let conn = KeystoreDatabaseConnection::open_in_memory(name.as_ref(), key)
             .await?
             .into();
         #[allow(clippy::arc_with_non_send_sync)] // see https://github.com/rustwasm/wasm-bindgen/pull/955
