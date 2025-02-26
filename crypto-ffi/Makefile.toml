@@ -8,57 +8,18 @@ LIBRARY_EXTENSION = { source = "${CARGO_MAKE_RUST_TARGET_OS}", mapping = { "linu
 command = "cargo"
 args = ["doc", "--no-deps"]
 
-[tasks.docs-kotlin-install-deps]
-env = { "DOKKA_VERSION" = "1.7.20" }
-script_runner = "@duckscript"
-script = '''
-    println -c bright_blue "Installing Dokka..."
-
-    target_folder = set ../target/_kotlin_docs_tmp/
-    dokka_version_file = set "${target_folder}.DOKKA_VERSION"
-    exists = mkdir ${target_folder}
-    dokka_version_file_exists = is_path_exists ${dokka_version_file}
-    if ${exists} and ${dokka_version_file_exists}
-        current_version = readfile ${dokka_version_file}
-        if eq ${current_version} ${DOKKA_VERSION}
-            println -c bright_blue "Dokka ${DOKKA_VERSION} already present, exiting"
-            exit
-        end
-        println -c bright_blue "Dokka older version detected, reinstalling"
-    end
-
-    println -c bright_blue "Downloading Dokka CLI & dependencies..."
-
-    wget -O "${target_folder}dokka-cli-${DOKKA_VERSION}.jar" "https://repo1.maven.org/maven2/org/jetbrains/dokka/dokka-cli/${DOKKA_VERSION}/dokka-cli-${DOKKA_VERSION}.jar"
-    wget -O "${target_folder}dokka-base-${DOKKA_VERSION}.jar" "https://repo1.maven.org/maven2/org/jetbrains/dokka/dokka-base/${DOKKA_VERSION}/dokka-base-${DOKKA_VERSION}.jar"
-    wget -O "${target_folder}dokka-analysis-${DOKKA_VERSION}.jar" "https://repo1.maven.org/maven2/org/jetbrains/dokka/dokka-analysis/${DOKKA_VERSION}/dokka-analysis-${DOKKA_VERSION}.jar"
-    wget -O "${target_folder}dokka-analysis-compiler-${DOKKA_VERSION}.jar" "https://repo1.maven.org/maven2/org/jetbrains/dokka/kotlin-analysis-compiler/${DOKKA_VERSION}/kotlin-analysis-compiler-${DOKKA_VERSION}.jar"
-    wget -O "${target_folder}dokka-analysis-intellij-${DOKKA_VERSION}.jar" "https://repo1.maven.org/maven2/org/jetbrains/dokka/kotlin-analysis-intellij/${DOKKA_VERSION}/kotlin-analysis-intellij-${DOKKA_VERSION}.jar"
-    # Change those in case the dep jars change when DOKKA_VERSION changes
-    wget -O "${target_folder}kotlinx-coroutines-core-1.6.4.jar" "https://repo1.maven.org/maven2/org/jetbrains/kotlinx/kotlinx-coroutines-core/1.6.4/kotlinx-coroutines-core-1.6.4.jar"
-    wget -O "${target_folder}kotlinx-html-jvm-0.8.1.jar" "https://maven.pkg.jetbrains.space/public/p/kotlinx-html/maven/org/jetbrains/kotlinx/kotlinx-html-jvm/0.8.1/kotlinx-html-jvm-0.8.1.jar"
-    wget -O "${target_folder}freemarker-2.3.31.jar" "https://repo1.maven.org/maven2/org/freemarker/freemarker/2.3.31/freemarker-2.3.31.jar"
-
-    # Touch version so that we can check it in later builds
-    writefile ${dokka_version_file} "${DOKKA_VERSION}"
-    println -c bright_blue "Downloading Dokka CLI & dependencies...done. [.DOKKA_VERSION file = ${DOKKA_VERSION}]"
-'''
-
 [tasks.docs-kotlin]
 dependencies = [
-    "docs-kotlin-install-deps",
     { name = "jvm-darwin", condition = { platforms = ["mac"] } },
     { name = "jvm-linux", condition = { platforms = ["linux"] } }
 ]
-command = "java"
-args = [
-    "-jar", "../target/_kotlin_docs_tmp/dokka-cli-${DOKKA_VERSION}.jar",
-    "-moduleName", "CoreCrypto",
-    "-pluginsClasspath",
-    "../target/_kotlin_docs_tmp/dokka-base-${DOKKA_VERSION}.jar;../target/_kotlin_docs_tmp/dokka-analysis-${DOKKA_VERSION}.jar;../target/_kotlin_docs_tmp/dokka-analysis-intellij-${DOKKA_VERSION}.jar;../target/_kotlin_docs_tmp/dokka-analysis-compiler-${DOKKA_VERSION}.jar;../target/_kotlin_docs_tmp/kotlinx-coroutines-core-1.6.4.jar;../target/_kotlin_docs_tmp/kotlinx-html-jvm-0.8.1.jar;../target/_kotlin_docs_tmp/freemarker-2.3.31.jar",
-    "-sourceSet", "-src ./bindings/jvm/src/main/kotlin",
-    "-outputDir", "../target/doc/core_crypto_ffi/bindings/kotlin",
-]
+script = '''
+  cd bindings
+  ./gradlew android:dokkaHtml
+  cd -
+  mkdir -p ../target/doc/core_crypto_ffi/bindings/kotlin
+  cp -R bindings/android/build/dokka/html/ ../target/doc/core_crypto_ffi/bindings/kotlin
+'''
 
 [tasks.docs-rust-wasm]
 command = "cargo"
