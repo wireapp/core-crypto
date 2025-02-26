@@ -1578,38 +1578,24 @@ impl CoreCrypto {
 
     /// Returns [`WasmCryptoResult<u64>`]
     ///
-    /// see [core_crypto::mls::MlsCentral::conversation_epoch]
+    /// see [core_crypto::mls::conversation::ImmutableConversation::epoch]
     pub fn conversation_epoch(&self, conversation_id: ConversationId) -> Promise {
         let central = self.inner.clone();
         future_to_promise(
-            async move {
-                WasmCryptoResult::Ok(
-                    central
-                        .conversation_epoch(&conversation_id)
-                        .await
-                        .map_err(CoreCryptoError::from)?
-                        .into(),
-                )
-            }
-            .err_into(),
+            async move { WasmCryptoResult::Ok(central.get_raw_conversation(&conversation_id).await?.epoch().into()) }
+                .err_into(),
         )
     }
 
     /// Returns [`WasmCryptoResult<Ciphersuite>`]
     ///
-    /// see [core_crypto::mls::MlsCentral::conversation_ciphersuite]
+    /// see [core_crypto::mls::conversation::ImmutableConversation::ciphersuite]
     pub fn conversation_ciphersuite(&self, conversation_id: ConversationId) -> Promise {
         let central = self.inner.clone();
         future_to_promise(
             async move {
                 WasmCryptoResult::Ok(
-                    Ciphersuite::from(
-                        central
-                            .conversation_ciphersuite(&conversation_id)
-                            .await
-                            .map_err(CoreCryptoError::from)?,
-                    )
-                    .into(),
+                    Ciphersuite::from(central.get_raw_conversation(&conversation_id).await?.ciphersuite()).into(),
                 )
             }
             .err_into(),
