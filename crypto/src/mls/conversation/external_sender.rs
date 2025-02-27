@@ -1,29 +1,8 @@
 use super::{Error, Result};
-use crate::context::CentralContext;
-use crate::prelude::{ConversationId, MlsCentral, MlsConversation};
-
-impl MlsCentral {
-    /// Returns the raw public key of the single external sender present in this group.
-    /// This should be used to initialize a subconversation
-    pub async fn get_external_sender(&self, id: &ConversationId) -> Result<Vec<u8>> {
-        self.get_raw_conversation(id).await?.get_external_sender().await
-    }
-}
-
-impl CentralContext {
-    /// See [MlsCentral::get_external_sender]
-    pub async fn get_external_sender(&self, id: &ConversationId) -> Result<Vec<u8>> {
-        self.get_conversation(id)
-            .await?
-            .read()
-            .await
-            .get_external_sender()
-            .await
-    }
-}
+use crate::prelude::MlsConversation;
 
 impl MlsConversation {
-    async fn get_external_sender(&self) -> Result<Vec<u8>> {
+    pub(crate) async fn get_external_sender(&self) -> Result<Vec<u8>> {
         let ext_senders = self
             .group
             .group_context_extensions()
@@ -61,7 +40,14 @@ mod tests {
                     .await
                     .unwrap();
 
-                let alice_ext_sender = alice_central.context.get_external_sender(&id).await.unwrap();
+                let alice_ext_sender = alice_central
+                    .context
+                    .conversation_guard(&id)
+                    .await
+                    .unwrap()
+                    .get_external_sender()
+                    .await
+                    .unwrap();
                 assert!(!alice_ext_sender.is_empty());
                 assert_eq!(alice_ext_sender, external_sender.signature_key().as_slice().to_vec());
             })

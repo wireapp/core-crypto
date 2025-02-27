@@ -608,13 +608,15 @@ impl CoreCryptoContext {
 
     /// Returns: [`WasmCryptoResult<Vec<u8>>`]
     ///
-    /// see [core_crypto::mls::context::CentralContext::export_secret_key]
+    /// see [core_crypto::mls::conversation::ImmutableConversation::export_secret_key]
     pub fn export_secret_key(&self, conversation_id: ConversationId, key_length: usize) -> Promise {
         let context = self.inner.clone();
         future_to_promise(
             async move {
                 let key = context
-                    .export_secret_key(&conversation_id.to_vec(), key_length)
+                    .conversation_guard(&conversation_id.to_vec())
+                    .await?
+                    .export_secret_key(key_length)
                     .await
                     .map_err(CoreCryptoError::from)?;
                 WasmCryptoResult::Ok(Uint8Array::from(key.as_slice()).into())
@@ -625,13 +627,15 @@ impl CoreCryptoContext {
 
     /// Returns: [`WasmCryptoResult<Vec<u8>>`]
     ///
-    /// see [core_crypto::mls::context::CentralContext::get_external_sender]
+    /// see [core_crypto::mls::conversation::ImmutableConversation::get_external_sender]
     pub fn get_external_sender(&self, id: ConversationId) -> Promise {
         let context = self.inner.clone();
         future_to_promise(
             async move {
                 let ext_sender = context
-                    .get_external_sender(&id.to_vec())
+                    .conversation_guard(&id.to_vec())
+                    .await?
+                    .get_external_sender()
                     .await
                     .map_err(CoreCryptoError::from)?;
                 WasmCryptoResult::Ok(Uint8Array::from(ext_sender.as_slice()).into())
@@ -642,7 +646,7 @@ impl CoreCryptoContext {
 
     /// Returns: [`WasmCryptoResult<Box<[js_sys::Uint8Array]>`]
     ///
-    /// see [core_crypto::mls::context::CentralContext::get_client_ids]
+    /// see [core_crypto::conversation::ImmutableConversation::get_client_ids]
     pub fn get_client_ids(&self, conversation_id: ConversationId) -> Promise {
         let context = self.inner.clone();
         future_to_promise(

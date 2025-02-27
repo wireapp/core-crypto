@@ -1213,26 +1213,37 @@ impl CoreCrypto {
         Ok(())
     }
 
-    /// See [core_crypto::mls::MlsCentral::get_client_ids]
+    /// See [core_crypto::mls::conversation::ImmutableConversation::get_client_ids]
     pub async fn get_client_ids(&self, conversation_id: Vec<u8>) -> CoreCryptoResult<Vec<ClientId>> {
         Ok(self
             .central
-            .get_client_ids(&conversation_id)
+            .get_raw_conversation(&conversation_id)
+            .await?
+            .get_client_ids()
             .await
-            .map(|cids| cids.into_iter().map(ClientId).collect())?)
+            .into_iter()
+            .map(ClientId)
+            .collect())
     }
 
-    /// See [core_crypto::mls::MlsCentral::export_secret_key]
+    /// See [core_crypto::mls::conversation::ImmutableConversation::export_secret_key]
     pub async fn export_secret_key(&self, conversation_id: Vec<u8>, key_length: u32) -> CoreCryptoResult<Vec<u8>> {
+        self.central
+            .get_raw_conversation(&conversation_id)
+            .await?
+            .export_secret_key(key_length as usize)
+            .await
+            .map_err(Into::into)
+    }
+
+    /// See [core_crypto::mls::conversation::ImmutableConversation::get_external_sender]
+    pub async fn get_external_sender(&self, conversation_id: Vec<u8>) -> CoreCryptoResult<Vec<u8>> {
         Ok(self
             .central
-            .export_secret_key(&conversation_id, key_length as usize)
+            .get_raw_conversation(&conversation_id)
+            .await?
+            .get_external_sender()
             .await?)
-    }
-
-    /// See [core_crypto::mls::MlsCentral::get_external_sender]
-    pub async fn get_external_sender(&self, conversation_id: Vec<u8>) -> CoreCryptoResult<Vec<u8>> {
-        Ok(self.central.get_external_sender(&conversation_id).await?)
     }
 }
 

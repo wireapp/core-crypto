@@ -1735,13 +1735,15 @@ impl CoreCrypto {
 
     /// Returns: [`WasmCryptoResult<Vec<u8>>`]
     ///
-    /// see [core_crypto::mls::context::CentralContext::export_secret_key]
+    /// See [crate::mls::conversation::ImmutableConversation::export_secret_key]
     pub fn export_secret_key(&self, conversation_id: ConversationId, key_length: usize) -> Promise {
         let central = self.inner.clone();
         future_to_promise(
             async move {
                 let key = central
-                    .export_secret_key(&conversation_id.to_vec(), key_length)
+                    .get_raw_conversation(&conversation_id.to_vec())
+                    .await?
+                    .export_secret_key(key_length)
                     .await
                     .map_err(CoreCryptoError::from)?;
                 WasmCryptoResult::Ok(Uint8Array::from(key.as_slice()).into())
@@ -1752,13 +1754,15 @@ impl CoreCrypto {
 
     /// Returns: [`WasmCryptoResult<Vec<u8>>`]
     ///
-    /// see [core_crypto::mls::context::CentralContext::get_external_sender]
+    /// See [crate::mls::conversation::ImmutableConversation::get_external_sender]
     pub fn get_external_sender(&self, id: ConversationId) -> Promise {
         let central = self.inner.clone();
         future_to_promise(
             async move {
                 let ext_sender = central
-                    .get_external_sender(&id.to_vec())
+                    .get_raw_conversation(&id.to_vec())
+                    .await?
+                    .get_external_sender()
                     .await
                     .map_err(CoreCryptoError::from)?;
                 WasmCryptoResult::Ok(Uint8Array::from(ext_sender.as_slice()).into())
@@ -1769,15 +1773,16 @@ impl CoreCrypto {
 
     /// Returns: [`WasmCryptoResult<Box<[js_sys::Uint8Array]>`]
     ///
-    /// see [core_crypto::mls::context::CentralContext::get_client_ids]
+    /// See [core_crypto::mls::conversation::ImmutableConversation::get_client_ids]
     pub fn get_client_ids(&self, conversation_id: ConversationId) -> Promise {
         let central = self.inner.clone();
         future_to_promise(
             async move {
                 let clients = central
-                    .get_client_ids(&conversation_id.to_vec())
-                    .await
-                    .map_err(CoreCryptoError::from)?;
+                    .get_raw_conversation(&conversation_id.to_vec())
+                    .await?
+                    .get_client_ids()
+                    .await;
                 let clients = js_sys::Array::from_iter(
                     clients
                         .into_iter()
