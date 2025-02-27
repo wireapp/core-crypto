@@ -79,6 +79,9 @@ data class AcmeChallenge(private val delegate: com.wire.crypto.uniffi.AcmeChalle
     val url: String
         get() = delegate.url
 
+    val target: String
+        get() = delegate.target
+
     val raw: JsonRawData
         get() = delegate.delegate.toUByteArray().asByteArray()
 
