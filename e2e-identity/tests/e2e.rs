@@ -304,7 +304,7 @@ mod dpop_challenge {
     #[tokio::test]
     /// Demonstrates that the client possesses the clientId. Client makes an authenticated request
     /// to wire-server, it delivers a nonce which the client seals in a signed DPoP JWT.
-    // @SF.PROVISIONING @TSFI.ACME
+    // @SF.PROVISIONING @TSFI.ACME @S8
     async fn should_fail_when_client_dpop_token_has_wrong_backend_nonce() {
         let test = E2eTest::new().start().await;
 
@@ -334,7 +334,7 @@ mod dpop_challenge {
     #[tokio::test]
     /// Acme server should be configured with wire-server public key to verify the access tokens
     /// issued by wire-server.
-    // @SF.PROVISIONING @TSFI.ACME
+    // @SF.PROVISIONING @TSFI.ACME @S8
     async fn should_fail_when_access_token_not_signed_by_wire_server() {
         let default = E2eTest::new();
         let wrong_backend_kp = Ed25519KeyPair::generate();
@@ -354,7 +354,7 @@ mod dpop_challenge {
 
     #[tokio::test]
     /// The access token has a 'chal' claim which should match the Acme challenge 'token'. This is verified by the acme server
-    // @SF.PROVISIONING @TSFI.ACME
+    // @SF.PROVISIONING @TSFI.ACME @S8
     async fn should_fail_when_access_token_challenge_claim_is_not_current_challenge_one() {
         let test = E2eTest::new().start().await;
 
@@ -386,7 +386,7 @@ mod dpop_challenge {
     /// We first set a clientId for the enrollment process when we create the acme order. This same
     /// clientId must be used and sealed in the accessToken which is verified by the acme server in
     /// the oidc challenge. The challenge should be invalid if they differ
-    // @SF.PROVISIONING @TSFI.ACME
+    // @SF.PROVISIONING @TSFI.ACME @S8
     async fn should_fail_when_access_token_client_id_mismatches() {
         let test = E2eTest::new().start().await;
 
@@ -417,7 +417,7 @@ mod dpop_challenge {
     #[tokio::test]
     /// Client DPoP token is nested within access token. The former should not be expired when
     /// acme server verifies the DPoP challenge
-    // @SF.PROVISIONING @TSFI.ACME
+    // @SF.PROVISIONING @TSFI.ACME @S8
     async fn should_fail_when_expired_client_dpop_token() {
         let test = E2eTest::new().start().await;
 
@@ -445,7 +445,7 @@ mod dpop_challenge {
     /// with the accepted wire-server host which is present in the DPoP "htu" claim and in the access token
     /// "iss" claim.
     /// The challenge should fail if any of those does not match the expected value
-    // @SF.PROVISIONING @TSFI.ACME
+    // @SF.PROVISIONING @TSFI.ACME @S8
     async fn should_fail_when_access_token_iss_mismatches_target() {
         // "iss" in access token mismatches expected target
         let test = E2eTest::new().start().await;
@@ -525,7 +525,7 @@ mod dpop_challenge {
 
     #[tokio::test]
     /// see [should_fail_when_access_token_iss_mismatches_target]
-    // @SF.PROVISIONING @TSFI.ACME
+    // @SF.PROVISIONING @TSFI.ACME @S8
     async fn should_fail_when_access_token_device_id_mismatches_target() {
         // "iss" deviceId mismatches the actual deviceId
         let test = E2eTest::new().start().await;
@@ -612,7 +612,7 @@ mod dpop_challenge {
     /// then verified and sealed in the access token which is finally verified by the ACME server
     /// as part of the DPoP challenge.
     /// Here we make the acme-server fail.
-    // @SF.PROVISIONING @TSFI.ACME
+    // @SF.PROVISIONING @TSFI.ACME @S8
     async fn acme_should_fail_when_client_dpop_token_has_wrong_handle() {
         let test = E2eTest::new().start().await;
 
@@ -642,7 +642,7 @@ mod dpop_challenge {
     /// In this attack, a malicious server forges an access token with a forged proof (the client DPoP token). Since it
     /// does not know the keypair used by the client it will use a random one. This should fail since the acme-server
     /// will verify the 'cnf.kid' and verify that it is indeed the JWK thumbprint of the ACME client.
-    // @SF.PROVISIONING @TSFI.ACME
+    // @SF.PROVISIONING @TSFI.ACME @S8
     async fn acme_should_fail_when_client_dpop_token_has_wrong_kid() {
         let test = E2eTest::new().start().await;
 
@@ -723,7 +723,7 @@ mod dpop_challenge {
 
     #[tokio::test]
     /// We bind the DPoP challenge "uri" to the access token. It is then validated by the ACME server
-    // @SF.PROVISIONING @TSFI.ACME
+    // @SF.PROVISIONING @TSFI.ACME @S8
     async fn should_fail_when_invalid_dpop_audience() {
         let test = E2eTest::new().start().await;
         let flow = EnrollmentFlow {
@@ -754,7 +754,7 @@ mod dpop_challenge {
     #[tokio::test]
     /// The DPoP token holds the "display name" of the client which is compared by the acme server against the
     /// display name in the acme identifier as part of the acme order
-    // @SF.PROVISIONING @TSFI.ACME
+    // @SF.PROVISIONING @TSFI.ACME @S8
     async fn acme_should_fail_when_client_dpop_token_has_wrong_display_name() {
         let test = E2eTest::new().start().await;
 
@@ -801,7 +801,7 @@ mod oidc_challenge {
     /// Authorization Server (Dex in our case) exposes an endpoint for clients to fetch its public
     /// keys (it gets from the OAuth discovery endpoint of hte IdP).
     /// It is used to validate the signature of the id token we supply to this challenge.
-    // @SF.PROVISIONING @TSFI.ACME
+    // @SF.PROVISIONING @TSFI.ACME @S8
     async fn should_fail_when_oidc_provider_discovery_uri_unavailable() {
         let mut test = E2eTest::new();
         // invalid discovery uri
@@ -821,7 +821,7 @@ mod oidc_challenge {
     #[ignore] // FIXME: adapt with Keycloak
     /// An id token with an invalid name is supplied to ACME server. It should verify that the handle
     /// is the same as the one used in the order.
-    // @SF.PROVISIONING @TSFI.ACME
+    // @SF.PROVISIONING @TSFI.ACME @S8
     async fn should_fail_when_invalid_handle() {
         let test = E2eTest::new();
 
@@ -863,7 +863,7 @@ mod oidc_challenge {
     #[ignore] // FIXME: adapt with Keycloak
     /// An id token with an invalid name is supplied to ACME server. It should verify that the display name
     /// is the same as the one used in the order.
-    // @SF.PROVISIONING @TSFI.ACME
+    // @SF.PROVISIONING @TSFI.ACME @S8
     async fn should_fail_when_invalid_display_name() {
         let test = E2eTest::new();
 
@@ -905,7 +905,7 @@ mod oidc_challenge {
     /// We use the "keyauth": '{oidc-challenge-token}.{acme-key-thumbprint}' to bind the acme client to the id token
     /// we validate in the acme server. This prevents id token being stolen or OAuth authorization performed outside of
     /// the current ACME session.
-    // @SF.PROVISIONING @TSFI.ACME
+    // @SF.PROVISIONING @TSFI.ACME @S8
     async fn should_fail_when_invalid_keyauth() {
         let test = E2eTest::new().start().await;
         let flow = EnrollmentFlow {
@@ -925,8 +925,8 @@ mod oidc_challenge {
     }
 
     #[tokio::test]
-    /// We add a "acme_aud" in the idToken which must match the OIDC challenge url
-    // @SF.PROVISIONING @TSFI.ACME
+    /// We add an "acme_aud" in the idToken which must match the OIDC challenge url
+    // @SF.PROVISIONING @TSFI.ACME @S8
     async fn should_fail_when_invalid_audience() {
         let test = E2eTest::new().start().await;
         let flow = EnrollmentFlow {
