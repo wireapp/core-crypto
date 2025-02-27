@@ -19,43 +19,6 @@ use crate::{
 };
 
 impl CentralContext {
-    pub(crate) async fn send_and_merge_commit(
-        &self,
-        conversation: async_lock::RwLockWriteGuard<'_, MlsConversation>,
-        commit: MlsCommitBundle,
-    ) -> Result<()> {
-        let conv_id = conversation.id().clone();
-        match self.send_commit(commit, Some(conversation)).await {
-            Ok(false) => Ok(()),
-            Ok(true) => {
-                let conversation = self.get_conversation(&conv_id).await?;
-                let mut conversation_guard = conversation.write().await;
-                conversation_guard
-                    .commit_accepted(
-                        &self
-                            .mls_provider()
-                            .await
-                            .map_err(RecursiveError::root("getting mls provider"))?,
-                    )
-                    .await
-            }
-            Err(e @ Error::MessageRejected { .. }) => {
-                let conversation = self.get_conversation(&conv_id).await?;
-                let mut conversation_guard = conversation.write().await;
-                conversation_guard
-                    .clear_pending_commit(
-                        &self
-                            .mls_provider()
-                            .await
-                            .map_err(RecursiveError::root("getting mls provider"))?,
-                    )
-                    .await?;
-                Err(e)
-            }
-            Err(e) => Err(e),
-        }
-    }
-
     /// Send the commit via mls transport and handle the response.
     /// Return `Ok(true)` if the commit should be accepted and merged,
     /// `Ok(false)` if commit transport was successful and the commit can be discarded.
