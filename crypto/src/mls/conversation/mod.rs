@@ -27,16 +27,16 @@
 //! | merge     | ❌           | ❌            | ✅           | ✅            |
 //! | decrypt   | ✅           | ✅            | ✅           | ✅            |
 
-use std::collections::HashMap;
-
+use core_crypto_keystore::{Connection, CryptoKeystoreMls};
+use mls_crypto_provider::{CryptoKeystore, MlsCryptoProvider};
 use openmls::{
     group::MlsGroup,
     prelude::{Credential, CredentialWithKey, SignaturePublicKey},
 };
+use openmls_traits::OpenMlsCryptoProvider;
 use openmls_traits::types::SignatureScheme;
-
-use core_crypto_keystore::{Connection, CryptoKeystoreMls};
-use mls_crypto_provider::{CryptoKeystore, MlsCryptoProvider};
+use std::collections::HashMap;
+use std::ops::Deref;
 
 use config::MlsConversationConfiguration;
 
@@ -74,9 +74,31 @@ mod renew;
 pub(crate) mod welcome;
 mod wipe;
 
+use crate::mls::Central;
 pub use conversation_guard::ConversationGuard;
 pub use error::{Error, Result};
 pub use immutable_conversation::ImmutableConversation;
+
+#[cfg_attr(target_family = "wasm", async_trait::async_trait(?Send))]
+#[cfg_attr(not(target_family = "wasm"), async_trait::async_trait)]
+pub(crate) trait Conversation<'a> {
+    type Central: Central;
+    
+    type Conversation: Deref<Target = MlsConversation> + Send;
+
+    async fn central(&self) -> Result<Self::Central>;
+
+    async fn conversation(&'a self) -> Self::Conversation;
+
+    async fn mls_provider(&self) -> Result<MlsCryptoProvider> {
+        self.central()
+            .await?
+            .mls_provider()
+            .await
+            .map_err(RecursiveError::mls("getting mls provider"))
+            .map_err(Into::into)
+    }
+}
 
 /// A unique identifier for a group/conversation. The identifier must be unique within a client.
 pub type ConversationId = Vec<u8>;
@@ -272,7 +294,7 @@ impl MlsCentral {
             .await
             .map_err(RecursiveError::root("getting conversation by id"))?
             .ok_or_else(|| LeafError::ConversationNotFound(id.clone()))?;
-        Ok(ImmutableConversation::new(raw_conversation, self.mls_backend.clone()))
+        Ok(ImmutableConversation::new(raw_conversation, self.clone()))
     }
 }
 
