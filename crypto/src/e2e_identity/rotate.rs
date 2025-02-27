@@ -117,7 +117,7 @@ impl CentralContext {
     /// or [CentralContext::e2ei_new_rotate_enrollment].
     ///
     /// # Expected actions to perform after this function (in this order)
-    /// 1. Rotate credentials for each conversation in [Self::e2ei_rotate]
+    /// 1. Rotate credentials for each conversation in [crate::mls::conversation::ConversationGuard::e2ei_rotate]
     /// 2. Generate new key packages with [Client::generate_new_keypackages]
     /// 3. Use these to replace the stale ones the in the backend
     /// 4. Delete the stale ones locally using [Self::delete_stale_key_packages]
@@ -219,34 +219,6 @@ impl CentralContext {
             .await
             .map_err(RecursiveError::mls_client("deleting keypackages"))?;
         Ok(())
-    }
-
-    /// Send a commit in a conversation for changing the credential. Requires first
-    /// having enrolled a new X509 certificate with either [CentralContext::e2ei_new_activation_enrollment]
-    /// or [CentralContext::e2ei_new_rotate_enrollment] and having saved it with [Self::save_x509_credential].
-    pub async fn e2ei_rotate(&self, id: &ConversationId, cb: Option<&CredentialBundle>) -> Result<()> {
-        let client = &self
-            .mls_client()
-            .await
-            .map_err(RecursiveError::root("getting mls client"))?;
-        let conversation = self
-            .get_conversation(id)
-            .await
-            .map_err(RecursiveError::mls_conversation("getting conversation by id"))?;
-        let mut conversation_guard = conversation.write().await;
-        let commit = conversation_guard
-            .e2ei_rotate(
-                &self
-                    .mls_provider()
-                    .await
-                    .map_err(RecursiveError::root("getting mls provider"))?,
-                client,
-                cb,
-            )
-            .await?;
-        self.send_and_merge_commit(conversation_guard, commit)
-            .await
-            .map_err(|e| Error::from(RecursiveError::mls_conversation("sending and merging commit")(e)))
     }
 }
 
@@ -800,7 +772,14 @@ pub(crate) mod tests {
                             .save_x509_credential(&mut enrollment, cert)
                             .await
                             .unwrap();
-                        alice_central.context.e2ei_rotate(&id, None).await.unwrap();
+                        alice_central
+                            .context
+                            .conversation_guard(&id)
+                            .await
+                            .unwrap()
+                            .e2ei_rotate(None)
+                            .await
+                            .unwrap();
 
                         let commit = alice_central.mls_transport.latest_commit().await;
 
@@ -867,7 +846,14 @@ pub(crate) mod tests {
                             .await
                             .unwrap();
 
-                        bob_central.context.e2ei_rotate(&id, None).await.unwrap();
+                        bob_central
+                            .context
+                            .conversation_guard(&id)
+                            .await
+                            .unwrap()
+                            .e2ei_rotate(None)
+                            .await
+                            .unwrap();
 
                         let commit = bob_central.mls_transport.latest_commit().await;
 
@@ -941,7 +927,14 @@ pub(crate) mod tests {
                         );
 
                         // Alice issues an Update commit to replace her current identity
-                        alice_central.context.e2ei_rotate(&id, Some(&cb)).await.unwrap();
+                        alice_central
+                            .context
+                            .conversation_guard(&id)
+                            .await
+                            .unwrap()
+                            .e2ei_rotate(Some(&cb))
+                            .await
+                            .unwrap();
                         let commit = alice_central.mls_transport.latest_commit().await;
 
                         // Bob decrypts the commit...
@@ -1117,7 +1110,14 @@ pub(crate) mod tests {
                         assert_eq!(alice_old_identity.x509_identity, None);
 
                         // Alice issues an Update commit to replace her current identity
-                        alice_central.context.e2ei_rotate(&id, None).await.unwrap();
+                        alice_central
+                            .context
+                            .conversation_guard(&id)
+                            .await
+                            .unwrap()
+                            .e2ei_rotate(None)
+                            .await
+                            .unwrap();
                         let commit = alice_central.mls_transport.latest_commit().await;
 
                         // Bob decrypts the commit...

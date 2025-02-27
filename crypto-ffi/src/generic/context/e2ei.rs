@@ -119,9 +119,14 @@ impl CoreCryptoContext {
             .into())
     }
 
-    /// See [core_crypto::context::CentralContext::e2ei_rotate]
+    /// See [core_crypto::mls::conversation::ConversationGuard::e2ei_rotate]
     pub async fn e2ei_rotate(&self, conversation_id: Vec<u8>) -> CoreCryptoResult<()> {
-        Ok(self.context.e2ei_rotate(&conversation_id, None).await?)
+        Ok(self
+            .context
+            .conversation_guard(&conversation_id)
+            .await?
+            .e2ei_rotate(None)
+            .await?)
     }
 
     /// See [core_crypto::context::CentralContext::save_x509_credential]
