@@ -2,20 +2,15 @@ use super::{Error, Result};
 #[cfg(not(target_family = "wasm"))]
 use crate::e2e_identity::refresh_token::RefreshToken;
 use crate::{
-    LeafError, MlsError, RecursiveError,
+    MlsError, RecursiveError,
     context::CentralContext,
     e2e_identity::init_certificates::NewCrlDistributionPoint,
-    mls::credential::{CredentialBundle, ext::CredentialExt, x509::CertificatePrivateKey},
-    prelude::{
-        CertificateBundle, Client, ConversationId, E2eiEnrollment, MlsCiphersuite, MlsCommitBundle, MlsConversation,
-        MlsCredentialType,
-    },
+    mls::credential::{ext::CredentialExt, x509::CertificatePrivateKey},
+    prelude::{CertificateBundle, E2eiEnrollment, MlsCiphersuite, MlsCredentialType},
 };
 use core_crypto_keystore::{CryptoKeystoreMls, connection::FetchFromDatabase, entities::MlsKeyPackage};
-use mls_crypto_provider::MlsCryptoProvider;
-use openmls::prelude::{KeyPackage, KeyPackageRef};
+use openmls::prelude::KeyPackage;
 use openmls_traits::OpenMlsCryptoProvider;
-use std::collections::HashMap;
 
 impl CentralContext {
     /// Generates an E2EI enrollment instance for a "regular" client (with a Basic credential)
@@ -222,90 +217,6 @@ impl CentralContext {
     }
 }
 
-impl MlsConversation {
-    #[cfg_attr(test, crate::durable)]
-    pub(crate) async fn e2ei_rotate(
-        &mut self,
-        backend: &MlsCryptoProvider,
-        client: &Client,
-        cb: Option<&CredentialBundle>,
-    ) -> Result<MlsCommitBundle> {
-        let cb = match cb {
-            Some(cb) => cb,
-            None => &client
-                .find_most_recent_credential_bundle(self.ciphersuite().signature_algorithm(), MlsCredentialType::X509)
-                .await
-                .map_err(|_| Error::MissingExistingClient(MlsCredentialType::X509))?,
-        };
-        let mut leaf_node = self.group.own_leaf().ok_or(LeafError::InternalMlsError)?.clone();
-        leaf_node.set_credential_with_key(cb.to_mls_credential_with_key());
-        self.update_keying_material(client, backend, Some(cb), Some(leaf_node))
-            .await
-            .map_err(RecursiveError::mls_conversation("updating keying material"))
-            .map_err(Into::into)
-    }
-}
-
-/// Result returned after rotating the Credential of the current client in all the local conversations
-#[derive(Debug, Clone)]
-pub struct MlsRotateBundle {
-    /// An Update commit for each conversation
-    pub commits: HashMap<ConversationId, MlsCommitBundle>,
-    /// Fresh KeyPackages with the new Credential
-    pub new_key_packages: Vec<KeyPackage>,
-    /// All the now deprecated KeyPackages. Once deleted remotely, delete them locally with [CentralContext::delete_keypackages]
-    pub key_package_refs_to_remove: Vec<KeyPackageRef>,
-    /// New CRL distribution points that appeared by the introduction of a new credential
-    pub crl_new_distribution_points: NewCrlDistributionPoint,
-}
-
-impl MlsRotateBundle {
-    /// Lower through the FFI
-    #[allow(clippy::type_complexity)]
-    pub fn to_bytes(
-        self,
-    ) -> Result<(
-        HashMap<String, MlsCommitBundle>,
-        Vec<Vec<u8>>,
-        Vec<Vec<u8>>,
-        NewCrlDistributionPoint,
-    )> {
-        use openmls::prelude::TlsSerializeTrait as _;
-
-        let commits_size = self.commits.len();
-        let commits = self.commits.into_iter().try_fold(
-            HashMap::with_capacity(commits_size),
-            |mut acc, (id, c)| -> Result<HashMap<String, MlsCommitBundle>> {
-                // because uniffi ONLY supports HashMap<String, T>
-                let id = hex::encode(id);
-                let _ = acc.insert(id, c);
-                Ok(acc)
-            },
-        )?;
-
-        let kp_size = self.new_key_packages.len();
-        let new_key_packages = self.new_key_packages.into_iter().try_fold(
-            Vec::with_capacity(kp_size),
-            |mut acc, kp| -> Result<Vec<Vec<u8>>> {
-                acc.push(kp.tls_serialize_detached()?);
-                Ok(acc)
-            },
-        )?;
-        let key_package_refs_to_remove = self
-            .key_package_refs_to_remove
-            .into_iter()
-            // TODO: add a method for taking ownership in HashReference. Tracking issue: WPB-9593
-            .map(|r| r.as_slice().to_vec())
-            .collect::<Vec<_>>();
-        Ok((
-            commits,
-            new_key_packages,
-            key_package_refs_to_remove,
-            self.crl_new_distribution_points,
-        ))
-    }
-}
-
 #[cfg(test)]
 // This is pub(crate) because failsafe_ctx() is used in other modules
 pub(crate) mod tests {
@@ -329,9 +240,9 @@ pub(crate) mod tests {
     wasm_bindgen_test_configure!(run_in_browser);
 
     pub(crate) mod all {
-        use openmls_traits::types::SignatureScheme;
-
+        use crate::prelude::Client;
         use crate::test_utils::context::TEAM;
+        use openmls_traits::types::SignatureScheme;
 
         use super::*;
 
