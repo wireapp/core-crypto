@@ -22,6 +22,7 @@ use crate::{
 /// By doing so, it permits mutable accesses to the conversation. This in turn
 /// means that we don't have to duplicate the entire `MlsConversation` API
 /// on `CentralContext`.
+#[derive(Debug)]
 pub struct ConversationGuard {
     inner: GroupStoreValue<MlsConversation>,
     central_context: CentralContext,
