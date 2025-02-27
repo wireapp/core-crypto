@@ -681,10 +681,13 @@ impl ClientContext {
         cb: &CredentialBundle,
     ) -> MlsCommitBundle {
         let client = self.client().await;
+        let backend = self.context.mls_provider().await.unwrap();
         let mut conversation_guard = self.context.conversation_guard(id).await.unwrap();
         let mut conversation = conversation_guard.conversation_mut().await;
+        let mut leaf_node = conversation.group.own_leaf().unwrap().clone();
+        leaf_node.set_credential_with_key(cb.to_mls_credential_with_key());
         conversation
-            .e2ei_rotate(&self.central.mls_backend, &client, Some(cb))
+            .update_keying_material(&client, &backend, Some(cb), Some(leaf_node))
             .await
             .unwrap()
     }

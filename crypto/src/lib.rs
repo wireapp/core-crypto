@@ -74,7 +74,6 @@ pub mod prelude {
             conversation_state::E2eiConversationState,
             device_status::DeviceStatus,
             identity::{WireIdentity, X509Identity},
-            rotate::MlsRotateBundle,
             types::{E2eiAcmeChallenge, E2eiAcmeDirectory, E2eiNewAcmeAuthz, E2eiNewAcmeOrder},
         },
         error::{CryptoboxMigrationError, Error, KeystoreError, LeafError, MlsError, ProteusError, RecursiveError},
