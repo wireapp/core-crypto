@@ -563,9 +563,12 @@ impl ClientContext {
         for conv in all_conversations {
             let id = conv.read().await.id().clone();
             self.context
-                .e2ei_rotate(&id, None)
+                .conversation_guard(&id)
                 .await
-                .map_err(RecursiveError::e2e_identity("e2ei rotating"))?;
+                .map_err(RecursiveError::mls_conversation("getting conversation by id"))?
+                .e2ei_rotate(None)
+                .await
+                .map_err(RecursiveError::mls_conversation("e2ei rotating"))?;
             let commit = self.mls_transport.latest_commit_bundle().await;
             conversation_ids_and_commits.push((id, commit));
         }
@@ -678,9 +681,9 @@ impl ClientContext {
         cb: &CredentialBundle,
     ) -> MlsCommitBundle {
         let client = self.client().await;
-        let conversation = self.context.get_conversation(id).await.unwrap();
-        let mut conversation_guard = conversation.write().await;
-        conversation_guard
+        let mut conversation_guard = self.context.conversation_guard(id).await.unwrap();
+        let mut conversation = conversation_guard.conversation_mut().await;
+        conversation
             .e2ei_rotate(&self.central.mls_backend, &client, Some(cb))
             .await
             .unwrap()

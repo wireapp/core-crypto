@@ -210,12 +210,16 @@ impl CoreCryptoContext {
 
     /// Returns: [`WasmCryptoResult<()>`]
     ///
-    /// see [core_crypto::context::CentralContext::e2ei_rotate]
+    /// See [core_crypto::mls::conversation::ConversationGuard::e2ei_rotate]
     pub fn e2ei_rotate(&self, conversation_id: ConversationId) -> Promise {
         let context = self.inner.clone();
         future_to_promise(
             async move {
-                context.e2ei_rotate(&conversation_id, None).await?;
+                context
+                    .conversation_guard(&conversation_id)
+                    .await?
+                    .e2ei_rotate(None)
+                    .await?;
                 WasmCryptoResult::Ok(JsValue::UNDEFINED)
             }
             .err_into(),
