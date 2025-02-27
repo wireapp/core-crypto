@@ -1,8 +1,7 @@
-/* 
-This file contains test mappings to automatically generate various reports for Zulu.
-They are marked with @SF and similar. 
-DO NOT REMOVE OR CHANGE THESE OR THE TESTS WITHOUT TALKING TO SECURITY FIRST!
-*/
+// This file contains test mappings to automatically generate various reports for Zulu.
+// They are marked with @SF and similar. 
+// DO NOT REMOVE OR CHANGE THESE OR THE TESTS WITHOUT TALKING TO SECURITY FIRST!
+
 #![cfg(not(target_family = "wasm"))]
 
 use jwt_simple::prelude::*;
