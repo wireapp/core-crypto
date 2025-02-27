@@ -1,5 +1,5 @@
 // This file contains test mappings to automatically generate various reports for Zulu.
-// They are marked with @SF and similar. 
+// They are marked with @SF and similar.
 // DO NOT REMOVE OR CHANGE THESE OR THE TESTS WITHOUT TALKING TO SECURITY FIRST!
 
 #![cfg(not(target_family = "wasm"))]
@@ -410,7 +410,6 @@ mod dpop_challenge {
             TestError::Acme(RustyAcmeError::ChallengeError(AcmeChallError::Invalid))
         ));
     }
-
 
     // TODO: not testable in practice because leeway of 360s is hardcoded in acme server
     #[ignore]
