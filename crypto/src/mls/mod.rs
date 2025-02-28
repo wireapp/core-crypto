@@ -149,8 +149,6 @@ pub(crate) mod config {
 #[cfg_attr(not(target_family = "wasm"), async_trait::async_trait)]
 
 pub(crate) trait Central: Send {
-    // This will be used very soon
-    #[expect(dead_code)]
     async fn client(&self) -> Result<Client>;
     async fn mls_provider(&self) -> Result<MlsCryptoProvider>;
 }
