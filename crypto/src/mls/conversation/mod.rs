@@ -74,7 +74,9 @@ mod renew;
 pub(crate) mod welcome;
 mod wipe;
 
+use crate::e2e_identity::conversation_state::compute_state;
 use crate::mls::Central;
+use crate::prelude::E2eiConversationState;
 pub use conversation_guard::ConversationGuard;
 pub use error::{Error, Result};
 pub use immutable_conversation::ImmutableConversation;
@@ -83,7 +85,7 @@ pub use immutable_conversation::ImmutableConversation;
 #[cfg_attr(not(target_family = "wasm"), async_trait::async_trait)]
 pub(crate) trait Conversation<'a> {
     type Central: Central;
-    
+
     type Conversation: Deref<Target = MlsConversation> + Send;
 
     async fn central(&self) -> Result<Self::Central>;
@@ -97,6 +99,29 @@ pub(crate) trait Conversation<'a> {
             .await
             .map_err(RecursiveError::mls("getting mls provider"))
             .map_err(Into::into)
+    }
+
+    async fn e2ei_conversation_state(&'a self) -> Result<E2eiConversationState> {
+        self.mls_provider()
+            .await?
+            .authentication_service()
+            .refresh_time_of_interest()
+            .await;
+        let conversation = self.conversation().await;
+        let cipher_suite = conversation.ciphersuite();
+        let members_credentials = conversation.group().members_credentials();
+        Ok(compute_state(
+            cipher_suite,
+            members_credentials,
+            MlsCredentialType::X509,
+            self.mls_provider()
+                .await?
+                .authentication_service()
+                .borrow()
+                .await
+                .as_ref(),
+        )
+        .await)
     }
 }
 
@@ -209,6 +234,10 @@ impl MlsConversation {
     /// Group/conversation id
     pub fn id(&self) -> &ConversationId {
         &self.id
+    }
+
+    pub(crate) fn group(&self) -> &MlsGroup {
+        &self.group
     }
 
     /// Returns all members credentials from the group/conversation

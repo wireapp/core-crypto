@@ -8,22 +8,6 @@ use openmls_traits::OpenMlsCryptoProvider;
 use std::collections::HashMap;
 
 impl ImmutableConversation {
-    /// See [`crate::mls::conversation::ConversationGuard::e2ei_conversation_state`].
-    pub async fn e2ei_conversation_state(&self) -> Result<E2eiConversationState> {
-        self.mls_provider()
-            .authentication_service()
-            .refresh_time_of_interest()
-            .await;
-        let inner = self.conversation();
-        Ok(compute_state(
-            inner.ciphersuite(),
-            inner.group.members_credentials(),
-            MlsCredentialType::X509,
-            self.mls_provider().authentication_service().borrow().await.as_ref(),
-        )
-        .await)
-    }
-
     /// See [`crate::mls::conversation::ConversationGuard::get_device_identities`].
     pub async fn get_device_identities(&self, device_ids: &[ClientId]) -> Result<Vec<WireIdentity>> {
         if device_ids.is_empty() {
