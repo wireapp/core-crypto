@@ -1582,8 +1582,17 @@ impl CoreCrypto {
     pub fn conversation_epoch(&self, conversation_id: ConversationId) -> Promise {
         let central = self.inner.clone();
         future_to_promise(
-            async move { WasmCryptoResult::Ok(central.get_raw_conversation(&conversation_id).await?.epoch().into()) }
-                .err_into(),
+            async move {
+                WasmCryptoResult::Ok(
+                    central
+                        .get_raw_conversation(&conversation_id)
+                        .await?
+                        .epoch()
+                        .await
+                        .into(),
+                )
+            }
+            .err_into(),
         )
     }
 
@@ -1595,7 +1604,14 @@ impl CoreCrypto {
         future_to_promise(
             async move {
                 WasmCryptoResult::Ok(
-                    Ciphersuite::from(central.get_raw_conversation(&conversation_id).await?.ciphersuite()).into(),
+                    Ciphersuite::from(
+                        central
+                            .get_raw_conversation(&conversation_id)
+                            .await?
+                            .ciphersuite()
+                            .await,
+                    )
+                    .into(),
                 )
             }
             .err_into(),

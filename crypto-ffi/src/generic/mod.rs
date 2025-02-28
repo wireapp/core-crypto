@@ -1184,12 +1184,17 @@ impl CoreCrypto {
 
     /// See [core_crypto::mls::conversation::ImmutableConversation::epoch]
     pub async fn conversation_epoch(&self, conversation_id: Vec<u8>) -> CoreCryptoResult<u64> {
-        Ok(self.central.get_raw_conversation(&conversation_id).await?.epoch())
+        Ok(self.central.get_raw_conversation(&conversation_id).await?.epoch().await)
     }
 
     /// See [core_crypto::mls::conversation::ImmutableConversation::ciphersuite]
     pub async fn conversation_ciphersuite(&self, conversation_id: &ConversationId) -> CoreCryptoResult<Ciphersuite> {
-        let cs = self.central.get_raw_conversation(conversation_id).await?.ciphersuite();
+        let cs = self
+            .central
+            .get_raw_conversation(conversation_id)
+            .await?
+            .ciphersuite()
+            .await;
         Ok(Ciphersuite::from(core_crypto::prelude::CiphersuiteName::from(cs)))
     }
 
