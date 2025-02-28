@@ -123,6 +123,52 @@ pub(crate) trait Conversation<'a> {
         )
         .await)
     }
+
+    /// From a given conversation, get the identity of the members supplied. Identity is only present for
+    /// members with a Certificate Credential (after turning on end-to-end identity).
+    /// If no member has a x509 certificate, it will return an empty Vec
+    async fn get_device_identities(&'a self, device_ids: &[ClientId]) -> Result<Vec<WireIdentity>> {
+        if device_ids.is_empty() {
+            return Err(Error::CallerError(
+                "This function accepts a list of IDs as a parameter, but that list was empty.",
+            ));
+        }
+        let mls_provider = self.mls_provider().await?;
+        let auth_service = mls_provider.authentication_service();
+        auth_service.refresh_time_of_interest().await;
+        let auth_service = auth_service.borrow().await;
+        let env = auth_service.as_ref();
+        let conversation = self.conversation().await;
+        conversation
+            .get_device_identities(device_ids, env)
+            .map_err(RecursiveError::e2e_identity("getting device identities"))
+            .map_err(Into::into)
+    }
+
+    /// From a given conversation, get the identity of the users (device holders) supplied.
+    /// Identity is only present for devices with a Certificate Credential (after turning on end-to-end identity).
+    /// If no member has a x509 certificate, it will return an empty Vec.
+    ///
+    /// Returns a Map with all the identities for a given users. Consumers are then recommended to
+    /// reduce those identities to determine the actual status of a user.
+    async fn get_user_identities(&'a self, user_ids: &[String]) -> Result<HashMap<String, Vec<WireIdentity>>> {
+        if user_ids.is_empty() {
+            return Err(Error::CallerError(
+                "This function accepts a list of IDs as a parameter, but that list was empty.",
+            ));
+        }
+        let mls_provider = self.mls_provider().await?;
+        let auth_service = mls_provider.authentication_service();
+        auth_service.refresh_time_of_interest().await;
+        let auth_service = auth_service.borrow().await;
+        let env = auth_service.as_ref();
+        let conversation = self.conversation().await;
+
+        conversation
+            .get_user_identities(user_ids, env)
+            .map_err(RecursiveError::e2e_identity("getting user identities"))
+            .map_err(Into::into)
+    }
 }
 
 /// A unique identifier for a group/conversation. The identifier must be unique within a client.
