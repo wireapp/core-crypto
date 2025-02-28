@@ -10,7 +10,6 @@ proteus = [
     "dep:cryptobox",
     "dep:proteus",
     "dep:proteus-wasm",
-    "core-crypto/cryptobox-migrate",
     "core-crypto/proteus",
 ]
 
