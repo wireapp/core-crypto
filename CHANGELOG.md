@@ -1,5 +1,28 @@
 # Changelog
 
+## v4.2.0 - 2025-02-28
+
+### Highlights
+ - The Android release once again bundles API docs.
+ - The Kotlin bindings have received several API fixes in particular:
+   - AcmeChallenge was missing the target property.
+   - proteusGetPrekeyFingerprint was missing.
+ - The Typescript bindings now correctly expose WireIdentity and X509Identity.
+ - The code base has migrated to Rust 2024 edition.
+
+### Bug Fixes
+
+- expose target on AcmeChallenge (c509a3f)
+- add missing proteus function (a956924)
+- don't expose uniffi types in the kotlin bindings (988b7d0)
+- publishing android docs (7b91f08)
+- publicly expose WireIdentity and X509Identity in the typescript bindings (6592d4a)
+- return the wasm bindgen generated JS type instead of converting the value to JSON. (3446920)
+
+### Testing
+
+- add test case for querying identities (3c36cb5)
+
 ## v4.1.0 - 2025-02-07
 
 ### Highlights
