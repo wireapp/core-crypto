@@ -739,9 +739,8 @@ mod tests {
         use super::Error;
         use crate::context::CentralContext;
         use crate::mls::conversation::Conversation;
-        use crate::prelude::{ClientId, ConversationId, MlsConversation, MlsCredentialType};
+        use crate::prelude::{ClientId, ConversationId, MlsCredentialType};
         use crate::{
-            RecursiveError,
             prelude::{DeviceStatus, E2eiConversationState},
             test_utils::*,
         };
