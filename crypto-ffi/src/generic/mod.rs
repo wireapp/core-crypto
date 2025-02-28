@@ -1087,7 +1087,7 @@ pub struct CoreCrypto {
 /// See [core_crypto::mls::Client::try_new]
 pub async fn core_crypto_new(
     path: String,
-    key: String,
+    key: DatabaseKey,
     client_id: ClientId,
     ciphersuites: Ciphersuites,
     nb_key_package: Option<u32>,
@@ -1098,7 +1098,7 @@ pub async fn core_crypto_new(
 #[uniffi::export]
 /// Similar to [core_crypto_new] but defers MLS initialization. It can be initialized later
 /// with [CoreCryptoContext::mls_init].
-pub async fn core_crypto_deferred_init(path: String, key: String) -> CoreCryptoResult<CoreCrypto> {
+pub async fn core_crypto_deferred_init(path: String, key: DatabaseKey) -> CoreCryptoResult<CoreCrypto> {
     CoreCrypto::new(path, key, None, None, None).await
 }
 
@@ -1108,7 +1108,7 @@ impl CoreCrypto {
     #[uniffi::constructor]
     pub async fn new(
         path: String,
-        key: String,
+        key: DatabaseKey,
         client_id: Option<ClientId>,
         ciphersuites: Option<Ciphersuites>,
         nb_key_package: Option<u32>,
@@ -1119,7 +1119,7 @@ impl CoreCrypto {
             .map_err(CoreCryptoError::generic())?;
         let configuration = MlsClientConfiguration::try_new(
             path,
-            key,
+            key.clone(),
             client_id.map(|cid| cid.0.clone()),
             (&ciphersuites.unwrap_or_default()).into(),
             None,
@@ -1651,7 +1651,8 @@ mod tests {
         testing_logger::setup();
         // we shouldn't be able to create a SQLite DB in `/root` unless we are running this test as root
         // Don't do that!
-        let result = CoreCrypto::new("/root/asdf".into(), "key".into(), None, None, None).await;
+        let key = DatabaseKey(core_crypto_keystore::DatabaseKey::generate());
+        let result = CoreCrypto::new("/root/asdf".into(), key, None, None, None).await;
         assert!(
             result.is_err(),
             "result must be an error in order to verify that something was logged"
@@ -1666,3 +1667,16 @@ mod tests {
         });
     }
 }
+
+// TODO: We derive Constructor here only because we need to construct an instance in interop.
+// Remove it once we drop the FFI client from interop.
+#[derive(derive_more::Constructor, derive_more::Deref)]
+pub struct DatabaseKey(core_crypto_keystore::DatabaseKey);
+
+uniffi::custom_type!(DatabaseKey, Vec<u8>, {
+    lower: |key| key.0.to_vec(),
+    try_lift: |vec| {
+        Ok(DatabaseKey(core_crypto_keystore::DatabaseKey::try_from(&vec[..])
+                        .map_err(|err| CoreCryptoError::Other(err.to_string()))?))
+    }
+});
