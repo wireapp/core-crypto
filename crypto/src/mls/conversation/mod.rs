@@ -102,6 +102,15 @@ pub(crate) trait ConversationWithCentral<'a> {
             .map_err(RecursiveError::mls("getting mls provider"))
             .map_err(Into::into)
     }
+
+    async fn mls_client(&self) -> Result<Client> {
+        self.central()
+            .await?
+            .client()
+            .await
+            .map_err(RecursiveError::mls("getting mls client"))
+            .map_err(Into::into)
+    }
 }
 
 /// The `Conversation` trait provides a set of operations that can be done on

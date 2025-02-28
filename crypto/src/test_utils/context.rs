@@ -16,6 +16,7 @@
 
 use super::Result;
 use crate::group_store::GroupStore;
+use crate::mls::conversation::Conversation;
 use crate::prelude::{MlsCommitBundle, MlsGroupInfoBundle, WelcomeBundle};
 use crate::test_utils::{ClientContext, TestError};
 use crate::{

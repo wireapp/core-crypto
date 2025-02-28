@@ -3,6 +3,7 @@
 
 use super::ConversationGuard;
 use super::Result;
+use crate::mls::conversation::ConversationWithCentral;
 use crate::mls::credential::CredentialBundle;
 use crate::prelude::MlsCredentialType;
 use crate::{LeafError, RecursiveError};

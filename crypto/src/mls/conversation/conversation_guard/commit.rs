@@ -2,6 +2,7 @@
 
 use openmls::prelude::KeyPackageIn;
 
+use crate::mls::conversation::ConversationWithCentral;
 use crate::{
     MlsError, RecursiveError,
     e2e_identity::init_certificates::NewCrlDistributionPoint,

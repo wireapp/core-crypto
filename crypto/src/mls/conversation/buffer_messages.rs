@@ -147,6 +147,7 @@ impl MlsConversation {
 #[cfg(test)]
 mod tests {
     use super::super::error::Error;
+    use crate::mls::conversation::Conversation;
     use crate::prelude::MlsConversationDecryptMessage;
     use crate::test_utils::*;
     use wasm_bindgen_test::*;

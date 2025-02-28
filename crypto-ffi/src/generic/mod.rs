@@ -29,6 +29,7 @@ use tls_codec::Deserialize;
 
 use self::context::CoreCryptoContext;
 use crate::{UniffiCustomTypeConverter, proteus_impl};
+use core_crypto::mls::conversation::Conversation;
 pub use core_crypto::prelude::ConversationId;
 use core_crypto::{
     InnermostErrorMessage, RecursiveError,

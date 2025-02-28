@@ -584,6 +584,7 @@ mod tests {
 
     mod conversation_epoch {
         use super::*;
+        use crate::mls::conversation::Conversation;
 
         #[apply(all_cred_cipher)]
         #[wasm_bindgen_test]
