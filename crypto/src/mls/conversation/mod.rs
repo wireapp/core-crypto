@@ -112,6 +112,10 @@ pub(crate) trait ConversationWithCentral<'a> {
 #[cfg_attr(target_family = "wasm", async_trait::async_trait(?Send))]
 #[cfg_attr(not(target_family = "wasm"), async_trait::async_trait)]
 pub trait Conversation<'a>: ConversationWithCentral<'a> {
+    /// Returns the epoch of a given conversation
+    async fn epoch(&'a self) -> u64 {
+        self.conversation().await.group().epoch().as_u64()
+    }
 
     async fn e2ei_conversation_state(&'a self) -> Result<E2eiConversationState> {
         self.mls_provider()
