@@ -1461,7 +1461,7 @@ impl CoreCrypto {
     /// see [core_crypto::mls::MlsCentral::try_new]
     pub async fn _internal_new(
         path: String,
-        key: String,
+        key: DatabaseKey,
         client_id: FfiClientId,
         ciphersuites: Box<[u16]>,
         entropy_seed: Option<Box<[u8]>>,
@@ -1476,7 +1476,7 @@ impl CoreCrypto {
             .expect("we never run corecrypto on systems with architectures narrower than 32 bits");
         let configuration = MlsCentralConfiguration::try_new(
             path,
-            key,
+            key.0,
             Some(client_id.into()),
             ciphersuites,
             entropy_seed,
@@ -1495,11 +1495,11 @@ impl CoreCrypto {
     /// see [core_crypto::mls::MlsCentral::try_new]
     pub async fn deferred_init(
         path: String,
-        key: String,
+        key: DatabaseKey,
         entropy_seed: Option<Box<[u8]>>,
     ) -> WasmCryptoResult<CoreCrypto> {
         let entropy_seed = entropy_seed.map(|s| s.to_vec());
-        let configuration = MlsCentralConfiguration::try_new(path, key, None, vec![], entropy_seed, None)
+        let configuration = MlsCentralConfiguration::try_new(path, key.0, None, vec![], entropy_seed, None)
             .map_err(CoreCryptoError::from)?;
 
         let central = MlsCentral::try_new(configuration)
@@ -2380,5 +2380,19 @@ impl From<core_crypto::e2e_identity::CrlRegistration> for CrlRegistration {
             dirty: value.dirty,
             expiration: value.expiration,
         }
+    }
+}
+
+#[wasm_bindgen]
+#[derive(Debug)]
+pub struct DatabaseKey(core_crypto_keystore::DatabaseKey);
+
+#[wasm_bindgen]
+impl DatabaseKey {
+    #[wasm_bindgen(constructor)]
+    pub fn new(buf: &[u8]) -> Result<DatabaseKey, wasm_bindgen::JsError> {
+        let key =
+            core_crypto_keystore::DatabaseKey::try_from(buf).map_err(|err| InternalError::Other(err.to_string()))?;
+        Ok(DatabaseKey(key))
     }
 }
