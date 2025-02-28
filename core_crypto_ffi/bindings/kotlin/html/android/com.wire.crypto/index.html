@@ -1,0 +1,1280 @@
+<!DOCTYPE html>
+<html class="no-js">
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1" charset="UTF-8">
+    <title>com.wire.crypto</title>
+    <link href="../../images/logo-icon.svg" rel="icon" type="image/svg">
+    <script>var pathToRoot = "../../";</script>
+    <script>document.documentElement.classList.replace("no-js","js");</script>
+    <script>const storage = localStorage.getItem("dokka-dark-mode")
+    if (storage == null) {
+        const osDarkSchemePreferred = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches
+        if (osDarkSchemePreferred === true) {
+            document.getElementsByTagName("html")[0].classList.add("theme-dark")
+        }
+    } else {
+        const savedDarkMode = JSON.parse(storage)
+        if(savedDarkMode === true) {
+            document.getElementsByTagName("html")[0].classList.add("theme-dark")
+        }
+    }
+    </script>
+<script type="text/javascript" src="https://unpkg.com/kotlin-playground@1/dist/playground.min.js" async="async"></script>
+<script type="text/javascript" src="../../scripts/sourceset_dependencies.js" async="async"></script>
+<link href="../../styles/style.css" rel="Stylesheet">
+<link href="../../styles/main.css" rel="Stylesheet">
+<link href="../../styles/prism.css" rel="Stylesheet">
+<link href="../../styles/logo-styles.css" rel="Stylesheet">
+<link href="../../styles/font-jb-sans-auto.css" rel="Stylesheet">
+<link href="../../ui-kit/ui-kit.min.css" rel="Stylesheet">
+<script type="text/javascript" src="../../scripts/clipboard.js" async="async"></script>
+<script type="text/javascript" src="../../scripts/navigation-loader.js" async="async"></script>
+<script type="text/javascript" src="../../scripts/platform-content-handler.js" async="async"></script>
+<script type="text/javascript" src="../../scripts/main.js" defer="defer"></script>
+<script type="text/javascript" src="../../scripts/prism.js" async="async"></script>
+<script type="text/javascript" src="../../ui-kit/ui-kit.min.js" defer="defer"></script>
+<script type="text/javascript" src="../../scripts/symbol-parameters-wrapper_deferred.js" defer="defer"></script>
+</head>
+<body>
+    <div class="root">
+    <nav class="navigation theme-dark" id="navigation-wrapper">
+            <a class="library-name--link" href="../../index.html">
+                    android
+            </a>
+        <button class="navigation-controls--btn navigation-controls--btn_toc ui-kit_mobile-only" id="toc-toggle"
+                type="button">Toggle table of contents
+        </button>
+        <div class="navigation-controls--break ui-kit_mobile-only"></div>
+        <div class="library-version" id="library-version">
+        </div>
+        <div class="navigation-controls">
+        <div class="filter-section filter-section_loading" id="filter-section">
+                <button class="platform-tag platform-selector jvm-like" data-active=""
+                        data-filter=":android:dokkaHtml/release">androidJvm</button>
+            <div class="dropdown filter-section--dropdown" data-role="dropdown" id="filter-section-dropdown">
+                <button class="button button_dropdown filter-section--dropdown-toggle" role="combobox"
+                        data-role="dropdown-toggle"
+                        aria-controls="platform-tags-listbox"
+                        aria-haspopup="listbox"
+                        aria-expanded="false"
+                        aria-label="Toggle source sets"
+                ></button>
+                <ul role="listbox" id="platform-tags-listbox" class="dropdown--list" data-role="dropdown-listbox">
+                    <div class="dropdown--header"><span>Platform filter</span>
+                        <button class="button" data-role="dropdown-toggle" aria-label="Close platform filter">
+                            <i class="ui-kit-icon ui-kit-icon_cross"></i>
+                        </button>
+                    </div>
+                        <li role="option" class="dropdown--option platform-selector-option jvm-like" tabindex="0">
+                            <label class="checkbox">
+                                <input type="checkbox" class="checkbox--input" id=":android:dokkaHtml/release"
+                                       data-filter=":android:dokkaHtml/release"/>
+                                <span class="checkbox--icon"></span>
+                                androidJvm
+                            </label>
+                        </li>
+                </ul>
+                <div class="dropdown--overlay"></div>
+            </div>
+        </div>
+            <button class="navigation-controls--btn navigation-controls--btn_theme" id="theme-toggle-button"
+                    type="button">Switch theme
+            </button>
+            <div class="navigation-controls--btn navigation-controls--btn_search" id="searchBar" role="button">Search in
+                API
+            </div>
+        </div>
+    </nav>
+        <div id="container">
+            <div class="sidebar" id="leftColumn">
+                <div class="dropdown theme-dark_mobile" data-role="dropdown" id="toc-dropdown">
+                    <ul role="listbox" id="toc-listbox" class="dropdown--list dropdown--list_toc-list"
+                        data-role="dropdown-listbox">
+                        <div class="dropdown--header">
+                            <span>
+                                    android
+                            </span>
+                            <button class="button" data-role="dropdown-toggle" aria-label="Close table of contents">
+                                <i class="ui-kit-icon ui-kit-icon_cross"></i>
+                            </button>
+                        </div>
+                        <div class="sidebar--inner" id="sideMenu"></div>
+                    </ul>
+                    <div class="dropdown--overlay"></div>
+                </div>
+            </div>
+            <div id="main">
+<div class="main-content" data-page-type="package" id="content" pageIds="android::com.wire.crypto////PointingToDeclaration//-1521573681">
+  <div class="breadcrumbs"><a href="../../index.html">android</a><span class="delimiter">/</span><span class="current">com.wire.crypto</span></div>
+  <div class="cover ">
+    <h1 class="cover"><span><span>Package-level</span></span> <span><span>declarations</span></span></h1>
+  </div>
+  <div class="tabbedcontent">
+    <div class="tabs-section" tabs-section="tabs-section"><button class="section-tab" data-active="" data-togglable="TYPE">Types</button><button class="section-tab" data-togglable="FUNCTION,EXTENSION_FUNCTION">Functions</button></div>
+    <div class="tabs-section-body">
+      <div data-togglable="TYPE">
+        <h2 class="">Types</h2>
+        <div class="table"><a data-name="471548698%2FClasslikes%2F-1521573681" anchor-label="AcmeChallenge" id="471548698%2FClasslikes%2F-1521573681" data-filterable-set=":android:dokkaHtml/release"></a>
+          <div class="table-row" data-filterable-current=":android:dokkaHtml/release" data-filterable-set=":android:dokkaHtml/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-acme-challenge/index.html"><span>Acme</span><wbr></wbr><span><span>Challenge</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="471548698%2FClasslikes%2F-1521573681"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":android:dokkaHtml/release"><div class="symbol monospace"><span class="token keyword">data </span><span class="token keyword">class </span><a href="-acme-challenge/index.html">AcmeChallenge</a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">delegate<span class="token operator">: </span><span data-unresolved-link="/&amp;lt;Error class: unknown class&amp;gt;///PointingToDeclaration/">&lt;Error class: unknown class&gt;</span></span></span><span class="token punctuation">)</span></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="1103962192%2FClasslikes%2F-1521573681" anchor-label="AcmeDirectory" id="1103962192%2FClasslikes%2F-1521573681" data-filterable-set=":android:dokkaHtml/release"></a>
+          <div class="table-row" data-filterable-current=":android:dokkaHtml/release" data-filterable-set=":android:dokkaHtml/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-acme-directory/index.html"><span>Acme</span><wbr></wbr><span><span>Directory</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1103962192%2FClasslikes%2F-1521573681"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":android:dokkaHtml/release"><div class="symbol monospace"><span class="token keyword">data </span><span class="token keyword">class </span><a href="-acme-directory/index.html">AcmeDirectory</a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">delegate<span class="token operator">: </span><span data-unresolved-link="/&amp;lt;Error class: unknown class&amp;gt;///PointingToDeclaration/">&lt;Error class: unknown class&gt;</span></span></span><span class="token punctuation">)</span></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-1081514795%2FClasslikes%2F-1521573681" anchor-label="AvsSecret" id="-1081514795%2FClasslikes%2F-1521573681" data-filterable-set=":android:dokkaHtml/release"></a>
+          <div class="table-row" data-filterable-current=":android:dokkaHtml/release" data-filterable-set=":android:dokkaHtml/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-avs-secret/index.html"><span>Avs</span><wbr></wbr><span><span>Secret</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1081514795%2FClasslikes%2F-1521573681"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":android:dokkaHtml/release"><div class="symbol monospace"><div class="block"><div class="block"><span class="token annotation builtin">@</span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin.jvm/-jvm-inline/index.html"><span class="token annotation builtin">JvmInline</span></a></div></div><span class="token keyword">value </span><span class="token keyword">class </span><a href="-avs-secret/index.html">AvsSecret</a><span class="token punctuation">(</span><span class="parameters "><span class="parameter "><span class="token keyword">val </span>value<span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-byte-array/index.html">ByteArray</a></span></span><span class="token punctuation">)</span> : <a href="-uniffi/index.html">Uniffi</a></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-706969435%2FClasslikes%2F-1521573681" anchor-label="BufferedDecryptedMessage" id="-706969435%2FClasslikes%2F-1521573681" data-filterable-set=":android:dokkaHtml/release"></a>
+          <div class="table-row" data-filterable-current=":android:dokkaHtml/release" data-filterable-set=":android:dokkaHtml/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-buffered-decrypted-message/index.html"><span>Buffered</span><wbr></wbr><span>Decrypted</span><wbr></wbr><span><span>Message</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-706969435%2FClasslikes%2F-1521573681"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":android:dokkaHtml/release"><div class="symbol monospace"><span class="token keyword">data </span><span class="token keyword">class </span><a href="-buffered-decrypted-message/index.html">BufferedDecryptedMessage</a><span class="token punctuation">(</span><span class="parameters "><span class="parameter "><span class="token keyword">val </span>message<span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-byte-array/index.html">ByteArray</a><span class="token operator">?</span><span class="token punctuation">, </span></span><span class="parameter "><span class="token keyword">val </span>proposals<span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin.collections/-set/index.html">Set</a><span class="token operator">&lt;</span><a href="-proposal-bundle/index.html">ProposalBundle</a><span class="token operator">&gt;</span><span class="token punctuation">, </span></span><span class="parameter "><span class="token keyword">val </span>isActive<span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-boolean/index.html">Boolean</a><span class="token punctuation">, </span></span><span class="parameter "><span class="token keyword">val </span>commitDelay<span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-long/index.html">Long</a><span class="token operator">?</span><span class="token punctuation">, </span></span><span class="parameter "><span class="token keyword">val </span>senderClientId<span class="token operator">: </span><a href="-client-id/index.html">ClientId</a><span class="token operator">?</span><span class="token punctuation">, </span></span><span class="parameter "><span class="token keyword">val </span>hasEpochChanged<span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-boolean/index.html">Boolean</a><span class="token punctuation">, </span></span><span class="parameter "><span class="token keyword">val </span>identity<span class="token operator">: </span><a href="-wire-identity/index.html">WireIdentity</a><span class="token punctuation">, </span></span><span class="parameter "><span class="token keyword">val </span>crlNewDistributionPoints<span class="token operator">: </span><a href="-crl-distribution-points/index.html">CrlDistributionPoints</a><span class="token operator">?</span></span></span><span class="token punctuation">)</span></div><div class="brief "><p class="paragraph">Type safe recursion of <a href="-decrypted-message/index.html">DecryptedMessage</a></p></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="1218240662%2FClasslikes%2F-1521573681" anchor-label="Ciphersuite" id="1218240662%2FClasslikes%2F-1521573681" data-filterable-set=":android:dokkaHtml/release"></a>
+          <div class="table-row" data-filterable-current=":android:dokkaHtml/release" data-filterable-set=":android:dokkaHtml/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-ciphersuite/index.html"><span><span>Ciphersuite</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1218240662%2FClasslikes%2F-1521573681"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":android:dokkaHtml/release"><div class="symbol monospace"><span class="token keyword">enum </span><a href="-ciphersuite/index.html">Ciphersuite</a> : <a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-enum/index.html">Enum</a><span class="token operator">&lt;</span><a href="-ciphersuite/index.html">Ciphersuite</a><span class="token operator">&gt; </span></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-970363047%2FClasslikes%2F-1521573681" anchor-label="Ciphersuites" id="-970363047%2FClasslikes%2F-1521573681" data-filterable-set=":android:dokkaHtml/release"></a>
+          <div class="table-row" data-filterable-current=":android:dokkaHtml/release" data-filterable-set=":android:dokkaHtml/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-ciphersuites/index.html"><span><span>Ciphersuites</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-970363047%2FClasslikes%2F-1521573681"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":android:dokkaHtml/release"><div class="symbol monospace"><div class="block"><div class="block"><span class="token annotation builtin">@</span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin.jvm/-jvm-inline/index.html"><span class="token annotation builtin">JvmInline</span></a></div></div><span class="token keyword">value </span><span class="token keyword">class </span><a href="-ciphersuites/index.html">Ciphersuites</a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">value<span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin.collections/-set/index.html">Set</a><span class="token operator">&lt;</span><a href="-ciphersuite/index.html">Ciphersuite</a><span class="token operator">&gt;</span></span></span><span class="token punctuation">)</span></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-76629415%2FClasslikes%2F-1521573681" anchor-label="ClientId" id="-76629415%2FClasslikes%2F-1521573681" data-filterable-set=":android:dokkaHtml/release"></a>
+          <div class="table-row" data-filterable-current=":android:dokkaHtml/release" data-filterable-set=":android:dokkaHtml/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-client-id/index.html"><span>Client</span><wbr></wbr><span><span>Id</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-76629415%2FClasslikes%2F-1521573681"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":android:dokkaHtml/release"><div class="symbol monospace"><div class="block"><div class="block"><span class="token annotation builtin">@</span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin.jvm/-jvm-inline/index.html"><span class="token annotation builtin">JvmInline</span></a></div></div><span class="token keyword">value </span><span class="token keyword">class </span><a href="-client-id/index.html">ClientId</a><span class="token punctuation">(</span><span class="parameters "><span class="parameter "><span class="token keyword">val </span>value<span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-string/index.html">String</a></span></span><span class="token punctuation">)</span> : <a href="-ffi-type/index.html">FfiType</a><span class="token operator">&lt;</span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-string/index.html">String</a><span class="token punctuation">, </span><span data-unresolved-link="/&amp;lt;Error class: unknown class&amp;gt;///PointingToDeclaration/">&lt;Error class: unknown class&gt;</span><span class="token operator">&gt; </span></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-1128375194%2FClasslikes%2F-1521573681" anchor-label="CommitBundle" id="-1128375194%2FClasslikes%2F-1521573681" data-filterable-set=":android:dokkaHtml/release"></a>
+          <div class="table-row" data-filterable-current=":android:dokkaHtml/release" data-filterable-set=":android:dokkaHtml/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-commit-bundle/index.html"><span>Commit</span><wbr></wbr><span><span>Bundle</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1128375194%2FClasslikes%2F-1521573681"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":android:dokkaHtml/release"><div class="symbol monospace"><span class="token keyword">data </span><span class="token keyword">class </span><a href="-commit-bundle/index.html">CommitBundle</a><span class="token punctuation">(</span><span class="parameters "><span class="parameter "><span class="token keyword">val </span>commit<span class="token operator">: </span><a href="-mls-message/index.html">MlsMessage</a><span class="token punctuation">, </span></span><span class="parameter "><span class="token keyword">val </span>welcome<span class="token operator">: </span><a href="-welcome/index.html">Welcome</a><span class="token operator">?</span><span class="token punctuation">, </span></span><span class="parameter "><span class="token keyword">val </span>groupInfoBundle<span class="token operator">: </span><a href="-group-info-bundle/index.html">GroupInfoBundle</a><span class="token punctuation">, </span></span><span class="parameter "><span class="token keyword">val </span>crlNewDistributionPoints<span class="token operator">: </span><a href="-crl-distribution-points/index.html">CrlDistributionPoints</a><span class="token operator">?</span></span></span><span class="token punctuation">)</span></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="438702367%2FClasslikes%2F-1521573681" anchor-label="CoreCrypto" id="438702367%2FClasslikes%2F-1521573681" data-filterable-set=":android:dokkaHtml/release"></a>
+          <div class="table-row" data-filterable-current=":android:dokkaHtml/release" data-filterable-set=":android:dokkaHtml/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-core-crypto/index.html"><span>Core</span><wbr></wbr><span><span>Crypto</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="438702367%2FClasslikes%2F-1521573681"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":android:dokkaHtml/release"><div class="symbol monospace"><span class="token keyword">class </span><a href="-core-crypto/index.html">CoreCrypto</a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">cc<span class="token operator">: </span><span data-unresolved-link="/&amp;lt;Error class: unknown class&amp;gt;///PointingToDeclaration/">&lt;Error class: unknown class&gt;</span></span></span><span class="token punctuation">)</span></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="1042765012%2FClasslikes%2F-1521573681" anchor-label="CoreCryptoContext" id="1042765012%2FClasslikes%2F-1521573681" data-filterable-set=":android:dokkaHtml/release"></a>
+          <div class="table-row" data-filterable-current=":android:dokkaHtml/release" data-filterable-set=":android:dokkaHtml/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-core-crypto-context/index.html"><span>Core</span><wbr></wbr><span>Crypto</span><wbr></wbr><span><span>Context</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1042765012%2FClasslikes%2F-1521573681"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":android:dokkaHtml/release"><div class="symbol monospace"><span class="token keyword">class </span><a href="-core-crypto-context/index.html">CoreCryptoContext</a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">cc<span class="token operator">: </span><span data-unresolved-link="/&amp;lt;Error class: unknown class&amp;gt;///PointingToDeclaration/">&lt;Error class: unknown class&gt;</span></span></span><span class="token punctuation">)</span></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-1531356748%2FClasslikes%2F-1521573681" anchor-label="CoreCryptoException" id="-1531356748%2FClasslikes%2F-1521573681" data-filterable-set=":android:dokkaHtml/release"></a>
+          <div class="table-row" data-filterable-current=":android:dokkaHtml/release" data-filterable-set=":android:dokkaHtml/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-core-crypto-exception/index.html"><span>Core</span><wbr></wbr><span>Crypto</span><wbr></wbr><span><span>Exception</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1531356748%2FClasslikes%2F-1521573681"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":android:dokkaHtml/release"><div class="symbol monospace"><span class="token keyword">sealed </span><span class="token keyword">class </span><a href="-core-crypto-exception/index.html">CoreCryptoException</a> : <a href="https://developer.android.com/reference/kotlin/java/lang/Exception.html">Exception</a></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-1443296529%2FClasslikes%2F-1521573681" anchor-label="CoreCryptoLogger" id="-1443296529%2FClasslikes%2F-1521573681" data-filterable-set=":android:dokkaHtml/release"></a>
+          <div class="table-row" data-filterable-current=":android:dokkaHtml/release" data-filterable-set=":android:dokkaHtml/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-core-crypto-logger/index.html"><span>Core</span><wbr></wbr><span>Crypto</span><wbr></wbr><span><span>Logger</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1443296529%2FClasslikes%2F-1521573681"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":android:dokkaHtml/release"><div class="symbol monospace"><span class="token keyword">interface </span><a href="-core-crypto-logger/index.html">CoreCryptoLogger</a></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-153648033%2FClasslikes%2F-1521573681" anchor-label="CoreCryptoLogLevel" id="-153648033%2FClasslikes%2F-1521573681" data-filterable-set=":android:dokkaHtml/release"></a>
+          <div class="table-row" data-filterable-current=":android:dokkaHtml/release" data-filterable-set=":android:dokkaHtml/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-core-crypto-log-level/index.html"><span>Core</span><wbr></wbr><span>Crypto</span><wbr></wbr><span>Log</span><wbr></wbr><span><span>Level</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-153648033%2FClasslikes%2F-1521573681"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":android:dokkaHtml/release"><div class="symbol monospace"><span class="token keyword">enum </span><a href="-core-crypto-log-level/index.html">CoreCryptoLogLevel</a> : <a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-enum/index.html">Enum</a><span class="token operator">&lt;</span><a href="-core-crypto-log-level/index.html">CoreCryptoLogLevel</a><span class="token operator">&gt; </span></div><div class="brief "><p class="paragraph">Defines the log level for a CoreCrypto</p></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-1531741106%2FClasslikes%2F-1521573681" anchor-label="CredentialType" id="-1531741106%2FClasslikes%2F-1521573681" data-filterable-set=":android:dokkaHtml/release"></a>
+          <div class="table-row" data-filterable-current=":android:dokkaHtml/release" data-filterable-set=":android:dokkaHtml/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-credential-type/index.html"><span>Credential</span><wbr></wbr><span><span>Type</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1531741106%2FClasslikes%2F-1521573681"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":android:dokkaHtml/release"><div class="symbol monospace"><span class="token keyword">enum </span><a href="-credential-type/index.html">CredentialType</a> : <a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-enum/index.html">Enum</a><span class="token operator">&lt;</span><a href="-credential-type/index.html">CredentialType</a><span class="token operator">&gt; </span></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-1778495361%2FClasslikes%2F-1521573681" anchor-label="CrlDistributionPoints" id="-1778495361%2FClasslikes%2F-1521573681" data-filterable-set=":android:dokkaHtml/release"></a>
+          <div class="table-row" data-filterable-current=":android:dokkaHtml/release" data-filterable-set=":android:dokkaHtml/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-crl-distribution-points/index.html"><span>Crl</span><wbr></wbr><span>Distribution</span><wbr></wbr><span><span>Points</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1778495361%2FClasslikes%2F-1521573681"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":android:dokkaHtml/release"><div class="symbol monospace"><div class="block"><div class="block"><span class="token annotation builtin">@</span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin.jvm/-jvm-inline/index.html"><span class="token annotation builtin">JvmInline</span></a></div></div><span class="token keyword">value </span><span class="token keyword">class </span><a href="-crl-distribution-points/index.html">CrlDistributionPoints</a><span class="token punctuation">(</span><span class="parameters "><span class="parameter "><span class="token keyword">val </span>value<span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin.collections/-set/index.html">Set</a><span class="token operator">&lt;</span><a href="https://developer.android.com/reference/kotlin/java/net/URI.html">URI</a><span class="token operator">&gt;</span></span></span><span class="token punctuation">)</span> : <a href="-ffi-type/index.html">FfiType</a><span class="token operator">&lt;</span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin.collections/-set/index.html">Set</a><span class="token operator">&lt;</span><a href="https://developer.android.com/reference/kotlin/java/net/URI.html">URI</a><span class="token operator">&gt;</span><span class="token punctuation">, </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin.collections/-list/index.html">List</a><span class="token operator">&lt;</span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-string/index.html">String</a><span class="token operator">&gt;</span><span class="token operator">&gt; </span></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-713070515%2FClasslikes%2F-1521573681" anchor-label="CRLRegistration" id="-713070515%2FClasslikes%2F-1521573681" data-filterable-set=":android:dokkaHtml/release"></a>
+          <div class="table-row" data-filterable-current=":android:dokkaHtml/release" data-filterable-set=":android:dokkaHtml/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-c-r-l-registration/index.html"><span><span>CRLRegistration</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-713070515%2FClasslikes%2F-1521573681"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":android:dokkaHtml/release"><div class="symbol monospace"><span class="token keyword">data </span><span class="token keyword">class </span><a href="-c-r-l-registration/index.html">CRLRegistration</a><span class="token punctuation">(</span><span class="parameters "><span class="parameter "><span class="token keyword">val </span>dirty<span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-boolean/index.html">Boolean</a><span class="token punctuation">, </span></span><span class="parameter "><span class="token keyword">val </span>expiration<span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-long/index.html">Long</a><span class="token operator">?</span></span></span><span class="token punctuation">)</span></div><div class="brief "><p class="paragraph">Supporting struct for CRL registration result</p></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="959972446%2FClasslikes%2F-1521573681" anchor-label="CustomConfiguration" id="959972446%2FClasslikes%2F-1521573681" data-filterable-set=":android:dokkaHtml/release"></a>
+          <div class="table-row" data-filterable-current=":android:dokkaHtml/release" data-filterable-set=":android:dokkaHtml/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-custom-configuration/index.html"><span>Custom</span><wbr></wbr><span><span>Configuration</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="959972446%2FClasslikes%2F-1521573681"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":android:dokkaHtml/release"><div class="symbol monospace"><span class="token keyword">data </span><span class="token keyword">class </span><a href="-custom-configuration/index.html">CustomConfiguration</a><span class="token punctuation">(</span><span class="parameters "><span class="parameter "><span class="token keyword">var </span>keyRotationSpan<span class="token operator">: </span><a href="https://developer.android.com/reference/kotlin/java/time/Duration.html">Duration</a><span class="token operator">?</span><span class="token punctuation">, </span></span><span class="parameter "><span class="token keyword">var </span>wirePolicy<span class="token operator">: </span><a href="-mls-wire-policy/index.html">MlsWirePolicy</a><span class="token operator">?</span></span></span><span class="token punctuation">)</span></div><div class="brief "><p class="paragraph">Configuration of MLS group</p></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="1390131396%2FClasslikes%2F-1521573681" anchor-label="DecryptedMessage" id="1390131396%2FClasslikes%2F-1521573681" data-filterable-set=":android:dokkaHtml/release"></a>
+          <div class="table-row" data-filterable-current=":android:dokkaHtml/release" data-filterable-set=":android:dokkaHtml/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-decrypted-message/index.html"><span>Decrypted</span><wbr></wbr><span><span>Message</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1390131396%2FClasslikes%2F-1521573681"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":android:dokkaHtml/release"><div class="symbol monospace"><span class="token keyword">data </span><span class="token keyword">class </span><a href="-decrypted-message/index.html">DecryptedMessage</a><span class="token punctuation">(</span><span class="parameters "><span class="parameter "><span class="token keyword">val </span>message<span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-byte-array/index.html">ByteArray</a><span class="token operator">?</span><span class="token punctuation">, </span></span><span class="parameter "><span class="token keyword">val </span>proposals<span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin.collections/-set/index.html">Set</a><span class="token operator">&lt;</span><a href="-proposal-bundle/index.html">ProposalBundle</a><span class="token operator">&gt;</span><span class="token punctuation">, </span></span><span class="parameter "><span class="token keyword">val </span>isActive<span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-boolean/index.html">Boolean</a><span class="token punctuation">, </span></span><span class="parameter "><span class="token keyword">val </span>commitDelay<span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-long/index.html">Long</a><span class="token operator">?</span><span class="token punctuation">, </span></span><span class="parameter "><span class="token keyword">val </span>senderClientId<span class="token operator">: </span><a href="-client-id/index.html">ClientId</a><span class="token operator">?</span><span class="token punctuation">, </span></span><span class="parameter "><span class="token keyword">val </span>hasEpochChanged<span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-boolean/index.html">Boolean</a><span class="token punctuation">, </span></span><span class="parameter "><span class="token keyword">val </span>identity<span class="token operator">: </span><a href="-wire-identity/index.html">WireIdentity</a><span class="token punctuation">, </span></span><span class="parameter "><span class="token keyword">val </span>bufferedMessages<span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin.collections/-list/index.html">List</a><span class="token operator">&lt;</span><a href="-buffered-decrypted-message/index.html">BufferedDecryptedMessage</a><span class="token operator">&gt;</span><span class="token operator">?</span><span class="token punctuation">, </span></span><span class="parameter "><span class="token keyword">val </span>crlNewDistributionPoints<span class="token operator">: </span><a href="-crl-distribution-points/index.html">CrlDistributionPoints</a><span class="token operator">?</span></span></span><span class="token punctuation">)</span></div><div class="brief "><p class="paragraph">Represents the potential items a consumer might require after passing us an encrypted message we have decrypted for him</p></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="1974608375%2FClasslikes%2F-1521573681" anchor-label="DeviceStatus" id="1974608375%2FClasslikes%2F-1521573681" data-filterable-set=":android:dokkaHtml/release"></a>
+          <div class="table-row" data-filterable-current=":android:dokkaHtml/release" data-filterable-set=":android:dokkaHtml/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-device-status/index.html"><span>Device</span><wbr></wbr><span><span>Status</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1974608375%2FClasslikes%2F-1521573681"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":android:dokkaHtml/release"><div class="symbol monospace"><span class="token keyword">enum </span><a href="-device-status/index.html">DeviceStatus</a> : <a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-enum/index.html">Enum</a><span class="token operator">&lt;</span><a href="-device-status/index.html">DeviceStatus</a><span class="token operator">&gt; </span></div><div class="brief "><p class="paragraph">Indicates the standalone status of a device Credential in a MLS group at a moment T. This does not represent the states where a device is not using MLS or is not using end-to-end identity</p></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="787844070%2FClasslikes%2F-1521573681" anchor-label="E2eiConversationState" id="787844070%2FClasslikes%2F-1521573681" data-filterable-set=":android:dokkaHtml/release"></a>
+          <div class="table-row" data-filterable-current=":android:dokkaHtml/release" data-filterable-set=":android:dokkaHtml/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-e2ei-conversation-state/index.html"><span>E2ei</span><wbr></wbr><span>Conversation</span><wbr></wbr><span><span>State</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="787844070%2FClasslikes%2F-1521573681"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":android:dokkaHtml/release"><div class="symbol monospace"><span class="token keyword">enum </span><a href="-e2ei-conversation-state/index.html">E2eiConversationState</a> : <a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-enum/index.html">Enum</a><span class="token operator">&lt;</span><a href="-e2ei-conversation-state/index.html">E2eiConversationState</a><span class="token operator">&gt; </span></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="1759953180%2FClasslikes%2F-1521573681" anchor-label="E2eiDumpedPkiEnv" id="1759953180%2FClasslikes%2F-1521573681" data-filterable-set=":android:dokkaHtml/release"></a>
+          <div class="table-row" data-filterable-current=":android:dokkaHtml/release" data-filterable-set=":android:dokkaHtml/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-e2ei-dumped-pki-env/index.html"><span>E2ei</span><wbr></wbr><span>Dumped</span><wbr></wbr><span>Pki</span><wbr></wbr><span><span>Env</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1759953180%2FClasslikes%2F-1521573681"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":android:dokkaHtml/release"><div class="symbol monospace"><span class="token keyword">data </span><span class="token keyword">class </span><a href="-e2ei-dumped-pki-env/index.html">E2eiDumpedPkiEnv</a><span class="token punctuation">(</span><span class="parameters "><span class="parameter "><span class="token keyword">var </span>rootCa<span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-string/index.html">String</a><span class="token punctuation">, </span></span><span class="parameter "><span class="token keyword">var </span>intermediates<span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin.collections/-list/index.html">List</a><span class="token operator">&lt;</span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-string/index.html">String</a><span class="token operator">&gt;</span><span class="token punctuation">, </span></span><span class="parameter "><span class="token keyword">var </span>crls<span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin.collections/-list/index.html">List</a><span class="token operator">&lt;</span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-string/index.html">String</a><span class="token operator">&gt;</span></span></span><span class="token punctuation">)</span></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="1280705866%2FClasslikes%2F-1521573681" anchor-label="E2EIEnrollment" id="1280705866%2FClasslikes%2F-1521573681" data-filterable-set=":android:dokkaHtml/release"></a>
+          <div class="table-row" data-filterable-current=":android:dokkaHtml/release" data-filterable-set=":android:dokkaHtml/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-e2-e-i-enrollment/index.html"><span><span>E2EIEnrollment</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1280705866%2FClasslikes%2F-1521573681"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":android:dokkaHtml/release"><div class="symbol monospace"><span class="token keyword">class </span><a href="-e2-e-i-enrollment/index.html">E2EIEnrollment</a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">delegate<span class="token operator">: </span><span data-unresolved-link="/&amp;lt;Error class: unknown class&amp;gt;///PointingToDeclaration/">&lt;Error class: unknown class&gt;</span></span></span><span class="token punctuation">)</span></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="1408068371%2FClasslikes%2F-1521573681" anchor-label="EnrollmentHandle" id="1408068371%2FClasslikes%2F-1521573681" data-filterable-set=":android:dokkaHtml/release"></a>
+          <div class="table-row" data-filterable-current=":android:dokkaHtml/release" data-filterable-set=":android:dokkaHtml/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-enrollment-handle/index.html"><span>Enrollment</span><wbr></wbr><span><span>Handle</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1408068371%2FClasslikes%2F-1521573681"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":android:dokkaHtml/release"><div class="symbol monospace"><span class="token keyword">typealias </span><a href="-enrollment-handle/index.html">EnrollmentHandle</a><span class="token operator"> = </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-byte-array/index.html">ByteArray</a></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-1458562492%2FClasslikes%2F-1521573681" anchor-label="ExternallyGeneratedHandle" id="-1458562492%2FClasslikes%2F-1521573681" data-filterable-set=":android:dokkaHtml/release"></a>
+          <div class="table-row" data-filterable-current=":android:dokkaHtml/release" data-filterable-set=":android:dokkaHtml/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-externally-generated-handle/index.html"><span>Externally</span><wbr></wbr><span>Generated</span><wbr></wbr><span><span>Handle</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1458562492%2FClasslikes%2F-1521573681"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":android:dokkaHtml/release"><div class="symbol monospace"><div class="block"><div class="block"><span class="token annotation builtin">@</span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin.jvm/-jvm-inline/index.html"><span class="token annotation builtin">JvmInline</span></a></div></div><span class="token keyword">value </span><span class="token keyword">class </span><a href="-externally-generated-handle/index.html">ExternallyGeneratedHandle</a><span class="token punctuation">(</span><span class="parameters "><span class="parameter "><span class="token keyword">val </span>value<span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin.collections/-list/index.html">List</a><span class="token operator">&lt;</span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-byte-array/index.html">ByteArray</a><span class="token operator">&gt;</span></span></span><span class="token punctuation">)</span> : <a href="-ffi-type/index.html">FfiType</a><span class="token operator">&lt;</span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin.collections/-list/index.html">List</a><span class="token operator">&lt;</span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-byte-array/index.html">ByteArray</a><span class="token operator">&gt;</span><span class="token punctuation">, </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin.collections/-list/index.html">List</a><span class="token operator">&lt;</span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-byte-array/index.html">ByteArray</a><span class="token operator">&gt;</span><span class="token operator">&gt; </span></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="602709700%2FClasslikes%2F-1521573681" anchor-label="ExternalSenderKey" id="602709700%2FClasslikes%2F-1521573681" data-filterable-set=":android:dokkaHtml/release"></a>
+          <div class="table-row" data-filterable-current=":android:dokkaHtml/release" data-filterable-set=":android:dokkaHtml/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-external-sender-key/index.html"><span>External</span><wbr></wbr><span>Sender</span><wbr></wbr><span><span>Key</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="602709700%2FClasslikes%2F-1521573681"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":android:dokkaHtml/release"><div class="symbol monospace"><div class="block"><div class="block"><span class="token annotation builtin">@</span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin.jvm/-jvm-inline/index.html"><span class="token annotation builtin">JvmInline</span></a></div></div><span class="token keyword">value </span><span class="token keyword">class </span><a href="-external-sender-key/index.html">ExternalSenderKey</a><span class="token punctuation">(</span><span class="parameters "><span class="parameter "><span class="token keyword">val </span>value<span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-byte-array/index.html">ByteArray</a></span></span><span class="token punctuation">)</span> : <a href="-uniffi/index.html">Uniffi</a></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-1021263968%2FClasslikes%2F-1521573681" anchor-label="FfiType" id="-1021263968%2FClasslikes%2F-1521573681" data-filterable-set=":android:dokkaHtml/release"></a>
+          <div class="table-row" data-filterable-current=":android:dokkaHtml/release" data-filterable-set=":android:dokkaHtml/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-ffi-type/index.html"><span>Ffi</span><wbr></wbr><span><span>Type</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1021263968%2FClasslikes%2F-1521573681"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":android:dokkaHtml/release"><div class="symbol monospace"><span class="token keyword">interface </span><a href="-ffi-type/index.html">FfiType</a><span class="token operator">&lt;</span><a href="-ffi-type/index.html">K</a><span class="token punctuation">, </span><a href="-ffi-type/index.html">R</a><span class="token operator">&gt;</span></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="523183382%2FClasslikes%2F-1521573681" anchor-label="GroupInfo" id="523183382%2FClasslikes%2F-1521573681" data-filterable-set=":android:dokkaHtml/release"></a>
+          <div class="table-row" data-filterable-current=":android:dokkaHtml/release" data-filterable-set=":android:dokkaHtml/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-group-info/index.html"><span>Group</span><wbr></wbr><span><span>Info</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="523183382%2FClasslikes%2F-1521573681"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":android:dokkaHtml/release"><div class="symbol monospace"><div class="block"><div class="block"><span class="token annotation builtin">@</span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin.jvm/-jvm-inline/index.html"><span class="token annotation builtin">JvmInline</span></a></div></div><span class="token keyword">value </span><span class="token keyword">class </span><a href="-group-info/index.html">GroupInfo</a><span class="token punctuation">(</span><span class="parameters "><span class="parameter "><span class="token keyword">val </span>value<span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-byte-array/index.html">ByteArray</a></span></span><span class="token punctuation">)</span> : <a href="-uniffi/index.html">Uniffi</a></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="531210996%2FClasslikes%2F-1521573681" anchor-label="GroupInfoBundle" id="531210996%2FClasslikes%2F-1521573681" data-filterable-set=":android:dokkaHtml/release"></a>
+          <div class="table-row" data-filterable-current=":android:dokkaHtml/release" data-filterable-set=":android:dokkaHtml/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-group-info-bundle/index.html"><span>Group</span><wbr></wbr><span>Info</span><wbr></wbr><span><span>Bundle</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="531210996%2FClasslikes%2F-1521573681"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":android:dokkaHtml/release"><div class="symbol monospace"><span class="token keyword">data </span><span class="token keyword">class </span><a href="-group-info-bundle/index.html">GroupInfoBundle</a><span class="token punctuation">(</span><span class="parameters "><span class="parameter "><span class="token keyword">val </span>encryptionType<span class="token operator">: </span><a href="-mls-group-info-encryption-type/index.html">MlsGroupInfoEncryptionType</a><span class="token punctuation">, </span></span><span class="parameter "><span class="token keyword">val </span>ratchetTreeType<span class="token operator">: </span><a href="-mls-ratchet-tree-type/index.html">MlsRatchetTreeType</a><span class="token punctuation">, </span></span><span class="parameter "><span class="token keyword">val </span>payload<span class="token operator">: </span><a href="-group-info/index.html">GroupInfo</a></span></span><span class="token punctuation">)</span></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="1043197209%2FClasslikes%2F-1521573681" anchor-label="JsonRawData" id="1043197209%2FClasslikes%2F-1521573681" data-filterable-set=":android:dokkaHtml/release"></a>
+          <div class="table-row" data-filterable-current=":android:dokkaHtml/release" data-filterable-set=":android:dokkaHtml/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-json-raw-data/index.html"><span>Json</span><wbr></wbr><span>Raw</span><wbr></wbr><span><span>Data</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1043197209%2FClasslikes%2F-1521573681"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":android:dokkaHtml/release"><div class="symbol monospace"><span class="token keyword">typealias </span><a href="-json-raw-data/index.html">JsonRawData</a><span class="token operator"> = </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-byte-array/index.html">ByteArray</a></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-1776534716%2FClasslikes%2F-1521573681" anchor-label="MlsException" id="-1776534716%2FClasslikes%2F-1521573681" data-filterable-set=":android:dokkaHtml/release"></a>
+          <div class="table-row" data-filterable-current=":android:dokkaHtml/release" data-filterable-set=":android:dokkaHtml/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-mls-exception/index.html"><span>Mls</span><wbr></wbr><span><span>Exception</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1776534716%2FClasslikes%2F-1521573681"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":android:dokkaHtml/release"><div class="symbol monospace"><span class="token keyword">sealed </span><span class="token keyword">class </span><a href="-mls-exception/index.html">MlsException</a> : <a href="https://developer.android.com/reference/kotlin/java/lang/Exception.html">Exception</a></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="184633977%2FClasslikes%2F-1521573681" anchor-label="MLSGroupId" id="184633977%2FClasslikes%2F-1521573681" data-filterable-set=":android:dokkaHtml/release"></a>
+          <div class="table-row" data-filterable-current=":android:dokkaHtml/release" data-filterable-set=":android:dokkaHtml/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-m-l-s-group-id/index.html"><span>MLSGroup</span><wbr></wbr><span><span>Id</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="184633977%2FClasslikes%2F-1521573681"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":android:dokkaHtml/release"><div class="symbol monospace"><div class="block"><div class="block"><span class="token annotation builtin">@</span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin.jvm/-jvm-inline/index.html"><span class="token annotation builtin">JvmInline</span></a></div></div><span class="token keyword">value </span><span class="token keyword">class </span><a href="-m-l-s-group-id/index.html">MLSGroupId</a><span class="token punctuation">(</span><span class="parameters "><span class="parameter "><span class="token keyword">val </span>value<span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-byte-array/index.html">ByteArray</a></span></span><span class="token punctuation">)</span> : <a href="-uniffi/index.html">Uniffi</a></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="395654633%2FClasslikes%2F-1521573681" anchor-label="MlsGroupInfoEncryptionType" id="395654633%2FClasslikes%2F-1521573681" data-filterable-set=":android:dokkaHtml/release"></a>
+          <div class="table-row" data-filterable-current=":android:dokkaHtml/release" data-filterable-set=":android:dokkaHtml/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-mls-group-info-encryption-type/index.html"><span>Mls</span><wbr></wbr><span>Group</span><wbr></wbr><span>Info</span><wbr></wbr><span>Encryption</span><wbr></wbr><span><span>Type</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="395654633%2FClasslikes%2F-1521573681"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":android:dokkaHtml/release"><div class="symbol monospace"><span class="token keyword">enum </span><a href="-mls-group-info-encryption-type/index.html">MlsGroupInfoEncryptionType</a> : <a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-enum/index.html">Enum</a><span class="token operator">&lt;</span><a href="-mls-group-info-encryption-type/index.html">MlsGroupInfoEncryptionType</a><span class="token operator">&gt; </span></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-419559192%2FClasslikes%2F-1521573681" anchor-label="MLSKeyPackage" id="-419559192%2FClasslikes%2F-1521573681" data-filterable-set=":android:dokkaHtml/release"></a>
+          <div class="table-row" data-filterable-current=":android:dokkaHtml/release" data-filterable-set=":android:dokkaHtml/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-m-l-s-key-package/index.html"><span>MLSKey</span><wbr></wbr><span><span>Package</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-419559192%2FClasslikes%2F-1521573681"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":android:dokkaHtml/release"><div class="symbol monospace"><div class="block"><div class="block"><span class="token annotation builtin">@</span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin.jvm/-jvm-inline/index.html"><span class="token annotation builtin">JvmInline</span></a></div></div><span class="token keyword">value </span><span class="token keyword">class </span><a href="-m-l-s-key-package/index.html">MLSKeyPackage</a><span class="token punctuation">(</span><span class="parameters "><span class="parameter "><span class="token keyword">val </span>value<span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-byte-array/index.html">ByteArray</a></span></span><span class="token punctuation">)</span> : <a href="-uniffi/index.html">Uniffi</a></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-843339001%2FClasslikes%2F-1521573681" anchor-label="MLSKeyPackageRef" id="-843339001%2FClasslikes%2F-1521573681" data-filterable-set=":android:dokkaHtml/release"></a>
+          <div class="table-row" data-filterable-current=":android:dokkaHtml/release" data-filterable-set=":android:dokkaHtml/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-m-l-s-key-package-ref/index.html"><span>MLSKey</span><wbr></wbr><span>Package</span><wbr></wbr><span><span>Ref</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-843339001%2FClasslikes%2F-1521573681"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":android:dokkaHtml/release"><div class="symbol monospace"><div class="block"><div class="block"><span class="token annotation builtin">@</span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin.jvm/-jvm-inline/index.html"><span class="token annotation builtin">JvmInline</span></a></div></div><span class="token keyword">value </span><span class="token keyword">class </span><a href="-m-l-s-key-package-ref/index.html">MLSKeyPackageRef</a><span class="token punctuation">(</span><span class="parameters "><span class="parameter "><span class="token keyword">val </span>value<span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-byte-array/index.html">ByteArray</a></span></span><span class="token punctuation">)</span> : <a href="-uniffi/index.html">Uniffi</a></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-663919860%2FClasslikes%2F-1521573681" anchor-label="MlsMessage" id="-663919860%2FClasslikes%2F-1521573681" data-filterable-set=":android:dokkaHtml/release"></a>
+          <div class="table-row" data-filterable-current=":android:dokkaHtml/release" data-filterable-set=":android:dokkaHtml/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-mls-message/index.html"><span>Mls</span><wbr></wbr><span><span>Message</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-663919860%2FClasslikes%2F-1521573681"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":android:dokkaHtml/release"><div class="symbol monospace"><div class="block"><div class="block"><span class="token annotation builtin">@</span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin.jvm/-jvm-inline/index.html"><span class="token annotation builtin">JvmInline</span></a></div></div><span class="token keyword">value </span><span class="token keyword">class </span><a href="-mls-message/index.html">MlsMessage</a><span class="token punctuation">(</span><span class="parameters "><span class="parameter "><span class="token keyword">val </span>value<span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-byte-array/index.html">ByteArray</a></span></span><span class="token punctuation">)</span> : <a href="-uniffi/index.html">Uniffi</a></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-1143870%2FClasslikes%2F-1521573681" anchor-label="MlsRatchetTreeType" id="-1143870%2FClasslikes%2F-1521573681" data-filterable-set=":android:dokkaHtml/release"></a>
+          <div class="table-row" data-filterable-current=":android:dokkaHtml/release" data-filterable-set=":android:dokkaHtml/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-mls-ratchet-tree-type/index.html"><span>Mls</span><wbr></wbr><span>Ratchet</span><wbr></wbr><span>Tree</span><wbr></wbr><span><span>Type</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1143870%2FClasslikes%2F-1521573681"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":android:dokkaHtml/release"><div class="symbol monospace"><span class="token keyword">enum </span><a href="-mls-ratchet-tree-type/index.html">MlsRatchetTreeType</a> : <a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-enum/index.html">Enum</a><span class="token operator">&lt;</span><a href="-mls-ratchet-tree-type/index.html">MlsRatchetTreeType</a><span class="token operator">&gt; </span></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-1670341206%2FClasslikes%2F-1521573681" anchor-label="MlsTransport" id="-1670341206%2FClasslikes%2F-1521573681" data-filterable-set=":android:dokkaHtml/release"></a>
+          <div class="table-row" data-filterable-current=":android:dokkaHtml/release" data-filterable-set=":android:dokkaHtml/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-mls-transport/index.html"><span>Mls</span><wbr></wbr><span><span>Transport</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1670341206%2FClasslikes%2F-1521573681"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":android:dokkaHtml/release"><div class="symbol monospace"><span class="token keyword">interface </span><a href="-mls-transport/index.html">MlsTransport</a></div><div class="brief "><p class="paragraph">You must implement this interface and pass the implementing object to <a href="-core-crypto/provide-transport.html">CoreCrypto.provideTransport</a>. CoreCrypto uses it to communicate with the delivery service.</p></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="1567628137%2FClasslikes%2F-1521573681" anchor-label="MlsTransportResponse" id="1567628137%2FClasslikes%2F-1521573681" data-filterable-set=":android:dokkaHtml/release"></a>
+          <div class="table-row" data-filterable-current=":android:dokkaHtml/release" data-filterable-set=":android:dokkaHtml/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-mls-transport-response/index.html"><span>Mls</span><wbr></wbr><span>Transport</span><wbr></wbr><span><span>Response</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1567628137%2FClasslikes%2F-1521573681"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":android:dokkaHtml/release"><div class="symbol monospace"><span class="token keyword">sealed </span><span class="token keyword">class </span><a href="-mls-transport-response/index.html">MlsTransportResponse</a></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-104348232%2FClasslikes%2F-1521573681" anchor-label="MlsWirePolicy" id="-104348232%2FClasslikes%2F-1521573681" data-filterable-set=":android:dokkaHtml/release"></a>
+          <div class="table-row" data-filterable-current=":android:dokkaHtml/release" data-filterable-set=":android:dokkaHtml/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-mls-wire-policy/index.html"><span>Mls</span><wbr></wbr><span>Wire</span><wbr></wbr><span><span>Policy</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-104348232%2FClasslikes%2F-1521573681"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":android:dokkaHtml/release"><div class="symbol monospace"><span class="token keyword">enum </span><a href="-mls-wire-policy/index.html">MlsWirePolicy</a> : <a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-enum/index.html">Enum</a><span class="token operator">&lt;</span><a href="-mls-wire-policy/index.html">MlsWirePolicy</a><span class="token operator">&gt; </span></div><div class="brief "><p class="paragraph">Encrypting policy in MLS group</p></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="162375911%2FClasslikes%2F-1521573681" anchor-label="NewAcmeAuthz" id="162375911%2FClasslikes%2F-1521573681" data-filterable-set=":android:dokkaHtml/release"></a>
+          <div class="table-row" data-filterable-current=":android:dokkaHtml/release" data-filterable-set=":android:dokkaHtml/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-new-acme-authz/index.html"><span>New</span><wbr></wbr><span>Acme</span><wbr></wbr><span><span>Authz</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="162375911%2FClasslikes%2F-1521573681"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":android:dokkaHtml/release"><div class="symbol monospace"><span class="token keyword">data </span><span class="token keyword">class </span><a href="-new-acme-authz/index.html">NewAcmeAuthz</a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">delegate<span class="token operator">: </span><span data-unresolved-link="/&amp;lt;Error class: unknown class&amp;gt;///PointingToDeclaration/">&lt;Error class: unknown class&gt;</span></span></span><span class="token punctuation">)</span></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-815719189%2FClasslikes%2F-1521573681" anchor-label="NewAcmeOrder" id="-815719189%2FClasslikes%2F-1521573681" data-filterable-set=":android:dokkaHtml/release"></a>
+          <div class="table-row" data-filterable-current=":android:dokkaHtml/release" data-filterable-set=":android:dokkaHtml/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-new-acme-order/index.html"><span>New</span><wbr></wbr><span>Acme</span><wbr></wbr><span><span>Order</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-815719189%2FClasslikes%2F-1521573681"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":android:dokkaHtml/release"><div class="symbol monospace"><span class="token keyword">data </span><span class="token keyword">class </span><a href="-new-acme-order/index.html">NewAcmeOrder</a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">delegate<span class="token operator">: </span><span data-unresolved-link="/&amp;lt;Error class: unknown class&amp;gt;///PointingToDeclaration/">&lt;Error class: unknown class&gt;</span></span></span><span class="token punctuation">)</span></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-1489977393%2FClasslikes%2F-1521573681" anchor-label="PlaintextMessage" id="-1489977393%2FClasslikes%2F-1521573681" data-filterable-set=":android:dokkaHtml/release"></a>
+          <div class="table-row" data-filterable-current=":android:dokkaHtml/release" data-filterable-set=":android:dokkaHtml/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-plaintext-message/index.html"><span>Plaintext</span><wbr></wbr><span><span>Message</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1489977393%2FClasslikes%2F-1521573681"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":android:dokkaHtml/release"><div class="symbol monospace"><div class="block"><div class="block"><span class="token annotation builtin">@</span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin.jvm/-jvm-inline/index.html"><span class="token annotation builtin">JvmInline</span></a></div></div><span class="token keyword">value </span><span class="token keyword">class </span><a href="-plaintext-message/index.html">PlaintextMessage</a><span class="token punctuation">(</span><span class="parameters "><span class="parameter "><span class="token keyword">val </span>value<span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-byte-array/index.html">ByteArray</a></span></span><span class="token punctuation">)</span> : <a href="-uniffi/index.html">Uniffi</a></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="1651558435%2FClasslikes%2F-1521573681" anchor-label="PreKey" id="1651558435%2FClasslikes%2F-1521573681" data-filterable-set=":android:dokkaHtml/release"></a>
+          <div class="table-row" data-filterable-current=":android:dokkaHtml/release" data-filterable-set=":android:dokkaHtml/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-pre-key/index.html"><span>Pre</span><wbr></wbr><span><span>Key</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1651558435%2FClasslikes%2F-1521573681"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":android:dokkaHtml/release"><div class="symbol monospace"><span class="token keyword">data </span><span class="token keyword">class </span><a href="-pre-key/index.html">PreKey</a><span class="token punctuation">(</span><span class="parameters "><span class="parameter "><span class="token keyword">val </span>id<span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-u-short/index.html">UShort</a><span class="token punctuation">, </span></span><span class="parameter "><span class="token keyword">val </span>data<span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-byte-array/index.html">ByteArray</a></span></span><span class="token punctuation">)</span></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-1837223989%2FClasslikes%2F-1521573681" anchor-label="ProposalBundle" id="-1837223989%2FClasslikes%2F-1521573681" data-filterable-set=":android:dokkaHtml/release"></a>
+          <div class="table-row" data-filterable-current=":android:dokkaHtml/release" data-filterable-set=":android:dokkaHtml/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-proposal-bundle/index.html"><span>Proposal</span><wbr></wbr><span><span>Bundle</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1837223989%2FClasslikes%2F-1521573681"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":android:dokkaHtml/release"><div class="symbol monospace"><span class="token keyword">data </span><span class="token keyword">class </span><a href="-proposal-bundle/index.html">ProposalBundle</a><span class="token punctuation">(</span><span class="parameters "><span class="parameter "><span class="token keyword">val </span>proposal<span class="token operator">: </span><a href="-mls-message/index.html">MlsMessage</a><span class="token punctuation">, </span></span><span class="parameter "><span class="token keyword">val </span>proposalRef<span class="token operator">: </span><a href="-proposal-ref/index.html">ProposalRef</a><span class="token punctuation">, </span></span><span class="parameter "><span class="token keyword">val </span>crlNewDistributionPoints<span class="token operator">: </span><a href="-crl-distribution-points/index.html">CrlDistributionPoints</a><span class="token operator">?</span></span></span><span class="token punctuation">)</span></div><div class="brief "><p class="paragraph">Returned when a Proposal is created. Helps roll backing a local proposal</p></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="1765372578%2FClasslikes%2F-1521573681" anchor-label="ProposalRef" id="1765372578%2FClasslikes%2F-1521573681" data-filterable-set=":android:dokkaHtml/release"></a>
+          <div class="table-row" data-filterable-current=":android:dokkaHtml/release" data-filterable-set=":android:dokkaHtml/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-proposal-ref/index.html"><span>Proposal</span><wbr></wbr><span><span>Ref</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1765372578%2FClasslikes%2F-1521573681"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":android:dokkaHtml/release"><div class="symbol monospace"><div class="block"><div class="block"><span class="token annotation builtin">@</span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin.jvm/-jvm-inline/index.html"><span class="token annotation builtin">JvmInline</span></a></div></div><span class="token keyword">value </span><span class="token keyword">class </span><a href="-proposal-ref/index.html">ProposalRef</a><span class="token punctuation">(</span><span class="parameters "><span class="parameter "><span class="token keyword">val </span>value<span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-byte-array/index.html">ByteArray</a></span></span><span class="token punctuation">)</span> : <a href="-uniffi/index.html">Uniffi</a></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="1222694028%2FClasslikes%2F-1521573681" anchor-label="ProteusException" id="1222694028%2FClasslikes%2F-1521573681" data-filterable-set=":android:dokkaHtml/release"></a>
+          <div class="table-row" data-filterable-current=":android:dokkaHtml/release" data-filterable-set=":android:dokkaHtml/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-proteus-exception/index.html"><span>Proteus</span><wbr></wbr><span><span>Exception</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1222694028%2FClasslikes%2F-1521573681"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":android:dokkaHtml/release"><div class="symbol monospace"><span class="token keyword">sealed </span><span class="token keyword">class </span><a href="-proteus-exception/index.html">ProteusException</a> : <a href="https://developer.android.com/reference/kotlin/java/lang/Exception.html">Exception</a></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="440728338%2FClasslikes%2F-1521573681" anchor-label="SessionId" id="440728338%2FClasslikes%2F-1521573681" data-filterable-set=":android:dokkaHtml/release"></a>
+          <div class="table-row" data-filterable-current=":android:dokkaHtml/release" data-filterable-set=":android:dokkaHtml/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-session-id/index.html"><span>Session</span><wbr></wbr><span><span>Id</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="440728338%2FClasslikes%2F-1521573681"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":android:dokkaHtml/release"><div class="symbol monospace"><span class="token keyword">typealias </span><a href="-session-id/index.html">SessionId</a><span class="token operator"> = </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-string/index.html">String</a></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-1403874111%2FClasslikes%2F-1521573681" anchor-label="SignaturePublicKey" id="-1403874111%2FClasslikes%2F-1521573681" data-filterable-set=":android:dokkaHtml/release"></a>
+          <div class="table-row" data-filterable-current=":android:dokkaHtml/release" data-filterable-set=":android:dokkaHtml/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-signature-public-key/index.html"><span>Signature</span><wbr></wbr><span>Public</span><wbr></wbr><span><span>Key</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1403874111%2FClasslikes%2F-1521573681"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":android:dokkaHtml/release"><div class="symbol monospace"><div class="block"><div class="block"><span class="token annotation builtin">@</span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin.jvm/-jvm-inline/index.html"><span class="token annotation builtin">JvmInline</span></a></div></div><span class="token keyword">value </span><span class="token keyword">class </span><a href="-signature-public-key/index.html">SignaturePublicKey</a><span class="token punctuation">(</span><span class="parameters "><span class="parameter "><span class="token keyword">val </span>value<span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-byte-array/index.html">ByteArray</a></span></span><span class="token punctuation">)</span> : <a href="-uniffi/index.html">Uniffi</a></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-279889210%2FClasslikes%2F-1521573681" anchor-label="Uniffi" id="-279889210%2FClasslikes%2F-1521573681" data-filterable-set=":android:dokkaHtml/release"></a>
+          <div class="table-row" data-filterable-current=":android:dokkaHtml/release" data-filterable-set=":android:dokkaHtml/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-uniffi/index.html"><span><span>Uniffi</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-279889210%2FClasslikes%2F-1521573681"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":android:dokkaHtml/release"><div class="symbol monospace"><span class="token keyword">interface </span><a href="-uniffi/index.html">Uniffi</a> : <a href="-ffi-type/index.html">FfiType</a><span class="token operator">&lt;</span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-byte-array/index.html">ByteArray</a><span class="token punctuation">, </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-byte-array/index.html">ByteArray</a><span class="token operator">&gt; </span></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="318971809%2FClasslikes%2F-1521573681" anchor-label="Welcome" id="318971809%2FClasslikes%2F-1521573681" data-filterable-set=":android:dokkaHtml/release"></a>
+          <div class="table-row" data-filterable-current=":android:dokkaHtml/release" data-filterable-set=":android:dokkaHtml/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-welcome/index.html"><span><span>Welcome</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="318971809%2FClasslikes%2F-1521573681"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":android:dokkaHtml/release"><div class="symbol monospace"><div class="block"><div class="block"><span class="token annotation builtin">@</span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin.jvm/-jvm-inline/index.html"><span class="token annotation builtin">JvmInline</span></a></div></div><span class="token keyword">value </span><span class="token keyword">class </span><a href="-welcome/index.html">Welcome</a><span class="token punctuation">(</span><span class="parameters "><span class="parameter "><span class="token keyword">val </span>value<span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-byte-array/index.html">ByteArray</a></span></span><span class="token punctuation">)</span> : <a href="-uniffi/index.html">Uniffi</a></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="941377855%2FClasslikes%2F-1521573681" anchor-label="WelcomeBundle" id="941377855%2FClasslikes%2F-1521573681" data-filterable-set=":android:dokkaHtml/release"></a>
+          <div class="table-row" data-filterable-current=":android:dokkaHtml/release" data-filterable-set=":android:dokkaHtml/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-welcome-bundle/index.html"><span>Welcome</span><wbr></wbr><span><span>Bundle</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="941377855%2FClasslikes%2F-1521573681"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":android:dokkaHtml/release"><div class="symbol monospace"><span class="token keyword">data </span><span class="token keyword">class </span><a href="-welcome-bundle/index.html">WelcomeBundle</a><span class="token punctuation">(</span><span class="parameters "><span class="parameter "><span class="token keyword">val </span>id<span class="token operator">: </span><a href="-m-l-s-group-id/index.html">MLSGroupId</a><span class="token punctuation">, </span></span><span class="parameter "><span class="token keyword">val </span>crlNewDistributionPoints<span class="token operator">: </span><a href="-crl-distribution-points/index.html">CrlDistributionPoints</a><span class="token operator">?</span></span></span><span class="token punctuation">)</span></div><div class="brief "><p class="paragraph">Contains everything client needs to know after decrypting an (encrypted) Welcome message</p></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-634133540%2FClasslikes%2F-1521573681" anchor-label="WireIdentity" id="-634133540%2FClasslikes%2F-1521573681" data-filterable-set=":android:dokkaHtml/release"></a>
+          <div class="table-row" data-filterable-current=":android:dokkaHtml/release" data-filterable-set=":android:dokkaHtml/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-wire-identity/index.html"><span>Wire</span><wbr></wbr><span><span>Identity</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-634133540%2FClasslikes%2F-1521573681"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":android:dokkaHtml/release"><div class="symbol monospace"><span class="token keyword">data </span><span class="token keyword">class </span><a href="-wire-identity/index.html">WireIdentity</a><span class="token punctuation">(</span><span class="parameters "><span class="parameter "><span class="token keyword">val </span>clientId<span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-string/index.html">String</a><span class="token punctuation">, </span></span><span class="parameter "><span class="token keyword">val </span>status<span class="token operator">: </span><a href="-device-status/index.html">DeviceStatus</a><span class="token punctuation">, </span></span><span class="parameter "><span class="token keyword">val </span>thumbprint<span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-string/index.html">String</a><span class="token punctuation">, </span></span><span class="parameter "><span class="token keyword">val </span>credentialType<span class="token operator">: </span><a href="-credential-type/index.html">CredentialType</a><span class="token punctuation">, </span></span><span class="parameter "><span class="token keyword">val </span>x509Identity<span class="token operator">: </span><a href="-x509-identity/index.html">X509Identity</a><span class="token operator">?</span></span></span><span class="token punctuation">)</span></div><div class="brief "><p class="paragraph">Represents a client using Wire's end-to-end identity solution</p></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="1269636859%2FClasslikes%2F-1521573681" anchor-label="X509Identity" id="1269636859%2FClasslikes%2F-1521573681" data-filterable-set=":android:dokkaHtml/release"></a>
+          <div class="table-row" data-filterable-current=":android:dokkaHtml/release" data-filterable-set=":android:dokkaHtml/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="-x509-identity/index.html"><span><span>X509Identity</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1269636859%2FClasslikes%2F-1521573681"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":android:dokkaHtml/release"><div class="symbol monospace"><span class="token keyword">data </span><span class="token keyword">class </span><a href="-x509-identity/index.html">X509Identity</a><span class="token punctuation">(</span><span class="parameters "><span class="parameter "><span class="token keyword">val </span>handle<span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-string/index.html">String</a><span class="token punctuation">, </span></span><span class="parameter "><span class="token keyword">val </span>displayName<span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-string/index.html">String</a><span class="token punctuation">, </span></span><span class="parameter "><span class="token keyword">val </span>domain<span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-string/index.html">String</a><span class="token punctuation">, </span></span><span class="parameter "><span class="token keyword">val </span>certificate<span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-string/index.html">String</a><span class="token punctuation">, </span></span><span class="parameter "><span class="token keyword">val </span>serialNumber<span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-string/index.html">String</a><span class="token punctuation">, </span></span><span class="parameter "><span class="token keyword">val </span>notBefore<span class="token operator">: </span><a href="https://developer.android.com/reference/kotlin/java/time/Instant.html">Instant</a><span class="token punctuation">, </span></span><span class="parameter "><span class="token keyword">val </span>notAfter<span class="token operator">: </span><a href="https://developer.android.com/reference/kotlin/java/time/Instant.html">Instant</a></span></span><span class="token punctuation">)</span></div><div class="brief "><p class="paragraph">Represents the parts of WireIdentity that are specific to a X509 certificate (and not a Basic one).</p></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div data-togglable="FUNCTION">
+        <h2 class="">Functions</h2>
+        <div class="table"><a data-name="-1884336811%2FFunctions%2F-1521573681" anchor-label="lift" id="-1884336811%2FFunctions%2F-1521573681" data-filterable-set=":android:dokkaHtml/release"></a>
+          <div class="table-row" data-togglable="EXTENSION_FUNCTION" data-filterable-current=":android:dokkaHtml/release" data-filterable-set=":android:dokkaHtml/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="lift.html"><span><span>lift</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1884336811%2FFunctions%2F-1521573681"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":android:dokkaHtml/release"><div class="symbol monospace"><span class="token keyword">fun </span><span data-unresolved-link="/&amp;lt;Error class: unknown class&amp;gt;///PointingToDeclaration/">&lt;Error class: unknown class&gt;</span><span class="token punctuation">.</span><a href="lift.html"><span class="token function">lift</span></a><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token operator">: </span><span data-unresolved-link="/&amp;lt;Error class: unknown class&amp;gt;///PointingToDeclaration/">&lt;Error class: unknown class&gt;</span></div><div class="symbol monospace"><span class="token keyword">fun </span><span data-unresolved-link="/&amp;lt;Error class: unknown class&amp;gt;///PointingToDeclaration/">&lt;Error class: unknown class&gt;</span><span class="token punctuation">.</span><a href="lift.html"><span class="token function">lift</span></a><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token operator">: </span><span data-unresolved-link="/&amp;lt;Error class: unknown class&amp;gt;///PointingToDeclaration/">&lt;Error class: unknown class&gt;</span></div><div class="symbol monospace"><span class="token keyword">fun </span><span data-unresolved-link="/&amp;lt;Error class: unknown class&amp;gt;///PointingToDeclaration/">&lt;Error class: unknown class&gt;</span><span class="token punctuation">.</span><a href="lift.html"><span class="token function">lift</span></a><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token operator">: </span><span data-unresolved-link="/&amp;lt;Error class: unknown class&amp;gt;///PointingToDeclaration/">&lt;Error class: unknown class&gt;</span></div><div class="symbol monospace"><span class="token keyword">fun </span><span data-unresolved-link="/&amp;lt;Error class: unknown class&amp;gt;///PointingToDeclaration/">&lt;Error class: unknown class&gt;</span><span class="token punctuation">.</span><a href="lift.html"><span class="token function">lift</span></a><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token operator">: </span><span data-unresolved-link="/&amp;lt;Error class: unknown class&amp;gt;///PointingToDeclaration/">&lt;Error class: unknown class&gt;</span></div><div class="symbol monospace"><span class="token keyword">fun </span><span data-unresolved-link="/&amp;lt;Error class: unknown class&amp;gt;///PointingToDeclaration/">&lt;Error class: unknown class&gt;</span><span class="token punctuation">.</span><a href="lift.html"><span class="token function">lift</span></a><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token operator">: </span><span data-unresolved-link="/&amp;lt;Error class: unknown class&amp;gt;///PointingToDeclaration/">&lt;Error class: unknown class&gt;</span></div><div class="symbol monospace"><span class="token keyword">fun </span><span data-unresolved-link="/&amp;lt;Error class: unknown class&amp;gt;///PointingToDeclaration/">&lt;Error class: unknown class&gt;</span><span class="token punctuation">.</span><a href="lift.html"><span class="token function">lift</span></a><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token operator">: </span><a href="-device-status/index.html">DeviceStatus</a></div><div class="symbol monospace"><span class="token keyword">fun </span><span data-unresolved-link="/&amp;lt;Error class: unknown class&amp;gt;///PointingToDeclaration/">&lt;Error class: unknown class&gt;</span><span class="token punctuation">.</span><a href="lift.html"><span class="token function">lift</span></a><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token operator">: </span><span data-unresolved-link="/&amp;lt;Error class: unknown class&amp;gt;///PointingToDeclaration/">&lt;Error class: unknown class&gt;</span></div><div class="symbol monospace"><span class="token keyword">fun </span><span data-unresolved-link="/&amp;lt;Error class: unknown class&amp;gt;///PointingToDeclaration/">&lt;Error class: unknown class&gt;</span><span class="token punctuation">.</span><a href="lift.html"><span class="token function">lift</span></a><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token operator">: </span><span data-unresolved-link="/&amp;lt;Error class: unknown class&amp;gt;///PointingToDeclaration/">&lt;Error class: unknown class&gt;</span></div><div class="symbol monospace"><span class="token keyword">fun </span><span data-unresolved-link="/&amp;lt;Error class: unknown class&amp;gt;///PointingToDeclaration/">&lt;Error class: unknown class&gt;</span><span class="token punctuation">.</span><a href="lift.html"><span class="token function">lift</span></a><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token operator">: </span><span data-unresolved-link="/&amp;lt;Error class: unknown class&amp;gt;///PointingToDeclaration/">&lt;Error class: unknown class&gt;</span></div><div class="symbol monospace"><span class="token keyword">fun </span><span data-unresolved-link="/&amp;lt;Error class: unknown class&amp;gt;///PointingToDeclaration/">&lt;Error class: unknown class&gt;</span><span class="token punctuation">.</span><a href="lift.html"><span class="token function">lift</span></a><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token operator">: </span><span data-unresolved-link="/&amp;lt;Error class: unknown class&amp;gt;///PointingToDeclaration/">&lt;Error class: unknown class&gt;</span></div><div class="symbol monospace"><span class="token keyword">fun </span><span data-unresolved-link="/&amp;lt;Error class: unknown class&amp;gt;///PointingToDeclaration/">&lt;Error class: unknown class&gt;</span><span class="token punctuation">.</span><a href="lift.html"><span class="token function">lift</span></a><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token operator">: </span><span data-unresolved-link="/&amp;lt;Error class: unknown class&amp;gt;///PointingToDeclaration/">&lt;Error class: unknown class&gt;</span></div><div class="symbol monospace"><span class="token keyword">fun </span><span data-unresolved-link="/&amp;lt;Error class: unknown class&amp;gt;///PointingToDeclaration/">&lt;Error class: unknown class&gt;</span><span class="token punctuation">.</span><a href="lift.html"><span class="token function">lift</span></a><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token operator">: </span><span data-unresolved-link="/&amp;lt;Error class: unknown class&amp;gt;///PointingToDeclaration/">&lt;Error class: unknown class&gt;</span></div><div class="symbol monospace"><span class="token keyword">fun </span><span data-unresolved-link="/&amp;lt;Error class: unknown class&amp;gt;///PointingToDeclaration/">&lt;Error class: unknown class&gt;</span><span class="token punctuation">.</span><a href="lift.html"><span class="token function">lift</span></a><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token operator">: </span><span data-unresolved-link="/&amp;lt;Error class: unknown class&amp;gt;///PointingToDeclaration/">&lt;Error class: unknown class&gt;</span></div><div class="symbol monospace"><span class="token keyword">fun </span><span data-unresolved-link="/&amp;lt;Error class: unknown class&amp;gt;///PointingToDeclaration/">&lt;Error class: unknown class&gt;</span><span class="token punctuation">.</span><a href="lift.html"><span class="token function">lift</span></a><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token operator">: </span><span data-unresolved-link="/&amp;lt;Error class: unknown class&amp;gt;///PointingToDeclaration/">&lt;Error class: unknown class&gt;</span></div><div class="symbol monospace"><span class="token keyword">fun </span><span data-unresolved-link="/&amp;lt;Error class: unknown class&amp;gt;///PointingToDeclaration/">&lt;Error class: unknown class&gt;</span><span class="token punctuation">.</span><a href="lift.html"><span class="token function">lift</span></a><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token operator">: </span><span data-unresolved-link="/&amp;lt;Error class: unknown class&amp;gt;///PointingToDeclaration/">&lt;Error class: unknown class&gt;</span></div><div class="symbol monospace"><span class="token keyword">fun </span><span data-unresolved-link="/&amp;lt;Error class: unknown class&amp;gt;///PointingToDeclaration/">&lt;Error class: unknown class&gt;</span><span class="token punctuation">.</span><a href="lift.html"><span class="token function">lift</span></a><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token operator">: </span><span data-unresolved-link="/&amp;lt;Error class: unknown class&amp;gt;///PointingToDeclaration/">&lt;Error class: unknown class&gt;</span></div><div class="symbol monospace"><span class="token keyword">fun </span><span data-unresolved-link="/&amp;lt;Error class: unknown class&amp;gt;///PointingToDeclaration/">&lt;Error class: unknown class&gt;</span><span class="token punctuation">.</span><a href="lift.html"><span class="token function">lift</span></a><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token operator">: </span><span data-unresolved-link="/&amp;lt;Error class: unknown class&amp;gt;///PointingToDeclaration/">&lt;Error class: unknown class&gt;</span></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-1739039770%2FFunctions%2F-1521573681" anchor-label="lower" id="-1739039770%2FFunctions%2F-1521573681" data-filterable-set=":android:dokkaHtml/release"></a>
+          <div class="table-row" data-togglable="EXTENSION_FUNCTION" data-filterable-current=":android:dokkaHtml/release" data-filterable-set=":android:dokkaHtml/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="lower.html"><span><span>lower</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1739039770%2FFunctions%2F-1521573681"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":android:dokkaHtml/release"><div class="symbol monospace"><span class="token keyword">fun </span><a href="-custom-configuration/index.html">CustomConfiguration</a><span class="token punctuation">.</span><a href="lower.html"><span class="token function">lower</span></a><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token operator">: </span><span data-unresolved-link="/&amp;lt;Error class: unknown class&amp;gt;///PointingToDeclaration/">&lt;Error class: unknown class&gt;</span></div><div class="symbol monospace"><span class="token keyword">fun </span><a href="-mls-transport-response/index.html">MlsTransportResponse</a><span class="token punctuation">.</span><a href="lower.html"><span class="token function">lower</span></a><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token operator">: </span><span data-unresolved-link="/&amp;lt;Error class: unknown class&amp;gt;///PointingToDeclaration/">&lt;Error class: unknown class&gt;</span></div><div class="symbol monospace"><span class="token keyword">fun </span><a href="-mls-wire-policy/index.html">MlsWirePolicy</a><span class="token punctuation">.</span><a href="lower.html"><span class="token function">lower</span></a><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token operator">: </span><span data-unresolved-link="/&amp;lt;Error class: unknown class&amp;gt;///PointingToDeclaration/">&lt;Error class: unknown class&gt;</span></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-195750009%2FFunctions%2F-1521573681" anchor-label="setLogger" id="-195750009%2FFunctions%2F-1521573681" data-filterable-set=":android:dokkaHtml/release"></a>
+          <div class="table-row" data-filterable-current=":android:dokkaHtml/release" data-filterable-set=":android:dokkaHtml/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="set-logger.html"><span>set</span><wbr></wbr><span><span>Logger</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-195750009%2FFunctions%2F-1521573681"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":android:dokkaHtml/release"><div class="symbol monospace"><span class="token keyword">fun </span><a href="set-logger.html"><span class="token function">setLogger</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">logger<span class="token operator">: </span><a href="-core-crypto-logger/index.html">CoreCryptoLogger</a></span></span><span class="token punctuation">)</span></div><div class="brief "><p class="paragraph">Initializes the logging inside Core Crypto. Not required to be called and by default there will be no logging.</p></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-660133299%2FFunctions%2F-1521573681" anchor-label="setMaxLogLevel" id="-660133299%2FFunctions%2F-1521573681" data-filterable-set=":android:dokkaHtml/release"></a>
+          <div class="table-row" data-filterable-current=":android:dokkaHtml/release" data-filterable-set=":android:dokkaHtml/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="set-max-log-level.html"><span>set</span><wbr></wbr><span>Max</span><wbr></wbr><span>Log</span><wbr></wbr><span><span>Level</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-660133299%2FFunctions%2F-1521573681"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":android:dokkaHtml/release"><div class="symbol monospace"><span class="token keyword">fun </span><a href="set-max-log-level.html"><span class="token function">setMaxLogLevel</span></a><span class="token punctuation">(</span><span class="parameters "><span class="parameter ">level<span class="token operator">: </span><a href="-core-crypto-log-level/index.html">CoreCryptoLogLevel</a></span></span><span class="token punctuation">)</span></div><div class="brief "><p class="paragraph">Set maximum log level of logs which are forwarded to the <a href="-core-crypto-logger/index.html">CoreCryptoLogger</a>.</p></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="614005763%2FFunctions%2F-1521573681" anchor-label="toAcmeChallenge" id="614005763%2FFunctions%2F-1521573681" data-filterable-set=":android:dokkaHtml/release"></a>
+          <div class="table-row" data-togglable="EXTENSION_FUNCTION" data-filterable-current=":android:dokkaHtml/release" data-filterable-set=":android:dokkaHtml/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="to-acme-challenge.html"><span>to</span><wbr></wbr><span>Acme</span><wbr></wbr><span><span>Challenge</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="614005763%2FFunctions%2F-1521573681"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":android:dokkaHtml/release"><div class="symbol monospace"><span class="token keyword">fun </span><span data-unresolved-link="/&amp;lt;Error class: unknown class&amp;gt;///PointingToDeclaration/">&lt;Error class: unknown class&gt;</span><span class="token punctuation">.</span><a href="to-acme-challenge.html"><span class="token function">toAcmeChallenge</span></a><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token operator">: </span><span data-unresolved-link="/&amp;lt;Error class: unknown class&amp;gt;///PointingToDeclaration/">&lt;Error class: unknown class&gt;</span></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="1144178159%2FFunctions%2F-1521573681" anchor-label="toAcmeDirectory" id="1144178159%2FFunctions%2F-1521573681" data-filterable-set=":android:dokkaHtml/release"></a>
+          <div class="table-row" data-togglable="EXTENSION_FUNCTION" data-filterable-current=":android:dokkaHtml/release" data-filterable-set=":android:dokkaHtml/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="to-acme-directory.html"><span>to</span><wbr></wbr><span>Acme</span><wbr></wbr><span><span>Directory</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1144178159%2FFunctions%2F-1521573681"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":android:dokkaHtml/release"><div class="symbol monospace"><span class="token keyword">fun </span><span data-unresolved-link="/&amp;lt;Error class: unknown class&amp;gt;///PointingToDeclaration/">&lt;Error class: unknown class&gt;</span><span class="token punctuation">.</span><a href="to-acme-directory.html"><span class="token function">toAcmeDirectory</span></a><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token operator">: </span><span data-unresolved-link="/&amp;lt;Error class: unknown class&amp;gt;///PointingToDeclaration/">&lt;Error class: unknown class&gt;</span></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-893178613%2FFunctions%2F-1521573681" anchor-label="toAvsSecret" id="-893178613%2FFunctions%2F-1521573681" data-filterable-set=":android:dokkaHtml/release"></a>
+          <div class="table-row" data-togglable="EXTENSION_FUNCTION" data-filterable-current=":android:dokkaHtml/release" data-filterable-set=":android:dokkaHtml/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="to-avs-secret.html"><span>to</span><wbr></wbr><span>Avs</span><wbr></wbr><span><span>Secret</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-893178613%2FFunctions%2F-1521573681"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":android:dokkaHtml/release"><div class="symbol monospace"><span class="token keyword">fun </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-byte-array/index.html">ByteArray</a><span class="token punctuation">.</span><a href="to-avs-secret.html"><span class="token function">toAvsSecret</span></a><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token operator">: </span><a href="-avs-secret/index.html">AvsSecret</a></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="1948486806%2FFunctions%2F-1521573681" anchor-label="toByteArray" id="1948486806%2FFunctions%2F-1521573681" data-filterable-set=":android:dokkaHtml/release"></a>
+          <div class="table-row" data-togglable="EXTENSION_FUNCTION" data-filterable-current=":android:dokkaHtml/release" data-filterable-set=":android:dokkaHtml/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="to-byte-array.html"><span>to</span><wbr></wbr><span>Byte</span><wbr></wbr><span><span>Array</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1948486806%2FFunctions%2F-1521573681"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":android:dokkaHtml/release"><div class="symbol monospace"><span class="token keyword">fun </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-string/index.html">String</a><span class="token punctuation">.</span><a href="to-byte-array.html"><span class="token function">toByteArray</span></a><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-byte-array/index.html">ByteArray</a></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="2097064214%2FFunctions%2F-1521573681" anchor-label="toClientId" id="2097064214%2FFunctions%2F-1521573681" data-filterable-set=":android:dokkaHtml/release"></a>
+          <div class="table-row" data-togglable="EXTENSION_FUNCTION" data-filterable-current=":android:dokkaHtml/release" data-filterable-set=":android:dokkaHtml/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="to-client-id.html"><span>to</span><wbr></wbr><span>Client</span><wbr></wbr><span><span>Id</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="2097064214%2FFunctions%2F-1521573681"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":android:dokkaHtml/release"><div class="symbol monospace"><span class="token keyword">fun </span><span data-unresolved-link="/&amp;lt;Error class: unknown class&amp;gt;///PointingToDeclaration/">&lt;Error class: unknown class&gt;</span><span class="token punctuation">.</span><a href="to-client-id.html"><span class="token function">toClientId</span></a><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token operator">: </span><span data-unresolved-link="/&amp;lt;Error class: unknown class&amp;gt;///PointingToDeclaration/">&lt;Error class: unknown class&gt;</span></div><div class="symbol monospace"><span class="token keyword">fun </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-string/index.html">String</a><span class="token punctuation">.</span><a href="to-client-id.html"><span class="token function">toClientId</span></a><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token operator">: </span><a href="-client-id/index.html">ClientId</a></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-1135267476%2FFunctions%2F-1521573681" anchor-label="toCrlDistributionPoint" id="-1135267476%2FFunctions%2F-1521573681" data-filterable-set=":android:dokkaHtml/release"></a>
+          <div class="table-row" data-togglable="EXTENSION_FUNCTION" data-filterable-current=":android:dokkaHtml/release" data-filterable-set=":android:dokkaHtml/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="to-crl-distribution-point.html"><span>to</span><wbr></wbr><span>Crl</span><wbr></wbr><span>Distribution</span><wbr></wbr><span><span>Point</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1135267476%2FFunctions%2F-1521573681"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":android:dokkaHtml/release"><div class="symbol monospace"><span class="token keyword">fun </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin.collections/-list/index.html">List</a><span class="token operator">&lt;</span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-string/index.html">String</a><span class="token operator">&gt;</span><span class="token punctuation">.</span><a href="to-crl-distribution-point.html"><span class="token function">toCrlDistributionPoint</span></a><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token operator">: </span><a href="-crl-distribution-points/index.html">CrlDistributionPoints</a></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-1288200376%2FFunctions%2F-1521573681" anchor-label="toExternallyGeneratedHandle" id="-1288200376%2FFunctions%2F-1521573681" data-filterable-set=":android:dokkaHtml/release"></a>
+          <div class="table-row" data-togglable="EXTENSION_FUNCTION" data-filterable-current=":android:dokkaHtml/release" data-filterable-set=":android:dokkaHtml/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="to-externally-generated-handle.html"><span>to</span><wbr></wbr><span>Externally</span><wbr></wbr><span>Generated</span><wbr></wbr><span><span>Handle</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1288200376%2FFunctions%2F-1521573681"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":android:dokkaHtml/release"><div class="symbol monospace"><span class="token keyword">fun </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin.collections/-list/index.html">List</a><span class="token operator">&lt;</span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-byte-array/index.html">ByteArray</a><span class="token operator">&gt;</span><span class="token punctuation">.</span><a href="to-externally-generated-handle.html"><span class="token function">toExternallyGeneratedHandle</span></a><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token operator">: </span><a href="-externally-generated-handle/index.html">ExternallyGeneratedHandle</a></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-703986950%2FFunctions%2F-1521573681" anchor-label="toExternalSenderKey" id="-703986950%2FFunctions%2F-1521573681" data-filterable-set=":android:dokkaHtml/release"></a>
+          <div class="table-row" data-togglable="EXTENSION_FUNCTION" data-filterable-current=":android:dokkaHtml/release" data-filterable-set=":android:dokkaHtml/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="to-external-sender-key.html"><span>to</span><wbr></wbr><span>External</span><wbr></wbr><span>Sender</span><wbr></wbr><span><span>Key</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-703986950%2FFunctions%2F-1521573681"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":android:dokkaHtml/release"><div class="symbol monospace"><span class="token keyword">fun </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-byte-array/index.html">ByteArray</a><span class="token punctuation">.</span><a href="to-external-sender-key.html"><span class="token function">toExternalSenderKey</span></a><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token operator">: </span><a href="-external-sender-key/index.html">ExternalSenderKey</a></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="872659730%2FFunctions%2F-1521573681" anchor-label="toGroupId" id="872659730%2FFunctions%2F-1521573681" data-filterable-set=":android:dokkaHtml/release"></a>
+          <div class="table-row" data-togglable="EXTENSION_FUNCTION" data-filterable-current=":android:dokkaHtml/release" data-filterable-set=":android:dokkaHtml/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="to-group-id.html"><span>to</span><wbr></wbr><span>Group</span><wbr></wbr><span><span>Id</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="872659730%2FFunctions%2F-1521573681"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":android:dokkaHtml/release"><div class="symbol monospace"><span class="token keyword">fun </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-byte-array/index.html">ByteArray</a><span class="token punctuation">.</span><a href="to-group-id.html"><span class="token function">toGroupId</span></a><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token operator">: </span><a href="-m-l-s-group-id/index.html">MLSGroupId</a></div><div class="symbol monospace"><span class="token keyword">fun </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-string/index.html">String</a><span class="token punctuation">.</span><a href="to-group-id.html"><span class="token function">toGroupId</span></a><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token operator">: </span><a href="-m-l-s-group-id/index.html">MLSGroupId</a></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="571099980%2FFunctions%2F-1521573681" anchor-label="toGroupInfo" id="571099980%2FFunctions%2F-1521573681" data-filterable-set=":android:dokkaHtml/release"></a>
+          <div class="table-row" data-togglable="EXTENSION_FUNCTION" data-filterable-current=":android:dokkaHtml/release" data-filterable-set=":android:dokkaHtml/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="to-group-info.html"><span>to</span><wbr></wbr><span>Group</span><wbr></wbr><span><span>Info</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="571099980%2FFunctions%2F-1521573681"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":android:dokkaHtml/release"><div class="symbol monospace"><span class="token keyword">fun </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-byte-array/index.html">ByteArray</a><span class="token punctuation">.</span><a href="to-group-info.html"><span class="token function">toGroupInfo</span></a><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token operator">: </span><a href="-group-info/index.html">GroupInfo</a></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="1667473854%2FFunctions%2F-1521573681" anchor-label="toHex" id="1667473854%2FFunctions%2F-1521573681" data-filterable-set=":android:dokkaHtml/release"></a>
+          <div class="table-row" data-togglable="EXTENSION_FUNCTION" data-filterable-current=":android:dokkaHtml/release" data-filterable-set=":android:dokkaHtml/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="to-hex.html"><span>to</span><wbr></wbr><span><span>Hex</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1667473854%2FFunctions%2F-1521573681"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":android:dokkaHtml/release"><div class="symbol monospace"><span class="token keyword">fun </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-byte-array/index.html">ByteArray</a><span class="token punctuation">.</span><a href="to-hex.html"><span class="token function">toHex</span></a><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token operator">: </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-string/index.html">String</a></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-459655138%2FFunctions%2F-1521573681" anchor-label="toMLSKeyPackage" id="-459655138%2FFunctions%2F-1521573681" data-filterable-set=":android:dokkaHtml/release"></a>
+          <div class="table-row" data-togglable="EXTENSION_FUNCTION" data-filterable-current=":android:dokkaHtml/release" data-filterable-set=":android:dokkaHtml/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="to-m-l-s-key-package.html"><span>to</span><wbr></wbr><span>MLSKey</span><wbr></wbr><span><span>Package</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-459655138%2FFunctions%2F-1521573681"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":android:dokkaHtml/release"><div class="symbol monospace"><span class="token keyword">fun </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-byte-array/index.html">ByteArray</a><span class="token punctuation">.</span><a href="to-m-l-s-key-package.html"><span class="token function">toMLSKeyPackage</span></a><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token operator">: </span><a href="-m-l-s-key-package/index.html">MLSKeyPackage</a></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="1879504758%2FFunctions%2F-1521573681" anchor-label="toMlsMessage" id="1879504758%2FFunctions%2F-1521573681" data-filterable-set=":android:dokkaHtml/release"></a>
+          <div class="table-row" data-togglable="EXTENSION_FUNCTION" data-filterable-current=":android:dokkaHtml/release" data-filterable-set=":android:dokkaHtml/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="to-mls-message.html"><span>to</span><wbr></wbr><span>Mls</span><wbr></wbr><span><span>Message</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="1879504758%2FFunctions%2F-1521573681"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":android:dokkaHtml/release"><div class="symbol monospace"><span class="token keyword">fun </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-byte-array/index.html">ByteArray</a><span class="token punctuation">.</span><a href="to-mls-message.html"><span class="token function">toMlsMessage</span></a><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token operator">: </span><a href="-mls-message/index.html">MlsMessage</a></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-65502799%2FFunctions%2F-1521573681" anchor-label="toNewAcmeAuthz" id="-65502799%2FFunctions%2F-1521573681" data-filterable-set=":android:dokkaHtml/release"></a>
+          <div class="table-row" data-togglable="EXTENSION_FUNCTION" data-filterable-current=":android:dokkaHtml/release" data-filterable-set=":android:dokkaHtml/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="to-new-acme-authz.html"><span>to</span><wbr></wbr><span>New</span><wbr></wbr><span>Acme</span><wbr></wbr><span><span>Authz</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-65502799%2FFunctions%2F-1521573681"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":android:dokkaHtml/release"><div class="symbol monospace"><span class="token keyword">fun </span><span data-unresolved-link="/&amp;lt;Error class: unknown class&amp;gt;///PointingToDeclaration/">&lt;Error class: unknown class&gt;</span><span class="token punctuation">.</span><a href="to-new-acme-authz.html"><span class="token function">toNewAcmeAuthz</span></a><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token operator">: </span><span data-unresolved-link="/&amp;lt;Error class: unknown class&amp;gt;///PointingToDeclaration/">&lt;Error class: unknown class&gt;</span></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="994214961%2FFunctions%2F-1521573681" anchor-label="toNewAcmeOrder" id="994214961%2FFunctions%2F-1521573681" data-filterable-set=":android:dokkaHtml/release"></a>
+          <div class="table-row" data-togglable="EXTENSION_FUNCTION" data-filterable-current=":android:dokkaHtml/release" data-filterable-set=":android:dokkaHtml/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="to-new-acme-order.html"><span>to</span><wbr></wbr><span>New</span><wbr></wbr><span>Acme</span><wbr></wbr><span><span>Order</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="994214961%2FFunctions%2F-1521573681"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":android:dokkaHtml/release"><div class="symbol monospace"><span class="token keyword">fun </span><span data-unresolved-link="/&amp;lt;Error class: unknown class&amp;gt;///PointingToDeclaration/">&lt;Error class: unknown class&gt;</span><span class="token punctuation">.</span><a href="to-new-acme-order.html"><span class="token function">toNewAcmeOrder</span></a><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token operator">: </span><span data-unresolved-link="/&amp;lt;Error class: unknown class&amp;gt;///PointingToDeclaration/">&lt;Error class: unknown class&gt;</span></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-344012571%2FFunctions%2F-1521573681" anchor-label="toPlaintextMessage" id="-344012571%2FFunctions%2F-1521573681" data-filterable-set=":android:dokkaHtml/release"></a>
+          <div class="table-row" data-togglable="EXTENSION_FUNCTION" data-filterable-current=":android:dokkaHtml/release" data-filterable-set=":android:dokkaHtml/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="to-plaintext-message.html"><span>to</span><wbr></wbr><span>Plaintext</span><wbr></wbr><span><span>Message</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-344012571%2FFunctions%2F-1521573681"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":android:dokkaHtml/release"><div class="symbol monospace"><span class="token keyword">fun </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-string/index.html">String</a><span class="token punctuation">.</span><a href="to-plaintext-message.html"><span class="token function">toPlaintextMessage</span></a><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token operator">: </span><a href="-plaintext-message/index.html">PlaintextMessage</a></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="-1067235496%2FFunctions%2F-1521573681" anchor-label="toProposalRef" id="-1067235496%2FFunctions%2F-1521573681" data-filterable-set=":android:dokkaHtml/release"></a>
+          <div class="table-row" data-togglable="EXTENSION_FUNCTION" data-filterable-current=":android:dokkaHtml/release" data-filterable-set=":android:dokkaHtml/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="to-proposal-ref.html"><span>to</span><wbr></wbr><span>Proposal</span><wbr></wbr><span><span>Ref</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="-1067235496%2FFunctions%2F-1521573681"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":android:dokkaHtml/release"><div class="symbol monospace"><span class="token keyword">fun </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-byte-array/index.html">ByteArray</a><span class="token punctuation">.</span><a href="to-proposal-ref.html"><span class="token function">toProposalRef</span></a><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token operator">: </span><a href="-proposal-ref/index.html">ProposalRef</a></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="898630955%2FFunctions%2F-1521573681" anchor-label="toSignaturePublicKey" id="898630955%2FFunctions%2F-1521573681" data-filterable-set=":android:dokkaHtml/release"></a>
+          <div class="table-row" data-togglable="EXTENSION_FUNCTION" data-filterable-current=":android:dokkaHtml/release" data-filterable-set=":android:dokkaHtml/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="to-signature-public-key.html"><span>to</span><wbr></wbr><span>Signature</span><wbr></wbr><span>Public</span><wbr></wbr><span><span>Key</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="898630955%2FFunctions%2F-1521573681"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":android:dokkaHtml/release"><div class="symbol monospace"><span class="token keyword">fun </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-byte-array/index.html">ByteArray</a><span class="token punctuation">.</span><a href="to-signature-public-key.html"><span class="token function">toSignaturePublicKey</span></a><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token operator">: </span><a href="-signature-public-key/index.html">SignaturePublicKey</a></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+<a data-name="639822167%2FFunctions%2F-1521573681" anchor-label="toWelcome" id="639822167%2FFunctions%2F-1521573681" data-filterable-set=":android:dokkaHtml/release"></a>
+          <div class="table-row" data-togglable="EXTENSION_FUNCTION" data-filterable-current=":android:dokkaHtml/release" data-filterable-set=":android:dokkaHtml/release">
+            <div class="main-subrow keyValue ">
+              <div class=""><span class="inline-flex">
+                  <div><a href="to-welcome.html"><span>to</span><wbr></wbr><span><span>Welcome</span></span></a></div>
+<span class="anchor-wrapper"><span class="anchor-icon" pointing-to="639822167%2FFunctions%2F-1521573681"></span>
+                    <div class="copy-popup-wrapper "><span class="copy-popup-icon"></span><span>Link copied to clipboard</span></div>
+                  </span></span></div>
+              <div>
+                <div class="title">
+                  <div class="platform-hinted " data-platform-hinted="data-platform-hinted"><div class="content sourceset-dependent-content" data-active="" data-togglable=":android:dokkaHtml/release"><div class="symbol monospace"><span class="token keyword">fun </span><a href="https://kotlinlang.org/api/core/kotlin-stdlib/kotlin/-byte-array/index.html">ByteArray</a><span class="token punctuation">.</span><a href="to-welcome.html"><span class="token function">toWelcome</span></a><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token operator">: </span><a href="-welcome/index.html">Welcome</a></div></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+    <div class="footer">
+        <a href="#content" id="go-to-top-link" class="footer--button footer--button_go-to-top"></a>
+        <span>© 2025 Copyright</span>
+        <span class="pull-right">
+            <span>Generated by </span>
+            <a class="footer--link footer--link_external" href="https://github.com/Kotlin/dokka">
+                <span>dokka</span>
+            </a>
+        </span>
+    </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
