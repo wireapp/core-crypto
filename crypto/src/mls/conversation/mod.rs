@@ -81,9 +81,11 @@ pub use conversation_guard::ConversationGuard;
 pub use error::{Error, Result};
 pub use immutable_conversation::ImmutableConversation;
 
+/// The base layer for [Conversation].
+/// The trait is only exposed internally.
 #[cfg_attr(target_family = "wasm", async_trait::async_trait(?Send))]
 #[cfg_attr(not(target_family = "wasm"), async_trait::async_trait)]
-pub(crate) trait Conversation<'a> {
+pub(crate) trait ConversationWithCentral<'a> {
     type Central: Central;
 
     type Conversation: Deref<Target = MlsConversation> + Send;
@@ -100,6 +102,16 @@ pub(crate) trait Conversation<'a> {
             .map_err(RecursiveError::mls("getting mls provider"))
             .map_err(Into::into)
     }
+}
+
+/// The `Conversation` trait provides a set of operations that can be done on
+/// an **immutable** conversation.
+// We keep the super trait internal intentionally, as it is not meant to be used by the public API,
+// hence #[expect(private_bounds)].
+#[expect(private_bounds)]
+#[cfg_attr(target_family = "wasm", async_trait::async_trait(?Send))]
+#[cfg_attr(not(target_family = "wasm"), async_trait::async_trait)]
+pub trait Conversation<'a>: ConversationWithCentral<'a> {
 
     async fn e2ei_conversation_state(&'a self) -> Result<E2eiConversationState> {
         self.mls_provider()
@@ -170,6 +182,8 @@ pub(crate) trait Conversation<'a> {
             .map_err(Into::into)
     }
 }
+
+impl<'a, T: ConversationWithCentral<'a>> Conversation<'a> for T {}
 
 /// A unique identifier for a group/conversation. The identifier must be unique within a client.
 pub type ConversationId = Vec<u8>;
