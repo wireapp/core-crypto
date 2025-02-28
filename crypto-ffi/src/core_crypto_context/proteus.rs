@@ -155,11 +155,6 @@ impl CoreCryptoContext {
         })
     }
 
-    /// See [core_crypto::transaction_context::TransactionContext::proteus_cryptobox_migrate]
-    pub async fn proteus_cryptobox_migrate(&self, path: String) -> CoreCryptoResult<()> {
-        proteus_impl!({ self.inner.proteus_cryptobox_migrate(&path).await.map_err(Into::into) })
-    }
-
     /// See [core_crypto::transaction_context::TransactionContext::proteus_reload_sessions]
     pub async fn proteus_reload_sessions(&self) -> CoreCryptoResult<()> {
         proteus_impl!({ self.inner.proteus_reload_sessions().await.map_err(Into::into) })

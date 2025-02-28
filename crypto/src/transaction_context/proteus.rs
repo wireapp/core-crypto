@@ -286,15 +286,4 @@ impl TransactionContext {
             .map_err(RecursiveError::root("geeting proteus fingerprint remote"))
             .map_err(Into::into)
     }
-
-    /// Migrates an existing Cryptobox data store (whether a folder or an IndexedDB database) located at `path` to the keystore.
-    ///
-    ///The client can then be initialized with [TransactionContext::proteus_init]
-    pub async fn proteus_cryptobox_migrate(&self, path: &str) -> Result<()> {
-        let keystore = self.keystore().await?;
-        ProteusCentral::cryptobox_migrate(&keystore, path)
-            .await
-            .map_err(RecursiveError::root("migrating from cryptobox"))
-            .map_err(Into::into)
-    }
 }

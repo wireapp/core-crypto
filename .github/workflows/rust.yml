@@ -59,7 +59,7 @@ jobs:
       - uses: ./.github/actions/setup-and-cache-rust
       - uses: taiki-e/install-action@nextest
       - name: "test corecrypto's proteus implementation"
-        run: cargo nextest run --locked --verbose --features proteus,cryptobox-migrate,proteus-keystore proteus
+        run: cargo nextest run --locked --verbose --features proteus,proteus-keystore proteus
 
   wasm-test:
     runs-on: ubuntu-latest

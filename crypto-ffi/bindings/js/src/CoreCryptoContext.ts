@@ -710,17 +710,6 @@ export class CoreCryptoContext {
     }
 
     /**
-     * Imports all the data stored by Cryptobox into the CoreCrypto keystore
-     *
-     * @param storeName - The name of the IndexedDB store where the data is stored
-     */
-    async proteusCryptoboxMigrate(storeName: string): Promise<void> {
-        return await CoreCryptoError.asyncMapErr(
-            this.#ctx.proteus_cryptobox_migrate(storeName)
-        );
-    }
-
-    /**
      * Creates an enrollment instance with private key material you can use in order to fetch
      * a new x509 certificate from the acme server.
      *

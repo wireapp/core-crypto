@@ -64,7 +64,7 @@ pub mod prelude {
             types::{E2eiAcmeChallenge, E2eiAcmeDirectory, E2eiNewAcmeAuthz, E2eiNewAcmeOrder},
         },
         ephemeral::{HISTORY_CLIENT_ID_PREFIX, HistorySecret},
-        error::{CryptoboxMigrationError, Error, KeystoreError, LeafError, MlsError, ProteusError, RecursiveError},
+        error::{Error, KeystoreError, LeafError, MlsError, ProteusError, RecursiveError},
         mls::{
             ciphersuite::MlsCiphersuite,
             conversation::{

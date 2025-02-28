@@ -208,9 +208,6 @@ impl From<core_crypto::Error> for CoreCryptoError {
             core_crypto::Error::Keystore(keystore_error) => Self::Other {
                 msg: keystore_error.innermost_error_message(),
             },
-            core_crypto::Error::CryptoboxMigration(cryptobox) => Self::Other {
-                msg: cryptobox.innermost_error_message(),
-            },
             core_crypto::Error::Recursive(recursive_error) => recursive_error.into(),
             core_crypto::Error::FeatureDisabled(_) | core_crypto::Error::InvalidHistorySecret(_) => {
                 Self::Other { msg: error.to_string() }
