@@ -1578,38 +1578,24 @@ impl CoreCrypto {
 
     /// Returns [`WasmCryptoResult<u64>`]
     ///
-    /// see [core_crypto::mls::MlsCentral::conversation_epoch]
+    /// see [core_crypto::mls::conversation::ImmutableConversation::epoch]
     pub fn conversation_epoch(&self, conversation_id: ConversationId) -> Promise {
         let central = self.inner.clone();
         future_to_promise(
-            async move {
-                WasmCryptoResult::Ok(
-                    central
-                        .conversation_epoch(&conversation_id)
-                        .await
-                        .map_err(CoreCryptoError::from)?
-                        .into(),
-                )
-            }
-            .err_into(),
+            async move { WasmCryptoResult::Ok(central.get_raw_conversation(&conversation_id).await?.epoch().into()) }
+                .err_into(),
         )
     }
 
     /// Returns [`WasmCryptoResult<Ciphersuite>`]
     ///
-    /// see [core_crypto::mls::MlsCentral::conversation_ciphersuite]
+    /// see [core_crypto::mls::conversation::ImmutableConversation::ciphersuite]
     pub fn conversation_ciphersuite(&self, conversation_id: ConversationId) -> Promise {
         let central = self.inner.clone();
         future_to_promise(
             async move {
                 WasmCryptoResult::Ok(
-                    Ciphersuite::from(
-                        central
-                            .conversation_ciphersuite(&conversation_id)
-                            .await
-                            .map_err(CoreCryptoError::from)?,
-                    )
-                    .into(),
+                    Ciphersuite::from(central.get_raw_conversation(&conversation_id).await?.ciphersuite()).into(),
                 )
             }
             .err_into(),
@@ -1749,13 +1735,15 @@ impl CoreCrypto {
 
     /// Returns: [`WasmCryptoResult<Vec<u8>>`]
     ///
-    /// see [core_crypto::mls::context::CentralContext::export_secret_key]
+    /// See [crate::mls::conversation::ImmutableConversation::export_secret_key]
     pub fn export_secret_key(&self, conversation_id: ConversationId, key_length: usize) -> Promise {
         let central = self.inner.clone();
         future_to_promise(
             async move {
                 let key = central
-                    .export_secret_key(&conversation_id.to_vec(), key_length)
+                    .get_raw_conversation(&conversation_id.to_vec())
+                    .await?
+                    .export_secret_key(key_length)
                     .await
                     .map_err(CoreCryptoError::from)?;
                 WasmCryptoResult::Ok(Uint8Array::from(key.as_slice()).into())
@@ -1766,13 +1754,15 @@ impl CoreCrypto {
 
     /// Returns: [`WasmCryptoResult<Vec<u8>>`]
     ///
-    /// see [core_crypto::mls::context::CentralContext::get_external_sender]
+    /// See [crate::mls::conversation::ImmutableConversation::get_external_sender]
     pub fn get_external_sender(&self, id: ConversationId) -> Promise {
         let central = self.inner.clone();
         future_to_promise(
             async move {
                 let ext_sender = central
-                    .get_external_sender(&id.to_vec())
+                    .get_raw_conversation(&id.to_vec())
+                    .await?
+                    .get_external_sender()
                     .await
                     .map_err(CoreCryptoError::from)?;
                 WasmCryptoResult::Ok(Uint8Array::from(ext_sender.as_slice()).into())
@@ -1783,15 +1773,16 @@ impl CoreCrypto {
 
     /// Returns: [`WasmCryptoResult<Box<[js_sys::Uint8Array]>`]
     ///
-    /// see [core_crypto::mls::context::CentralContext::get_client_ids]
+    /// See [core_crypto::mls::conversation::ImmutableConversation::get_client_ids]
     pub fn get_client_ids(&self, conversation_id: ConversationId) -> Promise {
         let central = self.inner.clone();
         future_to_promise(
             async move {
                 let clients = central
-                    .get_client_ids(&conversation_id.to_vec())
-                    .await
-                    .map_err(CoreCryptoError::from)?;
+                    .get_raw_conversation(&conversation_id.to_vec())
+                    .await?
+                    .get_client_ids()
+                    .await;
                 let clients = js_sys::Array::from_iter(
                     clients
                         .into_iter()
@@ -1843,14 +1834,16 @@ impl CoreCrypto {
 
     /// Returns [`WasmCryptoResult<Vec<WireIdentity>>`]
     ///
-    /// see [core_crypto::mls::context::CentralContext::get_device_identities]
+    /// see [core_crypto::mls::conversation::ConversationGuard::get_device_identities]
     pub fn get_device_identities(&self, conversation_id: ConversationId, device_ids: Box<[Uint8Array]>) -> Promise {
         let central = self.inner.clone();
         future_to_promise(
             async move {
                 let device_ids = device_ids.iter().map(|c| c.to_vec().into()).collect::<Vec<ClientId>>();
                 let identities = central
-                    .get_device_identities(&conversation_id, &device_ids[..])
+                    .get_raw_conversation(&conversation_id)
+                    .await?
+                    .get_device_identities(&device_ids[..])
                     .await
                     .map_err(CoreCryptoError::from)?
                     .into_iter()
@@ -1864,13 +1857,15 @@ impl CoreCrypto {
 
     /// Returns [`WasmCryptoResult<HashMap<String, Vec<WireIdentity>>>`]
     ///
-    /// see [core_crypto::mls::context::CentralContext::get_user_identities]
+    /// see [core_crypto::mls::conversation::ConversationGuard::get_user_identities]
     pub fn get_user_identities(&self, conversation_id: ConversationId, user_ids: Box<[String]>) -> Promise {
         let central = self.inner.clone();
         future_to_promise(
             async move {
                 let identities = central
-                    .get_user_identities(&conversation_id, user_ids.deref())
+                    .get_raw_conversation(&conversation_id)
+                    .await?
+                    .get_user_identities(user_ids.deref())
                     .await
                     .map_err(CoreCryptoError::from)?
                     .into_iter()

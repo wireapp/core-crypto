@@ -1,4 +1,5 @@
 mod commit;
+mod e2e_identity;
 mod encrypt;
 
 use async_lock::{RwLockReadGuard, RwLockWriteGuard};
@@ -8,6 +9,7 @@ use std::sync::Arc;
 
 use super::{Error, MlsConversation, Result, commit::MlsCommitBundle};
 use crate::mls::credential::CredentialBundle;
+use crate::prelude::{ClientId, MlsCiphersuite};
 use crate::{
     LeafError, RecursiveError,
     context::CentralContext,
@@ -20,6 +22,7 @@ use crate::{
 /// By doing so, it permits mutable accesses to the conversation. This in turn
 /// means that we don't have to duplicate the entire `MlsConversation` API
 /// on `CentralContext`.
+#[derive(Debug)]
 pub struct ConversationGuard {
     inner: GroupStoreValue<MlsConversation>,
     central_context: CentralContext,
@@ -87,5 +90,48 @@ impl ConversationGuard {
     fn group_info(group_info: Option<GroupInfo>) -> Result<MlsGroupInfoBundle> {
         let group_info = group_info.ok_or(LeafError::MissingGroupInfo)?;
         MlsGroupInfoBundle::try_new_full_plaintext(group_info)
+    }
+
+    /// Returns the epoch of a given conversation
+    pub async fn epoch(&self) -> u64 {
+        let conversation = self.inner.read().await;
+        conversation.group.epoch().as_u64()
+    }
+
+    /// Returns the ciphersuite of a given conversation
+    pub async fn ciphersuite(&self) -> MlsCiphersuite {
+        let conversation = self.inner.read().await;
+        conversation.ciphersuite()
+    }
+
+    /// Derives a new key from the one in the group, to be used elsewhere.
+    ///
+    /// # Arguments
+    /// * `key_length` - the length of the key to be derived. If the value is higher than the
+    ///     bounds of `u16` or the context hash * 255, an error will be returned
+    ///
+    /// # Errors
+    /// OpenMls secret generation error
+    pub async fn export_secret_key(&self, key_length: usize) -> Result<Vec<u8>> {
+        self.conversation()
+            .await
+            .export_secret_key(&self.mls_provider().await?, key_length)
+    }
+
+    /// Exports the clients from a conversation
+    ///
+    /// # Arguments
+    /// * `conversation_id` - the group/conversation id
+    ///
+    /// # Errors
+    /// if the conversation can't be found
+    pub async fn get_client_ids(&self) -> Vec<ClientId> {
+        self.conversation().await.get_client_ids()
+    }
+
+    /// Returns the raw public key of the single external sender present in this group.
+    /// This should be used to initialize a subconversation
+    pub async fn get_external_sender(&self) -> Result<Vec<u8>> {
+        self.conversation().await.get_external_sender().await
     }
 }

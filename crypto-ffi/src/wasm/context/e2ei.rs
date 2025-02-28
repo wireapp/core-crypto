@@ -210,12 +210,16 @@ impl CoreCryptoContext {
 
     /// Returns: [`WasmCryptoResult<()>`]
     ///
-    /// see [core_crypto::context::CentralContext::e2ei_rotate]
+    /// See [core_crypto::mls::conversation::ConversationGuard::e2ei_rotate]
     pub fn e2ei_rotate(&self, conversation_id: ConversationId) -> Promise {
         let context = self.inner.clone();
         future_to_promise(
             async move {
-                context.e2ei_rotate(&conversation_id, None).await?;
+                context
+                    .conversation_guard(&conversation_id)
+                    .await?
+                    .e2ei_rotate(None)
+                    .await?;
                 WasmCryptoResult::Ok(JsValue::UNDEFINED)
             }
             .err_into(),
@@ -290,15 +294,16 @@ impl CoreCryptoContext {
 
     /// Returns [`WasmCryptoResult<u8>`]
     ///
-    /// see [core_crypto::mls::context::CentralContext::e2ei_conversation_state]
+    /// see [core_crypto::mls::conversation::ImmutableConversation::e2ei_conversation_state]
     pub fn e2ei_conversation_state(&self, conversation_id: ConversationId) -> Promise {
         let context = self.inner.clone();
         future_to_promise(
             async move {
                 let state: E2eiConversationState = context
-                    .e2ei_conversation_state(&conversation_id)
-                    .await
-                    .map_err(CoreCryptoError::from)?
+                    .conversation_guard(&conversation_id)
+                    .await?
+                    .e2ei_conversation_state()
+                    .await?
                     .into();
                 WasmCryptoResult::Ok((state as u8).into())
             }
@@ -330,7 +335,9 @@ impl CoreCryptoContext {
             async move {
                 let device_ids = device_ids.iter().map(|c| c.to_vec().into()).collect::<Vec<ClientId>>();
                 let identities = context
-                    .get_device_identities(&conversation_id, &device_ids[..])
+                    .conversation_guard(&conversation_id)
+                    .await?
+                    .get_device_identities(&device_ids[..])
                     .await
                     .map_err(CoreCryptoError::from)?
                     .into_iter()
@@ -350,7 +357,9 @@ impl CoreCryptoContext {
         future_to_promise(
             async move {
                 let identities = context
-                    .get_user_identities(&conversation_id, user_ids.deref())
+                    .conversation_guard(&conversation_id)
+                    .await?
+                    .get_user_identities(user_ids.deref())
                     .await
                     .map_err(CoreCryptoError::from)?
                     .into_iter()

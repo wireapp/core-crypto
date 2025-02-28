@@ -563,9 +563,12 @@ impl ClientContext {
         for conv in all_conversations {
             let id = conv.read().await.id().clone();
             self.context
-                .e2ei_rotate(&id, None)
+                .conversation_guard(&id)
                 .await
-                .map_err(RecursiveError::e2e_identity("e2ei rotating"))?;
+                .map_err(RecursiveError::mls_conversation("getting conversation by id"))?
+                .e2ei_rotate(None)
+                .await
+                .map_err(RecursiveError::mls_conversation("e2ei rotating"))?;
             let commit = self.mls_transport.latest_commit_bundle().await;
             conversation_ids_and_commits.push((id, commit));
         }
@@ -678,10 +681,13 @@ impl ClientContext {
         cb: &CredentialBundle,
     ) -> MlsCommitBundle {
         let client = self.client().await;
-        let conversation = self.context.get_conversation(id).await.unwrap();
-        let mut conversation_guard = conversation.write().await;
-        conversation_guard
-            .e2ei_rotate(&self.central.mls_backend, &client, Some(cb))
+        let backend = self.context.mls_provider().await.unwrap();
+        let mut conversation_guard = self.context.conversation_guard(id).await.unwrap();
+        let mut conversation = conversation_guard.conversation_mut().await;
+        let mut leaf_node = conversation.group.own_leaf().unwrap().clone();
+        leaf_node.set_credential_with_key(cb.to_mls_credential_with_key());
+        conversation
+            .update_keying_material(&client, &backend, Some(cb), Some(leaf_node))
             .await
             .unwrap()
     }
@@ -705,7 +711,14 @@ impl ClientContext {
         // verify the identity in..
         // the MLS group
         let cid = self.get_client_id().await;
-        let group_identities = self.context.get_device_identities(id, &[cid.clone()]).await.unwrap();
+        let group_identities = self
+            .context
+            .conversation_guard(id)
+            .await
+            .unwrap()
+            .get_device_identities(&[cid.clone()])
+            .await
+            .unwrap();
         let group_identity = group_identities.first().unwrap();
         assert_eq!(group_identity.client_id.as_bytes(), cid.0.as_slice());
         assert_eq!(

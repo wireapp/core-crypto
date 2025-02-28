@@ -119,9 +119,14 @@ impl CoreCryptoContext {
             .into())
     }
 
-    /// See [core_crypto::context::CentralContext::e2ei_rotate]
+    /// See [core_crypto::mls::conversation::ConversationGuard::e2ei_rotate]
     pub async fn e2ei_rotate(&self, conversation_id: Vec<u8>) -> CoreCryptoResult<()> {
-        Ok(self.context.e2ei_rotate(&conversation_id, None).await?)
+        Ok(self
+            .context
+            .conversation_guard(&conversation_id)
+            .await?
+            .e2ei_rotate(None)
+            .await?)
     }
 
     /// See [core_crypto::context::CentralContext::save_x509_credential]
@@ -171,11 +176,13 @@ impl CoreCryptoContext {
             .map(E2eiEnrollment)?)
     }
 
-    /// See [core_crypto::context::CentralContext::e2ei_conversation_state]
+    /// See [core_crypto::mls::conversation::conversation_guard::ConversationGuard::e2ei_conversation_state]
     pub async fn e2ei_conversation_state(&self, conversation_id: Vec<u8>) -> CoreCryptoResult<E2eiConversationState> {
         Ok(self
             .context
-            .e2ei_conversation_state(&conversation_id)
+            .conversation_guard(&conversation_id)
+            .await?
+            .e2ei_conversation_state()
             .await
             .map(Into::into)?)
     }
@@ -205,7 +212,9 @@ impl CoreCryptoContext {
         let device_ids = device_ids.into_iter().map(|cid| cid.0).collect::<Vec<_>>();
         Ok(self
             .context
-            .get_device_identities(&conversation_id, &device_ids[..])
+            .conversation_guard(&conversation_id)
+            .await?
+            .get_device_identities(&device_ids[..])
             .await?
             .into_iter()
             .map(Into::into)
@@ -220,7 +229,9 @@ impl CoreCryptoContext {
     ) -> CoreCryptoResult<HashMap<String, Vec<WireIdentity>>> {
         Ok(self
             .context
-            .get_user_identities(&conversation_id, &user_ids[..])
+            .conversation_guard(&conversation_id)
+            .await?
+            .get_user_identities(&user_ids[..])
             .await?
             .into_iter()
             .map(|(k, v)| (k, v.into_iter().map(Into::into).collect()))
