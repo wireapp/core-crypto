@@ -271,20 +271,4 @@ impl CoreCryptoContext {
                 .map_err(Into::into)
         } or throw WasmCryptoResult<_>)
     }
-
-    /// Returns: [`WasmCryptoResult<()>`]
-    ///
-    /// See [core_crypto::context::CentralContext::proteus_cryptobox_migrate]
-    pub fn proteus_cryptobox_migrate(&self, path: String) -> Promise {
-        let context = self.inner.clone();
-        future_to_promise(
-            async move {
-                proteus_impl! {{
-                    context.proteus_cryptobox_migrate(&path).await.map_err(CoreCryptoError::from)?;
-                    WasmCryptoResult::Ok(JsValue::UNDEFINED)
-                } or throw WasmCryptoResult<_> }
-            }
-            .err_into(),
-        )
-    }
 }
