@@ -73,7 +73,7 @@ proteus-traits = { workspace = true, optional = true }
 sha2 = "0.10.8"
 
 [target.'cfg(not(target_family = "wasm"))'.dependencies]
-sysinfo = { version = "0.32", default-features = false, features = [
+sysinfo = { version = "0.33", default-features = false, features = [
     "apple-app-store",
     "system",
 ] }
