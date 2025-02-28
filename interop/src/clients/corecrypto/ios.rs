@@ -141,8 +141,9 @@ impl CoreCryptoIosClient {
         let client_id_str = client_id.as_hyphenated().to_string();
         let client_id_base64 = general_purpose::STANDARD.encode(client_id_str.as_str());
         let ciphersuite = CIPHERSUITE_IN_USE as u16;
+        let device = std::env::var("INTEROP_SIMULATOR_DEVICE").unwrap_or("booted".into());
 
-        let driver = SimulatorDriver::new("booted".into(), "com.wire.InteropClient".into());
+        let driver = SimulatorDriver::new(device, "com.wire.InteropClient".into());
         log::info!("initialising core crypto with ciphersuite {}", ciphersuite);
         driver
             .execute(format!(

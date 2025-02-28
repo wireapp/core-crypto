@@ -156,10 +156,14 @@ jobs:
         run: |
           cd interop/src/clients/InteropClient
           xcodebuild -scheme InteropClient -sdk iphonesimulator -destination 'platform=iOS Simulator,name=iPhone 16' clean build install  DSTROOT=./Products
-          ./install_app.sh "iPhone 16"
-          ./grant_permissions.sh "iPhone 16"
+          echo "INTEROP_SIMULATOR_DEVICE=$(./create_simulator.sh)" >> $GITHUB_ENV
       - name: run e2e interop test
         run: cargo run --bin interop
+      - name: delete simulator
+        if: always()
+        run: |
+          cd interop/src/clients/InteropClient
+          ./delete_simulator.sh ${{ env.INTEROP_SIMULATOR_DEVICE }}
 
   build-and-test-wasm:
     runs-on: ubuntu-latest
