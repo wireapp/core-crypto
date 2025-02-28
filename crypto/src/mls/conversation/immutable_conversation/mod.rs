@@ -1,7 +1,5 @@
-mod e2e_identity;
-
-use super::{Conversation, Error, MlsConversation, Result};
-use crate::prelude::{ClientId, MlsCentral, MlsCiphersuite};
+use super::{ConversationWithCentral, MlsConversation, Result};
+use crate::prelude::MlsCentral;
 
 /// An ImmutableConversation wraps a `MlsConversation`.
 ///
@@ -13,7 +11,7 @@ pub struct ImmutableConversation {
 
 #[cfg_attr(target_family = "wasm", async_trait::async_trait(?Send))]
 #[cfg_attr(not(target_family = "wasm"), async_trait::async_trait)]
-impl<'inner> Conversation<'inner> for ImmutableConversation {
+impl<'inner> ConversationWithCentral<'inner> for ImmutableConversation {
     type Central = MlsCentral;
 
     type Conversation = &'inner MlsConversation;
