@@ -24,6 +24,7 @@ use std::{
 };
 
 use crate::proteus_impl;
+use core_crypto::mls::conversation::Conversation;
 use core_crypto::{InnermostErrorMessage, MlsTransportResponse, prelude::*};
 use futures_util::future::TryFutureExt;
 use js_sys::{Promise, Uint8Array};
