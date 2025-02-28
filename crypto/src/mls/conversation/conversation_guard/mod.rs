@@ -7,7 +7,7 @@ use mls_crypto_provider::MlsCryptoProvider;
 use openmls::prelude::group_info::GroupInfo;
 use std::sync::Arc;
 
-use super::{Conversation, Error, MlsConversation, Result, commit::MlsCommitBundle};
+use super::{ConversationWithCentral, Error, MlsConversation, Result, commit::MlsCommitBundle};
 use crate::mls::credential::CredentialBundle;
 use crate::prelude::{ClientId, MlsCiphersuite};
 use crate::{
@@ -30,7 +30,7 @@ pub struct ConversationGuard {
 
 #[cfg_attr(target_family = "wasm", async_trait::async_trait(?Send))]
 #[cfg_attr(not(target_family = "wasm"), async_trait::async_trait)]
-impl<'inner> Conversation<'inner> for ConversationGuard {
+impl<'inner> ConversationWithCentral<'inner> for ConversationGuard {
     type Central = CentralContext;
     type Conversation = RwLockReadGuard<'inner, MlsConversation>;
 
