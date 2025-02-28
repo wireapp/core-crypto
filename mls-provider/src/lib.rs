@@ -1,6 +1,6 @@
 #![doc = include_str!("../README.md")]
 
-pub use core_crypto_keystore::Connection as CryptoKeystore;
+pub use core_crypto_keystore::{Connection as CryptoKeystore, DatabaseKey};
 
 mod crypto_provider;
 mod error;
@@ -61,12 +61,11 @@ impl std::ops::DerefMut for EntropySeed {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct MlsCryptoProviderConfiguration<'a> {
     /// File path or database name of the persistent storage
     pub db_path: &'a str,
     /// Encryption master key of the encrypted-at-rest persistent storage
-    pub identity_key: &'a str,
+    pub db_key: DatabaseKey,
     /// Dictates whether or not the backend storage is in memory or not
     pub in_memory: bool,
     /// External seed for the ChaCha20 PRNG entropy pool
@@ -85,9 +84,9 @@ impl MlsCryptoProvider {
     pub async fn try_new_with_configuration(config: MlsCryptoProviderConfiguration<'_>) -> MlsProviderResult<Self> {
         let crypto = config.entropy_seed.map(RustCrypto::new_with_seed).unwrap_or_default();
         let key_store = if config.in_memory {
-            CryptoKeystore::open_in_memory_with_key("", config.identity_key).await?
+            CryptoKeystore::open_in_memory_with_key("", &config.db_key).await?
         } else {
-            CryptoKeystore::open_with_key(config.db_path, config.identity_key).await?
+            CryptoKeystore::open_with_key(config.db_path, &config.db_key).await?
         };
         Ok(Self {
             crypto,
@@ -96,9 +95,9 @@ impl MlsCryptoProvider {
         })
     }
 
-    pub async fn try_new(db_path: impl AsRef<str>, identity_key: impl AsRef<str>) -> MlsProviderResult<Self> {
+    pub async fn try_new(db_path: impl AsRef<str>, db_key: &DatabaseKey) -> MlsProviderResult<Self> {
         let crypto = RustCrypto::default();
-        let key_store = CryptoKeystore::open_with_key(db_path, identity_key.as_ref()).await?;
+        let key_store = CryptoKeystore::open_with_key(db_path, db_key).await?;
         Ok(Self {
             crypto,
             key_store,
@@ -106,9 +105,9 @@ impl MlsCryptoProvider {
         })
     }
 
-    pub async fn try_new_in_memory(identity_key: impl AsRef<str>) -> MlsProviderResult<Self> {
+    pub async fn try_new_in_memory(db_key: &DatabaseKey) -> MlsProviderResult<Self> {
         let crypto = RustCrypto::default();
-        let key_store = CryptoKeystore::open_in_memory_with_key("", identity_key.as_ref()).await?;
+        let key_store = CryptoKeystore::open_in_memory_with_key("", db_key).await?;
         Ok(Self {
             crypto,
             key_store,
