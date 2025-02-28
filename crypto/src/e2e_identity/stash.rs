@@ -88,6 +88,8 @@ mod tests {
         test_utils::{x509::X509TestChain, *},
     };
 
+    use core_crypto_keystore::DatabaseKey;
+
     wasm_bindgen_test_configure!(run_in_browser);
 
     #[apply(all_cred_cipher)]
@@ -145,7 +147,8 @@ mod tests {
                     move |e, _cc| {
                         Box::pin(async move {
                             // this restore recreates a partial enrollment
-                            let backend = MlsCryptoProvider::try_new_in_memory("new").await.unwrap();
+                            let key = DatabaseKey::generate();
+                            let backend = MlsCryptoProvider::try_new_in_memory(&key).await.unwrap();
                             backend.new_transaction().await.unwrap();
                             let client_id = e.client_id.parse::<WireQualifiedClientId>().unwrap();
                             E2eiEnrollment::try_new(

@@ -123,6 +123,8 @@ mod tests {
         },
     };
 
+    use core_crypto_keystore::DatabaseKey;
+
     wasm_bindgen_test_configure!(run_in_browser);
 
     #[apply(all_cred_cipher)]
@@ -385,7 +387,7 @@ mod tests {
             let charlie_central = Client::try_new(
                 MlsClientConfiguration::try_new(
                     charlie_path.0,
-                    "charlie".into(),
+                    DatabaseKey::generate(),
                     None,
                     ciphersuites.clone(),
                     None,
@@ -526,7 +528,7 @@ mod tests {
 
         let creator_cfg = MlsClientConfiguration::try_new(
             creator_path.0,
-            "alice".into(),
+            DatabaseKey::generate(),
             None,
             ciphersuites.clone(),
             None,
@@ -568,7 +570,7 @@ mod tests {
         let guest_path = tmp_db_file();
         let guest_cfg = MlsClientConfiguration::try_new(
             guest_path.0,
-            "bob".into(),
+            DatabaseKey::generate(),
             None,
             ciphersuites.clone(),
             None,

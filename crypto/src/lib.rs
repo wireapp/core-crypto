@@ -39,6 +39,8 @@ mod build_metadata;
 use crate::prelude::MlsCommitBundle;
 pub use build_metadata::{BUILD_METADATA, BuildMetadata};
 
+pub use core_crypto_keystore::DatabaseKey;
+
 /// Common imports that should be useful for most uses of the crate
 pub mod prelude {
     pub use openmls::{
