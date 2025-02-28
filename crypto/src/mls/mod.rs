@@ -11,6 +11,7 @@ use crate::{
         key_package::INITIAL_KEYING_MATERIAL_COUNT,
     },
 };
+use core_crypto_keystore::DatabaseKey;
 use mls_crypto_provider::{EntropySeed, MlsCryptoProvider, MlsCryptoProviderConfiguration};
 use openmls_traits::OpenMlsCryptoProvider;
 
@@ -42,7 +43,7 @@ pub(crate) mod config {
         /// Location where the SQLite/IndexedDB database will be stored
         pub store_path: String,
         /// Identity key to be used to instantiate the [MlsCryptoProvider]
-        pub identity_key: String,
+        pub database_key: DatabaseKey,
         /// Identifier for the client to be used by [MlsCentral]
         pub client_id: Option<ClientId>,
         /// Entropy pool seed for the internal PRNG
@@ -58,7 +59,7 @@ pub(crate) mod config {
         ///
         /// # Arguments
         /// * `store_path` - location where the SQLite/IndexedDB database will be stored
-        /// * `identity_key` - identity key to be used to instantiate the [MlsCryptoProvider]
+        /// * `database_key` - key to be used to instantiate the [MlsCryptoProvider]
         /// * `client_id` - identifier for the client to be used by [MlsCentral]
         /// * `ciphersuites` - Ciphersuites supported by this device
         /// * `entropy` - External source of entropy for platforms where default source insufficient
@@ -68,21 +69,13 @@ pub(crate) mod config {
         ///
         /// # Examples
         ///
-        /// This should fail:
-        /// ```
-        /// use core_crypto::{prelude::MlsCentralConfiguration, mls::Error};
-        ///
-        /// let result = MlsCentralConfiguration::try_new(String::new(), String::new(), Some(b"".to_vec().into()), vec![], None, Some(100));
-        /// assert!(matches!(result.unwrap_err(), Error::MalformedIdentifier(_)));
-        /// ```
-        ///
-        /// This should work:
         /// ```
         /// use core_crypto::prelude::{MlsCentralConfiguration, MlsCiphersuite};
+        /// use core_crypto::DatabaseKey;
         ///
         /// let result = MlsCentralConfiguration::try_new(
         ///     "/tmp/crypto".to_string(),
-        ///     "MY_IDENTITY_KEY".to_string(),
+        ///     DatabaseKey::generate(),
         ///     Some(b"MY_CLIENT_ID".to_vec().into()),
         ///     vec![MlsCiphersuite::default()],
         ///     None,
@@ -92,7 +85,7 @@ pub(crate) mod config {
         /// ```
         pub fn try_new(
             store_path: String,
-            identity_key: String,
+            database_key: DatabaseKey,
             client_id: Option<ClientId>,
             ciphersuites: Vec<MlsCiphersuite>,
             entropy: Option<Vec<u8>>,
@@ -101,10 +94,6 @@ pub(crate) mod config {
             // TODO: probably more complex rules to enforce. Tracking issue: WPB-9598
             if store_path.trim().is_empty() {
                 return Err(Error::MalformedIdentifier("store_path"));
-            }
-            // TODO: probably more complex rules to enforce. Tracking issue: WPB-9598
-            if identity_key.trim().is_empty() {
-                return Err(Error::MalformedIdentifier("identity_key"));
             }
             // TODO: probably more complex rules to enforce. Tracking issue: WPB-9598
             if let Some(client_id) = client_id.as_ref() {
@@ -120,7 +109,7 @@ pub(crate) mod config {
                 .map_err(MlsError::wrap("gathering external entropy"))?;
             Ok(Self {
                 store_path,
-                identity_key,
+                database_key,
                 client_id,
                 ciphersuites,
                 external_entropy,
@@ -195,7 +184,7 @@ impl MlsCentral {
         // Init backend (crypto + rand + keystore)
         let mls_backend = MlsCryptoProvider::try_new_with_configuration(MlsCryptoProviderConfiguration {
             db_path: &configuration.store_path,
-            identity_key: &configuration.identity_key,
+            db_key: configuration.database_key.clone(),
             in_memory: false,
             entropy_seed: configuration.external_entropy.clone(),
         })
@@ -208,7 +197,7 @@ impl MlsCentral {
     pub async fn try_new_in_memory(configuration: MlsCentralConfiguration) -> Result<Self> {
         let mls_backend = MlsCryptoProvider::try_new_with_configuration(MlsCryptoProviderConfiguration {
             db_path: &configuration.store_path,
-            identity_key: &configuration.identity_key,
+            db_key: configuration.database_key.clone(),
             in_memory: true,
             entropy_seed: configuration.external_entropy.clone(),
         })
@@ -548,6 +537,8 @@ mod tests {
 
     wasm_bindgen_test_configure!(run_in_browser);
 
+    use core_crypto_keystore::DatabaseKey;
+
     mod conversation_epoch {
         use super::*;
         use crate::mls::conversation::Conversation as _;
@@ -620,7 +611,7 @@ mod tests {
                 Box::pin(async move {
                     let configuration = MlsCentralConfiguration::try_new(
                         tmp_dir_argument,
-                        "test".to_string(),
+                        DatabaseKey::generate(),
                         Some("alice".into()),
                         vec![case.ciphersuite()],
                         None,
@@ -641,7 +632,7 @@ mod tests {
             let ciphersuites = vec![MlsCiphersuite::default()];
             let configuration = MlsCentralConfiguration::try_new(
                 " ".to_string(),
-                "test".to_string(),
+                DatabaseKey::generate(),
                 Some("alice".into()),
                 ciphersuites,
                 None,
@@ -655,36 +646,13 @@ mod tests {
 
         #[cfg_attr(not(target_family = "wasm"), async_std::test)]
         #[wasm_bindgen_test]
-        async fn identity_key_should_not_be_empty_nor_blank() {
-            run_tests(|[tmp_dir_argument]| {
-                Box::pin(async move {
-                    let ciphersuites = vec![MlsCiphersuite::default()];
-                    let configuration = MlsCentralConfiguration::try_new(
-                        tmp_dir_argument,
-                        " ".to_string(),
-                        Some("alice".into()),
-                        ciphersuites,
-                        None,
-                        Some(INITIAL_KEYING_MATERIAL_COUNT),
-                    );
-                    assert!(matches!(
-                        configuration.unwrap_err(),
-                        mls::Error::MalformedIdentifier("identity_key")
-                    ));
-                })
-            })
-            .await
-        }
-
-        #[cfg_attr(not(target_family = "wasm"), async_std::test)]
-        #[wasm_bindgen_test]
         async fn client_id_should_not_be_empty() {
             run_tests(|[tmp_dir_argument]| {
                 Box::pin(async move {
                     let ciphersuites = vec![MlsCiphersuite::default()];
                     let configuration = MlsCentralConfiguration::try_new(
                         tmp_dir_argument,
-                        "test".to_string(),
+                        DatabaseKey::generate(),
                         Some("".into()),
                         ciphersuites,
                         None,
@@ -733,7 +701,7 @@ mod tests {
             Box::pin(async move {
                 let configuration = MlsCentralConfiguration::try_new(
                     tmp_dir_argument,
-                    "test".to_string(),
+                    DatabaseKey::generate(),
                     Some("potato".into()),
                     vec![case.ciphersuite()],
                     None,
@@ -756,7 +724,7 @@ mod tests {
                 let x509_test_chain = X509TestChain::init_empty(case.signature_scheme());
                 let configuration = MlsCentralConfiguration::try_new(
                     tmp_dir_argument,
-                    "test".to_string(),
+                    DatabaseKey::generate(),
                     None,
                     vec![case.ciphersuite()],
                     None,
