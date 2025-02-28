@@ -1,5 +1,4 @@
 mod commit;
-mod e2e_identity;
 mod encrypt;
 
 use async_lock::{RwLockReadGuard, RwLockWriteGuard};
