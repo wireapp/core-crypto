@@ -559,6 +559,7 @@ mod tests {
     };
 
     use super::*;
+    use core_crypto_keystore::DatabaseKey;
 
     wasm_bindgen_test_configure!(run_in_browser);
 
@@ -671,7 +672,7 @@ mod tests {
                     let path = tmp_db_file();
                     let config = MlsClientConfiguration::try_new(
                         path.0,
-                        name.clone(),
+                        DatabaseKey::generate(),
                         None,
                         vec![case.ciphersuite()],
                         None,

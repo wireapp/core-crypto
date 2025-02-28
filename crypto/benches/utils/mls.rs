@@ -8,7 +8,7 @@ use core_crypto::prelude::{
     CertificateBundle, Client, ClientId, ConversationId, MlsCiphersuite, MlsClientConfiguration, MlsCommitBundle,
     MlsConversationConfiguration, MlsCredentialType, MlsCustomConfiguration, MlsGroupInfoBundle,
 };
-use core_crypto::{CoreCrypto, MlsTransport, MlsTransportResponse};
+use core_crypto::{CoreCrypto, DatabaseKey, MlsTransport, MlsTransportResponse};
 use mls_crypto_provider::MlsCryptoProvider;
 use openmls::framing::MlsMessageOut;
 use openmls::{
@@ -152,11 +152,11 @@ pub async fn new_central(
 ) -> (CoreCrypto, tempfile::TempDir, Arc<dyn MlsTransportTestExt>) {
     let (path, tmp_file) = tmp_db_file();
     let client_id = Alphanumeric.sample_string(&mut rand::thread_rng(), 10);
-    let secret = Alphanumeric.sample_string(&mut rand::thread_rng(), 10);
+    let key = DatabaseKey::generate();
     let ciphersuites = vec![ciphersuite];
     let cfg = MlsClientConfiguration::try_new(
         path,
-        secret,
+        key,
         Some(client_id.as_bytes().into()),
         ciphersuites,
         None,
@@ -253,7 +253,8 @@ pub async fn rand_key_package(ciphersuite: MlsCiphersuite) -> (KeyPackage, Clien
         .sample_string(&mut rand::thread_rng(), 16)
         .as_bytes()
         .to_vec();
-    let backend = MlsCryptoProvider::try_new_in_memory("secret").await.unwrap();
+    let key = DatabaseKey::generate();
+    let backend = MlsCryptoProvider::try_new_in_memory(&key).await.unwrap();
     let cs: Ciphersuite = ciphersuite.into();
 
     let mut rng = backend.rand().borrow_rand().unwrap();
