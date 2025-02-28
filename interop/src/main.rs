@@ -59,7 +59,7 @@ fn run_test() -> Result<()> {
     use tokio::net::{TcpListener, TcpStream};
 
     color_eyre::install()?;
-    if std::env::var("RUST_LOG").is_ok() || std::env::var("CI").is_ok() {
+    if std::env::var("RUST_LOG").is_ok() {
         femme::start();
     }
 
