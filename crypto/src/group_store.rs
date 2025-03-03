@@ -290,26 +290,25 @@ pub(crate) const MEMORY_LIMIT: usize = 100_000_000;
 pub(crate) const ITEM_LIMIT: u32 = 100;
 
 impl HybridMemoryLimiter {
+    // in the wasm case, we ignore the suggested memory limit
+    #[cfg_attr(target_family = "wasm", expect(unused_variables))]
     pub(crate) fn new(count: Option<u32>, memory: Option<usize>) -> Self {
-        // false positive. We want to fetch system metrics lazily
-        #[allow(clippy::unnecessary_lazy_evaluations)]
-        let maybe_memory_limit = memory.or_else(|| {
-            cfg_if::cfg_if! {
-                if #[cfg(target_family = "wasm")] {
-                    None
-                } else {
-                    let system = sysinfo::System::new_with_specifics(sysinfo::RefreshKind::new().with_memory(sysinfo::MemoryRefreshKind::new().with_ram()));
-                    let available_sys_memory = system.available_memory();
-                    if available_sys_memory > 0 {
-                        Some(available_sys_memory as usize)
-                    } else {
-                        None
-                    }
-                }
-            }
-        });
+        #[cfg(target_family = "wasm")]
+        let memory_limit = MEMORY_LIMIT;
 
-        let mem = schnellru::ByMemoryUsage::new(maybe_memory_limit.unwrap_or(MEMORY_LIMIT));
+        #[cfg(not(target_family = "wasm"))]
+        let memory_limit = memory
+            .or_else(|| {
+                let system = sysinfo::System::new_with_specifics(
+                    sysinfo::RefreshKind::nothing().with_memory(sysinfo::MemoryRefreshKind::nothing().with_ram()),
+                );
+
+                let available_sys_memory = system.available_memory();
+                (available_sys_memory > 0).then_some(available_sys_memory as usize)
+            })
+            .unwrap_or(MEMORY_LIMIT);
+
+        let mem = schnellru::ByMemoryUsage::new(memory_limit);
         let len = schnellru::ByLength::new(count.unwrap_or(ITEM_LIMIT));
 
         Self { mem, len }
