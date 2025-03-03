@@ -731,7 +731,7 @@ mod tests {
 
         use super::Error;
         use crate::context::CentralContext;
-        use crate::mls::conversation::Conversation;
+        use crate::mls::conversation::Conversation as _;
         use crate::prelude::{ClientId, ConversationId, MlsCredentialType};
         use crate::{
             prelude::{DeviceStatus, E2eiConversationState},

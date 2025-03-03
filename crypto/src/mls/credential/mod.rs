@@ -152,6 +152,8 @@ mod tests {
     use std::sync::Arc;
     use wasm_bindgen_test::*;
 
+    use super::*;
+    use crate::mls::conversation::Conversation as _;
     use crate::{
         CoreCrypto, RecursiveError,
         mls::credential::x509::CertificatePrivateKey,
@@ -164,8 +166,6 @@ mod tests {
             *,
         },
     };
-
-    use super::*;
 
     wasm_bindgen_test_configure!(run_in_browser);
 

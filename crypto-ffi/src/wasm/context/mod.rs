@@ -3,6 +3,7 @@ use crate::{
     Ciphersuite, ConversationConfiguration, CoreCrypto, CoreCryptoError, CoreCryptoResult, CredentialType,
     CustomConfiguration, DecryptedMessage, FfiClientId, WasmCryptoResult, WelcomeBundle,
 };
+use core_crypto::mls::conversation::Conversation as _;
 use core_crypto::{
     RecursiveError,
     context::CentralContext,

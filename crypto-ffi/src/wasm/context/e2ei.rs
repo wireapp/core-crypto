@@ -3,6 +3,12 @@ use std::{
     ops::{Deref, DerefMut},
 };
 
+use crate::{
+    Ciphersuite, CoreCryptoError, CredentialType, CrlRegistration, E2eiDumpedPkiEnv, E2eiEnrollment, InternalError,
+    WasmCryptoResult, WireIdentity,
+    wasm::{E2eiConversationState, context::CoreCryptoContext},
+};
+use core_crypto::mls::conversation::Conversation as _;
 use core_crypto::{
     RecursiveError,
     prelude::{CiphersuiteName, ClientId, ConversationId, MlsCiphersuite, VerifiableGroupInfo},
@@ -12,12 +18,6 @@ use js_sys::{Promise, Uint8Array};
 use tls_codec::Deserialize;
 use wasm_bindgen::{JsValue, prelude::wasm_bindgen};
 use wasm_bindgen_futures::future_to_promise;
-
-use crate::{
-    Ciphersuite, CoreCryptoError, CredentialType, CrlRegistration, E2eiDumpedPkiEnv, E2eiEnrollment, InternalError,
-    WasmCryptoResult, WireIdentity,
-    wasm::{E2eiConversationState, context::CoreCryptoContext},
-};
 
 #[wasm_bindgen]
 impl CoreCryptoContext {

@@ -7,6 +7,7 @@ use crate::{
         E2eiEnrollment, MlsCredentialType, WireIdentity, context::CoreCryptoContext,
     },
 };
+use core_crypto::mls::conversation::Conversation as _;
 use core_crypto::{RecursiveError, prelude::VerifiableGroupInfo};
 use tls_codec::Deserialize;
 

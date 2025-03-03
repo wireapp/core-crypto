@@ -592,6 +592,7 @@ pub(crate) mod tests {
     use serde_json::json;
     use wasm_bindgen_test::*;
 
+    use crate::mls::conversation::Conversation as _;
     #[cfg(not(target_family = "wasm"))]
     use crate::{
         RecursiveError,

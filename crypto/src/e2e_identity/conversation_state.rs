@@ -214,12 +214,12 @@ mod tests {
     use crate::e2e_identity::rotate::tests::all::failsafe_ctx;
     use wasm_bindgen_test::*;
 
+    use super::*;
+    use crate::mls::conversation::Conversation as _;
     use crate::{
         prelude::{CertificateBundle, Client, MlsCredentialType},
         test_utils::*,
     };
-
-    use super::*;
 
     wasm_bindgen_test_configure!(run_in_browser);
 

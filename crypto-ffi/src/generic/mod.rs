@@ -29,6 +29,7 @@ use tls_codec::Deserialize;
 
 use self::context::CoreCryptoContext;
 use crate::{UniffiCustomTypeConverter, proteus_impl};
+use core_crypto::mls::conversation::Conversation as _;
 pub use core_crypto::prelude::ConversationId;
 use core_crypto::{
     InnermostErrorMessage, RecursiveError,
@@ -1184,12 +1185,18 @@ impl CoreCrypto {
 
     /// See [core_crypto::mls::conversation::ImmutableConversation::epoch]
     pub async fn conversation_epoch(&self, conversation_id: Vec<u8>) -> CoreCryptoResult<u64> {
-        Ok(self.central.get_raw_conversation(&conversation_id).await?.epoch())
+        let conversation = self.central.get_raw_conversation(&conversation_id).await?;
+        Ok(conversation.epoch().await)
     }
 
     /// See [core_crypto::mls::conversation::ImmutableConversation::ciphersuite]
     pub async fn conversation_ciphersuite(&self, conversation_id: &ConversationId) -> CoreCryptoResult<Ciphersuite> {
-        let cs = self.central.get_raw_conversation(conversation_id).await?.ciphersuite();
+        let cs = self
+            .central
+            .get_raw_conversation(conversation_id)
+            .await?
+            .ciphersuite()
+            .await;
         Ok(Ciphersuite::from(core_crypto::prelude::CiphersuiteName::from(cs)))
     }
 

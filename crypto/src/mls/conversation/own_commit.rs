@@ -130,6 +130,7 @@ mod tests {
     use super::super::error::Error;
     use crate::prelude::MlsError;
 
+    use crate::mls::conversation::Conversation as _;
     use wasm_bindgen_test::*;
 
     wasm_bindgen_test_configure!(run_in_browser);

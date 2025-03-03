@@ -4,6 +4,7 @@ use super::{
 };
 use crate::NewCrlDistributionPoints;
 use async_lock::{Mutex, OnceCell};
+use core_crypto::mls::conversation::Conversation as _;
 use core_crypto::{
     RecursiveError,
     context::CentralContext,

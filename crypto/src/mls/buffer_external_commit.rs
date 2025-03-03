@@ -149,6 +149,7 @@ impl CentralContext {
 
 #[cfg(test)]
 mod tests {
+    use crate::mls::conversation::Conversation as _;
     use crate::prelude::MlsConversationDecryptMessage;
     use crate::test_utils::*;
     use wasm_bindgen_test::*;

@@ -16,9 +16,9 @@ impl MlsConversation {
 
 #[cfg(test)]
 mod tests {
-    use wasm_bindgen_test::*;
-
+    use crate::mls::conversation::Conversation as _;
     use crate::test_utils::*;
+    use wasm_bindgen_test::*;
 
     wasm_bindgen_test_configure!(run_in_browser);
 

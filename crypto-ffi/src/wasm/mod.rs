@@ -24,6 +24,7 @@ use std::{
 };
 
 use crate::proteus_impl;
+use core_crypto::mls::conversation::Conversation as _;
 use core_crypto::{InnermostErrorMessage, MlsTransportResponse, prelude::*};
 use futures_util::future::TryFutureExt;
 use js_sys::{Promise, Uint8Array};
@@ -1582,8 +1583,16 @@ impl CoreCrypto {
     pub fn conversation_epoch(&self, conversation_id: ConversationId) -> Promise {
         let central = self.inner.clone();
         future_to_promise(
-            async move { WasmCryptoResult::Ok(central.get_raw_conversation(&conversation_id).await?.epoch().into()) }
-                .err_into(),
+            async move {
+                let epoch = central
+                    .get_raw_conversation(&conversation_id)
+                    .await?
+                    .epoch()
+                    .await
+                    .into();
+                WasmCryptoResult::Ok(epoch)
+            }
+            .err_into(),
         )
     }
 
@@ -1594,9 +1603,13 @@ impl CoreCrypto {
         let central = self.inner.clone();
         future_to_promise(
             async move {
-                WasmCryptoResult::Ok(
-                    Ciphersuite::from(central.get_raw_conversation(&conversation_id).await?.ciphersuite()).into(),
-                )
+                let ciphersuite: Ciphersuite = central
+                    .get_raw_conversation(&conversation_id)
+                    .await?
+                    .ciphersuite()
+                    .await
+                    .into();
+                WasmCryptoResult::Ok(ciphersuite.into())
             }
             .err_into(),
         )
