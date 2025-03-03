@@ -1,4 +1,6 @@
 import { browser } from "@wdio/globals";
+import type { local } from "webdriver";
+
 import {
     Ciphersuite,
     CommitBundle,
@@ -13,6 +15,12 @@ export const ALICE_ID = "alice";
 export const BOB_ID = "bob";
 export const CONV_ID = "convId";
 export const SESSION_ID = "proteusSessionId";
+
+// Logging can be adjusted via the CC_TEST_LOG_LEVEL variable:
+// 0 = no logs
+// 1 = browser logs
+// 2 = browser logs + CoreCrypto logs
+const logLevel = Number(process.env.CC_TEST_LOG_LEVEL || "0");
 
 declare global {
     interface Window {
@@ -41,16 +49,37 @@ interface DeliveryService extends MlsTransport {
     getLatestCommitBundle: () => Promise<CommitBundle>;
 }
 
+function logEvents(entry: local.LogEntry) {
+    if (logLevel >= 1) {
+        console.log(`[${entry.level}] ${entry.text}`);
+    }
+}
+
 export async function setup() {
     if ((await browser.getUrl()) === "about:blank") {
         await browser.url("/");
     }
-    await browser.execute(async () => {
+
+    // Forward browser log events to the console.
+    browser.on("log.entryAdded", logEvents);
+
+    await browser.execute(async (logLevel) => {
         if (window.ccModule === undefined) {
             // This is imported in the browser context, where it is fetched from the static file server,
             // but typescript tries to resolve this in the local directory.
             // @ts-expect-error TS2307: Cannot find module ./corecrypto.js or its corresponding type declarations.
             window.ccModule = await import("./corecrypto.js");
+
+            if (logLevel >= 2) {
+                window.ccModule.setLogger({
+                    log: (_, json_msg: string) => {
+                        console.log(json_msg);
+                    },
+                });
+                window.ccModule.setMaxLogLevel(
+                    window.ccModule.CoreCryptoLogLevel.Debug
+                );
+            }
 
             window.defaultCipherSuite =
                 window.ccModule.Ciphersuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519;
@@ -78,7 +107,7 @@ export async function setup() {
             }
             return cc;
         };
-    });
+    }, logLevel);
 }
 
 export async function teardown() {
@@ -98,6 +127,7 @@ export async function teardown() {
             delete window.cc[ccKey];
         }
     });
+    browser.off("log.entryAdded", logEvents);
 }
 
 /**
