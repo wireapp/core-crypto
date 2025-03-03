@@ -142,9 +142,12 @@ export async function ccInit(clientName: string): Promise<void> {
     return await browser.execute(async (clientName) => {
         const cipherSuite = window.defaultCipherSuite;
         const encoder = new TextEncoder();
+        const key = new Uint8Array(32);
+        window.crypto.getRandomValues(key);
+
         const clientConfig = {
             databaseName: clientName,
-            key: clientName,
+            key: new window.ccModule.DatabaseKey(key),
             wasmModule: undefined,
             ciphersuites: [cipherSuite],
             clientId: encoder.encode(clientName),
@@ -334,9 +337,12 @@ export async function roundTripMessage(
 export async function proteusInit(clientName: string): Promise<void> {
     return await browser.execute(async (clientName) => {
         const encoder = new TextEncoder();
+        const key = new Uint8Array(32);
+        window.crypto.getRandomValues(key);
+
         const clientConfig = {
             databaseName: clientName,
-            key: clientName,
+            key: new window.ccModule.DatabaseKey(key),
             clientId: encoder.encode(clientName),
         };
         const instance =
