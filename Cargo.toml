@@ -29,7 +29,7 @@ async-recursion = "1"
 async-std = "1.13"
 async-trait = "0.1"
 base64 = "0.22"
-bitflags = "2.8"
+bitflags = "2.9"
 cfg-if = "1.0"
 const_format = "0.2"
 core-crypto = { path = "crypto" }
