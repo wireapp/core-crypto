@@ -33,7 +33,10 @@ signature = { workspace = true, optional = true }
 
 [dev-dependencies]
 wire-e2e-identity = { version = "0.12.0", path = ".", features = ["builder"] }
-rusty-jwt-tools = { version = "0.12.0", path = "../jwt", features = ["test-utils", "rsa"] }
+rusty-jwt-tools = { version = "0.12.0", path = "../jwt", features = [
+    "test-utils",
+    "rsa",
+] }
 base64 = { workspace = true }
 url = { workspace = true }
 itertools = { workspace = true }
@@ -65,6 +68,11 @@ keycloak = { workspace = true }
 http-body-util = "0.1"
 hyper-util = { version = "0.1", features = ["full"] }
 
+[target.'cfg(target_family = "wasm")'.dependencies.uuid]
+workspace = true
+features = ["std", "js"]
+
+
 [features]
 default = []
-builder = [ "dep:x509-cert", "rusty-jwt-tools/test-utils"]
+builder = ["dep:x509-cert", "rusty-jwt-tools/test-utils"]
