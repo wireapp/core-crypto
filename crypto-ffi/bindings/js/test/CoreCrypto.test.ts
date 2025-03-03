@@ -954,3 +954,13 @@ describe("Error type mapping", () => {
         );
     });
 });
+
+describe("database key", () => {
+    it("must have correct length", async () => {
+        await expect(
+            browser.execute(async () => {
+                new window.ccModule.DatabaseKey(new Uint8Array(11));
+            })
+        ).rejects.toThrowError("Error: invalid buffer length for database key");
+    });
+});
