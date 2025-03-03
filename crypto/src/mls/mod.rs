@@ -145,6 +145,14 @@ pub(crate) mod config {
     }
 }
 
+#[cfg_attr(target_family = "wasm", async_trait::async_trait(?Send))]
+#[cfg_attr(not(target_family = "wasm"), async_trait::async_trait)]
+
+pub(crate) trait HasClientAndProvider: Send {
+    async fn client(&self) -> Result<Client>;
+    async fn mls_provider(&self) -> Result<MlsCryptoProvider>;
+}
+
 /// The entry point for the MLS CoreCrypto library. This struct provides all functionality to create
 /// and manage groups, make proposals and commits.
 #[derive(Debug, Clone)]
@@ -153,6 +161,18 @@ pub struct MlsCentral {
     pub(crate) mls_backend: MlsCryptoProvider,
     // this should be moved to the context
     pub(crate) transport: Arc<RwLock<Option<Arc<dyn MlsTransport + 'static>>>>,
+}
+
+#[cfg_attr(target_family = "wasm", async_trait::async_trait(?Send))]
+#[cfg_attr(not(target_family = "wasm"), async_trait::async_trait)]
+impl HasClientAndProvider for MlsCentral {
+    async fn client(&self) -> Result<Client> {
+        Ok(self.mls_client.clone())
+    }
+
+    async fn mls_provider(&self) -> Result<MlsCryptoProvider> {
+        Ok(self.mls_backend.clone())
+    }
 }
 
 impl MlsCentral {

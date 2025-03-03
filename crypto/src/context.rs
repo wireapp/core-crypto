@@ -1,10 +1,11 @@
 //! This module contains the primitives to enable transactional support on a higher level within the
 //! [MlsCentral]. All mutating operations need to be done through a [CentralContext].
 
+use crate::mls::HasClientAndProvider;
 #[cfg(feature = "proteus")]
 use crate::proteus::ProteusCentral;
 use crate::{
-    CoreCrypto, Error, KeystoreError, MlsError, MlsTransport, Result,
+    CoreCrypto, Error, KeystoreError, MlsError, MlsTransport, RecursiveError, Result,
     group_store::GroupStore,
     mls::MlsCentral,
     prelude::{Client, MlsConversation},
@@ -52,6 +53,24 @@ impl CoreCrypto {
             self.proteus.clone(),
         )
         .await
+    }
+}
+
+#[cfg_attr(target_family = "wasm", async_trait::async_trait(?Send))]
+#[cfg_attr(not(target_family = "wasm"), async_trait::async_trait)]
+impl HasClientAndProvider for CentralContext {
+    async fn client(&self) -> crate::mls::Result<Client> {
+        self.mls_client()
+            .await
+            .map_err(RecursiveError::root("getting mls client"))
+            .map_err(Into::into)
+    }
+
+    async fn mls_provider(&self) -> crate::mls::Result<MlsCryptoProvider> {
+        self.mls_provider()
+            .await
+            .map_err(RecursiveError::root("getting mls provider"))
+            .map_err(Into::into)
     }
 }
 
