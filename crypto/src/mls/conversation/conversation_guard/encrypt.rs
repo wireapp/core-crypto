@@ -3,6 +3,7 @@
 use super::ConversationGuard;
 use super::Result;
 use crate::MlsError;
+use crate::mls::conversation::ConversationWithMls as _;
 use openmls::prelude::MlsMessageOutBody;
 
 impl ConversationGuard {
