@@ -28,6 +28,7 @@ import {
     E2eiDumpedPkiEnv,
     MlsTransportProvider,
     WireIdentity,
+    DatabaseKey,
 } from "./core-crypto-ffi.js";
 
 import { CoreCryptoError } from "./CoreCryptoError.js";
@@ -58,7 +59,7 @@ export interface CoreCryptoDeferredParams {
      * Encryption master key
      * This should be appropriately stored in a secure location (i.e. WebCrypto private key storage)
      */
-    key: string;
+    key: DatabaseKey;
     /**
      * External PRNG entropy pool seed.
      * This **must** be exactly 32 bytes

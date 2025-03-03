@@ -1024,3 +1024,15 @@ describe("epoch observer", () => {
         expect(first_id_hex).toEqual(expect_conversation_id_hex);
     });
 });
+
+describe("database key", () => {
+    it("must have correct length", async () => {
+        await expect(
+            browser.execute(async () => {
+                new window.ccModule.DatabaseKey(new Uint8Array(11));
+            })
+        ).rejects.toThrowError(
+            "Error: Invalid database key size, expected 32, got 11"
+        );
+    });
+});
