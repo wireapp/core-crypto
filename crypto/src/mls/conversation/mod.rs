@@ -1354,4 +1354,101 @@ mod tests {
             .await;
         }
     }
+
+    mod export_secret {
+        use super::*;
+        use crate::MlsErrorKind;
+        use openmls::prelude::ExportSecretError;
+
+        #[apply(all_cred_cipher)]
+        #[wasm_bindgen_test]
+        pub async fn can_export_secret_key(case: TestCase) {
+            run_test_with_client_ids(case.clone(), ["alice"], move |[alice_central]| {
+                Box::pin(async move {
+                    let id = conversation_id();
+                    alice_central
+                        .context
+                        .new_conversation(&id, case.credential_type, case.cfg.clone())
+                        .await
+                        .unwrap();
+
+                    let key_length = 128;
+                    let result = alice_central
+                        .context
+                        .conversation_guard(&id)
+                        .await
+                        .unwrap()
+                        .export_secret_key(key_length)
+                        .await;
+                    assert!(result.is_ok());
+                    assert_eq!(result.unwrap().len(), key_length);
+                })
+            })
+            .await
+        }
+
+        #[apply(all_cred_cipher)]
+        #[wasm_bindgen_test]
+        pub async fn cannot_export_secret_key_invalid_length(case: TestCase) {
+            run_test_with_client_ids(case.clone(), ["alice"], move |[alice_central]| {
+                Box::pin(async move {
+                    let id = conversation_id();
+                    alice_central
+                        .context
+                        .new_conversation(&id, case.credential_type, case.cfg.clone())
+                        .await
+                        .unwrap();
+
+                    let result = alice_central
+                        .context
+                        .conversation_guard(&id)
+                        .await
+                        .unwrap()
+                        .export_secret_key(usize::MAX)
+                        .await;
+                    let error = result.unwrap_err();
+                    assert!(innermost_source_matches!(
+                        error,
+                        MlsErrorKind::MlsExportSecretError(ExportSecretError::KeyLengthTooLong)
+                    ));
+                })
+            })
+            .await
+        }
+    }
+
+    mod get_client_ids {
+        use super::*;
+
+        #[apply(all_cred_cipher)]
+        #[wasm_bindgen_test]
+        pub async fn can_get_client_ids(case: TestCase) {
+            run_test_with_client_ids(case.clone(), ["alice", "bob"], move |[alice_central, bob_central]| {
+                Box::pin(async move {
+                    let id = conversation_id();
+                    alice_central
+                        .context
+                        .new_conversation(&id, case.credential_type, case.cfg.clone())
+                        .await
+                        .unwrap();
+
+                    assert_eq!(
+                        alice_central
+                            .context
+                            .conversation_guard(&id)
+                            .await
+                            .unwrap()
+                            .get_client_ids()
+                            .await
+                            .len(),
+                        1
+                    );
+
+                    alice_central.invite_all(&case, &id, [&bob_central]).await.unwrap();
+                    assert_eq!(alice_central.context.get_client_ids(&id).await.unwrap().len(), 2);
+                })
+            })
+            .await
+        }
+    }
 }
