@@ -67,6 +67,7 @@ mod leaf_node_validation;
 pub(crate) mod merge;
 mod orphan_welcome;
 mod own_commit;
+mod pending_conversation;
 pub(crate) mod proposal;
 mod renew;
 pub(crate) mod welcome;
@@ -74,10 +75,13 @@ mod wipe;
 
 use crate::e2e_identity::conversation_state::compute_state;
 use crate::mls::HasClientAndProvider;
+use crate::mls::conversation::pending_conversation::PendingConversation;
 use crate::mls::credential::ext::CredentialExt as _;
 use crate::prelude::user_id::UserId;
 use crate::prelude::{ClientId, E2eiConversationState, WireIdentity};
 pub use conversation_guard::ConversationGuard;
+use core_crypto_keystore::connection::FetchFromDatabase;
+use core_crypto_keystore::entities::PersistedMlsPendingGroup;
 pub use error::{Error, Result};
 pub use immutable_conversation::ImmutableConversation;
 
@@ -497,6 +501,21 @@ impl CentralContext {
             .map_err(RecursiveError::root("fetching conversation from mls groups by id"))?
             .ok_or_else(|| LeafError::ConversationNotFound(id.clone()))?;
         Ok(ConversationGuard::new(inner, self.clone()))
+    }
+
+    pub(crate) async fn pending_conversation(&self, id: &ConversationId) -> Result<PendingConversation> {
+        let keystore = self
+            .keystore()
+            .await
+            .map_err(RecursiveError::root("getting keystore"))?;
+        let Some(pending_group) = keystore
+            .find::<PersistedMlsPendingGroup>(id)
+            .await
+            .map_err(KeystoreError::wrap("finding persisted mls pending group"))?
+        else {
+            return Err(LeafError::ConversationNotFound(id.clone()).into());
+        };
+        Ok(PendingConversation::new(pending_group, self.clone()))
     }
 
     pub(crate) async fn get_parent_conversation(
