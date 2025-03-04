@@ -235,7 +235,14 @@ mod tests {
                     // create a first commit then discard it from the store to be able to create a second one
                     let unmerged_commit = alice_central.create_unmerged_commit(&id).await.commit;
                     assert!(alice_central.pending_commit(&id).await.is_some());
-                    alice_central.context.clear_pending_commit(&id).await.unwrap();
+                    alice_central
+                        .context
+                        .conversation_guard(&id)
+                        .await
+                        .unwrap()
+                        .clear_pending_commit()
+                        .await
+                        .unwrap();
                     assert!(alice_central.pending_commit(&id).await.is_none());
 
                     // create another commit for the sole purpose of having it in the store
@@ -274,7 +281,14 @@ mod tests {
                     assert!(alice_central.pending_commit(&id).await.is_some());
 
                     // then delete the pending commit
-                    alice_central.context.clear_pending_commit(&id).await.unwrap();
+                    alice_central
+                        .context
+                        .conversation_guard(&id)
+                        .await
+                        .unwrap()
+                        .clear_pending_commit()
+                        .await
+                        .unwrap();
                     assert!(alice_central.pending_commit(&id).await.is_none());
 
                     let decrypt_self = alice_central

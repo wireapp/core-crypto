@@ -1512,7 +1512,14 @@ mod tests {
                         .commit
                         .to_bytes()
                         .unwrap();
-                    alice_central.context.clear_pending_commit(&id).await.unwrap();
+                    alice_central
+                        .context
+                        .conversation_guard(&id)
+                        .await
+                        .unwrap()
+                        .clear_pending_commit()
+                        .await
+                        .unwrap();
 
                     // Now let's jump to next epoch
                     alice_central

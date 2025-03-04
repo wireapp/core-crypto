@@ -66,9 +66,7 @@ impl ConversationGuard {
                 conversation.commit_accepted(&backend).await
             }
             Err(e @ Error::MessageRejected { .. }) => {
-                let backend = self.mls_provider().await?;
-                let mut conversation = self.inner.write().await;
-                conversation.clear_pending_commit(&backend).await?;
+                self.clear_pending_commit().await?;
                 Err(e)
             }
             Err(e) => Err(e),

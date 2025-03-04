@@ -69,7 +69,14 @@ mod tests {
 
                     // an commit to verify that we can still detect wrong epoch correctly
                     let unknown_commit = alice_central.create_unmerged_commit(&id).await.commit;
-                    alice_central.context.clear_pending_commit(&id).await.unwrap();
+                    alice_central
+                        .context
+                        .conversation_guard(&id)
+                        .await
+                        .unwrap()
+                        .clear_pending_commit()
+                        .await
+                        .unwrap();
 
                     alice_central
                         .context
