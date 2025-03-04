@@ -591,11 +591,8 @@ impl CentralContext {
         let msg =
             MlsMessageIn::tls_deserialize(&mut message.as_ref()).map_err(Error::tls_deserialize("mls message in"))?;
         let Ok(conversation) = self.get_conversation(id).await else {
-            return self
-                .try_process_own_join_commit(id, message)
-                .await
-                .map_err(RecursiveError::mls("handling when group is pending"))
-                .map_err(Into::into);
+            let pending_conversation = self.pending_conversation(id).await?;
+            return pending_conversation.try_process_own_join_commit(message).await;
         };
         let parent_conversation = self.get_parent_conversation(&conversation).await?;
 

@@ -16,7 +16,6 @@ use openmls_traits::OpenMlsCryptoProvider;
 
 use crate::context::CentralContext;
 
-pub(crate) mod buffer_external_commit;
 pub(crate) mod ciphersuite;
 pub(crate) mod client;
 pub mod conversation;
