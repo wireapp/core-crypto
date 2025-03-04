@@ -3,12 +3,11 @@
 //!
 //! Feel free to delete all of this when the issue is fixed on the DS side !
 
-use super::{Error, Result};
+use super::{ConversationGuard, Error, Result};
 use crate::obfuscate::Obfuscated;
 use crate::{
     KeystoreError, RecursiveError,
     context::CentralContext,
-    group_store::GroupStoreValue,
     prelude::{Client, ConversationId, MlsConversation, decrypt::MlsBufferedConversationDecryptMessage},
 };
 use core_crypto_keystore::{
@@ -44,7 +43,7 @@ impl CentralContext {
         is_rejoin: bool,
     ) -> Result<Option<Vec<MlsBufferedConversationDecryptMessage>>> {
         let parent_conversation = match &conversation.parent_id {
-            Some(id) => self.get_conversation(id).await.ok(),
+            Some(id) => self.conversation_guard(id).await.ok(),
             _ => None,
         };
         let client = &self
@@ -68,7 +67,7 @@ impl MlsConversation {
         &'a mut self,
         client: &'a Client,
         backend: &'a MlsCryptoProvider,
-        parent_conversation: Option<&'a GroupStoreValue<Self>>,
+        parent_conversation: Option<&'a ConversationGuard>,
         is_rejoin: bool,
     ) -> Result<Option<Vec<MlsBufferedConversationDecryptMessage>>> {
         // using the macro produces a clippy warning

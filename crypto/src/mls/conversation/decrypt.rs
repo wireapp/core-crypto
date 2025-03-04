@@ -26,12 +26,11 @@ use core_crypto_keystore::{
 };
 use mls_crypto_provider::MlsCryptoProvider;
 
-use super::{Error, Result};
+use super::{ConversationGuard, ConversationWithMls, Error, Result};
 use crate::{
     KeystoreError, MlsError, RecursiveError,
     context::CentralContext,
     e2e_identity::{conversation_state::compute_state, init_certificates::NewCrlDistributionPoint},
-    group_store::GroupStoreValue,
     mls::{
         ClientId, ConversationId, MlsConversation,
         client::Client,
@@ -129,7 +128,7 @@ impl MlsConversation {
     pub async fn decrypt_message(
         &mut self,
         message: MlsMessageIn,
-        parent_conv: Option<&GroupStoreValue<MlsConversation>>,
+        parent_conv: Option<&ConversationGuard>,
         client: &Client,
         backend: &MlsCryptoProvider,
         restore_pending: bool,
@@ -382,7 +381,11 @@ impl MlsConversation {
     ///
     /// By storing the raw commit bytes and doing deserialization/decryption from scratch, we preserve all
     /// security guarantees. When we do restore, it's as though the commit had simply been received later.
-    async fn buffer_pending_commit(&self, backend: &MlsCryptoProvider, commit: impl AsRef<[u8]>) -> Result<()> {
+    pub(crate) async fn buffer_pending_commit(
+        &self,
+        backend: &MlsCryptoProvider,
+        commit: impl AsRef<[u8]>,
+    ) -> Result<()> {
         info!(group_id = Obfuscated::from(&self.id); "buffering pending commit");
 
         let pending_commit = MlsBufferedCommit::new(self.id.clone(), commit.as_ref().to_owned());
@@ -417,7 +420,7 @@ impl MlsConversation {
     async fn try_process_buffered_commit(
         &mut self,
         commit: impl AsRef<[u8]>,
-        parent_conv: Option<&GroupStoreValue<MlsConversation>>,
+        parent_conv: Option<&ConversationGuard>,
         client: &Client,
         backend: &MlsCryptoProvider,
         restore_pending: bool,
@@ -446,7 +449,7 @@ impl MlsConversation {
         &mut self,
         client: &Client,
         backend: &MlsCryptoProvider,
-        parent_conv: Option<&GroupStoreValue<MlsConversation>>,
+        parent_conv: Option<&ConversationGuard>,
     ) -> Result<Option<Vec<MlsBufferedConversationDecryptMessage>>> {
         let pending_messages = self
             .restore_pending_messages(client, backend, parent_conv, false)
@@ -590,11 +593,11 @@ impl CentralContext {
     ) -> Result<MlsConversationDecryptMessage> {
         let msg =
             MlsMessageIn::tls_deserialize(&mut message.as_ref()).map_err(Error::tls_deserialize("mls message in"))?;
-        let Ok(conversation) = self.get_conversation(id).await else {
+        let Ok(mut conversation) = self.conversation_guard(id).await else {
             let pending_conversation = self.pending_conversation(id).await?;
             return pending_conversation.try_process_own_join_commit(message).await;
         };
-        let parent_conversation = self.get_parent_conversation(&conversation).await?;
+        let parent_conversation = conversation.get_parent().await?;
 
         let client = &self
             .mls_client()
@@ -606,7 +609,7 @@ impl CentralContext {
             .map_err(RecursiveError::root("getting mls provider"))?;
 
         let decrypt_message_result = conversation
-            .write()
+            .conversation_mut()
             .await
             .decrypt_message(msg, parent_conversation.as_ref(), client, backend, true)
             .await;
@@ -620,7 +623,7 @@ impl CentralContext {
         // That's because in that scope we don't have access to the raw message bytes; here, we do.
         if let Err(Error::BufferedCommit) = decrypt_message_result {
             conversation
-                .read()
+                .conversation()
                 .await
                 .buffer_pending_commit(backend, message)
                 .await?;

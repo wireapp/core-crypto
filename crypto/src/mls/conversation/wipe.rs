@@ -40,7 +40,7 @@ impl CentralContext {
 }
 
 impl MlsConversation {
-    async fn wipe_associated_entities(&mut self, backend: &MlsCryptoProvider) -> Result<()> {
+    pub(crate) async fn wipe_associated_entities(&mut self, backend: &MlsCryptoProvider) -> Result<()> {
         // the own client may or may not have generated an epoch keypair in the previous epoch
         // Since it is a terminal operation, ignoring the error is fine here.
         let _ = self.group.delete_previous_epoch_keypairs(backend).await;

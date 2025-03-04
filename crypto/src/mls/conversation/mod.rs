@@ -500,6 +500,7 @@ impl CentralContext {
             .await
             .map_err(RecursiveError::root("fetching conversation from mls groups by id"))?
             .ok_or_else(|| LeafError::ConversationNotFound(id.clone()))?;
+        // TODO(SimonThormeyer): Check if a pending conversation exists with this ID, if so, return it in a custom error variant
         Ok(ConversationGuard::new(inner, self.clone()))
     }
 

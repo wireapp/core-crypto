@@ -1,4 +1,5 @@
 mod commit;
+mod decrypt;
 mod encrypt;
 mod merge;
 
