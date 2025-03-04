@@ -114,9 +114,4 @@ impl CoreCryptoContext {
     pub fn proteus_fingerprint_prekeybundle(&self, prekey: Vec<u8>) -> CoreCryptoResult<String> {
         proteus_impl!({ Ok(core_crypto::proteus::ProteusCentral::fingerprint_prekeybundle(&prekey)?) })
     }
-
-    /// See [core_crypto::context::CentralContext::proteus_cryptobox_migrate]
-    pub async fn proteus_cryptobox_migrate(&self, path: String) -> CoreCryptoResult<()> {
-        proteus_impl!({ Ok(self.context.proteus_cryptobox_migrate(&path).await?) })
-    }
 }

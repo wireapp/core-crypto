@@ -335,7 +335,6 @@ impl From<core_crypto::Error> for CoreCryptoError {
             core_crypto::Error::MlsTransportNotProvided => Self::Other(error.to_string()),
             core_crypto::Error::ErrorDuringMlsTransport(error_message) => Self::Other(error_message),
             core_crypto::Error::Keystore(keystore_error) => Self::Other(keystore_error.innermost_error_message()),
-            core_crypto::Error::CryptoboxMigration(cryptobox) => Self::Other(cryptobox.innermost_error_message()),
             core_crypto::Error::Recursive(recursive_error) => recursive_error.into(),
             core_crypto::Error::FeatureDisabled(_) => Self::Other(error.to_string()),
         }

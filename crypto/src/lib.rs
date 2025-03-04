@@ -76,7 +76,7 @@ pub mod prelude {
             identity::{WireIdentity, X509Identity},
             types::{E2eiAcmeChallenge, E2eiAcmeDirectory, E2eiNewAcmeAuthz, E2eiNewAcmeOrder},
         },
-        error::{CryptoboxMigrationError, Error, KeystoreError, LeafError, MlsError, ProteusError, RecursiveError},
+        error::{Error, KeystoreError, LeafError, MlsError, ProteusError, RecursiveError},
         mls::{
             MlsCentral,
             ciphersuite::MlsCiphersuite,
