@@ -312,18 +312,13 @@ impl CoreCryptoContext {
 
     /// Returns [`WasmCryptoResult<u64>`]
     ///
-    /// see [core_crypto::mls::context::CentralContext::conversation_epoch]
+    /// see [core_crypto::mls::conversation::ConversationGuard::epoch]
     pub fn conversation_epoch(&self, conversation_id: ConversationId) -> Promise {
         let context = self.inner.clone();
         future_to_promise(
             async move {
-                WasmCryptoResult::Ok(
-                    context
-                        .conversation_epoch(&conversation_id)
-                        .await
-                        .map_err(CoreCryptoError::from)?
-                        .into(),
-                )
+                let conversation = context.conversation_guard(&conversation_id).await?;
+                WasmCryptoResult::Ok(conversation.epoch().await.into())
             }
             .err_into(),
         )
@@ -336,15 +331,13 @@ impl CoreCryptoContext {
         let context = self.inner.clone();
         future_to_promise(
             async move {
-                WasmCryptoResult::Ok(
-                    Ciphersuite::from(
-                        context
-                            .conversation_ciphersuite(&conversation_id)
-                            .await
-                            .map_err(CoreCryptoError::from)?,
-                    )
-                    .into(),
-                )
+                let ciphersuite: Ciphersuite = context
+                    .conversation_guard(&conversation_id)
+                    .await?
+                    .ciphersuite()
+                    .await
+                    .into();
+                WasmCryptoResult::Ok(ciphersuite.into())
             }
             .err_into(),
         )

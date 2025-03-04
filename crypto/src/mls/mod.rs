@@ -522,38 +522,6 @@ impl CentralContext {
             .is_some())
     }
 
-    /// Returns the epoch of a given conversation
-    ///
-    /// # Errors
-    /// If the conversation can't be found
-    #[cfg_attr(test, crate::idempotent)]
-    pub async fn conversation_epoch(&self, id: &ConversationId) -> Result<u64> {
-        Ok(self
-            .get_conversation(id)
-            .await
-            .map_err(RecursiveError::mls_conversation("getting conversation by id"))?
-            .read()
-            .await
-            .group
-            .epoch()
-            .as_u64())
-    }
-
-    /// Returns the ciphersuite of a given conversation
-    ///
-    /// # Errors
-    /// If the conversation can't be found
-    #[cfg_attr(test, crate::idempotent)]
-    pub async fn conversation_ciphersuite(&self, id: &ConversationId) -> Result<MlsCiphersuite> {
-        Ok(self
-            .get_conversation(id)
-            .await
-            .map_err(RecursiveError::mls_conversation("getting conversation by id"))?
-            .read()
-            .await
-            .ciphersuite())
-    }
-
     /// Generates a random byte array of the specified size
     pub async fn random_bytes(&self, len: usize) -> Result<Vec<u8>> {
         use openmls_traits::random::OpenMlsRand as _;
