@@ -1,5 +1,6 @@
 mod commit;
 mod encrypt;
+mod merge;
 
 use async_lock::{RwLockReadGuard, RwLockWriteGuard};
 use openmls::prelude::group_info::GroupInfo;
