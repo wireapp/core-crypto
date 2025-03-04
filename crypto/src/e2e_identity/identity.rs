@@ -1,15 +1,9 @@
-use std::collections::HashMap;
-use std::str::FromStr;
-
-use itertools::Itertools;
-use x509_cert::der::pem::LineEnding;
-
 use crate::{
-    RecursiveError,
     e2e_identity::{device_status::DeviceStatus, id::WireQualifiedClientId},
-    mls::credential::ext::CredentialExt,
-    prelude::{ClientId, MlsConversation, MlsCredentialType, user_id::UserId},
+    prelude::MlsCredentialType,
 };
+use std::str::FromStr;
+use x509_cert::der::pem::LineEnding;
 
 use super::{Error, Result};
 
@@ -76,50 +70,5 @@ impl<'a> TryFrom<(wire_e2e_identity::prelude::WireIdentity, &'a [u8])> for WireI
                 not_after: i.not_after,
             }),
         })
-    }
-}
-
-impl MlsConversation {
-    pub(crate) fn get_device_identities(
-        &self,
-        device_ids: &[ClientId],
-        env: Option<&wire_e2e_identity::prelude::x509::revocation::PkiEnvironment>,
-    ) -> Result<Vec<WireIdentity>> {
-        if device_ids.is_empty() {
-            return Err(Error::EmptyInputIdList);
-        }
-        self.members_with_key()
-            .into_iter()
-            .filter(|(id, _)| device_ids.contains(&ClientId::from(id.as_slice())))
-            .map(|(_, c)| {
-                c.extract_identity(self.ciphersuite(), env)
-                    .map_err(RecursiveError::mls_credential("extracting identity"))
-            })
-            .collect::<Result<Vec<_>, _>>()
-            .map_err(Into::into)
-    }
-
-    pub(crate) fn get_user_identities(
-        &self,
-        user_ids: &[String],
-        env: Option<&wire_e2e_identity::prelude::x509::revocation::PkiEnvironment>,
-    ) -> Result<HashMap<String, Vec<WireIdentity>>> {
-        if user_ids.is_empty() {
-            return Err(Error::EmptyInputIdList);
-        }
-        let user_ids = user_ids.iter().map(|uid| uid.as_bytes()).collect::<Vec<_>>();
-
-        self.members_with_key()
-            .iter()
-            .filter_map(|(id, c)| UserId::try_from(id.as_slice()).ok().zip(Some(c)))
-            .filter(|(uid, _)| user_ids.contains(uid))
-            .map(|(uid, c)| {
-                let uid = String::try_from(uid).map_err(RecursiveError::mls_client("getting user identities"))?;
-                let identity = c
-                    .extract_identity(self.ciphersuite(), env)
-                    .map_err(RecursiveError::mls_credential("extracting identity"))?;
-                Ok((uid, identity))
-            })
-            .process_results(|iter| iter.into_group_map())
     }
 }

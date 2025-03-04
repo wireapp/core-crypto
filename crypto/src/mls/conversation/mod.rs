@@ -27,7 +27,9 @@
 //! | merge     | ❌           | ❌            | ✅           | ✅            |
 //! | decrypt   | ✅           | ✅            | ✅           | ✅            |
 
+use config::MlsConversationConfiguration;
 use core_crypto_keystore::{Connection, CryptoKeystoreMls};
+use itertools::Itertools as _;
 use mls_crypto_provider::{CryptoKeystore, MlsCryptoProvider};
 use openmls::{
     group::MlsGroup,
@@ -37,8 +39,6 @@ use openmls_traits::OpenMlsCryptoProvider;
 use openmls_traits::types::SignatureScheme;
 use std::collections::HashMap;
 use std::ops::Deref;
-
-use config::MlsConversationConfiguration;
 
 use crate::{
     KeystoreError, LeafError, MlsError, RecursiveError,
@@ -75,6 +75,8 @@ mod wipe;
 
 use crate::e2e_identity::conversation_state::compute_state;
 use crate::mls::HasClientAndProvider;
+use crate::mls::credential::ext::CredentialExt as _;
+use crate::prelude::user_id::UserId;
 use crate::prelude::{ClientId, E2eiConversationState, WireIdentity};
 pub use conversation_guard::ConversationGuard;
 pub use error::{Error, Result};
@@ -203,8 +205,14 @@ pub trait Conversation<'a>: ConversationWithMls<'a> {
         let env = auth_service.as_ref();
         let conversation = self.conversation().await;
         conversation
-            .get_device_identities(device_ids, env)
-            .map_err(RecursiveError::e2e_identity("getting device identities"))
+            .members_with_key()
+            .into_iter()
+            .filter(|(id, _)| device_ids.contains(&ClientId::from(id.as_slice())))
+            .map(|(_, c)| {
+                c.extract_identity(conversation.ciphersuite(), env)
+                    .map_err(RecursiveError::mls_credential("extracting identity"))
+            })
+            .collect::<Result<Vec<_>, _>>()
             .map_err(Into::into)
     }
 
@@ -226,11 +234,21 @@ pub trait Conversation<'a>: ConversationWithMls<'a> {
         let auth_service = auth_service.borrow().await;
         let env = auth_service.as_ref();
         let conversation = self.conversation().await;
+        let user_ids = user_ids.iter().map(|uid| uid.as_bytes()).collect::<Vec<_>>();
 
         conversation
-            .get_user_identities(user_ids, env)
-            .map_err(RecursiveError::e2e_identity("getting user identities"))
-            .map_err(Into::into)
+            .members_with_key()
+            .iter()
+            .filter_map(|(id, c)| UserId::try_from(id.as_slice()).ok().zip(Some(c)))
+            .filter(|(uid, _)| user_ids.contains(uid))
+            .map(|(uid, c)| {
+                let uid = String::try_from(uid).map_err(RecursiveError::mls_client("getting user identities"))?;
+                let identity = c
+                    .extract_identity(conversation.ciphersuite(), env)
+                    .map_err(RecursiveError::mls_credential("extracting identity"))?;
+                Ok((uid, identity))
+            })
+            .process_results(|iter| iter.into_group_map())
     }
 }
 
