@@ -652,17 +652,18 @@ impl CoreCryptoContext {
         let context = self.inner.clone();
         future_to_promise(
             async move {
-                let clients = context
-                    .get_client_ids(&conversation_id.to_vec())
-                    .await
-                    .map_err(CoreCryptoError::from)?;
-                let clients = js_sys::Array::from_iter(
-                    clients
+                let client_ids = context
+                    .conversation_guard(&conversation_id.to_vec())
+                    .await?
+                    .get_client_ids()
+                    .await;
+                let client_ids = js_sys::Array::from_iter(
+                    client_ids
                         .into_iter()
                         .map(|client| Uint8Array::from(client.as_slice()))
                         .map(JsValue::from),
                 );
-                WasmCryptoResult::Ok(clients.into())
+                WasmCryptoResult::Ok(client_ids.into())
             }
             .err_into(),
         )

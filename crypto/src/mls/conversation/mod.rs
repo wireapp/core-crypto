@@ -61,7 +61,6 @@ mod duplicate;
 #[cfg(test)]
 mod durability;
 mod error;
-pub(crate) mod export;
 pub(crate) mod external_sender;
 pub(crate) mod group_info;
 mod immutable_conversation;
@@ -141,9 +140,15 @@ pub trait Conversation<'a>: ConversationWithMls<'a> {
     /// # Errors
     /// OpenMls secret generation error
     async fn export_secret_key(&'a self, key_length: usize) -> Result<Vec<u8>> {
-        self.conversation()
-            .await
-            .export_secret_key(&self.mls_provider().await?, key_length)
+        const EXPORTER_LABEL: &str = "exporter";
+        const EXPORTER_CONTEXT: &[u8] = &[];
+        let backend = self.mls_provider().await?;
+        let inner = self.conversation().await;
+        inner
+            .group()
+            .export_secret(&backend, EXPORTER_LABEL, EXPORTER_CONTEXT, key_length)
+            .map_err(MlsError::wrap("exporting secret key"))
+            .map_err(Into::into)
     }
 
     /// Exports the clients from a conversation
@@ -151,7 +156,12 @@ pub trait Conversation<'a>: ConversationWithMls<'a> {
     /// # Arguments
     /// * `conversation_id` - the group/conversation id
     async fn get_client_ids(&'a self) -> Vec<ClientId> {
-        self.conversation().await.get_client_ids()
+        let inner = self.conversation().await;
+        inner
+            .group()
+            .members()
+            .map(|kp| ClientId::from(kp.credential.identity()))
+            .collect()
     }
 
     /// Returns the raw public key of the single external sender present in this group.
@@ -1445,7 +1455,17 @@ mod tests {
                     );
 
                     alice_central.invite_all(&case, &id, [&bob_central]).await.unwrap();
-                    assert_eq!(alice_central.context.get_client_ids(&id).await.unwrap().len(), 2);
+                    assert_eq!(
+                        alice_central
+                            .context
+                            .conversation_guard(&id)
+                            .await
+                            .unwrap()
+                            .get_client_ids()
+                            .await
+                            .len(),
+                        2
+                    );
                 })
             })
             .await
