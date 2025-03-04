@@ -9,10 +9,6 @@ pub type Result<T, E = Error> = core::result::Result<T, E>;
 pub enum Error {
     #[error("Couldn't find client")]
     ClientNotFound(crate::prelude::ClientId),
-    #[error(
-        "You tried to join with an external commit but did not merge it yet. We will reapply this message for you when you merge your external commit"
-    )]
-    UnmergedPendingGroup,
     /// The ciphersuite identifier presented does not map to a known ciphersuite.
     #[error("Unknown ciphersuite")]
     UnknownCiphersuite,

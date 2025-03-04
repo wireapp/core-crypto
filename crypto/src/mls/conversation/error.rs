@@ -38,6 +38,10 @@ pub enum Error {
     BufferedCommit,
     #[error("Incoming message is for a future epoch. We will buffer it until the commit for that epoch arrives")]
     BufferedFutureMessage { message_epoch: u64 },
+    #[error(
+        "You tried to join with an external commit but did not merge it yet. We will reapply this message for you when you merge your external commit"
+    )]
+    UnmergedPendingGroup,
     #[error("Incoming message is from an epoch too far in the future to buffer.")]
     UnbufferedFarFutureMessage,
     #[error("The received commit is deemed stale and is from an older epoch.")]
