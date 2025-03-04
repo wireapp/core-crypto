@@ -61,7 +61,6 @@ mod duplicate;
 #[cfg(test)]
 mod durability;
 mod error;
-pub(crate) mod external_sender;
 pub(crate) mod group_info;
 mod immutable_conversation;
 mod leaf_node_validation;
@@ -169,7 +168,15 @@ pub trait Conversation<'a>: ConversationWithMls<'a> {
     /// Returns the raw public key of the single external sender present in this group.
     /// This should be used to initialize a subconversation
     async fn get_external_sender(&'a self) -> Result<Vec<u8>> {
-        self.conversation().await.get_external_sender().await
+        let inner = self.conversation().await;
+        let ext_senders = inner
+            .group()
+            .group_context_extensions()
+            .external_senders()
+            .ok_or(Error::MissingExternalSenderExtension)?;
+        let ext_sender = ext_senders.first().ok_or(Error::MissingExternalSenderExtension)?;
+        let ext_sender_public_key = ext_sender.signature_key().as_slice().to_vec();
+        Ok(ext_sender_public_key)
     }
 
     /// Indicates when to mark a conversation as not verified i.e. when not all its members have a X509
@@ -1484,6 +1491,43 @@ mod tests {
                             .len(),
                         2
                     );
+                })
+            })
+            .await
+        }
+    }
+
+    mod external_sender {
+        use super::*;
+
+        #[apply(all_cred_cipher)]
+        #[wasm_bindgen_test]
+        pub async fn should_fetch_ext_sender(case: TestCase) {
+            run_test_with_client_ids(case.clone(), ["alice"], move |[alice_central]| {
+                Box::pin(async move {
+                    let id = conversation_id();
+
+                    // by default in test no external sender is set. Let's add one
+                    let mut cfg = case.cfg.clone();
+                    let external_sender = alice_central.rand_external_sender(&case).await;
+                    cfg.external_senders = vec![external_sender.clone()];
+
+                    alice_central
+                        .context
+                        .new_conversation(&id, case.credential_type, cfg)
+                        .await
+                        .unwrap();
+
+                    let alice_ext_sender = alice_central
+                        .context
+                        .conversation_guard(&id)
+                        .await
+                        .unwrap()
+                        .get_external_sender()
+                        .await
+                        .unwrap();
+                    assert!(!alice_ext_sender.is_empty());
+                    assert_eq!(alice_ext_sender, external_sender.signature_key().as_slice().to_vec());
                 })
             })
             .await
