@@ -26,7 +26,7 @@ use crate::mls::credential::crl::{extract_crl_uris_from_group, get_new_crl_distr
 use crate::mls::credential::ext::CredentialExt;
 
 impl CentralContext {
-    pub(crate) async fn handle_when_group_is_pending(
+    pub(crate) async fn try_process_own_join_commit(
         &self,
         id: &ConversationId,
         message: impl AsRef<[u8]>,
