@@ -60,7 +60,7 @@ sha2 = "0.10"
 strum = { version = "0.26", features = ["derive"] }
 thiserror = "2.0"
 tls_codec = "0.4.1"
-uniffi = "0.28"
+uniffi = "0.29"
 url = "2.5"
 uuid = "1.12"
 x509-cert = "0.2"
