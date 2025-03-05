@@ -8,7 +8,7 @@ use super::{Client, Error, Result};
 
 /// An `EpochObserver` is notified whenever a conversation's epoch changes.
 #[async_trait]
-pub trait EpochObserver: std::fmt::Debug + Send + Sync {
+pub trait EpochObserver: Send + Sync {
     /// This function will be called every time a conversation's epoch changes.
     ///
     /// The `epoch` parameter is the new epoch.
