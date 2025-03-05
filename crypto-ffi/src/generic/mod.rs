@@ -28,7 +28,7 @@ use log_reload::ReloadLog;
 use tls_codec::Deserialize;
 
 use self::context::CoreCryptoContext;
-use crate::{UniffiCustomTypeConverter, proteus_impl};
+use crate::proteus_impl;
 use core_crypto::mls::conversation::Conversation as _;
 pub use core_crypto::prelude::ConversationId;
 use core_crypto::{
@@ -390,19 +390,10 @@ type CoreCryptoResult<T> = Result<T, CoreCryptoError>;
 #[derive(Debug, Clone, Eq, Hash, PartialEq)]
 pub struct ClientId(core_crypto::prelude::ClientId);
 
-uniffi::custom_type!(ClientId, Vec<u8>);
-
-impl UniffiCustomTypeConverter for ClientId {
-    type Builtin = Vec<u8>;
-
-    fn into_custom(val: Self::Builtin) -> uniffi::Result<Self> {
-        Ok(Self(core_crypto::prelude::ClientId::from(val)))
-    }
-
-    fn from_custom(obj: Self) -> Self::Builtin {
-        obj.0.to_vec()
-    }
-}
+uniffi::custom_type!(ClientId, Vec<u8>, {
+    lower: |id| id.0.to_vec(),
+    try_lift: |vec| Ok(Self(core_crypto::prelude::ClientId::from(vec)))
+});
 
 #[derive(Debug, Clone, derive_more::From, derive_more::Into)]
 pub struct NewCrlDistributionPoints(Option<Vec<String>>);
@@ -432,7 +423,14 @@ pub enum CiphersuiteName {
 #[derive(Debug, Clone)]
 pub struct Ciphersuite(core_crypto::prelude::CiphersuiteName);
 
-uniffi::custom_type!(Ciphersuite, u16);
+uniffi::custom_type!(Ciphersuite, u16, {
+    lower: |ciphersuite| (&ciphersuite.0).into(),
+    try_lift: |val| {
+        core_crypto::prelude::CiphersuiteName::try_from(val)
+            .map(Into::into)
+            .map_err(Into::into)
+    }
+});
 
 impl From<core_crypto::prelude::CiphersuiteName> for Ciphersuite {
     fn from(cs: core_crypto::prelude::CiphersuiteName) -> Self {
@@ -449,20 +447,6 @@ impl From<Ciphersuite> for core_crypto::prelude::CiphersuiteName {
 impl From<Ciphersuite> for MlsCiphersuite {
     fn from(cs: Ciphersuite) -> Self {
         cs.0.into()
-    }
-}
-
-impl UniffiCustomTypeConverter for Ciphersuite {
-    type Builtin = u16;
-
-    fn into_custom(val: Self::Builtin) -> uniffi::Result<Self> {
-        core_crypto::prelude::CiphersuiteName::try_from(val)
-            .map(Into::into)
-            .map_err(Into::into)
-    }
-
-    fn from_custom(obj: Self) -> Self::Builtin {
-        (&obj.0).into()
     }
 }
 
@@ -490,23 +474,16 @@ impl<'a> From<&'a Ciphersuites> for Vec<MlsCiphersuite> {
     }
 }
 
-uniffi::custom_type!(Ciphersuites, Vec<u16>);
-
-impl UniffiCustomTypeConverter for Ciphersuites {
-    type Builtin = Vec<u16>;
-
-    fn into_custom(val: Self::Builtin) -> uniffi::Result<Self> {
-        val.iter().try_fold(Self(vec![]), |mut acc, c| -> uniffi::Result<Self> {
+uniffi::custom_type!(Ciphersuites, Vec<u16>, {
+    lower: |cs| cs.0.into_iter().map(|c| (&c).into()).collect(),
+    try_lift: |val| {
+        val.iter().try_fold(Ciphersuites(vec![]), |mut acc, c| -> uniffi::Result<Self> {
             let cs = core_crypto::prelude::CiphersuiteName::try_from(*c)?;
             acc.0.push(cs);
             Ok(acc)
         })
     }
-
-    fn from_custom(obj: Self) -> Self::Builtin {
-        obj.0.into_iter().map(|c| (&c).into()).collect()
-    }
-}
+});
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, uniffi::Record)]
 /// Supporting struct for CRL registration result
