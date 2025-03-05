@@ -47,6 +47,8 @@ pub enum Error {
     TooManyIdentitiesPresent,
     #[error("The supplied credential does not match the id or signature schemes provided")]
     WrongCredential,
+    #[error("An EpochObserver has already been registered; reregistration is not possible")]
+    EpochObserverAlreadyExists,
     #[error("Serializing {item} for TLS")]
     TlsSerialize {
         item: &'static str,
