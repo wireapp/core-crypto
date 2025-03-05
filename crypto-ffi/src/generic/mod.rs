@@ -303,7 +303,10 @@ impl From<RecursiveError> for CoreCryptoError {
             core_crypto::mls::conversation::Error::BufferedCommit => MlsError::BufferedCommit.into(),
             core_crypto::mls::conversation::Error::MessageRejected { reason } => MlsError::MessageRejected { reason: reason.clone() }.into(),
             core_crypto::mls::conversation::Error::OrphanWelcome => MlsError::OrphanWelcome.into(),
-            core_crypto::mls::conversation::Error::UnmergedPendingGroup => MlsError::UnmergedPendingGroup.into(),
+            // The internal name is what we want, but renaming the external variant is a breaking change.
+            // Since we're re-designing the `BufferedMessage` errors soon, it's not worth producing
+            // an additional breaking change until then, so the names are inconsistent.
+            core_crypto::mls::conversation::Error::BufferedForPendingConversation => MlsError::UnmergedPendingGroup.into(),
             ||=> MlsError::Other(error.innermost_error_message()).into(),
         })
     }

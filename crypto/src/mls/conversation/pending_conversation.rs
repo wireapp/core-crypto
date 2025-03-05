@@ -64,7 +64,7 @@ impl PendingConversation {
             .save::<MlsPendingMessage>(pending_msg)
             .await
             .map_err(KeystoreError::wrap("saving mls pending message"))?;
-        Err(Error::UnmergedPendingGroup)
+        Err(Error::BufferedForPendingConversation)
     }
 
     /// If the message confirmation tag and the group confirmation tag are the same, it means that
@@ -242,10 +242,10 @@ mod tests {
                         .map(|m| m.to_bytes().unwrap());
                     for m in messages {
                         let decrypt = bob_central.context.decrypt_message(&id, m).await;
-                        assert!(matches!(decrypt.unwrap_err(), Error::UnmergedPendingGroup));
+                        assert!(matches!(decrypt.unwrap_err(), Error::BufferedForPendingConversation));
                     }
                     let decrypt = bob_central.context.decrypt_message(&id, app_msg).await;
-                    assert!(matches!(decrypt.unwrap_err(), Error::UnmergedPendingGroup));
+                    assert!(matches!(decrypt.unwrap_err(), Error::BufferedForPendingConversation));
 
                     // Bob should have buffered the messages
                     assert_eq!(bob_central.context.count_entities().await.pending_messages, 4);
