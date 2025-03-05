@@ -52,6 +52,7 @@ pub struct MlsConversationDecryptMessage {
     /// [ClientId] of the sender of the message being decrypted. Only present for application messages.
     pub sender_client_id: Option<ClientId>,
     /// Is the epoch changed after decrypting this message
+    #[deprecated = "This member will be removed in the future. Prefer using the `EpochObserver` interface."]
     pub has_epoch_changed: bool,
     /// Identity claims present in the sender credential
     /// Present for all messages
@@ -78,6 +79,7 @@ pub struct MlsBufferedConversationDecryptMessage {
     /// see [MlsConversationDecryptMessage]
     pub sender_client_id: Option<ClientId>,
     /// see [MlsConversationDecryptMessage]
+    #[deprecated = "This member will be removed in the future. Prefer using the `EpochObserver` interface."]
     pub has_epoch_changed: bool,
     /// see [MlsConversationDecryptMessage]
     pub identity: WireIdentity,
@@ -87,6 +89,8 @@ pub struct MlsBufferedConversationDecryptMessage {
 
 impl From<MlsConversationDecryptMessage> for MlsBufferedConversationDecryptMessage {
     fn from(from: MlsConversationDecryptMessage) -> Self {
+        // we still support the `has_epoch_changed` field, though we'll remove it later
+        #[expect(deprecated)]
         Self {
             app_msg: from.app_msg,
             proposals: from.proposals,
@@ -174,8 +178,7 @@ impl ConversationGuard {
         {
             let mut conversation = self.conversation_mut().await;
             let ct = conversation.extract_confirmation_tag_from_own_commit(&message)?;
-            let mut decrypted_message = conversation.handle_own_commit(backend, ct).await?;
-            // can't use `.then` because async
+            let mut decrypted_message = conversation.handle_own_commit(client, backend, ct).await?;
             debug_assert!(
                 decrypted_message.buffered_messages.is_none(),
                 "decrypted message should be constructed with empty buffer"
@@ -224,6 +227,8 @@ impl ConversationGuard {
                     "Application message"
                 );
 
+                // we still support the `has_epoch_changed` field, though we'll remove it later
+                #[expect(deprecated)]
                 MlsConversationDecryptMessage {
                     app_msg: Some(app_msg.into_bytes()),
                     proposals: vec![],
@@ -284,12 +289,15 @@ impl ConversationGuard {
                 }
 
                 let conversation = self.conversation().await;
+                let delay = conversation.compute_next_commit_delay();
 
+                // we still support the `has_epoch_changed` field, though we'll remove it later
+                #[expect(deprecated)]
                 MlsConversationDecryptMessage {
                     app_msg: None,
                     proposals: vec![],
                     is_active: true,
-                    delay: conversation.compute_next_commit_delay(),
+                    delay,
                     sender_client_id: None,
                     has_epoch_changed: false,
                     identity,
@@ -358,13 +366,17 @@ impl ConversationGuard {
                 }
 
                 let conversation = self.conversation().await;
+                let epoch = staged_commit.staged_context().epoch().as_u64();
                 info!(
                     group_id = Obfuscated::from(&conversation.id),
-                    epoch = staged_commit.staged_context().epoch().as_u64(),
+                    epoch,
                     proposals:? = staged_commit.queued_proposals().map(Obfuscated::from).collect::<Vec<_>>();
                     "Epoch advanced"
                 );
+                client.notify_epoch_changed(conversation.id.clone(), epoch).await;
 
+                // we still support the `has_epoch_changed` field, though we'll remove it later
+                #[expect(deprecated)]
                 MlsConversationDecryptMessage {
                     app_msg: None,
                     proposals,
@@ -392,6 +404,8 @@ impl ConversationGuard {
                     .map_err(RecursiveError::mls_credential("getting new crl distribution points"))?;
                 conversation.group.store_pending_proposal(*proposal);
 
+                // we still support the `has_epoch_changed` field, though we'll remove it later
+                #[expect(deprecated)]
                 MlsConversationDecryptMessage {
                     app_msg: None,
                     proposals: vec![],

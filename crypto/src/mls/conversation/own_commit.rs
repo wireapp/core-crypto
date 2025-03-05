@@ -5,7 +5,7 @@ use crate::{
         crl::{extract_crl_uris_from_group, get_new_crl_distribution_points},
         ext::CredentialExt,
     },
-    prelude::{MlsConversation, MlsConversationDecryptMessage},
+    prelude::{Client, MlsConversation, MlsConversationDecryptMessage},
 };
 use mls_crypto_provider::MlsCryptoProvider;
 use openmls::prelude::{
@@ -48,6 +48,7 @@ impl MlsConversation {
 
     pub(crate) async fn handle_own_commit(
         &mut self,
+        client: &Client,
         backend: &MlsCryptoProvider,
         ct: &ConfirmationTag,
     ) -> Result<MlsConversationDecryptMessage> {
@@ -55,7 +56,7 @@ impl MlsConversation {
             if self.eq_pending_commit(ct) {
                 // incoming is from ourselves and it's the same as the local pending commit
                 // => merge the pending commit & continue
-                self.merge_pending_commit(backend).await
+                self.merge_pending_commit(client, backend).await
             } else {
                 // this would mean we created a commit that got accepted by the DS but we cleared it locally
                 // then somehow retried and created another commit. This is a manifest client error
@@ -82,6 +83,7 @@ impl MlsConversation {
     /// This adapts [Self::commit_accepted] to return the same as [MlsConversation::decrypt_message]
     pub(crate) async fn merge_pending_commit(
         &mut self,
+        client: &Client,
         backend: &MlsCryptoProvider,
     ) -> Result<MlsConversationDecryptMessage> {
         self.commit_accepted(backend).await?;
@@ -108,6 +110,12 @@ impl MlsConversation {
         .await
         .map_err(RecursiveError::mls_credential("getting new crl distribution points"))?;
 
+        client
+            .notify_epoch_changed(self.id.clone(), self.group.epoch().as_u64())
+            .await;
+
+        // we still support the `has_epoch_changed` field, though we'll remove it later
+        #[expect(deprecated)]
         Ok(MlsConversationDecryptMessage {
             app_msg: None,
             proposals: vec![],

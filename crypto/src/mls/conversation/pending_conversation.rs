@@ -190,6 +190,12 @@ impl PendingConversation {
         .await
         .map_err(RecursiveError::mls_credential("getting new crl distribution points"))?;
 
+        // Note that though we return `has_epoch_changed: true` here, we don't notify the observer.
+        // This function can only be reached via a code path going through `MlsConversation::decrypt_message`
+        // which already notifies the observer; it would be redundant to notify here also.
+
+        // we still support the `has_epoch_changed` field, though we'll remove it later
+        #[expect(deprecated)]
         Ok(MlsConversationDecryptMessage {
             app_msg: None,
             proposals: vec![],
