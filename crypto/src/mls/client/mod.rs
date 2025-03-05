@@ -39,9 +39,9 @@ use log::debug;
 use openmls::prelude::{Credential, CredentialType};
 use openmls_basic_credential::SignatureKeyPair;
 use openmls_traits::{OpenMlsCryptoProvider, crypto::OpenMlsCrypto, types::SignatureScheme};
-use std::collections::HashSet;
 use std::ops::{Deref, DerefMut};
 use std::sync::Arc;
+use std::{collections::HashSet, fmt};
 use tls_codec::{Deserialize, Serialize};
 
 use core_crypto_keystore::entities::{EntityFindParams, MlsCredential, MlsSignatureKeyPair};
@@ -60,12 +60,28 @@ pub struct Client {
     state: Arc<RwLock<Option<ClientInner>>>,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Clone)]
 struct ClientInner {
     id: ClientId,
     pub(crate) identities: ClientIdentities,
     keypackage_lifetime: std::time::Duration,
     epoch_observer: Option<Arc<dyn EpochObserver>>,
+}
+
+impl fmt::Debug for ClientInner {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let observer_debug = if self.epoch_observer.is_some() {
+            "Some(Arc<dyn EpochObserver>)"
+        } else {
+            "None"
+        };
+        f.debug_struct("ClientInner")
+            .field("id", &self.id)
+            .field("identities", &self.identities)
+            .field("keypackage_lifetime", &self.keypackage_lifetime)
+            .field("epoch_observer", &observer_debug)
+            .finish()
+    }
 }
 
 impl Client {
