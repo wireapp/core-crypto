@@ -65,6 +65,7 @@ pub struct MlsConversationDecryptMessage {
     /// [ClientId] of the sender of the message being decrypted. Only present for application messages.
     pub sender_client_id: Option<ClientId>,
     /// Is the epoch changed after decrypting this message
+    #[deprecated = "This member will be removed in the future. Prefer using the `EpochObserver` interface."]
     pub has_epoch_changed: bool,
     /// Identity claims present in the sender credential
     /// Present for all messages
@@ -91,6 +92,7 @@ pub struct MlsBufferedConversationDecryptMessage {
     /// see [MlsConversationDecryptMessage]
     pub sender_client_id: Option<ClientId>,
     /// see [MlsConversationDecryptMessage]
+    #[deprecated = "This member will be removed in the future. Prefer using the `EpochObserver` interface."]
     pub has_epoch_changed: bool,
     /// see [MlsConversationDecryptMessage]
     pub identity: WireIdentity,
@@ -100,6 +102,8 @@ pub struct MlsBufferedConversationDecryptMessage {
 
 impl From<MlsConversationDecryptMessage> for MlsBufferedConversationDecryptMessage {
     fn from(from: MlsConversationDecryptMessage) -> Self {
+        // we still support the `has_epoch_changed` field, though we'll remove it later
+        #[expect(deprecated)]
         Self {
             app_msg: from.app_msg,
             proposals: from.proposals,
@@ -146,7 +150,7 @@ impl MlsConversation {
         })) = message_result
         {
             let ct = self.extract_confirmation_tag_from_own_commit(&message)?;
-            let mut decrypted_message = self.handle_own_commit(backend, ct).await?;
+            let mut decrypted_message = self.handle_own_commit(client, backend, ct).await?;
             // can't use `.then` because async
             debug_assert!(
                 decrypted_message.buffered_messages.is_none(),
@@ -196,6 +200,8 @@ impl MlsConversation {
                     "Application message"
                 );
 
+                // we still support the `has_epoch_changed` field, though we'll remove it later
+                #[expect(deprecated)]
                 MlsConversationDecryptMessage {
                     app_msg: Some(app_msg.into_bytes()),
                     proposals: vec![],
@@ -256,6 +262,8 @@ impl MlsConversation {
                     }
                 }
 
+                // we still support the `has_epoch_changed` field, though we'll remove it later
+                #[expect(deprecated)]
                 MlsConversationDecryptMessage {
                     app_msg: None,
                     proposals: vec![],
@@ -326,13 +334,17 @@ impl MlsConversation {
                         .await?;
                 }
 
+                let epoch = staged_commit.staged_context().epoch().as_u64();
                 info!(
                     group_id = Obfuscated::from(&self.id),
-                    epoch = staged_commit.staged_context().epoch().as_u64(),
+                    epoch,
                     proposals:? = staged_commit.queued_proposals().map(Obfuscated::from).collect::<Vec<_>>();
                     "Epoch advanced"
                 );
+                client.notify_epoch_changed(self.id.clone(), epoch).await;
 
+                // we still support the `has_epoch_changed` field, though we'll remove it later
+                #[expect(deprecated)]
                 MlsConversationDecryptMessage {
                     app_msg: None,
                     proposals,
@@ -359,6 +371,8 @@ impl MlsConversation {
                     .map_err(RecursiveError::mls_credential("getting new crl distribution points"))?;
                 self.group.store_pending_proposal(*proposal);
 
+                // we still support the `has_epoch_changed` field, though we'll remove it later
+                #[expect(deprecated)]
                 MlsConversationDecryptMessage {
                     app_msg: None,
                     proposals: vec![],
