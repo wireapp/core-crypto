@@ -45,6 +45,18 @@ impl ConversationGuard {
         self.inner.write().await
     }
 
+    pub(crate) async fn get_parent(&self) -> Result<Option<Self>> {
+        let conversation_lock = self.conversation().await;
+        let Some(parent_id) = conversation_lock.parent_id.as_ref() else {
+            return Ok(None);
+        };
+        self.central_context
+            .conversation_guard(parent_id)
+            .await
+            .map(Some)
+            .map_err(|_| Error::ParentGroupNotFound)
+    }
+
     async fn credential_bundle(&self) -> Result<Arc<CredentialBundle>> {
         let client = self.mls_client().await?;
         let inner = self.conversation().await;

@@ -518,20 +518,6 @@ impl CentralContext {
         Ok(PendingConversation::new(pending_group, self.clone()))
     }
 
-    pub(crate) async fn get_parent_conversation(
-        &self,
-        conversation: &GroupStoreValue<MlsConversation>,
-    ) -> Result<Option<GroupStoreValue<MlsConversation>>> {
-        let conversation_lock = conversation.read().await;
-        let Some(parent_id) = conversation_lock.parent_id.as_ref() else {
-            return Ok(None);
-        };
-        self.get_conversation(parent_id)
-            .await
-            .map(Some)
-            .map_err(|_| Error::ParentGroupNotFound)
-    }
-
     /// Mark a conversation as child of another one
     /// This will affect the behavior of callbacks in particular
     #[cfg_attr(test, crate::idempotent)]
