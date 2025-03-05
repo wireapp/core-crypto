@@ -46,7 +46,7 @@ impl PendingConversation {
         &self.inner.id
     }
 
-    pub(crate) async fn try_process_own_join_commit(
+    pub async fn try_process_own_join_commit(
         &self,
         message: impl AsRef<[u8]>,
     ) -> Result<MlsConversationDecryptMessage> {

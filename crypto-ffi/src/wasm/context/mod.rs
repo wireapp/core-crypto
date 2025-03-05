@@ -4,6 +4,7 @@ use crate::{
     CustomConfiguration, DecryptedMessage, FfiClientId, WasmCryptoResult, WelcomeBundle,
 };
 use core_crypto::mls::conversation::Conversation as _;
+use core_crypto::mls::conversation::Error as ConversationError;
 use core_crypto::{
     RecursiveError,
     context::CentralContext,
@@ -523,12 +524,14 @@ impl CoreCryptoContext {
         let context = self.inner.clone();
         future_to_promise(
             async move {
-                let raw_decrypted_message = context
-                    .decrypt_message(&conversation_id.to_vec(), payload)
-                    .await
-                    .map_err(CoreCryptoError::from)?;
+                let result = context.decrypt_message(&conversation_id, &payload).await;
+                let decrypted_message = if let Err(ConversationError::PendingConversation(pending)) = result {
+                    pending.try_process_own_join_commit(&payload).await
+                } else {
+                    result
+                }?;
 
-                let decrypted_message = DecryptedMessage::try_from(raw_decrypted_message)?;
+                let decrypted_message = DecryptedMessage::try_from(decrypted_message)?;
                 WasmCryptoResult::Ok(serde_wasm_bindgen::to_value(&decrypted_message)?)
             }
             .err_into(),

@@ -5,6 +5,7 @@ use super::{
 use crate::NewCrlDistributionPoints;
 use async_lock::{Mutex, OnceCell};
 use core_crypto::mls::conversation::Conversation as _;
+use core_crypto::mls::conversation::Error as ConversationError;
 use core_crypto::{
     RecursiveError,
     context::CentralContext,
@@ -487,11 +488,14 @@ impl CoreCryptoContext {
         conversation_id: Vec<u8>,
         payload: Vec<u8>,
     ) -> CoreCryptoResult<DecryptedMessage> {
-        let raw_decrypted_message = self.context.decrypt_message(&conversation_id, payload).await?;
+        let result = self.context.decrypt_message(&conversation_id, &payload).await;
+        let decrypted_message = if let Err(ConversationError::PendingConversation(pending)) = result {
+            pending.try_process_own_join_commit(&payload).await
+        } else {
+            result
+        }?;
 
-        let decrypted_message: DecryptedMessage = raw_decrypted_message.try_into()?;
-
-        Ok(decrypted_message)
+        decrypted_message.try_into()
     }
 
     /// See [core_crypto::mls::conversation::conversation_guard::ConversationGuard::encrypt_message]
