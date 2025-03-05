@@ -14,6 +14,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see http://www.gnu.org/licenses/.
 
+mod epoch_observer;
 mod error;
 pub(crate) mod id;
 pub(crate) mod identifier;
@@ -29,6 +30,7 @@ use crate::{
         key_package::KEYPACKAGE_DEFAULT_LIFETIME,
     },
 };
+pub use epoch_observer::EpochObserver;
 pub(crate) use error::{Error, Result};
 
 use async_lock::RwLock;
@@ -63,6 +65,7 @@ struct ClientInner {
     id: ClientId,
     pub(crate) identities: ClientIdentities,
     keypackage_lifetime: std::time::Duration,
+    epoch_observer: Option<Arc<dyn EpochObserver>>,
 }
 
 impl Client {
@@ -241,6 +244,7 @@ impl Client {
             id: client_id.clone(),
             identities: ClientIdentities::new(stored_skp.len()),
             keypackage_lifetime: KEYPACKAGE_DEFAULT_LIFETIME,
+            epoch_observer: None,
         })
         .await;
 
@@ -301,6 +305,7 @@ impl Client {
             id: id.into_owned(),
             identities: ClientIdentities::new(signature_schemes.len()),
             keypackage_lifetime: KEYPACKAGE_DEFAULT_LIFETIME,
+            epoch_observer: None,
         })
         .await;
 
@@ -406,6 +411,7 @@ impl Client {
             id: id.clone(),
             identities,
             keypackage_lifetime: KEYPACKAGE_DEFAULT_LIFETIME,
+            epoch_observer: None,
         })
         .await;
         Ok(())
