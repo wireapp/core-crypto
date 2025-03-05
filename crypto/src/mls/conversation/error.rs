@@ -4,6 +4,7 @@
 #![allow(missing_docs)]
 
 use super::config::MAX_PAST_EPOCHS;
+use crate::mls::conversation::pending_conversation::PendingConversation;
 
 pub type Result<T, E = Error> = core::result::Result<T, E>;
 
@@ -13,6 +14,8 @@ pub enum Error {
     InappropriateMessageBodyType,
     #[error("The specified parent group has not been found in the keystore")]
     ParentGroupNotFound,
+    #[error("The conversation with the specified id is pending")]
+    PendingConversation(PendingConversation),
     #[error("The current client id isn't authorized to perform this action")]
     Unauthorized,
     /// Message rejected by the delivery service

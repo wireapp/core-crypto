@@ -18,7 +18,8 @@ use tls_codec::Deserialize as _;
 
 /// A pending conversation is a conversation that has been created via an external join commit
 /// locally, while this commit has not yet been approved by the DS.
-pub(crate) struct PendingConversation {
+#[derive(Debug)]
+pub struct PendingConversation {
     inner: PersistedMlsPendingGroup,
     context: CentralContext,
 }

@@ -498,10 +498,15 @@ impl CentralContext {
             .map_err(RecursiveError::root("getting mls groups"))?
             .get_fetch(id, &keystore, None)
             .await
-            .map_err(RecursiveError::root("fetching conversation from mls groups by id"))?
-            .ok_or_else(|| LeafError::ConversationNotFound(id.clone()))?;
-        // TODO(SimonThormeyer): Check if a pending conversation exists with this ID, if so, return it in a custom error variant
-        Ok(ConversationGuard::new(inner, self.clone()))
+            .map_err(RecursiveError::root("fetching conversation from mls groups by id"))?;
+
+        if let Some(inner) = inner {
+            return Ok(ConversationGuard::new(inner, self.clone()));
+        }
+        // Check if there is a pending conversation with
+        // the same id
+        let pending = self.pending_conversation(id).await.map(Error::PendingConversation)?;
+        Err(pending)
     }
 
     pub(crate) async fn pending_conversation(&self, id: &ConversationId) -> Result<PendingConversation> {
