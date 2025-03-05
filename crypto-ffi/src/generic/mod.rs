@@ -387,7 +387,7 @@ impl CoreCryptoError {
 
 type CoreCryptoResult<T> = Result<T, CoreCryptoError>;
 
-#[derive(Debug, Clone, Eq, Hash, PartialEq)]
+#[derive(Debug, Clone, Eq, Hash, PartialEq, derive_more::From)]
 pub struct ClientId(core_crypto::prelude::ClientId);
 
 uniffi::custom_type!(ClientId, Vec<u8>, {
