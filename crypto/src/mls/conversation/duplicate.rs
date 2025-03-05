@@ -91,13 +91,19 @@ mod tests {
                     // decrypt once ... ok
                     bob_central
                         .context
-                        .decrypt_message(&id, &commit.to_bytes().unwrap())
+                        .conversation_guard(&id)
+                        .await
+                        .unwrap()
+                        .decrypt_message(&commit.to_bytes().unwrap())
                         .await
                         .unwrap();
                     // decrypt twice ... not ok
                     let decrypt_duplicate = bob_central
                         .context
-                        .decrypt_message(&id, &commit.to_bytes().unwrap())
+                        .conversation_guard(&id)
+                        .await
+                        .unwrap()
+                        .decrypt_message(&commit.to_bytes().unwrap())
                         .await;
                     assert!(matches!(decrypt_duplicate.unwrap_err(), Error::DuplicateMessage));
 
@@ -105,7 +111,10 @@ mod tests {
                     // It fails with this error since it's not the commit who has created this epoch
                     let decrypt_lost_commit = bob_central
                         .context
-                        .decrypt_message(&id, &unknown_commit.to_bytes().unwrap())
+                        .conversation_guard(&id)
+                        .await
+                        .unwrap()
+                        .decrypt_message(&unknown_commit.to_bytes().unwrap())
                         .await;
                     assert!(matches!(decrypt_lost_commit.unwrap_err(), Error::StaleCommit));
                 })
@@ -149,13 +158,19 @@ mod tests {
                 // decrypt once ... ok
                 alice_central
                     .context
-                    .decrypt_message(&id, &ext_commit.to_bytes().unwrap())
+                    .conversation_guard(&id)
+                    .await
+                    .unwrap()
+                    .decrypt_message(&ext_commit.to_bytes().unwrap())
                     .await
                     .unwrap();
                 // decrypt twice ... not ok
                 let decryption = alice_central
                     .context
-                    .decrypt_message(&id, &ext_commit.to_bytes().unwrap())
+                    .conversation_guard(&id)
+                    .await
+                    .unwrap()
+                    .decrypt_message(&ext_commit.to_bytes().unwrap())
                     .await;
                 assert!(matches!(decryption.unwrap_err(), Error::DuplicateMessage));
 
@@ -163,7 +178,10 @@ mod tests {
                 // It fails with this error since it's not the external commit who has created this epoch
                 let decryption = alice_central
                     .context
-                    .decrypt_message(&id, &unknown_ext_commit.to_bytes().unwrap())
+                    .conversation_guard(&id)
+                    .await
+                    .unwrap()
+                    .decrypt_message(&unknown_ext_commit.to_bytes().unwrap())
                     .await;
                 assert!(matches!(decryption.unwrap_err(), Error::StaleCommit));
             })
@@ -189,14 +207,20 @@ mod tests {
                 // decrypt once ... ok
                 bob_central
                     .context
-                    .decrypt_message(&id, &proposal.to_bytes().unwrap())
+                    .conversation_guard(&id)
+                    .await
+                    .unwrap()
+                    .decrypt_message(&proposal.to_bytes().unwrap())
                     .await
                     .unwrap();
 
                 // decrypt twice ... not ok
                 let decryption = bob_central
                     .context
-                    .decrypt_message(&id, &proposal.to_bytes().unwrap())
+                    .conversation_guard(&id)
+                    .await
+                    .unwrap()
+                    .decrypt_message(&proposal.to_bytes().unwrap())
                     .await;
                 assert!(matches!(decryption.unwrap_err(), Error::DuplicateMessage));
 
@@ -213,7 +237,10 @@ mod tests {
                 // Epoch has advanced so we cannot detect duplicates anymore
                 let decryption = bob_central
                     .context
-                    .decrypt_message(&id, &proposal.to_bytes().unwrap())
+                    .conversation_guard(&id)
+                    .await
+                    .unwrap()
+                    .decrypt_message(&proposal.to_bytes().unwrap())
                     .await;
                 assert!(matches!(decryption.unwrap_err(), Error::StaleProposal));
             })
@@ -250,14 +277,20 @@ mod tests {
                 // decrypt once ... ok
                 alice_central
                     .context
-                    .decrypt_message(&id, &ext_proposal.to_bytes().unwrap())
+                    .conversation_guard(&id)
+                    .await
+                    .unwrap()
+                    .decrypt_message(&ext_proposal.to_bytes().unwrap())
                     .await
                     .unwrap();
 
                 // decrypt twice ... not ok
                 let decryption = alice_central
                     .context
-                    .decrypt_message(&id, &ext_proposal.to_bytes().unwrap())
+                    .conversation_guard(&id)
+                    .await
+                    .unwrap()
+                    .decrypt_message(&ext_proposal.to_bytes().unwrap())
                     .await;
                 assert!(matches!(decryption.unwrap_err(), Error::DuplicateMessage));
 
@@ -274,7 +307,10 @@ mod tests {
                 // Epoch has advanced so we cannot detect duplicates anymore
                 let decryption = alice_central
                     .context
-                    .decrypt_message(&id, &ext_proposal.to_bytes().unwrap())
+                    .conversation_guard(&id)
+                    .await
+                    .unwrap()
+                    .decrypt_message(&ext_proposal.to_bytes().unwrap())
                     .await;
                 assert!(matches!(decryption.unwrap_err(), Error::StaleProposal));
             })
@@ -307,9 +343,22 @@ mod tests {
                     .unwrap();
 
                 // decrypt once .. ok
-                bob_central.context.decrypt_message(&id, &encrypted).await.unwrap();
+                bob_central
+                    .context
+                    .conversation_guard(&id)
+                    .await
+                    .unwrap()
+                    .decrypt_message(&encrypted)
+                    .await
+                    .unwrap();
                 // decrypt twice .. not ok
-                let decryption = bob_central.context.decrypt_message(&id, &encrypted).await;
+                let decryption = bob_central
+                    .context
+                    .conversation_guard(&id)
+                    .await
+                    .unwrap()
+                    .decrypt_message(&encrypted)
+                    .await;
                 assert!(matches!(decryption.unwrap_err(), Error::DuplicateMessage));
             })
         })

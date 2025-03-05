@@ -188,7 +188,10 @@ mod tests {
                     // since the pending commit is the same as the incoming one, it should succeed
                     let decrypt_self = alice_central
                         .context
-                        .decrypt_message(&id, &commit.commit.to_bytes().unwrap())
+                        .conversation_guard(&id)
+                        .await
+                        .unwrap()
+                        .decrypt_message(&commit.commit.to_bytes().unwrap())
                         .await;
                     assert!(decrypt_self.is_ok());
                     let decrypt_self = decrypt_self.unwrap();
@@ -251,7 +254,10 @@ mod tests {
 
                     let decrypt = alice_central
                         .context
-                        .decrypt_message(&id, &unmerged_commit.to_bytes().unwrap())
+                        .conversation_guard(&id)
+                        .await
+                        .unwrap()
+                        .decrypt_message(&unmerged_commit.to_bytes().unwrap())
                         .await;
                     assert!(matches!(decrypt.unwrap_err(), Error::ClearingPendingCommitError));
                 })
@@ -293,7 +299,10 @@ mod tests {
 
                     let decrypt_self = alice_central
                         .context
-                        .decrypt_message(&id, &commit.to_bytes().unwrap())
+                        .conversation_guard(&id)
+                        .await
+                        .unwrap()
+                        .decrypt_message(&commit.to_bytes().unwrap())
                         .await;
                     // this means DS replayed the commit. In that case just ignore, we have already merged the commit anyway
                     assert!(matches!(decrypt_self.unwrap_err(), Error::SelfCommitIgnored));
@@ -340,7 +349,10 @@ mod tests {
 
                 let decryption_result = alice_central
                     .context
-                    .decrypt_message(&conversation_id, commit_serialized)
+                    .conversation_guard(&conversation_id)
+                    .await
+                    .unwrap()
+                    .decrypt_message(commit_serialized)
                     .await;
                 let error = decryption_result.unwrap_err();
                 assert!(matches!(
@@ -360,7 +372,10 @@ mod tests {
                 assert!(
                     alice_central
                         .context
-                        .decrypt_message(&conversation_id, &add_bob_message.to_bytes().unwrap())
+                        .conversation_guard(&conversation_id)
+                        .await
+                        .unwrap()
+                        .decrypt_message(&add_bob_message.to_bytes().unwrap())
                         .await
                         .is_ok()
                 );

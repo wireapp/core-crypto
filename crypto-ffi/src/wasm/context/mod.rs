@@ -519,13 +519,17 @@ impl CoreCryptoContext {
 
     /// Returns: [`WasmCryptoResult<DecryptedMessage>`]
     ///
-    /// see [core_crypto::mls::context::CentralContext::decrypt_message]
+    /// see [core_crypto::mls::conversation::conversation_guard::ConversationGuard::decrypt_message]
     pub fn decrypt_message(&self, conversation_id: ConversationId, payload: Box<[u8]>) -> Promise {
         let context = self.inner.clone();
         future_to_promise(
             async move {
-                let result = context.decrypt_message(&conversation_id, &payload).await;
-                let decrypted_message = if let Err(ConversationError::PendingConversation(pending)) = result {
+                let result = context
+                    .conversation_guard(&conversation_id)
+                    .await?
+                    .decrypt_message(&payload)
+                    .await;
+                let decrypted_message = if let Err(ConversationError::PendingConversation(mut pending)) = result {
                     pending.try_process_own_join_commit(&payload).await
                 } else {
                     result

@@ -207,7 +207,10 @@ mod tests {
 
                         let proposals = alice_central
                             .context
-                            .decrypt_message(&id, commit.to_bytes().unwrap())
+                            .conversation_guard(&id)
+                            .await
+                            .unwrap()
+                            .decrypt_message(commit.to_bytes().unwrap())
                             .await
                             .unwrap()
                             .proposals;
@@ -227,7 +230,10 @@ mod tests {
                         let commit = bob_central.mls_transport.latest_commit().await;
                         let proposals = alice_central
                             .context
-                            .decrypt_message(&id, commit.to_bytes().unwrap())
+                            .conversation_guard(&id)
+                            .await
+                            .unwrap()
+                            .decrypt_message(commit.to_bytes().unwrap())
                             .await
                             .unwrap()
                             .proposals;
@@ -264,7 +270,10 @@ mod tests {
                         // Bob has Alice's update proposal
                         bob_central
                             .context
-                            .decrypt_message(&id, proposal.to_bytes().unwrap())
+                            .conversation_guard(&id)
+                            .await
+                            .unwrap()
+                            .decrypt_message(proposal.to_bytes().unwrap())
                             .await
                             .unwrap();
 
@@ -281,7 +290,10 @@ mod tests {
                         // Bob's commit has Alice's proposal
                         let proposals = alice_central
                             .context
-                            .decrypt_message(&id, commit.to_bytes().unwrap())
+                            .conversation_guard(&id)
+                            .await
+                            .unwrap()
+                            .decrypt_message(commit.to_bytes().unwrap())
                             .await
                             .unwrap()
                             .proposals;
@@ -292,7 +304,10 @@ mod tests {
                         let proposal = alice_central.context.new_update_proposal(&id).await.unwrap().proposal;
                         bob_central
                             .context
-                            .decrypt_message(&id, proposal.to_bytes().unwrap())
+                            .conversation_guard(&id)
+                            .await
+                            .unwrap()
+                            .decrypt_message(proposal.to_bytes().unwrap())
                             .await
                             .unwrap();
                         bob_central
@@ -306,7 +321,10 @@ mod tests {
                         let commit = bob_central.mls_transport.latest_commit().await;
                         let proposals = alice_central
                             .context
-                            .decrypt_message(&id, commit.to_bytes().unwrap())
+                            .conversation_guard(&id)
+                            .await
+                            .unwrap()
+                            .decrypt_message(commit.to_bytes().unwrap())
                             .await
                             .unwrap()
                             .proposals;
@@ -342,7 +360,10 @@ mod tests {
                         assert!(alice_central.pending_proposals(&id).await.is_empty());
                         alice_central
                             .context
-                            .decrypt_message(&id, proposal.to_bytes().unwrap())
+                            .conversation_guard(&id)
+                            .await
+                            .unwrap()
+                            .decrypt_message(proposal.to_bytes().unwrap())
                             .await
                             .unwrap();
                         assert_eq!(alice_central.pending_proposals(&id).await.len(), 1);
@@ -359,7 +380,10 @@ mod tests {
                         let commit = charlie_central.mls_transport.latest_commit().await;
                         let proposals = alice_central
                             .context
-                            .decrypt_message(&id, commit.to_bytes().unwrap())
+                            .conversation_guard(&id)
+                            .await
+                            .unwrap()
+                            .decrypt_message(commit.to_bytes().unwrap())
                             .await
                             .unwrap()
                             .proposals;
@@ -409,7 +433,10 @@ mod tests {
                         let commit = bob_central.mls_transport.latest_commit().await;
                         let proposals = alice_central
                             .context
-                            .decrypt_message(&id, commit.to_bytes().unwrap())
+                            .conversation_guard(&id)
+                            .await
+                            .unwrap()
+                            .decrypt_message(commit.to_bytes().unwrap())
                             .await
                             .unwrap()
                             .proposals;
@@ -459,7 +486,10 @@ mod tests {
                         let commit = bob_central.mls_transport.latest_commit().await;
                         let proposals = alice_central
                             .context
-                            .decrypt_message(&id, commit.to_bytes().unwrap())
+                            .conversation_guard(&id)
+                            .await
+                            .unwrap()
+                            .decrypt_message(commit.to_bytes().unwrap())
                             .await
                             .unwrap()
                             .proposals;
@@ -501,7 +531,10 @@ mod tests {
                             .proposal;
                         alice_central
                             .context
-                            .decrypt_message(&id, proposal.to_bytes().unwrap())
+                            .conversation_guard(&id)
+                            .await
+                            .unwrap()
+                            .decrypt_message(proposal.to_bytes().unwrap())
                             .await
                             .unwrap();
                         assert_eq!(alice_central.pending_proposals(&id).await.len(), 1);
@@ -518,7 +551,10 @@ mod tests {
                         let commit = charlie_central.mls_transport.latest_commit().await;
                         let proposals = alice_central
                             .context
-                            .decrypt_message(&id, commit.to_bytes().unwrap())
+                            .conversation_guard(&id)
+                            .await
+                            .unwrap()
+                            .decrypt_message(commit.to_bytes().unwrap())
                             .await
                             .unwrap()
                             .proposals;
@@ -565,7 +601,10 @@ mod tests {
                         let commit = bob_central.mls_transport.latest_commit().await;
                         let proposals = alice_central
                             .context
-                            .decrypt_message(&id, commit.to_bytes().unwrap())
+                            .conversation_guard(&id)
+                            .await
+                            .unwrap()
+                            .decrypt_message(commit.to_bytes().unwrap())
                             .await
                             .unwrap()
                             .proposals;
@@ -587,7 +626,10 @@ mod tests {
                         let commit = bob_central.mls_transport.latest_commit().await;
                         let proposals = alice_central
                             .context
-                            .decrypt_message(&id, commit.to_bytes().unwrap())
+                            .conversation_guard(&id)
+                            .await
+                            .unwrap()
+                            .decrypt_message(commit.to_bytes().unwrap())
                             .await
                             .unwrap()
                             .proposals;
@@ -633,7 +675,10 @@ mod tests {
                         let commit = bob_central.mls_transport.latest_commit().await;
                         let proposals = alice_central
                             .context
-                            .decrypt_message(&id, commit.to_bytes().unwrap())
+                            .conversation_guard(&id)
+                            .await
+                            .unwrap()
+                            .decrypt_message(commit.to_bytes().unwrap())
                             .await
                             .unwrap()
                             .proposals;
@@ -688,7 +733,10 @@ mod tests {
                         let commit = bob_central.mls_transport.latest_commit().await;
                         let proposals = alice_central
                             .context
-                            .decrypt_message(&id, commit.to_bytes().unwrap())
+                            .conversation_guard(&id)
+                            .await
+                            .unwrap()
+                            .decrypt_message(commit.to_bytes().unwrap())
                             .await
                             .unwrap()
                             .proposals;
@@ -729,7 +777,10 @@ mod tests {
                         assert!(alice_central.pending_proposals(&id).await.is_empty());
                         alice_central
                             .context
-                            .decrypt_message(&id, proposal.to_bytes().unwrap())
+                            .conversation_guard(&id)
+                            .await
+                            .unwrap()
+                            .decrypt_message(proposal.to_bytes().unwrap())
                             .await
                             .unwrap();
                         assert_eq!(alice_central.pending_proposals(&id).await.len(), 1);
@@ -745,7 +796,10 @@ mod tests {
                         let commit = charlie_central.mls_transport.latest_commit().await;
                         let proposals = alice_central
                             .context
-                            .decrypt_message(&id, commit.to_bytes().unwrap())
+                            .conversation_guard(&id)
+                            .await
+                            .unwrap()
+                            .decrypt_message(commit.to_bytes().unwrap())
                             .await
                             .unwrap()
                             .proposals;
@@ -798,7 +852,10 @@ mod tests {
                         let commit = bob_central.mls_transport.latest_commit().await;
                         let proposals = alice_central
                             .context
-                            .decrypt_message(&id, commit.to_bytes().unwrap())
+                            .conversation_guard(&id)
+                            .await
+                            .unwrap()
+                            .decrypt_message(commit.to_bytes().unwrap())
                             .await
                             .unwrap()
                             .proposals;
@@ -851,7 +908,10 @@ mod tests {
                         let commit = bob_central.mls_transport.latest_commit().await;
                         let proposals = alice_central
                             .context
-                            .decrypt_message(&id, commit.to_bytes().unwrap())
+                            .conversation_guard(&id)
+                            .await
+                            .unwrap()
+                            .decrypt_message(commit.to_bytes().unwrap())
                             .await
                             .unwrap()
                             .proposals;
@@ -903,7 +963,10 @@ mod tests {
                         let commit = bob_central.mls_transport.latest_commit().await;
                         let proposals = alice_central
                             .context
-                            .decrypt_message(&id, commit.to_bytes().unwrap())
+                            .conversation_guard(&id)
+                            .await
+                            .unwrap()
+                            .decrypt_message(commit.to_bytes().unwrap())
                             .await
                             .unwrap()
                             .proposals;

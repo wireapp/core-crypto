@@ -254,7 +254,10 @@ async fn run_mls_test(chrome_driver_addr: &std::net::SocketAddr) -> Result<()> {
         }
 
         let decrypted_master_raw = transaction
-            .decrypt_message(&conversation_id, message_to_decrypt)
+            .conversation_guard(&conversation_id)
+            .await
+            .unwrap()
+            .decrypt_message(message_to_decrypt)
             .await?
             .app_msg
             .ok_or_else(|| eyre!("[MLS] No message received on master client"))?;

@@ -211,7 +211,10 @@ mod tests {
 
                     let _ = bob_central
                         .context
-                        .decrypt_message(&id, &charlie_welcome_bundle.commit.tls_serialize_detached().unwrap())
+                        .conversation_guard(&id)
+                        .await
+                        .unwrap()
+                        .decrypt_message(&charlie_welcome_bundle.commit.tls_serialize_detached().unwrap())
                         .await
                         .unwrap();
 
@@ -241,7 +244,10 @@ mod tests {
 
                     let bob_decrypted_message = bob_central
                         .context
-                        .decrypt_message(&id, &proposal_bundle.proposal.tls_serialize_detached().unwrap())
+                        .conversation_guard(&id)
+                        .await
+                        .unwrap()
+                        .decrypt_message(&proposal_bundle.proposal.tls_serialize_detached().unwrap())
                         .await
                         .unwrap();
 
@@ -252,7 +258,10 @@ mod tests {
 
                     let charlie_decrypted_message = charlie_central
                         .context
-                        .decrypt_message(&id, &proposal_bundle.proposal.tls_serialize_detached().unwrap())
+                        .conversation_guard(&id)
+                        .await
+                        .unwrap()
+                        .decrypt_message(&proposal_bundle.proposal.tls_serialize_detached().unwrap())
                         .await
                         .unwrap();
 

@@ -202,7 +202,10 @@ mod tests {
                         assert_eq!(alice_central.pending_proposals(&id).await.len(), 1);
                         bob_central
                             .context
-                            .decrypt_message(&id, proposal.to_bytes().unwrap())
+                            .conversation_guard(&id)
+                            .await
+                            .unwrap()
+                            .decrypt_message(proposal.to_bytes().unwrap())
                             .await
                             .unwrap();
                         bob_central
@@ -221,7 +224,10 @@ mod tests {
                         // not be referenced in commit
                         alice_central
                             .context
-                            .decrypt_message(&id, commit.to_bytes().unwrap())
+                            .conversation_guard(&id)
+                            .await
+                            .unwrap()
+                            .decrypt_message(commit.to_bytes().unwrap())
                             .await
                             .unwrap();
                         assert_eq!(alice_central.get_conversation_unchecked(&id).await.members().len(), 3);
@@ -275,7 +281,10 @@ mod tests {
                         assert_eq!(alice_central.pending_proposals(&id).await.len(), 1);
                         bob_central
                             .context
-                            .decrypt_message(&id, proposal.to_bytes().unwrap())
+                            .conversation_guard(&id)
+                            .await
+                            .unwrap()
+                            .decrypt_message(proposal.to_bytes().unwrap())
                             .await
                             .unwrap();
                         bob_central
@@ -293,7 +302,10 @@ mod tests {
                         // not be referenced in commit
                         alice_central
                             .context
-                            .decrypt_message(&id, commit.to_bytes().unwrap())
+                            .conversation_guard(&id)
+                            .await
+                            .unwrap()
+                            .decrypt_message(commit.to_bytes().unwrap())
                             .await
                             .unwrap();
                         assert_eq!(alice_central.get_conversation_unchecked(&id).await.members().len(), 2);
@@ -338,7 +350,10 @@ mod tests {
                     let proposal = alice_central.context.new_update_proposal(&id).await.unwrap().proposal;
                     bob_central
                         .context
-                        .decrypt_message(&id, proposal.to_bytes().unwrap())
+                        .conversation_guard(&id)
+                        .await
+                        .unwrap()
+                        .decrypt_message(proposal.to_bytes().unwrap())
                         .await
                         .unwrap();
                     bob_central
@@ -370,7 +385,10 @@ mod tests {
                     // not be referenced in commit
                     alice_central
                         .context
-                        .decrypt_message(&id, commit.to_bytes().unwrap())
+                        .conversation_guard(&id)
+                        .await
+                        .unwrap()
+                        .decrypt_message(commit.to_bytes().unwrap())
                         .await
                         .unwrap();
                     assert!(
@@ -409,7 +427,10 @@ mod tests {
 
                     bob_central
                         .context
-                        .decrypt_message(&id, &proposal.to_bytes().unwrap())
+                        .conversation_guard(&id)
+                        .await
+                        .unwrap()
+                        .decrypt_message(&proposal.to_bytes().unwrap())
                         .await
                         .unwrap();
                     bob_central
@@ -425,7 +446,10 @@ mod tests {
                     // fails when we try to decrypt a proposal for past epoch
                     let past_proposal = bob_central
                         .context
-                        .decrypt_message(&id, &proposal.to_bytes().unwrap())
+                        .conversation_guard(&id)
+                        .await
+                        .unwrap()
+                        .decrypt_message(&proposal.to_bytes().unwrap())
                         .await;
                     assert!(matches!(past_proposal.unwrap_err(), Error::StaleProposal));
                 })

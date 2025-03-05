@@ -120,7 +120,7 @@ struct ParsedMessage {
 
 /// Abstraction over a MLS group capable of decrypting a MLS message
 impl MlsConversation {
-    /// see [CentralContext::decrypt_message]
+    /// see [ConversationGuard::decrypt_message]
     #[allow(clippy::too_many_arguments)]
     #[cfg_attr(test, crate::durable)]
     // FIXME: this might be causing stack overflow. Retry when this is solved: https://github.com/tokio-rs/tracing/issues/1147. Tracking issue: WPB-9654
@@ -678,7 +678,10 @@ mod tests {
                     let commit = bob_central.mls_transport.latest_commit().await;
                     let MlsConversationDecryptMessage { is_active, .. } = alice_central
                         .context
-                        .decrypt_message(&id, commit.to_bytes().unwrap())
+                        .conversation_guard(&id)
+                        .await
+                        .unwrap()
+                        .decrypt_message(commit.to_bytes().unwrap())
                         .await
                         .unwrap();
                     assert!(is_active)
@@ -711,7 +714,10 @@ mod tests {
                     let commit = bob_central.mls_transport.latest_commit().await;
                     let MlsConversationDecryptMessage { is_active, .. } = alice_central
                         .context
-                        .decrypt_message(&id, commit.to_bytes().unwrap())
+                        .conversation_guard(&id)
+                        .await
+                        .unwrap()
+                        .decrypt_message(commit.to_bytes().unwrap())
                         .await
                         .unwrap();
                     assert!(!is_active)
@@ -758,7 +764,10 @@ mod tests {
 
                     let decrypted = bob_central
                         .context
-                        .decrypt_message(&id, commit.to_bytes().unwrap())
+                        .conversation_guard(&id)
+                        .await
+                        .unwrap()
+                        .decrypt_message(commit.to_bytes().unwrap())
                         .await
                         .unwrap();
                     let epoch_after = bob_central.context.conversation_guard(&id).await.unwrap().epoch().await;
@@ -798,7 +807,10 @@ mod tests {
                         let add_charlie_proposal = bob_central.context.new_add_proposal(&id, charlie_kp).await.unwrap();
                         alice_central
                             .context
-                            .decrypt_message(&id, add_charlie_proposal.proposal.to_bytes().unwrap())
+                            .conversation_guard(&id)
+                            .await
+                            .unwrap()
+                            .decrypt_message(add_charlie_proposal.proposal.to_bytes().unwrap())
                             .await
                             .unwrap();
 
@@ -818,7 +830,10 @@ mod tests {
                             ..
                         } = alice_central
                             .context
-                            .decrypt_message(&id, commit.to_bytes().unwrap())
+                            .conversation_guard(&id)
+                            .await
+                            .unwrap()
+                            .decrypt_message(commit.to_bytes().unwrap())
                             .await
                             .unwrap();
                         assert!(proposals.is_empty());
@@ -870,7 +885,10 @@ mod tests {
                         // But first she receives Bob commit
                         let MlsConversationDecryptMessage { proposals, delay, .. } = alice_central
                             .context
-                            .decrypt_message(&id, bob_commit.to_bytes().unwrap())
+                            .conversation_guard(&id)
+                            .await
+                            .unwrap()
+                            .decrypt_message(bob_commit.to_bytes().unwrap())
                             .await
                             .unwrap();
                         // So Charlie has not been added to the group
@@ -896,7 +914,10 @@ mod tests {
                         // Let's use this proposal to see if it works
                         bob_central
                             .context
-                            .decrypt_message(&id, renewed_proposal.proposal.to_bytes().unwrap())
+                            .conversation_guard(&id)
+                            .await
+                            .unwrap()
+                            .decrypt_message(renewed_proposal.proposal.to_bytes().unwrap())
                             .await
                             .unwrap();
                         assert_eq!(bob_central.pending_proposals(&id).await.len(), 1);
@@ -911,7 +932,10 @@ mod tests {
                         let commit = bob_central.mls_transport.latest_commit().await;
                         let decrypted = alice_central
                             .context
-                            .decrypt_message(&id, commit.to_bytes().unwrap())
+                            .conversation_guard(&id)
+                            .await
+                            .unwrap()
+                            .decrypt_message(commit.to_bytes().unwrap())
                             .await
                             .unwrap();
                         // Charlie is now in the group
@@ -971,7 +995,10 @@ mod tests {
                         assert!(alice_central.pending_proposals(&id).await.is_empty());
                         alice_central
                             .context
-                            .decrypt_message(&id, ext_proposal.to_bytes().unwrap())
+                            .conversation_guard(&id)
+                            .await
+                            .unwrap()
+                            .decrypt_message(ext_proposal.to_bytes().unwrap())
                             .await
                             .unwrap();
                         assert_eq!(alice_central.pending_proposals(&id).await.len(), 1);
@@ -987,7 +1014,10 @@ mod tests {
                         let commit = bob_central.mls_transport.latest_commit().await;
                         let alice_renewed_proposals = alice_central
                             .context
-                            .decrypt_message(&id, commit.to_bytes().unwrap())
+                            .conversation_guard(&id)
+                            .await
+                            .unwrap()
+                            .decrypt_message(commit.to_bytes().unwrap())
                             .await
                             .unwrap()
                             .proposals;
@@ -1024,7 +1054,10 @@ mod tests {
 
                     let sender_client_id = bob_central
                         .context
-                        .decrypt_message(&id, commit.to_bytes().unwrap())
+                        .conversation_guard(&id)
+                        .await
+                        .unwrap()
+                        .decrypt_message(commit.to_bytes().unwrap())
                         .await
                         .unwrap()
                         .sender_client_id;
@@ -1063,7 +1096,10 @@ mod tests {
 
                         let decrypted = alice_central
                             .context
-                            .decrypt_message(&id, &ext_proposal.to_bytes().unwrap())
+                            .conversation_guard(&id)
+                            .await
+                            .unwrap()
+                            .decrypt_message(&ext_proposal.to_bytes().unwrap())
                             .await
                             .unwrap();
                         assert!(decrypted.app_msg.is_none());
@@ -1071,7 +1107,10 @@ mod tests {
 
                         let decrypted = bob_central
                             .context
-                            .decrypt_message(&id, &ext_proposal.to_bytes().unwrap())
+                            .conversation_guard(&id)
+                            .await
+                            .unwrap()
+                            .decrypt_message(&ext_proposal.to_bytes().unwrap())
                             .await
                             .unwrap();
                         assert!(decrypted.app_msg.is_none());
@@ -1114,7 +1153,10 @@ mod tests {
 
                         let decrypted = bob_central
                             .context
-                            .decrypt_message(&id, proposal.to_bytes().unwrap())
+                            .conversation_guard(&id)
+                            .await
+                            .unwrap()
+                            .decrypt_message(proposal.to_bytes().unwrap())
                             .await
                             .unwrap();
 
@@ -1155,7 +1197,10 @@ mod tests {
 
                     let sender_client_id = bob_central
                         .context
-                        .decrypt_message(&id, proposal.to_bytes().unwrap())
+                        .conversation_guard(&id)
+                        .await
+                        .unwrap()
+                        .decrypt_message(proposal.to_bytes().unwrap())
                         .await
                         .unwrap()
                         .sender_client_id;
@@ -1192,7 +1237,14 @@ mod tests {
                         .await
                         .unwrap();
                     assert_ne!(&msg[..], &encrypted[..]);
-                    let decrypted = bob_central.context.decrypt_message(&id, encrypted).await.unwrap();
+                    let decrypted = bob_central
+                        .context
+                        .conversation_guard(&id)
+                        .await
+                        .unwrap()
+                        .decrypt_message(encrypted)
+                        .await
+                        .unwrap();
                     let dec_msg = decrypted.app_msg.as_ref().unwrap().as_slice();
                     assert_eq!(dec_msg, &msg[..]);
                     assert!(!decrypted.has_epoch_changed);
@@ -1208,7 +1260,14 @@ mod tests {
                         .await
                         .unwrap();
                     assert_ne!(&msg[..], &encrypted[..]);
-                    let decrypted = alice_central.context.decrypt_message(&id, encrypted).await.unwrap();
+                    let decrypted = alice_central
+                        .context
+                        .conversation_guard(&id)
+                        .await
+                        .unwrap()
+                        .decrypt_message(encrypted)
+                        .await
+                        .unwrap();
                     let dec_msg = decrypted.app_msg.as_ref().unwrap().as_slice();
                     assert_eq!(dec_msg, &msg[..]);
                     assert!(!decrypted.has_epoch_changed);
@@ -1252,7 +1311,13 @@ mod tests {
                         .unwrap();
 
                     // fails because of Forward Secrecy
-                    let decrypt = bob_central.context.decrypt_message(&id, &encrypted).await;
+                    let decrypt = bob_central
+                        .context
+                        .conversation_guard(&id)
+                        .await
+                        .unwrap()
+                        .decrypt_message(&encrypted)
+                        .await;
                     assert!(matches!(decrypt.unwrap_err(), Error::DecryptionError));
                 })
             })
@@ -1295,12 +1360,21 @@ mod tests {
                         .unwrap();
 
                     // which Bob cannot decrypt because of Post CompromiseSecurity
-                    let decrypt = bob_central.context.decrypt_message(&id, &encrypted).await;
+                    let decrypt = bob_central
+                        .context
+                        .conversation_guard(&id)
+                        .await
+                        .unwrap()
+                        .decrypt_message(&encrypted)
+                        .await;
                     assert!(matches!(decrypt.unwrap_err(), Error::BufferedFutureMessage { .. }));
 
                     let decrypted_commit = bob_central
                         .context
-                        .decrypt_message(&id, commit.to_bytes().unwrap())
+                        .conversation_guard(&id)
+                        .await
+                        .unwrap()
+                        .decrypt_message(commit.to_bytes().unwrap())
                         .await
                         .unwrap();
                     let buffered_msg = decrypted_commit.buffered_messages.unwrap();
@@ -1348,7 +1422,13 @@ mod tests {
                     // ..then unstack them to see out_of_order_tolerance come into play
                     messages.reverse();
                     for (i, (original, encrypted)) in messages.iter().enumerate() {
-                        let decrypt = bob_central.context.decrypt_message(&id, encrypted).await;
+                        let decrypt = bob_central
+                            .context
+                            .conversation_guard(&id)
+                            .await
+                            .unwrap()
+                            .decrypt_message(encrypted)
+                            .await;
                         if i > out_of_order_tolerance as usize {
                             let decrypted = decrypt.unwrap().app_msg.unwrap();
                             assert_eq!(decrypted, original.as_bytes());
@@ -1387,7 +1467,10 @@ mod tests {
 
                     let sender_client_id = bob_central
                         .context
-                        .decrypt_message(&id, encrypted)
+                        .conversation_guard(&id)
+                        .await
+                        .unwrap()
+                        .decrypt_message(encrypted)
                         .await
                         .unwrap()
                         .sender_client_id
@@ -1447,12 +1530,22 @@ mod tests {
                         let commit = alice_central.mls_transport.latest_commit().await;
                         bob_central
                             .context
-                            .decrypt_message(&id, commit.to_bytes().unwrap())
+                            .conversation_guard(&id)
+                            .await
+                            .unwrap()
+                            .decrypt_message(commit.to_bytes().unwrap())
                             .await
                             .unwrap();
                     }
                     // Decrypt should work
-                    let decrypt = bob_central.context.decrypt_message(&id, &bob_message1).await.unwrap();
+                    let decrypt = bob_central
+                        .context
+                        .conversation_guard(&id)
+                        .await
+                        .unwrap()
+                        .decrypt_message(&bob_message1)
+                        .await
+                        .unwrap();
                     assert_eq!(decrypt.app_msg.unwrap(), b"Hello Bob");
 
                     // Moving the epochs once more should cause an error
@@ -1467,11 +1560,20 @@ mod tests {
                     let commit = alice_central.mls_transport.latest_commit().await;
                     bob_central
                         .context
-                        .decrypt_message(&id, commit.to_bytes().unwrap())
+                        .conversation_guard(&id)
+                        .await
+                        .unwrap()
+                        .decrypt_message(commit.to_bytes().unwrap())
                         .await
                         .unwrap();
 
-                    let decrypt = bob_central.context.decrypt_message(&id, &bob_message2).await;
+                    let decrypt = bob_central
+                        .context
+                        .conversation_guard(&id)
+                        .await
+                        .unwrap()
+                        .decrypt_message(&bob_message2)
+                        .await;
                     assert!(matches!(decrypt.unwrap_err(), Error::MessageEpochTooOld));
                 })
             })
@@ -1533,20 +1635,33 @@ mod tests {
                     let commit = alice_central.mls_transport.latest_commit().await;
                     bob_central
                         .context
-                        .decrypt_message(&id, commit.to_bytes().unwrap())
+                        .conversation_guard(&id)
+                        .await
+                        .unwrap()
+                        .decrypt_message(commit.to_bytes().unwrap())
                         .await
                         .unwrap();
 
                     // trying to consume outdated messages should fail with a dedicated error
                     let decrypt_err = bob_central
                         .context
-                        .decrypt_message(&id, &old_proposal)
+                        .conversation_guard(&id)
+                        .await
+                        .unwrap()
+                        .decrypt_message(&old_proposal)
                         .await
                         .unwrap_err();
 
                     assert!(matches!(decrypt_err, Error::StaleProposal));
 
-                    let decrypt_err = bob_central.context.decrypt_message(&id, &old_commit).await.unwrap_err();
+                    let decrypt_err = bob_central
+                        .context
+                        .conversation_guard(&id)
+                        .await
+                        .unwrap()
+                        .decrypt_message(&old_commit)
+                        .await
+                        .unwrap_err();
 
                     assert!(matches!(decrypt_err, Error::StaleCommit));
                 })

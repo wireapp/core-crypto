@@ -74,7 +74,10 @@ mod tests {
                 assert_ne!(&msg[..], &encrypted[..]);
                 let decrypted = bob_central
                     .context
-                    .decrypt_message(&id, encrypted)
+                    .conversation_guard(&id)
+                    .await
+                    .unwrap()
+                    .decrypt_message(encrypted)
                     .await
                     .unwrap()
                     .app_msg
@@ -105,7 +108,10 @@ mod tests {
                 assert_ne!(&msg[..], &encrypted[..]);
                 let decrypted = bob_central
                     .context
-                    .decrypt_message(&id, encrypted)
+                    .conversation_guard(&id)
+                    .await
+                    .unwrap()
+                    .decrypt_message(encrypted)
                     .await
                     .unwrap()
                     .app_msg
@@ -117,7 +123,10 @@ mod tests {
                 assert_ne!(&msg[..], &encrypted[..]);
                 let decrypted = bob_central
                     .context
-                    .decrypt_message(&id, encrypted)
+                    .conversation_guard(&id)
+                    .await
+                    .unwrap()
+                    .decrypt_message(encrypted)
                     .await
                     .unwrap()
                     .app_msg

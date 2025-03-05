@@ -107,7 +107,15 @@ fn decryption_bench_var_msg_size(c: &mut Criterion) {
                     },
                     |(central, id, encrypted)| async move {
                         let context = central.new_transaction().await.unwrap();
-                        black_box(context.decrypt_message(&id, encrypted).await.unwrap());
+                        black_box(
+                            context
+                                .conversation_guard(&id)
+                                .await
+                                .unwrap()
+                                .decrypt_message(encrypted)
+                                .await
+                                .unwrap(),
+                        );
                         context.finish().await.unwrap();
                     },
                     BatchSize::SmallInput,

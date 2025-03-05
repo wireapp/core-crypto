@@ -129,7 +129,13 @@ mod tests {
                                 .await;
                         }
 
-                        let decrypting = bob_central.context.decrypt_message(&id, proposal).await;
+                        let decrypting = bob_central
+                            .context
+                            .conversation_guard(&id)
+                            .await
+                            .unwrap()
+                            .decrypt_message(proposal)
+                            .await;
 
                         // TODO: currently succeeds as we don't anymore validate KeyPackage lifetime upon reception: find another way to craft an invalid KeyPackage. Tracking issue number: WPB-9623
                         decrypting.unwrap();
@@ -191,7 +197,13 @@ mod tests {
                                 .await;
                         }
 
-                        let decrypting = bob_central.context.decrypt_message(&id, commit).await;
+                        let decrypting = bob_central
+                            .context
+                            .conversation_guard(&id)
+                            .await
+                            .unwrap()
+                            .decrypt_message(commit)
+                            .await;
 
                         // TODO: currently succeeds as we don't anymore validate KeyPackage lifetime upon reception: find another way to craft an invalid KeyPackage. Tracking issue number: WPB-9623
                         decrypting.unwrap();

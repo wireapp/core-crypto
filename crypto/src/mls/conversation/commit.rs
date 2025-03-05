@@ -311,7 +311,10 @@ mod tests {
                         let commit = retry_provider.latest_commit().await;
                         bob_central
                             .context
-                            .decrypt_message(&id, &commit.to_bytes().unwrap())
+                            .conversation_guard(&id)
+                            .await
+                            .unwrap()
+                            .decrypt_message(&commit.to_bytes().unwrap())
                             .await
                             .unwrap();
 
@@ -328,7 +331,10 @@ mod tests {
                         let commit = retry_provider.latest_commit().await;
                         bob_central
                             .context
-                            .decrypt_message(&id, &commit.to_bytes().unwrap())
+                            .conversation_guard(&id)
+                            .await
+                            .unwrap()
+                            .decrypt_message(&commit.to_bytes().unwrap())
                             .await
                             .unwrap();
 
@@ -539,7 +545,10 @@ mod tests {
 
                     bob_central
                         .context
-                        .decrypt_message(&id, commit.to_bytes().unwrap())
+                        .conversation_guard(&id)
+                        .await
+                        .unwrap()
+                        .decrypt_message(commit.to_bytes().unwrap())
                         .await
                         .unwrap();
 
@@ -578,7 +587,10 @@ mod tests {
                             .unwrap();
                         bob_central
                             .context
-                            .decrypt_message(&id, proposal.proposal.to_bytes().unwrap())
+                            .conversation_guard(&id)
+                            .await
+                            .unwrap()
+                            .decrypt_message(proposal.proposal.to_bytes().unwrap())
                             .await
                             .unwrap();
 
@@ -717,7 +729,10 @@ mod tests {
                     // receiving the commit on bob's side (updating key from alice)
                     bob_central
                         .context
-                        .decrypt_message(&id, &commit.to_bytes().unwrap())
+                        .conversation_guard(&id)
+                        .await
+                        .unwrap()
+                        .decrypt_message(&commit.to_bytes().unwrap())
                         .await
                         .unwrap();
 
@@ -782,7 +797,10 @@ mod tests {
                         // receiving the proposal on Bob's side
                         bob_central
                             .context
-                            .decrypt_message(&id, add_charlie_proposal.proposal.to_bytes().unwrap())
+                            .conversation_guard(&id)
+                            .await
+                            .unwrap()
+                            .decrypt_message(add_charlie_proposal.proposal.to_bytes().unwrap())
                             .await
                             .unwrap();
 
@@ -836,7 +854,10 @@ mod tests {
                         // receiving the key update and the charlie's addition to the group
                         bob_central
                             .context
-                            .decrypt_message(&id, &commit.to_bytes().unwrap())
+                            .conversation_guard(&id)
+                            .await
+                            .unwrap()
+                            .decrypt_message(&commit.to_bytes().unwrap())
                             .await
                             .unwrap();
                         assert_eq!(bob_central.get_conversation_unchecked(&id).await.members().len(), 3);
@@ -882,7 +903,10 @@ mod tests {
                             .proposal;
                         bob_central
                             .context
-                            .decrypt_message(&id, proposal.to_bytes().unwrap())
+                            .conversation_guard(&id)
+                            .await
+                            .unwrap()
+                            .decrypt_message(proposal.to_bytes().unwrap())
                             .await
                             .unwrap();
 
@@ -899,7 +923,10 @@ mod tests {
 
                         bob_central
                             .context
-                            .decrypt_message(&id, commit.to_bytes().unwrap())
+                            .conversation_guard(&id)
+                            .await
+                            .unwrap()
+                            .decrypt_message(commit.to_bytes().unwrap())
                             .await
                             .unwrap();
 
@@ -1031,7 +1058,10 @@ mod tests {
                         assert_eq!(bob_central.get_conversation_unchecked(&id).await.members().len(), 2);
                         alice_central
                             .context
-                            .decrypt_message(&id, proposal.proposal.to_bytes().unwrap())
+                            .conversation_guard(&id)
+                            .await
+                            .unwrap()
+                            .decrypt_message(proposal.proposal.to_bytes().unwrap())
                             .await
                             .unwrap();
 
@@ -1048,7 +1078,10 @@ mod tests {
 
                         bob_central
                             .context
-                            .decrypt_message(&id, commit.to_bytes().unwrap())
+                            .conversation_guard(&id)
+                            .await
+                            .unwrap()
+                            .decrypt_message(commit.to_bytes().unwrap())
                             .await
                             .unwrap();
                         assert_eq!(bob_central.get_conversation_unchecked(&id).await.members().len(), 3);
@@ -1178,15 +1211,34 @@ mod tests {
                     let commit2 = commit2.to_bytes().unwrap();
 
                     // fails when a commit is skipped
-                    let out_of_order = bob_central.context.decrypt_message(&id, &commit2).await;
+                    let out_of_order = bob_central
+                        .context
+                        .conversation_guard(&id)
+                        .await
+                        .unwrap()
+                        .decrypt_message(&commit2)
+                        .await;
                     assert!(matches!(out_of_order.unwrap_err(), Error::BufferedFutureMessage { .. }));
 
                     // works in the right order though
                     // NB: here 'commit2' has been buffered so it is also applied when we decrypt commit1
-                    bob_central.context.decrypt_message(&id, &commit1).await.unwrap();
+                    bob_central
+                        .context
+                        .conversation_guard(&id)
+                        .await
+                        .unwrap()
+                        .decrypt_message(&commit1)
+                        .await
+                        .unwrap();
 
                     // and then fails again when trying to decrypt a commit with an epoch in the past
-                    let past_commit = bob_central.context.decrypt_message(&id, &commit1).await;
+                    let past_commit = bob_central
+                        .context
+                        .conversation_guard(&id)
+                        .await
+                        .unwrap()
+                        .decrypt_message(&commit1)
+                        .await;
                     assert!(matches!(past_commit.unwrap_err(), Error::StaleCommit));
                 })
             })
@@ -1231,13 +1283,19 @@ mod tests {
                     // replayed encrypted proposal should fail
                     bob_central
                         .context
-                        .decrypt_message(&id, proposal1.to_bytes().unwrap())
+                        .conversation_guard(&id)
+                        .await
+                        .unwrap()
+                        .decrypt_message(proposal1.to_bytes().unwrap())
                         .await
                         .unwrap();
                     assert!(matches!(
                         bob_central
                             .context
-                            .decrypt_message(&id, proposal2.to_bytes().unwrap())
+                            .conversation_guard(&id)
+                            .await
+                            .unwrap()
+                            .decrypt_message(proposal2.to_bytes().unwrap())
                             .await
                             .unwrap_err(),
                         Error::DuplicateMessage
@@ -1251,13 +1309,19 @@ mod tests {
                     // replayed encrypted commit should fail
                     bob_central
                         .context
-                        .decrypt_message(&id, commit1.to_bytes().unwrap())
+                        .conversation_guard(&id)
+                        .await
+                        .unwrap()
+                        .decrypt_message(commit1.to_bytes().unwrap())
                         .await
                         .unwrap();
                     assert!(matches!(
                         bob_central
                             .context
-                            .decrypt_message(&id, commit2.to_bytes().unwrap())
+                            .conversation_guard(&id)
+                            .await
+                            .unwrap()
+                            .decrypt_message(commit2.to_bytes().unwrap())
                             .await
                             .unwrap_err(),
                         Error::StaleCommit

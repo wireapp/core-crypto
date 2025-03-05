@@ -181,7 +181,10 @@ mod tests {
                     // Alice decrypts the external commit...
                     alice_central
                         .context
-                        .decrypt_message(&id, external_commit.commit.to_bytes().unwrap())
+                        .conversation_guard(&id)
+                        .await
+                        .unwrap()
+                        .decrypt_message(external_commit.commit.to_bytes().unwrap())
                         .await
                         .unwrap();
 
@@ -211,7 +214,10 @@ mod tests {
                     let proposal = alice_central.context.new_update_proposal(&id).await.unwrap().proposal;
                     alice_central
                         .context
-                        .decrypt_message(&id, external_proposal.to_bytes().unwrap())
+                        .conversation_guard(&id)
+                        .await
+                        .unwrap()
+                        .decrypt_message(external_proposal.to_bytes().unwrap())
                         .await
                         .unwrap();
                     let charlie = charlie_central.rand_key_package(&case).await;
@@ -242,10 +248,22 @@ mod tests {
                         .into_iter()
                         .map(|m| m.to_bytes().unwrap());
                     for m in messages {
-                        let decrypt = bob_central.context.decrypt_message(&id, m).await;
+                        let decrypt = bob_central
+                            .context
+                            .conversation_guard(&id)
+                            .await
+                            .unwrap()
+                            .decrypt_message(m)
+                            .await;
                         assert!(matches!(decrypt.unwrap_err(), Error::BufferedForPendingConversation));
                     }
-                    let decrypt = bob_central.context.decrypt_message(&id, app_msg).await;
+                    let decrypt = bob_central
+                        .context
+                        .conversation_guard(&id)
+                        .await
+                        .unwrap()
+                        .decrypt_message(app_msg)
+                        .await;
                     assert!(matches!(decrypt.unwrap_err(), Error::BufferedForPendingConversation));
 
                     // Bob should have buffered the messages
@@ -257,7 +275,10 @@ mod tests {
                         ..
                     } = bob_central
                         .context
-                        .decrypt_message(&id, external_commit.commit.to_bytes().unwrap())
+                        .conversation_guard(&id)
+                        .await
+                        .unwrap()
+                        .decrypt_message(external_commit.commit.to_bytes().unwrap())
                         .await
                         .unwrap()
                     else {
@@ -344,12 +365,24 @@ mod tests {
                         .unwrap();
 
                     // Since Alice missed Bob's commit she should buffer this message
-                    let decrypt = alice_central.context.decrypt_message(&id, msg1).await;
+                    let decrypt = alice_central
+                        .context
+                        .conversation_guard(&id)
+                        .await
+                        .unwrap()
+                        .decrypt_message(msg1)
+                        .await;
                     assert!(matches!(
                         decrypt.unwrap_err(),
                         mls::conversation::Error::BufferedFutureMessage { .. }
                     ));
-                    let decrypt = alice_central.context.decrypt_message(&id, msg2).await;
+                    let decrypt = alice_central
+                        .context
+                        .conversation_guard(&id)
+                        .await
+                        .unwrap()
+                        .decrypt_message(msg2)
+                        .await;
                     assert!(matches!(
                         decrypt.unwrap_err(),
                         mls::conversation::Error::BufferedFutureMessage { .. }
@@ -367,7 +400,10 @@ mod tests {
 
                     bob_central
                         .context
-                        .decrypt_message(&id, ext_commit.commit.to_bytes().unwrap())
+                        .conversation_guard(&id)
+                        .await
+                        .unwrap()
+                        .decrypt_message(ext_commit.commit.to_bytes().unwrap())
                         .await
                         .unwrap();
                     // Alice should have deleted all her buffered messages

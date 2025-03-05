@@ -177,7 +177,9 @@ impl EmulatedMlsClient for CoreCryptoNativeClient {
     async fn decrypt_message(&self, conversation_id: &[u8], message: &[u8]) -> Result<Option<Vec<u8>>> {
         let transaction = self.cc.new_transaction().await?;
         let result = transaction
-            .decrypt_message(&conversation_id.to_vec(), message)
+            .conversation_guard(&conversation_id.to_vec())
+            .await?
+            .decrypt_message(message)
             .await?
             .app_msg;
         transaction.finish().await?;

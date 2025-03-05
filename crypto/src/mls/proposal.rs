@@ -275,7 +275,10 @@ mod tests {
                         .unwrap();
                     bob_central
                         .context
-                        .decrypt_message(&id, remove_proposal.proposal.to_bytes().unwrap())
+                        .conversation_guard(&id)
+                        .await
+                        .unwrap()
+                        .decrypt_message(remove_proposal.proposal.to_bytes().unwrap())
                         .await
                         .unwrap();
                     alice_central
@@ -291,7 +294,10 @@ mod tests {
                     let commit = alice_central.mls_transport.latest_commit().await;
                     bob_central
                         .context
-                        .decrypt_message(&id, commit.to_bytes().unwrap())
+                        .conversation_guard(&id)
+                        .await
+                        .unwrap()
+                        .decrypt_message(commit.to_bytes().unwrap())
                         .await
                         .unwrap();
                     assert!(matches!(

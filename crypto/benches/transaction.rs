@@ -54,13 +54,25 @@ fn decrypt_transaction(c: &mut Criterion) {
                     if *transactional {
                         let context = bob_central.new_transaction().await.unwrap();
                         for message in encrypted_messages.into_iter() {
-                            context.decrypt_message(&id, message).await.unwrap();
+                            context
+                                .conversation_guard(&id)
+                                .await
+                                .unwrap()
+                                .decrypt_message(message)
+                                .await
+                                .unwrap();
                         }
                         context.finish().await.unwrap();
                     } else {
                         for message in encrypted_messages.into_iter() {
                             let context = bob_central.new_transaction().await.unwrap();
-                            context.decrypt_message(&id, message).await.unwrap();
+                            context
+                                .conversation_guard(&id)
+                                .await
+                                .unwrap()
+                                .decrypt_message(message)
+                                .await
+                                .unwrap();
                             context.finish().await.unwrap();
                         }
                     }

@@ -424,7 +424,10 @@ mod tests {
                 let commit = alice_central.mls_transport.latest_commit().await;
                 bob_central
                     .context
-                    .decrypt_message(&id, commit.to_bytes().unwrap())
+                    .conversation_guard(&id)
+                    .await
+                    .unwrap()
+                    .decrypt_message(commit.to_bytes().unwrap())
                     .await
                     .unwrap();
 

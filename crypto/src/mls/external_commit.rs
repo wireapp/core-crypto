@@ -315,7 +315,10 @@ mod tests {
                     assert_eq!(alice_central.get_conversation_unchecked(&id).await.members().len(), 1);
                     let decrypted = alice_central
                         .context
-                        .decrypt_message(&id, &external_commit.to_bytes().unwrap())
+                        .conversation_guard(&id)
+                        .await
+                        .unwrap()
+                        .decrypt_message(&external_commit.to_bytes().unwrap())
                         .await
                         .unwrap();
                     assert_eq!(alice_central.get_conversation_unchecked(&id).await.members().len(), 2);
@@ -397,7 +400,10 @@ mod tests {
                 assert_eq!(alice_central.get_conversation_unchecked(&id).await.members().len(), 1);
                 alice_central
                     .context
-                    .decrypt_message(&id, &external_commit.to_bytes().unwrap())
+                    .conversation_guard(&id)
+                    .await
+                    .unwrap()
+                    .decrypt_message(&external_commit.to_bytes().unwrap())
                     .await
                     .unwrap();
                 assert_eq!(alice_central.get_conversation_unchecked(&id).await.members().len(), 2);
@@ -446,7 +452,10 @@ mod tests {
                 // the wrong epoch
                 let result = alice_central
                     .context
-                    .decrypt_message(&id, &external_commit.to_bytes().unwrap())
+                    .conversation_guard(&id)
+                    .await
+                    .unwrap()
+                    .decrypt_message(&external_commit.to_bytes().unwrap())
                     .await;
                 assert!(matches!(result.unwrap_err(), mls::conversation::Error::StaleCommit));
             })
@@ -534,7 +543,10 @@ mod tests {
                     // Alice decrypts the commit, Bob's in !
                     alice_central
                         .context
-                        .decrypt_message(&id, &bob_external_commit.to_bytes().unwrap())
+                        .conversation_guard(&id)
+                        .await
+                        .unwrap()
+                        .decrypt_message(&bob_external_commit.to_bytes().unwrap())
                         .await
                         .unwrap();
                     assert_eq!(alice_central.get_conversation_unchecked(&id).await.members().len(), 2);
@@ -554,12 +566,18 @@ mod tests {
                     // Both Alice & Bob decrypt the commit
                     alice_central
                         .context
-                        .decrypt_message(&id, charlie_external_commit.to_bytes().unwrap())
+                        .conversation_guard(&id)
+                        .await
+                        .unwrap()
+                        .decrypt_message(charlie_external_commit.to_bytes().unwrap())
                         .await
                         .unwrap();
                     bob_central
                         .context
-                        .decrypt_message(&id, charlie_external_commit.to_bytes().unwrap())
+                        .conversation_guard(&id)
+                        .await
+                        .unwrap()
+                        .decrypt_message(charlie_external_commit.to_bytes().unwrap())
                         .await
                         .unwrap();
                     assert_eq!(alice_central.get_conversation_unchecked(&id).await.members().len(), 3);

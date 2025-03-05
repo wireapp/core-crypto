@@ -10,21 +10,17 @@ use openmls_traits::OpenMlsCryptoProvider as _;
 use tls_codec::Deserialize as _;
 
 impl ConversationGuard {
-    /// Deserializes a TLS-serialized message, then deciphers it
+    /// Deserializes a TLS-serialized message, then processes it
     ///
     /// # Arguments
-    /// * `conversation` - the group/conversation id
     /// * `message` - the encrypted message as a byte array
     ///
-    /// # Return type
-    /// This method will return a tuple containing an optional message and an optional delay time
-    /// for the callers to wait for committing. A message will be `None` in case the provided payload in
-    /// case of a system message, such as Proposals and Commits. Otherwise it will return the message as a
-    /// byte array. The delay will be `Some` when the message has a proposal
+    /// # Returns
+    /// An [MlsConversationDecryptMessage]
     ///
     /// # Errors
-    /// If the conversation can't be found, an error will be returned. Other errors are originating
-    /// from OpenMls and the KeyStore
+    /// If a message has been buffered, this will be indicated by an error.
+    /// Other errors are originating from OpenMls and the KeyStore
     pub async fn decrypt_message(&mut self, message: impl AsRef<[u8]>) -> Result<MlsConversationDecryptMessage> {
         let mls_message_in =
             MlsMessageIn::tls_deserialize(&mut message.as_ref()).map_err(Error::tls_deserialize("mls message in"))?;

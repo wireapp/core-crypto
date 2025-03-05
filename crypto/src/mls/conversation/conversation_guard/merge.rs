@@ -8,7 +8,7 @@
 //! * Send the commit to the Delivery Service
 //! * When Delivery Service responds
 //!     * 200 OK --> use [CentralContext::commit_accepted] to merge the commit
-//!     * 409 CONFLICT --> do nothing. [CentralContext::decrypt_message] will restore the proposals not committed
+//!     * 409 CONFLICT --> do nothing. [ConversationGuard::decrypt_message] will restore the proposals not committed
 //!     * 5xx --> retry
 
 use openmls::prelude::MlsGroupStateError;
@@ -56,7 +56,7 @@ impl ConversationGuard {
     /// **CAUTION**: only use this when you had an explicit response from the Delivery Service
     /// e.g. 403. Do not use otherwise e.g. 5xx responses, timeout etc..
     /// **DO NOT** use when Delivery Service responds 409, pending state will be renewed
-    /// in [CentralContext::decrypt_message]
+    /// in [ConversationGuard::decrypt_message]
     ///
     /// # Arguments
     /// * `conversation_id` - the group/conversation id

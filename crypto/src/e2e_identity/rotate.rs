@@ -368,7 +368,10 @@ pub(crate) mod tests {
                         for (id, commit) in result.conversation_ids_and_commits.into_iter() {
                             let decrypted = bob_central
                                 .context
-                                .decrypt_message(&id, commit.commit.to_bytes().unwrap())
+                                .conversation_guard(&id)
+                                .await
+                                .unwrap()
+                                .decrypt_message(commit.commit.to_bytes().unwrap())
                                 .await
                                 .unwrap();
                             alice_central.verify_sender_identity(&case, &decrypted).await;
@@ -696,7 +699,10 @@ pub(crate) mod tests {
 
                         let decrypted = bob_central
                             .context
-                            .decrypt_message(&id, commit.to_bytes().unwrap())
+                            .conversation_guard(&id)
+                            .await
+                            .unwrap()
+                            .decrypt_message(commit.to_bytes().unwrap())
                             .await
                             .unwrap();
                         alice_central.verify_sender_identity(&case, &decrypted).await;
@@ -770,7 +776,10 @@ pub(crate) mod tests {
 
                         let decrypted = alice_central
                             .context
-                            .decrypt_message(&id, commit.to_bytes().unwrap())
+                            .conversation_guard(&id)
+                            .await
+                            .unwrap()
+                            .decrypt_message(commit.to_bytes().unwrap())
                             .await
                             .unwrap();
                         bob_central.verify_sender_identity(&case, &decrypted).await;
@@ -855,7 +864,10 @@ pub(crate) mod tests {
                         // Bob decrypts the commit...
                         let decrypted = bob_central
                             .context
-                            .decrypt_message(&id, commit.to_bytes().unwrap())
+                            .conversation_guard(&id)
+                            .await
+                            .unwrap()
+                            .decrypt_message(commit.to_bytes().unwrap())
                             .await
                             .unwrap();
                         // ...and verifies that now Alice is represented with her new identity
@@ -935,7 +947,10 @@ pub(crate) mod tests {
                     // Alice decrypts the commit...
                     let decrypted = alice_central
                         .context
-                        .decrypt_message(&id, bob_commit.to_bytes().unwrap())
+                        .conversation_guard(&id)
+                        .await
+                        .unwrap()
+                        .decrypt_message(bob_commit.to_bytes().unwrap())
                         .await
                         .unwrap();
 
@@ -944,7 +959,10 @@ pub(crate) mod tests {
                     let renewed_proposal = decrypted.proposals.first().unwrap();
                     bob_central
                         .context
-                        .decrypt_message(&id, renewed_proposal.proposal.to_bytes().unwrap())
+                        .conversation_guard(&id)
+                        .await
+                        .unwrap()
+                        .decrypt_message(renewed_proposal.proposal.to_bytes().unwrap())
                         .await
                         .unwrap();
 
@@ -966,7 +984,10 @@ pub(crate) mod tests {
                     // Bob verifies that now Alice is represented with her new identity
                     let decrypted = bob_central
                         .context
-                        .decrypt_message(&id, rotate_commit.to_bytes().unwrap())
+                        .conversation_guard(&id)
+                        .await
+                        .unwrap()
+                        .decrypt_message(rotate_commit.to_bytes().unwrap())
                         .await
                         .unwrap();
                     alice_central.verify_sender_identity(&case, &decrypted).await;
@@ -1041,7 +1062,10 @@ pub(crate) mod tests {
                         // Bob decrypts the commit...
                         let decrypted = bob_central
                             .context
-                            .decrypt_message(&id, commit.to_bytes().unwrap())
+                            .conversation_guard(&id)
+                            .await
+                            .unwrap()
+                            .decrypt_message(commit.to_bytes().unwrap())
                             .await
                             .unwrap();
                         // ...and verifies that now Alice is represented with her new identity

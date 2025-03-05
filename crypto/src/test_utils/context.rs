@@ -155,7 +155,10 @@ impl ClientContext {
             .map_err(RecursiveError::mls_conversation("encrypting message; self -> other"))?;
         let decrypted = other
             .context
-            .decrypt_message(id, encrypted)
+            .conversation_guard(id)
+            .await
+            .map_err(RecursiveError::mls_conversation("getting conversation by id"))?
+            .decrypt_message(encrypted)
             .await
             .map_err(RecursiveError::mls_conversation("decrypting message; other <- self"))?
             .app_msg
@@ -173,7 +176,10 @@ impl ClientContext {
             .map_err(RecursiveError::mls_conversation("encrypting message; other -> self"))?;
         let decrypted = self
             .context
-            .decrypt_message(id, encrypted)
+            .conversation_guard(id)
+            .await
+            .map_err(RecursiveError::mls_conversation("getting conversation by id"))?
+            .decrypt_message(encrypted)
             .await
             .map_err(RecursiveError::mls_conversation("decrypting message; self <- other"))?
             .app_msg
@@ -264,7 +270,14 @@ impl ClientContext {
             let commit = commit
                 .tls_serialize_detached()
                 .map_err(MlsError::wrap("serializing detached tls"))?;
-            other.context.decrypt_message(id, commit).await.unwrap();
+            other
+                .context
+                .conversation_guard(id)
+                .await
+                .unwrap()
+                .decrypt_message(commit)
+                .await
+                .unwrap();
             self.try_talk_to(id, other).await?;
         }
         Ok(())

@@ -180,7 +180,10 @@ mod tests {
                     // Alice decrypts the commit...
                     alice_central
                         .context
-                        .decrypt_message(&id, unmerged_commit.commit.to_bytes().unwrap())
+                        .conversation_guard(&id)
+                        .await
+                        .unwrap()
+                        .decrypt_message(unmerged_commit.commit.to_bytes().unwrap())
                         .await
                         .unwrap();
 
@@ -210,7 +213,10 @@ mod tests {
                     let proposal = alice_central.context.new_update_proposal(&id).await.unwrap().proposal;
                     alice_central
                         .context
-                        .decrypt_message(&id, external_proposal.to_bytes().unwrap())
+                        .conversation_guard(&id)
+                        .await
+                        .unwrap()
+                        .decrypt_message(external_proposal.to_bytes().unwrap())
                         .await
                         .unwrap();
                     let charlie = charlie_central.rand_key_package(&case).await;
@@ -241,10 +247,22 @@ mod tests {
                         .into_iter()
                         .map(|m| m.to_bytes().unwrap());
                     for m in messages {
-                        let decrypt = bob_central.context.decrypt_message(&id, m).await;
+                        let decrypt = bob_central
+                            .context
+                            .conversation_guard(&id)
+                            .await
+                            .unwrap()
+                            .decrypt_message(m)
+                            .await;
                         assert!(matches!(decrypt.unwrap_err(), Error::BufferedFutureMessage { .. }));
                     }
-                    let decrypt = bob_central.context.decrypt_message(&id, app_msg).await;
+                    let decrypt = bob_central
+                        .context
+                        .conversation_guard(&id)
+                        .await
+                        .unwrap()
+                        .decrypt_message(app_msg)
+                        .await;
                     assert!(matches!(decrypt.unwrap_err(), Error::BufferedFutureMessage { .. }));
 
                     // Bob should have buffered the messages
@@ -256,7 +274,10 @@ mod tests {
                         ..
                     } = bob_central
                         .context
-                        .decrypt_message(&id, unmerged_commit.commit.to_bytes().unwrap())
+                        .conversation_guard(&id)
+                        .await
+                        .unwrap()
+                        .decrypt_message(unmerged_commit.commit.to_bytes().unwrap())
                         .await
                         .unwrap()
                     else {
@@ -347,7 +368,10 @@ mod tests {
                     let proposal = bob_central.context.new_update_proposal(&id).await.unwrap().proposal;
                     bob_central
                         .context
-                        .decrypt_message(&id, external_proposal.to_bytes().unwrap())
+                        .conversation_guard(&id)
+                        .await
+                        .unwrap()
+                        .decrypt_message(external_proposal.to_bytes().unwrap())
                         .await
                         .unwrap();
                     let debbie = debbie_central.rand_key_package(&case).await;
@@ -378,10 +402,22 @@ mod tests {
                         .into_iter()
                         .map(|m| m.to_bytes().unwrap());
                     for m in messages {
-                        let decrypt = alice_central.context.decrypt_message(&id, m).await;
+                        let decrypt = alice_central
+                            .context
+                            .conversation_guard(&id)
+                            .await
+                            .unwrap()
+                            .decrypt_message(m)
+                            .await;
                         assert!(matches!(decrypt.unwrap_err(), Error::BufferedFutureMessage { .. }));
                     }
-                    let decrypt = alice_central.context.decrypt_message(&id, app_msg).await;
+                    let decrypt = alice_central
+                        .context
+                        .conversation_guard(&id)
+                        .await
+                        .unwrap()
+                        .decrypt_message(app_msg)
+                        .await;
                     assert!(matches!(decrypt.unwrap_err(), Error::BufferedFutureMessage { .. }));
 
                     // Alice should have buffered the messages
@@ -392,7 +428,10 @@ mod tests {
 
                     let Some(restored_messages) = alice_central
                         .context
-                        .decrypt_message(&id, original_commit)
+                        .conversation_guard(&id)
+                        .await
+                        .unwrap()
+                        .decrypt_message(original_commit)
                         .await
                         .unwrap()
                         .buffered_messages
@@ -533,13 +572,19 @@ mod tests {
                     println!("observer executing first proposal");
                     observer
                         .context
-                        .decrypt_message(&conv_id, &proposal_remove_114_1.to_bytes().unwrap())
+                        .conversation_guard(&conv_id)
+                        .await
+                        .unwrap()
+                        .decrypt_message(&proposal_remove_114_1.to_bytes().unwrap())
                         .await
                         .unwrap();
                     println!("observer executing second proposal");
                     let result = observer
                         .context
-                        .decrypt_message(&conv_id, &proposal_remove_114_2.to_bytes().unwrap())
+                        .conversation_guard(&conv_id)
+                        .await
+                        .unwrap()
+                        .decrypt_message(&proposal_remove_114_2.to_bytes().unwrap())
                         .await;
                     assert!(matches!(
                         result.unwrap_err(),
@@ -548,7 +593,10 @@ mod tests {
                     println!("executing commit adding new user");
                     observer
                         .context
-                        .decrypt_message(&conv_id, &new_member_join_commit.to_bytes().unwrap())
+                        .conversation_guard(&conv_id)
+                        .await
+                        .unwrap()
+                        .decrypt_message(&new_member_join_commit.to_bytes().unwrap())
                         .await
                         .unwrap();
 
@@ -557,7 +605,10 @@ mod tests {
                     assert!(matches!(
                         new_member
                             .context
-                            .decrypt_message(&conv_id, &proposal_remove_114_1.to_bytes().unwrap())
+                            .conversation_guard(&conv_id)
+                            .await
+                            .unwrap()
+                            .decrypt_message(&proposal_remove_114_1.to_bytes().unwrap())
                             .await
                             .unwrap_err(),
                         mls::conversation::Error::StaleProposal,
@@ -565,7 +616,10 @@ mod tests {
                     println!("new_member executing second proposal");
                     new_member
                         .context
-                        .decrypt_message(&conv_id, &proposal_remove_114_2.to_bytes().unwrap())
+                        .conversation_guard(&conv_id)
+                        .await
+                        .unwrap()
+                        .decrypt_message(&proposal_remove_114_2.to_bytes().unwrap())
                         .await
                         .unwrap();
 
@@ -582,12 +636,18 @@ mod tests {
 
                     member_27
                         .context
-                        .decrypt_message(&conv_id, &proposal_remove_114_1.to_bytes().unwrap())
+                        .conversation_guard(&conv_id)
+                        .await
+                        .unwrap()
+                        .decrypt_message(&proposal_remove_114_1.to_bytes().unwrap())
                         .await
                         .unwrap();
                     let result = member_27
                         .context
-                        .decrypt_message(&conv_id, &proposal_remove_114_2.to_bytes().unwrap())
+                        .conversation_guard(&conv_id)
+                        .await
+                        .unwrap()
+                        .decrypt_message(&proposal_remove_114_2.to_bytes().unwrap())
                         .await;
                     assert!(matches!(
                         result.unwrap_err(),
@@ -595,12 +655,18 @@ mod tests {
                     ));
                     member_27
                         .context
-                        .decrypt_message(&conv_id, &new_member_join_commit.to_bytes().unwrap())
+                        .conversation_guard(&conv_id)
+                        .await
+                        .unwrap()
+                        .decrypt_message(&new_member_join_commit.to_bytes().unwrap())
                         .await
                         .unwrap();
                     member_27
                         .context
-                        .decrypt_message(&conv_id, &proposal_remove_115.to_bytes().unwrap())
+                        .conversation_guard(&conv_id)
+                        .await
+                        .unwrap()
+                        .decrypt_message(&proposal_remove_115.to_bytes().unwrap())
                         .await
                         .unwrap();
 
@@ -618,12 +684,18 @@ mod tests {
                     // This is the straightforward ordering and easy to deal with.
                     observer
                         .context
-                        .decrypt_message(&conv_id, &proposal_remove_115.to_bytes().unwrap())
+                        .conversation_guard(&conv_id)
+                        .await
+                        .unwrap()
+                        .decrypt_message(&proposal_remove_115.to_bytes().unwrap())
                         .await
                         .unwrap();
                     observer
                         .context
-                        .decrypt_message(&conv_id, &remove_two_members_commit.to_bytes().unwrap())
+                        .conversation_guard(&conv_id)
+                        .await
+                        .unwrap()
+                        .decrypt_message(&remove_two_members_commit.to_bytes().unwrap())
                         .await
                         .unwrap();
 
@@ -631,12 +703,18 @@ mod tests {
                     // the commit has to be buffered until the proposal it references is received.
                     let result = new_member
                         .context
-                        .decrypt_message(&conv_id, &remove_two_members_commit.to_bytes().unwrap())
+                        .conversation_guard(&conv_id)
+                        .await
+                        .unwrap()
+                        .decrypt_message(&remove_two_members_commit.to_bytes().unwrap())
                         .await;
                     assert!(matches!(result.unwrap_err(), Error::BufferedCommit));
                     new_member
                         .context
-                        .decrypt_message(&conv_id, &proposal_remove_115.to_bytes().unwrap())
+                        .conversation_guard(&conv_id)
+                        .await
+                        .unwrap()
+                        .decrypt_message(&proposal_remove_115.to_bytes().unwrap())
                         .await
                         .unwrap();
 

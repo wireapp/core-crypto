@@ -482,14 +482,19 @@ impl CoreCryptoContext {
         Ok(())
     }
 
-    /// See [core_crypto::context::CentralContext::decrypt_message]
+    /// See [core_crypto::mls::conversation::conversation_guard::ConversationGuard::decrypt_message]
     pub async fn decrypt_message(
         &self,
         conversation_id: Vec<u8>,
         payload: Vec<u8>,
     ) -> CoreCryptoResult<DecryptedMessage> {
-        let result = self.context.decrypt_message(&conversation_id, &payload).await;
-        let decrypted_message = if let Err(ConversationError::PendingConversation(pending)) = result {
+        let result = self
+            .context
+            .conversation_guard(&conversation_id)
+            .await?
+            .decrypt_message(&payload)
+            .await;
+        let decrypted_message = if let Err(ConversationError::PendingConversation(mut pending)) = result {
             pending.try_process_own_join_commit(&payload).await
         } else {
             result
