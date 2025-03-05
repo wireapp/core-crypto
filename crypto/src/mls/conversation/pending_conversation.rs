@@ -247,23 +247,16 @@ mod tests {
                     let messages = vec![commit.commit, external_proposal, proposal]
                         .into_iter()
                         .map(|m| m.to_bytes().unwrap());
+                    let Err(Error::PendingConversation(pending_conversation)) =
+                        bob_central.context.conversation_guard(&id).await
+                    else {
+                        panic!("Bob should not have the conversation yet")
+                    };
                     for m in messages {
-                        let decrypt = bob_central
-                            .context
-                            .conversation_guard(&id)
-                            .await
-                            .unwrap()
-                            .decrypt_message(m)
-                            .await;
+                        let decrypt = pending_conversation.try_process_own_join_commit(m).await;
                         assert!(matches!(decrypt.unwrap_err(), Error::BufferedForPendingConversation));
                     }
-                    let decrypt = bob_central
-                        .context
-                        .conversation_guard(&id)
-                        .await
-                        .unwrap()
-                        .decrypt_message(app_msg)
-                        .await;
+                    let decrypt = pending_conversation.try_process_own_join_commit(app_msg).await;
                     assert!(matches!(decrypt.unwrap_err(), Error::BufferedForPendingConversation));
 
                     // Bob should have buffered the messages
@@ -273,12 +266,8 @@ mod tests {
                     let MlsConversationDecryptMessage {
                         buffered_messages: Some(restored_messages),
                         ..
-                    } = bob_central
-                        .context
-                        .conversation_guard(&id)
-                        .await
-                        .unwrap()
-                        .decrypt_message(external_commit.commit.to_bytes().unwrap())
+                    } = pending_conversation
+                        .try_process_own_join_commit(external_commit.commit.to_bytes().unwrap())
                         .await
                         .unwrap()
                     else {
