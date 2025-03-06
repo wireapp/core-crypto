@@ -378,7 +378,8 @@ fun newClients(vararg clientIds: String) = runBlocking {
 fun initCc(): CoreCrypto = runBlocking {
     val root = Files.createTempDirectory("mls").toFile()
     val keyStore = root.resolve("keystore-${randomIdentifier()}")
-    val cc = CoreCrypto(keyStore.absolutePath, "secret")
+    val key = com.wire.crypto.testutils.genDatabaseKey()
+    val cc = CoreCrypto(keyStore.absolutePath, key)
     cc.provideTransport(MLSTest.mockDeliveryService)
     cc
 }
