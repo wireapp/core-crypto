@@ -111,7 +111,7 @@ impl From<MlsConversationDecryptMessage> for MlsBufferedConversationDecryptMessa
     }
 }
 
-struct ParsedMessage {
+pub(crate) struct ParsedMessage {
     is_duplicate: bool,
     protocol_message: ProtocolMessage,
     content_type: ContentType,
@@ -398,7 +398,7 @@ impl MlsConversation {
     }
 
     /// Retrieve the bytes of a pending commit.
-    async fn retrieve_buffered_commit(&self, backend: &MlsCryptoProvider) -> Result<Option<Vec<u8>>> {
+    pub(crate) async fn retrieve_buffered_commit(&self, backend: &MlsCryptoProvider) -> Result<Option<Vec<u8>>> {
         info!(group_id = Obfuscated::from(&self.id); "attempting to retrieve pending commit");
 
         backend
@@ -416,7 +416,7 @@ impl MlsConversation {
     /// gives a convenient point around which we can add context to errors. However, it's also
     /// a place where we can introduce a pin, given that we're otherwise doing a recursive
     /// async call, which would result in an infinitely-sized future.
-    async fn try_process_buffered_commit(
+    pub(crate) async fn try_process_buffered_commit(
         &mut self,
         commit: impl AsRef<[u8]>,
         parent_conv: Option<&ConversationGuard>,
@@ -433,7 +433,7 @@ impl MlsConversation {
     }
 
     /// Remove the buffered commit for this conversation; it has been applied.
-    async fn clear_buffered_commit(&self, backend: &MlsCryptoProvider) -> Result<()> {
+    pub(crate) async fn clear_buffered_commit(&self, backend: &MlsCryptoProvider) -> Result<()> {
         info!(group_id = Obfuscated::from(&self.id); "attempting to delete pending commit");
 
         backend
@@ -444,7 +444,7 @@ impl MlsConversation {
             .map_err(Into::into)
     }
 
-    async fn decrypt_and_clear_pending_messages(
+    pub(crate) async fn decrypt_and_clear_pending_messages(
         &mut self,
         client: &Client,
         backend: &MlsCryptoProvider,
@@ -466,7 +466,7 @@ impl MlsConversation {
         Ok(pending_messages)
     }
 
-    fn parse_message(&self, backend: &MlsCryptoProvider, msg_in: MlsMessageIn) -> Result<ParsedMessage> {
+    pub(crate) fn parse_message(&self, backend: &MlsCryptoProvider, msg_in: MlsMessageIn) -> Result<ParsedMessage> {
         let mut is_duplicate = false;
         let (protocol_message, content_type) = match msg_in.extract() {
             MlsMessageInBody::PublicMessage(m) => {
@@ -491,7 +491,7 @@ impl MlsConversation {
         })
     }
 
-    async fn process_message(
+    pub(crate) async fn process_message(
         &mut self,
         backend: &MlsCryptoProvider,
         ParsedMessage {
@@ -543,7 +543,7 @@ impl MlsConversation {
         Ok(processed_msg)
     }
 
-    async fn validate_commit(&self, commit: &StagedCommit, backend: &MlsCryptoProvider) -> Result<()> {
+    pub(crate) async fn validate_commit(&self, commit: &StagedCommit, backend: &MlsCryptoProvider) -> Result<()> {
         if backend.authentication_service().is_env_setup().await {
             let credentials: Vec<_> = commit
                 .add_proposals()
