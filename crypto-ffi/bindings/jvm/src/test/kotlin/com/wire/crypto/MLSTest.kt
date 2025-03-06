@@ -1,5 +1,6 @@
 package com.wire.crypto
 
+import com.wire.crypto.testutils.genDatabaseKey
 import kotlinx.coroutines.*
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.TestScope
@@ -360,7 +361,8 @@ fun newClients(vararg clientIds: String) = runBlocking {
 fun initCc(): CoreCrypto = runBlocking {
     val root = Files.createTempDirectory("mls").toFile()
     val keyStore = root.resolve("keystore-${randomIdentifier()}")
-    val cc = CoreCrypto(keyStore.absolutePath, "secret")
+    val key = genDatabaseKey()
+    val cc = CoreCrypto(keyStore.absolutePath, key)
     cc.provideTransport(MLSTest.mockDeliveryService)
     cc
 }
