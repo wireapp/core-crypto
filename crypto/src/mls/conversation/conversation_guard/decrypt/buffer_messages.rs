@@ -227,9 +227,10 @@ mod tests {
                     // And now Bob will have to decrypt those messages while he hasn't yet merged its commit
                     // To add more fun, he will buffer the messages in exactly the wrong order (to make
                     // sure he reapplies them in the right order afterwards)
-                    let messages = vec![commit.commit, external_proposal, proposal]
+                    let messages = [commit.commit, external_proposal, proposal]
                         .into_iter()
-                        .map(|m| m.to_bytes().unwrap());
+                        .map(|m| m.to_bytes().unwrap())
+                        .chain(std::iter::once(app_msg));
                     for m in messages {
                         let decrypt = bob_central
                             .context
@@ -240,17 +241,17 @@ mod tests {
                             .await;
                         assert!(matches!(decrypt.unwrap_err(), Error::BufferedFutureMessage { .. }));
                     }
-                    let decrypt = bob_central
-                        .context
-                        .conversation(&id)
-                        .await
-                        .unwrap()
-                        .decrypt_message(app_msg)
-                        .await;
-                    assert!(matches!(decrypt.unwrap_err(), Error::BufferedFutureMessage { .. }));
 
                     // Bob should have buffered the messages
                     assert_eq!(bob_central.context.count_entities().await.pending_messages, 4);
+
+                    let observer = TestEpochObserver::new();
+                    bob_central
+                        .client()
+                        .await
+                        .register_epoch_observer(observer.clone())
+                        .await
+                        .unwrap();
 
                     // Finally, Bob receives the green light from the DS and he can merge the external commit
                     let MlsConversationDecryptMessage {
@@ -267,26 +268,28 @@ mod tests {
                     else {
                         panic!("Alice's messages should have been restored at this point");
                     };
-                    for (i, m) in restored_messages.into_iter().enumerate() {
-                        match i {
-                            0 => {
-                                // this is the application message
-                                assert_eq!(&m.app_msg.unwrap(), b"Hello Bob !");
-                                assert!(!m.has_epoch_changed);
-                            }
-                            1 | 2 => {
-                                // this is either the member or the external proposal
-                                assert!(m.app_msg.is_none());
-                                assert!(!m.has_epoch_changed);
-                            }
-                            3 => {
-                                // this is the commit
-                                assert!(m.app_msg.is_none());
-                                assert!(m.has_epoch_changed);
-                            }
-                            _ => unreachable!(),
+
+                    for (idx, msg) in restored_messages.iter().enumerate() {
+                        if idx == 0 {
+                            // this is the application message
+                            assert_eq!(msg.app_msg.as_deref(), Some("Hello Bob !".as_bytes()));
+                        } else {
+                            assert!(msg.app_msg.is_none());
                         }
                     }
+                    let observed_epochs = observer
+                        .observed_epochs()
+                        .await
+                        .into_iter()
+                        .map(|(_conversation_id, epoch)| epoch)
+                        .collect::<Vec<_>>();
+                    dbg!(&observed_epochs);
+                    assert_eq!(
+                        observed_epochs.len(),
+                        2,
+                        "there was 1 buffered commit changing the epoch plus the outer commit changing the epoch"
+                    );
+
                     // because external commit got merged
                     assert!(bob_central.try_talk_to(&id, &alice_central).await.is_ok());
                     // because Alice's commit got merged
@@ -407,10 +410,20 @@ mod tests {
                     // Alice should have buffered the messages
                     assert_eq!(alice_central.context.count_entities().await.pending_messages, 4);
 
+                    let observer = TestEpochObserver::new();
+                    alice_central
+                        .client()
+                        .await
+                        .register_epoch_observer(observer.clone())
+                        .await
+                        .unwrap();
+
                     // Finally, Alice receives the original commit for this epoch
                     let original_commit = ext_commit.commit.to_bytes().unwrap();
-
-                    let Some(restored_messages) = alice_central
+                    let MlsConversationDecryptMessage {
+                        buffered_messages: Some(restored_messages),
+                        ..
+                    } = alice_central
                         .context
                         .conversation(&id)
                         .await
@@ -418,30 +431,30 @@ mod tests {
                         .decrypt_message(original_commit)
                         .await
                         .unwrap()
-                        .buffered_messages
                     else {
                         panic!("Bob's messages should have been restored at this point");
                     };
-                    for (i, m) in restored_messages.into_iter().enumerate() {
-                        match i {
-                            0 => {
-                                // this is the application message
-                                assert_eq!(&m.app_msg.unwrap(), b"Hello Alice !");
-                                assert!(!m.has_epoch_changed);
-                            }
-                            1 | 2 => {
-                                // this is either the member or the external proposal
-                                assert!(m.app_msg.is_none());
-                                assert!(!m.has_epoch_changed);
-                            }
-                            3 => {
-                                // this is the commit
-                                assert!(m.app_msg.is_none());
-                                assert!(m.has_epoch_changed);
-                            }
-                            _ => unreachable!(),
+                    for (idx, msg) in restored_messages.into_iter().enumerate() {
+                        if idx == 0 {
+                            assert_eq!(msg.app_msg.as_deref(), Some(b"Hello Alice !" as _));
+                        } else {
+                            assert!(msg.app_msg.is_none());
                         }
                     }
+
+                    let observed_epochs = observer
+                        .observed_epochs()
+                        .await
+                        .into_iter()
+                        .map(|(_conversation_id, epoch)| epoch)
+                        .collect::<Vec<_>>();
+                    dbg!(&observed_epochs);
+                    assert_eq!(
+                        observed_epochs.len(),
+                        2,
+                        "there was 1 buffered commit changing the epoch plus the outer commit changing the epoch"
+                    );
+
                     // because external commit got merged
                     assert!(alice_central.try_talk_to(&id, &bob_central).await.is_ok());
                     // because Alice's commit got merged

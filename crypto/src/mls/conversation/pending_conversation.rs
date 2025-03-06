@@ -411,6 +411,14 @@ mod tests {
                     // Bob should have buffered the messages
                     assert_eq!(bob_central.context.count_entities().await.pending_messages, 4);
 
+                    let observer = TestEpochObserver::new();
+                    bob_central
+                        .client()
+                        .await
+                        .register_epoch_observer(observer.clone())
+                        .await
+                        .unwrap();
+
                     // Finally, Bob receives the green light from the DS and he can merge the external commit
                     let MlsConversationDecryptMessage {
                         buffered_messages: Some(restored_messages),
@@ -422,26 +430,24 @@ mod tests {
                     else {
                         panic!("Alice's messages should have been restored at this point");
                     };
-                    for (i, m) in restored_messages.into_iter().enumerate() {
-                        match i {
-                            0 => {
-                                // this is the application message
-                                assert_eq!(&m.app_msg.unwrap(), b"Hello Bob !");
-                                assert!(!m.has_epoch_changed);
-                            }
-                            1 | 2 => {
-                                // this is either the member or the external proposal
-                                assert!(m.app_msg.is_none());
-                                assert!(!m.has_epoch_changed);
-                            }
-                            3 => {
-                                // this is the commit
-                                assert!(m.app_msg.is_none());
-                                assert!(m.has_epoch_changed);
-                            }
-                            _ => unreachable!(),
+
+                    let observed_epochs = observer.observed_epochs().await;
+                    assert_eq!(
+                        observed_epochs.len(),
+                        1,
+                        "we should see exactly 1 epoch change in these 4 messages"
+                    );
+                    assert_eq!(observed_epochs[0].0, id, "conversation id must match");
+
+                    for (idx, msg) in restored_messages.iter().enumerate() {
+                        if idx == 0 {
+                            // the only application message
+                            assert_eq!(msg.app_msg.as_deref(), Some(b"Hello Bob !" as _));
+                        } else {
+                            assert!(msg.app_msg.is_none());
                         }
                     }
+
                     // because external commit got merged
                     assert!(bob_central.try_talk_to(&id, &alice_central).await.is_ok());
                     // because Alice's commit got merged

@@ -647,6 +647,14 @@ mod tests {
                         .unwrap();
                     alice_central.invite_all(&case, &id, [&bob_central]).await.unwrap();
 
+                    let bob_observer = TestEpochObserver::new();
+                    bob_central
+                        .client()
+                        .await
+                        .register_epoch_observer(bob_observer.clone())
+                        .await
+                        .unwrap();
+
                     let epoch_before = alice_central.context.conversation(&id).await.unwrap().epoch().await;
 
                     alice_central
@@ -669,7 +677,7 @@ mod tests {
                         .unwrap();
                     let epoch_after = bob_central.context.conversation(&id).await.unwrap().epoch().await;
                     assert_eq!(epoch_after, epoch_before + 1);
-                    assert!(decrypted.has_epoch_changed);
+                    assert!(bob_observer.has_changed().await);
                     assert!(decrypted.delay.is_none());
                     assert!(decrypted.app_msg.is_none());
 
@@ -695,6 +703,14 @@ mod tests {
                             .unwrap();
                         alice_central.invite_all(&case, &id, [&bob_central]).await.unwrap();
 
+                        let alice_observer = TestEpochObserver::new();
+                        alice_central
+                            .client()
+                            .await
+                            .register_epoch_observer(alice_observer.clone())
+                            .await
+                            .unwrap();
+
                         // Bob will create a proposal to add Charlie
                         // Alice will decrypt this proposal
                         // Then Bob will create a commit to update
@@ -711,6 +727,8 @@ mod tests {
                             .await
                             .unwrap();
 
+                        alice_observer.reset().await;
+
                         bob_central
                             .context
                             .conversation(&id)
@@ -720,12 +738,7 @@ mod tests {
                             .await
                             .unwrap();
                         let commit = bob_central.mls_transport.latest_commit().await;
-                        let MlsConversationDecryptMessage {
-                            proposals,
-                            delay,
-                            has_epoch_changed,
-                            ..
-                        } = alice_central
+                        let MlsConversationDecryptMessage { proposals, delay, .. } = alice_central
                             .context
                             .conversation(&id)
                             .await
@@ -736,7 +749,7 @@ mod tests {
                         assert!(proposals.is_empty());
                         assert!(delay.is_none());
                         assert!(alice_central.pending_proposals(&id).await.is_empty());
-                        assert!(has_epoch_changed)
+                        assert!(alice_observer.has_changed().await);
                     })
                 },
             )
@@ -759,6 +772,14 @@ mod tests {
                             .await
                             .unwrap();
                         alice_central.invite_all(&case, &id, [&bob_central]).await.unwrap();
+
+                        let alice_observer = TestEpochObserver::new();
+                        alice_central
+                            .client()
+                            .await
+                            .register_epoch_observer(alice_observer.clone())
+                            .await
+                            .unwrap();
 
                         // Alice will create a proposal to add Charlie
                         // Bob will create a commit which Alice will decrypt
@@ -808,6 +829,10 @@ mod tests {
                             renewed_proposal.proposal.epoch().unwrap().as_u64()
                         );
 
+                        // we don't care if there was an epoch change before this,
+                        // but we want to see if the epoch changes for alice now
+                        alice_observer.reset().await;
+
                         // Let's use this proposal to see if it works
                         bob_central
                             .context
@@ -827,7 +852,7 @@ mod tests {
                             .await
                             .unwrap();
                         let commit = bob_central.mls_transport.latest_commit().await;
-                        let decrypted = alice_central
+                        let _decrypted = alice_central
                             .context
                             .conversation(&id)
                             .await
@@ -852,7 +877,7 @@ mod tests {
                                 .members()
                                 .contains_key::<Vec<u8>>(&charlie_central.get_client_id().await.to_vec())
                         );
-                        assert!(decrypted.has_epoch_changed);
+                        assert!(alice_observer.has_changed().await);
                     })
                 },
             )
@@ -984,6 +1009,14 @@ mod tests {
                             .unwrap();
                         alice_central.invite_all(&case, &id, [&bob_central]).await.unwrap();
 
+                        let bob_observer = TestEpochObserver::new();
+                        bob_central
+                            .client()
+                            .await
+                            .register_epoch_observer(bob_observer.clone())
+                            .await
+                            .unwrap();
+
                         let epoch = alice_central.get_conversation_unchecked(&id).await.group.epoch();
                         let ext_proposal = alice2_central
                             .context
@@ -1012,7 +1045,7 @@ mod tests {
                             .unwrap();
                         assert!(decrypted.app_msg.is_none());
                         assert!(decrypted.delay.is_some());
-                        assert!(!decrypted.has_epoch_changed)
+                        assert!(!bob_observer.has_changed().await)
                     })
                 },
             )
@@ -1039,6 +1072,14 @@ mod tests {
                             .await
                             .unwrap();
                         alice_central.invite_all(&case, &id, [&bob_central]).await.unwrap();
+
+                        let bob_observer = TestEpochObserver::new();
+                        bob_central
+                            .client()
+                            .await
+                            .register_epoch_observer(bob_observer.clone())
+                            .await
+                            .unwrap();
 
                         let charlie_kp = charlie_central.get_one_key_package(&case).await;
                         let proposal = alice_central
@@ -1068,7 +1109,7 @@ mod tests {
                             .await
                             .unwrap();
                         assert_eq!(bob_central.get_conversation_unchecked(&id).await.members().len(), 3);
-                        assert!(!decrypted.has_epoch_changed);
+                        assert!(!bob_observer.has_changed().await);
 
                         alice_central.verify_sender_identity(&case, &decrypted).await;
                     })
@@ -1124,6 +1165,21 @@ mod tests {
                         .unwrap();
                     alice_central.invite_all(&case, &id, [&bob_central]).await.unwrap();
 
+                    let alice_observer = TestEpochObserver::new();
+                    alice_central
+                        .client()
+                        .await
+                        .register_epoch_observer(alice_observer.clone())
+                        .await
+                        .unwrap();
+                    let bob_observer = TestEpochObserver::new();
+                    bob_central
+                        .client()
+                        .await
+                        .register_epoch_observer(bob_observer.clone())
+                        .await
+                        .unwrap();
+
                     let msg = b"Hello bob";
                     let encrypted = alice_central
                         .context
@@ -1144,7 +1200,7 @@ mod tests {
                         .unwrap();
                     let dec_msg = decrypted.app_msg.as_ref().unwrap().as_slice();
                     assert_eq!(dec_msg, &msg[..]);
-                    assert!(!decrypted.has_epoch_changed);
+                    assert!(!bob_observer.has_changed().await);
                     alice_central.verify_sender_identity(&case, &decrypted).await;
 
                     let msg = b"Hello alice";
@@ -1167,7 +1223,7 @@ mod tests {
                         .unwrap();
                     let dec_msg = decrypted.app_msg.as_ref().unwrap().as_slice();
                     assert_eq!(dec_msg, &msg[..]);
-                    assert!(!decrypted.has_epoch_changed);
+                    assert!(!alice_observer.has_changed().await);
                     bob_central.verify_sender_identity(&case, &decrypted).await;
                 })
             })

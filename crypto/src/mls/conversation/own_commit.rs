@@ -52,23 +52,23 @@ impl MlsConversation {
         backend: &MlsCryptoProvider,
         ct: &ConfirmationTag,
     ) -> Result<MlsConversationDecryptMessage> {
-        if self.group.pending_commit().is_some() {
-            if self.eq_pending_commit(ct) {
-                // incoming is from ourselves and it's the same as the local pending commit
-                // => merge the pending commit & continue
-                self.merge_pending_commit(client, backend).await
-            } else {
-                // this would mean we created a commit that got accepted by the DS but we cleared it locally
-                // then somehow retried and created another commit. This is a manifest client error
-                // and should be identified as such
-                Err(Error::ClearingPendingCommitError)
-            }
-        } else {
+        if self.group.pending_commit().is_none() {
             // This either means the DS replayed one of our commit OR we cleared a commit accepted by the DS
             // In both cases, CoreCrypto cannot be of any help since it cannot decrypt self commits
             // => deflect this case and let the caller handle it
-            Err(Error::SelfCommitIgnored)
+            return Err(Error::SelfCommitIgnored);
         }
+
+        if !self.eq_pending_commit(ct) {
+            // this would mean we created a commit that got accepted by the DS but we cleared it locally
+            // then somehow retried and created another commit. This is a manifest client error
+            // and should be identified as such
+            return Err(Error::ClearingPendingCommitError);
+        }
+
+        // incoming is from ourselves and it's the same as the local pending commit
+        // => merge the pending commit & continue
+        self.merge_pending_commit(client, backend).await
     }
 
     /// Compare incoming commit with local pending commit
