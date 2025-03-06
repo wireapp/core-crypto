@@ -25,6 +25,7 @@ pub use self::platform::*;
 use super::entities::{Entity, EntityFindParams, StringEntityId};
 
 use super::{CryptoKeystoreError, CryptoKeystoreResult};
+use crate::DatabaseKey;
 use async_lock::{Mutex, MutexGuard};
 use std::sync::Arc;
 
@@ -46,9 +47,9 @@ pub trait DatabaseConnectionRequirements: Sized {}
 #[cfg_attr(target_family = "wasm", async_trait::async_trait(?Send))]
 #[cfg_attr(not(target_family = "wasm"), async_trait::async_trait)]
 pub trait DatabaseConnection: DatabaseConnectionRequirements {
-    async fn open(name: &str, key: &str) -> CryptoKeystoreResult<Self>;
+    async fn open(name: &str, key: &DatabaseKey) -> CryptoKeystoreResult<Self>;
 
-    async fn open_in_memory(name: &str, key: &str) -> CryptoKeystoreResult<Self>;
+    async fn open_in_memory(name: &str, key: &DatabaseKey) -> CryptoKeystoreResult<Self>;
 
     async fn close(self) -> CryptoKeystoreResult<()>;
 
@@ -82,17 +83,15 @@ unsafe impl Send for Connection {}
 unsafe impl Sync for Connection {}
 
 impl Connection {
-    pub async fn open_with_key(name: impl AsRef<str>, key: impl AsRef<str>) -> CryptoKeystoreResult<Self> {
-        let conn = KeystoreDatabaseConnection::open(name.as_ref(), key.as_ref())
-            .await?
-            .into();
+    pub async fn open_with_key(name: impl AsRef<str>, key: &DatabaseKey) -> CryptoKeystoreResult<Self> {
+        let conn = KeystoreDatabaseConnection::open(name.as_ref(), key).await?.into();
         #[allow(clippy::arc_with_non_send_sync)] // see https://github.com/rustwasm/wasm-bindgen/pull/955
         let conn = Arc::new(conn);
         Ok(Self { conn })
     }
 
-    pub async fn open_in_memory_with_key(name: impl AsRef<str>, key: impl AsRef<str>) -> CryptoKeystoreResult<Self> {
-        let conn = KeystoreDatabaseConnection::open_in_memory(name.as_ref(), key.as_ref())
+    pub async fn open_in_memory_with_key(name: impl AsRef<str>, key: &DatabaseKey) -> CryptoKeystoreResult<Self> {
+        let conn = KeystoreDatabaseConnection::open_in_memory(name.as_ref(), key)
             .await?
             .into();
         #[allow(clippy::arc_with_non_send_sync)] // see https://github.com/rustwasm/wasm-bindgen/pull/955
