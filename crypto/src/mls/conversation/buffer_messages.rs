@@ -3,21 +3,9 @@
 //!
 //! Feel free to delete all of this when the issue is fixed on the DS side !
 
-use super::{ConversationGuard, Error, Result};
-use crate::obfuscate::Obfuscated;
-use crate::{
-    KeystoreError, RecursiveError,
-    context::CentralContext,
-    prelude::{Client, ConversationId, MlsConversation, decrypt::MlsBufferedConversationDecryptMessage},
-};
-use core_crypto_keystore::{
-    connection::FetchFromDatabase,
-    entities::{EntityFindParams, MlsPendingMessage},
-};
-use log::{error, info, trace};
-use mls_crypto_provider::MlsCryptoProvider;
-use openmls::prelude::{MlsMessageIn, MlsMessageInBody};
-use tls_codec::Deserialize;
+use super::Result;
+use crate::{KeystoreError, RecursiveError, context::CentralContext, prelude::ConversationId};
+use core_crypto_keystore::entities::MlsPendingMessage;
 
 impl CentralContext {
     pub(crate) async fn handle_future_message(&self, id: &ConversationId, message: impl AsRef<[u8]>) -> Result<()> {
@@ -35,111 +23,6 @@ impl CentralContext {
             .await
             .map_err(KeystoreError::wrap("saving pending mls message"))?;
         Ok(())
-    }
-
-    pub(crate) async fn restore_pending_messages(
-        &self,
-        conversation: &mut MlsConversation,
-        is_rejoin: bool,
-    ) -> Result<Option<Vec<MlsBufferedConversationDecryptMessage>>> {
-        let parent_conversation = match &conversation.parent_id {
-            Some(id) => self.conversation_guard(id).await.ok(),
-            _ => None,
-        };
-        let client = &self
-            .mls_client()
-            .await
-            .map_err(RecursiveError::root("getting mls client"))?;
-        let mls_provider = self
-            .mls_provider()
-            .await
-            .map_err(RecursiveError::root("getting mls provider"))?;
-        conversation
-            .restore_pending_messages(client, &mls_provider, parent_conversation.as_ref(), is_rejoin)
-            .await
-    }
-}
-
-impl MlsConversation {
-    #[cfg_attr(target_family = "wasm", async_recursion::async_recursion(?Send))]
-    #[cfg_attr(not(target_family = "wasm"), async_recursion::async_recursion)]
-    pub(crate) async fn restore_pending_messages<'a>(
-        &'a mut self,
-        client: &'a Client,
-        backend: &'a MlsCryptoProvider,
-        parent_conversation: Option<&'a ConversationGuard>,
-        is_rejoin: bool,
-    ) -> Result<Option<Vec<MlsBufferedConversationDecryptMessage>>> {
-        // using the macro produces a clippy warning
-        let result = async move {
-            let keystore = backend.keystore();
-            let group_id = self.id().as_slice();
-            if is_rejoin {
-                // This means the external commit is about rejoining the group.
-                // This is most of the time a last resort measure (for example when a commit is dropped)
-                // and you go out of sync so there's no point in decrypting buffered messages
-
-                trace!("External commit trying to rejoin group");
-                if keystore
-                    .find::<MlsPendingMessage>(group_id)
-                    .await
-                    .map_err(KeystoreError::wrap("finding mls pending message by group id"))?
-                    .is_some()
-                {
-                    keystore
-                        .remove::<MlsPendingMessage, _>(group_id)
-                        .await
-                        .map_err(KeystoreError::wrap("removing mls pending message"))?;
-                }
-                return Ok(None);
-            }
-
-            let mut pending_messages = keystore
-                .find_all::<MlsPendingMessage>(EntityFindParams::default())
-                .await
-                .map_err(KeystoreError::wrap("finding all mls pending messages"))?
-                .into_iter()
-                .filter(|pm| pm.foreign_id == group_id)
-                .map(|m| -> Result<_> {
-                    let msg = MlsMessageIn::tls_deserialize(&mut m.message.as_slice())
-                        .map_err(Error::tls_deserialize("mls message in"))?;
-                    let ct = match msg.body_as_ref() {
-                        MlsMessageInBody::PublicMessage(m) => m.content_type(),
-                        MlsMessageInBody::PrivateMessage(m) => m.content_type(),
-                        _ => return Err(Error::InappropriateMessageBodyType),
-                    };
-                    Ok((ct as u8, msg))
-                })
-                .collect::<Result<Vec<_>>>()?;
-
-            // We want to restore application messages first, then Proposals & finally Commits
-            // luckily for us that's the exact same order as the [ContentType] enum
-            pending_messages.sort_by(|(a, _), (b, _)| a.cmp(b));
-
-            info!(group_id = Obfuscated::from(&self.id); "Attempting to restore {} buffered messages", pending_messages.len());
-
-            let mut decrypted_messages = Vec::with_capacity(pending_messages.len());
-            for (_, m) in pending_messages {
-                let parent_conversation = match &self.parent_id {
-                    Some(_) => Some(parent_conversation.ok_or(Error::ParentGroupNotFound)?),
-                    _ => None,
-                };
-                let restore_pending = false; // to prevent infinite recursion
-                let decrypted = self
-                    .decrypt_message(m, parent_conversation, client, backend, restore_pending)
-                    .await?;
-                decrypted_messages.push(decrypted.into());
-            }
-
-            let decrypted_messages = (!decrypted_messages.is_empty()).then_some(decrypted_messages);
-
-            Ok(decrypted_messages)
-        }
-        .await;
-        if let Err(e) = &result {
-            error!(error:% = e; "Error restoring pending messages");
-        }
-        result
     }
 }
 

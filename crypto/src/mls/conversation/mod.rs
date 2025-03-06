@@ -56,7 +56,6 @@ pub(crate) mod config;
 pub(crate) mod conversation_guard;
 #[cfg(test)]
 mod db_count;
-pub mod decrypt;
 mod duplicate;
 #[cfg(test)]
 mod durability;

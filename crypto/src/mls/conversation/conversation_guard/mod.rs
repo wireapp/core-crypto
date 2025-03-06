@@ -1,5 +1,5 @@
 mod commit;
-mod decrypt;
+pub(crate) mod decrypt;
 mod encrypt;
 mod merge;
 

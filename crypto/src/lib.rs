@@ -89,7 +89,7 @@ pub mod prelude {
                 ConversationId, MlsConversation,
                 commit::{MlsCommitBundle, MlsConversationCreationMessage},
                 config::{MlsConversationConfiguration, MlsCustomConfiguration, MlsWirePolicy},
-                decrypt::{self, MlsBufferedConversationDecryptMessage, MlsConversationDecryptMessage},
+                conversation_guard::decrypt::{MlsBufferedConversationDecryptMessage, MlsConversationDecryptMessage},
                 group_info::{GroupInfoPayload, MlsGroupInfoBundle, MlsGroupInfoEncryptionType, MlsRatchetTreeType},
                 proposal::MlsProposalBundle,
                 welcome::WelcomeBundle,

@@ -8,42 +8,31 @@
 //! | 0 pend. Proposal  | ✅              | ✅              |
 //! | 1+ pend. Proposal | ✅              | ✅              |
 
+mod buffer_commit;
+pub(crate) mod buffer_messages;
+
+use super::{ConversationGuard, Result};
+use crate::e2e_identity::conversation_state::compute_state;
+use crate::e2e_identity::init_certificates::NewCrlDistributionPoint;
+use crate::mls::conversation::renew::Renew;
+use crate::mls::conversation::{Conversation, ConversationWithMls, Error};
+use crate::mls::credential::crl::{
+    extract_crl_uris_from_proposals, extract_crl_uris_from_update_path, get_new_crl_distribution_points,
+};
+use crate::mls::credential::ext::CredentialExt as _;
+use crate::obfuscate::Obfuscated;
+use crate::prelude::{ClientId, E2eiConversationState};
+use crate::prelude::{MlsProposalBundle, WireIdentity};
+use crate::{MlsError, RecursiveError};
 use log::{debug, info};
-use openmls::{
-    framing::errors::{MessageDecryptionError, SecretTreeError},
-    group::StagedCommit,
-    prelude::{
-        ContentType, CredentialType, MlsMessageIn, MlsMessageInBody, ProcessMessageError, ProcessedMessage,
-        ProcessedMessageContent, Proposal, ProtocolMessage, StageCommitError, ValidationError,
-    },
+use openmls::framing::errors::{MessageDecryptionError, SecretTreeError};
+use openmls::framing::{MlsMessageIn, MlsMessageInBody, ProcessedMessage, ProtocolMessage};
+use openmls::prelude::{
+    ContentType, CredentialType, ProcessMessageError, ProcessedMessageContent, Proposal, StageCommitError,
+    StagedCommit, ValidationError,
 };
-use openmls_traits::OpenMlsCryptoProvider;
-use tls_codec::Deserialize;
-
-use core_crypto_keystore::{
-    connection::FetchFromDatabase,
-    entities::{MlsBufferedCommit, MlsPendingMessage},
-};
-use mls_crypto_provider::MlsCryptoProvider;
-
-use super::{ConversationGuard, Error, Result};
-use crate::{
-    KeystoreError, MlsError, RecursiveError,
-    e2e_identity::{conversation_state::compute_state, init_certificates::NewCrlDistributionPoint},
-    mls::{
-        ClientId, MlsConversation,
-        client::Client,
-        conversation::renew::Renew,
-        credential::{
-            crl::{
-                extract_crl_uris_from_proposals, extract_crl_uris_from_update_path, get_new_crl_distribution_points,
-            },
-            ext::CredentialExt,
-        },
-    },
-    obfuscate::Obfuscated,
-    prelude::{E2eiConversationState, MlsProposalBundle, WireIdentity},
-};
+use openmls_traits::OpenMlsCryptoProvider as _;
+use tls_codec::Deserialize as _;
 
 /// Represents the potential items a consumer might require after passing us an encrypted message we
 /// have decrypted for him
@@ -111,30 +100,73 @@ impl From<MlsConversationDecryptMessage> for MlsBufferedConversationDecryptMessa
     }
 }
 
-pub(crate) struct ParsedMessage {
+struct ParsedMessage {
     is_duplicate: bool,
     protocol_message: ProtocolMessage,
     content_type: ContentType,
 }
 
-/// Abstraction over a MLS group capable of decrypting a MLS message
-impl MlsConversation {
-    /// see [ConversationGuard::decrypt_message]
-    #[allow(clippy::too_many_arguments)]
-    #[cfg_attr(test, crate::durable)]
-    // FIXME: this might be causing stack overflow. Retry when this is solved: https://github.com/tokio-rs/tracing/issues/1147. Tracking issue: WPB-9654
-    // #[cfg_attr(not(test), tracing::instrument(err, skip_all))]
-    pub async fn decrypt_message(
+#[derive(Clone, Copy, PartialEq, Eq)]
+enum RecursionPolicy {
+    AsNecessary,
+    None,
+}
+
+impl ConversationGuard {
+    /// Deserializes a TLS-serialized message, then processes it
+    ///
+    /// # Arguments
+    /// * `message` - the encrypted message as a byte array
+    ///
+    /// # Returns
+    /// An [MlsConversationDecryptMessage]
+    ///
+    /// # Errors
+    /// If a message has been buffered, this will be indicated by an error.
+    /// Other errors are originating from OpenMls and the KeyStore
+    pub async fn decrypt_message(&mut self, message: impl AsRef<[u8]>) -> Result<MlsConversationDecryptMessage> {
+        let mls_message_in =
+            MlsMessageIn::tls_deserialize(&mut message.as_ref()).map_err(Error::tls_deserialize("mls message in"))?;
+        let decrypt_message_result = self
+            .decrypt_message_inner(mls_message_in, RecursionPolicy::AsNecessary)
+            .await;
+
+        let conversation = self.conversation().await;
+        let context = &self.central_context;
+        if let Err(Error::BufferedFutureMessage { message_epoch }) = decrypt_message_result {
+            context
+                .handle_future_message(conversation.id(), message.as_ref())
+                .await?;
+            info!(group_id = Obfuscated::from(conversation.id()); "Buffered future message from epoch {message_epoch}");
+        }
+
+        // In the inner `decrypt_message` above, we raise the `BufferedCommit` error, but we only handle it here.
+        // That's because in that scope we don't have access to the raw message bytes; here, we do.
+        if let Err(Error::BufferedCommit) = decrypt_message_result {
+            self.buffer_commit(message).await?;
+        }
+
+        let decrypt_message = decrypt_message_result?;
+
+        if !decrypt_message.is_active {
+            // drop conversation to allow borrowing `self` again
+            drop(conversation);
+            self.wipe().await?;
+        }
+        Ok(decrypt_message)
+    }
+
+    /// We need an inner part, because this may be called recursively.
+    async fn decrypt_message_inner(
         &mut self,
         message: MlsMessageIn,
-        parent_conv: Option<&ConversationGuard>,
-        client: &Client,
-        backend: &MlsCryptoProvider,
-        restore_pending: bool,
+        recursion_policy: RecursionPolicy,
     ) -> Result<MlsConversationDecryptMessage> {
-        let parsed_message = self.parse_message(backend, message.clone())?;
+        let client = &self.mls_client().await?;
+        let backend = &self.mls_provider().await?;
+        let parsed_message = self.parse_message(message.clone()).await?;
 
-        let message_result = self.process_message(backend, parsed_message).await;
+        let message_result = self.process_message(parsed_message).await;
 
         // Handles the case where we receive our own commits.
         if let Err(Error::Mls(crate::MlsError {
@@ -143,17 +175,17 @@ impl MlsConversation {
             ..
         })) = message_result
         {
-            let ct = self.extract_confirmation_tag_from_own_commit(&message)?;
-            let mut decrypted_message = self.handle_own_commit(backend, ct).await?;
+            let mut conversation = self.conversation_mut().await;
+            let ct = conversation.extract_confirmation_tag_from_own_commit(&message)?;
+            let mut decrypted_message = conversation.handle_own_commit(backend, ct).await?;
             // can't use `.then` because async
             debug_assert!(
                 decrypted_message.buffered_messages.is_none(),
                 "decrypted message should be constructed with empty buffer"
             );
-            if restore_pending {
-                decrypted_message.buffered_messages = self
-                    .decrypt_and_clear_pending_messages(client, backend, parent_conv)
-                    .await?;
+            if recursion_policy == RecursionPolicy::AsNecessary {
+                drop(conversation);
+                decrypted_message.buffered_messages = self.restore_and_clear_pending_messages().await?;
             }
 
             return Ok(decrypted_message);
@@ -178,7 +210,7 @@ impl MlsConversation {
 
         let identity = credential
             .extract_identity(
-                self.ciphersuite(),
+                self.ciphersuite().await,
                 backend.authentication_service().borrow().await.as_ref(),
             )
             .map_err(RecursiveError::mls_credential("extracting identity"))?;
@@ -187,8 +219,9 @@ impl MlsConversation {
 
         let decrypted = match message.into_content() {
             ProcessedMessageContent::ApplicationMessage(app_msg) => {
+                let conversation = self.conversation().await;
                 debug!(
-                    group_id = Obfuscated::from(&self.id),
+                    group_id = Obfuscated::from(&conversation.id),
                     epoch = epoch.as_u64(),
                     sender_client_id = Obfuscated::from(&sender_client_id);
                     "Application message"
@@ -207,6 +240,7 @@ impl MlsConversation {
                 }
             }
             ProcessedMessageContent::ProposalMessage(proposal) => {
+                let mut conversation = self.conversation_mut().await;
                 let crl_dps = extract_crl_uris_from_proposals(&[proposal.proposal().clone()])
                     .map_err(RecursiveError::mls_credential("extracting crl urls from proposals"))?;
                 let crl_new_distribution_points = get_new_crl_distribution_points(backend, crl_dps)
@@ -214,27 +248,25 @@ impl MlsConversation {
                     .map_err(RecursiveError::mls_credential("getting new crl distribution points"))?;
 
                 info!(
-                    group_id = Obfuscated::from(&self.id),
+                    group_id = Obfuscated::from(&conversation.id),
                     sender = Obfuscated::from(proposal.sender()),
                     proposals = Obfuscated::from(&proposal.proposal);
                     "Received proposal"
                 );
 
-                self.group.store_pending_proposal(*proposal);
-
+                conversation.group.store_pending_proposal(*proposal);
+                drop(conversation);
                 if let Some(commit) =
-                    self.retrieve_buffered_commit(backend)
+                    self.retrieve_buffered_commit()
                         .await
                         .map_err(RecursiveError::mls_conversation(
                             "retrieving buffered commit while handling proposal",
                         ))?
                 {
-                    let process_result = self
-                        .try_process_buffered_commit(commit, parent_conv, client, backend, restore_pending)
-                        .await;
+                    let process_result = self.try_process_buffered_commit(commit, recursion_policy).await;
 
                     if process_result.is_ok() {
-                        self.clear_buffered_commit(backend)
+                        self.clear_buffered_commit()
                             .await
                             .map_err(RecursiveError::mls_conversation(
                                 "clearing buffered commit after successful application",
@@ -254,11 +286,13 @@ impl MlsConversation {
                     }
                 }
 
+                let conversation = self.conversation().await;
+
                 MlsConversationDecryptMessage {
                     app_msg: None,
                     proposals: vec![],
                     is_active: true,
-                    delay: self.compute_next_commit_delay(),
+                    delay: conversation.compute_next_commit_delay(),
                     sender_client_id: None,
                     has_epoch_changed: false,
                     identity,
@@ -267,9 +301,10 @@ impl MlsConversation {
                 }
             }
             ProcessedMessageContent::StagedCommitMessage(staged_commit) => {
-                self.validate_commit(&staged_commit, backend).await?;
+                self.validate_commit(&staged_commit).await?;
+                let mut conversation = self.conversation_mut().await;
 
-                let pending_proposals = self.self_pending_proposals().cloned().collect::<Vec<_>>();
+                let pending_proposals = conversation.self_pending_proposals().cloned().collect::<Vec<_>>();
 
                 let proposal_refs: Vec<Proposal> = pending_proposals
                     .iter()
@@ -299,33 +334,35 @@ impl MlsConversation {
                     .map_err(RecursiveError::mls_credential("getting new crl distribution points"))?;
 
                 // getting the pending has to be done before `merge_staged_commit` otherwise it's wiped out
-                let pending_commit = self.group.pending_commit().cloned();
+                let pending_commit = conversation.group.pending_commit().cloned();
 
-                self.group
+                conversation
+                    .group
                     .merge_staged_commit(backend, *staged_commit.clone())
                     .await
                     .map_err(MlsError::wrap("merge staged commit"))?;
 
                 let (proposals_to_renew, needs_update) = Renew::renew(
-                    &self.group.own_leaf_index(),
+                    &conversation.group.own_leaf_index(),
                     pending_proposals.into_iter(),
                     pending_commit.as_ref(),
                     staged_commit.as_ref(),
                 );
-                let proposals = self
+                let proposals = conversation
                     .renew_proposals_for_current_epoch(client, backend, proposals_to_renew.into_iter(), needs_update)
                     .await?;
 
                 // can't use `.then` because async
                 let mut buffered_messages = None;
-                if restore_pending {
-                    buffered_messages = self
-                        .decrypt_and_clear_pending_messages(client, backend, parent_conv)
-                        .await?;
+                // drop conversation to allow borrowing `self` again
+                drop(conversation);
+                if recursion_policy == RecursionPolicy::AsNecessary {
+                    buffered_messages = self.restore_and_clear_pending_messages().await?;
                 }
 
+                let conversation = self.conversation().await;
                 info!(
-                    group_id = Obfuscated::from(&self.id),
+                    group_id = Obfuscated::from(&conversation.id),
                     epoch = staged_commit.staged_context().epoch().as_u64(),
                     proposals:? = staged_commit.queued_proposals().map(Obfuscated::from).collect::<Vec<_>>();
                     "Epoch advanced"
@@ -334,8 +371,8 @@ impl MlsConversation {
                 MlsConversationDecryptMessage {
                     app_msg: None,
                     proposals,
-                    is_active: self.group.is_active(),
-                    delay: self.compute_next_commit_delay(),
+                    is_active: conversation.group.is_active(),
+                    delay: conversation.compute_next_commit_delay(),
                     sender_client_id: None,
                     has_epoch_changed: true,
                     identity,
@@ -344,8 +381,9 @@ impl MlsConversation {
                 }
             }
             ProcessedMessageContent::ExternalJoinProposalMessage(proposal) => {
+                let mut conversation = self.conversation_mut().await;
                 info!(
-                    group_id = Obfuscated::from(&self.id),
+                    group_id = Obfuscated::from(&conversation.id),
                     sender = Obfuscated::from(proposal.sender());
                     "Received external join proposal"
                 );
@@ -355,13 +393,13 @@ impl MlsConversation {
                 let crl_new_distribution_points = get_new_crl_distribution_points(backend, crl_dps)
                     .await
                     .map_err(RecursiveError::mls_credential("getting new crl distribution points"))?;
-                self.group.store_pending_proposal(*proposal);
+                conversation.group.store_pending_proposal(*proposal);
 
                 MlsConversationDecryptMessage {
                     app_msg: None,
                     proposals: vec![],
                     is_active: true,
-                    delay: self.compute_next_commit_delay(),
+                    delay: conversation.compute_next_commit_delay(),
                     sender_client_id: None,
                     has_epoch_changed: false,
                     identity,
@@ -371,106 +409,22 @@ impl MlsConversation {
             }
         };
 
-        self.persist_group_when_changed(&backend.keystore(), false).await?;
+        let mut conversation = self.conversation_mut().await;
+
+        conversation
+            .persist_group_when_changed(&backend.keystore(), false)
+            .await?;
 
         Ok(decrypted)
     }
 
-    /// Cache the bytes of a pending commit in the backend.
-    ///
-    /// By storing the raw commit bytes and doing deserialization/decryption from scratch, we preserve all
-    /// security guarantees. When we do restore, it's as though the commit had simply been received later.
-    pub(crate) async fn buffer_pending_commit(
-        &self,
-        backend: &MlsCryptoProvider,
-        commit: impl AsRef<[u8]>,
-    ) -> Result<()> {
-        info!(group_id = Obfuscated::from(&self.id); "buffering pending commit");
-
-        let pending_commit = MlsBufferedCommit::new(self.id.clone(), commit.as_ref().to_owned());
-
-        backend
-            .key_store()
-            .save(pending_commit)
-            .await
-            .map_err(KeystoreError::wrap("buffering pending commit"))?;
-        Ok(())
-    }
-
-    /// Retrieve the bytes of a pending commit.
-    pub(crate) async fn retrieve_buffered_commit(&self, backend: &MlsCryptoProvider) -> Result<Option<Vec<u8>>> {
-        info!(group_id = Obfuscated::from(&self.id); "attempting to retrieve pending commit");
-
-        backend
-            .keystore()
-            .find::<MlsBufferedCommit>(&self.id)
-            .await
-            .map(|option| option.map(MlsBufferedCommit::into_commit_data))
-            .map_err(KeystoreError::wrap("attempting to retrieve buffered commit"))
-            .map_err(Into::into)
-    }
-
-    /// Try to apply a buffered commit.
-    ///
-    /// This is largely a convenience function which handles deserializing the message, and
-    /// gives a convenient point around which we can add context to errors. However, it's also
-    /// a place where we can introduce a pin, given that we're otherwise doing a recursive
-    /// async call, which would result in an infinitely-sized future.
-    pub(crate) async fn try_process_buffered_commit(
-        &mut self,
-        commit: impl AsRef<[u8]>,
-        parent_conv: Option<&ConversationGuard>,
-        client: &Client,
-        backend: &MlsCryptoProvider,
-        restore_pending: bool,
-    ) -> Result<MlsConversationDecryptMessage> {
-        info!(group_id = Obfuscated::from(&self.id); "attempting to process pending commit");
-
-        let message =
-            MlsMessageIn::tls_deserialize(&mut commit.as_ref()).map_err(Error::tls_deserialize("mls message in"))?;
-
-        Box::pin(self.decrypt_message(message, parent_conv, client, backend, restore_pending)).await
-    }
-
-    /// Remove the buffered commit for this conversation; it has been applied.
-    pub(crate) async fn clear_buffered_commit(&self, backend: &MlsCryptoProvider) -> Result<()> {
-        info!(group_id = Obfuscated::from(&self.id); "attempting to delete pending commit");
-
-        backend
-            .keystore()
-            .remove::<MlsBufferedCommit, _>(&self.id)
-            .await
-            .map_err(KeystoreError::wrap("attempting to clear buffered commit"))
-            .map_err(Into::into)
-    }
-
-    pub(crate) async fn decrypt_and_clear_pending_messages(
-        &mut self,
-        client: &Client,
-        backend: &MlsCryptoProvider,
-        parent_conv: Option<&ConversationGuard>,
-    ) -> Result<Option<Vec<MlsBufferedConversationDecryptMessage>>> {
-        let pending_messages = self
-            .restore_pending_messages(client, backend, parent_conv, false)
-            .await?;
-
-        if pending_messages.is_some() {
-            info!(group_id = Obfuscated::from(&self.id); "Clearing all buffered messages for conversation");
-            backend
-                .key_store()
-                .remove::<MlsPendingMessage, _>(self.id())
-                .await
-                .map_err(KeystoreError::wrap("removing MlsPendingMessage from keystore"))?;
-        }
-
-        Ok(pending_messages)
-    }
-
-    pub(crate) fn parse_message(&self, backend: &MlsCryptoProvider, msg_in: MlsMessageIn) -> Result<ParsedMessage> {
+    async fn parse_message(&self, msg_in: MlsMessageIn) -> Result<ParsedMessage> {
         let mut is_duplicate = false;
+        let conversation = self.conversation().await;
+        let backend = self.mls_provider().await?;
         let (protocol_message, content_type) = match msg_in.extract() {
             MlsMessageInBody::PublicMessage(m) => {
-                is_duplicate = self.is_duplicate_message(backend, &m)?;
+                is_duplicate = conversation.is_duplicate_message(&backend, &m)?;
                 let ct = m.content_type();
                 (ProtocolMessage::PublicMessage(m), ct)
             }
@@ -491,9 +445,8 @@ impl MlsConversation {
         })
     }
 
-    pub(crate) async fn process_message(
+    async fn process_message(
         &mut self,
-        backend: &MlsCryptoProvider,
         ParsedMessage {
             is_duplicate,
             protocol_message,
@@ -501,10 +454,12 @@ impl MlsConversation {
         }: ParsedMessage,
     ) -> Result<ProcessedMessage> {
         let msg_epoch = protocol_message.epoch().as_u64();
-        let group_epoch = self.group.epoch().as_u64();
-        let processed_msg = self
+        let backend = self.mls_provider().await?;
+        let mut conversation = self.conversation_mut().await;
+        let group_epoch = conversation.group.epoch().as_u64();
+        let processed_msg = conversation
             .group
-            .process_message(backend, protocol_message)
+            .process_message(&backend, protocol_message)
             .await
             .map_err(|e| match e {
                 ProcessMessageError::ValidationError(ValidationError::UnableToDecrypt(
@@ -543,7 +498,8 @@ impl MlsConversation {
         Ok(processed_msg)
     }
 
-    pub(crate) async fn validate_commit(&self, commit: &StagedCommit, backend: &MlsCryptoProvider) -> Result<()> {
+    async fn validate_commit(&self, commit: &StagedCommit) -> Result<()> {
+        let backend = self.mls_provider().await?;
         if backend.authentication_service().is_env_setup().await {
             let credentials: Vec<_> = commit
                 .add_proposals()
@@ -554,7 +510,7 @@ impl MlsConversation {
                 })
                 .collect();
             let state = compute_state(
-                self.ciphersuite(),
+                self.ciphersuite().await,
                 credentials.iter(),
                 crate::prelude::MlsCredentialType::X509,
                 backend.authentication_service().borrow().await.as_ref(),
@@ -660,7 +616,6 @@ mod tests {
 
     mod commit {
         use super::*;
-        use crate::mls::conversation::Conversation as _;
 
         #[apply(all_cred_cipher)]
         #[wasm_bindgen_test]

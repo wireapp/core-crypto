@@ -5,6 +5,7 @@
 use super::Result;
 use super::{ConversationWithMls, Error};
 use crate::context::CentralContext;
+use crate::mls::conversation::conversation_guard::decrypt::buffer_messages::MessageRestorePolicy;
 use crate::mls::credential::crl::{extract_crl_uris_from_group, get_new_crl_distribution_points};
 use crate::mls::credential::ext::CredentialExt as _;
 use crate::prelude::{
@@ -14,6 +15,7 @@ use crate::prelude::{
 use crate::{KeystoreError, LeafError, MlsError, RecursiveError};
 use core_crypto_keystore::CryptoKeystoreMls as _;
 use core_crypto_keystore::entities::{MlsPendingMessage, PersistedMlsPendingGroup};
+use log::trace;
 use mls_crypto_provider::{CryptoKeystore, MlsCryptoProvider};
 use openmls::credentials::CredentialWithKey;
 use openmls::prelude::{MlsGroup, MlsMessageIn, MlsMessageInBody};
@@ -209,10 +211,20 @@ impl PendingConversation {
             ..Default::default()
         };
 
-        let is_rejoin = mls_provider.key_store().mls_group_exists(id.as_slice()).await;
+        // We have to determine the restore policy before we persist the group, because it depends
+        // on whether the group already exists.
+        let restore_policy = if mls_provider.key_store().mls_group_exists(id.as_slice()).await {
+            // If the group already exists, it means the external commit is about rejoining the group.
+            // This is most of the time a last resort measure (for example when a commit is dropped,
+            // and you go out of sync), so there's no point in decrypting buffered messages
+            trace!("External commit trying to rejoin group");
+            MessageRestorePolicy::ClearOnly
+        } else {
+            MessageRestorePolicy::DecryptAndClear
+        };
 
         // Persist the now usable MLS group in the keystore
-        let mut conversation = MlsConversation::from_mls_group(mls_group, configuration, &mls_provider)
+        let conversation = MlsConversation::from_mls_group(mls_group, configuration, &mls_provider)
             .await
             .map_err(RecursiveError::mls_conversation(
                 "constructing conversation from mls group",
@@ -220,16 +232,18 @@ impl PendingConversation {
 
         let context = &self.context;
 
-        let pending_messages = context
-            .restore_pending_messages(&mut conversation, is_rejoin)
-            .await
-            .map_err(RecursiveError::mls_conversation("restoring pending messages"))?;
-
         context
             .mls_groups()
             .await
             .map_err(RecursiveError::root("getting mls groups"))?
             .insert(id.clone(), conversation);
+
+        // This is the now merged conversation
+        let mut conversation = context.conversation_guard(id).await?;
+        let pending_messages = conversation
+            .restore_pending_messages(restore_policy)
+            .await
+            .map_err(RecursiveError::mls_conversation("restoring pending messages"))?;
 
         if pending_messages.is_some() {
             mls_provider
