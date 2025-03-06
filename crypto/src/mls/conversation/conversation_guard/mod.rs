@@ -3,13 +3,17 @@ mod decrypt;
 mod encrypt;
 mod merge;
 
-use async_lock::{RwLockReadGuard, RwLockWriteGuard};
-use openmls::prelude::group_info::GroupInfo;
-use std::sync::Arc;
-
 use super::{ConversationWithMls, Error, MlsConversation, Result, commit::MlsCommitBundle};
 use crate::mls::credential::CredentialBundle;
-use crate::{LeafError, context::CentralContext, group_store::GroupStoreValue, prelude::MlsGroupInfoBundle};
+use crate::{
+    KeystoreError, LeafError, RecursiveError, context::CentralContext, group_store::GroupStoreValue,
+    prelude::MlsGroupInfoBundle,
+};
+use async_lock::{RwLockReadGuard, RwLockWriteGuard};
+use core_crypto_keystore::CryptoKeystoreMls;
+use openmls::prelude::group_info::GroupInfo;
+use openmls_traits::OpenMlsCryptoProvider;
+use std::sync::Arc;
 
 /// A Conversation Guard wraps a `GroupStoreValue<MlsConversation>`.
 ///
@@ -44,6 +48,28 @@ impl ConversationGuard {
 
     pub(crate) async fn conversation_mut(&mut self) -> RwLockWriteGuard<MlsConversation> {
         self.inner.write().await
+    }
+
+    /// Destroys a group locally
+    ///
+    /// # Errors
+    /// KeyStore errors, such as IO
+    pub async fn wipe(&mut self) -> Result<()> {
+        let provider = self.mls_provider().await?;
+        let mut group_store = self
+            .central_context
+            .mls_groups()
+            .await
+            .map_err(RecursiveError::root("getting mls groups"))?;
+        let mut conversation = self.conversation_mut().await;
+        conversation.wipe_associated_entities(&provider).await?;
+        provider
+            .key_store()
+            .mls_group_delete(conversation.id())
+            .await
+            .map_err(KeystoreError::wrap("deleting mls group"))?;
+        let _ = group_store.remove(conversation.id());
+        Ok(())
     }
 
     pub(crate) async fn get_parent(&self) -> Result<Option<Self>> {

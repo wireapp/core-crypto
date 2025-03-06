@@ -1,5 +1,4 @@
 use super::{ConversationGuard, Result};
-use crate::mls::conversation::Conversation as _;
 use crate::mls::conversation::renew::Renew;
 use crate::mls::conversation::{ConversationWithMls, Error};
 use crate::mls::credential::crl::{
@@ -7,11 +6,9 @@ use crate::mls::credential::crl::{
 };
 use crate::mls::credential::ext::CredentialExt as _;
 use crate::obfuscate::Obfuscated;
-use crate::prelude::{Client, ClientId, MlsConversationDecryptMessage};
-use crate::{KeystoreError, MlsError, RecursiveError};
-use core_crypto_keystore::CryptoKeystoreMls as _;
+use crate::prelude::{ClientId, MlsConversationDecryptMessage};
+use crate::{MlsError, RecursiveError};
 use log::{debug, info};
-use mls_crypto_provider::MlsCryptoProvider;
 use openmls::framing::MlsMessageIn;
 use openmls::prelude::{ProcessMessageError, ProcessedMessageContent, Proposal, StageCommitError};
 use openmls_traits::OpenMlsCryptoProvider as _;
@@ -318,27 +315,5 @@ impl ConversationGuard {
             .await?;
 
         Ok(decrypted)
-    }
-
-    /// Destroys a group locally
-    ///
-    /// # Errors
-    /// KeyStore errors, such as IO
-    pub async fn wipe(&mut self) -> Result<()> {
-        let provider = self.mls_provider().await?;
-        let mut group_store = self
-            .central_context
-            .mls_groups()
-            .await
-            .map_err(RecursiveError::root("getting mls groups"))?;
-        let mut conversation = self.conversation_mut().await;
-        conversation.wipe_associated_entities(&provider).await?;
-        provider
-            .key_store()
-            .mls_group_delete(conversation.id())
-            .await
-            .map_err(KeystoreError::wrap("deleting mls group"))?;
-        let _ = group_store.remove(conversation.id());
-        Ok(())
     }
 }
