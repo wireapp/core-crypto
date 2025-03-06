@@ -25,6 +25,7 @@ pub(crate) mod external_commit;
 pub(crate) mod external_proposal;
 pub(crate) mod proposal;
 
+pub use client::EpochObserver;
 pub use error::{Error, Result};
 
 // Prevents direct instantiation of [MlsCentralConfiguration]

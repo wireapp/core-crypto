@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use async_trait::async_trait;
 
-use crate::prelude::ConversationId;
+use crate::{CoreCrypto, RecursiveError, mls::HasClientAndProvider as _, prelude::ConversationId};
 
 use super::{Client, Error, Result};
 
@@ -27,7 +27,7 @@ impl Client {
     ///
     /// This function should be called 0 or 1 times in a client's lifetime. If called
     /// when an epoch observer already exists, this will return an error.
-    pub async fn register_epoch_observer(&self, epoch_observer: Arc<dyn EpochObserver>) -> Result<()> {
+    pub(crate) async fn register_epoch_observer(&self, epoch_observer: Arc<dyn EpochObserver>) -> Result<()> {
         let mut guard = self.state.write().await;
         let inner = guard.as_mut().ok_or(Error::MlsNotInitialized)?;
         if inner.epoch_observer.is_some() {
@@ -45,6 +45,17 @@ impl Client {
                 observer.epoch_changed(conversation_id, epoch).await;
             }
         }
+    }
+}
+
+impl CoreCrypto {
+    /// Add an epoch observer to this client.
+    ///
+    /// This function should be called 0 or 1 times in a client's lifetime.
+    /// If called when an epoch observer already exists, this will return an error.
+    pub async fn register_epoch_observer(&self, epoch_observer: Arc<dyn EpochObserver>) -> Result<()> {
+        let client = self.client().await.map_err(RecursiveError::mls("getting mls client"))?;
+        client.register_epoch_observer(epoch_observer).await
     }
 }
 
