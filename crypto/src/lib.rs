@@ -167,6 +167,3 @@ impl CoreCrypto {
         self.mls
     }
 }
-
-#[cfg(feature = "uniffi")]
-uniffi::setup_scaffolding!("core_crypto");
