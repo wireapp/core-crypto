@@ -123,4 +123,4 @@ jobs:
           rustflags: ''
       - uses: taiki-e/install-action@cargo-hack
       - name: cargo/hack (verify features compile in isolation)
-        run: cargo hack check --each-feature --exclude-features uniffi --no-dev-deps
+        run: cargo hack check --each-feature --no-dev-deps
