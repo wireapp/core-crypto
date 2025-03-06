@@ -685,6 +685,8 @@ pub struct BufferedDecryptedMessage {
     pub is_active: bool,
     pub commit_delay: Option<u64>,
     pub sender_client_id: Option<ClientId>,
+    /// Deprecated: this member will be removed in the future. Prefer using the `EpochObserver` interface.
+    #[deprecated = "This member will be removed in the future. Prefer using the `EpochObserver` interface."]
     pub has_epoch_changed: bool,
     pub identity: WireIdentity,
     pub crl_new_distribution_points: Option<Vec<String>>,
@@ -709,6 +711,7 @@ impl TryFrom<MlsConversationDecryptMessage> for DecryptedMessage {
             })
             .transpose()?;
 
+        #[expect(deprecated)]
         Ok(Self {
             message: from.app_msg,
             proposals,
@@ -733,6 +736,7 @@ impl TryFrom<MlsBufferedConversationDecryptMessage> for BufferedDecryptedMessage
             .map(ProposalBundle::try_from)
             .collect::<CoreCryptoResult<Vec<_>>>()?;
 
+        #[expect(deprecated)]
         Ok(Self {
             message: from.app_msg,
             proposals,

@@ -17,6 +17,7 @@ use std::{future::Future, ops::Deref, sync::Arc};
 use tls_codec::{Deserialize, Serialize};
 
 pub mod e2ei;
+pub mod epoch_observer;
 pub mod proteus;
 
 #[derive(uniffi::Object)]
