@@ -38,7 +38,8 @@ internal class E2EITest {
     fun sample_e2ei_enrollment_should_succeed() = runTest {
         val root = Files.createTempDirectory("mls").toFile()
         val keyStore = root.resolve("keystore-$aliceId")
-        val cc = CoreCrypto(keyStore.absolutePath, "secret")
+        val key = com.wire.crypto.testutils.genDatabaseKey()
+        val cc = CoreCrypto(keyStore.absolutePath, key)
         val enrollment = cc.transaction { it.e2eiNewEnrollment(
             clientId = "b7ac11a4-8f01-4527-af88-1c30885a7931:6c1866f567616f31@wire.com",
             displayName = "Alice Smith",
