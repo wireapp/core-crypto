@@ -33,11 +33,12 @@ use std::ops::Deref;
 use std::sync::Arc;
 
 pub mod context;
+mod epoch_observer;
+mod error;
 pub mod fixtures;
 pub mod message;
 pub mod x509;
 // Cannot name it `proteus` because then it conflicts with proteus the crate :(
-mod error;
 #[cfg(feature = "proteus")]
 pub mod proteus_utils;
 
@@ -45,6 +46,7 @@ use crate::context::CentralContext;
 use crate::e2e_identity::id::{QualifiedE2eiClientId, WireQualifiedClientId};
 use crate::prelude::{Client, MlsCommitBundle, MlsGroupInfoBundle};
 pub use crate::prelude::{ClientIdentifier, INITIAL_KEYING_MATERIAL_COUNT, MlsCredentialType};
+pub(crate) use epoch_observer::TestEpochObserver;
 pub use error::Error as TestError;
 use error::Result;
 pub use fixtures::{TestCase, *};

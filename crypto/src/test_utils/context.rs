@@ -588,7 +588,7 @@ impl ClientContext {
     /// Creates a commit but don't merge it immediately (e.g, because the app crashes before he receives the success response from the ds via MlsTransport api)
     pub(crate) async fn create_unmerged_commit(&self, id: &ConversationId) -> MlsCommitBundle {
         self.context
-            .conversation_guard(&id)
+            .conversation_guard(id)
             .await
             .unwrap()
             .conversation_mut()
