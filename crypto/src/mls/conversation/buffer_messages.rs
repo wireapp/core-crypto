@@ -542,20 +542,17 @@ mod tests {
                     .unwrap();
 
                     // now bump the epoch in external_0: the new member has joined
-                    let new_member_join_commit = new_member
+                    let (new_member_join_commit, mut pending_conversation) = new_member
                         .create_unmerged_external_commit(
                             observer.get_group_info(&conv_id).await,
                             case.custom_cfg(),
                             case.credential_type,
                         )
-                        .await
-                        .commit;
+                        .await;
 
-                    new_member
-                        .context
-                        .merge_pending_group_from_external_commit(&conv_id)
-                        .await
-                        .unwrap();
+                    let new_member_join_commit = new_member_join_commit.commit;
+
+                    pending_conversation.merge().await.unwrap();
 
                     // also create the same proposal with the epoch increased by 1
                     let leaf_of_114 = new_member.index_of(&conv_id, member_114.get_client_id().await).await;

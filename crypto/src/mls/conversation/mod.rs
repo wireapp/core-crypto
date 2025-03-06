@@ -67,7 +67,7 @@ mod leaf_node_validation;
 pub(crate) mod merge;
 mod orphan_welcome;
 mod own_commit;
-mod pending_conversation;
+pub(crate) mod pending_conversation;
 pub(crate) mod proposal;
 mod renew;
 pub(crate) mod welcome;

@@ -473,7 +473,7 @@ impl CentralContext {
         creator_credential_type: MlsCredentialType,
         config: MlsConversationConfiguration,
     ) -> Result<()> {
-        if self.conversation_exists(id).await? || self.pending_group_exists(id).await? {
+        if self.conversation_exists(id).await? || self.pending_conversation_exists(id).await? {
             return Err(LeafError::ConversationAlreadyExists(id.clone()).into());
         }
         let conversation = MlsConversation::create(

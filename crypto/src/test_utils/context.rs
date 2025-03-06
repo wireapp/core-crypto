@@ -17,7 +17,8 @@
 use super::Result;
 use crate::group_store::GroupStore;
 use crate::mls::conversation::Conversation as _;
-use crate::prelude::{MlsCommitBundle, MlsGroupInfoBundle, WelcomeBundle};
+use crate::mls::conversation::pending_conversation::PendingConversation;
+use crate::prelude::{MlsCommitBundle, WelcomeBundle};
 use crate::test_utils::{ClientContext, TestError};
 use crate::{
     RecursiveError,
@@ -33,13 +34,11 @@ use crate::{
     },
     test_utils::{MessageExt, TestCase, x509::X509Certificate},
 };
-use core_crypto_keystore::CryptoKeystoreMls;
 use core_crypto_keystore::connection::FetchFromDatabase;
 use core_crypto_keystore::entities::{
     EntityFindParams, MlsCredential, MlsEncryptionKeyPair, MlsHpkePrivateKey, MlsKeyPackage, MlsSignatureKeyPair,
 };
 use mls_crypto_provider::MlsCryptoProvider;
-use openmls::group::MlsGroup;
 use openmls::prelude::{
     Credential, CredentialWithKey, CryptoConfig, ExternalSender, HpkePublicKey, KeyPackage, KeyPackageIn,
     LeafNodeIndex, Lifetime, MlsMessageIn, QueuedProposal, SignaturePublicKey, StagedCommit,
@@ -629,63 +628,13 @@ impl ClientContext {
         group_info: VerifiableGroupInfo,
         custom_cfg: MlsCustomConfiguration,
         credential_type: MlsCredentialType,
-    ) -> MlsCommitBundle {
-        let client = self.client().await;
-
-        let cs: MlsCiphersuite = group_info.ciphersuite().into();
-        let mls_provider = &self.central.mls_backend;
-        let cb = client
-            .get_most_recent_or_create_credential_bundle(&mls_provider, cs.signature_algorithm(), credential_type)
+    ) -> (MlsCommitBundle, PendingConversation) {
+        let (commit_bundle, _, pending_conversation) = self
+            .context
+            .create_external_join_commit(group_info, custom_cfg, credential_type)
             .await
             .unwrap();
-
-        let serialized_cfg = serde_json::to_vec(&custom_cfg)
-            .map_err(MlsError::wrap("serializing custom configuration"))
-            .unwrap();
-
-        let configuration = MlsConversationConfiguration {
-            ciphersuite: cs,
-            custom: custom_cfg,
-            ..Default::default()
-        };
-
-        let (group, commit, group_info) = MlsGroup::join_by_external_commit(
-            mls_provider,
-            &cb.signature_key,
-            None,
-            group_info,
-            &configuration.as_openmls_default_configuration().unwrap(),
-            &[],
-            cb.to_mls_credential_with_key(),
-        )
-        .await
-        .map_err(MlsError::wrap("joining by external commit"))
-        .unwrap();
-
-        // We should always have ratchet tree extension turned on hence GroupInfo should always be present
-        let group_info = group_info.unwrap();
-        let group_info = MlsGroupInfoBundle::try_new_full_plaintext(group_info).unwrap();
-
-        let new_group_id = group.group_id().to_vec();
-
-        mls_provider
-            .key_store()
-            .mls_pending_groups_save(
-                new_group_id.as_slice(),
-                &core_crypto_keystore::ser(&group).unwrap(),
-                &serialized_cfg,
-                None,
-            )
-            .await
-            .unwrap();
-
-        let commit_bundle = MlsCommitBundle {
-            welcome: None,
-            commit,
-            group_info,
-        };
-
-        commit_bundle
+        (commit_bundle, pending_conversation)
     }
 
     /// Creates a commit but don't merge it immediately (e.g, because the app crashes before he receives the success response from the ds via MlsTransport api)

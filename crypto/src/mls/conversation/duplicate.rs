@@ -138,15 +138,11 @@ mod tests {
                 let gi = alice_central.get_group_info(&id).await;
 
                 // an external commit to verify that we can still detect wrong epoch correctly
-                let unknown_ext_commit = bob_central
+                let (unknown_ext_commit, mut pending_conversation) = bob_central
                     .create_unmerged_external_commit(gi.clone(), case.custom_cfg(), case.credential_type)
-                    .await
-                    .commit;
-                bob_central
-                    .context
-                    .clear_pending_group_from_external_commit(&id)
-                    .await
-                    .unwrap();
+                    .await;
+                let unknown_ext_commit = unknown_ext_commit.commit;
+                pending_conversation.clear().await.unwrap();
 
                 bob_central
                     .context
