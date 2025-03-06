@@ -35,7 +35,8 @@ internal class ProteusClientTest {
     private fun newProteusClient(clientId: ClientId): CoreCrypto = runBlocking {
         val root = Files.createTempDirectory("mls").toFile()
         val keyStore = root.resolve("keystore-$clientId")
-        val cc = CoreCrypto(keyStore.absolutePath, "secret")
+        val key = com.wire.crypto.testutils.genDatabaseKey()
+        val cc = CoreCrypto(keyStore.absolutePath, key)
         cc.transaction { it.proteusInit() }
         cc
     }
