@@ -125,7 +125,7 @@ jobs:
         uses: taiki-e/install-action@v2
         with:
           tool: wasm-pack
-      - uses: browser-actions/setup-chrome@latest
+      - uses: wireapp/setup-chrome@master
         id: setup-chrome
         with:
           chrome-version: latest
@@ -172,7 +172,7 @@ jobs:
       RUSTFLAGS: "-D warnings -W unreachable-pub"
     steps:
       - uses: actions/checkout@v4
-      - uses: browser-actions/setup-chrome@latest
+      - uses: wireapp/setup-chrome@master
         id: setup-chrome
         with:
           chrome-version: stable

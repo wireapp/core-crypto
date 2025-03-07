@@ -103,7 +103,7 @@ jobs:
         with:
           target: wasm32-unknown-unknown
           rustflags: ''
-      - uses: browser-actions/setup-chrome@latest
+      - uses: wireapp/setup-chrome@master
         id: setup-chrome
         with:
           chrome-version: stable
