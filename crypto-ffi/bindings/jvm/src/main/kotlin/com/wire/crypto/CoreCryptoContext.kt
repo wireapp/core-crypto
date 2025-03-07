@@ -19,9 +19,12 @@
 package com.wire.crypto
 
 import com.wire.crypto.CoreCrypto.Companion.DEFAULT_NB_KEY_PACKAGE
+import com.wire.crypto.uniffi.EpochObserver
 import kotlin.time.Duration
 import kotlin.time.DurationUnit
 import kotlin.time.toDuration
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.CoroutineScope
 
 @Suppress("TooManyFunctions")
 class CoreCryptoContext(private val cc: com.wire.crypto.uniffi.CoreCryptoContext) {
@@ -730,6 +733,19 @@ class CoreCryptoContext(private val cc: com.wire.crypto.uniffi.CoreCryptoContext
             val encryptedMessage = cc.proteusEncrypt(sessionId, message)
             cc.proteusSessionSave(sessionId)
             encryptedMessage
+        }
+    }
+
+    suspend fun registerEpochObserver(scope: CoroutineScope, epochObserver: EpochObserver) {
+        // we want to wrap the observer here to provide async indirection, so that no matter what
+        // the observer that makes its way to the Rust side of things doesn't end up blocking
+        val observerIndirector = object: EpochObserver {
+            override suspend fun epochChanged(conversationId: kotlin.ByteArray, epoch: kotlin.ULong) {
+                scope.launch { epochObserver.epochChanged(conversationId, epoch) }
+            }
+        }
+        return wrapException {
+            cc.registerEpochObserver(observerIndirector);
         }
     }
 }
