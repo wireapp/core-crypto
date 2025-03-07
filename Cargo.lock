@@ -904,7 +904,6 @@ dependencies = [
  "thiserror 2.0.11",
  "time",
  "tls_codec",
- "uniffi",
  "url",
  "uuid",
  "vergen-gitcl",

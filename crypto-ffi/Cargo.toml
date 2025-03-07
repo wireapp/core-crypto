@@ -41,6 +41,7 @@ serde_json.workspace = true
 derive_more.workspace = true
 proteus-wasm = { workspace = true, optional = true }
 core-crypto-keystore = { workspace = true, optional = true }
+core-crypto.workspace = true
 
 # see https://github.com/RustCrypto/hashes/issues/404
 [target.'cfg(not(any(target_arch = "aarch64", target_arch = "x86_64", target_arch = "x86")))'.dependencies]
@@ -49,7 +50,6 @@ sha2 = { version = "0.10", features = ["force-soft"] }
 [target.'cfg(not(target_family = "wasm"))'.dependencies]
 # UniFFI - Android + iOS bindings - Runtime support
 uniffi.workspace = true
-core-crypto = { workspace = true, features = ["uniffi"] }
 
 [target.wasm32-unknown-unknown.dependencies]
 # caution! wasm-bindgen v0.2.100 causes our CI to fail
@@ -61,7 +61,6 @@ serde = { workspace = true, features = ["derive"] }
 js-sys = "0.3"
 web-sys = "0.3"
 strum.workspace = true
-core-crypto.workspace = true
 
 # UniFFI - Android + iOS bindings - Build support
 [target.'cfg(not(target_family = "wasm"))'.build-dependencies.uniffi]
