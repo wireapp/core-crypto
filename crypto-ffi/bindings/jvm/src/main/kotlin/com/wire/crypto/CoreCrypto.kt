@@ -129,6 +129,24 @@ class CoreCrypto(private val cc: com.wire.crypto.uniffi.CoreCrypto) {
     }
 
     /**
+     * Register an Epoch Observer which will be notified every time a conversation's epoch changes.
+     *
+     * This function should be called 0 or 1 times in the lifetime of CoreCrypto, regardless of the number of transactions.
+     */
+    suspend fun registerEpochObserver(scope: CoroutineScope, epochObserver: EpochObserver) {
+        // we want to wrap the observer here to provide async indirection, so that no matter what
+        // the observer that makes its way to the Rust side of things doesn't end up blocking
+        val observerIndirector = object: EpochObserver {
+            override suspend fun epochChanged(conversationId: kotlin.ByteArray, epoch: kotlin.ULong) {
+                scope.launch { epochObserver.epochChanged(conversationId, epoch) }
+            }
+        }
+        return wrapException {
+            cc.registerEpochObserver(observerIndirector);
+        }
+    }
+
+    /**
      * Closes this [CoreCrypto] instance and deallocates all loaded resources.
      *
      * **CAUTION**: This {@link CoreCrypto} instance won't be usable after a call to this method, but there's no way to express this requirement in Kotlin, so you'll get errors instead!
@@ -136,5 +154,4 @@ class CoreCrypto(private val cc: com.wire.crypto.uniffi.CoreCrypto) {
     fun close() {
         cc.close()
     }
-
 }
