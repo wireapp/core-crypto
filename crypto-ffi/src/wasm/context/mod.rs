@@ -447,15 +447,16 @@ impl CoreCryptoContext {
 
     /// Returns: [`WasmCryptoResult<()>`]
     ///
-    /// see [core_crypto::mls::context::CentralContext::mark_conversation_as_child_of]
+    /// see [core_crypto::mls::conversation::ConversationGuard::mark_as_child_of]
     pub fn mark_conversation_as_child_of(&self, child_id: Box<[u8]>, parent_id: Box<[u8]>) -> Promise {
         let context = self.inner.clone();
         future_to_promise(
             async move {
                 context
-                    .mark_conversation_as_child_of(&child_id.into(), &parent_id.into())
-                    .await
-                    .map_err(CoreCryptoError::from)?;
+                    .conversation_guard(&child_id.into())
+                    .await?
+                    .mark_as_child_of(&parent_id.into())
+                    .await?;
                 WasmCryptoResult::Ok(JsValue::UNDEFINED)
             }
             .err_into(),

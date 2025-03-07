@@ -448,12 +448,14 @@ impl CoreCryptoContext {
             .map_err(Into::into)
     }
 
-    /// See [core_crypto::context::CentralContext::mark_conversation_as_child_of]
+    /// See [core_crypto::mls::conversation::ConversationGuard::mark_as_child_of]
     pub async fn mark_conversation_as_child_of(&self, child_id: Vec<u8>, parent_id: Vec<u8>) -> CoreCryptoResult<()> {
         self.context
-            .mark_conversation_as_child_of(&child_id, &parent_id)
-            .await?;
-        Ok(())
+            .conversation_guard(&child_id)
+            .await?
+            .mark_as_child_of(&parent_id)
+            .await
+            .map_err(Into::into)
     }
 
     /// See [core_crypto::context::CentralContext::update_keying_material]

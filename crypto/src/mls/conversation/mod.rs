@@ -28,7 +28,7 @@
 //! | decrypt   | ✅           | ✅            | ✅           | ✅            |
 
 use config::MlsConversationConfiguration;
-use core_crypto_keystore::{Connection, CryptoKeystoreMls};
+use core_crypto_keystore::CryptoKeystoreMls;
 use itertools::Itertools as _;
 use mls_crypto_provider::{CryptoKeystore, MlsCryptoProvider};
 use openmls::{
@@ -421,18 +421,6 @@ impl MlsConversation {
         Ok(())
     }
 
-    /// Marks this conversation as child of another.
-    /// Prequisite: Being a member of this group and for it to be stored in the keystore
-    pub async fn mark_as_child_of(&mut self, parent_id: &ConversationId, keystore: &Connection) -> Result<()> {
-        if keystore.mls_group_exists(parent_id).await {
-            self.parent_id = Some(parent_id.clone());
-            self.persist_group_when_changed(keystore, true).await?;
-            Ok(())
-        } else {
-            Err(Error::ParentGroupNotFound)
-        }
-    }
-
     pub(crate) fn own_credential_type(&self) -> Result<MlsCredentialType> {
         Ok(self
             .group
@@ -521,30 +509,6 @@ impl CentralContext {
             return Err(LeafError::ConversationNotFound(id.clone()).into());
         };
         Ok(PendingConversation::new(pending_group, self.clone()))
-    }
-
-    /// Mark a conversation as child of another one
-    /// This will affect the behavior of callbacks in particular
-    #[cfg_attr(test, crate::idempotent)]
-    pub async fn mark_conversation_as_child_of(
-        &self,
-        child_id: &ConversationId,
-        parent_id: &ConversationId,
-    ) -> Result<()> {
-        let conversation = self.get_conversation(child_id).await?;
-        conversation
-            .write()
-            .await
-            .mark_as_child_of(
-                parent_id,
-                &self
-                    .keystore()
-                    .await
-                    .map_err(RecursiveError::root("getting keystore"))?,
-            )
-            .await?;
-
-        Ok(())
     }
 }
 

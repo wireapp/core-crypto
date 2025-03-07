@@ -5,6 +5,7 @@ mod merge;
 
 use super::{ConversationWithMls, Error, MlsConversation, Result, commit::MlsCommitBundle};
 use crate::mls::credential::CredentialBundle;
+use crate::prelude::ConversationId;
 use crate::{
     KeystoreError, LeafError, RecursiveError, context::CentralContext, group_store::GroupStoreValue,
     prelude::MlsGroupInfoBundle,
@@ -72,6 +73,10 @@ impl ConversationGuard {
         Ok(())
     }
 
+    /// This is not used right now, just like the entire mechanism of parent and
+    /// child conversations. When our threat model requires it, we can re-enable this, or we remove
+    /// it, along with all other code related to parent-child conversations.
+    #[expect(dead_code)]
     pub(crate) async fn get_parent(&self) -> Result<Option<Self>> {
         let conversation_lock = self.conversation().await;
         let Some(parent_id) = conversation_lock.parent_id.as_ref() else {
@@ -82,6 +87,21 @@ impl ConversationGuard {
             .await
             .map(Some)
             .map_err(|_| Error::ParentGroupNotFound)
+    }
+
+    /// Marks this conversation as child of another.
+    /// Prerequisite: Must be a member of the parent group, and it must exist in the keystore
+    pub async fn mark_as_child_of(&mut self, parent_id: &ConversationId) -> Result<()> {
+        let backend = self.mls_provider().await?;
+        let keystore = &backend.keystore();
+        let mut conversation = self.conversation_mut().await;
+        if keystore.mls_group_exists(parent_id).await {
+            conversation.parent_id = Some(parent_id.clone());
+            conversation.persist_group_when_changed(keystore, true).await?;
+            Ok(())
+        } else {
+            Err(Error::ParentGroupNotFound)
+        }
     }
 
     async fn credential_bundle(&self) -> Result<Arc<CredentialBundle>> {
