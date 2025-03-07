@@ -49,7 +49,6 @@ use crate::{
 
 use crate::context::CentralContext;
 
-mod buffer_messages;
 pub(crate) mod commit;
 mod commit_delay;
 pub(crate) mod config;

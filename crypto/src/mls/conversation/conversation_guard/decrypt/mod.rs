@@ -127,21 +127,20 @@ impl ConversationGuard {
     pub async fn decrypt_message(&mut self, message: impl AsRef<[u8]>) -> Result<MlsConversationDecryptMessage> {
         let mls_message_in =
             MlsMessageIn::tls_deserialize(&mut message.as_ref()).map_err(Error::tls_deserialize("mls message in"))?;
+
         let decrypt_message_result = self
             .decrypt_message_inner(mls_message_in, RecursionPolicy::AsNecessary)
             .await;
 
-        let conversation = self.conversation().await;
-        let context = &self.central_context;
+        // In the inner `decrypt_message` above, we raise the `BufferedCommit` or
+        // `BufferedFutureMessage` errors, but we only handle them here.
+        // That's because in the scope they're raised, we don't have access to the raw message
+        // bytes; here, we do.
         if let Err(Error::BufferedFutureMessage { message_epoch }) = decrypt_message_result {
-            context
-                .handle_future_message(conversation.id(), message.as_ref())
-                .await?;
+            self.buffer_future_message(message.as_ref()).await?;
+            let conversation = self.conversation().await;
             info!(group_id = Obfuscated::from(conversation.id()); "Buffered future message from epoch {message_epoch}");
         }
-
-        // In the inner `decrypt_message` above, we raise the `BufferedCommit` error, but we only handle it here.
-        // That's because in that scope we don't have access to the raw message bytes; here, we do.
         if let Err(Error::BufferedCommit) = decrypt_message_result {
             self.buffer_commit(message).await?;
         }
@@ -149,8 +148,6 @@ impl ConversationGuard {
         let decrypt_message = decrypt_message_result?;
 
         if !decrypt_message.is_active {
-            // drop conversation to allow borrowing `self` again
-            drop(conversation);
             self.wipe().await?;
         }
         Ok(decrypt_message)
@@ -471,6 +468,12 @@ impl ConversationGuard {
                     } else if msg_epoch == group_epoch + 1 {
                         // limit to next epoch otherwise if we were buffering a commit for epoch + 2
                         // we would fail when trying to decrypt it in [MlsCentral::commit_accepted]
+
+                        // We need to buffer the message until the group has advanced to the right
+                        // epoch. We can't do that here--we don't have the appropriate data in scope
+                        // --but we can at least produce the proper error and return that, so our
+                        // caller can handle it. Our caller needs to know about the epoch number, so
+                        // we pass it back inside the error.
                         Error::BufferedFutureMessage {
                             message_epoch: msg_epoch,
                         }
