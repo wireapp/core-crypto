@@ -15,6 +15,7 @@
 // along with this program. If not, see http://www.gnu.org/licenses/.
 #![allow(unused_variables)]
 pub mod context;
+mod epoch_observer;
 mod utils;
 
 use std::{
@@ -790,6 +791,7 @@ impl TryFrom<MlsConversationDecryptMessage> for DecryptedMessage {
             .transpose()
             .map_err(InternalError::generic())?;
 
+        #[expect(deprecated)]
         Ok(Self {
             message: from.app_msg,
             proposals,
@@ -899,6 +901,7 @@ impl TryFrom<MlsBufferedConversationDecryptMessage> for BufferedDecryptedMessage
             .transpose()
             .map_err(InternalError::generic())?;
 
+        #[expect(deprecated)]
         Ok(Self {
             message: from.app_msg,
             proposals,
@@ -1464,6 +1467,7 @@ impl CoreCrypto {
         entropy_seed: Option<Box<[u8]>>,
         nb_key_package: Option<u32>,
     ) -> WasmCryptoResult<CoreCrypto> {
+        console_error_panic_hook::set_once();
         let ciphersuites = lower_ciphersuites(&ciphersuites)?;
         let entropy_seed = entropy_seed.map(|s| s.to_vec());
         let nb_key_package = nb_key_package

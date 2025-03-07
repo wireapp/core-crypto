@@ -61,6 +61,8 @@ serde = { workspace = true, features = ["derive"] }
 js-sys = "0.3"
 web-sys = "0.3"
 strum.workspace = true
+async-channel.workspace = true
+console_error_panic_hook.workspace = true
 
 # UniFFI - Android + iOS bindings - Build support
 [target.'cfg(not(target_family = "wasm"))'.build-dependencies.uniffi]
