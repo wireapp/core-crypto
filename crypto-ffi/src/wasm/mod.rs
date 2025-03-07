@@ -787,6 +787,7 @@ impl TryFrom<MlsConversationDecryptMessage> for DecryptedMessage {
             .transpose()
             .map_err(InternalError::generic())?;
 
+        #[expect(deprecated)]
         Ok(Self {
             message: from.app_msg,
             proposals,
@@ -896,6 +897,7 @@ impl TryFrom<MlsBufferedConversationDecryptMessage> for BufferedDecryptedMessage
             .transpose()
             .map_err(InternalError::generic())?;
 
+        #[expect(deprecated)]
         Ok(Self {
             message: from.app_msg,
             proposals,

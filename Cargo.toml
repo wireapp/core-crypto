@@ -9,9 +9,7 @@ members = [
     "interop",
     "decode",
 ]
-exclude = [
-    "extras/webdriver-installation",
-]
+exclude = ["extras/webdriver-installation"]
 resolver = "2"
 
 [workspace.lints.clippy]
@@ -24,6 +22,7 @@ unexpected_cfgs = { level = "warn", check-cfg = [
 ] }
 
 [workspace.dependencies]
+async-channel = "2.3.1"
 async-lock = "3.4"
 async-recursion = "1"
 async-std = "1.13"

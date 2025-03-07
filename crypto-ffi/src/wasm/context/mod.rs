@@ -20,6 +20,7 @@ use wasm_bindgen::{JsValue, prelude::wasm_bindgen};
 use wasm_bindgen_futures::future_to_promise;
 
 pub mod e2ei;
+pub mod epoch_observer;
 pub mod proteus;
 
 #[wasm_bindgen]

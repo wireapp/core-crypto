@@ -41,6 +41,7 @@ serde_json.workspace = true
 derive_more.workspace = true
 proteus-wasm = { workspace = true, optional = true }
 core-crypto-keystore = { workspace = true, optional = true }
+async-channel = { workspace = true, optional = true }
 
 # see https://github.com/RustCrypto/hashes/issues/404
 [target.'cfg(not(any(target_arch = "aarch64", target_arch = "x86_64", target_arch = "x86")))'.dependencies]
@@ -62,6 +63,7 @@ js-sys = "0.3"
 web-sys = "0.3"
 strum.workspace = true
 core-crypto.workspace = true
+async-channel = { workspace = true, optional = false }
 
 # UniFFI - Android + iOS bindings - Build support
 [target.'cfg(not(target_family = "wasm"))'.build-dependencies.uniffi]
