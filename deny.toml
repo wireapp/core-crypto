@@ -23,7 +23,10 @@ targets = [
 version = 2
 ignore = [
     # `sodiumoxide` is only used in tests
-    "RUSTSEC-2021-0137"
+    "RUSTSEC-2021-0137",
+    # `paste` is no longer maintained and its repo is archived,
+    # however `uniffi` still depends on it.
+    "RUSTSEC-2024-0436"
 ]
 
 [bans]
