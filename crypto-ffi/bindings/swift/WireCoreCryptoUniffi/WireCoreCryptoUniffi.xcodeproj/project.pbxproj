@@ -7,17 +7,18 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		16CDD1172A2636BB0073FB8E /* WireCoreCrypto.h in Headers */ = {isa = PBXBuildFile; fileRef = 16CDD1162A2636BB0073FB8E /* WireCoreCrypto.h */; settings = {ATTRIBUTES = (Public, ); }; };
+		167AE3EC2D81B8C40075DF93 /* core_crypto_ffiFFI.h in Headers */ = {isa = PBXBuildFile; fileRef = 167AE3EB2D81B8C40075DF93 /* core_crypto_ffiFFI.h */; settings = {ATTRIBUTES = (Public, ); }; };
+		16CDD1172A2636BB0073FB8E /* WireCoreCryptoUniffi.h in Headers */ = {isa = PBXBuildFile; fileRef = 16CDD1162A2636BB0073FB8E /* WireCoreCryptoUniffi.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		16CDD1202A26392C0073FB8E /* CoreCrypto.swift in Sources */ = {isa = PBXBuildFile; fileRef = 16CDD11E2A26392C0073FB8E /* CoreCrypto.swift */; };
-		692B48272AA0F9810074F00A /* core_crypto_ffiFFI.h in Headers */ = {isa = PBXBuildFile; fileRef = 692B48262AA0F9810074F00A /* core_crypto_ffiFFI.h */; settings = {ATTRIBUTES = (Public, ); }; };
+		16E15D0F2D81C4BC0025C7D8 /* core_crypto_ffiFFI.h in Headers */ = {isa = PBXBuildFile; fileRef = 167AE3EB2D81B8C40075DF93 /* core_crypto_ffiFFI.h */; settings = {ATTRIBUTES = (Public, ); }; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
-		16CDD1132A2636BB0073FB8E /* WireCoreCrypto.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = WireCoreCrypto.framework; sourceTree = BUILT_PRODUCTS_DIR; };
-		16CDD1162A2636BB0073FB8E /* WireCoreCrypto.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = WireCoreCrypto.h; sourceTree = "<group>"; };
+		167AE3EB2D81B8C40075DF93 /* core_crypto_ffiFFI.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = core_crypto_ffiFFI.h; sourceTree = "<group>"; };
+		16CDD1132A2636BB0073FB8E /* WireCoreCryptoUniffi.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = WireCoreCryptoUniffi.framework; sourceTree = BUILT_PRODUCTS_DIR; };
+		16CDD1162A2636BB0073FB8E /* WireCoreCryptoUniffi.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = WireCoreCryptoUniffi.h; sourceTree = "<group>"; };
 		16CDD11E2A26392C0073FB8E /* CoreCrypto.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = CoreCrypto.swift; sourceTree = "<group>"; };
-		16CDD1212A29E0760073FB8E /* BuildSettings.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = BuildSettings.xcconfig; sourceTree = "<group>"; };
-		692B48262AA0F9810074F00A /* core_crypto_ffiFFI.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = core_crypto_ffiFFI.h; sourceTree = "<group>"; };
+		16CDD1212A29E0760073FB8E /* BuildSettings.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; name = BuildSettings.xcconfig; path = ../BuildSettings.xcconfig; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -35,7 +36,7 @@
 			isa = PBXGroup;
 			children = (
 				16CDD1212A29E0760073FB8E /* BuildSettings.xcconfig */,
-				16CDD1152A2636BB0073FB8E /* WireCoreCrypto */,
+				16CDD1152A2636BB0073FB8E /* WireCoreCryptoUniffi */,
 				16CDD1142A2636BB0073FB8E /* Products */,
 			);
 			sourceTree = "<group>";
@@ -43,19 +44,19 @@
 		16CDD1142A2636BB0073FB8E /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				16CDD1132A2636BB0073FB8E /* WireCoreCrypto.framework */,
+				16CDD1132A2636BB0073FB8E /* WireCoreCryptoUniffi.framework */,
 			);
 			name = Products;
 			sourceTree = "<group>";
 		};
-		16CDD1152A2636BB0073FB8E /* WireCoreCrypto */ = {
+		16CDD1152A2636BB0073FB8E /* WireCoreCryptoUniffi */ = {
 			isa = PBXGroup;
 			children = (
+				167AE3EB2D81B8C40075DF93 /* core_crypto_ffiFFI.h */,
 				16CDD11E2A26392C0073FB8E /* CoreCrypto.swift */,
-				16CDD1162A2636BB0073FB8E /* WireCoreCrypto.h */,
-				692B48262AA0F9810074F00A /* core_crypto_ffiFFI.h */,
+				16CDD1162A2636BB0073FB8E /* WireCoreCryptoUniffi.h */,
 			);
-			path = WireCoreCrypto;
+			path = WireCoreCryptoUniffi;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -65,17 +66,17 @@
 			isa = PBXHeadersBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				692B48272AA0F9810074F00A /* core_crypto_ffiFFI.h in Headers */,
-				16CDD1172A2636BB0073FB8E /* WireCoreCrypto.h in Headers */,
+				16E15D0F2D81C4BC0025C7D8 /* core_crypto_ffiFFI.h in Headers */,
+				16CDD1172A2636BB0073FB8E /* WireCoreCryptoUniffi.h in Headers */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXHeadersBuildPhase section */
 
 /* Begin PBXNativeTarget section */
-		16CDD1122A2636BB0073FB8E /* WireCoreCrypto */ = {
+		16CDD1122A2636BB0073FB8E /* WireCoreCryptoUniffi */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = 16CDD11A2A2636BB0073FB8E /* Build configuration list for PBXNativeTarget "WireCoreCrypto" */;
+			buildConfigurationList = 16CDD11A2A2636BB0073FB8E /* Build configuration list for PBXNativeTarget "WireCoreCryptoUniffi" */;
 			buildPhases = (
 				16CDD10E2A2636BB0073FB8E /* Headers */,
 				16CDD10F2A2636BB0073FB8E /* Sources */,
@@ -86,9 +87,9 @@
 			);
 			dependencies = (
 			);
-			name = WireCoreCrypto;
+			name = WireCoreCryptoUniffi;
 			productName = WireCoreCrypto;
-			productReference = 16CDD1132A2636BB0073FB8E /* WireCoreCrypto.framework */;
+			productReference = 16CDD1132A2636BB0073FB8E /* WireCoreCryptoUniffi.framework */;
 			productType = "com.apple.product-type.framework";
 		};
 /* End PBXNativeTarget section */
@@ -98,7 +99,7 @@
 			isa = PBXProject;
 			attributes = {
 				BuildIndependentTargetsInParallel = 1;
-				LastUpgradeCheck = 1430;
+				LastUpgradeCheck = 1620;
 				TargetAttributes = {
 					16CDD1122A2636BB0073FB8E = {
 						CreatedOnToolsVersion = 14.2;
@@ -106,7 +107,7 @@
 					};
 				};
 			};
-			buildConfigurationList = 16CDD10D2A2636BB0073FB8E /* Build configuration list for PBXProject "WireCoreCrypto" */;
+			buildConfigurationList = 16CDD10D2A2636BB0073FB8E /* Build configuration list for PBXProject "WireCoreCryptoUniffi" */;
 			compatibilityVersion = "Xcode 14.0";
 			developmentRegion = en;
 			hasScannedForEncodings = 0;
@@ -119,7 +120,7 @@
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
-				16CDD1122A2636BB0073FB8E /* WireCoreCrypto */,
+				16CDD1122A2636BB0073FB8E /* WireCoreCryptoUniffi */,
 			);
 		};
 /* End PBXProject section */
@@ -184,6 +185,7 @@
 				DEBUG_INFORMATION_FORMAT = dwarf;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				ENABLE_TESTABILITY = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
 				GCC_C_LANGUAGE_STANDARD = gnu11;
 				GCC_DYNAMIC_NO_PIC = NO;
 				GCC_NO_COMMON_BLOCKS = YES;
@@ -246,6 +248,7 @@
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				ENABLE_NS_ASSERTIONS = NO;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
 				GCC_C_LANGUAGE_STANDARD = gnu11;
 				GCC_NO_COMMON_BLOCKS = YES;
 				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
@@ -287,6 +290,7 @@
 					"@executable_path/../Frameworks",
 					"@loader_path/Frameworks",
 				);
+				MACH_O_TYPE = staticlib;
 				MACOSX_DEPLOYMENT_TARGET = 13.1;
 				MARKETING_VERSION = 1.0;
 				MODULE_VERIFIER_SUPPORTED_LANGUAGES = "objective-c objective-c++";
@@ -294,7 +298,7 @@
 				"OTHER_LDFLAGS[sdk=iphoneos*][arch=arm64]" = "../../../../target/aarch64-apple-ios/release/libcore_crypto_ffi.a";
 				"OTHER_LDFLAGS[sdk=iphonesimulator*][arch=arm64]" = "../../../../target/aarch64-apple-ios-sim/release/libcore_crypto_ffi.a";
 				"OTHER_LDFLAGS[sdk=iphonesimulator*][arch=x86_64]" = "../../../../target/x86_64-apple-ios/release/libcore_crypto_ffi.a";
-				PRODUCT_BUNDLE_IDENTIFIER = com.wire.WireCoreCrypto;
+				PRODUCT_BUNDLE_IDENTIFIER = com.wire.WireCoreCryptoUniffi;
 				PRODUCT_NAME = "$(TARGET_NAME:c99extidentifier)";
 				SDKROOT = auto;
 				SKIP_INSTALL = YES;
@@ -332,6 +336,7 @@
 					"@executable_path/../Frameworks",
 					"@loader_path/Frameworks",
 				);
+				MACH_O_TYPE = staticlib;
 				MACOSX_DEPLOYMENT_TARGET = 13.1;
 				MARKETING_VERSION = 1.0;
 				MODULE_VERIFIER_SUPPORTED_LANGUAGES = "objective-c objective-c++";
@@ -339,7 +344,7 @@
 				"OTHER_LDFLAGS[sdk=iphoneos*][arch=arm64]" = "../../../../target/aarch64-apple-ios/release/libcore_crypto_ffi.a";
 				"OTHER_LDFLAGS[sdk=iphonesimulator*][arch=arm64]" = "../../../../target/aarch64-apple-ios-sim/release/libcore_crypto_ffi.a";
 				"OTHER_LDFLAGS[sdk=iphonesimulator*][arch=x86_64]" = "../../../../target/x86_64-apple-ios/release/libcore_crypto_ffi.a";
-				PRODUCT_BUNDLE_IDENTIFIER = com.wire.WireCoreCrypto;
+				PRODUCT_BUNDLE_IDENTIFIER = com.wire.WireCoreCryptoUniffi;
 				PRODUCT_NAME = "$(TARGET_NAME:c99extidentifier)";
 				SDKROOT = auto;
 				SKIP_INSTALL = YES;
@@ -355,7 +360,7 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
-		16CDD10D2A2636BB0073FB8E /* Build configuration list for PBXProject "WireCoreCrypto" */ = {
+		16CDD10D2A2636BB0073FB8E /* Build configuration list for PBXProject "WireCoreCryptoUniffi" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				16CDD1182A2636BB0073FB8E /* Debug */,
@@ -364,7 +369,7 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		16CDD11A2A2636BB0073FB8E /* Build configuration list for PBXNativeTarget "WireCoreCrypto" */ = {
+		16CDD11A2A2636BB0073FB8E /* Build configuration list for PBXNativeTarget "WireCoreCryptoUniffi" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				16CDD11B2A2636BB0073FB8E /* Debug */,

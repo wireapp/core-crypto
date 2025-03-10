@@ -1,6 +1,6 @@
 //
 // Wire
-// Copyright (C) 2023 Wire Swiss GmbH
+// Copyright (C) 2025 Wire Swiss GmbH
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -16,12 +16,9 @@
 // along with this program. If not, see http://www.gnu.org/licenses/.
 //
 
-#import <Foundation/Foundation.h>
+// Configuration settings file format documentation can be found at:
+// https://help.apple.com/xcode/#/dev745c5c974
 
-//! Project version number for WireCoreCrypto.
-FOUNDATION_EXPORT double WireCoreCryptoVersionNumber;
+MARKETING_VERSION=4.2.0
+CURRENT_PROJECT_VERSION=1.0
 
-//! Project version string for WireCoreCrypto.
-FOUNDATION_EXPORT const unsigned char WireCoreCryptoVersionString[];
-
-#import <WireCoreCrypto/core_crypto_ffiFFI.h>
