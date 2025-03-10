@@ -129,6 +129,10 @@ jobs:
         path: target/doc
         merge-multiple: true
 
+    - name: Copy index.md
+      run: |
+        cp docs/index.md target/doc/index.md
+
     - name: deploy docs
       uses: peaceiris/actions-gh-pages@v4
       with:
