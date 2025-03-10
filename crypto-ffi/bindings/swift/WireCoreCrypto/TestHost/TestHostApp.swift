@@ -16,14 +16,13 @@
 // along with this program. If not, see http://www.gnu.org/licenses/.
 //
 
-// Configuration settings file format documentation can be found at:
-// https://help.apple.com/xcode/#/dev745c5c974
+import SwiftUI
 
-MARKETING_VERSION=4.2.2
-CURRENT_PROJECT_VERSION=40202
-DYLIB_CURRENT_VERSION=$(CURRENT_PROJECT_VERSION)
-DYLIB_COMPATIBILITY_VERSION=$(CURRENT_PROJECT_VERSION)
-BUILD_LIBRARY_FOR_DISTRIBUTION=YES
-OTHER_LDFLAGS[sdk=iphoneos*][arch=arm64] = ../../../../target/aarch64-apple-ios/release/libcore_crypto_ffi.a
-OTHER_LDFLAGS[sdk=iphonesimulator*][arch=x86_64] = ../../../../target/x86_64-apple-ios/release/libcore_crypto_ffi.a
-OTHER_LDFLAGS[sdk=iphonesimulator*][arch=arm64] = ../../../../target/aarch64-apple-ios-sim/release/libcore_crypto_ffi.a
+@main
+struct TestHostApp: App {
+    var body: some Scene {
+        WindowGroup {
+            ContentView()
+        }
+    }
+}

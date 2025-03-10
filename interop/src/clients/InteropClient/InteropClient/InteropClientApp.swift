@@ -21,14 +21,14 @@ import WireCoreCrypto
 class TransportProvider: MlsTransport {
 
     func sendCommitBundle(
-        commitBundle: WireCoreCrypto.CommitBundle
-    ) async -> WireCoreCrypto.MlsTransportResponse {
+        commitBundle: CommitBundle
+    ) async -> MlsTransportResponse {
         .success
     }
 
     func sendMessage(
         mlsMessage: Data
-    ) async -> WireCoreCrypto.MlsTransportResponse {
+    ) async -> MlsTransportResponse {
         .success
     }
 
