@@ -117,13 +117,18 @@ jobs:
       - ktdoc
 
     steps:
-    - uses: actions/download-artifact@v4.1.8
+    - name: checkout repository
+      uses: actions/checkout@v4
+
+    - name: Download rustdocs
+      uses: actions/download-artifact@v4.1.8
       with:
         pattern: "rustdocs"
         path: target/doc
         merge-multiple: true
 
-    - uses: actions/download-artifact@v4.1.8
+    - name: Download TypeScript and Kotlin docs
+      uses: actions/download-artifact@v4.1.8
       with:
         pattern: "*doc"
         path: target/doc
