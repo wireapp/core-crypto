@@ -20,6 +20,8 @@ package com.wire.crypto
 
 import kotlinx.coroutines.*
 import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.test.TestScope
+import kotlinx.coroutines.test.TestResult
 import org.assertj.core.api.AssertionsForInterfaceTypes.assertThat
 import org.assertj.core.api.AssertionsForInterfaceTypes.assertThatNoException
 import java.nio.file.Files
@@ -319,6 +321,49 @@ class MLSTest {
             secret
         }.toSet()
         assertThat(secrets).hasSize(n)
+    }
+
+    @Test
+    fun registerEpochObserver_should_notify_observer_on_new_epoch(): TestResult {
+        val scope = TestScope()
+        return scope.runTest {
+            // set up the observer. this just keeps a list of all observations.
+            data class EpochChanged(val conversationId: kotlin.ByteArray, val epoch: kotlin.ULong)
+            class Observer: com.wire.crypto.uniffi.EpochObserver {
+                val observed_events = emptyList<EpochChanged>().toMutableList();
+                override suspend fun epochChanged(conversationId: kotlin.ByteArray, epoch: kotlin.ULong) {
+                    observed_events.add(EpochChanged(conversationId, epoch))
+                }
+            }
+            var observer = Observer()
+
+            // set up the conversation in one transaction
+            val cc = initCc()
+            cc.transaction { ctx ->
+                ctx.mlsInit(aliceId.toClientId())
+                ctx.createConversation(id)
+            }
+
+            // register the observer
+            cc.registerEpochObserver(scope, observer)
+
+            // in another transaction, change the epoch
+            cc.transaction { ctx ->
+                ctx.updateKeyingMaterial(id)
+                // ctx.commitPendingProposals(id)
+            }
+
+            // observer must have observed an epoch change event
+            assertEquals(1, observer.observed_events.size, "we triggered exactly 1 epoch change and must have observed that")
+            val observed_group_id = observer.observed_events[0].conversationId.toGroupId()
+            // println("observed group id: $observed_group_id")
+            // println("expected group id: $id")
+            //
+            // This doesn't work without the string cast for what I can only assume to be Kotlin Reasons, which
+            // are sensible if you are an experienced kotlin developer, which I am not.
+            // If you want to observe a nonsense failure, un-comment the printlns above, and the `.toString()` calls below
+            assertTrue(observed_group_id.toString() == id.toString(), "the observed event must be for this conversation")
+        }
     }
 }
 

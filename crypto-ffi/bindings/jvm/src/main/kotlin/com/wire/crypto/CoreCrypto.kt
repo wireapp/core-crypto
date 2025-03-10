@@ -1,5 +1,9 @@
 package com.wire.crypto
 
+import com.wire.crypto.uniffi.EpochObserver
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.CoroutineScope
+
 typealias EnrollmentHandle = ByteArray
 
 /**
