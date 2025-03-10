@@ -34,31 +34,6 @@ class TransportProvider: MlsTransport {
 
 }
 
-class TransactionExecutor<Result>: CoreCryptoCommand {
-    let block: (_ context: CoreCryptoContext) async throws -> Result
-    var result: Result?
-
-    init(
-        _ block: @escaping (_ context: CoreCryptoContext) async throws -> Result
-    ) {
-        self.block = block
-    }
-
-    func execute(context: CoreCryptoContext) async throws {
-        result = try await block(context)
-    }
-}
-
-extension CoreCrypto {
-    func transaction<Result>(
-        _ block: @escaping (_ context: CoreCryptoContext) async throws -> Result
-    ) async throws -> Result {
-        let transactionExecutor = TransactionExecutor<Result>(block)
-        try await transaction(command: transactionExecutor)
-        return transactionExecutor.result!
-    }
-}
-
 enum InteropError: String, Error {
     case notInitialised =
         "Unable to perform action since core crypto is not initialised"
@@ -115,16 +90,20 @@ struct InteropClientApp: App {
     private func executeAction(_ action: InteropAction) async throws -> String {
         switch action {
         case .initMLS(let clientId, let ciphersuite):
-            self.coreCrypto = try await CoreCrypto.init(
-                path: generateKeystorePath(),
-                key: "secret",
-                clientId: clientId,
-                ciphersuites: [ciphersuite],
-                nbKeyPackage: nil
+            self.coreCrypto = try await CoreCrypto(
+                keystorePath: generateKeystorePath(),
+                keystoreSecret: "secret".data(using: .utf8)!
             )
 
             try await self.coreCrypto?.provideTransport(
-                callbacks: TransportProvider())
+                transport: TransportProvider())
+            
+            try await self.coreCrypto?.transaction({ context in
+                try await context.mlsInit(
+                    clientId: clientId,
+                    ciphersuites: [ciphersuite],
+                    nbKeyPackage: nil)
+            })
 
             return "Initialised MLS with ciphersuite: \(ciphersuite)"
 
@@ -148,20 +127,20 @@ struct InteropClientApp: App {
 
         case .addClient(let conversationId, let ciphersuite, let keyPackage):
             guard let coreCrypto else { throw InteropError.notInitialised }
+            
+            try await coreCrypto.transaction { context in
+                if try await context.conversationExists(
+                    conversationId: conversationId) == false {
+                    
+                    let customConfiguration = CustomConfiguration(
+                        keyRotationSpan: nil, wirePolicy: nil)
+                    let conversationConfiguration = ConversationConfiguration(
+                        ciphersuite: ciphersuite,
+                        externalSenders: [],
+                        custom: customConfiguration
+                    )
 
-            if try await coreCrypto.conversationExists(
-                conversationId: conversationId) == false
-            {
-                let customConfiguration = CustomConfiguration(
-                    keyRotationSpan: nil, wirePolicy: nil)
-                let conversationConfiguration = ConversationConfiguration(
-                    ciphersuite: ciphersuite,
-                    externalSenders: [],
-                    custom: customConfiguration
-                )
-
-                try await coreCrypto.transaction {
-                    try await $0.createConversation(
+                    try await context.createConversation(
                         conversationId: conversationId,
                         creatorCredentialType: .basic,
                         config: conversationConfiguration)
@@ -234,13 +213,13 @@ struct InteropClientApp: App {
 
         case .initProteus:
             if coreCrypto == nil {
-                self.coreCrypto = try await coreCryptoDeferredInit(
-                    path: generateKeystorePath(),
-                    key: "secret"
+                self.coreCrypto = try await CoreCrypto(
+                    keystorePath: generateKeystorePath(),
+                    keystoreSecret: "secret".data(using: .utf8)!
                 )
 
                 try await self.coreCrypto?.provideTransport(
-                    callbacks: TransportProvider())
+                    transport: TransportProvider())
             }
 
             try await coreCrypto?.transaction { try await $0.proteusInit() }
@@ -299,7 +278,9 @@ struct InteropClientApp: App {
         case .getFingerprint:
             guard let coreCrypto else { throw InteropError.notInitialised }
 
-            let fingerprint = try await coreCrypto.proteusFingerprint()
+            let fingerprint = try await coreCrypto.transaction({
+                try await $0.proteusFingerprint()
+            })
 
             return fingerprint
         }
