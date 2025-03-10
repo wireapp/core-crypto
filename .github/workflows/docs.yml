@@ -5,6 +5,15 @@ concurrency:
 
 on:
   push:
+    branches:
+      - main
+    tags:
+      - "**"
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Tag to checkout'
+        required: true
 
 env:
   CARGO_INCREMENTAL: 0
@@ -13,6 +22,7 @@ env:
   CARGO_TERM_COLOR: always
   CARGO_NET_GIT_FETCH_WITH_CLI: true
   CARGO_REGISTRIES_CRATES_IO_PROTOCOL: sparse
+  GIT_TAG: ${{ github.ref_type == 'tag' && github.ref_name || github.event.inputs.tag || '' }}
 
 jobs:
   rustdoc:
@@ -20,7 +30,10 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v4
+    - name: checkout repository
+      uses: actions/checkout@v4
+      with:
+        ref: ${{ env.GIT_TAG || '' }}
     - uses: actions-rust-lang/setup-rust-toolchain@v1  # this implicitly caches Rust tools and build artifacts
       with:
         rustflags: '-D warnings -W unreachable-pub'
@@ -42,6 +55,8 @@ jobs:
     steps:
     - name: checkout repository
       uses: actions/checkout@v4
+      with:
+        ref: ${{ env.GIT_TAG || '' }}
 
     - uses: actions-rust-lang/setup-rust-toolchain@v1  # this implicitly caches Rust tools and build artifacts
       with:
@@ -84,6 +99,8 @@ jobs:
     steps:
     - name: checkout repository
       uses: actions/checkout@v4
+      with:
+        ref: ${{ env.GIT_TAG || '' }}
 
     - uses: actions-rust-lang/setup-rust-toolchain@v1  # this implicitly caches Rust tools and build artifacts
       with:
@@ -110,7 +127,7 @@ jobs:
   deploy:
     name: deploy
     runs-on: ubuntu-latest
-    if: github.repository == 'wireapp/core-crypto' && github.ref_name == 'main'
+    if: github.repository == 'wireapp/core-crypto'
     needs:
       - rustdoc
       - tsdoc
@@ -124,14 +141,14 @@ jobs:
       uses: actions/download-artifact@v4.1.8
       with:
         pattern: "rustdocs"
-        path: target/doc
+        path: "./target/doc/${{ env.GIT_TAG }}"
         merge-multiple: true
 
     - name: Download TypeScript and Kotlin docs
       uses: actions/download-artifact@v4.1.8
       with:
         pattern: "*doc"
-        path: target/doc
+        path: "./target/doc/${{ env.GIT_TAG }}"
         merge-multiple: true
 
     - name: Copy index.md
@@ -143,6 +160,6 @@ jobs:
       with:
         github_token: ${{ secrets.GITHUB_TOKEN }}
         publish_branch: gh-pages
-        publish_dir: ./target/doc
+        publish_dir: "./target/doc/${{ env.GIT_TAG }}"
         force_orphan: true
         enable_jekyll: true
