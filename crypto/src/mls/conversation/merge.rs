@@ -17,13 +17,13 @@ use openmls_traits::OpenMlsCryptoProvider;
 use mls_crypto_provider::MlsCryptoProvider;
 
 use super::Result;
-use crate::{MlsError, mls::MlsConversation};
+use crate::{MlsError, mls::MlsConversation, prelude::Client};
 
 /// Abstraction over a MLS group capable of merging a commit
 impl MlsConversation {
     /// see [CentralContext::commit_accepted]
     #[cfg_attr(test, crate::durable)]
-    pub(crate) async fn commit_accepted(&mut self, backend: &MlsCryptoProvider) -> Result<()> {
+    pub(crate) async fn commit_accepted(&mut self, client: &Client, backend: &MlsCryptoProvider) -> Result<()> {
         // openmls stores here all the encryption keypairs used for update proposals..
         let previous_own_leaf_nodes = self.group.own_leaf_nodes.clone();
 
@@ -38,6 +38,10 @@ impl MlsConversation {
             let ek = oln.encryption_key().as_slice();
             let _ = backend.key_store().remove::<MlsEncryptionKeyPair, _>(ek).await;
         }
+
+        client
+            .notify_epoch_changed(self.id.clone(), self.group.epoch().as_u64())
+            .await;
 
         Ok(())
     }
@@ -84,6 +88,8 @@ mod tests {
         #[apply(all_cred_cipher)]
         #[wasm_bindgen_test]
         async fn should_clear_pending_commit_and_proposals(case: TestCase) {
+            use crate::mls::HasClientAndProvider as _;
+
             run_test_with_client_ids(case.clone(), ["alice"], move |[mut alice_central]| {
                 Box::pin(async move {
                     let id = conversation_id();
@@ -99,7 +105,10 @@ mod tests {
                     alice_central
                         .get_conversation_unchecked(&id)
                         .await
-                        .commit_accepted(&alice_central.central.mls_backend)
+                        .commit_accepted(
+                            &alice_central.context.client().await.unwrap(),
+                            &alice_central.central.mls_backend,
+                        )
                         .await
                         .unwrap();
                     assert!(alice_central.pending_commit(&id).await.is_none());

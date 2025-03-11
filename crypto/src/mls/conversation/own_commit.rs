@@ -86,7 +86,7 @@ impl MlsConversation {
         client: &Client,
         backend: &MlsCryptoProvider,
     ) -> Result<MlsConversationDecryptMessage> {
-        self.commit_accepted(backend).await?;
+        self.commit_accepted(client, backend).await?;
 
         let own_leaf = self
             .group
@@ -109,10 +109,6 @@ impl MlsConversation {
         )
         .await
         .map_err(RecursiveError::mls_credential("getting new crl distribution points"))?;
-
-        client
-            .notify_epoch_changed(self.id.clone(), self.group.epoch().as_u64())
-            .await;
 
         // we still support the `has_epoch_changed` field, though we'll remove it later
         #[expect(deprecated)]

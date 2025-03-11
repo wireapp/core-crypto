@@ -29,9 +29,10 @@ impl ConversationGuard {
         match self.send_commit(commit).await {
             Ok(TransportedCommitPolicy::None) => Ok(()),
             Ok(TransportedCommitPolicy::Merge) => {
+                let client = self.mls_client().await?;
                 let backend = self.mls_provider().await?;
                 let mut conversation = self.inner.write().await;
-                conversation.commit_accepted(&backend).await
+                conversation.commit_accepted(&client, &backend).await
             }
             Err(e @ Error::MessageRejected { .. }) => {
                 self.clear_pending_commit().await?;
