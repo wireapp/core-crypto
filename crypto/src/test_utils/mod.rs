@@ -513,7 +513,7 @@ pub async fn run_test_wo_clients(
 pub async fn run_tests<const N: usize>(
     test: impl FnOnce([String; N]) -> std::pin::Pin<Box<dyn std::future::Future<Output = ()> + 'static>> + 'static,
 ) {
-    let _ = pretty_env_logger::try_init();
+    let _ = env_logger::try_init();
     let paths: [(String, _); N] = (0..N).map(|_| tmp_db_file()).collect::<Vec<_>>().try_into().unwrap();
     // We need to store TempDir because they impl Drop which would delete the file before test begins
     let cloned_paths = paths
@@ -530,7 +530,7 @@ pub async fn run_cross_tests<const N: usize, const F: usize>(
     test: impl FnOnce([String; N], [String; F]) -> std::pin::Pin<Box<dyn std::future::Future<Output = ()> + 'static>>
     + 'static,
 ) {
-    let _ = pretty_env_logger::try_init();
+    let _ = env_logger::try_init();
     let paths1: [(String, _); N] = (0..N).map(|_| tmp_db_file()).collect::<Vec<_>>().try_into().unwrap();
     let paths2: [(String, _); F] = (0..F).map(|_| tmp_db_file()).collect::<Vec<_>>().try_into().unwrap();
     // We need to store TempDir because they impl Drop which would delete the file before test begins

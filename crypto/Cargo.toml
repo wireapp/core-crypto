@@ -101,7 +101,7 @@ wasm-bindgen-test = "0.3"
 js-sys = "0.3"
 rstest = "0.24"
 rstest_reuse = "0.7"
-pretty_env_logger = "0.5"
+env_logger = "0.11"
 async-std = { workspace = true, features = ["attributes"] }
 futures-util = { workspace = true, features = ["std", "alloc"] }
 proteus-traits = { workspace = true }

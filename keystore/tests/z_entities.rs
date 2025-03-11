@@ -48,7 +48,7 @@ macro_rules! test_for_entity {
         #[wasm_bindgen_test]
         async fn $test_name(context: KeystoreTestContext) {
             let store = context.store();
-            let _ = pretty_env_logger::try_init();
+            let _ = env_logger::try_init();
             let mut entity = crate::tests_impl::can_save_entity::<$entity>(&store).await;
 
             crate::tests_impl::can_find_entity::<$entity>(&store, &entity).await;
@@ -87,7 +87,7 @@ macro_rules! test_migration_to_db_v1_for_entity {
     ($test_name:ident, $entity:ty, $old_entity:ty $(, unique_entity: $unique_entity:tt)?) => {
         #[wasm_bindgen_test]
         async fn $test_name() {
-            let _ = pretty_env_logger::try_init();
+            let _ = env_logger::try_init();
             let name = store_name();
 
             let old_storage = core_crypto_keystore::keystore_v_1_0_0::Connection::open_with_key(&name, TEST_ENCRYPTION_KEY)
