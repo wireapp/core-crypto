@@ -136,8 +136,8 @@ impl CentralContext {
     /// If the conversation is not found, an error will be returned. Errors from OpenMls can be
     /// returned as well, when for example there's a commit pending to be merged
     async fn new_proposal(&self, id: &ConversationId, proposal: MlsProposal) -> Result<MlsProposalBundle> {
-        let conversation = self
-            .get_conversation(id)
+        let mut conversation = self
+            .conversation_guard(id)
             .await
             .map_err(RecursiveError::mls_conversation("getting conversation by id"))?;
         let client = &self
@@ -151,7 +151,7 @@ impl CentralContext {
                     .mls_provider()
                     .await
                     .map_err(RecursiveError::root("getting mls provider"))?,
-                conversation.write().await,
+                conversation.conversation_mut().await,
             )
             .await
     }
@@ -301,7 +301,7 @@ mod tests {
                         .await
                         .unwrap();
                     assert!(matches!(
-                        bob_central.context.get_conversation(&id).await.unwrap_err(),
+                        bob_central.context.conversation_guard(&id).await.unwrap_err(),
                         mls::conversation::Error::Leaf(LeafError::ConversationNotFound(conv_id)) if conv_id == id
                     ));
                 })

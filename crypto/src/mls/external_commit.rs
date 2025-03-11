@@ -233,9 +233,9 @@ mod tests {
 
                     // Let's say backend accepted our external commit.
                     // So Bob can merge the commit and update the local state
-                    assert!(bob_central.context.get_conversation(&id).await.is_err());
+                    assert!(bob_central.context.conversation_guard(&id).await.is_err());
                     pending_conversation.merge().await.unwrap();
-                    assert!(bob_central.context.get_conversation(&id).await.is_ok());
+                    assert!(bob_central.context.conversation_guard(&id).await.is_ok());
                     assert_eq!(bob_central.get_conversation_unchecked(&id).await.members().len(), 2);
                     assert!(alice_central.try_talk_to(&id, &bob_central).await.is_ok());
 
@@ -293,7 +293,7 @@ mod tests {
                     .await
                     .unwrap();
                 assert_eq!(conversation_id.as_slice(), &id);
-                assert!(bob_central.context.get_conversation(&id).await.is_ok());
+                assert!(bob_central.context.conversation_guard(&id).await.is_ok());
                 assert_eq!(bob_central.get_conversation_unchecked(&id).await.members().len(), 2);
 
                 let external_commit = bob_central.mls_transport.latest_commit().await;
@@ -437,7 +437,7 @@ mod tests {
                         .unwrap();
 
                     let bob_external_commit = bob_central.mls_transport.latest_commit().await;
-                    assert!(bob_central.context.get_conversation(&id).await.is_ok());
+                    assert!(bob_central.context.conversation_guard(&id).await.is_ok());
                     assert_eq!(bob_central.get_conversation_unchecked(&id).await.members().len(), 2);
 
                     // Alice decrypts the commit, Bob's in !
@@ -484,7 +484,7 @@ mod tests {
                     assert_eq!(bob_central.get_conversation_unchecked(&id).await.members().len(), 3);
 
                     // Charlie is also in!
-                    assert!(charlie_central.context.get_conversation(&id).await.is_ok());
+                    assert!(charlie_central.context.conversation_guard(&id).await.is_ok());
                     assert_eq!(charlie_central.get_conversation_unchecked(&id).await.members().len(), 3);
                     assert!(charlie_central.try_talk_to(&id, &alice_central).await.is_ok());
                     assert!(charlie_central.try_talk_to(&id, &bob_central).await.is_ok());

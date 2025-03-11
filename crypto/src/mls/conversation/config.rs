@@ -239,6 +239,7 @@ mod tests {
     use wasm_bindgen_test::*;
     use wire_e2e_identity::prelude::JwsAlgorithm;
 
+    use crate::mls::conversation::ConversationWithMls as _;
     use crate::{prelude::MlsConversationConfiguration, test_utils::*};
 
     wasm_bindgen_test_configure!(run_in_browser);
@@ -254,8 +255,8 @@ mod tests {
                     .new_conversation(&id, case.credential_type, case.cfg.clone())
                     .await
                     .unwrap();
-                let conv = cc.context.get_conversation(&id).await.unwrap();
-                let group = conv.read().await;
+                let conv = cc.context.conversation_guard(&id).await.unwrap();
+                let group = conv.conversation().await;
 
                 let capabilities = group.group.group_context_extensions().required_capabilities().unwrap();
 
@@ -281,8 +282,8 @@ mod tests {
                     .new_conversation(&id, case.credential_type, case.cfg.clone())
                     .await
                     .unwrap();
-                let conv = cc.context.get_conversation(&id).await.unwrap();
-                let group = conv.read().await;
+                let conv = cc.context.conversation_guard(&id).await.unwrap();
+                let group = conv.conversation().await;
 
                 // verifying https://www.rfc-editor.org/rfc/rfc9420.html#section-7.2
                 let creator_capabilities = group.group.own_leaf().unwrap().capabilities();

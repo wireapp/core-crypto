@@ -16,8 +16,8 @@
 
 use super::Result;
 use crate::group_store::GroupStore;
-use crate::mls::conversation::Conversation as _;
 use crate::mls::conversation::pending_conversation::PendingConversation;
+use crate::mls::conversation::{Conversation as _, ConversationWithMls as _};
 use crate::prelude::{MlsCommitBundle, WelcomeBundle};
 use crate::test_utils::{ClientContext, TestError};
 use crate::{
@@ -300,8 +300,8 @@ impl ClientContext {
     }
 
     pub async fn get_group_info(&self, id: &ConversationId) -> VerifiableGroupInfo {
-        let conversation_arc = self.context.get_conversation(id).await.unwrap();
-        let mut conversation = conversation_arc.write().await;
+        let mut conversation = self.context.conversation_guard(id).await.unwrap();
+        let mut conversation = conversation.conversation_mut().await;
         let group = &mut conversation.group;
         let ct = group.credential().unwrap().credential_type();
         let cs = group.ciphersuite();
@@ -428,10 +428,10 @@ impl ClientContext {
         id: &ConversationId,
     ) -> Option<Arc<CredentialBundle>> {
         self.context
-            .get_conversation(id)
+            .conversation_guard(id)
             .await
             .unwrap()
-            .read()
+            .conversation()
             .await
             .find_most_recent_credential_bundle(&self.client().await)
             .await

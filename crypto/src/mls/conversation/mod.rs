@@ -42,7 +42,7 @@ use std::ops::Deref;
 
 use crate::{
     KeystoreError, LeafError, MlsError, RecursiveError,
-    group_store::{GroupStore, GroupStoreValue},
+    group_store::GroupStore,
     mls::{MlsCentral, client::Client},
     prelude::{MlsCiphersuite, MlsCredentialType},
 };
@@ -442,7 +442,7 @@ impl MlsConversation {
 impl MlsCentral {
     /// Get an immutable view of an `MlsConversation`.
     ///
-    /// Because it operates on the raw conversation type, this may be faster than [`CentralContext::get_conversation`]
+    /// Because it operates on the raw conversation type, this may be faster than [`CentralContext::conversation_guard`]
     /// for transient and immutable purposes. For long-lived or mutable purposes, prefer the other method.
     pub async fn get_raw_conversation(&self, id: &ConversationId) -> Result<ImmutableConversation> {
         let raw_conversation = GroupStore::fetch_from_keystore(id, &self.mls_backend.keystore(), None)
@@ -454,21 +454,6 @@ impl MlsCentral {
 }
 
 impl CentralContext {
-    pub(crate) async fn get_conversation(&self, id: &ConversationId) -> Result<GroupStoreValue<MlsConversation>> {
-        let keystore = self
-            .mls_provider()
-            .await
-            .map_err(RecursiveError::root("getting mls provider"))?
-            .keystore();
-        self.mls_groups()
-            .await
-            .map_err(RecursiveError::root("getting mls groups"))?
-            .get_fetch(id, &keystore, None)
-            .await
-            .map_err(RecursiveError::root("fetching conversation from mls groups by id"))?
-            .ok_or_else(|| LeafError::ConversationNotFound(id.clone()).into())
-    }
-
     /// Acquire a conversation guard.
     ///
     /// This helper struct permits mutations on a conversation.

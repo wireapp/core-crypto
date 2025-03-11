@@ -1,10 +1,9 @@
 use super::Result;
 use crate::{
-    KeystoreError, MlsError, RecursiveError,
+    MlsError,
     context::CentralContext,
     prelude::{ConversationId, MlsConversation},
 };
-use core_crypto_keystore::CryptoKeystoreMls;
 use mls_crypto_provider::MlsCryptoProvider;
 use openmls_traits::OpenMlsCryptoProvider;
 
@@ -15,27 +14,7 @@ impl CentralContext {
     /// KeyStore errors, such as IO
     #[cfg_attr(test, crate::dispotent)]
     pub async fn wipe_conversation(&self, id: &ConversationId) -> Result<()> {
-        let provider = self
-            .mls_provider()
-            .await
-            .map_err(RecursiveError::root("getting mls provider"))?;
-        self.get_conversation(id)
-            .await?
-            .write()
-            .await
-            .wipe_associated_entities(&provider)
-            .await?;
-        provider
-            .key_store()
-            .mls_group_delete(id)
-            .await
-            .map_err(KeystoreError::wrap("deleting mls group"))?;
-        let _ = self
-            .mls_groups()
-            .await
-            .map_err(RecursiveError::root("getting mls groups"))?
-            .remove(id);
-        Ok(())
+        self.conversation_guard(id).await?.wipe().await
     }
 }
 

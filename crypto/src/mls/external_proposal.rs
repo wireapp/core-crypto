@@ -269,7 +269,7 @@ mod tests {
                         .decrypt_message(commit.to_bytes().unwrap())
                         .await
                         .unwrap();
-                    assert!(guest_central.get_conversation(&id).await.is_err());
+                    assert!(guest_central.conversation_guard(&id).await.is_err());
                     assert!(guest.try_talk_to(&id, &owner).await.is_err());
                 })
             })
