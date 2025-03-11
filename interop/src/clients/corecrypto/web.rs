@@ -23,7 +23,6 @@ impl CoreCryptoWebClient {
         let ciphersuite = CIPHERSUITE_IN_USE as u16;
         let client_config = serde_json::json!({
             "databaseName": format!("db-{client_id_str}"),
-            "key": "test",
             "ciphersuites": [ciphersuite],
             "clientId": client_id_str
         });
@@ -33,7 +32,10 @@ impl CoreCryptoWebClient {
             .execute_async(
                 r#"
 const [clientConfig, callback] = arguments;
-const { CoreCrypto, Ciphersuite, CredentialType } = await import("./corecrypto.js");
+const { CoreCrypto, Ciphersuite, CredentialType, DatabaseKey } = await import("./corecrypto.js");
+const key = new Uint8Array(32);
+window.crypto.getRandomValues(key);
+clientConfig.key = new DatabaseKey(key);
 window.CoreCrypto = CoreCrypto;
 window.cc = await window.CoreCrypto.init(clientConfig);
 window.ciphersuite = Ciphersuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519;
