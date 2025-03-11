@@ -71,7 +71,7 @@ mod tests {
                     let unknown_commit = alice_central.create_unmerged_commit(&id).await.commit;
                     alice_central
                         .context
-                        .conversation_guard(&id)
+                        .conversation(&id)
                         .await
                         .unwrap()
                         .clear_pending_commit()
@@ -80,7 +80,7 @@ mod tests {
 
                     alice_central
                         .context
-                        .conversation_guard(&id)
+                        .conversation(&id)
                         .await
                         .unwrap()
                         .update_key_material()
@@ -91,7 +91,7 @@ mod tests {
                     // decrypt once ... ok
                     bob_central
                         .context
-                        .conversation_guard(&id)
+                        .conversation(&id)
                         .await
                         .unwrap()
                         .decrypt_message(&commit.to_bytes().unwrap())
@@ -100,7 +100,7 @@ mod tests {
                     // decrypt twice ... not ok
                     let decrypt_duplicate = bob_central
                         .context
-                        .conversation_guard(&id)
+                        .conversation(&id)
                         .await
                         .unwrap()
                         .decrypt_message(&commit.to_bytes().unwrap())
@@ -111,7 +111,7 @@ mod tests {
                     // It fails with this error since it's not the commit who has created this epoch
                     let decrypt_lost_commit = bob_central
                         .context
-                        .conversation_guard(&id)
+                        .conversation(&id)
                         .await
                         .unwrap()
                         .decrypt_message(&unknown_commit.to_bytes().unwrap())
@@ -154,7 +154,7 @@ mod tests {
                 // decrypt once ... ok
                 alice_central
                     .context
-                    .conversation_guard(&id)
+                    .conversation(&id)
                     .await
                     .unwrap()
                     .decrypt_message(&ext_commit.to_bytes().unwrap())
@@ -163,7 +163,7 @@ mod tests {
                 // decrypt twice ... not ok
                 let decryption = alice_central
                     .context
-                    .conversation_guard(&id)
+                    .conversation(&id)
                     .await
                     .unwrap()
                     .decrypt_message(&ext_commit.to_bytes().unwrap())
@@ -174,7 +174,7 @@ mod tests {
                 // It fails with this error since it's not the external commit who has created this epoch
                 let decryption = alice_central
                     .context
-                    .conversation_guard(&id)
+                    .conversation(&id)
                     .await
                     .unwrap()
                     .decrypt_message(&unknown_ext_commit.to_bytes().unwrap())
@@ -203,7 +203,7 @@ mod tests {
                 // decrypt once ... ok
                 bob_central
                     .context
-                    .conversation_guard(&id)
+                    .conversation(&id)
                     .await
                     .unwrap()
                     .decrypt_message(&proposal.to_bytes().unwrap())
@@ -213,7 +213,7 @@ mod tests {
                 // decrypt twice ... not ok
                 let decryption = bob_central
                     .context
-                    .conversation_guard(&id)
+                    .conversation(&id)
                     .await
                     .unwrap()
                     .decrypt_message(&proposal.to_bytes().unwrap())
@@ -223,7 +223,7 @@ mod tests {
                 // advance Bob's epoch to trigger failure
                 bob_central
                     .context
-                    .conversation_guard(&id)
+                    .conversation(&id)
                     .await
                     .unwrap()
                     .commit_pending_proposals()
@@ -233,7 +233,7 @@ mod tests {
                 // Epoch has advanced so we cannot detect duplicates anymore
                 let decryption = bob_central
                     .context
-                    .conversation_guard(&id)
+                    .conversation(&id)
                     .await
                     .unwrap()
                     .decrypt_message(&proposal.to_bytes().unwrap())
@@ -256,13 +256,7 @@ mod tests {
                     .await
                     .unwrap();
 
-                let epoch = alice_central
-                    .context
-                    .conversation_guard(&id)
-                    .await
-                    .unwrap()
-                    .epoch()
-                    .await;
+                let epoch = alice_central.context.conversation(&id).await.unwrap().epoch().await;
 
                 let ext_proposal = bob_central
                     .context
@@ -273,7 +267,7 @@ mod tests {
                 // decrypt once ... ok
                 alice_central
                     .context
-                    .conversation_guard(&id)
+                    .conversation(&id)
                     .await
                     .unwrap()
                     .decrypt_message(&ext_proposal.to_bytes().unwrap())
@@ -283,7 +277,7 @@ mod tests {
                 // decrypt twice ... not ok
                 let decryption = alice_central
                     .context
-                    .conversation_guard(&id)
+                    .conversation(&id)
                     .await
                     .unwrap()
                     .decrypt_message(&ext_proposal.to_bytes().unwrap())
@@ -293,7 +287,7 @@ mod tests {
                 // advance alice's epoch
                 alice_central
                     .context
-                    .conversation_guard(&id)
+                    .conversation(&id)
                     .await
                     .unwrap()
                     .commit_pending_proposals()
@@ -303,7 +297,7 @@ mod tests {
                 // Epoch has advanced so we cannot detect duplicates anymore
                 let decryption = alice_central
                     .context
-                    .conversation_guard(&id)
+                    .conversation(&id)
                     .await
                     .unwrap()
                     .decrypt_message(&ext_proposal.to_bytes().unwrap())
@@ -331,7 +325,7 @@ mod tests {
                 let msg = b"Hello bob";
                 let encrypted = alice_central
                     .context
-                    .conversation_guard(&id)
+                    .conversation(&id)
                     .await
                     .unwrap()
                     .encrypt_message(msg)
@@ -341,7 +335,7 @@ mod tests {
                 // decrypt once .. ok
                 bob_central
                     .context
-                    .conversation_guard(&id)
+                    .conversation(&id)
                     .await
                     .unwrap()
                     .decrypt_message(&encrypted)
@@ -350,7 +344,7 @@ mod tests {
                 // decrypt twice .. not ok
                 let decryption = bob_central
                     .context
-                    .conversation_guard(&id)
+                    .conversation(&id)
                     .await
                     .unwrap()
                     .decrypt_message(&encrypted)

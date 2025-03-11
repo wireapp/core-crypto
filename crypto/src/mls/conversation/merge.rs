@@ -69,7 +69,7 @@ mod tests {
                     assert_eq!(alice_central.get_conversation_unchecked(&id).await.members().len(), 2);
                     alice_central
                         .context
-                        .conversation_guard(&id)
+                        .conversation(&id)
                         .await
                         .unwrap()
                         .remove_members(&[bob_central.get_client_id().await])
@@ -132,7 +132,7 @@ mod tests {
 
                     alice_central
                         .context
-                        .conversation_guard(&id)
+                        .conversation(&id)
                         .await
                         .unwrap()
                         .commit_pending_proposals()

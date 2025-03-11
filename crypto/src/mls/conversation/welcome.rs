@@ -181,7 +181,7 @@ mod tests {
 
                 alice_central
                     .context
-                    .conversation_guard(&id)
+                    .conversation(&id)
                     .await
                     .unwrap()
                     .add_members(vec![bob])
@@ -220,7 +220,7 @@ mod tests {
                 let bob = bob_central.rand_key_package(&case).await;
                 alice_central
                     .context
-                    .conversation_guard(&id)
+                    .conversation(&id)
                     .await
                     .unwrap()
                     .add_members(vec![bob])

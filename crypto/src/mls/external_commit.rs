@@ -220,7 +220,7 @@ mod tests {
                     assert_eq!(alice_central.get_conversation_unchecked(&id).await.members().len(), 1);
                     let decrypted = alice_central
                         .context
-                        .conversation_guard(&id)
+                        .conversation(&id)
                         .await
                         .unwrap()
                         .decrypt_message(&external_commit.commit.to_bytes().unwrap())
@@ -233,9 +233,9 @@ mod tests {
 
                     // Let's say backend accepted our external commit.
                     // So Bob can merge the commit and update the local state
-                    assert!(bob_central.context.conversation_guard(&id).await.is_err());
+                    assert!(bob_central.context.conversation(&id).await.is_err());
                     pending_conversation.merge().await.unwrap();
-                    assert!(bob_central.context.conversation_guard(&id).await.is_ok());
+                    assert!(bob_central.context.conversation(&id).await.is_ok());
                     assert_eq!(bob_central.get_conversation_unchecked(&id).await.members().len(), 2);
                     assert!(alice_central.try_talk_to(&id, &bob_central).await.is_ok());
 
@@ -293,7 +293,7 @@ mod tests {
                     .await
                     .unwrap();
                 assert_eq!(conversation_id.as_slice(), &id);
-                assert!(bob_central.context.conversation_guard(&id).await.is_ok());
+                assert!(bob_central.context.conversation(&id).await.is_ok());
                 assert_eq!(bob_central.get_conversation_unchecked(&id).await.members().len(), 2);
 
                 let external_commit = bob_central.mls_transport.latest_commit().await;
@@ -301,7 +301,7 @@ mod tests {
                 assert_eq!(alice_central.get_conversation_unchecked(&id).await.members().len(), 1);
                 alice_central
                     .context
-                    .conversation_guard(&id)
+                    .conversation(&id)
                     .await
                     .unwrap()
                     .decrypt_message(&external_commit.to_bytes().unwrap())
@@ -342,7 +342,7 @@ mod tests {
                 // Alice creates a new commit before receiving the external join
                 alice_central
                     .context
-                    .conversation_guard(&id)
+                    .conversation(&id)
                     .await
                     .unwrap()
                     .update_key_material()
@@ -353,7 +353,7 @@ mod tests {
                 // the wrong epoch
                 let result = alice_central
                     .context
-                    .conversation_guard(&id)
+                    .conversation(&id)
                     .await
                     .unwrap()
                     .decrypt_message(&external_commit.to_bytes().unwrap())
@@ -437,13 +437,13 @@ mod tests {
                         .unwrap();
 
                     let bob_external_commit = bob_central.mls_transport.latest_commit().await;
-                    assert!(bob_central.context.conversation_guard(&id).await.is_ok());
+                    assert!(bob_central.context.conversation(&id).await.is_ok());
                     assert_eq!(bob_central.get_conversation_unchecked(&id).await.members().len(), 2);
 
                     // Alice decrypts the commit, Bob's in !
                     alice_central
                         .context
-                        .conversation_guard(&id)
+                        .conversation(&id)
                         .await
                         .unwrap()
                         .decrypt_message(&bob_external_commit.to_bytes().unwrap())
@@ -466,7 +466,7 @@ mod tests {
                     // Both Alice & Bob decrypt the commit
                     alice_central
                         .context
-                        .conversation_guard(&id)
+                        .conversation(&id)
                         .await
                         .unwrap()
                         .decrypt_message(charlie_external_commit.to_bytes().unwrap())
@@ -474,7 +474,7 @@ mod tests {
                         .unwrap();
                     bob_central
                         .context
-                        .conversation_guard(&id)
+                        .conversation(&id)
                         .await
                         .unwrap()
                         .decrypt_message(charlie_external_commit.to_bytes().unwrap())
@@ -484,7 +484,7 @@ mod tests {
                     assert_eq!(bob_central.get_conversation_unchecked(&id).await.members().len(), 3);
 
                     // Charlie is also in!
-                    assert!(charlie_central.context.conversation_guard(&id).await.is_ok());
+                    assert!(charlie_central.context.conversation(&id).await.is_ok());
                     assert_eq!(charlie_central.get_conversation_unchecked(&id).await.members().len(), 3);
                     assert!(charlie_central.try_talk_to(&id, &alice_central).await.is_ok());
                     assert!(charlie_central.try_talk_to(&id, &bob_central).await.is_ok());
@@ -589,7 +589,7 @@ mod tests {
                 let bob = bob_central.rand_key_package(&case).await;
                 alice_central
                     .context
-                    .conversation_guard(&id)
+                    .conversation(&id)
                     .await
                     .unwrap()
                     .add_members(vec![bob])
@@ -633,7 +633,7 @@ mod tests {
                     let invalid_kp = bob_central.new_keypackage(&case, Lifetime::new(expiration_time)).await;
                     alice_central
                         .context
-                        .conversation_guard(&id)
+                        .conversation(&id)
                         .await
                         .unwrap()
                         .add_members(vec![invalid_kp.into()])

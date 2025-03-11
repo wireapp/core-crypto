@@ -724,7 +724,7 @@ impl MlsTransport for CoreCryptoTransportRetrySuccessProvider {
             for commit in commits.iter() {
                 receiver
                     .context
-                    .conversation_guard(conversation_id)
+                    .conversation(conversation_id)
                     .await
                     .expect("conversation guard")
                     .decrypt_message(commit.to_bytes().expect("reading bytes from intermediate commit"))

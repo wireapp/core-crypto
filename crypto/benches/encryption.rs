@@ -27,7 +27,7 @@ fn encryption_bench_var_group_size(c: &mut Criterion) {
                         let context = central.new_transaction().await.unwrap();
                         black_box(
                             context
-                                .conversation_guard(&id)
+                                .conversation(&id)
                                 .await
                                 .unwrap()
                                 .encrypt_message(text)
@@ -62,7 +62,7 @@ fn encryption_bench_var_msg_size(c: &mut Criterion) {
                         let context = central.new_transaction().await.unwrap();
                         black_box(
                             context
-                                .conversation_guard(&id)
+                                .conversation(&id)
                                 .await
                                 .unwrap()
                                 .encrypt_message(text)
@@ -95,7 +95,7 @@ fn decryption_bench_var_msg_size(c: &mut Criterion) {
                             let context = alice_central.new_transaction().await.unwrap();
                             let text = Alphanumeric.sample_string(&mut rand::thread_rng(), *i);
                             let encrypted = context
-                                .conversation_guard(&id)
+                                .conversation(&id)
                                 .await
                                 .unwrap()
                                 .encrypt_message(text)
@@ -109,7 +109,7 @@ fn decryption_bench_var_msg_size(c: &mut Criterion) {
                         let context = central.new_transaction().await.unwrap();
                         black_box(
                             context
-                                .conversation_guard(&id)
+                                .conversation(&id)
                                 .await
                                 .unwrap()
                                 .decrypt_message(encrypted)

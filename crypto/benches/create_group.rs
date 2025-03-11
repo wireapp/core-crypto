@@ -69,7 +69,7 @@ fn join_from_welcome_bench(c: &mut Criterion) {
                             bob_context.finish().await.unwrap();
                             let alice_context = alice_central.new_transaction().await.unwrap();
                             alice_context
-                                .conversation_guard(&id)
+                                .conversation(&id)
                                 .await
                                 .unwrap()
                                 .add_members(vec![bob_kp.into()])

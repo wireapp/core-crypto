@@ -152,7 +152,7 @@ mod tests {
                         // Owner receives external proposal message from server
                         let decrypted = owner_central
                             .context
-                            .conversation_guard(&id)
+                            .conversation(&id)
                             .await
                             .unwrap()
                             .decrypt_message(external_add.to_bytes().unwrap())
@@ -167,7 +167,7 @@ mod tests {
                         // simulate commit message reception from server
                         owner_central
                             .context
-                            .conversation_guard(&id)
+                            .conversation(&id)
                             .await
                             .unwrap()
                             .commit_pending_proposals()
@@ -237,21 +237,21 @@ mod tests {
                             .unwrap();
 
                     owner_central
-                        .conversation_guard(&id)
+                        .conversation(&id)
                         .await
                         .unwrap()
                         .decrypt_message(proposal.to_bytes().unwrap())
                         .await
                         .unwrap();
                     guest_central
-                        .conversation_guard(&id)
+                        .conversation(&id)
                         .await
                         .unwrap()
                         .decrypt_message(proposal.to_bytes().unwrap())
                         .await
                         .unwrap();
                     owner_central
-                        .conversation_guard(&id)
+                        .conversation(&id)
                         .await
                         .unwrap()
                         .commit_pending_proposals()
@@ -263,13 +263,13 @@ mod tests {
 
                     // guest can no longer participate
                     guest_central
-                        .conversation_guard(&id)
+                        .conversation(&id)
                         .await
                         .unwrap()
                         .decrypt_message(commit.to_bytes().unwrap())
                         .await
                         .unwrap();
-                    assert!(guest_central.conversation_guard(&id).await.is_err());
+                    assert!(guest_central.conversation(&id).await.is_err());
                     assert!(guest.try_talk_to(&id, &owner).await.is_err());
                 })
             })
@@ -318,7 +318,7 @@ mod tests {
 
                         let owner_decrypt = owner
                             .context
-                            .conversation_guard(&id)
+                            .conversation(&id)
                             .await
                             .unwrap()
                             .decrypt_message(proposal.to_bytes().unwrap())
@@ -336,7 +336,7 @@ mod tests {
 
                         let guest_decrypt = owner
                             .context
-                            .conversation_guard(&id)
+                            .conversation(&id)
                             .await
                             .unwrap()
                             .decrypt_message(proposal.to_bytes().unwrap())
@@ -399,7 +399,7 @@ mod tests {
 
                     let owner_decrypt = owner
                         .context
-                        .conversation_guard(&id)
+                        .conversation(&id)
                         .await
                         .unwrap()
                         .decrypt_message(proposal.to_bytes().unwrap())
@@ -414,7 +414,7 @@ mod tests {
 
                     let guest_decrypt = owner
                         .context
-                        .conversation_guard(&id)
+                        .conversation(&id)
                         .await
                         .unwrap()
                         .decrypt_message(proposal.to_bytes().unwrap())
@@ -463,7 +463,7 @@ mod tests {
                         // message and not from configuration
                         let charlie_kp = charlie.rand_key_package(&case).await;
                         alice_central
-                            .conversation_guard(&id)
+                            .conversation(&id)
                             .await
                             .unwrap()
                             .add_members(vec![charlie_kp])
@@ -472,7 +472,7 @@ mod tests {
                         let welcome = alice.mls_transport.latest_welcome_message().await;
                         let commit = alice.mls_transport.latest_commit().await;
                         bob_central
-                            .conversation_guard(&id)
+                            .conversation(&id)
                             .await
                             .unwrap()
                             .decrypt_message(commit.to_bytes().unwrap())
@@ -502,7 +502,7 @@ mod tests {
                         // joiner from Welcome should be able to verify the external remove proposal since
                         // it has fetched back the external_sender from Welcome
                         let charlie_can_verify_ext_proposal = charlie_central
-                            .conversation_guard(&id)
+                            .conversation(&id)
                             .await
                             .unwrap()
                             .decrypt_message(proposal.to_bytes().unwrap())
@@ -510,14 +510,14 @@ mod tests {
                         assert!(charlie_can_verify_ext_proposal.is_ok());
 
                         alice_central
-                            .conversation_guard(&id)
+                            .conversation(&id)
                             .await
                             .unwrap()
                             .decrypt_message(proposal.to_bytes().unwrap())
                             .await
                             .unwrap();
                         bob_central
-                            .conversation_guard(&id)
+                            .conversation(&id)
                             .await
                             .unwrap()
                             .decrypt_message(proposal.to_bytes().unwrap())
@@ -525,7 +525,7 @@ mod tests {
                             .unwrap();
 
                         charlie_central
-                            .conversation_guard(&id)
+                            .conversation(&id)
                             .await
                             .unwrap()
                             .commit_pending_proposals()
@@ -535,7 +535,7 @@ mod tests {
                         assert_eq!(charlie.get_conversation_unchecked(&id).await.members().len(), 2);
 
                         alice_central
-                            .conversation_guard(&id)
+                            .conversation(&id)
                             .await
                             .unwrap()
                             .decrypt_message(commit.to_bytes().unwrap())
@@ -543,7 +543,7 @@ mod tests {
                             .unwrap();
                         assert_eq!(alice.get_conversation_unchecked(&id).await.members().len(), 2);
                         bob_central
-                            .conversation_guard(&id)
+                            .conversation(&id)
                             .await
                             .unwrap()
                             .decrypt_message(commit.to_bytes().unwrap())
@@ -596,14 +596,14 @@ mod tests {
 
                         // Purposely have a configuration without `external_senders`
                         alice_central
-                            .conversation_guard(&id)
+                            .conversation(&id)
                             .await
                             .unwrap()
                             .decrypt_message(commit.to_bytes().unwrap())
                             .await
                             .unwrap();
                         bob_central
-                            .conversation_guard(&id)
+                            .conversation(&id)
                             .await
                             .unwrap()
                             .decrypt_message(commit.to_bytes().unwrap())
@@ -629,7 +629,7 @@ mod tests {
                         // joiner from external commit should be able to verify the external remove proposal
                         // since it has fetched back the external_sender from external commit
                         let charlie_can_verify_ext_proposal = charlie_central
-                            .conversation_guard(&id)
+                            .conversation(&id)
                             .await
                             .unwrap()
                             .decrypt_message(proposal.to_bytes().unwrap())
@@ -637,14 +637,14 @@ mod tests {
                         assert!(charlie_can_verify_ext_proposal.is_ok());
 
                         alice_central
-                            .conversation_guard(&id)
+                            .conversation(&id)
                             .await
                             .unwrap()
                             .decrypt_message(proposal.to_bytes().unwrap())
                             .await
                             .unwrap();
                         bob_central
-                            .conversation_guard(&id)
+                            .conversation(&id)
                             .await
                             .unwrap()
                             .decrypt_message(proposal.to_bytes().unwrap())
@@ -652,7 +652,7 @@ mod tests {
                             .unwrap();
 
                         charlie_central
-                            .conversation_guard(&id)
+                            .conversation(&id)
                             .await
                             .unwrap()
                             .commit_pending_proposals()
@@ -662,7 +662,7 @@ mod tests {
 
                         let commit = charlie.mls_transport.latest_commit().await;
                         alice_central
-                            .conversation_guard(&id)
+                            .conversation(&id)
                             .await
                             .unwrap()
                             .decrypt_message(commit.to_bytes().unwrap())
@@ -670,7 +670,7 @@ mod tests {
                             .unwrap();
                         assert_eq!(alice.get_conversation_unchecked(&id).await.members().len(), 2);
                         bob_central
-                            .conversation_guard(&id)
+                            .conversation(&id)
                             .await
                             .unwrap()
                             .decrypt_message(commit.to_bytes().unwrap())

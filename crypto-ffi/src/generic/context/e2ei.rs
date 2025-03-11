@@ -124,7 +124,7 @@ impl CoreCryptoContext {
     pub async fn e2ei_rotate(&self, conversation_id: Vec<u8>) -> CoreCryptoResult<()> {
         Ok(self
             .context
-            .conversation_guard(&conversation_id)
+            .conversation(&conversation_id)
             .await?
             .e2ei_rotate(None)
             .await?)
@@ -181,7 +181,7 @@ impl CoreCryptoContext {
     pub async fn e2ei_conversation_state(&self, conversation_id: Vec<u8>) -> CoreCryptoResult<E2eiConversationState> {
         Ok(self
             .context
-            .conversation_guard(&conversation_id)
+            .conversation(&conversation_id)
             .await?
             .e2ei_conversation_state()
             .await
@@ -213,7 +213,7 @@ impl CoreCryptoContext {
         let device_ids = device_ids.into_iter().map(|cid| cid.0).collect::<Vec<_>>();
         Ok(self
             .context
-            .conversation_guard(&conversation_id)
+            .conversation(&conversation_id)
             .await?
             .get_device_identities(&device_ids[..])
             .await?
@@ -230,7 +230,7 @@ impl CoreCryptoContext {
     ) -> CoreCryptoResult<HashMap<String, Vec<WireIdentity>>> {
         Ok(self
             .context
-            .conversation_guard(&conversation_id)
+            .conversation(&conversation_id)
             .await?
             .get_user_identities(&user_ids[..])
             .await?

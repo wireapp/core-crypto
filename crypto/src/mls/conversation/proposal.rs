@@ -202,7 +202,7 @@ mod tests {
                         assert_eq!(alice_central.pending_proposals(&id).await.len(), 1);
                         bob_central
                             .context
-                            .conversation_guard(&id)
+                            .conversation(&id)
                             .await
                             .unwrap()
                             .decrypt_message(proposal.to_bytes().unwrap())
@@ -210,7 +210,7 @@ mod tests {
                             .unwrap();
                         bob_central
                             .context
-                            .conversation_guard(&id)
+                            .conversation(&id)
                             .await
                             .unwrap()
                             .commit_pending_proposals()
@@ -224,7 +224,7 @@ mod tests {
                         // not be referenced in commit
                         alice_central
                             .context
-                            .conversation_guard(&id)
+                            .conversation(&id)
                             .await
                             .unwrap()
                             .decrypt_message(commit.to_bytes().unwrap())
@@ -281,7 +281,7 @@ mod tests {
                         assert_eq!(alice_central.pending_proposals(&id).await.len(), 1);
                         bob_central
                             .context
-                            .conversation_guard(&id)
+                            .conversation(&id)
                             .await
                             .unwrap()
                             .decrypt_message(proposal.to_bytes().unwrap())
@@ -289,7 +289,7 @@ mod tests {
                             .unwrap();
                         bob_central
                             .context
-                            .conversation_guard(&id)
+                            .conversation(&id)
                             .await
                             .unwrap()
                             .commit_pending_proposals()
@@ -302,7 +302,7 @@ mod tests {
                         // not be referenced in commit
                         alice_central
                             .context
-                            .conversation_guard(&id)
+                            .conversation(&id)
                             .await
                             .unwrap()
                             .decrypt_message(commit.to_bytes().unwrap())
@@ -350,7 +350,7 @@ mod tests {
                     let proposal = alice_central.context.new_update_proposal(&id).await.unwrap().proposal;
                     bob_central
                         .context
-                        .conversation_guard(&id)
+                        .conversation(&id)
                         .await
                         .unwrap()
                         .decrypt_message(proposal.to_bytes().unwrap())
@@ -358,7 +358,7 @@ mod tests {
                         .unwrap();
                     bob_central
                         .context
-                        .conversation_guard(&id)
+                        .conversation(&id)
                         .await
                         .unwrap()
                         .commit_pending_proposals()
@@ -385,7 +385,7 @@ mod tests {
                     // not be referenced in commit
                     alice_central
                         .context
-                        .conversation_guard(&id)
+                        .conversation(&id)
                         .await
                         .unwrap()
                         .decrypt_message(commit.to_bytes().unwrap())
@@ -427,7 +427,7 @@ mod tests {
 
                     bob_central
                         .context
-                        .conversation_guard(&id)
+                        .conversation(&id)
                         .await
                         .unwrap()
                         .decrypt_message(&proposal.to_bytes().unwrap())
@@ -435,7 +435,7 @@ mod tests {
                         .unwrap();
                     bob_central
                         .context
-                        .conversation_guard(&id)
+                        .conversation(&id)
                         .await
                         .unwrap()
                         .commit_pending_proposals()
@@ -446,7 +446,7 @@ mod tests {
                     // fails when we try to decrypt a proposal for past epoch
                     let past_proposal = bob_central
                         .context
-                        .conversation_guard(&id)
+                        .conversation(&id)
                         .await
                         .unwrap()
                         .decrypt_message(&proposal.to_bytes().unwrap())

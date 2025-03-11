@@ -73,7 +73,7 @@ mod tests {
 
                         let commit_creation = alice_central
                             .context
-                            .conversation_guard(&id)
+                            .conversation(&id)
                             .await
                             .unwrap()
                             .add_members(vec![invalid_kp.into()])
@@ -131,7 +131,7 @@ mod tests {
 
                         let decrypting = bob_central
                             .context
-                            .conversation_guard(&id)
+                            .conversation(&id)
                             .await
                             .unwrap()
                             .decrypt_message(proposal)
@@ -180,7 +180,7 @@ mod tests {
 
                         alice_central
                             .context
-                            .conversation_guard(&id)
+                            .conversation(&id)
                             .await
                             .unwrap()
                             .add_members(vec![invalid_kp.into()])
@@ -199,7 +199,7 @@ mod tests {
 
                         let decrypting = bob_central
                             .context
-                            .conversation_guard(&id)
+                            .conversation(&id)
                             .await
                             .unwrap()
                             .decrypt_message(commit)
@@ -238,7 +238,7 @@ mod tests {
                     let invalid_kp = bob_central.new_keypackage(&case, Lifetime::new(expiration_time)).await;
                     alice_central
                         .context
-                        .conversation_guard(&id)
+                        .conversation(&id)
                         .await
                         .unwrap()
                         .add_members(vec![invalid_kp.into()])

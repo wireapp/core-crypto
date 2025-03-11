@@ -146,7 +146,7 @@ impl ClientContext {
         let msg = b"Hello other";
         let encrypted = self
             .context
-            .conversation_guard(id)
+            .conversation(id)
             .await
             .map_err(RecursiveError::mls_conversation("getting conversation by id"))?
             .encrypt_message(msg)
@@ -154,7 +154,7 @@ impl ClientContext {
             .map_err(RecursiveError::mls_conversation("encrypting message; self -> other"))?;
         let decrypted = other
             .context
-            .conversation_guard(id)
+            .conversation(id)
             .await
             .map_err(RecursiveError::mls_conversation("getting conversation by id"))?
             .decrypt_message(encrypted)
@@ -167,7 +167,7 @@ impl ClientContext {
         let msg = b"Hello self";
         let encrypted = other
             .context
-            .conversation_guard(id)
+            .conversation(id)
             .await
             .map_err(RecursiveError::mls_conversation("getting conversation by id"))?
             .encrypt_message(msg)
@@ -175,7 +175,7 @@ impl ClientContext {
             .map_err(RecursiveError::mls_conversation("encrypting message; other -> self"))?;
         let decrypted = self
             .context
-            .conversation_guard(id)
+            .conversation(id)
             .await
             .map_err(RecursiveError::mls_conversation("getting conversation by id"))?
             .decrypt_message(encrypted)
@@ -213,7 +213,7 @@ impl ClientContext {
 
         let kps = others.iter().map(|(_, kp)| kp).cloned().collect::<Vec<_>>();
         self.context
-            .conversation_guard(&id)
+            .conversation(&id)
             .await
             .map_err(RecursiveError::mls_conversation("getting conversation by id"))?
             .add_members(kps)
@@ -271,7 +271,7 @@ impl ClientContext {
                 .map_err(MlsError::wrap("serializing detached tls"))?;
             other
                 .context
-                .conversation_guard(id)
+                .conversation(id)
                 .await
                 .unwrap()
                 .decrypt_message(commit)
@@ -300,7 +300,7 @@ impl ClientContext {
     }
 
     pub async fn get_group_info(&self, id: &ConversationId) -> VerifiableGroupInfo {
-        let mut conversation = self.context.conversation_guard(id).await.unwrap();
+        let mut conversation = self.context.conversation(id).await.unwrap();
         let mut conversation = conversation.conversation_mut().await;
         let group = &mut conversation.group;
         let ct = group.credential().unwrap().credential_type();
@@ -428,7 +428,7 @@ impl ClientContext {
         id: &ConversationId,
     ) -> Option<Arc<CredentialBundle>> {
         self.context
-            .conversation_guard(id)
+            .conversation(id)
             .await
             .unwrap()
             .conversation()
@@ -576,7 +576,7 @@ impl ClientContext {
         for conv in all_conversations {
             let id = conv.read().await.id().clone();
             self.context
-                .conversation_guard(&id)
+                .conversation(&id)
                 .await
                 .map_err(RecursiveError::mls_conversation("getting conversation by id"))?
                 .e2ei_rotate(None)
@@ -600,7 +600,7 @@ impl ClientContext {
     /// Creates a commit but don't merge it immediately (e.g, because the app crashes before he receives the success response from the ds via MlsTransport api)
     pub(crate) async fn create_unmerged_commit(&self, id: &ConversationId) -> MlsCommitBundle {
         self.context
-            .conversation_guard(&id)
+            .conversation(&id)
             .await
             .unwrap()
             .conversation_mut()
@@ -612,7 +612,7 @@ impl ClientContext {
 
     pub(crate) async fn commit_pending_proposals_unmerged(&self, id: &ConversationId) -> MlsCommitBundle {
         self.context
-            .conversation_guard(&id)
+            .conversation(&id)
             .await
             .unwrap()
             .conversation_mut()
@@ -645,7 +645,7 @@ impl ClientContext {
     ) -> MlsCommitBundle {
         let client = self.client().await;
         let backend = self.context.mls_provider().await.unwrap();
-        let mut conversation_guard = self.context.conversation_guard(id).await.unwrap();
+        let mut conversation_guard = self.context.conversation(id).await.unwrap();
         let mut conversation = conversation_guard.conversation_mut().await;
         let mut leaf_node = conversation.group.own_leaf().unwrap().clone();
         leaf_node.set_credential_with_key(cb.to_mls_credential_with_key());
@@ -676,7 +676,7 @@ impl ClientContext {
         let cid = self.get_client_id().await;
         let group_identities = self
             .context
-            .conversation_guard(id)
+            .conversation(id)
             .await
             .unwrap()
             .get_device_identities(&[cid.clone()])

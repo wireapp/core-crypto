@@ -215,11 +215,7 @@ impl CoreCryptoContext {
         let context = self.inner.clone();
         future_to_promise(
             async move {
-                context
-                    .conversation_guard(&conversation_id)
-                    .await?
-                    .e2ei_rotate(None)
-                    .await?;
+                context.conversation(&conversation_id).await?.e2ei_rotate(None).await?;
                 WasmCryptoResult::Ok(JsValue::UNDEFINED)
             }
             .err_into(),
@@ -300,7 +296,7 @@ impl CoreCryptoContext {
         future_to_promise(
             async move {
                 let state: E2eiConversationState = context
-                    .conversation_guard(&conversation_id)
+                    .conversation(&conversation_id)
                     .await?
                     .e2ei_conversation_state()
                     .await?
@@ -335,7 +331,7 @@ impl CoreCryptoContext {
             async move {
                 let device_ids = device_ids.iter().map(|c| c.to_vec().into()).collect::<Vec<ClientId>>();
                 let identities = context
-                    .conversation_guard(&conversation_id)
+                    .conversation(&conversation_id)
                     .await?
                     .get_device_identities(&device_ids[..])
                     .await
@@ -357,7 +353,7 @@ impl CoreCryptoContext {
         future_to_promise(
             async move {
                 let identities = context
-                    .conversation_guard(&conversation_id)
+                    .conversation(&conversation_id)
                     .await?
                     .get_user_identities(user_ids.deref())
                     .await

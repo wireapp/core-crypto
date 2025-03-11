@@ -255,7 +255,7 @@ mod tests {
                     .new_conversation(&id, case.credential_type, case.cfg.clone())
                     .await
                     .unwrap();
-                let conv = cc.context.conversation_guard(&id).await.unwrap();
+                let conv = cc.context.conversation(&id).await.unwrap();
                 let group = conv.conversation().await;
 
                 let capabilities = group.group.group_context_extensions().required_capabilities().unwrap();
@@ -282,7 +282,7 @@ mod tests {
                     .new_conversation(&id, case.credential_type, case.cfg.clone())
                     .await
                     .unwrap();
-                let conv = cc.context.conversation_guard(&id).await.unwrap();
+                let conv = cc.context.conversation(&id).await.unwrap();
                 let group = conv.conversation().await;
 
                 // verifying https://www.rfc-editor.org/rfc/rfc9420.html#section-7.2

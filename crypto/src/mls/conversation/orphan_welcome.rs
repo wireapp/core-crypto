@@ -35,7 +35,7 @@ mod tests {
                 // Alice invites Bob with a KeyPackage...
                 alice_central
                     .context
-                    .conversation_guard(&id)
+                    .conversation(&id)
                     .await
                     .unwrap()
                     .add_members(vec![bob])

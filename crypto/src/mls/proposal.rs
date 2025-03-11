@@ -137,7 +137,7 @@ impl CentralContext {
     /// returned as well, when for example there's a commit pending to be merged
     async fn new_proposal(&self, id: &ConversationId, proposal: MlsProposal) -> Result<MlsProposalBundle> {
         let mut conversation = self
-            .conversation_guard(id)
+            .conversation(id)
             .await
             .map_err(RecursiveError::mls_conversation("getting conversation by id"))?;
         let client = &self
@@ -183,7 +183,7 @@ mod tests {
                     alice_central.context.new_add_proposal(&id, bob_kp).await.unwrap();
                     alice_central
                         .context
-                        .conversation_guard(&id)
+                        .conversation(&id)
                         .await
                         .unwrap()
                         .commit_pending_proposals()
@@ -229,7 +229,7 @@ mod tests {
                     central.context.new_update_proposal(&id).await.unwrap();
                     central
                         .context
-                        .conversation_guard(&id)
+                        .conversation(&id)
                         .await
                         .unwrap()
                         .commit_pending_proposals()
@@ -275,7 +275,7 @@ mod tests {
                         .unwrap();
                     bob_central
                         .context
-                        .conversation_guard(&id)
+                        .conversation(&id)
                         .await
                         .unwrap()
                         .decrypt_message(remove_proposal.proposal.to_bytes().unwrap())
@@ -283,7 +283,7 @@ mod tests {
                         .unwrap();
                     alice_central
                         .context
-                        .conversation_guard(&id)
+                        .conversation(&id)
                         .await
                         .unwrap()
                         .commit_pending_proposals()
@@ -294,14 +294,14 @@ mod tests {
                     let commit = alice_central.mls_transport.latest_commit().await;
                     bob_central
                         .context
-                        .conversation_guard(&id)
+                        .conversation(&id)
                         .await
                         .unwrap()
                         .decrypt_message(commit.to_bytes().unwrap())
                         .await
                         .unwrap();
                     assert!(matches!(
-                        bob_central.context.conversation_guard(&id).await.unwrap_err(),
+                        bob_central.context.conversation(&id).await.unwrap_err(),
                         mls::conversation::Error::Leaf(LeafError::ConversationNotFound(conv_id)) if conv_id == id
                     ));
                 })

@@ -442,7 +442,7 @@ impl MlsConversation {
 impl MlsCentral {
     /// Get an immutable view of an `MlsConversation`.
     ///
-    /// Because it operates on the raw conversation type, this may be faster than [`CentralContext::conversation_guard`]
+    /// Because it operates on the raw conversation type, this may be faster than [`CentralContext::conversation`]
     /// for transient and immutable purposes. For long-lived or mutable purposes, prefer the other method.
     pub async fn get_raw_conversation(&self, id: &ConversationId) -> Result<ImmutableConversation> {
         let raw_conversation = GroupStore::fetch_from_keystore(id, &self.mls_backend.keystore(), None)
@@ -457,7 +457,7 @@ impl CentralContext {
     /// Acquire a conversation guard.
     ///
     /// This helper struct permits mutations on a conversation.
-    pub async fn conversation_guard(&self, id: &ConversationId) -> Result<ConversationGuard> {
+    pub async fn conversation(&self, id: &ConversationId) -> Result<ConversationGuard> {
         let keystore = self
             .mls_provider()
             .await
@@ -537,7 +537,7 @@ mod tests {
                 assert_eq!(alice_central.get_conversation_unchecked(&id).await.members().len(), 1);
                 let alice_can_send_message = alice_central
                     .context
-                    .conversation_guard(&id)
+                    .conversation(&id)
                     .await
                     .unwrap()
                     .encrypt_message(b"me")
@@ -564,7 +564,7 @@ mod tests {
                 let bob = bob_central.rand_key_package(&case).await;
                 alice_central
                     .context
-                    .conversation_guard(&id)
+                    .conversation(&id)
                     .await
                     .unwrap()
                     .add_members(vec![bob])
@@ -679,7 +679,7 @@ mod tests {
 
                 alice_central
                     .context
-                    .conversation_guard(&id)
+                    .conversation(&id)
                     .await
                     .unwrap()
                     .add_members(bob_and_friends_kps)
@@ -740,7 +740,7 @@ mod tests {
             expected_sizes: [usize; N],
         ) {
             let all_identities = central
-                .conversation_guard(id)
+                .conversation(id)
                 .await
                 .unwrap()
                 .get_user_identities(user_ids)
@@ -753,7 +753,7 @@ mod tests {
             }
             // Not found
             let not_found = central
-                .conversation_guard(id)
+                .conversation(id)
                 .await
                 .unwrap()
                 .get_user_identities(&["aaaaaaaaaaaaa".to_string()])
@@ -762,12 +762,7 @@ mod tests {
             assert!(not_found.is_empty());
 
             // Invalid usage
-            let invalid = central
-                .conversation_guard(id)
-                .await
-                .unwrap()
-                .get_user_identities(&[])
-                .await;
+            let invalid = central.conversation(id).await.unwrap().get_user_identities(&[]).await;
             assert!(matches!(invalid.unwrap_err(), Error::CallerError(_)));
         }
 
@@ -778,7 +773,7 @@ mod tests {
             name_status: &[(&'static str, DeviceStatus); N],
         ) {
             let mut identities = central
-                .conversation_guard(id)
+                .conversation(id)
                 .await
                 .unwrap()
                 .get_device_identities(client_ids)
@@ -798,7 +793,7 @@ mod tests {
 
             assert_eq!(
                 central
-                    .conversation_guard(id)
+                    .conversation(id)
                     .await
                     .unwrap()
                     .e2ei_conversation_state()
@@ -835,7 +830,7 @@ mod tests {
 
                         let mut android_ids = alice_android_central
                             .context
-                            .conversation_guard(&id)
+                            .conversation(&id)
                             .await
                             .unwrap()
                             .get_device_identities(&[android_id.clone(), ios_id.clone()])
@@ -845,7 +840,7 @@ mod tests {
                         assert_eq!(android_ids.len(), 2);
                         let mut ios_ids = alice_ios_central
                             .context
-                            .conversation_guard(&id)
+                            .conversation(&id)
                             .await
                             .unwrap()
                             .get_device_identities(&[android_id.clone(), ios_id.clone()])
@@ -858,7 +853,7 @@ mod tests {
 
                         let android_identities = alice_android_central
                             .context
-                            .conversation_guard(&id)
+                            .conversation(&id)
                             .await
                             .unwrap()
                             .get_device_identities(&[android_id])
@@ -872,7 +867,7 @@ mod tests {
 
                         let ios_identities = alice_android_central
                             .context
-                            .conversation_guard(&id)
+                            .conversation(&id)
                             .await
                             .unwrap()
                             .get_device_identities(&[ios_id])
@@ -886,7 +881,7 @@ mod tests {
 
                         let invalid = alice_android_central
                             .context
-                            .conversation_guard(&id)
+                            .conversation(&id)
                             .await
                             .unwrap()
                             .get_device_identities(&[])
@@ -1021,7 +1016,7 @@ mod tests {
 
                         let mut android_ids = alice_android_central
                             .context
-                            .conversation_guard(&id)
+                            .conversation(&id)
                             .await
                             .unwrap()
                             .get_device_identities(&[android_id.clone(), ios_id.clone()])
@@ -1031,7 +1026,7 @@ mod tests {
 
                         let mut ios_ids = alice_ios_central
                             .context
-                            .conversation_guard(&id)
+                            .conversation(&id)
                             .await
                             .unwrap()
                             .get_device_identities(&[android_id, ios_id])
@@ -1129,7 +1124,7 @@ mod tests {
                         let alice_user_id = alice_android_central.get_user_id().await;
                         let alice_identities = alice_android_central
                             .context
-                            .conversation_guard(&id)
+                            .conversation(&id)
                             .await
                             .unwrap()
                             .get_user_identities(&[alice_user_id.clone()])
@@ -1143,7 +1138,7 @@ mod tests {
                         let bob_user_id = bob_android_central.get_user_id().await;
                         let bob_identities = alice_android_central
                             .context
-                            .conversation_guard(&id)
+                            .conversation(&id)
                             .await
                             .unwrap()
                             .get_user_identities(&[bob_user_id.clone()])
@@ -1220,7 +1215,7 @@ mod tests {
                         let alice_user_id = alice_android_central.get_user_id().await;
                         let alice_identities = alice_android_central
                             .context
-                            .conversation_guard(&id)
+                            .conversation(&id)
                             .await
                             .unwrap()
                             .get_user_identities(&[alice_user_id.clone()])
@@ -1234,7 +1229,7 @@ mod tests {
                         let bob_user_id = bob_android_central.get_user_id().await;
                         let bob_identities = alice_android_central
                             .context
-                            .conversation_guard(&id)
+                            .conversation(&id)
                             .await
                             .unwrap()
                             .get_user_identities(&[bob_user_id.clone()])
@@ -1368,7 +1363,7 @@ mod tests {
                     let key_length = 128;
                     let result = alice_central
                         .context
-                        .conversation_guard(&id)
+                        .conversation(&id)
                         .await
                         .unwrap()
                         .export_secret_key(key_length)
@@ -1394,7 +1389,7 @@ mod tests {
 
                     let result = alice_central
                         .context
-                        .conversation_guard(&id)
+                        .conversation(&id)
                         .await
                         .unwrap()
                         .export_secret_key(usize::MAX)
@@ -1428,7 +1423,7 @@ mod tests {
                     assert_eq!(
                         alice_central
                             .context
-                            .conversation_guard(&id)
+                            .conversation(&id)
                             .await
                             .unwrap()
                             .get_client_ids()
@@ -1441,7 +1436,7 @@ mod tests {
                     assert_eq!(
                         alice_central
                             .context
-                            .conversation_guard(&id)
+                            .conversation(&id)
                             .await
                             .unwrap()
                             .get_client_ids()
@@ -1478,7 +1473,7 @@ mod tests {
 
                     let alice_ext_sender = alice_central
                         .context
-                        .conversation_guard(&id)
+                        .conversation(&id)
                         .await
                         .unwrap()
                         .get_external_sender()

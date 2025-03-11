@@ -272,7 +272,7 @@ mod tests {
                         // Bob produces a commit that Alice will receive only after she tried sending a commit
                         bob_central
                             .context
-                            .conversation_guard(&id)
+                            .conversation(&id)
                             .await
                             .unwrap()
                             .update_key_material()
@@ -307,7 +307,7 @@ mod tests {
                         // Send two commits and process them on bobs side
                         alice_central
                             .context
-                            .conversation_guard(&id)
+                            .conversation(&id)
                             .await
                             .unwrap()
                             .update_key_material()
@@ -316,7 +316,7 @@ mod tests {
                         let commit = retry_provider.latest_commit().await;
                         bob_central
                             .context
-                            .conversation_guard(&id)
+                            .conversation(&id)
                             .await
                             .unwrap()
                             .decrypt_message(&commit.to_bytes().unwrap())
@@ -327,7 +327,7 @@ mod tests {
                         // then success, but now without an intermediate commit
                         alice_central
                             .context
-                            .conversation_guard(&id)
+                            .conversation(&id)
                             .await
                             .unwrap()
                             .add_members(vec![charlie_central.rand_key_package(&case).await])
@@ -336,7 +336,7 @@ mod tests {
                         let commit = retry_provider.latest_commit().await;
                         bob_central
                             .context
-                            .conversation_guard(&id)
+                            .conversation(&id)
                             .await
                             .unwrap()
                             .decrypt_message(&commit.to_bytes().unwrap())
@@ -382,7 +382,7 @@ mod tests {
                         .unwrap();
                     alice_central
                         .context
-                        .conversation_guard(&id)
+                        .conversation(&id)
                         .await
                         .unwrap()
                         .add_members(vec![bob.clone()])
@@ -400,7 +400,7 @@ mod tests {
                         .unwrap();
                     alice_central
                         .context
-                        .conversation_guard(&id)
+                        .conversation(&id)
                         .await
                         .unwrap()
                         .add_members(vec![bob])
@@ -450,7 +450,7 @@ mod tests {
                     let bob = bob_central.rand_key_package(&case).await;
                     alice_central
                         .context
-                        .conversation_guard(&id)
+                        .conversation(&id)
                         .await
                         .unwrap()
                         .add_members(vec![bob])
@@ -493,7 +493,7 @@ mod tests {
                         let bob = bob_central.rand_key_package(&case).await;
                         alice_central
                             .context
-                            .conversation_guard(&id)
+                            .conversation(&id)
                             .await
                             .unwrap()
                             .add_members(vec![bob])
@@ -536,7 +536,7 @@ mod tests {
 
                     alice_central
                         .context
-                        .conversation_guard(&id)
+                        .conversation(&id)
                         .await
                         .unwrap()
                         .remove_members(&[bob_central.get_client_id().await])
@@ -550,7 +550,7 @@ mod tests {
 
                     bob_central
                         .context
-                        .conversation_guard(&id)
+                        .conversation(&id)
                         .await
                         .unwrap()
                         .decrypt_message(commit.to_bytes().unwrap())
@@ -559,7 +559,7 @@ mod tests {
 
                     // But has been removed from the conversation
                     assert!(matches!(
-                       bob_central.context.conversation_guard(&id).await.unwrap_err(),
+                       bob_central.context.conversation(&id).await.unwrap_err(),
                         mls::conversation::error::Error::Leaf(LeafError::ConversationNotFound(conv_id)) if conv_id == id
                     ));
                     assert!(alice_central.try_talk_to(&id, &bob_central).await.is_err());
@@ -592,7 +592,7 @@ mod tests {
                             .unwrap();
                         bob_central
                             .context
-                            .conversation_guard(&id)
+                            .conversation(&id)
                             .await
                             .unwrap()
                             .decrypt_message(proposal.proposal.to_bytes().unwrap())
@@ -601,7 +601,7 @@ mod tests {
 
                         alice_central
                             .context
-                            .conversation_guard(&id)
+                            .conversation(&id)
                             .await
                             .unwrap()
                             .remove_members(&[bob_central.get_client_id().await])
@@ -643,7 +643,7 @@ mod tests {
 
                         alice_central
                             .context
-                            .conversation_guard(&id)
+                            .conversation(&id)
                             .await
                             .unwrap()
                             .remove_members(&[bob_central.get_client_id().await])
@@ -706,7 +706,7 @@ mod tests {
                     // proposing the key update for alice
                     alice_central
                         .context
-                        .conversation_guard(&id)
+                        .conversation(&id)
                         .await
                         .unwrap()
                         .update_key_material()
@@ -734,7 +734,7 @@ mod tests {
                     // receiving the commit on bob's side (updating key from alice)
                     bob_central
                         .context
-                        .conversation_guard(&id)
+                        .conversation(&id)
                         .await
                         .unwrap()
                         .decrypt_message(&commit.to_bytes().unwrap())
@@ -802,7 +802,7 @@ mod tests {
                         // receiving the proposal on Bob's side
                         bob_central
                             .context
-                            .conversation_guard(&id)
+                            .conversation(&id)
                             .await
                             .unwrap()
                             .decrypt_message(add_charlie_proposal.proposal.to_bytes().unwrap())
@@ -820,7 +820,7 @@ mod tests {
                         // performing an update on Alice's key. this should generate a welcome for Charlie
                         alice_central
                             .context
-                            .conversation_guard(&id)
+                            .conversation(&id)
                             .await
                             .unwrap()
                             .update_key_material()
@@ -859,7 +859,7 @@ mod tests {
                         // receiving the key update and the charlie's addition to the group
                         bob_central
                             .context
-                            .conversation_guard(&id)
+                            .conversation(&id)
                             .await
                             .unwrap()
                             .decrypt_message(&commit.to_bytes().unwrap())
@@ -908,7 +908,7 @@ mod tests {
                             .proposal;
                         bob_central
                             .context
-                            .conversation_guard(&id)
+                            .conversation(&id)
                             .await
                             .unwrap()
                             .decrypt_message(proposal.to_bytes().unwrap())
@@ -917,7 +917,7 @@ mod tests {
 
                         alice_central
                             .context
-                            .conversation_guard(&id)
+                            .conversation(&id)
                             .await
                             .unwrap()
                             .update_key_material()
@@ -928,7 +928,7 @@ mod tests {
 
                         bob_central
                             .context
-                            .conversation_guard(&id)
+                            .conversation(&id)
                             .await
                             .unwrap()
                             .decrypt_message(commit.to_bytes().unwrap())
@@ -970,7 +970,7 @@ mod tests {
 
                         alice_central
                             .context
-                            .conversation_guard(&id)
+                            .conversation(&id)
                             .await
                             .unwrap()
                             .update_key_material()
@@ -1018,7 +1018,7 @@ mod tests {
                         assert_eq!(alice_central.get_conversation_unchecked(&id).await.members().len(), 1);
                         alice_central
                             .context
-                            .conversation_guard(&id)
+                            .conversation(&id)
                             .await
                             .unwrap()
                             .commit_pending_proposals()
@@ -1063,7 +1063,7 @@ mod tests {
                         assert_eq!(bob_central.get_conversation_unchecked(&id).await.members().len(), 2);
                         alice_central
                             .context
-                            .conversation_guard(&id)
+                            .conversation(&id)
                             .await
                             .unwrap()
                             .decrypt_message(proposal.proposal.to_bytes().unwrap())
@@ -1072,7 +1072,7 @@ mod tests {
 
                         alice_central
                             .context
-                            .conversation_guard(&id)
+                            .conversation(&id)
                             .await
                             .unwrap()
                             .commit_pending_proposals()
@@ -1083,7 +1083,7 @@ mod tests {
 
                         bob_central
                             .context
-                            .conversation_guard(&id)
+                            .conversation(&id)
                             .await
                             .unwrap()
                             .decrypt_message(commit.to_bytes().unwrap())
@@ -1115,7 +1115,7 @@ mod tests {
                         .unwrap();
                     alice_central
                         .context
-                        .conversation_guard(&id)
+                        .conversation(&id)
                         .await
                         .unwrap()
                         .commit_pending_proposals()
@@ -1156,7 +1156,7 @@ mod tests {
                             .unwrap();
                         alice_central
                             .context
-                            .conversation_guard(&id)
+                            .conversation(&id)
                             .await
                             .unwrap()
                             .commit_pending_proposals()
@@ -1196,7 +1196,7 @@ mod tests {
 
                     alice_central
                         .context
-                        .conversation_guard(&id)
+                        .conversation(&id)
                         .await
                         .unwrap()
                         .update_key_material()
@@ -1206,7 +1206,7 @@ mod tests {
                     let commit1 = commit1.to_bytes().unwrap();
                     alice_central
                         .context
-                        .conversation_guard(&id)
+                        .conversation(&id)
                         .await
                         .unwrap()
                         .update_key_material()
@@ -1218,7 +1218,7 @@ mod tests {
                     // fails when a commit is skipped
                     let out_of_order = bob_central
                         .context
-                        .conversation_guard(&id)
+                        .conversation(&id)
                         .await
                         .unwrap()
                         .decrypt_message(&commit2)
@@ -1229,7 +1229,7 @@ mod tests {
                     // NB: here 'commit2' has been buffered so it is also applied when we decrypt commit1
                     bob_central
                         .context
-                        .conversation_guard(&id)
+                        .conversation(&id)
                         .await
                         .unwrap()
                         .decrypt_message(&commit1)
@@ -1239,7 +1239,7 @@ mod tests {
                     // and then fails again when trying to decrypt a commit with an epoch in the past
                     let past_commit = bob_central
                         .context
-                        .conversation_guard(&id)
+                        .conversation(&id)
                         .await
                         .unwrap()
                         .decrypt_message(&commit1)
@@ -1276,7 +1276,7 @@ mod tests {
 
                     alice_central
                         .context
-                        .conversation_guard(&id)
+                        .conversation(&id)
                         .await
                         .unwrap()
                         .update_key_material()
@@ -1288,7 +1288,7 @@ mod tests {
                     // replayed encrypted proposal should fail
                     bob_central
                         .context
-                        .conversation_guard(&id)
+                        .conversation(&id)
                         .await
                         .unwrap()
                         .decrypt_message(proposal1.to_bytes().unwrap())
@@ -1297,7 +1297,7 @@ mod tests {
                     assert!(matches!(
                         bob_central
                             .context
-                            .conversation_guard(&id)
+                            .conversation(&id)
                             .await
                             .unwrap()
                             .decrypt_message(proposal2.to_bytes().unwrap())
@@ -1314,7 +1314,7 @@ mod tests {
                     // replayed encrypted commit should fail
                     bob_central
                         .context
-                        .conversation_guard(&id)
+                        .conversation(&id)
                         .await
                         .unwrap()
                         .decrypt_message(commit1.to_bytes().unwrap())
@@ -1323,7 +1323,7 @@ mod tests {
                     assert!(matches!(
                         bob_central
                             .context
-                            .conversation_guard(&id)
+                            .conversation(&id)
                             .await
                             .unwrap()
                             .decrypt_message(commit2.to_bytes().unwrap())

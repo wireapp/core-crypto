@@ -318,7 +318,7 @@ impl CoreCryptoContext {
         let context = self.inner.clone();
         future_to_promise(
             async move {
-                let conversation = context.conversation_guard(&conversation_id).await?;
+                let conversation = context.conversation(&conversation_id).await?;
                 WasmCryptoResult::Ok(conversation.epoch().await.into())
             }
             .err_into(),
@@ -332,12 +332,7 @@ impl CoreCryptoContext {
         let context = self.inner.clone();
         future_to_promise(
             async move {
-                let ciphersuite: Ciphersuite = context
-                    .conversation_guard(&conversation_id)
-                    .await?
-                    .ciphersuite()
-                    .await
-                    .into();
+                let ciphersuite: Ciphersuite = context.conversation(&conversation_id).await?.ciphersuite().await.into();
                 WasmCryptoResult::Ok(ciphersuite.into())
             }
             .err_into(),
@@ -403,7 +398,7 @@ impl CoreCryptoContext {
                     .collect::<CoreCryptoResult<Vec<_>>>()?;
 
                 let new_crl_distribution_point = context
-                    .conversation_guard(&conversation_id)
+                    .conversation(&conversation_id)
                     .await?
                     .add_members(key_packages)
                     .await?;
@@ -432,7 +427,7 @@ impl CoreCryptoContext {
                     .collect::<Vec<ClientId>>();
 
                 context
-                    .conversation_guard(&conversation_id)
+                    .conversation(&conversation_id)
                     .await
                     .map_err(CoreCryptoError::from)?
                     .remove_members(&clients)
@@ -453,7 +448,7 @@ impl CoreCryptoContext {
         future_to_promise(
             async move {
                 context
-                    .conversation_guard(&child_id.into())
+                    .conversation(&child_id.into())
                     .await?
                     .mark_as_child_of(&parent_id.into())
                     .await?;
@@ -471,7 +466,7 @@ impl CoreCryptoContext {
         future_to_promise(
             async move {
                 context
-                    .conversation_guard(&conversation_id)
+                    .conversation(&conversation_id)
                     .await
                     .map_err(CoreCryptoError::from)?
                     .update_key_material()
@@ -491,7 +486,7 @@ impl CoreCryptoContext {
         future_to_promise(
             async move {
                 context
-                    .conversation_guard(&conversation_id)
+                    .conversation(&conversation_id)
                     .await?
                     .commit_pending_proposals()
                     .await?;
@@ -526,7 +521,7 @@ impl CoreCryptoContext {
         future_to_promise(
             async move {
                 let result = context
-                    .conversation_guard(&conversation_id)
+                    .conversation(&conversation_id)
                     .await?
                     .decrypt_message(&payload)
                     .await;
@@ -551,7 +546,7 @@ impl CoreCryptoContext {
         future_to_promise(
             async move {
                 let ciphertext = context
-                    .conversation_guard(&conversation_id)
+                    .conversation(&conversation_id)
                     .await?
                     .encrypt_message(message)
                     .await
@@ -616,7 +611,7 @@ impl CoreCryptoContext {
         future_to_promise(
             async move {
                 let key = context
-                    .conversation_guard(&conversation_id.to_vec())
+                    .conversation(&conversation_id.to_vec())
                     .await?
                     .export_secret_key(key_length)
                     .await
@@ -635,7 +630,7 @@ impl CoreCryptoContext {
         future_to_promise(
             async move {
                 let ext_sender = context
-                    .conversation_guard(&id.to_vec())
+                    .conversation(&id.to_vec())
                     .await?
                     .get_external_sender()
                     .await
@@ -654,7 +649,7 @@ impl CoreCryptoContext {
         future_to_promise(
             async move {
                 let client_ids = context
-                    .conversation_guard(&conversation_id.to_vec())
+                    .conversation(&conversation_id.to_vec())
                     .await?
                     .get_client_ids()
                     .await;

@@ -147,7 +147,7 @@ impl PendingConversation {
         let id = self.id();
 
         // This is the now merged conversation
-        let conversation = context.conversation_guard(id).await?;
+        let conversation = context.conversation(id).await?;
         let conversation = conversation.conversation().await;
         let own_leaf = conversation.group.own_leaf().ok_or(LeafError::InternalMlsError)?;
 
@@ -239,7 +239,7 @@ impl PendingConversation {
             .insert(id.clone(), conversation);
 
         // This is the now merged conversation
-        let mut conversation = context.conversation_guard(id).await?;
+        let mut conversation = context.conversation(id).await?;
         let pending_messages = conversation
             .restore_pending_messages(restore_policy)
             .await
@@ -308,7 +308,7 @@ mod tests {
                     // Alice decrypts the external commit...
                     alice_central
                         .context
-                        .conversation_guard(&id)
+                        .conversation(&id)
                         .await
                         .unwrap()
                         .decrypt_message(external_commit.commit.to_bytes().unwrap())
@@ -316,13 +316,7 @@ mod tests {
                         .unwrap();
 
                     // Meanwhile Debbie joins the party by creating an external proposal
-                    let epoch = alice_central
-                        .context
-                        .conversation_guard(&id)
-                        .await
-                        .unwrap()
-                        .epoch()
-                        .await;
+                    let epoch = alice_central.context.conversation(&id).await.unwrap().epoch().await;
                     let external_proposal = debbie_central
                         .context
                         .new_external_add_proposal(id.clone(), epoch.into(), case.ciphersuite(), case.credential_type)
@@ -332,7 +326,7 @@ mod tests {
                     // ...then Alice generates new messages for this epoch
                     let app_msg = alice_central
                         .context
-                        .conversation_guard(&id)
+                        .conversation(&id)
                         .await
                         .unwrap()
                         .encrypt_message(b"Hello Bob !")
@@ -341,7 +335,7 @@ mod tests {
                     let proposal = alice_central.context.new_update_proposal(&id).await.unwrap().proposal;
                     alice_central
                         .context
-                        .conversation_guard(&id)
+                        .conversation(&id)
                         .await
                         .unwrap()
                         .decrypt_message(external_proposal.to_bytes().unwrap())
@@ -350,7 +344,7 @@ mod tests {
                     let charlie = charlie_central.rand_key_package(&case).await;
                     alice_central
                         .context
-                        .conversation_guard(&id)
+                        .conversation(&id)
                         .await
                         .unwrap()
                         .add_members(vec![charlie])
@@ -375,7 +369,7 @@ mod tests {
                         .into_iter()
                         .map(|m| m.to_bytes().unwrap());
                     let Err(Error::PendingConversation(mut pending_conversation)) =
-                        bob_central.context.conversation_guard(&id).await
+                        bob_central.context.conversation(&id).await
                     else {
                         panic!("Bob should not have the conversation yet")
                     };
@@ -456,7 +450,7 @@ mod tests {
                     // Alice will never see this commit
                     bob_central
                         .context
-                        .conversation_guard(&id)
+                        .conversation(&id)
                         .await
                         .unwrap()
                         .update_key_material()
@@ -465,7 +459,7 @@ mod tests {
 
                     let msg1 = bob_central
                         .context
-                        .conversation_guard(&id)
+                        .conversation(&id)
                         .await
                         .unwrap()
                         .encrypt_message("A")
@@ -473,7 +467,7 @@ mod tests {
                         .unwrap();
                     let msg2 = bob_central
                         .context
-                        .conversation_guard(&id)
+                        .conversation(&id)
                         .await
                         .unwrap()
                         .encrypt_message("B")
@@ -483,7 +477,7 @@ mod tests {
                     // Since Alice missed Bob's commit she should buffer this message
                     let decrypt = alice_central
                         .context
-                        .conversation_guard(&id)
+                        .conversation(&id)
                         .await
                         .unwrap()
                         .decrypt_message(msg1)
@@ -494,7 +488,7 @@ mod tests {
                     ));
                     let decrypt = alice_central
                         .context
-                        .conversation_guard(&id)
+                        .conversation(&id)
                         .await
                         .unwrap()
                         .decrypt_message(msg2)
@@ -516,7 +510,7 @@ mod tests {
 
                     bob_central
                         .context
-                        .conversation_guard(&id)
+                        .conversation(&id)
                         .await
                         .unwrap()
                         .decrypt_message(ext_commit.commit.to_bytes().unwrap())

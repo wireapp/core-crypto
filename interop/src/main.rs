@@ -184,7 +184,7 @@ async fn run_mls_test(chrome_driver_addr: &std::net::SocketAddr) -> Result<()> {
     let spinner = util::RunningProcess::new("[MLS] Step 2: Adding clients to conversation...", true);
 
     transaction
-        .conversation_guard(&conversation_id)
+        .conversation(&conversation_id)
         .await?
         .add_members(key_packages)
         .await?;
@@ -216,7 +216,7 @@ async fn run_mls_test(chrome_driver_addr: &std::net::SocketAddr) -> Result<()> {
         );
 
         let mut message_to_decrypt = transaction
-            .conversation_guard(&conversation_id)
+            .conversation(&conversation_id)
             .await?
             .encrypt_message(&message)
             .await?;
@@ -254,7 +254,7 @@ async fn run_mls_test(chrome_driver_addr: &std::net::SocketAddr) -> Result<()> {
         }
 
         let decrypted_master_raw = transaction
-            .conversation_guard(&conversation_id)
+            .conversation(&conversation_id)
             .await
             .unwrap()
             .decrypt_message(message_to_decrypt)

@@ -197,7 +197,7 @@ mod tests {
                         // Bob hasn't Alice's proposal but creates a commit
                         bob_central
                             .context
-                            .conversation_guard(&id)
+                            .conversation(&id)
                             .await
                             .unwrap()
                             .update_key_material()
@@ -207,7 +207,7 @@ mod tests {
 
                         let proposals = alice_central
                             .context
-                            .conversation_guard(&id)
+                            .conversation(&id)
                             .await
                             .unwrap()
                             .decrypt_message(commit.to_bytes().unwrap())
@@ -221,7 +221,7 @@ mod tests {
                         // It should also renew the proposal when in pending_commit
                         bob_central
                             .context
-                            .conversation_guard(&id)
+                            .conversation(&id)
                             .await
                             .unwrap()
                             .update_key_material()
@@ -230,7 +230,7 @@ mod tests {
                         let commit = bob_central.mls_transport.latest_commit().await;
                         let proposals = alice_central
                             .context
-                            .conversation_guard(&id)
+                            .conversation(&id)
                             .await
                             .unwrap()
                             .decrypt_message(commit.to_bytes().unwrap())
@@ -270,7 +270,7 @@ mod tests {
                         // Bob has Alice's update proposal
                         bob_central
                             .context
-                            .conversation_guard(&id)
+                            .conversation(&id)
                             .await
                             .unwrap()
                             .decrypt_message(proposal.to_bytes().unwrap())
@@ -279,7 +279,7 @@ mod tests {
 
                         bob_central
                             .context
-                            .conversation_guard(&id)
+                            .conversation(&id)
                             .await
                             .unwrap()
                             .update_key_material()
@@ -290,7 +290,7 @@ mod tests {
                         // Bob's commit has Alice's proposal
                         let proposals = alice_central
                             .context
-                            .conversation_guard(&id)
+                            .conversation(&id)
                             .await
                             .unwrap()
                             .decrypt_message(commit.to_bytes().unwrap())
@@ -304,7 +304,7 @@ mod tests {
                         let proposal = alice_central.context.new_update_proposal(&id).await.unwrap().proposal;
                         bob_central
                             .context
-                            .conversation_guard(&id)
+                            .conversation(&id)
                             .await
                             .unwrap()
                             .decrypt_message(proposal.to_bytes().unwrap())
@@ -312,7 +312,7 @@ mod tests {
                             .unwrap();
                         bob_central
                             .context
-                            .conversation_guard(&id)
+                            .conversation(&id)
                             .await
                             .unwrap()
                             .update_key_material()
@@ -321,7 +321,7 @@ mod tests {
                         let commit = bob_central.mls_transport.latest_commit().await;
                         let proposals = alice_central
                             .context
-                            .conversation_guard(&id)
+                            .conversation(&id)
                             .await
                             .unwrap()
                             .decrypt_message(commit.to_bytes().unwrap())
@@ -360,7 +360,7 @@ mod tests {
                         assert!(alice_central.pending_proposals(&id).await.is_empty());
                         alice_central
                             .context
-                            .conversation_guard(&id)
+                            .conversation(&id)
                             .await
                             .unwrap()
                             .decrypt_message(proposal.to_bytes().unwrap())
@@ -371,7 +371,7 @@ mod tests {
                         // Charlie does not have other proposals, it creates a commit
                         charlie_central
                             .context
-                            .conversation_guard(&id)
+                            .conversation(&id)
                             .await
                             .unwrap()
                             .update_key_material()
@@ -380,7 +380,7 @@ mod tests {
                         let commit = charlie_central.mls_transport.latest_commit().await;
                         let proposals = alice_central
                             .context
-                            .conversation_guard(&id)
+                            .conversation(&id)
                             .await
                             .unwrap()
                             .decrypt_message(commit.to_bytes().unwrap())
@@ -424,7 +424,7 @@ mod tests {
                         let charlie = charlie_central.rand_key_package(&case).await;
                         bob_central
                             .context
-                            .conversation_guard(&id)
+                            .conversation(&id)
                             .await
                             .unwrap()
                             .add_members(vec![charlie])
@@ -433,7 +433,7 @@ mod tests {
                         let commit = bob_central.mls_transport.latest_commit().await;
                         let proposals = alice_central
                             .context
-                            .conversation_guard(&id)
+                            .conversation(&id)
                             .await
                             .unwrap()
                             .decrypt_message(commit.to_bytes().unwrap())
@@ -477,7 +477,7 @@ mod tests {
                         let charlie = charlie_central.rand_key_package(&case).await;
                         bob_central
                             .context
-                            .conversation_guard(&id)
+                            .conversation(&id)
                             .await
                             .unwrap()
                             .add_members(vec![charlie])
@@ -486,7 +486,7 @@ mod tests {
                         let commit = bob_central.mls_transport.latest_commit().await;
                         let proposals = alice_central
                             .context
-                            .conversation_guard(&id)
+                            .conversation(&id)
                             .await
                             .unwrap()
                             .decrypt_message(commit.to_bytes().unwrap())
@@ -531,7 +531,7 @@ mod tests {
                             .proposal;
                         alice_central
                             .context
-                            .conversation_guard(&id)
+                            .conversation(&id)
                             .await
                             .unwrap()
                             .decrypt_message(proposal.to_bytes().unwrap())
@@ -542,7 +542,7 @@ mod tests {
                         // But Charlie will commit meanwhile
                         charlie_central
                             .context
-                            .conversation_guard(&id)
+                            .conversation(&id)
                             .await
                             .unwrap()
                             .update_key_material()
@@ -551,7 +551,7 @@ mod tests {
                         let commit = charlie_central.mls_transport.latest_commit().await;
                         let proposals = alice_central
                             .context
-                            .conversation_guard(&id)
+                            .conversation(&id)
                             .await
                             .unwrap()
                             .decrypt_message(commit.to_bytes().unwrap())
@@ -592,7 +592,7 @@ mod tests {
                         // But meanwhile Bob will create a commit without Alice's proposal
                         bob_central
                             .context
-                            .conversation_guard(&id)
+                            .conversation(&id)
                             .await
                             .unwrap()
                             .update_key_material()
@@ -601,7 +601,7 @@ mod tests {
                         let commit = bob_central.mls_transport.latest_commit().await;
                         let proposals = alice_central
                             .context
-                            .conversation_guard(&id)
+                            .conversation(&id)
                             .await
                             .unwrap()
                             .decrypt_message(commit.to_bytes().unwrap())
@@ -617,7 +617,7 @@ mod tests {
                         assert!(alice_central.pending_commit(&id).await.is_some());
                         bob_central
                             .context
-                            .conversation_guard(&id)
+                            .conversation(&id)
                             .await
                             .unwrap()
                             .update_key_material()
@@ -626,7 +626,7 @@ mod tests {
                         let commit = bob_central.mls_transport.latest_commit().await;
                         let proposals = alice_central
                             .context
-                            .conversation_guard(&id)
+                            .conversation(&id)
                             .await
                             .unwrap()
                             .decrypt_message(commit.to_bytes().unwrap())
@@ -666,7 +666,7 @@ mod tests {
                         // But meanwhile Bob will create a commit
                         bob_central
                             .context
-                            .conversation_guard(&id)
+                            .conversation(&id)
                             .await
                             .unwrap()
                             .update_key_material()
@@ -675,7 +675,7 @@ mod tests {
                         let commit = bob_central.mls_transport.latest_commit().await;
                         let proposals = alice_central
                             .context
-                            .conversation_guard(&id)
+                            .conversation(&id)
                             .await
                             .unwrap()
                             .decrypt_message(commit.to_bytes().unwrap())
@@ -724,7 +724,7 @@ mod tests {
 
                         bob_central
                             .context
-                            .conversation_guard(&id)
+                            .conversation(&id)
                             .await
                             .unwrap()
                             .remove_members(&[charlie_central.get_client_id().await])
@@ -733,7 +733,7 @@ mod tests {
                         let commit = bob_central.mls_transport.latest_commit().await;
                         let proposals = alice_central
                             .context
-                            .conversation_guard(&id)
+                            .conversation(&id)
                             .await
                             .unwrap()
                             .decrypt_message(commit.to_bytes().unwrap())
@@ -777,7 +777,7 @@ mod tests {
                         assert!(alice_central.pending_proposals(&id).await.is_empty());
                         alice_central
                             .context
-                            .conversation_guard(&id)
+                            .conversation(&id)
                             .await
                             .unwrap()
                             .decrypt_message(proposal.to_bytes().unwrap())
@@ -787,7 +787,7 @@ mod tests {
 
                         charlie_central
                             .context
-                            .conversation_guard(&id)
+                            .conversation(&id)
                             .await
                             .unwrap()
                             .update_key_material()
@@ -796,7 +796,7 @@ mod tests {
                         let commit = charlie_central.mls_transport.latest_commit().await;
                         let proposals = alice_central
                             .context
-                            .conversation_guard(&id)
+                            .conversation(&id)
                             .await
                             .unwrap()
                             .decrypt_message(commit.to_bytes().unwrap())
@@ -843,7 +843,7 @@ mod tests {
                         // Whereas Bob wants to remove Debbie
                         bob_central
                             .context
-                            .conversation_guard(&id)
+                            .conversation(&id)
                             .await
                             .unwrap()
                             .remove_members(&[debbie_central.get_client_id().await])
@@ -852,7 +852,7 @@ mod tests {
                         let commit = bob_central.mls_transport.latest_commit().await;
                         let proposals = alice_central
                             .context
-                            .conversation_guard(&id)
+                            .conversation(&id)
                             .await
                             .unwrap()
                             .decrypt_message(commit.to_bytes().unwrap())
@@ -899,7 +899,7 @@ mod tests {
                         // Whereas Bob wants to remove Debbie
                         bob_central
                             .context
-                            .conversation_guard(&id)
+                            .conversation(&id)
                             .await
                             .unwrap()
                             .remove_members(&[debbie_central.get_client_id().await])
@@ -908,7 +908,7 @@ mod tests {
                         let commit = bob_central.mls_transport.latest_commit().await;
                         let proposals = alice_central
                             .context
-                            .conversation_guard(&id)
+                            .conversation(&id)
                             .await
                             .unwrap()
                             .decrypt_message(commit.to_bytes().unwrap())
@@ -954,7 +954,7 @@ mod tests {
                         // Whereas Bob wants to remove Debbie
                         bob_central
                             .context
-                            .conversation_guard(&id)
+                            .conversation(&id)
                             .await
                             .unwrap()
                             .remove_members(&[debbie_central.get_client_id().await])
@@ -963,7 +963,7 @@ mod tests {
                         let commit = bob_central.mls_transport.latest_commit().await;
                         let proposals = alice_central
                             .context
-                            .conversation_guard(&id)
+                            .conversation(&id)
                             .await
                             .unwrap()
                             .decrypt_message(commit.to_bytes().unwrap())

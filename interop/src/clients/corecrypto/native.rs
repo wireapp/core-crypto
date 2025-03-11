@@ -131,7 +131,7 @@ impl EmulatedMlsClient for CoreCryptoNativeClient {
 
         let kp = KeyPackageIn::tls_deserialize(&mut &kp[..])?;
         transaction
-            .conversation_guard(&conversation_id)
+            .conversation(&conversation_id)
             .await?
             .add_members(vec![kp])
             .await?;
@@ -143,7 +143,7 @@ impl EmulatedMlsClient for CoreCryptoNativeClient {
     async fn kick_client(&self, conversation_id: &[u8], client_id: &[u8]) -> Result<()> {
         let transaction = self.cc.new_transaction().await?;
         transaction
-            .conversation_guard(&conversation_id.to_owned())
+            .conversation(&conversation_id.to_owned())
             .await?
             .remove_members(&[client_id.to_owned().into()])
             .await?;
@@ -166,7 +166,7 @@ impl EmulatedMlsClient for CoreCryptoNativeClient {
     async fn encrypt_message(&self, conversation_id: &[u8], message: &[u8]) -> Result<Vec<u8>> {
         let transaction = self.cc.new_transaction().await?;
         let result = transaction
-            .conversation_guard(&conversation_id.to_vec())
+            .conversation(&conversation_id.to_vec())
             .await?
             .encrypt_message(message)
             .await?;
@@ -177,7 +177,7 @@ impl EmulatedMlsClient for CoreCryptoNativeClient {
     async fn decrypt_message(&self, conversation_id: &[u8], message: &[u8]) -> Result<Option<Vec<u8>>> {
         let transaction = self.cc.new_transaction().await?;
         let result = transaction
-            .conversation_guard(&conversation_id.to_vec())
+            .conversation(&conversation_id.to_vec())
             .await?
             .decrypt_message(message)
             .await?

@@ -14,7 +14,7 @@ impl CentralContext {
     /// KeyStore errors, such as IO
     #[cfg_attr(test, crate::dispotent)]
     pub async fn wipe_conversation(&self, id: &ConversationId) -> Result<()> {
-        self.conversation_guard(id).await?.wipe().await
+        self.conversation(id).await?.wipe().await
     }
 }
 

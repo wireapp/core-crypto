@@ -57,7 +57,7 @@ fn encrypt_message_bench(c: &mut Criterion) {
                         let context = central.new_transaction().await.unwrap();
                         black_box(
                             context
-                                .conversation_guard(&id)
+                                .conversation(&id)
                                 .await
                                 .unwrap()
                                 .encrypt_message(text)
@@ -122,15 +122,7 @@ fn add_client_bench(c: &mut Criterion) {
                     },
                     |(central, id, kps)| async move {
                         let context = central.new_transaction().await.unwrap();
-                        black_box(
-                            context
-                                .conversation_guard(&id)
-                                .await
-                                .unwrap()
-                                .add_members(kps)
-                                .await
-                                .unwrap(),
-                        );
+                        black_box(context.conversation(&id).await.unwrap().add_members(kps).await.unwrap());
                         context.finish().await.unwrap();
                         black_box(());
                     },
@@ -189,7 +181,7 @@ fn remove_client_bench(c: &mut Criterion) {
                         let context = central.new_transaction().await.unwrap();
                         black_box(
                             context
-                                .conversation_guard(&id)
+                                .conversation(&id)
                                 .await
                                 .unwrap()
                                 .remove_members(client_ids.as_slice())
@@ -258,7 +250,7 @@ fn update_client_bench(c: &mut Criterion) {
                         let context = central.new_transaction().await.unwrap();
                         black_box(
                             context
-                                .conversation_guard(&id)
+                                .conversation(&id)
                                 .await
                                 .unwrap()
                                 .update_key_material()

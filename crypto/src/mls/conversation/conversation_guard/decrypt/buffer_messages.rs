@@ -170,7 +170,7 @@ mod tests {
                     // Alice decrypts the commit...
                     alice_central
                         .context
-                        .conversation_guard(&id)
+                        .conversation(&id)
                         .await
                         .unwrap()
                         .decrypt_message(unmerged_commit.commit.to_bytes().unwrap())
@@ -178,13 +178,7 @@ mod tests {
                         .unwrap();
 
                     // Meanwhile Debbie joins the party by creating an external proposal
-                    let epoch = alice_central
-                        .context
-                        .conversation_guard(&id)
-                        .await
-                        .unwrap()
-                        .epoch()
-                        .await;
+                    let epoch = alice_central.context.conversation(&id).await.unwrap().epoch().await;
                     let external_proposal = debbie_central
                         .context
                         .new_external_add_proposal(id.clone(), epoch.into(), case.ciphersuite(), case.credential_type)
@@ -194,7 +188,7 @@ mod tests {
                     // ...then Alice generates new messages for this epoch
                     let app_msg = alice_central
                         .context
-                        .conversation_guard(&id)
+                        .conversation(&id)
                         .await
                         .unwrap()
                         .encrypt_message(b"Hello Bob !")
@@ -203,7 +197,7 @@ mod tests {
                     let proposal = alice_central.context.new_update_proposal(&id).await.unwrap().proposal;
                     alice_central
                         .context
-                        .conversation_guard(&id)
+                        .conversation(&id)
                         .await
                         .unwrap()
                         .decrypt_message(external_proposal.to_bytes().unwrap())
@@ -212,7 +206,7 @@ mod tests {
                     let charlie = charlie_central.rand_key_package(&case).await;
                     alice_central
                         .context
-                        .conversation_guard(&id)
+                        .conversation(&id)
                         .await
                         .unwrap()
                         .add_members(vec![charlie])
@@ -239,7 +233,7 @@ mod tests {
                     for m in messages {
                         let decrypt = bob_central
                             .context
-                            .conversation_guard(&id)
+                            .conversation(&id)
                             .await
                             .unwrap()
                             .decrypt_message(m)
@@ -248,7 +242,7 @@ mod tests {
                     }
                     let decrypt = bob_central
                         .context
-                        .conversation_guard(&id)
+                        .conversation(&id)
                         .await
                         .unwrap()
                         .decrypt_message(app_msg)
@@ -264,7 +258,7 @@ mod tests {
                         ..
                     } = bob_central
                         .context
-                        .conversation_guard(&id)
+                        .conversation(&id)
                         .await
                         .unwrap()
                         .decrypt_message(unmerged_commit.commit.to_bytes().unwrap())
@@ -341,7 +335,7 @@ mod tests {
                     // And before others had the chance to get the commit, Bob will create & send messages in the next epoch
                     // which Alice will have to buffer until she receives the commit.
                     // This simulates what the DS does with unordered messages
-                    let epoch = bob_central.context.conversation_guard(&id).await.unwrap().epoch().await;
+                    let epoch = bob_central.context.conversation(&id).await.unwrap().epoch().await;
                     let external_proposal = charlie_central
                         .context
                         .new_external_add_proposal(id.clone(), epoch.into(), case.ciphersuite(), case.credential_type)
@@ -349,7 +343,7 @@ mod tests {
                         .unwrap();
                     let app_msg = bob_central
                         .context
-                        .conversation_guard(&id)
+                        .conversation(&id)
                         .await
                         .unwrap()
                         .encrypt_message(b"Hello Alice !")
@@ -358,7 +352,7 @@ mod tests {
                     let proposal = bob_central.context.new_update_proposal(&id).await.unwrap().proposal;
                     bob_central
                         .context
-                        .conversation_guard(&id)
+                        .conversation(&id)
                         .await
                         .unwrap()
                         .decrypt_message(external_proposal.to_bytes().unwrap())
@@ -367,7 +361,7 @@ mod tests {
                     let debbie = debbie_central.rand_key_package(&case).await;
                     bob_central
                         .context
-                        .conversation_guard(&id)
+                        .conversation(&id)
                         .await
                         .unwrap()
                         .add_members(vec![debbie])
@@ -394,7 +388,7 @@ mod tests {
                     for m in messages {
                         let decrypt = alice_central
                             .context
-                            .conversation_guard(&id)
+                            .conversation(&id)
                             .await
                             .unwrap()
                             .decrypt_message(m)
@@ -403,7 +397,7 @@ mod tests {
                     }
                     let decrypt = alice_central
                         .context
-                        .conversation_guard(&id)
+                        .conversation(&id)
                         .await
                         .unwrap()
                         .decrypt_message(app_msg)
@@ -418,7 +412,7 @@ mod tests {
 
                     let Some(restored_messages) = alice_central
                         .context
-                        .conversation_guard(&id)
+                        .conversation(&id)
                         .await
                         .unwrap()
                         .decrypt_message(original_commit)
@@ -559,7 +553,7 @@ mod tests {
                     println!("observer executing first proposal");
                     observer
                         .context
-                        .conversation_guard(&conv_id)
+                        .conversation(&conv_id)
                         .await
                         .unwrap()
                         .decrypt_message(&proposal_remove_114_1.to_bytes().unwrap())
@@ -568,7 +562,7 @@ mod tests {
                     println!("observer executing second proposal");
                     let result = observer
                         .context
-                        .conversation_guard(&conv_id)
+                        .conversation(&conv_id)
                         .await
                         .unwrap()
                         .decrypt_message(&proposal_remove_114_2.to_bytes().unwrap())
@@ -580,7 +574,7 @@ mod tests {
                     println!("executing commit adding new user");
                     observer
                         .context
-                        .conversation_guard(&conv_id)
+                        .conversation(&conv_id)
                         .await
                         .unwrap()
                         .decrypt_message(&new_member_join_commit.to_bytes().unwrap())
@@ -592,7 +586,7 @@ mod tests {
                     assert!(matches!(
                         new_member
                             .context
-                            .conversation_guard(&conv_id)
+                            .conversation(&conv_id)
                             .await
                             .unwrap()
                             .decrypt_message(&proposal_remove_114_1.to_bytes().unwrap())
@@ -603,7 +597,7 @@ mod tests {
                     println!("new_member executing second proposal");
                     new_member
                         .context
-                        .conversation_guard(&conv_id)
+                        .conversation(&conv_id)
                         .await
                         .unwrap()
                         .decrypt_message(&proposal_remove_114_2.to_bytes().unwrap())
@@ -623,7 +617,7 @@ mod tests {
 
                     member_27
                         .context
-                        .conversation_guard(&conv_id)
+                        .conversation(&conv_id)
                         .await
                         .unwrap()
                         .decrypt_message(&proposal_remove_114_1.to_bytes().unwrap())
@@ -631,7 +625,7 @@ mod tests {
                         .unwrap();
                     let result = member_27
                         .context
-                        .conversation_guard(&conv_id)
+                        .conversation(&conv_id)
                         .await
                         .unwrap()
                         .decrypt_message(&proposal_remove_114_2.to_bytes().unwrap())
@@ -642,7 +636,7 @@ mod tests {
                     ));
                     member_27
                         .context
-                        .conversation_guard(&conv_id)
+                        .conversation(&conv_id)
                         .await
                         .unwrap()
                         .decrypt_message(&new_member_join_commit.to_bytes().unwrap())
@@ -650,7 +644,7 @@ mod tests {
                         .unwrap();
                     member_27
                         .context
-                        .conversation_guard(&conv_id)
+                        .conversation(&conv_id)
                         .await
                         .unwrap()
                         .decrypt_message(&proposal_remove_115.to_bytes().unwrap())
@@ -659,7 +653,7 @@ mod tests {
 
                     member_27
                         .context
-                        .conversation_guard(&conv_id)
+                        .conversation(&conv_id)
                         .await
                         .unwrap()
                         .commit_pending_proposals()
@@ -671,7 +665,7 @@ mod tests {
                     // This is the straightforward ordering and easy to deal with.
                     observer
                         .context
-                        .conversation_guard(&conv_id)
+                        .conversation(&conv_id)
                         .await
                         .unwrap()
                         .decrypt_message(&proposal_remove_115.to_bytes().unwrap())
@@ -679,7 +673,7 @@ mod tests {
                         .unwrap();
                     observer
                         .context
-                        .conversation_guard(&conv_id)
+                        .conversation(&conv_id)
                         .await
                         .unwrap()
                         .decrypt_message(&remove_two_members_commit.to_bytes().unwrap())
@@ -690,7 +684,7 @@ mod tests {
                     // the commit has to be buffered until the proposal it references is received.
                     let result = new_member
                         .context
-                        .conversation_guard(&conv_id)
+                        .conversation(&conv_id)
                         .await
                         .unwrap()
                         .decrypt_message(&remove_two_members_commit.to_bytes().unwrap())
@@ -698,7 +692,7 @@ mod tests {
                     assert!(matches!(result.unwrap_err(), Error::BufferedCommit));
                     new_member
                         .context
-                        .conversation_guard(&conv_id)
+                        .conversation(&conv_id)
                         .await
                         .unwrap()
                         .decrypt_message(&proposal_remove_115.to_bytes().unwrap())

@@ -83,7 +83,7 @@ impl ConversationGuard {
             return Ok(None);
         };
         self.central_context
-            .conversation_guard(parent_id)
+            .conversation(parent_id)
             .await
             .map(Some)
             .map_err(|_| Error::ParentGroupNotFound)

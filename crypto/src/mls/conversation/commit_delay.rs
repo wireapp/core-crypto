@@ -182,7 +182,7 @@ mod tests {
                     let bob = bob_central.rand_key_package(&case).await;
                     alice_central
                         .context
-                        .conversation_guard(&id)
+                        .conversation(&id)
                         .await
                         .unwrap()
                         .add_members(vec![bob])
@@ -200,7 +200,7 @@ mod tests {
                     let charlie = charlie_central.rand_key_package(&case).await;
                     alice_central
                         .context
-                        .conversation_guard(&id)
+                        .conversation(&id)
                         .await
                         .unwrap()
                         .add_members(vec![charlie])
@@ -211,7 +211,7 @@ mod tests {
 
                     let _ = bob_central
                         .context
-                        .conversation_guard(&id)
+                        .conversation(&id)
                         .await
                         .unwrap()
                         .decrypt_message(&charlie_welcome_bundle.commit.tls_serialize_detached().unwrap())
@@ -244,7 +244,7 @@ mod tests {
 
                     let bob_decrypted_message = bob_central
                         .context
-                        .conversation_guard(&id)
+                        .conversation(&id)
                         .await
                         .unwrap()
                         .decrypt_message(&proposal_bundle.proposal.tls_serialize_detached().unwrap())
@@ -258,7 +258,7 @@ mod tests {
 
                     let charlie_decrypted_message = charlie_central
                         .context
-                        .conversation_guard(&id)
+                        .conversation(&id)
                         .await
                         .unwrap()
                         .decrypt_message(&proposal_bundle.proposal.tls_serialize_detached().unwrap())

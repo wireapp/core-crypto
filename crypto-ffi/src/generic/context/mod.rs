@@ -264,18 +264,13 @@ impl CoreCryptoContext {
 
     /// See [core_crypto::mls::conversation::ConversationGuard::epoch]
     pub async fn conversation_epoch(&self, conversation_id: Vec<u8>) -> CoreCryptoResult<u64> {
-        let conversation = self.context.conversation_guard(&conversation_id).await?;
+        let conversation = self.context.conversation(&conversation_id).await?;
         Ok(conversation.epoch().await)
     }
 
     /// See [core_crypto::mls::conversation::ConversationGuard::ciphersuite]
     pub async fn conversation_ciphersuite(&self, conversation_id: &ConversationId) -> CoreCryptoResult<Ciphersuite> {
-        let cs = self
-            .context
-            .conversation_guard(conversation_id)
-            .await?
-            .ciphersuite()
-            .await;
+        let cs = self.context.conversation(conversation_id).await?.ciphersuite().await;
         Ok(Ciphersuite::from(core_crypto::prelude::CiphersuiteName::from(cs)))
     }
 
@@ -288,7 +283,7 @@ impl CoreCryptoContext {
     pub async fn get_client_ids(&self, conversation_id: Vec<u8>) -> CoreCryptoResult<Vec<ClientId>> {
         let client_ids = self
             .context
-            .conversation_guard(&conversation_id)
+            .conversation(&conversation_id)
             .await?
             .get_client_ids()
             .await
@@ -301,7 +296,7 @@ impl CoreCryptoContext {
     /// See [core_crypto::mls::conversation::ImmutableConversation::export_secret_key]
     pub async fn export_secret_key(&self, conversation_id: Vec<u8>, key_length: u32) -> CoreCryptoResult<Vec<u8>> {
         self.context
-            .conversation_guard(&conversation_id)
+            .conversation(&conversation_id)
             .await?
             .export_secret_key(key_length as usize)
             .await
@@ -311,7 +306,7 @@ impl CoreCryptoContext {
     /// See [core_crypto::mls::conversation::ImmutableConversation::get_external_sender]
     pub async fn get_external_sender(&self, conversation_id: Vec<u8>) -> CoreCryptoResult<Vec<u8>> {
         self.context
-            .conversation_guard(&conversation_id)
+            .conversation(&conversation_id)
             .await?
             .get_external_sender()
             .await
@@ -425,7 +420,7 @@ impl CoreCryptoContext {
 
         let distribution_points: Option<Vec<_>> = self
             .context
-            .conversation_guard(&conversation_id)
+            .conversation(&conversation_id)
             .await?
             .add_members(key_packages)
             .await?
@@ -441,7 +436,7 @@ impl CoreCryptoContext {
     ) -> CoreCryptoResult<()> {
         let clients: Vec<core_crypto::prelude::ClientId> = clients.into_iter().map(|c| c.0).collect();
         self.context
-            .conversation_guard(&conversation_id)
+            .conversation(&conversation_id)
             .await?
             .remove_members(&clients)
             .await
@@ -451,7 +446,7 @@ impl CoreCryptoContext {
     /// See [core_crypto::mls::conversation::ConversationGuard::mark_as_child_of]
     pub async fn mark_conversation_as_child_of(&self, child_id: Vec<u8>, parent_id: Vec<u8>) -> CoreCryptoResult<()> {
         self.context
-            .conversation_guard(&child_id)
+            .conversation(&child_id)
             .await?
             .mark_as_child_of(&parent_id)
             .await
@@ -461,7 +456,7 @@ impl CoreCryptoContext {
     /// See [core_crypto::context::CentralContext::update_keying_material]
     pub async fn update_keying_material(&self, conversation_id: Vec<u8>) -> CoreCryptoResult<()> {
         self.context
-            .conversation_guard(&conversation_id)
+            .conversation(&conversation_id)
             .await?
             .update_key_material()
             .await
@@ -471,7 +466,7 @@ impl CoreCryptoContext {
     /// See [core_crypto::mls::conversation::conversation_guard::ConversationGuard::commit_pending_proposals]
     pub async fn commit_pending_proposals(&self, conversation_id: Vec<u8>) -> CoreCryptoResult<()> {
         self.context
-            .conversation_guard(&conversation_id)
+            .conversation(&conversation_id)
             .await?
             .commit_pending_proposals()
             .await
@@ -492,7 +487,7 @@ impl CoreCryptoContext {
     ) -> CoreCryptoResult<DecryptedMessage> {
         let result = self
             .context
-            .conversation_guard(&conversation_id)
+            .conversation(&conversation_id)
             .await?
             .decrypt_message(&payload)
             .await;
@@ -508,7 +503,7 @@ impl CoreCryptoContext {
     /// See [core_crypto::mls::conversation::conversation_guard::ConversationGuard::encrypt_message]
     pub async fn encrypt_message(&self, conversation_id: Vec<u8>, message: Vec<u8>) -> CoreCryptoResult<Vec<u8>> {
         self.context
-            .conversation_guard(&conversation_id)
+            .conversation(&conversation_id)
             .await?
             .encrypt_message(message)
             .await

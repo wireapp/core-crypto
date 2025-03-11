@@ -368,7 +368,7 @@ pub(crate) mod tests {
                         for (id, commit) in result.conversation_ids_and_commits.into_iter() {
                             let decrypted = bob_central
                                 .context
-                                .conversation_guard(&id)
+                                .conversation(&id)
                                 .await
                                 .unwrap()
                                 .decrypt_message(commit.commit.to_bytes().unwrap())
@@ -688,7 +688,7 @@ pub(crate) mod tests {
                             .unwrap();
                         alice_central
                             .context
-                            .conversation_guard(&id)
+                            .conversation(&id)
                             .await
                             .unwrap()
                             .e2ei_rotate(None)
@@ -699,7 +699,7 @@ pub(crate) mod tests {
 
                         let decrypted = bob_central
                             .context
-                            .conversation_guard(&id)
+                            .conversation(&id)
                             .await
                             .unwrap()
                             .decrypt_message(commit.to_bytes().unwrap())
@@ -765,7 +765,7 @@ pub(crate) mod tests {
 
                         bob_central
                             .context
-                            .conversation_guard(&id)
+                            .conversation(&id)
                             .await
                             .unwrap()
                             .e2ei_rotate(None)
@@ -776,7 +776,7 @@ pub(crate) mod tests {
 
                         let decrypted = alice_central
                             .context
-                            .conversation_guard(&id)
+                            .conversation(&id)
                             .await
                             .unwrap()
                             .decrypt_message(commit.to_bytes().unwrap())
@@ -834,7 +834,7 @@ pub(crate) mod tests {
                         // Verify old identity is still there in the MLS group
                         let alice_old_identities = alice_central
                             .context
-                            .conversation_guard(&id)
+                            .conversation(&id)
                             .await
                             .unwrap()
                             .get_device_identities(&[alice_cid])
@@ -853,7 +853,7 @@ pub(crate) mod tests {
                         // Alice issues an Update commit to replace her current identity
                         alice_central
                             .context
-                            .conversation_guard(&id)
+                            .conversation(&id)
                             .await
                             .unwrap()
                             .e2ei_rotate(Some(&cb))
@@ -864,7 +864,7 @@ pub(crate) mod tests {
                         // Bob decrypts the commit...
                         let decrypted = bob_central
                             .context
-                            .conversation_guard(&id)
+                            .conversation(&id)
                             .await
                             .unwrap()
                             .decrypt_message(commit.to_bytes().unwrap())
@@ -935,7 +935,7 @@ pub(crate) mod tests {
                     // Meanwhile, Bob creates a simple commit
                     bob_central
                         .context
-                        .conversation_guard(&id)
+                        .conversation(&id)
                         .await
                         .unwrap()
                         .update_key_material()
@@ -947,7 +947,7 @@ pub(crate) mod tests {
                     // Alice decrypts the commit...
                     let decrypted = alice_central
                         .context
-                        .conversation_guard(&id)
+                        .conversation(&id)
                         .await
                         .unwrap()
                         .decrypt_message(bob_commit.to_bytes().unwrap())
@@ -959,7 +959,7 @@ pub(crate) mod tests {
                     let renewed_proposal = decrypted.proposals.first().unwrap();
                     bob_central
                         .context
-                        .conversation_guard(&id)
+                        .conversation(&id)
                         .await
                         .unwrap()
                         .decrypt_message(renewed_proposal.proposal.to_bytes().unwrap())
@@ -968,7 +968,7 @@ pub(crate) mod tests {
 
                     alice_central
                         .context
-                        .conversation_guard(&id)
+                        .conversation(&id)
                         .await
                         .unwrap()
                         .commit_pending_proposals()
@@ -984,7 +984,7 @@ pub(crate) mod tests {
                     // Bob verifies that now Alice is represented with her new identity
                     let decrypted = bob_central
                         .context
-                        .conversation_guard(&id)
+                        .conversation(&id)
                         .await
                         .unwrap()
                         .decrypt_message(rotate_commit.to_bytes().unwrap())
@@ -1038,7 +1038,7 @@ pub(crate) mod tests {
                         // Verify old identity is a basic identity in the MLS group
                         let alice_old_identities = alice_central
                             .context
-                            .conversation_guard(&id)
+                            .conversation(&id)
                             .await
                             .unwrap()
                             .get_device_identities(&[alice_cid])
@@ -1051,7 +1051,7 @@ pub(crate) mod tests {
                         // Alice issues an Update commit to replace her current identity
                         alice_central
                             .context
-                            .conversation_guard(&id)
+                            .conversation(&id)
                             .await
                             .unwrap()
                             .e2ei_rotate(None)
@@ -1062,7 +1062,7 @@ pub(crate) mod tests {
                         // Bob decrypts the commit...
                         let decrypted = bob_central
                             .context
-                            .conversation_guard(&id)
+                            .conversation(&id)
                             .await
                             .unwrap()
                             .decrypt_message(commit.to_bytes().unwrap())

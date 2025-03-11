@@ -177,18 +177,12 @@ mod tests {
                     let commit = alice_central.create_unmerged_e2ei_rotate_commit(&id, &cb).await;
                     assert!(alice_central.pending_commit(&id).await.is_some());
 
-                    let epoch = alice_central
-                        .context
-                        .conversation_guard(&id)
-                        .await
-                        .unwrap()
-                        .epoch()
-                        .await;
+                    let epoch = alice_central.context.conversation(&id).await.unwrap().epoch().await;
 
                     // since the pending commit is the same as the incoming one, it should succeed
                     let decrypt_self = alice_central
                         .context
-                        .conversation_guard(&id)
+                        .conversation(&id)
                         .await
                         .unwrap()
                         .decrypt_message(&commit.commit.to_bytes().unwrap())
@@ -196,13 +190,7 @@ mod tests {
                     assert!(decrypt_self.is_ok());
                     let decrypt_self = decrypt_self.unwrap();
 
-                    let epoch_after_decrypt = alice_central
-                        .context
-                        .conversation_guard(&id)
-                        .await
-                        .unwrap()
-                        .epoch()
-                        .await;
+                    let epoch_after_decrypt = alice_central.context.conversation(&id).await.unwrap().epoch().await;
                     assert_eq!(epoch + 1, epoch_after_decrypt);
 
                     // there is no proposals to renew here since it's our own commit we merge
@@ -240,7 +228,7 @@ mod tests {
                     assert!(alice_central.pending_commit(&id).await.is_some());
                     alice_central
                         .context
-                        .conversation_guard(&id)
+                        .conversation(&id)
                         .await
                         .unwrap()
                         .clear_pending_commit()
@@ -254,7 +242,7 @@ mod tests {
 
                     let decrypt = alice_central
                         .context
-                        .conversation_guard(&id)
+                        .conversation(&id)
                         .await
                         .unwrap()
                         .decrypt_message(&unmerged_commit.to_bytes().unwrap())
@@ -289,7 +277,7 @@ mod tests {
                     // then delete the pending commit
                     alice_central
                         .context
-                        .conversation_guard(&id)
+                        .conversation(&id)
                         .await
                         .unwrap()
                         .clear_pending_commit()
@@ -299,7 +287,7 @@ mod tests {
 
                     let decrypt_self = alice_central
                         .context
-                        .conversation_guard(&id)
+                        .conversation(&id)
                         .await
                         .unwrap()
                         .decrypt_message(&commit.to_bytes().unwrap())
@@ -349,7 +337,7 @@ mod tests {
 
                 let decryption_result = alice_central
                     .context
-                    .conversation_guard(&conversation_id)
+                    .conversation(&conversation_id)
                     .await
                     .unwrap()
                     .decrypt_message(commit_serialized)
@@ -372,7 +360,7 @@ mod tests {
                 assert!(
                     alice_central
                         .context
-                        .conversation_guard(&conversation_id)
+                        .conversation(&conversation_id)
                         .await
                         .unwrap()
                         .decrypt_message(&add_bob_message.to_bytes().unwrap())

@@ -562,7 +562,7 @@ mod tests {
                         .new_conversation(&id, case.credential_type, case.cfg.clone())
                         .await
                         .unwrap();
-                    let epoch = central.context.conversation_guard(&id).await.unwrap().epoch().await;
+                    let epoch = central.context.conversation(&id).await.unwrap().epoch().await;
                     assert_eq!(epoch, 0);
                 })
             })
@@ -581,13 +581,7 @@ mod tests {
                         .await
                         .unwrap();
                     alice_central.invite_all(&case, &id, [&bob_central]).await.unwrap();
-                    let epoch = alice_central
-                        .context
-                        .conversation_guard(&id)
-                        .await
-                        .unwrap()
-                        .epoch()
-                        .await;
+                    let epoch = alice_central.context.conversation(&id).await.unwrap().epoch().await;
                     assert_eq!(epoch, 1);
                 })
             })
@@ -602,7 +596,7 @@ mod tests {
             run_test_with_central(case.clone(), move |[central]| {
                 Box::pin(async move {
                     let id = conversation_id();
-                    let err = central.context.conversation_guard(&id).await.unwrap_err();
+                    let err = central.context.conversation(&id).await.unwrap_err();
                     assert!(matches!(
                         err,
                         mls::conversation::Error::Leaf(LeafError::ConversationNotFound(i)) if i == id

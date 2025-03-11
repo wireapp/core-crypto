@@ -132,7 +132,7 @@ mod tests {
                         assert_eq!(alice_central.pending_proposals(&id).await.len(), 3);
                         alice_central
                             .context
-                            .conversation_guard(&id)
+                            .conversation(&id)
                             .await
                             .unwrap()
                             .clear_pending_proposal(add_ref)
@@ -149,7 +149,7 @@ mod tests {
 
                         alice_central
                             .context
-                            .conversation_guard(&id)
+                            .conversation(&id)
                             .await
                             .unwrap()
                             .clear_pending_proposal(remove_ref)
@@ -166,7 +166,7 @@ mod tests {
 
                         alice_central
                             .context
-                            .conversation_guard(&id)
+                            .conversation(&id)
                             .await
                             .unwrap()
                             .clear_pending_proposal(update_ref)
@@ -201,7 +201,7 @@ mod tests {
                     let any_ref = MlsProposalRef::from(vec![0; case.ciphersuite().hash_length()]);
                     let clear = alice_central
                         .context
-                        .conversation_guard(&id)
+                        .conversation(&id)
                         .await
                         .unwrap()
                         .clear_pending_proposal(any_ref.clone())
@@ -232,7 +232,7 @@ mod tests {
                     assert_eq!(cc.pending_proposals(&id).await.len(), 1);
 
                     cc.context
-                        .conversation_guard(&id)
+                        .conversation(&id)
                         .await
                         .unwrap()
                         .clear_pending_proposal(proposal_ref)
@@ -271,7 +271,7 @@ mod tests {
                     assert!(alice_central.pending_commit(&id).await.is_some());
                     alice_central
                         .context
-                        .conversation_guard(&id)
+                        .conversation(&id)
                         .await
                         .unwrap()
                         .clear_pending_commit()
@@ -297,7 +297,7 @@ mod tests {
                     assert!(alice_central.pending_commit(&id).await.is_none());
                     let clear = alice_central
                         .context
-                        .conversation_guard(&id)
+                        .conversation(&id)
                         .await
                         .unwrap()
                         .clear_pending_commit()
@@ -326,7 +326,7 @@ mod tests {
                     assert!(cc.pending_commit(&id).await.is_some());
 
                     cc.context
-                        .conversation_guard(&id)
+                        .conversation(&id)
                         .await
                         .unwrap()
                         .clear_pending_commit()

@@ -244,7 +244,7 @@ mod tests {
                     MlsCredentialType::Basic => {
                         let alice_state = alice_central
                             .context
-                            .conversation_guard(&id)
+                            .conversation(&id)
                             .await
                             .unwrap()
                             .e2ei_conversation_state()
@@ -252,7 +252,7 @@ mod tests {
                             .unwrap();
                         let bob_state = bob_central
                             .context
-                            .conversation_guard(&id)
+                            .conversation(&id)
                             .await
                             .unwrap()
                             .e2ei_conversation_state()
@@ -272,7 +272,7 @@ mod tests {
                     MlsCredentialType::X509 => {
                         let alice_state = alice_central
                             .context
-                            .conversation_guard(&id)
+                            .conversation(&id)
                             .await
                             .unwrap()
                             .e2ei_conversation_state()
@@ -280,7 +280,7 @@ mod tests {
                             .unwrap();
                         let bob_state = bob_central
                             .context
-                            .conversation_guard(&id)
+                            .conversation(&id)
                             .await
                             .unwrap()
                             .e2ei_conversation_state()
@@ -355,7 +355,7 @@ mod tests {
                     // since in that case both have a different credential type the conversation is always not verified
                     let alice_state = alice_central
                         .context
-                        .conversation_guard(&id)
+                        .conversation(&id)
                         .await
                         .unwrap()
                         .e2ei_conversation_state()
@@ -363,7 +363,7 @@ mod tests {
                         .unwrap();
                     let bob_state = bob_central
                         .context
-                        .conversation_guard(&id)
+                        .conversation(&id)
                         .await
                         .unwrap()
                         .e2ei_conversation_state()
@@ -415,7 +415,7 @@ mod tests {
                 let cb = Client::new_x509_credential_bundle(cert.clone()).unwrap();
                 alice_central
                     .context
-                    .conversation_guard(&id)
+                    .conversation(&id)
                     .await
                     .unwrap()
                     .e2ei_rotate(Some(&cb))
@@ -424,7 +424,7 @@ mod tests {
                 let commit = alice_central.mls_transport.latest_commit().await;
                 bob_central
                     .context
-                    .conversation_guard(&id)
+                    .conversation(&id)
                     .await
                     .unwrap()
                     .decrypt_message(commit.to_bytes().unwrap())
@@ -450,7 +450,7 @@ mod tests {
 
                 let alice_state = alice_central
                     .context
-                    .conversation_guard(&id)
+                    .conversation(&id)
                     .await
                     .unwrap()
                     .e2ei_conversation_state()
@@ -458,7 +458,7 @@ mod tests {
                     .unwrap();
                 let bob_state = bob_central
                     .context
-                    .conversation_guard(&id)
+                    .conversation(&id)
                     .await
                     .unwrap()
                     .e2ei_conversation_state()
@@ -510,7 +510,7 @@ mod tests {
                     let cb = Client::new_x509_credential_bundle(cert_bundle.clone()).unwrap();
                     alice_central
                         .context
-                        .conversation_guard(&id)
+                        .conversation(&id)
                         .await
                         .unwrap()
                         .e2ei_rotate(Some(&cb))
@@ -538,7 +538,7 @@ mod tests {
 
                     let alice_state = alice_central
                         .context
-                        .conversation_guard(&id)
+                        .conversation(&id)
                         .await
                         .unwrap()
                         .e2ei_conversation_state()

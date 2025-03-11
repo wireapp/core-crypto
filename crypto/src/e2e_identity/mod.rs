@@ -693,7 +693,7 @@ pub(crate) mod tests {
                     .await
                     .unwrap();
                 cc.context
-                    .conversation_guard(&id)
+                    .conversation(&id)
                     .await
                     .unwrap()
                     .encrypt_message("Hello e2e identity !")
@@ -701,7 +701,7 @@ pub(crate) mod tests {
                     .unwrap();
                 assert_eq!(
                     cc.context
-                        .conversation_guard(&id)
+                        .conversation(&id)
                         .await
                         .unwrap()
                         .e2ei_conversation_state()

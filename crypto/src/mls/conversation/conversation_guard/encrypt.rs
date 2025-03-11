@@ -65,7 +65,7 @@ mod tests {
                 let msg = b"Hello bob";
                 let encrypted = alice_central
                     .context
-                    .conversation_guard(&id)
+                    .conversation(&id)
                     .await
                     .unwrap()
                     .encrypt_message(msg)
@@ -74,7 +74,7 @@ mod tests {
                 assert_ne!(&msg[..], &encrypted[..]);
                 let decrypted = bob_central
                     .context
-                    .conversation_guard(&id)
+                    .conversation(&id)
                     .await
                     .unwrap()
                     .decrypt_message(encrypted)
@@ -101,14 +101,14 @@ mod tests {
                     .await
                     .unwrap();
                 alice_central.invite_all(&case, &id, [&bob_central]).await.unwrap();
-                let mut alice_conversation = alice_central.context.conversation_guard(&id).await.unwrap();
+                let mut alice_conversation = alice_central.context.conversation(&id).await.unwrap();
 
                 let msg = b"Hello bob";
                 let encrypted = alice_conversation.encrypt_message(msg).await.unwrap();
                 assert_ne!(&msg[..], &encrypted[..]);
                 let decrypted = bob_central
                     .context
-                    .conversation_guard(&id)
+                    .conversation(&id)
                     .await
                     .unwrap()
                     .decrypt_message(encrypted)
@@ -123,7 +123,7 @@ mod tests {
                 assert_ne!(&msg[..], &encrypted[..]);
                 let decrypted = bob_central
                     .context
-                    .conversation_guard(&id)
+                    .conversation(&id)
                     .await
                     .unwrap()
                     .decrypt_message(encrypted)

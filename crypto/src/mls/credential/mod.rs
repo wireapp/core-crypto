@@ -322,7 +322,7 @@ mod tests {
             assert_eq!(
                 alice_central
                     .context
-                    .conversation_guard(&id)
+                    .conversation(&id)
                     .await
                     .unwrap()
                     .e2ei_conversation_state()
@@ -341,7 +341,7 @@ mod tests {
             assert_eq!(
                 alice_central
                     .context
-                    .conversation_guard(&id)
+                    .conversation(&id)
                     .await
                     .unwrap()
                     .e2ei_conversation_state()
@@ -374,7 +374,7 @@ mod tests {
             assert_eq!(
                 alice_central
                     .context
-                    .conversation_guard(&id)
+                    .conversation(&id)
                     .await
                     .unwrap()
                     .e2ei_conversation_state()
@@ -386,7 +386,7 @@ mod tests {
             assert_eq!(
                 bob_central
                     .context
-                    .conversation_guard(&id)
+                    .conversation(&id)
                     .await
                     .unwrap()
                     .e2ei_conversation_state()
@@ -399,7 +399,7 @@ mod tests {
             assert_eq!(
                 alice_central
                     .context
-                    .conversation_guard(&id)
+                    .conversation(&id)
                     .await
                     .unwrap()
                     .e2ei_conversation_state()
@@ -411,7 +411,7 @@ mod tests {
             assert_eq!(
                 bob_central
                     .context
-                    .conversation_guard(&id)
+                    .conversation(&id)
                     .await
                     .unwrap()
                     .e2ei_conversation_state()
@@ -470,7 +470,7 @@ mod tests {
             assert_eq!(
                 alice_central
                     .context
-                    .conversation_guard(&id)
+                    .conversation(&id)
                     .await
                     .unwrap()
                     .e2ei_conversation_state()
@@ -484,7 +484,7 @@ mod tests {
             assert_eq!(
                 alice_central
                     .context
-                    .conversation_guard(&id)
+                    .conversation(&id)
                     .await
                     .unwrap()
                     .e2ei_conversation_state()
