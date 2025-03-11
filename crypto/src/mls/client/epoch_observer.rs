@@ -47,3 +47,116 @@ impl Client {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use rstest::rstest;
+    use rstest_reuse::apply;
+    use wasm_bindgen_test::*;
+
+    use crate::test_utils::{TestCase, TestEpochObserver, all_cred_cipher, conversation_id, run_test_with_client_ids};
+
+    #[apply(all_cred_cipher)]
+    #[wasm_bindgen_test]
+    pub async fn observe_local_epoch_change(case: TestCase) {
+        run_test_with_client_ids(case.clone(), ["alice"], move |[client]| {
+            Box::pin(async move {
+                let id = conversation_id();
+                client
+                    .context
+                    .new_conversation(&id, case.credential_type, case.cfg.clone())
+                    .await
+                    .unwrap();
+
+                let observer = TestEpochObserver::new();
+                client
+                    .client()
+                    .await
+                    .register_epoch_observer(observer.clone())
+                    .await
+                    .unwrap();
+
+                // trigger an epoch
+                client
+                    .context
+                    .conversation(&id)
+                    .await
+                    .unwrap()
+                    .update_key_material()
+                    .await
+                    .unwrap();
+
+                // ensure we have observed the epoch change
+                let observed_epochs = observer.observed_epochs().await;
+                assert_eq!(
+                    observed_epochs.len(),
+                    1,
+                    "we triggered exactly one epoch change and so should observe one epoch change"
+                );
+                assert_eq!(
+                    observed_epochs[0].0, id,
+                    "conversation id of observed epoch change must match"
+                );
+            })
+        })
+        .await
+    }
+
+    #[apply(all_cred_cipher)]
+    #[wasm_bindgen_test]
+    pub async fn observe_remote_epoch_change(case: TestCase) {
+        run_test_with_client_ids(case.clone(), ["alice", "bob"], move |[alice, bob]| {
+            Box::pin(async move {
+                let id = conversation_id();
+                alice
+                    .context
+                    .new_conversation(&id, case.credential_type, case.cfg.clone())
+                    .await
+                    .unwrap();
+
+                alice.invite_all(&case, &id, [&bob]).await.unwrap();
+
+                //  bob has the observer
+                let observer = TestEpochObserver::new();
+                bob.client()
+                    .await
+                    .register_epoch_observer(observer.clone())
+                    .await
+                    .unwrap();
+
+                // alice triggers an epoch
+                alice
+                    .context
+                    .conversation(&id)
+                    .await
+                    .unwrap()
+                    .update_key_material()
+                    .await
+                    .unwrap();
+
+                // communicate that to bob
+                let commit = alice.mls_transport.latest_commit().await;
+                bob.context
+                    .conversation(&id)
+                    .await
+                    .unwrap()
+                    .decrypt_message(commit.to_bytes().unwrap())
+                    .await
+                    .unwrap();
+
+                // ensure we have observed the epoch change
+                let observed_epochs = observer.observed_epochs().await;
+                assert_eq!(
+                    observed_epochs.len(),
+                    1,
+                    "we triggered exactly one epoch change and so should observe one epoch change"
+                );
+                assert_eq!(
+                    observed_epochs[0].0, id,
+                    "conversation id of observed epoch change must match"
+                );
+            })
+        })
+        .await
+    }
+}
