@@ -9,7 +9,7 @@ use openmls::prelude::{LeafNode, MlsMessageOut};
 
 use mls_crypto_provider::MlsCryptoProvider;
 
-use super::{Error, Result};
+use super::{ConversationGuard, ConversationWithMls as _, Error, Result};
 use crate::{
     LeafError, MlsTransportResponse, RecursiveError,
     context::CentralContext,
@@ -25,13 +25,13 @@ impl CentralContext {
     pub(crate) async fn send_commit(
         &self,
         mut commit: MlsCommitBundle,
-        conversation: Option<async_lock::RwLockWriteGuard<'_, MlsConversation>>,
+        mut conversation: Option<&mut ConversationGuard>,
     ) -> Result<bool> {
-        let guard = self
+        let transport = self
             .mls_transport()
             .await
             .map_err(RecursiveError::root("getting mls transport"))?;
-        let transport = guard.as_ref().ok_or::<Error>(
+        let transport = transport.as_ref().ok_or::<Error>(
             RecursiveError::root("getting mls transport")(crate::Error::MlsTransportNotProvided).into(),
         )?;
         let client = self
@@ -43,12 +43,15 @@ impl CentralContext {
             .await
             .map_err(RecursiveError::root("getting mls provider"))?;
 
-        let conversation_id_and_epoch = conversation
-            .as_ref()
-            .map(|c| (c.id().clone(), c.group.epoch().as_u64()));
+        // Can't use map() because of .await
+        let epoch_before_sending = match conversation.as_ref() {
+            None => None,
+            Some(conversation) => {
+                let inner = conversation.conversation().await;
+                Some(inner.group().epoch().as_u64())
+            }
+        };
 
-        // Release lock here, so the callback can do processing on the conversation (e.g., process commits before returning retry).
-        drop(conversation);
         loop {
             match transport
                 .send_commit_bundle(commit.clone())
@@ -62,25 +65,27 @@ impl CentralContext {
                     return Err(Error::MessageRejected { reason });
                 }
                 MlsTransportResponse::Retry => {
-                    let Some((ref conversation_id, ref epoch_before_sending)) = conversation_id_and_epoch else {
+                    let Some(conversation) = conversation.as_mut() else {
                         return Err(Error::CannotRetryWithoutConversation);
                     };
-                    let conversation = self.get_conversation(conversation_id).await?;
-                    let mut conversation_guard = conversation.write().await;
-                    if *epoch_before_sending == conversation_guard.group.epoch().as_u64() {
-                        // No intermediate commits have been processed before returning retry.
-                        // This will be the case, e.g., on network failure.
-                        // We can just send the exact same commit again.
-                        continue;
+                    let mut inner = conversation.conversation_mut().await;
+                    let epoch_after_sending = inner.group().epoch().as_u64();
+                    if let Some(epoch_before_sending) = epoch_before_sending {
+                        if epoch_before_sending == epoch_after_sending {
+                            // No intermediate commits have been processed before returning retry.
+                            // This will be the case, e.g., on network failure.
+                            // We can just send the exact same commit again.
+                            continue;
+                        }
                     }
+
                     // The epoch has changed. I.e., a client originally tried sending a commit for an old epoch,
                     // which was rejected by the DS.
                     // Before returning `Retry`, the API consumer has fetched and merged all commits,
                     // so the group state is up-to-date.
                     // The original commit has been `renewed` to a pending proposal, unless the
                     // intended operation was already done in one of the merged commits.
-                    let Some(commit_to_retry) = conversation_guard.commit_pending_proposals(&client, &backend).await?
-                    else {
+                    let Some(commit_to_retry) = inner.commit_pending_proposals(&client, &backend).await? else {
                         // The intended operation was already done in one of the merged commits.
                         return Ok(false);
                     };
@@ -554,7 +559,7 @@ mod tests {
 
                     // But has been removed from the conversation
                     assert!(matches!(
-                       bob_central.context.get_conversation(&id).await.unwrap_err(),
+                       bob_central.context.conversation_guard(&id).await.unwrap_err(),
                         mls::conversation::error::Error::Leaf(LeafError::ConversationNotFound(conv_id)) if conv_id == id
                     ));
                     assert!(alice_central.try_talk_to(&id, &bob_central).await.is_err());

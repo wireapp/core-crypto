@@ -114,10 +114,7 @@ impl ConversationGuard {
     }
 
     pub(crate) async fn send_and_merge_commit(&mut self, commit: MlsCommitBundle) -> Result<()> {
-        // note we hand over this instance of the guard; when we need a `conversation` guard again,
-        // we'll need to re-fetch it.
-        let conversation = self.inner.write().await;
-        match self.central_context.send_commit(commit, Some(conversation)).await {
+        match self.central().await?.send_commit(commit, Some(self)).await {
             Ok(false) => Ok(()),
             Ok(true) => {
                 let backend = self.mls_provider().await?;
