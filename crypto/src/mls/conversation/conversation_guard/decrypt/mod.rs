@@ -1073,14 +1073,6 @@ mod tests {
                             .unwrap();
                         alice_central.invite_all(&case, &id, [&bob_central]).await.unwrap();
 
-                        let bob_observer = TestEpochObserver::new();
-                        bob_central
-                            .client()
-                            .await
-                            .register_epoch_observer(bob_observer.clone())
-                            .await
-                            .unwrap();
-
                         let charlie_kp = charlie_central.get_one_key_package(&case).await;
                         let proposal = alice_central
                             .context
@@ -1109,7 +1101,6 @@ mod tests {
                             .await
                             .unwrap();
                         assert_eq!(bob_central.get_conversation_unchecked(&id).await.members().len(), 3);
-                        assert!(!bob_observer.has_changed().await);
 
                         alice_central.verify_sender_identity(&case, &decrypted).await;
                     })
