@@ -90,6 +90,18 @@ export interface CoreCryptoParams extends CoreCryptoDeferredParams {
     nbKeyPackage?: number;
 }
 
+// The interface that `core-crypto-ffi.js` actually expects
+interface InternalEpochObserver {
+    epoch_changed(
+        conversation_id: ConversationId,
+        epoch: number
+    ): Promise<void>;
+}
+
+export interface EpochObserver {
+    epochChanged(conversationId: ConversationId, epoch: number): Promise<void>;
+}
+
 /**
  * Initializes the global logger for Core Crypto and registers the callback.
  *
@@ -641,5 +653,27 @@ export class CoreCrypto {
             this.#cc.get_credential_in_use(groupInfo, credentialType)
         );
         return normalizeEnum(E2eiConversationState, state);
+    }
+
+    /**
+     * Registers an epoch observer, which will then be notified every time a conversation's epoch changes.
+     *
+     * @param observer must conform to the {@link EpochObserver} interface
+     * @returns nothing
+     */
+    async registerEpochObserver(observer: EpochObserver): Promise<void> {
+        // we want to wrap the observer here to provide async indirection, so that no matter what
+        // the observer that makes its way to the Rust side of things doesn't end up blocking
+        const observerIndirector: InternalEpochObserver = {
+            async epoch_changed(conversation_id, epoch) {
+                // Note that we intentionally do not await the result of this function
+                // this is a JS peculiarity: instead of explicitly spawning a new task, we just
+                // create the Promise and send it off into the ether, to complete at its own pace
+                observer.epochChanged(conversation_id, epoch);
+            },
+        };
+        return await CoreCryptoError.asyncMapErr(
+            this.#cc.register_epoch_observer(observerIndirector)
+        );
     }
 }

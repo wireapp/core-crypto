@@ -34,6 +34,7 @@ export type {
     CoreCryptoDeferredParams,
     CoreCryptoParams,
     CoreCryptoLogger,
+    EpochObserver,
 } from "./CoreCryptoInstance.js";
 
 export {
