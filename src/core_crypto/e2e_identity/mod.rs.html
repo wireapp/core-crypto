@@ -1000,28 +1000,68 @@
 <a href="#999" id="999">999</a>
 <a href="#1000" id="1000">1000</a>
 <a href="#1001" id="1001">1001</a>
-<a href="#1002" id="1002">1002</a></pre></div><pre class="rust"><code><span class="kw">use </span>openmls_traits::OpenMlsCryptoProvider;
+<a href="#1002" id="1002">1002</a>
+<a href="#1003" id="1003">1003</a>
+<a href="#1004" id="1004">1004</a>
+<a href="#1005" id="1005">1005</a>
+<a href="#1006" id="1006">1006</a>
+<a href="#1007" id="1007">1007</a>
+<a href="#1008" id="1008">1008</a>
+<a href="#1009" id="1009">1009</a>
+<a href="#1010" id="1010">1010</a>
+<a href="#1011" id="1011">1011</a>
+<a href="#1012" id="1012">1012</a>
+<a href="#1013" id="1013">1013</a>
+<a href="#1014" id="1014">1014</a>
+<a href="#1015" id="1015">1015</a>
+<a href="#1016" id="1016">1016</a>
+<a href="#1017" id="1017">1017</a>
+<a href="#1018" id="1018">1018</a>
+<a href="#1019" id="1019">1019</a>
+<a href="#1020" id="1020">1020</a>
+<a href="#1021" id="1021">1021</a>
+<a href="#1022" id="1022">1022</a>
+<a href="#1023" id="1023">1023</a>
+<a href="#1024" id="1024">1024</a>
+<a href="#1025" id="1025">1025</a>
+<a href="#1026" id="1026">1026</a>
+<a href="#1027" id="1027">1027</a>
+<a href="#1028" id="1028">1028</a>
+<a href="#1029" id="1029">1029</a>
+<a href="#1030" id="1030">1030</a>
+<a href="#1031" id="1031">1031</a>
+<a href="#1032" id="1032">1032</a>
+<a href="#1033" id="1033">1033</a>
+<a href="#1034" id="1034">1034</a>
+<a href="#1035" id="1035">1035</a>
+<a href="#1036" id="1036">1036</a>
+<a href="#1037" id="1037">1037</a>
+<a href="#1038" id="1038">1038</a>
+<a href="#1039" id="1039">1039</a>
+<a href="#1040" id="1040">1040</a>
+<a href="#1041" id="1041">1041</a></pre></div><pre class="rust"><code><span class="kw">use </span>openmls_traits::OpenMlsCryptoProvider;
 <span class="kw">use </span>std::collections::HashMap;
 
 <span class="kw">use </span>wire_e2e_identity::prelude::{E2eiAcmeAuthorization, RustyE2eIdentity};
 <span class="kw">use </span>zeroize::Zeroize;
 
-<span class="kw">use </span>error::<span class="kw-2">*</span>;
 <span class="kw">use </span>mls_crypto_provider::MlsCryptoProvider;
 
-<span class="kw">use </span><span class="kw">crate</span>::e2e_identity::init_certificates::NewCrlDistributionPoint;
 <span class="kw">use crate</span>::{
-    e2e_identity::{crypto::E2eiSignatureKeypair, id::QualifiedE2eiClientId},
+    RecursiveError,
+    context::CentralContext,
+    e2e_identity::{
+        crypto::E2eiSignatureKeypair, id::QualifiedE2eiClientId, init_certificates::NewCrlDistributionPoint,
+    },
     mls::credential::x509::CertificatePrivateKey,
-    prelude::{id::ClientId, identifier::ClientIdentifier, CertificateBundle, MlsCiphersuite},
-    CryptoError, CryptoResult,
+    prelude::{CertificateBundle, MlsCiphersuite, id::ClientId, identifier::ClientIdentifier},
 };
 
 <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">mod </span>conversation_state;
 <span class="kw">mod </span>crypto;
 <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">mod </span>device_status;
 <span class="kw">pub mod </span>enabled;
-<span class="kw">pub mod </span>error;
+<span class="kw">mod </span>error;
 <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">mod </span>id;
 <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">mod </span>identity;
 <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">mod </span>init_certificates;
@@ -1031,7 +1071,7 @@
 <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">mod </span>stash;
 <span class="kw">pub mod </span>types;
 
-<span class="kw">use </span><span class="kw">crate</span>::context::CentralContext;
+<span class="kw">pub use </span>error::{Error, <span class="prelude-ty">Result</span>};
 <span class="kw">pub use </span>init_certificates::E2eiDumpedPkiEnv;
 
 <span class="kw">type </span>Json = Vec&lt;u8&gt;;
@@ -1062,7 +1102,7 @@
         team: <span class="prelude-ty">Option</span>&lt;String&gt;,
         expiry_sec: u32,
         ciphersuite: MlsCiphersuite,
-    ) -&gt; CryptoResult&lt;E2eiEnrollment&gt; {
+    ) -&gt; <span class="prelude-ty">Result</span>&lt;E2eiEnrollment&gt; {
         <span class="kw">let </span>signature_keypair = <span class="prelude-val">None</span>; <span class="comment">// fresh install without a Basic client. Supplying None will generate a new keypair
         </span>E2eiEnrollment::try_new(
             client_id,
@@ -1070,7 +1110,10 @@
             handle,
             team,
             expiry_sec,
-            <span class="kw-2">&amp;</span><span class="self">self</span>.mls_provider().<span class="kw">await</span><span class="question-mark">?</span>,
+            <span class="kw-2">&amp;</span><span class="self">self
+                </span>.mls_provider()
+                .<span class="kw">await
+                </span>.map_err(RecursiveError::root(<span class="string">"getting mls provider"</span>))<span class="question-mark">?</span>,
             ciphersuite,
             signature_keypair,
             <span class="attr">#[cfg(not(target_family = <span class="string">"wasm"</span>))]
@@ -1085,23 +1128,27 @@
         enrollment: <span class="kw-2">&amp;mut </span>E2eiEnrollment,
         certificate_chain: String,
         nb_init_key_packages: <span class="prelude-ty">Option</span>&lt;usize&gt;,
-    ) -&gt; CryptoResult&lt;NewCrlDistributionPoint&gt; {
+    ) -&gt; <span class="prelude-ty">Result</span>&lt;NewCrlDistributionPoint&gt; {
         <span class="kw">let </span>sk = enrollment.get_sign_key_for_mls()<span class="question-mark">?</span>;
         <span class="kw">let </span>cs = enrollment.ciphersuite;
         <span class="kw">let </span>certificate_chain = enrollment
             .certificate_response(
                 certificate_chain,
                 <span class="self">self</span>.mls_provider()
-                    .<span class="kw">await</span><span class="question-mark">?
+                    .<span class="kw">await
+                    </span>.map_err(RecursiveError::root(<span class="string">"getting mls provider"</span>))<span class="question-mark">?
                     </span>.authentication_service()
                     .borrow()
                     .<span class="kw">await
                     </span>.as_ref()
-                    .ok_or(CryptoError::ConsumerError)<span class="question-mark">?</span>,
+                    .ok_or(Error::PkiEnvironmentUnset)<span class="question-mark">?</span>,
             )
             .<span class="kw">await</span><span class="question-mark">?</span>;
 
-        <span class="kw">let </span>crl_new_distribution_points = <span class="self">self</span>.extract_dp_on_init(<span class="kw-2">&amp;</span>certificate_chain[..]).<span class="kw">await</span><span class="question-mark">?</span>;
+        <span class="kw">let </span>crl_new_distribution_points = <span class="self">self
+            </span>.extract_dp_on_init(<span class="kw-2">&amp;</span>certificate_chain[..])
+            .<span class="kw">await
+            </span>.map_err(RecursiveError::mls_credential(<span class="string">"extracting dp on init"</span>))<span class="question-mark">?</span>;
 
         <span class="kw">let </span>private_key = CertificatePrivateKey {
             value: sk,
@@ -1113,7 +1160,9 @@
             private_key,
         };
         <span class="kw">let </span>identifier = ClientIdentifier::X509(HashMap::from([(cs.signature_algorithm(), cert_bundle)]));
-        <span class="self">self</span>.mls_init(identifier, <span class="macro">vec!</span>[cs], nb_init_key_packages).<span class="kw">await</span><span class="question-mark">?</span>;
+        <span class="self">self</span>.mls_init(identifier, <span class="macro">vec!</span>[cs], nb_init_key_packages)
+            .<span class="kw">await
+            </span>.map_err(RecursiveError::mls(<span class="string">"initializing mls"</span>))<span class="question-mark">?</span>;
         <span class="prelude-val">Ok</span>(crl_new_distribution_points)
     }
 }
@@ -1167,7 +1216,7 @@
         ciphersuite: MlsCiphersuite,
         sign_keypair: <span class="prelude-ty">Option</span>&lt;E2eiSignatureKeypair&gt;,
         <span class="attr">#[cfg(not(target_family = <span class="string">"wasm"</span>))] </span>refresh_token: <span class="prelude-ty">Option</span>&lt;refresh_token::RefreshToken&gt;,
-    ) -&gt; CryptoResult&lt;<span class="self">Self</span>&gt; {
+    ) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>&gt; {
         <span class="kw">let </span>alg = ciphersuite.try_into()<span class="question-mark">?</span>;
         <span class="kw">let </span>sign_sk = <span class="kw">match </span>sign_keypair {
             <span class="prelude-val">Some</span>(kp) =&gt; kp,
@@ -1177,7 +1226,7 @@
         <span class="kw">let </span>client_id = QualifiedE2eiClientId::try_from(client_id.as_slice())<span class="question-mark">?</span>;
         <span class="kw">let </span>client_id = String::try_from(client_id)<span class="question-mark">?</span>;
         <span class="kw">let </span>expiry = core::time::Duration::from_secs(u64::from(expiry_sec));
-        <span class="kw">let </span>delegate = RustyE2eIdentity::try_new(alg, sign_sk.clone()).map_err(E2eIdentityError::from)<span class="question-mark">?</span>;
+        <span class="kw">let </span>delegate = RustyE2eIdentity::try_new(alg, sign_sk.clone()).map_err(Error::from)<span class="question-mark">?</span>;
         <span class="prelude-val">Ok</span>(<span class="self">Self </span>{
             delegate,
             sign_sk,
@@ -1206,7 +1255,7 @@
     ///
     /// # Parameters
     /// * `directory` - http response body
-    </span><span class="kw">pub fn </span>directory_response(<span class="kw-2">&amp;mut </span><span class="self">self</span>, directory: Json) -&gt; E2eIdentityResult&lt;types::E2eiAcmeDirectory&gt; {
+    </span><span class="kw">pub fn </span>directory_response(<span class="kw-2">&amp;mut </span><span class="self">self</span>, directory: Json) -&gt; <span class="prelude-ty">Result</span>&lt;types::E2eiAcmeDirectory&gt; {
         <span class="kw">let </span>directory = serde_json::from_slice(<span class="kw-2">&amp;</span>directory[..])<span class="question-mark">?</span>;
         <span class="kw">let </span>directory: types::E2eiAcmeDirectory = <span class="self">self</span>.acme_directory_response(directory)<span class="question-mark">?</span>.into();
         <span class="self">self</span>.directory = <span class="prelude-val">Some</span>(directory.clone());
@@ -1221,10 +1270,11 @@
     /// # Parameters
     /// * `directory` - you got from [Self::directory_response]
     /// * `previous_nonce` - you got from calling `HEAD {directory.new_nonce}`
-    </span><span class="kw">pub fn </span>new_account_request(<span class="kw-2">&amp;</span><span class="self">self</span>, previous_nonce: String) -&gt; E2eIdentityResult&lt;Json&gt; {
-        <span class="kw">let </span>directory = <span class="self">self</span>.directory.as_ref().ok_or(E2eIdentityError::OutOfOrderEnrollment(
-            <span class="string">"You must first call 'directoryResponse()'"</span>,
-        ))<span class="question-mark">?</span>;
+    </span><span class="kw">pub fn </span>new_account_request(<span class="kw-2">&amp;</span><span class="self">self</span>, previous_nonce: String) -&gt; <span class="prelude-ty">Result</span>&lt;Json&gt; {
+        <span class="kw">let </span>directory = <span class="self">self
+            </span>.directory
+            .as_ref()
+            .ok_or(Error::OutOfOrderEnrollment(<span class="string">"You must first call 'directoryResponse()'"</span>))<span class="question-mark">?</span>;
         <span class="kw">let </span>account = <span class="self">self</span>.acme_new_account_request(<span class="kw-2">&amp;</span>directory.try_into()<span class="question-mark">?</span>, previous_nonce)<span class="question-mark">?</span>;
         <span class="kw">let </span>account = serde_json::to_vec(<span class="kw-2">&amp;</span>account)<span class="question-mark">?</span>;
         <span class="prelude-val">Ok</span>(account)
@@ -1236,7 +1286,7 @@
     ///
     /// # Parameters
     /// * `account` - http response body
-    </span><span class="kw">pub fn </span>new_account_response(<span class="kw-2">&amp;mut </span><span class="self">self</span>, account: Json) -&gt; E2eIdentityResult&lt;()&gt; {
+    </span><span class="kw">pub fn </span>new_account_response(<span class="kw-2">&amp;mut </span><span class="self">self</span>, account: Json) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
         <span class="kw">let </span>account = serde_json::from_slice(<span class="kw-2">&amp;</span>account[..])<span class="question-mark">?</span>;
         <span class="kw">let </span>account = <span class="self">self</span>.acme_new_account_response(account)<span class="question-mark">?</span>;
         <span class="self">self</span>.account = <span class="prelude-val">Some</span>(account);
@@ -1249,11 +1299,12 @@
     ///
     /// # Parameters
     /// * `previous_nonce` - `replay-nonce` response header from `POST /acme/{provisioner-name}/new-account`
-    </span><span class="kw">pub fn </span>new_order_request(<span class="kw-2">&amp;</span><span class="self">self</span>, previous_nonce: String) -&gt; E2eIdentityResult&lt;Json&gt; {
-        <span class="kw">let </span>directory = <span class="self">self</span>.directory.as_ref().ok_or(E2eIdentityError::OutOfOrderEnrollment(
-            <span class="string">"You must first call 'directoryResponse()'"</span>,
-        ))<span class="question-mark">?</span>;
-        <span class="kw">let </span>account = <span class="self">self</span>.account.as_ref().ok_or(E2eIdentityError::OutOfOrderEnrollment(
+    </span><span class="kw">pub fn </span>new_order_request(<span class="kw-2">&amp;</span><span class="self">self</span>, previous_nonce: String) -&gt; <span class="prelude-ty">Result</span>&lt;Json&gt; {
+        <span class="kw">let </span>directory = <span class="self">self
+            </span>.directory
+            .as_ref()
+            .ok_or(Error::OutOfOrderEnrollment(<span class="string">"You must first call 'directoryResponse()'"</span>))<span class="question-mark">?</span>;
+        <span class="kw">let </span>account = <span class="self">self</span>.account.as_ref().ok_or(Error::OutOfOrderEnrollment(
             <span class="string">"You must first call 'newAccountResponse()'"</span>,
         ))<span class="question-mark">?</span>;
         <span class="kw">let </span>order = <span class="self">self</span>.acme_new_order_request(
@@ -1275,7 +1326,7 @@
     ///
     /// # Parameters
     /// * `new_order` - http response body
-    </span><span class="kw">pub fn </span>new_order_response(<span class="kw-2">&amp;</span><span class="self">self</span>, order: Json) -&gt; E2eIdentityResult&lt;types::E2eiNewAcmeOrder&gt; {
+    </span><span class="kw">pub fn </span>new_order_response(<span class="kw-2">&amp;</span><span class="self">self</span>, order: Json) -&gt; <span class="prelude-ty">Result</span>&lt;types::E2eiNewAcmeOrder&gt; {
         <span class="kw">let </span>order = serde_json::from_slice(<span class="kw-2">&amp;</span>order[..])<span class="question-mark">?</span>;
         <span class="self">self</span>.acme_new_order_response(order)<span class="question-mark">?</span>.try_into()
     }
@@ -1289,8 +1340,8 @@
     /// * `account` - you got from [Self::new_account_response]
     /// * `previous_nonce` - `replay-nonce` response header from `POST /acme/{provisioner-name}/new-order`
     ///   (or from the previous to this method if you are creating the second authorization)
-    </span><span class="kw">pub fn </span>new_authz_request(<span class="kw-2">&amp;</span><span class="self">self</span>, url: String, previous_nonce: String) -&gt; E2eIdentityResult&lt;Json&gt; {
-        <span class="kw">let </span>account = <span class="self">self</span>.account.as_ref().ok_or(E2eIdentityError::OutOfOrderEnrollment(
+    </span><span class="kw">pub fn </span>new_authz_request(<span class="kw-2">&amp;</span><span class="self">self</span>, url: String, previous_nonce: String) -&gt; <span class="prelude-ty">Result</span>&lt;Json&gt; {
+        <span class="kw">let </span>account = <span class="self">self</span>.account.as_ref().ok_or(Error::OutOfOrderEnrollment(
             <span class="string">"You must first call 'newAccountResponse()'"</span>,
         ))<span class="question-mark">?</span>;
         <span class="kw">let </span>authz = <span class="self">self</span>.acme_new_authz_request(<span class="kw-2">&amp;</span>url.parse()<span class="question-mark">?</span>, account, previous_nonce)<span class="question-mark">?</span>;
@@ -1304,7 +1355,7 @@
     ///
     /// # Parameters
     /// * `new_authz` - http response body
-    </span><span class="kw">pub fn </span>new_authz_response(<span class="kw-2">&amp;mut </span><span class="self">self</span>, authz: Json) -&gt; E2eIdentityResult&lt;types::E2eiNewAcmeAuthz&gt; {
+    </span><span class="kw">pub fn </span>new_authz_response(<span class="kw-2">&amp;mut </span><span class="self">self</span>, authz: Json) -&gt; <span class="prelude-ty">Result</span>&lt;types::E2eiNewAcmeAuthz&gt; {
         <span class="kw">let </span>authz = serde_json::from_slice(<span class="kw-2">&amp;</span>authz[..])<span class="question-mark">?</span>;
         <span class="kw">let </span>authz = <span class="self">self</span>.acme_new_authz_response(authz)<span class="question-mark">?</span>;
         <span class="kw">match </span><span class="kw-2">&amp;</span>authz {
@@ -1328,17 +1379,15 @@
     ///   See endpoint [definition](https://staging-nginz-https.zinfra.io/api/swagger-ui/#/default/get_clients__client__nonce)
     /// * `expiry` - token expiry
     </span><span class="attr">#[allow(clippy::too_many_arguments)]
-    </span><span class="kw">pub fn </span>create_dpop_token(<span class="kw-2">&amp;</span><span class="self">self</span>, expiry_secs: u32, backend_nonce: String) -&gt; E2eIdentityResult&lt;String&gt; {
+    </span><span class="kw">pub fn </span>create_dpop_token(<span class="kw-2">&amp;</span><span class="self">self</span>, expiry_secs: u32, backend_nonce: String) -&gt; <span class="prelude-ty">Result</span>&lt;String&gt; {
         <span class="kw">let </span>expiry = core::time::Duration::from_secs(expiry_secs <span class="kw">as </span>u64);
         <span class="kw">let </span>authz = <span class="self">self
             </span>.device_authz
             .as_ref()
-            .ok_or(E2eIdentityError::OutOfOrderEnrollment(
-                <span class="string">"You must first call 'newAuthzResponse()'"</span>,
-            ))<span class="question-mark">?</span>;
+            .ok_or(Error::OutOfOrderEnrollment(<span class="string">"You must first call 'newAuthzResponse()'"</span>))<span class="question-mark">?</span>;
         <span class="kw">let </span>challenge = <span class="kw">match </span>authz {
             E2eiAcmeAuthorization::Device { challenge, .. } =&gt; challenge,
-            E2eiAcmeAuthorization::User { .. } =&gt; <span class="kw">return </span><span class="prelude-val">Err</span>(E2eIdentityError::ImplementationError),
+            E2eiAcmeAuthorization::User { .. } =&gt; <span class="kw">return </span><span class="prelude-val">Err</span>(Error::ImplementationError),
         };
         <span class="prelude-val">Ok</span>(<span class="self">self</span>.new_dpop_token(
             <span class="kw-2">&amp;</span><span class="self">self</span>.client_id,
@@ -1360,18 +1409,16 @@
     /// * `dpop_challenge` - you found after [Self::new_authz_response]
     /// * `account` - you got from [Self::new_account_response]
     /// * `previous_nonce` - `replay-nonce` response header from `POST /acme/{provisioner-name}/authz/{authz-id}`
-    </span><span class="kw">pub fn </span>new_dpop_challenge_request(<span class="kw-2">&amp;</span><span class="self">self</span>, access_token: String, previous_nonce: String) -&gt; E2eIdentityResult&lt;Json&gt; {
+    </span><span class="kw">pub fn </span>new_dpop_challenge_request(<span class="kw-2">&amp;</span><span class="self">self</span>, access_token: String, previous_nonce: String) -&gt; <span class="prelude-ty">Result</span>&lt;Json&gt; {
         <span class="kw">let </span>authz = <span class="self">self
             </span>.device_authz
             .as_ref()
-            .ok_or(E2eIdentityError::OutOfOrderEnrollment(
-                <span class="string">"You must first call 'newAuthzResponse()'"</span>,
-            ))<span class="question-mark">?</span>;
+            .ok_or(Error::OutOfOrderEnrollment(<span class="string">"You must first call 'newAuthzResponse()'"</span>))<span class="question-mark">?</span>;
         <span class="kw">let </span>challenge = <span class="kw">match </span>authz {
             E2eiAcmeAuthorization::Device { challenge, .. } =&gt; challenge,
-            E2eiAcmeAuthorization::User { .. } =&gt; <span class="kw">return </span><span class="prelude-val">Err</span>(E2eIdentityError::ImplementationError),
+            E2eiAcmeAuthorization::User { .. } =&gt; <span class="kw">return </span><span class="prelude-val">Err</span>(Error::ImplementationError),
         };
-        <span class="kw">let </span>account = <span class="self">self</span>.account.as_ref().ok_or(E2eIdentityError::OutOfOrderEnrollment(
+        <span class="kw">let </span>account = <span class="self">self</span>.account.as_ref().ok_or(Error::OutOfOrderEnrollment(
             <span class="string">"You must first call 'newAccountResponse()'"</span>,
         ))<span class="question-mark">?</span>;
         <span class="kw">let </span>challenge = <span class="self">self</span>.acme_dpop_challenge_request(access_token, challenge, account, previous_nonce)<span class="question-mark">?</span>;
@@ -1385,7 +1432,7 @@
     ///
     /// # Parameters
     /// * `challenge` - http response body
-    </span><span class="kw">pub fn </span>new_dpop_challenge_response(<span class="kw-2">&amp;</span><span class="self">self</span>, challenge: Json) -&gt; E2eIdentityResult&lt;()&gt; {
+    </span><span class="kw">pub fn </span>new_dpop_challenge_response(<span class="kw-2">&amp;</span><span class="self">self</span>, challenge: Json) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
         <span class="kw">let </span>challenge = serde_json::from_slice(<span class="kw-2">&amp;</span>challenge[..])<span class="question-mark">?</span>;
         <span class="prelude-val">Ok</span>(<span class="self">self</span>.acme_new_challenge_response(challenge)<span class="question-mark">?</span>)
     }
@@ -1405,21 +1452,22 @@
         id_token: String,
         <span class="attr">#[cfg(not(target_family = <span class="string">"wasm"</span>))] </span>refresh_token: String,
         previous_nonce: String,
-    ) -&gt; E2eIdentityResult&lt;Json&gt; {
+    ) -&gt; <span class="prelude-ty">Result</span>&lt;Json&gt; {
         <span class="attr">#[cfg(not(target_family = <span class="string">"wasm"</span>))]
         </span>{
             <span class="kw">if </span>refresh_token.is_empty() {
-                <span class="kw">return </span><span class="prelude-val">Err</span>(E2eIdentityError::InvalidRefreshToken);
+                <span class="kw">return </span><span class="prelude-val">Err</span>(Error::InvalidRefreshToken);
             }
         }
-        <span class="kw">let </span>authz = <span class="self">self</span>.user_authz.as_ref().ok_or(E2eIdentityError::OutOfOrderEnrollment(
-            <span class="string">"You must first call 'newAuthzResponse()'"</span>,
-        ))<span class="question-mark">?</span>;
+        <span class="kw">let </span>authz = <span class="self">self
+            </span>.user_authz
+            .as_ref()
+            .ok_or(Error::OutOfOrderEnrollment(<span class="string">"You must first call 'newAuthzResponse()'"</span>))<span class="question-mark">?</span>;
         <span class="kw">let </span>challenge = <span class="kw">match </span>authz {
             E2eiAcmeAuthorization::User { challenge, .. } =&gt; challenge,
-            E2eiAcmeAuthorization::Device { .. } =&gt; <span class="kw">return </span><span class="prelude-val">Err</span>(E2eIdentityError::ImplementationError),
+            E2eiAcmeAuthorization::Device { .. } =&gt; <span class="kw">return </span><span class="prelude-val">Err</span>(Error::ImplementationError),
         };
-        <span class="kw">let </span>account = <span class="self">self</span>.account.as_ref().ok_or(E2eIdentityError::OutOfOrderEnrollment(
+        <span class="kw">let </span>account = <span class="self">self</span>.account.as_ref().ok_or(Error::OutOfOrderEnrollment(
             <span class="string">"You must first call 'newAccountResponse()'"</span>,
         ))<span class="question-mark">?</span>;
         <span class="kw">let </span>challenge = <span class="self">self</span>.acme_oidc_challenge_request(id_token, challenge, account, previous_nonce)<span class="question-mark">?</span>;
@@ -1441,7 +1489,7 @@
         <span class="kw-2">&amp;mut </span><span class="self">self</span>,
         <span class="attr">#[cfg(not(target_family = <span class="string">"wasm"</span>))] </span>backend: <span class="kw-2">&amp;</span>MlsCryptoProvider,
         challenge: Json,
-    ) -&gt; E2eIdentityResult&lt;()&gt; {
+    ) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
         <span class="kw">let </span>challenge = serde_json::from_slice(<span class="kw-2">&amp;</span>challenge[..])<span class="question-mark">?</span>;
         <span class="self">self</span>.acme_new_challenge_response(challenge)<span class="question-mark">?</span>;
 
@@ -1451,7 +1499,7 @@
             // that we could have persisted it at the end of the enrollment but what if the next enrollment
             // steps fail ? Is it a reason good enough not to persist the token and ask the user to
             // authenticate again: probably not.
-            </span><span class="kw">let </span>refresh_token = <span class="self">self</span>.refresh_token.take().ok_or(E2eIdentityError::OutOfOrderEnrollment(
+            </span><span class="kw">let </span>refresh_token = <span class="self">self</span>.refresh_token.take().ok_or(Error::OutOfOrderEnrollment(
                 <span class="string">"You must first call 'new_oidc_challenge_request()'"</span>,
             ))<span class="question-mark">?</span>;
             refresh_token.replace(backend).<span class="kw">await</span><span class="question-mark">?</span>;
@@ -1467,8 +1515,8 @@
     /// * `order_url` - `location` header from http response you got from [Self::new_order_response]
     /// * `account` - you got from [Self::new_account_response]
     /// * `previous_nonce` - `replay-nonce` response header from `POST /acme/{provisioner-name}/challenge/{challenge-id}`
-    </span><span class="kw">pub fn </span>check_order_request(<span class="kw-2">&amp;</span><span class="self">self</span>, order_url: String, previous_nonce: String) -&gt; E2eIdentityResult&lt;Json&gt; {
-        <span class="kw">let </span>account = <span class="self">self</span>.account.as_ref().ok_or(E2eIdentityError::OutOfOrderEnrollment(
+    </span><span class="kw">pub fn </span>check_order_request(<span class="kw-2">&amp;</span><span class="self">self</span>, order_url: String, previous_nonce: String) -&gt; <span class="prelude-ty">Result</span>&lt;Json&gt; {
+        <span class="kw">let </span>account = <span class="self">self</span>.account.as_ref().ok_or(Error::OutOfOrderEnrollment(
             <span class="string">"You must first call 'newAccountResponse()'"</span>,
         ))<span class="question-mark">?</span>;
         <span class="kw">let </span>order = <span class="self">self</span>.acme_check_order_request(order_url.parse()<span class="question-mark">?</span>, account, previous_nonce)<span class="question-mark">?</span>;
@@ -1485,7 +1533,7 @@
     ///
     /// # Returns
     /// The finalize url to use with [Self::finalize_request]
-    </span><span class="kw">pub fn </span>check_order_response(<span class="kw-2">&amp;mut </span><span class="self">self</span>, order: Json) -&gt; E2eIdentityResult&lt;String&gt; {
+    </span><span class="kw">pub fn </span>check_order_response(<span class="kw-2">&amp;mut </span><span class="self">self</span>, order: Json) -&gt; <span class="prelude-ty">Result</span>&lt;String&gt; {
         <span class="kw">let </span>order = serde_json::from_slice(<span class="kw-2">&amp;</span>order[..])<span class="question-mark">?</span>;
         <span class="kw">let </span>valid_order = <span class="self">self</span>.acme_check_order_response(order)<span class="question-mark">?</span>;
         <span class="kw">let </span>finalize_url = valid_order.finalize_url.to_string();
@@ -1502,11 +1550,11 @@
     /// * `order` - you got from [Self::check_order_response]
     /// * `account` - you got from [Self::new_account_response]
     /// * `previous_nonce` - `replay-nonce` response header from `POST /acme/{provisioner-name}/order/{order-id}`
-    </span><span class="kw">pub fn </span>finalize_request(<span class="kw-2">&amp;mut </span><span class="self">self</span>, previous_nonce: String) -&gt; E2eIdentityResult&lt;Json&gt; {
-        <span class="kw">let </span>account = <span class="self">self</span>.account.as_ref().ok_or(E2eIdentityError::OutOfOrderEnrollment(
+    </span><span class="kw">pub fn </span>finalize_request(<span class="kw-2">&amp;mut </span><span class="self">self</span>, previous_nonce: String) -&gt; <span class="prelude-ty">Result</span>&lt;Json&gt; {
+        <span class="kw">let </span>account = <span class="self">self</span>.account.as_ref().ok_or(Error::OutOfOrderEnrollment(
             <span class="string">"You must first call 'newAccountResponse()'"</span>,
         ))<span class="question-mark">?</span>;
-        <span class="kw">let </span>order = <span class="self">self</span>.valid_order.as_ref().ok_or(E2eIdentityError::OutOfOrderEnrollment(
+        <span class="kw">let </span>order = <span class="self">self</span>.valid_order.as_ref().ok_or(Error::OutOfOrderEnrollment(
             <span class="string">"You must first call 'checkOrderResponse()'"</span>,
         ))<span class="question-mark">?</span>;
         <span class="kw">let </span>finalize = <span class="self">self</span>.acme_finalize_request(order, account, previous_nonce)<span class="question-mark">?</span>;
@@ -1523,7 +1571,7 @@
     ///
     /// # Returns
     /// The certificate url to use with [Self::certificate_request]
-    </span><span class="kw">pub fn </span>finalize_response(<span class="kw-2">&amp;mut </span><span class="self">self</span>, finalize: Json) -&gt; E2eIdentityResult&lt;String&gt; {
+    </span><span class="kw">pub fn </span>finalize_response(<span class="kw-2">&amp;mut </span><span class="self">self</span>, finalize: Json) -&gt; <span class="prelude-ty">Result</span>&lt;String&gt; {
         <span class="kw">let </span>finalize = serde_json::from_slice(<span class="kw-2">&amp;</span>finalize[..])<span class="question-mark">?</span>;
         <span class="kw">let </span>finalize = <span class="self">self</span>.acme_finalize_response(finalize)<span class="question-mark">?</span>;
         <span class="kw">let </span>certificate_url = finalize.certificate_url.to_string();
@@ -1539,13 +1587,14 @@
     /// * `finalize` - you got from [Self::finalize_response]
     /// * `account` - you got from [Self::new_account_response]
     /// * `previous_nonce` - `replay-nonce` response header from `POST /acme/{provisioner-name}/order/{order-id}/finalize`
-    </span><span class="kw">pub fn </span>certificate_request(<span class="kw-2">&amp;mut </span><span class="self">self</span>, previous_nonce: String) -&gt; E2eIdentityResult&lt;Json&gt; {
-        <span class="kw">let </span>account = <span class="self">self</span>.account.take().ok_or(E2eIdentityError::OutOfOrderEnrollment(
+    </span><span class="kw">pub fn </span>certificate_request(<span class="kw-2">&amp;mut </span><span class="self">self</span>, previous_nonce: String) -&gt; <span class="prelude-ty">Result</span>&lt;Json&gt; {
+        <span class="kw">let </span>account = <span class="self">self</span>.account.take().ok_or(Error::OutOfOrderEnrollment(
             <span class="string">"You must first call 'newAccountResponse()'"</span>,
         ))<span class="question-mark">?</span>;
-        <span class="kw">let </span>finalize = <span class="self">self</span>.finalize.take().ok_or(E2eIdentityError::OutOfOrderEnrollment(
-            <span class="string">"You must first call 'finalizeResponse()'"</span>,
-        ))<span class="question-mark">?</span>;
+        <span class="kw">let </span>finalize = <span class="self">self
+            </span>.finalize
+            .take()
+            .ok_or(Error::OutOfOrderEnrollment(<span class="string">"You must first call 'finalizeResponse()'"</span>))<span class="question-mark">?</span>;
         <span class="kw">let </span>certificate = <span class="self">self</span>.acme_x509_certificate_request(finalize, account, previous_nonce)<span class="question-mark">?</span>;
         <span class="kw">let </span>certificate = serde_json::to_vec(<span class="kw-2">&amp;</span>certificate)<span class="question-mark">?</span>;
         <span class="prelude-val">Ok</span>(certificate)
@@ -1555,8 +1604,8 @@
         <span class="kw-2">&amp;mut </span><span class="self">self</span>,
         certificate_chain: String,
         env: <span class="kw-2">&amp;</span>wire_e2e_identity::prelude::x509::revocation::PkiEnvironment,
-    ) -&gt; E2eIdentityResult&lt;Vec&lt;Vec&lt;u8&gt;&gt;&gt; {
-        <span class="kw">let </span>order = <span class="self">self</span>.valid_order.take().ok_or(E2eIdentityError::OutOfOrderEnrollment(
+    ) -&gt; <span class="prelude-ty">Result</span>&lt;Vec&lt;Vec&lt;u8&gt;&gt;&gt; {
+        <span class="kw">let </span>order = <span class="self">self</span>.valid_order.take().ok_or(Error::OutOfOrderEnrollment(
             <span class="string">"You must first call 'checkOrderResponse()'"</span>,
         ))<span class="question-mark">?</span>;
         <span class="kw">let </span>certificates = <span class="self">self</span>.acme_x509_certificate_response(certificate_chain, order, <span class="prelude-val">Some</span>(env))<span class="question-mark">?</span>;
@@ -1584,14 +1633,17 @@
     <span class="kw">use </span>serde_json::json;
     <span class="kw">use </span>wasm_bindgen_test::<span class="kw-2">*</span>;
 
-    <span class="kw">use </span><span class="kw">crate</span>::context::CentralContext;
+    <span class="kw">use </span><span class="kw">crate</span>::mls::conversation::Conversation <span class="kw">as _</span>;
     <span class="attr">#[cfg(not(target_family = <span class="string">"wasm"</span>))]
-    </span><span class="kw">use </span><span class="kw">crate</span>::e2e_identity::refresh_token::RefreshToken;
+    </span><span class="kw">use crate</span>::{
+        RecursiveError,
+        e2e_identity::{Error, refresh_token::RefreshToken},
+    };
     <span class="kw">use crate</span>::{
-        e2e_identity::{id::QualifiedE2eiClientId, tests::x509::X509TestChain},
+        context::CentralContext,
+        e2e_identity::{<span class="prelude-ty">Result</span>, id::QualifiedE2eiClientId, tests::x509::X509TestChain},
         prelude::<span class="kw-2">*</span>,
         test_utils::{context::TEAM, <span class="kw-2">*</span>},
-        CryptoResult,
     };
 
     <span class="macro">wasm_bindgen_test_configure!</span>(run_in_browser);
@@ -1681,9 +1733,21 @@
                     .new_conversation(<span class="kw-2">&amp;</span>id, MlsCredentialType::X509, case.cfg.clone())
                     .<span class="kw">await
                     </span>.unwrap();
-                cc.context.encrypt_message(<span class="kw-2">&amp;</span>id, <span class="string">"Hello e2e identity !"</span>).<span class="kw">await</span>.unwrap();
+                cc.context
+                    .conversation_guard(<span class="kw-2">&amp;</span>id)
+                    .<span class="kw">await
+                    </span>.unwrap()
+                    .encrypt_message(<span class="string">"Hello e2e identity !"</span>)
+                    .<span class="kw">await
+                    </span>.unwrap();
                 <span class="macro">assert_eq!</span>(
-                    cc.context.e2ei_conversation_state(<span class="kw-2">&amp;</span>id).<span class="kw">await</span>.unwrap(),
+                    cc.context
+                        .conversation_guard(<span class="kw-2">&amp;</span>id)
+                        .<span class="kw">await
+                        </span>.unwrap()
+                        .e2ei_conversation_state()
+                        .<span class="kw">await
+                        </span>.unwrap(),
                     E2eiConversationState::Verified
                 );
                 <span class="macro">assert!</span>(cc.context.e2ei_is_enabled(case.signature_scheme()).<span class="kw">await</span>.unwrap());
@@ -1699,7 +1763,7 @@
     }
 
     <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">type </span>InitFnReturn&lt;<span class="lifetime">'a</span>&gt; =
-        std::pin::Pin&lt;Box&lt;<span class="kw">dyn </span>std::future::Future&lt;Output = CryptoResult&lt;E2eiEnrollment&gt;&gt; + <span class="lifetime">'a</span>&gt;&gt;;
+        std::pin::Pin&lt;Box&lt;<span class="kw">dyn </span>std::future::Future&lt;Output = <span class="prelude-ty">Result</span>&lt;E2eiEnrollment&gt;&gt; + <span class="lifetime">'a</span>&gt;&gt;;
 
     <span class="doccomment">/// Helps the compiler with its lifetime inference rules while passing async closures
     </span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">struct </span>E2eiInitWrapper&lt;<span class="lifetime">'a</span>&gt; {
@@ -1717,11 +1781,15 @@
         init: <span class="kw">impl </span>Fn(E2eiInitWrapper) -&gt; InitFnReturn&lt;<span class="lifetime">'_</span>&gt;,
         <span class="comment">// used to verify persisting the instance actually does restore it entirely
         </span>restore: <span class="kw">impl </span>Fn(E2eiEnrollment, <span class="kw-2">&amp;</span><span class="lifetime">'a </span>CentralContext) -&gt; RestoreFnReturn&lt;<span class="lifetime">'a</span>&gt;,
-    ) -&gt; CryptoResult&lt;(E2eiEnrollment, String)&gt; {
+    ) -&gt; <span class="prelude-ty">Result</span>&lt;(E2eiEnrollment, String)&gt; {
         x509_test_chain.register_with_central(<span class="kw-2">&amp;</span>ctx.context).<span class="kw">await</span>;
         <span class="attr">#[cfg(not(target_family = <span class="string">"wasm"</span>))]
         </span>{
-            <span class="kw">let </span>backend = ctx.context.mls_provider().<span class="kw">await</span><span class="question-mark">?</span>;
+            <span class="kw">let </span>backend = ctx
+                .context
+                .mls_provider()
+                .<span class="kw">await
+                </span>.map_err(RecursiveError::root(<span class="string">"getting mls provider"</span>))<span class="question-mark">?</span>;
             <span class="kw">let </span>keystore = backend.key_store();
             <span class="kw">if </span>is_renewal {
                 <span class="kw">let </span>initial_refresh_token =
@@ -1740,7 +1808,11 @@
 
         <span class="attr">#[cfg(not(target_family = <span class="string">"wasm"</span>))]
         </span>{
-            <span class="kw">let </span>backend = ctx.context.mls_provider().<span class="kw">await</span><span class="question-mark">?</span>;
+            <span class="kw">let </span>backend = ctx
+                .context
+                .mls_provider()
+                .<span class="kw">await
+                </span>.map_err(RecursiveError::root(<span class="string">"getting mls provider"</span>))<span class="question-mark">?</span>;
             <span class="kw">let </span>keystore = backend.key_store();
             <span class="kw">if </span>is_renewal {
                 <span class="macro">assert!</span>(enrollment.refresh_token.is_some());
@@ -1748,7 +1820,7 @@
             } <span class="kw">else </span>{
                 <span class="macro">assert!</span>(<span class="macro">matches!</span>(
                     enrollment.get_refresh_token().unwrap_err(),
-                    E2eIdentityError::OutOfOrderEnrollment(<span class="kw">_</span>)
+                    Error::OutOfOrderEnrollment(<span class="kw">_</span>)
                 ));
                 <span class="macro">assert!</span>(RefreshToken::find(keystore).<span class="kw">await</span>.is_err());
             }
@@ -1784,7 +1856,9 @@
             <span class="prelude-val">None </span>=&gt; ctx.get_e2ei_client_id().<span class="kw">await</span>.to_uri(),
             <span class="prelude-val">Some</span>(client_id) =&gt; <span class="macro">format!</span>(<span class="string">"{}{client_id}"</span>, wire_e2e_identity::prelude::E2eiClientId::URI_SCHEME),
         };
-        <span class="kw">let </span>device_identifier = <span class="macro">format!</span>(<span class="string">"{{\"name\":\"{display_name}\",\"domain\":\"world.com\",\"client-id\":\"{client_id}\",\"handle\":\"wireapp://%40{handle}@world.com\"}}"</span>);
+        <span class="kw">let </span>device_identifier = <span class="macro">format!</span>(
+            <span class="string">"{{\"name\":\"{display_name}\",\"domain\":\"world.com\",\"client-id\":\"{client_id}\",\"handle\":\"wireapp://%40{handle}@world.com\"}}"
+        </span>);
         <span class="kw">let </span>user_identifier = <span class="macro">format!</span>(
             <span class="string">"{{\"name\":\"{display_name}\",\"domain\":\"world.com\",\"handle\":\"wireapp://%40{handle}@world.com\"}}"
         </span>);
@@ -1908,7 +1982,11 @@
 
         <span class="attr">#[cfg(not(target_family = <span class="string">"wasm"</span>))]
         </span>{
-            <span class="kw">let </span>backend = ctx.context.mls_provider().<span class="kw">await</span><span class="question-mark">?</span>;
+            <span class="kw">let </span>backend = ctx
+                .context
+                .mls_provider()
+                .<span class="kw">await
+                </span>.map_err(RecursiveError::root(<span class="string">"getting mls provider"</span>))<span class="question-mark">?</span>;
             <span class="kw">let </span>keystore = backend.key_store();
             enrollment
                 .new_oidc_challenge_response(<span class="kw-2">&amp;</span>ctx.context.mls_provider().<span class="kw">await</span>.unwrap(), oidc_chall_resp)

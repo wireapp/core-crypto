@@ -175,8 +175,8 @@
 <span class="attr">#[cfg(feature = <span class="string">"dummy-entity"</span>)]
 </span><span class="kw">pub mod </span>dummy_entity {
     <span class="kw">use crate</span>::{
-        entities::{Entity, EntityBase, EntityFindParams, StringEntityId},
         CryptoKeystoreResult, MissingKeyErrorKind,
+        entities::{Entity, EntityBase, EntityFindParams, StringEntityId},
     };
 
     <span class="attr">#[derive(Debug, Eq, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
@@ -189,7 +189,7 @@
         <span class="kw">const </span>COLLECTION_NAME: <span class="kw-2">&amp;</span><span class="lifetime">'static </span>str = <span class="string">""</span>;
 
         <span class="kw">fn </span>to_missing_key_err_kind() -&gt; MissingKeyErrorKind {
-            MissingKeyErrorKind::MlsGroup
+            MissingKeyErrorKind::PersistedMlsGroup
         }
 
         <span class="kw">fn </span>to_transaction_entity(<span class="self">self</span>) -&gt; <span class="kw">crate</span>::transaction::dynamic_dispatch::Entity {

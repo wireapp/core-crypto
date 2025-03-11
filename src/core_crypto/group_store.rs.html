@@ -501,7 +501,19 @@
 <a href="#500" id="500">500</a>
 <a href="#501" id="501">501</a>
 <a href="#502" id="502">502</a>
-<a href="#503" id="503">503</a></pre></div><pre class="rust"><code><span class="comment">// Wire
+<a href="#503" id="503">503</a>
+<a href="#504" id="504">504</a>
+<a href="#505" id="505">505</a>
+<a href="#506" id="506">506</a>
+<a href="#507" id="507">507</a>
+<a href="#508" id="508">508</a>
+<a href="#509" id="509">509</a>
+<a href="#510" id="510">510</a>
+<a href="#511" id="511">511</a>
+<a href="#512" id="512">512</a>
+<a href="#513" id="513">513</a>
+<a href="#514" id="514">514</a>
+<a href="#515" id="515">515</a></pre></div><pre class="rust"><code><span class="comment">// Wire
 // Copyright (C) 2022 Wire Swiss GmbH
 
 // This program is free software: you can redistribute it and/or modify
@@ -517,8 +529,12 @@
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see http://www.gnu.org/licenses/.
 
-</span><span class="kw">use </span><span class="kw">crate</span>::prelude::{CryptoResult, MlsConversation};
-<span class="kw">use </span>core_crypto_keystore::{connection::FetchFromDatabase, entities::EntityFindParams};
+</span><span class="kw">use </span>std::sync::Arc;
+
+<span class="kw">use crate</span>::{KeystoreError, ProteusError, RecursiveError, <span class="prelude-ty">Result</span>, prelude::MlsConversation};
+<span class="kw">use </span>core_crypto_keystore::connection::FetchFromDatabase;
+<span class="attr">#[cfg(test)]
+</span><span class="kw">use </span>core_crypto_keystore::entities::EntityFindParams;
 
 <span class="attr">#[cfg_attr(target_family = <span class="string">"wasm"</span>, async_trait::async_trait(<span class="question-mark">?</span>Send))]
 #[cfg_attr(not(target_family = <span class="string">"wasm"</span>), async_trait::async_trait)]
@@ -526,17 +542,19 @@
     <span class="kw">type </span>RawStoreValue: core_crypto_keystore::entities::Entity;
     <span class="kw">type </span>IdentityType;
 
-    <span class="kw">fn </span>id(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>[u8];
+    <span class="attr">#[cfg(test)]
+    </span><span class="kw">fn </span>id(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>[u8];
 
     <span class="kw">async fn </span>fetch_from_id(
         id: <span class="kw-2">&amp;</span>[u8],
         identity: <span class="prelude-ty">Option</span>&lt;<span class="self">Self</span>::IdentityType&gt;,
         keystore: <span class="kw-2">&amp;</span><span class="kw">impl </span>FetchFromDatabase,
-    ) -&gt; CryptoResult&lt;<span class="prelude-ty">Option</span>&lt;<span class="self">Self</span>&gt;&gt;
+    ) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="prelude-ty">Option</span>&lt;<span class="self">Self</span>&gt;&gt;
     <span class="kw">where
         </span><span class="self">Self</span>: Sized;
 
-    <span class="kw">async fn </span>fetch_all(keystore: <span class="kw-2">&amp;</span><span class="kw">impl </span>FetchFromDatabase) -&gt; CryptoResult&lt;Vec&lt;<span class="self">Self</span>&gt;&gt;
+    <span class="attr">#[cfg(test)]
+    </span><span class="kw">async fn </span>fetch_all(keystore: <span class="kw-2">&amp;</span><span class="kw">impl </span>FetchFromDatabase) -&gt; <span class="prelude-ty">Result</span>&lt;Vec&lt;<span class="self">Self</span>&gt;&gt;
     <span class="kw">where
         </span><span class="self">Self</span>: Sized;
 }
@@ -547,7 +565,8 @@
     <span class="kw">type </span>RawStoreValue = core_crypto_keystore::entities::PersistedMlsGroup;
     <span class="kw">type </span>IdentityType = ();
 
-    <span class="kw">fn </span>id(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>[u8] {
+    <span class="attr">#[cfg(test)]
+    </span><span class="kw">fn </span>id(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>[u8] {
         <span class="self">self</span>.id().as_slice()
     }
 
@@ -555,25 +574,27 @@
         id: <span class="kw-2">&amp;</span>[u8],
         <span class="kw">_</span>: <span class="prelude-ty">Option</span>&lt;<span class="self">Self</span>::IdentityType&gt;,
         keystore: <span class="kw-2">&amp;</span><span class="kw">impl </span>FetchFromDatabase,
-    ) -&gt; <span class="kw">crate</span>::CryptoResult&lt;<span class="prelude-ty">Option</span>&lt;<span class="self">Self</span>&gt;&gt; {
-        <span class="kw">let </span>result = keystore.find::&lt;<span class="self">Self</span>::RawStoreValue&gt;(id).<span class="kw">await</span><span class="question-mark">?</span>;
+    ) -&gt; <span class="kw">crate</span>::Result&lt;<span class="prelude-ty">Option</span>&lt;<span class="self">Self</span>&gt;&gt; {
+        <span class="kw">let </span>result = keystore
+            .find::&lt;<span class="self">Self</span>::RawStoreValue&gt;(id)
+            .<span class="kw">await
+            </span>.map_err(KeystoreError::wrap(<span class="string">"finding mls conversation from keystore by id"</span>))<span class="question-mark">?</span>;
         <span class="kw">let </span><span class="prelude-val">Some</span>(store_value) = result <span class="kw">else </span>{
             <span class="kw">return </span><span class="prelude-val">Ok</span>(<span class="prelude-val">None</span>);
         };
 
-        <span class="kw">let </span>conversation = <span class="self">Self</span>::from_serialized_state(store_value.state.clone(), store_value.parent_id.clone())<span class="question-mark">?</span>;
+        <span class="kw">let </span>conversation = <span class="self">Self</span>::from_serialized_state(store_value.state.clone(), store_value.parent_id.clone())
+            .map_err(RecursiveError::mls_conversation(<span class="string">"deserializing mls conversation"</span>))<span class="question-mark">?</span>;
         <span class="comment">// If the conversation is not active, pretend it doesn't exist
-        </span><span class="prelude-val">Ok</span>(<span class="kw">if </span>conversation.group.is_active() {
-            <span class="prelude-val">Some</span>(conversation)
-        } <span class="kw">else </span>{
-            <span class="prelude-val">None
-        </span>})
+        </span><span class="prelude-val">Ok</span>(conversation.group.is_active().then_some(conversation))
     }
 
-    <span class="kw">async fn </span>fetch_all(keystore: <span class="kw-2">&amp;</span><span class="kw">impl </span>FetchFromDatabase) -&gt; CryptoResult&lt;Vec&lt;<span class="self">Self</span>&gt;&gt; {
+    <span class="attr">#[cfg(test)]
+    </span><span class="kw">async fn </span>fetch_all(keystore: <span class="kw-2">&amp;</span><span class="kw">impl </span>FetchFromDatabase) -&gt; <span class="prelude-ty">Result</span>&lt;Vec&lt;<span class="self">Self</span>&gt;&gt; {
         <span class="kw">let </span>all_conversations = keystore
             .find_all::&lt;<span class="self">Self</span>::RawStoreValue&gt;(EntityFindParams::default())
-            .<span class="kw">await</span><span class="question-mark">?</span>;
+            .<span class="kw">await
+            </span>.map_err(KeystoreError::wrap(<span class="string">"finding all mls conversations"</span>))<span class="question-mark">?</span>;
         <span class="prelude-val">Ok</span>(all_conversations
             .iter()
             .filter_map(|c| {
@@ -589,9 +610,10 @@
 #[cfg_attr(not(target_family = <span class="string">"wasm"</span>), async_trait::async_trait)]
 </span><span class="kw">impl </span>GroupStoreEntity <span class="kw">for </span><span class="kw">crate</span>::proteus::ProteusConversationSession {
     <span class="kw">type </span>RawStoreValue = core_crypto_keystore::entities::ProteusSession;
-    <span class="kw">type </span>IdentityType = std::sync::Arc&lt;proteus_wasm::keys::IdentityKeyPair&gt;;
+    <span class="kw">type </span>IdentityType = Arc&lt;proteus_wasm::keys::IdentityKeyPair&gt;;
 
-    <span class="kw">fn </span>id(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>[u8] {
+    <span class="attr">#[cfg(test)]
+    </span><span class="kw">fn </span>id(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>[u8] {
         <span class="macro">unreachable!</span>()
     }
 
@@ -599,18 +621,21 @@
         id: <span class="kw-2">&amp;</span>[u8],
         identity: <span class="prelude-ty">Option</span>&lt;<span class="self">Self</span>::IdentityType&gt;,
         keystore: <span class="kw-2">&amp;</span><span class="kw">impl </span>FetchFromDatabase,
-    ) -&gt; <span class="kw">crate</span>::CryptoResult&lt;<span class="prelude-ty">Option</span>&lt;<span class="self">Self</span>&gt;&gt; {
-        <span class="kw">let </span>result = keystore.find::&lt;<span class="self">Self</span>::RawStoreValue&gt;(id).<span class="kw">await</span><span class="question-mark">?</span>;
+    ) -&gt; <span class="kw">crate</span>::Result&lt;<span class="prelude-ty">Option</span>&lt;<span class="self">Self</span>&gt;&gt; {
+        <span class="kw">let </span>result = keystore
+            .find::&lt;<span class="self">Self</span>::RawStoreValue&gt;(id)
+            .<span class="kw">await
+            </span>.map_err(KeystoreError::wrap(<span class="string">"finding raw group store entity by id"</span>))<span class="question-mark">?</span>;
         <span class="kw">let </span><span class="prelude-val">Some</span>(store_value) = result <span class="kw">else </span>{
             <span class="kw">return </span><span class="prelude-val">Ok</span>(<span class="prelude-val">None</span>);
         };
 
         <span class="kw">let </span><span class="prelude-val">Some</span>(identity) = identity <span class="kw">else </span>{
-            <span class="kw">return </span><span class="prelude-val">Err</span>(<span class="kw">crate</span>::CryptoError::ProteusNotInitialized);
+            <span class="kw">return </span><span class="prelude-val">Err</span>(<span class="kw">crate</span>::Error::ProteusNotInitialized);
         };
 
         <span class="kw">let </span>session = proteus_wasm::session::Session::deserialise(identity, <span class="kw-2">&amp;</span>store_value.session)
-            .map_err(<span class="kw">crate</span>::ProteusError::from)<span class="question-mark">?</span>;
+            .map_err(ProteusError::wrap(<span class="string">"deserializing session"</span>))<span class="question-mark">?</span>;
 
         <span class="prelude-val">Ok</span>(<span class="prelude-val">Some</span>(<span class="self">Self </span>{
             identifier: store_value.id.clone(),
@@ -618,7 +643,8 @@
         }))
     }
 
-    <span class="kw">async fn </span>fetch_all(_keystore: <span class="kw-2">&amp;</span><span class="kw">impl </span>FetchFromDatabase) -&gt; CryptoResult&lt;Vec&lt;<span class="self">Self</span>&gt;&gt;
+    <span class="attr">#[cfg(test)]
+    </span><span class="kw">async fn </span>fetch_all(_keystore: <span class="kw-2">&amp;</span><span class="kw">impl </span>FetchFromDatabase) -&gt; <span class="prelude-ty">Result</span>&lt;Vec&lt;<span class="self">Self</span>&gt;&gt;
     <span class="kw">where
         </span><span class="self">Self</span>: Sized,
     {
@@ -626,7 +652,7 @@
     }
 }
 
-<span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">type </span>GroupStoreValue&lt;V&gt; = std::sync::Arc&lt;async_lock::RwLock&lt;V&gt;&gt;;
+<span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">type </span>GroupStoreValue&lt;V&gt; = Arc&lt;async_lock::RwLock&lt;V&gt;&gt;;
 
 <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">type </span>LruMap&lt;V&gt; = schnellru::LruMap&lt;Vec&lt;u8&gt;, GroupStoreValue&lt;V&gt;, HybridMemoryLimiter&gt;;
 
@@ -700,22 +726,19 @@
         k: <span class="kw-2">&amp;</span>[u8],
         keystore: <span class="kw-2">&amp;</span><span class="kw">impl </span>FetchFromDatabase,
         identity: <span class="prelude-ty">Option</span>&lt;V::IdentityType&gt;,
-    ) -&gt; <span class="kw">crate</span>::CryptoResult&lt;<span class="prelude-ty">Option</span>&lt;GroupStoreValue&lt;V&gt;&gt;&gt; {
+    ) -&gt; <span class="kw">crate</span>::Result&lt;<span class="prelude-ty">Option</span>&lt;GroupStoreValue&lt;V&gt;&gt;&gt; {
         <span class="comment">// Optimistic cache lookup
         </span><span class="kw">if let </span><span class="prelude-val">Some</span>(value) = <span class="self">self</span>.<span class="number">0</span>.get(k) {
             <span class="kw">return </span><span class="prelude-val">Ok</span>(<span class="prelude-val">Some</span>(value.clone()));
         }
 
         <span class="comment">// Not in store, fetch the thing in the keystore
-        </span><span class="kw">let </span><span class="kw-2">mut </span>value = V::fetch_from_id(k, identity, keystore).<span class="kw">await</span><span class="question-mark">?</span>;
-        <span class="kw">if let </span><span class="prelude-val">Some</span>(value) = value.take() {
-            <span class="kw">let </span>value_to_insert = std::sync::Arc::new(async_lock::RwLock::new(value));
+        </span><span class="kw">let </span>inserted_value = V::fetch_from_id(k, identity, keystore).<span class="kw">await</span><span class="question-mark">?</span>.map(|value| {
+            <span class="kw">let </span>value_to_insert = Arc::new(async_lock::RwLock::new(value));
             <span class="self">self</span>.insert_prepped(k.to_vec(), value_to_insert.clone());
-
-            <span class="prelude-val">Ok</span>(<span class="prelude-val">Some</span>(value_to_insert))
-        } <span class="kw">else </span>{
-            <span class="prelude-val">Ok</span>(<span class="prelude-val">None</span>)
-        }
+            value_to_insert
+        });
+        <span class="prelude-val">Ok</span>(inserted_value)
     }
 
     <span class="doccomment">/// Returns the value from the keystore.
@@ -725,20 +748,18 @@
         k: <span class="kw-2">&amp;</span>[u8],
         keystore: <span class="kw-2">&amp;</span><span class="kw">impl </span>FetchFromDatabase,
         identity: <span class="prelude-ty">Option</span>&lt;V::IdentityType&gt;,
-    ) -&gt; <span class="kw">crate</span>::CryptoResult&lt;<span class="prelude-ty">Option</span>&lt;V&gt;&gt; {
+    ) -&gt; <span class="kw">crate</span>::Result&lt;<span class="prelude-ty">Option</span>&lt;V&gt;&gt; {
         V::fetch_from_id(k, identity, keystore).<span class="kw">await
     </span>}
 
-    <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">async fn </span>get_fetch_all(
-        <span class="kw-2">&amp;mut </span><span class="self">self</span>,
-        keystore: <span class="kw-2">&amp;</span><span class="kw">impl </span>FetchFromDatabase,
-    ) -&gt; CryptoResult&lt;Vec&lt;GroupStoreValue&lt;V&gt;&gt;&gt; {
+    <span class="attr">#[cfg(test)]
+    </span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">async fn </span>get_fetch_all(<span class="kw-2">&amp;mut </span><span class="self">self</span>, keystore: <span class="kw-2">&amp;</span><span class="kw">impl </span>FetchFromDatabase) -&gt; <span class="prelude-ty">Result</span>&lt;Vec&lt;GroupStoreValue&lt;V&gt;&gt;&gt; {
         <span class="kw">let </span>all = V::fetch_all(keystore)
             .<span class="kw">await</span><span class="question-mark">?
             </span>.into_iter()
             .map(|g| {
                 <span class="kw">let </span>id = g.id().to_vec();
-                <span class="kw">let </span>to_insert = std::sync::Arc::new(async_lock::RwLock::new(g));
+                <span class="kw">let </span>to_insert = Arc::new(async_lock::RwLock::new(g));
                 <span class="self">self</span>.insert_prepped(id, to_insert.clone());
                 to_insert
             })
@@ -751,18 +772,18 @@
     }
 
     <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>insert(<span class="kw-2">&amp;mut </span><span class="self">self</span>, k: Vec&lt;u8&gt;, entity: V) {
-        <span class="kw">let </span>value_to_insert = std::sync::Arc::new(async_lock::RwLock::new(entity));
+        <span class="kw">let </span>value_to_insert = Arc::new(async_lock::RwLock::new(entity));
         <span class="self">self</span>.insert_prepped(k, value_to_insert)
     }
 
     <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>try_insert(<span class="kw-2">&amp;mut </span><span class="self">self</span>, k: Vec&lt;u8&gt;, entity: V) -&gt; <span class="prelude-ty">Result</span>&lt;(), V&gt; {
-        <span class="kw">let </span>value_to_insert = std::sync::Arc::new(async_lock::RwLock::new(entity));
+        <span class="kw">let </span>value_to_insert = Arc::new(async_lock::RwLock::new(entity));
 
         <span class="kw">if </span><span class="self">self</span>.<span class="number">0</span>.insert(k, value_to_insert.clone()) {
             <span class="prelude-val">Ok</span>(())
         } <span class="kw">else </span>{
             <span class="comment">// This is safe because we just built the value
-            </span><span class="prelude-val">Err</span>(std::sync::Arc::into_inner(value_to_insert).unwrap().into_inner())
+            </span><span class="prelude-val">Err</span>(Arc::into_inner(value_to_insert).unwrap().into_inner())
         }
     }
 
@@ -784,26 +805,25 @@
 <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">const </span>ITEM_LIMIT: u32 = <span class="number">100</span>;
 
 <span class="kw">impl </span>HybridMemoryLimiter {
-    <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>new(count: <span class="prelude-ty">Option</span>&lt;u32&gt;, memory: <span class="prelude-ty">Option</span>&lt;usize&gt;) -&gt; <span class="self">Self </span>{
-        <span class="comment">// false positive. We want to fetch system metrics lazily
-        </span><span class="attr">#[allow(clippy::unnecessary_lazy_evaluations)]
-        </span><span class="kw">let </span>maybe_memory_limit = memory.or_else(|| {
-            <span class="macro">cfg_if::cfg_if!</span> {
-                <span class="kw">if </span><span class="attr">#[cfg(target_family = <span class="string">"wasm"</span>)] </span>{
-                    <span class="prelude-val">None
-                </span>} <span class="kw">else </span>{
-                    <span class="kw">let </span>system = sysinfo::System::new_with_specifics(sysinfo::RefreshKind::new().with_memory(sysinfo::MemoryRefreshKind::new().with_ram()));
-                    <span class="kw">let </span>available_sys_memory = system.available_memory();
-                    <span class="kw">if </span>available_sys_memory &gt; <span class="number">0 </span>{
-                        <span class="prelude-val">Some</span>(available_sys_memory <span class="kw">as </span>usize)
-                    } <span class="kw">else </span>{
-                        <span class="prelude-val">None
-                    </span>}
-                }
-            }
-        });
+    <span class="comment">// in the wasm case, we ignore the suggested memory limit
+    </span><span class="attr">#[cfg_attr(target_family = <span class="string">"wasm"</span>, expect(unused_variables))]
+    </span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>new(count: <span class="prelude-ty">Option</span>&lt;u32&gt;, memory: <span class="prelude-ty">Option</span>&lt;usize&gt;) -&gt; <span class="self">Self </span>{
+        <span class="attr">#[cfg(target_family = <span class="string">"wasm"</span>)]
+        </span><span class="kw">let </span>memory_limit = MEMORY_LIMIT;
 
-        <span class="kw">let </span>mem = schnellru::ByMemoryUsage::new(maybe_memory_limit.unwrap_or(MEMORY_LIMIT));
+        <span class="attr">#[cfg(not(target_family = <span class="string">"wasm"</span>))]
+        </span><span class="kw">let </span>memory_limit = memory
+            .or_else(|| {
+                <span class="kw">let </span>system = sysinfo::System::new_with_specifics(
+                    sysinfo::RefreshKind::nothing().with_memory(sysinfo::MemoryRefreshKind::nothing().with_ram()),
+                );
+
+                <span class="kw">let </span>available_sys_memory = system.available_memory();
+                (available_sys_memory &gt; <span class="number">0</span>).then_some(available_sys_memory <span class="kw">as </span>usize)
+            })
+            .unwrap_or(MEMORY_LIMIT);
+
+        <span class="kw">let </span>mem = schnellru::ByMemoryUsage::new(memory_limit);
         <span class="kw">let </span>len = schnellru::ByLength::new(count.unwrap_or(ITEM_LIMIT));
 
         <span class="self">Self </span>{ mem, len }
@@ -871,12 +891,14 @@
             id: <span class="kw-2">&amp;</span>[u8],
             _identity: <span class="prelude-ty">Option</span>&lt;<span class="self">Self</span>::IdentityType&gt;,
             _keystore: <span class="kw-2">&amp;</span><span class="kw">impl </span>FetchFromDatabase,
-        ) -&gt; <span class="kw">crate</span>::CryptoResult&lt;<span class="prelude-ty">Option</span>&lt;<span class="self">Self</span>&gt;&gt; {
-            <span class="kw">let </span>id = std::str::from_utf8(id)<span class="question-mark">?</span>;
+        ) -&gt; <span class="kw">crate</span>::Result&lt;<span class="prelude-ty">Option</span>&lt;<span class="self">Self</span>&gt;&gt; {
+            <span class="comment">// it's not worth adding a variant to the Error type here to handle test dummy values
+            </span><span class="kw">let </span>id = std::str::from_utf8(id).expect(<span class="string">"dummy value ids are strings"</span>);
             <span class="prelude-val">Ok</span>(<span class="prelude-val">Some</span>(id.into()))
         }
 
-        <span class="kw">async fn </span>fetch_all(_keystore: <span class="kw-2">&amp;</span><span class="kw">impl </span>FetchFromDatabase) -&gt; CryptoResult&lt;Vec&lt;<span class="self">Self</span>&gt;&gt; {
+        <span class="attr">#[cfg(test)]
+        </span><span class="kw">async fn </span>fetch_all(_keystore: <span class="kw-2">&amp;</span><span class="kw">impl </span>FetchFromDatabase) -&gt; <span class="prelude-ty">Result</span>&lt;Vec&lt;<span class="self">Self</span>&gt;&gt; {
             <span class="macro">unreachable!</span>()
         }
     }
@@ -906,9 +928,11 @@
         <span class="kw">let </span><span class="kw-2">mut </span>store = TestGroupStore::new(<span class="prelude-val">Some</span>(u32::MAX), <span class="prelude-val">Some</span>(usize::MAX));
         <span class="kw">for </span>i <span class="kw">in </span><span class="number">1</span>..=<span class="number">3 </span>{
             <span class="kw">let </span>i_str = i.to_string();
-            <span class="macro">assert!</span>(store
-                .try_insert(i_str.as_bytes().to_vec(), i_str.as_str().into())
-                .is_ok());
+            <span class="macro">assert!</span>(
+                store
+                    .try_insert(i_str.as_bytes().to_vec(), i_str.as_str().into())
+                    .is_ok()
+            );
             <span class="macro">assert_eq!</span>(store.len(), i);
         }
         <span class="kw">for </span>i <span class="kw">in </span><span class="number">4</span>..=<span class="number">6 </span>{

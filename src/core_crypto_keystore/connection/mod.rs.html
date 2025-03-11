@@ -330,11 +330,7 @@
 <a href="#329" id="329">329</a>
 <a href="#330" id="330">330</a>
 <a href="#331" id="331">331</a>
-<a href="#332" id="332">332</a>
-<a href="#333" id="333">333</a>
-<a href="#334" id="334">334</a>
-<a href="#335" id="335">335</a>
-<a href="#336" id="336">336</a></pre></div><pre class="rust"><code><span class="comment">// Wire
+<a href="#332" id="332">332</a></pre></div><pre class="rust"><code><span class="comment">// Wire
 // Copyright (C) 2022 Wire Swiss GmbH
 
 // This program is free software: you can redistribute it and/or modify
@@ -394,7 +390,9 @@
 
 <span class="attr">#[cfg_attr(target_family = <span class="string">"wasm"</span>, async_trait::async_trait(<span class="question-mark">?</span>Send))]
 #[cfg_attr(not(target_family = <span class="string">"wasm"</span>), async_trait::async_trait)]
-</span><span class="kw">pub trait </span>DatabaseConnection: DatabaseConnectionRequirements {
+</span><span class="kw">pub trait </span>DatabaseConnection&lt;<span class="lifetime">'a</span>&gt;: DatabaseConnectionRequirements {
+    <span class="kw">type </span>Connection: <span class="lifetime">'a</span>;
+
     <span class="kw">async fn </span>open(name: <span class="kw-2">&amp;</span>str, key: <span class="kw-2">&amp;</span>str) -&gt; CryptoKeystoreResult&lt;<span class="self">Self</span>&gt;;
 
     <span class="kw">async fn </span>open_in_memory(name: <span class="kw-2">&amp;</span>str, key: <span class="kw-2">&amp;</span>str) -&gt; CryptoKeystoreResult&lt;<span class="self">Self</span>&gt;;
@@ -418,13 +416,6 @@
 
         <span class="prelude-val">Ok</span>(())
     }
-    <span class="attr">#[cfg(not(target_family = <span class="string">"wasm"</span>))]
-    </span><span class="kw">async fn </span>new_transaction(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; CryptoKeystoreResult&lt;TransactionWrapper&lt;<span class="lifetime">'_</span>&gt;&gt;;
-    <span class="attr">#[cfg(target_family = <span class="string">"wasm"</span>)]
-    </span><span class="kw">async fn </span>new_transaction&lt;T: AsRef&lt;str&gt;&gt;(
-        <span class="kw-2">&amp;mut </span><span class="self">self</span>,
-        tables: <span class="kw-2">&amp;</span>[T],
-    ) -&gt; CryptoKeystoreResult&lt;<span class="kw">crate</span>::connection::TransactionWrapper&lt;<span class="lifetime">'_</span>&gt;&gt;;
 }
 
 <span class="attr">#[derive(Debug, Clone)]
@@ -462,9 +453,10 @@
     <span class="kw">async fn </span>count&lt;E: Entity&lt;ConnectionType = KeystoreDatabaseConnection&gt;&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; CryptoKeystoreResult&lt;usize&gt;;
 }
 
-<span class="comment">// * SAFETY: this has mutexes and atomics protecting underlying data so this is safe to share between threads
+<span class="comment">// SAFETY: this has mutexes and atomics protecting underlying data so this is safe to share between threads
 </span><span class="kw">unsafe impl </span>Send <span class="kw">for </span>Connection {}
-<span class="kw">unsafe impl </span>Sync <span class="kw">for </span>Connection {}
+<span class="comment">// SAFETY: this has mutexes and atomics protecting underlying data so this is safe to share between threads
+</span><span class="kw">unsafe impl </span>Sync <span class="kw">for </span>Connection {}
 
 <span class="kw">impl </span>Connection {
     <span class="kw">pub async fn </span>open_with_key(name: <span class="kw">impl </span>AsRef&lt;str&gt;, key: <span class="kw">impl </span>AsRef&lt;str&gt;) -&gt; CryptoKeystoreResult&lt;<span class="self">Self</span>&gt; {

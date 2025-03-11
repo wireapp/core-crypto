@@ -182,7 +182,7 @@
     <span class="kw">use </span>chrono::TimeZone;
     <span class="kw">use </span>clap::Parser <span class="kw">as _</span>;
     <span class="kw">use </span>color_eyre::eyre::eyre;
-    <span class="kw">use </span>core_crypto_keystore::{connection::FetchFromDatabase, entities::<span class="kw-2">*</span>, Connection <span class="kw">as </span>Keystore};
+    <span class="kw">use </span>core_crypto_keystore::{Connection <span class="kw">as </span>Keystore, connection::FetchFromDatabase, entities::<span class="kw-2">*</span>};
     <span class="kw">use </span>openmls::prelude::TlsDeserializeTrait;
     <span class="kw">use </span>serde::ser::{SerializeMap, Serializer};
 

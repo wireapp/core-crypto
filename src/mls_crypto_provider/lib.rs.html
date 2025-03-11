@@ -208,14 +208,7 @@
 <a href="#207" id="207">207</a>
 <a href="#208" id="208">208</a>
 <a href="#209" id="209">209</a>
-<a href="#210" id="210">210</a>
-<a href="#211" id="211">211</a>
-<a href="#212" id="212">212</a>
-<a href="#213" id="213">213</a>
-<a href="#214" id="214">214</a>
-<a href="#215" id="215">215</a>
-<a href="#216" id="216">216</a>
-<a href="#217" id="217">217</a></pre></div><pre class="rust"><code><span class="comment">// Wire
+<a href="#210" id="210">210</a></pre></div><pre class="rust"><code><span class="comment">// Wire
 // Copyright (C) 2022 Wire Swiss GmbH
 
 // This program is free software: you can redistribute it and/or modify
@@ -390,13 +383,6 @@
     /// Note: This does **not** destroy the data on-disk in case of persistent backing store
     </span><span class="kw">pub async fn </span>close(<span class="self">self</span>) -&gt; MlsProviderResult&lt;()&gt; {
         <span class="prelude-val">Ok</span>(<span class="self">self</span>.key_store.close().<span class="kw">await</span><span class="question-mark">?</span>)
-    }
-
-    <span class="doccomment">/// Tears down this provider and **obliterates every single piece of data stored on disk**.
-    ///
-    /// *you have been warned*
-    </span><span class="kw">pub async fn </span>destroy_and_reset(<span class="self">self</span>) -&gt; MlsProviderResult&lt;()&gt; {
-        <span class="prelude-val">Ok</span>(<span class="self">self</span>.key_store.wipe().<span class="kw">await</span><span class="question-mark">?</span>)
     }
 
     <span class="doccomment">/// Clone keystore (its an `Arc` internnaly)

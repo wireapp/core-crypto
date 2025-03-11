@@ -421,7 +421,10 @@
 <a href="#420" id="420">420</a>
 <a href="#421" id="421">421</a>
 <a href="#422" id="422">422</a>
-<a href="#423" id="423">423</a></pre></div><pre class="rust"><code><span class="kw">use </span><span class="kw">crate</span>::entity_derive::{IdColumnType, IdTransformation, KeyStoreEntityFlattened};
+<a href="#423" id="423">423</a>
+<a href="#424" id="424">424</a>
+<a href="#425" id="425">425</a>
+<a href="#426" id="426">426</a></pre></div><pre class="rust"><code><span class="kw">use </span><span class="kw">crate</span>::entity_derive::{IdColumnType, IdTransformation, KeyStoreEntityFlattened};
 <span class="kw">use </span>quote::quote;
 
 <span class="kw">impl </span>quote::ToTokens <span class="kw">for </span>KeyStoreEntityFlattened {
@@ -539,6 +542,7 @@
                     conn: <span class="kw-2">&amp;mut </span><span class="self">Self</span>::ConnectionType,
                     params: <span class="kw">crate</span>::entities::EntityFindParams,
                 ) -&gt; <span class="kw">crate</span>::CryptoKeystoreResult&lt;Vec&lt;<span class="self">Self</span>&gt;&gt; {
+                    <span class="kw">let </span><span class="kw-2">mut </span>conn = conn.conn().<span class="kw">await</span>;
                     <span class="kw">let </span>transaction = conn.transaction()<span class="question-mark">?</span>;
                     <span class="kw">let </span>query = #find_all_query.to_string() + <span class="kw-2">&amp;</span>params.to_sql();
 
@@ -582,6 +586,7 @@
                     conn: <span class="kw-2">&amp;mut </span><span class="self">Self</span>::ConnectionType,
                     id: <span class="kw-2">&amp;</span><span class="kw">crate</span>::entities::StringEntityId,
                 ) -&gt; <span class="kw">crate</span>::CryptoKeystoreResult&lt;<span class="prelude-ty">Option</span>&lt;<span class="self">Self</span>&gt;&gt; {
+                    <span class="kw">let </span><span class="kw-2">mut </span>conn = conn.conn().<span class="kw">await</span>;
                     <span class="kw">let </span>transaction = conn.transaction()<span class="question-mark">?</span>;
                     <span class="kw">use </span>rusqlite::OptionalExtension <span class="kw">as _</span>;
 
@@ -631,7 +636,8 @@
                 }
 
                 <span class="kw">async fn </span>count(conn: <span class="kw-2">&amp;mut </span><span class="self">Self</span>::ConnectionType) -&gt; <span class="kw">crate</span>::CryptoKeystoreResult&lt;usize&gt; {
-                    <span class="prelude-val">Ok</span>(conn.query_row(<span class="kw-2">&amp;</span>#count_query, [], |r| r.get(<span class="number">0</span>))<span class="question-mark">?</span>)
+                    <span class="kw">let </span>conn = conn.conn().<span class="kw">await</span>;
+                    conn.query_row(<span class="kw-2">&amp;</span>#count_query, [], |r| r.get(<span class="number">0</span>)).map_err(Into::into)
                 }
             }
         }

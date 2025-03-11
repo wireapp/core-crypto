@@ -151,10 +151,32 @@
 <a href="#150" id="150">150</a>
 <a href="#151" id="151">151</a>
 <a href="#152" id="152">152</a>
-<a href="#153" id="153">153</a></pre></div><pre class="rust"><code><span class="kw">use </span>openmls_traits::{random::OpenMlsRand, OpenMlsCryptoProvider};
+<a href="#153" id="153">153</a>
+<a href="#154" id="154">154</a>
+<a href="#155" id="155">155</a>
+<a href="#156" id="156">156</a>
+<a href="#157" id="157">157</a>
+<a href="#158" id="158">158</a>
+<a href="#159" id="159">159</a>
+<a href="#160" id="160">160</a>
+<a href="#161" id="161">161</a>
+<a href="#162" id="162">162</a>
+<a href="#163" id="163">163</a>
+<a href="#164" id="164">164</a>
+<a href="#165" id="165">165</a>
+<a href="#166" id="166">166</a>
+<a href="#167" id="167">167</a>
+<a href="#168" id="168">168</a>
+<a href="#169" id="169">169</a>
+<a href="#170" id="170">170</a>
+<a href="#171" id="171">171</a>
+<a href="#172" id="172">172</a>
+<a href="#173" id="173">173</a></pre></div><pre class="rust"><code><span class="kw">use </span>openmls_traits::{OpenMlsCryptoProvider, random::OpenMlsRand};
 
+<span class="kw">use </span><span class="kw">super</span>::Result;
 <span class="kw">use </span><span class="kw">crate</span>::context::CentralContext;
-<span class="kw">use </span><span class="kw">crate</span>::prelude::{CryptoError, CryptoResult, E2eiEnrollment};
+<span class="kw">use </span><span class="kw">crate</span>::prelude::E2eiEnrollment;
+<span class="kw">use crate</span>::{KeystoreError, MlsError, RecursiveError};
 <span class="kw">use </span>core_crypto_keystore::CryptoKeystoreMls;
 <span class="kw">use </span>mls_crypto_provider::MlsCryptoProvider;
 
@@ -163,26 +185,29 @@
 </span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">type </span>EnrollmentHandle = Vec&lt;u8&gt;;
 
 <span class="kw">impl </span>E2eiEnrollment {
-    <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">async fn </span>stash(<span class="self">self</span>, backend: <span class="kw-2">&amp;</span>MlsCryptoProvider) -&gt; CryptoResult&lt;EnrollmentHandle&gt; {
+    <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">async fn </span>stash(<span class="self">self</span>, backend: <span class="kw-2">&amp;</span>MlsCryptoProvider) -&gt; <span class="prelude-ty">Result</span>&lt;EnrollmentHandle&gt; {
         <span class="comment">// should be enough to prevent collisions
         </span><span class="kw">const </span>HANDLE_SIZE: usize = <span class="number">32</span>;
 
         <span class="kw">let </span>content = serde_json::to_vec(<span class="kw-2">&amp;</span><span class="self">self</span>)<span class="question-mark">?</span>;
-        <span class="kw">let </span>handle = backend.crypto().random_vec(HANDLE_SIZE).map_err(CryptoError::from)<span class="question-mark">?</span>;
+        <span class="kw">let </span>handle = backend
+            .crypto()
+            .random_vec(HANDLE_SIZE)
+            .map_err(MlsError::wrap(<span class="string">"generating random vector of bytes"</span>))<span class="question-mark">?</span>;
         backend
             .key_store()
             .save_e2ei_enrollment(<span class="kw-2">&amp;</span>handle, <span class="kw-2">&amp;</span>content)
             .<span class="kw">await
-            </span>.map_err(CryptoError::from)<span class="question-mark">?</span>;
+            </span>.map_err(KeystoreError::wrap(<span class="string">"saving e2ei enrollment"</span>))<span class="question-mark">?</span>;
         <span class="prelude-val">Ok</span>(handle)
     }
 
-    <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">async fn </span>stash_pop(backend: <span class="kw-2">&amp;</span>MlsCryptoProvider, handle: EnrollmentHandle) -&gt; CryptoResult&lt;<span class="self">Self</span>&gt; {
+    <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">async fn </span>stash_pop(backend: <span class="kw-2">&amp;</span>MlsCryptoProvider, handle: EnrollmentHandle) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>&gt; {
         <span class="kw">let </span>content = backend
             .key_store()
             .pop_e2ei_enrollment(<span class="kw-2">&amp;</span>handle)
             .<span class="kw">await
-            </span>.map_err(CryptoError::from)<span class="question-mark">?</span>;
+            </span>.map_err(KeystoreError::wrap(<span class="string">"popping e2ei enrollment"</span>))<span class="question-mark">?</span>;
         <span class="prelude-val">Ok</span>(serde_json::from_slice(<span class="kw-2">&amp;</span>content)<span class="question-mark">?</span>)
     }
 }
@@ -196,16 +221,30 @@
     ///
     /// # Returns
     /// A handle for retrieving the enrollment later on
-    </span><span class="kw">pub async fn </span>e2ei_enrollment_stash(<span class="kw-2">&amp;</span><span class="self">self</span>, enrollment: E2eiEnrollment) -&gt; CryptoResult&lt;EnrollmentHandle&gt; {
-        enrollment.stash(<span class="kw-2">&amp;</span><span class="self">self</span>.mls_provider().<span class="kw">await</span><span class="question-mark">?</span>).<span class="kw">await
+    </span><span class="kw">pub async fn </span>e2ei_enrollment_stash(<span class="kw-2">&amp;</span><span class="self">self</span>, enrollment: E2eiEnrollment) -&gt; <span class="prelude-ty">Result</span>&lt;EnrollmentHandle&gt; {
+        enrollment
+            .stash(
+                <span class="kw-2">&amp;</span><span class="self">self
+                    </span>.mls_provider()
+                    .<span class="kw">await
+                    </span>.map_err(RecursiveError::root(<span class="string">"getting mls provider"</span>))<span class="question-mark">?</span>,
+            )
+            .<span class="kw">await
     </span>}
 
     <span class="doccomment">/// Fetches the persisted enrollment and deletes it from the keystore
     ///
     /// # Arguments
     /// * `handle` - returned by [CentralContext::e2ei_enrollment_stash]
-    </span><span class="kw">pub async fn </span>e2ei_enrollment_stash_pop(<span class="kw-2">&amp;</span><span class="self">self</span>, handle: EnrollmentHandle) -&gt; CryptoResult&lt;E2eiEnrollment&gt; {
-        E2eiEnrollment::stash_pop(<span class="kw-2">&amp;</span><span class="self">self</span>.mls_provider().<span class="kw">await</span><span class="question-mark">?</span>, handle).<span class="kw">await
+    </span><span class="kw">pub async fn </span>e2ei_enrollment_stash_pop(<span class="kw-2">&amp;</span><span class="self">self</span>, handle: EnrollmentHandle) -&gt; <span class="prelude-ty">Result</span>&lt;E2eiEnrollment&gt; {
+        E2eiEnrollment::stash_pop(
+            <span class="kw-2">&amp;</span><span class="self">self
+                </span>.mls_provider()
+                .<span class="kw">await
+                </span>.map_err(RecursiveError::root(<span class="string">"getting mls provider"</span>))<span class="question-mark">?</span>,
+            handle,
+        )
+        .<span class="kw">await
     </span>}
 }
 
@@ -249,11 +288,12 @@
                 .<span class="kw">await
                 </span>.unwrap();
 
-                <span class="macro">assert!</span>(cc
-                    .context
-                    .e2ei_mls_init_only(<span class="kw-2">&amp;mut </span>enrollment, cert, <span class="prelude-val">Some</span>(INITIAL_KEYING_MATERIAL_COUNT))
-                    .<span class="kw">await
-                    </span>.is_ok());
+                <span class="macro">assert!</span>(
+                    cc.context
+                        .e2ei_mls_init_only(<span class="kw-2">&amp;mut </span>enrollment, cert, <span class="prelude-val">Some</span>(INITIAL_KEYING_MATERIAL_COUNT))
+                        .<span class="kw">await
+                        </span>.is_ok()
+                );
             })
         })
         .<span class="kw">await

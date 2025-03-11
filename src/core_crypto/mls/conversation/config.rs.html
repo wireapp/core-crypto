@@ -359,7 +359,14 @@
 <a href="#358" id="358">358</a>
 <a href="#359" id="359">359</a>
 <a href="#360" id="360">360</a>
-<a href="#361" id="361">361</a></pre></div><pre class="rust"><code><span class="comment">// Wire
+<a href="#361" id="361">361</a>
+<a href="#362" id="362">362</a>
+<a href="#363" id="363">363</a>
+<a href="#364" id="364">364</a>
+<a href="#365" id="365">365</a>
+<a href="#366" id="366">366</a>
+<a href="#367" id="367">367</a>
+<a href="#368" id="368">368</a></pre></div><pre class="rust"><code><span class="comment">// Wire
 // Copyright (C) 2022 Wire Swiss GmbH
 
 // This program is free software: you can redistribute it and/or modify
@@ -382,19 +389,20 @@
 
 </span><span class="kw">use </span>mls_crypto_provider::MlsCryptoProvider;
 <span class="kw">use </span>openmls::prelude::{
-    Capabilities, Credential, CredentialType, ExternalSender, OpenMlsSignaturePublicKey, ProtocolVersion,
-    RequiredCapabilitiesExtension, SenderRatchetConfiguration, WireFormatPolicy, PURE_CIPHERTEXT_WIRE_FORMAT_POLICY,
-    PURE_PLAINTEXT_WIRE_FORMAT_POLICY,
+    Capabilities, Credential, CredentialType, ExternalSender, OpenMlsSignaturePublicKey,
+    PURE_CIPHERTEXT_WIRE_FORMAT_POLICY, PURE_PLAINTEXT_WIRE_FORMAT_POLICY, ProtocolVersion,
+    RequiredCapabilitiesExtension, SenderRatchetConfiguration, WireFormatPolicy,
 };
-<span class="kw">use </span>openmls_traits::crypto::OpenMlsCrypto;
-<span class="kw">use </span>openmls_traits::types::{Ciphersuite, SignatureScheme};
-<span class="kw">use </span>openmls_traits::OpenMlsCryptoProvider;
+<span class="kw">use </span>openmls_traits::{
+    OpenMlsCryptoProvider,
+    crypto::OpenMlsCrypto,
+    types::{Ciphersuite, SignatureScheme},
+};
 <span class="kw">use </span>serde::{Deserialize, Serialize};
 <span class="kw">use </span>wire_e2e_identity::prelude::parse_json_jwk;
 
-<span class="kw">use </span><span class="kw">crate</span>::context::CentralContext;
-<span class="kw">use </span><span class="kw">crate</span>::prelude::{CryptoResult, E2eIdentityError, MlsCiphersuite};
-<span class="kw">use </span><span class="kw">crate</span>::MlsError;
+<span class="kw">use </span><span class="kw">super</span>::Result;
+<span class="kw">use crate</span>::{MlsError, RecursiveError, context::CentralContext, prelude::MlsCiphersuite};
 
 <span class="doccomment">/// Sets the config in OpenMls for the oldest possible epoch(past current) that a message can be decrypted
 </span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">const </span>MAX_PAST_EPOCHS: usize = <span class="number">3</span>;
@@ -412,8 +420,11 @@
         <span class="kw-2">&amp;</span><span class="self">self</span>,
         cfg: <span class="kw-2">&amp;mut </span>MlsConversationConfiguration,
         external_senders: Vec&lt;Vec&lt;u8&gt;&gt;,
-    ) -&gt; CryptoResult&lt;()&gt; {
-        <span class="kw">let </span>mls_provider = <span class="self">self</span>.mls_provider().<span class="kw">await</span><span class="question-mark">?</span>;
+    ) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
+        <span class="kw">let </span>mls_provider = <span class="self">self
+            </span>.mls_provider()
+            .<span class="kw">await
+            </span>.map_err(RecursiveError::root(<span class="string">"getting mls provider"</span>))<span class="question-mark">?</span>;
         cfg.external_senders = external_senders
             .into_iter()
             .map(|key| {
@@ -425,7 +436,7 @@
                     )
                 })
             })
-            .collect::&lt;CryptoResult&lt;<span class="kw">_</span>&gt;&gt;()<span class="question-mark">?</span>;
+            .collect::&lt;<span class="prelude-ty">Result</span>&lt;<span class="kw">_</span>&gt;&gt;()<span class="question-mark">?</span>;
         <span class="prelude-val">Ok</span>(())
     }
 }
@@ -467,7 +478,7 @@
 
     <span class="doccomment">/// Generates an `MlsGroupConfig` from this configuration
     </span><span class="attr">#[inline(always)]
-    </span><span class="kw">pub fn </span>as_openmls_default_configuration(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; CryptoResult&lt;openmls::group::MlsGroupConfig&gt; {
+    </span><span class="kw">pub fn </span>as_openmls_default_configuration(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;openmls::group::MlsGroupConfig&gt; {
         <span class="kw">let </span>crypto_config = openmls::prelude::CryptoConfig {
             version: <span class="self">Self</span>::DEFAULT_PROTOCOL_VERSION,
             ciphersuite: <span class="self">self</span>.ciphersuite.into(),
@@ -505,10 +516,11 @@
     }
 
     <span class="doccomment">/// This expects a raw json serialized JWK. It works with any Signature scheme
-    </span><span class="kw">fn </span>parse_external_sender(jwk: <span class="kw-2">&amp;</span>[u8]) -&gt; CryptoResult&lt;ExternalSender&gt; {
+    </span><span class="kw">fn </span>parse_external_sender(jwk: <span class="kw-2">&amp;</span>[u8]) -&gt; <span class="prelude-ty">Result</span>&lt;ExternalSender&gt; {
         <span class="kw">let </span>pk = parse_json_jwk(jwk)
             .map_err(wire_e2e_identity::prelude::E2eIdentityError::from)
-            .map_err(E2eIdentityError::from)<span class="question-mark">?</span>;
+            .map_err(<span class="kw">crate</span>::e2e_identity::Error::from)
+            .map_err(RecursiveError::e2e_identity(<span class="string">"parsing jwk"</span>))<span class="question-mark">?</span>;
         <span class="prelude-val">Ok</span>(ExternalSender::new(
             pk.into(),
             Credential::new_basic(<span class="self">Self</span>::WIRE_SERVER_IDENTITY.into()),
@@ -522,12 +534,13 @@
         key: Vec&lt;u8&gt;,
         signature_scheme: SignatureScheme,
         backend: <span class="kw-2">&amp;</span>MlsCryptoProvider,
-    ) -&gt; CryptoResult&lt;ExternalSender&gt; {
+    ) -&gt; <span class="prelude-ty">Result</span>&lt;ExternalSender&gt; {
         backend
             .crypto()
             .validate_signature_key(signature_scheme, <span class="kw-2">&amp;</span>key[..])
-            .map_err(MlsError::from)<span class="question-mark">?</span>;
-        <span class="kw">let </span>key = OpenMlsSignaturePublicKey::new(key.into(), signature_scheme).map_err(MlsError::from)<span class="question-mark">?</span>;
+            .map_err(MlsError::wrap(<span class="string">"validating signature key"</span>))<span class="question-mark">?</span>;
+        <span class="kw">let </span>key = OpenMlsSignaturePublicKey::new(key.into(), signature_scheme)
+            .map_err(MlsError::wrap(<span class="string">"creating new signature public key"</span>))<span class="question-mark">?</span>;
         <span class="prelude-val">Ok</span>(ExternalSender::new(
             key.into(),
             Credential::new_basic(<span class="self">Self</span>::WIRE_SERVER_IDENTITY.into()),
@@ -587,9 +600,9 @@
 </span><span class="kw">mod </span>tests {
     <span class="kw">use </span>openmls::prelude::ProtocolVersion;
     <span class="kw">use </span>openmls_traits::{
+        OpenMlsCryptoProvider,
         crypto::OpenMlsCrypto,
         types::{SignatureScheme, VerifiableCiphersuite},
-        OpenMlsCryptoProvider,
     };
     <span class="kw">use </span>wasm_bindgen_test::<span class="kw-2">*</span>;
     <span class="kw">use </span>wire_e2e_identity::prelude::JwsAlgorithm;
@@ -685,11 +698,12 @@
                     .signature_key_gen(case.signature_scheme())
                     .unwrap();
 
-                <span class="macro">assert!</span>(cc
-                    .context
-                    .set_raw_external_senders(<span class="kw-2">&amp;mut </span>case.cfg.clone(), <span class="macro">vec!</span>[pk])
-                    .<span class="kw">await
-                    </span>.is_ok());
+                <span class="macro">assert!</span>(
+                    cc.context
+                        .set_raw_external_senders(<span class="kw-2">&amp;mut </span>case.cfg.clone(), <span class="macro">vec!</span>[pk])
+                        .<span class="kw">await
+                        </span>.is_ok()
+                );
             })
         })
         .<span class="kw">await

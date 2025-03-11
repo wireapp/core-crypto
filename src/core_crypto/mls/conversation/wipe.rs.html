@@ -115,8 +115,30 @@
 <a href="#114" id="114">114</a>
 <a href="#115" id="115">115</a>
 <a href="#116" id="116">116</a>
-<a href="#117" id="117">117</a></pre></div><pre class="rust"><code><span class="kw">use </span><span class="kw">crate</span>::context::CentralContext;
-<span class="kw">use </span><span class="kw">crate</span>::prelude::{ConversationId, CryptoResult, MlsConversation, MlsError};
+<a href="#117" id="117">117</a>
+<a href="#118" id="118">118</a>
+<a href="#119" id="119">119</a>
+<a href="#120" id="120">120</a>
+<a href="#121" id="121">121</a>
+<a href="#122" id="122">122</a>
+<a href="#123" id="123">123</a>
+<a href="#124" id="124">124</a>
+<a href="#125" id="125">125</a>
+<a href="#126" id="126">126</a>
+<a href="#127" id="127">127</a>
+<a href="#128" id="128">128</a>
+<a href="#129" id="129">129</a>
+<a href="#130" id="130">130</a>
+<a href="#131" id="131">131</a>
+<a href="#132" id="132">132</a>
+<a href="#133" id="133">133</a>
+<a href="#134" id="134">134</a>
+<a href="#135" id="135">135</a></pre></div><pre class="rust"><code><span class="kw">use </span><span class="kw">super</span>::Result;
+<span class="kw">use crate</span>::{
+    KeystoreError, MlsError, RecursiveError,
+    context::CentralContext,
+    prelude::{ConversationId, MlsConversation},
+};
 <span class="kw">use </span>core_crypto_keystore::CryptoKeystoreMls;
 <span class="kw">use </span>mls_crypto_provider::MlsCryptoProvider;
 <span class="kw">use </span>openmls_traits::OpenMlsCryptoProvider;
@@ -127,22 +149,33 @@
     /// # Errors
     /// KeyStore errors, such as IO
     </span><span class="attr">#[cfg_attr(test, <span class="kw">crate</span>::dispotent)]
-    </span><span class="kw">pub async fn </span>wipe_conversation(<span class="kw-2">&amp;</span><span class="self">self</span>, id: <span class="kw-2">&amp;</span>ConversationId) -&gt; CryptoResult&lt;()&gt; {
-        <span class="kw">let </span>provider = <span class="self">self</span>.mls_provider().<span class="kw">await</span><span class="question-mark">?</span>;
+    </span><span class="kw">pub async fn </span>wipe_conversation(<span class="kw-2">&amp;</span><span class="self">self</span>, id: <span class="kw-2">&amp;</span>ConversationId) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
+        <span class="kw">let </span>provider = <span class="self">self
+            </span>.mls_provider()
+            .<span class="kw">await
+            </span>.map_err(RecursiveError::root(<span class="string">"getting mls provider"</span>))<span class="question-mark">?</span>;
         <span class="self">self</span>.get_conversation(id)
             .<span class="kw">await</span><span class="question-mark">?
             </span>.write()
             .<span class="kw">await
             </span>.wipe_associated_entities(<span class="kw-2">&amp;</span>provider)
             .<span class="kw">await</span><span class="question-mark">?</span>;
-        provider.key_store().mls_group_delete(id).<span class="kw">await</span><span class="question-mark">?</span>;
-        <span class="kw">let _ </span>= <span class="self">self</span>.mls_groups().<span class="kw">await</span><span class="question-mark">?</span>.remove(id);
+        provider
+            .key_store()
+            .mls_group_delete(id)
+            .<span class="kw">await
+            </span>.map_err(KeystoreError::wrap(<span class="string">"deleting mls group"</span>))<span class="question-mark">?</span>;
+        <span class="kw">let _ </span>= <span class="self">self
+            </span>.mls_groups()
+            .<span class="kw">await
+            </span>.map_err(RecursiveError::root(<span class="string">"getting mls groups"</span>))<span class="question-mark">?
+            </span>.remove(id);
         <span class="prelude-val">Ok</span>(())
     }
 }
 
 <span class="kw">impl </span>MlsConversation {
-    <span class="kw">async fn </span>wipe_associated_entities(<span class="kw-2">&amp;mut </span><span class="self">self</span>, backend: <span class="kw-2">&amp;</span>MlsCryptoProvider) -&gt; CryptoResult&lt;()&gt; {
+    <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">async fn </span>wipe_associated_entities(<span class="kw-2">&amp;mut </span><span class="self">self</span>, backend: <span class="kw-2">&amp;</span>MlsCryptoProvider) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
         <span class="comment">// the own client may or may not have generated an epoch keypair in the previous epoch
         // Since it is a terminal operation, ignoring the error is fine here.
         </span><span class="kw">let _ </span>= <span class="self">self</span>.group.delete_previous_epoch_keypairs(backend).<span class="kw">await</span>;
@@ -153,7 +186,7 @@
             </span><span class="self">self</span>.group
                 .remove_pending_proposal(backend.key_store(), proposal.proposal_reference())
                 .<span class="kw">await
-                </span>.map_err(MlsError::from)<span class="question-mark">?</span>;
+                </span>.map_err(MlsError::wrap(<span class="string">"removing pending proposal"</span>))<span class="question-mark">?</span>;
         }
 
         <span class="prelude-val">Ok</span>(())
@@ -164,7 +197,8 @@
 </span><span class="kw">mod </span>tests {
     <span class="kw">use </span>wasm_bindgen_test::<span class="kw-2">*</span>;
 
-    <span class="kw">use crate</span>::{prelude::CryptoError, test_utils::<span class="kw-2">*</span>};
+    <span class="kw">use </span><span class="kw">super</span>::<span class="kw">super</span>::error::Error;
+    <span class="kw">use </span><span class="kw">crate</span>::test_utils::<span class="kw-2">*</span>;
 
     <span class="macro">wasm_bindgen_test_configure!</span>(run_in_browser);
 
@@ -191,11 +225,13 @@
     <span class="attr">#[apply(all_cred_cipher)]
     #[wasm_bindgen_test]
     </span><span class="kw">async fn </span>cannot_wipe_group_non_existent(case: TestCase) {
+        <span class="kw">use </span><span class="kw">crate</span>::LeafError;
+
         run_test_with_central(case.clone(), <span class="kw">move </span>|[central]| {
             Box::pin(<span class="kw">async move </span>{
                 <span class="kw">let </span>id = conversation_id();
                 <span class="kw">let </span>err = central.context.wipe_conversation(<span class="kw-2">&amp;</span>id).<span class="kw">await</span>.unwrap_err();
-                <span class="macro">assert!</span>(<span class="macro">matches!</span>(err, CryptoError::ConversationNotFound(conv_id) <span class="kw">if </span>conv_id == id));
+                <span class="macro">assert!</span>(<span class="macro">matches!</span>(err, Error::Leaf(LeafError::ConversationNotFound(conv_id)) <span class="kw">if </span>conv_id == id));
             })
         })
         .<span class="kw">await</span>;

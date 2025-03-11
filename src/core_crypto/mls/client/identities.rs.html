@@ -260,10 +260,19 @@
 <a href="#259" id="259">259</a>
 <a href="#260" id="260">260</a>
 <a href="#261" id="261">261</a>
-<a href="#262" id="262">262</a></pre></div><pre class="rust"><code><span class="kw">use </span><span class="kw">crate</span>::mls::client::ClientInner;
+<a href="#262" id="262">262</a>
+<a href="#263" id="263">263</a>
+<a href="#264" id="264">264</a>
+<a href="#265" id="265">265</a></pre></div><pre class="rust"><code><span class="kw">use crate</span>::{
+    LeafError, RecursiveError,
+    mls::client::{
+        ClientInner,
+        error::{Error, <span class="prelude-ty">Result</span>},
+    },
+};
 <span class="kw">use crate</span>::{
-    mls::credential::{typ::MlsCredentialType, CredentialBundle},
-    prelude::{Client, CryptoError, CryptoResult, MlsConversation},
+    mls::credential::{CredentialBundle, typ::MlsCredentialType},
+    prelude::{Client, MlsConversation},
 };
 <span class="kw">use </span>openmls::prelude::{Credential, SignaturePublicKey};
 <span class="kw">use </span>openmls_traits::types::SignatureScheme;
@@ -315,11 +324,7 @@
 
     <span class="doccomment">/// Having `cb` requiring ownership kinda forces the caller to first persist it in the keystore and
     /// only then store it in this in-memory map
-    </span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">async fn </span>push_credential_bundle(
-        <span class="kw-2">&amp;mut </span><span class="self">self</span>,
-        sc: SignatureScheme,
-        cb: CredentialBundle,
-    ) -&gt; CryptoResult&lt;()&gt; {
+    </span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">async fn </span>push_credential_bundle(<span class="kw-2">&amp;mut </span><span class="self">self</span>, sc: SignatureScheme, cb: CredentialBundle) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
         <span class="comment">// this would mean we have messed something up and that we do no init this CredentialBundle from a keypair just inserted in the keystore
         </span><span class="macro">debug_assert_ne!</span>(cb.created_at, <span class="number">0</span>);
 
@@ -327,7 +332,7 @@
             <span class="prelude-val">Some</span>(cbs) =&gt; {
                 <span class="kw">let </span>already_exists = !cbs.insert(Arc::new(cb));
                 <span class="kw">if </span>already_exists {
-                    <span class="kw">return </span><span class="prelude-val">Err</span>(CryptoError::CredentialBundleConflict);
+                    <span class="kw">return </span><span class="prelude-val">Err</span>(Error::CredentialBundleConflict);
                 }
             }
             <span class="prelude-val">None </span>=&gt; {
@@ -337,7 +342,7 @@
         <span class="prelude-val">Ok</span>(())
     }
 
-    <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">async fn </span>remove(<span class="kw-2">&amp;mut </span><span class="self">self</span>, credential: <span class="kw-2">&amp;</span>Credential) -&gt; CryptoResult&lt;()&gt; {
+    <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">async fn </span>remove(<span class="kw-2">&amp;mut </span><span class="self">self</span>, credential: <span class="kw-2">&amp;</span>Credential) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
         <span class="self">self</span>.<span class="number">0</span>.iter_mut().for_each(|(<span class="kw">_</span>, cbs)| {
             cbs.retain(|c| c.credential() != credential);
         });
@@ -350,22 +355,23 @@
 }
 
 <span class="kw">impl </span>MlsConversation {
-    <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">async fn </span>find_current_credential_bundle(<span class="kw-2">&amp;</span><span class="self">self</span>, client: <span class="kw-2">&amp;</span>Client) -&gt; CryptoResult&lt;Arc&lt;CredentialBundle&gt;&gt; {
-        <span class="kw">let </span>own_leaf = <span class="self">self</span>.group.own_leaf().ok_or(CryptoError::InternalMlsError)<span class="question-mark">?</span>;
+    <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">async fn </span>find_current_credential_bundle(<span class="kw-2">&amp;</span><span class="self">self</span>, client: <span class="kw-2">&amp;</span>Client) -&gt; <span class="prelude-ty">Result</span>&lt;Arc&lt;CredentialBundle&gt;&gt; {
+        <span class="kw">let </span>own_leaf = <span class="self">self</span>.group.own_leaf().ok_or(LeafError::InternalMlsError)<span class="question-mark">?</span>;
         <span class="kw">let </span>sc = <span class="self">self</span>.ciphersuite().signature_algorithm();
-        <span class="kw">let </span>ct = <span class="self">self</span>.own_credential_type()<span class="question-mark">?</span>;
+        <span class="kw">let </span>ct = <span class="self">self
+            </span>.own_credential_type()
+            .map_err(RecursiveError::mls_conversation(<span class="string">"getting own credential type"</span>))<span class="question-mark">?</span>;
 
         client
             .find_credential_bundle_by_public_key(sc, ct, own_leaf.signature_key())
             .<span class="kw">await
     </span>}
 
-    <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">async fn </span>find_most_recent_credential_bundle(
-        <span class="kw-2">&amp;</span><span class="self">self</span>,
-        client: <span class="kw-2">&amp;</span>Client,
-    ) -&gt; CryptoResult&lt;Arc&lt;CredentialBundle&gt;&gt; {
+    <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">async fn </span>find_most_recent_credential_bundle(<span class="kw-2">&amp;</span><span class="self">self</span>, client: <span class="kw-2">&amp;</span>Client) -&gt; <span class="prelude-ty">Result</span>&lt;Arc&lt;CredentialBundle&gt;&gt; {
         <span class="kw">let </span>sc = <span class="self">self</span>.ciphersuite().signature_algorithm();
-        <span class="kw">let </span>ct = <span class="self">self</span>.own_credential_type()<span class="question-mark">?</span>;
+        <span class="kw">let </span>ct = <span class="self">self
+            </span>.own_credential_type()
+            .map_err(RecursiveError::mls_conversation(<span class="string">"getting own credential type"</span>))<span class="question-mark">?</span>;
 
         client.find_most_recent_credential_bundle(sc, ct).<span class="kw">await
     </span>}
@@ -376,13 +382,13 @@
         <span class="kw-2">&amp;</span><span class="self">self</span>,
         sc: SignatureScheme,
         ct: MlsCredentialType,
-    ) -&gt; CryptoResult&lt;Arc&lt;CredentialBundle&gt;&gt; {
+    ) -&gt; <span class="prelude-ty">Result</span>&lt;Arc&lt;CredentialBundle&gt;&gt; {
         <span class="kw">match </span><span class="self">self</span>.state.read().<span class="kw">await</span>.deref() {
-            <span class="prelude-val">None </span>=&gt; <span class="prelude-val">Err</span>(CryptoError::MlsNotInitialized),
+            <span class="prelude-val">None </span>=&gt; <span class="prelude-val">Err</span>(Error::MlsNotInitialized),
             <span class="prelude-val">Some</span>(ClientInner { identities, .. }) =&gt; identities
                 .find_most_recent_credential_bundle(sc, ct)
                 .<span class="kw">await
-                </span>.ok_or(CryptoError::CredentialNotFound(ct)),
+                </span>.ok_or(Error::CredentialNotFound(ct)),
         }
     }
 
@@ -391,20 +397,20 @@
         sc: SignatureScheme,
         ct: MlsCredentialType,
         pk: <span class="kw-2">&amp;</span>SignaturePublicKey,
-    ) -&gt; CryptoResult&lt;Arc&lt;CredentialBundle&gt;&gt; {
+    ) -&gt; <span class="prelude-ty">Result</span>&lt;Arc&lt;CredentialBundle&gt;&gt; {
         <span class="kw">match </span><span class="self">self</span>.state.read().<span class="kw">await</span>.deref() {
-            <span class="prelude-val">None </span>=&gt; <span class="prelude-val">Err</span>(CryptoError::MlsNotInitialized),
+            <span class="prelude-val">None </span>=&gt; <span class="prelude-val">Err</span>(Error::MlsNotInitialized),
             <span class="prelude-val">Some</span>(ClientInner { identities, .. }) =&gt; identities
                 .find_credential_bundle_by_public_key(sc, ct, pk)
                 .<span class="kw">await
-                </span>.ok_or(CryptoError::CredentialNotFound(ct)),
+                </span>.ok_or(Error::CredentialNotFound(ct)),
         }
     }
 
     <span class="attr">#[cfg(test)]
-    </span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">async fn </span>identities_count(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; CryptoResult&lt;usize&gt; {
+    </span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">async fn </span>identities_count(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;usize&gt; {
         <span class="kw">match </span><span class="self">self</span>.state.read().<span class="kw">await</span>.deref() {
-            <span class="prelude-val">None </span>=&gt; <span class="prelude-val">Err</span>(CryptoError::MlsNotInitialized),
+            <span class="prelude-val">None </span>=&gt; <span class="prelude-val">Err</span>(Error::MlsNotInitialized),
             <span class="prelude-val">Some</span>(ClientInner { identities, .. }) =&gt; <span class="prelude-val">Ok</span>(identities.iter().count()),
         }
     }
@@ -412,7 +418,7 @@
 
 <span class="attr">#[cfg(test)]
 </span><span class="kw">mod </span>tests {
-    <span class="kw">use </span><span class="kw">crate</span>::test_utils::<span class="kw-2">*</span>;
+    <span class="kw">use crate</span>::{mls, test_utils::<span class="kw-2">*</span>};
     <span class="kw">use </span>openmls::prelude::SignaturePublicKey;
     <span class="kw">use </span>rand::Rng;
     <span class="kw">use </span>wasm_bindgen_test::<span class="kw-2">*</span>;
@@ -514,7 +520,7 @@
                         .<span class="kw">await</span>;
                     <span class="macro">assert!</span>(<span class="macro">matches!</span>(
                         push.unwrap_err(),
-                        <span class="kw">crate</span>::CryptoError::CredentialBundleConflict
+                        mls::client::Error::CredentialBundleConflict
                     ));
                 })
             })

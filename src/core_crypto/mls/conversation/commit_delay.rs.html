@@ -269,7 +269,13 @@
 <a href="#268" id="268">268</a>
 <a href="#269" id="269">269</a>
 <a href="#270" id="270">270</a>
-<a href="#271" id="271">271</a></pre></div><pre class="rust"><code><span class="kw">use </span>log::{debug, trace};
+<a href="#271" id="271">271</a>
+<a href="#272" id="272">272</a>
+<a href="#273" id="273">273</a>
+<a href="#274" id="274">274</a>
+<a href="#275" id="275">275</a>
+<a href="#276" id="276">276</a>
+<a href="#277" id="277">277</a></pre></div><pre class="rust"><code><span class="kw">use </span>log::{debug, trace};
 <span class="kw">use </span>openmls::prelude::LeafNodeIndex;
 
 <span class="kw">use </span><span class="kw">super</span>::MlsConversation;
@@ -329,7 +335,6 @@
 
                     <span class="prelude-ty">Result</span>::&lt;<span class="kw">_</span>, MlsError&gt;::Ok(acc)
                 })
-                .map_err(MlsError::from)
                 .unwrap_or_default();
 
             <span class="comment">// Post-commit visualization of the number of members after remove proposals
@@ -362,7 +367,7 @@
 <span class="attr">#[cfg(test)]
 </span><span class="kw">mod </span>tests {
     <span class="kw">use super</span>::<span class="kw-2">*</span>;
-    <span class="kw">use crate</span>::{prelude::MlsConversationCreationMessage, test_utils::<span class="kw-2">*</span>};
+    <span class="kw">use </span><span class="kw">crate</span>::test_utils::<span class="kw-2">*</span>;
     <span class="kw">use </span>tls_codec::Serialize <span class="kw">as _</span>;
     <span class="kw">use </span>wasm_bindgen_test::<span class="kw-2">*</span>;
 
@@ -452,15 +457,15 @@
                         </span>.unwrap();
 
                     <span class="kw">let </span>bob = bob_central.rand_key_package(<span class="kw-2">&amp;</span>case).<span class="kw">await</span>;
-                    <span class="kw">let </span>MlsConversationCreationMessage {
-                        welcome: bob_welcome, ..
-                    } = alice_central
+                    alice_central
                         .context
-                        .add_members_to_conversation(<span class="kw-2">&amp;</span>id, <span class="macro">vec!</span>[bob])
+                        .conversation_guard(<span class="kw-2">&amp;</span>id)
+                        .<span class="kw">await
+                        </span>.unwrap()
+                        .add_members(<span class="macro">vec!</span>[bob])
                         .<span class="kw">await
                         </span>.unwrap();
-                    <span class="macro">assert_eq!</span>(alice_central.get_conversation_unchecked(<span class="kw-2">&amp;</span>id).<span class="kw">await</span>.members().len(), <span class="number">1</span>);
-                    alice_central.context.commit_accepted(<span class="kw-2">&amp;</span>id).<span class="kw">await</span>.unwrap();
+                    <span class="kw">let </span>bob_welcome = alice_central.mls_transport.latest_welcome_message().<span class="kw">await</span>;
                     <span class="macro">assert_eq!</span>(alice_central.get_conversation_unchecked(<span class="kw-2">&amp;</span>id).<span class="kw">await</span>.members().len(), <span class="number">2</span>);
 
                     bob_central
@@ -470,28 +475,29 @@
                         </span>.unwrap();
 
                     <span class="kw">let </span>charlie = charlie_central.rand_key_package(<span class="kw-2">&amp;</span>case).<span class="kw">await</span>;
-                    <span class="kw">let </span>MlsConversationCreationMessage {
-                        welcome: charlie_welcome,
-                        commit,
-                        ..
-                    } = alice_central
+                    alice_central
                         .context
-                        .add_members_to_conversation(<span class="kw-2">&amp;</span>id, <span class="macro">vec!</span>[charlie])
+                        .conversation_guard(<span class="kw-2">&amp;</span>id)
+                        .<span class="kw">await
+                        </span>.unwrap()
+                        .add_members(<span class="macro">vec!</span>[charlie])
                         .<span class="kw">await
                         </span>.unwrap();
-                    <span class="macro">assert_eq!</span>(alice_central.get_conversation_unchecked(<span class="kw-2">&amp;</span>id).<span class="kw">await</span>.members().len(), <span class="number">2</span>);
-                    alice_central.context.commit_accepted(<span class="kw-2">&amp;</span>id).<span class="kw">await</span>.unwrap();
+                    <span class="kw">let </span>charlie_welcome_bundle = alice_central.mls_transport.latest_commit_bundle().<span class="kw">await</span>;
                     <span class="macro">assert_eq!</span>(alice_central.get_conversation_unchecked(<span class="kw-2">&amp;</span>id).<span class="kw">await</span>.members().len(), <span class="number">3</span>);
 
                     <span class="kw">let _ </span>= bob_central
                         .context
-                        .decrypt_message(<span class="kw-2">&amp;</span>id, <span class="kw-2">&amp;</span>commit.tls_serialize_detached().unwrap())
+                        .conversation_guard(<span class="kw-2">&amp;</span>id)
+                        .<span class="kw">await
+                        </span>.unwrap()
+                        .decrypt_message(<span class="kw-2">&amp;</span>charlie_welcome_bundle.commit.tls_serialize_detached().unwrap())
                         .<span class="kw">await
                         </span>.unwrap();
 
                     charlie_central
                         .context
-                        .process_welcome_message(charlie_welcome.into(), case.custom_cfg())
+                        .process_welcome_message(charlie_welcome_bundle.welcome.unwrap().into(), case.custom_cfg())
                         .<span class="kw">await
                         </span>.unwrap();
 
@@ -515,7 +521,10 @@
 
                     <span class="kw">let </span>bob_decrypted_message = bob_central
                         .context
-                        .decrypt_message(<span class="kw-2">&amp;</span>id, <span class="kw-2">&amp;</span>proposal_bundle.proposal.tls_serialize_detached().unwrap())
+                        .conversation_guard(<span class="kw-2">&amp;</span>id)
+                        .<span class="kw">await
+                        </span>.unwrap()
+                        .decrypt_message(<span class="kw-2">&amp;</span>proposal_bundle.proposal.tls_serialize_detached().unwrap())
                         .<span class="kw">await
                         </span>.unwrap();
 
@@ -526,7 +535,10 @@
 
                     <span class="kw">let </span>charlie_decrypted_message = charlie_central
                         .context
-                        .decrypt_message(<span class="kw-2">&amp;</span>id, <span class="kw-2">&amp;</span>proposal_bundle.proposal.tls_serialize_detached().unwrap())
+                        .conversation_guard(<span class="kw-2">&amp;</span>id)
+                        .<span class="kw">await
+                        </span>.unwrap()
+                        .decrypt_message(<span class="kw-2">&amp;</span>proposal_bundle.proposal.tls_serialize_detached().unwrap())
                         .<span class="kw">await
                         </span>.unwrap();
 

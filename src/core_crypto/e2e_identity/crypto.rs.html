@@ -71,16 +71,14 @@
 <a href="#70" id="70">70</a>
 <a href="#71" id="71">71</a>
 <a href="#72" id="72">72</a>
-<a href="#73" id="73">73</a>
-<a href="#74" id="74">74</a>
-<a href="#75" id="75">75</a></pre></div><pre class="rust"><code><span class="kw">use </span><span class="kw">super</span>::error::<span class="kw-2">*</span>;
-<span class="kw">use crate</span>::{prelude::MlsCiphersuite, CryptoError, CryptoResult, MlsError};
+<a href="#73" id="73">73</a></pre></div><pre class="rust"><code><span class="kw">use </span><span class="kw">super</span>::error::<span class="kw-2">*</span>;
+<span class="kw">use crate</span>::{MlsError, prelude::MlsCiphersuite};
 <span class="kw">use </span>mls_crypto_provider::{MlsCryptoProvider, PkiKeypair, RustCrypto};
 <span class="kw">use </span>openmls_basic_credential::SignatureKeyPair <span class="kw">as </span>OpenMlsSignatureKeyPair;
 <span class="kw">use </span>openmls_traits::{
+    OpenMlsCryptoProvider,
     crypto::OpenMlsCrypto,
     types::{Ciphersuite, SignatureScheme},
-    OpenMlsCryptoProvider,
 };
 <span class="kw">use </span>wire_e2e_identity::prelude::JwsAlgorithm;
 <span class="kw">use </span>zeroize::Zeroize;
@@ -89,32 +87,32 @@
     <span class="kw">pub</span>(<span class="kw">super</span>) <span class="kw">fn </span>new_sign_key(
         ciphersuite: MlsCiphersuite,
         backend: <span class="kw-2">&amp;</span>MlsCryptoProvider,
-    ) -&gt; CryptoResult&lt;E2eiSignatureKeypair&gt; {
+    ) -&gt; <span class="prelude-ty">Result</span>&lt;E2eiSignatureKeypair&gt; {
         <span class="kw">let </span>(sk, <span class="kw">_</span>) = backend
             .crypto()
             .signature_key_gen(ciphersuite.signature_algorithm())
-            .map_err(MlsError::from)<span class="question-mark">?</span>;
+            .map_err(MlsError::wrap(<span class="string">"performing signature keygen"</span>))<span class="question-mark">?</span>;
         E2eiSignatureKeypair::try_new(ciphersuite.signature_algorithm(), sk)
     }
 
-    <span class="kw">pub</span>(<span class="kw">super</span>) <span class="kw">fn </span>get_sign_key_for_mls(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; CryptoResult&lt;Vec&lt;u8&gt;&gt; {
+    <span class="kw">pub</span>(<span class="kw">super</span>) <span class="kw">fn </span>get_sign_key_for_mls(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;Vec&lt;u8&gt;&gt; {
         <span class="kw">let </span>sk = <span class="kw">match </span><span class="self">self</span>.ciphersuite.signature_algorithm() {
             SignatureScheme::ECDSA_SECP256R1_SHA256 | SignatureScheme::ECDSA_SECP384R1_SHA384 =&gt; <span class="self">self</span>.sign_sk.to_vec(),
             SignatureScheme::ECDSA_SECP521R1_SHA512 =&gt; RustCrypto::normalize_p521_secret_key(<span class="kw-2">&amp;</span><span class="self">self</span>.sign_sk).to_vec(),
             SignatureScheme::ED25519 =&gt; RustCrypto::normalize_ed25519_key(<span class="self">self</span>.sign_sk.as_slice())
-                .map_err(MlsError::from)<span class="question-mark">?
+                .map_err(MlsError::wrap(<span class="string">"normalizing ed25519 key"</span>))<span class="question-mark">?
                 </span>.to_bytes()
                 .to_vec(),
-            SignatureScheme::ED448 =&gt; <span class="kw">return </span><span class="prelude-val">Err</span>(E2eIdentityError::NotYetSupported.into()),
+            SignatureScheme::ED448 =&gt; <span class="kw">return </span><span class="prelude-val">Err</span>(Error::NotYetSupported),
         };
         <span class="prelude-val">Ok</span>(sk)
     }
 }
 
 <span class="kw">impl </span>TryFrom&lt;MlsCiphersuite&gt; <span class="kw">for </span>JwsAlgorithm {
-    <span class="kw">type </span>Error = E2eIdentityError;
+    <span class="kw">type </span>Error = Error;
 
-    <span class="kw">fn </span>try_from(cs: MlsCiphersuite) -&gt; E2eIdentityResult&lt;<span class="self">Self</span>&gt; {
+    <span class="kw">fn </span>try_from(cs: MlsCiphersuite) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>&gt; {
         <span class="kw">let </span>cs = openmls_traits::types::Ciphersuite::from(cs);
         <span class="prelude-val">Ok</span>(<span class="kw">match </span>cs {
             Ciphersuite::MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519
@@ -123,9 +121,7 @@
             Ciphersuite::MLS_256_DHKEMP384_AES256GCM_SHA384_P384 =&gt; JwsAlgorithm::P384,
             Ciphersuite::MLS_256_DHKEMP521_AES256GCM_SHA512_P521 =&gt; JwsAlgorithm::P521,
             Ciphersuite::MLS_256_DHKEMX448_AES256GCM_SHA512_Ed448
-            | Ciphersuite::MLS_256_DHKEMX448_CHACHA20POLY1305_SHA512_Ed448 =&gt; {
-                <span class="kw">return </span><span class="prelude-val">Err</span>(E2eIdentityError::NotYetSupported)
-            }
+            | Ciphersuite::MLS_256_DHKEMX448_CHACHA20POLY1305_SHA512_Ed448 =&gt; <span class="kw">return </span><span class="prelude-val">Err</span>(Error::NotYetSupported),
         })
     }
 }
@@ -135,16 +131,16 @@
 </span><span class="kw">pub struct </span>E2eiSignatureKeypair(Vec&lt;u8&gt;);
 
 <span class="kw">impl </span>E2eiSignatureKeypair {
-    <span class="kw">pub fn </span>try_new(sc: SignatureScheme, sk: Vec&lt;u8&gt;) -&gt; CryptoResult&lt;<span class="self">Self</span>&gt; {
-        <span class="kw">let </span>keypair = PkiKeypair::new(sc, sk)<span class="question-mark">?</span>;
+    <span class="kw">pub fn </span>try_new(sc: SignatureScheme, sk: Vec&lt;u8&gt;) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>&gt; {
+        <span class="kw">let </span>keypair = PkiKeypair::new(sc, sk).map_err(MlsError::wrap(<span class="string">"creating new pki keypair"</span>))<span class="question-mark">?</span>;
         <span class="prelude-val">Ok</span>(<span class="self">Self</span>(keypair.signing_key_bytes()))
     }
 }
 
 <span class="kw">impl </span>TryFrom&lt;<span class="kw-2">&amp;</span>OpenMlsSignatureKeyPair&gt; <span class="kw">for </span>E2eiSignatureKeypair {
-    <span class="kw">type </span>Error = CryptoError;
+    <span class="kw">type </span>Error = Error;
 
-    <span class="kw">fn </span>try_from(kp: <span class="kw-2">&amp;</span>OpenMlsSignatureKeyPair) -&gt; CryptoResult&lt;<span class="self">Self</span>&gt; {
+    <span class="kw">fn </span>try_from(kp: <span class="kw-2">&amp;</span>OpenMlsSignatureKeyPair) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>&gt; {
         <span class="self">Self</span>::try_new(kp.signature_scheme(), kp.private().to_vec())
     }
 }

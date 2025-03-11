@@ -416,7 +416,49 @@
 <a href="#415" id="415">415</a>
 <a href="#416" id="416">416</a>
 <a href="#417" id="417">417</a>
-<a href="#418" id="418">418</a></pre></div><pre class="rust"><code><span class="doccomment">//! This table summarizes when a MLS group can create a commit or proposal:
+<a href="#418" id="418">418</a>
+<a href="#419" id="419">419</a>
+<a href="#420" id="420">420</a>
+<a href="#421" id="421">421</a>
+<a href="#422" id="422">422</a>
+<a href="#423" id="423">423</a>
+<a href="#424" id="424">424</a>
+<a href="#425" id="425">425</a>
+<a href="#426" id="426">426</a>
+<a href="#427" id="427">427</a>
+<a href="#428" id="428">428</a>
+<a href="#429" id="429">429</a>
+<a href="#430" id="430">430</a>
+<a href="#431" id="431">431</a>
+<a href="#432" id="432">432</a>
+<a href="#433" id="433">433</a>
+<a href="#434" id="434">434</a>
+<a href="#435" id="435">435</a>
+<a href="#436" id="436">436</a>
+<a href="#437" id="437">437</a>
+<a href="#438" id="438">438</a>
+<a href="#439" id="439">439</a>
+<a href="#440" id="440">440</a>
+<a href="#441" id="441">441</a>
+<a href="#442" id="442">442</a>
+<a href="#443" id="443">443</a>
+<a href="#444" id="444">444</a>
+<a href="#445" id="445">445</a>
+<a href="#446" id="446">446</a>
+<a href="#447" id="447">447</a>
+<a href="#448" id="448">448</a>
+<a href="#449" id="449">449</a>
+<a href="#450" id="450">450</a>
+<a href="#451" id="451">451</a>
+<a href="#452" id="452">452</a>
+<a href="#453" id="453">453</a>
+<a href="#454" id="454">454</a>
+<a href="#455" id="455">455</a>
+<a href="#456" id="456">456</a>
+<a href="#457" id="457">457</a>
+<a href="#458" id="458">458</a>
+<a href="#459" id="459">459</a>
+<a href="#460" id="460">460</a></pre></div><pre class="rust"><code><span class="doccomment">//! This table summarizes when a MLS group can create a commit or proposal:
 //!
 //! | can create handshake ? | 0 pend. Commit | 1 pend. Commit |
 //! |------------------------|----------------|----------------|
@@ -427,13 +469,12 @@
 
 <span class="kw">use </span>mls_crypto_provider::MlsCryptoProvider;
 
+<span class="kw">use super</span>::{Error, <span class="prelude-ty">Result</span>};
 <span class="kw">use crate</span>::{
-    e2e_identity::init_certificates::NewCrlDistributionPoint, mls::credential::crl::get_new_crl_distribution_points,
-};
-<span class="kw">use crate</span>::{
-    mls::credential::crl::extract_crl_uris_from_credentials,
+    MlsError, RecursiveError,
+    e2e_identity::init_certificates::NewCrlDistributionPoint,
+    mls::credential::crl::{extract_crl_uris_from_credentials, get_new_crl_distribution_points},
     prelude::{Client, MlsConversation, MlsProposalRef},
-    CryptoError, CryptoResult, MlsError,
 };
 
 <span class="doccomment">/// Creating proposals
@@ -445,24 +486,26 @@
         client: <span class="kw-2">&amp;</span>Client,
         backend: <span class="kw-2">&amp;</span>MlsCryptoProvider,
         key_package: KeyPackageIn,
-    ) -&gt; CryptoResult&lt;MlsProposalBundle&gt; {
+    ) -&gt; <span class="prelude-ty">Result</span>&lt;MlsProposalBundle&gt; {
         <span class="kw">let </span>signer = <span class="kw-2">&amp;</span><span class="self">self
             </span>.find_current_credential_bundle(client)
             .<span class="kw">await
-            </span>.map_err(|<span class="kw">_</span>| CryptoError::IdentityInitializationError)<span class="question-mark">?
+            </span>.map_err(|<span class="kw">_</span>| Error::IdentityInitializationError)<span class="question-mark">?
             </span>.signature_key;
 
         <span class="kw">let </span>crl_new_distribution_points = get_new_crl_distribution_points(
             backend,
-            extract_crl_uris_from_credentials(std::iter::once(key_package.credential().mls_credential()))<span class="question-mark">?</span>,
+            extract_crl_uris_from_credentials(std::iter::once(key_package.credential().mls_credential()))
+                .map_err(RecursiveError::mls_credential(<span class="string">"extracting crl uris from credentials"</span>))<span class="question-mark">?</span>,
         )
-        .<span class="kw">await</span><span class="question-mark">?</span>;
+        .<span class="kw">await
+        </span>.map_err(RecursiveError::mls_credential(<span class="string">"getting new crl distribution points"</span>))<span class="question-mark">?</span>;
 
         <span class="kw">let </span>(proposal, proposal_ref) = <span class="self">self
             </span>.group
             .propose_add_member(backend, signer, key_package)
             .<span class="kw">await
-            </span>.map_err(MlsError::from)<span class="question-mark">?</span>;
+            </span>.map_err(MlsError::wrap(<span class="string">"propose add member"</span>))<span class="question-mark">?</span>;
         <span class="kw">let </span>proposal = MlsProposalBundle {
             proposal,
             proposal_ref: proposal_ref.into(),
@@ -479,17 +522,16 @@
         client: <span class="kw-2">&amp;</span>Client,
         backend: <span class="kw-2">&amp;</span>MlsCryptoProvider,
         member: LeafNodeIndex,
-    ) -&gt; CryptoResult&lt;MlsProposalBundle&gt; {
+    ) -&gt; <span class="prelude-ty">Result</span>&lt;MlsProposalBundle&gt; {
         <span class="kw">let </span>signer = <span class="kw-2">&amp;</span><span class="self">self
             </span>.find_current_credential_bundle(client)
             .<span class="kw">await
-            </span>.map_err(|<span class="kw">_</span>| CryptoError::IdentityInitializationError)<span class="question-mark">?
+            </span>.map_err(|<span class="kw">_</span>| Error::IdentityInitializationError)<span class="question-mark">?
             </span>.signature_key;
         <span class="kw">let </span>proposal = <span class="self">self
             </span>.group
             .propose_remove_member(backend, signer, member)
-            .map_err(MlsError::from)
-            .map_err(CryptoError::from)
+            .map_err(MlsError::wrap(<span class="string">"propose remove member"</span>))
             .map(MlsProposalBundle::from)<span class="question-mark">?</span>;
         <span class="self">self</span>.persist_group_when_changed(<span class="kw-2">&amp;</span>backend.keystore(), <span class="bool-val">false</span>).<span class="kw">await</span><span class="question-mark">?</span>;
         <span class="prelude-val">Ok</span>(proposal)
@@ -501,7 +543,7 @@
         <span class="kw-2">&amp;mut </span><span class="self">self</span>,
         client: <span class="kw-2">&amp;</span>Client,
         backend: <span class="kw-2">&amp;</span>MlsCryptoProvider,
-    ) -&gt; CryptoResult&lt;MlsProposalBundle&gt; {
+    ) -&gt; <span class="prelude-ty">Result</span>&lt;MlsProposalBundle&gt; {
         <span class="self">self</span>.propose_explicit_self_update(client, backend, <span class="prelude-val">None</span>).<span class="kw">await
     </span>}
 
@@ -512,15 +554,19 @@
         client: <span class="kw-2">&amp;</span>Client,
         backend: <span class="kw-2">&amp;</span>MlsCryptoProvider,
         leaf_node: <span class="prelude-ty">Option</span>&lt;LeafNode&gt;,
-    ) -&gt; CryptoResult&lt;MlsProposalBundle&gt; {
+    ) -&gt; <span class="prelude-ty">Result</span>&lt;MlsProposalBundle&gt; {
         <span class="kw">let </span>msg_signer = <span class="kw-2">&amp;</span><span class="self">self
             </span>.find_current_credential_bundle(client)
             .<span class="kw">await
-            </span>.map_err(|<span class="kw">_</span>| CryptoError::IdentityInitializationError)<span class="question-mark">?
+            </span>.map_err(|<span class="kw">_</span>| Error::IdentityInitializationError)<span class="question-mark">?
             </span>.signature_key;
 
         <span class="kw">let </span>proposal = <span class="kw">if let </span><span class="prelude-val">Some</span>(leaf_node) = leaf_node {
-            <span class="kw">let </span>leaf_node_signer = <span class="kw-2">&amp;</span><span class="self">self</span>.find_most_recent_credential_bundle(client).<span class="kw">await</span><span class="question-mark">?</span>.signature_key;
+            <span class="kw">let </span>leaf_node_signer = <span class="kw-2">&amp;</span><span class="self">self
+                </span>.find_most_recent_credential_bundle(client)
+                .<span class="kw">await
+                </span>.map_err(RecursiveError::mls_client(<span class="string">"finding most recent credential bundle"</span>))<span class="question-mark">?
+                </span>.signature_key;
 
             <span class="self">self</span>.group
                 .propose_explicit_self_update(backend, msg_signer, leaf_node, leaf_node_signer)
@@ -528,8 +574,8 @@
         </span>} <span class="kw">else </span>{
             <span class="self">self</span>.group.propose_self_update(backend, msg_signer).<span class="kw">await
         </span>}
-        .map_err(MlsError::from)
-        .map(MlsProposalBundle::from)<span class="question-mark">?</span>;
+        .map(MlsProposalBundle::from)
+        .map_err(MlsError::wrap(<span class="string">"proposing self update"</span>))<span class="question-mark">?</span>;
 
         <span class="self">self</span>.persist_group_when_changed(<span class="kw-2">&amp;</span>backend.keystore(), <span class="bool-val">false</span>).<span class="kw">await</span><span class="question-mark">?</span>;
         <span class="prelude-val">Ok</span>(proposal)
@@ -562,9 +608,12 @@
     /// 0 -&gt; proposal
     /// 1 -&gt; proposal reference
     </span><span class="attr">#[allow(clippy::type_complexity)]
-    </span><span class="kw">pub fn </span>to_bytes(<span class="self">self</span>) -&gt; CryptoResult&lt;(Vec&lt;u8&gt;, Vec&lt;u8&gt;, NewCrlDistributionPoint)&gt; {
+    </span><span class="kw">pub fn </span>to_bytes(<span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;(Vec&lt;u8&gt;, Vec&lt;u8&gt;, NewCrlDistributionPoint)&gt; {
         <span class="kw">use </span>openmls::prelude::TlsSerializeTrait <span class="kw">as _</span>;
-        <span class="kw">let </span>proposal = <span class="self">self</span>.proposal.tls_serialize_detached().map_err(MlsError::from)<span class="question-mark">?</span>;
+        <span class="kw">let </span>proposal = <span class="self">self
+            </span>.proposal
+            .tls_serialize_detached()
+            .map_err(Error::tls_serialize(<span class="string">"proposal"</span>))<span class="question-mark">?</span>;
         <span class="kw">let </span>proposal_ref = <span class="self">self</span>.proposal_ref.to_bytes();
 
         <span class="prelude-val">Ok</span>((proposal, proposal_ref, <span class="self">self</span>.crl_new_distribution_points))
@@ -577,7 +626,7 @@
     <span class="kw">use </span>openmls::prelude::SignaturePublicKey;
     <span class="kw">use </span>wasm_bindgen_test::<span class="kw-2">*</span>;
 
-    <span class="kw">use crate</span>::{prelude::MlsCommitBundle, test_utils::<span class="kw-2">*</span>};
+    <span class="kw">use </span><span class="kw">crate</span>::test_utils::<span class="kw-2">*</span>;
 
     <span class="kw">use super</span>::<span class="kw-2">*</span>;
 
@@ -613,23 +662,32 @@
                         <span class="macro">assert_eq!</span>(alice_central.pending_proposals(<span class="kw-2">&amp;</span>id).<span class="kw">await</span>.len(), <span class="number">1</span>);
                         bob_central
                             .context
-                            .decrypt_message(<span class="kw-2">&amp;</span>id, proposal.to_bytes().unwrap())
-                            .<span class="kw">await
-                            </span>.unwrap();
-                        <span class="kw">let </span>MlsCommitBundle { commit, welcome, .. } = bob_central
-                            .context
-                            .commit_pending_proposals(<span class="kw-2">&amp;</span>id)
+                            .conversation_guard(<span class="kw-2">&amp;</span>id)
                             .<span class="kw">await
                             </span>.unwrap()
-                            .unwrap();
-                        bob_central.context.commit_accepted(<span class="kw-2">&amp;</span>id).<span class="kw">await</span>.unwrap();
+                            .decrypt_message(proposal.to_bytes().unwrap())
+                            .<span class="kw">await
+                            </span>.unwrap();
+                        bob_central
+                            .context
+                            .conversation_guard(<span class="kw-2">&amp;</span>id)
+                            .<span class="kw">await
+                            </span>.unwrap()
+                            .commit_pending_proposals()
+                            .<span class="kw">await
+                            </span>.unwrap();
+                        <span class="kw">let </span>commit = bob_central.mls_transport.latest_commit().<span class="kw">await</span>;
+                        <span class="kw">let </span>welcome = bob_central.mls_transport.latest_welcome_message().<span class="kw">await</span>;
                         <span class="macro">assert_eq!</span>(bob_central.get_conversation_unchecked(<span class="kw-2">&amp;</span>id).<span class="kw">await</span>.members().len(), <span class="number">3</span>);
 
                         <span class="comment">// if 'new_proposal' wasn't durable this would fail because proposal would
                         // not be referenced in commit
                         </span>alice_central
                             .context
-                            .decrypt_message(<span class="kw-2">&amp;</span>id, commit.to_bytes().unwrap())
+                            .conversation_guard(<span class="kw-2">&amp;</span>id)
+                            .<span class="kw">await
+                            </span>.unwrap()
+                            .decrypt_message(commit.to_bytes().unwrap())
                             .<span class="kw">await
                             </span>.unwrap();
                         <span class="macro">assert_eq!</span>(alice_central.get_conversation_unchecked(<span class="kw-2">&amp;</span>id).<span class="kw">await</span>.members().len(), <span class="number">3</span>);
@@ -637,7 +695,7 @@
                         charlie_central
                             .try_join_from_welcome(
                                 <span class="kw-2">&amp;</span>id,
-                                welcome.unwrap().into(),
+                                welcome.into(),
                                 case.custom_cfg(),
                                 <span class="macro">vec!</span>[<span class="kw-2">&amp;</span>alice_central, <span class="kw-2">&amp;</span>bob_central],
                             )
@@ -683,24 +741,31 @@
                         <span class="macro">assert_eq!</span>(alice_central.pending_proposals(<span class="kw-2">&amp;</span>id).<span class="kw">await</span>.len(), <span class="number">1</span>);
                         bob_central
                             .context
-                            .decrypt_message(<span class="kw-2">&amp;</span>id, proposal.to_bytes().unwrap())
-                            .<span class="kw">await
-                            </span>.unwrap();
-                        <span class="kw">let </span>commit = bob_central
-                            .context
-                            .commit_pending_proposals(<span class="kw-2">&amp;</span>id)
+                            .conversation_guard(<span class="kw-2">&amp;</span>id)
                             .<span class="kw">await
                             </span>.unwrap()
-                            .unwrap()
-                            .commit;
-                        bob_central.context.commit_accepted(<span class="kw-2">&amp;</span>id).<span class="kw">await</span>.unwrap();
+                            .decrypt_message(proposal.to_bytes().unwrap())
+                            .<span class="kw">await
+                            </span>.unwrap();
+                        bob_central
+                            .context
+                            .conversation_guard(<span class="kw-2">&amp;</span>id)
+                            .<span class="kw">await
+                            </span>.unwrap()
+                            .commit_pending_proposals()
+                            .<span class="kw">await
+                            </span>.unwrap();
+                        <span class="kw">let </span>commit = bob_central.mls_transport.latest_commit().<span class="kw">await</span>;
                         <span class="macro">assert_eq!</span>(bob_central.get_conversation_unchecked(<span class="kw-2">&amp;</span>id).<span class="kw">await</span>.members().len(), <span class="number">2</span>);
 
                         <span class="comment">// if 'new_proposal' wasn't durable this would fail because proposal would
                         // not be referenced in commit
                         </span>alice_central
                             .context
-                            .decrypt_message(<span class="kw-2">&amp;</span>id, commit.to_bytes().unwrap())
+                            .conversation_guard(<span class="kw-2">&amp;</span>id)
+                            .<span class="kw">await
+                            </span>.unwrap()
+                            .decrypt_message(commit.to_bytes().unwrap())
                             .<span class="kw">await
                             </span>.unwrap();
                         <span class="macro">assert_eq!</span>(alice_central.get_conversation_unchecked(<span class="kw-2">&amp;</span>id).<span class="kw">await</span>.members().len(), <span class="number">2</span>);
@@ -745,47 +810,54 @@
                     <span class="kw">let </span>proposal = alice_central.context.new_update_proposal(<span class="kw-2">&amp;</span>id).<span class="kw">await</span>.unwrap().proposal;
                     bob_central
                         .context
-                        .decrypt_message(<span class="kw-2">&amp;</span>id, proposal.to_bytes().unwrap())
-                        .<span class="kw">await
-                        </span>.unwrap();
-                    <span class="kw">let </span>commit = bob_central
-                        .context
-                        .commit_pending_proposals(<span class="kw-2">&amp;</span>id)
+                        .conversation_guard(<span class="kw-2">&amp;</span>id)
                         .<span class="kw">await
                         </span>.unwrap()
-                        .unwrap()
-                        .commit;
+                        .decrypt_message(proposal.to_bytes().unwrap())
+                        .<span class="kw">await
+                        </span>.unwrap();
+                    bob_central
+                        .context
+                        .conversation_guard(<span class="kw-2">&amp;</span>id)
+                        .<span class="kw">await
+                        </span>.unwrap()
+                        .commit_pending_proposals()
+                        .<span class="kw">await
+                        </span>.unwrap();
+                    <span class="kw">let </span>commit = bob_central.mls_transport.latest_commit().<span class="kw">await</span>;
 
-                    <span class="comment">// before merging, commit is not applied
-                    </span><span class="macro">assert!</span>(bob_central
-                        .get_conversation_unchecked(<span class="kw-2">&amp;</span>id)
-                        .<span class="kw">await
-                        </span>.encryption_keys()
-                        .contains(<span class="kw-2">&amp;</span>alice_key));
-                    bob_central.context.commit_accepted(<span class="kw-2">&amp;</span>id).<span class="kw">await</span>.unwrap();
-                    <span class="macro">assert!</span>(!bob_central
-                        .get_conversation_unchecked(<span class="kw-2">&amp;</span>id)
-                        .<span class="kw">await
-                        </span>.encryption_keys()
-                        .contains(<span class="kw-2">&amp;</span>alice_key));
+                    <span class="macro">assert!</span>(
+                        !bob_central
+                            .get_conversation_unchecked(<span class="kw-2">&amp;</span>id)
+                            .<span class="kw">await
+                            </span>.encryption_keys()
+                            .contains(<span class="kw-2">&amp;</span>alice_key)
+                    );
 
-                    <span class="macro">assert!</span>(alice_central
-                        .get_conversation_unchecked(<span class="kw-2">&amp;</span>id)
-                        .<span class="kw">await
-                        </span>.encryption_keys()
-                        .contains(<span class="kw-2">&amp;</span>alice_key));
+                    <span class="macro">assert!</span>(
+                        alice_central
+                            .get_conversation_unchecked(<span class="kw-2">&amp;</span>id)
+                            .<span class="kw">await
+                            </span>.encryption_keys()
+                            .contains(<span class="kw-2">&amp;</span>alice_key)
+                    );
                     <span class="comment">// if 'new_proposal' wasn't durable this would fail because proposal would
                     // not be referenced in commit
                     </span>alice_central
                         .context
-                        .decrypt_message(<span class="kw-2">&amp;</span>id, commit.to_bytes().unwrap())
+                        .conversation_guard(<span class="kw-2">&amp;</span>id)
+                        .<span class="kw">await
+                        </span>.unwrap()
+                        .decrypt_message(commit.to_bytes().unwrap())
                         .<span class="kw">await
                         </span>.unwrap();
-                    <span class="macro">assert!</span>(!alice_central
-                        .get_conversation_unchecked(<span class="kw-2">&amp;</span>id)
-                        .<span class="kw">await
-                        </span>.encryption_keys()
-                        .contains(<span class="kw-2">&amp;</span>alice_key));
+                    <span class="macro">assert!</span>(
+                        !alice_central
+                            .get_conversation_unchecked(<span class="kw-2">&amp;</span>id)
+                            .<span class="kw">await
+                            </span>.encryption_keys()
+                            .contains(<span class="kw-2">&amp;</span>alice_key)
+                    );
 
                     <span class="comment">// ensuring both can encrypt messages
                     </span><span class="macro">assert!</span>(alice_central.try_talk_to(<span class="kw-2">&amp;</span>id, <span class="kw-2">&amp;</span>bob_central).<span class="kw">await</span>.is_ok());
@@ -815,19 +887,31 @@
 
                     bob_central
                         .context
-                        .decrypt_message(<span class="kw-2">&amp;</span>id, <span class="kw-2">&amp;</span>proposal.to_bytes().unwrap())
+                        .conversation_guard(<span class="kw-2">&amp;</span>id)
+                        .<span class="kw">await
+                        </span>.unwrap()
+                        .decrypt_message(<span class="kw-2">&amp;</span>proposal.to_bytes().unwrap())
                         .<span class="kw">await
                         </span>.unwrap();
-                    bob_central.context.commit_pending_proposals(<span class="kw-2">&amp;</span>id).<span class="kw">await</span>.unwrap();
+                    bob_central
+                        .context
+                        .conversation_guard(<span class="kw-2">&amp;</span>id)
+                        .<span class="kw">await
+                        </span>.unwrap()
+                        .commit_pending_proposals()
+                        .<span class="kw">await
+                        </span>.unwrap();
                     <span class="comment">// epoch++
-                    </span>bob_central.context.commit_accepted(<span class="kw-2">&amp;</span>id).<span class="kw">await</span>.unwrap();
 
-                    <span class="comment">// fails when we try to decrypt a proposal for past epoch
+                    // fails when we try to decrypt a proposal for past epoch
                     </span><span class="kw">let </span>past_proposal = bob_central
                         .context
-                        .decrypt_message(<span class="kw-2">&amp;</span>id, <span class="kw-2">&amp;</span>proposal.to_bytes().unwrap())
+                        .conversation_guard(<span class="kw-2">&amp;</span>id)
+                        .<span class="kw">await
+                        </span>.unwrap()
+                        .decrypt_message(<span class="kw-2">&amp;</span>proposal.to_bytes().unwrap())
                         .<span class="kw">await</span>;
-                    <span class="macro">assert!</span>(<span class="macro">matches!</span>(past_proposal.unwrap_err(), CryptoError::StaleProposal));
+                    <span class="macro">assert!</span>(<span class="macro">matches!</span>(past_proposal.unwrap_err(), Error::StaleProposal));
                 })
             })
             .<span class="kw">await</span>;

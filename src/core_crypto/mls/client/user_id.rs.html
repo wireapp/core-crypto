@@ -68,7 +68,7 @@
 <a href="#67" id="67">67</a>
 <a href="#68" id="68">68</a>
 <a href="#69" id="69">69</a>
-<a href="#70" id="70">70</a></pre></div><pre class="rust"><code><span class="kw">use crate</span>::{CryptoError, CryptoResult};
+<a href="#70" id="70">70</a></pre></div><pre class="rust"><code><span class="kw">use super</span>::{Error, <span class="prelude-ty">Result</span>};
 
 <span class="doccomment">/// Unique identifier of a User (human person holding some devices).
 /// This contradicts the initial design requirements of this project since it was supposed to be
@@ -81,37 +81,37 @@
 </span><span class="kw">pub struct </span>UserId&lt;<span class="lifetime">'a</span>&gt;(<span class="kw-2">&amp;</span><span class="lifetime">'a </span>[u8]);
 
 <span class="kw">impl </span>UserId&lt;<span class="lifetime">'_</span>&gt; {
-    <span class="kw">const </span>USER_ID_DELIMITER: u8 = <span class="number">58</span>; <span class="comment">// the char ':'
-</span>}
+    <span class="kw">const </span>USER_ID_DELIMITER: u8 = <span class="string">b':'</span>;
+}
 
 <span class="kw">impl</span>&lt;<span class="lifetime">'a</span>&gt; TryFrom&lt;<span class="kw-2">&amp;</span><span class="lifetime">'a </span>str&gt; <span class="kw">for </span>UserId&lt;<span class="lifetime">'a</span>&gt; {
-    <span class="kw">type </span>Error = CryptoError;
+    <span class="kw">type </span>Error = Error;
 
-    <span class="kw">fn </span>try_from(client_id: <span class="kw-2">&amp;</span><span class="lifetime">'a </span>str) -&gt; CryptoResult&lt;<span class="self">Self</span>&gt; {
+    <span class="kw">fn </span>try_from(client_id: <span class="kw-2">&amp;</span><span class="lifetime">'a </span>str) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>&gt; {
         client_id.as_bytes().try_into()
     }
 }
 
 <span class="kw">impl</span>&lt;<span class="lifetime">'a</span>&gt; TryFrom&lt;<span class="kw-2">&amp;</span><span class="lifetime">'a </span>[u8]&gt; <span class="kw">for </span>UserId&lt;<span class="lifetime">'a</span>&gt; {
-    <span class="kw">type </span>Error = CryptoError;
+    <span class="kw">type </span>Error = Error;
 
-    <span class="kw">fn </span>try_from(id: <span class="kw-2">&amp;</span><span class="lifetime">'a </span>[u8]) -&gt; CryptoResult&lt;<span class="self">Self</span>&gt; {
+    <span class="kw">fn </span>try_from(id: <span class="kw-2">&amp;</span><span class="lifetime">'a </span>[u8]) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>&gt; {
         <span class="kw">let </span>found = id
             .splitn(<span class="number">2</span>, |<span class="kw-2">&amp;</span>b| b == <span class="self">Self</span>::USER_ID_DELIMITER)
             .next()
-            .ok_or(CryptoError::InvalidClientId)<span class="question-mark">?</span>;
+            .ok_or(Error::InvalidUserId)<span class="question-mark">?</span>;
         <span class="kw">if </span>found.len() == id.len() {
-            <span class="kw">return </span><span class="prelude-val">Err</span>(CryptoError::InvalidClientId);
+            <span class="kw">return </span><span class="prelude-val">Err</span>(Error::InvalidUserId);
         }
         <span class="prelude-val">Ok</span>(<span class="self">Self</span>(found))
     }
 }
 
 <span class="kw">impl </span>TryFrom&lt;UserId&lt;<span class="lifetime">'_</span>&gt;&gt; <span class="kw">for </span>String {
-    <span class="kw">type </span>Error = CryptoError;
+    <span class="kw">type </span>Error = Error;
 
-    <span class="kw">fn </span>try_from(uid: UserId&lt;<span class="lifetime">'_</span>&gt;) -&gt; CryptoResult&lt;<span class="self">Self</span>&gt; {
-        <span class="prelude-val">Ok</span>(std::str::from_utf8(<span class="kw-2">&amp;</span>uid)<span class="question-mark">?</span>.to_string())
+    <span class="kw">fn </span>try_from(uid: UserId&lt;<span class="lifetime">'_</span>&gt;) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>&gt; {
+        <span class="prelude-val">Ok</span>(std::str::from_utf8(<span class="kw-2">&amp;</span>uid).map_err(|<span class="kw">_</span>| Error::InvalidUserId)<span class="question-mark">?</span>.to_string())
     }
 }
 
@@ -135,7 +135,7 @@
     </span><span class="kw">async fn </span>should_fail_when_invalid() {
         <span class="kw">let </span>user_id = <span class="string">"LcksJb74Tm6N12cDjFy7lQ/8e6424430d3b28be@world.com"</span>;
         <span class="kw">let </span>user_id = UserId::try_from(user_id);
-        <span class="macro">assert!</span>(<span class="macro">matches!</span>(user_id.unwrap_err(), CryptoError::InvalidClientId));
+        <span class="macro">assert!</span>(<span class="macro">matches!</span>(user_id.unwrap_err(), Error::InvalidUserId));
     }
 }
 </code></pre></div></section></main></body></html>

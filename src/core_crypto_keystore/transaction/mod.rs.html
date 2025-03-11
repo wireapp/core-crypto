@@ -351,7 +351,13 @@
 <a href="#350" id="350">350</a>
 <a href="#351" id="351">351</a>
 <a href="#352" id="352">352</a>
-<a href="#353" id="353">353</a></pre></div><pre class="rust"><code><span class="kw">pub mod </span>dynamic_dispatch;
+<a href="#353" id="353">353</a>
+<a href="#354" id="354">354</a>
+<a href="#355" id="355">355</a>
+<a href="#356" id="356">356</a>
+<a href="#357" id="357">357</a>
+<a href="#358" id="358">358</a>
+<a href="#359" id="359">359</a></pre></div><pre class="rust"><code><span class="kw">pub mod </span>dynamic_dispatch;
 
 <span class="kw">use </span><span class="kw">crate</span>::entities::mls::<span class="kw-2">*</span>;
 <span class="attr">#[cfg(feature = <span class="string">"proteus-keystore"</span>)]
@@ -359,8 +365,8 @@
 <span class="kw">use </span><span class="kw">crate</span>::entities::{ConsumerData, EntityBase, EntityFindParams, EntityTransactionExt, UniqueEntity};
 <span class="kw">use </span><span class="kw">crate</span>::transaction::dynamic_dispatch::EntityId;
 <span class="kw">use crate</span>::{
-    connection::{Connection, DatabaseConnection, FetchFromDatabase, KeystoreDatabaseConnection},
     CryptoKeystoreError, CryptoKeystoreResult,
+    connection::{Connection, FetchFromDatabase, KeystoreDatabaseConnection},
 };
 <span class="kw">use </span>async_lock::{RwLock, SemaphoreGuardArc};
 <span class="kw">use </span>itertools::Itertools;
@@ -396,11 +402,12 @@
         <span class="kw-2">mut </span>entity: E,
     ) -&gt; CryptoKeystoreResult&lt;E&gt; {
         entity.pre_save().<span class="kw">await</span><span class="question-mark">?</span>;
-        <span class="kw">let </span><span class="kw-2">mut </span>conn = <span class="self">self</span>.cache.borrow_conn().<span class="kw">await</span><span class="question-mark">?</span>;
+        <span class="kw">let </span>conn = <span class="self">self</span>.cache.borrow_conn().<span class="kw">await</span><span class="question-mark">?</span>;
+        <span class="kw">let </span><span class="kw-2">mut </span>conn = conn.conn().<span class="kw">await</span>;
         <span class="attr">#[cfg(target_family = <span class="string">"wasm"</span>)]
         </span><span class="kw">let </span>transaction = conn.new_transaction(<span class="kw-2">&amp;</span>[E::COLLECTION_NAME]).<span class="kw">await</span><span class="question-mark">?</span>;
         <span class="attr">#[cfg(not(target_family = <span class="string">"wasm"</span>))]
-        </span><span class="kw">let </span>transaction = conn.new_transaction().<span class="kw">await</span><span class="question-mark">?</span>;
+        </span><span class="kw">let </span>transaction = conn.transaction()<span class="question-mark">?</span>.into();
         entity.save(<span class="kw-2">&amp;</span>transaction).<span class="kw">await</span><span class="question-mark">?</span>;
         transaction.commit_tx().<span class="kw">await</span><span class="question-mark">?</span>;
         <span class="prelude-val">Ok</span>(entity)
@@ -413,11 +420,12 @@
         <span class="kw-2">&amp;</span><span class="self">self</span>,
         id: S,
     ) -&gt; CryptoKeystoreResult&lt;()&gt; {
-        <span class="kw">let </span><span class="kw-2">mut </span>conn = <span class="self">self</span>.cache.borrow_conn().<span class="kw">await</span><span class="question-mark">?</span>;
+        <span class="kw">let </span>conn = <span class="self">self</span>.cache.borrow_conn().<span class="kw">await</span><span class="question-mark">?</span>;
+        <span class="kw">let </span><span class="kw-2">mut </span>conn = conn.conn().<span class="kw">await</span>;
         <span class="attr">#[cfg(target_family = <span class="string">"wasm"</span>)]
         </span><span class="kw">let </span>transaction = conn.new_transaction(<span class="kw-2">&amp;</span>[E::COLLECTION_NAME]).<span class="kw">await</span><span class="question-mark">?</span>;
         <span class="attr">#[cfg(not(target_family = <span class="string">"wasm"</span>))]
-        </span><span class="kw">let </span>transaction = conn.new_transaction().<span class="kw">await</span><span class="question-mark">?</span>;
+        </span><span class="kw">let </span>transaction = conn.transaction()<span class="question-mark">?</span>.into();
         E::delete(<span class="kw-2">&amp;</span>transaction, id.as_ref().into()).<span class="kw">await</span><span class="question-mark">?</span>;
         transaction.commit_tx().<span class="kw">await</span><span class="question-mark">?</span>;
         <span class="kw">let </span><span class="kw-2">mut </span>deleted_list = <span class="self">self</span>.deleted.write().<span class="kw">await</span>;
@@ -440,11 +448,12 @@
     }
 
     <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">async fn </span>cred_delete_by_credential(<span class="kw-2">&amp;</span><span class="self">self</span>, cred: Vec&lt;u8&gt;) -&gt; CryptoKeystoreResult&lt;()&gt; {
-        <span class="kw">let </span><span class="kw-2">mut </span>conn = <span class="self">self</span>.cache.borrow_conn().<span class="kw">await</span><span class="question-mark">?</span>;
+        <span class="kw">let </span>conn = <span class="self">self</span>.cache.borrow_conn().<span class="kw">await</span><span class="question-mark">?</span>;
+        <span class="kw">let </span><span class="kw-2">mut </span>conn = conn.conn().<span class="kw">await</span>;
         <span class="attr">#[cfg(target_family = <span class="string">"wasm"</span>)]
         </span><span class="kw">let </span>transaction = conn.new_transaction(<span class="kw-2">&amp;</span>[MlsCredential::COLLECTION_NAME]).<span class="kw">await</span><span class="question-mark">?</span>;
         <span class="attr">#[cfg(not(target_family = <span class="string">"wasm"</span>))]
-        </span><span class="kw">let </span>transaction = conn.new_transaction().<span class="kw">await</span><span class="question-mark">?</span>;
+        </span><span class="kw">let </span>transaction = conn.transaction()<span class="question-mark">?</span>.into();
         MlsCredential::delete_by_credential(<span class="kw-2">&amp;</span>transaction, cred.clone()).<span class="kw">await</span><span class="question-mark">?</span>;
         transaction.commit_tx().<span class="kw">await</span><span class="question-mark">?</span>;
         <span class="kw">let </span><span class="kw-2">mut </span>deleted_list = <span class="self">self</span>.deleted_credentials.write().<span class="kw">await</span>;
@@ -461,14 +470,15 @@
         </span>E: <span class="kw">crate</span>::entities::Entity&lt;ConnectionType = KeystoreDatabaseConnection&gt;,
     {
         <span class="kw">let </span>cache_result = <span class="self">self</span>.cache.find(id).<span class="kw">await</span><span class="question-mark">?</span>;
-        <span class="kw">if let </span><span class="prelude-val">Some</span>(cache_result) = cache_result {
-            <span class="prelude-val">Ok</span>(<span class="prelude-val">Some</span>(<span class="prelude-val">Some</span>(cache_result)))
-        } <span class="kw">else </span>{
-            <span class="kw">let </span>deleted_list = <span class="self">self</span>.deleted.read().<span class="kw">await</span>;
-            <span class="kw">if </span>deleted_list.contains(<span class="kw-2">&amp;</span>EntityId::from_collection_name(E::COLLECTION_NAME, id)<span class="question-mark">?</span>) {
-                <span class="prelude-val">Ok</span>(<span class="prelude-val">Some</span>(<span class="prelude-val">None</span>))
-            } <span class="kw">else </span>{
-                <span class="prelude-val">Ok</span>(<span class="prelude-val">None</span>)
+        <span class="kw">match </span>cache_result {
+            <span class="prelude-val">Some</span>(cache_result) =&gt; <span class="prelude-val">Ok</span>(<span class="prelude-val">Some</span>(<span class="prelude-val">Some</span>(cache_result))),
+            <span class="kw">_ </span>=&gt; {
+                <span class="kw">let </span>deleted_list = <span class="self">self</span>.deleted.read().<span class="kw">await</span>;
+                <span class="kw">if </span>deleted_list.contains(<span class="kw-2">&amp;</span>EntityId::from_collection_name(E::COLLECTION_NAME, id)<span class="question-mark">?</span>) {
+                    <span class="prelude-val">Ok</span>(<span class="prelude-val">Some</span>(<span class="prelude-val">None</span>))
+                } <span class="kw">else </span>{
+                    <span class="prelude-val">Ok</span>(<span class="prelude-val">None</span>)
+                }
             }
         }
     }
@@ -477,12 +487,13 @@
         <span class="kw-2">&amp;</span><span class="self">self</span>,
     ) -&gt; CryptoKeystoreResult&lt;<span class="prelude-ty">Option</span>&lt;U&gt;&gt; {
         <span class="kw">let </span>cache_result = <span class="self">self</span>.cache.find_unique().<span class="kw">await</span>;
-        <span class="kw">if let </span><span class="prelude-val">Ok</span>(cache_result) = cache_result {
-            <span class="prelude-val">Ok</span>(<span class="prelude-val">Some</span>(cache_result))
-        } <span class="kw">else </span>{
-            <span class="comment">// The deleted list doesn't have to be checked because unique entities don't implement
-            // deletion, just replace. So we can directly return None.
-            </span><span class="prelude-val">Ok</span>(<span class="prelude-val">None</span>)
+        <span class="kw">match </span>cache_result {
+            <span class="prelude-val">Ok</span>(cache_result) =&gt; <span class="prelude-val">Ok</span>(<span class="prelude-val">Some</span>(cache_result)),
+            <span class="kw">_ </span>=&gt; {
+                <span class="comment">// The deleted list doesn't have to be checked because unique entities don't implement
+                // deletion, just replace. So we can directly return None.
+                </span><span class="prelude-val">Ok</span>(<span class="prelude-val">None</span>)
+            }
         }
     }
 
@@ -611,21 +622,22 @@
 /// );
 ///```
 </span><span class="macro">macro_rules!</span> commit_transaction {
-    (<span class="macro-nonterminal">$keystore_transaction</span>:expr, <span class="macro-nonterminal">$db</span>:expr, [ $( (<span class="macro-nonterminal">$records</span>:ident, <span class="macro-nonterminal">$entity</span>:ty) ),<span class="kw-2">*</span>], proteus_types: [ $( (<span class="macro-nonterminal">$conditional_records</span>:ident, <span class="macro-nonterminal">$conditional_entity</span>:ty) ),<span class="kw-2">*</span>]) =&gt; {
+    (<span class="macro-nonterminal">$keystore_transaction</span>:expr_2021, <span class="macro-nonterminal">$db</span>:expr_2021, [ $( (<span class="macro-nonterminal">$records</span>:ident, <span class="macro-nonterminal">$entity</span>:ty) ),<span class="kw-2">*</span>], proteus_types: [ $( (<span class="macro-nonterminal">$conditional_records</span>:ident, <span class="macro-nonterminal">$conditional_entity</span>:ty) ),<span class="kw-2">*</span>]) =&gt; {
         <span class="attr">#[cfg(feature = <span class="string">"proteus-keystore"</span>)]
         </span><span class="macro">commit_transaction!</span>(<span class="macro-nonterminal">$keystore_transaction</span>, <span class="macro-nonterminal">$db</span>, [ $( (<span class="macro-nonterminal">$records</span>, <span class="macro-nonterminal">$entity</span>) ),<span class="kw-2">*</span>], [ $( (<span class="macro-nonterminal">$conditional_records</span>, <span class="macro-nonterminal">$conditional_entity</span>) ),<span class="kw-2">*</span>]);
 
         <span class="attr">#[cfg(not(feature = <span class="string">"proteus-keystore"</span>))]
         </span><span class="macro">commit_transaction!</span>(<span class="macro-nonterminal">$keystore_transaction</span>, <span class="macro-nonterminal">$db</span>, [ $( (<span class="macro-nonterminal">$records</span>, <span class="macro-nonterminal">$entity</span>) ),<span class="kw-2">*</span>]);
     };
-     (<span class="macro-nonterminal">$keystore_transaction</span>:expr, <span class="macro-nonterminal">$db</span>:expr, $([ $( (<span class="macro-nonterminal">$records</span>:ident, <span class="macro-nonterminal">$entity</span>:ty) ),<span class="kw-2">*</span>]),<span class="kw-2">*</span>) =&gt; {
+     (<span class="macro-nonterminal">$keystore_transaction</span>:expr_2021, <span class="macro-nonterminal">$db</span>:expr_2021, $([ $( (<span class="macro-nonterminal">$records</span>:ident, <span class="macro-nonterminal">$entity</span>:ty) ),<span class="kw-2">*</span>]),<span class="kw-2">*</span>) =&gt; {
             <span class="kw">let </span>cached_collections = ( $( $(
             <span class="macro-nonterminal">$keystore_transaction</span>.cache.find_all::&lt;<span class="macro-nonterminal">$entity</span>&gt;(Default::default()).<span class="kw">await</span><span class="question-mark">?</span>,
                 )* )* );
 
              <span class="kw">let </span>( $( $( <span class="macro-nonterminal">$records</span>, )* )* ) = cached_collections;
 
-            <span class="kw">let </span><span class="kw-2">mut </span>conn = <span class="macro-nonterminal">$db</span>.borrow_conn().<span class="kw">await</span><span class="question-mark">?</span>;
+            <span class="kw">let </span>conn = <span class="macro-nonterminal">$db</span>.borrow_conn().<span class="kw">await</span><span class="question-mark">?</span>;
+            <span class="kw">let </span><span class="kw-2">mut </span>conn = conn.conn().<span class="kw">await</span>;
             <span class="kw">let </span>deleted_ids = <span class="macro-nonterminal">$keystore_transaction</span>.deleted.read().<span class="kw">await</span>;
 
             <span class="kw">let </span><span class="kw-2">mut </span>tables = Vec::new();
@@ -647,7 +659,7 @@
             <span class="attr">#[cfg(target_family = <span class="string">"wasm"</span>)]
             </span><span class="kw">let </span>tx = conn.new_transaction(<span class="kw-2">&amp;</span>tables).<span class="kw">await</span><span class="question-mark">?</span>;
             <span class="attr">#[cfg(not(target_family = <span class="string">"wasm"</span>))]
-            </span><span class="kw">let </span>tx = conn.new_transaction().<span class="kw">await</span><span class="question-mark">?</span>;
+            </span><span class="kw">let </span>tx = conn.transaction()<span class="question-mark">?</span>.into();
 
              $( $(
                 <span class="kw">if </span>!<span class="macro-nonterminal">$records</span>.is_empty() {

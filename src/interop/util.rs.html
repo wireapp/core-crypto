@@ -72,7 +72,65 @@
 <a href="#71" id="71">71</a>
 <a href="#72" id="72">72</a>
 <a href="#73" id="73">73</a>
-<a href="#74" id="74">74</a></pre></div><pre class="rust"><code><span class="comment">// Wire
+<a href="#74" id="74">74</a>
+<a href="#75" id="75">75</a>
+<a href="#76" id="76">76</a>
+<a href="#77" id="77">77</a>
+<a href="#78" id="78">78</a>
+<a href="#79" id="79">79</a>
+<a href="#80" id="80">80</a>
+<a href="#81" id="81">81</a>
+<a href="#82" id="82">82</a>
+<a href="#83" id="83">83</a>
+<a href="#84" id="84">84</a>
+<a href="#85" id="85">85</a>
+<a href="#86" id="86">86</a>
+<a href="#87" id="87">87</a>
+<a href="#88" id="88">88</a>
+<a href="#89" id="89">89</a>
+<a href="#90" id="90">90</a>
+<a href="#91" id="91">91</a>
+<a href="#92" id="92">92</a>
+<a href="#93" id="93">93</a>
+<a href="#94" id="94">94</a>
+<a href="#95" id="95">95</a>
+<a href="#96" id="96">96</a>
+<a href="#97" id="97">97</a>
+<a href="#98" id="98">98</a>
+<a href="#99" id="99">99</a>
+<a href="#100" id="100">100</a>
+<a href="#101" id="101">101</a>
+<a href="#102" id="102">102</a>
+<a href="#103" id="103">103</a>
+<a href="#104" id="104">104</a>
+<a href="#105" id="105">105</a>
+<a href="#106" id="106">106</a>
+<a href="#107" id="107">107</a>
+<a href="#108" id="108">108</a>
+<a href="#109" id="109">109</a>
+<a href="#110" id="110">110</a>
+<a href="#111" id="111">111</a>
+<a href="#112" id="112">112</a>
+<a href="#113" id="113">113</a>
+<a href="#114" id="114">114</a>
+<a href="#115" id="115">115</a>
+<a href="#116" id="116">116</a>
+<a href="#117" id="117">117</a>
+<a href="#118" id="118">118</a>
+<a href="#119" id="119">119</a>
+<a href="#120" id="120">120</a>
+<a href="#121" id="121">121</a>
+<a href="#122" id="122">122</a>
+<a href="#123" id="123">123</a>
+<a href="#124" id="124">124</a>
+<a href="#125" id="125">125</a>
+<a href="#126" id="126">126</a>
+<a href="#127" id="127">127</a>
+<a href="#128" id="128">128</a>
+<a href="#129" id="129">129</a>
+<a href="#130" id="130">130</a>
+<a href="#131" id="131">131</a>
+<a href="#132" id="132">132</a></pre></div><pre class="rust"><code><span class="comment">// Wire
 // Copyright (C) 2022 Wire Swiss GmbH
 
 // This program is free software: you can redistribute it and/or modify
@@ -88,7 +146,12 @@
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see http://www.gnu.org/licenses/.
 
-</span><span class="kw">use </span>spinoff::Spinner;
+</span><span class="kw">use </span>core_crypto::MlsTransport;
+<span class="kw">use </span>core_crypto::prelude::MlsCommitBundle;
+<span class="kw">use </span>core_crypto_ffi::CommitBundle;
+<span class="kw">use </span>openmls::prelude::MlsMessageOut;
+<span class="kw">use </span>spinoff::Spinner;
+<span class="kw">use </span>tokio::sync::RwLock;
 
 <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">struct </span>RunningProcess {
     spinner: <span class="prelude-ty">Option</span>&lt;Spinner&gt;,
@@ -144,6 +207,59 @@
         } <span class="kw">else </span>{
             <span class="macro">log::info!</span>(<span class="string">"{msg}"</span>);
         }
+    }
+}
+
+<span class="attr">#[async_trait::async_trait]
+</span><span class="kw">pub trait </span>MlsTransportTestExt: MlsTransport {
+    <span class="kw">async fn </span>latest_commit_bundle(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; MlsCommitBundle;
+    <span class="kw">async fn </span>latest_welcome_message(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; MlsMessageOut {
+        <span class="self">self</span>.latest_commit_bundle().<span class="kw">await</span>.welcome.unwrap().clone()
+    }
+}
+
+<span class="attr">#[derive(Debug, Default)]
+</span><span class="kw">pub struct </span>MlsTransportSuccessProvider {
+    latest_commit_bundle: RwLock&lt;<span class="prelude-ty">Option</span>&lt;MlsCommitBundle&gt;&gt;,
+    latest_message: RwLock&lt;<span class="prelude-ty">Option</span>&lt;Vec&lt;u8&gt;&gt;&gt;,
+}
+
+<span class="attr">#[async_trait::async_trait]
+</span><span class="kw">impl </span>MlsTransport <span class="kw">for </span>MlsTransportSuccessProvider {
+    <span class="kw">async fn </span>send_commit_bundle(
+        <span class="kw-2">&amp;</span><span class="self">self</span>,
+        commit_bundle: MlsCommitBundle,
+    ) -&gt; core_crypto::Result&lt;core_crypto::MlsTransportResponse&gt; {
+        <span class="self">self</span>.latest_commit_bundle.write().<span class="kw">await</span>.replace(commit_bundle);
+        <span class="prelude-val">Ok</span>(core_crypto::MlsTransportResponse::Success)
+    }
+
+    <span class="kw">async fn </span>send_message(<span class="kw-2">&amp;</span><span class="self">self</span>, mls_message: Vec&lt;u8&gt;) -&gt; core_crypto::Result&lt;core_crypto::MlsTransportResponse&gt; {
+        <span class="self">self</span>.latest_message.write().<span class="kw">await</span>.replace(mls_message);
+        <span class="prelude-val">Ok</span>(core_crypto::MlsTransportResponse::Success)
+    }
+}
+
+<span class="attr">#[async_trait::async_trait]
+</span><span class="kw">impl </span>MlsTransportTestExt <span class="kw">for </span>MlsTransportSuccessProvider {
+    <span class="kw">async fn </span>latest_commit_bundle(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; MlsCommitBundle {
+        <span class="self">self</span>.latest_commit_bundle
+            .read()
+            .<span class="kw">await
+            </span>.clone()
+            .expect(<span class="string">"latest_commit_bundle"</span>)
+    }
+}
+
+<span class="attr">#[async_trait::async_trait]
+</span><span class="kw">impl </span>core_crypto_ffi::MlsTransport <span class="kw">for </span>MlsTransportSuccessProvider {
+    <span class="kw">async fn </span>send_commit_bundle(<span class="kw-2">&amp;</span><span class="self">self</span>, _commit_bundle: CommitBundle) -&gt; core_crypto_ffi::MlsTransportResponse {
+        core_crypto_ffi::MlsTransportResponse::Success
+    }
+
+    <span class="kw">async fn </span>send_message(<span class="kw-2">&amp;</span><span class="self">self</span>, mls_message: Vec&lt;u8&gt;) -&gt; core_crypto_ffi::MlsTransportResponse {
+        <span class="self">self</span>.latest_message.write().<span class="kw">await</span>.replace(mls_message);
+        core_crypto_ffi::MlsTransportResponse::Success
     }
 }
 </code></pre></div></section></main></body></html>

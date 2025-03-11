@@ -249,15 +249,45 @@
 <a href="#248" id="248">248</a>
 <a href="#249" id="249">249</a>
 <a href="#250" id="250">250</a>
-<a href="#251" id="251">251</a></pre></div><pre class="rust"><code><span class="doccomment">//! cf &lt;https://www.rfc-editor.org/rfc/rfc9420.html#name-leaf-node-validation&gt;
+<a href="#251" id="251">251</a>
+<a href="#252" id="252">252</a>
+<a href="#253" id="253">253</a>
+<a href="#254" id="254">254</a>
+<a href="#255" id="255">255</a>
+<a href="#256" id="256">256</a>
+<a href="#257" id="257">257</a>
+<a href="#258" id="258">258</a>
+<a href="#259" id="259">259</a>
+<a href="#260" id="260">260</a>
+<a href="#261" id="261">261</a>
+<a href="#262" id="262">262</a>
+<a href="#263" id="263">263</a>
+<a href="#264" id="264">264</a>
+<a href="#265" id="265">265</a>
+<a href="#266" id="266">266</a>
+<a href="#267" id="267">267</a>
+<a href="#268" id="268">268</a>
+<a href="#269" id="269">269</a>
+<a href="#270" id="270">270</a>
+<a href="#271" id="271">271</a>
+<a href="#272" id="272">272</a>
+<a href="#273" id="273">273</a>
+<a href="#274" id="274">274</a>
+<a href="#275" id="275">275</a>
+<a href="#276" id="276">276</a>
+<a href="#277" id="277">277</a>
+<a href="#278" id="278">278</a>
+<a href="#279" id="279">279</a>
+<a href="#280" id="280">280</a></pre></div><pre class="rust"><code><span class="doccomment">//! cf &lt;https://www.rfc-editor.org/rfc/rfc9420.html#name-leaf-node-validation&gt;
 
 </span><span class="attr">#[cfg(test)]
 </span><span class="kw">mod </span>tests {
     <span class="kw">use </span>openmls::prelude::Lifetime;
     <span class="kw">use </span>wasm_bindgen_test::<span class="kw-2">*</span>;
 
-    <span class="kw">use crate</span>::{test_utils::<span class="kw-2">*</span>, CryptoError, MlsError};
-    <span class="kw">use </span>openmls::prelude::{AddMembersError, KeyPackageVerifyError, ProposeAddMemberError};
+    <span class="kw">use crate</span>::{MlsErrorKind, test_utils::<span class="kw-2">*</span>};
+
+    <span class="kw">use </span>openmls::prelude::{AddMembersError, KeyPackageVerifyError};
 
     <span class="macro">wasm_bindgen_test_configure!</span>(run_in_browser);
 
@@ -276,7 +306,7 @@
                 <span class="kw">move </span>|[<span class="kw-2">mut </span>alice_central, bob_central]| {
                     Box::pin(<span class="kw">async move </span>{
                         <span class="kw">let </span>expiration_time = <span class="number">14</span>;
-                        <span class="kw">let </span>start = fluvio_wasm_timer::Instant::now();
+                        <span class="kw">let </span>start = web_time::Instant::now();
                         <span class="kw">let </span>id = conversation_id();
                         alice_central
                             .context
@@ -296,17 +326,20 @@
                         }
 
                         <span class="kw">let </span>proposal_creation = alice_central.context.new_add_proposal(<span class="kw-2">&amp;</span>id, invalid_kp).<span class="kw">await</span>;
-                        <span class="macro">assert!</span>(<span class="macro">matches!</span>(
-                            proposal_creation.unwrap_err(),
-                            CryptoError::MlsError(MlsError::ProposeAddMemberError(
-                                ProposeAddMemberError::KeyPackageVerifyError(KeyPackageVerifyError::InvalidLeafNode(<span class="kw">_</span>))
-                            ))
+                        <span class="kw">let </span>error = proposal_creation.unwrap_err();
+                        <span class="macro">assert!</span>(<span class="macro">innermost_source_matches!</span>(
+                            error,
+                            MlsErrorKind::ProposeAddMemberError(
+                                openmls::prelude::ProposeAddMemberError::KeyPackageVerifyError(
+                                    KeyPackageVerifyError::InvalidLeafNode(<span class="kw">_</span>)
+                                )
+                            ),
                         ));
                         <span class="macro">assert!</span>(alice_central.pending_proposals(<span class="kw-2">&amp;</span>id).<span class="kw">await</span>.is_empty());
 
                         <span class="comment">// should fail when creating Add commits
                         </span><span class="kw">let </span>expiration_time = <span class="number">14</span>;
-                        <span class="kw">let </span>start = fluvio_wasm_timer::Instant::now();
+                        <span class="kw">let </span>start = web_time::Instant::now();
 
                         <span class="kw">let </span>invalid_kp = bob_central.new_keypackage(<span class="kw-2">&amp;</span>case, Lifetime::new(expiration_time)).<span class="kw">await</span>;
 
@@ -320,14 +353,18 @@
 
                         <span class="kw">let </span>commit_creation = alice_central
                             .context
-                            .add_members_to_conversation(<span class="kw-2">&amp;</span>id, <span class="macro">vec!</span>[invalid_kp.into()])
+                            .conversation_guard(<span class="kw-2">&amp;</span>id)
+                            .<span class="kw">await
+                            </span>.unwrap()
+                            .add_members(<span class="macro">vec!</span>[invalid_kp.into()])
                             .<span class="kw">await</span>;
 
-                        <span class="macro">assert!</span>(<span class="macro">matches!</span>(
-                            commit_creation.unwrap_err(),
-                            CryptoError::MlsError(MlsError::MlsAddMembersError(
-                                AddMembersError::KeyPackageVerifyError(KeyPackageVerifyError::InvalidLeafNode(<span class="kw">_</span>))
-                            ))
+                        <span class="kw">let </span>error = commit_creation.unwrap_err();
+                        <span class="macro">assert!</span>(<span class="macro">innermost_source_matches!</span>(
+                            error,
+                            MlsErrorKind::MlsAddMembersError(AddMembersError::KeyPackageVerifyError(
+                                KeyPackageVerifyError::InvalidLeafNode(<span class="kw">_</span>)
+                            )),
                         ));
                         <span class="macro">assert!</span>(alice_central.pending_proposals(<span class="kw-2">&amp;</span>id).<span class="kw">await</span>.is_empty());
                         <span class="macro">assert!</span>(alice_central.pending_commit(<span class="kw-2">&amp;</span>id).<span class="kw">await</span>.is_none());
@@ -348,7 +385,7 @@
                 <span class="kw">move </span>|[alice_central, bob_central, charlie_central]| {
                     Box::pin(<span class="kw">async move </span>{
                         <span class="kw">let </span>expiration_time = <span class="number">14</span>;
-                        <span class="kw">let </span>start = fluvio_wasm_timer::Instant::now();
+                        <span class="kw">let </span>start = web_time::Instant::now();
                         <span class="kw">let </span>id = conversation_id();
                         alice_central
                             .context
@@ -372,7 +409,13 @@
                                 .<span class="kw">await</span>;
                         }
 
-                        <span class="kw">let </span>decrypting = bob_central.context.decrypt_message(<span class="kw-2">&amp;</span>id, proposal).<span class="kw">await</span>;
+                        <span class="kw">let </span>decrypting = bob_central
+                            .context
+                            .conversation_guard(<span class="kw-2">&amp;</span>id)
+                            .<span class="kw">await
+                            </span>.unwrap()
+                            .decrypt_message(proposal)
+                            .<span class="kw">await</span>;
 
                         <span class="comment">// TODO: currently succeeds as we don't anymore validate KeyPackage lifetime upon reception: find another way to craft an invalid KeyPackage. Tracking issue number: WPB-9623
                         </span>decrypting.unwrap();
@@ -401,7 +444,7 @@
                 <span class="kw">move </span>|[alice_central, bob_central, charlie_central]| {
                     Box::pin(<span class="kw">async move </span>{
                         <span class="kw">let </span>expiration_time = <span class="number">14</span>;
-                        <span class="kw">let </span>start = fluvio_wasm_timer::Instant::now();
+                        <span class="kw">let </span>start = web_time::Instant::now();
                         <span class="kw">let </span>id = conversation_id();
                         alice_central
                             .context
@@ -415,12 +458,16 @@
                             .new_keypackage(<span class="kw-2">&amp;</span>case, Lifetime::new(expiration_time))
                             .<span class="kw">await</span>;
 
-                        <span class="kw">let </span>commit = alice_central
+                        alice_central
                             .context
-                            .add_members_to_conversation(<span class="kw-2">&amp;</span>id, <span class="macro">vec!</span>[invalid_kp.into()])
+                            .conversation_guard(<span class="kw-2">&amp;</span>id)
+                            .<span class="kw">await
+                            </span>.unwrap()
+                            .add_members(<span class="macro">vec!</span>[invalid_kp.into()])
                             .<span class="kw">await
                             </span>.unwrap();
-                        <span class="kw">let </span>commit = commit.commit.to_bytes().unwrap();
+                        <span class="kw">let </span>commit = alice_central.mls_transport.latest_commit().<span class="kw">await</span>;
+                        <span class="kw">let </span>commit = commit.to_bytes().unwrap();
 
                         <span class="kw">let </span>elapsed = start.elapsed();
                         <span class="comment">// Give time to the certificate to expire
@@ -430,7 +477,13 @@
                                 .<span class="kw">await</span>;
                         }
 
-                        <span class="kw">let </span>decrypting = bob_central.context.decrypt_message(<span class="kw-2">&amp;</span>id, commit).<span class="kw">await</span>;
+                        <span class="kw">let </span>decrypting = bob_central
+                            .context
+                            .conversation_guard(<span class="kw-2">&amp;</span>id)
+                            .<span class="kw">await
+                            </span>.unwrap()
+                            .decrypt_message(commit)
+                            .<span class="kw">await</span>;
 
                         <span class="comment">// TODO: currently succeeds as we don't anymore validate KeyPackage lifetime upon reception: find another way to craft an invalid KeyPackage. Tracking issue number: WPB-9623
                         </span>decrypting.unwrap();
@@ -454,7 +507,7 @@
             run_test_with_client_ids(case.clone(), [<span class="string">"alice"</span>, <span class="string">"bob"</span>], <span class="kw">move </span>|[alice_central, bob_central]| {
                 Box::pin(<span class="kw">async move </span>{
                     <span class="kw">let </span>expiration_time = <span class="number">14</span>;
-                    <span class="kw">let </span>start = fluvio_wasm_timer::Instant::now();
+                    <span class="kw">let </span>start = web_time::Instant::now();
                     <span class="kw">let </span>id = conversation_id();
                     alice_central
                         .context
@@ -463,12 +516,14 @@
                         </span>.unwrap();
 
                     <span class="kw">let </span>invalid_kp = bob_central.new_keypackage(<span class="kw-2">&amp;</span>case, Lifetime::new(expiration_time)).<span class="kw">await</span>;
-                    <span class="kw">let </span>commit = alice_central
+                    alice_central
                         .context
-                        .add_members_to_conversation(<span class="kw-2">&amp;</span>id, <span class="macro">vec!</span>[invalid_kp.into()])
+                        .conversation_guard(<span class="kw-2">&amp;</span>id)
+                        .<span class="kw">await
+                        </span>.unwrap()
+                        .add_members(<span class="macro">vec!</span>[invalid_kp.into()])
                         .<span class="kw">await
                         </span>.unwrap();
-                    alice_central.context.commit_accepted(<span class="kw-2">&amp;</span>id).<span class="kw">await</span>.unwrap();
 
                     <span class="kw">let </span>elapsed = start.elapsed();
                     <span class="comment">// Give time to the certificate to expire
@@ -479,7 +534,10 @@
 
                     <span class="kw">let </span>process_welcome = bob_central
                         .context
-                        .process_welcome_message(commit.welcome.into(), case.custom_cfg())
+                        .process_welcome_message(
+                            alice_central.mls_transport.latest_welcome_message().<span class="kw">await</span>.into(),
+                            case.custom_cfg(),
+                        )
                         .<span class="kw">await</span>;
 
                     <span class="comment">// TODO: currently succeeds as we don't anymore validate KeyPackage lifetime upon reception: find another way to craft an invalid KeyPackage. Tracking issue number: WPB-9623

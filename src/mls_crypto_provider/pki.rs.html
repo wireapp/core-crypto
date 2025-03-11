@@ -755,8 +755,8 @@
     authentication_service::{CredentialAuthenticationStatus, CredentialRef},
     types::SignatureScheme,
 };
-<span class="kw">use </span>spki::der::referenced::RefToOwned;
 <span class="kw">use </span>spki::SignatureAlgorithmIdentifier;
+<span class="kw">use </span>spki::der::referenced::RefToOwned;
 <span class="kw">use </span>std::sync::Arc;
 
 <span class="attr">#[derive(Debug, Clone, Default)]
@@ -845,8 +845,8 @@
 
                 <span class="kw">if let </span><span class="prelude-val">Err</span>(validation_error) = pki_env.validate_cert_and_revocation(<span class="kw-2">&amp;</span>cert) {
                     <span class="kw">use </span>wire_e2e_identity::prelude::x509::{
-                        reexports::certval::{Error <span class="kw">as </span>CertvalError, PathValidationStatus},
                         RustyX509CheckError,
+                        reexports::certval::{Error <span class="kw">as </span>CertvalError, PathValidationStatus},
                     };
 
                     <span class="kw">if let </span>RustyX509CheckError::CertValError(CertvalError::PathValidation(
@@ -1230,8 +1230,8 @@
         revoked_cert_serial_numbers: Vec&lt;Vec&lt;u8&gt;&gt;,
     ) -&gt; MlsProviderResult&lt;x509_cert::crl::CertificateList&gt; {
         <span class="kw">let </span>signature_algorithm = <span class="self">self</span>.signature_algorithm();
-        <span class="kw">let </span>now = fluvio_wasm_timer::SystemTime::now()
-            .duration_since(fluvio_wasm_timer::UNIX_EPOCH)
+        <span class="kw">let </span>now = web_time::SystemTime::now()
+            .duration_since(web_time::UNIX_EPOCH)
             .map_err(|<span class="kw">_</span>| MlsProviderError::CertificateGenerationError)<span class="question-mark">?</span>;
         <span class="kw">let </span>now = x509_cert::der::asn1::GeneralizedTime::from_unix_duration(now)
             .map_err(|<span class="kw">_</span>| MlsProviderError::CertificateGenerationError)<span class="question-mark">?</span>;
@@ -1382,8 +1382,8 @@
         <span class="kw">let </span>validity_start = <span class="kw">if let </span><span class="prelude-val">Some</span>(validity_start) = args.validity_start {
             validity_start
         } <span class="kw">else </span>{
-            fluvio_wasm_timer::SystemTime::now()
-                .duration_since(fluvio_wasm_timer::UNIX_EPOCH)
+            web_time::SystemTime::now()
+                .duration_since(web_time::UNIX_EPOCH)
                 .map_err(|<span class="kw">_</span>| MlsProviderError::CertificateGenerationError)<span class="question-mark">?
         </span>} - std::time::Duration::from_secs(<span class="number">1</span>); <span class="comment">// to prevent time clipping
 

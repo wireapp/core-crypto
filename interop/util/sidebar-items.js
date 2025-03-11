@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"struct":["RunningProcess"]};
+window.SIDEBAR_ITEMS = {"struct":["MlsTransportSuccessProvider","RunningProcess"],"trait":["MlsTransportTestExt"]};

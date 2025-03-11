@@ -267,8 +267,8 @@
 </span><span class="kw">pub enum </span>MissingKeyErrorKind {
     <span class="attr">#[error(<span class="string">"Consumer Data"</span>)]
     </span>ConsumerData,
-    <span class="attr">#[error(<span class="string">"MLS KeyPackageBundle"</span>)]
-    </span>MlsKeyPackageBundle,
+    <span class="attr">#[error(<span class="string">"MLS KeyPackage"</span>)]
+    </span>MlsKeyPackage,
     <span class="attr">#[error(<span class="string">"MLS SignatureKeyPair"</span>)]
     </span>MlsSignatureKeyPair,
     <span class="attr">#[error(<span class="string">"MLS HpkePrivateKey"</span>)]
@@ -284,7 +284,7 @@
     <span class="attr">#[error(<span class="string">"MLS Buffered Commit"</span>)]
     </span>MlsBufferedCommit,
     <span class="attr">#[error(<span class="string">"MLS Persisted Group"</span>)]
-    </span>MlsGroup,
+    </span>PersistedMlsGroup,
     <span class="attr">#[error(<span class="string">"MLS Persisted Pending Group"</span>)]
     </span>MlsPendingGroup,
     <span class="attr">#[error(<span class="string">"MLS Pending Messages"</span>)]

@@ -122,24 +122,7 @@
 <a href="#121" id="121">121</a>
 <a href="#122" id="122">122</a>
 <a href="#123" id="123">123</a>
-<a href="#124" id="124">124</a>
-<a href="#125" id="125">125</a>
-<a href="#126" id="126">126</a>
-<a href="#127" id="127">127</a>
-<a href="#128" id="128">128</a>
-<a href="#129" id="129">129</a>
-<a href="#130" id="130">130</a>
-<a href="#131" id="131">131</a>
-<a href="#132" id="132">132</a>
-<a href="#133" id="133">133</a>
-<a href="#134" id="134">134</a>
-<a href="#135" id="135">135</a>
-<a href="#136" id="136">136</a>
-<a href="#137" id="137">137</a>
-<a href="#138" id="138">138</a>
-<a href="#139" id="139">139</a>
-<a href="#140" id="140">140</a>
-<a href="#141" id="141">141</a></pre></div><pre class="rust"><code><span class="comment">// Wire
+<a href="#124" id="124">124</a></pre></div><pre class="rust"><code><span class="comment">// Wire
 // Copyright (C) 2022 Wire Swiss GmbH
 
 // This program is free software: you can redistribute it and/or modify
@@ -156,11 +139,12 @@
 // along with this program. If not, see http://www.gnu.org/licenses/.
 
 </span><span class="kw">use </span><span class="kw">crate</span>::clients::{EmulatedClient, EmulatedClientProtocol, EmulatedClientType, EmulatedProteusClient};
-<span class="kw">use </span>color_eyre::eyre::{eyre, <span class="prelude-ty">Result</span>};
+<span class="kw">use </span>color_eyre::eyre::{<span class="prelude-ty">Result</span>, eyre};
+<span class="kw">use </span>std::cell::Cell;
 
 <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">struct </span>CryptoboxNativeClient {
     client_id: Vec&lt;u8&gt;,
-    last_prekey_id: u16,
+    last_prekey_id: Cell&lt;u16&gt;,
     cbox: <span class="prelude-ty">Option</span>&lt;cryptobox::CBox&lt;cryptobox::store::file::FileStore&gt;&gt;,
     tempdir: <span class="prelude-ty">Option</span>&lt;tempfile::TempDir&gt;,
 }
@@ -170,7 +154,7 @@
         <span class="kw">let </span>client_id = uuid::Uuid::new_v4().into_bytes().to_vec();
         <span class="self">Self </span>{
             client_id,
-            last_prekey_id: <span class="number">0</span>,
+            last_prekey_id: Cell::new(<span class="number">0</span>),
             cbox: <span class="prelude-val">None</span>,
             tempdir: <span class="prelude-val">None</span>,
         }
@@ -214,70 +198,52 @@
         <span class="prelude-val">Ok</span>(())
     }
 
-    <span class="kw">async fn </span>get_prekey(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;Vec&lt;u8&gt;&gt; {
-        <span class="kw">if let </span><span class="prelude-val">Some</span>(cbox) = <span class="kw-2">&amp;mut </span><span class="self">self</span>.cbox {
-            <span class="self">self</span>.last_prekey_id += <span class="number">1</span>;
-            <span class="kw">let </span>prekey_bundle = cbox.new_prekey(proteus::keys::PreKeyId::new(<span class="self">self</span>.last_prekey_id))<span class="question-mark">?</span>;
-            <span class="prelude-val">Ok</span>(prekey_bundle.serialise()<span class="question-mark">?</span>)
-        } <span class="kw">else </span>{
-            <span class="kw">return </span><span class="prelude-val">Err</span>(<span class="macro">eyre!</span>(<span class="string">"Cryptobox isn't initialized"</span>));
-        }
+    <span class="kw">async fn </span>get_prekey(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;Vec&lt;u8&gt;&gt; {
+        <span class="kw">let </span>cbox = <span class="self">self</span>.cbox.as_ref().ok_or(<span class="macro">eyre!</span>(<span class="string">"Cryptobox isn't initialized"</span>))<span class="question-mark">?</span>;
+        <span class="self">self</span>.last_prekey_id.replace(<span class="self">self</span>.last_prekey_id.get() + <span class="number">1</span>);
+        <span class="kw">let </span>prekey_bundle = cbox.new_prekey(proteus::keys::PreKeyId::new(<span class="self">self</span>.last_prekey_id.get()))<span class="question-mark">?</span>;
+        <span class="prelude-val">Ok</span>(prekey_bundle.serialise()<span class="question-mark">?</span>)
     }
 
-    <span class="kw">async fn </span>session_from_prekey(<span class="kw-2">&amp;mut </span><span class="self">self</span>, session_id: <span class="kw-2">&amp;</span>str, prekey: <span class="kw-2">&amp;</span>[u8]) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
-        <span class="kw">if let </span><span class="prelude-val">Some</span>(cbox) = <span class="kw-2">&amp;mut </span><span class="self">self</span>.cbox {
-            <span class="kw">let </span><span class="kw-2">mut </span>session = cbox.session_from_prekey(session_id.to_string(), prekey)<span class="question-mark">?</span>;
-            cbox.session_save(<span class="kw-2">&amp;mut </span>session)<span class="question-mark">?</span>;
-            <span class="prelude-val">Ok</span>(())
-        } <span class="kw">else </span>{
-            <span class="kw">return </span><span class="prelude-val">Err</span>(<span class="macro">eyre!</span>(<span class="string">"Cryptobox isn't initialized"</span>));
-        }
+    <span class="kw">async fn </span>session_from_prekey(<span class="kw-2">&amp;</span><span class="self">self</span>, session_id: <span class="kw-2">&amp;</span>str, prekey: <span class="kw-2">&amp;</span>[u8]) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
+        <span class="kw">let </span>cbox = <span class="self">self</span>.cbox.as_ref().ok_or(<span class="macro">eyre!</span>(<span class="string">"Cryptobox isn't initialized"</span>))<span class="question-mark">?</span>;
+        <span class="kw">let </span><span class="kw-2">mut </span>session = cbox.session_from_prekey(session_id.to_string(), prekey)<span class="question-mark">?</span>;
+        cbox.session_save(<span class="kw-2">&amp;mut </span>session)<span class="question-mark">?</span>;
+        <span class="prelude-val">Ok</span>(())
     }
 
-    <span class="kw">async fn </span>session_from_message(<span class="kw-2">&amp;mut </span><span class="self">self</span>, session_id: <span class="kw-2">&amp;</span>str, message: <span class="kw-2">&amp;</span>[u8]) -&gt; <span class="prelude-ty">Result</span>&lt;Vec&lt;u8&gt;&gt; {
-        <span class="kw">if let </span><span class="prelude-val">Some</span>(cbox) = <span class="kw-2">&amp;mut </span><span class="self">self</span>.cbox {
-            <span class="kw">let </span>(<span class="kw-2">mut </span>session, message) = cbox.session_from_message(session_id.to_string(), message)<span class="question-mark">?</span>;
-            cbox.session_save(<span class="kw-2">&amp;mut </span>session)<span class="question-mark">?</span>;
-            <span class="prelude-val">Ok</span>(message)
-        } <span class="kw">else </span>{
-            <span class="kw">return </span><span class="prelude-val">Err</span>(<span class="macro">eyre!</span>(<span class="string">"Cryptobox isn't initialized"</span>));
-        }
+    <span class="kw">async fn </span>session_from_message(<span class="kw-2">&amp;</span><span class="self">self</span>, session_id: <span class="kw-2">&amp;</span>str, message: <span class="kw-2">&amp;</span>[u8]) -&gt; <span class="prelude-ty">Result</span>&lt;Vec&lt;u8&gt;&gt; {
+        <span class="kw">let </span>cbox = <span class="self">self</span>.cbox.as_ref().ok_or(<span class="macro">eyre!</span>(<span class="string">"Cryptobox isn't initialized"</span>))<span class="question-mark">?</span>;
+        <span class="kw">let </span>(<span class="kw-2">mut </span>session, message) = cbox.session_from_message(session_id.to_string(), message)<span class="question-mark">?</span>;
+        cbox.session_save(<span class="kw-2">&amp;mut </span>session)<span class="question-mark">?</span>;
+        <span class="prelude-val">Ok</span>(message)
     }
 
-    <span class="kw">async fn </span>encrypt(<span class="kw-2">&amp;mut </span><span class="self">self</span>, session_id: <span class="kw-2">&amp;</span>str, plaintext: <span class="kw-2">&amp;</span>[u8]) -&gt; <span class="prelude-ty">Result</span>&lt;Vec&lt;u8&gt;&gt; {
-        <span class="kw">if let </span><span class="prelude-val">Some</span>(cbox) = <span class="kw-2">&amp;mut </span><span class="self">self</span>.cbox {
-            <span class="kw">if let </span><span class="prelude-val">Some</span>(<span class="kw-2">mut </span>session) = cbox.session_load(session_id.to_string())<span class="question-mark">? </span>{
-                <span class="kw">let </span>encrypted = session.encrypt(plaintext)<span class="question-mark">?</span>;
-                cbox.session_save(<span class="kw-2">&amp;mut </span>session)<span class="question-mark">?</span>;
-                <span class="prelude-val">Ok</span>(encrypted)
-            } <span class="kw">else </span>{
-                <span class="kw">return </span><span class="prelude-val">Err</span>(<span class="macro">eyre!</span>(<span class="string">"session not found"</span>));
-            }
-        } <span class="kw">else </span>{
-            <span class="kw">return </span><span class="prelude-val">Err</span>(<span class="macro">eyre!</span>(<span class="string">"Cryptobox isn't initialized"</span>));
-        }
+    <span class="kw">async fn </span>encrypt(<span class="kw-2">&amp;</span><span class="self">self</span>, session_id: <span class="kw-2">&amp;</span>str, plaintext: <span class="kw-2">&amp;</span>[u8]) -&gt; <span class="prelude-ty">Result</span>&lt;Vec&lt;u8&gt;&gt; {
+        <span class="kw">let </span>cbox = <span class="self">self</span>.cbox.as_ref().ok_or(<span class="macro">eyre!</span>(<span class="string">"Cryptobox isn't initialized"</span>))<span class="question-mark">?</span>;
+        <span class="kw">let </span><span class="kw-2">mut </span>session = cbox
+            .session_load(session_id.to_string())<span class="question-mark">?
+            </span>.ok_or(<span class="macro">eyre!</span>(<span class="string">"session not found"</span>))<span class="question-mark">?</span>;
+        <span class="kw">let </span>encrypted = session.encrypt(plaintext)<span class="question-mark">?</span>;
+        cbox.session_save(<span class="kw-2">&amp;mut </span>session)<span class="question-mark">?</span>;
+        <span class="prelude-val">Ok</span>(encrypted)
     }
 
-    <span class="kw">async fn </span>decrypt(<span class="kw-2">&amp;mut </span><span class="self">self</span>, session_id: <span class="kw-2">&amp;</span>str, ciphertext: <span class="kw-2">&amp;</span>[u8]) -&gt; <span class="prelude-ty">Result</span>&lt;Vec&lt;u8&gt;&gt; {
-        <span class="kw">if let </span><span class="prelude-val">Some</span>(cbox) = <span class="kw-2">&amp;mut </span><span class="self">self</span>.cbox {
-            <span class="kw">if let </span><span class="prelude-val">Some</span>(<span class="kw-2">mut </span>session) = cbox.session_load(session_id.to_string())<span class="question-mark">? </span>{
-                <span class="kw">let </span>decrypted = session.decrypt(ciphertext)<span class="question-mark">?</span>;
-                cbox.session_save(<span class="kw-2">&amp;mut </span>session)<span class="question-mark">?</span>;
-                <span class="prelude-val">Ok</span>(decrypted)
-            } <span class="kw">else </span>{
-                <span class="kw">return </span><span class="prelude-val">Err</span>(<span class="macro">eyre!</span>(<span class="string">"session not found"</span>));
-            }
-        } <span class="kw">else </span>{
-            <span class="kw">return </span><span class="prelude-val">Err</span>(<span class="macro">eyre!</span>(<span class="string">"Cryptobox isn't initialized"</span>));
-        }
+    <span class="kw">async fn </span>decrypt(<span class="kw-2">&amp;</span><span class="self">self</span>, session_id: <span class="kw-2">&amp;</span>str, ciphertext: <span class="kw-2">&amp;</span>[u8]) -&gt; <span class="prelude-ty">Result</span>&lt;Vec&lt;u8&gt;&gt; {
+        <span class="kw">let </span>cbox = <span class="self">self</span>.cbox.as_ref().ok_or(<span class="macro">eyre!</span>(<span class="string">"Cryptobox isn't initialized"</span>))<span class="question-mark">?</span>;
+        <span class="kw">let </span><span class="kw-2">mut </span>session = cbox
+            .session_load(session_id.to_string())<span class="question-mark">?
+            </span>.ok_or(<span class="macro">eyre!</span>(<span class="string">"session not found"</span>))<span class="question-mark">?</span>;
+        <span class="kw">let </span>decrypted = session.decrypt(ciphertext)<span class="question-mark">?</span>;
+        cbox.session_save(<span class="kw-2">&amp;mut </span>session)<span class="question-mark">?</span>;
+        <span class="prelude-val">Ok</span>(decrypted)
     }
 
     <span class="kw">async fn </span>fingerprint(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;String&gt; {
-        <span class="kw">if let </span><span class="prelude-val">Some</span>(cbox) = <span class="kw-2">&amp;</span><span class="self">self</span>.cbox {
-            <span class="prelude-val">Ok</span>(cbox.fingerprint())
-        } <span class="kw">else </span>{
-            <span class="kw">return </span><span class="prelude-val">Err</span>(<span class="macro">eyre!</span>(<span class="string">"Cryptobox isn't initialized"</span>));
-        }
+        <span class="self">self</span>.cbox
+            .as_ref()
+            .map(|cbox| cbox.fingerprint())
+            .ok_or(<span class="macro">eyre!</span>(<span class="string">"Cryptobox isn't initialized"</span>))
     }
 }
 </code></pre></div></section></main></body></html>

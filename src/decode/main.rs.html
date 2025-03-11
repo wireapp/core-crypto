@@ -140,8 +140,18 @@
 <a href="#139" id="139">139</a>
 <a href="#140" id="140">140</a>
 <a href="#141" id="141">141</a>
-<a href="#142" id="142">142</a></pre></div><pre class="rust"><code><span class="kw">use </span>base64::Engine;
+<a href="#142" id="142">142</a>
+<a href="#143" id="143">143</a>
+<a href="#144" id="144">144</a>
+<a href="#145" id="145">145</a>
+<a href="#146" id="146">146</a>
+<a href="#147" id="147">147</a>
+<a href="#148" id="148">148</a>
+<a href="#149" id="149">149</a>
+<a href="#150" id="150">150</a>
+<a href="#151" id="151">151</a></pre></div><pre class="rust"><code><span class="kw">use </span>base64::Engine;
 <span class="kw">use </span>clap::{Parser, Subcommand};
+<span class="kw">use </span>openmls::prelude::{MlsMessageIn, TlsDeserializeTrait};
 <span class="kw">use </span>proteus_wasm::internal::message::SessionTag;
 <span class="kw">use </span>proteus_wasm::internal::util::fmt_hex;
 <span class="kw">use </span>proteus_wasm::keys::{PreKeyBundle, Signature};
@@ -263,6 +273,8 @@
         <span class="doccomment">/// Base64 encoded proteus message
         </span>message: String,
     },
+    <span class="doccomment">/// Decode a MLS message
+    </span>MlsMessage { message: String },
 }
 
 <span class="kw">fn </span>main() -&gt; <span class="prelude-ty">Result</span>&lt;(), Box&lt;<span class="kw">dyn </span>std::error::Error&gt;&gt; {
@@ -278,6 +290,12 @@
             <span class="kw">let </span>bytes = base64::prelude::BASE64_STANDARD.decode(message)<span class="question-mark">?</span>;
             <span class="kw">let </span>message = Envelope::deserialise(<span class="kw-2">&amp;</span>bytes)<span class="question-mark">?</span>;
             <span class="macro">println!</span>(<span class="string">"{:#?}"</span>, ProteusEnvelope::from(message));
+            <span class="prelude-val">Ok</span>(())
+        }
+        Command::MlsMessage { message } =&gt; {
+            <span class="kw">let </span>bytes = base64::prelude::BASE64_STANDARD.decode(message)<span class="question-mark">?</span>;
+            <span class="kw">let </span>message = MlsMessageIn::tls_deserialize(<span class="kw-2">&amp;mut </span>bytes.as_slice())<span class="question-mark">?</span>;
+            <span class="macro">println!</span>(<span class="string">"{message:#?}"</span>);
             <span class="prelude-val">Ok</span>(())
         }
     }

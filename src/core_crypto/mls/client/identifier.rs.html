@@ -64,10 +64,22 @@
 <a href="#63" id="63">63</a>
 <a href="#64" id="64">64</a>
 <a href="#65" id="65">65</a>
-<a href="#66" id="66">66</a></pre></div><pre class="rust"><code><span class="kw">use </span><span class="kw">super</span>::CredentialBundle;
+<a href="#66" id="66">66</a>
+<a href="#67" id="67">67</a>
+<a href="#68" id="68">68</a>
+<a href="#69" id="69">69</a>
+<a href="#70" id="70">70</a>
+<a href="#71" id="71">71</a>
+<a href="#72" id="72">72</a>
+<a href="#73" id="73">73</a>
+<a href="#74" id="74">74</a>
+<a href="#75" id="75">75</a></pre></div><pre class="rust"><code><span class="kw">use super</span>::{
+    CredentialBundle,
+    error::{Error, <span class="prelude-ty">Result</span>},
+};
 <span class="kw">use crate</span>::{
-    prelude::CryptoError,
-    prelude::{CertificateBundle, Client, ClientId, CryptoResult},
+    RecursiveError,
+    prelude::{CertificateBundle, Client, ClientId},
 };
 <span class="kw">use </span>mls_crypto_provider::MlsCryptoProvider;
 <span class="kw">use </span>openmls_traits::types::SignatureScheme;
@@ -86,15 +98,17 @@
 <span class="kw">impl </span>ClientIdentifier {
     <span class="doccomment">/// Extract the unique [ClientId] from an identifier. Use with parsimony as, in case of a x509
     /// certificate this leads to parsing the certificate
-    </span><span class="kw">pub fn </span>get_id(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; CryptoResult&lt;std::borrow::Cow&lt;ClientId&gt;&gt; {
+    </span><span class="kw">pub fn </span>get_id(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;std::borrow::Cow&lt;ClientId&gt;&gt; {
         <span class="kw">match </span><span class="self">self </span>{
             ClientIdentifier::Basic(id) =&gt; <span class="prelude-val">Ok</span>(std::borrow::Cow::Borrowed(id)),
             ClientIdentifier::X509(certs) =&gt; {
                 <span class="comment">// since ClientId has uniqueness constraints, it is the same for all certificates.
                 // hence no need to compute it for every certificate then verify its uniqueness
                 // that's not a getter's job
-                </span><span class="kw">let </span>cert = certs.values().next().ok_or(CryptoError::ImplementationError)<span class="question-mark">?</span>;
-                <span class="kw">let </span>id = cert.get_client_id()<span class="question-mark">?</span>;
+                </span><span class="kw">let </span>cert = certs.values().next().ok_or(Error::NoX509CertificateBundle)<span class="question-mark">?</span>;
+                <span class="kw">let </span>id = cert
+                    .get_client_id()
+                    .map_err(RecursiveError::mls_credential(<span class="string">"getting client id"</span>))<span class="question-mark">?</span>;
                 <span class="prelude-val">Ok</span>(std::borrow::Cow::Owned(id))
             }
         }
@@ -106,12 +120,13 @@
         <span class="self">self</span>,
         backend: <span class="kw-2">&amp;</span>MlsCryptoProvider,
         signature_schemes: HashSet&lt;SignatureScheme&gt;,
-    ) -&gt; CryptoResult&lt;Vec&lt;(SignatureScheme, ClientId, CredentialBundle)&gt;&gt; {
+    ) -&gt; <span class="prelude-ty">Result</span>&lt;Vec&lt;(SignatureScheme, ClientId, CredentialBundle)&gt;&gt; {
         <span class="kw">match </span><span class="self">self </span>{
             ClientIdentifier::Basic(id) =&gt; signature_schemes.iter().try_fold(
                 Vec::with_capacity(signature_schemes.len()),
-                |<span class="kw-2">mut </span>acc, <span class="kw-2">&amp;</span>sc| -&gt; CryptoResult&lt;<span class="kw">_</span>&gt; {
-                    <span class="kw">let </span>cb = Client::new_basic_credential_bundle(<span class="kw-2">&amp;</span>id, sc, backend)<span class="question-mark">?</span>;
+                |<span class="kw-2">mut </span>acc, <span class="kw-2">&amp;</span>sc| -&gt; <span class="prelude-ty">Result</span>&lt;<span class="kw">_</span>&gt; {
+                    <span class="kw">let </span>cb = Client::new_basic_credential_bundle(<span class="kw-2">&amp;</span>id, sc, backend)
+                        .map_err(RecursiveError::mls_credential(<span class="string">"creating new basic credential bundle"</span>))<span class="question-mark">?</span>;
                     acc.push((sc, id.clone(), cb));
                     <span class="prelude-val">Ok</span>(acc)
                 },
@@ -120,9 +135,12 @@
                 <span class="kw">let </span>cap = certs.len();
                 certs
                     .into_iter()
-                    .try_fold(Vec::with_capacity(cap), |<span class="kw-2">mut </span>acc, (sc, cert)| -&gt; CryptoResult&lt;<span class="kw">_</span>&gt; {
-                        <span class="kw">let </span>id = cert.get_client_id()<span class="question-mark">?</span>;
-                        <span class="kw">let </span>cb = Client::new_x509_credential_bundle(cert)<span class="question-mark">?</span>;
+                    .try_fold(Vec::with_capacity(cap), |<span class="kw-2">mut </span>acc, (sc, cert)| -&gt; <span class="prelude-ty">Result</span>&lt;<span class="kw">_</span>&gt; {
+                        <span class="kw">let </span>id = cert
+                            .get_client_id()
+                            .map_err(RecursiveError::mls_credential(<span class="string">"getting client id"</span>))<span class="question-mark">?</span>;
+                        <span class="kw">let </span>cb = Client::new_x509_credential_bundle(cert)
+                            .map_err(RecursiveError::mls_credential(<span class="string">"creating new x509 credential bundle"</span>))<span class="question-mark">?</span>;
                         acc.push((sc, id, cb));
                         <span class="prelude-val">Ok</span>(acc)
                     })

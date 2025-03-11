@@ -451,7 +451,17 @@
 <a href="#450" id="450">450</a>
 <a href="#451" id="451">451</a>
 <a href="#452" id="452">452</a>
-<a href="#453" id="453">453</a></pre></div><pre class="rust"><code><span class="comment">// Wire
+<a href="#453" id="453">453</a>
+<a href="#454" id="454">454</a>
+<a href="#455" id="455">455</a>
+<a href="#456" id="456">456</a>
+<a href="#457" id="457">457</a>
+<a href="#458" id="458">458</a>
+<a href="#459" id="459">459</a>
+<a href="#460" id="460">460</a>
+<a href="#461" id="461">461</a>
+<a href="#462" id="462">462</a>
+<a href="#463" id="463">463</a></pre></div><pre class="rust"><code><span class="comment">// Wire
 // Copyright (C) 2022 Wire Swiss GmbH
 
 // This program is free software: you can redistribute it and/or modify
@@ -468,19 +478,21 @@
 // along with this program. If not, see http://www.gnu.org/licenses/.
 
 </span><span class="kw">use super</span>::{Entity, EntityBase, EntityFindParams, EntityTransactionExt, StringEntityId};
-<span class="kw">use crate</span>::{connection::TransactionWrapper, CryptoKeystoreError, CryptoKeystoreResult};
+<span class="kw">use crate</span>::{CryptoKeystoreError, CryptoKeystoreResult, connection::TransactionWrapper};
 <span class="kw">use </span>openmls_traits::types::SignatureScheme;
 <span class="kw">use </span>zeroize::Zeroize;
 
 <span class="doccomment">/// Entity representing a persisted `MlsGroup`
-</span><span class="attr">#[derive(Debug, Clone, PartialEq, Eq, Zeroize)]
+</span><span class="attr">#[derive(Debug, Clone, PartialEq, Eq, Zeroize, core_crypto_macros::Entity)]
 #[zeroize(drop)]
+#[entity(collection_name = <span class="string">"mls_groups"</span>)]
 #[cfg_attr(
     any(target_family = <span class="string">"wasm"</span>, feature = <span class="string">"serde"</span>),
     derive(serde::Serialize, serde::Deserialize)
 )]
 </span><span class="kw">pub struct </span>PersistedMlsGroup {
-    <span class="kw">pub </span>id: Vec&lt;u8&gt;,
+    <span class="attr">#[id(hex, column = <span class="string">"id_hex"</span>)]
+    </span><span class="kw">pub </span>id: Vec&lt;u8&gt;,
     <span class="kw">pub </span>state: Vec&lt;u8&gt;,
     <span class="kw">pub </span>parent_id: <span class="prelude-ty">Option</span>&lt;Vec&lt;u8&gt;&gt;,
 }
@@ -653,11 +665,13 @@
 }
 
 <span class="doccomment">/// Entity representing a list of [MlsEncryptionKeyPair]
-</span><span class="attr">#[derive(Debug, Clone, PartialEq, Eq, Zeroize)]
+</span><span class="attr">#[derive(Debug, Clone, PartialEq, Eq, Zeroize, core_crypto_macros::Entity)]
 #[zeroize(drop)]
+#[entity(collection_name = <span class="string">"mls_epoch_encryption_keypairs"</span>)]
 #[cfg_attr(target_family = <span class="string">"wasm"</span>, derive(serde::Serialize, serde::Deserialize))]
 </span><span class="kw">pub struct </span>MlsEpochEncryptionKeyPair {
-    <span class="kw">pub </span>id: Vec&lt;u8&gt;,
+    <span class="attr">#[id(hex, column = <span class="string">"id_hex"</span>)]
+    </span><span class="kw">pub </span>id: Vec&lt;u8&gt;,
     <span class="kw">pub </span>keypairs: Vec&lt;u8&gt;,
 }
 
@@ -674,21 +688,24 @@
 }
 
 <span class="doccomment">/// Entity representing a persisted `KeyPackage`
-</span><span class="attr">#[derive(Debug, Clone, PartialEq, Eq, Zeroize)]
+</span><span class="attr">#[derive(Debug, Clone, PartialEq, Eq, Zeroize, core_crypto_macros::Entity)]
 #[zeroize(drop)]
+#[entity(collection_name = <span class="string">"mls_keypackages"</span>)]
 #[cfg_attr(
     any(target_family = <span class="string">"wasm"</span>, feature = <span class="string">"serde"</span>),
     derive(serde::Serialize, serde::Deserialize)
 )]
 </span><span class="kw">pub struct </span>MlsKeyPackage {
-    <span class="kw">pub </span>keypackage_ref: Vec&lt;u8&gt;,
+    <span class="attr">#[id(hex, column = <span class="string">"keypackage_ref_hex"</span>)]
+    </span><span class="kw">pub </span>keypackage_ref: Vec&lt;u8&gt;,
     <span class="kw">pub </span>keypackage: Vec&lt;u8&gt;,
 }
 
 <span class="doccomment">/// Entity representing an enrollment instance used to fetch a x509 certificate and persisted when
 /// context switches and the memory it lives in is about to be erased
-</span><span class="attr">#[derive(Debug, Clone, PartialEq, Eq, Zeroize)]
+</span><span class="attr">#[derive(Debug, Clone, PartialEq, Eq, Zeroize, core_crypto_macros::Entity)]
 #[zeroize(drop)]
+#[entity(collection_name = <span class="string">"e2ei_enrollment"</span>, no_upsert)]
 #[cfg_attr(
     any(target_family = <span class="string">"wasm"</span>, feature = <span class="string">"serde"</span>),
     derive(serde::Serialize, serde::Deserialize)
@@ -755,6 +772,7 @@
     <span class="kw">fn </span>new(content: Vec&lt;u8&gt;) -&gt; <span class="self">Self</span>;
 
     <span class="kw">async fn </span>find_unique(conn: <span class="kw-2">&amp;mut </span><span class="self">Self</span>::ConnectionType) -&gt; CryptoKeystoreResult&lt;<span class="self">Self</span>&gt; {
+        <span class="kw">let </span><span class="kw-2">mut </span>conn = conn.conn().<span class="kw">await</span>;
         <span class="kw">let </span>transaction = conn.transaction()<span class="question-mark">?</span>;
         <span class="kw">use </span>rusqlite::OptionalExtension <span class="kw">as _</span>;
 
@@ -790,11 +808,11 @@
     }
 
     <span class="kw">async fn </span>count(conn: <span class="kw-2">&amp;mut </span><span class="self">Self</span>::ConnectionType) -&gt; CryptoKeystoreResult&lt;usize&gt; {
-        <span class="prelude-val">Ok</span>(
-            conn.query_row(<span class="kw-2">&amp;</span><span class="macro">format!</span>(<span class="string">"SELECT COUNT(*) FROM {}"</span>, <span class="self">Self</span>::COLLECTION_NAME), [], |r| {
-                r.get(<span class="number">0</span>)
-            })<span class="question-mark">?</span>,
-        )
+        <span class="kw">let </span>conn = conn.conn().<span class="kw">await</span>;
+        conn.query_row(<span class="kw-2">&amp;</span><span class="macro">format!</span>(<span class="string">"SELECT COUNT(*) FROM {}"</span>, <span class="self">Self</span>::COLLECTION_NAME), [], |r| {
+            r.get(<span class="number">0</span>)
+        })
+        .map_err(Into::into)
     }
 
     <span class="kw">fn </span>content(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>[u8];
@@ -882,7 +900,7 @@
     <span class="kw">pub </span>content: Vec&lt;u8&gt;,
 }
 
-<span class="attr">#[derive(Debug, Clone, PartialEq, Eq, Zeroize)]
+<span class="attr">#[derive(Debug, Clone, PartialEq, Eq, Zeroize, core_crypto_macros::Entity)]
 #[zeroize(drop)]
 #[cfg_attr(
     any(target_family = <span class="string">"wasm"</span>, feature = <span class="string">"serde"</span>),
@@ -890,18 +908,20 @@
 )]
 </span><span class="kw">pub struct </span>E2eiIntermediateCert {
     <span class="comment">// key to identify the CA cert; Using a combination of SKI &amp; AKI extensions concatenated like so is suitable: `SKI[+AKI]`
+    </span><span class="attr">#[id]
     </span><span class="kw">pub </span>ski_aki_pair: String,
     <span class="kw">pub </span>content: Vec&lt;u8&gt;,
 }
 
-<span class="attr">#[derive(Debug, Clone, PartialEq, Eq, Zeroize)]
+<span class="attr">#[derive(Debug, Clone, PartialEq, Eq, Zeroize, core_crypto_macros::Entity)]
 #[zeroize(drop)]
 #[cfg_attr(
     any(target_family = <span class="string">"wasm"</span>, feature = <span class="string">"serde"</span>),
     derive(serde::Serialize, serde::Deserialize)
 )]
 </span><span class="kw">pub struct </span>E2eiCrl {
-    <span class="kw">pub </span>distribution_point: String,
+    <span class="attr">#[id]
+    </span><span class="kw">pub </span>distribution_point: String,
     <span class="kw">pub </span>content: Vec&lt;u8&gt;,
 }
 </code></pre></div></section></main></body></html>

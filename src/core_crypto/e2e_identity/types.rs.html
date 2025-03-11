@@ -175,7 +175,7 @@
 <a href="#174" id="174">174</a>
 <a href="#175" id="175">175</a></pre></div><pre class="rust"><code><span class="doccomment">//! We only expose byte arrays through the FFI so we do all the conversions here
 
-</span><span class="kw">use </span><span class="kw">super</span>::error::{E2eIdentityError, E2eIdentityResult};
+</span><span class="kw">use super</span>::{Error, <span class="prelude-ty">Result</span>};
 
 <span class="doccomment">/// See [RFC 8555 Section 7.1.1](https://www.rfc-editor.org/rfc/rfc8555.html#section-7.1.1)
 </span><span class="attr">#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
@@ -203,9 +203,9 @@
 }
 
 <span class="kw">impl </span>TryFrom&lt;<span class="kw-2">&amp;</span>E2eiAcmeDirectory&gt; <span class="kw">for </span>wire_e2e_identity::prelude::AcmeDirectory {
-    <span class="kw">type </span>Error = E2eIdentityError;
+    <span class="kw">type </span>Error = Error;
 
-    <span class="kw">fn </span>try_from(directory: <span class="kw-2">&amp;</span>E2eiAcmeDirectory) -&gt; E2eIdentityResult&lt;<span class="self">Self</span>&gt; {
+    <span class="kw">fn </span>try_from(directory: <span class="kw-2">&amp;</span>E2eiAcmeDirectory) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>&gt; {
         <span class="prelude-val">Ok</span>(<span class="self">Self </span>{
             new_nonce: directory.new_nonce.parse()<span class="question-mark">?</span>,
             new_account: directory.new_account.parse()<span class="question-mark">?</span>,
@@ -227,9 +227,9 @@
 }
 
 <span class="kw">impl </span>TryFrom&lt;wire_e2e_identity::prelude::E2eiNewAcmeOrder&gt; <span class="kw">for </span>E2eiNewAcmeOrder {
-    <span class="kw">type </span>Error = E2eIdentityError;
+    <span class="kw">type </span>Error = Error;
 
-    <span class="kw">fn </span>try_from(new_order: wire_e2e_identity::prelude::E2eiNewAcmeOrder) -&gt; E2eIdentityResult&lt;<span class="self">Self</span>&gt; {
+    <span class="kw">fn </span>try_from(new_order: wire_e2e_identity::prelude::E2eiNewAcmeOrder) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>&gt; {
         <span class="prelude-val">Ok</span>(<span class="self">Self </span>{
             authorizations: new_order.authorizations.iter().map(url::Url::to_string).collect(),
             delegate: serde_json::to_vec(<span class="kw-2">&amp;</span>new_order.delegate)<span class="question-mark">?</span>,
@@ -238,16 +238,16 @@
 }
 
 <span class="kw">impl </span>TryFrom&lt;E2eiNewAcmeOrder&gt; <span class="kw">for </span>wire_e2e_identity::prelude::E2eiNewAcmeOrder {
-    <span class="kw">type </span>Error = E2eIdentityError;
+    <span class="kw">type </span>Error = Error;
 
-    <span class="kw">fn </span>try_from(new_order: E2eiNewAcmeOrder) -&gt; E2eIdentityResult&lt;<span class="self">Self</span>&gt; {
+    <span class="kw">fn </span>try_from(new_order: E2eiNewAcmeOrder) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>&gt; {
         <span class="kw">let </span>authorizations = new_order
             .authorizations
             .iter()
             .map(|a| a.parse())
             .collect::&lt;<span class="prelude-ty">Result</span>&lt;Vec&lt;url::Url&gt;, url::ParseError&gt;&gt;()<span class="question-mark">?
             </span>.try_into()
-            .map_err(|<span class="kw">_</span>| E2eIdentityError::ImplementationError)<span class="question-mark">?</span>;
+            .map_err(|<span class="kw">_</span>| Error::ImplementationError)<span class="question-mark">?</span>;
 
         <span class="prelude-val">Ok</span>(<span class="self">Self </span>{
             authorizations,
@@ -270,9 +270,9 @@
 }
 
 <span class="kw">impl </span>TryFrom&lt;wire_e2e_identity::prelude::E2eiAcmeAuthorization&gt; <span class="kw">for </span>E2eiNewAcmeAuthz {
-    <span class="kw">type </span>Error = E2eIdentityError;
+    <span class="kw">type </span>Error = Error;
 
-    <span class="kw">fn </span>try_from(authz: wire_e2e_identity::prelude::E2eiAcmeAuthorization) -&gt; E2eIdentityResult&lt;<span class="self">Self</span>&gt; {
+    <span class="kw">fn </span>try_from(authz: wire_e2e_identity::prelude::E2eiAcmeAuthorization) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>&gt; {
         <span class="prelude-val">Ok</span>(<span class="kw">match </span>authz {
             wire_e2e_identity::prelude::E2eiAcmeAuthorization::User {
                 identifier,
@@ -293,9 +293,9 @@
 }
 
 <span class="kw">impl </span>TryFrom&lt;<span class="kw-2">&amp;</span>E2eiNewAcmeAuthz&gt; <span class="kw">for </span>wire_e2e_identity::prelude::E2eiAcmeAuthorization {
-    <span class="kw">type </span>Error = E2eIdentityError;
+    <span class="kw">type </span>Error = Error;
 
-    <span class="kw">fn </span>try_from(authz: <span class="kw-2">&amp;</span>E2eiNewAcmeAuthz) -&gt; E2eIdentityResult&lt;<span class="self">Self</span>&gt; {
+    <span class="kw">fn </span>try_from(authz: <span class="kw-2">&amp;</span>E2eiNewAcmeAuthz) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>&gt; {
         <span class="prelude-val">Ok</span>(<span class="kw">match </span><span class="kw-2">&amp;</span>authz.keyauth {
             <span class="prelude-val">None </span>=&gt; <span class="self">Self</span>::Device {
                 identifier: authz.identifier.clone(),
@@ -326,9 +326,9 @@
 }
 
 <span class="kw">impl </span>TryFrom&lt;wire_e2e_identity::prelude::E2eiAcmeChallenge&gt; <span class="kw">for </span>E2eiAcmeChallenge {
-    <span class="kw">type </span>Error = E2eIdentityError;
+    <span class="kw">type </span>Error = Error;
 
-    <span class="kw">fn </span>try_from(chall: wire_e2e_identity::prelude::E2eiAcmeChallenge) -&gt; E2eIdentityResult&lt;<span class="self">Self</span>&gt; {
+    <span class="kw">fn </span>try_from(chall: wire_e2e_identity::prelude::E2eiAcmeChallenge) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>&gt; {
         <span class="prelude-val">Ok</span>(<span class="self">Self </span>{
             delegate: serde_json::to_vec(<span class="kw-2">&amp;</span>chall.delegate)<span class="question-mark">?</span>,
             url: chall.url.to_string(),
@@ -338,9 +338,9 @@
 }
 
 <span class="kw">impl </span>TryFrom&lt;<span class="kw-2">&amp;</span>E2eiAcmeChallenge&gt; <span class="kw">for </span>wire_e2e_identity::prelude::E2eiAcmeChallenge {
-    <span class="kw">type </span>Error = E2eIdentityError;
+    <span class="kw">type </span>Error = Error;
 
-    <span class="kw">fn </span>try_from(chall: <span class="kw-2">&amp;</span>E2eiAcmeChallenge) -&gt; E2eIdentityResult&lt;<span class="self">Self</span>&gt; {
+    <span class="kw">fn </span>try_from(chall: <span class="kw-2">&amp;</span>E2eiAcmeChallenge) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>&gt; {
         <span class="prelude-val">Ok</span>(<span class="self">Self </span>{
             delegate: serde_json::from_slice(<span class="kw-2">&amp;</span>chall.delegate[..])<span class="question-mark">?</span>,
             url: chall.url.parse()<span class="question-mark">?</span>,

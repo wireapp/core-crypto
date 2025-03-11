@@ -167,35 +167,7 @@
 <a href="#166" id="166">166</a>
 <a href="#167" id="167">167</a>
 <a href="#168" id="168">168</a>
-<a href="#169" id="169">169</a>
-<a href="#170" id="170">170</a>
-<a href="#171" id="171">171</a>
-<a href="#172" id="172">172</a>
-<a href="#173" id="173">173</a>
-<a href="#174" id="174">174</a>
-<a href="#175" id="175">175</a>
-<a href="#176" id="176">176</a>
-<a href="#177" id="177">177</a>
-<a href="#178" id="178">178</a>
-<a href="#179" id="179">179</a>
-<a href="#180" id="180">180</a>
-<a href="#181" id="181">181</a>
-<a href="#182" id="182">182</a>
-<a href="#183" id="183">183</a>
-<a href="#184" id="184">184</a>
-<a href="#185" id="185">185</a>
-<a href="#186" id="186">186</a>
-<a href="#187" id="187">187</a>
-<a href="#188" id="188">188</a>
-<a href="#189" id="189">189</a>
-<a href="#190" id="190">190</a>
-<a href="#191" id="191">191</a>
-<a href="#192" id="192">192</a>
-<a href="#193" id="193">193</a>
-<a href="#194" id="194">194</a>
-<a href="#195" id="195">195</a>
-<a href="#196" id="196">196</a>
-<a href="#197" id="197">197</a></pre></div><pre class="rust"><code><span class="comment">// Wire
+<a href="#169" id="169">169</a></pre></div><pre class="rust"><code><span class="comment">// Wire
 // Copyright (C) 2022 Wire Swiss GmbH
 
 // This program is free software: you can redistribute it and/or modify
@@ -249,32 +221,33 @@
 <span class="kw">mod </span>obfuscate;
 
 <span class="kw">mod </span>build_metadata;
-<span class="kw">pub use </span>build_metadata::{BuildMetadata, BUILD_METADATA};
+<span class="kw">use </span><span class="kw">crate</span>::prelude::MlsCommitBundle;
+<span class="kw">pub use </span>build_metadata::{BUILD_METADATA, BuildMetadata};
 
 <span class="doccomment">/// Common imports that should be useful for most uses of the crate
 </span><span class="kw">pub mod </span>prelude {
     <span class="kw">pub use </span>openmls::{
         group::{MlsGroup, MlsGroupConfig},
         prelude::{
-            group_info::VerifiableGroupInfo, Ciphersuite <span class="kw">as </span>CiphersuiteName, Credential, GroupEpoch, KeyPackage,
-            KeyPackageIn, KeyPackageRef, MlsMessageIn, Node,
+            Ciphersuite <span class="kw">as </span>CiphersuiteName, Credential, GroupEpoch, KeyPackage, KeyPackageIn, KeyPackageRef,
+            MlsMessageIn, Node, group_info::VerifiableGroupInfo,
         },
     };
 
     <span class="kw">pub use </span>mls_crypto_provider::{EntropySeed, MlsCryptoProvider, RawEntropySeed};
 
     <span class="kw">pub use crate</span>::{
+        CoreCrypto, MlsTransport,
         e2e_identity::{
+            E2eiEnrollment,
             conversation_state::E2eiConversationState,
             device_status::DeviceStatus,
-            error::{E2eIdentityError, E2eIdentityResult},
             identity::{WireIdentity, X509Identity},
-            rotate::MlsRotateBundle,
             types::{E2eiAcmeChallenge, E2eiAcmeDirectory, E2eiNewAcmeAuthz, E2eiNewAcmeOrder},
-            E2eiEnrollment,
         },
-        error::{CryptoError, CryptoResult, CryptoboxMigrationError, MlsError, ProteusError},
+        error::{CryptoboxMigrationError, Error, KeystoreError, LeafError, MlsError, ProteusError, RecursiveError},
         mls::{
+            MlsCentral,
             ciphersuite::MlsCiphersuite,
             client::id::ClientId,
             client::identifier::ClientIdentifier,
@@ -282,68 +255,42 @@
             client::<span class="kw-2">*</span>,
             config::MlsCentralConfiguration,
             conversation::{
+                ConversationId, MlsConversation,
                 commit::{MlsCommitBundle, MlsConversationCreationMessage},
                 config::{MlsConversationConfiguration, MlsCustomConfiguration, MlsWirePolicy},
-                decrypt::{<span class="self">self</span>, MlsBufferedConversationDecryptMessage, MlsConversationDecryptMessage},
+                conversation_guard::decrypt::{MlsBufferedConversationDecryptMessage, MlsConversationDecryptMessage},
                 group_info::{GroupInfoPayload, MlsGroupInfoBundle, MlsGroupInfoEncryptionType, MlsRatchetTreeType},
                 proposal::MlsProposalBundle,
                 welcome::WelcomeBundle,
-                ConversationId, MlsConversation,
             },
             credential::{typ::MlsCredentialType, x509::CertificateBundle},
-            external_commit::MlsConversationInitBundle,
             proposal::{MlsProposal, MlsProposalRef},
-            MlsCentral,
         },
-        CoreCrypto, CoreCryptoCallbacks,
     };
 }
 
-<span class="doccomment">/// Client callbacks in order to Core Crypto to verify user authorization
-///
-/// This trait is used to provide callback mechanisms for the MlsCentral struct, for example for
-/// operations like adding or removing memebers that can be authorized through a caller provided
-/// authorization method.
+<span class="doccomment">/// Response from the delivery service
+</span><span class="kw">pub enum </span>MlsTransportResponse {
+    <span class="doccomment">/// The message was accepted by the delivery service
+    </span>Success,
+    <span class="doccomment">/// A client should have consumed all incoming messages before re-trying.
+    </span>Retry,
+    <span class="doccomment">/// The message was rejected by the delivery service and there's no recovery.
+    </span>Abort {
+        <span class="doccomment">/// Why did the delivery service reject the message?
+        </span>reason: String,
+    },
+}
+
+<span class="doccomment">/// Client callbacks to allow communication with the delivery service.
+/// There are two different endpoints, one for messages and one for commit bundles.
 </span><span class="attr">#[cfg_attr(target_family = <span class="string">"wasm"</span>, async_trait::async_trait(<span class="question-mark">?</span>Send))]
 #[cfg_attr(not(target_family = <span class="string">"wasm"</span>), async_trait::async_trait)]
-</span><span class="kw">pub trait </span>CoreCryptoCallbacks: std::fmt::Debug + Send + Sync {
-    <span class="doccomment">/// Function responsible for authorizing an operation.
-    /// Returns `true` if the operation is authorized.
-    ///
-    /// # Arguments
-    /// * `conversation_id` - id of the group/conversation
-    /// * `client_id` - id of the client to authorize
-    </span><span class="kw">async fn </span>authorize(<span class="kw-2">&amp;</span><span class="self">self</span>, conversation_id: prelude::ConversationId, client_id: prelude::ClientId) -&gt; bool;
-    <span class="doccomment">/// Function responsible for authorizing an operation for a given user.
-    /// Use `external_client_id` &amp; `existing_clients` to get all the 'client_id' belonging to the same user
-    /// as `external_client_id`. Then, given those client ids, verify that at least one has the right role
-    /// (is authorized) exactly like it's done in [Self::authorize]
-    /// Returns `true` if the operation is authorized.
-    ///
-    /// # Arguments
-    /// * `conversation_id` - id of the group/conversation
-    /// * `external_client_id` - id a client external to the MLS group
-    /// * `existing_clients` - all the clients in the MLS group
-    </span><span class="kw">async fn </span>user_authorize(
-        <span class="kw-2">&amp;</span><span class="self">self</span>,
-        conversation_id: prelude::ConversationId,
-        external_client_id: prelude::ClientId,
-        existing_clients: Vec&lt;prelude::ClientId&gt;,
-    ) -&gt; bool;
-    <span class="doccomment">/// Validates if the given `client_id` belongs to one of the provided `existing_clients`
-    /// This basically allows to defer the client ID parsing logic to the caller - because CoreCrypto is oblivious to such things
-    ///
-    /// # Arguments
-    /// * `conversation_id` - ID of the conversation
-    /// * `client_id` - client ID of the client referenced within the sent proposal
-    /// * `existing_clients` - all the clients in the MLS group
-    </span><span class="kw">async fn </span>client_is_existing_group_user(
-        <span class="kw-2">&amp;</span><span class="self">self</span>,
-        conversation_id: prelude::ConversationId,
-        client_id: prelude::ClientId,
-        existing_clients: Vec&lt;prelude::ClientId&gt;,
-        parent_conversation_clients: <span class="prelude-ty">Option</span>&lt;Vec&lt;prelude::ClientId&gt;&gt;,
-    ) -&gt; bool;
+</span><span class="kw">pub trait </span>MlsTransport: std::fmt::Debug + Send + Sync {
+    <span class="doccomment">/// Send a commit bundle to the corresponding endpoint.
+    </span><span class="kw">async fn </span>send_commit_bundle(<span class="kw-2">&amp;</span><span class="self">self</span>, commit_bundle: MlsCommitBundle) -&gt; <span class="prelude-ty">Result</span>&lt;MlsTransportResponse&gt;;
+    <span class="doccomment">/// Send a message to the corresponding endpoint.
+    </span><span class="kw">async fn </span>send_message(<span class="kw-2">&amp;</span><span class="self">self</span>, mls_message: Vec&lt;u8&gt;) -&gt; <span class="prelude-ty">Result</span>&lt;MlsTransportResponse&gt;;
 }
 
 <span class="attr">#[derive(Debug)]
@@ -389,7 +336,4 @@
         <span class="self">self</span>.mls
     }
 }
-
-<span class="attr">#[cfg(feature = <span class="string">"uniffi"</span>)]
-</span><span class="macro">uniffi::setup_scaffolding!</span>(<span class="string">"core_crypto"</span>);
 </code></pre></div></section></main></body></html>

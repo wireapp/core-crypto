@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"mod":["conversation"],"struct":["MlsCentral"]};
+window.SIDEBAR_ITEMS = {"enum":["Error"],"mod":["conversation"],"struct":["MlsCentral"],"type":["Result"]};

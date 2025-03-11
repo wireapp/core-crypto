@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"mod":["e2ei","proteus"],"struct":["CoreCryptoContext","TransactionHelper"],"trait":["CoreCryptoCommand"]};
+window.SIDEBAR_ITEMS = {"fn":["uniffi_core_crypto_ffi_fn_init_callback_vtable_corecryptocommand"],"mod":["e2ei","proteus"],"struct":["CoreCryptoContext","TransactionHelper","UniFfiTraitVtableCoreCryptoCommand"],"trait":["CoreCryptoCommand"]};

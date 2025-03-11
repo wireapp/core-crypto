@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"mod":["decrypt"],"struct":["MlsConversation"],"type":["ConversationId"]};
+window.SIDEBAR_ITEMS = {"enum":["Error"],"struct":["ConversationGuard","ImmutableConversation","MlsConversation"],"trait":["Conversation"],"type":["ConversationId","Result"]};

@@ -241,7 +241,17 @@
 <a href="#240" id="240">240</a>
 <a href="#241" id="241">241</a>
 <a href="#242" id="242">242</a>
-<a href="#243" id="243">243</a></pre></div><pre class="rust"><code><span class="comment">// Wire
+<a href="#243" id="243">243</a>
+<a href="#244" id="244">244</a>
+<a href="#245" id="245">245</a>
+<a href="#246" id="246">246</a>
+<a href="#247" id="247">247</a>
+<a href="#248" id="248">248</a>
+<a href="#249" id="249">249</a>
+<a href="#250" id="250">250</a>
+<a href="#251" id="251">251</a>
+<a href="#252" id="252">252</a>
+<a href="#253" id="253">253</a></pre></div><pre class="rust"><code><span class="comment">// Wire
 // Copyright (C) 2022 Wire Swiss GmbH
 
 // This program is free software: you can redistribute it and/or modify
@@ -257,44 +267,57 @@
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see http://www.gnu.org/licenses/.
 
-</span><span class="kw">use </span>color_eyre::eyre::Result;
-<span class="kw">use </span>core_crypto_ffi::{
-    context::TransactionHelper, ClientId, CoreCrypto, CustomConfiguration, MlsCredentialType, UniffiCustomTypeConverter,
-};
-<span class="kw">use </span>std::sync::Arc;
-
-<span class="kw">use crate</span>::{
-    clients::{EmulatedClient, EmulatedClientProtocol, EmulatedClientType, EmulatedMlsClient},
+</span><span class="kw">use crate</span>::{
     CIPHERSUITE_IN_USE,
+    clients::{EmulatedClient, EmulatedClientProtocol, EmulatedClientType, EmulatedMlsClient},
 };
+<span class="kw">use </span>color_eyre::eyre::Result;
+<span class="kw">use </span>core_crypto_ffi::{ClientId, CoreCrypto, CustomConfiguration, MlsCredentialType, context::TransactionHelper};
+<span class="kw">use </span>std::cell::Cell;
+<span class="kw">use </span>std::sync::Arc;
+<span class="kw">use </span>tempfile::NamedTempFile;
 
 <span class="attr">#[derive(Debug)]
 </span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">struct </span>CoreCryptoFfiClient {
     cc: CoreCrypto,
     client_id: Vec&lt;u8&gt;,
+    <span class="comment">// We will create a NamedTempFile which we will immediately use to get the path.
+    // Once we get the path, we don't need to read from it anymore, but the compiler
+    // will rightly point out that the value we store in the CoreCryptoFfiClient
+    // struct is never read. However, we need to store the NamedTempFile instance in
+    // the struct, so that the temporary file is not cleaned up prematurely.
+    // So mark the field as unused to silence the compiler here.
+    </span>_temp_file: NamedTempFile,
     <span class="attr">#[cfg(feature = <span class="string">"proteus"</span>)]
-    </span>prekey_last_id: u16,
+    </span>prekey_last_id: Cell&lt;u16&gt;,
 }
 
 <span class="kw">impl </span>CoreCryptoFfiClient {
     <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">async fn </span>new() -&gt; <span class="prelude-ty">Result</span>&lt;CoreCryptoFfiClient&gt; {
         <span class="kw">let </span>client_id = uuid::Uuid::new_v4();
         <span class="kw">let </span>client_id_bytes: Vec&lt;u8&gt; = client_id.as_hyphenated().to_string().as_bytes().into();
-        <span class="kw">let </span>client_id = ClientId::into_custom(client_id_bytes.clone()).unwrap();
+        <span class="kw">let </span>client_id = ClientId::from(core_crypto::prelude::ClientId::from(<span class="kw-2">&amp;</span>client_id_bytes[..]));
         <span class="kw">let </span>ciphersuite = CIPHERSUITE_IN_USE;
+        <span class="kw">let </span>temp_file = NamedTempFile::with_prefix(<span class="string">"interop-ffi-keystore-"</span>)<span class="question-mark">?</span>;
+
         <span class="kw">let </span>cc = CoreCrypto::new(
-            <span class="string">"path"</span>.into(),
-            <span class="string">"key"</span>.into(),
+            temp_file.path().to_string_lossy().into_owned(),
+            <span class="string">"key"</span>.to_string(),
             <span class="prelude-val">Some</span>(client_id),
             <span class="prelude-val">Some</span>(<span class="macro">vec!</span>[ciphersuite].into()),
             <span class="prelude-val">None</span>,
         )
         .<span class="kw">await</span><span class="question-mark">?</span>;
+
+        cc.provide_transport(Arc::new(<span class="kw">crate</span>::MlsTransportSuccessProvider::default()))
+            .<span class="kw">await</span><span class="question-mark">?</span>;
+
         <span class="prelude-val">Ok</span>(<span class="self">Self </span>{
             cc,
+            _temp_file: temp_file,
             client_id: client_id_bytes,
             <span class="attr">#[cfg(feature = <span class="string">"proteus"</span>)]
-            </span>prekey_last_id: <span class="number">0</span>,
+            </span>prekey_last_id: Cell::new(<span class="number">0</span>),
         })
     }
 }
@@ -318,13 +341,14 @@
     }
 
     <span class="kw">async fn </span>wipe(<span class="kw-2">mut </span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
-        <span class="prelude-val">Ok</span>(Arc::new(<span class="self">self</span>.cc).wipe().<span class="kw">await</span><span class="question-mark">?</span>)
+        drop(<span class="self">self</span>.cc);
+        <span class="prelude-val">Ok</span>(())
     }
 }
 
 <span class="attr">#[async_trait::async_trait(<span class="question-mark">?</span>Send)]
 </span><span class="kw">impl </span>EmulatedMlsClient <span class="kw">for </span>CoreCryptoFfiClient {
-    <span class="kw">async fn </span>get_keypackage(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;Vec&lt;u8&gt;&gt; {
+    <span class="kw">async fn </span>get_keypackage(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;Vec&lt;u8&gt;&gt; {
         <span class="kw">let </span>ciphersuite = CIPHERSUITE_IN_USE.into();
         <span class="kw">let </span>credential_type = MlsCredentialType::Basic;
         <span class="kw">let </span>extractor = TransactionHelper::new(<span class="kw">move </span>|context| <span class="kw">async move </span>{
@@ -339,7 +363,7 @@
         <span class="prelude-val">Ok</span>(kp)
     }
 
-    <span class="kw">async fn </span>add_client(<span class="kw-2">&amp;mut </span><span class="self">self</span>, conversation_id: <span class="kw-2">&amp;</span>[u8], kp: <span class="kw-2">&amp;</span>[u8]) -&gt; <span class="prelude-ty">Result</span>&lt;Vec&lt;u8&gt;&gt; {
+    <span class="kw">async fn </span>add_client(<span class="kw-2">&amp;</span><span class="self">self</span>, conversation_id: <span class="kw-2">&amp;</span>[u8], kp: <span class="kw-2">&amp;</span>[u8]) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
         <span class="kw">if </span>!<span class="self">self</span>.cc.conversation_exists(conversation_id.to_vec()).<span class="kw">await</span><span class="question-mark">? </span>{
             <span class="kw">let </span>cfg = core_crypto_ffi::ConversationConfiguration {
                 ciphersuite: CIPHERSUITE_IN_USE.into(),
@@ -366,13 +390,11 @@
             context.add_clients_to_conversation(conversation_id, key_packages).<span class="kw">await
         </span>});
         <span class="self">self</span>.cc.transaction(extractor.clone()).<span class="kw">await</span><span class="question-mark">?</span>;
-        <span class="kw">let </span>welcome = extractor.into_return_value();
-
-        <span class="prelude-val">Ok</span>(welcome.welcome)
+        <span class="prelude-val">Ok</span>(())
     }
 
-    <span class="kw">async fn </span>kick_client(<span class="kw-2">&amp;mut </span><span class="self">self</span>, conversation_id: <span class="kw-2">&amp;</span>[u8], client_id: <span class="kw-2">&amp;</span>[u8]) -&gt; <span class="prelude-ty">Result</span>&lt;Vec&lt;u8&gt;&gt; {
-        <span class="kw">let </span>client_id = ClientId::into_custom(client_id.to_vec()).unwrap();
+    <span class="kw">async fn </span>kick_client(<span class="kw-2">&amp;</span><span class="self">self</span>, conversation_id: <span class="kw-2">&amp;</span>[u8], client_id: <span class="kw-2">&amp;</span>[u8]) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
+        <span class="kw">let </span>client_id = ClientId::from(core_crypto::prelude::ClientId::from(client_id));
         <span class="kw">let </span>conversation_id = conversation_id.to_vec();
         <span class="kw">let </span>extractor = TransactionHelper::new(<span class="kw">move </span>|context| <span class="kw">async move </span>{
             context
@@ -380,12 +402,10 @@
                 .<span class="kw">await
         </span>});
         <span class="self">self</span>.cc.transaction(extractor.clone()).<span class="kw">await</span><span class="question-mark">?</span>;
-        <span class="kw">let </span>commit = extractor.into_return_value();
-
-        <span class="prelude-val">Ok</span>(commit.commit)
+        <span class="prelude-val">Ok</span>(())
     }
 
-    <span class="kw">async fn </span>process_welcome(<span class="kw-2">&amp;mut </span><span class="self">self</span>, welcome: <span class="kw-2">&amp;</span>[u8]) -&gt; <span class="prelude-ty">Result</span>&lt;Vec&lt;u8&gt;&gt; {
+    <span class="kw">async fn </span>process_welcome(<span class="kw-2">&amp;</span><span class="self">self</span>, welcome: <span class="kw-2">&amp;</span>[u8]) -&gt; <span class="prelude-ty">Result</span>&lt;Vec&lt;u8&gt;&gt; {
         <span class="kw">let </span>cfg = CustomConfiguration {
             key_rotation_span: <span class="prelude-val">None</span>,
             wire_policy: <span class="prelude-val">None</span>,
@@ -397,7 +417,7 @@
         <span class="prelude-val">Ok</span>(extractor.into_return_value().id)
     }
 
-    <span class="kw">async fn </span>encrypt_message(<span class="kw-2">&amp;mut </span><span class="self">self</span>, conversation_id: <span class="kw-2">&amp;</span>[u8], message: <span class="kw-2">&amp;</span>[u8]) -&gt; <span class="prelude-ty">Result</span>&lt;Vec&lt;u8&gt;&gt; {
+    <span class="kw">async fn </span>encrypt_message(<span class="kw-2">&amp;</span><span class="self">self</span>, conversation_id: <span class="kw-2">&amp;</span>[u8], message: <span class="kw-2">&amp;</span>[u8]) -&gt; <span class="prelude-ty">Result</span>&lt;Vec&lt;u8&gt;&gt; {
         <span class="kw">let </span>conversation_id = conversation_id.to_vec();
         <span class="kw">let </span>message = message.to_vec();
         <span class="kw">let </span>extractor =
@@ -408,7 +428,7 @@
         <span class="prelude-val">Ok</span>(extractor.into_return_value())
     }
 
-    <span class="kw">async fn </span>decrypt_message(<span class="kw-2">&amp;mut </span><span class="self">self</span>, conversation_id: <span class="kw-2">&amp;</span>[u8], message: <span class="kw-2">&amp;</span>[u8]) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="prelude-ty">Option</span>&lt;Vec&lt;u8&gt;&gt;&gt; {
+    <span class="kw">async fn </span>decrypt_message(<span class="kw-2">&amp;</span><span class="self">self</span>, conversation_id: <span class="kw-2">&amp;</span>[u8], message: <span class="kw-2">&amp;</span>[u8]) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="prelude-ty">Option</span>&lt;Vec&lt;u8&gt;&gt;&gt; {
         <span class="kw">let </span>conversation_id = conversation_id.to_vec();
         <span class="kw">let </span>message = message.to_vec();
         <span class="kw">let </span>extractor =
@@ -426,22 +446,22 @@
     <span class="kw">async fn </span>init(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
         <span class="self">self</span>.cc
             .transaction(TransactionHelper::new(<span class="kw">move </span>|context| <span class="kw">async move </span>{
-                context.proteus_init().<span class="kw">await</span>.map_err(Into::into)
-            }))
+                context.proteus_init().<span class="kw">await
+            </span>}))
             .<span class="kw">await</span><span class="question-mark">?</span>;
         <span class="prelude-val">Ok</span>(())
     }
 
-    <span class="kw">async fn </span>get_prekey(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;Vec&lt;u8&gt;&gt; {
-        <span class="self">self</span>.prekey_last_id += <span class="number">1</span>;
-        <span class="kw">let </span>prekey_last_id = <span class="self">self</span>.prekey_last_id;
+    <span class="kw">async fn </span>get_prekey(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;Vec&lt;u8&gt;&gt; {
+        <span class="kw">let </span>prekey_last_id = <span class="self">self</span>.prekey_last_id.get() + <span class="number">1</span>;
+        <span class="self">self</span>.prekey_last_id.replace(prekey_last_id);
         <span class="kw">let </span>extractor =
             TransactionHelper::new(<span class="kw">move </span>|context| <span class="kw">async move </span>{ context.proteus_new_prekey(prekey_last_id).<span class="kw">await </span>});
         <span class="self">self</span>.cc.transaction(extractor.clone()).<span class="kw">await</span><span class="question-mark">?</span>;
         <span class="prelude-val">Ok</span>(extractor.into_return_value())
     }
 
-    <span class="kw">async fn </span>session_from_prekey(<span class="kw-2">&amp;mut </span><span class="self">self</span>, session_id: <span class="kw-2">&amp;</span>str, prekey: <span class="kw-2">&amp;</span>[u8]) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
+    <span class="kw">async fn </span>session_from_prekey(<span class="kw-2">&amp;</span><span class="self">self</span>, session_id: <span class="kw-2">&amp;</span>str, prekey: <span class="kw-2">&amp;</span>[u8]) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
         <span class="kw">let </span>session_id = session_id.to_string();
         <span class="kw">let </span>prekey = prekey.to_vec();
         <span class="self">self</span>.cc
@@ -452,7 +472,7 @@
         <span class="prelude-val">Ok</span>(())
     }
 
-    <span class="kw">async fn </span>session_from_message(<span class="kw-2">&amp;mut </span><span class="self">self</span>, session_id: <span class="kw-2">&amp;</span>str, message: <span class="kw-2">&amp;</span>[u8]) -&gt; <span class="prelude-ty">Result</span>&lt;Vec&lt;u8&gt;&gt; {
+    <span class="kw">async fn </span>session_from_message(<span class="kw-2">&amp;</span><span class="self">self</span>, session_id: <span class="kw-2">&amp;</span>str, message: <span class="kw-2">&amp;</span>[u8]) -&gt; <span class="prelude-ty">Result</span>&lt;Vec&lt;u8&gt;&gt; {
         <span class="kw">let </span>session_id = session_id.to_string();
         <span class="kw">let </span>message = message.to_vec();
         <span class="kw">let </span>extractor = TransactionHelper::new(<span class="kw">move </span>|context| <span class="kw">async move </span>{
@@ -462,7 +482,7 @@
         <span class="prelude-val">Ok</span>(extractor.into_return_value())
     }
 
-    <span class="kw">async fn </span>encrypt(<span class="kw-2">&amp;mut </span><span class="self">self</span>, session_id: <span class="kw-2">&amp;</span>str, plaintext: <span class="kw-2">&amp;</span>[u8]) -&gt; <span class="prelude-ty">Result</span>&lt;Vec&lt;u8&gt;&gt; {
+    <span class="kw">async fn </span>encrypt(<span class="kw-2">&amp;</span><span class="self">self</span>, session_id: <span class="kw-2">&amp;</span>str, plaintext: <span class="kw-2">&amp;</span>[u8]) -&gt; <span class="prelude-ty">Result</span>&lt;Vec&lt;u8&gt;&gt; {
         <span class="kw">let </span>session_id = session_id.to_string();
         <span class="kw">let </span>plaintext = plaintext.to_vec();
         <span class="kw">let </span>extractor =
@@ -471,7 +491,7 @@
         <span class="prelude-val">Ok</span>(extractor.into_return_value())
     }
 
-    <span class="kw">async fn </span>decrypt(<span class="kw-2">&amp;mut </span><span class="self">self</span>, session_id: <span class="kw-2">&amp;</span>str, ciphertext: <span class="kw-2">&amp;</span>[u8]) -&gt; <span class="prelude-ty">Result</span>&lt;Vec&lt;u8&gt;&gt; {
+    <span class="kw">async fn </span>decrypt(<span class="kw-2">&amp;</span><span class="self">self</span>, session_id: <span class="kw-2">&amp;</span>str, ciphertext: <span class="kw-2">&amp;</span>[u8]) -&gt; <span class="prelude-ty">Result</span>&lt;Vec&lt;u8&gt;&gt; {
         <span class="kw">let </span>session_id = session_id.to_string();
         <span class="kw">let </span>ciphertext = ciphertext.to_vec();
         <span class="kw">let </span>extractor =

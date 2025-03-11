@@ -80,8 +80,7 @@
 <a href="#79" id="79">79</a>
 <a href="#80" id="80">80</a>
 <a href="#81" id="81">81</a>
-<a href="#82" id="82">82</a>
-<a href="#83" id="83">83</a></pre></div><pre class="rust"><code><span class="comment">// Wire
+<a href="#82" id="82">82</a></pre></div><pre class="rust"><code><span class="comment">// Wire
 // Copyright (C) 2022 Wire Swiss GmbH
 
 // This program is free software: you can redistribute it and/or modify
@@ -97,8 +96,8 @@
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see http://www.gnu.org/licenses/.
 
-</span><span class="kw">use </span><span class="kw">crate</span>::util::RunningProcess;
-<span class="kw">use </span><span class="kw">crate</span>::TEST_SERVER_URI;
+</span><span class="kw">use </span><span class="kw">crate</span>::TEST_SERVER_URI;
+<span class="kw">use </span><span class="kw">crate</span>::util::RunningProcess;
 <span class="kw">use </span>color_eyre::eyre::Result;
 
 <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">async fn </span>setup_webdriver(force: bool) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
@@ -135,8 +134,8 @@
 }
 
 <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">async fn </span>setup_browser(addr: <span class="kw-2">&amp;</span>std::net::SocketAddr, folder: <span class="kw-2">&amp;</span>str) -&gt; <span class="prelude-ty">Result</span>&lt;fantoccini::Client&gt; {
-    <span class="comment">// let spinner = RunningProcess::new("Starting Fantoccini remote browser...", false);
-    </span><span class="kw">let </span><span class="kw-2">mut </span>caps_json = <span class="macro">serde_json::json!</span>({
+    <span class="kw">let </span>spinner = RunningProcess::new(<span class="string">"Starting Fantoccini remote browser..."</span>, <span class="bool-val">false</span>);
+    <span class="kw">let </span><span class="kw-2">mut </span>caps_json = <span class="macro">serde_json::json!</span>({
         <span class="string">"goog:chromeOptions"</span>: {
             <span class="string">"args"</span>: [
                 <span class="string">"headless"</span>,
@@ -160,8 +159,7 @@
         .<span class="kw">await</span><span class="question-mark">?</span>;
     browser.goto(<span class="kw-2">&amp;</span><span class="macro">format!</span>(<span class="string">"{TEST_SERVER_URI}/{folder}/index.html"</span>)).<span class="kw">await</span><span class="question-mark">?</span>;
 
-    <span class="comment">// spinner.success("Browser [OK]");
-
-    </span><span class="prelude-val">Ok</span>(browser)
+    spinner.success(<span class="string">"Browser [OK]"</span>);
+    <span class="prelude-val">Ok</span>(browser)
 }
 </code></pre></div></section></main></body></html>

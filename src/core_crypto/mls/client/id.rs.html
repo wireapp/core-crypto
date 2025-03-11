@@ -93,7 +93,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see http://www.gnu.org/licenses/.
 
-</span><span class="kw">use </span><span class="kw">crate</span>::CryptoError;
+</span><span class="kw">use </span><span class="kw">super</span>::error::Error;
 
 <span class="doccomment">/// A Client identifier
 ///
@@ -148,7 +148,7 @@
 }
 
 <span class="kw">impl </span>std::str::FromStr <span class="kw">for </span>ClientId {
-    <span class="kw">type </span><span class="prelude-val">Err </span>= CryptoError;
+    <span class="kw">type </span><span class="prelude-val">Err </span>= Error;
 
     <span class="kw">fn </span>from_str(s: <span class="kw-2">&amp;</span>str) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>, <span class="self">Self</span>::Err&gt; {
         <span class="prelude-val">Ok</span>(<span class="self">Self</span>(

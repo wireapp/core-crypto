@@ -170,13 +170,13 @@
 <span class="attr">#[async_trait::async_trait(<span class="question-mark">?</span>Send)]
 #[allow(dead_code)]
 </span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">trait </span>EmulatedMlsClient: EmulatedClient {
-    <span class="kw">async fn </span>get_keypackage(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;Vec&lt;u8&gt;&gt;;
-    <span class="kw">async fn </span>add_client(<span class="kw-2">&amp;mut </span><span class="self">self</span>, conversation_id: <span class="kw-2">&amp;</span>[u8], kp: <span class="kw-2">&amp;</span>[u8]) -&gt; <span class="prelude-ty">Result</span>&lt;Vec&lt;u8&gt;&gt;;
-    <span class="kw">async fn </span>kick_client(<span class="kw-2">&amp;mut </span><span class="self">self</span>, conversation_id: <span class="kw-2">&amp;</span>[u8], client_id: <span class="kw-2">&amp;</span>[u8]) -&gt; <span class="prelude-ty">Result</span>&lt;Vec&lt;u8&gt;&gt;;
-    <span class="kw">async fn </span>process_welcome(<span class="kw-2">&amp;mut </span><span class="self">self</span>, welcome: <span class="kw-2">&amp;</span>[u8]) -&gt; <span class="prelude-ty">Result</span>&lt;Vec&lt;u8&gt;&gt;;
-    <span class="kw">async fn </span>encrypt_message(<span class="kw-2">&amp;mut </span><span class="self">self</span>, conversation_id: <span class="kw-2">&amp;</span>[u8], message: <span class="kw-2">&amp;</span>[u8]) -&gt; <span class="prelude-ty">Result</span>&lt;Vec&lt;u8&gt;&gt;;
+    <span class="kw">async fn </span>get_keypackage(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;Vec&lt;u8&gt;&gt;;
+    <span class="kw">async fn </span>add_client(<span class="kw-2">&amp;</span><span class="self">self</span>, conversation_id: <span class="kw-2">&amp;</span>[u8], kp: <span class="kw-2">&amp;</span>[u8]) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt;;
+    <span class="kw">async fn </span>kick_client(<span class="kw-2">&amp;</span><span class="self">self</span>, conversation_id: <span class="kw-2">&amp;</span>[u8], client_id: <span class="kw-2">&amp;</span>[u8]) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt;;
+    <span class="kw">async fn </span>process_welcome(<span class="kw-2">&amp;</span><span class="self">self</span>, welcome: <span class="kw-2">&amp;</span>[u8]) -&gt; <span class="prelude-ty">Result</span>&lt;Vec&lt;u8&gt;&gt;;
+    <span class="kw">async fn </span>encrypt_message(<span class="kw-2">&amp;</span><span class="self">self</span>, conversation_id: <span class="kw-2">&amp;</span>[u8], message: <span class="kw-2">&amp;</span>[u8]) -&gt; <span class="prelude-ty">Result</span>&lt;Vec&lt;u8&gt;&gt;;
     <span class="comment">// TODO: Make it more complex so that we can extract other things like proposals etc. Tracking issue: WPB-9647
-    </span><span class="kw">async fn </span>decrypt_message(<span class="kw-2">&amp;mut </span><span class="self">self</span>, conversation_id: <span class="kw-2">&amp;</span>[u8], message: <span class="kw-2">&amp;</span>[u8]) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="prelude-ty">Option</span>&lt;Vec&lt;u8&gt;&gt;&gt;;
+    </span><span class="kw">async fn </span>decrypt_message(<span class="kw-2">&amp;</span><span class="self">self</span>, conversation_id: <span class="kw-2">&amp;</span>[u8], message: <span class="kw-2">&amp;</span>[u8]) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="prelude-ty">Option</span>&lt;Vec&lt;u8&gt;&gt;&gt;;
 }
 
 <span class="attr">#[async_trait::async_trait(<span class="question-mark">?</span>Send)]
@@ -185,11 +185,11 @@
     <span class="kw">async fn </span>init(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
         <span class="prelude-val">Ok</span>(())
     }
-    <span class="kw">async fn </span>get_prekey(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;Vec&lt;u8&gt;&gt;;
-    <span class="kw">async fn </span>session_from_prekey(<span class="kw-2">&amp;mut </span><span class="self">self</span>, session_id: <span class="kw-2">&amp;</span>str, prekey: <span class="kw-2">&amp;</span>[u8]) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt;;
-    <span class="kw">async fn </span>session_from_message(<span class="kw-2">&amp;mut </span><span class="self">self</span>, session_id: <span class="kw-2">&amp;</span>str, message: <span class="kw-2">&amp;</span>[u8]) -&gt; <span class="prelude-ty">Result</span>&lt;Vec&lt;u8&gt;&gt;;
-    <span class="kw">async fn </span>encrypt(<span class="kw-2">&amp;mut </span><span class="self">self</span>, session_id: <span class="kw-2">&amp;</span>str, plaintext: <span class="kw-2">&amp;</span>[u8]) -&gt; <span class="prelude-ty">Result</span>&lt;Vec&lt;u8&gt;&gt;;
-    <span class="kw">async fn </span>decrypt(<span class="kw-2">&amp;mut </span><span class="self">self</span>, session_id: <span class="kw-2">&amp;</span>str, ciphertext: <span class="kw-2">&amp;</span>[u8]) -&gt; <span class="prelude-ty">Result</span>&lt;Vec&lt;u8&gt;&gt;;
+    <span class="kw">async fn </span>get_prekey(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;Vec&lt;u8&gt;&gt;;
+    <span class="kw">async fn </span>session_from_prekey(<span class="kw-2">&amp;</span><span class="self">self</span>, session_id: <span class="kw-2">&amp;</span>str, prekey: <span class="kw-2">&amp;</span>[u8]) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt;;
+    <span class="kw">async fn </span>session_from_message(<span class="kw-2">&amp;</span><span class="self">self</span>, session_id: <span class="kw-2">&amp;</span>str, message: <span class="kw-2">&amp;</span>[u8]) -&gt; <span class="prelude-ty">Result</span>&lt;Vec&lt;u8&gt;&gt;;
+    <span class="kw">async fn </span>encrypt(<span class="kw-2">&amp;</span><span class="self">self</span>, session_id: <span class="kw-2">&amp;</span>str, plaintext: <span class="kw-2">&amp;</span>[u8]) -&gt; <span class="prelude-ty">Result</span>&lt;Vec&lt;u8&gt;&gt;;
+    <span class="kw">async fn </span>decrypt(<span class="kw-2">&amp;</span><span class="self">self</span>, session_id: <span class="kw-2">&amp;</span>str, ciphertext: <span class="kw-2">&amp;</span>[u8]) -&gt; <span class="prelude-ty">Result</span>&lt;Vec&lt;u8&gt;&gt;;
     <span class="kw">async fn </span>fingerprint(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;String&gt;;
 }
 

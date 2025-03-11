@@ -203,7 +203,9 @@
 <a href="#202" id="202">202</a>
 <a href="#203" id="203">203</a>
 <a href="#204" id="204">204</a>
-<a href="#205" id="205">205</a></pre></div><pre class="rust"><code><span class="doccomment">//! This module exists merely because the `Entity` trait is not object safe.
+<a href="#205" id="205">205</a>
+<a href="#206" id="206">206</a>
+<a href="#207" id="207">207</a></pre></div><pre class="rust"><code><span class="doccomment">//! This module exists merely because the `Entity` trait is not object safe.
 //! See &lt;https://doc.rust-lang.org/reference/items/traits.html#object-safety.&gt;.
 
 </span><span class="kw">use </span><span class="kw">crate</span>::connection::TransactionWrapper;
@@ -222,10 +224,10 @@
     ConsumerData(ConsumerData),
     SignatureKeyPair(MlsSignatureKeyPair),
     HpkePrivateKey(MlsHpkePrivateKey),
-    KeyPackage(MlsKeyPackage),
+    MlsKeyPackage(MlsKeyPackage),
     PskBundle(MlsPskBundle),
     EncryptionKeyPair(MlsEncryptionKeyPair),
-    EpochEncryptionKeyPair(MlsEpochEncryptionKeyPair),
+    MlsEpochEncryptionKeyPair(MlsEpochEncryptionKeyPair),
     MlsCredential(MlsCredential),
     MlsBufferedCommit(MlsBufferedCommit),
     PersistedMlsGroup(PersistedMlsGroup),
@@ -359,10 +361,12 @@
         Entity::ConsumerData(consumer_data) =&gt; consumer_data.replace(tx).<span class="kw">await</span>,
         Entity::SignatureKeyPair(mls_signature_key_pair) =&gt; mls_signature_key_pair.save(tx).<span class="kw">await</span>,
         Entity::HpkePrivateKey(mls_hpke_private_key) =&gt; mls_hpke_private_key.save(tx).<span class="kw">await</span>,
-        Entity::KeyPackage(mls_key_package) =&gt; mls_key_package.save(tx).<span class="kw">await</span>,
+        Entity::MlsKeyPackage(mls_key_package) =&gt; mls_key_package.save(tx).<span class="kw">await</span>,
         Entity::PskBundle(mls_psk_bundle) =&gt; mls_psk_bundle.save(tx).<span class="kw">await</span>,
         Entity::EncryptionKeyPair(mls_encryption_key_pair) =&gt; mls_encryption_key_pair.save(tx).<span class="kw">await</span>,
-        Entity::EpochEncryptionKeyPair(mls_epoch_encryption_key_pair) =&gt; mls_epoch_encryption_key_pair.save(tx).<span class="kw">await</span>,
+        Entity::MlsEpochEncryptionKeyPair(mls_epoch_encryption_key_pair) =&gt; {
+            mls_epoch_encryption_key_pair.save(tx).<span class="kw">await
+        </span>}
         Entity::MlsCredential(mls_credential) =&gt; mls_credential.save(tx).<span class="kw">await</span>,
         Entity::MlsBufferedCommit(mls_pending_commit) =&gt; mls_pending_commit.save(tx).<span class="kw">await</span>,
         Entity::PersistedMlsGroup(persisted_mls_group) =&gt; persisted_mls_group.save(tx).<span class="kw">await</span>,

@@ -57,13 +57,12 @@
 <a href="#56" id="56">56</a>
 <a href="#57" id="57">57</a>
 <a href="#58" id="58">58</a>
-<a href="#59" id="59">59</a></pre></div><pre class="rust"><code><span class="kw">use </span><span class="kw">super</span>::E2eiEnrollment;
-<span class="kw">use crate</span>::{
-    prelude::{E2eIdentityError, E2eIdentityResult},
-    CryptoError, CryptoResult,
+<a href="#59" id="59">59</a></pre></div><pre class="rust"><code><span class="kw">use super</span>::{
+    E2eiEnrollment,
+    error::{Error, <span class="prelude-ty">Result</span>},
 };
 <span class="kw">use </span>core_crypto_keystore::connection::FetchFromDatabase;
-<span class="kw">use </span>core_crypto_keystore::{entities::E2eiRefreshToken, CryptoKeystoreResult};
+<span class="kw">use </span>core_crypto_keystore::{CryptoKeystoreResult, entities::E2eiRefreshToken};
 <span class="kw">use </span>mls_crypto_provider::MlsCryptoProvider;
 <span class="kw">use </span>zeroize::Zeroize;
 
@@ -73,7 +72,7 @@
 </span><span class="kw">pub struct </span>RefreshToken(String);
 
 <span class="kw">impl </span>RefreshToken {
-    <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">async fn </span>find(key_store: <span class="kw-2">&amp;</span><span class="kw">impl </span>FetchFromDatabase) -&gt; CryptoResult&lt;RefreshToken&gt; {
+    <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">async fn </span>find(key_store: <span class="kw-2">&amp;</span><span class="kw">impl </span>FetchFromDatabase) -&gt; <span class="prelude-ty">Result</span>&lt;RefreshToken&gt; {
         key_store.find_unique::&lt;E2eiRefreshToken&gt;().<span class="kw">await</span><span class="question-mark">?</span>.try_into()
     }
 
@@ -89,22 +88,23 @@
     <span class="doccomment">/// Lets clients retrieve the OIDC refresh token to try to renew the user's authorization.
     /// If it's expired, the user needs to reauthenticate and they will update the refresh token
     /// in [E2eiEnrollment::new_oidc_challenge_request]
-    </span><span class="kw">pub fn </span>get_refresh_token(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; E2eIdentityResult&lt;<span class="kw-2">&amp;</span>str&gt; {
+    </span><span class="kw">pub fn </span>get_refresh_token(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="kw-2">&amp;</span>str&gt; {
         <span class="self">self</span>.refresh_token
             .as_ref()
             .map(|rt| rt.as_str())
-            .ok_or(E2eIdentityError::OutOfOrderEnrollment(
+            .ok_or(Error::OutOfOrderEnrollment(
                 <span class="string">"No OIDC refresh token registered yet or it has been persisted"</span>,
             ))
     }
 }
 
 <span class="kw">impl </span>TryFrom&lt;E2eiRefreshToken&gt; <span class="kw">for </span>RefreshToken {
-    <span class="kw">type </span>Error = CryptoError;
+    <span class="kw">type </span>Error = Error;
 
-    <span class="kw">fn </span>try_from(<span class="kw-2">mut </span>entity: E2eiRefreshToken) -&gt; CryptoResult&lt;<span class="self">Self</span>&gt; {
+    <span class="kw">fn </span>try_from(<span class="kw-2">mut </span>entity: E2eiRefreshToken) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>&gt; {
         <span class="kw">let </span>content = std::mem::take(<span class="kw-2">&amp;mut </span>entity.content);
-        <span class="prelude-val">Ok</span>(<span class="self">Self</span>(String::from_utf8(content)<span class="question-mark">?</span>))
+        <span class="kw">let </span>content = String::from_utf8(content).map_err(|<span class="kw">_</span>| Error::InvalidRefreshToken)<span class="question-mark">?</span>;
+        <span class="prelude-val">Ok</span>(<span class="self">Self</span>(content))
     }
 }
 

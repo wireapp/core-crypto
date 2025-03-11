@@ -332,7 +332,16 @@
 <a href="#331" id="331">331</a>
 <a href="#332" id="332">332</a>
 <a href="#333" id="333">333</a>
-<a href="#334" id="334">334</a></pre></div><pre class="rust"><code><span class="comment">// Wire
+<a href="#334" id="334">334</a>
+<a href="#335" id="335">335</a>
+<a href="#336" id="336">336</a>
+<a href="#337" id="337">337</a>
+<a href="#338" id="338">338</a>
+<a href="#339" id="339">339</a>
+<a href="#340" id="340">340</a>
+<a href="#341" id="341">341</a>
+<a href="#342" id="342">342</a>
+<a href="#343" id="343">343</a></pre></div><pre class="rust"><code><span class="comment">// Wire
 // Copyright (C) 2022 Wire Swiss GmbH
 
 // This program is free software: you can redistribute it and/or modify
@@ -349,14 +358,14 @@
 // along with this program. If not, see http://www.gnu.org/licenses/.
 
 </span><span class="kw">use crate</span>::{
+    CryptoKeystoreError, MissingKeyErrorKind,
     connection::KeystoreDatabaseConnection,
     entities::{Entity, EntityBase, EntityFindParams, PersistedMlsPendingGroup, StringEntityId},
-    CryptoKeystoreError, MissingKeyErrorKind,
 };
 <span class="kw">use crate</span>::{
+    CryptoKeystoreResult,
     connection::{DatabaseConnection, TransactionWrapper},
     entities::EntityTransactionExt,
-    CryptoKeystoreResult,
 };
 
 <span class="attr">#[async_trait::async_trait]
@@ -372,6 +381,7 @@
         <span class="kw">use </span>rusqlite::OptionalExtension <span class="kw">as _</span>;
         <span class="kw">use </span>std::io::Read <span class="kw">as _</span>;
 
+        <span class="kw">let </span><span class="kw-2">mut </span>conn = conn.conn().<span class="kw">await</span>;
         <span class="kw">let </span>transaction = conn.transaction()<span class="question-mark">?</span>;
         <span class="kw">let </span>rowid: <span class="prelude-ty">Option</span>&lt;i64&gt; = transaction
             .query_row(
@@ -430,6 +440,7 @@
         conn: <span class="kw-2">&amp;mut </span><span class="self">Self</span>::ConnectionType,
         params: EntityFindParams,
     ) -&gt; <span class="kw">crate</span>::CryptoKeystoreResult&lt;Vec&lt;<span class="self">Self</span>&gt;&gt; {
+        <span class="kw">let </span><span class="kw-2">mut </span>conn = conn.conn().<span class="kw">await</span>;
         <span class="kw">let </span>transaction = conn.transaction()<span class="question-mark">?</span>;
         <span class="kw">let </span>query: String = <span class="macro">format!</span>(<span class="string">"SELECT rowid FROM mls_pending_groups {}"</span>, params.to_sql());
 
@@ -488,6 +499,8 @@
         conn: <span class="kw-2">&amp;mut </span><span class="self">Self</span>::ConnectionType,
         _ids: <span class="kw-2">&amp;</span>[StringEntityId],
     ) -&gt; <span class="kw">crate</span>::CryptoKeystoreResult&lt;Vec&lt;<span class="self">Self</span>&gt;&gt; {
+        <span class="kw">let </span><span class="kw-2">mut </span>conn = conn.conn().<span class="kw">await</span>;
+
         <span class="comment">// Plot twist: we always select ALL the persisted groups. Unsure if we want to make it a real API with selection
         </span><span class="kw">let </span><span class="kw-2">mut </span>stmt = conn.prepare_cached(<span class="string">"SELECT rowid FROM mls_pending_groups ORDER BY rowid ASC"</span>)<span class="question-mark">?</span>;
         <span class="kw">let </span>rowids: Vec&lt;i64&gt; = stmt
@@ -554,7 +567,9 @@
     }
 
     <span class="kw">async fn </span>count(conn: <span class="kw-2">&amp;mut </span><span class="self">Self</span>::ConnectionType) -&gt; <span class="kw">crate</span>::CryptoKeystoreResult&lt;usize&gt; {
-        <span class="prelude-val">Ok</span>(conn.query_row(<span class="string">"SELECT COUNT(*) FROM mls_pending_groups"</span>, [], |r| r.get(<span class="number">0</span>))<span class="question-mark">?</span>)
+        <span class="kw">let </span>conn = conn.conn().<span class="kw">await</span>;
+        conn.query_row(<span class="string">"SELECT COUNT(*) FROM mls_pending_groups"</span>, [], |r| r.get(<span class="number">0</span>))
+            .map_err(Into::into)
     }
 }
 
@@ -589,7 +604,7 @@
         <span class="kw">let </span>zb = rusqlite::blob::ZeroBlob(<span class="self">self</span>.state.len() <span class="kw">as </span>i32);
         <span class="kw">let </span>zid = rusqlite::blob::ZeroBlob(<span class="self">self</span>.id.len() <span class="kw">as </span>i32);
 
-        <span class="kw">let </span>rowid: i64 = <span class="kw">if let </span><span class="prelude-val">Some</span>(rowid) = transaction
+        <span class="kw">let </span>rowid: i64 = <span class="kw">match </span>transaction
             .query_row(
                 <span class="string">"SELECT rowid FROM mls_pending_groups WHERE id = ?"</span>,
                 [<span class="self">self</span>.id.as_slice()],
@@ -597,29 +612,32 @@
             )
             .optional()<span class="question-mark">?
         </span>{
-            <span class="kw">use </span>rusqlite::ToSql <span class="kw">as _</span>;
-            transaction.execute(
-                <span class="string">"UPDATE mls_pending_groups SET state = ?, parent_id = ?, cfg = ? WHERE id = ?"</span>,
-                [<span class="kw-2">&amp;</span>zb.to_sql()<span class="question-mark">?</span>, <span class="kw-2">&amp;</span>zpid.to_sql()<span class="question-mark">?</span>, <span class="kw-2">&amp;</span>zcfg.to_sql()<span class="question-mark">?</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.id.to_sql()<span class="question-mark">?</span>],
-            )<span class="question-mark">?</span>;
-            rowid
-        } <span class="kw">else </span>{
-            <span class="kw">let </span>id_bytes = <span class="kw-2">&amp;</span><span class="self">self</span>.id;
+            <span class="prelude-val">Some</span>(rowid) =&gt; {
+                <span class="kw">use </span>rusqlite::ToSql <span class="kw">as _</span>;
+                transaction.execute(
+                    <span class="string">"UPDATE mls_pending_groups SET state = ?, parent_id = ?, cfg = ? WHERE id = ?"</span>,
+                    [<span class="kw-2">&amp;</span>zb.to_sql()<span class="question-mark">?</span>, <span class="kw-2">&amp;</span>zpid.to_sql()<span class="question-mark">?</span>, <span class="kw-2">&amp;</span>zcfg.to_sql()<span class="question-mark">?</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.id.to_sql()<span class="question-mark">?</span>],
+                )<span class="question-mark">?</span>;
+                rowid
+            }
+            <span class="kw">_ </span>=&gt; {
+                <span class="kw">let </span>id_bytes = <span class="kw-2">&amp;</span><span class="self">self</span>.id;
 
-            <span class="kw">use </span>rusqlite::ToSql <span class="kw">as _</span>;
-            transaction.execute(
-                <span class="string">"INSERT INTO mls_pending_groups (id, state, cfg, parent_id) VALUES(?, ?, ?, ?)"</span>,
-                [<span class="kw-2">&amp;</span>zid.to_sql()<span class="question-mark">?</span>, <span class="kw-2">&amp;</span>zb.to_sql()<span class="question-mark">?</span>, <span class="kw-2">&amp;</span>zcfg.to_sql()<span class="question-mark">?</span>, <span class="kw-2">&amp;</span>zpid.to_sql()<span class="question-mark">?</span>],
-            )<span class="question-mark">?</span>;
-            <span class="kw">let </span>rowid = transaction.last_insert_rowid();
+                <span class="kw">use </span>rusqlite::ToSql <span class="kw">as _</span>;
+                transaction.execute(
+                    <span class="string">"INSERT INTO mls_pending_groups (id, state, cfg, parent_id) VALUES(?, ?, ?, ?)"</span>,
+                    [<span class="kw-2">&amp;</span>zid.to_sql()<span class="question-mark">?</span>, <span class="kw-2">&amp;</span>zb.to_sql()<span class="question-mark">?</span>, <span class="kw-2">&amp;</span>zcfg.to_sql()<span class="question-mark">?</span>, <span class="kw-2">&amp;</span>zpid.to_sql()<span class="question-mark">?</span>],
+                )<span class="question-mark">?</span>;
+                <span class="kw">let </span>rowid = transaction.last_insert_rowid();
 
-            <span class="kw">let </span><span class="kw-2">mut </span>blob =
-                transaction.blob_open(rusqlite::DatabaseName::Main, <span class="string">"mls_pending_groups"</span>, <span class="string">"id"</span>, rowid, <span class="bool-val">false</span>)<span class="question-mark">?</span>;
-            <span class="kw">use </span>std::io::Write <span class="kw">as _</span>;
-            blob.write_all(id_bytes)<span class="question-mark">?</span>;
-            blob.close()<span class="question-mark">?</span>;
+                <span class="kw">let </span><span class="kw-2">mut </span>blob =
+                    transaction.blob_open(rusqlite::DatabaseName::Main, <span class="string">"mls_pending_groups"</span>, <span class="string">"id"</span>, rowid, <span class="bool-val">false</span>)<span class="question-mark">?</span>;
+                <span class="kw">use </span>std::io::Write <span class="kw">as _</span>;
+                blob.write_all(id_bytes)<span class="question-mark">?</span>;
+                blob.close()<span class="question-mark">?</span>;
 
-            rowid
+                rowid
+            }
         };
 
         <span class="kw">let </span><span class="kw-2">mut </span>blob = transaction.blob_open(

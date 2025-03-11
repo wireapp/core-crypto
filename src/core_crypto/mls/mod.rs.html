@@ -720,33 +720,124 @@
 <a href="#719" id="719">719</a>
 <a href="#720" id="720">720</a>
 <a href="#721" id="721">721</a>
-<a href="#722" id="722">722</a></pre></div><pre class="rust"><code><span class="kw">use </span>std::sync::Arc;
+<a href="#722" id="722">722</a>
+<a href="#723" id="723">723</a>
+<a href="#724" id="724">724</a>
+<a href="#725" id="725">725</a>
+<a href="#726" id="726">726</a>
+<a href="#727" id="727">727</a>
+<a href="#728" id="728">728</a>
+<a href="#729" id="729">729</a>
+<a href="#730" id="730">730</a>
+<a href="#731" id="731">731</a>
+<a href="#732" id="732">732</a>
+<a href="#733" id="733">733</a>
+<a href="#734" id="734">734</a>
+<a href="#735" id="735">735</a>
+<a href="#736" id="736">736</a>
+<a href="#737" id="737">737</a>
+<a href="#738" id="738">738</a>
+<a href="#739" id="739">739</a>
+<a href="#740" id="740">740</a>
+<a href="#741" id="741">741</a>
+<a href="#742" id="742">742</a>
+<a href="#743" id="743">743</a>
+<a href="#744" id="744">744</a>
+<a href="#745" id="745">745</a>
+<a href="#746" id="746">746</a>
+<a href="#747" id="747">747</a>
+<a href="#748" id="748">748</a>
+<a href="#749" id="749">749</a>
+<a href="#750" id="750">750</a>
+<a href="#751" id="751">751</a>
+<a href="#752" id="752">752</a>
+<a href="#753" id="753">753</a>
+<a href="#754" id="754">754</a>
+<a href="#755" id="755">755</a>
+<a href="#756" id="756">756</a>
+<a href="#757" id="757">757</a>
+<a href="#758" id="758">758</a>
+<a href="#759" id="759">759</a>
+<a href="#760" id="760">760</a>
+<a href="#761" id="761">761</a>
+<a href="#762" id="762">762</a>
+<a href="#763" id="763">763</a>
+<a href="#764" id="764">764</a>
+<a href="#765" id="765">765</a>
+<a href="#766" id="766">766</a>
+<a href="#767" id="767">767</a>
+<a href="#768" id="768">768</a>
+<a href="#769" id="769">769</a>
+<a href="#770" id="770">770</a>
+<a href="#771" id="771">771</a>
+<a href="#772" id="772">772</a>
+<a href="#773" id="773">773</a>
+<a href="#774" id="774">774</a>
+<a href="#775" id="775">775</a>
+<a href="#776" id="776">776</a>
+<a href="#777" id="777">777</a>
+<a href="#778" id="778">778</a>
+<a href="#779" id="779">779</a>
+<a href="#780" id="780">780</a>
+<a href="#781" id="781">781</a>
+<a href="#782" id="782">782</a>
+<a href="#783" id="783">783</a>
+<a href="#784" id="784">784</a>
+<a href="#785" id="785">785</a>
+<a href="#786" id="786">786</a>
+<a href="#787" id="787">787</a>
+<a href="#788" id="788">788</a>
+<a href="#789" id="789">789</a>
+<a href="#790" id="790">790</a>
+<a href="#791" id="791">791</a>
+<a href="#792" id="792">792</a>
+<a href="#793" id="793">793</a>
+<a href="#794" id="794">794</a>
+<a href="#795" id="795">795</a>
+<a href="#796" id="796">796</a>
+<a href="#797" id="797">797</a>
+<a href="#798" id="798">798</a>
+<a href="#799" id="799">799</a>
+<a href="#800" id="800">800</a>
+<a href="#801" id="801">801</a>
+<a href="#802" id="802">802</a>
+<a href="#803" id="803">803</a>
+<a href="#804" id="804">804</a>
+<a href="#805" id="805">805</a>
+<a href="#806" id="806">806</a>
+<a href="#807" id="807">807</a>
+<a href="#808" id="808">808</a></pre></div><pre class="rust"><code><span class="kw">use </span>std::sync::Arc;
 
 <span class="kw">use </span>async_lock::RwLock;
 <span class="kw">use </span>log::trace;
 
-<span class="kw">use </span><span class="kw">crate</span>::prelude::{
-    identifier::ClientIdentifier, key_package::INITIAL_KEYING_MATERIAL_COUNT, Client, ClientId, ConversationId,
-    CoreCryptoCallbacks, CryptoError, CryptoResult, MlsCentralConfiguration, MlsCiphersuite, MlsConversation,
-    MlsConversationConfiguration, MlsCredentialType, MlsError,
+<span class="kw">use crate</span>::{
+    CoreCrypto, LeafError, MlsError, RecursiveError,
+    prelude::{
+        Client, ClientId, ConversationId, MlsCentralConfiguration, MlsCiphersuite, MlsConversation,
+        MlsConversationConfiguration, MlsCredentialType, MlsTransport, identifier::ClientIdentifier,
+        key_package::INITIAL_KEYING_MATERIAL_COUNT,
+    },
 };
-<span class="kw">use </span><span class="kw">crate</span>::CoreCrypto;
 <span class="kw">use </span>mls_crypto_provider::{EntropySeed, MlsCryptoProvider, MlsCryptoProviderConfiguration};
 <span class="kw">use </span>openmls_traits::OpenMlsCryptoProvider;
 
 <span class="kw">use </span><span class="kw">crate</span>::context::CentralContext;
 
-<span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">mod </span>buffer_external_commit;
 <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">mod </span>ciphersuite;
 <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">mod </span>client;
 <span class="kw">pub mod </span>conversation;
 <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">mod </span>credential;
+<span class="kw">mod </span>error;
 <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">mod </span>external_commit;
 <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">mod </span>external_proposal;
 <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">mod </span>proposal;
 
+<span class="kw">pub use </span>error::{Error, <span class="prelude-ty">Result</span>};
+
 <span class="comment">// Prevents direct instantiation of [MlsCentralConfiguration]
 </span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">mod </span>config {
+    <span class="kw">use </span>ciphersuite::MlsCiphersuite;
     <span class="kw">use </span>mls_crypto_provider::EntropySeed;
 
     <span class="kw">use super</span>::<span class="kw-2">*</span>;
@@ -780,21 +871,21 @@
         /// * `entropy` - External source of entropy for platforms where default source insufficient
         ///
         /// # Errors
-        /// Any empty string parameter will result in a [CryptoError::MalformedIdentifier] error.
+        /// Any empty string parameter will result in a [Error::MalformedIdentifier] error.
         ///
         /// # Examples
         ///
         /// This should fail:
         /// ```
-        /// use core_crypto::{prelude::MlsCentralConfiguration, CryptoError};
+        /// use core_crypto::{prelude::MlsCentralConfiguration, mls::Error};
         ///
         /// let result = MlsCentralConfiguration::try_new(String::new(), String::new(), Some(b"".to_vec().into()), vec![], None, Some(100));
-        /// assert!(matches!(result.unwrap_err(), CryptoError::MalformedIdentifier(_)));
+        /// assert!(matches!(result.unwrap_err(), Error::MalformedIdentifier(_)));
         /// ```
         ///
         /// This should work:
         /// ```
-        /// use core_crypto::prelude::{MlsCentralConfiguration, CryptoError, MlsCiphersuite};
+        /// use core_crypto::prelude::{MlsCentralConfiguration, MlsCiphersuite};
         ///
         /// let result = MlsCentralConfiguration::try_new(
         ///     "/tmp/crypto".to_string(),
@@ -813,26 +904,27 @@
             ciphersuites: Vec&lt;MlsCiphersuite&gt;,
             entropy: <span class="prelude-ty">Option</span>&lt;Vec&lt;u8&gt;&gt;,
             nb_init_key_packages: <span class="prelude-ty">Option</span>&lt;usize&gt;,
-        ) -&gt; CryptoResult&lt;<span class="self">Self</span>&gt; {
+        ) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>&gt; {
             <span class="comment">// TODO: probably more complex rules to enforce. Tracking issue: WPB-9598
             </span><span class="kw">if </span>store_path.trim().is_empty() {
-                <span class="kw">return </span><span class="prelude-val">Err</span>(CryptoError::MalformedIdentifier(<span class="string">"store_path"</span>));
+                <span class="kw">return </span><span class="prelude-val">Err</span>(Error::MalformedIdentifier(<span class="string">"store_path"</span>));
             }
             <span class="comment">// TODO: probably more complex rules to enforce. Tracking issue: WPB-9598
             </span><span class="kw">if </span>identity_key.trim().is_empty() {
-                <span class="kw">return </span><span class="prelude-val">Err</span>(CryptoError::MalformedIdentifier(<span class="string">"identity_key"</span>));
+                <span class="kw">return </span><span class="prelude-val">Err</span>(Error::MalformedIdentifier(<span class="string">"identity_key"</span>));
             }
             <span class="comment">// TODO: probably more complex rules to enforce. Tracking issue: WPB-9598
             </span><span class="kw">if let </span><span class="prelude-val">Some</span>(client_id) = client_id.as_ref() {
                 <span class="kw">if </span>client_id.is_empty() {
-                    <span class="kw">return </span><span class="prelude-val">Err</span>(CryptoError::MalformedIdentifier(<span class="string">"client_id"</span>));
+                    <span class="kw">return </span><span class="prelude-val">Err</span>(Error::MalformedIdentifier(<span class="string">"client_id"</span>));
                 }
             }
             <span class="kw">let </span>external_entropy = entropy
                 .as_deref()
                 .map(|seed| <span class="kw-2">&amp;</span>seed[..EntropySeed::EXPECTED_LEN])
                 .map(EntropySeed::try_from_slice)
-                .transpose()<span class="question-mark">?</span>;
+                .transpose()
+                .map_err(MlsError::wrap(<span class="string">"gathering external entropy"</span>))<span class="question-mark">?</span>;
             <span class="prelude-val">Ok</span>(<span class="self">Self </span>{
                 store_path,
                 identity_key,
@@ -860,6 +952,14 @@
     }
 }
 
+<span class="attr">#[cfg_attr(target_family = <span class="string">"wasm"</span>, async_trait::async_trait(<span class="question-mark">?</span>Send))]
+#[cfg_attr(not(target_family = <span class="string">"wasm"</span>), async_trait::async_trait)]
+
+</span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">trait </span>HasClientAndProvider: Send {
+    <span class="kw">async fn </span>client(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;Client&gt;;
+    <span class="kw">async fn </span>mls_provider(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;MlsCryptoProvider&gt;;
+}
+
 <span class="doccomment">/// The entry point for the MLS CoreCrypto library. This struct provides all functionality to create
 /// and manage groups, make proposals and commits.
 </span><span class="attr">#[derive(Debug, Clone)]
@@ -867,7 +967,19 @@
     <span class="kw">pub</span>(<span class="kw">crate</span>) mls_client: Client,
     <span class="kw">pub</span>(<span class="kw">crate</span>) mls_backend: MlsCryptoProvider,
     <span class="comment">// this should be moved to the context
-    </span><span class="kw">pub</span>(<span class="kw">crate</span>) callbacks: Arc&lt;RwLock&lt;<span class="prelude-ty">Option</span>&lt;std::sync::Arc&lt;<span class="kw">dyn </span>CoreCryptoCallbacks + <span class="lifetime">'static</span>&gt;&gt;&gt;&gt;,
+    </span><span class="kw">pub</span>(<span class="kw">crate</span>) transport: Arc&lt;RwLock&lt;<span class="prelude-ty">Option</span>&lt;Arc&lt;<span class="kw">dyn </span>MlsTransport + <span class="lifetime">'static</span>&gt;&gt;&gt;&gt;,
+}
+
+<span class="attr">#[cfg_attr(target_family = <span class="string">"wasm"</span>, async_trait::async_trait(<span class="question-mark">?</span>Send))]
+#[cfg_attr(not(target_family = <span class="string">"wasm"</span>), async_trait::async_trait)]
+</span><span class="kw">impl </span>HasClientAndProvider <span class="kw">for </span>MlsCentral {
+    <span class="kw">async fn </span>client(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;Client&gt; {
+        <span class="prelude-val">Ok</span>(<span class="self">self</span>.mls_client.clone())
+    }
+
+    <span class="kw">async fn </span>mls_provider(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;MlsCryptoProvider&gt; {
+        <span class="prelude-val">Ok</span>(<span class="self">self</span>.mls_backend.clone())
+    }
 }
 
 <span class="kw">impl </span>MlsCentral {
@@ -886,7 +998,7 @@
     /// * for x509 Credentials if the cetificate chain length is lower than 2
     /// * for Basic Credentials if the signature key cannot be generated either by not supported
     ///   scheme or the key generation fails
-    </span><span class="kw">pub async fn </span>try_new(configuration: MlsCentralConfiguration) -&gt; CryptoResult&lt;<span class="self">Self</span>&gt; {
+    </span><span class="kw">pub async fn </span>try_new(configuration: MlsCentralConfiguration) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>&gt; {
         <span class="comment">// Init backend (crypto + rand + keystore)
         </span><span class="kw">let </span>mls_backend = MlsCryptoProvider::try_new_with_configuration(MlsCryptoProviderConfiguration {
             db_path: <span class="kw-2">&amp;</span>configuration.store_path,
@@ -894,26 +1006,27 @@
             in_memory: <span class="bool-val">false</span>,
             entropy_seed: configuration.external_entropy.clone(),
         })
-        .<span class="kw">await</span><span class="question-mark">?</span>;
+        .<span class="kw">await
+        </span>.map_err(MlsError::wrap(<span class="string">"trying to initialize mls crypto provider object"</span>))<span class="question-mark">?</span>;
         <span class="self">Self</span>::new_with_backend(mls_backend, configuration).<span class="kw">await
     </span>}
 
     <span class="doccomment">/// Same as the [MlsCentral::try_new] but instead, it uses an in memory KeyStore. Although required, the `store_path` parameter from the `MlsCentralConfiguration` won't be used here.
-    </span><span class="kw">pub async fn </span>try_new_in_memory(configuration: MlsCentralConfiguration) -&gt; CryptoResult&lt;<span class="self">Self</span>&gt; {
+    </span><span class="kw">pub async fn </span>try_new_in_memory(configuration: MlsCentralConfiguration) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>&gt; {
         <span class="kw">let </span>mls_backend = MlsCryptoProvider::try_new_with_configuration(MlsCryptoProviderConfiguration {
             db_path: <span class="kw-2">&amp;</span>configuration.store_path,
             identity_key: <span class="kw-2">&amp;</span>configuration.identity_key,
             in_memory: <span class="bool-val">true</span>,
             entropy_seed: configuration.external_entropy.clone(),
         })
-        .<span class="kw">await</span><span class="question-mark">?</span>;
+        .<span class="kw">await
+        </span>.map_err(MlsError::wrap(
+            <span class="string">"trying to initialize mls crypto provider object (in memory)"</span>,
+        ))<span class="question-mark">?</span>;
         <span class="self">Self</span>::new_with_backend(mls_backend, configuration).<span class="kw">await
     </span>}
 
-    <span class="kw">async fn </span>new_with_backend(
-        mls_backend: MlsCryptoProvider,
-        configuration: MlsCentralConfiguration,
-    ) -&gt; CryptoResult&lt;<span class="self">Self</span>&gt; {
+    <span class="kw">async fn </span>new_with_backend(mls_backend: MlsCryptoProvider, configuration: MlsCentralConfiguration) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>&gt; {
         <span class="kw">let </span>mls_client = Client::default();
 
         <span class="comment">// We create the core crypto instance first to enable creating a transaction from it and
@@ -922,11 +1035,14 @@
         </span><span class="kw">let </span>central = <span class="self">Self </span>{
             mls_backend: mls_backend.clone(),
             mls_client: mls_client.clone(),
-            callbacks: Arc::new(<span class="prelude-val">None</span>.into()),
+            transport: Arc::new(<span class="prelude-val">None</span>.into()),
         };
 
         <span class="kw">let </span>cc = CoreCrypto::from(central);
-        <span class="kw">let </span>context = cc.new_transaction().<span class="kw">await</span><span class="question-mark">?</span>;
+        <span class="kw">let </span>context = cc
+            .new_transaction()
+            .<span class="kw">await
+            </span>.map_err(RecursiveError::root(<span class="string">"starting new transaction"</span>))<span class="question-mark">?</span>;
         <span class="kw">if let </span><span class="prelude-val">Some</span>(id) = configuration.client_id {
             mls_client
                 .init(
@@ -937,20 +1053,25 @@
                         .nb_init_key_packages
                         .unwrap_or(INITIAL_KEYING_MATERIAL_COUNT),
                 )
-                .<span class="kw">await</span><span class="question-mark">?
+                .<span class="kw">await
+                </span>.map_err(RecursiveError::mls_client(<span class="string">"initializing mls client"</span>))<span class="question-mark">?
         </span>}
         <span class="kw">let </span>central = cc.mls;
-        context.init_pki_env().<span class="kw">await</span><span class="question-mark">?</span>;
-        context.finish().<span class="kw">await</span><span class="question-mark">?</span>;
+        context
+            .init_pki_env()
+            .<span class="kw">await
+            </span>.map_err(RecursiveError::e2e_identity(<span class="string">"initializing pki environment"</span>))<span class="question-mark">?</span>;
+        context
+            .finish()
+            .<span class="kw">await
+            </span>.map_err(RecursiveError::root(<span class="string">"finishing transaction"</span>))<span class="question-mark">?</span>;
         <span class="prelude-val">Ok</span>(central)
     }
 
-    <span class="doccomment">/// Sets the consumer callbacks (i.e authorization callbacks for CoreCrypto to perform authorization calls when needed)
-    ///
-    /// # Arguments
-    /// * `callbacks` - a callback to be called to perform authorization
-    </span><span class="kw">pub async fn </span>callbacks(<span class="kw-2">&amp;</span><span class="self">self</span>, callbacks: std::sync::Arc&lt;<span class="kw">dyn </span>CoreCryptoCallbacks&gt;) {
-        <span class="self">self</span>.callbacks.write().<span class="kw">await</span>.replace(callbacks);
+    <span class="doccomment">/// Provide the implementation of functions to communicate with the delivery service
+    /// (see [MlsTransport]).
+    </span><span class="kw">pub async fn </span>provide_transport(<span class="kw-2">&amp;</span><span class="self">self</span>, transport: Arc&lt;<span class="kw">dyn </span>MlsTransport&gt;) {
+        <span class="self">self</span>.transport.write().<span class="kw">await</span>.replace(transport);
     }
 
     <span class="doccomment">/// Returns the client's most recent public signature key as a buffer.
@@ -963,80 +1084,63 @@
         <span class="kw-2">&amp;</span><span class="self">self</span>,
         ciphersuite: MlsCiphersuite,
         credential_type: MlsCredentialType,
-    ) -&gt; CryptoResult&lt;Vec&lt;u8&gt;&gt; {
+    ) -&gt; <span class="prelude-ty">Result</span>&lt;Vec&lt;u8&gt;&gt; {
         <span class="kw">let </span>cb = <span class="self">self
             </span>.mls_client
             .find_most_recent_credential_bundle(ciphersuite.signature_algorithm(), credential_type)
-            .<span class="kw">await</span><span class="question-mark">?</span>;
+            .<span class="kw">await
+            </span>.map_err(RecursiveError::mls_client(<span class="string">"finding most recent credential bundle"</span>))<span class="question-mark">?</span>;
         <span class="prelude-val">Ok</span>(cb.signature_key.to_public_vec())
     }
 
     <span class="doccomment">/// Returns the client's id as a buffer
-    </span><span class="kw">pub async fn </span>client_id(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; CryptoResult&lt;ClientId&gt; {
-        <span class="self">self</span>.mls_client.id().<span class="kw">await
-    </span>}
+    </span><span class="kw">pub async fn </span>client_id(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;ClientId&gt; {
+        <span class="self">self</span>.mls_client
+            .id()
+            .<span class="kw">await
+            </span>.map_err(RecursiveError::mls_client(<span class="string">"getting client id"</span>))
+            .map_err(Into::into)
+    }
 
     <span class="doccomment">/// Checks if a given conversation id exists locally
-    </span><span class="kw">pub async fn </span>conversation_exists(<span class="kw-2">&amp;</span><span class="self">self</span>, id: <span class="kw-2">&amp;</span>ConversationId) -&gt; CryptoResult&lt;bool&gt; {
-        <span class="prelude-val">Ok</span>(<span class="self">self</span>.get_conversation(id).<span class="kw">await</span><span class="question-mark">?</span>.is_some())
-    }
-
-    <span class="doccomment">/// Returns the epoch of a given conversation
-    ///
-    /// # Errors
-    /// If the conversation can't be found
-    </span><span class="attr">#[cfg_attr(test, <span class="kw">crate</span>::idempotent)]
-    </span><span class="kw">pub async fn </span>conversation_epoch(<span class="kw-2">&amp;</span><span class="self">self</span>, id: <span class="kw-2">&amp;</span>ConversationId) -&gt; CryptoResult&lt;u64&gt; {
-        <span class="prelude-val">Ok</span>(<span class="self">self
-            </span>.get_conversation(id)
-            .<span class="kw">await</span><span class="question-mark">?
-            </span>.ok_or_else(|| CryptoError::ConversationNotFound(id.clone()))<span class="question-mark">?
-            </span>.group
-            .epoch()
-            .as_u64())
-    }
-
-    <span class="doccomment">/// Returns the ciphersuite of a given conversation
-    ///
-    /// # Errors
-    /// If the conversation can't be found
-    </span><span class="attr">#[cfg_attr(test, <span class="kw">crate</span>::idempotent)]
-    </span><span class="kw">pub async fn </span>conversation_ciphersuite(<span class="kw-2">&amp;</span><span class="self">self</span>, id: <span class="kw-2">&amp;</span>ConversationId) -&gt; CryptoResult&lt;MlsCiphersuite&gt; {
-        <span class="prelude-val">Ok</span>(<span class="self">self
-            </span>.get_conversation(id)
-            .<span class="kw">await</span><span class="question-mark">?
-            </span>.ok_or_else(|| CryptoError::ConversationNotFound(id.clone()))<span class="question-mark">?
-            </span>.ciphersuite())
+    </span><span class="kw">pub async fn </span>conversation_exists(<span class="kw-2">&amp;</span><span class="self">self</span>, id: <span class="kw-2">&amp;</span>ConversationId) -&gt; <span class="prelude-ty">Result</span>&lt;bool&gt; {
+        <span class="kw">match </span><span class="self">self</span>.get_raw_conversation(id).<span class="kw">await </span>{
+            <span class="prelude-val">Ok</span>(<span class="kw">_</span>) =&gt; <span class="prelude-val">Ok</span>(<span class="bool-val">true</span>),
+            <span class="prelude-val">Err</span>(conversation::Error::Leaf(LeafError::ConversationNotFound(<span class="kw">_</span>))) =&gt; <span class="prelude-val">Ok</span>(<span class="bool-val">false</span>),
+            <span class="prelude-val">Err</span>(e) =&gt; {
+                <span class="prelude-val">Err</span>(RecursiveError::mls_conversation(<span class="string">"getting conversation by id to check for existence"</span>)(e).into())
+            }
+        }
     }
 
     <span class="doccomment">/// Generates a random byte array of the specified size
-    </span><span class="kw">pub fn </span>random_bytes(<span class="kw-2">&amp;</span><span class="self">self</span>, len: usize) -&gt; CryptoResult&lt;Vec&lt;u8&gt;&gt; {
+    </span><span class="kw">pub fn </span>random_bytes(<span class="kw-2">&amp;</span><span class="self">self</span>, len: usize) -&gt; <span class="prelude-ty">Result</span>&lt;Vec&lt;u8&gt;&gt; {
         <span class="kw">use </span>openmls_traits::random::OpenMlsRand <span class="kw">as _</span>;
-        <span class="prelude-val">Ok</span>(<span class="self">self</span>.mls_backend.rand().random_vec(len)<span class="question-mark">?</span>)
+        <span class="self">self</span>.mls_backend
+            .rand()
+            .random_vec(len)
+            .map_err(MlsError::wrap(<span class="string">"generating random vector"</span>))
+            .map_err(Into::into)
     }
 
     <span class="doccomment">/// Closes the connection with the local KeyStore
     ///
     /// # Errors
     /// KeyStore errors, such as IO
-    </span><span class="kw">pub async fn </span>close(<span class="self">self</span>) -&gt; CryptoResult&lt;()&gt; {
-        <span class="self">self</span>.mls_backend.close().<span class="kw">await</span><span class="question-mark">?</span>;
-        <span class="prelude-val">Ok</span>(())
-    }
-
-    <span class="doccomment">/// Destroys everything we have, in-memory and on disk.
-    ///
-    /// # Errors
-    /// KeyStore errors, such as IO
-    </span><span class="kw">pub async fn </span>wipe(<span class="self">self</span>) -&gt; CryptoResult&lt;()&gt; {
-        <span class="self">self</span>.mls_backend.destroy_and_reset().<span class="kw">await</span><span class="question-mark">?</span>;
-        <span class="prelude-val">Ok</span>(())
+    </span><span class="kw">pub async fn </span>close(<span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
+        <span class="self">self</span>.mls_backend
+            .close()
+            .<span class="kw">await
+            </span>.map_err(MlsError::wrap(<span class="string">"closing connection with keystore"</span>))
+            .map_err(Into::into)
     }
 
     <span class="doccomment">/// see [mls_crypto_provider::MlsCryptoProvider::reseed]
-    </span><span class="kw">pub async fn </span>reseed(<span class="kw-2">&amp;</span><span class="self">self</span>, seed: <span class="prelude-ty">Option</span>&lt;EntropySeed&gt;) -&gt; CryptoResult&lt;()&gt; {
-        <span class="self">self</span>.mls_backend.reseed(seed)<span class="question-mark">?</span>;
-        <span class="prelude-val">Ok</span>(())
+    </span><span class="kw">pub async fn </span>reseed(<span class="kw-2">&amp;</span><span class="self">self</span>, seed: <span class="prelude-ty">Option</span>&lt;EntropySeed&gt;) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
+        <span class="self">self</span>.mls_backend
+            .reseed(seed)
+            .map_err(MlsError::wrap(<span class="string">"reseeding mls backend"</span>))
+            .map_err(Into::into)
     }
 }
 
@@ -1049,17 +1153,34 @@
         identifier: ClientIdentifier,
         ciphersuites: Vec&lt;MlsCiphersuite&gt;,
         nb_init_key_packages: <span class="prelude-ty">Option</span>&lt;usize&gt;,
-    ) -&gt; CryptoResult&lt;()&gt; {
+    ) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
         <span class="kw">let </span>nb_key_package = nb_init_key_packages.unwrap_or(INITIAL_KEYING_MATERIAL_COUNT);
-        <span class="kw">let </span>mls_client = <span class="self">self</span>.mls_client().<span class="kw">await</span><span class="question-mark">?</span>;
+        <span class="kw">let </span>mls_client = <span class="self">self
+            </span>.mls_client()
+            .<span class="kw">await
+            </span>.map_err(RecursiveError::root(<span class="string">"getting mls client"</span>))<span class="question-mark">?</span>;
         mls_client
-            .init(identifier, <span class="kw-2">&amp;</span>ciphersuites, <span class="kw-2">&amp;</span><span class="self">self</span>.mls_provider().<span class="kw">await</span><span class="question-mark">?</span>, nb_key_package)
-            .<span class="kw">await</span><span class="question-mark">?</span>;
+            .init(
+                identifier,
+                <span class="kw-2">&amp;</span>ciphersuites,
+                <span class="kw-2">&amp;</span><span class="self">self
+                    </span>.mls_provider()
+                    .<span class="kw">await
+                    </span>.map_err(RecursiveError::root(<span class="string">"getting mls provider"</span>))<span class="question-mark">?</span>,
+                nb_key_package,
+            )
+            .<span class="kw">await
+            </span>.map_err(RecursiveError::mls_client(<span class="string">"initializing mls client"</span>))<span class="question-mark">?</span>;
 
         <span class="kw">if </span>mls_client.is_e2ei_capable().<span class="kw">await </span>{
-            <span class="kw">let </span>client_id = mls_client.id().<span class="kw">await</span><span class="question-mark">?</span>;
+            <span class="kw">let </span>client_id = mls_client
+                .id()
+                .<span class="kw">await
+                </span>.map_err(RecursiveError::mls_client(<span class="string">"getting client id"</span>))<span class="question-mark">?</span>;
             <span class="macro">trace!</span>(client_id:% = client_id; <span class="string">"Initializing PKI environment"</span>);
-            <span class="self">self</span>.init_pki_env().<span class="kw">await</span><span class="question-mark">?</span>;
+            <span class="self">self</span>.init_pki_env()
+                .<span class="kw">await
+                </span>.map_err(RecursiveError::e2e_identity(<span class="string">"initializing pki env"</span>))<span class="question-mark">?</span>;
         }
 
         <span class="prelude-val">Ok</span>(())
@@ -1070,12 +1191,21 @@
     ///
     /// This returns the TLS-serialized identity keys (i.e. the signature keypair's public key)
     </span><span class="attr">#[cfg_attr(test, <span class="kw">crate</span>::dispotent)]
-    </span><span class="kw">pub async fn </span>mls_generate_keypairs(<span class="kw-2">&amp;</span><span class="self">self</span>, ciphersuites: Vec&lt;MlsCiphersuite&gt;) -&gt; CryptoResult&lt;Vec&lt;ClientId&gt;&gt; {
+    </span><span class="kw">pub async fn </span>mls_generate_keypairs(<span class="kw-2">&amp;</span><span class="self">self</span>, ciphersuites: Vec&lt;MlsCiphersuite&gt;) -&gt; <span class="prelude-ty">Result</span>&lt;Vec&lt;ClientId&gt;&gt; {
         <span class="self">self</span>.mls_client()
-            .<span class="kw">await</span><span class="question-mark">?
-            </span>.generate_raw_keypairs(<span class="kw-2">&amp;</span>ciphersuites, <span class="kw-2">&amp;</span><span class="self">self</span>.mls_provider().<span class="kw">await</span><span class="question-mark">?</span>)
             .<span class="kw">await
-    </span>}
+            </span>.map_err(RecursiveError::root(<span class="string">"getting mls client"</span>))<span class="question-mark">?
+            </span>.generate_raw_keypairs(
+                <span class="kw-2">&amp;</span>ciphersuites,
+                <span class="kw-2">&amp;</span><span class="self">self
+                    </span>.mls_provider()
+                    .<span class="kw">await
+                    </span>.map_err(RecursiveError::root(<span class="string">"getting mls provider"</span>))<span class="question-mark">?</span>,
+            )
+            .<span class="kw">await
+            </span>.map_err(RecursiveError::mls_client(<span class="string">"generating raw keypairs"</span>))
+            .map_err(Into::into)
+    }
 
     <span class="doccomment">/// Updates the current temporary Client ID with the newly provided one. This is the second step in the externally-generated clients process
     ///
@@ -1086,31 +1216,52 @@
         client_id: ClientId,
         tmp_client_ids: Vec&lt;ClientId&gt;,
         ciphersuites: Vec&lt;MlsCiphersuite&gt;,
-    ) -&gt; CryptoResult&lt;()&gt; {
+    ) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
         <span class="self">self</span>.mls_client()
-            .<span class="kw">await</span><span class="question-mark">?
-            </span>.init_with_external_client_id(client_id, tmp_client_ids, <span class="kw-2">&amp;</span>ciphersuites, <span class="kw-2">&amp;</span><span class="self">self</span>.mls_provider().<span class="kw">await</span><span class="question-mark">?</span>)
             .<span class="kw">await
-    </span>}
+            </span>.map_err(RecursiveError::root(<span class="string">"getting mls client"</span>))<span class="question-mark">?
+            </span>.init_with_external_client_id(
+                client_id,
+                tmp_client_ids,
+                <span class="kw-2">&amp;</span>ciphersuites,
+                <span class="kw-2">&amp;</span><span class="self">self
+                    </span>.mls_provider()
+                    .<span class="kw">await
+                    </span>.map_err(RecursiveError::root(<span class="string">"getting mls provider"</span>))<span class="question-mark">?</span>,
+            )
+            .<span class="kw">await
+            </span>.map_err(RecursiveError::mls_client(
+                <span class="string">"initializing mls client with external client id"</span>,
+            ))
+            .map_err(Into::into)
+    }
 
     <span class="doccomment">/// see [MlsCentral::client_public_key]
     </span><span class="kw">pub async fn </span>client_public_key(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
         ciphersuite: MlsCiphersuite,
         credential_type: MlsCredentialType,
-    ) -&gt; CryptoResult&lt;Vec&lt;u8&gt;&gt; {
+    ) -&gt; <span class="prelude-ty">Result</span>&lt;Vec&lt;u8&gt;&gt; {
         <span class="kw">let </span>cb = <span class="self">self
             </span>.mls_client()
-            .<span class="kw">await</span><span class="question-mark">?
+            .<span class="kw">await
+            </span>.map_err(RecursiveError::root(<span class="string">"getting mls client"</span>))<span class="question-mark">?
             </span>.find_most_recent_credential_bundle(ciphersuite.signature_algorithm(), credential_type)
-            .<span class="kw">await</span><span class="question-mark">?</span>;
+            .<span class="kw">await
+            </span>.map_err(RecursiveError::mls_client(<span class="string">"finding most recent credential bundle"</span>))<span class="question-mark">?</span>;
         <span class="prelude-val">Ok</span>(cb.signature_key.to_public_vec())
     }
 
     <span class="doccomment">/// see [MlsCentral::client_id]
-    </span><span class="kw">pub async fn </span>client_id(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; CryptoResult&lt;ClientId&gt; {
-        <span class="self">self</span>.mls_client().<span class="kw">await</span><span class="question-mark">?</span>.id().<span class="kw">await
-    </span>}
+    </span><span class="kw">pub async fn </span>client_id(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;ClientId&gt; {
+        <span class="self">self</span>.mls_client()
+            .<span class="kw">await
+            </span>.map_err(RecursiveError::root(<span class="string">"getting mls client"</span>))<span class="question-mark">?
+            </span>.id()
+            .<span class="kw">await
+            </span>.map_err(RecursiveError::mls_client(<span class="string">"getting client id"</span>))
+            .map_err(Into::into)
+    }
 
     <span class="doccomment">/// Create a new empty conversation
     ///
@@ -1129,58 +1280,65 @@
         id: <span class="kw-2">&amp;</span>ConversationId,
         creator_credential_type: MlsCredentialType,
         config: MlsConversationConfiguration,
-    ) -&gt; CryptoResult&lt;()&gt; {
-        <span class="kw">if </span><span class="self">self</span>.conversation_exists(id).<span class="kw">await</span><span class="question-mark">? </span>|| <span class="self">self</span>.pending_group_exists(id).<span class="kw">await</span><span class="question-mark">? </span>{
-            <span class="kw">return </span><span class="prelude-val">Err</span>(CryptoError::ConversationAlreadyExists(id.clone()));
+    ) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
+        <span class="kw">if </span><span class="self">self</span>.conversation_exists(id).<span class="kw">await</span><span class="question-mark">? </span>|| <span class="self">self</span>.pending_conversation_exists(id).<span class="kw">await</span><span class="question-mark">? </span>{
+            <span class="kw">return </span><span class="prelude-val">Err</span>(LeafError::ConversationAlreadyExists(id.clone()).into());
         }
         <span class="kw">let </span>conversation = MlsConversation::create(
             id.clone(),
-            <span class="kw-2">&amp;</span><span class="self">self</span>.mls_client().<span class="kw">await</span><span class="question-mark">?</span>,
+            <span class="kw-2">&amp;</span><span class="self">self
+                </span>.mls_client()
+                .<span class="kw">await
+                </span>.map_err(RecursiveError::root(<span class="string">"getting mls client"</span>))<span class="question-mark">?</span>,
             creator_credential_type,
             config,
-            <span class="kw-2">&amp;</span><span class="self">self</span>.mls_provider().<span class="kw">await</span><span class="question-mark">?</span>,
+            <span class="kw-2">&amp;</span><span class="self">self
+                </span>.mls_provider()
+                .<span class="kw">await
+                </span>.map_err(RecursiveError::root(<span class="string">"getting mls provider"</span>))<span class="question-mark">?</span>,
         )
-        .<span class="kw">await</span><span class="question-mark">?</span>;
+        .<span class="kw">await
+        </span>.map_err(RecursiveError::mls_conversation(<span class="string">"creating conversation"</span>))<span class="question-mark">?</span>;
 
-        <span class="self">self</span>.mls_groups().<span class="kw">await</span><span class="question-mark">?</span>.insert(id.clone(), conversation);
+        <span class="self">self</span>.mls_groups()
+            .<span class="kw">await
+            </span>.map_err(RecursiveError::root(<span class="string">"getting mls groups"</span>))<span class="question-mark">?
+            </span>.insert(id.clone(), conversation);
 
         <span class="prelude-val">Ok</span>(())
     }
 
     <span class="doccomment">/// Checks if a given conversation id exists locally
-    </span><span class="kw">pub async fn </span>conversation_exists(<span class="kw-2">&amp;</span><span class="self">self</span>, id: <span class="kw-2">&amp;</span>ConversationId) -&gt; CryptoResult&lt;bool&gt; {
+    </span><span class="kw">pub async fn </span>conversation_exists(<span class="kw-2">&amp;</span><span class="self">self</span>, id: <span class="kw-2">&amp;</span>ConversationId) -&gt; <span class="prelude-ty">Result</span>&lt;bool&gt; {
         <span class="prelude-val">Ok</span>(<span class="self">self
             </span>.mls_groups()
-            .<span class="kw">await</span><span class="question-mark">?
-            </span>.get_fetch(id, <span class="kw-2">&amp;</span><span class="self">self</span>.mls_provider().<span class="kw">await</span><span class="question-mark">?</span>.keystore(), <span class="prelude-val">None</span>)
+            .<span class="kw">await
+            </span>.map_err(RecursiveError::root(<span class="string">"getting mls groups"</span>))<span class="question-mark">?
+            </span>.get_fetch(
+                id,
+                <span class="kw-2">&amp;</span><span class="self">self
+                    </span>.mls_provider()
+                    .<span class="kw">await
+                    </span>.map_err(RecursiveError::root(<span class="string">"getting mls provider"</span>))<span class="question-mark">?
+                    </span>.keystore(),
+                <span class="prelude-val">None</span>,
+            )
             .<span class="kw">await
             </span>.ok()
             .flatten()
             .is_some())
     }
 
-    <span class="doccomment">/// Returns the epoch of a given conversation
-    ///
-    /// # Errors
-    /// If the conversation can't be found
-    </span><span class="attr">#[cfg_attr(test, <span class="kw">crate</span>::idempotent)]
-    </span><span class="kw">pub async fn </span>conversation_epoch(<span class="kw-2">&amp;</span><span class="self">self</span>, id: <span class="kw-2">&amp;</span>ConversationId) -&gt; CryptoResult&lt;u64&gt; {
-        <span class="prelude-val">Ok</span>(<span class="self">self</span>.get_conversation(id).<span class="kw">await</span><span class="question-mark">?</span>.read().<span class="kw">await</span>.group.epoch().as_u64())
-    }
-
-    <span class="doccomment">/// Returns the ciphersuite of a given conversation
-    ///
-    /// # Errors
-    /// If the conversation can't be found
-    </span><span class="attr">#[cfg_attr(test, <span class="kw">crate</span>::idempotent)]
-    </span><span class="kw">pub async fn </span>conversation_ciphersuite(<span class="kw-2">&amp;</span><span class="self">self</span>, id: <span class="kw-2">&amp;</span>ConversationId) -&gt; CryptoResult&lt;MlsCiphersuite&gt; {
-        <span class="prelude-val">Ok</span>(<span class="self">self</span>.get_conversation(id).<span class="kw">await</span><span class="question-mark">?</span>.read().<span class="kw">await</span>.ciphersuite())
-    }
-
     <span class="doccomment">/// Generates a random byte array of the specified size
-    </span><span class="kw">pub async fn </span>random_bytes(<span class="kw-2">&amp;</span><span class="self">self</span>, len: usize) -&gt; CryptoResult&lt;Vec&lt;u8&gt;&gt; {
+    </span><span class="kw">pub async fn </span>random_bytes(<span class="kw-2">&amp;</span><span class="self">self</span>, len: usize) -&gt; <span class="prelude-ty">Result</span>&lt;Vec&lt;u8&gt;&gt; {
         <span class="kw">use </span>openmls_traits::random::OpenMlsRand <span class="kw">as _</span>;
-        <span class="prelude-val">Ok</span>(<span class="self">self</span>.mls_provider().<span class="kw">await</span><span class="question-mark">?</span>.rand().random_vec(len)<span class="question-mark">?</span>)
+        <span class="self">self</span>.mls_provider()
+            .<span class="kw">await
+            </span>.map_err(RecursiveError::root(<span class="string">"getting mls provider"</span>))<span class="question-mark">?
+            </span>.rand()
+            .random_vec(len)
+            .map_err(MlsError::wrap(<span class="string">"generating random vector"</span>))
+            .map_err(Into::into)
     }
 }
 
@@ -1188,17 +1346,18 @@
 </span><span class="kw">mod </span>tests {
     <span class="kw">use </span>wasm_bindgen_test::<span class="kw-2">*</span>;
 
-    <span class="kw">use </span><span class="kw">crate</span>::prelude::{CertificateBundle, ClientIdentifier, MlsCredentialType, INITIAL_KEYING_MATERIAL_COUNT};
+    <span class="kw">use </span><span class="kw">crate</span>::prelude::{CertificateBundle, ClientIdentifier, INITIAL_KEYING_MATERIAL_COUNT, MlsCredentialType};
     <span class="kw">use crate</span>::{
-        mls::{CryptoError, MlsCentral, MlsCentralConfiguration},
-        test_utils::{x509::X509TestChain, <span class="kw-2">*</span>},
         CoreCrypto,
+        mls::{MlsCentral, MlsCentralConfiguration},
+        test_utils::{x509::X509TestChain, <span class="kw-2">*</span>},
     };
 
     <span class="macro">wasm_bindgen_test_configure!</span>(run_in_browser);
 
     <span class="kw">mod </span>conversation_epoch {
         <span class="kw">use super</span>::<span class="kw-2">*</span>;
+        <span class="kw">use </span><span class="kw">crate</span>::mls::conversation::Conversation <span class="kw">as _</span>;
 
         <span class="attr">#[apply(all_cred_cipher)]
         #[wasm_bindgen_test]
@@ -1211,7 +1370,7 @@
                         .new_conversation(<span class="kw-2">&amp;</span>id, case.credential_type, case.cfg.clone())
                         .<span class="kw">await
                         </span>.unwrap();
-                    <span class="kw">let </span>epoch = central.context.conversation_epoch(<span class="kw-2">&amp;</span>id).<span class="kw">await</span>.unwrap();
+                    <span class="kw">let </span>epoch = central.context.conversation_guard(<span class="kw-2">&amp;</span>id).<span class="kw">await</span>.unwrap().epoch().<span class="kw">await</span>;
                     <span class="macro">assert_eq!</span>(epoch, <span class="number">0</span>);
                 })
             })
@@ -1230,7 +1389,13 @@
                         .<span class="kw">await
                         </span>.unwrap();
                     alice_central.invite_all(<span class="kw-2">&amp;</span>case, <span class="kw-2">&amp;</span>id, [<span class="kw-2">&amp;</span>bob_central]).<span class="kw">await</span>.unwrap();
-                    <span class="kw">let </span>epoch = alice_central.context.conversation_epoch(<span class="kw-2">&amp;</span>id).<span class="kw">await</span>.unwrap();
+                    <span class="kw">let </span>epoch = alice_central
+                        .context
+                        .conversation_guard(<span class="kw-2">&amp;</span>id)
+                        .<span class="kw">await
+                        </span>.unwrap()
+                        .epoch()
+                        .<span class="kw">await</span>;
                     <span class="macro">assert_eq!</span>(epoch, <span class="number">1</span>);
                 })
             })
@@ -1240,11 +1405,16 @@
         <span class="attr">#[apply(all_cred_cipher)]
         #[wasm_bindgen_test]
         </span><span class="kw">async fn </span>conversation_not_found(case: TestCase) {
+            <span class="kw">use crate</span>::{LeafError, mls};
+
             run_test_with_central(case.clone(), <span class="kw">move </span>|[central]| {
                 Box::pin(<span class="kw">async move </span>{
                     <span class="kw">let </span>id = conversation_id();
-                    <span class="kw">let </span>err = central.context.conversation_epoch(<span class="kw-2">&amp;</span>id).<span class="kw">await</span>.unwrap_err();
-                    <span class="macro">assert!</span>(<span class="macro">matches!</span>(err, CryptoError::ConversationNotFound(conv_id) <span class="kw">if </span>conv_id == id));
+                    <span class="kw">let </span>err = central.context.conversation_guard(<span class="kw-2">&amp;</span>id).<span class="kw">await</span>.unwrap_err();
+                    <span class="macro">assert!</span>(<span class="macro">matches!</span>(
+                        err,
+                        mls::conversation::Error::Leaf(LeafError::ConversationNotFound(i)) <span class="kw">if </span>i == id
+                    ));
                 })
             })
             .<span class="kw">await</span>;
@@ -1252,7 +1422,7 @@
     }
 
     <span class="kw">mod </span>invariants {
-        <span class="kw">use </span><span class="kw">crate</span>::prelude::MlsCiphersuite;
+        <span class="kw">use crate</span>::{mls, prelude::MlsCiphersuite};
 
         <span class="kw">use super</span>::<span class="kw-2">*</span>;
 
@@ -1292,7 +1462,7 @@
             );
             <span class="macro">assert!</span>(<span class="macro">matches!</span>(
                 configuration.unwrap_err(),
-                CryptoError::MalformedIdentifier(<span class="string">"store_path"</span>)
+                mls::Error::MalformedIdentifier(<span class="string">"store_path"</span>)
             ));
         }
 
@@ -1312,7 +1482,7 @@
                     );
                     <span class="macro">assert!</span>(<span class="macro">matches!</span>(
                         configuration.unwrap_err(),
-                        CryptoError::MalformedIdentifier(<span class="string">"identity_key"</span>)
+                        mls::Error::MalformedIdentifier(<span class="string">"identity_key"</span>)
                     ));
                 })
             })
@@ -1335,7 +1505,7 @@
                     );
                     <span class="macro">assert!</span>(<span class="macro">matches!</span>(
                         configuration.unwrap_err(),
-                        CryptoError::MalformedIdentifier(<span class="string">"client_id"</span>)
+                        mls::Error::MalformedIdentifier(<span class="string">"client_id"</span>)
                     ));
                 })
             })
@@ -1346,6 +1516,8 @@
     <span class="attr">#[apply(all_cred_cipher)]
     #[wasm_bindgen_test]
     </span><span class="kw">async fn </span>create_conversation_should_fail_when_already_exists(case: TestCase) {
+        <span class="kw">use crate</span>::{LeafError, mls};
+
         run_test_with_client_ids(case.clone(), [<span class="string">"alice"</span>], <span class="kw">move </span>|[alice_central]| {
             Box::pin(<span class="kw">async move </span>{
                 <span class="kw">let </span>id = conversation_id();
@@ -1361,7 +1533,7 @@
                     .context
                     .new_conversation(<span class="kw-2">&amp;</span>id, case.credential_type, case.cfg.clone())
                     .<span class="kw">await</span>;
-                <span class="macro">assert!</span>(<span class="macro">matches!</span>(repeat_create.unwrap_err(), CryptoError::ConversationAlreadyExists(i) <span class="kw">if </span>i == id));
+                <span class="macro">assert!</span>(<span class="macro">matches!</span>(repeat_create.unwrap_err(), mls::Error::Leaf(LeafError::ConversationAlreadyExists(i)) <span class="kw">if </span>i == id));
             })
         })
         .<span class="kw">await</span>;

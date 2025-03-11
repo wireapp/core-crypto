@@ -225,17 +225,37 @@
 <a href="#224" id="224">224</a>
 <a href="#225" id="225">225</a>
 <a href="#226" id="226">226</a>
-<a href="#227" id="227">227</a></pre></div><pre class="rust"><code><span class="kw">use </span>std::borrow::BorrowMut;
+<a href="#227" id="227">227</a>
+<a href="#228" id="228">228</a>
+<a href="#229" id="229">229</a>
+<a href="#230" id="230">230</a>
+<a href="#231" id="231">231</a>
+<a href="#232" id="232">232</a>
+<a href="#233" id="233">233</a>
+<a href="#234" id="234">234</a>
+<a href="#235" id="235">235</a>
+<a href="#236" id="236">236</a>
+<a href="#237" id="237">237</a>
+<a href="#238" id="238">238</a>
+<a href="#239" id="239">239</a>
+<a href="#240" id="240">240</a>
+<a href="#241" id="241">241</a>
+<a href="#242" id="242">242</a>
+<a href="#243" id="243">243</a>
+<a href="#244" id="244">244</a>
+<a href="#245" id="245">245</a>
+<a href="#246" id="246">246</a>
+<a href="#247" id="247">247</a>
+<a href="#248" id="248">248</a></pre></div><pre class="rust"><code><span class="kw">use </span>std::borrow::BorrowMut;
 
-<span class="kw">use </span><span class="kw">crate</span>::context::CentralContext;
+<span class="kw">use super</span>::{Error, <span class="prelude-ty">Result</span>};
 <span class="kw">use crate</span>::{
+    LeafError, MlsError, RecursiveError,
+    context::CentralContext,
     e2e_identity::init_certificates::NewCrlDistributionPoint,
     group_store::GroupStore,
     mls::credential::crl::{extract_crl_uris_from_group, get_new_crl_distribution_points},
-    prelude::{
-        ConversationId, CryptoError, CryptoResult, MlsConversation, MlsConversationConfiguration,
-        MlsCustomConfiguration, MlsError,
-    },
+    prelude::{ConversationId, MlsConversation, MlsConversationConfiguration, MlsCustomConfiguration},
 };
 <span class="kw">use </span>core_crypto_keystore::{connection::FetchFromDatabase, entities::PersistedMlsPendingGroup};
 <span class="kw">use </span>mls_crypto_provider::MlsCryptoProvider;
@@ -269,9 +289,10 @@
         <span class="kw-2">&amp;</span><span class="self">self</span>,
         welcome: Vec&lt;u8&gt;,
         custom_cfg: MlsCustomConfiguration,
-    ) -&gt; CryptoResult&lt;WelcomeBundle&gt; {
+    ) -&gt; <span class="prelude-ty">Result</span>&lt;WelcomeBundle&gt; {
         <span class="kw">let </span><span class="kw-2">mut </span>cursor = std::io::Cursor::new(welcome);
-        <span class="kw">let </span>welcome = MlsMessageIn::tls_deserialize(<span class="kw-2">&amp;mut </span>cursor).map_err(MlsError::from)<span class="question-mark">?</span>;
+        <span class="kw">let </span>welcome =
+            MlsMessageIn::tls_deserialize(<span class="kw-2">&amp;mut </span>cursor).map_err(Error::tls_deserialize(<span class="string">"mls message in (welcome)"</span>))<span class="question-mark">?</span>;
         <span class="self">self</span>.process_welcome_message(welcome, custom_cfg).<span class="kw">await
     </span>}
 
@@ -293,10 +314,11 @@
         <span class="kw-2">&amp;</span><span class="self">self</span>,
         welcome: MlsMessageIn,
         custom_cfg: MlsCustomConfiguration,
-    ) -&gt; CryptoResult&lt;WelcomeBundle&gt; {
-        <span class="kw">let </span>welcome = <span class="kw">match </span>welcome.extract() {
-            MlsMessageInBody::Welcome(welcome) =&gt; welcome,
-            <span class="kw">_ </span>=&gt; <span class="kw">return </span><span class="prelude-val">Err</span>(CryptoError::ConsumerError),
+    ) -&gt; <span class="prelude-ty">Result</span>&lt;WelcomeBundle&gt; {
+        <span class="kw">let </span>MlsMessageInBody::Welcome(welcome) = welcome.extract() <span class="kw">else </span>{
+            <span class="kw">return </span><span class="prelude-val">Err</span>(Error::CallerError(
+                <span class="string">"the message provided to process_welcome_message was not a welcome message"</span>,
+            ));
         };
         <span class="kw">let </span>cs = welcome.ciphersuite().into();
         <span class="kw">let </span>configuration = MlsConversationConfiguration {
@@ -304,15 +326,26 @@
             custom: custom_cfg,
             ..Default::default()
         };
-        <span class="kw">let </span>mls_provider = <span class="self">self</span>.mls_provider().<span class="kw">await</span><span class="question-mark">?</span>;
-        <span class="kw">let </span><span class="kw-2">mut </span>mls_groups = <span class="self">self</span>.mls_groups().<span class="kw">await</span><span class="question-mark">?</span>;
+        <span class="kw">let </span>mls_provider = <span class="self">self
+            </span>.mls_provider()
+            .<span class="kw">await
+            </span>.map_err(RecursiveError::root(<span class="string">"getting mls provider"</span>))<span class="question-mark">?</span>;
+        <span class="kw">let </span><span class="kw-2">mut </span>mls_groups = <span class="self">self
+            </span>.mls_groups()
+            .<span class="kw">await
+            </span>.map_err(RecursiveError::root(<span class="string">"getting mls groups"</span>))<span class="question-mark">?</span>;
         <span class="kw">let </span>conversation =
             MlsConversation::from_welcome_message(welcome, configuration, <span class="kw-2">&amp;</span>mls_provider, mls_groups.borrow_mut())
                 .<span class="kw">await</span><span class="question-mark">?</span>;
 
         <span class="comment">// We wait for the group to be created then we iterate through all members
-        </span><span class="kw">let </span>crl_new_distribution_points =
-            get_new_crl_distribution_points(<span class="kw-2">&amp;</span>mls_provider, extract_crl_uris_from_group(<span class="kw-2">&amp;</span>conversation.group)<span class="question-mark">?</span>).<span class="kw">await</span><span class="question-mark">?</span>;
+        </span><span class="kw">let </span>crl_new_distribution_points = get_new_crl_distribution_points(
+            <span class="kw-2">&amp;</span>mls_provider,
+            extract_crl_uris_from_group(<span class="kw-2">&amp;</span>conversation.group)
+                .map_err(RecursiveError::mls_credential(<span class="string">"extracting crl uris from group"</span>))<span class="question-mark">?</span>,
+        )
+        .<span class="kw">await
+        </span>.map_err(RecursiveError::mls_credential(<span class="string">"getting new crl distribution points"</span>))<span class="question-mark">?</span>;
 
         <span class="kw">let </span>id = conversation.id.clone();
         mls_groups.insert(id.clone(), conversation);
@@ -340,15 +373,15 @@
         configuration: MlsConversationConfiguration,
         backend: <span class="kw-2">&amp;</span>MlsCryptoProvider,
         mls_groups: <span class="kw-2">&amp;mut </span>GroupStore&lt;MlsConversation&gt;,
-    ) -&gt; CryptoResult&lt;<span class="self">Self</span>&gt; {
+    ) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>&gt; {
         <span class="kw">let </span>mls_group_config = configuration.as_openmls_default_configuration()<span class="question-mark">?</span>;
 
         <span class="kw">let </span>group = MlsGroup::new_from_welcome(backend, <span class="kw-2">&amp;</span>mls_group_config, welcome, <span class="prelude-val">None</span>).<span class="kw">await</span>;
 
         <span class="kw">let </span>group = <span class="kw">match </span>group {
             <span class="prelude-val">Err</span>(openmls::prelude::WelcomeError::NoMatchingKeyPackage)
-            | <span class="prelude-val">Err</span>(openmls::prelude::WelcomeError::NoMatchingEncryptionKey) =&gt; <span class="kw">return </span><span class="prelude-val">Err</span>(CryptoError::OrphanWelcome),
-            <span class="kw">_ </span>=&gt; group.map_err(MlsError::from)<span class="question-mark">?</span>,
+            | <span class="prelude-val">Err</span>(openmls::prelude::WelcomeError::NoMatchingEncryptionKey) =&gt; <span class="kw">return </span><span class="prelude-val">Err</span>(Error::OrphanWelcome),
+            <span class="kw">_ </span>=&gt; group.map_err(MlsError::wrap(<span class="string">"group could not be created from welcome"</span>))<span class="question-mark">?</span>,
         };
 
         <span class="kw">let </span>id = ConversationId::from(group.group_id().as_slice());
@@ -359,7 +392,7 @@
         <span class="kw">let </span>pending_group_exists = pending_group.ok().flatten().is_some();
 
         <span class="kw">if </span>conversation_exists || pending_group_exists {
-            <span class="kw">return </span><span class="prelude-val">Err</span>(CryptoError::ConversationAlreadyExists(id));
+            <span class="kw">return </span><span class="prelude-val">Err</span>(LeafError::ConversationAlreadyExists(id).into());
         }
 
         <span class="self">Self</span>::from_mls_group(group, configuration, backend).<span class="kw">await
@@ -370,7 +403,7 @@
 </span><span class="kw">mod </span>tests {
     <span class="kw">use </span>wasm_bindgen_test::<span class="kw-2">*</span>;
 
-    <span class="kw">use crate</span>::{prelude::MlsConversationCreationMessage, test_utils::<span class="kw-2">*</span>};
+    <span class="kw">use </span><span class="kw">crate</span>::test_utils::<span class="kw-2">*</span>;
 
     <span class="kw">use super</span>::<span class="kw-2">*</span>;
 
@@ -394,12 +427,16 @@
                     .<span class="kw">await
                     </span>.unwrap();
 
-                <span class="kw">let </span>MlsConversationCreationMessage { welcome, .. } = alice_central
+                alice_central
                     .context
-                    .add_members_to_conversation(<span class="kw-2">&amp;</span>id, <span class="macro">vec!</span>[bob])
+                    .conversation_guard(<span class="kw-2">&amp;</span>id)
+                    .<span class="kw">await
+                    </span>.unwrap()
+                    .add_members(<span class="macro">vec!</span>[bob])
                     .<span class="kw">await
                     </span>.unwrap();
 
+                <span class="kw">let </span>welcome = alice_central.mls_transport.latest_welcome_message().<span class="kw">await</span>;
                 <span class="comment">// Bob accepts the welcome message, and as such, it should prune the used keypackage from the store
                 </span>bob_central
                     .context
@@ -429,13 +466,16 @@
                     .<span class="kw">await
                     </span>.unwrap();
                 <span class="kw">let </span>bob = bob_central.rand_key_package(<span class="kw-2">&amp;</span>case).<span class="kw">await</span>;
-                <span class="kw">let </span>welcome = alice_central
+                alice_central
                     .context
-                    .add_members_to_conversation(<span class="kw-2">&amp;</span>id, <span class="macro">vec!</span>[bob])
+                    .conversation_guard(<span class="kw-2">&amp;</span>id)
                     .<span class="kw">await
                     </span>.unwrap()
-                    .welcome;
+                    .add_members(<span class="macro">vec!</span>[bob])
+                    .<span class="kw">await
+                    </span>.unwrap();
 
+                <span class="kw">let </span>welcome = alice_central.mls_transport.latest_welcome_message().<span class="kw">await</span>;
                 <span class="comment">// Meanwhile Bob creates a conversation with the exact same id as the one he's trying to join
                 </span>bob_central
                     .context
@@ -446,7 +486,9 @@
                     .context
                     .process_welcome_message(welcome.into(), case.custom_cfg())
                     .<span class="kw">await</span>;
-                <span class="macro">assert!</span>(<span class="macro">matches!</span>(join_welcome.unwrap_err(), CryptoError::ConversationAlreadyExists(i) <span class="kw">if </span>i == id));
+                <span class="macro">assert!</span>(
+                    <span class="macro">matches!</span>(join_welcome.unwrap_err(), Error::Leaf(LeafError::ConversationAlreadyExists(i)) <span class="kw">if </span>i == id)
+                );
             })
         })
         .<span class="kw">await</span>;

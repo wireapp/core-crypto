@@ -102,81 +102,7 @@
 <a href="#101" id="101">101</a>
 <a href="#102" id="102">102</a>
 <a href="#103" id="103">103</a>
-<a href="#104" id="104">104</a>
-<a href="#105" id="105">105</a>
-<a href="#106" id="106">106</a>
-<a href="#107" id="107">107</a>
-<a href="#108" id="108">108</a>
-<a href="#109" id="109">109</a>
-<a href="#110" id="110">110</a>
-<a href="#111" id="111">111</a>
-<a href="#112" id="112">112</a>
-<a href="#113" id="113">113</a>
-<a href="#114" id="114">114</a>
-<a href="#115" id="115">115</a>
-<a href="#116" id="116">116</a>
-<a href="#117" id="117">117</a>
-<a href="#118" id="118">118</a>
-<a href="#119" id="119">119</a>
-<a href="#120" id="120">120</a>
-<a href="#121" id="121">121</a>
-<a href="#122" id="122">122</a>
-<a href="#123" id="123">123</a>
-<a href="#124" id="124">124</a>
-<a href="#125" id="125">125</a>
-<a href="#126" id="126">126</a>
-<a href="#127" id="127">127</a>
-<a href="#128" id="128">128</a>
-<a href="#129" id="129">129</a>
-<a href="#130" id="130">130</a>
-<a href="#131" id="131">131</a>
-<a href="#132" id="132">132</a>
-<a href="#133" id="133">133</a>
-<a href="#134" id="134">134</a>
-<a href="#135" id="135">135</a>
-<a href="#136" id="136">136</a>
-<a href="#137" id="137">137</a>
-<a href="#138" id="138">138</a>
-<a href="#139" id="139">139</a>
-<a href="#140" id="140">140</a>
-<a href="#141" id="141">141</a>
-<a href="#142" id="142">142</a>
-<a href="#143" id="143">143</a>
-<a href="#144" id="144">144</a>
-<a href="#145" id="145">145</a>
-<a href="#146" id="146">146</a>
-<a href="#147" id="147">147</a>
-<a href="#148" id="148">148</a>
-<a href="#149" id="149">149</a>
-<a href="#150" id="150">150</a>
-<a href="#151" id="151">151</a>
-<a href="#152" id="152">152</a>
-<a href="#153" id="153">153</a>
-<a href="#154" id="154">154</a>
-<a href="#155" id="155">155</a>
-<a href="#156" id="156">156</a>
-<a href="#157" id="157">157</a>
-<a href="#158" id="158">158</a>
-<a href="#159" id="159">159</a>
-<a href="#160" id="160">160</a>
-<a href="#161" id="161">161</a>
-<a href="#162" id="162">162</a>
-<a href="#163" id="163">163</a>
-<a href="#164" id="164">164</a>
-<a href="#165" id="165">165</a>
-<a href="#166" id="166">166</a>
-<a href="#167" id="167">167</a>
-<a href="#168" id="168">168</a>
-<a href="#169" id="169">169</a>
-<a href="#170" id="170">170</a>
-<a href="#171" id="171">171</a>
-<a href="#172" id="172">172</a>
-<a href="#173" id="173">173</a>
-<a href="#174" id="174">174</a>
-<a href="#175" id="175">175</a>
-<a href="#176" id="176">176</a>
-<a href="#177" id="177">177</a>
-<a href="#178" id="178">178</a></pre></div><pre class="rust"><code><span class="comment">// Wire
+<a href="#104" id="104">104</a></pre></div><pre class="rust"><code><span class="comment">// Wire
 // Copyright (C) 2022 Wire Swiss GmbH
 
 // This program is free software: you can redistribute it and/or modify
@@ -192,37 +118,13 @@
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see http://www.gnu.org/licenses/.
 
-</span><span class="kw">use </span><span class="kw">crate</span>::util::RunningProcess;
-<span class="kw">use </span><span class="kw">crate</span>::TEST_SERVER_PORT;
+</span><span class="kw">use </span><span class="kw">crate</span>::TEST_SERVER_PORT;
+<span class="kw">use </span><span class="kw">crate</span>::util::RunningProcess;
 <span class="kw">use </span>color_eyre::eyre::Result;
 <span class="kw">use </span>std::net::SocketAddr;
+<span class="kw">use </span>std::path::PathBuf;
 
-<span class="kw">async fn </span>find_wasm_file(deploy_path: <span class="kw-2">&amp;</span>std::path::Path) -&gt; <span class="prelude-ty">Result</span>&lt;std::path::PathBuf&gt; {
-    <span class="kw">let </span>wasm_base_path = deploy_path.to_path_buf();
-    <span class="kw">let </span>wasm_path = <span class="kw">if </span>wasm_base_path.exists() {
-        <span class="kw">let </span><span class="kw-2">mut </span>wasm_dir = tokio::fs::read_dir(wasm_base_path.clone()).<span class="kw">await</span><span class="question-mark">?</span>;
-        <span class="kw">let </span><span class="kw-2">mut </span>maybe_wasm_path = <span class="prelude-val">None</span>;
-        <span class="kw">while let </span><span class="prelude-val">Some</span>(entry) = wasm_dir.next_entry().<span class="kw">await</span><span class="question-mark">? </span>{
-            <span class="macro">log::debug!</span>(<span class="string">"wasm dir entry: {entry:?}"</span>);
-            <span class="kw">if let </span><span class="prelude-val">Some</span>(ext) = entry.path().extension() {
-                <span class="kw">if </span>ext == std::ffi::OsStr::new(<span class="string">"wasm"</span>) {
-                    <span class="macro">log::debug!</span>(<span class="string">"found"</span>);
-                    maybe_wasm_path = <span class="prelude-val">Some</span>(entry);
-                }
-            }
-        }
-        maybe_wasm_path
-            .map(|entry| entry.path())
-            .unwrap_or_else(|| wasm_base_path.join(<span class="string">".not-found"</span>))
-    } <span class="kw">else </span>{
-        wasm_base_path.join(<span class="string">".not-found"</span>)
-    };
-
-    <span class="prelude-val">Ok</span>(wasm_path)
-}
-
-<span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">async fn </span>build_wasm() -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
-    <span class="kw">use </span>sha2::{Digest, Sha256};
+<span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">async fn </span>build_wasm(wasm_deploy_path: PathBuf) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
     <span class="kw">use </span>tokio::process::Command;
 
     <span class="kw">let </span>cwd = std::env::current_dir()<span class="question-mark">?</span>;
@@ -249,102 +151,52 @@
         spinner.success(<span class="string">"Cryptobox ESM bundle [OK]"</span>);
     }
 
-    <span class="kw">let </span><span class="kw-2">mut </span>spinner = RunningProcess::new(<span class="string">"Building WASM bundle..."</span>, <span class="bool-val">false</span>);
+    <span class="kw">let </span>spinner = RunningProcess::new(<span class="string">"Building WASM bundle..."</span>, <span class="bool-val">false</span>);
 
-    <span class="kw">let </span>wasm_deploy_path = cwd.join(<span class="string">"platforms/web"</span>);
+    Command::new(<span class="string">"cargo"</span>)
+        .args([<span class="string">"make"</span>, <span class="string">"wasm"</span>])
+        .current_dir(cwd.join(<span class="string">"crypto-ffi"</span>))
+        .stdout(std::process::Stdio::null())
+        .stderr(std::process::Stdio::null())
+        .status()
+        .<span class="kw">await</span><span class="question-mark">?</span>;
 
-    <span class="kw">let </span>exe_path = std::env::current_exe()<span class="question-mark">?</span>;
-    <span class="kw">let </span>exe_folder = exe_path.parent().unwrap();
-    <span class="kw">let </span>wasm_cache_path = exe_folder.join(<span class="string">".wasm.cache"</span>);
-    <span class="kw">let </span>js_cache_path = exe_folder.join(<span class="string">".js.cache"</span>);
-
-    <span class="kw">let </span>wasm_path = find_wasm_file(<span class="kw-2">&amp;</span>wasm_deploy_path).<span class="kw">await</span><span class="question-mark">?</span>;
-    <span class="kw">let </span>js_path = wasm_deploy_path.join(<span class="string">"corecrypto.js"</span>);
+    Command::new(<span class="string">"bun"</span>)
+        .args([<span class="string">"run"</span>, <span class="string">"build"</span>])
+        .current_dir(cwd.join(<span class="string">"crypto-ffi/bindings/js"</span>))
+        .stdout(std::process::Stdio::null())
+        .stderr(std::process::Stdio::null())
+        .status()
+        .<span class="kw">await</span><span class="question-mark">?</span>;
 
     std::fs::copy(
         cwd.join(<span class="string">"crypto-ffi/bindings/js/test/index.html"</span>),
         wasm_deploy_path.join(<span class="string">"index.html"</span>),
     )<span class="question-mark">?</span>;
 
-    <span class="kw">if </span>!wasm_path.exists() || !js_path.exists() {
-        spinner.update(<span class="string">"WASM: No JS/WASM files found, rebuilding; Please wait..."</span>);
-    } <span class="kw">else if </span>wasm_cache_path.exists() &amp;&amp; js_cache_path.exists() {
-        <span class="kw">let </span>wasm_hash = hex::decode(tokio::fs::read_to_string(wasm_cache_path.clone()).<span class="kw">await</span><span class="question-mark">?</span>)<span class="question-mark">?</span>;
-        <span class="kw">let </span>js_hash = hex::decode(tokio::fs::read_to_string(js_cache_path.clone()).<span class="kw">await</span><span class="question-mark">?</span>)<span class="question-mark">?</span>;
+    std::fs::copy(
+        cwd.join(<span class="string">"crypto-ffi/bindings/js/src/corecrypto.js"</span>),
+        wasm_deploy_path.join(<span class="string">"corecrypto.js"</span>),
+    )<span class="question-mark">?</span>;
 
-        <span class="kw">let </span><span class="kw-2">mut </span>hasher = Sha256::new();
-        hasher.update(tokio::fs::read(js_path.clone()).<span class="kw">await</span><span class="question-mark">?</span>);
-        <span class="kw">let </span>js_current_hash = hasher.finalize();
+    std::fs::copy(
+        cwd.join(<span class="string">"crypto-ffi/bindings/js/src/corecrypto.d.ts"</span>),
+        wasm_deploy_path.join(<span class="string">"corecrypto.d.ts"</span>),
+    )<span class="question-mark">?</span>;
 
-        <span class="kw">let </span><span class="kw-2">mut </span>hasher = Sha256::new();
-        hasher.update(tokio::fs::read(wasm_path.clone()).<span class="kw">await</span><span class="question-mark">?</span>);
-        <span class="kw">let </span>wasm_current_hash = hasher.finalize();
-
-        <span class="kw">if </span>js_current_hash[..] == js_hash &amp;&amp; wasm_current_hash[..] == wasm_hash {
-            spinner.success(<span class="string">"WASM: builds are identical - skipping build"</span>);
-            <span class="kw">return </span><span class="prelude-val">Ok</span>(());
-        }
-
-        spinner.update(<span class="string">"WASM: Hashes differ, needs rebuild! Please wait..."</span>);
-    } <span class="kw">else </span>{
-        spinner.update(<span class="string">"WASM: No cache file found, rebuilding to get a cache! Please wait..."</span>);
-    }
-
-    <span class="kw">let </span><span class="kw-2">mut </span>cargo_args = <span class="macro">vec!</span>[<span class="string">"make"</span>, <span class="string">"wasm"</span>];
-    <span class="kw">let </span><span class="kw-2">mut </span>bun_env = <span class="macro">vec!</span>[];
-
-    <span class="kw">if </span><span class="macro">cfg!</span>(feature = <span class="string">"proteus"</span>) {
-        spinner.update(
-            <span class="string">"`proteus` feature enabled. Building `core-crypto` with proteus support &amp; enabling bun env BUILD_PROTEUS=1; Also building ESM bundle for Cryptobox"</span>,
-        );
-        cargo_args.push(<span class="string">"--features"</span>);
-        cargo_args.push(<span class="string">"proteus"</span>);
-        bun_env.push((<span class="string">"BUILD_PROTEUS"</span>, <span class="string">"1"</span>));
-    }
-
-    Command::new(<span class="string">"cargo"</span>)
-        .args(<span class="kw-2">&amp;</span>cargo_args)
-        .current_dir(cwd.join(<span class="string">"crypto-ffi"</span>))
-        .stdout(std::process::Stdio::null())
-        .status()
-        .<span class="kw">await</span><span class="question-mark">?</span>;
-
-    Command::new(<span class="string">"bun"</span>)
-        .args([<span class="string">"run"</span>, <span class="string">"wdio"</span>])
-        .envs(bun_env.clone())
-        .stdout(std::process::Stdio::null())
-        .stderr(std::process::Stdio::null())
-        .status()
-        .<span class="kw">await</span><span class="question-mark">?</span>;
-
-    spinner.update(<span class="string">"WASM: Computing new file hashes..."</span>);
-
-    <span class="kw">let </span><span class="kw-2">mut </span>hasher = Sha256::new();
-    hasher.update(tokio::fs::read(js_path).<span class="kw">await</span><span class="question-mark">?</span>);
-    <span class="kw">let </span>js_current_hash = hex::encode(hasher.finalize());
-
-    <span class="kw">let </span>wasm_path = find_wasm_file(<span class="kw-2">&amp;</span>wasm_deploy_path).<span class="kw">await</span><span class="question-mark">?</span>;
-    <span class="macro">log::debug!</span>(<span class="string">"Found wasm file at {wasm_path:?}"</span>);
-
-    <span class="kw">let </span><span class="kw-2">mut </span>hasher = Sha256::new();
-    hasher.update(tokio::fs::read(wasm_path).<span class="kw">await</span><span class="question-mark">?</span>);
-    <span class="kw">let </span>wasm_current_hash = hex::encode(hasher.finalize());
-
-    <span class="macro">log::debug!</span>(<span class="string">"Cache updated; CoreCrypto.wasm[{wasm_current_hash}] | corecrypto.js[{js_current_hash}]"</span>);
-    <span class="macro">log::debug!</span>(<span class="string">"JS Cache Path: {js_cache_path:?} | WASM Cache Path: {wasm_cache_path:?}"</span>);
-
-    tokio::fs::write(js_cache_path, js_current_hash).<span class="kw">await</span><span class="question-mark">?</span>;
-    tokio::fs::write(wasm_cache_path, wasm_current_hash).<span class="kw">await</span><span class="question-mark">?</span>;
+    std::fs::copy(
+        cwd.join(<span class="string">"crypto-ffi/bindings/js/src/core-crypto-ffi_bg.wasm"</span>),
+        wasm_deploy_path.join(<span class="string">"core-crypto-ffi_bg.wasm"</span>),
+    )<span class="question-mark">?</span>;
 
     spinner.success(<span class="string">"WASM bundle [OK]"</span>);
-
     <span class="prelude-val">Ok</span>(())
 }
 
-<span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">async fn </span>spawn_http_server() -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
+<span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">async fn </span>spawn_http_server(wasm_deploy_path: PathBuf) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
     <span class="kw">use </span>warp::Filter <span class="kw">as _</span>;
     <span class="kw">let </span>addr = SocketAddr::from(([<span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>], TEST_SERVER_PORT.parse()<span class="question-mark">?</span>));
-    <span class="kw">let </span>warp_filter_cc = warp::path(<span class="string">"core-crypto"</span>).and(warp::fs::dir(<span class="string">"platforms/web"</span>.to_string()));
+    <span class="kw">let </span>warp_filter_cc = warp::path(<span class="string">"core-crypto"</span>).and(warp::fs::dir(wasm_deploy_path));
     <span class="kw">let </span>warp_filter_cbox =
         warp::path(<span class="string">"cryptobox"</span>).and(warp::fs::dir(<span class="string">"interop/src/build/web/cryptobox-esm/dist"</span>.to_string()));
 

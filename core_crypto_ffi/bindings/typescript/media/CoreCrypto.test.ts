@@ -13,7 +13,7 @@ import {
     SESSION_ID,
     setup,
     teardown,
-} from "./utils";
+} from "./utils.js";
 import { afterEach, beforeEach, describe } from "mocha";
 import {
     CoreCryptoError,
@@ -21,8 +21,8 @@ import {
     E2eiConversationState,
     GroupInfoEncryptionType,
     RatchetTreeType,
-} from "../CoreCrypto";
-import CoreCryptoContext from "../CoreCryptoContext";
+    CoreCryptoContext,
+} from "../src/CoreCrypto.js";
 
 beforeEach(async () => {
     await setup();
@@ -393,13 +393,6 @@ describe("proteus", () => {
                 "ProteusErrorOther: Another Proteus error occurred but the details are probably irrelevant to clients (101)"
             )
         );
-
-        const lastErrorCode = await browser.execute(async (clientName) => {
-            const cc = window.ensureCcDefined(clientName);
-            return await cc.proteusLastErrorCode();
-        }, BOB_ID);
-
-        expect(lastErrorCode).toBe(101);
     });
 });
 
@@ -656,6 +649,51 @@ describe("end to end identity", () => {
         );
         expect(conversationState).toBe(E2eiConversationState.NotEnabled);
     });
+
+    it("identities can be queried by client id", async () => {
+        await ccInit(ALICE_ID);
+        await createConversation(ALICE_ID, CONV_ID);
+        const identities = await browser.execute(
+            async (clientName, conversationId) => {
+                const cc = window.ensureCcDefined(clientName);
+                const encoder = new TextEncoder();
+                const identities = await cc.transaction(async (ctx) => {
+                    return await ctx.getDeviceIdentities(
+                        encoder.encode(conversationId),
+                        [encoder.encode(clientName)]
+                    );
+                });
+
+                return identities.pop()?.clientId;
+            },
+            ALICE_ID,
+            CONV_ID
+        );
+        expect(identities).toBe(ALICE_ID);
+    });
+
+    it("identities can be queried by user id", async () => {
+        const ALICE_ID = "LcksJb74Tm6N12cDjFy7lQ:8e6424430d3b28be@world.com";
+        await ccInit(ALICE_ID);
+        await createConversation(ALICE_ID, CONV_ID);
+        const identities = await browser.execute(
+            async (clientName, conversationId) => {
+                const cc = window.ensureCcDefined(clientName);
+                const encoder = new TextEncoder();
+                const identities = await cc.transaction(async (ctx) => {
+                    return await ctx.getUserIdentities(
+                        encoder.encode(conversationId),
+                        ["LcksJb74Tm6N12cDjFy7lQ"]
+                    );
+                });
+
+                return identities.values().next().value?.pop()?.clientId;
+            },
+            ALICE_ID,
+            CONV_ID
+        );
+        expect(identities).toBe(ALICE_ID);
+    });
 });
 
 describe("logger", () => {
@@ -876,11 +914,43 @@ describe("logger", () => {
 });
 
 describe("build", () => {
-    it("metadata can be retrieved and contain key 'cargo_features'", async () => {
+    it("metadata can be retrieved and contain key 'gitDescribe'", async () => {
         await expect(
             browser.execute(async () =>
-                window.ccModule.CoreCrypto.buildMetadata().toJSON()
+                window.ccModule.buildMetadata().toJSON()
             )
         ).resolves.toMatchObject({ gitDescribe: expect.anything() });
+    });
+});
+
+describe("build", () => {
+    it("version can be retrieved and is a semantic version number", async () => {
+        await expect(
+            browser.execute(async () => window.ccModule.version())
+        ).resolves.toMatch(
+            RegExp(
+                // Regex for matching semantic versions from https://semver.org
+                "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-((?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?$"
+            )
+        );
+    });
+});
+
+describe("Error type mapping", () => {
+    it("should work for conversation already exists", async () => {
+        await ccInit(ALICE_ID);
+        await createConversation(ALICE_ID, CONV_ID);
+
+        const expectedErrorMessage = "Conversation already exists";
+
+        await expect(
+            createConversation(ALICE_ID, CONV_ID)
+            // wdio wraps the error and prepends the original message with
+            // the error type as prefix
+        ).rejects.toThrowError(
+            new Error(
+                `MlsErrorConversationAlreadyExists: ${expectedErrorMessage}`
+            )
+        );
     });
 });

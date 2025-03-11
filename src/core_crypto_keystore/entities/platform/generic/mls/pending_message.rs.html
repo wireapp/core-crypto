@@ -192,7 +192,11 @@
 <a href="#191" id="191">191</a>
 <a href="#192" id="192">192</a>
 <a href="#193" id="193">193</a>
-<a href="#194" id="194">194</a></pre></div><pre class="rust"><code><span class="comment">// Wire
+<a href="#194" id="194">194</a>
+<a href="#195" id="195">195</a>
+<a href="#196" id="196">196</a>
+<a href="#197" id="197">197</a>
+<a href="#198" id="198">198</a></pre></div><pre class="rust"><code><span class="comment">// Wire
 // Copyright (C) 2022 Wire Swiss GmbH
 
 // This program is free software: you can redistribute it and/or modify
@@ -209,9 +213,9 @@
 // along with this program. If not, see http://www.gnu.org/licenses/.
 
 </span><span class="kw">use crate</span>::{
+    CryptoKeystoreResult, MissingKeyErrorKind,
     connection::{DatabaseConnection, KeystoreDatabaseConnection, TransactionWrapper},
     entities::{Entity, EntityBase, EntityFindParams, EntityTransactionExt, MlsPendingMessage, StringEntityId},
-    CryptoKeystoreResult, MissingKeyErrorKind,
 };
 
 <span class="attr">#[async_trait::async_trait]
@@ -233,6 +237,7 @@
         <span class="kw">use </span>rusqlite::OptionalExtension <span class="kw">as _</span>;
         <span class="kw">use </span>std::io::Read <span class="kw">as _</span>;
 
+        <span class="kw">let </span><span class="kw-2">mut </span>conn = conn.conn().<span class="kw">await</span>;
         <span class="kw">let </span>transaction = conn.transaction()<span class="question-mark">?</span>;
         <span class="kw">let </span>rowid: <span class="prelude-ty">Option</span>&lt;i64&gt; = transaction
             .query_row(
@@ -273,6 +278,7 @@
         conn: <span class="kw-2">&amp;mut </span><span class="self">Self</span>::ConnectionType,
         params: EntityFindParams,
     ) -&gt; <span class="kw">crate</span>::CryptoKeystoreResult&lt;Vec&lt;<span class="self">Self</span>&gt;&gt; {
+        <span class="kw">let </span><span class="kw-2">mut </span>conn = conn.conn().<span class="kw">await</span>;
         <span class="kw">let </span>transaction = conn.transaction()<span class="question-mark">?</span>;
         <span class="kw">let </span>query: String = <span class="macro">format!</span>(<span class="string">"SELECT rowid FROM mls_pending_messages {}"</span>, params.to_sql());
 
@@ -317,7 +323,9 @@
     }
 
     <span class="kw">async fn </span>count(conn: <span class="kw-2">&amp;mut </span><span class="self">Self</span>::ConnectionType) -&gt; <span class="kw">crate</span>::CryptoKeystoreResult&lt;usize&gt; {
-        <span class="prelude-val">Ok</span>(conn.query_row(<span class="string">"SELECT COUNT(*) FROM mls_pending_messages"</span>, [], |r| r.get(<span class="number">0</span>))<span class="question-mark">?</span>)
+        <span class="kw">let </span>conn = conn.conn().<span class="kw">await</span>;
+        conn.query_row(<span class="string">"SELECT COUNT(*) FROM mls_pending_messages"</span>, [], |r| r.get(<span class="number">0</span>))
+            .map_err(Into::into)
     }
 }
 

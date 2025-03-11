@@ -699,7 +699,54 @@
 <a href="#698" id="698">698</a>
 <a href="#699" id="699">699</a>
 <a href="#700" id="700">700</a>
-<a href="#701" id="701">701</a></pre></div><pre class="rust"><code><span class="comment">// Wire
+<a href="#701" id="701">701</a>
+<a href="#702" id="702">702</a>
+<a href="#703" id="703">703</a>
+<a href="#704" id="704">704</a>
+<a href="#705" id="705">705</a>
+<a href="#706" id="706">706</a>
+<a href="#707" id="707">707</a>
+<a href="#708" id="708">708</a>
+<a href="#709" id="709">709</a>
+<a href="#710" id="710">710</a>
+<a href="#711" id="711">711</a>
+<a href="#712" id="712">712</a>
+<a href="#713" id="713">713</a>
+<a href="#714" id="714">714</a>
+<a href="#715" id="715">715</a>
+<a href="#716" id="716">716</a>
+<a href="#717" id="717">717</a>
+<a href="#718" id="718">718</a>
+<a href="#719" id="719">719</a>
+<a href="#720" id="720">720</a>
+<a href="#721" id="721">721</a>
+<a href="#722" id="722">722</a>
+<a href="#723" id="723">723</a>
+<a href="#724" id="724">724</a>
+<a href="#725" id="725">725</a>
+<a href="#726" id="726">726</a>
+<a href="#727" id="727">727</a>
+<a href="#728" id="728">728</a>
+<a href="#729" id="729">729</a>
+<a href="#730" id="730">730</a>
+<a href="#731" id="731">731</a>
+<a href="#732" id="732">732</a>
+<a href="#733" id="733">733</a>
+<a href="#734" id="734">734</a>
+<a href="#735" id="735">735</a>
+<a href="#736" id="736">736</a>
+<a href="#737" id="737">737</a>
+<a href="#738" id="738">738</a>
+<a href="#739" id="739">739</a>
+<a href="#740" id="740">740</a>
+<a href="#741" id="741">741</a>
+<a href="#742" id="742">742</a>
+<a href="#743" id="743">743</a>
+<a href="#744" id="744">744</a>
+<a href="#745" id="745">745</a>
+<a href="#746" id="746">746</a>
+<a href="#747" id="747">747</a>
+<a href="#748" id="748">748</a></pre></div><pre class="rust"><code><span class="comment">// Wire
 // Copyright (C) 2022 Wire Swiss GmbH
 
 // This program is free software: you can redistribute it and/or modify
@@ -727,19 +774,20 @@
 };
 <span class="kw">use </span>mls_crypto_provider::{CryptoKeystore, MlsCryptoProvider};
 
-<span class="kw">use </span><span class="kw">crate</span>::context::CentralContext;
-<span class="kw">use </span><span class="kw">crate</span>::mls::client::ClientInner;
+<span class="kw">use super</span>::{Error, <span class="prelude-ty">Result</span>};
+<span class="kw">use crate</span>::{KeystoreError, MlsError};
 <span class="kw">use crate</span>::{
-    mls::credential::CredentialBundle,
-    prelude::{
-        Client, CryptoError, CryptoResult, MlsCiphersuite, MlsConversationConfiguration, MlsCredentialType, MlsError,
-    },
+    RecursiveError,
+    context::CentralContext,
+    mls::{client::ClientInner, credential::CredentialBundle},
+    prelude::{Client, MlsCiphersuite, MlsConversationConfiguration, MlsCredentialType},
 };
 
 <span class="doccomment">/// Default number of KeyPackages a client generates the first time it's created
 </span><span class="attr">#[cfg(not(test))]
 </span><span class="kw">pub const </span>INITIAL_KEYING_MATERIAL_COUNT: usize = <span class="number">100</span>;
-<span class="attr">#[cfg(test)]
+<span class="doccomment">/// Default number of KeyPackages a client generates the first time it's created
+</span><span class="attr">#[cfg(test)]
 </span><span class="kw">pub const </span>INITIAL_KEYING_MATERIAL_COUNT: usize = <span class="number">10</span>;
 
 <span class="doccomment">/// Default lifetime of all generated KeyPackages. Matches the limit defined in openmls
@@ -759,9 +807,9 @@
         backend: <span class="kw-2">&amp;</span>MlsCryptoProvider,
         cs: MlsCiphersuite,
         cb: <span class="kw-2">&amp;</span>CredentialBundle,
-    ) -&gt; CryptoResult&lt;KeyPackage&gt; {
+    ) -&gt; <span class="prelude-ty">Result</span>&lt;KeyPackage&gt; {
         <span class="kw">match </span><span class="self">self</span>.state.read().<span class="kw">await</span>.deref() {
-            <span class="prelude-val">None </span>=&gt; <span class="prelude-val">Err</span>(CryptoError::MlsNotInitialized),
+            <span class="prelude-val">None </span>=&gt; <span class="prelude-val">Err</span>(Error::MlsNotInitialized),
             <span class="prelude-val">Some</span>(ClientInner {
                 keypackage_lifetime, ..
             }) =&gt; {
@@ -781,7 +829,7 @@
                         },
                     )
                     .<span class="kw">await
-                    </span>.map_err(MlsError::from)<span class="question-mark">?</span>;
+                    </span>.map_err(KeystoreError::wrap(<span class="string">"building keypackage"</span>))<span class="question-mark">?</span>;
 
                 <span class="prelude-val">Ok</span>(keypackage)
             }
@@ -804,7 +852,7 @@
         ciphersuite: MlsCiphersuite,
         credential_type: MlsCredentialType,
         backend: <span class="kw-2">&amp;</span>MlsCryptoProvider,
-    ) -&gt; CryptoResult&lt;Vec&lt;KeyPackage&gt;&gt; {
+    ) -&gt; <span class="prelude-ty">Result</span>&lt;Vec&lt;KeyPackage&gt;&gt; {
         <span class="comment">// Auto-prune expired keypackages on request
         </span><span class="self">self</span>.prune_keypackages(backend, <span class="kw-2">&amp;</span>[]).<span class="kw">await</span><span class="question-mark">?</span>;
         <span class="kw">use </span>core_crypto_keystore::CryptoKeystoreMls <span class="kw">as _</span>;
@@ -812,7 +860,7 @@
         <span class="kw">let </span><span class="kw-2">mut </span>existing_kps = backend
             .key_store()
             .mls_fetch_keypackages::&lt;KeyPackage&gt;(count <span class="kw">as </span>u32)
-            .<span class="kw">await</span><span class="question-mark">?
+            .<span class="kw">await</span>.map_err(KeystoreError::wrap(<span class="string">"fetching mls keypackages"</span>))<span class="question-mark">?
             </span>.into_iter()
             <span class="comment">// TODO: do this filtering in SQL when the schema is updated. Tracking issue: WPB-9599
             </span>.filter(|kp|
@@ -843,7 +891,7 @@
         ciphersuite: MlsCiphersuite,
         cb: <span class="kw-2">&amp;</span>CredentialBundle,
         count: usize,
-    ) -&gt; CryptoResult&lt;Vec&lt;KeyPackage&gt;&gt; {
+    ) -&gt; <span class="prelude-ty">Result</span>&lt;Vec&lt;KeyPackage&gt;&gt; {
         <span class="kw">let </span><span class="kw-2">mut </span>kps = Vec::with_capacity(count);
 
         <span class="kw">for _ in </span><span class="number">0</span>..count {
@@ -862,10 +910,15 @@
         backend: <span class="kw-2">&amp;</span>MlsCryptoProvider,
         ciphersuite: MlsCiphersuite,
         credential_type: MlsCredentialType,
-    ) -&gt; CryptoResult&lt;usize&gt; {
-        <span class="kw">let </span>kps: Vec&lt;MlsKeyPackage&gt; = backend.key_store().find_all(EntityFindParams::default()).<span class="kw">await</span><span class="question-mark">?</span>;
+    ) -&gt; <span class="prelude-ty">Result</span>&lt;usize&gt; {
+        <span class="kw">let </span>kps: Vec&lt;MlsKeyPackage&gt; = backend
+            .key_store()
+            .find_all(EntityFindParams::default())
+            .<span class="kw">await
+            </span>.map_err(KeystoreError::wrap(<span class="string">"finding all key packages"</span>))<span class="question-mark">?</span>;
 
-        <span class="kw">let </span>valid_count = kps
+        <span class="kw">let </span><span class="kw-2">mut </span>valid_count = <span class="number">0</span>;
+        <span class="kw">for </span>kp <span class="kw">in </span>kps
             .into_iter()
             .map(|kp| core_crypto_keystore::deser::&lt;KeyPackage&gt;(<span class="kw-2">&amp;</span>kp.keypackage))
             <span class="comment">// TODO: do this filtering in SQL when the schema is updated. Tracking issue: WPB-9599
@@ -874,12 +927,12 @@
                     .map(|b| b.ciphersuite() == ciphersuite.<span class="number">0 </span>&amp;&amp; MlsCredentialType::from(b.leaf_node().credential().credential_type()) == credential_type)
                     .unwrap_or_default()
             })
-            .try_fold(<span class="number">0usize</span>, |<span class="kw-2">mut </span>valid_count, kp| {
-                <span class="kw">if </span>!<span class="self">Self</span>::is_mls_keypackage_expired(<span class="kw-2">&amp;</span>kp<span class="question-mark">?</span>) {
-                    valid_count += <span class="number">1</span>;
-                }
-                CryptoResult::Ok(valid_count)
-            })<span class="question-mark">?</span>;
+        {
+            <span class="kw">let </span>kp = kp.map_err(KeystoreError::wrap(<span class="string">"counting valid keypackages"</span>))<span class="question-mark">?</span>;
+            <span class="kw">if </span>!<span class="self">Self</span>::is_mls_keypackage_expired(<span class="kw-2">&amp;</span>kp) {
+                valid_count += <span class="number">1</span>;
+            }
+        }
 
         <span class="prelude-val">Ok</span>(valid_count)
     }
@@ -899,7 +952,7 @@
     /// Warning: Despite this API being public, the caller should know what they're doing.
     /// Provided KeypackageRefs **will** be purged regardless of their expiration state, so please be wary of what you are doing if you directly call this API.
     /// This could result in still valid, uploaded keypackages being pruned from the system and thus being impossible to find when referenced in a future Welcome message.
-    </span><span class="kw">pub async fn </span>prune_keypackages(<span class="kw-2">&amp;</span><span class="self">self</span>, backend: <span class="kw-2">&amp;</span>MlsCryptoProvider, refs: <span class="kw-2">&amp;</span>[KeyPackageRef]) -&gt; CryptoResult&lt;()&gt; {
+    </span><span class="kw">pub async fn </span>prune_keypackages(<span class="kw-2">&amp;</span><span class="self">self</span>, backend: <span class="kw-2">&amp;</span>MlsCryptoProvider, refs: <span class="kw-2">&amp;</span>[KeyPackageRef]) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
         <span class="kw">let </span>keystore = backend.keystore();
         <span class="kw">let </span>kps = <span class="self">self</span>.find_all_keypackages(<span class="kw-2">&amp;</span>keystore).<span class="kw">await</span><span class="question-mark">?</span>;
         <span class="kw">let _ </span>= <span class="self">self</span>._prune_keypackages(<span class="kw-2">&amp;</span>kps, <span class="kw-2">&amp;</span>keystore, refs).<span class="kw">await</span><span class="question-mark">?</span>;
@@ -910,9 +963,9 @@
         <span class="kw-2">&amp;mut </span><span class="self">self</span>,
         backend: <span class="kw-2">&amp;</span>MlsCryptoProvider,
         refs: <span class="kw-2">&amp;</span>[KeyPackageRef],
-    ) -&gt; CryptoResult&lt;()&gt; {
+    ) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
         <span class="kw">match </span><span class="self">self</span>.state.write().<span class="kw">await</span>.deref_mut() {
-            <span class="prelude-val">None </span>=&gt; <span class="prelude-val">Err</span>(CryptoError::MlsNotInitialized),
+            <span class="prelude-val">None </span>=&gt; <span class="prelude-val">Err</span>(Error::MlsNotInitialized),
             <span class="prelude-val">Some</span>(ClientInner { identities, .. }) =&gt; {
                 <span class="kw">let </span>keystore = backend.key_store();
                 <span class="kw">let </span>kps = <span class="self">self</span>.find_all_keypackages(keystore).<span class="kw">await</span><span class="question-mark">?</span>;
@@ -925,8 +978,10 @@
                         .leaf_node()
                         .credential()
                         .tls_serialize_detached()
-                        .map_err(MlsError::from)<span class="question-mark">?</span>;
-                    <span class="kw">let </span>kp_ref = kp.hash_ref(backend.crypto()).map_err(MlsError::from)<span class="question-mark">?</span>;
+                        .map_err(Error::tls_serialize(<span class="string">"keypackage"</span>))<span class="question-mark">?</span>;
+                    <span class="kw">let </span>kp_ref = kp
+                        .hash_ref(backend.crypto())
+                        .map_err(MlsError::wrap(<span class="string">"computing keypackage hashref"</span>))<span class="question-mark">?</span>;
                     grouped_kps
                         .entry(cred)
                         .and_modify(|kprfs| kprfs.push(kp_ref.clone()))
@@ -938,9 +993,13 @@
                     </span><span class="kw">let </span>all_to_delete = kps.iter().all(|kpr| kp_to_delete.contains(<span class="kw-2">&amp;</span>kpr.as_slice()));
                     <span class="kw">if </span>all_to_delete {
                         <span class="comment">// then delete this Credential
-                        </span>backend.keystore().cred_delete_by_credential(credential.clone()).<span class="kw">await</span><span class="question-mark">?</span>;
-                        <span class="kw">let </span>credential =
-                            Credential::tls_deserialize(<span class="kw-2">&amp;mut </span>credential.as_slice()).map_err(MlsError::from)<span class="question-mark">?</span>;
+                        </span>backend
+                            .keystore()
+                            .cred_delete_by_credential(credential.clone())
+                            .<span class="kw">await
+                            </span>.map_err(KeystoreError::wrap(<span class="string">"deleting credential"</span>))<span class="question-mark">?</span>;
+                        <span class="kw">let </span>credential = Credential::tls_deserialize(<span class="kw-2">&amp;mut </span>credential.as_slice())
+                            .map_err(Error::tls_deserialize(<span class="string">"credential"</span>))<span class="question-mark">?</span>;
                         identities.remove(<span class="kw-2">&amp;</span>credential).<span class="kw">await</span><span class="question-mark">?</span>;
                     }
                 }
@@ -958,7 +1017,7 @@
         kps: <span class="kw-2">&amp;</span><span class="lifetime">'a </span>[(MlsKeyPackage, KeyPackage)],
         keystore: <span class="kw-2">&amp;</span>CryptoKeystore,
         refs: <span class="kw-2">&amp;</span>[KeyPackageRef],
-    ) -&gt; <span class="prelude-ty">Result</span>&lt;Vec&lt;<span class="kw-2">&amp;</span><span class="lifetime">'a </span>[u8]&gt;, CryptoError&gt; {
+    ) -&gt; <span class="prelude-ty">Result</span>&lt;Vec&lt;<span class="kw-2">&amp;</span><span class="lifetime">'a </span>[u8]&gt;, Error&gt; {
         <span class="kw">let </span>kp_to_delete: Vec&lt;<span class="kw">_</span>&gt; = kps
             .iter()
             .filter_map(|(store_kp, kp)| {
@@ -976,13 +1035,18 @@
 
         <span class="kw">for </span>(kp, kp_ref) <span class="kw">in </span><span class="kw-2">&amp;</span>kp_to_delete {
             <span class="comment">// TODO: maybe rewrite this to optimize it. But honestly it's called so rarely and on a so tiny amount of data. Tacking issue: WPB-9600
-            </span>keystore.remove::&lt;MlsKeyPackage, <span class="kw-2">&amp;</span>[u8]&gt;(kp_ref.as_slice()).<span class="kw">await</span><span class="question-mark">?</span>;
+            </span>keystore
+                .remove::&lt;MlsKeyPackage, <span class="kw-2">&amp;</span>[u8]&gt;(kp_ref.as_slice())
+                .<span class="kw">await
+                </span>.map_err(KeystoreError::wrap(<span class="string">"removing key package from keystore"</span>))<span class="question-mark">?</span>;
             keystore
                 .remove::&lt;MlsHpkePrivateKey, <span class="kw-2">&amp;</span>[u8]&gt;(kp.hpke_init_key().as_slice())
-                .<span class="kw">await</span><span class="question-mark">?</span>;
+                .<span class="kw">await
+                </span>.map_err(KeystoreError::wrap(<span class="string">"removing private key from keystore"</span>))<span class="question-mark">?</span>;
             keystore
                 .remove::&lt;MlsEncryptionKeyPair, <span class="kw-2">&amp;</span>[u8]&gt;(kp.leaf_node().encryption_key().as_slice())
-                .<span class="kw">await</span><span class="question-mark">?</span>;
+                .<span class="kw">await
+                </span>.map_err(KeystoreError::wrap(<span class="string">"removing encryption keypair from keystore"</span>))<span class="question-mark">?</span>;
         }
 
         <span class="kw">let </span>kp_to_delete = kp_to_delete
@@ -993,14 +1057,20 @@
         <span class="prelude-val">Ok</span>(kp_to_delete)
     }
 
-    <span class="kw">async fn </span>find_all_keypackages(<span class="kw-2">&amp;</span><span class="self">self</span>, keystore: <span class="kw-2">&amp;</span>CryptoKeystore) -&gt; CryptoResult&lt;Vec&lt;(MlsKeyPackage, KeyPackage)&gt;&gt; {
-        <span class="kw">let </span>kps: Vec&lt;MlsKeyPackage&gt; = keystore.find_all(EntityFindParams::default()).<span class="kw">await</span><span class="question-mark">?</span>;
+    <span class="kw">async fn </span>find_all_keypackages(<span class="kw-2">&amp;</span><span class="self">self</span>, keystore: <span class="kw-2">&amp;</span>CryptoKeystore) -&gt; <span class="prelude-ty">Result</span>&lt;Vec&lt;(MlsKeyPackage, KeyPackage)&gt;&gt; {
+        <span class="kw">let </span>kps: Vec&lt;MlsKeyPackage&gt; = keystore
+            .find_all(EntityFindParams::default())
+            .<span class="kw">await
+            </span>.map_err(KeystoreError::wrap(<span class="string">"finding all keypackages"</span>))<span class="question-mark">?</span>;
 
-        <span class="kw">let </span>kps = kps.into_iter().try_fold(<span class="macro">vec!</span>[], |<span class="kw-2">mut </span>acc, raw_kp| {
-            <span class="kw">let </span>kp = core_crypto_keystore::deser::&lt;KeyPackage&gt;(<span class="kw-2">&amp;</span>raw_kp.keypackage)<span class="question-mark">?</span>;
-            acc.push((raw_kp, kp));
-            CryptoResult::Ok(acc)
-        })<span class="question-mark">?</span>;
+        <span class="kw">let </span>kps = kps
+            .into_iter()
+            .map(|raw_kp| -&gt; <span class="prelude-ty">Result</span>&lt;<span class="kw">_</span>&gt; {
+                <span class="kw">let </span>kp = core_crypto_keystore::deser::&lt;KeyPackage&gt;(<span class="kw-2">&amp;</span>raw_kp.keypackage)
+                    .map_err(KeystoreError::wrap(<span class="string">"deserializing keypackage"</span>))<span class="question-mark">?</span>;
+                <span class="prelude-val">Ok</span>((raw_kp, kp))
+            })
+            .collect::&lt;<span class="prelude-ty">Result</span>&lt;Vec&lt;<span class="kw">_</span>&gt;, <span class="kw">_</span>&gt;&gt;()<span class="question-mark">?</span>;
 
         <span class="prelude-val">Ok</span>(kps)
     }
@@ -1008,13 +1078,12 @@
     <span class="doccomment">/// Allows to set the current default keypackage lifetime extension duration.
     /// It will be embedded in the [openmls::key_packages::KeyPackage]'s [openmls::extensions::LifetimeExtension]
     </span><span class="attr">#[cfg(test)]
-    </span><span class="kw">pub async fn </span>set_keypackage_lifetime(<span class="kw-2">&amp;</span><span class="self">self</span>, duration: std::time::Duration) -&gt; CryptoResult&lt;()&gt; {
+    </span><span class="kw">pub async fn </span>set_keypackage_lifetime(<span class="kw-2">&amp;</span><span class="self">self</span>, duration: std::time::Duration) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
         <span class="kw">use </span>std::ops::DerefMut;
         <span class="kw">match </span><span class="self">self</span>.state.write().<span class="kw">await</span>.deref_mut() {
-            <span class="prelude-val">None </span>=&gt; <span class="prelude-val">Err</span>(CryptoError::MlsNotInitialized),
+            <span class="prelude-val">None </span>=&gt; <span class="prelude-val">Err</span>(Error::MlsNotInitialized),
             <span class="prelude-val">Some</span>(ClientInner {
-                <span class="kw-2">ref mut </span>keypackage_lifetime,
-                ..
+                keypackage_lifetime, ..
             }) =&gt; {
                 <span class="kw-2">*</span>keypackage_lifetime = duration;
                 <span class="prelude-val">Ok</span>(())
@@ -1042,14 +1111,20 @@
         ciphersuite: MlsCiphersuite,
         credential_type: MlsCredentialType,
         amount_requested: usize,
-    ) -&gt; CryptoResult&lt;Vec&lt;KeyPackage&gt;&gt; {
-        <span class="kw">let </span>client = <span class="self">self</span>.mls_client().<span class="kw">await</span><span class="question-mark">?</span>;
+    ) -&gt; <span class="prelude-ty">Result</span>&lt;Vec&lt;KeyPackage&gt;&gt; {
+        <span class="kw">let </span>client = <span class="self">self
+            </span>.mls_client()
+            .<span class="kw">await
+            </span>.map_err(RecursiveError::root(<span class="string">"getting mls client"</span>))<span class="question-mark">?</span>;
         client
             .request_key_packages(
                 amount_requested,
                 ciphersuite,
                 credential_type,
-                <span class="kw-2">&amp;</span><span class="self">self</span>.mls_provider().<span class="kw">await</span><span class="question-mark">?</span>,
+                <span class="kw-2">&amp;</span><span class="self">self
+                    </span>.mls_provider()
+                    .<span class="kw">await
+                    </span>.map_err(RecursiveError::root(<span class="string">"getting mls provider"</span>))<span class="question-mark">?</span>,
             )
             .<span class="kw">await
     </span>}
@@ -1060,23 +1135,42 @@
         <span class="kw-2">&amp;</span><span class="self">self</span>,
         ciphersuite: MlsCiphersuite,
         credential_type: MlsCredentialType,
-    ) -&gt; CryptoResult&lt;usize&gt; {
-        <span class="kw">let </span>client = <span class="self">self</span>.mls_client().<span class="kw">await</span><span class="question-mark">?</span>;
+    ) -&gt; <span class="prelude-ty">Result</span>&lt;usize&gt; {
+        <span class="kw">let </span>client = <span class="self">self
+            </span>.mls_client()
+            .<span class="kw">await
+            </span>.map_err(RecursiveError::root(<span class="string">"getting mls client"</span>))<span class="question-mark">?</span>;
         client
-            .valid_keypackages_count(<span class="kw-2">&amp;</span><span class="self">self</span>.mls_provider().<span class="kw">await</span><span class="question-mark">?</span>, ciphersuite, credential_type)
+            .valid_keypackages_count(
+                <span class="kw-2">&amp;</span><span class="self">self
+                    </span>.mls_provider()
+                    .<span class="kw">await
+                    </span>.map_err(RecursiveError::root(<span class="string">"getting mls provider"</span>))<span class="question-mark">?</span>,
+                ciphersuite,
+                credential_type,
+            )
             .<span class="kw">await
     </span>}
 
     <span class="doccomment">/// Prunes local KeyPackages after making sure they also have been deleted on the backend side
-    /// You should only use this after [CentralContext::e2ei_rotate_all]
+    /// You should only use this after [CentralContext::save_x509_credential]
     </span><span class="attr">#[cfg_attr(test, <span class="kw">crate</span>::dispotent)]
-    </span><span class="kw">pub async fn </span>delete_keypackages(<span class="kw-2">&amp;</span><span class="self">self</span>, refs: <span class="kw-2">&amp;</span>[KeyPackageRef]) -&gt; CryptoResult&lt;()&gt; {
+    </span><span class="kw">pub async fn </span>delete_keypackages(<span class="kw-2">&amp;</span><span class="self">self</span>, refs: <span class="kw-2">&amp;</span>[KeyPackageRef]) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
         <span class="kw">if </span>refs.is_empty() {
-            <span class="kw">return </span><span class="prelude-val">Err</span>(CryptoError::ConsumerError);
+            <span class="kw">return </span><span class="prelude-val">Err</span>(Error::EmptyKeypackageList);
         }
-        <span class="kw">let </span><span class="kw-2">mut </span>client = <span class="self">self</span>.mls_client().<span class="kw">await</span><span class="question-mark">?</span>;
+        <span class="kw">let </span><span class="kw-2">mut </span>client = <span class="self">self
+            </span>.mls_client()
+            .<span class="kw">await
+            </span>.map_err(RecursiveError::root(<span class="string">"getting mls client"</span>))<span class="question-mark">?</span>;
         client
-            .prune_keypackages_and_credential(<span class="kw-2">&amp;</span><span class="self">self</span>.mls_provider().<span class="kw">await</span><span class="question-mark">?</span>, refs)
+            .prune_keypackages_and_credential(
+                <span class="kw-2">&amp;</span><span class="self">self
+                    </span>.mls_provider()
+                    .<span class="kw">await
+                    </span>.map_err(RecursiveError::root(<span class="string">"getting mls provider"</span>))<span class="question-mark">?</span>,
+                refs,
+            )
             .<span class="kw">await
     </span>}
 }
@@ -1084,15 +1178,15 @@
 <span class="attr">#[cfg(test)]
 </span><span class="kw">mod </span>tests {
     <span class="kw">use </span>openmls::prelude::{KeyPackage, KeyPackageIn, KeyPackageRef, ProtocolVersion};
-    <span class="kw">use </span>openmls_traits::types::VerifiableCiphersuite;
     <span class="kw">use </span>openmls_traits::OpenMlsCryptoProvider;
+    <span class="kw">use </span>openmls_traits::types::VerifiableCiphersuite;
     <span class="kw">use </span>wasm_bindgen_test::<span class="kw-2">*</span>;
 
     <span class="kw">use </span>mls_crypto_provider::MlsCryptoProvider;
 
     <span class="kw">use </span><span class="kw">crate</span>::e2e_identity::tests::{e2ei_enrollment, init_activation_or_rotation, noop_restore};
-    <span class="kw">use </span><span class="kw">crate</span>::prelude::key_package::INITIAL_KEYING_MATERIAL_COUNT;
     <span class="kw">use </span><span class="kw">crate</span>::prelude::MlsConversationConfiguration;
+    <span class="kw">use </span><span class="kw">crate</span>::prelude::key_package::INITIAL_KEYING_MATERIAL_COUNT;
     <span class="kw">use </span><span class="kw">crate</span>::test_utils::<span class="kw-2">*</span>;
 
     <span class="kw">use </span><span class="kw">super</span>::Client;
@@ -1173,7 +1267,7 @@
 
                 <span class="kw">let </span>_rotate_bundle = client_context
                     .context
-                    .e2ei_rotate_all(<span class="kw-2">&amp;mut </span>enrollment, cert_chain, <span class="number">5</span>)
+                    .save_x509_credential(<span class="kw-2">&amp;mut </span>enrollment, cert_chain)
                     .<span class="kw">await
                     </span>.unwrap();
 

@@ -224,7 +224,7 @@
     }
 }
 
-<span class="attr">#[derive(Debug, Clone, Zeroize, PartialEq, Eq)]
+<span class="attr">#[derive(Debug, Clone, Zeroize, PartialEq, Eq, core_crypto_macros::Entity)]
 #[zeroize(drop)]
 #[cfg_attr(
     any(target_family = <span class="string">"wasm"</span>, feature = <span class="string">"serde"</span>),

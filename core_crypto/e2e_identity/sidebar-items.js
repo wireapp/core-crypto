@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"mod":["enabled","error","types"],"struct":["CrlRegistration","E2eiDumpedPkiEnv","E2eiEnrollment"]};
+window.SIDEBAR_ITEMS = {"enum":["Error"],"mod":["enabled","types"],"struct":["CrlRegistration","E2eiDumpedPkiEnv","E2eiEnrollment"],"type":["Result"]};
