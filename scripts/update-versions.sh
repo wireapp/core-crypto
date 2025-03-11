@@ -21,3 +21,9 @@ mv ${js_path}/package.json.new ${js_path}/package.json
 
 # Update Maven package version.
 sed -i "0,/^VERSION_NAME=[0-9.]\+$/{s//VERSION_NAME=${new_version}/;b;}" crypto-ffi/bindings/gradle.properties
+
+# Update Swift package version.
+IFS='.' read -r major minor patch <<< $new_version
+project_version=$((10000 * $major + 100 * $minor + $patch))
+sed -i "0,/^MARKETING_VERSION=[0-9.]\+$/{s//MARKETING_VERSION=${new_version}/;b;}" crypto-ffi/bindings/swift/BuildSettings.xcconfig
+sed -i "0,/^CURRENT_PROJECT_VERSION=[0-9.]\+$/{s//CURRENT_PROJECT_VERSION=${project_version}/;b;}" crypto-ffi/bindings/swift/BuildSettings.xcconfig
