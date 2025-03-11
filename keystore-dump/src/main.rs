@@ -20,7 +20,7 @@ async fn main() -> Result<()> {
     use chrono::TimeZone;
     use clap::Parser as _;
     use color_eyre::eyre::eyre;
-    use core_crypto_keystore::{Connection as Keystore, connection::FetchFromDatabase, entities::*};
+    use core_crypto_keystore::{Connection as Keystore, DatabaseKey, connection::FetchFromDatabase, entities::*};
     use openmls::prelude::TlsDeserializeTrait;
     use serde::ser::{SerializeMap, Serializer};
 
@@ -32,7 +32,8 @@ async fn main() -> Result<()> {
         return Err(eyre!("File not found: {}", args.path));
     }
 
-    let keystore = Keystore::open_with_key(&args.path, &args.key)
+    let key = DatabaseKey::try_from(hex::decode(&args.key)?.as_slice())?;
+    let keystore = Keystore::open_with_key(&args.path, &key)
         .await
         .map_err(|e| eyre!("The passkey is probably wrong; [err: {e}]"))?;
 
