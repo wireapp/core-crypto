@@ -62,7 +62,7 @@ args = ["run", "--cwd", "bindings/js", "build"]
 
 ##################################### FFI #####################################
 
-[tasks._bindings-swift]
+[tasks.bindings-swift]
 command = "cargo"
 args = [
     "run",
@@ -75,12 +75,6 @@ args = [
     "--out-dir", "./bindings/swift/WireCoreCryptoUniffi/WireCoreCryptoUniffi",
     "--library", "../target/release/deps/libcore_crypto_ffi.${LIBRARY_EXTENSION}"
 ]
-
-[tasks.bindings-swift]
-dependencies = ["_bindings-swift"]
-script = '''
-    mv ./bindings/swift/WireCoreCryptoUniffi/WireCoreCryptoUniffi/core_crypto_ffi.swift ./bindings/swift/WireCoreCryptoUniffi/WireCoreCryptoUniffi/CoreCrypto.swift
-'''
 
 [tasks.bindings-kotlin-android]
 command = "cargo"

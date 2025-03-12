@@ -9,16 +9,16 @@
 /* Begin PBXBuildFile section */
 		167AE3AC2D80512A0075DF93 /* BuildSettings.xcconfig in Resources */ = {isa = PBXBuildFile; fileRef = 16CDD1212A29E0760073FB8E /* BuildSettings.xcconfig */; };
 		16CDD1172A2636BB0073FB8E /* WireCoreCryptoUniffi.h in Headers */ = {isa = PBXBuildFile; fileRef = 16CDD1162A2636BB0073FB8E /* WireCoreCryptoUniffi.h */; settings = {ATTRIBUTES = (Public, ); }; };
-		16CDD1202A26392C0073FB8E /* CoreCrypto.swift in Sources */ = {isa = PBXBuildFile; fileRef = 16CDD11E2A26392C0073FB8E /* CoreCrypto.swift */; };
 		16E15D0F2D81C4BC0025C7D8 /* core_crypto_ffiFFI.h in Headers */ = {isa = PBXBuildFile; fileRef = 167AE3EB2D81B8C40075DF93 /* core_crypto_ffiFFI.h */; settings = {ATTRIBUTES = (Public, ); }; };
+		16E15D5E2D81C87A0025C7D8 /* core_crypto_ffi.swift in Sources */ = {isa = PBXBuildFile; fileRef = 16E15D5D2D81C87A0025C7D8 /* core_crypto_ffi.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
 		167AE3EB2D81B8C40075DF93 /* core_crypto_ffiFFI.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = core_crypto_ffiFFI.h; sourceTree = "<group>"; };
 		16CDD1132A2636BB0073FB8E /* WireCoreCryptoUniffi.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = WireCoreCryptoUniffi.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		16CDD1162A2636BB0073FB8E /* WireCoreCryptoUniffi.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = WireCoreCryptoUniffi.h; sourceTree = "<group>"; };
-		16CDD11E2A26392C0073FB8E /* CoreCrypto.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = CoreCrypto.swift; sourceTree = "<group>"; };
 		16CDD1212A29E0760073FB8E /* BuildSettings.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; name = BuildSettings.xcconfig; path = ../BuildSettings.xcconfig; sourceTree = "<group>"; };
+		16E15D5D2D81C87A0025C7D8 /* core_crypto_ffi.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = core_crypto_ffi.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -52,8 +52,8 @@
 		16CDD1152A2636BB0073FB8E /* WireCoreCryptoUniffi */ = {
 			isa = PBXGroup;
 			children = (
+				16E15D5D2D81C87A0025C7D8 /* core_crypto_ffi.swift */,
 				167AE3EB2D81B8C40075DF93 /* core_crypto_ffiFFI.h */,
-				16CDD11E2A26392C0073FB8E /* CoreCrypto.swift */,
 				16CDD1162A2636BB0073FB8E /* WireCoreCryptoUniffi.h */,
 			);
 			path = WireCoreCryptoUniffi;
@@ -103,7 +103,7 @@
 				TargetAttributes = {
 					16CDD1122A2636BB0073FB8E = {
 						CreatedOnToolsVersion = 14.2;
-						LastSwiftMigration = 1420;
+						LastSwiftMigration = 1620;
 					};
 				};
 			};
@@ -141,7 +141,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				16CDD1202A26392C0073FB8E /* CoreCrypto.swift in Sources */,
+				16E15D5E2D81C87A0025C7D8 /* core_crypto_ffi.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
