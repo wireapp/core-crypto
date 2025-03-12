@@ -383,7 +383,7 @@
     </span><span class="kw">pub async fn </span>e2ei_rotate(<span class="kw-2">&amp;</span><span class="self">self</span>, conversation_id: Vec&lt;u8&gt;) -&gt; CoreCryptoResult&lt;()&gt; {
         <span class="prelude-val">Ok</span>(<span class="self">self
             </span>.context
-            .conversation_guard(<span class="kw-2">&amp;</span>conversation_id)
+            .conversation(<span class="kw-2">&amp;</span>conversation_id)
             .<span class="kw">await</span><span class="question-mark">?
             </span>.e2ei_rotate(<span class="prelude-val">None</span>)
             .<span class="kw">await</span><span class="question-mark">?</span>)
@@ -440,7 +440,7 @@
     </span><span class="kw">pub async fn </span>e2ei_conversation_state(<span class="kw-2">&amp;</span><span class="self">self</span>, conversation_id: Vec&lt;u8&gt;) -&gt; CoreCryptoResult&lt;E2eiConversationState&gt; {
         <span class="prelude-val">Ok</span>(<span class="self">self
             </span>.context
-            .conversation_guard(<span class="kw-2">&amp;</span>conversation_id)
+            .conversation(<span class="kw-2">&amp;</span>conversation_id)
             .<span class="kw">await</span><span class="question-mark">?
             </span>.e2ei_conversation_state()
             .<span class="kw">await
@@ -472,7 +472,7 @@
         <span class="kw">let </span>device_ids = device_ids.into_iter().map(|cid| cid.<span class="number">0</span>).collect::&lt;Vec&lt;<span class="kw">_</span>&gt;&gt;();
         <span class="prelude-val">Ok</span>(<span class="self">self
             </span>.context
-            .conversation_guard(<span class="kw-2">&amp;</span>conversation_id)
+            .conversation(<span class="kw-2">&amp;</span>conversation_id)
             .<span class="kw">await</span><span class="question-mark">?
             </span>.get_device_identities(<span class="kw-2">&amp;</span>device_ids[..])
             .<span class="kw">await</span><span class="question-mark">?
@@ -489,7 +489,7 @@
     ) -&gt; CoreCryptoResult&lt;HashMap&lt;String, Vec&lt;WireIdentity&gt;&gt;&gt; {
         <span class="prelude-val">Ok</span>(<span class="self">self
             </span>.context
-            .conversation_guard(<span class="kw-2">&amp;</span>conversation_id)
+            .conversation(<span class="kw-2">&amp;</span>conversation_id)
             .<span class="kw">await</span><span class="question-mark">?
             </span>.get_user_identities(<span class="kw-2">&amp;</span>user_ids[..])
             .<span class="kw">await</span><span class="question-mark">?

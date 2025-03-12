@@ -475,8 +475,8 @@
     /// If the conversation is not found, an error will be returned. Errors from OpenMls can be
     /// returned as well, when for example there's a commit pending to be merged
     </span><span class="kw">async fn </span>new_proposal(<span class="kw-2">&amp;</span><span class="self">self</span>, id: <span class="kw-2">&amp;</span>ConversationId, proposal: MlsProposal) -&gt; <span class="prelude-ty">Result</span>&lt;MlsProposalBundle&gt; {
-        <span class="kw">let </span>conversation = <span class="self">self
-            </span>.get_conversation(id)
+        <span class="kw">let </span><span class="kw-2">mut </span>conversation = <span class="self">self
+            </span>.conversation(id)
             .<span class="kw">await
             </span>.map_err(RecursiveError::mls_conversation(<span class="string">"getting conversation by id"</span>))<span class="question-mark">?</span>;
         <span class="kw">let </span>client = <span class="kw-2">&amp;</span><span class="self">self
@@ -490,7 +490,7 @@
                     </span>.mls_provider()
                     .<span class="kw">await
                     </span>.map_err(RecursiveError::root(<span class="string">"getting mls provider"</span>))<span class="question-mark">?</span>,
-                conversation.write().<span class="kw">await</span>,
+                conversation.conversation_mut().<span class="kw">await</span>,
             )
             .<span class="kw">await
     </span>}
@@ -522,7 +522,7 @@
                     alice_central.context.new_add_proposal(<span class="kw-2">&amp;</span>id, bob_kp).<span class="kw">await</span>.unwrap();
                     alice_central
                         .context
-                        .conversation_guard(<span class="kw-2">&amp;</span>id)
+                        .conversation(<span class="kw-2">&amp;</span>id)
                         .<span class="kw">await
                         </span>.unwrap()
                         .commit_pending_proposals()
@@ -568,7 +568,7 @@
                     central.context.new_update_proposal(<span class="kw-2">&amp;</span>id).<span class="kw">await</span>.unwrap();
                     central
                         .context
-                        .conversation_guard(<span class="kw-2">&amp;</span>id)
+                        .conversation(<span class="kw-2">&amp;</span>id)
                         .<span class="kw">await
                         </span>.unwrap()
                         .commit_pending_proposals()
@@ -614,7 +614,7 @@
                         </span>.unwrap();
                     bob_central
                         .context
-                        .conversation_guard(<span class="kw-2">&amp;</span>id)
+                        .conversation(<span class="kw-2">&amp;</span>id)
                         .<span class="kw">await
                         </span>.unwrap()
                         .decrypt_message(remove_proposal.proposal.to_bytes().unwrap())
@@ -622,7 +622,7 @@
                         </span>.unwrap();
                     alice_central
                         .context
-                        .conversation_guard(<span class="kw-2">&amp;</span>id)
+                        .conversation(<span class="kw-2">&amp;</span>id)
                         .<span class="kw">await
                         </span>.unwrap()
                         .commit_pending_proposals()
@@ -633,14 +633,14 @@
                     <span class="kw">let </span>commit = alice_central.mls_transport.latest_commit().<span class="kw">await</span>;
                     bob_central
                         .context
-                        .conversation_guard(<span class="kw-2">&amp;</span>id)
+                        .conversation(<span class="kw-2">&amp;</span>id)
                         .<span class="kw">await
                         </span>.unwrap()
                         .decrypt_message(commit.to_bytes().unwrap())
                         .<span class="kw">await
                         </span>.unwrap();
                     <span class="macro">assert!</span>(<span class="macro">matches!</span>(
-                        bob_central.context.get_conversation(<span class="kw-2">&amp;</span>id).<span class="kw">await</span>.unwrap_err(),
+                        bob_central.context.conversation(<span class="kw-2">&amp;</span>id).<span class="kw">await</span>.unwrap_err(),
                         mls::conversation::Error::Leaf(LeafError::ConversationNotFound(conv_id)) <span class="kw">if </span>conv_id == id
                     ));
                 })

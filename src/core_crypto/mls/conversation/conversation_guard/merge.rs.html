@@ -479,7 +479,7 @@
                         <span class="macro">assert_eq!</span>(alice_central.pending_proposals(<span class="kw-2">&amp;</span>id).<span class="kw">await</span>.len(), <span class="number">3</span>);
                         alice_central
                             .context
-                            .conversation_guard(<span class="kw-2">&amp;</span>id)
+                            .conversation(<span class="kw-2">&amp;</span>id)
                             .<span class="kw">await
                             </span>.unwrap()
                             .clear_pending_proposal(add_ref)
@@ -496,7 +496,7 @@
 
                         alice_central
                             .context
-                            .conversation_guard(<span class="kw-2">&amp;</span>id)
+                            .conversation(<span class="kw-2">&amp;</span>id)
                             .<span class="kw">await
                             </span>.unwrap()
                             .clear_pending_proposal(remove_ref)
@@ -513,7 +513,7 @@
 
                         alice_central
                             .context
-                            .conversation_guard(<span class="kw-2">&amp;</span>id)
+                            .conversation(<span class="kw-2">&amp;</span>id)
                             .<span class="kw">await
                             </span>.unwrap()
                             .clear_pending_proposal(update_ref)
@@ -548,7 +548,7 @@
                     <span class="kw">let </span>any_ref = MlsProposalRef::from(<span class="macro">vec!</span>[<span class="number">0</span>; case.ciphersuite().hash_length()]);
                     <span class="kw">let </span>clear = alice_central
                         .context
-                        .conversation_guard(<span class="kw-2">&amp;</span>id)
+                        .conversation(<span class="kw-2">&amp;</span>id)
                         .<span class="kw">await
                         </span>.unwrap()
                         .clear_pending_proposal(any_ref.clone())
@@ -579,7 +579,7 @@
                     <span class="macro">assert_eq!</span>(cc.pending_proposals(<span class="kw-2">&amp;</span>id).<span class="kw">await</span>.len(), <span class="number">1</span>);
 
                     cc.context
-                        .conversation_guard(<span class="kw-2">&amp;</span>id)
+                        .conversation(<span class="kw-2">&amp;</span>id)
                         .<span class="kw">await
                         </span>.unwrap()
                         .clear_pending_proposal(proposal_ref)
@@ -618,7 +618,7 @@
                     <span class="macro">assert!</span>(alice_central.pending_commit(<span class="kw-2">&amp;</span>id).<span class="kw">await</span>.is_some());
                     alice_central
                         .context
-                        .conversation_guard(<span class="kw-2">&amp;</span>id)
+                        .conversation(<span class="kw-2">&amp;</span>id)
                         .<span class="kw">await
                         </span>.unwrap()
                         .clear_pending_commit()
@@ -644,7 +644,7 @@
                     <span class="macro">assert!</span>(alice_central.pending_commit(<span class="kw-2">&amp;</span>id).<span class="kw">await</span>.is_none());
                     <span class="kw">let </span>clear = alice_central
                         .context
-                        .conversation_guard(<span class="kw-2">&amp;</span>id)
+                        .conversation(<span class="kw-2">&amp;</span>id)
                         .<span class="kw">await
                         </span>.unwrap()
                         .clear_pending_commit()
@@ -673,7 +673,7 @@
                     <span class="macro">assert!</span>(cc.pending_commit(<span class="kw-2">&amp;</span>id).<span class="kw">await</span>.is_some());
 
                     cc.context
-                        .conversation_guard(<span class="kw-2">&amp;</span>id)
+                        .conversation(<span class="kw-2">&amp;</span>id)
                         .<span class="kw">await
                         </span>.unwrap()
                         .clear_pending_commit()

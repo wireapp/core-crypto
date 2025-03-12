@@ -96,7 +96,7 @@
                 <span class="comment">// Alice invites Bob with a KeyPackage...
                 </span>alice_central
                     .context
-                    .conversation_guard(<span class="kw-2">&amp;</span>id)
+                    .conversation(<span class="kw-2">&amp;</span>id)
                     .<span class="kw">await
                     </span>.unwrap()
                     .add_members(<span class="macro">vec!</span>[bob])

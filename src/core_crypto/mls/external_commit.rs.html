@@ -699,11 +699,7 @@
 <a href="#698" id="698">698</a>
 <a href="#699" id="699">699</a>
 <a href="#700" id="700">700</a>
-<a href="#701" id="701">701</a>
-<a href="#702" id="702">702</a>
-<a href="#703" id="703">703</a>
-<a href="#704" id="704">704</a>
-<a href="#705" id="705">705</a></pre></div><pre class="rust"><code><span class="comment">// Wire
+<a href="#701" id="701">701</a></pre></div><pre class="rust"><code><span class="comment">// Wire
 // Copyright (C) 2022 Wire Swiss GmbH
 
 // This program is free software: you can redistribute it and/or modify
@@ -768,12 +764,8 @@
             </span>.create_external_join_commit(group_info, custom_cfg, credential_type)
             .<span class="kw">await</span><span class="question-mark">?</span>;
 
-        <span class="kw">match </span><span class="self">self</span>.send_commit(commit_bundle, <span class="prelude-val">None</span>).<span class="kw">await </span>{
-            <span class="prelude-val">Ok</span>(need_to_merge_commit) =&gt; {
-                <span class="macro">debug_assert!</span>(
-                    need_to_merge_commit,
-                    <span class="string">"If sending the external commit was successful, we should always need to merge it"
-                </span>);
+        <span class="kw">match </span>pending_conversation.send_commit(commit_bundle).<span class="kw">await </span>{
+            <span class="prelude-val">Ok</span>(()) =&gt; {
                 pending_conversation
                     .merge()
                     .<span class="kw">await
@@ -925,7 +917,7 @@
                     </span><span class="macro">assert_eq!</span>(alice_central.get_conversation_unchecked(<span class="kw-2">&amp;</span>id).<span class="kw">await</span>.members().len(), <span class="number">1</span>);
                     <span class="kw">let </span>decrypted = alice_central
                         .context
-                        .conversation_guard(<span class="kw-2">&amp;</span>id)
+                        .conversation(<span class="kw-2">&amp;</span>id)
                         .<span class="kw">await
                         </span>.unwrap()
                         .decrypt_message(<span class="kw-2">&amp;</span>external_commit.commit.to_bytes().unwrap())
@@ -938,9 +930,9 @@
 
                     <span class="comment">// Let's say backend accepted our external commit.
                     // So Bob can merge the commit and update the local state
-                    </span><span class="macro">assert!</span>(bob_central.context.get_conversation(<span class="kw-2">&amp;</span>id).<span class="kw">await</span>.is_err());
+                    </span><span class="macro">assert!</span>(bob_central.context.conversation(<span class="kw-2">&amp;</span>id).<span class="kw">await</span>.is_err());
                     pending_conversation.merge().<span class="kw">await</span>.unwrap();
-                    <span class="macro">assert!</span>(bob_central.context.get_conversation(<span class="kw-2">&amp;</span>id).<span class="kw">await</span>.is_ok());
+                    <span class="macro">assert!</span>(bob_central.context.conversation(<span class="kw-2">&amp;</span>id).<span class="kw">await</span>.is_ok());
                     <span class="macro">assert_eq!</span>(bob_central.get_conversation_unchecked(<span class="kw-2">&amp;</span>id).<span class="kw">await</span>.members().len(), <span class="number">2</span>);
                     <span class="macro">assert!</span>(alice_central.try_talk_to(<span class="kw-2">&amp;</span>id, <span class="kw-2">&amp;</span>bob_central).<span class="kw">await</span>.is_ok());
 
@@ -998,7 +990,7 @@
                     .<span class="kw">await
                     </span>.unwrap();
                 <span class="macro">assert_eq!</span>(conversation_id.as_slice(), <span class="kw-2">&amp;</span>id);
-                <span class="macro">assert!</span>(bob_central.context.get_conversation(<span class="kw-2">&amp;</span>id).<span class="kw">await</span>.is_ok());
+                <span class="macro">assert!</span>(bob_central.context.conversation(<span class="kw-2">&amp;</span>id).<span class="kw">await</span>.is_ok());
                 <span class="macro">assert_eq!</span>(bob_central.get_conversation_unchecked(<span class="kw-2">&amp;</span>id).<span class="kw">await</span>.members().len(), <span class="number">2</span>);
 
                 <span class="kw">let </span>external_commit = bob_central.mls_transport.latest_commit().<span class="kw">await</span>;
@@ -1006,7 +998,7 @@
                 </span><span class="macro">assert_eq!</span>(alice_central.get_conversation_unchecked(<span class="kw-2">&amp;</span>id).<span class="kw">await</span>.members().len(), <span class="number">1</span>);
                 alice_central
                     .context
-                    .conversation_guard(<span class="kw-2">&amp;</span>id)
+                    .conversation(<span class="kw-2">&amp;</span>id)
                     .<span class="kw">await
                     </span>.unwrap()
                     .decrypt_message(<span class="kw-2">&amp;</span>external_commit.to_bytes().unwrap())
@@ -1047,7 +1039,7 @@
                 <span class="comment">// Alice creates a new commit before receiving the external join
                 </span>alice_central
                     .context
-                    .conversation_guard(<span class="kw-2">&amp;</span>id)
+                    .conversation(<span class="kw-2">&amp;</span>id)
                     .<span class="kw">await
                     </span>.unwrap()
                     .update_key_material()
@@ -1058,7 +1050,7 @@
                 // the wrong epoch
                 </span><span class="kw">let </span>result = alice_central
                     .context
-                    .conversation_guard(<span class="kw-2">&amp;</span>id)
+                    .conversation(<span class="kw-2">&amp;</span>id)
                     .<span class="kw">await
                     </span>.unwrap()
                     .decrypt_message(<span class="kw-2">&amp;</span>external_commit.to_bytes().unwrap())
@@ -1142,13 +1134,13 @@
                         </span>.unwrap();
 
                     <span class="kw">let </span>bob_external_commit = bob_central.mls_transport.latest_commit().<span class="kw">await</span>;
-                    <span class="macro">assert!</span>(bob_central.context.get_conversation(<span class="kw-2">&amp;</span>id).<span class="kw">await</span>.is_ok());
+                    <span class="macro">assert!</span>(bob_central.context.conversation(<span class="kw-2">&amp;</span>id).<span class="kw">await</span>.is_ok());
                     <span class="macro">assert_eq!</span>(bob_central.get_conversation_unchecked(<span class="kw-2">&amp;</span>id).<span class="kw">await</span>.members().len(), <span class="number">2</span>);
 
                     <span class="comment">// Alice decrypts the commit, Bob's in !
                     </span>alice_central
                         .context
-                        .conversation_guard(<span class="kw-2">&amp;</span>id)
+                        .conversation(<span class="kw-2">&amp;</span>id)
                         .<span class="kw">await
                         </span>.unwrap()
                         .decrypt_message(<span class="kw-2">&amp;</span>bob_external_commit.to_bytes().unwrap())
@@ -1171,7 +1163,7 @@
                     <span class="comment">// Both Alice &amp; Bob decrypt the commit
                     </span>alice_central
                         .context
-                        .conversation_guard(<span class="kw-2">&amp;</span>id)
+                        .conversation(<span class="kw-2">&amp;</span>id)
                         .<span class="kw">await
                         </span>.unwrap()
                         .decrypt_message(charlie_external_commit.to_bytes().unwrap())
@@ -1179,7 +1171,7 @@
                         </span>.unwrap();
                     bob_central
                         .context
-                        .conversation_guard(<span class="kw-2">&amp;</span>id)
+                        .conversation(<span class="kw-2">&amp;</span>id)
                         .<span class="kw">await
                         </span>.unwrap()
                         .decrypt_message(charlie_external_commit.to_bytes().unwrap())
@@ -1189,7 +1181,7 @@
                     <span class="macro">assert_eq!</span>(bob_central.get_conversation_unchecked(<span class="kw-2">&amp;</span>id).<span class="kw">await</span>.members().len(), <span class="number">3</span>);
 
                     <span class="comment">// Charlie is also in!
-                    </span><span class="macro">assert!</span>(charlie_central.context.get_conversation(<span class="kw-2">&amp;</span>id).<span class="kw">await</span>.is_ok());
+                    </span><span class="macro">assert!</span>(charlie_central.context.conversation(<span class="kw-2">&amp;</span>id).<span class="kw">await</span>.is_ok());
                     <span class="macro">assert_eq!</span>(charlie_central.get_conversation_unchecked(<span class="kw-2">&amp;</span>id).<span class="kw">await</span>.members().len(), <span class="number">3</span>);
                     <span class="macro">assert!</span>(charlie_central.try_talk_to(<span class="kw-2">&amp;</span>id, <span class="kw-2">&amp;</span>alice_central).<span class="kw">await</span>.is_ok());
                     <span class="macro">assert!</span>(charlie_central.try_talk_to(<span class="kw-2">&amp;</span>id, <span class="kw-2">&amp;</span>bob_central).<span class="kw">await</span>.is_ok());
@@ -1294,7 +1286,7 @@
                 <span class="kw">let </span>bob = bob_central.rand_key_package(<span class="kw-2">&amp;</span>case).<span class="kw">await</span>;
                 alice_central
                     .context
-                    .conversation_guard(<span class="kw-2">&amp;</span>id)
+                    .conversation(<span class="kw-2">&amp;</span>id)
                     .<span class="kw">await
                     </span>.unwrap()
                     .add_members(<span class="macro">vec!</span>[bob])
@@ -1338,7 +1330,7 @@
                     <span class="kw">let </span>invalid_kp = bob_central.new_keypackage(<span class="kw-2">&amp;</span>case, Lifetime::new(expiration_time)).<span class="kw">await</span>;
                     alice_central
                         .context
-                        .conversation_guard(<span class="kw-2">&amp;</span>id)
+                        .conversation(<span class="kw-2">&amp;</span>id)
                         .<span class="kw">await
                         </span>.unwrap()
                         .add_members(<span class="macro">vec!</span>[invalid_kp.into()])

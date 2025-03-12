@@ -366,7 +366,8 @@
 <a href="#365" id="365">365</a>
 <a href="#366" id="366">366</a>
 <a href="#367" id="367">367</a>
-<a href="#368" id="368">368</a></pre></div><pre class="rust"><code><span class="comment">// Wire
+<a href="#368" id="368">368</a>
+<a href="#369" id="369">369</a></pre></div><pre class="rust"><code><span class="comment">// Wire
 // Copyright (C) 2022 Wire Swiss GmbH
 
 // This program is free software: you can redistribute it and/or modify
@@ -607,6 +608,7 @@
     <span class="kw">use </span>wasm_bindgen_test::<span class="kw-2">*</span>;
     <span class="kw">use </span>wire_e2e_identity::prelude::JwsAlgorithm;
 
+    <span class="kw">use </span><span class="kw">crate</span>::mls::conversation::ConversationWithMls <span class="kw">as _</span>;
     <span class="kw">use crate</span>::{prelude::MlsConversationConfiguration, test_utils::<span class="kw-2">*</span>};
 
     <span class="macro">wasm_bindgen_test_configure!</span>(run_in_browser);
@@ -622,8 +624,8 @@
                     .new_conversation(<span class="kw-2">&amp;</span>id, case.credential_type, case.cfg.clone())
                     .<span class="kw">await
                     </span>.unwrap();
-                <span class="kw">let </span>conv = cc.context.get_conversation(<span class="kw-2">&amp;</span>id).<span class="kw">await</span>.unwrap();
-                <span class="kw">let </span>group = conv.read().<span class="kw">await</span>;
+                <span class="kw">let </span>conv = cc.context.conversation(<span class="kw-2">&amp;</span>id).<span class="kw">await</span>.unwrap();
+                <span class="kw">let </span>group = conv.conversation().<span class="kw">await</span>;
 
                 <span class="kw">let </span>capabilities = group.group.group_context_extensions().required_capabilities().unwrap();
 
@@ -649,8 +651,8 @@
                     .new_conversation(<span class="kw-2">&amp;</span>id, case.credential_type, case.cfg.clone())
                     .<span class="kw">await
                     </span>.unwrap();
-                <span class="kw">let </span>conv = cc.context.get_conversation(<span class="kw-2">&amp;</span>id).<span class="kw">await</span>.unwrap();
-                <span class="kw">let </span>group = conv.read().<span class="kw">await</span>;
+                <span class="kw">let </span>conv = cc.context.conversation(<span class="kw-2">&amp;</span>id).<span class="kw">await</span>.unwrap();
+                <span class="kw">let </span>group = conv.conversation().<span class="kw">await</span>;
 
                 <span class="comment">// verifying https://www.rfc-editor.org/rfc/rfc9420.html#section-7.2
                 </span><span class="kw">let </span>creator_capabilities = group.group.own_leaf().unwrap().capabilities();

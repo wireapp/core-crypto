@@ -839,7 +839,7 @@
                         <span class="comment">// Owner receives external proposal message from server
                         </span><span class="kw">let </span>decrypted = owner_central
                             .context
-                            .conversation_guard(<span class="kw-2">&amp;</span>id)
+                            .conversation(<span class="kw-2">&amp;</span>id)
                             .<span class="kw">await
                             </span>.unwrap()
                             .decrypt_message(external_add.to_bytes().unwrap())
@@ -854,7 +854,7 @@
                         <span class="comment">// simulate commit message reception from server
                         </span>owner_central
                             .context
-                            .conversation_guard(<span class="kw-2">&amp;</span>id)
+                            .conversation(<span class="kw-2">&amp;</span>id)
                             .<span class="kw">await
                             </span>.unwrap()
                             .commit_pending_proposals()
@@ -924,21 +924,21 @@
                             .unwrap();
 
                     owner_central
-                        .conversation_guard(<span class="kw-2">&amp;</span>id)
+                        .conversation(<span class="kw-2">&amp;</span>id)
                         .<span class="kw">await
                         </span>.unwrap()
                         .decrypt_message(proposal.to_bytes().unwrap())
                         .<span class="kw">await
                         </span>.unwrap();
                     guest_central
-                        .conversation_guard(<span class="kw-2">&amp;</span>id)
+                        .conversation(<span class="kw-2">&amp;</span>id)
                         .<span class="kw">await
                         </span>.unwrap()
                         .decrypt_message(proposal.to_bytes().unwrap())
                         .<span class="kw">await
                         </span>.unwrap();
                     owner_central
-                        .conversation_guard(<span class="kw-2">&amp;</span>id)
+                        .conversation(<span class="kw-2">&amp;</span>id)
                         .<span class="kw">await
                         </span>.unwrap()
                         .commit_pending_proposals()
@@ -950,13 +950,13 @@
 
                     <span class="comment">// guest can no longer participate
                     </span>guest_central
-                        .conversation_guard(<span class="kw-2">&amp;</span>id)
+                        .conversation(<span class="kw-2">&amp;</span>id)
                         .<span class="kw">await
                         </span>.unwrap()
                         .decrypt_message(commit.to_bytes().unwrap())
                         .<span class="kw">await
                         </span>.unwrap();
-                    <span class="macro">assert!</span>(guest_central.get_conversation(<span class="kw-2">&amp;</span>id).<span class="kw">await</span>.is_err());
+                    <span class="macro">assert!</span>(guest_central.conversation(<span class="kw-2">&amp;</span>id).<span class="kw">await</span>.is_err());
                     <span class="macro">assert!</span>(guest.try_talk_to(<span class="kw-2">&amp;</span>id, <span class="kw-2">&amp;</span>owner).<span class="kw">await</span>.is_err());
                 })
             })
@@ -1005,7 +1005,7 @@
 
                         <span class="kw">let </span>owner_decrypt = owner
                             .context
-                            .conversation_guard(<span class="kw-2">&amp;</span>id)
+                            .conversation(<span class="kw-2">&amp;</span>id)
                             .<span class="kw">await
                             </span>.unwrap()
                             .decrypt_message(proposal.to_bytes().unwrap())
@@ -1023,7 +1023,7 @@
 
                         <span class="kw">let </span>guest_decrypt = owner
                             .context
-                            .conversation_guard(<span class="kw-2">&amp;</span>id)
+                            .conversation(<span class="kw-2">&amp;</span>id)
                             .<span class="kw">await
                             </span>.unwrap()
                             .decrypt_message(proposal.to_bytes().unwrap())
@@ -1086,7 +1086,7 @@
 
                     <span class="kw">let </span>owner_decrypt = owner
                         .context
-                        .conversation_guard(<span class="kw-2">&amp;</span>id)
+                        .conversation(<span class="kw-2">&amp;</span>id)
                         .<span class="kw">await
                         </span>.unwrap()
                         .decrypt_message(proposal.to_bytes().unwrap())
@@ -1101,7 +1101,7 @@
 
                     <span class="kw">let </span>guest_decrypt = owner
                         .context
-                        .conversation_guard(<span class="kw-2">&amp;</span>id)
+                        .conversation(<span class="kw-2">&amp;</span>id)
                         .<span class="kw">await
                         </span>.unwrap()
                         .decrypt_message(proposal.to_bytes().unwrap())
@@ -1150,7 +1150,7 @@
                         // message and not from configuration
                         </span><span class="kw">let </span>charlie_kp = charlie.rand_key_package(<span class="kw-2">&amp;</span>case).<span class="kw">await</span>;
                         alice_central
-                            .conversation_guard(<span class="kw-2">&amp;</span>id)
+                            .conversation(<span class="kw-2">&amp;</span>id)
                             .<span class="kw">await
                             </span>.unwrap()
                             .add_members(<span class="macro">vec!</span>[charlie_kp])
@@ -1159,7 +1159,7 @@
                         <span class="kw">let </span>welcome = alice.mls_transport.latest_welcome_message().<span class="kw">await</span>;
                         <span class="kw">let </span>commit = alice.mls_transport.latest_commit().<span class="kw">await</span>;
                         bob_central
-                            .conversation_guard(<span class="kw-2">&amp;</span>id)
+                            .conversation(<span class="kw-2">&amp;</span>id)
                             .<span class="kw">await
                             </span>.unwrap()
                             .decrypt_message(commit.to_bytes().unwrap())
@@ -1189,7 +1189,7 @@
                         <span class="comment">// joiner from Welcome should be able to verify the external remove proposal since
                         // it has fetched back the external_sender from Welcome
                         </span><span class="kw">let </span>charlie_can_verify_ext_proposal = charlie_central
-                            .conversation_guard(<span class="kw-2">&amp;</span>id)
+                            .conversation(<span class="kw-2">&amp;</span>id)
                             .<span class="kw">await
                             </span>.unwrap()
                             .decrypt_message(proposal.to_bytes().unwrap())
@@ -1197,14 +1197,14 @@
                         <span class="macro">assert!</span>(charlie_can_verify_ext_proposal.is_ok());
 
                         alice_central
-                            .conversation_guard(<span class="kw-2">&amp;</span>id)
+                            .conversation(<span class="kw-2">&amp;</span>id)
                             .<span class="kw">await
                             </span>.unwrap()
                             .decrypt_message(proposal.to_bytes().unwrap())
                             .<span class="kw">await
                             </span>.unwrap();
                         bob_central
-                            .conversation_guard(<span class="kw-2">&amp;</span>id)
+                            .conversation(<span class="kw-2">&amp;</span>id)
                             .<span class="kw">await
                             </span>.unwrap()
                             .decrypt_message(proposal.to_bytes().unwrap())
@@ -1212,7 +1212,7 @@
                             </span>.unwrap();
 
                         charlie_central
-                            .conversation_guard(<span class="kw-2">&amp;</span>id)
+                            .conversation(<span class="kw-2">&amp;</span>id)
                             .<span class="kw">await
                             </span>.unwrap()
                             .commit_pending_proposals()
@@ -1222,7 +1222,7 @@
                         <span class="macro">assert_eq!</span>(charlie.get_conversation_unchecked(<span class="kw-2">&amp;</span>id).<span class="kw">await</span>.members().len(), <span class="number">2</span>);
 
                         alice_central
-                            .conversation_guard(<span class="kw-2">&amp;</span>id)
+                            .conversation(<span class="kw-2">&amp;</span>id)
                             .<span class="kw">await
                             </span>.unwrap()
                             .decrypt_message(commit.to_bytes().unwrap())
@@ -1230,7 +1230,7 @@
                             </span>.unwrap();
                         <span class="macro">assert_eq!</span>(alice.get_conversation_unchecked(<span class="kw-2">&amp;</span>id).<span class="kw">await</span>.members().len(), <span class="number">2</span>);
                         bob_central
-                            .conversation_guard(<span class="kw-2">&amp;</span>id)
+                            .conversation(<span class="kw-2">&amp;</span>id)
                             .<span class="kw">await
                             </span>.unwrap()
                             .decrypt_message(commit.to_bytes().unwrap())
@@ -1283,14 +1283,14 @@
 
                         <span class="comment">// Purposely have a configuration without `external_senders`
                         </span>alice_central
-                            .conversation_guard(<span class="kw-2">&amp;</span>id)
+                            .conversation(<span class="kw-2">&amp;</span>id)
                             .<span class="kw">await
                             </span>.unwrap()
                             .decrypt_message(commit.to_bytes().unwrap())
                             .<span class="kw">await
                             </span>.unwrap();
                         bob_central
-                            .conversation_guard(<span class="kw-2">&amp;</span>id)
+                            .conversation(<span class="kw-2">&amp;</span>id)
                             .<span class="kw">await
                             </span>.unwrap()
                             .decrypt_message(commit.to_bytes().unwrap())
@@ -1316,7 +1316,7 @@
                         <span class="comment">// joiner from external commit should be able to verify the external remove proposal
                         // since it has fetched back the external_sender from external commit
                         </span><span class="kw">let </span>charlie_can_verify_ext_proposal = charlie_central
-                            .conversation_guard(<span class="kw-2">&amp;</span>id)
+                            .conversation(<span class="kw-2">&amp;</span>id)
                             .<span class="kw">await
                             </span>.unwrap()
                             .decrypt_message(proposal.to_bytes().unwrap())
@@ -1324,14 +1324,14 @@
                         <span class="macro">assert!</span>(charlie_can_verify_ext_proposal.is_ok());
 
                         alice_central
-                            .conversation_guard(<span class="kw-2">&amp;</span>id)
+                            .conversation(<span class="kw-2">&amp;</span>id)
                             .<span class="kw">await
                             </span>.unwrap()
                             .decrypt_message(proposal.to_bytes().unwrap())
                             .<span class="kw">await
                             </span>.unwrap();
                         bob_central
-                            .conversation_guard(<span class="kw-2">&amp;</span>id)
+                            .conversation(<span class="kw-2">&amp;</span>id)
                             .<span class="kw">await
                             </span>.unwrap()
                             .decrypt_message(proposal.to_bytes().unwrap())
@@ -1339,7 +1339,7 @@
                             </span>.unwrap();
 
                         charlie_central
-                            .conversation_guard(<span class="kw-2">&amp;</span>id)
+                            .conversation(<span class="kw-2">&amp;</span>id)
                             .<span class="kw">await
                             </span>.unwrap()
                             .commit_pending_proposals()
@@ -1349,7 +1349,7 @@
 
                         <span class="kw">let </span>commit = charlie.mls_transport.latest_commit().<span class="kw">await</span>;
                         alice_central
-                            .conversation_guard(<span class="kw-2">&amp;</span>id)
+                            .conversation(<span class="kw-2">&amp;</span>id)
                             .<span class="kw">await
                             </span>.unwrap()
                             .decrypt_message(commit.to_bytes().unwrap())
@@ -1357,7 +1357,7 @@
                             </span>.unwrap();
                         <span class="macro">assert_eq!</span>(alice.get_conversation_unchecked(<span class="kw-2">&amp;</span>id).<span class="kw">await</span>.members().len(), <span class="number">2</span>);
                         bob_central
-                            .conversation_guard(<span class="kw-2">&amp;</span>id)
+                            .conversation(<span class="kw-2">&amp;</span>id)
                             .<span class="kw">await
                             </span>.unwrap()
                             .decrypt_message(commit.to_bytes().unwrap())

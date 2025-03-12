@@ -353,7 +353,7 @@
 
                         <span class="kw">let </span>commit_creation = alice_central
                             .context
-                            .conversation_guard(<span class="kw-2">&amp;</span>id)
+                            .conversation(<span class="kw-2">&amp;</span>id)
                             .<span class="kw">await
                             </span>.unwrap()
                             .add_members(<span class="macro">vec!</span>[invalid_kp.into()])
@@ -411,7 +411,7 @@
 
                         <span class="kw">let </span>decrypting = bob_central
                             .context
-                            .conversation_guard(<span class="kw-2">&amp;</span>id)
+                            .conversation(<span class="kw-2">&amp;</span>id)
                             .<span class="kw">await
                             </span>.unwrap()
                             .decrypt_message(proposal)
@@ -460,7 +460,7 @@
 
                         alice_central
                             .context
-                            .conversation_guard(<span class="kw-2">&amp;</span>id)
+                            .conversation(<span class="kw-2">&amp;</span>id)
                             .<span class="kw">await
                             </span>.unwrap()
                             .add_members(<span class="macro">vec!</span>[invalid_kp.into()])
@@ -479,7 +479,7 @@
 
                         <span class="kw">let </span>decrypting = bob_central
                             .context
-                            .conversation_guard(<span class="kw-2">&amp;</span>id)
+                            .conversation(<span class="kw-2">&amp;</span>id)
                             .<span class="kw">await
                             </span>.unwrap()
                             .decrypt_message(commit)
@@ -518,7 +518,7 @@
                     <span class="kw">let </span>invalid_kp = bob_central.new_keypackage(<span class="kw-2">&amp;</span>case, Lifetime::new(expiration_time)).<span class="kw">await</span>;
                     alice_central
                         .context
-                        .conversation_guard(<span class="kw-2">&amp;</span>id)
+                        .conversation(<span class="kw-2">&amp;</span>id)
                         .<span class="kw">await
                         </span>.unwrap()
                         .add_members(<span class="macro">vec!</span>[invalid_kp.into()])

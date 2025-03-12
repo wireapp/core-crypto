@@ -1734,7 +1734,7 @@
                     .<span class="kw">await
                     </span>.unwrap();
                 cc.context
-                    .conversation_guard(<span class="kw-2">&amp;</span>id)
+                    .conversation(<span class="kw-2">&amp;</span>id)
                     .<span class="kw">await
                     </span>.unwrap()
                     .encrypt_message(<span class="string">"Hello e2e identity !"</span>)
@@ -1742,7 +1742,7 @@
                     </span>.unwrap();
                 <span class="macro">assert_eq!</span>(
                     cc.context
-                        .conversation_guard(<span class="kw-2">&amp;</span>id)
+                        .conversation(<span class="kw-2">&amp;</span>id)
                         .<span class="kw">await
                         </span>.unwrap()
                         .e2ei_conversation_state()

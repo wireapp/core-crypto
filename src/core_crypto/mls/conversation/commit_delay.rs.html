@@ -459,7 +459,7 @@
                     <span class="kw">let </span>bob = bob_central.rand_key_package(<span class="kw-2">&amp;</span>case).<span class="kw">await</span>;
                     alice_central
                         .context
-                        .conversation_guard(<span class="kw-2">&amp;</span>id)
+                        .conversation(<span class="kw-2">&amp;</span>id)
                         .<span class="kw">await
                         </span>.unwrap()
                         .add_members(<span class="macro">vec!</span>[bob])
@@ -477,7 +477,7 @@
                     <span class="kw">let </span>charlie = charlie_central.rand_key_package(<span class="kw-2">&amp;</span>case).<span class="kw">await</span>;
                     alice_central
                         .context
-                        .conversation_guard(<span class="kw-2">&amp;</span>id)
+                        .conversation(<span class="kw-2">&amp;</span>id)
                         .<span class="kw">await
                         </span>.unwrap()
                         .add_members(<span class="macro">vec!</span>[charlie])
@@ -488,7 +488,7 @@
 
                     <span class="kw">let _ </span>= bob_central
                         .context
-                        .conversation_guard(<span class="kw-2">&amp;</span>id)
+                        .conversation(<span class="kw-2">&amp;</span>id)
                         .<span class="kw">await
                         </span>.unwrap()
                         .decrypt_message(<span class="kw-2">&amp;</span>charlie_welcome_bundle.commit.tls_serialize_detached().unwrap())
@@ -521,7 +521,7 @@
 
                     <span class="kw">let </span>bob_decrypted_message = bob_central
                         .context
-                        .conversation_guard(<span class="kw-2">&amp;</span>id)
+                        .conversation(<span class="kw-2">&amp;</span>id)
                         .<span class="kw">await
                         </span>.unwrap()
                         .decrypt_message(<span class="kw-2">&amp;</span>proposal_bundle.proposal.tls_serialize_detached().unwrap())
@@ -535,7 +535,7 @@
 
                     <span class="kw">let </span>charlie_decrypted_message = charlie_central
                         .context
-                        .conversation_guard(<span class="kw-2">&amp;</span>id)
+                        .conversation(<span class="kw-2">&amp;</span>id)
                         .<span class="kw">await
                         </span>.unwrap()
                         .decrypt_message(<span class="kw-2">&amp;</span>proposal_bundle.proposal.tls_serialize_detached().unwrap())

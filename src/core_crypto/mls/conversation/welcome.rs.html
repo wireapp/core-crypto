@@ -429,7 +429,7 @@
 
                 alice_central
                     .context
-                    .conversation_guard(<span class="kw-2">&amp;</span>id)
+                    .conversation(<span class="kw-2">&amp;</span>id)
                     .<span class="kw">await
                     </span>.unwrap()
                     .add_members(<span class="macro">vec!</span>[bob])
@@ -468,7 +468,7 @@
                 <span class="kw">let </span>bob = bob_central.rand_key_package(<span class="kw-2">&amp;</span>case).<span class="kw">await</span>;
                 alice_central
                     .context
-                    .conversation_guard(<span class="kw-2">&amp;</span>id)
+                    .conversation(<span class="kw-2">&amp;</span>id)
                     .<span class="kw">await
                     </span>.unwrap()
                     .add_members(<span class="macro">vec!</span>[bob])

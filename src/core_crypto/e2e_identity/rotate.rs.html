@@ -1452,7 +1452,7 @@
                         <span class="kw">for </span>(id, commit) <span class="kw">in </span>result.conversation_ids_and_commits.into_iter() {
                             <span class="kw">let </span>decrypted = bob_central
                                 .context
-                                .conversation_guard(<span class="kw-2">&amp;</span>id)
+                                .conversation(<span class="kw-2">&amp;</span>id)
                                 .<span class="kw">await
                                 </span>.unwrap()
                                 .decrypt_message(commit.commit.to_bytes().unwrap())
@@ -1772,7 +1772,7 @@
                             </span>.unwrap();
                         alice_central
                             .context
-                            .conversation_guard(<span class="kw-2">&amp;</span>id)
+                            .conversation(<span class="kw-2">&amp;</span>id)
                             .<span class="kw">await
                             </span>.unwrap()
                             .e2ei_rotate(<span class="prelude-val">None</span>)
@@ -1783,7 +1783,7 @@
 
                         <span class="kw">let </span>decrypted = bob_central
                             .context
-                            .conversation_guard(<span class="kw-2">&amp;</span>id)
+                            .conversation(<span class="kw-2">&amp;</span>id)
                             .<span class="kw">await
                             </span>.unwrap()
                             .decrypt_message(commit.to_bytes().unwrap())
@@ -1849,7 +1849,7 @@
 
                         bob_central
                             .context
-                            .conversation_guard(<span class="kw-2">&amp;</span>id)
+                            .conversation(<span class="kw-2">&amp;</span>id)
                             .<span class="kw">await
                             </span>.unwrap()
                             .e2ei_rotate(<span class="prelude-val">None</span>)
@@ -1860,7 +1860,7 @@
 
                         <span class="kw">let </span>decrypted = alice_central
                             .context
-                            .conversation_guard(<span class="kw-2">&amp;</span>id)
+                            .conversation(<span class="kw-2">&amp;</span>id)
                             .<span class="kw">await
                             </span>.unwrap()
                             .decrypt_message(commit.to_bytes().unwrap())
@@ -1918,7 +1918,7 @@
                         <span class="comment">// Verify old identity is still there in the MLS group
                         </span><span class="kw">let </span>alice_old_identities = alice_central
                             .context
-                            .conversation_guard(<span class="kw-2">&amp;</span>id)
+                            .conversation(<span class="kw-2">&amp;</span>id)
                             .<span class="kw">await
                             </span>.unwrap()
                             .get_device_identities(<span class="kw-2">&amp;</span>[alice_cid])
@@ -1937,7 +1937,7 @@
                         <span class="comment">// Alice issues an Update commit to replace her current identity
                         </span>alice_central
                             .context
-                            .conversation_guard(<span class="kw-2">&amp;</span>id)
+                            .conversation(<span class="kw-2">&amp;</span>id)
                             .<span class="kw">await
                             </span>.unwrap()
                             .e2ei_rotate(<span class="prelude-val">Some</span>(<span class="kw-2">&amp;</span>cb))
@@ -1948,7 +1948,7 @@
                         <span class="comment">// Bob decrypts the commit...
                         </span><span class="kw">let </span>decrypted = bob_central
                             .context
-                            .conversation_guard(<span class="kw-2">&amp;</span>id)
+                            .conversation(<span class="kw-2">&amp;</span>id)
                             .<span class="kw">await
                             </span>.unwrap()
                             .decrypt_message(commit.to_bytes().unwrap())
@@ -2019,7 +2019,7 @@
                     <span class="comment">// Meanwhile, Bob creates a simple commit
                     </span>bob_central
                         .context
-                        .conversation_guard(<span class="kw-2">&amp;</span>id)
+                        .conversation(<span class="kw-2">&amp;</span>id)
                         .<span class="kw">await
                         </span>.unwrap()
                         .update_key_material()
@@ -2031,7 +2031,7 @@
                     <span class="comment">// Alice decrypts the commit...
                     </span><span class="kw">let </span>decrypted = alice_central
                         .context
-                        .conversation_guard(<span class="kw-2">&amp;</span>id)
+                        .conversation(<span class="kw-2">&amp;</span>id)
                         .<span class="kw">await
                         </span>.unwrap()
                         .decrypt_message(bob_commit.to_bytes().unwrap())
@@ -2043,7 +2043,7 @@
                     <span class="kw">let </span>renewed_proposal = decrypted.proposals.first().unwrap();
                     bob_central
                         .context
-                        .conversation_guard(<span class="kw-2">&amp;</span>id)
+                        .conversation(<span class="kw-2">&amp;</span>id)
                         .<span class="kw">await
                         </span>.unwrap()
                         .decrypt_message(renewed_proposal.proposal.to_bytes().unwrap())
@@ -2052,7 +2052,7 @@
 
                     alice_central
                         .context
-                        .conversation_guard(<span class="kw-2">&amp;</span>id)
+                        .conversation(<span class="kw-2">&amp;</span>id)
                         .<span class="kw">await
                         </span>.unwrap()
                         .commit_pending_proposals()
@@ -2068,7 +2068,7 @@
                     <span class="comment">// Bob verifies that now Alice is represented with her new identity
                     </span><span class="kw">let </span>decrypted = bob_central
                         .context
-                        .conversation_guard(<span class="kw-2">&amp;</span>id)
+                        .conversation(<span class="kw-2">&amp;</span>id)
                         .<span class="kw">await
                         </span>.unwrap()
                         .decrypt_message(rotate_commit.to_bytes().unwrap())
@@ -2122,7 +2122,7 @@
                         <span class="comment">// Verify old identity is a basic identity in the MLS group
                         </span><span class="kw">let </span>alice_old_identities = alice_central
                             .context
-                            .conversation_guard(<span class="kw-2">&amp;</span>id)
+                            .conversation(<span class="kw-2">&amp;</span>id)
                             .<span class="kw">await
                             </span>.unwrap()
                             .get_device_identities(<span class="kw-2">&amp;</span>[alice_cid])
@@ -2135,7 +2135,7 @@
                         <span class="comment">// Alice issues an Update commit to replace her current identity
                         </span>alice_central
                             .context
-                            .conversation_guard(<span class="kw-2">&amp;</span>id)
+                            .conversation(<span class="kw-2">&amp;</span>id)
                             .<span class="kw">await
                             </span>.unwrap()
                             .e2ei_rotate(<span class="prelude-val">None</span>)
@@ -2146,7 +2146,7 @@
                         <span class="comment">// Bob decrypts the commit...
                         </span><span class="kw">let </span>decrypted = bob_central
                             .context
-                            .conversation_guard(<span class="kw-2">&amp;</span>id)
+                            .conversation(<span class="kw-2">&amp;</span>id)
                             .<span class="kw">await
                             </span>.unwrap()
                             .decrypt_message(commit.to_bytes().unwrap())

@@ -1487,27 +1487,7 @@
 <a href="#1486" id="1486">1486</a>
 <a href="#1487" id="1487">1487</a>
 <a href="#1488" id="1488">1488</a>
-<a href="#1489" id="1489">1489</a>
-<a href="#1490" id="1490">1490</a>
-<a href="#1491" id="1491">1491</a>
-<a href="#1492" id="1492">1492</a>
-<a href="#1493" id="1493">1493</a>
-<a href="#1494" id="1494">1494</a>
-<a href="#1495" id="1495">1495</a>
-<a href="#1496" id="1496">1496</a>
-<a href="#1497" id="1497">1497</a>
-<a href="#1498" id="1498">1498</a>
-<a href="#1499" id="1499">1499</a>
-<a href="#1500" id="1500">1500</a>
-<a href="#1501" id="1501">1501</a>
-<a href="#1502" id="1502">1502</a>
-<a href="#1503" id="1503">1503</a>
-<a href="#1504" id="1504">1504</a>
-<a href="#1505" id="1505">1505</a>
-<a href="#1506" id="1506">1506</a>
-<a href="#1507" id="1507">1507</a>
-<a href="#1508" id="1508">1508</a>
-<a href="#1509" id="1509">1509</a></pre></div><pre class="rust"><code><span class="comment">// Wire
+<a href="#1489" id="1489">1489</a></pre></div><pre class="rust"><code><span class="comment">// Wire
 // Copyright (C) 2022 Wire Swiss GmbH
 
 // This program is free software: you can redistribute it and/or modify
@@ -1551,7 +1531,7 @@
 
 <span class="kw">use crate</span>::{
     KeystoreError, LeafError, MlsError, RecursiveError,
-    group_store::{GroupStore, GroupStoreValue},
+    group_store::GroupStore,
     mls::{MlsCentral, client::Client},
     prelude::{MlsCiphersuite, MlsCredentialType},
 };
@@ -1951,7 +1931,7 @@
 <span class="kw">impl </span>MlsCentral {
     <span class="doccomment">/// Get an immutable view of an `MlsConversation`.
     ///
-    /// Because it operates on the raw conversation type, this may be faster than [`CentralContext::get_conversation`]
+    /// Because it operates on the raw conversation type, this may be faster than [`CentralContext::conversation`]
     /// for transient and immutable purposes. For long-lived or mutable purposes, prefer the other method.
     </span><span class="kw">pub async fn </span>get_raw_conversation(<span class="kw-2">&amp;</span><span class="self">self</span>, id: <span class="kw-2">&amp;</span>ConversationId) -&gt; <span class="prelude-ty">Result</span>&lt;ImmutableConversation&gt; {
         <span class="kw">let </span>raw_conversation = GroupStore::fetch_from_keystore(id, <span class="kw-2">&amp;</span><span class="self">self</span>.mls_backend.keystore(), <span class="prelude-val">None</span>)
@@ -1963,25 +1943,10 @@
 }
 
 <span class="kw">impl </span>CentralContext {
-    <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">async fn </span>get_conversation(<span class="kw-2">&amp;</span><span class="self">self</span>, id: <span class="kw-2">&amp;</span>ConversationId) -&gt; <span class="prelude-ty">Result</span>&lt;GroupStoreValue&lt;MlsConversation&gt;&gt; {
-        <span class="kw">let </span>keystore = <span class="self">self
-            </span>.mls_provider()
-            .<span class="kw">await
-            </span>.map_err(RecursiveError::root(<span class="string">"getting mls provider"</span>))<span class="question-mark">?
-            </span>.keystore();
-        <span class="self">self</span>.mls_groups()
-            .<span class="kw">await
-            </span>.map_err(RecursiveError::root(<span class="string">"getting mls groups"</span>))<span class="question-mark">?
-            </span>.get_fetch(id, <span class="kw-2">&amp;</span>keystore, <span class="prelude-val">None</span>)
-            .<span class="kw">await
-            </span>.map_err(RecursiveError::root(<span class="string">"fetching conversation from mls groups by id"</span>))<span class="question-mark">?
-            </span>.ok_or_else(|| LeafError::ConversationNotFound(id.clone()).into())
-    }
-
     <span class="doccomment">/// Acquire a conversation guard.
     ///
     /// This helper struct permits mutations on a conversation.
-    </span><span class="kw">pub async fn </span>conversation_guard(<span class="kw-2">&amp;</span><span class="self">self</span>, id: <span class="kw-2">&amp;</span>ConversationId) -&gt; <span class="prelude-ty">Result</span>&lt;ConversationGuard&gt; {
+    </span><span class="kw">pub async fn </span>conversation(<span class="kw-2">&amp;</span><span class="self">self</span>, id: <span class="kw-2">&amp;</span>ConversationId) -&gt; <span class="prelude-ty">Result</span>&lt;ConversationGuard&gt; {
         <span class="kw">let </span>keystore = <span class="self">self
             </span>.mls_provider()
             .<span class="kw">await
@@ -2061,7 +2026,7 @@
                 <span class="macro">assert_eq!</span>(alice_central.get_conversation_unchecked(<span class="kw-2">&amp;</span>id).<span class="kw">await</span>.members().len(), <span class="number">1</span>);
                 <span class="kw">let </span>alice_can_send_message = alice_central
                     .context
-                    .conversation_guard(<span class="kw-2">&amp;</span>id)
+                    .conversation(<span class="kw-2">&amp;</span>id)
                     .<span class="kw">await
                     </span>.unwrap()
                     .encrypt_message(<span class="string">b"me"</span>)
@@ -2088,7 +2053,7 @@
                 <span class="kw">let </span>bob = bob_central.rand_key_package(<span class="kw-2">&amp;</span>case).<span class="kw">await</span>;
                 alice_central
                     .context
-                    .conversation_guard(<span class="kw-2">&amp;</span>id)
+                    .conversation(<span class="kw-2">&amp;</span>id)
                     .<span class="kw">await
                     </span>.unwrap()
                     .add_members(<span class="macro">vec!</span>[bob])
@@ -2203,7 +2168,7 @@
 
                 alice_central
                     .context
-                    .conversation_guard(<span class="kw-2">&amp;</span>id)
+                    .conversation(<span class="kw-2">&amp;</span>id)
                     .<span class="kw">await
                     </span>.unwrap()
                     .add_members(bob_and_friends_kps)
@@ -2264,7 +2229,7 @@
             expected_sizes: [usize; N],
         ) {
             <span class="kw">let </span>all_identities = central
-                .conversation_guard(id)
+                .conversation(id)
                 .<span class="kw">await
                 </span>.unwrap()
                 .get_user_identities(user_ids)
@@ -2277,7 +2242,7 @@
             }
             <span class="comment">// Not found
             </span><span class="kw">let </span>not_found = central
-                .conversation_guard(id)
+                .conversation(id)
                 .<span class="kw">await
                 </span>.unwrap()
                 .get_user_identities(<span class="kw-2">&amp;</span>[<span class="string">"aaaaaaaaaaaaa"</span>.to_string()])
@@ -2286,12 +2251,7 @@
             <span class="macro">assert!</span>(not_found.is_empty());
 
             <span class="comment">// Invalid usage
-            </span><span class="kw">let </span>invalid = central
-                .conversation_guard(id)
-                .<span class="kw">await
-                </span>.unwrap()
-                .get_user_identities(<span class="kw-2">&amp;</span>[])
-                .<span class="kw">await</span>;
+            </span><span class="kw">let </span>invalid = central.conversation(id).<span class="kw">await</span>.unwrap().get_user_identities(<span class="kw-2">&amp;</span>[]).<span class="kw">await</span>;
             <span class="macro">assert!</span>(<span class="macro">matches!</span>(invalid.unwrap_err(), Error::CallerError(<span class="kw">_</span>)));
         }
 
@@ -2302,7 +2262,7 @@
             name_status: <span class="kw-2">&amp;</span>[(<span class="kw-2">&amp;</span><span class="lifetime">'static </span>str, DeviceStatus); N],
         ) {
             <span class="kw">let </span><span class="kw-2">mut </span>identities = central
-                .conversation_guard(id)
+                .conversation(id)
                 .<span class="kw">await
                 </span>.unwrap()
                 .get_device_identities(client_ids)
@@ -2322,7 +2282,7 @@
 
             <span class="macro">assert_eq!</span>(
                 central
-                    .conversation_guard(id)
+                    .conversation(id)
                     .<span class="kw">await
                     </span>.unwrap()
                     .e2ei_conversation_state()
@@ -2359,7 +2319,7 @@
 
                         <span class="kw">let </span><span class="kw-2">mut </span>android_ids = alice_android_central
                             .context
-                            .conversation_guard(<span class="kw-2">&amp;</span>id)
+                            .conversation(<span class="kw-2">&amp;</span>id)
                             .<span class="kw">await
                             </span>.unwrap()
                             .get_device_identities(<span class="kw-2">&amp;</span>[android_id.clone(), ios_id.clone()])
@@ -2369,7 +2329,7 @@
                         <span class="macro">assert_eq!</span>(android_ids.len(), <span class="number">2</span>);
                         <span class="kw">let </span><span class="kw-2">mut </span>ios_ids = alice_ios_central
                             .context
-                            .conversation_guard(<span class="kw-2">&amp;</span>id)
+                            .conversation(<span class="kw-2">&amp;</span>id)
                             .<span class="kw">await
                             </span>.unwrap()
                             .get_device_identities(<span class="kw-2">&amp;</span>[android_id.clone(), ios_id.clone()])
@@ -2382,7 +2342,7 @@
 
                         <span class="kw">let </span>android_identities = alice_android_central
                             .context
-                            .conversation_guard(<span class="kw-2">&amp;</span>id)
+                            .conversation(<span class="kw-2">&amp;</span>id)
                             .<span class="kw">await
                             </span>.unwrap()
                             .get_device_identities(<span class="kw-2">&amp;</span>[android_id])
@@ -2396,7 +2356,7 @@
 
                         <span class="kw">let </span>ios_identities = alice_android_central
                             .context
-                            .conversation_guard(<span class="kw-2">&amp;</span>id)
+                            .conversation(<span class="kw-2">&amp;</span>id)
                             .<span class="kw">await
                             </span>.unwrap()
                             .get_device_identities(<span class="kw-2">&amp;</span>[ios_id])
@@ -2410,7 +2370,7 @@
 
                         <span class="kw">let </span>invalid = alice_android_central
                             .context
-                            .conversation_guard(<span class="kw-2">&amp;</span>id)
+                            .conversation(<span class="kw-2">&amp;</span>id)
                             .<span class="kw">await
                             </span>.unwrap()
                             .get_device_identities(<span class="kw-2">&amp;</span>[])
@@ -2545,7 +2505,7 @@
 
                         <span class="kw">let </span><span class="kw-2">mut </span>android_ids = alice_android_central
                             .context
-                            .conversation_guard(<span class="kw-2">&amp;</span>id)
+                            .conversation(<span class="kw-2">&amp;</span>id)
                             .<span class="kw">await
                             </span>.unwrap()
                             .get_device_identities(<span class="kw-2">&amp;</span>[android_id.clone(), ios_id.clone()])
@@ -2555,7 +2515,7 @@
 
                         <span class="kw">let </span><span class="kw-2">mut </span>ios_ids = alice_ios_central
                             .context
-                            .conversation_guard(<span class="kw-2">&amp;</span>id)
+                            .conversation(<span class="kw-2">&amp;</span>id)
                             .<span class="kw">await
                             </span>.unwrap()
                             .get_device_identities(<span class="kw-2">&amp;</span>[android_id, ios_id])
@@ -2653,7 +2613,7 @@
                         </span><span class="kw">let </span>alice_user_id = alice_android_central.get_user_id().<span class="kw">await</span>;
                         <span class="kw">let </span>alice_identities = alice_android_central
                             .context
-                            .conversation_guard(<span class="kw-2">&amp;</span>id)
+                            .conversation(<span class="kw-2">&amp;</span>id)
                             .<span class="kw">await
                             </span>.unwrap()
                             .get_user_identities(<span class="kw-2">&amp;</span>[alice_user_id.clone()])
@@ -2667,7 +2627,7 @@
                         </span><span class="kw">let </span>bob_user_id = bob_android_central.get_user_id().<span class="kw">await</span>;
                         <span class="kw">let </span>bob_identities = alice_android_central
                             .context
-                            .conversation_guard(<span class="kw-2">&amp;</span>id)
+                            .conversation(<span class="kw-2">&amp;</span>id)
                             .<span class="kw">await
                             </span>.unwrap()
                             .get_user_identities(<span class="kw-2">&amp;</span>[bob_user_id.clone()])
@@ -2744,7 +2704,7 @@
                         </span><span class="kw">let </span>alice_user_id = alice_android_central.get_user_id().<span class="kw">await</span>;
                         <span class="kw">let </span>alice_identities = alice_android_central
                             .context
-                            .conversation_guard(<span class="kw-2">&amp;</span>id)
+                            .conversation(<span class="kw-2">&amp;</span>id)
                             .<span class="kw">await
                             </span>.unwrap()
                             .get_user_identities(<span class="kw-2">&amp;</span>[alice_user_id.clone()])
@@ -2758,7 +2718,7 @@
                         </span><span class="kw">let </span>bob_user_id = bob_android_central.get_user_id().<span class="kw">await</span>;
                         <span class="kw">let </span>bob_identities = alice_android_central
                             .context
-                            .conversation_guard(<span class="kw-2">&amp;</span>id)
+                            .conversation(<span class="kw-2">&amp;</span>id)
                             .<span class="kw">await
                             </span>.unwrap()
                             .get_user_identities(<span class="kw-2">&amp;</span>[bob_user_id.clone()])
@@ -2892,7 +2852,7 @@
                     <span class="kw">let </span>key_length = <span class="number">128</span>;
                     <span class="kw">let </span>result = alice_central
                         .context
-                        .conversation_guard(<span class="kw-2">&amp;</span>id)
+                        .conversation(<span class="kw-2">&amp;</span>id)
                         .<span class="kw">await
                         </span>.unwrap()
                         .export_secret_key(key_length)
@@ -2918,7 +2878,7 @@
 
                     <span class="kw">let </span>result = alice_central
                         .context
-                        .conversation_guard(<span class="kw-2">&amp;</span>id)
+                        .conversation(<span class="kw-2">&amp;</span>id)
                         .<span class="kw">await
                         </span>.unwrap()
                         .export_secret_key(usize::MAX)
@@ -2952,7 +2912,7 @@
                     <span class="macro">assert_eq!</span>(
                         alice_central
                             .context
-                            .conversation_guard(<span class="kw-2">&amp;</span>id)
+                            .conversation(<span class="kw-2">&amp;</span>id)
                             .<span class="kw">await
                             </span>.unwrap()
                             .get_client_ids()
@@ -2965,7 +2925,7 @@
                     <span class="macro">assert_eq!</span>(
                         alice_central
                             .context
-                            .conversation_guard(<span class="kw-2">&amp;</span>id)
+                            .conversation(<span class="kw-2">&amp;</span>id)
                             .<span class="kw">await
                             </span>.unwrap()
                             .get_client_ids()
@@ -3002,7 +2962,7 @@
 
                     <span class="kw">let </span>alice_ext_sender = alice_central
                         .context
-                        .conversation_guard(<span class="kw-2">&amp;</span>id)
+                        .conversation(<span class="kw-2">&amp;</span>id)
                         .<span class="kw">await
                         </span>.unwrap()
                         .get_external_sender()

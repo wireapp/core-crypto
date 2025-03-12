@@ -1179,7 +1179,7 @@
                         <span class="comment">// Bob hasn't Alice's proposal but creates a commit
                         </span>bob_central
                             .context
-                            .conversation_guard(<span class="kw-2">&amp;</span>id)
+                            .conversation(<span class="kw-2">&amp;</span>id)
                             .<span class="kw">await
                             </span>.unwrap()
                             .update_key_material()
@@ -1189,7 +1189,7 @@
 
                         <span class="kw">let </span>proposals = alice_central
                             .context
-                            .conversation_guard(<span class="kw-2">&amp;</span>id)
+                            .conversation(<span class="kw-2">&amp;</span>id)
                             .<span class="kw">await
                             </span>.unwrap()
                             .decrypt_message(commit.to_bytes().unwrap())
@@ -1203,7 +1203,7 @@
                         <span class="comment">// It should also renew the proposal when in pending_commit
                         </span>bob_central
                             .context
-                            .conversation_guard(<span class="kw-2">&amp;</span>id)
+                            .conversation(<span class="kw-2">&amp;</span>id)
                             .<span class="kw">await
                             </span>.unwrap()
                             .update_key_material()
@@ -1212,7 +1212,7 @@
                         <span class="kw">let </span>commit = bob_central.mls_transport.latest_commit().<span class="kw">await</span>;
                         <span class="kw">let </span>proposals = alice_central
                             .context
-                            .conversation_guard(<span class="kw-2">&amp;</span>id)
+                            .conversation(<span class="kw-2">&amp;</span>id)
                             .<span class="kw">await
                             </span>.unwrap()
                             .decrypt_message(commit.to_bytes().unwrap())
@@ -1252,7 +1252,7 @@
                         <span class="comment">// Bob has Alice's update proposal
                         </span>bob_central
                             .context
-                            .conversation_guard(<span class="kw-2">&amp;</span>id)
+                            .conversation(<span class="kw-2">&amp;</span>id)
                             .<span class="kw">await
                             </span>.unwrap()
                             .decrypt_message(proposal.to_bytes().unwrap())
@@ -1261,7 +1261,7 @@
 
                         bob_central
                             .context
-                            .conversation_guard(<span class="kw-2">&amp;</span>id)
+                            .conversation(<span class="kw-2">&amp;</span>id)
                             .<span class="kw">await
                             </span>.unwrap()
                             .update_key_material()
@@ -1272,7 +1272,7 @@
                         <span class="comment">// Bob's commit has Alice's proposal
                         </span><span class="kw">let </span>proposals = alice_central
                             .context
-                            .conversation_guard(<span class="kw-2">&amp;</span>id)
+                            .conversation(<span class="kw-2">&amp;</span>id)
                             .<span class="kw">await
                             </span>.unwrap()
                             .decrypt_message(commit.to_bytes().unwrap())
@@ -1286,7 +1286,7 @@
                         <span class="kw">let </span>proposal = alice_central.context.new_update_proposal(<span class="kw-2">&amp;</span>id).<span class="kw">await</span>.unwrap().proposal;
                         bob_central
                             .context
-                            .conversation_guard(<span class="kw-2">&amp;</span>id)
+                            .conversation(<span class="kw-2">&amp;</span>id)
                             .<span class="kw">await
                             </span>.unwrap()
                             .decrypt_message(proposal.to_bytes().unwrap())
@@ -1294,7 +1294,7 @@
                             </span>.unwrap();
                         bob_central
                             .context
-                            .conversation_guard(<span class="kw-2">&amp;</span>id)
+                            .conversation(<span class="kw-2">&amp;</span>id)
                             .<span class="kw">await
                             </span>.unwrap()
                             .update_key_material()
@@ -1303,7 +1303,7 @@
                         <span class="kw">let </span>commit = bob_central.mls_transport.latest_commit().<span class="kw">await</span>;
                         <span class="kw">let </span>proposals = alice_central
                             .context
-                            .conversation_guard(<span class="kw-2">&amp;</span>id)
+                            .conversation(<span class="kw-2">&amp;</span>id)
                             .<span class="kw">await
                             </span>.unwrap()
                             .decrypt_message(commit.to_bytes().unwrap())
@@ -1342,7 +1342,7 @@
                         <span class="macro">assert!</span>(alice_central.pending_proposals(<span class="kw-2">&amp;</span>id).<span class="kw">await</span>.is_empty());
                         alice_central
                             .context
-                            .conversation_guard(<span class="kw-2">&amp;</span>id)
+                            .conversation(<span class="kw-2">&amp;</span>id)
                             .<span class="kw">await
                             </span>.unwrap()
                             .decrypt_message(proposal.to_bytes().unwrap())
@@ -1353,7 +1353,7 @@
                         <span class="comment">// Charlie does not have other proposals, it creates a commit
                         </span>charlie_central
                             .context
-                            .conversation_guard(<span class="kw-2">&amp;</span>id)
+                            .conversation(<span class="kw-2">&amp;</span>id)
                             .<span class="kw">await
                             </span>.unwrap()
                             .update_key_material()
@@ -1362,7 +1362,7 @@
                         <span class="kw">let </span>commit = charlie_central.mls_transport.latest_commit().<span class="kw">await</span>;
                         <span class="kw">let </span>proposals = alice_central
                             .context
-                            .conversation_guard(<span class="kw-2">&amp;</span>id)
+                            .conversation(<span class="kw-2">&amp;</span>id)
                             .<span class="kw">await
                             </span>.unwrap()
                             .decrypt_message(commit.to_bytes().unwrap())
@@ -1406,7 +1406,7 @@
                         <span class="kw">let </span>charlie = charlie_central.rand_key_package(<span class="kw-2">&amp;</span>case).<span class="kw">await</span>;
                         bob_central
                             .context
-                            .conversation_guard(<span class="kw-2">&amp;</span>id)
+                            .conversation(<span class="kw-2">&amp;</span>id)
                             .<span class="kw">await
                             </span>.unwrap()
                             .add_members(<span class="macro">vec!</span>[charlie])
@@ -1415,7 +1415,7 @@
                         <span class="kw">let </span>commit = bob_central.mls_transport.latest_commit().<span class="kw">await</span>;
                         <span class="kw">let </span>proposals = alice_central
                             .context
-                            .conversation_guard(<span class="kw-2">&amp;</span>id)
+                            .conversation(<span class="kw-2">&amp;</span>id)
                             .<span class="kw">await
                             </span>.unwrap()
                             .decrypt_message(commit.to_bytes().unwrap())
@@ -1459,7 +1459,7 @@
                         <span class="kw">let </span>charlie = charlie_central.rand_key_package(<span class="kw-2">&amp;</span>case).<span class="kw">await</span>;
                         bob_central
                             .context
-                            .conversation_guard(<span class="kw-2">&amp;</span>id)
+                            .conversation(<span class="kw-2">&amp;</span>id)
                             .<span class="kw">await
                             </span>.unwrap()
                             .add_members(<span class="macro">vec!</span>[charlie])
@@ -1468,7 +1468,7 @@
                         <span class="kw">let </span>commit = bob_central.mls_transport.latest_commit().<span class="kw">await</span>;
                         <span class="kw">let </span>proposals = alice_central
                             .context
-                            .conversation_guard(<span class="kw-2">&amp;</span>id)
+                            .conversation(<span class="kw-2">&amp;</span>id)
                             .<span class="kw">await
                             </span>.unwrap()
                             .decrypt_message(commit.to_bytes().unwrap())
@@ -1513,7 +1513,7 @@
                             .proposal;
                         alice_central
                             .context
-                            .conversation_guard(<span class="kw-2">&amp;</span>id)
+                            .conversation(<span class="kw-2">&amp;</span>id)
                             .<span class="kw">await
                             </span>.unwrap()
                             .decrypt_message(proposal.to_bytes().unwrap())
@@ -1524,7 +1524,7 @@
                         <span class="comment">// But Charlie will commit meanwhile
                         </span>charlie_central
                             .context
-                            .conversation_guard(<span class="kw-2">&amp;</span>id)
+                            .conversation(<span class="kw-2">&amp;</span>id)
                             .<span class="kw">await
                             </span>.unwrap()
                             .update_key_material()
@@ -1533,7 +1533,7 @@
                         <span class="kw">let </span>commit = charlie_central.mls_transport.latest_commit().<span class="kw">await</span>;
                         <span class="kw">let </span>proposals = alice_central
                             .context
-                            .conversation_guard(<span class="kw-2">&amp;</span>id)
+                            .conversation(<span class="kw-2">&amp;</span>id)
                             .<span class="kw">await
                             </span>.unwrap()
                             .decrypt_message(commit.to_bytes().unwrap())
@@ -1574,7 +1574,7 @@
                         <span class="comment">// But meanwhile Bob will create a commit without Alice's proposal
                         </span>bob_central
                             .context
-                            .conversation_guard(<span class="kw-2">&amp;</span>id)
+                            .conversation(<span class="kw-2">&amp;</span>id)
                             .<span class="kw">await
                             </span>.unwrap()
                             .update_key_material()
@@ -1583,7 +1583,7 @@
                         <span class="kw">let </span>commit = bob_central.mls_transport.latest_commit().<span class="kw">await</span>;
                         <span class="kw">let </span>proposals = alice_central
                             .context
-                            .conversation_guard(<span class="kw-2">&amp;</span>id)
+                            .conversation(<span class="kw-2">&amp;</span>id)
                             .<span class="kw">await
                             </span>.unwrap()
                             .decrypt_message(commit.to_bytes().unwrap())
@@ -1599,7 +1599,7 @@
                         <span class="macro">assert!</span>(alice_central.pending_commit(<span class="kw-2">&amp;</span>id).<span class="kw">await</span>.is_some());
                         bob_central
                             .context
-                            .conversation_guard(<span class="kw-2">&amp;</span>id)
+                            .conversation(<span class="kw-2">&amp;</span>id)
                             .<span class="kw">await
                             </span>.unwrap()
                             .update_key_material()
@@ -1608,7 +1608,7 @@
                         <span class="kw">let </span>commit = bob_central.mls_transport.latest_commit().<span class="kw">await</span>;
                         <span class="kw">let </span>proposals = alice_central
                             .context
-                            .conversation_guard(<span class="kw-2">&amp;</span>id)
+                            .conversation(<span class="kw-2">&amp;</span>id)
                             .<span class="kw">await
                             </span>.unwrap()
                             .decrypt_message(commit.to_bytes().unwrap())
@@ -1648,7 +1648,7 @@
                         <span class="comment">// But meanwhile Bob will create a commit
                         </span>bob_central
                             .context
-                            .conversation_guard(<span class="kw-2">&amp;</span>id)
+                            .conversation(<span class="kw-2">&amp;</span>id)
                             .<span class="kw">await
                             </span>.unwrap()
                             .update_key_material()
@@ -1657,7 +1657,7 @@
                         <span class="kw">let </span>commit = bob_central.mls_transport.latest_commit().<span class="kw">await</span>;
                         <span class="kw">let </span>proposals = alice_central
                             .context
-                            .conversation_guard(<span class="kw-2">&amp;</span>id)
+                            .conversation(<span class="kw-2">&amp;</span>id)
                             .<span class="kw">await
                             </span>.unwrap()
                             .decrypt_message(commit.to_bytes().unwrap())
@@ -1706,7 +1706,7 @@
 
                         bob_central
                             .context
-                            .conversation_guard(<span class="kw-2">&amp;</span>id)
+                            .conversation(<span class="kw-2">&amp;</span>id)
                             .<span class="kw">await
                             </span>.unwrap()
                             .remove_members(<span class="kw-2">&amp;</span>[charlie_central.get_client_id().<span class="kw">await</span>])
@@ -1715,7 +1715,7 @@
                         <span class="kw">let </span>commit = bob_central.mls_transport.latest_commit().<span class="kw">await</span>;
                         <span class="kw">let </span>proposals = alice_central
                             .context
-                            .conversation_guard(<span class="kw-2">&amp;</span>id)
+                            .conversation(<span class="kw-2">&amp;</span>id)
                             .<span class="kw">await
                             </span>.unwrap()
                             .decrypt_message(commit.to_bytes().unwrap())
@@ -1759,7 +1759,7 @@
                         <span class="macro">assert!</span>(alice_central.pending_proposals(<span class="kw-2">&amp;</span>id).<span class="kw">await</span>.is_empty());
                         alice_central
                             .context
-                            .conversation_guard(<span class="kw-2">&amp;</span>id)
+                            .conversation(<span class="kw-2">&amp;</span>id)
                             .<span class="kw">await
                             </span>.unwrap()
                             .decrypt_message(proposal.to_bytes().unwrap())
@@ -1769,7 +1769,7 @@
 
                         charlie_central
                             .context
-                            .conversation_guard(<span class="kw-2">&amp;</span>id)
+                            .conversation(<span class="kw-2">&amp;</span>id)
                             .<span class="kw">await
                             </span>.unwrap()
                             .update_key_material()
@@ -1778,7 +1778,7 @@
                         <span class="kw">let </span>commit = charlie_central.mls_transport.latest_commit().<span class="kw">await</span>;
                         <span class="kw">let </span>proposals = alice_central
                             .context
-                            .conversation_guard(<span class="kw-2">&amp;</span>id)
+                            .conversation(<span class="kw-2">&amp;</span>id)
                             .<span class="kw">await
                             </span>.unwrap()
                             .decrypt_message(commit.to_bytes().unwrap())
@@ -1825,7 +1825,7 @@
                         <span class="comment">// Whereas Bob wants to remove Debbie
                         </span>bob_central
                             .context
-                            .conversation_guard(<span class="kw-2">&amp;</span>id)
+                            .conversation(<span class="kw-2">&amp;</span>id)
                             .<span class="kw">await
                             </span>.unwrap()
                             .remove_members(<span class="kw-2">&amp;</span>[debbie_central.get_client_id().<span class="kw">await</span>])
@@ -1834,7 +1834,7 @@
                         <span class="kw">let </span>commit = bob_central.mls_transport.latest_commit().<span class="kw">await</span>;
                         <span class="kw">let </span>proposals = alice_central
                             .context
-                            .conversation_guard(<span class="kw-2">&amp;</span>id)
+                            .conversation(<span class="kw-2">&amp;</span>id)
                             .<span class="kw">await
                             </span>.unwrap()
                             .decrypt_message(commit.to_bytes().unwrap())
@@ -1881,7 +1881,7 @@
                         <span class="comment">// Whereas Bob wants to remove Debbie
                         </span>bob_central
                             .context
-                            .conversation_guard(<span class="kw-2">&amp;</span>id)
+                            .conversation(<span class="kw-2">&amp;</span>id)
                             .<span class="kw">await
                             </span>.unwrap()
                             .remove_members(<span class="kw-2">&amp;</span>[debbie_central.get_client_id().<span class="kw">await</span>])
@@ -1890,7 +1890,7 @@
                         <span class="kw">let </span>commit = bob_central.mls_transport.latest_commit().<span class="kw">await</span>;
                         <span class="kw">let </span>proposals = alice_central
                             .context
-                            .conversation_guard(<span class="kw-2">&amp;</span>id)
+                            .conversation(<span class="kw-2">&amp;</span>id)
                             .<span class="kw">await
                             </span>.unwrap()
                             .decrypt_message(commit.to_bytes().unwrap())
@@ -1936,7 +1936,7 @@
                         <span class="comment">// Whereas Bob wants to remove Debbie
                         </span>bob_central
                             .context
-                            .conversation_guard(<span class="kw-2">&amp;</span>id)
+                            .conversation(<span class="kw-2">&amp;</span>id)
                             .<span class="kw">await
                             </span>.unwrap()
                             .remove_members(<span class="kw-2">&amp;</span>[debbie_central.get_client_id().<span class="kw">await</span>])
@@ -1945,7 +1945,7 @@
                         <span class="kw">let </span>commit = bob_central.mls_transport.latest_commit().<span class="kw">await</span>;
                         <span class="kw">let </span>proposals = alice_central
                             .context
-                            .conversation_guard(<span class="kw-2">&amp;</span>id)
+                            .conversation(<span class="kw-2">&amp;</span>id)
                             .<span class="kw">await
                             </span>.unwrap()
                             .decrypt_message(commit.to_bytes().unwrap())

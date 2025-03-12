@@ -370,7 +370,7 @@
 
         <span class="kw">let </span>kp = KeyPackageIn::tls_deserialize(<span class="kw-2">&amp;mut &amp;</span>kp[..])<span class="question-mark">?</span>;
         transaction
-            .conversation_guard(<span class="kw-2">&amp;</span>conversation_id)
+            .conversation(<span class="kw-2">&amp;</span>conversation_id)
             .<span class="kw">await</span><span class="question-mark">?
             </span>.add_members(<span class="macro">vec!</span>[kp])
             .<span class="kw">await</span><span class="question-mark">?</span>;
@@ -382,7 +382,7 @@
     <span class="kw">async fn </span>kick_client(<span class="kw-2">&amp;</span><span class="self">self</span>, conversation_id: <span class="kw-2">&amp;</span>[u8], client_id: <span class="kw-2">&amp;</span>[u8]) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
         <span class="kw">let </span>transaction = <span class="self">self</span>.cc.new_transaction().<span class="kw">await</span><span class="question-mark">?</span>;
         transaction
-            .conversation_guard(<span class="kw-2">&amp;</span>conversation_id.to_owned())
+            .conversation(<span class="kw-2">&amp;</span>conversation_id.to_owned())
             .<span class="kw">await</span><span class="question-mark">?
             </span>.remove_members(<span class="kw-2">&amp;</span>[client_id.to_owned().into()])
             .<span class="kw">await</span><span class="question-mark">?</span>;
@@ -405,7 +405,7 @@
     <span class="kw">async fn </span>encrypt_message(<span class="kw-2">&amp;</span><span class="self">self</span>, conversation_id: <span class="kw-2">&amp;</span>[u8], message: <span class="kw-2">&amp;</span>[u8]) -&gt; <span class="prelude-ty">Result</span>&lt;Vec&lt;u8&gt;&gt; {
         <span class="kw">let </span>transaction = <span class="self">self</span>.cc.new_transaction().<span class="kw">await</span><span class="question-mark">?</span>;
         <span class="kw">let </span>result = transaction
-            .conversation_guard(<span class="kw-2">&amp;</span>conversation_id.to_vec())
+            .conversation(<span class="kw-2">&amp;</span>conversation_id.to_vec())
             .<span class="kw">await</span><span class="question-mark">?
             </span>.encrypt_message(message)
             .<span class="kw">await</span><span class="question-mark">?</span>;
@@ -416,7 +416,7 @@
     <span class="kw">async fn </span>decrypt_message(<span class="kw-2">&amp;</span><span class="self">self</span>, conversation_id: <span class="kw-2">&amp;</span>[u8], message: <span class="kw-2">&amp;</span>[u8]) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="prelude-ty">Option</span>&lt;Vec&lt;u8&gt;&gt;&gt; {
         <span class="kw">let </span>transaction = <span class="self">self</span>.cc.new_transaction().<span class="kw">await</span><span class="question-mark">?</span>;
         <span class="kw">let </span>result = transaction
-            .conversation_guard(<span class="kw-2">&amp;</span>conversation_id.to_vec())
+            .conversation(<span class="kw-2">&amp;</span>conversation_id.to_vec())
             .<span class="kw">await</span><span class="question-mark">?
             </span>.decrypt_message(message)
             .<span class="kw">await</span><span class="question-mark">?

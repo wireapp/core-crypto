@@ -218,7 +218,7 @@
                     <span class="macro">assert_eq!</span>(alice_central.get_conversation_unchecked(<span class="kw-2">&amp;</span>id).<span class="kw">await</span>.members().len(), <span class="number">2</span>);
                     alice_central
                         .context
-                        .conversation_guard(<span class="kw-2">&amp;</span>id)
+                        .conversation(<span class="kw-2">&amp;</span>id)
                         .<span class="kw">await
                         </span>.unwrap()
                         .remove_members(<span class="kw-2">&amp;</span>[bob_central.get_client_id().<span class="kw">await</span>])
@@ -281,7 +281,7 @@
 
                     alice_central
                         .context
-                        .conversation_guard(<span class="kw-2">&amp;</span>id)
+                        .conversation(<span class="kw-2">&amp;</span>id)
                         .<span class="kw">await
                         </span>.unwrap()
                         .commit_pending_proposals()

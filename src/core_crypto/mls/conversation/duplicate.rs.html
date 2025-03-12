@@ -355,13 +355,7 @@
 <a href="#354" id="354">354</a>
 <a href="#355" id="355">355</a>
 <a href="#356" id="356">356</a>
-<a href="#357" id="357">357</a>
-<a href="#358" id="358">358</a>
-<a href="#359" id="359">359</a>
-<a href="#360" id="360">360</a>
-<a href="#361" id="361">361</a>
-<a href="#362" id="362">362</a>
-<a href="#363" id="363">363</a></pre></div><pre class="rust"><code><span class="doccomment">//! Due the current delivery semantics on backend side (at least once) we have to deal with this
+<a href="#357" id="357">357</a></pre></div><pre class="rust"><code><span class="doccomment">//! Due the current delivery semantics on backend side (at least once) we have to deal with this
 //! in CoreCrypto so as not to return a decryption error to the client. Remove this when this is used
 //! with a DS guaranteeing exactly once delivery semantics since the following degrades the performances
 
@@ -434,7 +428,7 @@
                     </span><span class="kw">let </span>unknown_commit = alice_central.create_unmerged_commit(<span class="kw-2">&amp;</span>id).<span class="kw">await</span>.commit;
                     alice_central
                         .context
-                        .conversation_guard(<span class="kw-2">&amp;</span>id)
+                        .conversation(<span class="kw-2">&amp;</span>id)
                         .<span class="kw">await
                         </span>.unwrap()
                         .clear_pending_commit()
@@ -443,7 +437,7 @@
 
                     alice_central
                         .context
-                        .conversation_guard(<span class="kw-2">&amp;</span>id)
+                        .conversation(<span class="kw-2">&amp;</span>id)
                         .<span class="kw">await
                         </span>.unwrap()
                         .update_key_material()
@@ -454,7 +448,7 @@
                     <span class="comment">// decrypt once ... ok
                     </span>bob_central
                         .context
-                        .conversation_guard(<span class="kw-2">&amp;</span>id)
+                        .conversation(<span class="kw-2">&amp;</span>id)
                         .<span class="kw">await
                         </span>.unwrap()
                         .decrypt_message(<span class="kw-2">&amp;</span>commit.to_bytes().unwrap())
@@ -463,7 +457,7 @@
                     <span class="comment">// decrypt twice ... not ok
                     </span><span class="kw">let </span>decrypt_duplicate = bob_central
                         .context
-                        .conversation_guard(<span class="kw-2">&amp;</span>id)
+                        .conversation(<span class="kw-2">&amp;</span>id)
                         .<span class="kw">await
                         </span>.unwrap()
                         .decrypt_message(<span class="kw-2">&amp;</span>commit.to_bytes().unwrap())
@@ -474,7 +468,7 @@
                     // It fails with this error since it's not the commit who has created this epoch
                     </span><span class="kw">let </span>decrypt_lost_commit = bob_central
                         .context
-                        .conversation_guard(<span class="kw-2">&amp;</span>id)
+                        .conversation(<span class="kw-2">&amp;</span>id)
                         .<span class="kw">await
                         </span>.unwrap()
                         .decrypt_message(<span class="kw-2">&amp;</span>unknown_commit.to_bytes().unwrap())
@@ -517,7 +511,7 @@
                 <span class="comment">// decrypt once ... ok
                 </span>alice_central
                     .context
-                    .conversation_guard(<span class="kw-2">&amp;</span>id)
+                    .conversation(<span class="kw-2">&amp;</span>id)
                     .<span class="kw">await
                     </span>.unwrap()
                     .decrypt_message(<span class="kw-2">&amp;</span>ext_commit.to_bytes().unwrap())
@@ -526,7 +520,7 @@
                 <span class="comment">// decrypt twice ... not ok
                 </span><span class="kw">let </span>decryption = alice_central
                     .context
-                    .conversation_guard(<span class="kw-2">&amp;</span>id)
+                    .conversation(<span class="kw-2">&amp;</span>id)
                     .<span class="kw">await
                     </span>.unwrap()
                     .decrypt_message(<span class="kw-2">&amp;</span>ext_commit.to_bytes().unwrap())
@@ -537,7 +531,7 @@
                 // It fails with this error since it's not the external commit who has created this epoch
                 </span><span class="kw">let </span>decryption = alice_central
                     .context
-                    .conversation_guard(<span class="kw-2">&amp;</span>id)
+                    .conversation(<span class="kw-2">&amp;</span>id)
                     .<span class="kw">await
                     </span>.unwrap()
                     .decrypt_message(<span class="kw-2">&amp;</span>unknown_ext_commit.to_bytes().unwrap())
@@ -566,7 +560,7 @@
                 <span class="comment">// decrypt once ... ok
                 </span>bob_central
                     .context
-                    .conversation_guard(<span class="kw-2">&amp;</span>id)
+                    .conversation(<span class="kw-2">&amp;</span>id)
                     .<span class="kw">await
                     </span>.unwrap()
                     .decrypt_message(<span class="kw-2">&amp;</span>proposal.to_bytes().unwrap())
@@ -576,7 +570,7 @@
                 <span class="comment">// decrypt twice ... not ok
                 </span><span class="kw">let </span>decryption = bob_central
                     .context
-                    .conversation_guard(<span class="kw-2">&amp;</span>id)
+                    .conversation(<span class="kw-2">&amp;</span>id)
                     .<span class="kw">await
                     </span>.unwrap()
                     .decrypt_message(<span class="kw-2">&amp;</span>proposal.to_bytes().unwrap())
@@ -586,7 +580,7 @@
                 <span class="comment">// advance Bob's epoch to trigger failure
                 </span>bob_central
                     .context
-                    .conversation_guard(<span class="kw-2">&amp;</span>id)
+                    .conversation(<span class="kw-2">&amp;</span>id)
                     .<span class="kw">await
                     </span>.unwrap()
                     .commit_pending_proposals()
@@ -596,7 +590,7 @@
                 <span class="comment">// Epoch has advanced so we cannot detect duplicates anymore
                 </span><span class="kw">let </span>decryption = bob_central
                     .context
-                    .conversation_guard(<span class="kw-2">&amp;</span>id)
+                    .conversation(<span class="kw-2">&amp;</span>id)
                     .<span class="kw">await
                     </span>.unwrap()
                     .decrypt_message(<span class="kw-2">&amp;</span>proposal.to_bytes().unwrap())
@@ -619,13 +613,7 @@
                     .<span class="kw">await
                     </span>.unwrap();
 
-                <span class="kw">let </span>epoch = alice_central
-                    .context
-                    .conversation_guard(<span class="kw-2">&amp;</span>id)
-                    .<span class="kw">await
-                    </span>.unwrap()
-                    .epoch()
-                    .<span class="kw">await</span>;
+                <span class="kw">let </span>epoch = alice_central.context.conversation(<span class="kw-2">&amp;</span>id).<span class="kw">await</span>.unwrap().epoch().<span class="kw">await</span>;
 
                 <span class="kw">let </span>ext_proposal = bob_central
                     .context
@@ -636,7 +624,7 @@
                 <span class="comment">// decrypt once ... ok
                 </span>alice_central
                     .context
-                    .conversation_guard(<span class="kw-2">&amp;</span>id)
+                    .conversation(<span class="kw-2">&amp;</span>id)
                     .<span class="kw">await
                     </span>.unwrap()
                     .decrypt_message(<span class="kw-2">&amp;</span>ext_proposal.to_bytes().unwrap())
@@ -646,7 +634,7 @@
                 <span class="comment">// decrypt twice ... not ok
                 </span><span class="kw">let </span>decryption = alice_central
                     .context
-                    .conversation_guard(<span class="kw-2">&amp;</span>id)
+                    .conversation(<span class="kw-2">&amp;</span>id)
                     .<span class="kw">await
                     </span>.unwrap()
                     .decrypt_message(<span class="kw-2">&amp;</span>ext_proposal.to_bytes().unwrap())
@@ -656,7 +644,7 @@
                 <span class="comment">// advance alice's epoch
                 </span>alice_central
                     .context
-                    .conversation_guard(<span class="kw-2">&amp;</span>id)
+                    .conversation(<span class="kw-2">&amp;</span>id)
                     .<span class="kw">await
                     </span>.unwrap()
                     .commit_pending_proposals()
@@ -666,7 +654,7 @@
                 <span class="comment">// Epoch has advanced so we cannot detect duplicates anymore
                 </span><span class="kw">let </span>decryption = alice_central
                     .context
-                    .conversation_guard(<span class="kw-2">&amp;</span>id)
+                    .conversation(<span class="kw-2">&amp;</span>id)
                     .<span class="kw">await
                     </span>.unwrap()
                     .decrypt_message(<span class="kw-2">&amp;</span>ext_proposal.to_bytes().unwrap())
@@ -694,7 +682,7 @@
                 <span class="kw">let </span>msg = <span class="string">b"Hello bob"</span>;
                 <span class="kw">let </span>encrypted = alice_central
                     .context
-                    .conversation_guard(<span class="kw-2">&amp;</span>id)
+                    .conversation(<span class="kw-2">&amp;</span>id)
                     .<span class="kw">await
                     </span>.unwrap()
                     .encrypt_message(msg)
@@ -704,7 +692,7 @@
                 <span class="comment">// decrypt once .. ok
                 </span>bob_central
                     .context
-                    .conversation_guard(<span class="kw-2">&amp;</span>id)
+                    .conversation(<span class="kw-2">&amp;</span>id)
                     .<span class="kw">await
                     </span>.unwrap()
                     .decrypt_message(<span class="kw-2">&amp;</span>encrypted)
@@ -713,7 +701,7 @@
                 <span class="comment">// decrypt twice .. not ok
                 </span><span class="kw">let </span>decryption = bob_central
                     .context
-                    .conversation_guard(<span class="kw-2">&amp;</span>id)
+                    .conversation(<span class="kw-2">&amp;</span>id)
                     .<span class="kw">await
                     </span>.unwrap()
                     .decrypt_message(<span class="kw-2">&amp;</span>encrypted)

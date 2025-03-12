@@ -529,12 +529,7 @@
 <a href="#528" id="528">528</a>
 <a href="#529" id="529">529</a>
 <a href="#530" id="530">530</a>
-<a href="#531" id="531">531</a>
-<a href="#532" id="532">532</a>
-<a href="#533" id="533">533</a>
-<a href="#534" id="534">534</a>
-<a href="#535" id="535">535</a>
-<a href="#536" id="536">536</a></pre></div><pre class="rust"><code><span class="kw">use super</span>::{
+<a href="#531" id="531">531</a></pre></div><pre class="rust"><code><span class="kw">use super</span>::{
     Ciphersuite, Ciphersuites, ClientId, ConversationConfiguration, CoreCrypto, CoreCryptoError, CoreCryptoResult,
     CustomConfiguration, DecryptedMessage, MlsCredentialType, WelcomeBundle,
 };
@@ -800,18 +795,13 @@
 
     <span class="doccomment">/// See [core_crypto::mls::conversation::ConversationGuard::epoch]
     </span><span class="kw">pub async fn </span>conversation_epoch(<span class="kw-2">&amp;</span><span class="self">self</span>, conversation_id: Vec&lt;u8&gt;) -&gt; CoreCryptoResult&lt;u64&gt; {
-        <span class="kw">let </span>conversation = <span class="self">self</span>.context.conversation_guard(<span class="kw-2">&amp;</span>conversation_id).<span class="kw">await</span><span class="question-mark">?</span>;
+        <span class="kw">let </span>conversation = <span class="self">self</span>.context.conversation(<span class="kw-2">&amp;</span>conversation_id).<span class="kw">await</span><span class="question-mark">?</span>;
         <span class="prelude-val">Ok</span>(conversation.epoch().<span class="kw">await</span>)
     }
 
     <span class="doccomment">/// See [core_crypto::mls::conversation::ConversationGuard::ciphersuite]
     </span><span class="kw">pub async fn </span>conversation_ciphersuite(<span class="kw-2">&amp;</span><span class="self">self</span>, conversation_id: <span class="kw-2">&amp;</span>ConversationId) -&gt; CoreCryptoResult&lt;Ciphersuite&gt; {
-        <span class="kw">let </span>cs = <span class="self">self
-            </span>.context
-            .conversation_guard(conversation_id)
-            .<span class="kw">await</span><span class="question-mark">?
-            </span>.ciphersuite()
-            .<span class="kw">await</span>;
+        <span class="kw">let </span>cs = <span class="self">self</span>.context.conversation(conversation_id).<span class="kw">await</span><span class="question-mark">?</span>.ciphersuite().<span class="kw">await</span>;
         <span class="prelude-val">Ok</span>(Ciphersuite::from(core_crypto::prelude::CiphersuiteName::from(cs)))
     }
 
@@ -824,7 +814,7 @@
     </span><span class="kw">pub async fn </span>get_client_ids(<span class="kw-2">&amp;</span><span class="self">self</span>, conversation_id: Vec&lt;u8&gt;) -&gt; CoreCryptoResult&lt;Vec&lt;ClientId&gt;&gt; {
         <span class="kw">let </span>client_ids = <span class="self">self
             </span>.context
-            .conversation_guard(<span class="kw-2">&amp;</span>conversation_id)
+            .conversation(<span class="kw-2">&amp;</span>conversation_id)
             .<span class="kw">await</span><span class="question-mark">?
             </span>.get_client_ids()
             .<span class="kw">await
@@ -837,7 +827,7 @@
     <span class="doccomment">/// See [core_crypto::mls::conversation::ImmutableConversation::export_secret_key]
     </span><span class="kw">pub async fn </span>export_secret_key(<span class="kw-2">&amp;</span><span class="self">self</span>, conversation_id: Vec&lt;u8&gt;, key_length: u32) -&gt; CoreCryptoResult&lt;Vec&lt;u8&gt;&gt; {
         <span class="self">self</span>.context
-            .conversation_guard(<span class="kw-2">&amp;</span>conversation_id)
+            .conversation(<span class="kw-2">&amp;</span>conversation_id)
             .<span class="kw">await</span><span class="question-mark">?
             </span>.export_secret_key(key_length <span class="kw">as </span>usize)
             .<span class="kw">await
@@ -847,7 +837,7 @@
     <span class="doccomment">/// See [core_crypto::mls::conversation::ImmutableConversation::get_external_sender]
     </span><span class="kw">pub async fn </span>get_external_sender(<span class="kw-2">&amp;</span><span class="self">self</span>, conversation_id: Vec&lt;u8&gt;) -&gt; CoreCryptoResult&lt;Vec&lt;u8&gt;&gt; {
         <span class="self">self</span>.context
-            .conversation_guard(<span class="kw-2">&amp;</span>conversation_id)
+            .conversation(<span class="kw-2">&amp;</span>conversation_id)
             .<span class="kw">await</span><span class="question-mark">?
             </span>.get_external_sender()
             .<span class="kw">await
@@ -961,7 +951,7 @@
 
         <span class="kw">let </span>distribution_points: <span class="prelude-ty">Option</span>&lt;Vec&lt;<span class="kw">_</span>&gt;&gt; = <span class="self">self
             </span>.context
-            .conversation_guard(<span class="kw-2">&amp;</span>conversation_id)
+            .conversation(<span class="kw-2">&amp;</span>conversation_id)
             .<span class="kw">await</span><span class="question-mark">?
             </span>.add_members(key_packages)
             .<span class="kw">await</span><span class="question-mark">?
@@ -977,7 +967,7 @@
     ) -&gt; CoreCryptoResult&lt;()&gt; {
         <span class="kw">let </span>clients: Vec&lt;core_crypto::prelude::ClientId&gt; = clients.into_iter().map(|c| c.<span class="number">0</span>).collect();
         <span class="self">self</span>.context
-            .conversation_guard(<span class="kw-2">&amp;</span>conversation_id)
+            .conversation(<span class="kw-2">&amp;</span>conversation_id)
             .<span class="kw">await</span><span class="question-mark">?
             </span>.remove_members(<span class="kw-2">&amp;</span>clients)
             .<span class="kw">await
@@ -987,7 +977,7 @@
     <span class="doccomment">/// See [core_crypto::mls::conversation::ConversationGuard::mark_as_child_of]
     </span><span class="kw">pub async fn </span>mark_conversation_as_child_of(<span class="kw-2">&amp;</span><span class="self">self</span>, child_id: Vec&lt;u8&gt;, parent_id: Vec&lt;u8&gt;) -&gt; CoreCryptoResult&lt;()&gt; {
         <span class="self">self</span>.context
-            .conversation_guard(<span class="kw-2">&amp;</span>child_id)
+            .conversation(<span class="kw-2">&amp;</span>child_id)
             .<span class="kw">await</span><span class="question-mark">?
             </span>.mark_as_child_of(<span class="kw-2">&amp;</span>parent_id)
             .<span class="kw">await
@@ -997,7 +987,7 @@
     <span class="doccomment">/// See [core_crypto::context::CentralContext::update_keying_material]
     </span><span class="kw">pub async fn </span>update_keying_material(<span class="kw-2">&amp;</span><span class="self">self</span>, conversation_id: Vec&lt;u8&gt;) -&gt; CoreCryptoResult&lt;()&gt; {
         <span class="self">self</span>.context
-            .conversation_guard(<span class="kw-2">&amp;</span>conversation_id)
+            .conversation(<span class="kw-2">&amp;</span>conversation_id)
             .<span class="kw">await</span><span class="question-mark">?
             </span>.update_key_material()
             .<span class="kw">await
@@ -1007,7 +997,7 @@
     <span class="doccomment">/// See [core_crypto::mls::conversation::conversation_guard::ConversationGuard::commit_pending_proposals]
     </span><span class="kw">pub async fn </span>commit_pending_proposals(<span class="kw-2">&amp;</span><span class="self">self</span>, conversation_id: Vec&lt;u8&gt;) -&gt; CoreCryptoResult&lt;()&gt; {
         <span class="self">self</span>.context
-            .conversation_guard(<span class="kw-2">&amp;</span>conversation_id)
+            .conversation(<span class="kw-2">&amp;</span>conversation_id)
             .<span class="kw">await</span><span class="question-mark">?
             </span>.commit_pending_proposals()
             .<span class="kw">await
@@ -1028,7 +1018,7 @@
     ) -&gt; CoreCryptoResult&lt;DecryptedMessage&gt; {
         <span class="kw">let </span>result = <span class="self">self
             </span>.context
-            .conversation_guard(<span class="kw-2">&amp;</span>conversation_id)
+            .conversation(<span class="kw-2">&amp;</span>conversation_id)
             .<span class="kw">await</span><span class="question-mark">?
             </span>.decrypt_message(<span class="kw-2">&amp;</span>payload)
             .<span class="kw">await</span>;
@@ -1044,7 +1034,7 @@
     <span class="doccomment">/// See [core_crypto::mls::conversation::conversation_guard::ConversationGuard::encrypt_message]
     </span><span class="kw">pub async fn </span>encrypt_message(<span class="kw-2">&amp;</span><span class="self">self</span>, conversation_id: Vec&lt;u8&gt;, message: Vec&lt;u8&gt;) -&gt; CoreCryptoResult&lt;Vec&lt;u8&gt;&gt; {
         <span class="self">self</span>.context
-            .conversation_guard(<span class="kw-2">&amp;</span>conversation_id)
+            .conversation(<span class="kw-2">&amp;</span>conversation_id)
             .<span class="kw">await</span><span class="question-mark">?
             </span>.encrypt_message(message)
             .<span class="kw">await

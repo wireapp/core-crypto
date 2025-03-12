@@ -375,19 +375,7 @@
 <a href="#374" id="374">374</a>
 <a href="#375" id="375">375</a>
 <a href="#376" id="376">376</a>
-<a href="#377" id="377">377</a>
-<a href="#378" id="378">378</a>
-<a href="#379" id="379">379</a>
-<a href="#380" id="380">380</a>
-<a href="#381" id="381">381</a>
-<a href="#382" id="382">382</a>
-<a href="#383" id="383">383</a>
-<a href="#384" id="384">384</a>
-<a href="#385" id="385">385</a>
-<a href="#386" id="386">386</a>
-<a href="#387" id="387">387</a>
-<a href="#388" id="388">388</a>
-<a href="#389" id="389">389</a></pre></div><pre class="rust"><code><span class="kw">use super</span>::{Error, <span class="prelude-ty">Result</span>};
+<a href="#377" id="377">377</a></pre></div><pre class="rust"><code><span class="kw">use super</span>::{Error, <span class="prelude-ty">Result</span>};
 <span class="kw">use crate</span>::{
     RecursiveError,
     mls::credential::{
@@ -566,18 +554,12 @@
                     </span><span class="kw">let </span>commit = alice_central.create_unmerged_e2ei_rotate_commit(<span class="kw-2">&amp;</span>id, <span class="kw-2">&amp;</span>cb).<span class="kw">await</span>;
                     <span class="macro">assert!</span>(alice_central.pending_commit(<span class="kw-2">&amp;</span>id).<span class="kw">await</span>.is_some());
 
-                    <span class="kw">let </span>epoch = alice_central
-                        .context
-                        .conversation_guard(<span class="kw-2">&amp;</span>id)
-                        .<span class="kw">await
-                        </span>.unwrap()
-                        .epoch()
-                        .<span class="kw">await</span>;
+                    <span class="kw">let </span>epoch = alice_central.context.conversation(<span class="kw-2">&amp;</span>id).<span class="kw">await</span>.unwrap().epoch().<span class="kw">await</span>;
 
                     <span class="comment">// since the pending commit is the same as the incoming one, it should succeed
                     </span><span class="kw">let </span>decrypt_self = alice_central
                         .context
-                        .conversation_guard(<span class="kw-2">&amp;</span>id)
+                        .conversation(<span class="kw-2">&amp;</span>id)
                         .<span class="kw">await
                         </span>.unwrap()
                         .decrypt_message(<span class="kw-2">&amp;</span>commit.commit.to_bytes().unwrap())
@@ -585,13 +567,7 @@
                     <span class="macro">assert!</span>(decrypt_self.is_ok());
                     <span class="kw">let </span>decrypt_self = decrypt_self.unwrap();
 
-                    <span class="kw">let </span>epoch_after_decrypt = alice_central
-                        .context
-                        .conversation_guard(<span class="kw-2">&amp;</span>id)
-                        .<span class="kw">await
-                        </span>.unwrap()
-                        .epoch()
-                        .<span class="kw">await</span>;
+                    <span class="kw">let </span>epoch_after_decrypt = alice_central.context.conversation(<span class="kw-2">&amp;</span>id).<span class="kw">await</span>.unwrap().epoch().<span class="kw">await</span>;
                     <span class="macro">assert_eq!</span>(epoch + <span class="number">1</span>, epoch_after_decrypt);
 
                     <span class="comment">// there is no proposals to renew here since it's our own commit we merge
@@ -629,7 +605,7 @@
                     <span class="macro">assert!</span>(alice_central.pending_commit(<span class="kw-2">&amp;</span>id).<span class="kw">await</span>.is_some());
                     alice_central
                         .context
-                        .conversation_guard(<span class="kw-2">&amp;</span>id)
+                        .conversation(<span class="kw-2">&amp;</span>id)
                         .<span class="kw">await
                         </span>.unwrap()
                         .clear_pending_commit()
@@ -643,7 +619,7 @@
 
                     <span class="kw">let </span>decrypt = alice_central
                         .context
-                        .conversation_guard(<span class="kw-2">&amp;</span>id)
+                        .conversation(<span class="kw-2">&amp;</span>id)
                         .<span class="kw">await
                         </span>.unwrap()
                         .decrypt_message(<span class="kw-2">&amp;</span>unmerged_commit.to_bytes().unwrap())
@@ -678,7 +654,7 @@
                     <span class="comment">// then delete the pending commit
                     </span>alice_central
                         .context
-                        .conversation_guard(<span class="kw-2">&amp;</span>id)
+                        .conversation(<span class="kw-2">&amp;</span>id)
                         .<span class="kw">await
                         </span>.unwrap()
                         .clear_pending_commit()
@@ -688,7 +664,7 @@
 
                     <span class="kw">let </span>decrypt_self = alice_central
                         .context
-                        .conversation_guard(<span class="kw-2">&amp;</span>id)
+                        .conversation(<span class="kw-2">&amp;</span>id)
                         .<span class="kw">await
                         </span>.unwrap()
                         .decrypt_message(<span class="kw-2">&amp;</span>commit.to_bytes().unwrap())
@@ -738,7 +714,7 @@
 
                 <span class="kw">let </span>decryption_result = alice_central
                     .context
-                    .conversation_guard(<span class="kw-2">&amp;</span>conversation_id)
+                    .conversation(<span class="kw-2">&amp;</span>conversation_id)
                     .<span class="kw">await
                     </span>.unwrap()
                     .decrypt_message(commit_serialized)
@@ -761,7 +737,7 @@
                 </span><span class="macro">assert!</span>(
                     alice_central
                         .context
-                        .conversation_guard(<span class="kw-2">&amp;</span>conversation_id)
+                        .conversation(<span class="kw-2">&amp;</span>conversation_id)
                         .<span class="kw">await
                         </span>.unwrap()
                         .decrypt_message(<span class="kw-2">&amp;</span>add_bob_message.to_bytes().unwrap())

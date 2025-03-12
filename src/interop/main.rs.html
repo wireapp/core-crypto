@@ -670,7 +670,7 @@
     <span class="kw">let </span>spinner = util::RunningProcess::new(<span class="string">"[MLS] Step 2: Adding clients to conversation..."</span>, <span class="bool-val">true</span>);
 
     transaction
-        .conversation_guard(<span class="kw-2">&amp;</span>conversation_id)
+        .conversation(<span class="kw-2">&amp;</span>conversation_id)
         .<span class="kw">await</span><span class="question-mark">?
         </span>.add_members(key_packages)
         .<span class="kw">await</span><span class="question-mark">?</span>;
@@ -702,7 +702,7 @@
         );
 
         <span class="kw">let </span><span class="kw-2">mut </span>message_to_decrypt = transaction
-            .conversation_guard(<span class="kw-2">&amp;</span>conversation_id)
+            .conversation(<span class="kw-2">&amp;</span>conversation_id)
             .<span class="kw">await</span><span class="question-mark">?
             </span>.encrypt_message(<span class="kw-2">&amp;</span>message)
             .<span class="kw">await</span><span class="question-mark">?</span>;
@@ -740,7 +740,7 @@
         }
 
         <span class="kw">let </span>decrypted_master_raw = transaction
-            .conversation_guard(<span class="kw-2">&amp;</span>conversation_id)
+            .conversation(<span class="kw-2">&amp;</span>conversation_id)
             .<span class="kw">await
             </span>.unwrap()
             .decrypt_message(message_to_decrypt)

@@ -204,7 +204,7 @@
                 <span class="kw">let </span>msg = <span class="string">b"Hello bob"</span>;
                 <span class="kw">let </span>encrypted = alice_central
                     .context
-                    .conversation_guard(<span class="kw-2">&amp;</span>id)
+                    .conversation(<span class="kw-2">&amp;</span>id)
                     .<span class="kw">await
                     </span>.unwrap()
                     .encrypt_message(msg)
@@ -213,7 +213,7 @@
                 <span class="macro">assert_ne!</span>(<span class="kw-2">&amp;</span>msg[..], <span class="kw-2">&amp;</span>encrypted[..]);
                 <span class="kw">let </span>decrypted = bob_central
                     .context
-                    .conversation_guard(<span class="kw-2">&amp;</span>id)
+                    .conversation(<span class="kw-2">&amp;</span>id)
                     .<span class="kw">await
                     </span>.unwrap()
                     .decrypt_message(encrypted)
@@ -240,14 +240,14 @@
                     .<span class="kw">await
                     </span>.unwrap();
                 alice_central.invite_all(<span class="kw-2">&amp;</span>case, <span class="kw-2">&amp;</span>id, [<span class="kw-2">&amp;</span>bob_central]).<span class="kw">await</span>.unwrap();
-                <span class="kw">let </span><span class="kw-2">mut </span>alice_conversation = alice_central.context.conversation_guard(<span class="kw-2">&amp;</span>id).<span class="kw">await</span>.unwrap();
+                <span class="kw">let </span><span class="kw-2">mut </span>alice_conversation = alice_central.context.conversation(<span class="kw-2">&amp;</span>id).<span class="kw">await</span>.unwrap();
 
                 <span class="kw">let </span>msg = <span class="string">b"Hello bob"</span>;
                 <span class="kw">let </span>encrypted = alice_conversation.encrypt_message(msg).<span class="kw">await</span>.unwrap();
                 <span class="macro">assert_ne!</span>(<span class="kw-2">&amp;</span>msg[..], <span class="kw-2">&amp;</span>encrypted[..]);
                 <span class="kw">let </span>decrypted = bob_central
                     .context
-                    .conversation_guard(<span class="kw-2">&amp;</span>id)
+                    .conversation(<span class="kw-2">&amp;</span>id)
                     .<span class="kw">await
                     </span>.unwrap()
                     .decrypt_message(encrypted)
@@ -262,7 +262,7 @@
                 <span class="macro">assert_ne!</span>(<span class="kw-2">&amp;</span>msg[..], <span class="kw-2">&amp;</span>encrypted[..]);
                 <span class="kw">let </span>decrypted = bob_central
                     .context
-                    .conversation_guard(<span class="kw-2">&amp;</span>id)
+                    .conversation(<span class="kw-2">&amp;</span>id)
                     .<span class="kw">await
                     </span>.unwrap()
                     .decrypt_message(encrypted)

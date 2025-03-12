@@ -118,31 +118,12 @@
 <a href="#117" id="117">117</a>
 <a href="#118" id="118">118</a>
 <a href="#119" id="119">119</a>
-<a href="#120" id="120">120</a>
-<a href="#121" id="121">121</a>
-<a href="#122" id="122">122</a>
-<a href="#123" id="123">123</a>
-<a href="#124" id="124">124</a>
-<a href="#125" id="125">125</a>
-<a href="#126" id="126">126</a>
-<a href="#127" id="127">127</a>
-<a href="#128" id="128">128</a>
-<a href="#129" id="129">129</a>
-<a href="#130" id="130">130</a>
-<a href="#131" id="131">131</a>
-<a href="#132" id="132">132</a>
-<a href="#133" id="133">133</a>
-<a href="#134" id="134">134</a>
-<a href="#135" id="135">135</a>
-<a href="#136" id="136">136</a>
-<a href="#137" id="137">137</a>
-<a href="#138" id="138">138</a>
-<a href="#139" id="139">139</a></pre></div><pre class="rust"><code><span class="kw">mod </span>commit;
+<a href="#120" id="120">120</a></pre></div><pre class="rust"><code><span class="kw">mod </span>commit;
 <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">mod </span>decrypt;
 <span class="kw">mod </span>encrypt;
 <span class="kw">mod </span>merge;
 
-<span class="kw">use super</span>::{ConversationWithMls, Error, MlsConversation, <span class="prelude-ty">Result</span>, commit::MlsCommitBundle};
+<span class="kw">use super</span>::{ConversationWithMls, Error, MlsConversation, <span class="prelude-ty">Result</span>};
 <span class="kw">use </span><span class="kw">crate</span>::mls::credential::CredentialBundle;
 <span class="kw">use </span><span class="kw">crate</span>::prelude::ConversationId;
 <span class="kw">use crate</span>::{
@@ -222,7 +203,7 @@
             <span class="kw">return </span><span class="prelude-val">Ok</span>(<span class="prelude-val">None</span>);
         };
         <span class="self">self</span>.central_context
-            .conversation_guard(parent_id)
+            .conversation(parent_id)
             .<span class="kw">await
             </span>.map(<span class="prelude-val">Some</span>)
             .map_err(|<span class="kw">_</span>| Error::ParentGroupNotFound)
@@ -250,25 +231,6 @@
             .find_current_credential_bundle(<span class="kw-2">&amp;</span>client)
             .<span class="kw">await
             </span>.map_err(|<span class="kw">_</span>| Error::IdentityInitializationError)
-    }
-
-    <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">async fn </span>send_and_merge_commit(<span class="kw-2">&amp;mut </span><span class="self">self</span>, commit: MlsCommitBundle) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
-        <span class="comment">// note we hand over this instance of the guard; when we need a `conversation` guard again,
-        // we'll need to re-fetch it.
-        </span><span class="kw">let </span>conversation = <span class="self">self</span>.inner.write().<span class="kw">await</span>;
-        <span class="kw">match </span><span class="self">self</span>.central_context.send_commit(commit, <span class="prelude-val">Some</span>(conversation)).<span class="kw">await </span>{
-            <span class="prelude-val">Ok</span>(<span class="bool-val">false</span>) =&gt; <span class="prelude-val">Ok</span>(()),
-            <span class="prelude-val">Ok</span>(<span class="bool-val">true</span>) =&gt; {
-                <span class="kw">let </span>backend = <span class="self">self</span>.mls_provider().<span class="kw">await</span><span class="question-mark">?</span>;
-                <span class="kw">let </span><span class="kw-2">mut </span>conversation = <span class="self">self</span>.inner.write().<span class="kw">await</span>;
-                conversation.commit_accepted(<span class="kw-2">&amp;</span>backend).<span class="kw">await
-            </span>}
-            <span class="prelude-val">Err</span>(e @ Error::MessageRejected { .. }) =&gt; {
-                <span class="self">self</span>.clear_pending_commit().<span class="kw">await</span><span class="question-mark">?</span>;
-                <span class="prelude-val">Err</span>(e)
-            }
-            <span class="prelude-val">Err</span>(e) =&gt; <span class="prelude-val">Err</span>(e),
-        }
     }
 
     <span class="kw">fn </span>group_info(group_info: <span class="prelude-ty">Option</span>&lt;GroupInfo&gt;) -&gt; <span class="prelude-ty">Result</span>&lt;MlsGroupInfoBundle&gt; {

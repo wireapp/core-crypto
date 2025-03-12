@@ -662,7 +662,7 @@
                         <span class="macro">assert_eq!</span>(alice_central.pending_proposals(<span class="kw-2">&amp;</span>id).<span class="kw">await</span>.len(), <span class="number">1</span>);
                         bob_central
                             .context
-                            .conversation_guard(<span class="kw-2">&amp;</span>id)
+                            .conversation(<span class="kw-2">&amp;</span>id)
                             .<span class="kw">await
                             </span>.unwrap()
                             .decrypt_message(proposal.to_bytes().unwrap())
@@ -670,7 +670,7 @@
                             </span>.unwrap();
                         bob_central
                             .context
-                            .conversation_guard(<span class="kw-2">&amp;</span>id)
+                            .conversation(<span class="kw-2">&amp;</span>id)
                             .<span class="kw">await
                             </span>.unwrap()
                             .commit_pending_proposals()
@@ -684,7 +684,7 @@
                         // not be referenced in commit
                         </span>alice_central
                             .context
-                            .conversation_guard(<span class="kw-2">&amp;</span>id)
+                            .conversation(<span class="kw-2">&amp;</span>id)
                             .<span class="kw">await
                             </span>.unwrap()
                             .decrypt_message(commit.to_bytes().unwrap())
@@ -741,7 +741,7 @@
                         <span class="macro">assert_eq!</span>(alice_central.pending_proposals(<span class="kw-2">&amp;</span>id).<span class="kw">await</span>.len(), <span class="number">1</span>);
                         bob_central
                             .context
-                            .conversation_guard(<span class="kw-2">&amp;</span>id)
+                            .conversation(<span class="kw-2">&amp;</span>id)
                             .<span class="kw">await
                             </span>.unwrap()
                             .decrypt_message(proposal.to_bytes().unwrap())
@@ -749,7 +749,7 @@
                             </span>.unwrap();
                         bob_central
                             .context
-                            .conversation_guard(<span class="kw-2">&amp;</span>id)
+                            .conversation(<span class="kw-2">&amp;</span>id)
                             .<span class="kw">await
                             </span>.unwrap()
                             .commit_pending_proposals()
@@ -762,7 +762,7 @@
                         // not be referenced in commit
                         </span>alice_central
                             .context
-                            .conversation_guard(<span class="kw-2">&amp;</span>id)
+                            .conversation(<span class="kw-2">&amp;</span>id)
                             .<span class="kw">await
                             </span>.unwrap()
                             .decrypt_message(commit.to_bytes().unwrap())
@@ -810,7 +810,7 @@
                     <span class="kw">let </span>proposal = alice_central.context.new_update_proposal(<span class="kw-2">&amp;</span>id).<span class="kw">await</span>.unwrap().proposal;
                     bob_central
                         .context
-                        .conversation_guard(<span class="kw-2">&amp;</span>id)
+                        .conversation(<span class="kw-2">&amp;</span>id)
                         .<span class="kw">await
                         </span>.unwrap()
                         .decrypt_message(proposal.to_bytes().unwrap())
@@ -818,7 +818,7 @@
                         </span>.unwrap();
                     bob_central
                         .context
-                        .conversation_guard(<span class="kw-2">&amp;</span>id)
+                        .conversation(<span class="kw-2">&amp;</span>id)
                         .<span class="kw">await
                         </span>.unwrap()
                         .commit_pending_proposals()
@@ -845,7 +845,7 @@
                     // not be referenced in commit
                     </span>alice_central
                         .context
-                        .conversation_guard(<span class="kw-2">&amp;</span>id)
+                        .conversation(<span class="kw-2">&amp;</span>id)
                         .<span class="kw">await
                         </span>.unwrap()
                         .decrypt_message(commit.to_bytes().unwrap())
@@ -887,7 +887,7 @@
 
                     bob_central
                         .context
-                        .conversation_guard(<span class="kw-2">&amp;</span>id)
+                        .conversation(<span class="kw-2">&amp;</span>id)
                         .<span class="kw">await
                         </span>.unwrap()
                         .decrypt_message(<span class="kw-2">&amp;</span>proposal.to_bytes().unwrap())
@@ -895,7 +895,7 @@
                         </span>.unwrap();
                     bob_central
                         .context
-                        .conversation_guard(<span class="kw-2">&amp;</span>id)
+                        .conversation(<span class="kw-2">&amp;</span>id)
                         .<span class="kw">await
                         </span>.unwrap()
                         .commit_pending_proposals()
@@ -906,7 +906,7 @@
                     // fails when we try to decrypt a proposal for past epoch
                     </span><span class="kw">let </span>past_proposal = bob_central
                         .context
-                        .conversation_guard(<span class="kw-2">&amp;</span>id)
+                        .conversation(<span class="kw-2">&amp;</span>id)
                         .<span class="kw">await
                         </span>.unwrap()
                         .decrypt_message(<span class="kw-2">&amp;</span>proposal.to_bytes().unwrap())

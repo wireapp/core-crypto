@@ -1257,82 +1257,7 @@
 <a href="#1256" id="1256">1256</a>
 <a href="#1257" id="1257">1257</a>
 <a href="#1258" id="1258">1258</a>
-<a href="#1259" id="1259">1259</a>
-<a href="#1260" id="1260">1260</a>
-<a href="#1261" id="1261">1261</a>
-<a href="#1262" id="1262">1262</a>
-<a href="#1263" id="1263">1263</a>
-<a href="#1264" id="1264">1264</a>
-<a href="#1265" id="1265">1265</a>
-<a href="#1266" id="1266">1266</a>
-<a href="#1267" id="1267">1267</a>
-<a href="#1268" id="1268">1268</a>
-<a href="#1269" id="1269">1269</a>
-<a href="#1270" id="1270">1270</a>
-<a href="#1271" id="1271">1271</a>
-<a href="#1272" id="1272">1272</a>
-<a href="#1273" id="1273">1273</a>
-<a href="#1274" id="1274">1274</a>
-<a href="#1275" id="1275">1275</a>
-<a href="#1276" id="1276">1276</a>
-<a href="#1277" id="1277">1277</a>
-<a href="#1278" id="1278">1278</a>
-<a href="#1279" id="1279">1279</a>
-<a href="#1280" id="1280">1280</a>
-<a href="#1281" id="1281">1281</a>
-<a href="#1282" id="1282">1282</a>
-<a href="#1283" id="1283">1283</a>
-<a href="#1284" id="1284">1284</a>
-<a href="#1285" id="1285">1285</a>
-<a href="#1286" id="1286">1286</a>
-<a href="#1287" id="1287">1287</a>
-<a href="#1288" id="1288">1288</a>
-<a href="#1289" id="1289">1289</a>
-<a href="#1290" id="1290">1290</a>
-<a href="#1291" id="1291">1291</a>
-<a href="#1292" id="1292">1292</a>
-<a href="#1293" id="1293">1293</a>
-<a href="#1294" id="1294">1294</a>
-<a href="#1295" id="1295">1295</a>
-<a href="#1296" id="1296">1296</a>
-<a href="#1297" id="1297">1297</a>
-<a href="#1298" id="1298">1298</a>
-<a href="#1299" id="1299">1299</a>
-<a href="#1300" id="1300">1300</a>
-<a href="#1301" id="1301">1301</a>
-<a href="#1302" id="1302">1302</a>
-<a href="#1303" id="1303">1303</a>
-<a href="#1304" id="1304">1304</a>
-<a href="#1305" id="1305">1305</a>
-<a href="#1306" id="1306">1306</a>
-<a href="#1307" id="1307">1307</a>
-<a href="#1308" id="1308">1308</a>
-<a href="#1309" id="1309">1309</a>
-<a href="#1310" id="1310">1310</a>
-<a href="#1311" id="1311">1311</a>
-<a href="#1312" id="1312">1312</a>
-<a href="#1313" id="1313">1313</a>
-<a href="#1314" id="1314">1314</a>
-<a href="#1315" id="1315">1315</a>
-<a href="#1316" id="1316">1316</a>
-<a href="#1317" id="1317">1317</a>
-<a href="#1318" id="1318">1318</a>
-<a href="#1319" id="1319">1319</a>
-<a href="#1320" id="1320">1320</a>
-<a href="#1321" id="1321">1321</a>
-<a href="#1322" id="1322">1322</a>
-<a href="#1323" id="1323">1323</a>
-<a href="#1324" id="1324">1324</a>
-<a href="#1325" id="1325">1325</a>
-<a href="#1326" id="1326">1326</a>
-<a href="#1327" id="1327">1327</a>
-<a href="#1328" id="1328">1328</a>
-<a href="#1329" id="1329">1329</a>
-<a href="#1330" id="1330">1330</a>
-<a href="#1331" id="1331">1331</a>
-<a href="#1332" id="1332">1332</a>
-<a href="#1333" id="1333">1333</a>
-<a href="#1334" id="1334">1334</a></pre></div><pre class="rust"><code><span class="doccomment">//! This table summarizes when a MLS group can create a commit or proposal:
+<a href="#1259" id="1259">1259</a></pre></div><pre class="rust"><code><span class="doccomment">//! This table summarizes when a MLS group can create a commit or proposal:
 //!
 //! | can create handshake ? | 0 pend. Commit | 1 pend. Commit |
 //! |------------------------|----------------|----------------|
@@ -1345,88 +1270,13 @@
 
 <span class="kw">use super</span>::{Error, <span class="prelude-ty">Result</span>};
 <span class="kw">use crate</span>::{
-    LeafError, MlsTransportResponse, RecursiveError,
-    context::CentralContext,
+    LeafError, RecursiveError,
     e2e_identity::init_certificates::NewCrlDistributionPoint,
     mls::{MlsConversation, credential::CredentialBundle},
     prelude::{Client, MlsError, MlsGroupInfoBundle},
 };
 
-<span class="kw">impl </span>CentralContext {
-    <span class="doccomment">/// Send the commit via mls transport and handle the response.
-    /// Return `Ok(true)` if the commit should be accepted and merged,
-    /// `Ok(false)` if commit transport was successful and the commit can be discarded.
-    </span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">async fn </span>send_commit(
-        <span class="kw-2">&amp;</span><span class="self">self</span>,
-        <span class="kw-2">mut </span>commit: MlsCommitBundle,
-        conversation: <span class="prelude-ty">Option</span>&lt;async_lock::RwLockWriteGuard&lt;<span class="lifetime">'_</span>, MlsConversation&gt;&gt;,
-    ) -&gt; <span class="prelude-ty">Result</span>&lt;bool&gt; {
-        <span class="kw">let </span>guard = <span class="self">self
-            </span>.mls_transport()
-            .<span class="kw">await
-            </span>.map_err(RecursiveError::root(<span class="string">"getting mls transport"</span>))<span class="question-mark">?</span>;
-        <span class="kw">let </span>transport = guard.as_ref().ok_or::&lt;Error&gt;(
-            RecursiveError::root(<span class="string">"getting mls transport"</span>)(<span class="kw">crate</span>::Error::MlsTransportNotProvided).into(),
-        )<span class="question-mark">?</span>;
-        <span class="kw">let </span>client = <span class="self">self
-            </span>.mls_client()
-            .<span class="kw">await
-            </span>.map_err(RecursiveError::root(<span class="string">"getting mls client"</span>))<span class="question-mark">?</span>;
-        <span class="kw">let </span>backend = <span class="self">self
-            </span>.mls_provider()
-            .<span class="kw">await
-            </span>.map_err(RecursiveError::root(<span class="string">"getting mls provider"</span>))<span class="question-mark">?</span>;
-
-        <span class="kw">let </span>conversation_id_and_epoch = conversation
-            .as_ref()
-            .map(|c| (c.id().clone(), c.group.epoch().as_u64()));
-
-        <span class="comment">// Release lock here, so the callback can do processing on the conversation (e.g., process commits before returning retry).
-        </span>drop(conversation);
-        <span class="kw">loop </span>{
-            <span class="kw">match </span>transport
-                .send_commit_bundle(commit.clone())
-                .<span class="kw">await
-                </span>.map_err(RecursiveError::root(<span class="string">"sending commit bundle"</span>))<span class="question-mark">?
-            </span>{
-                MlsTransportResponse::Success =&gt; {
-                    <span class="kw">return </span><span class="prelude-val">Ok</span>(<span class="bool-val">true</span>);
-                }
-                MlsTransportResponse::Abort { reason } =&gt; {
-                    <span class="kw">return </span><span class="prelude-val">Err</span>(Error::MessageRejected { reason });
-                }
-                MlsTransportResponse::Retry =&gt; {
-                    <span class="kw">let </span><span class="prelude-val">Some</span>((<span class="kw-2">ref </span>conversation_id, <span class="kw-2">ref </span>epoch_before_sending)) = conversation_id_and_epoch <span class="kw">else </span>{
-                        <span class="kw">return </span><span class="prelude-val">Err</span>(Error::CannotRetryWithoutConversation);
-                    };
-                    <span class="kw">let </span>conversation = <span class="self">self</span>.get_conversation(conversation_id).<span class="kw">await</span><span class="question-mark">?</span>;
-                    <span class="kw">let </span><span class="kw-2">mut </span>conversation_guard = conversation.write().<span class="kw">await</span>;
-                    <span class="kw">if </span><span class="kw-2">*</span>epoch_before_sending == conversation_guard.group.epoch().as_u64() {
-                        <span class="comment">// No intermediate commits have been processed before returning retry.
-                        // This will be the case, e.g., on network failure.
-                        // We can just send the exact same commit again.
-                        </span><span class="kw">continue</span>;
-                    }
-                    <span class="comment">// The epoch has changed. I.e., a client originally tried sending a commit for an old epoch,
-                    // which was rejected by the DS.
-                    // Before returning `Retry`, the API consumer has fetched and merged all commits,
-                    // so the group state is up-to-date.
-                    // The original commit has been `renewed` to a pending proposal, unless the
-                    // intended operation was already done in one of the merged commits.
-                    </span><span class="kw">let </span><span class="prelude-val">Some</span>(commit_to_retry) = conversation_guard.commit_pending_proposals(<span class="kw-2">&amp;</span>client, <span class="kw-2">&amp;</span>backend).<span class="kw">await</span><span class="question-mark">?
-                    </span><span class="kw">else </span>{
-                        <span class="comment">// The intended operation was already done in one of the merged commits.
-                        </span><span class="kw">return </span><span class="prelude-val">Ok</span>(<span class="bool-val">false</span>);
-                    };
-                    commit = commit_to_retry;
-                }
-            }
-        }
-    }
-}
-
-<span class="doccomment">/// Creating commit
-</span><span class="kw">impl </span>MlsConversation {
+<span class="kw">impl </span>MlsConversation {
     <span class="doccomment">/// see [MlsCentral::update_keying_material]
     </span><span class="attr">#[cfg_attr(test, <span class="kw">crate</span>::durable)]
     </span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">async fn </span>update_keying_material(
@@ -1601,7 +1451,7 @@
                         <span class="comment">// Bob produces a commit that Alice will receive only after she tried sending a commit
                         </span>bob_central
                             .context
-                            .conversation_guard(<span class="kw-2">&amp;</span>id)
+                            .conversation(<span class="kw-2">&amp;</span>id)
                             .<span class="kw">await
                             </span>.unwrap()
                             .update_key_material()
@@ -1636,7 +1486,7 @@
                         <span class="comment">// Send two commits and process them on bobs side
                         </span>alice_central
                             .context
-                            .conversation_guard(<span class="kw-2">&amp;</span>id)
+                            .conversation(<span class="kw-2">&amp;</span>id)
                             .<span class="kw">await
                             </span>.unwrap()
                             .update_key_material()
@@ -1645,7 +1495,7 @@
                         <span class="kw">let </span>commit = retry_provider.latest_commit().<span class="kw">await</span>;
                         bob_central
                             .context
-                            .conversation_guard(<span class="kw-2">&amp;</span>id)
+                            .conversation(<span class="kw-2">&amp;</span>id)
                             .<span class="kw">await
                             </span>.unwrap()
                             .decrypt_message(<span class="kw-2">&amp;</span>commit.to_bytes().unwrap())
@@ -1656,7 +1506,7 @@
                         // then success, but now without an intermediate commit
                         </span>alice_central
                             .context
-                            .conversation_guard(<span class="kw-2">&amp;</span>id)
+                            .conversation(<span class="kw-2">&amp;</span>id)
                             .<span class="kw">await
                             </span>.unwrap()
                             .add_members(<span class="macro">vec!</span>[charlie_central.rand_key_package(<span class="kw-2">&amp;</span>case).<span class="kw">await</span>])
@@ -1665,7 +1515,7 @@
                         <span class="kw">let </span>commit = retry_provider.latest_commit().<span class="kw">await</span>;
                         bob_central
                             .context
-                            .conversation_guard(<span class="kw-2">&amp;</span>id)
+                            .conversation(<span class="kw-2">&amp;</span>id)
                             .<span class="kw">await
                             </span>.unwrap()
                             .decrypt_message(<span class="kw-2">&amp;</span>commit.to_bytes().unwrap())
@@ -1711,7 +1561,7 @@
                         </span>.unwrap();
                     alice_central
                         .context
-                        .conversation_guard(<span class="kw-2">&amp;</span>id)
+                        .conversation(<span class="kw-2">&amp;</span>id)
                         .<span class="kw">await
                         </span>.unwrap()
                         .add_members(<span class="macro">vec!</span>[bob.clone()])
@@ -1729,7 +1579,7 @@
                         </span>.unwrap();
                     alice_central
                         .context
-                        .conversation_guard(<span class="kw-2">&amp;</span>id)
+                        .conversation(<span class="kw-2">&amp;</span>id)
                         .<span class="kw">await
                         </span>.unwrap()
                         .add_members(<span class="macro">vec!</span>[bob])
@@ -1779,7 +1629,7 @@
                     <span class="kw">let </span>bob = bob_central.rand_key_package(<span class="kw-2">&amp;</span>case).<span class="kw">await</span>;
                     alice_central
                         .context
-                        .conversation_guard(<span class="kw-2">&amp;</span>id)
+                        .conversation(<span class="kw-2">&amp;</span>id)
                         .<span class="kw">await
                         </span>.unwrap()
                         .add_members(<span class="macro">vec!</span>[bob])
@@ -1822,7 +1672,7 @@
                         <span class="kw">let </span>bob = bob_central.rand_key_package(<span class="kw-2">&amp;</span>case).<span class="kw">await</span>;
                         alice_central
                             .context
-                            .conversation_guard(<span class="kw-2">&amp;</span>id)
+                            .conversation(<span class="kw-2">&amp;</span>id)
                             .<span class="kw">await
                             </span>.unwrap()
                             .add_members(<span class="macro">vec!</span>[bob])
@@ -1865,7 +1715,7 @@
 
                     alice_central
                         .context
-                        .conversation_guard(<span class="kw-2">&amp;</span>id)
+                        .conversation(<span class="kw-2">&amp;</span>id)
                         .<span class="kw">await
                         </span>.unwrap()
                         .remove_members(<span class="kw-2">&amp;</span>[bob_central.get_client_id().<span class="kw">await</span>])
@@ -1879,7 +1729,7 @@
 
                     bob_central
                         .context
-                        .conversation_guard(<span class="kw-2">&amp;</span>id)
+                        .conversation(<span class="kw-2">&amp;</span>id)
                         .<span class="kw">await
                         </span>.unwrap()
                         .decrypt_message(commit.to_bytes().unwrap())
@@ -1888,7 +1738,7 @@
 
                     <span class="comment">// But has been removed from the conversation
                     </span><span class="macro">assert!</span>(<span class="macro">matches!</span>(
-                       bob_central.context.get_conversation(<span class="kw-2">&amp;</span>id).<span class="kw">await</span>.unwrap_err(),
+                       bob_central.context.conversation(<span class="kw-2">&amp;</span>id).<span class="kw">await</span>.unwrap_err(),
                         mls::conversation::error::Error::Leaf(LeafError::ConversationNotFound(conv_id)) <span class="kw">if </span>conv_id == id
                     ));
                     <span class="macro">assert!</span>(alice_central.try_talk_to(<span class="kw-2">&amp;</span>id, <span class="kw-2">&amp;</span>bob_central).<span class="kw">await</span>.is_err());
@@ -1921,7 +1771,7 @@
                             </span>.unwrap();
                         bob_central
                             .context
-                            .conversation_guard(<span class="kw-2">&amp;</span>id)
+                            .conversation(<span class="kw-2">&amp;</span>id)
                             .<span class="kw">await
                             </span>.unwrap()
                             .decrypt_message(proposal.proposal.to_bytes().unwrap())
@@ -1930,7 +1780,7 @@
 
                         alice_central
                             .context
-                            .conversation_guard(<span class="kw-2">&amp;</span>id)
+                            .conversation(<span class="kw-2">&amp;</span>id)
                             .<span class="kw">await
                             </span>.unwrap()
                             .remove_members(<span class="kw-2">&amp;</span>[bob_central.get_client_id().<span class="kw">await</span>])
@@ -1972,7 +1822,7 @@
 
                         alice_central
                             .context
-                            .conversation_guard(<span class="kw-2">&amp;</span>id)
+                            .conversation(<span class="kw-2">&amp;</span>id)
                             .<span class="kw">await
                             </span>.unwrap()
                             .remove_members(<span class="kw-2">&amp;</span>[bob_central.get_client_id().<span class="kw">await</span>])
@@ -2035,7 +1885,7 @@
                     <span class="comment">// proposing the key update for alice
                     </span>alice_central
                         .context
-                        .conversation_guard(<span class="kw-2">&amp;</span>id)
+                        .conversation(<span class="kw-2">&amp;</span>id)
                         .<span class="kw">await
                         </span>.unwrap()
                         .update_key_material()
@@ -2063,7 +1913,7 @@
                     <span class="comment">// receiving the commit on bob's side (updating key from alice)
                     </span>bob_central
                         .context
-                        .conversation_guard(<span class="kw-2">&amp;</span>id)
+                        .conversation(<span class="kw-2">&amp;</span>id)
                         .<span class="kw">await
                         </span>.unwrap()
                         .decrypt_message(<span class="kw-2">&amp;</span>commit.to_bytes().unwrap())
@@ -2131,7 +1981,7 @@
                         <span class="comment">// receiving the proposal on Bob's side
                         </span>bob_central
                             .context
-                            .conversation_guard(<span class="kw-2">&amp;</span>id)
+                            .conversation(<span class="kw-2">&amp;</span>id)
                             .<span class="kw">await
                             </span>.unwrap()
                             .decrypt_message(add_charlie_proposal.proposal.to_bytes().unwrap())
@@ -2149,7 +1999,7 @@
                         <span class="comment">// performing an update on Alice's key. this should generate a welcome for Charlie
                         </span>alice_central
                             .context
-                            .conversation_guard(<span class="kw-2">&amp;</span>id)
+                            .conversation(<span class="kw-2">&amp;</span>id)
                             .<span class="kw">await
                             </span>.unwrap()
                             .update_key_material()
@@ -2188,7 +2038,7 @@
                         <span class="comment">// receiving the key update and the charlie's addition to the group
                         </span>bob_central
                             .context
-                            .conversation_guard(<span class="kw-2">&amp;</span>id)
+                            .conversation(<span class="kw-2">&amp;</span>id)
                             .<span class="kw">await
                             </span>.unwrap()
                             .decrypt_message(<span class="kw-2">&amp;</span>commit.to_bytes().unwrap())
@@ -2237,7 +2087,7 @@
                             .proposal;
                         bob_central
                             .context
-                            .conversation_guard(<span class="kw-2">&amp;</span>id)
+                            .conversation(<span class="kw-2">&amp;</span>id)
                             .<span class="kw">await
                             </span>.unwrap()
                             .decrypt_message(proposal.to_bytes().unwrap())
@@ -2246,7 +2096,7 @@
 
                         alice_central
                             .context
-                            .conversation_guard(<span class="kw-2">&amp;</span>id)
+                            .conversation(<span class="kw-2">&amp;</span>id)
                             .<span class="kw">await
                             </span>.unwrap()
                             .update_key_material()
@@ -2257,7 +2107,7 @@
 
                         bob_central
                             .context
-                            .conversation_guard(<span class="kw-2">&amp;</span>id)
+                            .conversation(<span class="kw-2">&amp;</span>id)
                             .<span class="kw">await
                             </span>.unwrap()
                             .decrypt_message(commit.to_bytes().unwrap())
@@ -2299,7 +2149,7 @@
 
                         alice_central
                             .context
-                            .conversation_guard(<span class="kw-2">&amp;</span>id)
+                            .conversation(<span class="kw-2">&amp;</span>id)
                             .<span class="kw">await
                             </span>.unwrap()
                             .update_key_material()
@@ -2347,7 +2197,7 @@
                         <span class="macro">assert_eq!</span>(alice_central.get_conversation_unchecked(<span class="kw-2">&amp;</span>id).<span class="kw">await</span>.members().len(), <span class="number">1</span>);
                         alice_central
                             .context
-                            .conversation_guard(<span class="kw-2">&amp;</span>id)
+                            .conversation(<span class="kw-2">&amp;</span>id)
                             .<span class="kw">await
                             </span>.unwrap()
                             .commit_pending_proposals()
@@ -2392,7 +2242,7 @@
                         <span class="macro">assert_eq!</span>(bob_central.get_conversation_unchecked(<span class="kw-2">&amp;</span>id).<span class="kw">await</span>.members().len(), <span class="number">2</span>);
                         alice_central
                             .context
-                            .conversation_guard(<span class="kw-2">&amp;</span>id)
+                            .conversation(<span class="kw-2">&amp;</span>id)
                             .<span class="kw">await
                             </span>.unwrap()
                             .decrypt_message(proposal.proposal.to_bytes().unwrap())
@@ -2401,7 +2251,7 @@
 
                         alice_central
                             .context
-                            .conversation_guard(<span class="kw-2">&amp;</span>id)
+                            .conversation(<span class="kw-2">&amp;</span>id)
                             .<span class="kw">await
                             </span>.unwrap()
                             .commit_pending_proposals()
@@ -2412,7 +2262,7 @@
 
                         bob_central
                             .context
-                            .conversation_guard(<span class="kw-2">&amp;</span>id)
+                            .conversation(<span class="kw-2">&amp;</span>id)
                             .<span class="kw">await
                             </span>.unwrap()
                             .decrypt_message(commit.to_bytes().unwrap())
@@ -2444,7 +2294,7 @@
                         </span>.unwrap();
                     alice_central
                         .context
-                        .conversation_guard(<span class="kw-2">&amp;</span>id)
+                        .conversation(<span class="kw-2">&amp;</span>id)
                         .<span class="kw">await
                         </span>.unwrap()
                         .commit_pending_proposals()
@@ -2485,7 +2335,7 @@
                             </span>.unwrap();
                         alice_central
                             .context
-                            .conversation_guard(<span class="kw-2">&amp;</span>id)
+                            .conversation(<span class="kw-2">&amp;</span>id)
                             .<span class="kw">await
                             </span>.unwrap()
                             .commit_pending_proposals()
@@ -2525,7 +2375,7 @@
 
                     alice_central
                         .context
-                        .conversation_guard(<span class="kw-2">&amp;</span>id)
+                        .conversation(<span class="kw-2">&amp;</span>id)
                         .<span class="kw">await
                         </span>.unwrap()
                         .update_key_material()
@@ -2535,7 +2385,7 @@
                     <span class="kw">let </span>commit1 = commit1.to_bytes().unwrap();
                     alice_central
                         .context
-                        .conversation_guard(<span class="kw-2">&amp;</span>id)
+                        .conversation(<span class="kw-2">&amp;</span>id)
                         .<span class="kw">await
                         </span>.unwrap()
                         .update_key_material()
@@ -2547,7 +2397,7 @@
                     <span class="comment">// fails when a commit is skipped
                     </span><span class="kw">let </span>out_of_order = bob_central
                         .context
-                        .conversation_guard(<span class="kw-2">&amp;</span>id)
+                        .conversation(<span class="kw-2">&amp;</span>id)
                         .<span class="kw">await
                         </span>.unwrap()
                         .decrypt_message(<span class="kw-2">&amp;</span>commit2)
@@ -2558,7 +2408,7 @@
                     // NB: here 'commit2' has been buffered so it is also applied when we decrypt commit1
                     </span>bob_central
                         .context
-                        .conversation_guard(<span class="kw-2">&amp;</span>id)
+                        .conversation(<span class="kw-2">&amp;</span>id)
                         .<span class="kw">await
                         </span>.unwrap()
                         .decrypt_message(<span class="kw-2">&amp;</span>commit1)
@@ -2568,7 +2418,7 @@
                     <span class="comment">// and then fails again when trying to decrypt a commit with an epoch in the past
                     </span><span class="kw">let </span>past_commit = bob_central
                         .context
-                        .conversation_guard(<span class="kw-2">&amp;</span>id)
+                        .conversation(<span class="kw-2">&amp;</span>id)
                         .<span class="kw">await
                         </span>.unwrap()
                         .decrypt_message(<span class="kw-2">&amp;</span>commit1)
@@ -2605,7 +2455,7 @@
 
                     alice_central
                         .context
-                        .conversation_guard(<span class="kw-2">&amp;</span>id)
+                        .conversation(<span class="kw-2">&amp;</span>id)
                         .<span class="kw">await
                         </span>.unwrap()
                         .update_key_material()
@@ -2617,7 +2467,7 @@
                     <span class="comment">// replayed encrypted proposal should fail
                     </span>bob_central
                         .context
-                        .conversation_guard(<span class="kw-2">&amp;</span>id)
+                        .conversation(<span class="kw-2">&amp;</span>id)
                         .<span class="kw">await
                         </span>.unwrap()
                         .decrypt_message(proposal1.to_bytes().unwrap())
@@ -2626,7 +2476,7 @@
                     <span class="macro">assert!</span>(<span class="macro">matches!</span>(
                         bob_central
                             .context
-                            .conversation_guard(<span class="kw-2">&amp;</span>id)
+                            .conversation(<span class="kw-2">&amp;</span>id)
                             .<span class="kw">await
                             </span>.unwrap()
                             .decrypt_message(proposal2.to_bytes().unwrap())
@@ -2643,7 +2493,7 @@
                     <span class="comment">// replayed encrypted commit should fail
                     </span>bob_central
                         .context
-                        .conversation_guard(<span class="kw-2">&amp;</span>id)
+                        .conversation(<span class="kw-2">&amp;</span>id)
                         .<span class="kw">await
                         </span>.unwrap()
                         .decrypt_message(commit1.to_bytes().unwrap())
@@ -2652,7 +2502,7 @@
                     <span class="macro">assert!</span>(<span class="macro">matches!</span>(
                         bob_central
                             .context
-                            .conversation_guard(<span class="kw-2">&amp;</span>id)
+                            .conversation(<span class="kw-2">&amp;</span>id)
                             .<span class="kw">await
                             </span>.unwrap()
                             .decrypt_message(commit2.to_bytes().unwrap())
