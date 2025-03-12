@@ -226,9 +226,12 @@ core-crypto/crypto-ffi/bindings/js$ bun run build
 ```
 
 Run tests:
+
 ```sh
-core-crypto/crypto-ffi/bindings/js$ bun run test
+core-crypto/crypto-ffi/bindings/js$ CC_TEST_LOG_LEVEL=1 bun run test
 ```
+
+Note the `CC_TEST_LOG_LEVEL` environment variable. At 1 it emits browser console logs; at 2 it also emits CoreCrypto logs.
 
 Note that CI will fail if it doesn't like your formatting. This can typically be automtically adjusted with
 
