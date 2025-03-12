@@ -9,101 +9,14 @@ use openmls::prelude::{LeafNode, MlsMessageOut};
 
 use mls_crypto_provider::MlsCryptoProvider;
 
-use super::{ConversationGuard, ConversationWithMls as _, Error, Result};
+use super::{Error, Result};
 use crate::{
-    LeafError, MlsTransportResponse, RecursiveError,
-    context::CentralContext,
+    LeafError, RecursiveError,
     e2e_identity::init_certificates::NewCrlDistributionPoint,
     mls::{MlsConversation, credential::CredentialBundle},
     prelude::{Client, MlsError, MlsGroupInfoBundle},
 };
 
-/// What to do with a commit after it has been sent via [crate::MlsTransport].
-#[derive(Clone, Copy, PartialEq, Eq)]
-pub(crate) enum TransportedCommitPolicy {
-    /// Accept and merge the commit.
-    Merge,
-    /// Do nothing, because intended operation was already done in one in intermediate processing.
-    None,
-}
-
-impl CentralContext {
-    /// Send the commit via mls transport and handle the response.
-    pub(crate) async fn send_commit(
-        &self,
-        mut commit: MlsCommitBundle,
-        mut conversation: Option<&mut ConversationGuard>,
-    ) -> Result<TransportedCommitPolicy> {
-        let transport = self
-            .mls_transport()
-            .await
-            .map_err(RecursiveError::root("getting mls transport"))?;
-        let transport = transport.as_ref().ok_or::<Error>(
-            RecursiveError::root("getting mls transport")(crate::Error::MlsTransportNotProvided).into(),
-        )?;
-        let client = self
-            .mls_client()
-            .await
-            .map_err(RecursiveError::root("getting mls client"))?;
-        let backend = self
-            .mls_provider()
-            .await
-            .map_err(RecursiveError::root("getting mls provider"))?;
-
-        // Can't use map() because of .await
-        let epoch_before_sending = match conversation.as_ref() {
-            None => None,
-            Some(conversation) => {
-                let inner = conversation.conversation().await;
-                Some(inner.group().epoch().as_u64())
-            }
-        };
-
-        loop {
-            match transport
-                .send_commit_bundle(commit.clone())
-                .await
-                .map_err(RecursiveError::root("sending commit bundle"))?
-            {
-                MlsTransportResponse::Success => {
-                    return Ok(TransportedCommitPolicy::Merge);
-                }
-                MlsTransportResponse::Abort { reason } => {
-                    return Err(Error::MessageRejected { reason });
-                }
-                MlsTransportResponse::Retry => {
-                    let Some(conversation) = conversation.as_mut() else {
-                        return Err(Error::CannotRetryWithoutConversation);
-                    };
-                    let mut inner = conversation.conversation_mut().await;
-                    let epoch_after_sending = inner.group().epoch().as_u64();
-                    if let Some(epoch_before_sending) = epoch_before_sending {
-                        if epoch_before_sending == epoch_after_sending {
-                            // No intermediate commits have been processed before returning retry.
-                            // This will be the case, e.g., on network failure.
-                            // We can just send the exact same commit again.
-                            continue;
-                        }
-                    }
-
-                    // The epoch has changed. I.e., a client originally tried sending a commit for an old epoch,
-                    // which was rejected by the DS.
-                    // Before returning `Retry`, the API consumer has fetched and merged all commits,
-                    // so the group state is up-to-date.
-                    // The original commit has been `renewed` to a pending proposal, unless the
-                    // intended operation was already done in one of the merged commits.
-                    let Some(commit_to_retry) = inner.commit_pending_proposals(&client, &backend).await? else {
-                        // The intended operation was already done in one of the merged commits.
-                        return Ok(TransportedCommitPolicy::None);
-                    };
-                    commit = commit_to_retry;
-                }
-            }
-        }
-    }
-}
-
-/// Creating commit
 impl MlsConversation {
     /// see [MlsCentral::update_keying_material]
     #[cfg_attr(test, crate::durable)]

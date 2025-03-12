@@ -3,8 +3,7 @@ pub(crate) mod decrypt;
 mod encrypt;
 mod merge;
 
-use super::{ConversationWithMls, Error, MlsConversation, Result, commit::MlsCommitBundle};
-use crate::mls::conversation::commit::TransportedCommitPolicy;
+use super::{ConversationWithMls, Error, MlsConversation, Result};
 use crate::mls::credential::CredentialBundle;
 use crate::prelude::ConversationId;
 use crate::{
@@ -112,22 +111,6 @@ impl ConversationGuard {
             .find_current_credential_bundle(&client)
             .await
             .map_err(|_| Error::IdentityInitializationError)
-    }
-
-    pub(crate) async fn send_and_merge_commit(&mut self, commit: MlsCommitBundle) -> Result<()> {
-        match self.central().await?.send_commit(commit, Some(self)).await {
-            Ok(TransportedCommitPolicy::None) => Ok(()),
-            Ok(TransportedCommitPolicy::Merge) => {
-                let backend = self.mls_provider().await?;
-                let mut conversation = self.inner.write().await;
-                conversation.commit_accepted(&backend).await
-            }
-            Err(e @ Error::MessageRejected { .. }) => {
-                self.clear_pending_commit().await?;
-                Err(e)
-            }
-            Err(e) => Err(e),
-        }
     }
 
     fn group_info(group_info: Option<GroupInfo>) -> Result<MlsGroupInfoBundle> {

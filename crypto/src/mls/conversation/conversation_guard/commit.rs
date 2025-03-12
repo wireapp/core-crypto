@@ -1,12 +1,12 @@
-//! The methods in this module all produce commits.
+//! The methods in this module all produce or handle commits.
 
 use openmls::prelude::KeyPackageIn;
 
-use crate::mls::conversation::ConversationWithMls as _;
+use crate::mls::conversation::{ConversationWithMls as _, Error};
 use crate::mls::credential::CredentialBundle;
 use crate::prelude::MlsCredentialType;
 use crate::{
-    LeafError, MlsError, RecursiveError,
+    LeafError, MlsError, MlsTransportResponse, RecursiveError,
     e2e_identity::init_certificates::NewCrlDistributionPoint,
     mls::{
         conversation::{ConversationGuard, Result, commit::MlsCommitBundle},
@@ -15,7 +15,89 @@ use crate::{
     prelude::ClientId,
 };
 
+/// What to do with a commit after it has been sent via [crate::MlsTransport].
+#[derive(Clone, Copy, PartialEq, Eq)]
+pub(crate) enum TransportedCommitPolicy {
+    /// Accept and merge the commit.
+    Merge,
+    /// Do nothing, because intended operation was already done in one in intermediate processing.
+    None,
+}
+
 impl ConversationGuard {
+    async fn send_and_merge_commit(&mut self, commit: MlsCommitBundle) -> Result<()> {
+        match self.send_commit(commit).await {
+            Ok(TransportedCommitPolicy::None) => Ok(()),
+            Ok(TransportedCommitPolicy::Merge) => {
+                let backend = self.mls_provider().await?;
+                let mut conversation = self.inner.write().await;
+                conversation.commit_accepted(&backend).await
+            }
+            Err(e @ Error::MessageRejected { .. }) => {
+                self.clear_pending_commit().await?;
+                Err(e)
+            }
+            Err(e) => Err(e),
+        }
+    }
+
+    /// Send the commit via [crate::MlsTransport] and handle the response.
+    async fn send_commit(&mut self, mut commit: MlsCommitBundle) -> Result<TransportedCommitPolicy> {
+        let transport = self
+            .central()
+            .await?
+            .mls_transport()
+            .await
+            .map_err(RecursiveError::root("getting mls transport"))?;
+        let transport = transport.as_ref().ok_or::<Error>(
+            RecursiveError::root("getting mls transport")(crate::Error::MlsTransportNotProvided).into(),
+        )?;
+        let client = self.mls_client().await?;
+        let backend = self.mls_provider().await?;
+
+        let inner = self.conversation().await;
+        let epoch_before_sending = inner.group().epoch().as_u64();
+        // Drop the lock to allow mutably borrowing self again.
+        drop(inner);
+
+        loop {
+            match transport
+                .send_commit_bundle(commit.clone())
+                .await
+                .map_err(RecursiveError::root("sending commit bundle"))?
+            {
+                MlsTransportResponse::Success => {
+                    return Ok(TransportedCommitPolicy::Merge);
+                }
+                MlsTransportResponse::Abort { reason } => {
+                    return Err(Error::MessageRejected { reason });
+                }
+                MlsTransportResponse::Retry => {
+                    let mut inner = self.conversation_mut().await;
+                    let epoch_after_sending = inner.group().epoch().as_u64();
+                    if epoch_before_sending == epoch_after_sending {
+                        // No intermediate commits have been processed before returning retry.
+                        // This will be the case, e.g., on network failure.
+                        // We can just send the exact same commit again.
+                        continue;
+                    }
+
+                    // The epoch has changed. I.e., a client originally tried sending a commit for an old epoch,
+                    // which was rejected by the DS.
+                    // Before returning `Retry`, the API consumer has fetched and merged all commits,
+                    // so the group state is up-to-date.
+                    // The original commit has been `renewed` to a pending proposal, unless the
+                    // intended operation was already done in one of the merged commits.
+                    let Some(commit_to_retry) = inner.commit_pending_proposals(&client, &backend).await? else {
+                        // The intended operation was already done in one of the merged commits.
+                        return Ok(TransportedCommitPolicy::None);
+                    };
+                    commit = commit_to_retry;
+                }
+            }
+        }
+    }
+
     /// Adds new members to the group/conversation
     pub async fn add_members(&mut self, key_packages: Vec<KeyPackageIn>) -> Result<NewCrlDistributionPoint> {
         let backend = self.mls_provider().await?;
