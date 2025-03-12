@@ -101,7 +101,7 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: ${{github.event.number}}-swift-ffi
-          path: crypto-ffi/bindings/swift/WireCoreCrypto
+          path: crypto-ffi/bindings/swift/WireCoreCryptoUniffi
       - name: create xcframework
         run: |
           cd crypto-ffi/bindings/swift
@@ -151,7 +151,7 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: ${{github.event.number}}-swift-ffi
-          path: crypto-ffi/bindings/swift/WireCoreCrypto
+          path: crypto-ffi/bindings/swift/WireCoreCryptoUniffi
       - name: build & install iOS Interop client
         run: |
           cd interop/src/clients/InteropClient
