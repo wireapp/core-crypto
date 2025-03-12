@@ -7,7 +7,7 @@ crypto-ffi/bindings/*/out
 crypto-ffi/bindings/*/.build
 crypto-ffi/bindings/*/build
 crypto-ffi/bindings/*/.swiftpm
-crypto-ffi/bindings/swift/WireCoreCryptoUniffi/WireCoreCryptoUniffi/CoreCrypto.swift
+crypto-ffi/bindings/swift/WireCoreCryptoUniffi/WireCoreCryptoUniffi/core_crypto_ffi.swift
 crypto-ffi/bindings/swift/WireCoreCryptoUniffi/WireCoreCryptoUniffi/core_crypto.swift
 crypto-ffi/bindings/swift/WireCoreCryptoUniffi/WireCoreCryptoUniffi/core_cryptoFFI.h
 crypto-ffi/bindings/swift/WireCoreCryptoUniffi/WireCoreCryptoUniffi/core_crypto_ffiFFI.h
