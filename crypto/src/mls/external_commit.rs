@@ -17,6 +17,7 @@
 use openmls::prelude::{MlsGroup, group_info::VerifiableGroupInfo};
 
 use super::Result;
+use crate::mls::conversation::commit::TransportedCommitPolicy;
 use crate::mls::conversation::pending_conversation::PendingConversation;
 use crate::prelude::{MlsCommitBundle, WelcomeBundle};
 use crate::{
@@ -64,9 +65,9 @@ impl CentralContext {
             .await?;
 
         match self.send_commit(commit_bundle, None).await {
-            Ok(need_to_merge_commit) => {
+            Ok(commit_policy) => {
                 debug_assert!(
-                    need_to_merge_commit,
+                    commit_policy == TransportedCommitPolicy::Merge,
                     "If sending the external commit was successful, we should always need to merge it"
                 );
                 pending_conversation

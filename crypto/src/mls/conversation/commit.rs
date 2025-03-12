@@ -18,15 +18,22 @@ use crate::{
     prelude::{Client, MlsError, MlsGroupInfoBundle},
 };
 
+/// What to do with a commit after it has been sent via [crate::MlsTransport].
+#[derive(Clone, Copy, PartialEq, Eq)]
+pub(crate) enum TransportedCommitPolicy {
+    /// Accept and merge the commit.
+    Merge,
+    /// Do nothing, because intended operation was already done in one in intermediate processing.
+    None,
+}
+
 impl CentralContext {
     /// Send the commit via mls transport and handle the response.
-    /// Return `Ok(true)` if the commit should be accepted and merged,
-    /// `Ok(false)` if commit transport was successful and the commit can be discarded.
     pub(crate) async fn send_commit(
         &self,
         mut commit: MlsCommitBundle,
         mut conversation: Option<&mut ConversationGuard>,
-    ) -> Result<bool> {
+    ) -> Result<TransportedCommitPolicy> {
         let transport = self
             .mls_transport()
             .await
@@ -59,7 +66,7 @@ impl CentralContext {
                 .map_err(RecursiveError::root("sending commit bundle"))?
             {
                 MlsTransportResponse::Success => {
-                    return Ok(true);
+                    return Ok(TransportedCommitPolicy::Merge);
                 }
                 MlsTransportResponse::Abort { reason } => {
                     return Err(Error::MessageRejected { reason });
@@ -87,7 +94,7 @@ impl CentralContext {
                     // intended operation was already done in one of the merged commits.
                     let Some(commit_to_retry) = inner.commit_pending_proposals(&client, &backend).await? else {
                         // The intended operation was already done in one of the merged commits.
-                        return Ok(false);
+                        return Ok(TransportedCommitPolicy::None);
                     };
                     commit = commit_to_retry;
                 }

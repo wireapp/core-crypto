@@ -4,6 +4,7 @@ mod encrypt;
 mod merge;
 
 use super::{ConversationWithMls, Error, MlsConversation, Result, commit::MlsCommitBundle};
+use crate::mls::conversation::commit::TransportedCommitPolicy;
 use crate::mls::credential::CredentialBundle;
 use crate::prelude::ConversationId;
 use crate::{
@@ -115,8 +116,8 @@ impl ConversationGuard {
 
     pub(crate) async fn send_and_merge_commit(&mut self, commit: MlsCommitBundle) -> Result<()> {
         match self.central().await?.send_commit(commit, Some(self)).await {
-            Ok(false) => Ok(()),
-            Ok(true) => {
+            Ok(TransportedCommitPolicy::None) => Ok(()),
+            Ok(TransportedCommitPolicy::Merge) => {
                 let backend = self.mls_provider().await?;
                 let mut conversation = self.inner.write().await;
                 conversation.commit_accepted(&backend).await
