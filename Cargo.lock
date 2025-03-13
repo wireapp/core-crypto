@@ -964,6 +964,7 @@ dependencies = [
  "core-crypto-macros",
  "core-foundation 0.10.0",
  "criterion",
+ "derive_more",
  "env_logger",
  "futures-lite",
  "getrandom 0.2.15",
