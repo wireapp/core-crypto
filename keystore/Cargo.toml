@@ -33,6 +33,7 @@ dummy-entity = ["serde"]
 [dependencies]
 thiserror.workspace = true
 cfg-if.workspace = true
+derive_more.workspace = true
 hex.workspace = true
 zeroize = { workspace = true, features = ["zeroize_derive"] }
 async-trait.workspace = true
