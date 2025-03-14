@@ -1,5 +1,11 @@
 # Changelog
 
+## v4.2.2 - 2025-03-14
+
+### Bug Fixes
+
+- fix publishing to maven central
+
 ## v4.2.1 - 2025-03-14
 
 ### Bug Fixes
