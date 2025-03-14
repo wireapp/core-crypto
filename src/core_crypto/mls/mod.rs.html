@@ -800,7 +800,8 @@
 <a href="#799" id="799">799</a>
 <a href="#800" id="800">800</a>
 <a href="#801" id="801">801</a>
-<a href="#802" id="802">802</a></pre></div><pre class="rust"><code><span class="kw">use </span>std::sync::Arc;
+<a href="#802" id="802">802</a>
+<a href="#803" id="803">803</a></pre></div><pre class="rust"><code><span class="kw">use </span>std::sync::Arc;
 
 <span class="kw">use </span>async_lock::RwLock;
 <span class="kw">use </span>log::trace;
@@ -827,6 +828,7 @@
 <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">mod </span>external_proposal;
 <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">mod </span>proposal;
 
+<span class="kw">pub use </span>client::EpochObserver;
 <span class="kw">pub use </span>error::{Error, <span class="prelude-ty">Result</span>};
 
 <span class="comment">// Prevents direct instantiation of [MlsCentralConfiguration]

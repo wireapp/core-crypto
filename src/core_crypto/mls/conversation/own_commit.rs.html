@@ -375,14 +375,18 @@
 <a href="#374" id="374">374</a>
 <a href="#375" id="375">375</a>
 <a href="#376" id="376">376</a>
-<a href="#377" id="377">377</a></pre></div><pre class="rust"><code><span class="kw">use super</span>::{Error, <span class="prelude-ty">Result</span>};
+<a href="#377" id="377">377</a>
+<a href="#378" id="378">378</a>
+<a href="#379" id="379">379</a>
+<a href="#380" id="380">380</a>
+<a href="#381" id="381">381</a></pre></div><pre class="rust"><code><span class="kw">use super</span>::{Error, <span class="prelude-ty">Result</span>};
 <span class="kw">use crate</span>::{
     RecursiveError,
     mls::credential::{
         crl::{extract_crl_uris_from_group, get_new_crl_distribution_points},
         ext::CredentialExt,
     },
-    prelude::{MlsConversation, MlsConversationDecryptMessage},
+    prelude::{Client, MlsConversation, MlsConversationDecryptMessage},
 };
 <span class="kw">use </span>mls_crypto_provider::MlsCryptoProvider;
 <span class="kw">use </span>openmls::prelude::{
@@ -425,27 +429,28 @@
 
     <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">async fn </span>handle_own_commit(
         <span class="kw-2">&amp;mut </span><span class="self">self</span>,
+        client: <span class="kw-2">&amp;</span>Client,
         backend: <span class="kw-2">&amp;</span>MlsCryptoProvider,
         ct: <span class="kw-2">&amp;</span>ConfirmationTag,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;MlsConversationDecryptMessage&gt; {
-        <span class="kw">if </span><span class="self">self</span>.group.pending_commit().is_some() {
-            <span class="kw">if </span><span class="self">self</span>.eq_pending_commit(ct) {
-                <span class="comment">// incoming is from ourselves and it's the same as the local pending commit
-                // =&gt; merge the pending commit &amp; continue
-                </span><span class="self">self</span>.merge_pending_commit(backend).<span class="kw">await
-            </span>} <span class="kw">else </span>{
-                <span class="comment">// this would mean we created a commit that got accepted by the DS but we cleared it locally
-                // then somehow retried and created another commit. This is a manifest client error
-                // and should be identified as such
-                </span><span class="prelude-val">Err</span>(Error::ClearingPendingCommitError)
-            }
-        } <span class="kw">else </span>{
+        <span class="kw">if </span><span class="self">self</span>.group.pending_commit().is_none() {
             <span class="comment">// This either means the DS replayed one of our commit OR we cleared a commit accepted by the DS
             // In both cases, CoreCrypto cannot be of any help since it cannot decrypt self commits
             // =&gt; deflect this case and let the caller handle it
-            </span><span class="prelude-val">Err</span>(Error::SelfCommitIgnored)
+            </span><span class="kw">return </span><span class="prelude-val">Err</span>(Error::SelfCommitIgnored);
         }
-    }
+
+        <span class="kw">if </span>!<span class="self">self</span>.eq_pending_commit(ct) {
+            <span class="comment">// this would mean we created a commit that got accepted by the DS but we cleared it locally
+            // then somehow retried and created another commit. This is a manifest client error
+            // and should be identified as such
+            </span><span class="kw">return </span><span class="prelude-val">Err</span>(Error::ClearingPendingCommitError);
+        }
+
+        <span class="comment">// incoming is from ourselves and it's the same as the local pending commit
+        // =&gt; merge the pending commit &amp; continue
+        </span><span class="self">self</span>.merge_pending_commit(client, backend).<span class="kw">await
+    </span>}
 
     <span class="doccomment">/// Compare incoming commit with local pending commit
     </span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>eq_pending_commit(<span class="kw-2">&amp;</span><span class="self">self</span>, commit_ct: <span class="kw-2">&amp;</span>ConfirmationTag) -&gt; bool {
@@ -459,9 +464,10 @@
     /// This adapts [Self::commit_accepted] to return the same as [MlsConversation::decrypt_message]
     </span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">async fn </span>merge_pending_commit(
         <span class="kw-2">&amp;mut </span><span class="self">self</span>,
+        client: <span class="kw-2">&amp;</span>Client,
         backend: <span class="kw-2">&amp;</span>MlsCryptoProvider,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;MlsConversationDecryptMessage&gt; {
-        <span class="self">self</span>.commit_accepted(backend).<span class="kw">await</span><span class="question-mark">?</span>;
+        <span class="self">self</span>.commit_accepted(client, backend).<span class="kw">await</span><span class="question-mark">?</span>;
 
         <span class="kw">let </span>own_leaf = <span class="self">self
             </span>.group
@@ -485,7 +491,9 @@
         .<span class="kw">await
         </span>.map_err(RecursiveError::mls_credential(<span class="string">"getting new crl distribution points"</span>))<span class="question-mark">?</span>;
 
-        <span class="prelude-val">Ok</span>(MlsConversationDecryptMessage {
+        <span class="comment">// we still support the `has_epoch_changed` field, though we'll remove it later
+        </span><span class="attr">#[expect(deprecated)]
+        </span><span class="prelude-val">Ok</span>(MlsConversationDecryptMessage {
             app_msg: <span class="prelude-val">None</span>,
             proposals: <span class="macro">vec!</span>[],
             is_active: <span class="self">self</span>.group.is_active(),

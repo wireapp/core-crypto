@@ -692,7 +692,29 @@
 <a href="#691" id="691">691</a>
 <a href="#692" id="692">692</a>
 <a href="#693" id="693">693</a>
-<a href="#694" id="694">694</a></pre></div><pre class="rust"><code><span class="comment">// Wire
+<a href="#694" id="694">694</a>
+<a href="#695" id="695">695</a>
+<a href="#696" id="696">696</a>
+<a href="#697" id="697">697</a>
+<a href="#698" id="698">698</a>
+<a href="#699" id="699">699</a>
+<a href="#700" id="700">700</a>
+<a href="#701" id="701">701</a>
+<a href="#702" id="702">702</a>
+<a href="#703" id="703">703</a>
+<a href="#704" id="704">704</a>
+<a href="#705" id="705">705</a>
+<a href="#706" id="706">706</a>
+<a href="#707" id="707">707</a>
+<a href="#708" id="708">708</a>
+<a href="#709" id="709">709</a>
+<a href="#710" id="710">710</a>
+<a href="#711" id="711">711</a>
+<a href="#712" id="712">712</a>
+<a href="#713" id="713">713</a>
+<a href="#714" id="714">714</a>
+<a href="#715" id="715">715</a>
+<a href="#716" id="716">716</a></pre></div><pre class="rust"><code><span class="comment">// Wire
 // Copyright (C) 2022 Wire Swiss GmbH
 
 // This program is free software: you can redistribute it and/or modify
@@ -708,7 +730,8 @@
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see http://www.gnu.org/licenses/.
 
-</span><span class="kw">mod </span>error;
+</span><span class="kw">mod </span>epoch_observer;
+<span class="kw">mod </span>error;
 <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">mod </span>id;
 <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">mod </span>identifier;
 <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">mod </span>identities;
@@ -723,6 +746,7 @@
         key_package::KEYPACKAGE_DEFAULT_LIFETIME,
     },
 };
+<span class="kw">pub use </span>epoch_observer::EpochObserver;
 <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">use </span>error::{Error, <span class="prelude-ty">Result</span>};
 
 <span class="kw">use </span>async_lock::RwLock;
@@ -731,9 +755,9 @@
 <span class="kw">use </span>openmls::prelude::{Credential, CredentialType};
 <span class="kw">use </span>openmls_basic_credential::SignatureKeyPair;
 <span class="kw">use </span>openmls_traits::{OpenMlsCryptoProvider, crypto::OpenMlsCrypto, types::SignatureScheme};
-<span class="kw">use </span>std::collections::HashSet;
 <span class="kw">use </span>std::ops::{Deref, DerefMut};
 <span class="kw">use </span>std::sync::Arc;
+<span class="kw">use </span>std::{collections::HashSet, fmt};
 <span class="kw">use </span>tls_codec::{Deserialize, Serialize};
 
 <span class="kw">use </span>core_crypto_keystore::entities::{EntityFindParams, MlsCredential, MlsSignatureKeyPair};
@@ -752,11 +776,28 @@
     state: Arc&lt;RwLock&lt;<span class="prelude-ty">Option</span>&lt;ClientInner&gt;&gt;&gt;,
 }
 
-<span class="attr">#[derive(Debug, Clone)]
+<span class="attr">#[derive(Clone)]
 </span><span class="kw">struct </span>ClientInner {
     id: ClientId,
     <span class="kw">pub</span>(<span class="kw">crate</span>) identities: ClientIdentities,
     keypackage_lifetime: std::time::Duration,
+    epoch_observer: <span class="prelude-ty">Option</span>&lt;Arc&lt;<span class="kw">dyn </span>EpochObserver&gt;&gt;,
+}
+
+<span class="kw">impl </span>fmt::Debug <span class="kw">for </span>ClientInner {
+    <span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, f: <span class="kw-2">&amp;mut </span>fmt::Formatter&lt;<span class="lifetime">'_</span>&gt;) -&gt; fmt::Result {
+        <span class="kw">let </span>observer_debug = <span class="kw">if </span><span class="self">self</span>.epoch_observer.is_some() {
+            <span class="string">"Some(Arc&lt;dyn EpochObserver&gt;)"
+        </span>} <span class="kw">else </span>{
+            <span class="string">"None"
+        </span>};
+        f.debug_struct(<span class="string">"ClientInner"</span>)
+            .field(<span class="string">"id"</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.id)
+            .field(<span class="string">"identities"</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.identities)
+            .field(<span class="string">"keypackage_lifetime"</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.keypackage_lifetime)
+            .field(<span class="string">"epoch_observer"</span>, <span class="kw-2">&amp;</span>observer_debug)
+            .finish()
+    }
 }
 
 <span class="kw">impl </span>Client {
@@ -935,6 +976,7 @@
             id: client_id.clone(),
             identities: ClientIdentities::new(stored_skp.len()),
             keypackage_lifetime: KEYPACKAGE_DEFAULT_LIFETIME,
+            epoch_observer: <span class="prelude-val">None</span>,
         })
         .<span class="kw">await</span>;
 
@@ -995,6 +1037,7 @@
             id: id.into_owned(),
             identities: ClientIdentities::new(signature_schemes.len()),
             keypackage_lifetime: KEYPACKAGE_DEFAULT_LIFETIME,
+            epoch_observer: <span class="prelude-val">None</span>,
         })
         .<span class="kw">await</span>;
 
@@ -1100,6 +1143,7 @@
             id: id.clone(),
             identities,
             keypackage_lifetime: KEYPACKAGE_DEFAULT_LIFETIME,
+            epoch_observer: <span class="prelude-val">None</span>,
         })
         .<span class="kw">await</span>;
         <span class="prelude-val">Ok</span>(())

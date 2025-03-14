@@ -84,7 +84,13 @@
 <a href="#83" id="83">83</a>
 <a href="#84" id="84">84</a>
 <a href="#85" id="85">85</a>
-<a href="#86" id="86">86</a></pre></div><pre class="rust"><code><span class="kw">use </span><span class="kw">crate</span>::prelude::{ClientId, ConversationId};
+<a href="#86" id="86">86</a>
+<a href="#87" id="87">87</a>
+<a href="#88" id="88">88</a>
+<a href="#89" id="89">89</a>
+<a href="#90" id="90">90</a>
+<a href="#91" id="91">91</a>
+<a href="#92" id="92">92</a></pre></div><pre class="rust"><code><span class="kw">use </span><span class="kw">crate</span>::prelude::{ClientId, ConversationId};
 <span class="kw">use </span>derive_more::{Constructor, From};
 <span class="kw">use </span>hex;
 <span class="kw">use </span>log::kv::{ToValue, Value};
@@ -142,8 +148,14 @@
     }
 }
 
-<span class="attr">#[derive(From, Constructor)]
-</span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">struct </span>Obfuscated&lt;T&gt;(T);
+<span class="doccomment">/// We often want logging for some values that we shouldn't know the real value of, for privacy reasons.
+///
+/// `ConversationId` is a canonical example of such an item.
+///
+/// This wrapper lets us log a partial hash of the sensitive item, so we have deterministic loggable non-sensitive
+/// aliases for all our sensitive values.
+</span><span class="attr">#[derive(From, Constructor)]
+</span><span class="kw">pub struct </span>Obfuscated&lt;T&gt;(T);
 
 <span class="kw">impl</span>&lt;T&gt; Debug <span class="kw">for </span>Obfuscated&lt;T&gt;
 <span class="kw">where

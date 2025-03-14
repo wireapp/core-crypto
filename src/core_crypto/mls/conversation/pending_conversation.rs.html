@@ -546,7 +546,19 @@
 <a href="#545" id="545">545</a>
 <a href="#546" id="546">546</a>
 <a href="#547" id="547">547</a>
-<a href="#548" id="548">548</a></pre></div><pre class="rust"><code><span class="doccomment">//! When a client joins a group via an external commit, it sometimes receives messages
+<a href="#548" id="548">548</a>
+<a href="#549" id="549">549</a>
+<a href="#550" id="550">550</a>
+<a href="#551" id="551">551</a>
+<a href="#552" id="552">552</a>
+<a href="#553" id="553">553</a>
+<a href="#554" id="554">554</a>
+<a href="#555" id="555">555</a>
+<a href="#556" id="556">556</a>
+<a href="#557" id="557">557</a>
+<a href="#558" id="558">558</a>
+<a href="#559" id="559">559</a>
+<a href="#560" id="560">560</a></pre></div><pre class="rust"><code><span class="doccomment">//! When a client joins a group via an external commit, it sometimes receives messages
 //! (most of the time renewed external proposals) for the new epoch whereas it does not yet have
 //! the confirmation from the DS that the external join commit has been accepted.
 
@@ -738,7 +750,13 @@
         .<span class="kw">await
         </span>.map_err(RecursiveError::mls_credential(<span class="string">"getting new crl distribution points"</span>))<span class="question-mark">?</span>;
 
-        <span class="prelude-val">Ok</span>(MlsConversationDecryptMessage {
+        <span class="comment">// Note that though we return `has_epoch_changed: true` here, we don't notify the observer.
+        // This function can only be reached via a code path going through `MlsConversation::decrypt_message`
+        // which already notifies the observer; it would be redundant to notify here also.
+
+        // we still support the `has_epoch_changed` field, though we'll remove it later
+        </span><span class="attr">#[expect(deprecated)]
+        </span><span class="prelude-val">Ok</span>(MlsConversationDecryptMessage {
             app_msg: <span class="prelude-val">None</span>,
             proposals: <span class="macro">vec!</span>[],
             is_active: conversation.group.is_active(),
@@ -953,6 +971,14 @@
                     <span class="comment">// Bob should have buffered the messages
                     </span><span class="macro">assert_eq!</span>(bob_central.context.count_entities().<span class="kw">await</span>.pending_messages, <span class="number">4</span>);
 
+                    <span class="kw">let </span>observer = TestEpochObserver::new();
+                    bob_central
+                        .client()
+                        .<span class="kw">await
+                        </span>.register_epoch_observer(observer.clone())
+                        .<span class="kw">await
+                        </span>.unwrap();
+
                     <span class="comment">// Finally, Bob receives the green light from the DS and he can merge the external commit
                     </span><span class="kw">let </span>MlsConversationDecryptMessage {
                         buffered_messages: <span class="prelude-val">Some</span>(restored_messages),
@@ -964,26 +990,24 @@
                     <span class="kw">else </span>{
                         <span class="macro">panic!</span>(<span class="string">"Alice's messages should have been restored at this point"</span>);
                     };
-                    <span class="kw">for </span>(i, m) <span class="kw">in </span>restored_messages.into_iter().enumerate() {
-                        <span class="kw">match </span>i {
-                            <span class="number">0 </span>=&gt; {
-                                <span class="comment">// this is the application message
-                                </span><span class="macro">assert_eq!</span>(<span class="kw-2">&amp;</span>m.app_msg.unwrap(), <span class="string">b"Hello Bob !"</span>);
-                                <span class="macro">assert!</span>(!m.has_epoch_changed);
-                            }
-                            <span class="number">1 </span>| <span class="number">2 </span>=&gt; {
-                                <span class="comment">// this is either the member or the external proposal
-                                </span><span class="macro">assert!</span>(m.app_msg.is_none());
-                                <span class="macro">assert!</span>(!m.has_epoch_changed);
-                            }
-                            <span class="number">3 </span>=&gt; {
-                                <span class="comment">// this is the commit
-                                </span><span class="macro">assert!</span>(m.app_msg.is_none());
-                                <span class="macro">assert!</span>(m.has_epoch_changed);
-                            }
-                            <span class="kw">_ </span>=&gt; <span class="macro">unreachable!</span>(),
+
+                    <span class="kw">let </span>observed_epochs = observer.observed_epochs().<span class="kw">await</span>;
+                    <span class="macro">assert_eq!</span>(
+                        observed_epochs.len(),
+                        <span class="number">1</span>,
+                        <span class="string">"we should see exactly 1 epoch change in these 4 messages"
+                    </span>);
+                    <span class="macro">assert_eq!</span>(observed_epochs[<span class="number">0</span>].<span class="number">0</span>, id, <span class="string">"conversation id must match"</span>);
+
+                    <span class="kw">for </span>(idx, msg) <span class="kw">in </span>restored_messages.iter().enumerate() {
+                        <span class="kw">if </span>idx == <span class="number">0 </span>{
+                            <span class="comment">// the only application message
+                            </span><span class="macro">assert_eq!</span>(msg.app_msg.as_deref(), <span class="prelude-val">Some</span>(<span class="string">b"Hello Bob !" </span><span class="kw">as _</span>));
+                        } <span class="kw">else </span>{
+                            <span class="macro">assert!</span>(msg.app_msg.is_none());
                         }
                     }
+
                     <span class="comment">// because external commit got merged
                     </span><span class="macro">assert!</span>(bob_central.try_talk_to(<span class="kw-2">&amp;</span>id, <span class="kw-2">&amp;</span>alice_central).<span class="kw">await</span>.is_ok());
                     <span class="comment">// because Alice's commit got merged

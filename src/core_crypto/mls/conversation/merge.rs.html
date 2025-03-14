@@ -147,7 +147,16 @@
 <a href="#146" id="146">146</a>
 <a href="#147" id="147">147</a>
 <a href="#148" id="148">148</a>
-<a href="#149" id="149">149</a></pre></div><pre class="rust"><code><span class="doccomment">//! A MLS group can be merged (aka committed) when it has a pending commit. The latter is a commit
+<a href="#149" id="149">149</a>
+<a href="#150" id="150">150</a>
+<a href="#151" id="151">151</a>
+<a href="#152" id="152">152</a>
+<a href="#153" id="153">153</a>
+<a href="#154" id="154">154</a>
+<a href="#155" id="155">155</a>
+<a href="#156" id="156">156</a>
+<a href="#157" id="157">157</a>
+<a href="#158" id="158">158</a></pre></div><pre class="rust"><code><span class="doccomment">//! A MLS group can be merged (aka committed) when it has a pending commit. The latter is a commit
 //! we created which is still waiting to be "committed". By doing so, we will apply all the
 //! modifications present in the commit to the ratchet tree and also persist the new group in the
 //! keystore. Like this, even if the application crashes we will be able to restore.
@@ -166,13 +175,13 @@
 <span class="kw">use </span>mls_crypto_provider::MlsCryptoProvider;
 
 <span class="kw">use </span><span class="kw">super</span>::Result;
-<span class="kw">use crate</span>::{MlsError, mls::MlsConversation};
+<span class="kw">use crate</span>::{MlsError, mls::MlsConversation, prelude::Client};
 
 <span class="doccomment">/// Abstraction over a MLS group capable of merging a commit
 </span><span class="kw">impl </span>MlsConversation {
     <span class="doccomment">/// see [CentralContext::commit_accepted]
     </span><span class="attr">#[cfg_attr(test, <span class="kw">crate</span>::durable)]
-    </span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">async fn </span>commit_accepted(<span class="kw-2">&amp;mut </span><span class="self">self</span>, backend: <span class="kw-2">&amp;</span>MlsCryptoProvider) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
+    </span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">async fn </span>commit_accepted(<span class="kw-2">&amp;mut </span><span class="self">self</span>, client: <span class="kw-2">&amp;</span>Client, backend: <span class="kw-2">&amp;</span>MlsCryptoProvider) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
         <span class="comment">// openmls stores here all the encryption keypairs used for update proposals..
         </span><span class="kw">let </span>previous_own_leaf_nodes = <span class="self">self</span>.group.own_leaf_nodes.clone();
 
@@ -187,6 +196,10 @@
             <span class="kw">let </span>ek = oln.encryption_key().as_slice();
             <span class="kw">let _ </span>= backend.key_store().remove::&lt;MlsEncryptionKeyPair, <span class="kw">_</span>&gt;(ek).<span class="kw">await</span>;
         }
+
+        client
+            .notify_epoch_changed(<span class="self">self</span>.id.clone(), <span class="self">self</span>.group.epoch().as_u64())
+            .<span class="kw">await</span>;
 
         <span class="prelude-val">Ok</span>(())
     }
@@ -233,6 +246,8 @@
         <span class="attr">#[apply(all_cred_cipher)]
         #[wasm_bindgen_test]
         </span><span class="kw">async fn </span>should_clear_pending_commit_and_proposals(case: TestCase) {
+            <span class="kw">use </span><span class="kw">crate</span>::mls::HasClientAndProvider <span class="kw">as _</span>;
+
             run_test_with_client_ids(case.clone(), [<span class="string">"alice"</span>], <span class="kw">move </span>|[<span class="kw-2">mut </span>alice_central]| {
                 Box::pin(<span class="kw">async move </span>{
                     <span class="kw">let </span>id = conversation_id();
@@ -248,7 +263,10 @@
                     alice_central
                         .get_conversation_unchecked(<span class="kw-2">&amp;</span>id)
                         .<span class="kw">await
-                        </span>.commit_accepted(<span class="kw-2">&amp;</span>alice_central.central.mls_backend)
+                        </span>.commit_accepted(
+                            <span class="kw-2">&amp;</span>alice_central.context.client().<span class="kw">await</span>.unwrap(),
+                            <span class="kw-2">&amp;</span>alice_central.central.mls_backend,
+                        )
                         .<span class="kw">await
                         </span>.unwrap();
                     <span class="macro">assert!</span>(alice_central.pending_commit(<span class="kw-2">&amp;</span>id).<span class="kw">await</span>.is_none());

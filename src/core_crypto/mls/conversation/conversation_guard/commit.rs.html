@@ -255,7 +255,8 @@
 <a href="#254" id="254">254</a>
 <a href="#255" id="255">255</a>
 <a href="#256" id="256">256</a>
-<a href="#257" id="257">257</a></pre></div><pre class="rust"><code><span class="doccomment">//! The methods in this module all produce or handle commits.
+<a href="#257" id="257">257</a>
+<a href="#258" id="258">258</a></pre></div><pre class="rust"><code><span class="doccomment">//! The methods in this module all produce or handle commits.
 
 </span><span class="kw">use </span>openmls::prelude::KeyPackageIn;
 
@@ -286,9 +287,10 @@
         <span class="kw">match </span><span class="self">self</span>.send_commit(commit).<span class="kw">await </span>{
             <span class="prelude-val">Ok</span>(TransportedCommitPolicy::None) =&gt; <span class="prelude-val">Ok</span>(()),
             <span class="prelude-val">Ok</span>(TransportedCommitPolicy::Merge) =&gt; {
+                <span class="kw">let </span>client = <span class="self">self</span>.mls_client().<span class="kw">await</span><span class="question-mark">?</span>;
                 <span class="kw">let </span>backend = <span class="self">self</span>.mls_provider().<span class="kw">await</span><span class="question-mark">?</span>;
                 <span class="kw">let </span><span class="kw-2">mut </span>conversation = <span class="self">self</span>.inner.write().<span class="kw">await</span>;
-                conversation.commit_accepted(<span class="kw-2">&amp;</span>backend).<span class="kw">await
+                conversation.commit_accepted(<span class="kw-2">&amp;</span>client, <span class="kw-2">&amp;</span>backend).<span class="kw">await
             </span>}
             <span class="prelude-val">Err</span>(e @ Error::MessageRejected { .. }) =&gt; {
                 <span class="self">self</span>.clear_pending_commit().<span class="kw">await</span><span class="question-mark">?</span>;

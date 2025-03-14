@@ -1650,7 +1650,12 @@
 <a href="#1649" id="1649">1649</a>
 <a href="#1650" id="1650">1650</a>
 <a href="#1651" id="1651">1651</a>
-<a href="#1652" id="1652">1652</a></pre></div><pre class="rust"><code><span class="comment">// Wire
+<a href="#1652" id="1652">1652</a>
+<a href="#1653" id="1653">1653</a>
+<a href="#1654" id="1654">1654</a>
+<a href="#1655" id="1655">1655</a>
+<a href="#1656" id="1656">1656</a>
+<a href="#1657" id="1657">1657</a></pre></div><pre class="rust"><code><span class="comment">// Wire
 // Copyright (C) 2022 Wire Swiss GmbH
 
 // This program is free software: you can redistribute it and/or modify
@@ -1693,6 +1698,7 @@
 };
 
 <span class="kw">pub mod </span>context;
+<span class="kw">mod </span>epoch_observer;
 
 <span class="attr">#[allow(dead_code)]
 </span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">const </span>VERSION: <span class="kw-2">&amp;</span>str = <span class="macro">env!</span>(<span class="string">"CARGO_PKG_VERSION"</span>);
@@ -2317,7 +2323,9 @@
     <span class="kw">pub </span>is_active: bool,
     <span class="kw">pub </span>commit_delay: <span class="prelude-ty">Option</span>&lt;u64&gt;,
     <span class="kw">pub </span>sender_client_id: <span class="prelude-ty">Option</span>&lt;ClientId&gt;,
-    <span class="kw">pub </span>has_epoch_changed: bool,
+    <span class="doccomment">/// Deprecated: this member will be removed in the future. Prefer using the `EpochObserver` interface.
+    </span><span class="attr">#[deprecated = <span class="string">"This member will be removed in the future. Prefer using the `EpochObserver` interface."</span>]
+    </span><span class="kw">pub </span>has_epoch_changed: bool,
     <span class="kw">pub </span>identity: WireIdentity,
     <span class="kw">pub </span>crl_new_distribution_points: <span class="prelude-ty">Option</span>&lt;Vec&lt;String&gt;&gt;,
 }
@@ -2341,7 +2349,8 @@
             })
             .transpose()<span class="question-mark">?</span>;
 
-        <span class="prelude-val">Ok</span>(<span class="self">Self </span>{
+        <span class="attr">#[expect(deprecated)]
+        </span><span class="prelude-val">Ok</span>(<span class="self">Self </span>{
             message: from.app_msg,
             proposals,
             is_active: from.is_active,
@@ -2365,7 +2374,8 @@
             .map(ProposalBundle::try_from)
             .collect::&lt;CoreCryptoResult&lt;Vec&lt;<span class="kw">_</span>&gt;&gt;&gt;()<span class="question-mark">?</span>;
 
-        <span class="prelude-val">Ok</span>(<span class="self">Self </span>{
+        <span class="attr">#[expect(deprecated)]
+        </span><span class="prelude-val">Ok</span>(<span class="self">Self </span>{
             message: from.app_msg,
             proposals,
             is_active: from.is_active,

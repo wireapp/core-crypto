@@ -114,6 +114,7 @@ $dokka.location:com.wire.crypto/CoreCrypto///PointingToDeclaration/android/com.
 $dokka.location:com.wire.crypto/CoreCrypto/CoreCrypto/#[Error type: Unresolved type for com.wire.crypto.uniffi.CoreCrypto]/PointingToDeclaration/android/com.wire.crypto/-core-crypto/-core-crypto.html
 $dokka.location:com.wire.crypto/CoreCrypto/close/#/PointingToDeclaration/android/com.wire.crypto/-core-crypto/close.html
 $dokka.location:com.wire.crypto/CoreCrypto/provideTransport/#com.wire.crypto.MlsTransport/PointingToDeclaration/android/com.wire.crypto/-core-crypto/provide-transport.html
+$dokka.location:com.wire.crypto/CoreCrypto/registerEpochObserver/#kotlinx.coroutines.CoroutineScope#[Error type: Unresolved type for EpochObserver]/PointingToDeclaration/android/com.wire.crypto/-core-crypto/register-epoch-observer.html
 $dokka.location:com.wire.crypto/CoreCrypto/transaction/#kotlin.coroutines.SuspendFunction1[com.wire.crypto.CoreCryptoContext,TypeParam(bounds=[kotlin.Any?])]/PointingToDeclaration/android/com.wire.crypto/-core-crypto/transaction.html
 $dokka.location:com.wire.crypto/CoreCryptoContext.Companion///PointingToDeclaration/android/com.wire.crypto/-core-crypto-context/-companion/index.html
 $dokka.location:com.wire.crypto/CoreCryptoContext///PointingToDeclaration/android/com.wire.crypto/-core-crypto-context/index.html

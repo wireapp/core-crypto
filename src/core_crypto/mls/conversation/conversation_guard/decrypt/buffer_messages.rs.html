@@ -708,7 +708,20 @@
 <a href="#707" id="707">707</a>
 <a href="#708" id="708">708</a>
 <a href="#709" id="709">709</a>
-<a href="#710" id="710">710</a></pre></div><pre class="rust"><code><span class="doccomment">//! Sometimes, while still in epoch `n`, we receive messages for epoch `n + 1`.
+<a href="#710" id="710">710</a>
+<a href="#711" id="711">711</a>
+<a href="#712" id="712">712</a>
+<a href="#713" id="713">713</a>
+<a href="#714" id="714">714</a>
+<a href="#715" id="715">715</a>
+<a href="#716" id="716">716</a>
+<a href="#717" id="717">717</a>
+<a href="#718" id="718">718</a>
+<a href="#719" id="719">719</a>
+<a href="#720" id="720">720</a>
+<a href="#721" id="721">721</a>
+<a href="#722" id="722">722</a>
+<a href="#723" id="723">723</a></pre></div><pre class="rust"><code><span class="doccomment">//! Sometimes, while still in epoch `n`, we receive messages for epoch `n + 1`.
 //! This is because our DS implementation doesn't guarantee that messages arrive in order.
 //! This module deals with buffering these messages until we receive the commit that advances the
 //! group epoch.
@@ -937,9 +950,10 @@
                     <span class="comment">// And now Bob will have to decrypt those messages while he hasn't yet merged its commit
                     // To add more fun, he will buffer the messages in exactly the wrong order (to make
                     // sure he reapplies them in the right order afterwards)
-                    </span><span class="kw">let </span>messages = <span class="macro">vec!</span>[commit.commit, external_proposal, proposal]
+                    </span><span class="kw">let </span>messages = [commit.commit, external_proposal, proposal]
                         .into_iter()
-                        .map(|m| m.to_bytes().unwrap());
+                        .map(|m| m.to_bytes().unwrap())
+                        .chain(std::iter::once(app_msg));
                     <span class="kw">for </span>m <span class="kw">in </span>messages {
                         <span class="kw">let </span>decrypt = bob_central
                             .context
@@ -950,17 +964,17 @@
                             .<span class="kw">await</span>;
                         <span class="macro">assert!</span>(<span class="macro">matches!</span>(decrypt.unwrap_err(), Error::BufferedFutureMessage { .. }));
                     }
-                    <span class="kw">let </span>decrypt = bob_central
-                        .context
-                        .conversation(<span class="kw-2">&amp;</span>id)
-                        .<span class="kw">await
-                        </span>.unwrap()
-                        .decrypt_message(app_msg)
-                        .<span class="kw">await</span>;
-                    <span class="macro">assert!</span>(<span class="macro">matches!</span>(decrypt.unwrap_err(), Error::BufferedFutureMessage { .. }));
 
                     <span class="comment">// Bob should have buffered the messages
                     </span><span class="macro">assert_eq!</span>(bob_central.context.count_entities().<span class="kw">await</span>.pending_messages, <span class="number">4</span>);
+
+                    <span class="kw">let </span>observer = TestEpochObserver::new();
+                    bob_central
+                        .client()
+                        .<span class="kw">await
+                        </span>.register_epoch_observer(observer.clone())
+                        .<span class="kw">await
+                        </span>.unwrap();
 
                     <span class="comment">// Finally, Bob receives the green light from the DS and he can merge the external commit
                     </span><span class="kw">let </span>MlsConversationDecryptMessage {
@@ -977,26 +991,28 @@
                     <span class="kw">else </span>{
                         <span class="macro">panic!</span>(<span class="string">"Alice's messages should have been restored at this point"</span>);
                     };
-                    <span class="kw">for </span>(i, m) <span class="kw">in </span>restored_messages.into_iter().enumerate() {
-                        <span class="kw">match </span>i {
-                            <span class="number">0 </span>=&gt; {
-                                <span class="comment">// this is the application message
-                                </span><span class="macro">assert_eq!</span>(<span class="kw-2">&amp;</span>m.app_msg.unwrap(), <span class="string">b"Hello Bob !"</span>);
-                                <span class="macro">assert!</span>(!m.has_epoch_changed);
-                            }
-                            <span class="number">1 </span>| <span class="number">2 </span>=&gt; {
-                                <span class="comment">// this is either the member or the external proposal
-                                </span><span class="macro">assert!</span>(m.app_msg.is_none());
-                                <span class="macro">assert!</span>(!m.has_epoch_changed);
-                            }
-                            <span class="number">3 </span>=&gt; {
-                                <span class="comment">// this is the commit
-                                </span><span class="macro">assert!</span>(m.app_msg.is_none());
-                                <span class="macro">assert!</span>(m.has_epoch_changed);
-                            }
-                            <span class="kw">_ </span>=&gt; <span class="macro">unreachable!</span>(),
+
+                    <span class="kw">for </span>(idx, msg) <span class="kw">in </span>restored_messages.iter().enumerate() {
+                        <span class="kw">if </span>idx == <span class="number">0 </span>{
+                            <span class="comment">// this is the application message
+                            </span><span class="macro">assert_eq!</span>(msg.app_msg.as_deref(), <span class="prelude-val">Some</span>(<span class="string">"Hello Bob !"</span>.as_bytes()));
+                        } <span class="kw">else </span>{
+                            <span class="macro">assert!</span>(msg.app_msg.is_none());
                         }
                     }
+                    <span class="kw">let </span>observed_epochs = observer
+                        .observed_epochs()
+                        .<span class="kw">await
+                        </span>.into_iter()
+                        .map(|(_conversation_id, epoch)| epoch)
+                        .collect::&lt;Vec&lt;<span class="kw">_</span>&gt;&gt;();
+                    <span class="macro">dbg!</span>(<span class="kw-2">&amp;</span>observed_epochs);
+                    <span class="macro">assert_eq!</span>(
+                        observed_epochs.len(),
+                        <span class="number">2</span>,
+                        <span class="string">"there was 1 buffered commit changing the epoch plus the outer commit changing the epoch"
+                    </span>);
+
                     <span class="comment">// because external commit got merged
                     </span><span class="macro">assert!</span>(bob_central.try_talk_to(<span class="kw-2">&amp;</span>id, <span class="kw-2">&amp;</span>alice_central).<span class="kw">await</span>.is_ok());
                     <span class="comment">// because Alice's commit got merged
@@ -1117,10 +1133,20 @@
                     <span class="comment">// Alice should have buffered the messages
                     </span><span class="macro">assert_eq!</span>(alice_central.context.count_entities().<span class="kw">await</span>.pending_messages, <span class="number">4</span>);
 
+                    <span class="kw">let </span>observer = TestEpochObserver::new();
+                    alice_central
+                        .client()
+                        .<span class="kw">await
+                        </span>.register_epoch_observer(observer.clone())
+                        .<span class="kw">await
+                        </span>.unwrap();
+
                     <span class="comment">// Finally, Alice receives the original commit for this epoch
                     </span><span class="kw">let </span>original_commit = ext_commit.commit.to_bytes().unwrap();
-
-                    <span class="kw">let </span><span class="prelude-val">Some</span>(restored_messages) = alice_central
+                    <span class="kw">let </span>MlsConversationDecryptMessage {
+                        buffered_messages: <span class="prelude-val">Some</span>(restored_messages),
+                        ..
+                    } = alice_central
                         .context
                         .conversation(<span class="kw-2">&amp;</span>id)
                         .<span class="kw">await
@@ -1128,30 +1154,30 @@
                         .decrypt_message(original_commit)
                         .<span class="kw">await
                         </span>.unwrap()
-                        .buffered_messages
                     <span class="kw">else </span>{
                         <span class="macro">panic!</span>(<span class="string">"Bob's messages should have been restored at this point"</span>);
                     };
-                    <span class="kw">for </span>(i, m) <span class="kw">in </span>restored_messages.into_iter().enumerate() {
-                        <span class="kw">match </span>i {
-                            <span class="number">0 </span>=&gt; {
-                                <span class="comment">// this is the application message
-                                </span><span class="macro">assert_eq!</span>(<span class="kw-2">&amp;</span>m.app_msg.unwrap(), <span class="string">b"Hello Alice !"</span>);
-                                <span class="macro">assert!</span>(!m.has_epoch_changed);
-                            }
-                            <span class="number">1 </span>| <span class="number">2 </span>=&gt; {
-                                <span class="comment">// this is either the member or the external proposal
-                                </span><span class="macro">assert!</span>(m.app_msg.is_none());
-                                <span class="macro">assert!</span>(!m.has_epoch_changed);
-                            }
-                            <span class="number">3 </span>=&gt; {
-                                <span class="comment">// this is the commit
-                                </span><span class="macro">assert!</span>(m.app_msg.is_none());
-                                <span class="macro">assert!</span>(m.has_epoch_changed);
-                            }
-                            <span class="kw">_ </span>=&gt; <span class="macro">unreachable!</span>(),
+                    <span class="kw">for </span>(idx, msg) <span class="kw">in </span>restored_messages.into_iter().enumerate() {
+                        <span class="kw">if </span>idx == <span class="number">0 </span>{
+                            <span class="macro">assert_eq!</span>(msg.app_msg.as_deref(), <span class="prelude-val">Some</span>(<span class="string">b"Hello Alice !" </span><span class="kw">as _</span>));
+                        } <span class="kw">else </span>{
+                            <span class="macro">assert!</span>(msg.app_msg.is_none());
                         }
                     }
+
+                    <span class="kw">let </span>observed_epochs = observer
+                        .observed_epochs()
+                        .<span class="kw">await
+                        </span>.into_iter()
+                        .map(|(_conversation_id, epoch)| epoch)
+                        .collect::&lt;Vec&lt;<span class="kw">_</span>&gt;&gt;();
+                    <span class="macro">dbg!</span>(<span class="kw-2">&amp;</span>observed_epochs);
+                    <span class="macro">assert_eq!</span>(
+                        observed_epochs.len(),
+                        <span class="number">2</span>,
+                        <span class="string">"there was 1 buffered commit changing the epoch plus the outer commit changing the epoch"
+                    </span>);
+
                     <span class="comment">// because external commit got merged
                     </span><span class="macro">assert!</span>(alice_central.try_talk_to(<span class="kw-2">&amp;</span>id, <span class="kw-2">&amp;</span>bob_central).<span class="kw">await</span>.is_ok());
                     <span class="comment">// because Alice's commit got merged

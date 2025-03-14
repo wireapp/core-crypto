@@ -1553,7 +1553,68 @@
 <a href="#1552" id="1552">1552</a>
 <a href="#1553" id="1553">1553</a>
 <a href="#1554" id="1554">1554</a>
-<a href="#1555" id="1555">1555</a></pre></div><pre class="rust"><code><span class="doccomment">//! MLS defines 3 kind of messages: Proposal, Commits and Application messages. Since they can (should)
+<a href="#1555" id="1555">1555</a>
+<a href="#1556" id="1556">1556</a>
+<a href="#1557" id="1557">1557</a>
+<a href="#1558" id="1558">1558</a>
+<a href="#1559" id="1559">1559</a>
+<a href="#1560" id="1560">1560</a>
+<a href="#1561" id="1561">1561</a>
+<a href="#1562" id="1562">1562</a>
+<a href="#1563" id="1563">1563</a>
+<a href="#1564" id="1564">1564</a>
+<a href="#1565" id="1565">1565</a>
+<a href="#1566" id="1566">1566</a>
+<a href="#1567" id="1567">1567</a>
+<a href="#1568" id="1568">1568</a>
+<a href="#1569" id="1569">1569</a>
+<a href="#1570" id="1570">1570</a>
+<a href="#1571" id="1571">1571</a>
+<a href="#1572" id="1572">1572</a>
+<a href="#1573" id="1573">1573</a>
+<a href="#1574" id="1574">1574</a>
+<a href="#1575" id="1575">1575</a>
+<a href="#1576" id="1576">1576</a>
+<a href="#1577" id="1577">1577</a>
+<a href="#1578" id="1578">1578</a>
+<a href="#1579" id="1579">1579</a>
+<a href="#1580" id="1580">1580</a>
+<a href="#1581" id="1581">1581</a>
+<a href="#1582" id="1582">1582</a>
+<a href="#1583" id="1583">1583</a>
+<a href="#1584" id="1584">1584</a>
+<a href="#1585" id="1585">1585</a>
+<a href="#1586" id="1586">1586</a>
+<a href="#1587" id="1587">1587</a>
+<a href="#1588" id="1588">1588</a>
+<a href="#1589" id="1589">1589</a>
+<a href="#1590" id="1590">1590</a>
+<a href="#1591" id="1591">1591</a>
+<a href="#1592" id="1592">1592</a>
+<a href="#1593" id="1593">1593</a>
+<a href="#1594" id="1594">1594</a>
+<a href="#1595" id="1595">1595</a>
+<a href="#1596" id="1596">1596</a>
+<a href="#1597" id="1597">1597</a>
+<a href="#1598" id="1598">1598</a>
+<a href="#1599" id="1599">1599</a>
+<a href="#1600" id="1600">1600</a>
+<a href="#1601" id="1601">1601</a>
+<a href="#1602" id="1602">1602</a>
+<a href="#1603" id="1603">1603</a>
+<a href="#1604" id="1604">1604</a>
+<a href="#1605" id="1605">1605</a>
+<a href="#1606" id="1606">1606</a>
+<a href="#1607" id="1607">1607</a>
+<a href="#1608" id="1608">1608</a>
+<a href="#1609" id="1609">1609</a>
+<a href="#1610" id="1610">1610</a>
+<a href="#1611" id="1611">1611</a>
+<a href="#1612" id="1612">1612</a>
+<a href="#1613" id="1613">1613</a>
+<a href="#1614" id="1614">1614</a>
+<a href="#1615" id="1615">1615</a>
+<a href="#1616" id="1616">1616</a></pre></div><pre class="rust"><code><span class="doccomment">//! MLS defines 3 kind of messages: Proposal, Commits and Application messages. Since they can (should)
 //! be all encrypted we need to first decrypt them before deciding what to do with them.
 //!
 //! This table summarizes when a MLS group can decrypt any message:
@@ -1607,6 +1668,7 @@
     <span class="doccomment">/// [ClientId] of the sender of the message being decrypted. Only present for application messages.
     </span><span class="kw">pub </span>sender_client_id: <span class="prelude-ty">Option</span>&lt;ClientId&gt;,
     <span class="doccomment">/// Is the epoch changed after decrypting this message
+    </span><span class="attr">#[deprecated = <span class="string">"This member will be removed in the future. Prefer using the `EpochObserver` interface."</span>]
     </span><span class="kw">pub </span>has_epoch_changed: bool,
     <span class="doccomment">/// Identity claims present in the sender credential
     /// Present for all messages
@@ -1633,6 +1695,7 @@
     <span class="doccomment">/// see [MlsConversationDecryptMessage]
     </span><span class="kw">pub </span>sender_client_id: <span class="prelude-ty">Option</span>&lt;ClientId&gt;,
     <span class="doccomment">/// see [MlsConversationDecryptMessage]
+    </span><span class="attr">#[deprecated = <span class="string">"This member will be removed in the future. Prefer using the `EpochObserver` interface."</span>]
     </span><span class="kw">pub </span>has_epoch_changed: bool,
     <span class="doccomment">/// see [MlsConversationDecryptMessage]
     </span><span class="kw">pub </span>identity: WireIdentity,
@@ -1642,7 +1705,9 @@
 
 <span class="kw">impl </span>From&lt;MlsConversationDecryptMessage&gt; <span class="kw">for </span>MlsBufferedConversationDecryptMessage {
     <span class="kw">fn </span>from(from: MlsConversationDecryptMessage) -&gt; <span class="self">Self </span>{
-        <span class="self">Self </span>{
+        <span class="comment">// we still support the `has_epoch_changed` field, though we'll remove it later
+        </span><span class="attr">#[expect(deprecated)]
+        </span><span class="self">Self </span>{
             app_msg: from.app_msg,
             proposals: from.proposals,
             is_active: from.is_active,
@@ -1729,9 +1794,8 @@
         {
             <span class="kw">let </span><span class="kw-2">mut </span>conversation = <span class="self">self</span>.conversation_mut().<span class="kw">await</span>;
             <span class="kw">let </span>ct = conversation.extract_confirmation_tag_from_own_commit(<span class="kw-2">&amp;</span>message)<span class="question-mark">?</span>;
-            <span class="kw">let </span><span class="kw-2">mut </span>decrypted_message = conversation.handle_own_commit(backend, ct).<span class="kw">await</span><span class="question-mark">?</span>;
-            <span class="comment">// can't use `.then` because async
-            </span><span class="macro">debug_assert!</span>(
+            <span class="kw">let </span><span class="kw-2">mut </span>decrypted_message = conversation.handle_own_commit(client, backend, ct).<span class="kw">await</span><span class="question-mark">?</span>;
+            <span class="macro">debug_assert!</span>(
                 decrypted_message.buffered_messages.is_none(),
                 <span class="string">"decrypted message should be constructed with empty buffer"
             </span>);
@@ -1779,7 +1843,9 @@
                     <span class="string">"Application message"
                 </span>);
 
-                MlsConversationDecryptMessage {
+                <span class="comment">// we still support the `has_epoch_changed` field, though we'll remove it later
+                </span><span class="attr">#[expect(deprecated)]
+                </span>MlsConversationDecryptMessage {
                     app_msg: <span class="prelude-val">Some</span>(app_msg.into_bytes()),
                     proposals: <span class="macro">vec!</span>[],
                     is_active: <span class="bool-val">true</span>,
@@ -1839,12 +1905,15 @@
                 }
 
                 <span class="kw">let </span>conversation = <span class="self">self</span>.conversation().<span class="kw">await</span>;
+                <span class="kw">let </span>delay = conversation.compute_next_commit_delay();
 
-                MlsConversationDecryptMessage {
+                <span class="comment">// we still support the `has_epoch_changed` field, though we'll remove it later
+                </span><span class="attr">#[expect(deprecated)]
+                </span>MlsConversationDecryptMessage {
                     app_msg: <span class="prelude-val">None</span>,
                     proposals: <span class="macro">vec!</span>[],
                     is_active: <span class="bool-val">true</span>,
-                    delay: conversation.compute_next_commit_delay(),
+                    delay,
                     sender_client_id: <span class="prelude-val">None</span>,
                     has_epoch_changed: <span class="bool-val">false</span>,
                     identity,
@@ -1913,14 +1982,18 @@
                 }
 
                 <span class="kw">let </span>conversation = <span class="self">self</span>.conversation().<span class="kw">await</span>;
+                <span class="kw">let </span>epoch = staged_commit.staged_context().epoch().as_u64();
                 <span class="macro">info!</span>(
                     group_id = Obfuscated::from(<span class="kw-2">&amp;</span>conversation.id),
-                    epoch = staged_commit.staged_context().epoch().as_u64(),
+                    epoch,
                     proposals:<span class="question-mark">? </span>= staged_commit.queued_proposals().map(Obfuscated::from).collect::&lt;Vec&lt;<span class="kw">_</span>&gt;&gt;();
                     <span class="string">"Epoch advanced"
                 </span>);
+                client.notify_epoch_changed(conversation.id.clone(), epoch).<span class="kw">await</span>;
 
-                MlsConversationDecryptMessage {
+                <span class="comment">// we still support the `has_epoch_changed` field, though we'll remove it later
+                </span><span class="attr">#[expect(deprecated)]
+                </span>MlsConversationDecryptMessage {
                     app_msg: <span class="prelude-val">None</span>,
                     proposals,
                     is_active: conversation.group.is_active(),
@@ -1947,7 +2020,9 @@
                     </span>.map_err(RecursiveError::mls_credential(<span class="string">"getting new crl distribution points"</span>))<span class="question-mark">?</span>;
                 conversation.group.store_pending_proposal(<span class="kw-2">*</span>proposal);
 
-                MlsConversationDecryptMessage {
+                <span class="comment">// we still support the `has_epoch_changed` field, though we'll remove it later
+                </span><span class="attr">#[expect(deprecated)]
+                </span>MlsConversationDecryptMessage {
                     app_msg: <span class="prelude-val">None</span>,
                     proposals: <span class="macro">vec!</span>[],
                     is_active: <span class="bool-val">true</span>,
@@ -2188,6 +2263,14 @@
                         </span>.unwrap();
                     alice_central.invite_all(<span class="kw-2">&amp;</span>case, <span class="kw-2">&amp;</span>id, [<span class="kw-2">&amp;</span>bob_central]).<span class="kw">await</span>.unwrap();
 
+                    <span class="kw">let </span>bob_observer = TestEpochObserver::new();
+                    bob_central
+                        .client()
+                        .<span class="kw">await
+                        </span>.register_epoch_observer(bob_observer.clone())
+                        .<span class="kw">await
+                        </span>.unwrap();
+
                     <span class="kw">let </span>epoch_before = alice_central.context.conversation(<span class="kw-2">&amp;</span>id).<span class="kw">await</span>.unwrap().epoch().<span class="kw">await</span>;
 
                     alice_central
@@ -2210,7 +2293,7 @@
                         </span>.unwrap();
                     <span class="kw">let </span>epoch_after = bob_central.context.conversation(<span class="kw-2">&amp;</span>id).<span class="kw">await</span>.unwrap().epoch().<span class="kw">await</span>;
                     <span class="macro">assert_eq!</span>(epoch_after, epoch_before + <span class="number">1</span>);
-                    <span class="macro">assert!</span>(decrypted.has_epoch_changed);
+                    <span class="macro">assert!</span>(bob_observer.has_changed().<span class="kw">await</span>);
                     <span class="macro">assert!</span>(decrypted.delay.is_none());
                     <span class="macro">assert!</span>(decrypted.app_msg.is_none());
 
@@ -2236,6 +2319,14 @@
                             </span>.unwrap();
                         alice_central.invite_all(<span class="kw-2">&amp;</span>case, <span class="kw-2">&amp;</span>id, [<span class="kw-2">&amp;</span>bob_central]).<span class="kw">await</span>.unwrap();
 
+                        <span class="kw">let </span>alice_observer = TestEpochObserver::new();
+                        alice_central
+                            .client()
+                            .<span class="kw">await
+                            </span>.register_epoch_observer(alice_observer.clone())
+                            .<span class="kw">await
+                            </span>.unwrap();
+
                         <span class="comment">// Bob will create a proposal to add Charlie
                         // Alice will decrypt this proposal
                         // Then Bob will create a commit to update
@@ -2252,6 +2343,8 @@
                             .<span class="kw">await
                             </span>.unwrap();
 
+                        alice_observer.reset().<span class="kw">await</span>;
+
                         bob_central
                             .context
                             .conversation(<span class="kw-2">&amp;</span>id)
@@ -2261,12 +2354,7 @@
                             .<span class="kw">await
                             </span>.unwrap();
                         <span class="kw">let </span>commit = bob_central.mls_transport.latest_commit().<span class="kw">await</span>;
-                        <span class="kw">let </span>MlsConversationDecryptMessage {
-                            proposals,
-                            delay,
-                            has_epoch_changed,
-                            ..
-                        } = alice_central
+                        <span class="kw">let </span>MlsConversationDecryptMessage { proposals, delay, .. } = alice_central
                             .context
                             .conversation(<span class="kw-2">&amp;</span>id)
                             .<span class="kw">await
@@ -2277,7 +2365,7 @@
                         <span class="macro">assert!</span>(proposals.is_empty());
                         <span class="macro">assert!</span>(delay.is_none());
                         <span class="macro">assert!</span>(alice_central.pending_proposals(<span class="kw-2">&amp;</span>id).<span class="kw">await</span>.is_empty());
-                        <span class="macro">assert!</span>(has_epoch_changed)
+                        <span class="macro">assert!</span>(alice_observer.has_changed().<span class="kw">await</span>);
                     })
                 },
             )
@@ -2300,6 +2388,14 @@
                             .<span class="kw">await
                             </span>.unwrap();
                         alice_central.invite_all(<span class="kw-2">&amp;</span>case, <span class="kw-2">&amp;</span>id, [<span class="kw-2">&amp;</span>bob_central]).<span class="kw">await</span>.unwrap();
+
+                        <span class="kw">let </span>alice_observer = TestEpochObserver::new();
+                        alice_central
+                            .client()
+                            .<span class="kw">await
+                            </span>.register_epoch_observer(alice_observer.clone())
+                            .<span class="kw">await
+                            </span>.unwrap();
 
                         <span class="comment">// Alice will create a proposal to add Charlie
                         // Bob will create a commit which Alice will decrypt
@@ -2349,6 +2445,10 @@
                             renewed_proposal.proposal.epoch().unwrap().as_u64()
                         );
 
+                        <span class="comment">// we don't care if there was an epoch change before this,
+                        // but we want to see if the epoch changes for alice now
+                        </span>alice_observer.reset().<span class="kw">await</span>;
+
                         <span class="comment">// Let's use this proposal to see if it works
                         </span>bob_central
                             .context
@@ -2368,7 +2468,7 @@
                             .<span class="kw">await
                             </span>.unwrap();
                         <span class="kw">let </span>commit = bob_central.mls_transport.latest_commit().<span class="kw">await</span>;
-                        <span class="kw">let </span>decrypted = alice_central
+                        <span class="kw">let </span>_decrypted = alice_central
                             .context
                             .conversation(<span class="kw-2">&amp;</span>id)
                             .<span class="kw">await
@@ -2393,7 +2493,7 @@
                                 </span>.members()
                                 .contains_key::&lt;Vec&lt;u8&gt;&gt;(<span class="kw-2">&amp;</span>charlie_central.get_client_id().<span class="kw">await</span>.to_vec())
                         );
-                        <span class="macro">assert!</span>(decrypted.has_epoch_changed);
+                        <span class="macro">assert!</span>(alice_observer.has_changed().<span class="kw">await</span>);
                     })
                 },
             )
@@ -2525,6 +2625,14 @@
                             </span>.unwrap();
                         alice_central.invite_all(<span class="kw-2">&amp;</span>case, <span class="kw-2">&amp;</span>id, [<span class="kw-2">&amp;</span>bob_central]).<span class="kw">await</span>.unwrap();
 
+                        <span class="kw">let </span>bob_observer = TestEpochObserver::new();
+                        bob_central
+                            .client()
+                            .<span class="kw">await
+                            </span>.register_epoch_observer(bob_observer.clone())
+                            .<span class="kw">await
+                            </span>.unwrap();
+
                         <span class="kw">let </span>epoch = alice_central.get_conversation_unchecked(<span class="kw-2">&amp;</span>id).<span class="kw">await</span>.group.epoch();
                         <span class="kw">let </span>ext_proposal = alice2_central
                             .context
@@ -2553,7 +2661,7 @@
                             </span>.unwrap();
                         <span class="macro">assert!</span>(decrypted.app_msg.is_none());
                         <span class="macro">assert!</span>(decrypted.delay.is_some());
-                        <span class="macro">assert!</span>(!decrypted.has_epoch_changed)
+                        <span class="macro">assert!</span>(!bob_observer.has_changed().<span class="kw">await</span>)
                     })
                 },
             )
@@ -2609,7 +2717,6 @@
                             .<span class="kw">await
                             </span>.unwrap();
                         <span class="macro">assert_eq!</span>(bob_central.get_conversation_unchecked(<span class="kw-2">&amp;</span>id).<span class="kw">await</span>.members().len(), <span class="number">3</span>);
-                        <span class="macro">assert!</span>(!decrypted.has_epoch_changed);
 
                         alice_central.verify_sender_identity(<span class="kw-2">&amp;</span>case, <span class="kw-2">&amp;</span>decrypted).<span class="kw">await</span>;
                     })
@@ -2665,6 +2772,21 @@
                         </span>.unwrap();
                     alice_central.invite_all(<span class="kw-2">&amp;</span>case, <span class="kw-2">&amp;</span>id, [<span class="kw-2">&amp;</span>bob_central]).<span class="kw">await</span>.unwrap();
 
+                    <span class="kw">let </span>alice_observer = TestEpochObserver::new();
+                    alice_central
+                        .client()
+                        .<span class="kw">await
+                        </span>.register_epoch_observer(alice_observer.clone())
+                        .<span class="kw">await
+                        </span>.unwrap();
+                    <span class="kw">let </span>bob_observer = TestEpochObserver::new();
+                    bob_central
+                        .client()
+                        .<span class="kw">await
+                        </span>.register_epoch_observer(bob_observer.clone())
+                        .<span class="kw">await
+                        </span>.unwrap();
+
                     <span class="kw">let </span>msg = <span class="string">b"Hello bob"</span>;
                     <span class="kw">let </span>encrypted = alice_central
                         .context
@@ -2685,7 +2807,7 @@
                         </span>.unwrap();
                     <span class="kw">let </span>dec_msg = decrypted.app_msg.as_ref().unwrap().as_slice();
                     <span class="macro">assert_eq!</span>(dec_msg, <span class="kw-2">&amp;</span>msg[..]);
-                    <span class="macro">assert!</span>(!decrypted.has_epoch_changed);
+                    <span class="macro">assert!</span>(!bob_observer.has_changed().<span class="kw">await</span>);
                     alice_central.verify_sender_identity(<span class="kw-2">&amp;</span>case, <span class="kw-2">&amp;</span>decrypted).<span class="kw">await</span>;
 
                     <span class="kw">let </span>msg = <span class="string">b"Hello alice"</span>;
@@ -2708,7 +2830,7 @@
                         </span>.unwrap();
                     <span class="kw">let </span>dec_msg = decrypted.app_msg.as_ref().unwrap().as_slice();
                     <span class="macro">assert_eq!</span>(dec_msg, <span class="kw-2">&amp;</span>msg[..]);
-                    <span class="macro">assert!</span>(!decrypted.has_epoch_changed);
+                    <span class="macro">assert!</span>(!alice_observer.has_changed().<span class="kw">await</span>);
                     bob_central.verify_sender_identity(<span class="kw-2">&amp;</span>case, <span class="kw-2">&amp;</span>decrypted).<span class="kw">await</span>;
                 })
             })
