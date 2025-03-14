@@ -38,8 +38,6 @@ cfg_if::cfg_if! {
         mod wasm;
         pub use self::wasm::*;
     } else {
-        uniffi::setup_scaffolding!("core_crypto_ffi");
-
         mod generic;
         pub use self::generic::*;
     }
@@ -47,3 +45,10 @@ cfg_if::cfg_if! {
 
 #[cfg(doc)]
 pub mod bindings;
+
+#[cfg(not(target_family = "wasm"))]
+uniffi::setup_scaffolding!("core_crypto_ffi");
+
+mod metadata;
+
+pub use metadata::{BuildMetadata, build_metadata, version};
