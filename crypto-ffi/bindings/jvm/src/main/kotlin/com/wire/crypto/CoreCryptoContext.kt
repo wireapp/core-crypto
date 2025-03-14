@@ -732,4 +732,13 @@ class CoreCryptoContext(private val cc: com.wire.crypto.uniffi.CoreCryptoContext
             encryptedMessage
         }
     }
+
+    /**
+     * Import all the data stored by Cryptobox, located at [path], into the CoreCrypto keystore
+     */
+    suspend fun proteusCryptoboxMigrate(path: String) {
+        return wrapException {
+            cc.proteusCryptoboxMigrate(path)
+        }
+    }
 }
