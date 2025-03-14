@@ -298,6 +298,7 @@ The versioning scheme used is [SemVer AKA Semantic Versioning](https://semver.or
    - bar
    - baz
    ```
+1. In [index.md](docs/index.md), copy the commented-out table row from  the bottom of the file to the appropriate place
 1. Make sure the changes look reasonable and complete; you can use the previous release as a reference
 1. Push your `prepare-release/X.Y.Z` branch and create a PR for it
 1. Get it reviewed, then merge it into `main` and remove the `prepare-release/X.Y.Z` branch from the remote
@@ -305,7 +306,6 @@ The versioning scheme used is [SemVer AKA Semantic Versioning](https://semver.or
 1. Create the release tag: `git tag -s vX.Y.Z`
 1. Push the new tag: `git push origin tag vX.Y.Z`
 1. Create a new release on github, copying the relevant section from `CHANGELOG.md`
-1. In [index.md](docs/index.md), copy the commented-out table row from  the bottom of the file to the appropriate place
 in the table, ordering by version number, descending. Search and replace the first 5 occurrences of `x.x.x` with `X.Y.Z`.
 1. Voilà!
 
