@@ -97,6 +97,7 @@ pub mod prelude {
             credential::{typ::MlsCredentialType, x509::CertificateBundle},
             proposal::{MlsProposal, MlsProposalRef},
         },
+        obfuscate::Obfuscated,
     };
 }
 

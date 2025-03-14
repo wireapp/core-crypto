@@ -56,8 +56,14 @@ impl Obfuscate for &Sender {
     }
 }
 
+/// We often want logging for some values that we shouldn't know the real value of, for privacy reasons.
+///
+/// `ConversationId` is a canonical example of such an item.
+///
+/// This wrapper lets us log a partial hash of the sensitive item, so we have deterministic loggable non-sensitive
+/// aliases for all our sensitive values.
 #[derive(From, Constructor)]
-pub(crate) struct Obfuscated<T>(T);
+pub struct Obfuscated<T>(T);
 
 impl<T> Debug for Obfuscated<T>
 where

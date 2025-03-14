@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
 use async_trait::async_trait;
-use core_crypto::prelude::ConversationId;
+use core_crypto::prelude::{ConversationId, Obfuscated};
 
 use crate::{CoreCryptoError, generic::CoreCryptoResult};
 
@@ -49,9 +49,16 @@ struct ObserverShim(Arc<dyn EpochObserver>);
 #[async_trait]
 impl core_crypto::mls::EpochObserver for ObserverShim {
     async fn epoch_changed(&self, conversation_id: ConversationId, epoch: u64) {
-        // We want to ignore all errors arising from the change notice function.
-        // It should be purely fire-and-forget.
-        let _ = self.0.epoch_changed(conversation_id, epoch).await;
+        if let Err(err) = self.0.epoch_changed(conversation_id.clone(), epoch).await {
+            // we don't _care_ if an error is thrown by the the notification function, per se,
+            // but this would probably be useful information for downstream debugging efforts
+            log::warn!(
+                conversation_id = Obfuscated::new(&conversation_id),
+                epoch,
+                err = log::kv::Value::from_dyn_error(&err);
+                "caught an error when attempting to notify the epoch observer of an epoch change"
+            );
+        }
     }
 }
 

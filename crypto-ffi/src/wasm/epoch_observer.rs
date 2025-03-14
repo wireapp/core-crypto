@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
 use async_trait::async_trait;
-use core_crypto::prelude::ConversationId;
+use core_crypto::prelude::{ConversationId, Obfuscated};
 use log::kv;
 use wasm_bindgen::prelude::*;
 
@@ -56,12 +56,12 @@ impl CoreCrypto {
         let shim = Arc::new(ObserverShim(tx));
         wasm_bindgen_futures::spawn_local(async move {
             while let Ok((conversation_id, epoch)) = rx.recv().await {
-                if let Err(err) = epoch_observer.epoch_changed(conversation_id, epoch).await {
+                if let Err(err) = epoch_observer.epoch_changed(conversation_id.clone(), epoch).await {
                     // we don't _care_ if an error is thrown by the the notification function, per se,
                     // but this would probably be useful information for downstream debugging efforts
-                    //
-                    // Can't use the `Obfuscate` thing to log the group as it's private, so ignore group id and epoch
                     log::warn!(
+                        conversation_id = Obfuscated::new(&conversation_id),
+                        epoch,
                         err = LoggableJsValue(err);
                         "caught an error when attempting to notify the epoch observer of an epoch change"
                     );
