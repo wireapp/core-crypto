@@ -156,6 +156,7 @@ $dokka.location:com.wire.crypto/CoreCryptoContext/mlsInit/#com.wire.crypto.Clien
 $dokka.location:com.wire.crypto/CoreCryptoContext/mlsInitWithClientId/#com.wire.crypto.ClientId#com.wire.crypto.ExternallyGeneratedHandle#com.wire.crypto.Ciphersuites/PointingToDeclaration/android/com.wire.crypto/-core-crypto-context/mls-init-with-client-id.html
 $dokka.location:com.wire.crypto/CoreCryptoContext/processWelcomeMessage/#com.wire.crypto.Welcome#com.wire.crypto.CustomConfiguration/PointingToDeclaration/android/com.wire.crypto/-core-crypto-context/process-welcome-message.html
 $dokka.location:com.wire.crypto/CoreCryptoContext/proteusCreateSession/#com.wire.crypto.PreKey#kotlin.String/PointingToDeclaration/android/com.wire.crypto/-core-crypto-context/proteus-create-session.html
+$dokka.location:com.wire.crypto/CoreCryptoContext/proteusCryptoboxMigrate/#kotlin.String/PointingToDeclaration/android/com.wire.crypto/-core-crypto-context/proteus-cryptobox-migrate.html
 $dokka.location:com.wire.crypto/CoreCryptoContext/proteusDecrypt/#kotlin.ByteArray#kotlin.String/PointingToDeclaration/android/com.wire.crypto/-core-crypto-context/proteus-decrypt.html
 $dokka.location:com.wire.crypto/CoreCryptoContext/proteusDeleteSession/#kotlin.String/PointingToDeclaration/android/com.wire.crypto/-core-crypto-context/proteus-delete-session.html
 $dokka.location:com.wire.crypto/CoreCryptoContext/proteusDoesSessionExist/#kotlin.String/PointingToDeclaration/android/com.wire.crypto/-core-crypto-context/proteus-does-session-exist.html
