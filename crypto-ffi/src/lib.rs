@@ -33,6 +33,12 @@ pub mod bindings;
 #[cfg(not(target_family = "wasm"))]
 uniffi::setup_scaffolding!("core_crypto_ffi");
 
+mod error;
 mod metadata;
 
+#[cfg(feature = "proteus")]
+pub use error::proteus::ProteusError;
+pub use error::{CoreCryptoResult, core_crypto::CoreCryptoError, mls::MlsError};
+#[cfg(target_family = "wasm")]
+pub use error::{WasmCryptoResult, internal::InternalError};
 pub use metadata::{BuildMetadata, build_metadata, version};
