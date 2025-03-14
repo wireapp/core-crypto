@@ -63,6 +63,7 @@ enum InteropError: String, Error {
     case notInitialised =
         "Unable to perform action since core crypto is not initialised"
     case encodingError = "Failed to encode result"
+    case randomBytesError = "Failed to get random bytes"
 }
 
 @main
@@ -112,12 +113,23 @@ struct InteropClientApp: App {
         }
     }
 
+    private func generateDatabaseKey() throws -> WireCoreCrypto.DatabaseKey {
+        var bytes = [UInt8](repeating: 0, count: 32)
+        let status = SecRandomCopyBytes(kSecRandomDefault, bytes.count, &bytes)
+
+        if status == errSecSuccess {
+            return WireCoreCrypto.DatabaseKey(bytes)
+        }
+        throw InteropError.randomBytesError
+    }
+
     private func executeAction(_ action: InteropAction) async throws -> String {
         switch action {
         case .initMLS(let clientId, let ciphersuite):
+            let key = try generateDatabaseKey()
             self.coreCrypto = try await CoreCrypto.init(
                 path: generateKeystorePath(),
-                key: "secret",
+                key: key,
                 clientId: clientId,
                 ciphersuites: [ciphersuite],
                 nbKeyPackage: nil
@@ -234,9 +246,10 @@ struct InteropClientApp: App {
 
         case .initProteus:
             if coreCrypto == nil {
+                let key = try generateDatabaseKey()
                 self.coreCrypto = try await coreCryptoDeferredInit(
                     path: generateKeystorePath(),
-                    key: "secret"
+                    key: key
                 )
 
                 try await self.coreCrypto?.provideTransport(

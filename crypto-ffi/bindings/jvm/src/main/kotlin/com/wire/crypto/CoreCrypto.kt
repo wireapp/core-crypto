@@ -2,6 +2,9 @@ package com.wire.crypto
 
 typealias EnrollmentHandle = ByteArray
 
+@JvmInline
+value class DatabaseKey(internal val bytes: ByteArray)
+
 /**
  * Defines the log level for a CoreCrypto
  */
@@ -70,9 +73,9 @@ class CoreCrypto(private val cc: com.wire.crypto.uniffi.CoreCrypto) {
 
         suspend operator fun invoke(
             keystore: String,
-            databaseKey: String
+            databaseKey: DatabaseKey
         ): CoreCrypto {
-            val cc = com.wire.crypto.uniffi.coreCryptoDeferredInit(keystore, databaseKey)
+            val cc = com.wire.crypto.uniffi.coreCryptoDeferredInit(keystore, databaseKey.bytes)
             return CoreCrypto(cc)
         }
     }

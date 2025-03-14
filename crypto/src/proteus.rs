@@ -1203,6 +1203,8 @@ mod tests {
 
     wasm_bindgen_test_configure!(run_in_browser);
 
+    use core_crypto_keystore::DatabaseKey;
+
     #[apply(all_cred_cipher)]
     #[wasm_bindgen_test]
     async fn cc_can_init(case: TestCase) {
@@ -1213,7 +1215,7 @@ mod tests {
         let client_id = "alice".into();
         let cfg = MlsCentralConfiguration::try_new(
             path,
-            "test".to_string(),
+            DatabaseKey::generate(),
             Some(client_id),
             vec![case.ciphersuite()],
             None,
@@ -1239,7 +1241,7 @@ mod tests {
         // we are deferring MLS initialization here, not passing a MLS 'client_id' yet
         let cfg = MlsCentralConfiguration::try_new(
             path,
-            "test".to_string(),
+            DatabaseKey::generate(),
             None,
             vec![case.ciphersuite()],
             None,
@@ -1289,7 +1291,8 @@ mod tests {
         let (path, db_file) = tmp_db_file();
         #[cfg(target_family = "wasm")]
         let (path, _) = tmp_db_file();
-        let keystore = core_crypto_keystore::Connection::open_with_key(&path, "test")
+        let key = DatabaseKey::generate();
+        let keystore = core_crypto_keystore::Connection::open_with_key(&path, &key)
             .await
             .unwrap();
         keystore.new_transaction().await.unwrap();
@@ -1297,7 +1300,7 @@ mod tests {
         let identity = (*central.proteus_identity).clone();
         keystore.commit_transaction().await.unwrap();
 
-        let keystore = core_crypto_keystore::Connection::open_with_key(path, "test")
+        let keystore = core_crypto_keystore::Connection::open_with_key(path, &key)
             .await
             .unwrap();
         keystore.new_transaction().await.unwrap();
@@ -1320,7 +1323,8 @@ mod tests {
 
         let session_id = uuid::Uuid::new_v4().hyphenated().to_string();
 
-        let mut keystore = core_crypto_keystore::Connection::open_with_key(path, "test")
+        let key = DatabaseKey::generate();
+        let mut keystore = core_crypto_keystore::Connection::open_with_key(path, &key)
             .await
             .unwrap();
         keystore.new_transaction().await.unwrap();
@@ -1361,7 +1365,8 @@ mod tests {
 
         let session_id = uuid::Uuid::new_v4().hyphenated().to_string();
 
-        let mut keystore = core_crypto_keystore::Connection::open_with_key(path, "test")
+        let key = DatabaseKey::generate();
+        let mut keystore = core_crypto_keystore::Connection::open_with_key(path, &key)
             .await
             .unwrap();
         keystore.new_transaction().await.unwrap();
@@ -1404,7 +1409,8 @@ mod tests {
         #[cfg(target_family = "wasm")]
         let (path, _) = tmp_db_file();
 
-        let keystore = core_crypto_keystore::Connection::open_with_key(path, "test")
+        let key = DatabaseKey::generate();
+        let keystore = core_crypto_keystore::Connection::open_with_key(path, &key)
             .await
             .unwrap();
         keystore.new_transaction().await.unwrap();
@@ -1506,8 +1512,9 @@ mod tests {
         let keystore_dir = tempfile::tempdir().unwrap();
         let keystore_file = keystore_dir.path().join("keystore");
 
+        let key = DatabaseKey::generate();
         let mut keystore =
-            core_crypto_keystore::Connection::open_with_key(keystore_file.as_os_str().to_string_lossy(), "test")
+            core_crypto_keystore::Connection::open_with_key(keystore_file.as_os_str().to_string_lossy(), &key)
                 .await
                 .unwrap();
         keystore.new_transaction().await.unwrap();
@@ -1686,7 +1693,8 @@ mod tests {
                 let alice_session_fingerprint_remote = alice_session.remote_identity().fingerprint();
 
                 let _ = wasm_bindgen_futures::JsFuture::from(run_cryptobox(alice)).await.unwrap();
-                let mut keystore = core_crypto_keystore::Connection::open_with_key(&format!("{CRYPTOBOX_JS_DBNAME}-imported"), "test").await.unwrap();
+                let key = DatabaseKey::generate();
+                let mut keystore = core_crypto_keystore::Connection::open_with_key(&format!("{CRYPTOBOX_JS_DBNAME}-imported"), &key).await.unwrap();
                 keystore.new_transaction().await.unwrap();
                 let Err(crate::Error::CryptoboxMigration(crate::CryptoboxMigrationError{
                     source: crate::CryptoboxMigrationErrorKind::ProvidedPathDoesNotExist(_),
