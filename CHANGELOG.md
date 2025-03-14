@@ -1,5 +1,18 @@
 # Changelog
 
+## v4.2.1 - 2025-03-14
+
+### Bug Fixes
+
+- expose `proteusCryptoboxMigrate()` [WPB-16549] (682b9fe)
+
+### Documentation
+
+- fix comments in index.md (b35b021)
+- update README.md with instructions to update docs table (0ce3d49)
+- update documentation table with links to docs for `v3.1.0` and `v4.2.0` (93bcba9)
+- add docs landing page [WPB-11382] (5361146)
+
 ## v4.2.0 - 2025-02-28
 
 ### Highlights
