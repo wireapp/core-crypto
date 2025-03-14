@@ -3,7 +3,7 @@ use std::sync::Arc;
 use async_trait::async_trait;
 use core_crypto::prelude::{ConversationId, Obfuscated};
 
-use crate::{CoreCryptoError, generic::CoreCryptoResult};
+use crate::{CoreCryptoError, CoreCryptoResult};
 
 use super::CoreCrypto;
 

@@ -1,4 +1,5 @@
-use crate::wasm::{InternalError, lower_ciphersuites};
+use crate::InternalError;
+use crate::wasm::lower_ciphersuites;
 use crate::{
     Ciphersuite, ConversationConfiguration, CoreCrypto, CoreCryptoError, CoreCryptoResult, CredentialType,
     CustomConfiguration, DecryptedMessage, FfiClientId, WasmCryptoResult, WelcomeBundle,

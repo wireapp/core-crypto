@@ -5,7 +5,7 @@ use core_crypto::prelude::{ConversationId, Obfuscated};
 use log::kv;
 use wasm_bindgen::prelude::*;
 
-use crate::{InternalError, wasm::CoreCryptoResult};
+use crate::{CoreCryptoResult, InternalError};
 
 use super::CoreCrypto;
 

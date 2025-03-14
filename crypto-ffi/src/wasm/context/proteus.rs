@@ -1,5 +1,5 @@
+use crate::CoreCryptoError;
 use crate::proteus_impl;
-use crate::wasm::CoreCryptoError;
 use crate::wasm::context::CoreCryptoContext;
 use crate::{ProteusAutoPrekeyBundle, WasmCryptoResult};
 use futures_util::TryFutureExt;
