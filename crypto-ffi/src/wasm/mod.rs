@@ -27,6 +27,7 @@ use std::{
 use crate::proteus_impl;
 use core_crypto::mls::conversation::Conversation as _;
 use core_crypto::{InnermostErrorMessage, MlsTransportResponse, prelude::*};
+use core_crypto_keystore::Connection as Database;
 use futures_util::future::TryFutureExt;
 use js_sys::{Promise, Uint8Array};
 use log::{
@@ -1428,6 +1429,16 @@ impl MlsTransport for MlsTransportProvider {
             .map_err(|e| Error::ErrorDuringMlsTransport(format!("JsError: {e:?}")))?
             .into())
     }
+}
+
+/// Updates the key of the CoreCrypto database.
+/// To be used only once, when moving from CoreCrypto <= 4.x to CoreCrypto 5.x.
+#[wasm_bindgen(js_name = migrateDatabaseKeyTypeToBytes)]
+pub async fn migrate_db_key_type_to_bytes(name: &str, old_key: &str, new_key: &DatabaseKey) -> WasmCryptoResult<()> {
+    Database::migrate_db_key_type_to_bytes(name, old_key, &new_key.0)
+        .await
+        .map_err(InternalError::generic())
+        .map_err(Into::into)
 }
 
 #[derive(Debug)]

@@ -73,6 +73,7 @@ export {
     ConversationConfiguration,
     CustomConfiguration,
     DatabaseKey,
+    migrateDatabaseKeyTypeToBytes,
 } from "./core-crypto-ffi.js";
 import initWasm from "./core-crypto-ffi.js";
 
