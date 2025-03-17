@@ -13,7 +13,8 @@ use tls_codec::Deserialize;
 
 use self::context::CoreCryptoContext;
 use crate::{
-    Ciphersuite, Ciphersuites, ClientId, CommitBundle, CoreCryptoError, CoreCryptoResult, CredentialType, proteus_impl,
+    Ciphersuite, Ciphersuites, ClientId, CommitBundle, CoreCryptoError, CoreCryptoResult, CredentialType, WireIdentity,
+    proteus_impl,
 };
 use core_crypto::mls::conversation::Conversation as _;
 pub use core_crypto::prelude::ConversationId;
@@ -27,28 +28,6 @@ use core_crypto_keystore::Connection as Database;
 
 pub mod context;
 mod epoch_observer;
-
-#[derive(Debug, Clone, uniffi::Record)]
-/// See [core_crypto::prelude::WireIdentity]
-pub struct WireIdentity {
-    pub client_id: String,
-    pub status: DeviceStatus,
-    pub thumbprint: String,
-    pub credential_type: CredentialType,
-    pub x509_identity: Option<X509Identity>,
-}
-
-impl From<core_crypto::prelude::WireIdentity> for WireIdentity {
-    fn from(i: core_crypto::prelude::WireIdentity) -> Self {
-        Self {
-            client_id: i.client_id,
-            status: i.status.into(),
-            thumbprint: i.thumbprint,
-            credential_type: i.credential_type.into(),
-            x509_identity: i.x509_identity.map(Into::into),
-        }
-    }
-}
 
 #[derive(Debug, Copy, Clone, Eq, PartialEq, uniffi::Enum)]
 #[repr(u8)]
@@ -67,32 +46,6 @@ impl From<core_crypto::prelude::DeviceStatus> for DeviceStatus {
             core_crypto::prelude::DeviceStatus::Valid => Self::Valid,
             core_crypto::prelude::DeviceStatus::Expired => Self::Expired,
             core_crypto::prelude::DeviceStatus::Revoked => Self::Revoked,
-        }
-    }
-}
-
-#[derive(Debug, Clone, uniffi::Record)]
-/// See [core_crypto::prelude::X509Identity]
-pub struct X509Identity {
-    pub handle: String,
-    pub display_name: String,
-    pub domain: String,
-    pub certificate: String,
-    pub serial_number: String,
-    pub not_before: u64,
-    pub not_after: u64,
-}
-
-impl From<core_crypto::prelude::X509Identity> for X509Identity {
-    fn from(i: core_crypto::prelude::X509Identity) -> Self {
-        Self {
-            handle: i.handle,
-            display_name: i.display_name,
-            domain: i.domain,
-            certificate: i.certificate,
-            serial_number: i.serial_number,
-            not_before: i.not_before,
-            not_after: i.not_after,
         }
     }
 }
