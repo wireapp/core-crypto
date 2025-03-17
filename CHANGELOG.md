@@ -1,5 +1,11 @@
 # Changelog
 
+## v4.2.3 - 2025-03-14
+
+### Bug Fixes
+
+- fix android publishing to maven central
+
 ## v4.2.2 - 2025-03-14
 
 ### Bug Fixes
