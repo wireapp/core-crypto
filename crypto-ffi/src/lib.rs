@@ -54,6 +54,7 @@ mod ciphersuite;
 mod client_id;
 mod credential_type;
 mod crl;
+mod decrypted_message;
 mod error;
 mod metadata;
 
@@ -67,6 +68,7 @@ pub use ciphersuite::{Ciphersuite, Ciphersuites};
 pub use client_id::{ClientId, FfiClientId};
 pub use credential_type::CredentialType;
 pub use crl::{CrlRegistration, NewCrlDistributionPoints};
+pub use decrypted_message::{BufferedDecryptedMessage, DecryptedMessage};
 #[cfg(feature = "proteus")]
 pub use error::proteus::ProteusError;
 pub use error::{CoreCryptoResult, core_crypto::CoreCryptoError, mls::MlsError};
