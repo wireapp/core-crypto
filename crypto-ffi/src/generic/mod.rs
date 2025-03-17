@@ -29,27 +29,6 @@ use core_crypto_keystore::Connection as Database;
 pub mod context;
 mod epoch_observer;
 
-#[derive(Debug, Copy, Clone, Eq, PartialEq, uniffi::Enum)]
-#[repr(u8)]
-pub enum DeviceStatus {
-    /// All is fine
-    Valid = 1,
-    /// The Credential's certificate is expired
-    Expired = 2,
-    /// The Credential's certificate is revoked (not implemented yet)
-    Revoked = 3,
-}
-
-impl From<core_crypto::prelude::DeviceStatus> for DeviceStatus {
-    fn from(value: core_crypto::prelude::DeviceStatus) -> Self {
-        match value {
-            core_crypto::prelude::DeviceStatus::Valid => Self::Valid,
-            core_crypto::prelude::DeviceStatus::Expired => Self::Expired,
-            core_crypto::prelude::DeviceStatus::Revoked => Self::Revoked,
-        }
-    }
-}
-
 #[derive(Debug, Clone, uniffi::Record)]
 /// See [core_crypto::prelude::MlsConversationConfiguration]
 pub struct ConversationConfiguration {

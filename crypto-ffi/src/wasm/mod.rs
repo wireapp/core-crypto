@@ -1333,29 +1333,6 @@ impl From<core_crypto::prelude::E2eiConversationState> for E2eiConversationState
 }
 
 #[wasm_bindgen]
-#[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
-#[repr(u8)]
-/// see [core_crypto::prelude::DeviceStatus]
-pub enum DeviceStatus {
-    /// All is fine
-    Valid = 1,
-    /// The Credential's certificate is expired
-    Expired = 2,
-    /// The Credential's certificate is revoked (not implemented yet)
-    Revoked = 3,
-}
-
-impl From<core_crypto::prelude::DeviceStatus> for DeviceStatus {
-    fn from(state: core_crypto::prelude::DeviceStatus) -> Self {
-        match state {
-            core_crypto::prelude::DeviceStatus::Valid => Self::Valid,
-            core_crypto::prelude::DeviceStatus::Expired => Self::Expired,
-            core_crypto::prelude::DeviceStatus::Revoked => Self::Revoked,
-        }
-    }
-}
-
-#[wasm_bindgen]
 #[derive(Debug)]
 pub struct DatabaseKey(core_crypto_keystore::DatabaseKey);
 
