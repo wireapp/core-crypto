@@ -33,9 +33,13 @@ pub mod bindings;
 #[cfg(not(target_family = "wasm"))]
 uniffi::setup_scaffolding!("core_crypto_ffi");
 
+mod ciphersuite;
 mod error;
 mod metadata;
 
+#[cfg(target_family = "wasm")]
+pub(crate) use ciphersuite::lower_ciphersuites;
+pub use ciphersuite::{Ciphersuite, Ciphersuites};
 #[cfg(feature = "proteus")]
 pub use error::proteus::ProteusError;
 pub use error::{CoreCryptoResult, core_crypto::CoreCryptoError, mls::MlsError};
