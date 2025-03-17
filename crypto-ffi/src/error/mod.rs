@@ -18,7 +18,7 @@ pub type WasmCryptoResult<T> = CoreCryptoResult<T, core_crypto::CoreCryptoError>
 /// This has the further disadvantage that we have very little context information at the point of
 /// logging. We'll try this out for now anyway; if it turns out that we need to add more tracing
 /// in the future, we can figure out our techniques then.
-pub(crate) fn log_error(error: &dyn std::error::Error) {
+fn log_error(error: &dyn std::error::Error) {
     // we exclude the original error message from the chain
     let chain = {
         let mut error = error;

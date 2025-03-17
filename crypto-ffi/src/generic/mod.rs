@@ -12,14 +12,14 @@ use log_reload::ReloadLog;
 use tls_codec::Deserialize;
 
 use self::context::CoreCryptoContext;
-use crate::{CoreCryptoError, CoreCryptoResult, proteus_impl};
+use crate::{Ciphersuite, Ciphersuites, CoreCryptoError, CoreCryptoResult, proteus_impl};
 use core_crypto::mls::conversation::Conversation as _;
 pub use core_crypto::prelude::ConversationId;
 use core_crypto::{
     RecursiveError,
     prelude::{
-        Client, EntropySeed, MlsBufferedConversationDecryptMessage, MlsCiphersuite, MlsClientConfiguration,
-        MlsCommitBundle, MlsConversationDecryptMessage, MlsCustomConfiguration, MlsGroupInfoBundle, MlsProposalBundle,
+        Client, EntropySeed, MlsBufferedConversationDecryptMessage, MlsClientConfiguration, MlsCommitBundle,
+        MlsConversationDecryptMessage, MlsCustomConfiguration, MlsGroupInfoBundle, MlsProposalBundle,
         VerifiableGroupInfo,
     },
 };
@@ -40,91 +40,6 @@ uniffi::custom_type!(ClientId, Vec<u8>, {
 pub struct NewCrlDistributionPoints(Option<Vec<String>>);
 
 uniffi::custom_newtype!(NewCrlDistributionPoints, Option<Vec<String>>);
-
-#[allow(non_camel_case_types)]
-#[derive(Debug, Clone, Copy, PartialEq, Eq, uniffi::Enum)]
-#[repr(u16)]
-pub enum CiphersuiteName {
-    /// DH KEM x25519 | AES-GCM 128 | SHA2-256 | Ed25519
-    MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519 = 0x0001,
-    /// DH KEM P256 | AES-GCM 128 | SHA2-256 | EcDSA P256
-    MLS_128_DHKEMP256_AES128GCM_SHA256_P256 = 0x0002,
-    /// DH KEM x25519 | Chacha20Poly1305 | SHA2-256 | Ed25519
-    MLS_128_DHKEMX25519_CHACHA20POLY1305_SHA256_Ed25519 = 0x0003,
-    /// DH KEM x448 | AES-GCM 256 | SHA2-512 | Ed448
-    MLS_256_DHKEMX448_AES256GCM_SHA512_Ed448 = 0x0004,
-    /// DH KEM P521 | AES-GCM 256 | SHA2-512 | EcDSA P521
-    MLS_256_DHKEMP521_AES256GCM_SHA512_P521 = 0x0005,
-    /// DH KEM x448 | Chacha20Poly1305 | SHA2-512 | Ed448
-    MLS_256_DHKEMX448_CHACHA20POLY1305_SHA512_Ed448 = 0x0006,
-    /// DH KEM P384 | AES-GCM 256 | SHA2-384 | EcDSA P384
-    MLS_256_DHKEMP384_AES256GCM_SHA384_P384 = 0x0007,
-}
-
-#[derive(Debug, Clone)]
-pub struct Ciphersuite(core_crypto::prelude::CiphersuiteName);
-
-uniffi::custom_type!(Ciphersuite, u16, {
-    lower: |ciphersuite| (&ciphersuite.0).into(),
-    try_lift: |val| {
-        core_crypto::prelude::CiphersuiteName::try_from(val)
-            .map(Into::into)
-            .map_err(Into::into)
-    }
-});
-
-impl From<core_crypto::prelude::CiphersuiteName> for Ciphersuite {
-    fn from(cs: core_crypto::prelude::CiphersuiteName) -> Self {
-        Self(cs)
-    }
-}
-
-impl From<Ciphersuite> for core_crypto::prelude::CiphersuiteName {
-    fn from(cs: Ciphersuite) -> Self {
-        cs.0
-    }
-}
-
-impl From<Ciphersuite> for MlsCiphersuite {
-    fn from(cs: Ciphersuite) -> Self {
-        cs.0.into()
-    }
-}
-
-#[derive(Debug, Default, Clone)]
-pub struct Ciphersuites(Vec<core_crypto::prelude::CiphersuiteName>);
-
-impl From<Vec<core_crypto::prelude::CiphersuiteName>> for Ciphersuites {
-    fn from(cs: Vec<core_crypto::prelude::CiphersuiteName>) -> Self {
-        Self(cs)
-    }
-}
-
-impl From<Ciphersuites> for Vec<core_crypto::prelude::CiphersuiteName> {
-    fn from(cs: Ciphersuites) -> Self {
-        cs.0
-    }
-}
-
-impl<'a> From<&'a Ciphersuites> for Vec<MlsCiphersuite> {
-    fn from(cs: &'a Ciphersuites) -> Self {
-        cs.0.iter().fold(Vec::with_capacity(cs.0.len()), |mut acc, c| {
-            acc.push((*c).into());
-            acc
-        })
-    }
-}
-
-uniffi::custom_type!(Ciphersuites, Vec<u16>, {
-    lower: |cs| cs.0.into_iter().map(|c| (&c).into()).collect(),
-    try_lift: |val| {
-        val.iter().try_fold(Ciphersuites(vec![]), |mut acc, c| -> uniffi::Result<Self> {
-            let cs = core_crypto::prelude::CiphersuiteName::try_from(*c)?;
-            acc.0.push(cs);
-            Ok(acc)
-        })
-    }
-});
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, uniffi::Record)]
 /// Supporting struct for CRL registration result
