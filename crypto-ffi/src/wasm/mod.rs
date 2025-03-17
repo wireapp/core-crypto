@@ -27,82 +27,8 @@ use wasm_bindgen_futures::future_to_promise;
 
 use crate::{
     Ciphersuite, CommitBundle, CoreCryptoError, CredentialType, FfiClientId, InternalError, MlsError, WasmCryptoResult,
-    lower_ciphersuites,
+    WireIdentity, lower_ciphersuites,
 };
-
-#[wasm_bindgen(getter_with_clone)]
-#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
-/// Represents the identity claims identifying a client
-/// Those claims are verifiable by any member in the group
-pub struct WireIdentity {
-    /// Unique client identifier e.g. `T4Coy4vdRzianwfOgXpn6A:6add501bacd1d90e@whitehouse.gov`
-    #[wasm_bindgen(readonly, js_name = clientId)]
-    pub client_id: String,
-    /// Status of the Credential at the moment this object is created
-    #[wasm_bindgen(readonly)]
-    pub status: u8,
-    /// MLS thumbprint
-    #[wasm_bindgen(readonly)]
-    pub thumbprint: String,
-    #[wasm_bindgen(readonly, js_name = credentialType)]
-    pub credential_type: u8,
-    #[wasm_bindgen(readonly, js_name = x509Identity)]
-    pub x509_identity: Option<X509Identity>,
-}
-
-impl From<core_crypto::prelude::WireIdentity> for WireIdentity {
-    fn from(i: core_crypto::prelude::WireIdentity) -> Self {
-        Self {
-            client_id: i.client_id,
-            status: i.status as u8,
-            thumbprint: i.thumbprint,
-            credential_type: i.credential_type as u8,
-            x509_identity: i.x509_identity.map(Into::into),
-        }
-    }
-}
-
-#[wasm_bindgen(getter_with_clone)]
-#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
-/// Represents the identity claims identifying a client
-/// Those claims are verifiable by any member in the group
-pub struct X509Identity {
-    /// user handle e.g. `john_wire`
-    #[wasm_bindgen(readonly)]
-    pub handle: String,
-    /// Name as displayed in the messaging application e.g. `John Fitzgerald Kennedy`
-    #[wasm_bindgen(readonly, js_name = displayName)]
-    pub display_name: String,
-    /// DNS domain for which this identity proof was generated e.g. `whitehouse.gov`
-    #[wasm_bindgen(readonly)]
-    pub domain: String,
-    /// X509 certificate identifying this client in the MLS group ; PEM encoded
-    #[wasm_bindgen(readonly)]
-    pub certificate: String,
-    /// X509 certificate serial number
-    #[wasm_bindgen(readonly, js_name = serialNumber)]
-    pub serial_number: String,
-    /// X509 certificate not before as Unix timestamp
-    #[wasm_bindgen(readonly, js_name = notBefore)]
-    pub not_before: u64,
-    /// X509 certificate not after as Unix timestamp
-    #[wasm_bindgen(readonly, js_name = notAfter)]
-    pub not_after: u64,
-}
-
-impl From<core_crypto::prelude::X509Identity> for X509Identity {
-    fn from(i: core_crypto::prelude::X509Identity) -> Self {
-        Self {
-            handle: i.handle,
-            display_name: i.display_name,
-            domain: i.domain,
-            certificate: i.certificate,
-            serial_number: i.serial_number,
-            not_before: i.not_before,
-            not_after: i.not_after,
-        }
-    }
-}
 
 #[wasm_bindgen(getter_with_clone)]
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]

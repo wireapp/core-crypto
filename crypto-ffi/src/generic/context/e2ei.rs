@@ -1,10 +1,10 @@
 use std::{collections::HashMap, ops::DerefMut};
 
 use crate::{
-    CoreCryptoError, CrlRegistration, NewCrlDistributionPoints,
+    CoreCryptoError, CrlRegistration, NewCrlDistributionPoints, WireIdentity,
     generic::{
         Ciphersuite, ClientId, CoreCryptoResult, CredentialType, E2eiConversationState, E2eiDumpedPkiEnv,
-        E2eiEnrollment, WireIdentity, context::CoreCryptoContext,
+        E2eiEnrollment, context::CoreCryptoContext,
     },
 };
 use core_crypto::mls::conversation::Conversation as _;
