@@ -35,6 +35,7 @@ uniffi::setup_scaffolding!("core_crypto_ffi");
 
 mod ciphersuite;
 mod client_id;
+mod crl;
 mod error;
 mod metadata;
 
@@ -42,6 +43,7 @@ mod metadata;
 pub(crate) use ciphersuite::lower_ciphersuites;
 pub use ciphersuite::{Ciphersuite, Ciphersuites};
 pub use client_id::{ClientId, FfiClientId};
+pub use crl::{CrlRegistration, NewCrlDistributionPoints};
 #[cfg(feature = "proteus")]
 pub use error::proteus::ProteusError;
 pub use error::{CoreCryptoResult, core_crypto::CoreCryptoError, mls::MlsError};
