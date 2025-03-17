@@ -1036,3 +1036,64 @@ describe("database key", () => {
         );
     });
 });
+
+describe("database migration", () => {
+    it("migrating key type to bytes works", async () => {
+        const stores = await import('./db-v10002003-dump.json');
+
+        const response = await fetch('https://cdn.jsdelivr.net/npm/idb@8/build/umd.js');
+        if (!response.ok)
+            throw new Error(`failed to fetch script: ${response.statusText}`);
+
+        await browser.executeScript(await response.text(), []);
+
+        const result = await browser.execute(async (stores_) => {
+            // First, we need to restore the IndexedDB database in the browser.
+            const stores = JSON.parse(stores_);
+            const clientName = "alice";
+            const version = 10002003;
+            const db = await idb.openDB(clientName, version, {
+                async upgrade(db) {
+                    for (let [name, value] of Object.entries(stores)) {
+                        await db.createObjectStore(name);
+                    }
+                }
+            })
+
+            const chunks = s => Array.from({ length: s.length / 2 }, (_, i) => s.substr(i * 2, 2));
+            const fromHex = s => Uint8Array.from(chunks(s), (byte) => parseInt(byte, 16));
+
+            for (let [name, value] of Object.entries(stores)) {
+                for (let [key, val] of Object.entries(value)) {
+                    await db.put(name, val, fromHex(key));
+                }
+            }
+
+            // It is important to close the database here since otherwise the migration process
+            // will be stuck because we'd be holding a connection to the same database open.
+            db.close();
+
+            // Migrate the whole database to use the new key type.
+            const old_key = clientName;
+            const new_key = new window.ccModule.DatabaseKey(new Uint8Array(32));
+            await window.ccModule.migrateDatabaseKeyTypeToBytes(clientName, old_key, new_key);
+
+            // Reconstruct the client based on the migrated database and fetch the epoch.
+            const cipherSuite = window.defaultCipherSuite;
+            const encoder = new TextEncoder();
+            const clientConfig = {
+                databaseName: clientName,
+                key: new_key,
+                wasmModule: undefined,
+                ciphersuites: [cipherSuite],
+                clientId: encoder.encode(clientName),
+            };
+            const instance = await window.ccModule.CoreCrypto.init(clientConfig);
+            const epoch = await instance.conversationEpoch(encoder.encode("convId"));
+            return epoch;
+        }, JSON.stringify(stores));
+
+        // If the migration succeeded, the epoch has to be 1.
+        expect(result).toEqual(1n);
+    });
+});
