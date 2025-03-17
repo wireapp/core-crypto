@@ -25,37 +25,10 @@ use utils::*;
 use wasm_bindgen::{JsCast, prelude::*};
 use wasm_bindgen_futures::future_to_promise;
 
-use crate::{Ciphersuite, CoreCryptoError, FfiClientId, InternalError, MlsError, WasmCryptoResult, lower_ciphersuites};
-
-#[allow(non_camel_case_types)]
-#[wasm_bindgen]
-#[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
-#[repr(u16)]
-/// see [core_crypto::prelude::MlsCredentialType]
-pub enum CredentialType {
-    /// Just a KeyPair
-    Basic = 0x0001,
-    /// A certificate obtained through e2e identity enrollment process
-    X509 = 0x0002,
-}
-
-impl From<CredentialType> for core_crypto::prelude::MlsCredentialType {
-    fn from(from: CredentialType) -> Self {
-        match from {
-            CredentialType::Basic => core_crypto::prelude::MlsCredentialType::Basic,
-            CredentialType::X509 => core_crypto::prelude::MlsCredentialType::X509,
-        }
-    }
-}
-
-impl From<core_crypto::prelude::MlsCredentialType> for CredentialType {
-    fn from(from: core_crypto::prelude::MlsCredentialType) -> Self {
-        match from {
-            core_crypto::prelude::MlsCredentialType::Basic => CredentialType::Basic,
-            core_crypto::prelude::MlsCredentialType::X509 => CredentialType::X509,
-        }
-    }
-}
+use crate::{
+    Ciphersuite, CoreCryptoError, CredentialType, FfiClientId, InternalError, MlsError, WasmCryptoResult,
+    lower_ciphersuites,
+};
 
 #[wasm_bindgen]
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]

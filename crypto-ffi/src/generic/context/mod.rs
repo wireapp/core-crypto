@@ -1,6 +1,6 @@
 use super::{
     Ciphersuite, Ciphersuites, ClientId, ConversationConfiguration, CoreCrypto, CoreCryptoError, CoreCryptoResult,
-    CustomConfiguration, DecryptedMessage, MlsCredentialType, WelcomeBundle,
+    CredentialType, CustomConfiguration, DecryptedMessage, WelcomeBundle,
 };
 use crate::NewCrlDistributionPoints;
 use async_lock::{Mutex, OnceCell};
@@ -254,7 +254,7 @@ impl CoreCryptoContext {
     pub async fn client_public_key(
         &self,
         ciphersuite: Ciphersuite,
-        credential_type: MlsCredentialType,
+        credential_type: CredentialType,
     ) -> CoreCryptoResult<Vec<u8>> {
         Ok(self
             .context
@@ -317,7 +317,7 @@ impl CoreCryptoContext {
     pub async fn client_keypackages(
         &self,
         ciphersuite: Ciphersuite,
-        credential_type: MlsCredentialType,
+        credential_type: CredentialType,
         amount_requested: u32,
     ) -> CoreCryptoResult<Vec<Vec<u8>>> {
         let kps = self
@@ -340,7 +340,7 @@ impl CoreCryptoContext {
     pub async fn client_valid_keypackages_count(
         &self,
         ciphersuite: Ciphersuite,
-        credential_type: MlsCredentialType,
+        credential_type: CredentialType,
     ) -> CoreCryptoResult<u64> {
         let count = self
             .context
@@ -369,7 +369,7 @@ impl CoreCryptoContext {
     pub async fn create_conversation(
         &self,
         conversation_id: Vec<u8>,
-        creator_credential_type: MlsCredentialType,
+        creator_credential_type: CredentialType,
         config: ConversationConfiguration,
     ) -> CoreCryptoResult<()> {
         let mut lower_cfg = MlsConversationConfiguration {
@@ -515,7 +515,7 @@ impl CoreCryptoContext {
         &self,
         group_info: Vec<u8>,
         custom_configuration: CustomConfiguration,
-        credential_type: MlsCredentialType,
+        credential_type: CredentialType,
     ) -> CoreCryptoResult<WelcomeBundle> {
         let group_info = VerifiableGroupInfo::tls_deserialize(&mut group_info.as_slice())
             .map_err(core_crypto::mls::conversation::Error::tls_deserialize(

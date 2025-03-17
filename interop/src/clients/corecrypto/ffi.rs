@@ -3,7 +3,7 @@ use crate::{
     clients::{EmulatedClient, EmulatedClientProtocol, EmulatedClientType, EmulatedMlsClient},
 };
 use color_eyre::eyre::Result;
-use core_crypto_ffi::{ClientId, CoreCrypto, CustomConfiguration, MlsCredentialType, context::TransactionHelper};
+use core_crypto_ffi::{ClientId, CoreCrypto, CustomConfiguration, CredentialType, context::TransactionHelper};
 use std::cell::Cell;
 use std::sync::Arc;
 use tempfile::NamedTempFile;
@@ -81,7 +81,7 @@ impl EmulatedClient for CoreCryptoFfiClient {
 impl EmulatedMlsClient for CoreCryptoFfiClient {
     async fn get_keypackage(&self) -> Result<Vec<u8>> {
         let ciphersuite = CIPHERSUITE_IN_USE.into();
-        let credential_type = MlsCredentialType::Basic;
+        let credential_type = CredentialType::Basic;
         let extractor = TransactionHelper::new(move |context| async move {
             Ok(context
                 .client_keypackages(ciphersuite, credential_type, 1)
@@ -108,7 +108,7 @@ impl EmulatedMlsClient for CoreCryptoFfiClient {
             self.cc
                 .transaction(TransactionHelper::new(move |context| async move {
                     context
-                        .create_conversation(conversation_id, MlsCredentialType::Basic, cfg)
+                        .create_conversation(conversation_id, CredentialType::Basic, cfg)
                         .await?;
                     Ok(())
                 }))
