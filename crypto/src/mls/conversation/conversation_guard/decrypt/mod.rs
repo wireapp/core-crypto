@@ -13,7 +13,7 @@ pub(crate) mod buffer_messages;
 
 use super::{ConversationGuard, Result};
 use crate::e2e_identity::conversation_state::compute_state;
-use crate::e2e_identity::init_certificates::NewCrlDistributionPoint;
+use crate::e2e_identity::init_certificates::NewCrlDistributionPoints;
 use crate::mls::conversation::renew::Renew;
 use crate::mls::conversation::{Conversation, ConversationWithMls, Error};
 use crate::mls::credential::crl::{
@@ -62,7 +62,7 @@ pub struct MlsConversationDecryptMessage {
     /// because the DS did not fan them out in order.
     pub buffered_messages: Option<Vec<MlsBufferedConversationDecryptMessage>>,
     /// New CRL distribution points that appeared by the introduction of a new credential
-    pub crl_new_distribution_points: NewCrlDistributionPoint,
+    pub crl_new_distribution_points: NewCrlDistributionPoints,
 }
 
 /// Type safe recursion of [MlsConversationDecryptMessage]
@@ -84,7 +84,7 @@ pub struct MlsBufferedConversationDecryptMessage {
     /// see [MlsConversationDecryptMessage]
     pub identity: WireIdentity,
     /// see [MlsConversationDecryptMessage]
-    pub crl_new_distribution_points: NewCrlDistributionPoint,
+    pub crl_new_distribution_points: NewCrlDistributionPoints,
 }
 
 impl From<MlsConversationDecryptMessage> for MlsBufferedConversationDecryptMessage {
