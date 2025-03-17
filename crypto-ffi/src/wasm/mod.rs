@@ -25,7 +25,7 @@ use utils::*;
 use wasm_bindgen::{JsCast, prelude::*};
 use wasm_bindgen_futures::future_to_promise;
 
-use crate::{Ciphersuite, CoreCryptoError, InternalError, MlsError, WasmCryptoResult, lower_ciphersuites};
+use crate::{Ciphersuite, CoreCryptoError, FfiClientId, InternalError, MlsError, WasmCryptoResult, lower_ciphersuites};
 
 #[allow(non_camel_case_types)]
 #[wasm_bindgen]
@@ -56,8 +56,6 @@ impl From<core_crypto::prelude::MlsCredentialType> for CredentialType {
         }
     }
 }
-
-pub type FfiClientId = Box<[u8]>;
 
 #[wasm_bindgen]
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]

@@ -12,7 +12,7 @@ use log_reload::ReloadLog;
 use tls_codec::Deserialize;
 
 use self::context::CoreCryptoContext;
-use crate::{Ciphersuite, Ciphersuites, CoreCryptoError, CoreCryptoResult, proteus_impl};
+use crate::{Ciphersuite, Ciphersuites, ClientId, CoreCryptoError, CoreCryptoResult, proteus_impl};
 use core_crypto::mls::conversation::Conversation as _;
 pub use core_crypto::prelude::ConversationId;
 use core_crypto::{
@@ -27,14 +27,6 @@ use core_crypto_keystore::Connection as Database;
 
 pub mod context;
 mod epoch_observer;
-
-#[derive(Debug, Clone, Eq, Hash, PartialEq, derive_more::From)]
-pub struct ClientId(core_crypto::prelude::ClientId);
-
-uniffi::custom_type!(ClientId, Vec<u8>, {
-    lower: |id| id.0.to_vec(),
-    try_lift: |vec| Ok(Self(core_crypto::prelude::ClientId::from(vec)))
-});
 
 #[derive(Debug, Clone, derive_more::From, derive_more::Into)]
 pub struct NewCrlDistributionPoints(Option<Vec<String>>);
