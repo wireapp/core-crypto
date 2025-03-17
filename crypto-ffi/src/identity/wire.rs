@@ -1,7 +1,7 @@
 #[cfg(target_family = "wasm")]
 use wasm_bindgen::prelude::*;
 
-use crate::{CredentialType, DeviceStatus, X509Identity};
+use crate::{CredentialType, X509Identity};
 
 /// See [core_crypto::prelude::WireIdentity]
 #[derive(Debug, Clone)]
@@ -35,6 +35,29 @@ impl From<core_crypto::prelude::WireIdentity> for WireIdentity {
             thumbprint: i.thumbprint,
             credential_type: i.credential_type.into(),
             x509_identity: i.x509_identity.map(Into::into),
+        }
+    }
+}
+
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
+#[cfg_attr(target_family = "wasm", wasm_bindgen, derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(not(target_family = "wasm"), derive(uniffi::Enum))]
+#[repr(u8)]
+pub enum DeviceStatus {
+    /// All is fine
+    Valid = 1,
+    /// The Credential's certificate is expired
+    Expired = 2,
+    /// The Credential's certificate is revoked (not implemented yet)
+    Revoked = 3,
+}
+
+impl From<core_crypto::prelude::DeviceStatus> for DeviceStatus {
+    fn from(value: core_crypto::prelude::DeviceStatus) -> Self {
+        match value {
+            core_crypto::prelude::DeviceStatus::Valid => Self::Valid,
+            core_crypto::prelude::DeviceStatus::Expired => Self::Expired,
+            core_crypto::prelude::DeviceStatus::Revoked => Self::Revoked,
         }
     }
 }

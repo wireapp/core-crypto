@@ -59,5 +59,8 @@ pub use error::proteus::ProteusError;
 pub use error::{CoreCryptoResult, core_crypto::CoreCryptoError, mls::MlsError};
 #[cfg(target_family = "wasm")]
 pub use error::{WasmCryptoResult, internal::InternalError};
-pub use identity::{wire::WireIdentity, x509::X509Identity};
+pub use identity::{
+    wire::{DeviceStatus, WireIdentity},
+    x509::X509Identity,
+};
 pub use metadata::{BuildMetadata, build_metadata, version};
