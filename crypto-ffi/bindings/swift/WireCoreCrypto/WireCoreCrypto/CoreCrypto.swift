@@ -16,7 +16,40 @@
 // along with this program. If not, see http://www.gnu.org/licenses/.
 //
 
-internal import WireCoreCryptoUniffi
+import WireCoreCryptoUniffi
+
+@_exported public import struct WireCoreCryptoUniffi.BufferedDecryptedMessage
+@_exported public import struct WireCoreCryptoUniffi.BuildMetadata
+@_exported public import typealias WireCoreCryptoUniffi.Ciphersuite
+@_exported public import typealias WireCoreCryptoUniffi.Ciphersuites
+@_exported public import typealias WireCoreCryptoUniffi.ClientId
+@_exported public import struct WireCoreCryptoUniffi.CommitBundle
+@_exported public import struct WireCoreCryptoUniffi.ConversationConfiguration
+@_exported public import protocol WireCoreCryptoUniffi.CoreCryptoContextProtocol
+@_exported public import enum WireCoreCryptoUniffi.CoreCryptoError
+@_exported public import enum WireCoreCryptoUniffi.CoreCryptoLogLevel
+@_exported public import protocol WireCoreCryptoUniffi.CoreCryptoLogger
+@_exported public import struct WireCoreCryptoUniffi.CrlRegistration
+@_exported public import struct WireCoreCryptoUniffi.CustomConfiguration
+@_exported public import struct WireCoreCryptoUniffi.DecryptedMessage
+@_exported public import enum WireCoreCryptoUniffi.DeviceStatus
+@_exported public import enum WireCoreCryptoUniffi.E2eiConversationState
+@_exported public import struct WireCoreCryptoUniffi.E2eiDumpedPkiEnv
+@_exported public import class WireCoreCryptoUniffi.E2eiEnrollment
+@_exported public import struct WireCoreCryptoUniffi.GroupInfoBundle
+@_exported public import enum WireCoreCryptoUniffi.MlsCredentialType
+@_exported public import enum WireCoreCryptoUniffi.MlsError
+@_exported public import enum WireCoreCryptoUniffi.MlsGroupInfoEncryptionType
+@_exported public import enum WireCoreCryptoUniffi.MlsRatchetTreeType
+@_exported public import protocol WireCoreCryptoUniffi.MlsTransport
+@_exported public import enum WireCoreCryptoUniffi.MlsTransportResponse
+@_exported public import enum WireCoreCryptoUniffi.MlsWirePolicy
+@_exported public import typealias WireCoreCryptoUniffi.NewCrlDistributionPoints
+@_exported public import struct WireCoreCryptoUniffi.ProteusAutoPrekeyBundle
+@_exported public import enum WireCoreCryptoUniffi.ProteusError
+@_exported public import struct WireCoreCryptoUniffi.WelcomeBundle
+@_exported public import struct WireCoreCryptoUniffi.WireIdentity
+@_exported public import struct WireCoreCryptoUniffi.X509Identity
 
 public protocol CoreCryptoProtocol {
 
@@ -29,7 +62,7 @@ public protocol CoreCryptoProtocol {
     /// - Returns: Result value returned from the closure if any.
     ///
     func transaction<Result>(
-        _ block: @escaping (_ context: CoreCryptoContext) async throws -> Result
+        _ block: @escaping (_ context: CoreCryptoContextProtocol) async throws -> Result
     ) async throws -> Result
 
     /// Register a callback which will be called when performing MLS operations which require communication with the delivery service.
@@ -68,35 +101,32 @@ public class CoreCrypto: CoreCryptoProtocol {
     /// - Parameter keystoreSecret: secret key to for the encrypted key store
     ///
     public init(keystorePath: String, keystoreSecret: Data) async throws {
-        self.coreCrypto = try await wrapError {
+        self.coreCrypto =
             try await WireCoreCryptoUniffi.coreCryptoDeferredInit(
                 path: keystorePath,
                 key: String(data: keystoreSecret, encoding: .utf8)!
             )
-        }
     }
 
     public func transaction<Result>(
-        _ block: @escaping (_ context: CoreCryptoContext) async throws -> Result
+        _ block: @escaping (_ context: CoreCryptoContextProtocol) async throws -> Result
     ) async throws -> Result {
         let transactionExecutor = TransactionExecutor<Result>(block)
-        try await wrapError { try await coreCrypto.transaction(command: transactionExecutor) }
+        try await coreCrypto.transaction(command: transactionExecutor)
         return transactionExecutor.result!
     }
 
     public func provideTransport(transport: any MlsTransport) async throws {
-        try await wrapError {
-            try await coreCrypto.provideTransport(
-                callbacks: MlsTransportAdapter(transport: transport))
-        }
+        try await coreCrypto.provideTransport(
+            callbacks: transport)
     }
 
     public static func setLogger(_ logger: CoreCryptoLogger) {
-        WireCoreCryptoUniffi.setLoggerOnly(logger: CoreCryptoLoggerAdapter(logger: logger))
+        WireCoreCryptoUniffi.setLoggerOnly(logger: logger)
     }
 
     public static func setMaxLogLevel(_ level: CoreCryptoLogLevel) {
-        WireCoreCryptoUniffi.setMaxLogLevel(level: level.lower())
+        WireCoreCryptoUniffi.setMaxLogLevel(level: level)
     }
 
     public static func version() -> String {
@@ -104,58 +134,24 @@ public class CoreCrypto: CoreCryptoProtocol {
     }
 
     public static func buildMetadata() -> BuildMetadata {
-        WireCoreCryptoUniffi.buildMetadata().lift()
-    }
-
-}
-
-class MlsTransportAdapter: WireCoreCryptoUniffi.MlsTransport {
-
-    let transport: MlsTransport
-
-    init(transport: MlsTransport) {
-        self.transport = transport
-    }
-
-    func sendCommitBundle(commitBundle: WireCoreCryptoUniffi.CommitBundle) async
-        -> WireCoreCryptoUniffi.MlsTransportResponse
-    {
-        await transport.sendCommitBundle(commitBundle: commitBundle.lift()).lower()
-    }
-
-    func sendMessage(mlsMessage: Data) async -> WireCoreCryptoUniffi.MlsTransportResponse {
-        await transport.sendMessage(mlsMessage: mlsMessage).lower()
-    }
-
-}
-
-class CoreCryptoLoggerAdapter: WireCoreCryptoUniffi.CoreCryptoLogger {
-
-    let logger: CoreCryptoLogger
-
-    init(logger: CoreCryptoLogger) {
-        self.logger = logger
-    }
-
-    func log(level: WireCoreCryptoUniffi.CoreCryptoLogLevel, message: String, context: String?) {
-        logger.log(level: level.lift(), message: message, context: context)
+        WireCoreCryptoUniffi.buildMetadata()
     }
 
 }
 
 class TransactionExecutor<Result>: WireCoreCryptoUniffi.CoreCryptoCommand {
 
-    let block: (_ context: CoreCryptoContext) async throws -> Result
+    let block: (_ context: CoreCryptoContextProtocol) async throws -> Result
     var result: Result?
 
     init(
-        _ block: @escaping (_ context: CoreCryptoContext) async throws -> Result
+        _ block: @escaping (_ context: CoreCryptoContextProtocol) async throws -> Result
     ) {
         self.block = block
     }
 
     func execute(context: WireCoreCryptoUniffi.CoreCryptoContext) async throws {
-        result = try await block(CoreCryptoContextAdapter(context: context))
+        result = try await block(context)
     }
 
 }

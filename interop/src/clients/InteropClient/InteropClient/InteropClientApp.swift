@@ -21,14 +21,14 @@ import WireCoreCrypto
 class TransportProvider: MlsTransport {
 
     func sendCommitBundle(
-        commitBundle: WireCoreCrypto.CommitBundle
-    ) async -> WireCoreCrypto.MlsTransportResponse {
+        commitBundle: CommitBundle
+    ) async -> MlsTransportResponse {
         .success
     }
 
     func sendMessage(
         mlsMessage: Data
-    ) async -> WireCoreCrypto.MlsTransportResponse {
+    ) async -> MlsTransportResponse {
         .success
     }
 
@@ -111,7 +111,7 @@ struct InteropClientApp: App {
             guard let coreCrypto else { throw InteropError.notInitialised }
 
             let keyPackage = try await coreCrypto.transaction {
-                try await $0.generateKeyPackages(
+                try await $0.clientKeypackages(
                     ciphersuite: ciphersuite,
                     credentialType: .basic,
                     amountRequested: 1)
@@ -143,12 +143,12 @@ struct InteropClientApp: App {
                     try await context.createConversation(
                         conversationId: conversationId,
                         creatorCredentialType: .basic,
-                        configuration: conversationConfiguration)
+                        config: conversationConfiguration)
                 }
             }
 
             _ = try await coreCrypto.transaction {
-                try await $0.addClients(
+                try await $0.addClientsToConversation(
                     conversationId: conversationId,
                     keyPackages: [keyPackage]
                 )
@@ -160,9 +160,9 @@ struct InteropClientApp: App {
             guard let coreCrypto else { throw InteropError.notInitialised }
 
             _ = try await coreCrypto.transaction {
-                try await $0.removeClients(
+                try await $0.removeClientsFromConversation(
                     conversationId: conversationId,
-                    clientsIds: [clientId]
+                    clients: [clientId]
                 )
             }
 
@@ -176,7 +176,7 @@ struct InteropClientApp: App {
                 keyRotationSpan: nil, wirePolicy: nil)
             let bundle = try await coreCrypto.transaction {
                 try await $0.processWelcomeMessage(
-                    welcomeMessage,
+                    welcomeMessage: welcomeMessage,
                     customConfiguration: configuration
                 )
             }

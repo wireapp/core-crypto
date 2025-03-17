@@ -39,7 +39,7 @@ final class WireCoreCryptoTests: XCTestCase {
         try await coreCrypto.transaction { context in
             let previousData = try await context.getData()
             XCTAssertNil(previousData)
-            try await context.setData(data)
+            try await context.setData(data: data)
         }
 
         try await coreCrypto.transaction { context in
@@ -68,7 +68,7 @@ final class WireCoreCryptoTests: XCTestCase {
         let ciphersuite: Ciphersuite = 2
         let aliceId = "alice1".data(using: .utf8)!
         let coreCrypto = try await createCoreCrypto()
-        var context: CoreCryptoContext? = nil
+        var context: CoreCryptoContextProtocol? = nil
 
         try await coreCrypto.transaction { context = $0 }
 
@@ -120,7 +120,7 @@ final class WireCoreCryptoTests: XCTestCase {
                 try await ctx.createConversation(
                     conversationId: conversationId,
                     creatorCredentialType: .basic,
-                    configuration: configuration
+                    config: configuration
                 )
                 throw expectedError
             }
@@ -132,7 +132,7 @@ final class WireCoreCryptoTests: XCTestCase {
             try await ctx.createConversation(
                 conversationId: conversationId,
                 creatorCredentialType: .basic,
-                configuration: configuration
+                config: configuration
             )
         }
     }
@@ -157,7 +157,7 @@ final class WireCoreCryptoTests: XCTestCase {
                             try await ctx.getData().map { String(data: $0, encoding: .utf8)! }?
                             .appending(token)
                             ?? token
-                        try await ctx.setData(data.data(using: .utf8)!)
+                        try await ctx.setData(data: data.data(using: .utf8)!)
                     }
                 }
             }
@@ -192,18 +192,18 @@ final class WireCoreCryptoTests: XCTestCase {
             try await $0.createConversation(
                 conversationId: conversationId,
                 creatorCredentialType: .basic,
-                configuration: configuration
+                config: configuration
             )
         }
 
-        let expectedError = CoreCryptoError.mls(MlsError.conversationAlreadyExists(conversationId))
+        let expectedError = CoreCryptoError.Mls(MlsError.ConversationAlreadyExists(conversationId))
 
         try await alice.transaction { ctx in
             await self.XCTAssertThrowsErrorAsync(expectedError) {
                 try await ctx.createConversation(
                     conversationId: conversationId,
                     creatorCredentialType: .basic,
-                    configuration: configuration
+                    config: configuration
                 )
             }
         }
@@ -213,7 +213,7 @@ final class WireCoreCryptoTests: XCTestCase {
         let ciphersuite: Ciphersuite = 2
         let alice = try await createClients("alice1")[0]
         let publicKey = try await alice.transaction {
-            try await $0.getPublicKey(
+            try await $0.clientPublicKey(
                 ciphersuite: ciphersuite,
                 credentialType: .basic
             )
@@ -239,7 +239,7 @@ final class WireCoreCryptoTests: XCTestCase {
         let resultAfter = try await alice.transaction {
             try await $0.createConversation(
                 conversationId: conversationId, creatorCredentialType: .basic,
-                configuration: configuration)
+                config: configuration)
             return try await $0.conversationExists(conversationId: conversationId)
         }
         XCTAssertFalse(resultBefore)
@@ -265,23 +265,24 @@ final class WireCoreCryptoTests: XCTestCase {
             try await $0.createConversation(
                 conversationId: conversationId,
                 creatorCredentialType: .basic,
-                configuration: configuration
+                config: configuration
             )
         }
         let aliceKp = try await alice.transaction {
-            try await $0.generateKeyPackages(
+            try await $0.clientKeypackages(
                 ciphersuite: ciphersuite,
                 credentialType: .basic,
                 amountRequested: 1
             ).first!
         }
         try await bob.transaction {
-            _ = try await $0.addClients(conversationId: conversationId, keyPackages: [aliceKp])
+            _ = try await $0.addClientsToConversation(
+                conversationId: conversationId, keyPackages: [aliceKp])
         }
         let welcome = mockMlsTransport.lastCommitBundle?.welcome
         let groupId = try await alice.transaction {
             try await $0.processWelcomeMessage(
-                welcome!,
+                welcomeMessage: welcome!,
                 customConfiguration: configuration.custom
             ).id
         }
@@ -317,24 +318,25 @@ final class WireCoreCryptoTests: XCTestCase {
             try await $0.createConversation(
                 conversationId: conversationId,
                 creatorCredentialType: .basic,
-                configuration: configuration
+                config: configuration
             )
         }
 
         let aliceKp = try await alice.transaction {
-            try await $0.generateKeyPackages(
+            try await $0.clientKeypackages(
                 ciphersuite: ciphersuite,
                 credentialType: .basic,
                 amountRequested: 1
             ).first!
         }
         try await bob.transaction {
-            _ = try await $0.addClients(conversationId: conversationId, keyPackages: [aliceKp])
+            _ = try await $0.addClientsToConversation(
+                conversationId: conversationId, keyPackages: [aliceKp])
         }
         let welcome = mockMlsTransport.lastCommitBundle?.welcome
         let groupId = try await alice.transaction {
             try await $0.processWelcomeMessage(
-                welcome!,
+                welcomeMessage: welcome!,
                 customConfiguration: configuration.custom
             ).id
         }
@@ -353,7 +355,7 @@ final class WireCoreCryptoTests: XCTestCase {
         XCTAssertEqual(plaintext, message)
 
         try await bob.transaction { context in
-            await self.XCTAssertThrowsErrorAsync(CoreCryptoError.mls(.duplicateMessage)) {
+            await self.XCTAssertThrowsErrorAsync(CoreCryptoError.Mls(.DuplicateMessage)) {
                 _ = try await context.decryptMessage(
                     conversationId: conversationId, payload: ciphertext)
             }
