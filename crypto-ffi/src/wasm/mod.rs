@@ -1848,25 +1848,6 @@ impl From<core_crypto::prelude::DeviceStatus> for DeviceStatus {
 }
 
 #[wasm_bindgen]
-#[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
-/// Supporting struct for CRL registration result
-pub struct CrlRegistration {
-    /// Whether this CRL modifies the old CRL (i.e. has a different revocated cert list)
-    pub dirty: bool,
-    /// Optional expiration timestamp
-    pub expiration: Option<u64>,
-}
-
-impl From<core_crypto::e2e_identity::CrlRegistration> for CrlRegistration {
-    fn from(value: core_crypto::e2e_identity::CrlRegistration) -> Self {
-        Self {
-            dirty: value.dirty,
-            expiration: value.expiration,
-        }
-    }
-}
-
-#[wasm_bindgen]
 #[derive(Debug)]
 pub struct DatabaseKey(core_crypto_keystore::DatabaseKey);
 
