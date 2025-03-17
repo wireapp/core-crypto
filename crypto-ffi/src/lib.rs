@@ -49,6 +49,7 @@ pub mod bindings;
 #[cfg(not(target_family = "wasm"))]
 uniffi::setup_scaffolding!("core_crypto_ffi");
 
+mod bundles;
 mod ciphersuite;
 mod client_id;
 mod credential_type;
@@ -56,6 +57,10 @@ mod crl;
 mod error;
 mod metadata;
 
+pub use bundles::{
+    commit::CommitBundle, group_info::GroupInfoBundle, proposal::ProposalBundle,
+    proteus_auto_prekey::ProteusAutoPrekeyBundle, welcome::WelcomeBundle,
+};
 #[cfg(target_family = "wasm")]
 pub(crate) use ciphersuite::lower_ciphersuites;
 pub use ciphersuite::{Ciphersuite, Ciphersuites};
