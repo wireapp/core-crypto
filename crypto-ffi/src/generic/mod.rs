@@ -12,7 +12,7 @@ use log_reload::ReloadLog;
 use tls_codec::Deserialize;
 
 use self::context::CoreCryptoContext;
-use crate::{Ciphersuite, Ciphersuites, ClientId, CoreCryptoError, CoreCryptoResult, proteus_impl};
+use crate::{Ciphersuite, Ciphersuites, ClientId, CoreCryptoError, CoreCryptoResult, CredentialType, proteus_impl};
 use core_crypto::mls::conversation::Conversation as _;
 pub use core_crypto::prelude::ConversationId;
 use core_crypto::{
@@ -258,7 +258,7 @@ pub struct WireIdentity {
     pub client_id: String,
     pub status: DeviceStatus,
     pub thumbprint: String,
-    pub credential_type: MlsCredentialType,
+    pub credential_type: CredentialType,
     pub x509_identity: Option<X509Identity>,
 }
 
@@ -388,34 +388,6 @@ impl From<core_crypto::e2e_identity::E2eiDumpedPkiEnv> for E2eiDumpedPkiEnv {
             root_ca: value.root_ca,
             intermediates: value.intermediates,
             crls: value.crls,
-        }
-    }
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Default, uniffi::Enum)]
-#[repr(u8)]
-pub enum MlsCredentialType {
-    /// Basic credential i.e. a KeyPair
-    #[default]
-    Basic = 0x01,
-    /// A x509 certificate generally obtained through e2e identity enrollment process
-    X509 = 0x02,
-}
-
-impl From<core_crypto::prelude::MlsCredentialType> for MlsCredentialType {
-    fn from(value: core_crypto::prelude::MlsCredentialType) -> Self {
-        match value {
-            core_crypto::prelude::MlsCredentialType::Basic => Self::Basic,
-            core_crypto::prelude::MlsCredentialType::X509 => Self::X509,
-        }
-    }
-}
-
-impl From<MlsCredentialType> for core_crypto::prelude::MlsCredentialType {
-    fn from(value: MlsCredentialType) -> core_crypto::prelude::MlsCredentialType {
-        match value {
-            MlsCredentialType::Basic => core_crypto::prelude::MlsCredentialType::Basic,
-            MlsCredentialType::X509 => core_crypto::prelude::MlsCredentialType::X509,
         }
     }
 }
@@ -681,7 +653,7 @@ impl CoreCrypto {
     pub async fn client_public_key(
         &self,
         ciphersuite: Ciphersuite,
-        credential_type: MlsCredentialType,
+        credential_type: CredentialType,
     ) -> CoreCryptoResult<Vec<u8>> {
         Ok(self
             .central
@@ -900,7 +872,7 @@ impl CoreCrypto {
     pub async fn get_credential_in_use(
         &self,
         group_info: Vec<u8>,
-        credential_type: MlsCredentialType,
+        credential_type: CredentialType,
     ) -> CoreCryptoResult<E2eiConversationState> {
         let group_info = VerifiableGroupInfo::tls_deserialize(&mut group_info.as_slice())
             .map_err(core_crypto::mls::conversation::Error::tls_deserialize(

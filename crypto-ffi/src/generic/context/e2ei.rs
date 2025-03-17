@@ -3,8 +3,8 @@ use std::{collections::HashMap, ops::DerefMut};
 use crate::{
     CoreCryptoError, CrlRegistration, NewCrlDistributionPoints,
     generic::{
-        Ciphersuite, ClientId, CoreCryptoResult, E2eiConversationState, E2eiDumpedPkiEnv, E2eiEnrollment,
-        MlsCredentialType, WireIdentity, context::CoreCryptoContext,
+        Ciphersuite, ClientId, CoreCryptoResult, CredentialType, E2eiConversationState, E2eiDumpedPkiEnv,
+        E2eiEnrollment, WireIdentity, context::CoreCryptoContext,
     },
 };
 use core_crypto::mls::conversation::Conversation as _;
@@ -243,7 +243,7 @@ impl CoreCryptoContext {
     pub async fn get_credential_in_use(
         &self,
         group_info: Vec<u8>,
-        credential_type: MlsCredentialType,
+        credential_type: CredentialType,
     ) -> CoreCryptoResult<E2eiConversationState> {
         let group_info = VerifiableGroupInfo::tls_deserialize(&mut group_info.as_slice())
             .map_err(core_crypto::mls::conversation::Error::tls_deserialize(
