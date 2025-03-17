@@ -1,8 +1,7 @@
-use super::{
-    Ciphersuite, Ciphersuites, ClientId, ConversationConfiguration, CoreCrypto, CoreCryptoError, CoreCryptoResult,
-    CredentialType, CustomConfiguration,
+use super::{Ciphersuite, Ciphersuites, ClientId, CoreCrypto, CoreCryptoError, CoreCryptoResult, CredentialType};
+use crate::{
+    ConversationConfiguration, CustomConfiguration, DecryptedMessage, NewCrlDistributionPoints, WelcomeBundle,
 };
-use crate::{DecryptedMessage, NewCrlDistributionPoints, WelcomeBundle};
 
 use async_lock::{Mutex, OnceCell};
 use core_crypto::{
