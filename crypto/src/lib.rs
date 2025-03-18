@@ -111,10 +111,12 @@ pub trait MlsTransport: std::fmt::Debug + Send + Sync {
     async fn send_message(&self, mls_message: Vec<u8>) -> Result<MlsTransportResponse>;
 }
 
-#[derive(Debug)]
 /// Wrapper superstruct for both [mls::Client] and [proteus::ProteusCentral]
 ///
 /// As [std::ops::Deref] is implemented, this struct is automatically dereferred to [mls::Client] apart from `proteus_*` calls
+///
+/// This is cheap to clone as all internal members have `Arc` wrappers or are `Copy`.
+#[derive(Debug, Clone)]
 pub struct CoreCrypto {
     mls: mls::client::Client,
     #[cfg(feature = "proteus")]

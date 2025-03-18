@@ -132,7 +132,6 @@ pub(crate) mod config {
 
 #[cfg_attr(target_family = "wasm", async_trait::async_trait(?Send))]
 #[cfg_attr(not(target_family = "wasm"), async_trait::async_trait)]
-
 pub(crate) trait HasClientAndProvider: Send {
     async fn client(&self) -> Result<Client>;
     async fn mls_provider(&self) -> Result<MlsCryptoProvider>;
