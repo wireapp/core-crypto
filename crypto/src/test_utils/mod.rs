@@ -20,7 +20,7 @@
 
 use crate::{
     CoreCrypto, MlsTransport, MlsTransportResponse,
-    prelude::{Client, ClientId, ConversationId, MlsCentralConfiguration},
+    prelude::{Client, ClientId, ConversationId, MlsClientConfiguration},
     test_utils::x509::{CertificateParams, X509TestChain, X509TestChainActorArg, X509TestChainArgs},
 };
 use async_lock::RwLock;
@@ -327,7 +327,7 @@ async fn create_centrals<const N: usize>(
     let transport = &transport.clone();
     let stream = paths.into_iter().enumerate().map(|(i, p)| {
         async move {
-            let configuration = MlsCentralConfiguration::try_new(
+            let configuration = MlsClientConfiguration::try_new(
                 p,
                 "test".into(),
                 None,
@@ -485,7 +485,7 @@ pub async fn run_test_wo_clients(
             // let x509_test_chain = X509TestChain::init_empty(case.signature_scheme());
 
             let ciphersuites = vec![case.cfg.ciphersuite];
-            let configuration = MlsCentralConfiguration::try_new(
+            let configuration = MlsClientConfiguration::try_new(
                 p.to_string(),
                 "test".into(),
                 None,
@@ -556,7 +556,7 @@ pub async fn run_cross_tests<const N: usize, const F: usize>(
 #[cfg(not(target_family = "wasm"))]
 pub fn tmp_db_file() -> (String, tempfile::TempDir) {
     let file = tempfile::tempdir().unwrap();
-    (MlsCentralConfiguration::tmp_store_path(&file), file)
+    (MlsClientConfiguration::tmp_store_path(&file), file)
 }
 
 #[cfg(target_family = "wasm")]

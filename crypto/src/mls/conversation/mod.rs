@@ -505,7 +505,7 @@ mod tests {
 
     use crate::{
         CoreCrypto,
-        prelude::{ClientIdentifier, INITIAL_KEYING_MATERIAL_COUNT, MlsCentralConfiguration},
+        prelude::{ClientIdentifier, INITIAL_KEYING_MATERIAL_COUNT, MlsClientConfiguration},
         test_utils::*,
     };
 
@@ -620,7 +620,7 @@ mod tests {
                     let uuid = uuid::Uuid::new_v4();
                     let name = uuid.hyphenated().to_string();
                     let path = tmp_db_file();
-                    let config = MlsCentralConfiguration::try_new(
+                    let config = MlsClientConfiguration::try_new(
                         path.0,
                         name.clone(),
                         None,

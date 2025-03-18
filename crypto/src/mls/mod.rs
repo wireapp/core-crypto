@@ -5,7 +5,7 @@ use log::trace;
 use crate::{
     CoreCrypto, LeafError, MlsError, RecursiveError,
     prelude::{
-        Client, ClientId, ConversationId, MlsCentralConfiguration, MlsCiphersuite, MlsConversation,
+        Client, ClientId, ConversationId, MlsCiphersuite, MlsClientConfiguration, MlsConversation,
         MlsConversationConfiguration, MlsCredentialType, MlsTransport, identifier::ClientIdentifier,
         key_package::INITIAL_KEYING_MATERIAL_COUNT,
     },
@@ -27,17 +27,17 @@ pub(crate) mod proposal;
 pub use client::EpochObserver;
 pub use error::{Error, Result};
 
-// Prevents direct instantiation of [MlsCentralConfiguration]
+/// Prevents direct instantiation of [MlsClientConfiguration]
 pub(crate) mod config {
     use ciphersuite::MlsCiphersuite;
     use mls_crypto_provider::EntropySeed;
 
     use super::*;
 
-    /// Configuration parameters for `MlsCentral`
+    /// Configuration parameters for [Client].
     #[derive(Debug, Clone)]
     #[non_exhaustive]
-    pub struct MlsCentralConfiguration {
+    pub struct MlsClientConfiguration {
         /// Location where the SQLite/IndexedDB database will be stored
         pub store_path: String,
         /// Identity key to be used to instantiate the [MlsCryptoProvider]
@@ -52,7 +52,7 @@ pub(crate) mod config {
         pub nb_init_key_packages: Option<usize>,
     }
 
-    impl MlsCentralConfiguration {
+    impl MlsClientConfiguration {
         /// Creates a new instance of the configuration.
         ///
         /// # Arguments
@@ -69,17 +69,17 @@ pub(crate) mod config {
         ///
         /// This should fail:
         /// ```
-        /// use core_crypto::{prelude::MlsCentralConfiguration, mls::Error};
+        /// use core_crypto::{prelude::MlsClientConfiguration, mls::Error};
         ///
-        /// let result = MlsCentralConfiguration::try_new(String::new(), String::new(), Some(b"".to_vec().into()), vec![], None, Some(100));
+        /// let result = MlsClientConfiguration::try_new(String::new(), String::new(), Some(b"".to_vec().into()), vec![], None, Some(100));
         /// assert!(matches!(result.unwrap_err(), Error::MalformedIdentifier(_)));
         /// ```
         ///
         /// This should work:
         /// ```
-        /// use core_crypto::prelude::{MlsCentralConfiguration, MlsCiphersuite};
+        /// use core_crypto::prelude::{MlsClientConfiguration, MlsCiphersuite};
         ///
-        /// let result = MlsCentralConfiguration::try_new(
+        /// let result = MlsClientConfiguration::try_new(
         ///     "/tmp/crypto".to_string(),
         ///     "MY_IDENTITY_KEY".to_string(),
         ///     Some(b"MY_CLIENT_ID".to_vec().into()),
@@ -180,7 +180,7 @@ impl Client {
     /// * for x509 Credentials if the cetificate chain length is lower than 2
     /// * for Basic Credentials if the signature key cannot be generated either by not supported
     ///   scheme or the key generation fails
-    pub async fn try_new(configuration: MlsCentralConfiguration) -> Result<Self> {
+    pub async fn try_new(configuration: MlsClientConfiguration) -> Result<Self> {
         // Init backend (crypto + rand + keystore)
         let mls_backend = MlsCryptoProvider::try_new_with_configuration(MlsCryptoProviderConfiguration {
             db_path: &configuration.store_path,
@@ -194,7 +194,7 @@ impl Client {
     }
 
     /// Same as the [Client::try_new] but instead, it uses an in memory KeyStore. Although required, the `store_path` parameter from the `MlsCentralConfiguration` won't be used here.
-    pub async fn try_new_in_memory(configuration: MlsCentralConfiguration) -> Result<Self> {
+    pub async fn try_new_in_memory(configuration: MlsClientConfiguration) -> Result<Self> {
         let mls_backend = MlsCryptoProvider::try_new_with_configuration(MlsCryptoProviderConfiguration {
             db_path: &configuration.store_path,
             identity_key: &configuration.identity_key,
@@ -208,7 +208,7 @@ impl Client {
         Self::new_with_backend(mls_backend, configuration).await
     }
 
-    async fn new_with_backend(mls_backend: MlsCryptoProvider, configuration: MlsCentralConfiguration) -> Result<Self> {
+    async fn new_with_backend(mls_backend: MlsCryptoProvider, configuration: MlsClientConfiguration) -> Result<Self> {
         // We create the core crypto instance first to enable creating a transaction from it and
         // doing all subsequent actions inside a single transaction, though it forces us to clone
         // a few Arcs and locks.
@@ -529,7 +529,7 @@ mod tests {
     use crate::prelude::{CertificateBundle, ClientIdentifier, INITIAL_KEYING_MATERIAL_COUNT, MlsCredentialType};
     use crate::{
         CoreCrypto,
-        mls::{Client, MlsCentralConfiguration},
+        mls::{Client, MlsClientConfiguration},
         test_utils::{x509::X509TestChain, *},
     };
 
@@ -605,7 +605,7 @@ mod tests {
         async fn can_create_from_valid_configuration(case: TestCase) {
             run_tests(move |[tmp_dir_argument]| {
                 Box::pin(async move {
-                    let configuration = MlsCentralConfiguration::try_new(
+                    let configuration = MlsClientConfiguration::try_new(
                         tmp_dir_argument,
                         "test".to_string(),
                         Some("alice".into()),
@@ -626,7 +626,7 @@ mod tests {
         #[wasm_bindgen_test]
         fn store_path_should_not_be_empty_nor_blank() {
             let ciphersuites = vec![MlsCiphersuite::default()];
-            let configuration = MlsCentralConfiguration::try_new(
+            let configuration = MlsClientConfiguration::try_new(
                 " ".to_string(),
                 "test".to_string(),
                 Some("alice".into()),
@@ -646,7 +646,7 @@ mod tests {
             run_tests(|[tmp_dir_argument]| {
                 Box::pin(async move {
                     let ciphersuites = vec![MlsCiphersuite::default()];
-                    let configuration = MlsCentralConfiguration::try_new(
+                    let configuration = MlsClientConfiguration::try_new(
                         tmp_dir_argument,
                         " ".to_string(),
                         Some("alice".into()),
@@ -669,7 +669,7 @@ mod tests {
             run_tests(|[tmp_dir_argument]| {
                 Box::pin(async move {
                     let ciphersuites = vec![MlsCiphersuite::default()];
-                    let configuration = MlsCentralConfiguration::try_new(
+                    let configuration = MlsClientConfiguration::try_new(
                         tmp_dir_argument,
                         "test".to_string(),
                         Some("".into()),
@@ -718,7 +718,7 @@ mod tests {
     async fn can_fetch_client_public_key(case: TestCase) {
         run_tests(move |[tmp_dir_argument]| {
             Box::pin(async move {
-                let configuration = MlsCentralConfiguration::try_new(
+                let configuration = MlsClientConfiguration::try_new(
                     tmp_dir_argument,
                     "test".to_string(),
                     Some("potato".into()),
@@ -742,7 +742,7 @@ mod tests {
         run_tests(move |[tmp_dir_argument]| {
             Box::pin(async move {
                 let x509_test_chain = X509TestChain::init_empty(case.signature_scheme());
-                let configuration = MlsCentralConfiguration::try_new(
+                let configuration = MlsClientConfiguration::try_new(
                     tmp_dir_argument,
                     "test".to_string(),
                     None,

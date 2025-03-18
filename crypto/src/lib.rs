@@ -84,7 +84,7 @@ pub mod prelude {
             client::identifier::ClientIdentifier,
             client::key_package::INITIAL_KEYING_MATERIAL_COUNT,
             client::*,
-            config::MlsCentralConfiguration,
+            config::MlsClientConfiguration,
             conversation::{
                 ConversationId, MlsConversation,
                 commit::{MlsCommitBundle, MlsConversationCreationMessage},

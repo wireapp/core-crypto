@@ -142,7 +142,7 @@ async fn run_mls_test(chrome_driver_addr: &std::net::SocketAddr) -> Result<()> {
     ];
 
     let ciphersuites = vec![CIPHERSUITE_IN_USE.into()];
-    let configuration = MlsCentralConfiguration::try_new(
+    let configuration = MlsClientConfiguration::try_new(
         "whatever".into(),
         "test".into(),
         Some(MLS_MAIN_CLIENTID.into()),
@@ -337,7 +337,7 @@ async fn run_proteus_test(chrome_driver_addr: &std::net::SocketAddr) -> Result<(
         cryptobox_web_client.clone(),
     ];
 
-    let configuration = MlsCentralConfiguration::try_new(
+    let configuration = MlsClientConfiguration::try_new(
         "whatever".into(),
         "test".into(),
         Some(MLS_MAIN_CLIENTID.into()),

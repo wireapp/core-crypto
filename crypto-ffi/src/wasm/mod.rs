@@ -1474,7 +1474,7 @@ impl CoreCrypto {
             .map(usize::try_from)
             .transpose()
             .expect("we never run corecrypto on systems with architectures narrower than 32 bits");
-        let configuration = MlsCentralConfiguration::try_new(
+        let configuration = MlsClientConfiguration::try_new(
             path,
             key,
             Some(client_id.into()),
@@ -1497,7 +1497,7 @@ impl CoreCrypto {
         entropy_seed: Option<Box<[u8]>>,
     ) -> WasmCryptoResult<CoreCrypto> {
         let entropy_seed = entropy_seed.map(|s| s.to_vec());
-        let configuration = MlsCentralConfiguration::try_new(path, key, None, vec![], entropy_seed, None)
+        let configuration = MlsClientConfiguration::try_new(path, key, None, vec![], entropy_seed, None)
             .map_err(CoreCryptoError::from)?;
 
         let client = Client::try_new(configuration).await.map_err(CoreCryptoError::from)?;
