@@ -155,6 +155,8 @@ pub(crate) trait HasClientAndProvider: Send {
 
 /// The entry point for the MLS CoreCrypto library. This struct provides all functionality to create
 /// and manage groups, make proposals and commits.
+///
+/// This is cheap to clone because all its internal members have `Arc` wrappers.
 #[derive(Debug, Clone)]
 pub struct MlsCentral {
     pub(crate) mls_client: Client,
