@@ -1,5 +1,5 @@
 use super::{Error, Result};
-use crate::{MlsError, RecursiveError, context::CentralContext, e2e_identity::CrlRegistration, prelude::MlsCentral};
+use crate::{MlsError, RecursiveError, context::CentralContext, e2e_identity::CrlRegistration, prelude::Client};
 use core_crypto_keystore::{
     connection::FetchFromDatabase,
     entities::{E2eiAcmeCA, E2eiCrl, E2eiIntermediateCert},
@@ -33,8 +33,8 @@ pub struct E2eiDumpedPkiEnv {
 }
 
 impl CentralContext {
-    /// See [MlsCentral::e2ei_is_pki_env_setup].
-    /// Unlike [MlsCentral::e2ei_is_pki_env_setup], this function returns a result.
+    /// See [Client::e2ei_is_pki_env_setup].
+    /// Unlike [Client::e2ei_is_pki_env_setup], this function returns a result.
     pub async fn e2ei_is_pki_env_setup(&self) -> Result<bool> {
         Ok(self
             .mls_provider()
@@ -45,7 +45,7 @@ impl CentralContext {
             .await)
     }
 
-    /// See [MlsCentral::e2ei_dump_pki_env].
+    /// See [Client::e2ei_dump_pki_env].
     pub async fn e2ei_dump_pki_env(&self) -> Result<Option<E2eiDumpedPkiEnv>> {
         if !self.e2ei_is_pki_env_setup().await? {
             return Ok(None);
@@ -257,7 +257,7 @@ impl CentralContext {
     }
 }
 
-impl MlsCentral {
+impl Client {
     /// Returns whether the E2EI PKI environment is setup (i.e. Root CA, Intermediates, CRLs)
     pub async fn e2ei_is_pki_env_setup(&self) -> bool {
         self.mls_backend.is_pki_env_setup().await

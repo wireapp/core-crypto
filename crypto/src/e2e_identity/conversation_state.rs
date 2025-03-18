@@ -1,7 +1,7 @@
 use crate::{
     MlsError, RecursiveError,
     mls::credential::ext::CredentialExt,
-    prelude::{MlsCentral, MlsCredentialType},
+    prelude::{Client, MlsCredentialType},
 };
 
 use openmls_traits::OpenMlsCryptoProvider;
@@ -33,7 +33,7 @@ pub enum E2eiConversationState {
 }
 
 impl CentralContext {
-    /// See [MlsCentral::e2ei_verify_group_state].
+    /// See [Client::e2ei_verify_group_state].
     pub async fn e2ei_verify_group_state(&self, group_info: VerifiableGroupInfo) -> Result<E2eiConversationState> {
         let mls_provider = self
             .mls_provider()
@@ -66,7 +66,7 @@ impl CentralContext {
         Ok(compute_state(cs, credentials, MlsCredentialType::X509, auth_service.as_ref()).await)
     }
 
-    /// See [MlsCentral::get_credential_in_use].
+    /// See [Client::get_credential_in_use].
     pub async fn get_credential_in_use(
         &self,
         group_info: VerifiableGroupInfo,
@@ -96,7 +96,7 @@ impl CentralContext {
     }
 }
 
-impl MlsCentral {
+impl Client {
     /// Verifies a Group state before joining it
     pub async fn e2ei_verify_group_state(&self, group_info: VerifiableGroupInfo) -> Result<E2eiConversationState> {
         self.mls_backend

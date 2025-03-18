@@ -5,7 +5,7 @@ use std::fmt::{Display, Formatter};
 use std::sync::Arc;
 
 use core_crypto::prelude::{
-    CertificateBundle, ClientId, ConversationId, MlsCentral, MlsCentralConfiguration, MlsCiphersuite, MlsCommitBundle,
+    CertificateBundle, Client, ClientId, ConversationId, MlsCentralConfiguration, MlsCiphersuite, MlsCommitBundle,
     MlsConversationConfiguration, MlsCredentialType, MlsCustomConfiguration, MlsGroupInfoBundle,
 };
 use core_crypto::{CoreCrypto, MlsTransport, MlsTransportResponse};
@@ -164,9 +164,9 @@ pub async fn new_central(
     )
     .unwrap();
     let central = if in_memory {
-        MlsCentral::try_new_in_memory(cfg).await.unwrap()
+        Client::try_new_in_memory(cfg).await.unwrap()
     } else {
-        MlsCentral::try_new(cfg).await.unwrap()
+        Client::try_new(cfg).await.unwrap()
     };
     let cc = CoreCrypto::from(central);
     let delivery_service = Arc::<CoreCryptoTransportSuccessProvider>::default();
@@ -188,7 +188,7 @@ pub fn conversation_id() -> ConversationId {
 }
 
 pub async fn add_clients(
-    central: &mut MlsCentral,
+    central: &mut Client,
     id: &ConversationId,
     ciphersuite: MlsCiphersuite,
     nb_clients: usize,
@@ -279,8 +279,8 @@ pub async fn rand_key_package(ciphersuite: MlsCiphersuite) -> (KeyPackage, Clien
 }
 
 pub async fn invite(
-    from: &mut MlsCentral,
-    other: &mut MlsCentral,
+    from: &mut Client,
+    other: &mut Client,
     id: &ConversationId,
     ciphersuite: MlsCiphersuite,
     delivery_service: Arc<dyn MlsTransportTestExt>,

@@ -18,7 +18,7 @@ use crate::{
 };
 
 impl MlsConversation {
-    /// see [MlsCentral::update_keying_material]
+    /// see [Client::update_keying_material]
     #[cfg_attr(test, crate::durable)]
     pub(crate) async fn update_keying_material(
         &mut self,
@@ -53,7 +53,7 @@ impl MlsConversation {
         })
     }
 
-    /// see [MlsCentral::commit_pending_proposals]
+    /// see [Client::commit_pending_proposals]
     #[cfg_attr(test, crate::durable)]
     pub(crate) async fn commit_pending_proposals(
         &mut self,

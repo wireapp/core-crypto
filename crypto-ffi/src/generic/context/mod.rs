@@ -250,7 +250,7 @@ impl CoreCryptoContext {
             .await?)
     }
 
-    /// See [core_crypto::mls::MlsCentral::client_public_key]
+    /// See [core_crypto::mls::Client::client_public_key]
     pub async fn client_public_key(
         &self,
         ciphersuite: Ciphersuite,
@@ -274,7 +274,7 @@ impl CoreCryptoContext {
         Ok(Ciphersuite::from(core_crypto::prelude::CiphersuiteName::from(cs)))
     }
 
-    /// See [core_crypto::mls::MlsCentral::conversation_exists]
+    /// See [core_crypto::mls::Client::conversation_exists]
     pub async fn conversation_exists(&self, conversation_id: Vec<u8>) -> CoreCryptoResult<bool> {
         Ok(self.context.conversation_exists(&conversation_id).await?)
     }

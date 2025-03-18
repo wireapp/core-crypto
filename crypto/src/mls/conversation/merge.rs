@@ -107,7 +107,7 @@ mod tests {
                         .await
                         .commit_accepted(
                             &alice_central.context.client().await.unwrap(),
-                            &alice_central.central.mls_backend,
+                            &alice_central.client.mls_backend,
                         )
                         .await
                         .unwrap();

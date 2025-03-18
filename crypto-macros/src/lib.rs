@@ -41,7 +41,7 @@ pub fn durable(_args: TokenStream, item: TokenStream) -> TokenStream {
 
 /// !!! Not literally idempotent !!!
 ///
-/// Marker for methods on 'MlsCentral' which leave the number of entities in the keystore even.
+/// Marker for methods on 'core_crypto::Client' which leave the number of entities in the keystore even.
 /// They can create/destroy some but always compensate.
 /// So they are not idempotent, they cannot be safely replayed and they might leave the keystore in
 /// a different state.
@@ -50,7 +50,7 @@ pub fn idempotent(_args: TokenStream, item: TokenStream) -> TokenStream {
     idempotent::idempotent(item)
 }
 
-/// Neologism to mean the opposite of idempotent. Methods of 'MlsCentral' marked with this have to
+/// Neologism to mean the opposite of idempotent. Methods of 'core_crypto::Client' marked with this have to
 /// insert/delete an entity in the keystore and change the number of entities persisted.
 #[proc_macro_attribute]
 pub fn dispotent(_args: TokenStream, item: TokenStream) -> TokenStream {

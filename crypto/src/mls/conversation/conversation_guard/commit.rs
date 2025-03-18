@@ -45,7 +45,7 @@ impl ConversationGuard {
     /// Send the commit via [crate::MlsTransport] and handle the response.
     async fn send_commit(&mut self, mut commit: MlsCommitBundle) -> Result<TransportedCommitPolicy> {
         let transport = self
-            .central()
+            .context()
             .await?
             .mls_transport()
             .await

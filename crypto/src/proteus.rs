@@ -367,10 +367,10 @@ impl CentralContext {
     }
 }
 
-/// Proteus counterpart of [crate::mls::MlsCentral]
+/// Proteus counterpart of [crate::mls::Client]
 ///
 /// The big difference is that [ProteusCentral] doesn't *own* its own keystore but must borrow it from the outside.
-/// Whether it's exclusively for this struct's purposes or it's shared with our main struct, [crate::mls::MlsCentral]
+/// Whether it's exclusively for this struct's purposes or it's shared with our main struct, [crate::mls::Client]
 #[derive(Debug)]
 pub struct ProteusCentral {
     proteus_identity: Arc<IdentityKeyPair>,
@@ -1191,7 +1191,7 @@ impl ProteusCentral {
 #[cfg(test)]
 mod tests {
     use crate::{
-        prelude::{CertificateBundle, ClientIdentifier, MlsCentral, MlsCentralConfiguration, MlsCredentialType},
+        prelude::{CertificateBundle, Client, ClientIdentifier, MlsCentralConfiguration, MlsCredentialType},
         test_utils::{proteus_utils::*, x509::X509TestChain, *},
     };
 
@@ -1220,7 +1220,7 @@ mod tests {
             Some(INITIAL_KEYING_MATERIAL_COUNT),
         )
         .unwrap();
-        let cc: CoreCrypto = MlsCentral::try_new(cfg).await.unwrap().into();
+        let cc: CoreCrypto = Client::try_new(cfg).await.unwrap().into();
         let context = cc.new_transaction().await.unwrap();
         assert!(context.proteus_init().await.is_ok());
         assert!(context.proteus_new_prekey(1).await.is_ok());
@@ -1246,7 +1246,7 @@ mod tests {
             Some(INITIAL_KEYING_MATERIAL_COUNT),
         )
         .unwrap();
-        let cc: CoreCrypto = MlsCentral::try_new(cfg).await.unwrap().into();
+        let cc: CoreCrypto = Client::try_new(cfg).await.unwrap().into();
         let transaction = cc.new_transaction().await.unwrap();
         let x509_test_chain = X509TestChain::init_empty(case.signature_scheme());
         x509_test_chain.register_with_central(&transaction).await;

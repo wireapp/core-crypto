@@ -53,7 +53,7 @@ impl CoreCryptoNativeClient {
         let configuration =
             MlsCentralConfiguration::try_new("whatever".into(), "test".into(), cid, ciphersuites, None, Some(100))?;
 
-        let cc = CoreCrypto::from(MlsCentral::try_new_in_memory(configuration).await?);
+        let cc = CoreCrypto::from(Client::try_new_in_memory(configuration).await?);
 
         cc.provide_transport(Arc::new(MlsTransportSuccessProvider::default()))
             .await;

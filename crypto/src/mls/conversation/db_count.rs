@@ -1,5 +1,5 @@
 use crate::context::CentralContext;
-use crate::prelude::MlsCentral;
+use crate::prelude::Client;
 use core_crypto_keystore::{
     connection::FetchFromDatabase,
     entities::{
@@ -24,7 +24,7 @@ pub struct EntitiesCount {
     pub signature_keypair: usize,
 }
 
-impl MlsCentral {
+impl Client {
     /// Count the entities
     pub async fn count_entities(&self) -> EntitiesCount {
         let keystore = self.mls_backend.keystore();

@@ -1,5 +1,5 @@
 //! This module contains the primitives to enable transactional support on a higher level within the
-//! [MlsCentral]. All mutating operations need to be done through a [CentralContext].
+//! [Client]. All mutating operations need to be done through a [CentralContext].
 
 use crate::mls::HasClientAndProvider;
 #[cfg(feature = "proteus")]
@@ -7,7 +7,6 @@ use crate::proteus::ProteusCentral;
 use crate::{
     CoreCrypto, Error, KeystoreError, MlsError, MlsTransport, RecursiveError, Result,
     group_store::GroupStore,
-    mls::MlsCentral,
     prelude::{Client, MlsConversation},
 };
 use async_lock::{Mutex, RwLock, RwLockReadGuardArc, RwLockWriteGuardArc};
@@ -76,23 +75,23 @@ impl HasClientAndProvider for CentralContext {
 
 impl CentralContext {
     async fn new(
-        mls_central: &MlsCentral,
+        client: &Client,
         #[cfg(feature = "proteus")] proteus_central: Arc<Mutex<Option<ProteusCentral>>>,
     ) -> Result<Self> {
-        mls_central
+        client
             .mls_backend
             .new_transaction()
             .await
             .map_err(MlsError::wrap("creating new transaction"))?;
         let mls_groups = Arc::new(RwLock::new(Default::default()));
-        let callbacks = mls_central.transport.clone();
-        let mls_client = mls_central.mls_client.clone();
+        let callbacks = client.transport.clone();
+        let mls_client = client.clone();
         Ok(Self {
             state: Arc::new(
                 ContextState::Valid {
                     mls_client,
                     transport: callbacks,
-                    provider: mls_central.mls_backend.clone(),
+                    provider: client.mls_backend.clone(),
                     mls_groups,
                     #[cfg(feature = "proteus")]
                     proteus_central,
