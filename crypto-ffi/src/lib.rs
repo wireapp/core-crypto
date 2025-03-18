@@ -37,8 +37,10 @@ mod bundles;
 mod ciphersuite;
 mod client_id;
 mod configuration;
+mod core_crypto;
 mod credential_type;
 mod crl;
+mod database_key;
 mod decrypted_message;
 mod error;
 mod identity;
@@ -55,8 +57,12 @@ pub(crate) use ciphersuite::lower_ciphersuites;
 pub use ciphersuite::{Ciphersuite, Ciphersuites};
 pub use client_id::{ClientId, FfiClientId};
 pub use configuration::{ConversationConfiguration, CustomConfiguration, WirePolicy};
+pub use core_crypto::CoreCrypto;
+#[cfg(not(target_family = "wasm"))]
+pub use core_crypto::{core_crypto_deferred_init, core_crypto_new};
 pub use credential_type::CredentialType;
 pub use crl::{CrlRegistration, NewCrlDistributionPoints};
+pub use database_key::{DatabaseKey, migrate_db_key_type_to_bytes};
 pub use decrypted_message::{BufferedDecryptedMessage, DecryptedMessage};
 #[cfg(feature = "proteus")]
 pub use error::proteus::ProteusError;

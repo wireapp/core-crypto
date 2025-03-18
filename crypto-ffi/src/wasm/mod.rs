@@ -8,7 +8,6 @@ use std::{collections::HashMap, ops::Deref, sync::Arc};
 use crate::proteus_impl;
 use core_crypto::mls::conversation::Conversation as _;
 use core_crypto::prelude::*;
-use core_crypto_keystore::Connection as Database;
 use futures_util::future::TryFutureExt;
 use js_sys::{Promise, Uint8Array};
 use tls_codec::Deserialize;
@@ -17,7 +16,7 @@ use wasm_bindgen::prelude::*;
 use wasm_bindgen_futures::future_to_promise;
 
 use crate::{
-    Ciphersuite, CoreCryptoError, CoreCryptoLogLevel, CoreCryptoLogger, CredentialType, FfiClientId, InternalError,
+    Ciphersuite, CoreCrypto, CoreCryptoError, CoreCryptoLogLevel, CoreCryptoLogger, CredentialType, InternalError,
     MlsError, MlsTransport, MlsTransportShim, WasmCryptoResult, WireIdentity, lower_ciphersuites, set_logger_only,
     set_max_log_level_inner,
 };
@@ -47,97 +46,19 @@ impl From<core_crypto::e2e_identity::E2eiDumpedPkiEnv> for E2eiDumpedPkiEnv {
     }
 }
 
-/// Updates the key of the CoreCrypto database.
-/// To be used only once, when moving from CoreCrypto <= 5.x to CoreCrypto 6.x.
-#[wasm_bindgen(js_name = migrateDatabaseKeyTypeToBytes)]
-pub async fn migrate_db_key_type_to_bytes(name: &str, old_key: &str, new_key: &DatabaseKey) -> WasmCryptoResult<()> {
-    Database::migrate_db_key_type_to_bytes(name, old_key, &new_key.0)
-        .await
-        .map_err(InternalError::generic())
-        .map_err(Into::into)
-}
-
-#[derive(Debug)]
-#[wasm_bindgen]
-pub struct CoreCrypto {
-    inner: Arc<core_crypto::CoreCrypto>,
-}
-
 #[wasm_bindgen]
 impl CoreCrypto {
-    /// see [core_crypto::mls::Client::try_new]
-    pub async fn _internal_new(
-        path: String,
-        key: DatabaseKey,
-        client_id: FfiClientId,
-        ciphersuites: Box<[u16]>,
-        entropy_seed: Option<Box<[u8]>>,
-        nb_key_package: Option<u32>,
-    ) -> WasmCryptoResult<CoreCrypto> {
-        console_error_panic_hook::set_once();
-        let ciphersuites = lower_ciphersuites(&ciphersuites)?;
-        let entropy_seed = entropy_seed.map(|s| s.to_vec());
-        let nb_key_package = nb_key_package
-            .map(usize::try_from)
-            .transpose()
-            .expect("we never run corecrypto on systems with architectures narrower than 32 bits");
-        let configuration = MlsClientConfiguration::try_new(
-            path,
-            key.0,
-            Some(client_id.into()),
-            ciphersuites,
-            entropy_seed,
-            nb_key_package,
-        )
-        .map_err(CoreCryptoError::from)?;
-
-        let client = Client::try_new(configuration).await.map_err(CoreCryptoError::from)?;
-        Ok(CoreCrypto {
-            inner: Arc::new(client.into()),
-        })
-    }
-
-    /// see [core_crypto::mls::Client::try_new]
-    pub async fn deferred_init(
-        path: String,
-        key: DatabaseKey,
-        entropy_seed: Option<Box<[u8]>>,
-    ) -> WasmCryptoResult<CoreCrypto> {
-        let entropy_seed = entropy_seed.map(|s| s.to_vec());
-        let configuration = MlsClientConfiguration::try_new(path, key.0, None, vec![], entropy_seed, None)
-            .map_err(CoreCryptoError::from)?;
-
-        let client = Client::try_new(configuration).await.map_err(CoreCryptoError::from)?;
-
-        Ok(CoreCrypto {
-            inner: Arc::new(client.into()),
-        })
-    }
-
-    /// Returns the Arc strong ref count
-    pub fn has_outstanding_refs(&self) -> bool {
-        Arc::strong_count(&self.inner) > 1
-    }
-
     /// Returns: [`WasmCryptoResult<()>`]
     ///
     /// see [core_crypto::mls::Client::close]
     pub fn close(self) -> Promise {
-        let error_message: &JsValue = &format!(
-            "There are other outstanding references to this CoreCrypto instance [strong refs = {}]",
-            Arc::strong_count(&self.inner),
+        future_to_promise(
+            async move {
+                self.inner.take().close().await.map_err(CoreCryptoError::from)?;
+                WasmCryptoResult::Ok(JsValue::UNDEFINED)
+            }
+            .err_into(),
         )
-        .into();
-        match Arc::into_inner(self.inner) {
-            Some(central) => future_to_promise(
-                async move {
-                    central.take().close().await.map_err(CoreCryptoError::from)?;
-                    WasmCryptoResult::Ok(JsValue::UNDEFINED)
-                }
-                .err_into(),
-            ),
-            None => Promise::reject(error_message),
-        }
     }
 
     pub fn set_logger(logger: CoreCryptoLogger) {
@@ -958,19 +879,5 @@ impl From<core_crypto::prelude::E2eiConversationState> for E2eiConversationState
             core_crypto::prelude::E2eiConversationState::NotVerified => Self::NotVerified,
             core_crypto::prelude::E2eiConversationState::NotEnabled => Self::NotEnabled,
         }
-    }
-}
-
-#[wasm_bindgen]
-#[derive(Debug)]
-pub struct DatabaseKey(core_crypto_keystore::DatabaseKey);
-
-#[wasm_bindgen]
-impl DatabaseKey {
-    #[wasm_bindgen(constructor)]
-    pub fn new(buf: &[u8]) -> Result<DatabaseKey, wasm_bindgen::JsError> {
-        let key =
-            core_crypto_keystore::DatabaseKey::try_from(buf).map_err(|err| InternalError::Other(err.to_string()))?;
-        Ok(DatabaseKey(key))
     }
 }
