@@ -5,12 +5,12 @@ use crate::{
     RecursiveError,
     context::CentralContext,
     mls,
-    prelude::{Client, MlsCentral, MlsCredentialType},
+    prelude::{Client, MlsCredentialType},
 };
 use openmls_traits::types::SignatureScheme;
 
 impl CentralContext {
-    /// See [MlsCentral::e2ei_is_enabled]
+    /// See [Client::e2ei_is_enabled]
     pub async fn e2ei_is_enabled(&self, signature_scheme: SignatureScheme) -> Result<bool> {
         let client = self
             .mls_client()
@@ -20,15 +20,9 @@ impl CentralContext {
     }
 }
 
-impl MlsCentral {
+impl Client {
     /// Returns true when end-to-end-identity is enabled for the given SignatureScheme
     pub async fn e2ei_is_enabled(&self, signature_scheme: SignatureScheme) -> Result<bool> {
-        self.mls_client.e2ei_is_enabled(signature_scheme).await
-    }
-}
-
-impl Client {
-    async fn e2ei_is_enabled(&self, signature_scheme: SignatureScheme) -> Result<bool> {
         let x509_result = self
             .find_most_recent_credential_bundle(signature_scheme, MlsCredentialType::X509)
             .await;

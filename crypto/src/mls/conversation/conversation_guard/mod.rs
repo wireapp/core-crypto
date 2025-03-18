@@ -30,10 +30,10 @@ pub struct ConversationGuard {
 #[cfg_attr(target_family = "wasm", async_trait::async_trait(?Send))]
 #[cfg_attr(not(target_family = "wasm"), async_trait::async_trait)]
 impl<'inner> ConversationWithMls<'inner> for ConversationGuard {
-    type Central = CentralContext;
+    type Context = CentralContext;
     type Conversation = RwLockReadGuard<'inner, MlsConversation>;
 
-    async fn central(&self) -> Result<CentralContext> {
+    async fn context(&self) -> Result<CentralContext> {
         Ok(self.central_context.clone())
     }
 

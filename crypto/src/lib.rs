@@ -78,8 +78,8 @@ pub mod prelude {
         },
         error::{CryptoboxMigrationError, Error, KeystoreError, LeafError, MlsError, ProteusError, RecursiveError},
         mls::{
-            MlsCentral,
             ciphersuite::MlsCiphersuite,
+            client::Client,
             client::id::ClientId,
             client::identifier::ClientIdentifier,
             client::key_package::INITIAL_KEYING_MATERIAL_COUNT,
@@ -126,11 +126,11 @@ pub trait MlsTransport: std::fmt::Debug + Send + Sync {
 }
 
 #[derive(Debug)]
-/// Wrapper superstruct for both [mls::MlsCentral] and [proteus::ProteusCentral]
+/// Wrapper superstruct for both [mls::Client] and [proteus::ProteusCentral]
 ///
-/// As [std::ops::Deref] is implemented, this struct is automatically dereferred to [mls::MlsCentral] apart from `proteus_*` calls
+/// As [std::ops::Deref] is implemented, this struct is automatically dereferred to [mls::Client] apart from `proteus_*` calls
 pub struct CoreCrypto {
-    mls: mls::MlsCentral,
+    mls: mls::client::Client,
     #[cfg(feature = "proteus")]
     proteus: Arc<Mutex<Option<proteus::ProteusCentral>>>,
     #[cfg(not(feature = "proteus"))]
@@ -138,8 +138,8 @@ pub struct CoreCrypto {
     proteus: (),
 }
 
-impl From<mls::MlsCentral> for CoreCrypto {
-    fn from(mls: mls::MlsCentral) -> Self {
+impl From<mls::client::Client> for CoreCrypto {
+    fn from(mls: mls::client::Client) -> Self {
         Self {
             mls,
             proteus: Default::default(),
@@ -148,7 +148,7 @@ impl From<mls::MlsCentral> for CoreCrypto {
 }
 
 impl std::ops::Deref for CoreCrypto {
-    type Target = mls::MlsCentral;
+    type Target = mls::client::Client;
 
     fn deref(&self) -> &Self::Target {
         &self.mls
@@ -164,7 +164,7 @@ impl std::ops::DerefMut for CoreCrypto {
 impl CoreCrypto {
     /// Allows to extract the MLS Client from the wrapper superstruct
     #[inline]
-    pub fn take(self) -> mls::MlsCentral {
+    pub fn take(self) -> mls::client::Client {
         self.mls
     }
 }

@@ -23,7 +23,7 @@ pub(crate) mod key_package;
 pub(crate) mod user_id;
 
 use crate::{
-    KeystoreError, LeafError, MlsError, RecursiveError,
+    KeystoreError, LeafError, MlsError, MlsTransport, RecursiveError,
     mls::credential::{CredentialBundle, ext::CredentialExt},
     prelude::{
         CertificateBundle, ClientId, MlsCiphersuite, MlsCredentialType, identifier::ClientIdentifier,
@@ -55,13 +55,15 @@ use mls_crypto_provider::MlsCryptoProvider;
 /// A client can belong to many MLS groups
 ///
 /// It is cheap to clone a `Client` because everything heavy is wrapped inside an [Arc].
-#[derive(Clone, Debug, Default)]
+#[derive(Clone, Debug)]
 pub struct Client {
-    state: Arc<RwLock<Option<ClientInner>>>,
+    pub(crate) state: Arc<RwLock<Option<ClientInner>>>,
+    pub(crate) mls_backend: MlsCryptoProvider,
+    pub(crate) transport: Arc<RwLock<Option<Arc<dyn MlsTransport + 'static>>>>,
 }
 
 #[derive(Clone)]
-struct ClientInner {
+pub(crate) struct ClientInner {
     id: ClientId,
     pub(crate) identities: ClientIdentities,
     keypackage_lifetime: std::time::Duration,
@@ -141,6 +143,13 @@ impl Client {
         };
 
         Ok(())
+    }
+
+    /// Resets the client to an uninitialized state.
+    #[cfg(test)]
+    pub(crate) async fn reset(&self) {
+        let mut inner_lock = self.state.write().await;
+        *inner_lock = None;
     }
 
     pub(crate) async fn is_ready(&self) -> bool {
@@ -584,11 +593,12 @@ impl Client {
     #![allow(missing_docs)]
 
     pub async fn random_generate(
+        &self,
         case: &crate::test_utils::TestCase,
-        backend: &MlsCryptoProvider,
         signer: Option<&crate::test_utils::x509::X509Certificate>,
         provision: bool,
-    ) -> Result<Self> {
+    ) -> Result<()> {
+        self.reset().await;
         let user_uuid = uuid::Uuid::new_v4();
         let rnd_id = rand::random::<usize>();
         let client_id = format!("{}:{rnd_id:x}@members.wire.com", user_uuid.hyphenated());
@@ -604,11 +614,10 @@ impl Client {
         } else {
             0
         };
-        let client = Self::default();
-        client
-            .generate(identity, backend, &[case.ciphersuite()], nb_key_package)
+        let backend = self.mls_backend.clone();
+        self.generate(identity, &backend, &[case.ciphersuite()], nb_key_package)
             .await?;
-        Ok(client)
+        Ok(())
     }
 
     pub async fn find_keypackages(&self, backend: &MlsCryptoProvider) -> Result<Vec<openmls::prelude::KeyPackage>> {
@@ -631,86 +640,96 @@ mod tests {
     use mls_crypto_provider::MlsCryptoProvider;
     use wasm_bindgen_test::*;
 
-    use super::Client;
-
     wasm_bindgen_test_configure!(run_in_browser);
 
     #[apply(all_cred_cipher)]
     #[wasm_bindgen_test]
     async fn can_generate_client(case: TestCase) {
-        let backend = MlsCryptoProvider::try_new_in_memory("test").await.unwrap();
-        let x509_test_chain = if case.is_x509() {
-            let x509_test_chain = crate::test_utils::x509::X509TestChain::init_empty(case.signature_scheme());
-            x509_test_chain.register_with_provider(&backend).await;
-            Some(x509_test_chain)
-        } else {
-            None
-        };
-        backend.new_transaction().await.unwrap();
-        let _ = Client::random_generate(
-            &case,
-            &backend,
-            x509_test_chain.as_ref().map(|chain| chain.find_local_intermediate_ca()),
-            false,
-        )
+        run_test_with_central(case.clone(), move |[alice]| {
+            Box::pin(async move {
+                let backend = MlsCryptoProvider::try_new_in_memory("test").await.unwrap();
+                let x509_test_chain = if case.is_x509() {
+                    let x509_test_chain = crate::test_utils::x509::X509TestChain::init_empty(case.signature_scheme());
+                    x509_test_chain.register_with_provider(&backend).await;
+                    Some(x509_test_chain)
+                } else {
+                    None
+                };
+                backend.new_transaction().await.unwrap();
+                let client = alice.client().await;
+                client
+                    .random_generate(
+                        &case,
+                        x509_test_chain.as_ref().map(|chain| chain.find_local_intermediate_ca()),
+                        false,
+                    )
+                    .await
+                    .unwrap();
+            })
+        })
         .await
-        .unwrap();
     }
 
     #[apply(all_cred_cipher)]
     #[wasm_bindgen_test]
     async fn can_externally_generate_client(case: TestCase) {
-        if case.is_basic() {
-            run_tests(move |[tmp_dir_argument]| {
-                Box::pin(async move {
-                    let backend = MlsCryptoProvider::try_new(tmp_dir_argument, "test").await.unwrap();
-                    backend.new_transaction().await.unwrap();
-                    // phase 1: generate standalone keypair
-                    let client_id: ClientId = b"whatever:my:client:is@world.com".to_vec().into();
-                    let alice = Client::default();
-                    // TODO: test with multi-ciphersuite. Tracking issue: WPB-9601
-                    let handles = alice
-                        .generate_raw_keypairs(&[case.ciphersuite()], &backend)
-                        .await
-                        .unwrap();
+        run_test_with_central(case.clone(), move |[alice]| {
+            Box::pin(async move {
+                if case.is_basic() {
+                    run_tests(move |[tmp_dir_argument]| {
+                        Box::pin(async move {
+                            let backend = MlsCryptoProvider::try_new(tmp_dir_argument, "test").await.unwrap();
+                            backend.new_transaction().await.unwrap();
+                            // phase 1: generate standalone keypair
+                            let client_id: ClientId = b"whatever:my:client:is@world.com".to_vec().into();
+                            let alice = alice.client().await;
+                            alice.reset().await;
+                            // TODO: test with multi-ciphersuite. Tracking issue: WPB-9601
+                            let handles = alice
+                                .generate_raw_keypairs(&[case.ciphersuite()], &backend)
+                                .await
+                                .unwrap();
 
-                    let mut identities = backend
-                        .keystore()
-                        .find_all::<MlsSignatureKeyPair>(EntityFindParams::default())
-                        .await
-                        .unwrap();
+                            let mut identities = backend
+                                .keystore()
+                                .find_all::<MlsSignatureKeyPair>(EntityFindParams::default())
+                                .await
+                                .unwrap();
 
-                    assert_eq!(identities.len(), 1);
+                            assert_eq!(identities.len(), 1);
 
-                    let prov_identity = identities.pop().unwrap();
+                            let prov_identity = identities.pop().unwrap();
 
-                    // Make sure we are actually returning the clientId
-                    // TODO: test with multi-ciphersuite. Tracking issue: WPB-9601
-                    let prov_client_id: ClientId = prov_identity.credential_id.as_slice().into();
-                    assert_eq!(&prov_client_id, handles.first().unwrap());
+                            // Make sure we are actually returning the clientId
+                            // TODO: test with multi-ciphersuite. Tracking issue: WPB-9601
+                            let prov_client_id: ClientId = prov_identity.credential_id.as_slice().into();
+                            assert_eq!(&prov_client_id, handles.first().unwrap());
 
-                    // phase 2: pretend we have a new client ID from the backend, and try to init the client this way
-                    alice
-                        .init_with_external_client_id(
-                            client_id.clone(),
-                            handles.clone(),
-                            &[case.ciphersuite()],
-                            &backend,
-                        )
-                        .await
-                        .unwrap();
+                            // phase 2: pretend we have a new client ID from the backend, and try to init the client this way
+                            alice
+                                .init_with_external_client_id(
+                                    client_id.clone(),
+                                    handles.clone(),
+                                    &[case.ciphersuite()],
+                                    &backend,
+                                )
+                                .await
+                                .unwrap();
 
-                    // Make sure both client id and PK are intact
-                    assert_eq!(alice.id().await.unwrap(), client_id);
-                    let cb = alice
-                        .find_most_recent_credential_bundle(case.signature_scheme(), case.credential_type)
-                        .await
-                        .unwrap();
-                    let client_id: ClientId = cb.credential().identity().into();
-                    assert_eq!(&client_id, handles.first().unwrap());
-                })
+                            // Make sure both client id and PK are intact
+                            assert_eq!(alice.id().await.unwrap(), client_id);
+                            let cb = alice
+                                .find_most_recent_credential_bundle(case.signature_scheme(), case.credential_type)
+                                .await
+                                .unwrap();
+                            let client_id: ClientId = cb.credential().identity().into();
+                            assert_eq!(&client_id, handles.first().unwrap());
+                        })
+                    })
+                    .await
+                }
             })
-            .await
-        }
+        })
+        .await
     }
 }

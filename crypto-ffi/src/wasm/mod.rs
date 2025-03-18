@@ -1458,7 +1458,7 @@ impl CoreCrypto {
         }
     }
 
-    /// see [core_crypto::mls::MlsCentral::try_new]
+    /// see [core_crypto::mls::Client::try_new]
     pub async fn _internal_new(
         path: String,
         key: String,
@@ -1484,15 +1484,13 @@ impl CoreCrypto {
         )
         .map_err(CoreCryptoError::from)?;
 
-        let central = MlsCentral::try_new(configuration)
-            .await
-            .map_err(CoreCryptoError::from)?;
+        let client = Client::try_new(configuration).await.map_err(CoreCryptoError::from)?;
         Ok(CoreCrypto {
-            inner: Arc::new(central.into()),
+            inner: Arc::new(client.into()),
         })
     }
 
-    /// see [core_crypto::mls::MlsCentral::try_new]
+    /// see [core_crypto::mls::Client::try_new]
     pub async fn deferred_init(
         path: String,
         key: String,
@@ -1502,12 +1500,10 @@ impl CoreCrypto {
         let configuration = MlsCentralConfiguration::try_new(path, key, None, vec![], entropy_seed, None)
             .map_err(CoreCryptoError::from)?;
 
-        let central = MlsCentral::try_new(configuration)
-            .await
-            .map_err(CoreCryptoError::from)?;
+        let client = Client::try_new(configuration).await.map_err(CoreCryptoError::from)?;
 
         Ok(CoreCrypto {
-            inner: Arc::new(central.into()),
+            inner: Arc::new(client.into()),
         })
     }
 
@@ -1518,7 +1514,7 @@ impl CoreCrypto {
 
     /// Returns: [`WasmCryptoResult<()>`]
     ///
-    /// see [core_crypto::mls::MlsCentral::close]
+    /// see [core_crypto::mls::Client::close]
     pub fn close(self) -> Promise {
         let error_message: &JsValue = &format!(
             "There are other outstanding references to this CoreCrypto instance [strong refs = {}]",
@@ -1553,7 +1549,7 @@ impl CoreCrypto {
 
     /// Returns: [`WasmCryptoResult<()>`]
     ///
-    /// see [core_crypto::mls::MlsCentral::provide_transport]
+    /// see [core_crypto::mls::Client::provide_transport]
     pub fn provide_transport(&self, callbacks: MlsTransportProvider) -> Promise {
         let central = self.inner.clone();
         future_to_promise(
@@ -1568,7 +1564,7 @@ impl CoreCrypto {
 
     /// Returns:: [`WasmCryptoResult<js_sys::Uint8Array>`]
     ///
-    /// see [core_crypto::mls::MlsCentral::client_public_key]
+    /// see [core_crypto::mls::Client::client_public_key]
     pub fn client_public_key(&self, ciphersuite: Ciphersuite, credential_type: CredentialType) -> Promise {
         let ciphersuite: CiphersuiteName = ciphersuite.into();
         let central = self.inner.clone();
@@ -1624,7 +1620,7 @@ impl CoreCrypto {
 
     /// Returns: [`bool`]
     ///
-    /// see [core_crypto::mls::MlsCentral::conversation_exists]
+    /// see [core_crypto::mls::Client::conversation_exists]
     pub fn conversation_exists(&self, conversation_id: ConversationId) -> Promise {
         let central = self.inner.clone();
         future_to_promise(
@@ -1641,7 +1637,7 @@ impl CoreCrypto {
 
     /// Returns: [`WasmCryptoResult<js_sys::Uint8Array>`]
     ///
-    /// see [core_crypto::mls::MlsCentral::random_bytes]
+    /// see [core_crypto::mls::Client::random_bytes]
     pub fn random_bytes(&self, len: usize) -> Promise {
         let central = self.inner.clone();
         future_to_promise(

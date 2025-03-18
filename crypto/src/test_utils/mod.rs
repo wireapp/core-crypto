@@ -20,7 +20,7 @@
 
 use crate::{
     CoreCrypto, MlsTransport, MlsTransportResponse,
-    prelude::{ClientId, ConversationId, MlsCentral, MlsCentralConfiguration},
+    prelude::{Client, ClientId, ConversationId, MlsCentralConfiguration},
     test_utils::x509::{CertificateParams, X509TestChain, X509TestChainActorArg, X509TestChainArgs},
 };
 use async_lock::RwLock;
@@ -44,8 +44,8 @@ pub mod proteus_utils;
 
 use crate::context::CentralContext;
 use crate::e2e_identity::id::{QualifiedE2eiClientId, WireQualifiedClientId};
-use crate::prelude::{Client, MlsCommitBundle, MlsGroupInfoBundle};
 pub use crate::prelude::{ClientIdentifier, INITIAL_KEYING_MATERIAL_COUNT, MlsCredentialType};
+use crate::prelude::{MlsCommitBundle, MlsGroupInfoBundle};
 pub(crate) use epoch_observer::TestEpochObserver;
 pub use error::Error as TestError;
 use error::Result;
@@ -105,7 +105,7 @@ pub(crate) use innermost_source_matches;
 #[derive(Debug, Clone)]
 pub struct ClientContext {
     pub context: CentralContext,
-    pub central: MlsCentral,
+    pub client: Client,
     pub mls_transport: Arc<dyn MlsTransportTestExt>,
     pub x509_test_chain: std::sync::Arc<Option<X509TestChain>>,
 }
@@ -123,11 +123,11 @@ impl ClientContext {
     }
 
     pub async fn client(&self) -> Client {
-        self.context.mls_client().await.unwrap()
+        self.client.clone()
     }
 
     pub async fn get_client_id(&self) -> ClientId {
-        self.client().await.id().await.unwrap()
+        self.client.id().await.unwrap()
     }
 }
 
@@ -283,7 +283,7 @@ pub async fn run_cross_signed_tests_with_client_ids<const N: usize, const F: usi
                 let central = cc.mls;
                 contexts1.push(ClientContext {
                     context,
-                    central,
+                    client: central,
                     mls_transport: transport1.clone(),
                     x509_test_chain: Arc::new(None),
                 });
@@ -296,7 +296,7 @@ pub async fn run_cross_signed_tests_with_client_ids<const N: usize, const F: usi
                 let central = cc.mls;
                 contexts2.push(ClientContext {
                     context,
-                    central,
+                    client: central,
                     mls_transport: transport2.clone(),
                     x509_test_chain: Arc::new(None),
                 });
@@ -323,7 +323,7 @@ async fn create_centrals<const N: usize>(
     paths: [String; N],
     chain: Option<&X509TestChain>,
     transport: Arc<dyn MlsTransport>,
-) -> [MlsCentral; N] {
+) -> [Client; N] {
     let transport = &transport.clone();
     let stream = paths.into_iter().enumerate().map(|(i, p)| {
         async move {
@@ -336,8 +336,8 @@ async fn create_centrals<const N: usize>(
                 Some(INITIAL_KEYING_MATERIAL_COUNT),
             )
             .unwrap();
-            let central = MlsCentral::try_new(configuration).await.unwrap();
-            let cc = CoreCrypto::from(central);
+            let client = Client::try_new(configuration).await.unwrap();
+            let cc = CoreCrypto::from(client);
             let context = cc.new_transaction().await.unwrap();
             let central = cc.mls;
 
@@ -434,11 +434,11 @@ pub async fn run_test_with_deterministic_client_ids_and_revocation<const N: usiz
             let transport = Arc::<CoreCryptoTransportSuccessProvider>::default();
             let centrals = create_centrals(&case, paths1, chain1.as_ref(), transport.clone()).await;
             let mut centrals1 = Vec::new();
-            for (index, mls_central) in centrals.into_iter().enumerate() {
-                let cc = CoreCrypto::from(mls_central);
+            for (index, client) in centrals.into_iter().enumerate() {
+                let cc = CoreCrypto::from(client);
                 let context = ClientContext {
                     context: cc.new_transaction().await.unwrap(),
-                    central: cc.mls,
+                    client: cc.mls,
                     mls_transport: transport.clone(),
                     x509_test_chain: Arc::new(chain1.clone()),
                 };
@@ -447,11 +447,11 @@ pub async fn run_test_with_deterministic_client_ids_and_revocation<const N: usiz
             let transport = Arc::<CoreCryptoTransportSuccessProvider>::default();
             let centrals = create_centrals(&case, paths2, chain2.as_ref(), transport.clone()).await;
             let mut centrals2 = Vec::new();
-            for (index, mls_central) in centrals.into_iter().enumerate() {
-                let cc = CoreCrypto::from(mls_central);
+            for (index, client) in centrals.into_iter().enumerate() {
+                let cc = CoreCrypto::from(client);
                 let context = ClientContext {
                     context: cc.new_transaction().await.unwrap(),
-                    central: cc.mls,
+                    client: cc.mls,
                     mls_transport: transport.clone(),
                     x509_test_chain: Arc::new(chain2.clone()),
                 };
@@ -494,14 +494,14 @@ pub async fn run_test_wo_clients(
                 Some(INITIAL_KEYING_MATERIAL_COUNT),
             )
             .unwrap();
-            let central = MlsCentral::try_new(configuration).await.unwrap();
+            let client = Client::try_new(configuration).await.unwrap();
             let transport = Arc::<CoreCryptoTransportSuccessProvider>::default();
-            central.provide_transport(transport.clone()).await;
-            let cc = CoreCrypto::from(central);
+            client.provide_transport(transport.clone()).await;
+            let cc = CoreCrypto::from(client);
             let context = cc.new_transaction().await.unwrap();
             test(ClientContext {
                 context: context.clone(),
-                central: cc.mls,
+                client: cc.mls,
                 mls_transport: transport.clone(),
                 x509_test_chain: None.into(),
             })

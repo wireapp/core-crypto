@@ -43,7 +43,7 @@ use std::ops::Deref;
 use crate::{
     KeystoreError, LeafError, MlsError, RecursiveError,
     group_store::GroupStore,
-    mls::{MlsCentral, client::Client},
+    mls::Client,
     prelude::{MlsCiphersuite, MlsCredentialType},
 };
 
@@ -88,17 +88,17 @@ pub use immutable_conversation::ImmutableConversation;
 #[cfg_attr(target_family = "wasm", async_trait::async_trait(?Send))]
 #[cfg_attr(not(target_family = "wasm"), async_trait::async_trait)]
 pub(crate) trait ConversationWithMls<'a> {
-    /// [MlsCentral] or [CentralContext] both implement [HasClientAndProvider].
-    type Central: HasClientAndProvider;
+    /// [Client] or [CentralContext] both implement [HasClientAndProvider].
+    type Context: HasClientAndProvider;
 
     type Conversation: Deref<Target = MlsConversation> + Send;
 
-    async fn central(&self) -> Result<Self::Central>;
+    async fn context(&self) -> Result<Self::Context>;
 
     async fn conversation(&'a self) -> Self::Conversation;
 
     async fn mls_provider(&self) -> Result<MlsCryptoProvider> {
-        self.central()
+        self.context()
             .await?
             .mls_provider()
             .await
@@ -107,7 +107,7 @@ pub(crate) trait ConversationWithMls<'a> {
     }
 
     async fn mls_client(&self) -> Result<Client> {
-        self.central()
+        self.context()
             .await?
             .client()
             .await
@@ -439,7 +439,7 @@ impl MlsConversation {
     }
 }
 
-impl MlsCentral {
+impl Client {
     /// Get an immutable view of an `MlsConversation`.
     ///
     /// Because it operates on the raw conversation type, this may be faster than [`CentralContext::conversation`]
@@ -629,8 +629,8 @@ mod tests {
                         Some(INITIAL_KEYING_MATERIAL_COUNT),
                     )
                     .unwrap();
-                    let central = MlsCentral::try_new(config).await.unwrap();
-                    let cc = CoreCrypto::from(central);
+                    let client = Client::try_new(config).await.unwrap();
+                    let cc = CoreCrypto::from(client);
                     let friend_context = cc.new_transaction().await.unwrap();
                     let central = cc.mls;
 
@@ -663,7 +663,7 @@ mod tests {
 
                     let context = ClientContext {
                         context: friend_context,
-                        central,
+                        client: central,
                         mls_transport: Arc::<CoreCryptoTransportSuccessProvider>::default(),
                         x509_test_chain: x509_test_chain_arc.clone(),
                     };

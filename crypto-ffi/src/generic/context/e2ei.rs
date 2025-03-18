@@ -192,19 +192,19 @@ impl CoreCryptoContext {
         Ok(self.context.e2ei_dump_pki_env().await?.map(Into::into))
     }
 
-    /// See [core_crypto::mls::MlsCentral::e2ei_is_pki_env_setup]
+    /// See [core_crypto::mls::Client::e2ei_is_pki_env_setup]
     pub async fn e2ei_is_pki_env_setup(&self) -> CoreCryptoResult<bool> {
         Ok(self.context.e2ei_is_pki_env_setup().await?)
     }
 
-    /// See [core_crypto::mls::MlsCentral::e2ei_is_enabled]
+    /// See [core_crypto::mls::Client::e2ei_is_enabled]
     pub async fn e2ei_is_enabled(&self, ciphersuite: Ciphersuite) -> CoreCryptoResult<bool> {
         let sc = core_crypto::prelude::MlsCiphersuite::from(core_crypto::prelude::CiphersuiteName::from(ciphersuite))
             .signature_algorithm();
         Ok(self.context.e2ei_is_enabled(sc).await?)
     }
 
-    /// See [core_crypto::mls::MlsCentral::get_device_identities]
+    /// See [core_crypto::mls::Client::get_device_identities]
     pub async fn get_device_identities(
         &self,
         conversation_id: Vec<u8>,
@@ -222,7 +222,7 @@ impl CoreCryptoContext {
             .collect::<Vec<_>>())
     }
 
-    /// See [core_crypto::mls::MlsCentral::get_user_identities]
+    /// See [core_crypto::mls::Client::get_user_identities]
     pub async fn get_user_identities(
         &self,
         conversation_id: Vec<u8>,
@@ -239,7 +239,7 @@ impl CoreCryptoContext {
             .collect::<HashMap<String, Vec<WireIdentity>>>())
     }
 
-    /// See [core_crypto::mls::MlsCentral::get_credential_in_use]
+    /// See [core_crypto::mls::Client::get_credential_in_use]
     pub async fn get_credential_in_use(
         &self,
         group_info: Vec<u8>,

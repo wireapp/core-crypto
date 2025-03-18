@@ -240,7 +240,6 @@ pub(crate) mod tests {
     wasm_bindgen_test_configure!(run_in_browser);
 
     pub(crate) mod all {
-        use crate::prelude::Client;
         use crate::test_utils::context::TEAM;
         use openmls_traits::types::SignatureScheme;
 
@@ -587,7 +586,8 @@ pub(crate) mod tests {
                     backend.keystore().commit_transaction().await.unwrap();
                     backend.keystore().new_transaction().await.unwrap();
 
-                    let new_client = Client::default();
+                    let new_client = alice_central.client.clone();
+                    new_client.reset().await;
 
                     new_client.load(backend, &cid, all_credentials, scs).await.unwrap();
 

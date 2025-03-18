@@ -158,7 +158,7 @@ mod tests {
         CoreCrypto, RecursiveError,
         mls::credential::x509::CertificatePrivateKey,
         prelude::{
-            ClientIdentifier, ConversationId, E2eiConversationState, INITIAL_KEYING_MATERIAL_COUNT, MlsCentral,
+            Client, ClientIdentifier, ConversationId, E2eiConversationState, INITIAL_KEYING_MATERIAL_COUNT,
             MlsCentralConfiguration, MlsCredentialType,
         },
         test_utils::{
@@ -426,7 +426,7 @@ mod tests {
 
             let ciphersuites = vec![case.ciphersuite()];
 
-            let charlie_central = MlsCentral::try_new(
+            let charlie_central = Client::try_new(
                 MlsCentralConfiguration::try_new(
                     charlie_path.0,
                     "charlie".into(),
@@ -453,7 +453,7 @@ mod tests {
 
             let charlie_context = ClientContext {
                 context: charlie_transaction,
-                central: charlie_central,
+                client: charlie_central,
                 mls_transport: Arc::<CoreCryptoTransportSuccessProvider>::default(),
                 x509_test_chain: Arc::new(Some(x509_test_chain)),
             };
@@ -578,7 +578,7 @@ mod tests {
         )
         .map_err(RecursiveError::mls("making creator config"))?;
 
-        let creator_central = MlsCentral::try_new(creator_cfg)
+        let creator_central = Client::try_new(creator_cfg)
             .await
             .map_err(RecursiveError::mls("creating mls central"))?;
         let creator_transport = Arc::<CoreCryptoTransportSuccessProvider>::default();
@@ -595,7 +595,7 @@ mod tests {
         }
         let creator_client_context = ClientContext {
             context: creator_transaction.clone(),
-            central: creator_central,
+            client: creator_central,
             mls_transport: creator_transport.clone(),
             x509_test_chain: Arc::new(x509_test_chain.cloned()),
         };
@@ -620,7 +620,7 @@ mod tests {
         )
         .map_err(RecursiveError::mls("creating mls config"))?;
 
-        let guest_central = MlsCentral::try_new(guest_cfg)
+        let guest_central = Client::try_new(guest_cfg)
             .await
             .map_err(RecursiveError::mls("creating mls central"))?;
         let guest_transport = Arc::<CoreCryptoTransportSuccessProvider>::default();
@@ -650,7 +650,7 @@ mod tests {
 
         let guest_client_context = ClientContext {
             context: guest_transaction.clone(),
-            central: guest_central,
+            client: guest_central,
             mls_transport: guest_transport.clone(),
             x509_test_chain: Arc::new(x509_test_chain.cloned()),
         };

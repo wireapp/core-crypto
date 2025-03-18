@@ -448,39 +448,45 @@ mod tests {
     #[apply(all_cred_cipher)]
     #[wasm_bindgen_test]
     async fn can_assess_keypackage_expiration(case: TestCase) {
-        let (cs, ct) = (case.ciphersuite(), case.credential_type);
-        let backend = MlsCryptoProvider::try_new_in_memory("test").await.unwrap();
-        let x509_test_chain = if case.is_x509() {
-            let x509_test_chain = crate::test_utils::x509::X509TestChain::init_empty(case.signature_scheme());
-            x509_test_chain.register_with_provider(&backend).await;
-            Some(x509_test_chain)
-        } else {
-            None
-        };
+        run_test_with_central(case.clone(), move |[central]| {
+            Box::pin(async move {
+                let (cs, ct) = (case.ciphersuite(), case.credential_type);
+                let backend = MlsCryptoProvider::try_new_in_memory("test").await.unwrap();
+                let x509_test_chain = if case.is_x509() {
+                    let x509_test_chain = crate::test_utils::x509::X509TestChain::init_empty(case.signature_scheme());
+                    x509_test_chain.register_with_provider(&backend).await;
+                    Some(x509_test_chain)
+                } else {
+                    None
+                };
 
-        backend.new_transaction().await.unwrap();
-        let client = Client::random_generate(
-            &case,
-            &backend,
-            x509_test_chain.as_ref().map(|chain| chain.find_local_intermediate_ca()),
-            false,
-        )
-        .await
-        .unwrap();
+                backend.new_transaction().await.unwrap();
+                let client = central.client;
+                client
+                    .random_generate(
+                        &case,
+                        x509_test_chain.as_ref().map(|chain| chain.find_local_intermediate_ca()),
+                        false,
+                    )
+                    .await
+                    .unwrap();
 
-        // 90-day standard expiration
-        let kp_std_exp = client.generate_one_keypackage(&backend, cs, ct).await.unwrap();
-        assert!(!Client::is_mls_keypackage_expired(&kp_std_exp));
+                // 90-day standard expiration
+                let kp_std_exp = client.generate_one_keypackage(&backend, cs, ct).await.unwrap();
+                assert!(!Client::is_mls_keypackage_expired(&kp_std_exp));
 
-        // 1-second expiration
-        client
-            .set_keypackage_lifetime(std::time::Duration::from_secs(1))
-            .await
-            .unwrap();
-        let kp_1s_exp = client.generate_one_keypackage(&backend, cs, ct).await.unwrap();
-        // Sleep 2 seconds to make sure we make the kp expire
-        async_std::task::sleep(std::time::Duration::from_secs(2)).await;
-        assert!(Client::is_mls_keypackage_expired(&kp_1s_exp));
+                // 1-second expiration
+                client
+                    .set_keypackage_lifetime(std::time::Duration::from_secs(1))
+                    .await
+                    .unwrap();
+                let kp_1s_exp = client.generate_one_keypackage(&backend, cs, ct).await.unwrap();
+                // Sleep 2 seconds to make sure we make the kp expire
+                async_std::task::sleep(std::time::Duration::from_secs(2)).await;
+                assert!(Client::is_mls_keypackage_expired(&kp_1s_exp));
+            })
+        })
+        .await;
     }
 
     #[apply(all_cred_cipher)]
@@ -626,84 +632,90 @@ mod tests {
     #[apply(all_cred_cipher)]
     #[wasm_bindgen_test]
     async fn automatically_prunes_lifetime_expired_keypackages(case: TestCase) {
-        const UNEXPIRED_COUNT: usize = 125;
-        const EXPIRED_COUNT: usize = 200;
-        let backend = MlsCryptoProvider::try_new_in_memory("test").await.unwrap();
-        let x509_test_chain = if case.is_x509() {
-            let x509_test_chain = crate::test_utils::x509::X509TestChain::init_empty(case.signature_scheme());
-            x509_test_chain.register_with_provider(&backend).await;
-            Some(x509_test_chain)
-        } else {
-            None
-        };
-        backend.new_transaction().await.unwrap();
-        let client = Client::random_generate(
-            &case,
-            &backend,
-            x509_test_chain.as_ref().map(|chain| chain.find_local_intermediate_ca()),
-            false,
-        )
+        run_test_with_central(case.clone(), move |[central]| {
+            Box::pin(async move {
+                const UNEXPIRED_COUNT: usize = 125;
+                const EXPIRED_COUNT: usize = 200;
+                let backend = MlsCryptoProvider::try_new_in_memory("test").await.unwrap();
+                let x509_test_chain = if case.is_x509() {
+                    let x509_test_chain = crate::test_utils::x509::X509TestChain::init_empty(case.signature_scheme());
+                    x509_test_chain.register_with_provider(&backend).await;
+                    Some(x509_test_chain)
+                } else {
+                    None
+                };
+                backend.new_transaction().await.unwrap();
+                let client = central.client().await;
+                client
+                    .random_generate(
+                        &case,
+                        x509_test_chain.as_ref().map(|chain| chain.find_local_intermediate_ca()),
+                        false,
+                    )
+                    .await
+                    .unwrap();
+
+                // Generate `UNEXPIRED_COUNT` kpbs that are with default 3 months expiration. We *should* keep them for the duration of the test
+                let unexpired_kpbs = client
+                    .request_key_packages(UNEXPIRED_COUNT, case.ciphersuite(), case.credential_type, &backend)
+                    .await
+                    .unwrap();
+                let len = client
+                    .valid_keypackages_count(&backend, case.ciphersuite(), case.credential_type)
+                    .await
+                    .unwrap();
+                assert_eq!(len, unexpired_kpbs.len());
+                assert_eq!(len, UNEXPIRED_COUNT);
+
+                // Set the keypackage expiration to be in 2 seconds
+                client
+                    .set_keypackage_lifetime(std::time::Duration::from_secs(10))
+                    .await
+                    .unwrap();
+
+                // Generate new keypackages that are normally partially expired 2s after they're requested
+                let partially_expired_kpbs = client
+                    .request_key_packages(EXPIRED_COUNT, case.ciphersuite(), case.credential_type, &backend)
+                    .await
+                    .unwrap();
+                assert_eq!(partially_expired_kpbs.len(), EXPIRED_COUNT);
+
+                // Sleep to trigger the expiration
+                async_std::task::sleep(std::time::Duration::from_secs(10)).await;
+
+                // Request the same number of keypackages. The automatic lifetime-based expiration should take
+                // place and remove old expired keypackages and generate fresh ones instead
+                let fresh_kpbs = client
+                    .request_key_packages(EXPIRED_COUNT, case.ciphersuite(), case.credential_type, &backend)
+                    .await
+                    .unwrap();
+                let len = client
+                    .valid_keypackages_count(&backend, case.ciphersuite(), case.credential_type)
+                    .await
+                    .unwrap();
+                assert_eq!(len, fresh_kpbs.len());
+                assert_eq!(len, EXPIRED_COUNT);
+
+                // Try to deep compare and find kps matching expired and non-expired ones
+                let (unexpired_match, expired_match) =
+                    fresh_kpbs
+                        .iter()
+                        .fold((0usize, 0usize), |(mut unexpired_match, mut expired_match), fresh| {
+                            if unexpired_kpbs.iter().any(|kp| kp == fresh) {
+                                unexpired_match += 1;
+                            } else if partially_expired_kpbs.iter().any(|kpb| kpb == fresh) {
+                                expired_match += 1;
+                            }
+
+                            (unexpired_match, expired_match)
+                        });
+
+                // TADA!
+                assert_eq!(unexpired_match, UNEXPIRED_COUNT);
+                assert_eq!(expired_match, 0);
+            })
+        })
         .await
-        .unwrap();
-
-        // Generate `UNEXPIRED_COUNT` kpbs that are with default 3 months expiration. We *should* keep them for the duration of the test
-        let unexpired_kpbs = client
-            .request_key_packages(UNEXPIRED_COUNT, case.ciphersuite(), case.credential_type, &backend)
-            .await
-            .unwrap();
-        let len = client
-            .valid_keypackages_count(&backend, case.ciphersuite(), case.credential_type)
-            .await
-            .unwrap();
-        assert_eq!(len, unexpired_kpbs.len());
-        assert_eq!(len, UNEXPIRED_COUNT);
-
-        // Set the keypackage expiration to be in 2 seconds
-        client
-            .set_keypackage_lifetime(std::time::Duration::from_secs(10))
-            .await
-            .unwrap();
-
-        // Generate new keypackages that are normally partially expired 2s after they're requested
-        let partially_expired_kpbs = client
-            .request_key_packages(EXPIRED_COUNT, case.ciphersuite(), case.credential_type, &backend)
-            .await
-            .unwrap();
-        assert_eq!(partially_expired_kpbs.len(), EXPIRED_COUNT);
-
-        // Sleep to trigger the expiration
-        async_std::task::sleep(std::time::Duration::from_secs(10)).await;
-
-        // Request the same number of keypackages. The automatic lifetime-based expiration should take
-        // place and remove old expired keypackages and generate fresh ones instead
-        let fresh_kpbs = client
-            .request_key_packages(EXPIRED_COUNT, case.ciphersuite(), case.credential_type, &backend)
-            .await
-            .unwrap();
-        let len = client
-            .valid_keypackages_count(&backend, case.ciphersuite(), case.credential_type)
-            .await
-            .unwrap();
-        assert_eq!(len, fresh_kpbs.len());
-        assert_eq!(len, EXPIRED_COUNT);
-
-        // Try to deep compare and find kps matching expired and non-expired ones
-        let (unexpired_match, expired_match) =
-            fresh_kpbs
-                .iter()
-                .fold((0usize, 0usize), |(mut unexpired_match, mut expired_match), fresh| {
-                    if unexpired_kpbs.iter().any(|kp| kp == fresh) {
-                        unexpired_match += 1;
-                    } else if partially_expired_kpbs.iter().any(|kpb| kpb == fresh) {
-                        expired_match += 1;
-                    }
-
-                    (unexpired_match, expired_match)
-                });
-
-        // TADA!
-        assert_eq!(unexpired_match, UNEXPIRED_COUNT);
-        assert_eq!(expired_match, 0);
     }
 
     #[apply(all_cred_cipher)]

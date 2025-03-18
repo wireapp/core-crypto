@@ -1,6 +1,5 @@
 use std::sync::Arc;
 
-use async_lock::RwLock;
 use log::trace;
 
 use crate::{
@@ -43,7 +42,7 @@ pub(crate) mod config {
         pub store_path: String,
         /// Identity key to be used to instantiate the [MlsCryptoProvider]
         pub identity_key: String,
-        /// Identifier for the client to be used by [MlsCentral]
+        /// Identifier for the client to be used by [Client]
         pub client_id: Option<ClientId>,
         /// Entropy pool seed for the internal PRNG
         pub external_entropy: Option<EntropySeed>,
@@ -59,7 +58,7 @@ pub(crate) mod config {
         /// # Arguments
         /// * `store_path` - location where the SQLite/IndexedDB database will be stored
         /// * `identity_key` - identity key to be used to instantiate the [MlsCryptoProvider]
-        /// * `client_id` - identifier for the client to be used by [MlsCentral]
+        /// * `client_id` - identifier for the client to be used by [Client]
         /// * `ciphersuites` - Ciphersuites supported by this device
         /// * `entropy` - External source of entropy for platforms where default source insufficient
         ///
@@ -153,21 +152,11 @@ pub(crate) trait HasClientAndProvider: Send {
     async fn mls_provider(&self) -> Result<MlsCryptoProvider>;
 }
 
-/// The entry point for the MLS CoreCrypto library. This struct provides all functionality to create
-/// and manage groups, make proposals and commits.
-#[derive(Debug, Clone)]
-pub struct MlsCentral {
-    pub(crate) mls_client: Client,
-    pub(crate) mls_backend: MlsCryptoProvider,
-    // this should be moved to the context
-    pub(crate) transport: Arc<RwLock<Option<Arc<dyn MlsTransport + 'static>>>>,
-}
-
 #[cfg_attr(target_family = "wasm", async_trait::async_trait(?Send))]
 #[cfg_attr(not(target_family = "wasm"), async_trait::async_trait)]
-impl HasClientAndProvider for MlsCentral {
+impl HasClientAndProvider for Client {
     async fn client(&self) -> Result<Client> {
-        Ok(self.mls_client.clone())
+        Ok(self.clone())
     }
 
     async fn mls_provider(&self) -> Result<MlsCryptoProvider> {
@@ -175,7 +164,7 @@ impl HasClientAndProvider for MlsCentral {
     }
 }
 
-impl MlsCentral {
+impl Client {
     /// Tries to initialize the MLS Central object.
     /// Takes a store path (i.e. Disk location of the embedded database, should be consistent between messaging sessions)
     /// And a root identity key (i.e. enclaved encryption key for this device)
@@ -204,7 +193,7 @@ impl MlsCentral {
         Self::new_with_backend(mls_backend, configuration).await
     }
 
-    /// Same as the [MlsCentral::try_new] but instead, it uses an in memory KeyStore. Although required, the `store_path` parameter from the `MlsCentralConfiguration` won't be used here.
+    /// Same as the [Client::try_new] but instead, it uses an in memory KeyStore. Although required, the `store_path` parameter from the `MlsCentralConfiguration` won't be used here.
     pub async fn try_new_in_memory(configuration: MlsCentralConfiguration) -> Result<Self> {
         let mls_backend = MlsCryptoProvider::try_new_with_configuration(MlsCryptoProviderConfiguration {
             db_path: &configuration.store_path,
@@ -220,24 +209,23 @@ impl MlsCentral {
     }
 
     async fn new_with_backend(mls_backend: MlsCryptoProvider, configuration: MlsCentralConfiguration) -> Result<Self> {
-        let mls_client = Client::default();
-
         // We create the core crypto instance first to enable creating a transaction from it and
         // doing all subsequent actions inside a single transaction, though it forces us to clone
         // a few Arcs and locks.
-        let central = Self {
+        let client = Self {
             mls_backend: mls_backend.clone(),
-            mls_client: mls_client.clone(),
+            state: Default::default(),
             transport: Arc::new(None.into()),
         };
 
-        let cc = CoreCrypto::from(central);
+        let cc = CoreCrypto::from(client.clone());
         let context = cc
             .new_transaction()
             .await
             .map_err(RecursiveError::root("starting new transaction"))?;
+
         if let Some(id) = configuration.client_id {
-            mls_client
+            client
                 .init(
                     ClientIdentifier::Basic(id),
                     configuration.ciphersuites.as_slice(),
@@ -249,6 +237,7 @@ impl MlsCentral {
                 .await
                 .map_err(RecursiveError::mls_client("initializing mls client"))?
         }
+
         let central = cc.mls;
         context
             .init_pki_env()
@@ -279,7 +268,6 @@ impl MlsCentral {
         credential_type: MlsCredentialType,
     ) -> Result<Vec<u8>> {
         let cb = self
-            .mls_client
             .find_most_recent_credential_bundle(ciphersuite.signature_algorithm(), credential_type)
             .await
             .map_err(RecursiveError::mls_client("finding most recent credential bundle"))?;
@@ -288,8 +276,7 @@ impl MlsCentral {
 
     /// Returns the client's id as a buffer
     pub async fn client_id(&self) -> Result<ClientId> {
-        self.mls_client
-            .id()
+        self.id()
             .await
             .map_err(RecursiveError::mls_client("getting client id"))
             .map_err(Into::into)
@@ -429,7 +416,7 @@ impl CentralContext {
             .map_err(Into::into)
     }
 
-    /// see [MlsCentral::client_public_key]
+    /// see [Client::client_public_key]
     pub async fn client_public_key(
         &self,
         ciphersuite: MlsCiphersuite,
@@ -445,7 +432,7 @@ impl CentralContext {
         Ok(cb.signature_key.to_public_vec())
     }
 
-    /// see [MlsCentral::client_id]
+    /// see [Client::client_id]
     pub async fn client_id(&self) -> Result<ClientId> {
         self.mls_client()
             .await
@@ -542,7 +529,7 @@ mod tests {
     use crate::prelude::{CertificateBundle, ClientIdentifier, INITIAL_KEYING_MATERIAL_COUNT, MlsCredentialType};
     use crate::{
         CoreCrypto,
-        mls::{MlsCentral, MlsCentralConfiguration},
+        mls::{Client, MlsCentralConfiguration},
         test_utils::{x509::X509TestChain, *},
     };
 
@@ -628,8 +615,8 @@ mod tests {
                     )
                     .unwrap();
 
-                    let central = MlsCentral::try_new(configuration).await;
-                    assert!(central.is_ok())
+                    let new_client_result = Client::try_new(configuration).await;
+                    assert!(new_client_result.is_ok())
                 })
             })
             .await
@@ -741,7 +728,8 @@ mod tests {
                 )
                 .unwrap();
 
-                let result = MlsCentral::try_new(configuration.clone()).await;
+                let result = Client::try_new(configuration.clone()).await;
+                println!("{:?}", result);
                 assert!(result.is_ok());
             })
         })
@@ -763,9 +751,9 @@ mod tests {
                     Some(INITIAL_KEYING_MATERIAL_COUNT),
                 )
                 .unwrap();
-                // phase 1: init without mls_client
-                let central = MlsCentral::try_new(configuration).await.unwrap();
-                let cc = CoreCrypto::from(central);
+                // phase 1: init without initialized mls_client
+                let client = Client::try_new(configuration).await.unwrap();
+                let cc = CoreCrypto::from(client);
                 let context = cc.new_transaction().await.unwrap();
                 x509_test_chain.register_with_central(&context).await;
 

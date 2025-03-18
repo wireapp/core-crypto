@@ -443,11 +443,7 @@ impl ClientContext {
         sc: SignatureScheme,
         ct: MlsCredentialType,
     ) -> Option<Arc<CredentialBundle>> {
-        self.client()
-            .await
-            .find_most_recent_credential_bundle(sc, ct)
-            .await
-            .ok()
+        self.client.find_most_recent_credential_bundle(sc, ct).await.ok()
     }
 
     pub async fn find_credential_bundle(
@@ -588,7 +584,7 @@ impl ClientContext {
         let new_key_packages = self
             .client()
             .await
-            .generate_new_keypackages(&self.central.mls_backend, cipher_suite, cb, key_package_count)
+            .generate_new_keypackages(&self.client.mls_backend, cipher_suite, cb, key_package_count)
             .await
             .map_err(RecursiveError::mls_client("generating new key packages"))?;
         Ok(RotateAllResult {
@@ -605,7 +601,7 @@ impl ClientContext {
             .unwrap()
             .conversation_mut()
             .await
-            .update_keying_material(&self.client().await, &self.central.mls_backend, None, None)
+            .update_keying_material(&self.client().await, &self.client.mls_backend, None, None)
             .await
             .unwrap()
     }
@@ -617,7 +613,7 @@ impl ClientContext {
             .unwrap()
             .conversation_mut()
             .await
-            .commit_pending_proposals(&self.client().await, &self.central.mls_backend)
+            .commit_pending_proposals(&self.client().await, &self.client.mls_backend)
             .await
             .expect("comitting pending proposals")
             .expect("expect committing pending proposals to produce a commit")
