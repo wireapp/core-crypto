@@ -20,14 +20,14 @@ use tls_codec::Deserialize;
 
 use self::context::CoreCryptoContext;
 use crate::{
-    Ciphersuite, Ciphersuites, ClientId, CoreCryptoError, CoreCryptoResult, CredentialType, MlsTransport,
+    Ciphersuite, Ciphersuites, ClientId, CoreCrypto, CoreCryptoError, CoreCryptoResult, CredentialType, MlsTransport,
     MlsTransportShim, WireIdentity, proteus_impl,
 };
 use core_crypto::mls::conversation::Conversation as _;
 pub use core_crypto::prelude::ConversationId;
 use core_crypto::{
     RecursiveError,
-    prelude::{EntropySeed, MlsCentral, MlsCentralConfiguration, VerifiableGroupInfo},
+    prelude::{EntropySeed, VerifiableGroupInfo},
 };
 
 pub mod context;
@@ -51,63 +51,12 @@ impl From<core_crypto::e2e_identity::E2eiDumpedPkiEnv> for E2eiDumpedPkiEnv {
     }
 }
 
-#[derive(Debug, uniffi::Object)]
-pub struct CoreCrypto {
-    central: core_crypto::CoreCrypto,
-}
-
-#[uniffi::export]
-/// See [core_crypto::mls::MlsCentral::try_new]
-pub async fn core_crypto_new(
-    path: String,
-    key: String,
-    client_id: ClientId,
-    ciphersuites: Ciphersuites,
-    nb_key_package: Option<u32>,
-) -> CoreCryptoResult<CoreCrypto> {
-    CoreCrypto::new(path, key, Some(client_id), Some(ciphersuites), nb_key_package).await
-}
-
-#[uniffi::export]
-/// Similar to [core_crypto_new] but defers MLS initialization. It can be initialized later
-/// with [CoreCryptoContext::mls_init].
-pub async fn core_crypto_deferred_init(path: String, key: String) -> CoreCryptoResult<CoreCrypto> {
-    CoreCrypto::new(path, key, None, None, None).await
-}
-
 #[allow(dead_code, unused_variables)]
 #[uniffi::export]
 impl CoreCrypto {
-    #[uniffi::constructor]
-    pub async fn new(
-        path: String,
-        key: String,
-        client_id: Option<ClientId>,
-        ciphersuites: Option<Ciphersuites>,
-        nb_key_package: Option<u32>,
-    ) -> CoreCryptoResult<Self> {
-        let nb_key_package = nb_key_package
-            .map(usize::try_from)
-            .transpose()
-            .map_err(CoreCryptoError::generic())?;
-        let configuration = MlsCentralConfiguration::try_new(
-            path,
-            key,
-            client_id.map(|cid| cid.0.clone()),
-            (&ciphersuites.unwrap_or_default()).into(),
-            None,
-            nb_key_package,
-        )?;
-
-        let central = MlsCentral::try_new(configuration).await?;
-        let central = core_crypto::CoreCrypto::from(central);
-
-        Ok(CoreCrypto { central })
-    }
-
     /// See [core_crypto::mls::MlsCentral::provide_transport]
     pub async fn provide_transport(&self, callbacks: Arc<dyn MlsTransport>) -> CoreCryptoResult<()> {
-        self.central
+        self.inner
             .provide_transport(Arc::new(MlsTransportShim(callbacks)))
             .await;
         Ok(())
@@ -120,21 +69,21 @@ impl CoreCrypto {
         credential_type: CredentialType,
     ) -> CoreCryptoResult<Vec<u8>> {
         Ok(self
-            .central
+            .inner
             .client_public_key(ciphersuite.into(), credential_type.into())
             .await?)
     }
 
     /// See [core_crypto::mls::conversation::ImmutableConversation::epoch]
     pub async fn conversation_epoch(&self, conversation_id: Vec<u8>) -> CoreCryptoResult<u64> {
-        let conversation = self.central.get_raw_conversation(&conversation_id).await?;
+        let conversation = self.inner.get_raw_conversation(&conversation_id).await?;
         Ok(conversation.epoch().await)
     }
 
     /// See [core_crypto::mls::conversation::ImmutableConversation::ciphersuite]
     pub async fn conversation_ciphersuite(&self, conversation_id: &ConversationId) -> CoreCryptoResult<Ciphersuite> {
         let cs = self
-            .central
+            .inner
             .get_raw_conversation(conversation_id)
             .await?
             .ciphersuite()
@@ -144,20 +93,20 @@ impl CoreCrypto {
 
     /// See [core_crypto::mls::MlsCentral::conversation_exists]
     pub async fn conversation_exists(&self, conversation_id: Vec<u8>) -> CoreCryptoResult<bool> {
-        Ok(self.central.conversation_exists(&conversation_id).await?)
+        Ok(self.inner.conversation_exists(&conversation_id).await?)
     }
 
     /// See [core_crypto::mls::MlsCentral::random_bytes]
     pub async fn random_bytes(&self, len: u32) -> CoreCryptoResult<Vec<u8>> {
         Ok(self
-            .central
+            .inner
             .random_bytes(len.try_into().map_err(CoreCryptoError::generic())?)?)
     }
 
     /// see [core_crypto::prelude::MlsCryptoProvider::reseed]
     pub async fn reseed_rng(&self, seed: Vec<u8>) -> CoreCryptoResult<()> {
         let seed = EntropySeed::try_from_slice(&seed).map_err(CoreCryptoError::generic())?;
-        self.central.reseed(Some(seed)).await?;
+        self.inner.reseed(Some(seed)).await?;
 
         Ok(())
     }
@@ -165,7 +114,7 @@ impl CoreCrypto {
     /// See [core_crypto::mls::conversation::ImmutableConversation::get_client_ids]
     pub async fn get_client_ids(&self, conversation_id: Vec<u8>) -> CoreCryptoResult<Vec<ClientId>> {
         Ok(self
-            .central
+            .inner
             .get_raw_conversation(&conversation_id)
             .await?
             .get_client_ids()
@@ -177,7 +126,7 @@ impl CoreCrypto {
 
     /// See [core_crypto::mls::conversation::ImmutableConversation::export_secret_key]
     pub async fn export_secret_key(&self, conversation_id: Vec<u8>, key_length: u32) -> CoreCryptoResult<Vec<u8>> {
-        self.central
+        self.inner
             .get_raw_conversation(&conversation_id)
             .await?
             .export_secret_key(key_length as usize)
@@ -188,7 +137,7 @@ impl CoreCrypto {
     /// See [core_crypto::mls::conversation::ImmutableConversation::get_external_sender]
     pub async fn get_external_sender(&self, conversation_id: Vec<u8>) -> CoreCryptoResult<Vec<u8>> {
         Ok(self
-            .central
+            .inner
             .get_raw_conversation(&conversation_id)
             .await?
             .get_external_sender()
@@ -222,7 +171,7 @@ impl From<core_crypto::prelude::E2eiConversationState> for E2eiConversationState
 impl CoreCrypto {
     /// See [core_crypto::proteus::ProteusCentral::session_exists]
     pub async fn proteus_session_exists(&self, session_id: String) -> CoreCryptoResult<bool> {
-        proteus_impl!({ Ok(self.central.proteus_session_exists(&session_id).await?) })
+        proteus_impl!({ Ok(self.inner.proteus_session_exists(&session_id).await?) })
     }
 
     /// See [core_crypto::proteus::ProteusCentral::last_resort_prekey_id]
@@ -232,17 +181,17 @@ impl CoreCrypto {
 
     /// See [core_crypto::proteus::ProteusCentral::fingerprint]
     pub async fn proteus_fingerprint(&self) -> CoreCryptoResult<String> {
-        proteus_impl!({ Ok(self.central.proteus_fingerprint().await?) })
+        proteus_impl!({ Ok(self.inner.proteus_fingerprint().await?) })
     }
 
     /// See [core_crypto::proteus::ProteusCentral::fingerprint_local]
     pub async fn proteus_fingerprint_local(&self, session_id: String) -> CoreCryptoResult<String> {
-        proteus_impl!({ Ok(self.central.proteus_fingerprint_local(&session_id).await?) })
+        proteus_impl!({ Ok(self.inner.proteus_fingerprint_local(&session_id).await?) })
     }
 
     /// See [core_crypto::proteus::ProteusCentral::fingerprint_remote]
     pub async fn proteus_fingerprint_remote(&self, session_id: String) -> CoreCryptoResult<String> {
-        proteus_impl!({ Ok(self.central.proteus_fingerprint_remote(&session_id).await?) })
+        proteus_impl!({ Ok(self.inner.proteus_fingerprint_remote(&session_id).await?) })
     }
 
     /// See [core_crypto::proteus::ProteusCentral::fingerprint_prekeybundle]
@@ -257,19 +206,19 @@ impl CoreCrypto {
 #[uniffi::export]
 impl CoreCrypto {
     pub async fn e2ei_dump_pki_env(&self) -> CoreCryptoResult<Option<E2eiDumpedPkiEnv>> {
-        Ok(self.central.e2ei_dump_pki_env().await?.map(Into::into))
+        Ok(self.inner.e2ei_dump_pki_env().await?.map(Into::into))
     }
 
     /// See [core_crypto::mls::MlsCentral::e2ei_is_pki_env_setup]
     pub async fn e2ei_is_pki_env_setup(&self) -> bool {
-        self.central.e2ei_is_pki_env_setup().await
+        self.inner.e2ei_is_pki_env_setup().await
     }
 
     /// See [core_crypto::mls::MlsCentral::e2ei_is_enabled]
     pub async fn e2ei_is_enabled(&self, ciphersuite: Ciphersuite) -> CoreCryptoResult<bool> {
         let sc = core_crypto::prelude::MlsCiphersuite::from(core_crypto::prelude::CiphersuiteName::from(ciphersuite))
             .signature_algorithm();
-        Ok(self.central.e2ei_is_enabled(sc).await?)
+        Ok(self.inner.e2ei_is_enabled(sc).await?)
     }
 
     /// See [core_crypto::mls::conversation::ConversationGuard::get_device_identities]
@@ -280,7 +229,7 @@ impl CoreCrypto {
     ) -> CoreCryptoResult<Vec<WireIdentity>> {
         let device_ids = device_ids.into_iter().map(|cid| cid.0).collect::<Vec<_>>();
         Ok(self
-            .central
+            .inner
             .get_raw_conversation(&conversation_id)
             .await?
             .get_device_identities(&device_ids[..])
@@ -297,7 +246,7 @@ impl CoreCrypto {
         user_ids: Vec<String>,
     ) -> CoreCryptoResult<HashMap<String, Vec<WireIdentity>>> {
         Ok(self
-            .central
+            .inner
             .get_raw_conversation(&conversation_id)
             .await?
             .get_user_identities(&user_ids[..])
@@ -319,7 +268,7 @@ impl CoreCrypto {
             ))
             .map_err(RecursiveError::mls_conversation("deserializing veriable group info"))?;
         Ok(self
-            .central
+            .inner
             .get_credential_in_use(group_info, credential_type.into())
             .await?
             .into())

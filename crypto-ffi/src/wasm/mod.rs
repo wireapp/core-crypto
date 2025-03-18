@@ -31,7 +31,7 @@ use wasm_bindgen::prelude::*;
 use wasm_bindgen_futures::future_to_promise;
 
 use crate::{
-    Ciphersuite, CoreCryptoError, CoreCryptoLogLevel, CoreCryptoLogger, CredentialType, FfiClientId, InternalError,
+    Ciphersuite, CoreCrypto, CoreCryptoError, CoreCryptoLogLevel, CoreCryptoLogger, CredentialType, InternalError,
     MlsError, MlsTransport, MlsTransportShim, WasmCryptoResult, WireIdentity, lower_ciphersuites, set_logger_only,
     set_max_log_level_inner,
 };
@@ -61,91 +61,19 @@ impl From<core_crypto::e2e_identity::E2eiDumpedPkiEnv> for E2eiDumpedPkiEnv {
     }
 }
 
-#[derive(Debug)]
-#[wasm_bindgen]
-pub struct CoreCrypto {
-    inner: Arc<core_crypto::CoreCrypto>,
-}
-
 #[wasm_bindgen]
 impl CoreCrypto {
-    /// see [core_crypto::mls::MlsCentral::try_new]
-    pub async fn _internal_new(
-        path: String,
-        key: String,
-        client_id: FfiClientId,
-        ciphersuites: Box<[u16]>,
-        entropy_seed: Option<Box<[u8]>>,
-        nb_key_package: Option<u32>,
-    ) -> WasmCryptoResult<CoreCrypto> {
-        console_error_panic_hook::set_once();
-        let ciphersuites = lower_ciphersuites(&ciphersuites)?;
-        let entropy_seed = entropy_seed.map(|s| s.to_vec());
-        let nb_key_package = nb_key_package
-            .map(usize::try_from)
-            .transpose()
-            .expect("we never run corecrypto on systems with architectures narrower than 32 bits");
-        let configuration = MlsCentralConfiguration::try_new(
-            path,
-            key,
-            Some(client_id.into()),
-            ciphersuites,
-            entropy_seed,
-            nb_key_package,
-        )
-        .map_err(CoreCryptoError::from)?;
-
-        let central = MlsCentral::try_new(configuration)
-            .await
-            .map_err(CoreCryptoError::from)?;
-        Ok(CoreCrypto {
-            inner: Arc::new(central.into()),
-        })
-    }
-
-    /// see [core_crypto::mls::MlsCentral::try_new]
-    pub async fn deferred_init(
-        path: String,
-        key: String,
-        entropy_seed: Option<Box<[u8]>>,
-    ) -> WasmCryptoResult<CoreCrypto> {
-        let entropy_seed = entropy_seed.map(|s| s.to_vec());
-        let configuration = MlsCentralConfiguration::try_new(path, key, None, vec![], entropy_seed, None)
-            .map_err(CoreCryptoError::from)?;
-
-        let central = MlsCentral::try_new(configuration)
-            .await
-            .map_err(CoreCryptoError::from)?;
-
-        Ok(CoreCrypto {
-            inner: Arc::new(central.into()),
-        })
-    }
-
-    /// Returns the Arc strong ref count
-    pub fn has_outstanding_refs(&self) -> bool {
-        Arc::strong_count(&self.inner) > 1
-    }
-
     /// Returns: [`WasmCryptoResult<()>`]
     ///
     /// see [core_crypto::mls::MlsCentral::close]
     pub fn close(self) -> Promise {
-        let error_message: &JsValue = &format!(
-            "There are other outstanding references to this CoreCrypto instance [strong refs = {}]",
-            Arc::strong_count(&self.inner),
+        future_to_promise(
+            async move {
+                self.inner.take().close().await.map_err(CoreCryptoError::from)?;
+                WasmCryptoResult::Ok(JsValue::UNDEFINED)
+            }
+            .err_into(),
         )
-        .into();
-        match Arc::into_inner(self.inner) {
-            Some(central) => future_to_promise(
-                async move {
-                    central.take().close().await.map_err(CoreCryptoError::from)?;
-                    WasmCryptoResult::Ok(JsValue::UNDEFINED)
-                }
-                .err_into(),
-            ),
-            None => Promise::reject(error_message),
-        }
     }
 
     pub fn set_logger(logger: CoreCryptoLogger) {
