@@ -5,7 +5,7 @@ use std::fmt::{Display, Formatter};
 use std::sync::Arc;
 
 use core_crypto::prelude::{
-    CertificateBundle, Client, ClientId, ConversationId, MlsCentralConfiguration, MlsCiphersuite, MlsCommitBundle,
+    CertificateBundle, Client, ClientId, ConversationId, MlsCiphersuite, MlsClientConfiguration, MlsCommitBundle,
     MlsConversationConfiguration, MlsCredentialType, MlsCustomConfiguration, MlsGroupInfoBundle,
 };
 use core_crypto::{CoreCrypto, MlsTransport, MlsTransportResponse};
@@ -154,7 +154,7 @@ pub async fn new_central(
     let client_id = Alphanumeric.sample_string(&mut rand::thread_rng(), 10);
     let secret = Alphanumeric.sample_string(&mut rand::thread_rng(), 10);
     let ciphersuites = vec![ciphersuite];
-    let cfg = MlsCentralConfiguration::try_new(
+    let cfg = MlsClientConfiguration::try_new(
         path,
         secret,
         Some(client_id.as_bytes().into()),

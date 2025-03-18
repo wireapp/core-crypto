@@ -1191,7 +1191,7 @@ impl ProteusCentral {
 #[cfg(test)]
 mod tests {
     use crate::{
-        prelude::{CertificateBundle, Client, ClientIdentifier, MlsCentralConfiguration, MlsCredentialType},
+        prelude::{CertificateBundle, Client, ClientIdentifier, MlsClientConfiguration, MlsCredentialType},
         test_utils::{proteus_utils::*, x509::X509TestChain, *},
     };
 
@@ -1211,7 +1211,7 @@ mod tests {
         #[cfg(target_family = "wasm")]
         let (path, _) = tmp_db_file();
         let client_id = "alice".into();
-        let cfg = MlsCentralConfiguration::try_new(
+        let cfg = MlsClientConfiguration::try_new(
             path,
             "test".to_string(),
             Some(client_id),
@@ -1237,7 +1237,7 @@ mod tests {
         #[cfg(target_family = "wasm")]
         let (path, _) = tmp_db_file();
         // we are deferring MLS initialization here, not passing a MLS 'client_id' yet
-        let cfg = MlsCentralConfiguration::try_new(
+        let cfg = MlsClientConfiguration::try_new(
             path,
             "test".to_string(),
             None,

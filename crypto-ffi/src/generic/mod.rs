@@ -34,7 +34,7 @@ pub use core_crypto::prelude::ConversationId;
 use core_crypto::{
     InnermostErrorMessage, RecursiveError,
     prelude::{
-        Client, EntropySeed, MlsBufferedConversationDecryptMessage, MlsCentralConfiguration, MlsCiphersuite,
+        Client, EntropySeed, MlsBufferedConversationDecryptMessage, MlsCiphersuite, MlsClientConfiguration,
         MlsCommitBundle, MlsConversationDecryptMessage, MlsCustomConfiguration, MlsGroupInfoBundle, MlsProposalBundle,
         VerifiableGroupInfo,
     },
@@ -1133,7 +1133,7 @@ impl CoreCrypto {
             .map(usize::try_from)
             .transpose()
             .map_err(CoreCryptoError::generic())?;
-        let configuration = MlsCentralConfiguration::try_new(
+        let configuration = MlsClientConfiguration::try_new(
             path,
             key,
             client_id.map(|cid| cid.0.clone()),

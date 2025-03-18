@@ -159,7 +159,7 @@ mod tests {
         mls::credential::x509::CertificatePrivateKey,
         prelude::{
             Client, ClientIdentifier, ConversationId, E2eiConversationState, INITIAL_KEYING_MATERIAL_COUNT,
-            MlsCentralConfiguration, MlsCredentialType,
+            MlsClientConfiguration, MlsCredentialType,
         },
         test_utils::{
             x509::{CertificateParams, X509TestChain},
@@ -427,7 +427,7 @@ mod tests {
             let ciphersuites = vec![case.ciphersuite()];
 
             let charlie_central = Client::try_new(
-                MlsCentralConfiguration::try_new(
+                MlsClientConfiguration::try_new(
                     charlie_path.0,
                     "charlie".into(),
                     None,
@@ -568,7 +568,7 @@ mod tests {
 
         let creator_path = tmp_db_file();
 
-        let creator_cfg = MlsCentralConfiguration::try_new(
+        let creator_cfg = MlsClientConfiguration::try_new(
             creator_path.0,
             "alice".into(),
             None,
@@ -610,7 +610,7 @@ mod tests {
             .map_err(RecursiveError::mls("initializing mls"))?;
 
         let guest_path = tmp_db_file();
-        let guest_cfg = MlsCentralConfiguration::try_new(
+        let guest_cfg = MlsClientConfiguration::try_new(
             guest_path.0,
             "bob".into(),
             None,
