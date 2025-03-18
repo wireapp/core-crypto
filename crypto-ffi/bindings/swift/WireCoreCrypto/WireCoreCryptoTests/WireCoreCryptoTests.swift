@@ -362,6 +362,55 @@ final class WireCoreCryptoTests: XCTestCase {
         }
     }
 
+    func testRegisterEpochObserverShouldNotifyObserverOnNewEpoch() async throws {
+        struct Epoch: Equatable {
+            let conversationId: Data
+            let epoch: UInt64
+        }
+
+        class EpochRecoder: EpochObserver {
+            var epochs: [Epoch] = []
+            func epochChanged(conversationId: Data, epoch: UInt64) async throws {
+                epochs.append(Epoch(conversationId: conversationId, epoch: epoch))
+            }
+        }
+
+        let clientId = "client1".data(using: .utf8)!
+        let conversationId = "conversation1".data(using: .utf8)!
+        let ciphersuite: Ciphersuite = 2
+        let configuration = ConversationConfiguration(
+            ciphersuite: ciphersuite,
+            externalSenders: [],
+            custom: CustomConfiguration(
+                keyRotationSpan: nil,
+                wirePolicy: nil
+            )
+        )
+
+        // set up the conversation in one transaction
+        let coreCrypto = try await createCoreCrypto()
+        try await coreCrypto.transaction { context in
+            try await context.mlsInit(
+                clientId: clientId, ciphersuites: [ciphersuite], nbKeyPackage: nil)
+            try await context.createConversation(
+                conversationId: conversationId,
+                creatorCredentialType: .basic,
+                config: configuration
+            )
+        }
+
+        // register the observer
+        let epochRecorder = EpochRecoder()
+        try await coreCrypto.registerEpochObserver(epochRecorder)
+
+        // in another transaction, change the epoch
+        try await coreCrypto.transaction { context in
+            try await context.updateKeyingMaterial(conversationId: conversationId)
+        }
+
+        XCTAssertEqual(epochRecorder.epochs, [Epoch(conversationId: conversationId, epoch: 1)])
+    }
+
     // MARK - helpers
 
     class MockMlsTransport: MlsTransport {

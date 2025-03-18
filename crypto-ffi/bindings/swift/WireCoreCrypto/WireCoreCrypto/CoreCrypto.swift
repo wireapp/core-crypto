@@ -36,6 +36,7 @@ import WireCoreCryptoUniffi
 @_exported public import enum WireCoreCryptoUniffi.E2eiConversationState
 @_exported public import struct WireCoreCryptoUniffi.E2eiDumpedPkiEnv
 @_exported public import class WireCoreCryptoUniffi.E2eiEnrollment
+@_exported public import protocol WireCoreCryptoUniffi.EpochObserver
 @_exported public import struct WireCoreCryptoUniffi.GroupInfoBundle
 @_exported public import enum WireCoreCryptoUniffi.MlsCredentialType
 @_exported public import enum WireCoreCryptoUniffi.MlsError
@@ -121,6 +122,21 @@ public class CoreCrypto: CoreCryptoProtocol {
             callbacks: transport)
     }
 
+    ///
+    /// Register an Epoch Observer which will be notified every time a conversation's epoch changes.
+    ///
+    /// - Parameter epochObserver: epoch observer to register
+    ///
+    /// This function should be called 0 or 1 times in the lifetime of CoreCrypto,
+    /// regardless of the number of transactions.
+    ///
+    public func registerEpochObserver(_ epochObserver: EpochObserver) async throws {
+        // we want to wrap the observer here to provide async indirection, so that no matter what
+        // the observer that makes its way to the Rust side of things doesn't end up blocking
+        try await coreCrypto.registerEpochObserver(
+            epochObserver: EpochObserverIndirector(epochObserver))
+    }
+
     public static func setLogger(_ logger: CoreCryptoLogger) {
         WireCoreCryptoUniffi.setLoggerOnly(logger: logger)
     }
@@ -135,6 +151,22 @@ public class CoreCrypto: CoreCryptoProtocol {
 
     public static func buildMetadata() -> BuildMetadata {
         WireCoreCryptoUniffi.buildMetadata()
+    }
+
+}
+
+class EpochObserverIndirector: EpochObserver {
+
+    let epochObserver: EpochObserver
+
+    init(_ epochObserver: EpochObserver) {
+        self.epochObserver = epochObserver
+    }
+
+    func epochChanged(conversationId: Data, epoch: UInt64) async throws {
+        Task {
+            try await epochObserver.epochChanged(conversationId: conversationId, epoch: epoch)
+        }
     }
 
 }
