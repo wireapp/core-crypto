@@ -11,7 +11,7 @@ use std::{fmt, sync::Arc};
 
 use core_crypto::prelude::MlsCommitBundle;
 
-use crate::CommitBundle;
+use crate::{CommitBundle, CoreCrypto, CoreCryptoResult};
 
 #[cfg(not(target_family = "wasm"))]
 #[derive(Debug, Clone, PartialEq, Eq, uniffi::Enum)]
@@ -48,7 +48,8 @@ pub trait MlsTransport: Send + Sync {
 }
 
 #[cfg(not(target_family = "wasm"))]
-pub(crate) struct MlsTransportShim(pub(crate) Arc<dyn MlsTransport>);
+#[derive(derive_more::Constructor)]
+struct MlsTransportShim(Arc<dyn MlsTransport>);
 
 #[cfg(not(target_family = "wasm"))]
 impl fmt::Debug for MlsTransportShim {
@@ -148,7 +149,7 @@ extern "C" {
 }
 
 #[cfg(target_family = "wasm")]
-pub(crate) struct MlsTransportShim(Arc<async_lock::Mutex<MlsTransport>>);
+struct MlsTransportShim(Arc<async_lock::Mutex<MlsTransport>>);
 
 #[cfg(target_family = "wasm")]
 // SAFETY: by wrapping the foreign thing in Arc<Mutex<_>>, we make this value safe to transport and view between threads
@@ -169,7 +170,7 @@ impl fmt::Debug for MlsTransportShim {
 
 #[cfg(target_family = "wasm")]
 impl MlsTransportShim {
-    pub(crate) fn new(mls_transport: MlsTransport) -> Self {
+    fn new(mls_transport: MlsTransport) -> Self {
         // we implement send and sync on self because of the arc/mutex thing
         #[expect(clippy::arc_with_non_send_sync)]
         Self(Arc::new(async_lock::Mutex::new(mls_transport)))
@@ -213,5 +214,25 @@ impl core_crypto::MlsTransport for MlsTransportShim {
             ))
         })?;
         Ok(response.into())
+    }
+}
+
+/// In uniffi, `MlsTransport` is a trait which we need to wrap
+#[cfg(not(target_family = "wasm"))]
+type Callbacks = Arc<dyn MlsTransport>;
+
+/// In wasm, `MlsTransport` is an object, a `JsValue` that someone promised duck-types to the right interface.
+#[cfg(target_family = "wasm")]
+type Callbacks = MlsTransport;
+
+#[cfg_attr(target_family = "wasm", wasm_bindgen)]
+#[cfg_attr(not(target_family = "wasm"), uniffi::export)]
+impl CoreCrypto {
+    /// See [core_crypto::mls::MlsCentral::provide_transport]
+    pub async fn provide_transport(&self, callbacks: Callbacks) -> CoreCryptoResult<()> {
+        self.inner
+            .provide_transport(Arc::new(MlsTransportShim::new(callbacks)))
+            .await;
+        Ok(())
     }
 }

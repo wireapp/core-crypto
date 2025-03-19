@@ -14,14 +14,14 @@
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see http://www.gnu.org/licenses/.
 
-use std::{collections::HashMap, sync::Arc};
+use std::collections::HashMap;
 
 use tls_codec::Deserialize;
 
 use self::context::CoreCryptoContext;
 use crate::{
-    Ciphersuite, Ciphersuites, ClientId, CoreCrypto, CoreCryptoError, CoreCryptoResult, CredentialType, MlsTransport,
-    MlsTransportShim, WireIdentity, proteus_impl,
+    Ciphersuite, Ciphersuites, ClientId, CoreCrypto, CoreCryptoError, CoreCryptoResult, CredentialType, WireIdentity,
+    proteus_impl,
 };
 use core_crypto::mls::conversation::Conversation as _;
 pub use core_crypto::prelude::ConversationId;
@@ -54,14 +54,6 @@ impl From<core_crypto::e2e_identity::E2eiDumpedPkiEnv> for E2eiDumpedPkiEnv {
 #[allow(dead_code, unused_variables)]
 #[uniffi::export]
 impl CoreCrypto {
-    /// See [core_crypto::mls::MlsCentral::provide_transport]
-    pub async fn provide_transport(&self, callbacks: Arc<dyn MlsTransport>) -> CoreCryptoResult<()> {
-        self.inner
-            .provide_transport(Arc::new(MlsTransportShim(callbacks)))
-            .await;
-        Ok(())
-    }
-
     /// See [core_crypto::mls::MlsCentral::client_public_key]
     pub async fn client_public_key(
         &self,
@@ -548,14 +540,14 @@ mod tests {
         testing_logger::setup();
         // we shouldn't be able to create a SQLite DB in `/root` unless we are running this test as root
         // Don't do that!
-        let result = CoreCrypto::new("/root/asdf".into(), "key".into(), None, None, None).await;
+        let result = CoreCrypto::new("/root/asdf".into(), "key".into(), None, None, None, None).await;
         assert!(
             result.is_err(),
             "result must be an error in order to verify that something was logged"
         );
         testing_logger::validate(|captured_logs| {
             assert!(
-                captured_logs.iter().any(|log| log.level == Level::Warn
+                captured_logs.iter().any(|log| log.level == log::Level::Warn
                     && log.target == "core-crypto"
                     && log.body.contains("returning this error across ffi")),
                 "log message did not appear within the captured logs"
