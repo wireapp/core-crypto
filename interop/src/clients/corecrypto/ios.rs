@@ -23,8 +23,9 @@ use color_eyre::eyre::Result;
 use core_crypto::prelude::{KeyPackage, KeyPackageIn};
 use std::cell::{Cell, RefCell};
 use std::fs;
-use std::io::{BufRead, BufReader};
-use std::process::{Child, ChildStdout, Command, Stdio};
+use std::io::{BufRead, BufReader, Read};
+use std::process::{Child, ChildStdout, Command, Output, Stdio};
+use std::time::Duration;
 use thiserror::Error;
 use tls_codec::Deserialize;
 
@@ -51,7 +52,25 @@ struct SimulatorDriverError {
 
 impl SimulatorDriver {
     fn new(device: String, application: String) -> Self {
-        log::info!("launching application: {}", application);
+        let application = Self::launch_application(&device, &application, true).expect("Failed ot launch application");
+
+        Self {
+            device,
+            process: application.0,
+            output: RefCell::new(application.1),
+        }
+    }
+
+    fn boot_device(device: &str) -> std::io::Result<Output> {
+        Command::new("xcrun").args(["simctl", "boot", device]).output()
+    }
+
+    fn launch_application(
+        device: &str,
+        application: &str,
+        boot_device: bool,
+    ) -> Result<(Child, BufReader<ChildStdout>)> {
+        log::info!("launching application: {} on {}", application, device);
 
         let mut process = Command::new("xcrun")
             .args([
@@ -59,8 +78,8 @@ impl SimulatorDriver {
                 "launch",
                 "--console-pty",
                 "--terminate-running-process",
-                &device,
-                &application,
+                device,
+                application,
             ])
             .stdout(Stdio::piped())
             .stderr(Stdio::piped())
@@ -73,9 +92,31 @@ impl SimulatorDriver {
                 .take()
                 .expect("Expected stdout to be available on child process"),
         );
-        let mut line = String::new();
+
+        // Wait for child process to launch or fail
+        std::thread::sleep(Duration::from_secs(3));
+        match process.try_wait() {
+            Ok(None) => {}
+            Ok(Some(exit_status)) => {
+                if boot_device && exit_status.code() == Some(149) {
+                    log::info!("device is shutdown, booting...");
+                    Self::boot_device(device)?;
+                    return Self::launch_application(device, application, false);
+                }
+
+                let mut error_message = String::new();
+                process
+                    .stderr
+                    .map(|mut stderr| stderr.read_to_string(&mut error_message));
+                panic!("Failed to launch application ({}): {}", exit_status, error_message)
+            }
+            Err(error) => {
+                panic!("Failed to launch application: {}", error)
+            }
+        }
 
         // Waiting for confirmation that the application has launched.
+        let mut line = String::new();
         while !line.contains("Ready") {
             line.clear();
             output
@@ -84,12 +125,7 @@ impl SimulatorDriver {
         }
 
         log::info!("application launched: {}", line);
-
-        Self {
-            device,
-            process,
-            output: RefCell::new(output),
-        }
+        Ok((process, output))
     }
 
     async fn execute(&self, action: String) -> Result<String> {
