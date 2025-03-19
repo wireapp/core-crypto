@@ -6,11 +6,12 @@ use crate::{Ciphersuite, ClientId, CoreCrypto, CoreCryptoResult};
 
 // Note that we can't do the same `Box<[u8]>` thing here; it doesn't work for async functions.
 #[cfg(target_family = "wasm")]
-type ConversationId = js_sys::Uint8Array;
+pub(crate) type ConversationId = js_sys::Uint8Array;
 
 #[cfg(not(target_family = "wasm"))]
-type ConversationId = Vec<u8>;
+pub(crate) type ConversationId = Vec<u8>;
 
+#[macro_export]
 macro_rules! conversation_id_vec {
     ($conversation_id:expr) => {{
         #[cfg(target_family = "wasm")]
