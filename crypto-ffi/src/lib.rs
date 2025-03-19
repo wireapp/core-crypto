@@ -42,6 +42,7 @@ pub(crate) use core_crypto::conversation::ConversationId;
 pub use core_crypto::{
     CoreCrypto,
     e2ei::E2eiDumpedPkiEnv,
+    epoch_observer::EpochObserver,
     logger::{CoreCryptoLogLevel, CoreCryptoLogger},
     mls_transport::{MlsTransport, MlsTransportResponse},
 };

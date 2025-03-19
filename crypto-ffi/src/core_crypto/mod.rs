@@ -1,6 +1,7 @@
 mod client;
 pub(crate) mod conversation;
 pub(crate) mod e2ei;
+pub(crate) mod epoch_observer;
 pub mod logger;
 pub mod mls_transport;
 mod proteus;
