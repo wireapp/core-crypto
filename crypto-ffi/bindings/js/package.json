@@ -53,9 +53,9 @@
   "scripts": {
     "clean": "rm -f src/corecrypto.js src/corecrypto.d.ts",
     "build": "bun run clean && bun build --target browser --format esm --outfile src/corecrypto.js src/CoreCrypto.ts",
-    "postbuild": "bunx dts-bundle-generator --project tsconfig.json -o src/corecrypto.d.ts --no-check src/CoreCrypto.ts",
-    "test": "bunx wdio run wdio.conf.ts --spec test/**/*.test.ts",
-    "bench": "bunx wdio run wdio.conf.ts --spec benches/**/*.bench.ts --log-level warn"
+    "postbuild": "bun x dts-bundle-generator --project tsconfig.json -o src/corecrypto.d.ts --no-check src/CoreCrypto.ts",
+    "test": "bun x wdio run wdio.conf.ts --spec test/**/*.test.ts",
+    "bench": "bun x wdio run wdio.conf.ts --spec benches/**/*.bench.ts --log-level warn"
   },
   "type": "module",
   "types": "src/corecrypto.d.ts"
