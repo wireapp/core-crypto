@@ -1,3 +1,4 @@
+pub mod logger;
 pub mod mls_transport;
 
 #[cfg(not(target_family = "wasm"))]

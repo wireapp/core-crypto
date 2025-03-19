@@ -31,8 +31,8 @@ use wasm_bindgen::prelude::*;
 use wasm_bindgen_futures::future_to_promise;
 
 use crate::{
-    Ciphersuite, CoreCrypto, CoreCryptoError, CoreCryptoLogLevel, CoreCryptoLogger, CredentialType, InternalError,
-    MlsError, WasmCryptoResult, WireIdentity, lower_ciphersuites, set_logger_only, set_max_log_level_inner,
+    Ciphersuite, CoreCrypto, CoreCryptoError, CredentialType, InternalError, MlsError, WasmCryptoResult, WireIdentity,
+    lower_ciphersuites,
 };
 
 #[wasm_bindgen(getter_with_clone)]
@@ -62,14 +62,6 @@ impl From<core_crypto::e2e_identity::E2eiDumpedPkiEnv> for E2eiDumpedPkiEnv {
 
 #[wasm_bindgen]
 impl CoreCrypto {
-    pub fn set_logger(logger: CoreCryptoLogger) {
-        set_logger_only(logger);
-    }
-
-    pub fn set_max_log_level(level: CoreCryptoLogLevel) {
-        set_max_log_level_inner(level)
-    }
-
     /// Returns:: [`WasmCryptoResult<js_sys::Uint8Array>`]
     ///
     /// see [core_crypto::mls::MlsCentral::client_public_key]

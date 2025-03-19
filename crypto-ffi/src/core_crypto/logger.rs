@@ -14,6 +14,9 @@ use log_reload::ReloadLog;
 #[cfg(target_family = "wasm")]
 use wasm_bindgen::prelude::*;
 
+#[cfg(target_family = "wasm")]
+use crate::CoreCrypto;
+
 /// Defines the log level for a CoreCrypto
 #[derive(Debug, Clone, Copy)]
 #[cfg_attr(target_family = "wasm", wasm_bindgen)]
@@ -101,7 +104,7 @@ impl DummyLogger {
 
 /// The uniffi log shim is a simple wrapper around the foreign implementer of the trait
 #[cfg(not(target_family = "wasm"))]
-#[derive(Clone)]
+#[derive(Clone, derive_more::Constructor)]
 struct LogShim {
     logger: Arc<dyn CoreCryptoLogger>,
 }
@@ -219,6 +222,14 @@ impl log::Log for LogShim {
 static INIT_LOGGER: Once = Once::new();
 static LOGGER: LazyLock<ReloadLog<LogShim>> = LazyLock::new(|| ReloadLog::new(LogShim::default()));
 
+/// In uniffi the logger interface is a boxed trait instance
+#[cfg(not(target_family = "wasm"))]
+type Logger = Arc<dyn CoreCryptoLogger>;
+
+/// In wasm the logger interface is a duck-typed `JsValue`
+#[cfg(target_family = "wasm")]
+type Logger = CoreCryptoLogger;
+
 /// Initializes the logger
 ///
 /// NOTE: in a future  release we will remove `level` argument.
@@ -230,24 +241,8 @@ pub fn set_logger(logger: Arc<dyn CoreCryptoLogger>, level: CoreCryptoLogLevel) 
 }
 
 /// Initializes the logger
-#[cfg(not(target_family = "wasm"))]
-#[uniffi::export]
-pub fn set_logger_only(logger: Arc<dyn CoreCryptoLogger>) {
-    LOGGER
-        .handle()
-        .replace(LogShim { logger })
-        .expect("no poisoned locks should be possible as we never panic while holding the lock");
-
-    INIT_LOGGER.call_once(|| {
-        log::set_logger(LOGGER.deref())
-            .expect("no poisonsed locks should be possible as we never panic while holding the lock");
-        log::set_max_level(LevelFilter::Warn);
-    });
-}
-
-/// Initializes the logger
-#[cfg(target_family = "wasm")]
-pub(crate) fn set_logger_only(logger: CoreCryptoLogger) {
+#[cfg_attr(not(target_family = "wasm"), uniffi::export)]
+pub fn set_logger_only(logger: Logger) {
     LOGGER
         .handle()
         .replace(LogShim::new(logger))
@@ -260,13 +255,21 @@ pub(crate) fn set_logger_only(logger: CoreCryptoLogger) {
     });
 }
 
-pub(crate) fn set_max_log_level_inner(level: CoreCryptoLogLevel) {
-    log::set_max_level(level.into());
-}
-
 /// Set maximum log level forwarded to the logger
 #[cfg(not(target_family = "wasm"))]
 #[uniffi::export]
 pub fn set_max_log_level(level: CoreCryptoLogLevel) {
-    set_max_log_level_inner(level);
+    log::set_max_level(level.into());
+}
+
+#[cfg(target_family = "wasm")]
+#[wasm_bindgen]
+impl CoreCrypto {
+    pub fn set_logger(logger: CoreCryptoLogger) {
+        set_logger_only(logger);
+    }
+
+    pub fn set_max_log_level(level: CoreCryptoLogLevel) {
+        log::set_max_level(level.into());
+    }
 }
