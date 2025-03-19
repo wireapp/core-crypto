@@ -1,4 +1,5 @@
 mod client;
+mod conversation;
 pub mod logger;
 pub mod mls_transport;
 

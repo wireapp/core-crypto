@@ -54,28 +54,6 @@ impl From<core_crypto::e2e_identity::E2eiDumpedPkiEnv> for E2eiDumpedPkiEnv {
 #[allow(dead_code, unused_variables)]
 #[uniffi::export]
 impl CoreCrypto {
-    /// See [core_crypto::mls::conversation::ImmutableConversation::epoch]
-    pub async fn conversation_epoch(&self, conversation_id: Vec<u8>) -> CoreCryptoResult<u64> {
-        let conversation = self.inner.get_raw_conversation(&conversation_id).await?;
-        Ok(conversation.epoch().await)
-    }
-
-    /// See [core_crypto::mls::conversation::ImmutableConversation::ciphersuite]
-    pub async fn conversation_ciphersuite(&self, conversation_id: &ConversationId) -> CoreCryptoResult<Ciphersuite> {
-        let cs = self
-            .inner
-            .get_raw_conversation(conversation_id)
-            .await?
-            .ciphersuite()
-            .await;
-        Ok(Ciphersuite::from(core_crypto::prelude::CiphersuiteName::from(cs)))
-    }
-
-    /// See [core_crypto::mls::MlsCentral::conversation_exists]
-    pub async fn conversation_exists(&self, conversation_id: Vec<u8>) -> CoreCryptoResult<bool> {
-        Ok(self.inner.conversation_exists(&conversation_id).await?)
-    }
-
     /// See [core_crypto::mls::MlsCentral::random_bytes]
     pub async fn random_bytes(&self, len: u32) -> CoreCryptoResult<Vec<u8>> {
         Ok(self
