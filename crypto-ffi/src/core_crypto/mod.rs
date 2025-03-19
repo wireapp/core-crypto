@@ -1,6 +1,7 @@
-use core_crypto::prelude::{Client, MlsClientConfiguration};
+pub mod logger;
 pub mod mls_transport;
 
+use core_crypto::prelude::{Client, MlsClientConfiguration};
 #[cfg(target_family = "wasm")]
 use wasm_bindgen::prelude::*;
 
