@@ -14,25 +14,6 @@
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see http://www.gnu.org/licenses/.
 
-#[macro_export]
-macro_rules! proteus_impl {
-    ($body:block or throw $err_type:ty) => {
-        {
-        cfg_if::cfg_if! {
-            if #[cfg(feature = "proteus")] {
-                #[allow(clippy::redundant_closure_call)]
-                $body
-            } else {
-                return <$err_type>::Err(core_crypto::Error::FeatureDisabled("proteus").into());
-            }
-        }
-        }
-    };
-    ($body:block) => {
-        proteus_impl!($body or throw ::std::result::Result<_, _>)
-    };
-}
-
 cfg_if::cfg_if! {
     if #[cfg(target_family = "wasm")] {
         mod wasm;
@@ -60,6 +41,7 @@ mod decrypted_message;
 mod error;
 mod identity;
 mod metadata;
+mod proteus;
 
 pub use bundles::{
     commit::CommitBundle, group_info::GroupInfoBundle, proposal::ProposalBundle,

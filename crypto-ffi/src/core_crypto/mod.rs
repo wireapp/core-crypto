@@ -2,6 +2,7 @@ mod client;
 mod conversation;
 pub mod logger;
 pub mod mls_transport;
+mod proteus;
 mod randomness;
 
 #[cfg(not(target_family = "wasm"))]
