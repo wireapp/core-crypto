@@ -62,19 +62,6 @@ impl From<core_crypto::e2e_identity::E2eiDumpedPkiEnv> for E2eiDumpedPkiEnv {
 
 #[wasm_bindgen]
 impl CoreCrypto {
-    /// Returns: [`WasmCryptoResult<()>`]
-    ///
-    /// see [core_crypto::mls::MlsCentral::close]
-    pub fn close(self) -> Promise {
-        future_to_promise(
-            async move {
-                self.inner.take().close().await.map_err(CoreCryptoError::from)?;
-                WasmCryptoResult::Ok(JsValue::UNDEFINED)
-            }
-            .err_into(),
-        )
-    }
-
     pub fn set_logger(logger: CoreCryptoLogger) {
         set_logger_only(logger);
     }

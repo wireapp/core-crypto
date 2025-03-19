@@ -1,12 +1,15 @@
 pub mod mls_transport;
 
+#[cfg(not(target_family = "wasm"))]
+use std::sync::Arc;
+
 use core_crypto::{mls::MlsCentral, prelude::MlsCentralConfiguration};
 #[cfg(target_family = "wasm")]
 use wasm_bindgen::prelude::*;
 
 #[cfg(target_family = "wasm")]
 use crate::WasmCryptoResult;
-use crate::{Ciphersuites, ClientId, CoreCryptoResult, error::internal::InternalError};
+use crate::{Ciphersuites, ClientId, CoreCryptoError, CoreCryptoResult, error::internal::InternalError};
 
 /// In Wasm, boxed slices are the natural way to communicate an immutable byte slice
 #[cfg(target_family = "wasm")]
@@ -130,5 +133,27 @@ impl CoreCrypto {
             .map_err(InternalError::from)?;
 
         Self::from_config(configuration).await
+    }
+
+    /// see [core_crypto::mls::MlsCentral::close]
+    pub async fn close(self) -> CoreCryptoResult<()> {
+        self.inner.take().close().await.map_err(CoreCryptoError::from)?;
+        Ok(())
+    }
+}
+
+#[cfg(not(target_family = "wasm"))]
+#[uniffi::export]
+impl CoreCrypto {
+    /// see [core_crypto::mls::MlsCentral::close]
+    pub async fn close(self: Arc<Self>) -> CoreCryptoResult<()> {
+        let strong_refs = Arc::strong_count(&self);
+        let Some(Self { inner }) = Arc::into_inner(self) else {
+            return Err(CoreCryptoError::Other(format!(
+                "cannot close this as multiple strong refs exist: {strong_refs}"
+            )));
+        };
+        inner.take().close().await.map_err(CoreCryptoError::from)?;
+        Ok(())
     }
 }
