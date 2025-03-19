@@ -71,7 +71,6 @@ mod renew;
 pub(crate) mod welcome;
 mod wipe;
 
-use crate::e2e_identity::conversation_state::compute_state;
 use crate::mls::HasClientAndProvider;
 use crate::mls::conversation::pending_conversation::PendingConversation;
 use crate::mls::credential::ext::CredentialExt as _;
@@ -188,7 +187,7 @@ pub trait Conversation<'a>: ConversationWithMls<'a> {
         let authentication_service = backend.authentication_service();
         authentication_service.refresh_time_of_interest().await;
         let inner = self.conversation().await;
-        let state = compute_state(
+        let state = Client::compute_conversation_state(
             inner.ciphersuite(),
             inner.group.members_credentials(),
             MlsCredentialType::X509,

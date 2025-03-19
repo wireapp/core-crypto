@@ -1,12 +1,7 @@
 //! Utility for clients to get the current state of E2EI when the app resumes
 
 use super::Result;
-use crate::{
-    RecursiveError,
-    context::CentralContext,
-    mls,
-    prelude::{Client, MlsCredentialType},
-};
+use crate::{RecursiveError, context::CentralContext};
 use openmls_traits::types::SignatureScheme;
 
 impl CentralContext {
@@ -16,28 +11,11 @@ impl CentralContext {
             .mls_client()
             .await
             .map_err(RecursiveError::root("getting mls client"))?;
-        client.e2ei_is_enabled(signature_scheme).await
-    }
-}
-
-impl Client {
-    /// Returns true when end-to-end-identity is enabled for the given SignatureScheme
-    pub async fn e2ei_is_enabled(&self, signature_scheme: SignatureScheme) -> Result<bool> {
-        let x509_result = self
-            .find_most_recent_credential_bundle(signature_scheme, MlsCredentialType::X509)
-            .await;
-        match x509_result {
-            Err(mls::client::Error::CredentialNotFound(MlsCredentialType::X509)) => {
-                self.find_most_recent_credential_bundle(signature_scheme, MlsCredentialType::Basic)
-                    .await
-                    .map_err(RecursiveError::mls_client(
-                        "finding most recent basic credential bundle after searching for x509",
-                    ))?;
-                Ok(false)
-            }
-            Err(e) => Err(RecursiveError::mls_client("finding most recent x509 credential bundle")(e).into()),
-            Ok(_) => Ok(true),
-        }
+        client
+            .e2ei_is_enabled(signature_scheme)
+            .await
+            .map_err(RecursiveError::mls_client("is e2ei enabled for client?"))
+            .map_err(Into::into)
     }
 }
 

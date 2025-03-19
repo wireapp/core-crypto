@@ -1300,7 +1300,13 @@ impl CoreCrypto {
 #[uniffi::export]
 impl CoreCrypto {
     pub async fn e2ei_dump_pki_env(&self) -> CoreCryptoResult<Option<E2eiDumpedPkiEnv>> {
-        Ok(self.central.e2ei_dump_pki_env().await?.map(Into::into))
+        let dumped_pki_env = self
+            .central
+            .e2ei_dump_pki_env()
+            .await
+            .map_err(RecursiveError::mls_client("dumping pki env"))?
+            .map(Into::into);
+        Ok(dumped_pki_env)
     }
 
     /// See [core_crypto::mls::Client::e2ei_is_pki_env_setup]
@@ -1312,7 +1318,11 @@ impl CoreCrypto {
     pub async fn e2ei_is_enabled(&self, ciphersuite: Ciphersuite) -> CoreCryptoResult<bool> {
         let sc = core_crypto::prelude::MlsCiphersuite::from(core_crypto::prelude::CiphersuiteName::from(ciphersuite))
             .signature_algorithm();
-        Ok(self.central.e2ei_is_enabled(sc).await?)
+        self.central
+            .e2ei_is_enabled(sc)
+            .await
+            .map_err(RecursiveError::mls_client("is e2ei enabled on client?"))
+            .map_err(Into::into)
     }
 
     /// See [core_crypto::mls::conversation::ConversationGuard::get_device_identities]
@@ -1361,11 +1371,13 @@ impl CoreCrypto {
                 "verifiable group info",
             ))
             .map_err(RecursiveError::mls_conversation("deserializing veriable group info"))?;
-        Ok(self
+        let credential = self
             .central
             .get_credential_in_use(group_info, credential_type.into())
-            .await?
-            .into())
+            .await
+            .map_err(RecursiveError::mls_client("getting credential in use"))?
+            .into();
+        Ok(credential)
     }
 }
 

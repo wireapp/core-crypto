@@ -1571,7 +1571,7 @@ impl CoreCrypto {
         future_to_promise(
             async move {
                 let pk = central
-                    .client_public_key(ciphersuite.into(), credential_type.into())
+                    .public_key(ciphersuite.into(), credential_type.into())
                     .await
                     .map_err(CoreCryptoError::from)?;
                 WasmCryptoResult::Ok(Uint8Array::from(pk.as_slice()).into())
@@ -1820,7 +1820,11 @@ impl CoreCrypto {
         let central = self.inner.clone();
         future_to_promise(
             async move {
-                let dump: Option<E2eiDumpedPkiEnv> = central.e2ei_dump_pki_env().await?.map(Into::into);
+                let dump: Option<E2eiDumpedPkiEnv> = central
+                    .e2ei_dump_pki_env()
+                    .await
+                    .map_err(RecursiveError::mls_client("dumping pki env"))?
+                    .map(Into::into);
                 WasmCryptoResult::Ok(serde_wasm_bindgen::to_value(&dump)?)
             }
             .err_into(),
@@ -1841,7 +1845,11 @@ impl CoreCrypto {
         let central = self.inner.clone();
         future_to_promise(
             async move {
-                let is_enabled = central.e2ei_is_enabled(sc).await.map_err(CoreCryptoError::from)?.into();
+                let is_enabled = central
+                    .e2ei_is_enabled(sc)
+                    .await
+                    .map_err(RecursiveError::mls_client("is e2ei enabled for client"))?
+                    .into();
                 WasmCryptoResult::Ok(is_enabled)
             }
             .err_into(),
@@ -1915,7 +1923,7 @@ impl CoreCrypto {
                     .get_credential_in_use(group_info, credential_type.into())
                     .await
                     .map(Into::into)
-                    .map_err(CoreCryptoError::from)?;
+                    .map_err(RecursiveError::mls_client("getting credential in use"))?;
 
                 WasmCryptoResult::Ok((state as u8).into())
             }

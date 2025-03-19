@@ -363,10 +363,12 @@ impl CentralContext {
 mod tests {
     use wasm_bindgen_test::*;
 
-    use crate::prelude::{CertificateBundle, ClientIdentifier, INITIAL_KEYING_MATERIAL_COUNT, MlsCredentialType};
+    use crate::prelude::{
+        CertificateBundle, ClientIdentifier, INITIAL_KEYING_MATERIAL_COUNT, MlsClientConfiguration, MlsCredentialType,
+    };
     use crate::{
         CoreCrypto,
-        mls::{Client, MlsClientConfiguration},
+        mls::Client,
         test_utils::{x509::X509TestChain, *},
     };
 
