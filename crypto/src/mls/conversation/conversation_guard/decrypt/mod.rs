@@ -12,7 +12,6 @@ mod buffer_commit;
 pub(crate) mod buffer_messages;
 
 use super::{ConversationGuard, Result};
-use crate::e2e_identity::conversation_state::compute_state;
 use crate::e2e_identity::init_certificates::NewCrlDistributionPoint;
 use crate::mls::conversation::renew::Renew;
 use crate::mls::conversation::{Conversation, ConversationWithMls, Error};
@@ -21,7 +20,7 @@ use crate::mls::credential::crl::{
 };
 use crate::mls::credential::ext::CredentialExt as _;
 use crate::obfuscate::Obfuscated;
-use crate::prelude::{ClientId, E2eiConversationState};
+use crate::prelude::{Client, ClientId, E2eiConversationState};
 use crate::prelude::{MlsProposalBundle, WireIdentity};
 use crate::{MlsError, RecursiveError};
 use log::{debug, info};
@@ -526,7 +525,7 @@ impl ConversationGuard {
                     matches!(credential.credential_type(), CredentialType::X509).then(|| credential.clone())
                 })
                 .collect();
-            let state = compute_state(
+            let state = Client::compute_conversation_state(
                 self.ciphersuite().await,
                 credentials.iter(),
                 crate::prelude::MlsCredentialType::X509,

@@ -1,5 +1,5 @@
 use super::{Error, Result};
-use crate::{MlsError, RecursiveError, context::CentralContext, e2e_identity::CrlRegistration, prelude::Client};
+use crate::{MlsError, RecursiveError, context::CentralContext, e2e_identity::CrlRegistration};
 use core_crypto_keystore::{
     connection::FetchFromDatabase,
     entities::{E2eiAcmeCA, E2eiCrl, E2eiIntermediateCert},
@@ -257,27 +257,8 @@ impl CentralContext {
     }
 }
 
-impl Client {
-    /// Returns whether the E2EI PKI environment is setup (i.e. Root CA, Intermediates, CRLs)
-    pub async fn e2ei_is_pki_env_setup(&self) -> bool {
-        self.mls_backend.is_pki_env_setup().await
-    }
-
-    /// Dumps the PKI environment as PEM
-    pub async fn e2ei_dump_pki_env(&self) -> Result<Option<E2eiDumpedPkiEnv>> {
-        if !self.e2ei_is_pki_env_setup().await {
-            return Ok(None);
-        }
-        let pki_env_lock = self.mls_backend.authentication_service().borrow().await;
-        let Some(pki_env) = &*pki_env_lock else {
-            return Ok(None);
-        };
-        E2eiDumpedPkiEnv::from_pki_env(pki_env).await
-    }
-}
-
 impl E2eiDumpedPkiEnv {
-    async fn from_pki_env(pki_env: &PkiEnvironment) -> Result<Option<E2eiDumpedPkiEnv>> {
+    pub(crate) async fn from_pki_env(pki_env: &PkiEnvironment) -> Result<Option<E2eiDumpedPkiEnv>> {
         let Some(root) = pki_env
             .get_trust_anchors()
             .map_err(Error::certificate_validation("getting pki trust anchors"))?
