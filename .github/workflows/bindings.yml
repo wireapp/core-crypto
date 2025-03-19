@@ -113,7 +113,7 @@ jobs:
 
   create-xcframework:
     needs: build-ios
-    runs-on: self-hosted
+    runs-on: macos-latest
     steps:
       - uses: actions/checkout@v4
       - name: download artifacts for ios
@@ -127,13 +127,17 @@ jobs:
         with:
           name: ${{github.event.number}}-swift-ffi
           path: crypto-ffi/bindings/swift/WireCoreCryptoUniffi
+      - name: setup Xcode
+        uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: '16.2.0'
       - name: create xcframework
         run: |
           cd crypto-ffi/bindings/swift
           ./build-xcframework.sh
 
   e2e-interop-test:
-    runs-on: self-hosted
+    runs-on: macos-latest
     needs: build-ios
     steps:
       - uses: actions/checkout@v4
@@ -145,7 +149,7 @@ jobs:
       - name: setup Xcode
         uses: maxim-lobanov/setup-xcode@v1
         with:
-          xcode-version: '16.1.0'
+          xcode-version: '16.2.0'
       - name: setup wasm-pack
         uses: taiki-e/install-action@v2
         with:
