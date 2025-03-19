@@ -211,7 +211,7 @@ async fn run_mls_test(chrome_driver_addr: &std::net::SocketAddr) -> Result<()> {
 
         log::info!(
             "Master client [{}] >>> {}",
-            hex::encode(master_client.client_id().await?.as_slice()),
+            hex::encode(master_client.id().await?.as_slice()),
             message
         );
 

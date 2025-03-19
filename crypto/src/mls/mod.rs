@@ -1,16 +1,13 @@
-use std::sync::Arc;
-
 use log::trace;
 
 use crate::{
-    CoreCrypto, LeafError, MlsError, RecursiveError,
+    LeafError, MlsError, RecursiveError,
     prelude::{
-        Client, ClientId, ConversationId, MlsCiphersuite, MlsClientConfiguration, MlsConversation,
-        MlsConversationConfiguration, MlsCredentialType, MlsTransport, identifier::ClientIdentifier,
-        key_package::INITIAL_KEYING_MATERIAL_COUNT,
+        Client, ClientId, ConversationId, MlsCiphersuite, MlsConversation, MlsConversationConfiguration,
+        MlsCredentialType, identifier::ClientIdentifier, key_package::INITIAL_KEYING_MATERIAL_COUNT,
     },
 };
-use mls_crypto_provider::{EntropySeed, MlsCryptoProvider, MlsCryptoProviderConfiguration};
+use mls_crypto_provider::MlsCryptoProvider;
 use openmls_traits::OpenMlsCryptoProvider;
 
 use crate::context::CentralContext;
@@ -164,166 +161,6 @@ impl HasClientAndProvider for Client {
     }
 }
 
-impl Client {
-    /// Tries to initialize the MLS Central object.
-    /// Takes a store path (i.e. Disk location of the embedded database, should be consistent between messaging sessions)
-    /// And a root identity key (i.e. enclaved encryption key for this device)
-    ///
-    /// # Arguments
-    /// * `configuration` - the configuration for the `MlsCentral`
-    ///
-    /// # Errors
-    /// Failures in the initialization of the KeyStore can cause errors, such as IO, the same kind
-    /// of errors can happen when the groups are being restored from the KeyStore or even during
-    /// the client initialization (to fetch the identity signature). Other than that, `MlsError`
-    /// can be caused by group deserialization or during the initialization of the credentials:
-    /// * for x509 Credentials if the cetificate chain length is lower than 2
-    /// * for Basic Credentials if the signature key cannot be generated either by not supported
-    ///   scheme or the key generation fails
-    pub async fn try_new(configuration: MlsClientConfiguration) -> Result<Self> {
-        // Init backend (crypto + rand + keystore)
-        let mls_backend = MlsCryptoProvider::try_new_with_configuration(MlsCryptoProviderConfiguration {
-            db_path: &configuration.store_path,
-            identity_key: &configuration.identity_key,
-            in_memory: false,
-            entropy_seed: configuration.external_entropy.clone(),
-        })
-        .await
-        .map_err(MlsError::wrap("trying to initialize mls crypto provider object"))?;
-        Self::new_with_backend(mls_backend, configuration).await
-    }
-
-    /// Same as the [Client::try_new] but instead, it uses an in memory KeyStore. Although required, the `store_path` parameter from the `MlsCentralConfiguration` won't be used here.
-    pub async fn try_new_in_memory(configuration: MlsClientConfiguration) -> Result<Self> {
-        let mls_backend = MlsCryptoProvider::try_new_with_configuration(MlsCryptoProviderConfiguration {
-            db_path: &configuration.store_path,
-            identity_key: &configuration.identity_key,
-            in_memory: true,
-            entropy_seed: configuration.external_entropy.clone(),
-        })
-        .await
-        .map_err(MlsError::wrap(
-            "trying to initialize mls crypto provider object (in memory)",
-        ))?;
-        Self::new_with_backend(mls_backend, configuration).await
-    }
-
-    async fn new_with_backend(mls_backend: MlsCryptoProvider, configuration: MlsClientConfiguration) -> Result<Self> {
-        // We create the core crypto instance first to enable creating a transaction from it and
-        // doing all subsequent actions inside a single transaction, though it forces us to clone
-        // a few Arcs and locks.
-        let client = Self {
-            mls_backend: mls_backend.clone(),
-            state: Default::default(),
-            transport: Arc::new(None.into()),
-        };
-
-        let cc = CoreCrypto::from(client.clone());
-        let context = cc
-            .new_transaction()
-            .await
-            .map_err(RecursiveError::root("starting new transaction"))?;
-
-        if let Some(id) = configuration.client_id {
-            client
-                .init(
-                    ClientIdentifier::Basic(id),
-                    configuration.ciphersuites.as_slice(),
-                    &mls_backend,
-                    configuration
-                        .nb_init_key_packages
-                        .unwrap_or(INITIAL_KEYING_MATERIAL_COUNT),
-                )
-                .await
-                .map_err(RecursiveError::mls_client("initializing mls client"))?
-        }
-
-        let central = cc.mls;
-        context
-            .init_pki_env()
-            .await
-            .map_err(RecursiveError::e2e_identity("initializing pki environment"))?;
-        context
-            .finish()
-            .await
-            .map_err(RecursiveError::root("finishing transaction"))?;
-        Ok(central)
-    }
-
-    /// Provide the implementation of functions to communicate with the delivery service
-    /// (see [MlsTransport]).
-    pub async fn provide_transport(&self, transport: Arc<dyn MlsTransport>) {
-        self.transport.write().await.replace(transport);
-    }
-
-    /// Returns the client's most recent public signature key as a buffer.
-    /// Used to upload a public key to the server in order to verify client's messages signature.
-    ///
-    /// # Arguments
-    /// * `ciphersuite` - a callback to be called to perform authorization
-    /// * `credential_type` - of the credential to look for
-    pub async fn client_public_key(
-        &self,
-        ciphersuite: MlsCiphersuite,
-        credential_type: MlsCredentialType,
-    ) -> Result<Vec<u8>> {
-        let cb = self
-            .find_most_recent_credential_bundle(ciphersuite.signature_algorithm(), credential_type)
-            .await
-            .map_err(RecursiveError::mls_client("finding most recent credential bundle"))?;
-        Ok(cb.signature_key.to_public_vec())
-    }
-
-    /// Returns the client's id as a buffer
-    pub async fn client_id(&self) -> Result<ClientId> {
-        self.id()
-            .await
-            .map_err(RecursiveError::mls_client("getting client id"))
-            .map_err(Into::into)
-    }
-
-    /// Checks if a given conversation id exists locally
-    pub async fn conversation_exists(&self, id: &ConversationId) -> Result<bool> {
-        match self.get_raw_conversation(id).await {
-            Ok(_) => Ok(true),
-            Err(conversation::Error::Leaf(LeafError::ConversationNotFound(_))) => Ok(false),
-            Err(e) => {
-                Err(RecursiveError::mls_conversation("getting conversation by id to check for existence")(e).into())
-            }
-        }
-    }
-
-    /// Generates a random byte array of the specified size
-    pub fn random_bytes(&self, len: usize) -> Result<Vec<u8>> {
-        use openmls_traits::random::OpenMlsRand as _;
-        self.mls_backend
-            .rand()
-            .random_vec(len)
-            .map_err(MlsError::wrap("generating random vector"))
-            .map_err(Into::into)
-    }
-
-    /// Closes the connection with the local KeyStore
-    ///
-    /// # Errors
-    /// KeyStore errors, such as IO
-    pub async fn close(self) -> Result<()> {
-        self.mls_backend
-            .close()
-            .await
-            .map_err(MlsError::wrap("closing connection with keystore"))
-            .map_err(Into::into)
-    }
-
-    /// see [mls_crypto_provider::MlsCryptoProvider::reseed]
-    pub async fn reseed(&self, seed: Option<EntropySeed>) -> Result<()> {
-        self.mls_backend
-            .reseed(seed)
-            .map_err(MlsError::wrap("reseeding mls backend"))
-            .map_err(Into::into)
-    }
-}
-
 impl CentralContext {
     /// Initializes the MLS client if [super::CoreCrypto] has previously been initialized with
     /// `CoreCrypto::deferred_init` instead of `CoreCrypto::new`.
@@ -432,7 +269,7 @@ impl CentralContext {
         Ok(cb.signature_key.to_public_vec())
     }
 
-    /// see [Client::client_id]
+    /// see [Client::id]
     pub async fn client_id(&self) -> Result<ClientId> {
         self.mls_client()
             .await
