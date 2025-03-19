@@ -31,8 +31,9 @@ args = ["install", "--cwd", "bindings/js"]
 
 [tasks.docs-ts]
 dependencies = ["wasm", "bun-deps"]
-command = "bunx"
+command = "bun"
 args = [
+    "x",
     "typedoc",
     "--basePath", "./bindings/js",
     "--entryPoints", "./bindings/js/src/CoreCrypto.ts",
