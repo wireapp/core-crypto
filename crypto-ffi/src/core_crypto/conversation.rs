@@ -2,7 +2,7 @@ use core_crypto::mls::conversation::Conversation as _;
 #[cfg(target_family = "wasm")]
 use wasm_bindgen::prelude::*;
 
-use crate::{Ciphersuite, CoreCrypto, CoreCryptoResult};
+use crate::{Ciphersuite, ClientId, CoreCrypto, CoreCryptoResult};
 
 // Note that we can't do the same `Box<[u8]>` thing here; it doesn't work for async functions.
 #[cfg(target_family = "wasm")]
@@ -57,6 +57,35 @@ impl CoreCrypto {
         let conversation_id = conversation_id_vec!(conversation_id);
         self.inner
             .conversation_exists(&conversation_id)
+            .await
+            .map_err(Into::into)
+    }
+
+    /// See [core_crypto::mls::conversation::ImmutableConversation::get_client_ids]
+    pub async fn get_client_ids(&self, conversation_id: &ConversationId) -> CoreCryptoResult<Vec<ClientId>> {
+        let conversation_id = conversation_id_vec!(conversation_id);
+        let conversation = self.inner.get_raw_conversation(&conversation_id).await?;
+        Ok(conversation.get_client_ids().await.into_iter().map(ClientId).collect())
+    }
+
+    /// See [core_crypto::mls::conversation::ImmutableConversation::get_external_sender]
+    pub async fn get_external_sender(&self, conversation_id: &ConversationId) -> CoreCryptoResult<Vec<u8>> {
+        let conversation_id = conversation_id_vec!(conversation_id);
+        let conversation = self.inner.get_raw_conversation(&conversation_id).await?;
+        conversation.get_external_sender().await.map_err(Into::into)
+    }
+
+    /// See [core_crypto::mls::conversation::ImmutableConversation::export_secret_key]
+    pub async fn export_secret_key(
+        &self,
+        conversation_id: &ConversationId,
+        key_length: u32,
+    ) -> CoreCryptoResult<Vec<u8>> {
+        let conversation_id = conversation_id_vec!(conversation_id);
+        self.inner
+            .get_raw_conversation(&conversation_id)
+            .await?
+            .export_secret_key(key_length as usize)
             .await
             .map_err(Into::into)
     }
