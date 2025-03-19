@@ -1,3 +1,9 @@
+pub(crate) mod acme_challenge;
+pub(crate) mod acme_directory;
+pub(crate) mod enrollment;
+pub(crate) mod new_acme_authz;
+pub(crate) mod new_acme_order;
+
 #[cfg(target_family = "wasm")]
 use wasm_bindgen::prelude::*;
 
