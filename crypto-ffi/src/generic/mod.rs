@@ -1164,7 +1164,7 @@ impl CoreCrypto {
     ) -> CoreCryptoResult<Vec<u8>> {
         Ok(self
             .central
-            .client_public_key(ciphersuite.into(), credential_type.into())
+            .public_key(ciphersuite.into(), credential_type.into())
             .await?)
     }
 

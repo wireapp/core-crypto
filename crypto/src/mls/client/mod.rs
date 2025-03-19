@@ -23,7 +23,7 @@ pub(crate) mod key_package;
 pub(crate) mod user_id;
 
 use crate::{
-    KeystoreError, LeafError, MlsError, MlsTransport, RecursiveError,
+    CoreCrypto, KeystoreError, LeafError, MlsError, MlsTransport, RecursiveError,
     mls::credential::{CredentialBundle, ext::CredentialExt},
     prelude::{
         CertificateBundle, ClientId, MlsCiphersuite, MlsCredentialType, identifier::ClientIdentifier,
@@ -44,9 +44,11 @@ use std::sync::Arc;
 use std::{collections::HashSet, fmt};
 use tls_codec::{Deserialize, Serialize};
 
+use crate::mls::conversation;
+use crate::prelude::{ConversationId, INITIAL_KEYING_MATERIAL_COUNT, MlsClientConfiguration};
 use core_crypto_keystore::entities::{EntityFindParams, MlsCredential, MlsSignatureKeyPair};
 use identities::ClientIdentities;
-use mls_crypto_provider::MlsCryptoProvider;
+use mls_crypto_provider::{EntropySeed, MlsCryptoProvider, MlsCryptoProviderConfiguration};
 
 /// Represents a MLS client which in our case is the equivalent of a device.
 ///
@@ -87,6 +89,100 @@ impl fmt::Debug for ClientInner {
 }
 
 impl Client {
+    /// Tries to initialize the [Client].
+    /// Takes a store path (i.e. Disk location of the embedded database, should be consistent between messaging sessions)
+    /// And a root identity key (i.e. enclaved encryption key for this device)
+    ///
+    /// # Arguments
+    /// * `configuration` - the configuration for the `MlsCentral`
+    ///
+    /// # Errors
+    /// Failures in the initialization of the KeyStore can cause errors, such as IO, the same kind
+    /// of errors can happen when the groups are being restored from the KeyStore or even during
+    /// the client initialization (to fetch the identity signature). Other than that, `MlsError`
+    /// can be caused by group deserialization or during the initialization of the credentials:
+    /// * for x509 Credentials if the certificate chain length is lower than 2
+    /// * for Basic Credentials if the signature key cannot be generated either by not supported
+    ///   scheme or the key generation fails
+    pub async fn try_new(configuration: MlsClientConfiguration) -> crate::mls::Result<Self> {
+        // Init backend (crypto + rand + keystore)
+        let mls_backend = MlsCryptoProvider::try_new_with_configuration(MlsCryptoProviderConfiguration {
+            db_path: &configuration.store_path,
+            identity_key: &configuration.identity_key,
+            in_memory: false,
+            entropy_seed: configuration.external_entropy.clone(),
+        })
+        .await
+        .map_err(MlsError::wrap("trying to initialize mls crypto provider object"))?;
+        Self::new_with_backend(mls_backend, configuration).await
+    }
+
+    /// Same as the [Client::try_new] but instead, it uses an in memory KeyStore. Although required, the `store_path` parameter from the `MlsCentralConfiguration` won't be used here.
+    pub async fn try_new_in_memory(configuration: MlsClientConfiguration) -> crate::mls::Result<Self> {
+        let mls_backend = MlsCryptoProvider::try_new_with_configuration(MlsCryptoProviderConfiguration {
+            db_path: &configuration.store_path,
+            identity_key: &configuration.identity_key,
+            in_memory: true,
+            entropy_seed: configuration.external_entropy.clone(),
+        })
+        .await
+        .map_err(MlsError::wrap(
+            "trying to initialize mls crypto provider object (in memory)",
+        ))?;
+        Self::new_with_backend(mls_backend, configuration).await
+    }
+
+    async fn new_with_backend(
+        mls_backend: MlsCryptoProvider,
+        configuration: MlsClientConfiguration,
+    ) -> crate::mls::Result<Self> {
+        // We create the core crypto instance first to enable creating a transaction from it and
+        // doing all subsequent actions inside a single transaction, though it forces us to clone
+        // a few Arcs and locks.
+        let client = Self {
+            mls_backend: mls_backend.clone(),
+            state: Default::default(),
+            transport: Arc::new(None.into()),
+        };
+
+        let cc = CoreCrypto::from(client.clone());
+        let context = cc
+            .new_transaction()
+            .await
+            .map_err(RecursiveError::root("starting new transaction"))?;
+
+        if let Some(id) = configuration.client_id {
+            client
+                .init(
+                    ClientIdentifier::Basic(id),
+                    configuration.ciphersuites.as_slice(),
+                    &mls_backend,
+                    configuration
+                        .nb_init_key_packages
+                        .unwrap_or(INITIAL_KEYING_MATERIAL_COUNT),
+                )
+                .await
+                .map_err(RecursiveError::mls_client("initializing mls client"))?
+        }
+
+        let central = cc.mls;
+        context
+            .init_pki_env()
+            .await
+            .map_err(RecursiveError::e2e_identity("initializing pki environment"))?;
+        context
+            .finish()
+            .await
+            .map_err(RecursiveError::root("finishing transaction"))?;
+        Ok(central)
+    }
+
+    /// Provide the implementation of functions to communicate with the delivery service
+    /// (see [MlsTransport]).
+    pub async fn provide_transport(&self, transport: Arc<dyn MlsTransport>) {
+        self.transport.write().await.replace(transport);
+    }
+
     /// Initializes the client.
     /// If the client's cryptographic material is already stored in the keystore, it loads it
     /// Otherwise, it is being created.
@@ -168,6 +264,65 @@ impl Client {
     async fn replace_inner(&self, new_inner: ClientInner) {
         let mut inner_lock = self.state.write().await;
         *inner_lock = Some(new_inner);
+    }
+
+    /// Returns the client's most recent public signature key as a buffer.
+    /// Used to upload a public key to the server in order to verify client's messages signature.
+    ///
+    /// # Arguments
+    /// * `ciphersuite` - a callback to be called to perform authorization
+    /// * `credential_type` - of the credential to look for
+    pub async fn public_key(
+        &self,
+        ciphersuite: MlsCiphersuite,
+        credential_type: MlsCredentialType,
+    ) -> crate::mls::Result<Vec<u8>> {
+        let cb = self
+            .find_most_recent_credential_bundle(ciphersuite.signature_algorithm(), credential_type)
+            .await
+            .map_err(RecursiveError::mls_client("finding most recent credential bundle"))?;
+        Ok(cb.signature_key.to_public_vec())
+    }
+
+    /// Checks if a given conversation id exists locally
+    pub async fn conversation_exists(&self, id: &ConversationId) -> crate::mls::Result<bool> {
+        match self.get_raw_conversation(id).await {
+            Ok(_) => Ok(true),
+            Err(conversation::Error::Leaf(LeafError::ConversationNotFound(_))) => Ok(false),
+            Err(e) => {
+                Err(RecursiveError::mls_conversation("getting conversation by id to check for existence")(e).into())
+            }
+        }
+    }
+
+    /// Generates a random byte array of the specified size
+    pub fn random_bytes(&self, len: usize) -> crate::mls::Result<Vec<u8>> {
+        use openmls_traits::random::OpenMlsRand as _;
+        self.mls_backend
+            .rand()
+            .random_vec(len)
+            .map_err(MlsError::wrap("generating random vector"))
+            .map_err(Into::into)
+    }
+
+    /// Closes the connection with the local KeyStore
+    ///
+    /// # Errors
+    /// KeyStore errors, such as IO
+    pub async fn close(self) -> crate::mls::Result<()> {
+        self.mls_backend
+            .close()
+            .await
+            .map_err(MlsError::wrap("closing connection with keystore"))
+            .map_err(Into::into)
+    }
+
+    /// see [mls_crypto_provider::MlsCryptoProvider::reseed]
+    pub async fn reseed(&self, seed: Option<EntropySeed>) -> crate::mls::Result<()> {
+        self.mls_backend
+            .reseed(seed)
+            .map_err(MlsError::wrap("reseeding mls backend"))
+            .map_err(Into::into)
     }
 
     /// Initializes a raw MLS keypair without an associated client ID
