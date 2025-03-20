@@ -785,6 +785,42 @@ impl Client {
             .map_err(KeystoreError::wrap("fetching mls keypackages"))?;
         Ok(kps)
     }
+
+    pub(crate) async fn init_x509_credential_bundle_if_missing(
+        &self,
+        backend: &MlsCryptoProvider,
+        sc: SignatureScheme,
+        cb: CertificateBundle,
+    ) -> Result<()> {
+        let existing_cb = self
+            .find_most_recent_credential_bundle(sc, MlsCredentialType::X509)
+            .await
+            .is_err();
+        if existing_cb {
+            self.save_new_x509_credential_bundle(&backend.keystore(), sc, cb)
+                .await
+                .map_err(RecursiveError::mls_client("saving new x509 credential bundle"))?;
+        }
+        Ok(())
+    }
+
+    pub(crate) async fn generate_one_keypackage(
+        &self,
+        backend: &MlsCryptoProvider,
+        cs: MlsCiphersuite,
+        ct: MlsCredentialType,
+    ) -> Result<openmls::prelude::KeyPackage> {
+        let cb = self
+            .find_most_recent_credential_bundle(cs.signature_algorithm(), ct)
+            .await
+            .map_err(RecursiveError::mls_client("finding most recent credential bundle"))?;
+        self.generate_one_keypackage_from_credential_bundle(backend, cs, &cb)
+            .await
+            .map_err(RecursiveError::mls_client(
+                "generating new keypackage from credential bundle",
+            ))
+            .map_err(Into::into)
+    }
 }
 
 #[cfg(test)]
