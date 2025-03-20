@@ -1,8 +1,5 @@
-use mls_crypto_provider::MlsCryptoProvider;
-use openmls::prelude::{Credential, CredentialWithKey, OpenMlsCrypto};
+use openmls::prelude::{Credential, CredentialWithKey};
 use openmls_basic_credential::SignatureKeyPair;
-use openmls_traits::{OpenMlsCryptoProvider, types::SignatureScheme};
-use openmls_x509_credential::CertificateKeyPair;
 use std::cmp::Ordering;
 use std::hash::{Hash, Hasher};
 
@@ -12,8 +9,6 @@ pub(crate) mod ext;
 pub(crate) mod typ;
 pub(crate) mod x509;
 
-use crate::MlsError;
-use crate::prelude::{CertificateBundle, Client, ClientId};
 pub(crate) use error::{Error, Result};
 
 #[derive(Debug)]
@@ -103,46 +98,6 @@ impl PartialOrd for CredentialBundle {
     }
 }
 
-impl Client {
-    pub(crate) fn new_basic_credential_bundle(
-        id: &ClientId,
-        sc: SignatureScheme,
-        backend: &MlsCryptoProvider,
-    ) -> Result<CredentialBundle> {
-        let (sk, pk) = backend
-            .crypto()
-            .signature_key_gen(sc)
-            .map_err(MlsError::wrap("generating a signature key"))?;
-
-        let signature_key = SignatureKeyPair::from_raw(sc, sk, pk);
-        let credential = Credential::new_basic(id.to_vec());
-        let cb = CredentialBundle {
-            credential,
-            signature_key,
-            created_at: 0,
-        };
-
-        Ok(cb)
-    }
-
-    pub(crate) fn new_x509_credential_bundle(cert: CertificateBundle) -> Result<CredentialBundle> {
-        let created_at = cert.get_created_at()?;
-        let (sk, ..) = cert.private_key.into_parts();
-        let chain = cert.certificate_chain;
-
-        let kp = CertificateKeyPair::new(sk, chain.clone()).map_err(MlsError::wrap("creating certificate key pair"))?;
-
-        let credential = Credential::new_x509(chain).map_err(MlsError::wrap("creating x509 credential"))?;
-
-        let cb = CredentialBundle {
-            credential,
-            signature_key: kp.0,
-            created_at,
-        };
-        Ok(cb)
-    }
-}
-
 // TODO: ensure certificate signature must match the group's ciphersuite ; fails otherwise. Tracking issue: WPB-9632
 // Requires more than 1 ciphersuite supported at the moment.
 #[cfg(test)]
@@ -152,6 +107,7 @@ mod tests {
     use std::sync::Arc;
     use wasm_bindgen_test::*;
 
+    use super::x509::CertificateBundle;
     use super::*;
     use crate::mls::conversation::Conversation as _;
     use crate::{
@@ -166,7 +122,6 @@ mod tests {
             *,
         },
     };
-    use x509::CertificateBundle;
 
     wasm_bindgen_test_configure!(run_in_browser);
 

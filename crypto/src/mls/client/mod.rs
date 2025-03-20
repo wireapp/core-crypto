@@ -40,6 +40,7 @@ use log::debug;
 use openmls::prelude::{Credential, CredentialType};
 use openmls_basic_credential::SignatureKeyPair;
 use openmls_traits::{OpenMlsCryptoProvider, crypto::OpenMlsCrypto, types::SignatureScheme};
+use openmls_x509_credential::CertificateKeyPair;
 use std::ops::{Deref, DerefMut};
 use std::sync::Arc;
 use std::{collections::HashSet, fmt};
@@ -285,6 +286,46 @@ impl Client {
         Ok(cb.signature_key.to_public_vec())
     }
 
+    pub(crate) fn new_basic_credential_bundle(
+        id: &ClientId,
+        sc: SignatureScheme,
+        backend: &MlsCryptoProvider,
+    ) -> Result<CredentialBundle> {
+        let (sk, pk) = backend
+            .crypto()
+            .signature_key_gen(sc)
+            .map_err(MlsError::wrap("generating a signature key"))?;
+
+        let signature_key = SignatureKeyPair::from_raw(sc, sk, pk);
+        let credential = Credential::new_basic(id.to_vec());
+        let cb = CredentialBundle {
+            credential,
+            signature_key,
+            created_at: 0,
+        };
+
+        Ok(cb)
+    }
+
+    pub(crate) fn new_x509_credential_bundle(cert: CertificateBundle) -> Result<CredentialBundle> {
+        let created_at = cert
+            .get_created_at()
+            .map_err(RecursiveError::mls_credential("getting credetntial created at"))?;
+        let (sk, ..) = cert.private_key.into_parts();
+        let chain = cert.certificate_chain;
+
+        let kp = CertificateKeyPair::new(sk, chain.clone()).map_err(MlsError::wrap("creating certificate key pair"))?;
+
+        let credential = Credential::new_x509(chain).map_err(MlsError::wrap("creating x509 credential"))?;
+
+        let cb = CredentialBundle {
+            credential,
+            signature_key: kp.0,
+            created_at,
+        };
+        Ok(cb)
+    }
+
     /// Checks if a given conversation id exists locally
     pub async fn conversation_exists(&self, id: &ConversationId) -> crate::mls::Result<bool> {
         match self.get_raw_conversation(id).await {
@@ -358,8 +399,7 @@ impl Client {
                 .map_err(MlsError::wrap("generating random client id"))?
                 .into();
 
-            let cb = Self::new_basic_credential_bundle(&tmp_client_id, cs.signature_algorithm(), backend)
-                .map_err(RecursiveError::mls_credential("creating new basic credential bundle"))?;
+            let cb = Self::new_basic_credential_bundle(&tmp_client_id, cs.signature_algorithm(), backend)?;
 
             let sign_kp = MlsSignatureKeyPair::new(
                 cs.signature_algorithm(),
@@ -721,8 +761,7 @@ impl Client {
         if matches!(existing_cb, Err(Error::CredentialNotFound(_))) {
             let id = self.id().await?;
             debug!(id:% = &id; "Initializing basic credential bundle");
-            let cb = Self::new_basic_credential_bundle(&id, sc, backend)
-                .map_err(RecursiveError::mls_credential("creating new basic credential bundle"))?;
+            let cb = Self::new_basic_credential_bundle(&id, sc, backend)?;
             self.save_identity(&backend.keystore(), None, sc, cb).await?;
         }
         Ok(())
@@ -737,8 +776,7 @@ impl Client {
         let id = cb
             .get_client_id()
             .map_err(RecursiveError::mls_credential("getting client id"))?;
-        let cb = Self::new_x509_credential_bundle(cb)
-            .map_err(RecursiveError::mls_credential("creating new x509 credential bundle"))?;
+        let cb = Self::new_x509_credential_bundle(cb)?;
         self.save_identity(keystore, Some(&id), sc, cb).await
     }
 }
