@@ -49,30 +49,6 @@ pub struct CustomConfiguration {
     pub wire_policy: Option<WirePolicy>,
 }
 
-#[cfg(target_family = "wasm")]
-#[wasm_bindgen]
-impl CustomConfiguration {
-    #[wasm_bindgen(constructor)]
-    pub fn new(key_rotation_span: Option<u32>, wire_policy: Option<WirePolicy>) -> Self {
-        Self {
-            key_rotation_span,
-            wire_policy,
-        }
-    }
-}
-
-#[cfg(not(target_family = "wasm"))]
-#[uniffi::export]
-impl CustomConfiguration {
-    #[uniffi::constructor]
-    pub fn new(key_rotation_span: Option<u32>, wire_policy: Option<WirePolicy>) -> Self {
-        Self {
-            key_rotation_span,
-            wire_policy,
-        }
-    }
-}
-
 impl From<CustomConfiguration> for MlsCustomConfiguration {
     fn from(cfg: CustomConfiguration) -> Self {
         let key_rotation_span = cfg
@@ -96,40 +72,10 @@ impl From<CustomConfiguration> for MlsCustomConfiguration {
 )]
 #[cfg_attr(not(target_family = "wasm"), derive(uniffi::Record))]
 pub struct ConversationConfiguration {
-    pub(crate) ciphersuite: Ciphersuite,
-    pub(crate) external_senders: Vec<Vec<u8>>,
-    pub(crate) custom: CustomConfiguration,
-}
-
-#[cfg(target_family = "wasm")]
-#[wasm_bindgen]
-impl ConversationConfiguration {
-    #[wasm_bindgen(constructor)]
-    pub fn new(
-        ciphersuite: Ciphersuite,
-        external_senders: Vec<js_sys::Uint8Array>,
-        custom: Option<CustomConfiguration>,
-    ) -> Self {
-        let external_senders = external_senders.iter().map(js_sys::Uint8Array::to_vec).collect();
-        let custom = custom.unwrap_or_default();
-        Self {
-            ciphersuite,
-            external_senders,
-            custom,
-        }
-    }
-}
-
-#[cfg(not(target_family = "wasm"))]
-#[uniffi::export]
-impl ConversationConfiguration {
-    #[uniffi::constructor(default(custom = None))]
-    pub fn new(ciphersuite: Ciphersuite, external_senders: Vec<Vec<u8>>, custom: Option<CustomConfiguration>) -> Self {
-        let custom = custom.unwrap_or_default();
-        Self {
-            ciphersuite,
-            external_senders,
-            custom,
-        }
-    }
+    #[cfg_attr(target_family = "wasm", wasm_bindgen(readonly))]
+    pub ciphersuite: Ciphersuite,
+    #[cfg_attr(target_family = "wasm", wasm_bindgen(skip))]
+    pub external_senders: Vec<Vec<u8>>,
+    #[cfg_attr(target_family = "wasm", wasm_bindgen(readonly))]
+    pub custom: CustomConfiguration,
 }
