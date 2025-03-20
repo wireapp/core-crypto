@@ -3,7 +3,7 @@ use crate::{
     clients::{EmulatedClient, EmulatedClientProtocol, EmulatedClientType, EmulatedMlsClient},
 };
 use color_eyre::eyre::Result;
-use core_crypto_ffi::{ClientId, CoreCrypto, CredentialType, CustomConfiguration, context::TransactionHelper};
+use core_crypto_ffi::{ClientId, CoreCrypto, CredentialType, CustomConfiguration, TransactionHelper};
 use std::cell::Cell;
 use std::sync::Arc;
 use tempfile::NamedTempFile;
@@ -36,6 +36,7 @@ impl CoreCryptoFfiClient {
             core_crypto_ffi::DatabaseKey::new(core_crypto::DatabaseKey::generate()),
             Some(client_id),
             Some(vec![ciphersuite].into()),
+            None,
             None,
         )
         .await?;
@@ -95,30 +96,26 @@ impl EmulatedMlsClient for CoreCryptoFfiClient {
     }
 
     async fn add_client(&self, conversation_id: &[u8], kp: &[u8]) -> Result<()> {
-        if !self.cc.conversation_exists(conversation_id.to_vec()).await? {
-            let cfg = core_crypto_ffi::ConversationConfiguration {
-                ciphersuite: CIPHERSUITE_IN_USE.into(),
-                external_senders: vec![],
-                custom: CustomConfiguration {
-                    key_rotation_span: None,
-                    wire_policy: None,
-                },
-            };
-            let conversation_id = conversation_id.to_vec();
+        let conversation_id = conversation_id.to_vec();
+        if !self.cc.conversation_exists(&conversation_id).await? {
+            let cfg = core_crypto_ffi::ConversationConfiguration::new(CIPHERSUITE_IN_USE.into(), vec![], None);
+            let conversation_id = conversation_id.clone();
             self.cc
-                .transaction(TransactionHelper::new(move |context| async move {
+                .transaction(TransactionHelper::new(async move |context| {
+                    let conversation_id = conversation_id.clone();
                     context
-                        .create_conversation(conversation_id, CredentialType::Basic, cfg)
+                        .create_conversation(&conversation_id, CredentialType::Basic, cfg)
                         .await?;
                     Ok(())
                 }))
                 .await?;
         }
 
-        let conversation_id = conversation_id.to_vec();
         let key_packages = vec![kp.to_vec()];
-        let extractor = TransactionHelper::new(move |context| async move {
-            context.add_clients_to_conversation(conversation_id, key_packages).await
+        let extractor = TransactionHelper::new(async move |context| {
+            context
+                .add_clients_to_conversation(&conversation_id, key_packages)
+                .await
         });
         self.cc.transaction(extractor.clone()).await?;
         Ok(())
@@ -129,7 +126,7 @@ impl EmulatedMlsClient for CoreCryptoFfiClient {
         let conversation_id = conversation_id.to_vec();
         let extractor = TransactionHelper::new(move |context| async move {
             context
-                .remove_clients_from_conversation(conversation_id, vec![client_id])
+                .remove_clients_from_conversation(&conversation_id, vec![client_id])
                 .await
         });
         self.cc.transaction(extractor.clone()).await?;
@@ -153,7 +150,7 @@ impl EmulatedMlsClient for CoreCryptoFfiClient {
         let message = message.to_vec();
         let extractor =
             TransactionHelper::new(
-                move |context| async move { context.encrypt_message(conversation_id, message).await },
+                move |context| async move { context.encrypt_message(&conversation_id, message).await },
             );
         self.cc.transaction(extractor.clone()).await?;
         Ok(extractor.into_return_value())
@@ -164,7 +161,7 @@ impl EmulatedMlsClient for CoreCryptoFfiClient {
         let message = message.to_vec();
         let extractor =
             TransactionHelper::new(
-                move |context| async move { context.decrypt_message(conversation_id, message).await },
+                move |context| async move { context.decrypt_message(&conversation_id, message).await },
             );
         self.cc.transaction(extractor.clone()).await?;
         Ok(extractor.into_return_value().message)
