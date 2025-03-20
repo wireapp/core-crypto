@@ -38,4 +38,11 @@ impl CoreCryptoContext {
     pub async fn get_data(&self) -> CoreCryptoResult<Option<Vec<u8>>> {
         self.inner.get_data().await.map_err(Into::into)
     }
+
+    /// Returns: [`WasmCryptoResult<js_sys::Uint8Array>`]
+    ///
+    /// see [core_crypto::mls::context::CentralContext::random_bytes]
+    pub async fn random_bytes(&self, len: u32) -> CoreCryptoResult<Vec<u8>> {
+        self.inner.random_bytes(len as _).await.map_err(Into::into)
+    }
 }
