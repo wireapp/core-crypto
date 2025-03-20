@@ -18,16 +18,6 @@ pub mod proteus;
 
 #[uniffi::export]
 impl CoreCryptoContext {
-    /// See [core_crypto::context::CentralContext::set_data].
-    pub async fn set_data(&self, data: Vec<u8>) -> CoreCryptoResult<()> {
-        self.inner.set_data(data).await.map_err(Into::into)
-    }
-
-    /// See [core_crypto::context::CentralContext::get_data].
-    pub async fn get_data(&self) -> CoreCryptoResult<Option<Vec<u8>>> {
-        self.inner.get_data().await.map_err(Into::into)
-    }
-
     /// See [core_crypto::context::CentralContext::mls_init]
     pub async fn mls_init(
         &self,
