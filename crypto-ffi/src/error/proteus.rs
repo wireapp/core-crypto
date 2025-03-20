@@ -2,8 +2,6 @@
 #[cfg_attr(target_family = "wasm", derive(strum::AsRefStr))]
 #[cfg_attr(not(target_family = "wasm"), derive(uniffi::Error))]
 pub enum ProteusError {
-    #[error("Proteus was not initialized")]
-    NotInitialized,
     #[error("The requested session was not found")]
     SessionNotFound,
     #[error("We already decrypted this message once")]
@@ -22,7 +20,6 @@ impl ProteusError {
         }
 
         match code {
-            5 => Self::NotInitialized,
             102 => Self::SessionNotFound,
             204 => Self::RemoteIdentityChanged,
             209 => Self::DuplicateMessage,
@@ -33,7 +30,6 @@ impl ProteusError {
 
     pub fn error_code(&self) -> u16 {
         match self {
-            Self::NotInitialized => 5,
             Self::SessionNotFound => 102,
             Self::RemoteIdentityChanged => 204,
             Self::DuplicateMessage => 209,
