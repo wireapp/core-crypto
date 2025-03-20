@@ -285,6 +285,44 @@ impl Client {
         Ok(cb.signature_key.to_public_vec())
     }
 
+    pub(crate) fn new_basic_credential_bundle(
+        id: &ClientId,
+        sc: SignatureScheme,
+        backend: &MlsCryptoProvider,
+    ) -> Result<CredentialBundle> {
+        let (sk, pk) = backend
+            .crypto()
+            .signature_key_gen(sc)
+            .map_err(MlsError::wrap("generating a signature key"))?;
+
+        let signature_key = SignatureKeyPair::from_raw(sc, sk, pk);
+        let credential = Credential::new_basic(self.id());
+        let cb = CredentialBundle {
+            credential,
+            signature_key,
+            created_at: 0,
+        };
+
+        Ok(cb)
+    }
+
+    pub(crate) fn new_x509_credential_bundle(cert: CertificateBundle) -> Result<CredentialBundle> {
+        let created_at = cert.get_created_at()?;
+        let (sk, ..) = cert.private_key.into_parts();
+        let chain = cert.certificate_chain;
+
+        let kp = CertificateKeyPair::new(sk, chain.clone()).map_err(MlsError::wrap("creating certificate key pair"))?;
+
+        let credential = Credential::new_x509(chain).map_err(MlsError::wrap("creating x509 credential"))?;
+
+        let cb = CredentialBundle {
+            credential,
+            signature_key: kp.0,
+            created_at,
+        };
+        Ok(cb)
+    }
+
     /// Checks if a given conversation id exists locally
     pub async fn conversation_exists(&self, id: &ConversationId) -> crate::mls::Result<bool> {
         match self.get_raw_conversation(id).await {
