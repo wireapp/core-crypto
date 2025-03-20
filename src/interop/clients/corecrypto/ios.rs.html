@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `interop/src/clients/corecrypto/ios.rs`."><title>ios.rs - source</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../../../static.files/rustdoc-46132b98.css"><meta name="rustdoc-vars" data-root-path="../../../../" data-static-root-path="../../../../static.files/" data-current-crate="interop" data-themes="" data-resource-suffix="" data-rustdoc-version="1.85.0 (4d91de4e4 2025-02-17)" data-channel="1.85.0" data-search-js="search-75f5ac3e.js" data-settings-js="settings-0f613d39.js" ><script src="../../../../static.files/storage-59e33391.js"></script><script defer src="../../../../static.files/src-script-56102188.js"></script><script defer src="../../../../src-files.js"></script><script defer src="../../../../static.files/main-5f194d8c.js"></script><noscript><link rel="stylesheet" href="../../../../static.files/noscript-893ab5e7.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../static.files/favicon-32x32-6580c154.png"><link rel="icon" type="image/svg+xml" href="../../../../static.files/favicon-044be391.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer"></div><main><rustdoc-search></rustdoc-search><section id="main-content" class="content"><div class="main-heading"><h1><div class="sub-heading">interop/clients/corecrypto/</div>ios.rs</h1><rustdoc-toolbar></rustdoc-toolbar></div><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers">
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `interop/src/clients/corecrypto/ios.rs`."><title>ios.rs - source</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../../../static.files/rustdoc-46132b98.css"><meta name="rustdoc-vars" data-root-path="../../../../" data-static-root-path="../../../../static.files/" data-current-crate="interop" data-themes="" data-resource-suffix="" data-rustdoc-version="1.85.1 (4eb161250 2025-03-15)" data-channel="1.85.1" data-search-js="search-75f5ac3e.js" data-settings-js="settings-0f613d39.js" ><script src="../../../../static.files/storage-59e33391.js"></script><script defer src="../../../../static.files/src-script-56102188.js"></script><script defer src="../../../../src-files.js"></script><script defer src="../../../../static.files/main-5f194d8c.js"></script><noscript><link rel="stylesheet" href="../../../../static.files/noscript-893ab5e7.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../static.files/favicon-32x32-6580c154.png"><link rel="icon" type="image/svg+xml" href="../../../../static.files/favicon-044be391.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer"></div><main><rustdoc-search></rustdoc-search><section id="main-content" class="content"><div class="main-heading"><h1><div class="sub-heading">interop/clients/corecrypto/</div>ios.rs</h1><rustdoc-toolbar></rustdoc-toolbar></div><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers">
 <a href="#1" id="1">1</a>
 <a href="#2" id="2">2</a>
 <a href="#3" id="3">3</a>
@@ -352,7 +352,43 @@
 <a href="#351" id="351">351</a>
 <a href="#352" id="352">352</a>
 <a href="#353" id="353">353</a>
-<a href="#354" id="354">354</a></pre></div><pre class="rust"><code><span class="comment">// Wire
+<a href="#354" id="354">354</a>
+<a href="#355" id="355">355</a>
+<a href="#356" id="356">356</a>
+<a href="#357" id="357">357</a>
+<a href="#358" id="358">358</a>
+<a href="#359" id="359">359</a>
+<a href="#360" id="360">360</a>
+<a href="#361" id="361">361</a>
+<a href="#362" id="362">362</a>
+<a href="#363" id="363">363</a>
+<a href="#364" id="364">364</a>
+<a href="#365" id="365">365</a>
+<a href="#366" id="366">366</a>
+<a href="#367" id="367">367</a>
+<a href="#368" id="368">368</a>
+<a href="#369" id="369">369</a>
+<a href="#370" id="370">370</a>
+<a href="#371" id="371">371</a>
+<a href="#372" id="372">372</a>
+<a href="#373" id="373">373</a>
+<a href="#374" id="374">374</a>
+<a href="#375" id="375">375</a>
+<a href="#376" id="376">376</a>
+<a href="#377" id="377">377</a>
+<a href="#378" id="378">378</a>
+<a href="#379" id="379">379</a>
+<a href="#380" id="380">380</a>
+<a href="#381" id="381">381</a>
+<a href="#382" id="382">382</a>
+<a href="#383" id="383">383</a>
+<a href="#384" id="384">384</a>
+<a href="#385" id="385">385</a>
+<a href="#386" id="386">386</a>
+<a href="#387" id="387">387</a>
+<a href="#388" id="388">388</a>
+<a href="#389" id="389">389</a>
+<a href="#390" id="390">390</a></pre></div><pre class="rust"><code><span class="comment">// Wire
 // Copyright (C) 2025 Wire Swiss GmbH
 
 // This program is free software: you can redistribute it and/or modify
@@ -377,8 +413,9 @@
 <span class="kw">use </span>core_crypto::prelude::{KeyPackage, KeyPackageIn};
 <span class="kw">use </span>std::cell::{Cell, RefCell};
 <span class="kw">use </span>std::fs;
-<span class="kw">use </span>std::io::{BufRead, BufReader};
-<span class="kw">use </span>std::process::{Child, ChildStdout, Command, Stdio};
+<span class="kw">use </span>std::io::{BufRead, BufReader, Read};
+<span class="kw">use </span>std::process::{Child, ChildStdout, Command, Output, Stdio};
+<span class="kw">use </span>std::time::Duration;
 <span class="kw">use </span>thiserror::Error;
 <span class="kw">use </span>tls_codec::Deserialize;
 
@@ -405,7 +442,25 @@
 
 <span class="kw">impl </span>SimulatorDriver {
     <span class="kw">fn </span>new(device: String, application: String) -&gt; <span class="self">Self </span>{
-        <span class="macro">log::info!</span>(<span class="string">"launching application: {}"</span>, application);
+        <span class="kw">let </span>application = <span class="self">Self</span>::launch_application(<span class="kw-2">&amp;</span>device, <span class="kw-2">&amp;</span>application, <span class="bool-val">true</span>).expect(<span class="string">"Failed ot launch application"</span>);
+
+        <span class="self">Self </span>{
+            device,
+            process: application.<span class="number">0</span>,
+            output: RefCell::new(application.<span class="number">1</span>),
+        }
+    }
+
+    <span class="kw">fn </span>boot_device(device: <span class="kw-2">&amp;</span>str) -&gt; std::io::Result&lt;Output&gt; {
+        Command::new(<span class="string">"xcrun"</span>).args([<span class="string">"simctl"</span>, <span class="string">"boot"</span>, device]).output()
+    }
+
+    <span class="kw">fn </span>launch_application(
+        device: <span class="kw-2">&amp;</span>str,
+        application: <span class="kw-2">&amp;</span>str,
+        boot_device: bool,
+    ) -&gt; <span class="prelude-ty">Result</span>&lt;(Child, BufReader&lt;ChildStdout&gt;)&gt; {
+        <span class="macro">log::info!</span>(<span class="string">"launching application: {} on {}"</span>, application, device);
 
         <span class="kw">let </span><span class="kw-2">mut </span>process = Command::new(<span class="string">"xcrun"</span>)
             .args([
@@ -413,8 +468,8 @@
                 <span class="string">"launch"</span>,
                 <span class="string">"--console-pty"</span>,
                 <span class="string">"--terminate-running-process"</span>,
-                <span class="kw-2">&amp;</span>device,
-                <span class="kw-2">&amp;</span>application,
+                device,
+                application,
             ])
             .stdout(Stdio::piped())
             .stderr(Stdio::piped())
@@ -427,10 +482,32 @@
                 .take()
                 .expect(<span class="string">"Expected stdout to be available on child process"</span>),
         );
-        <span class="kw">let </span><span class="kw-2">mut </span>line = String::new();
+
+        <span class="comment">// Wait for child process to launch or fail
+        </span>std::thread::sleep(Duration::from_secs(<span class="number">3</span>));
+        <span class="kw">match </span>process.try_wait() {
+            <span class="prelude-val">Ok</span>(<span class="prelude-val">None</span>) =&gt; {}
+            <span class="prelude-val">Ok</span>(<span class="prelude-val">Some</span>(exit_status)) =&gt; {
+                <span class="kw">if </span>boot_device &amp;&amp; exit_status.code() == <span class="prelude-val">Some</span>(<span class="number">149</span>) {
+                    <span class="macro">log::info!</span>(<span class="string">"device is shutdown, booting..."</span>);
+                    <span class="self">Self</span>::boot_device(device)<span class="question-mark">?</span>;
+                    <span class="kw">return </span><span class="self">Self</span>::launch_application(device, application, <span class="bool-val">false</span>);
+                }
+
+                <span class="kw">let </span><span class="kw-2">mut </span>error_message = String::new();
+                process
+                    .stderr
+                    .map(|<span class="kw-2">mut </span>stderr| stderr.read_to_string(<span class="kw-2">&amp;mut </span>error_message));
+                <span class="macro">panic!</span>(<span class="string">"Failed to launch application ({}): {}"</span>, exit_status, error_message)
+            }
+            <span class="prelude-val">Err</span>(error) =&gt; {
+                <span class="macro">panic!</span>(<span class="string">"Failed to launch application: {}"</span>, error)
+            }
+        }
 
         <span class="comment">// Waiting for confirmation that the application has launched.
-        </span><span class="kw">while </span>!line.contains(<span class="string">"Ready"</span>) {
+        </span><span class="kw">let </span><span class="kw-2">mut </span>line = String::new();
+        <span class="kw">while </span>!line.contains(<span class="string">"Ready"</span>) {
             line.clear();
             output
                 .read_line(<span class="kw-2">&amp;mut </span>line)
@@ -438,12 +515,7 @@
         }
 
         <span class="macro">log::info!</span>(<span class="string">"application launched: {}"</span>, line);
-
-        <span class="self">Self </span>{
-            device,
-            process,
-            output: RefCell::new(output),
-        }
+        <span class="prelude-val">Ok</span>((process, output))
     }
 
     <span class="kw">async fn </span>execute(<span class="kw-2">&amp;</span><span class="self">self</span>, action: String) -&gt; <span class="prelude-ty">Result</span>&lt;String&gt; {
