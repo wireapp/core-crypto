@@ -1,9 +1,9 @@
 use std::{collections::HashMap, ops::DerefMut};
 
 use crate::{
-    CoreCryptoError, CrlRegistration, E2eiConversationState, E2eiDumpedPkiEnv, E2eiEnrollment,
+    CoreCryptoContext, CoreCryptoError, CrlRegistration, E2eiConversationState, E2eiDumpedPkiEnv, E2eiEnrollment,
     NewCrlDistributionPoints, WireIdentity,
-    generic::{Ciphersuite, ClientId, CoreCryptoResult, CredentialType, context::CoreCryptoContext},
+    generic::{Ciphersuite, ClientId, CoreCryptoResult, CredentialType},
 };
 use core_crypto::mls::conversation::Conversation as _;
 use core_crypto::{RecursiveError, prelude::VerifiableGroupInfo};
