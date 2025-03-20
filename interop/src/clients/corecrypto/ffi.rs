@@ -98,7 +98,11 @@ impl EmulatedMlsClient for CoreCryptoFfiClient {
     async fn add_client(&self, conversation_id: &[u8], kp: &[u8]) -> Result<()> {
         let conversation_id = conversation_id.to_vec();
         if !self.cc.conversation_exists(&conversation_id).await? {
-            let cfg = core_crypto_ffi::ConversationConfiguration::new(CIPHERSUITE_IN_USE.into(), vec![], None);
+            let cfg = core_crypto_ffi::ConversationConfiguration {
+                ciphersuite: CIPHERSUITE_IN_USE.into(),
+                external_senders: Default::default(),
+                custom: Default::default(),
+            };
             let conversation_id = conversation_id.clone();
             self.cc
                 .transaction(TransactionHelper::new(async move |context| {
