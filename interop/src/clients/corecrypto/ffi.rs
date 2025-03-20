@@ -3,7 +3,7 @@ use crate::{
     clients::{EmulatedClient, EmulatedClientProtocol, EmulatedClientType, EmulatedMlsClient},
 };
 use color_eyre::eyre::Result;
-use core_crypto_ffi::{ClientId, CoreCrypto, CustomConfiguration, CredentialType, context::TransactionHelper};
+use core_crypto_ffi::{ClientId, CoreCrypto, CredentialType, CustomConfiguration, context::TransactionHelper};
 use std::cell::Cell;
 use std::sync::Arc;
 use tempfile::NamedTempFile;
