@@ -97,7 +97,7 @@ struct InteropClientApp: App {
 
             try await self.coreCrypto?.provideTransport(
                 transport: TransportProvider())
-            
+
             try await self.coreCrypto?.transaction({ context in
                 try await context.mlsInit(
                     clientId: clientId,
@@ -127,11 +127,12 @@ struct InteropClientApp: App {
 
         case .addClient(let conversationId, let ciphersuite, let keyPackage):
             guard let coreCrypto else { throw InteropError.notInitialised }
-            
+
             try await coreCrypto.transaction { context in
                 if try await context.conversationExists(
-                    conversationId: conversationId) == false {
-                    
+                    conversationId: conversationId) == false
+                {
+
                     let customConfiguration = CustomConfiguration(
                         keyRotationSpan: nil, wirePolicy: nil)
                     let conversationConfiguration = ConversationConfiguration(
