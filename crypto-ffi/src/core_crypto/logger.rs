@@ -236,13 +236,11 @@ type Logger = CoreCryptoLogger;
 #[cfg(not(target_family = "wasm"))]
 #[uniffi::export]
 pub fn set_logger(logger: Arc<dyn CoreCryptoLogger>, level: CoreCryptoLogLevel) {
-    set_logger_only(logger);
+    set_logger_only_inner(logger);
     set_max_log_level(level);
 }
 
-/// Initializes the logger
-#[cfg_attr(not(target_family = "wasm"), uniffi::export)]
-pub fn set_logger_only(logger: Logger) {
+fn set_logger_only_inner(logger: Logger) {
     LOGGER
         .handle()
         .replace(LogShim::new(logger))
@@ -253,6 +251,13 @@ pub fn set_logger_only(logger: Logger) {
             .expect("no poisonsed locks should be possible as we never panic while holding the lock");
         log::set_max_level(LevelFilter::Warn);
     });
+}
+
+/// Initializes the logger
+#[cfg(not(target_family = "wasm"))]
+#[uniffi::export]
+pub fn set_logger_only(logger: Logger) {
+    set_logger_only_inner(logger);
 }
 
 /// Set maximum log level forwarded to the logger
@@ -266,7 +271,7 @@ pub fn set_max_log_level(level: CoreCryptoLogLevel) {
 #[wasm_bindgen]
 impl CoreCrypto {
     pub fn set_logger(logger: CoreCryptoLogger) {
-        set_logger_only(logger);
+        set_logger_only_inner(logger);
     }
 
     pub fn set_max_log_level(level: CoreCryptoLogLevel) {
