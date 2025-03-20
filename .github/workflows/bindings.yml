@@ -45,10 +45,14 @@ jobs:
         uses: maxim-lobanov/setup-xcode@v1
         with:
             xcode-version: '16.2.0'
-      - name: swift format
+      - name: lint swift bindings
         run: |
             cd crypto-ffi/bindings/swift/WireCoreCrypto
-            swift format lint -r .
+            swift format lint -r . -s
+      - name: lint swift interop client
+        run: |
+          cd interop/src/clients/InteropClient
+          swift format lint -r . -s
       - name: ios tests
         run: |
           cd crypto-ffi/bindings/swift/WireCoreCrypto
