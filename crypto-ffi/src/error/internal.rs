@@ -8,7 +8,7 @@ use wasm_bindgen::JsValue;
 
 #[derive(Debug, thiserror::Error)]
 #[cfg_attr(target_family = "wasm", derive(strum::AsRefStr))]
-#[cfg_attr(not(target_family = "wasm"), derive(uniffi::Error))]
+#[cfg_attr(not(target_family = "wasm"), derive(uniffi::Error), uniffi(flat_error))]
 pub enum InternalError {
     #[error(transparent)]
     Mls(#[from] MlsError),
@@ -24,8 +24,11 @@ pub enum InternalError {
     #[error("Unknown ciphersuite identifier")]
     UnknownCiphersuite,
     #[cfg(target_family = "wasm")]
-    #[error("Transaction rolled back. Uncaught JsError: {uncaught_error:?}")]
-    TransactionFailed { uncaught_error: JsValue },
+    #[error("Transaction rolled back due to unexpected JS error: {0:?}")]
+    TransactionFailed(JsValue),
+    #[cfg(not(target_family = "wasm"))]
+    #[error("Transaction rolled back due to unexpected uniffi error: {0:?}")]
+    TransactionFailed(#[from] uniffi::UnexpectedUniFFICallbackError),
     #[error("{0}")]
     Other(String),
 }
