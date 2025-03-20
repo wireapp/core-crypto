@@ -166,6 +166,7 @@ mod tests {
             *,
         },
     };
+    use x509::CertificateBundle;
 
     wasm_bindgen_test_configure!(run_in_browser);
 

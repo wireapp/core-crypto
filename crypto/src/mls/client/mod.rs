@@ -744,58 +744,117 @@ impl Client {
 }
 
 #[cfg(test)]
-impl Client {
-    // test functions are not held to the same documentation standard as proper functions
-    #![allow(missing_docs)]
-
-    pub async fn random_generate(
-        &self,
-        case: &crate::test_utils::TestCase,
-        signer: Option<&crate::test_utils::x509::X509Certificate>,
-        provision: bool,
-    ) -> Result<()> {
-        self.reset().await;
-        let user_uuid = uuid::Uuid::new_v4();
-        let rnd_id = rand::random::<usize>();
-        let client_id = format!("{}:{rnd_id:x}@members.wire.com", user_uuid.hyphenated());
-        let identity = match case.credential_type {
-            MlsCredentialType::Basic => ClientIdentifier::Basic(client_id.as_str().into()),
-            MlsCredentialType::X509 => {
-                let signer = signer.expect("Missing intermediate CA");
-                CertificateBundle::rand_identifier(&client_id, &[signer])
-            }
-        };
-        let nb_key_package = if provision {
-            crate::prelude::INITIAL_KEYING_MATERIAL_COUNT
-        } else {
-            0
-        };
-        let backend = self.mls_backend.clone();
-        self.generate(identity, &backend, &[case.ciphersuite()], nb_key_package)
-            .await?;
-        Ok(())
-    }
-
-    pub async fn find_keypackages(&self, backend: &MlsCryptoProvider) -> Result<Vec<openmls::prelude::KeyPackage>> {
-        use core_crypto_keystore::CryptoKeystoreMls as _;
-        let kps = backend
-            .key_store()
-            .mls_fetch_keypackages::<openmls::prelude::KeyPackage>(u32::MAX)
-            .await
-            .map_err(KeystoreError::wrap("fetching mls keypackages"))?;
-        Ok(kps)
-    }
-}
-
-#[cfg(test)]
 mod tests {
+    use super::*;
     use crate::prelude::ClientId;
     use crate::test_utils::*;
+    use conversation::db_count::EntitiesCount;
     use core_crypto_keystore::connection::FetchFromDatabase;
-    use core_crypto_keystore::entities::{EntityFindParams, MlsSignatureKeyPair};
+    use core_crypto_keystore::entities::*;
     use mls_crypto_provider::MlsCryptoProvider;
     use wasm_bindgen_test::*;
 
+    impl Client {
+        // test functions are not held to the same documentation standard as proper functions
+        #![allow(missing_docs)]
+
+        pub async fn random_generate(
+            &self,
+            case: &crate::test_utils::TestCase,
+            signer: Option<&crate::test_utils::x509::X509Certificate>,
+            provision: bool,
+        ) -> Result<()> {
+            self.reset().await;
+            let user_uuid = uuid::Uuid::new_v4();
+            let rnd_id = rand::random::<usize>();
+            let client_id = format!("{}:{rnd_id:x}@members.wire.com", user_uuid.hyphenated());
+            let identity = match case.credential_type {
+                MlsCredentialType::Basic => ClientIdentifier::Basic(client_id.as_str().into()),
+                MlsCredentialType::X509 => {
+                    let signer = signer.expect("Missing intermediate CA");
+                    CertificateBundle::rand_identifier(&client_id, &[signer])
+                }
+            };
+            let nb_key_package = if provision {
+                crate::prelude::INITIAL_KEYING_MATERIAL_COUNT
+            } else {
+                0
+            };
+            let backend = self.mls_backend.clone();
+            self.generate(identity, &backend, &[case.ciphersuite()], nb_key_package)
+                .await?;
+            Ok(())
+        }
+
+        pub async fn find_keypackages(&self, backend: &MlsCryptoProvider) -> Result<Vec<openmls::prelude::KeyPackage>> {
+            use core_crypto_keystore::CryptoKeystoreMls as _;
+            let kps = backend
+                .key_store()
+                .mls_fetch_keypackages::<openmls::prelude::KeyPackage>(u32::MAX)
+                .await
+                .map_err(KeystoreError::wrap("fetching mls keypackages"))?;
+            Ok(kps)
+        }
+
+        pub(crate) async fn init_x509_credential_bundle_if_missing(
+            &self,
+            backend: &MlsCryptoProvider,
+            sc: SignatureScheme,
+            cb: CertificateBundle,
+        ) -> Result<()> {
+            let existing_cb = self
+                .find_most_recent_credential_bundle(sc, MlsCredentialType::X509)
+                .await
+                .is_err();
+            if existing_cb {
+                self.save_new_x509_credential_bundle(&backend.keystore(), sc, cb)
+                    .await?;
+            }
+            Ok(())
+        }
+
+        pub(crate) async fn generate_one_keypackage(
+            &self,
+            backend: &MlsCryptoProvider,
+            cs: MlsCiphersuite,
+            ct: MlsCredentialType,
+        ) -> Result<openmls::prelude::KeyPackage> {
+            let cb = self
+                .find_most_recent_credential_bundle(cs.signature_algorithm(), ct)
+                .await?;
+            self.generate_one_keypackage_from_credential_bundle(backend, cs, &cb)
+                .await
+        }
+
+        /// Count the entities
+        pub async fn count_entities(&self) -> EntitiesCount {
+            let keystore = self.mls_backend.keystore();
+            let credential = keystore.count::<MlsCredential>().await.unwrap();
+            let encryption_keypair = keystore.count::<MlsEncryptionKeyPair>().await.unwrap();
+            let epoch_encryption_keypair = keystore.count::<MlsEpochEncryptionKeyPair>().await.unwrap();
+            let enrollment = keystore.count::<E2eiEnrollment>().await.unwrap();
+            let group = keystore.count::<PersistedMlsGroup>().await.unwrap();
+            let hpke_private_key = keystore.count::<MlsHpkePrivateKey>().await.unwrap();
+            let key_package = keystore.count::<MlsKeyPackage>().await.unwrap();
+            let pending_group = keystore.count::<PersistedMlsPendingGroup>().await.unwrap();
+            let pending_messages = keystore.count::<MlsPendingMessage>().await.unwrap();
+            let psk_bundle = keystore.count::<MlsPskBundle>().await.unwrap();
+            let signature_keypair = keystore.count::<MlsSignatureKeyPair>().await.unwrap();
+            EntitiesCount {
+                credential,
+                encryption_keypair,
+                epoch_encryption_keypair,
+                enrollment,
+                group,
+                hpke_private_key,
+                key_package,
+                pending_group,
+                pending_messages,
+                psk_bundle,
+                signature_keypair,
+            }
+        }
+    }
     wasm_bindgen_test_configure!(run_in_browser);
 
     #[apply(all_cred_cipher)]

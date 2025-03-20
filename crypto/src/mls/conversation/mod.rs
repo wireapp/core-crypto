@@ -54,7 +54,7 @@ mod commit_delay;
 pub(crate) mod config;
 pub(crate) mod conversation_guard;
 #[cfg(test)]
-mod db_count;
+pub(crate) mod db_count;
 mod duplicate;
 #[cfg(test)]
 mod durability;
