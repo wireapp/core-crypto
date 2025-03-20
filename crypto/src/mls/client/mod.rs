@@ -798,8 +798,7 @@ impl Client {
             .is_err();
         if existing_cb {
             self.save_new_x509_credential_bundle(&backend.keystore(), sc, cb)
-                .await
-                .map_err(RecursiveError::mls_client("saving new x509 credential bundle"))?;
+                .await?;
         }
         Ok(())
     }
@@ -812,14 +811,9 @@ impl Client {
     ) -> Result<openmls::prelude::KeyPackage> {
         let cb = self
             .find_most_recent_credential_bundle(cs.signature_algorithm(), ct)
-            .await
-            .map_err(RecursiveError::mls_client("finding most recent credential bundle"))?;
+            .await?;
         self.generate_one_keypackage_from_credential_bundle(backend, cs, &cb)
             .await
-            .map_err(RecursiveError::mls_client(
-                "generating new keypackage from credential bundle",
-            ))
-            .map_err(Into::into)
     }
 }
 
