@@ -1,6 +1,7 @@
 #[cfg(target_family = "wasm")]
 pub(crate) mod array_of_byte_array;
 mod mls;
+mod proteus;
 
 use std::{ops::Deref, sync::Arc};
 
@@ -39,8 +40,6 @@ impl CoreCryptoContext {
         self.inner.get_data().await.map_err(Into::into)
     }
 
-    /// Returns: [`WasmCryptoResult<js_sys::Uint8Array>`]
-    ///
     /// see [core_crypto::mls::context::CentralContext::random_bytes]
     pub async fn random_bytes(&self, len: u32) -> CoreCryptoResult<Vec<u8>> {
         self.inner.random_bytes(len as _).await.map_err(Into::into)
