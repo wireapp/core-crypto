@@ -118,17 +118,26 @@ impl From<core_crypto::Error> for InternalError {
     fn from(error: core_crypto::Error) -> Self {
         log_error(&error);
 
-        // we can take care of the _simple_ error-mapping up here.
-        #[cfg(feature = "proteus")]
-        if let core_crypto::Error::Proteus(proteus) = &error {
-            if let Some(proteus_error) = ProteusError::from_error_code(proteus.source.error_code()) {
-                return Self::Proteus(proteus_error);
-            }
-        }
         match error {
             #[cfg(feature = "proteus")]
-            core_crypto::Error::ProteusNotInitialized => Self::Proteus(ProteusError::NotInitialized),
-            core_crypto::Error::Proteus(proteus) => Self::Other(proteus.innermost_error_message()),
+            core_crypto::Error::ProteusNotInitialized => Self::Other(error.to_string()),
+            #[cfg(not(feature = "proteus"))]
+            core_crypto::Error::ProteusNotInitialized => {
+                unreachable!("we never throw a proteus not initialized error when not using proteus")
+            }
+            #[cfg(feature = "proteus")]
+            core_crypto::Error::Proteus(proteus) => {
+                let error_code = proteus.source.error_code();
+                if let Some(proteus_error) = ProteusError::from_error_code(error_code) {
+                    Self::Proteus(proteus_error)
+                } else {
+                    Self::Other(format!("unknown proteus error code: {error_code:?}"))
+                }
+            }
+            #[cfg(not(feature = "proteus"))]
+            core_crypto::Error::Proteus(_proteus) => {
+                unreachable!("we don't raise proteus errors when building without proteus")
+            }
             core_crypto::Error::Mls(mls) => Self::Mls(MlsError::from(mls)),
             core_crypto::Error::InvalidContext => Self::Other(error.to_string()),
             core_crypto::Error::MlsTransportNotProvided => Self::Other(error.to_string()),
