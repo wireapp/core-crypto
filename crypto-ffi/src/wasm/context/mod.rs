@@ -24,39 +24,6 @@ pub mod proteus;
 
 #[wasm_bindgen]
 impl CoreCryptoContext {
-    /// Returns: [`WasmCryptoResult<()>`]
-    ///
-    /// see [core_crypto::context::CentralContext::set_data]
-    pub fn set_data(&self, data: Box<[u8]>) -> Promise {
-        let context = self.inner.clone();
-        future_to_promise(
-            async move {
-                context.set_data(data.into()).await.map_err(CoreCryptoError::from)?;
-                WasmCryptoResult::Ok(JsValue::UNDEFINED)
-            }
-            .err_into(),
-        )
-    }
-
-    /// Returns: [`WasmCryptoResult<Option<js_sys::Uint8Array>>`]
-    ///
-    /// see [core_crypto::context::CentralContext::get_data]
-    pub fn get_data(&self) -> Promise {
-        let context = self.inner.clone();
-        future_to_promise(
-            async move {
-                let data = context.get_data().await.map_err(CoreCryptoError::from)?;
-                let result = if let Some(data) = data {
-                    JsValue::from(js_sys::Uint8Array::from(data.as_slice()))
-                } else {
-                    JsValue::UNDEFINED
-                };
-                WasmCryptoResult::Ok(result)
-            }
-            .err_into(),
-        )
-    }
-
     /// see [core_crypto::mls::context::CentralContext::mls_init]
     pub fn mls_init(&self, client_id: FfiClientId, ciphersuites: Box<[u16]>, nb_key_package: Option<u32>) -> Promise {
         let context = self.inner.clone();
