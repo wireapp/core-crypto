@@ -22,7 +22,7 @@ dependencies {
 }
 
 android {
-    namespace = "com.wire.crypto"
+    namespace = "com.wire.crypto.uniffi"
     compileSdk = libs.versions.sdk.compile.get().toInt()
     defaultConfig {
         minSdk = libs.versions.sdk.min.get().toInt()
