@@ -23,17 +23,14 @@ export {
 
 import {
     CoreCrypto as CoreCryptoFfi,
-    CommitBundle as CommitBundleFfi,
-    CoreCryptoWasmLogger,
     E2eiDumpedPkiEnv,
-    MlsTransportProvider,
     WireIdentity,
+    build_metadata as ffiBuildMetadata,
+    version as ffiVersion,
 } from "./core-crypto-ffi.js";
 
 import { CoreCryptoError } from "./CoreCryptoError.js";
 import {
-    commitBundleFromFfi,
-    mapTransportResponseToFfi,
     CredentialType,
     ConversationId,
     ClientId,
@@ -44,6 +41,7 @@ import {
 import { CoreCryptoContext } from "./CoreCryptoContext.js";
 
 import { E2eiConversationState, normalizeEnum } from "./CoreCryptoE2EI.js";
+import { Ciphersuites } from "./core-crypto-ffi.js";
 
 /**
  * Params for CoreCrypto deferred initialization
@@ -109,9 +107,8 @@ export interface EpochObserver {
  *
  * @param logger - the interface to be called when something is going to be logged
  **/
-export function setLogger(logger: CoreCryptoLogger, ctx: unknown = null): void {
-    const wasmLogger = new CoreCryptoWasmLogger(logger.log, ctx);
-    CoreCryptoFfi.set_logger(wasmLogger);
+export function setLogger(logger: CoreCryptoLogger): void {
+    CoreCryptoFfi.set_logger(logger);
 }
 
 /**
@@ -154,7 +151,7 @@ export function setMaxLogLevel(level: CoreCryptoLogLevel): void {
  * @returns varous build metadata for `core-crypto`.
  */
 export function buildMetadata(): CoreCryptoFfiTypes.BuildMetadata {
-    return CoreCryptoFfi.build_metadata();
+    return ffiBuildMetadata();
 }
 
 /**
@@ -163,7 +160,7 @@ export function buildMetadata(): CoreCryptoFfiTypes.BuildMetadata {
  * @returns the CoreCrypto version as a string (e.g. "3.1.2")
  */
 export function version(): string {
-    return CoreCryptoFfi.version();
+    return ffiVersion();
 }
 
 /**
@@ -180,7 +177,7 @@ export class CoreCrypto {
         return this.#cc as CoreCryptoFfiTypes.CoreCrypto;
     }
 
-    static setLogger(logger: CoreCryptoWasmLogger) {
+    static setLogger(logger: CoreCryptoLogger) {
         CoreCryptoFfi.set_logger(logger);
     }
 
@@ -231,13 +228,15 @@ export class CoreCrypto {
         entropySeed,
         nbKeyPackage,
     }: CoreCryptoParams): Promise<CoreCrypto> {
-        const cs = ciphersuites.map((cs) => cs.valueOf());
+        const cs = new Ciphersuites(
+            Uint16Array.from(ciphersuites.map((cs) => cs.valueOf()))
+        );
         const cc = await CoreCryptoError.asyncMapErr(
-            CoreCryptoFfi._internal_new(
+            CoreCryptoFfi.async_new(
                 databaseName,
                 key,
                 clientId,
-                Uint16Array.of(...cs),
+                cs,
                 entropySeed,
                 nbKeyPackage
             )
@@ -318,10 +317,22 @@ export class CoreCrypto {
      * If this returns `true` you **cannot** call {@link CoreCrypto.close} as it will produce an error because of the
      * outstanding references that were detected.
      *
-     * @returns whether the CoreCrypto instance is locked
+     * @deprecated This function cannot accurately work synchronously; use {@link CoreCrypto.canClose} instead.
+     * @returns always `false`
      */
     isLocked(): boolean {
-        return this.#cc.has_outstanding_refs();
+        return false;
+    }
+
+    /**
+     * Returns true when a call to {@link CoreCrypto.close} would succeed right now.
+     *
+     * As with all such methods, beware TOCTOU.
+     *
+     * @returns whether the CoreCrypto instance is can potentially close right now
+     */
+    async canClose(): Promise<boolean> {
+        return !(await this.#cc.can_close());
     }
 
     /**
@@ -339,30 +350,10 @@ export class CoreCrypto {
      *
      * @param transportProvider - Any implementor of the {@link MlsTransport} interface
      */
-    async provideTransport(
-        transportProvider: MlsTransport,
-        ctx: unknown = null
-    ): Promise<void> {
-        try {
-            await this.#cc.provide_transport(
-                new MlsTransportProvider(
-                    async (commitBundle: CommitBundleFfi) => {
-                        const result = await transportProvider.sendCommitBundle(
-                            commitBundleFromFfi(commitBundle)
-                        );
-                        return mapTransportResponseToFfi(result);
-                    },
-                    async (message: Uint8Array) => {
-                        const result =
-                            await transportProvider.sendMessage(message);
-                        return mapTransportResponseToFfi(result);
-                    },
-                    ctx
-                )
-            );
-        } catch (e) {
-            throw CoreCryptoError.fromStdError(e as Error);
-        }
+    async provideTransport(transportProvider: MlsTransport): Promise<void> {
+        return await CoreCryptoError.asyncMapErr(
+            this.#cc.provide_transport(transportProvider)
+        );
     }
 
     /**
@@ -387,9 +378,13 @@ export class CoreCrypto {
      * ```
      */
     async conversationEpoch(conversationId: ConversationId): Promise<number> {
-        return await CoreCryptoError.asyncMapErr(
+        const epoch = await CoreCryptoError.asyncMapErr(
             this.#cc.conversation_epoch(conversationId)
         );
+        if (!Number.isSafeInteger(epoch)) {
+            throw new Error("epoch cannot be represented as a `number`");
+        }
+        return Number(epoch);
     }
 
     /**
@@ -400,9 +395,10 @@ export class CoreCrypto {
     async conversationCiphersuite(
         conversationId: ConversationId
     ): Promise<Ciphersuite> {
-        return await CoreCryptoError.asyncMapErr(
+        const cs = await CoreCryptoError.asyncMapErr(
             this.#cc.conversation_ciphersuite(conversationId)
         );
+        return Ciphersuite.from_number(cs.as_u16());
     }
 
     /**
@@ -416,8 +412,9 @@ export class CoreCrypto {
         ciphersuite: Ciphersuite,
         credentialType: CredentialType
     ): Promise<Uint8Array> {
+        const cs = new CoreCryptoFfiTypes.Ciphersuite(ciphersuite);
         return await CoreCryptoError.asyncMapErr(
-            this.#cc.client_public_key(ciphersuite, credentialType)
+            this.#cc.client_public_key(cs, credentialType)
         );
     }
 
@@ -462,9 +459,10 @@ export class CoreCrypto {
      * @returns A list of clients from the members of the group
      */
     async getClientIds(conversationId: ConversationId): Promise<ClientId[]> {
-        return await CoreCryptoError.asyncMapErr(
+        const clientIds = await CoreCryptoError.asyncMapErr(
             this.#cc.get_client_ids(conversationId)
         );
+        return clientIds.map((clientId) => clientId.as_bytes());
     }
 
     /**
@@ -588,7 +586,9 @@ export class CoreCrypto {
      */
     async e2eiIsEnabled(ciphersuite: Ciphersuite): Promise<boolean> {
         return await CoreCryptoError.asyncMapErr(
-            this.#cc.e2ei_is_enabled(ciphersuite)
+            this.#cc.e2ei_is_enabled(
+                new CoreCryptoFfiTypes.Ciphersuite(ciphersuite)
+            )
         );
     }
 
@@ -604,7 +604,10 @@ export class CoreCrypto {
         deviceIds: ClientId[]
     ): Promise<WireIdentity[]> {
         return await CoreCryptoError.asyncMapErr(
-            this.#cc.get_device_identities(conversationId, deviceIds)
+            this.#cc.get_device_identities(
+                conversationId,
+                deviceIds.map((id) => new CoreCryptoFfiTypes.ClientId(id))
+            )
         );
     }
 

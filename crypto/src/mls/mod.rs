@@ -155,6 +155,8 @@ pub(crate) trait HasClientAndProvider: Send {
 
 /// The entry point for the MLS CoreCrypto library. This struct provides all functionality to create
 /// and manage groups, make proposals and commits.
+///
+/// This is cheap to clone because all its internal members have `Arc` wrappers.
 #[derive(Debug, Clone)]
 pub struct MlsCentral {
     pub(crate) mls_client: Client,
@@ -314,6 +316,13 @@ impl MlsCentral {
             .random_vec(len)
             .map_err(MlsError::wrap("generating random vector"))
             .map_err(Into::into)
+    }
+
+    /// Reports whether the local KeyStore believes that it can currently close.
+    ///
+    /// Beware TOCTOU!
+    pub async fn can_close(&self) -> bool {
+        self.mls_backend.can_close().await
     }
 
     /// Closes the connection with the local KeyStore

@@ -1,11 +1,21 @@
 import {
     MlsTransportResponseVariant,
-    WasmMlsTransportResponse as MlsTransportResponseFfi,
+    MlsTransportResponse as MlsTransportResponseFfi,
     CommitBundle as CommitBundleFfi,
     WireIdentity,
+    MlsGroupInfoEncryptionType as GroupInfoEncryptionType,
+    MlsRatchetTreeType as RatchetTreeType,
 } from "./core-crypto-ffi.js";
 
-export { WelcomeBundle } from "./core-crypto-ffi.js";
+import * as CoreCryptoFfiTypes from "./core-crypto-ffi.d.js";
+
+export {
+    WelcomeBundle,
+    CredentialType,
+    WirePolicy,
+} from "./core-crypto-ffi.js";
+
+export { GroupInfoEncryptionType, RatchetTreeType };
 
 /**
  * see [core_crypto::prelude::CiphersuiteName]
@@ -41,29 +51,27 @@ export enum Ciphersuite {
     MLS_256_DHKEMP384_AES256GCM_SHA384_P384 = 0x0007,
 }
 
-export enum CredentialType {
-    /**
-     * Just a KeyPair
-     */
-    Basic = 0x0001,
-    /**
-     * A certificate obtained through e2e identity enrollment process
-     */
-    X509 = 0x0002,
-}
+export namespace Ciphersuite {
+    export function from_number(n: number): Ciphersuite {
+        if (!(n in Ciphersuite)) {
+            throw new Error(`unknown ciphersuite id: ${n}`);
+        }
+        return n as Ciphersuite;
+    }
 
-/**
- * see [core_crypto::prelude::MlsWirePolicy]
- */
-export enum WirePolicy {
-    /**
-     * Handshake messages are never encrypted
-     */
-    Plaintext = 0x0001,
-    /**
-     * Handshake messages are always encrypted
-     */
-    Ciphertext = 0x0002,
+    export function from(ffi: CoreCryptoFfiTypes.Ciphersuite): Ciphersuite {
+        return Ciphersuite.from_number(ffi.as_u16());
+    }
+
+    export function into(self: Ciphersuite): CoreCryptoFfiTypes.Ciphersuite {
+        return new CoreCryptoFfiTypes.Ciphersuite(self);
+    }
+
+    export function into_ciphersuites(
+        self: Ciphersuite[]
+    ): CoreCryptoFfiTypes.Ciphersuites {
+        return new CoreCryptoFfiTypes.Ciphersuites(Uint16Array.from(self));
+    }
 }
 
 /**
@@ -77,6 +85,16 @@ export type ConversationId = Uint8Array;
  * This is a freeform, uninspected buffer.
  */
 export type ClientId = Uint8Array;
+
+export namespace ClientId {
+    export function from(ffi: CoreCryptoFfiTypes.ClientId): ClientId {
+        return ffi.as_bytes();
+    }
+
+    export function into(self: ClientId): CoreCryptoFfiTypes.ClientId {
+        return new CoreCryptoFfiTypes.ClientId(self);
+    }
+}
 
 /**
  * Alias for proposal reference. It is a byte array of size 16.
@@ -141,40 +159,6 @@ export interface GroupInfoBundle {
 }
 
 /**
- * Informs whether the GroupInfo is confidential
- * see [core_crypto::mls::conversation::group_info::GroupInfoEncryptionType]
- */
-export enum GroupInfoEncryptionType {
-    /**
-     * Unencrypted
-     */
-    Plaintext = 0x01,
-    /**
-     * Encrypted in a JWE (not yet implemented)
-     */
-    JweEncrypted = 0x02,
-}
-
-/**
- * Represents different ways of carrying the Ratchet Tree with some optimizations to save some space
- * see [core_crypto::mls::conversation::group_info::RatchetTreeType]
- */
-export enum RatchetTreeType {
-    /**
-     * Complete GroupInfo
-     */
-    Full = 0x01,
-    /**
-     * Contains the difference since previous epoch (not yet implemented)
-     */
-    Delta = 0x02,
-    /**
-     * To define (not yet implemented)
-     */
-    ByRef = 0x03,
-}
-
-/**
  * This is a wrapper for all the possible outcomes you can get after decrypting a message
  */
 export interface DecryptedMessage {
@@ -223,6 +207,19 @@ export interface DecryptedMessage {
     crlNewDistributionPoints?: string[];
 }
 
+export namespace DecryptedMessage {
+    export function from(
+        ffi: CoreCryptoFfiTypes.DecryptedMessage
+    ): DecryptedMessage {
+        return {
+            ...BufferedDecryptedMessage.from(ffi),
+            bufferedMessages: ffi.buffered_messages?.map((msg) =>
+                BufferedDecryptedMessage.from(msg)
+            ),
+        };
+    }
+}
+
 /**
  * Almost same as {@link DecryptedMessage} but avoids recursion
  */
@@ -259,6 +256,28 @@ export interface BufferedDecryptedMessage {
      * see {@link DecryptedMessage.crlNewDistributionPoints}
      */
     crlNewDistributionPoints?: string[];
+}
+
+export namespace BufferedDecryptedMessage {
+    export function from(
+        ffi: CoreCryptoFfiTypes.BufferedDecryptedMessage
+    ): BufferedDecryptedMessage {
+        return {
+            message: ffi.message,
+            proposals: ffi.proposals.map((prop) => ProposalBundle.from(prop)),
+            isActive: ffi.is_active,
+            commitDelay: ffi.commit_delay
+                ? Number(ffi.commit_delay)
+                : undefined,
+            senderClientId: ffi.sender_client_id
+                ? ClientId.from(ffi.sender_client_id)
+                : undefined,
+            hasEpochChanged: ffi.has_epoch_changed,
+            identity: ffi.identity,
+            crlNewDistributionPoints:
+                ffi.crl_new_distribution_points.as_strings(),
+        };
+    }
 }
 
 /**
@@ -302,6 +321,18 @@ export interface ProposalBundle {
      * @readonly
      */
     crlNewDistributionPoints?: string[];
+}
+
+export namespace ProposalBundle {
+    export function from(
+        ffi: CoreCryptoFfiTypes.ProposalBundle
+    ): ProposalBundle {
+        return {
+            proposal: ffi.proposal,
+            proposalRef: ffi.proposal_ref,
+            crlNewDistributionPoints: ffi.crl_new_distribution_points,
+        };
+    }
 }
 
 /**

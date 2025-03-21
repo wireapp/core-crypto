@@ -14,6 +14,7 @@ module.exports = {
     },
     rules: {
         "prettier/prettier": "error",
+        "@typescript-eslint/no-namespace": "off" // namespaces for static methods on arbitrary types are awesome!
     },
     plugins: ["@typescript-eslint", "prettier", "wdio"],
 };

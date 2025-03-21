@@ -9,9 +9,7 @@ use mls_crypto_provider::MlsCryptoProvider;
 use crate::{
     RecursiveError,
     context::CentralContext,
-    e2e_identity::{
-        crypto::E2eiSignatureKeypair, id::QualifiedE2eiClientId, init_certificates::NewCrlDistributionPoint,
-    },
+    e2e_identity::{crypto::E2eiSignatureKeypair, id::QualifiedE2eiClientId},
     mls::credential::x509::CertificatePrivateKey,
     prelude::{CertificateBundle, MlsCiphersuite, id::ClientId, identifier::ClientIdentifier},
 };
@@ -31,7 +29,7 @@ pub(crate) mod stash;
 pub mod types;
 
 pub use error::{Error, Result};
-pub use init_certificates::E2eiDumpedPkiEnv;
+pub use init_certificates::{E2eiDumpedPkiEnv, NewCrlDistributionPoints};
 
 type Json = Vec<u8>;
 
@@ -87,7 +85,7 @@ impl CentralContext {
         enrollment: &mut E2eiEnrollment,
         certificate_chain: String,
         nb_init_key_packages: Option<usize>,
-    ) -> Result<NewCrlDistributionPoint> {
+    ) -> Result<NewCrlDistributionPoints> {
         let sk = enrollment.get_sign_key_for_mls()?;
         let cs = enrollment.ciphersuite;
         let certificate_chain = enrollment
