@@ -1,5 +1,11 @@
 # Changelog
 
+## v5.0.1 - 2025-03-21
+
+### Bug Fixes
+
+- Swift publishing failing due to not running on latest macos runner (385f031)
+
 ## v5.0.0 - 2025-03-21
 
 ### Highlights
