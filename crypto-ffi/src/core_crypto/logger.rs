@@ -23,7 +23,7 @@ use crate::CoreCrypto;
 #[cfg_attr(not(target_family = "wasm"), derive(uniffi::Enum))]
 #[repr(u8)]
 pub enum CoreCryptoLogLevel {
-    Off,
+    Off = 1,
     Trace,
     Debug,
     Info,

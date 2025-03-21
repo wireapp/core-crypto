@@ -22,6 +22,28 @@ export interface CRLRegistration {
     expiration?: number;
 }
 
+export namespace CRLRegistration {
+    export function into(
+        registration: CRLRegistration
+    ): CoreCryptoFfiTypes.CrlRegistration {
+        return new CoreCryptoFfiTypes.CrlRegistration(
+            registration.dirty,
+            registration.expiration
+                ? BigInt(registration.expiration)
+                : undefined
+        );
+    }
+
+    export function from(
+        ffi: CoreCryptoFfiTypes.CrlRegistration
+    ): CRLRegistration {
+        return {
+            dirty: ffi.dirty,
+            expiration: ffi.expiration ? Number(ffi.expiration) : undefined,
+        };
+    }
+}
+
 export function normalizeEnum<T>(enumType: T, value: number): T[keyof T] {
     const enumAsString = enumType[value as unknown as keyof T];
     const enumAsDiscriminant = enumType[enumAsString as unknown as keyof T];
@@ -187,7 +209,7 @@ export class E2eiEnrollment {
     async createDpopToken(
         expirySecs: number,
         backendNonce: string
-    ): Promise<Uint8Array> {
+    ): Promise<string> {
         return await CoreCryptoError.asyncMapErr(
             this.#enrollment.create_dpop_token(expirySecs, backendNonce)
         );

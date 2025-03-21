@@ -13,11 +13,13 @@ use crate::{CredentialType, X509Identity};
 #[cfg_attr(not(target_family = "wasm"), derive(uniffi::Record))]
 pub struct WireIdentity {
     /// Unique client identifier e.g. `T4Coy4vdRzianwfOgXpn6A:6add501bacd1d90e@whitehouse.gov`
+    #[cfg_attr(target_family = "wasm", wasm_bindgen(js_name = clientId))]
     pub client_id: String,
     /// Status of the Credential at the moment this object is created
     pub status: DeviceStatus,
     /// MLS thumbprint
     pub thumbprint: String,
+    #[cfg_attr(target_family = "wasm", wasm_bindgen(js_name = credentialType))]
     pub credential_type: CredentialType,
     pub x509_identity: Option<X509Identity>,
 }

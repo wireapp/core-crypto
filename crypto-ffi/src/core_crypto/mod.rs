@@ -17,7 +17,10 @@ use wasm_bindgen::prelude::*;
 
 #[cfg(target_family = "wasm")]
 use crate::WasmCryptoResult;
-use crate::{Ciphersuites, ClientId, CoreCryptoError, CoreCryptoResult, error::internal::InternalError};
+use crate::{
+    Ciphersuites, CoreCryptoError, CoreCryptoResult, client_id::AsCoreCryptoClientId as _,
+    error::internal::InternalError,
+};
 
 /// In Wasm, boxed slices are the natural way to communicate an immutable byte slice
 #[cfg(target_family = "wasm")]
@@ -36,6 +39,12 @@ pub(crate) fn entropy_seed_map(e: EntropySeed) -> Vec<u8> {
 pub(crate) fn entropy_seed_map(e: EntropySeed) -> Vec<u8> {
     e
 }
+
+#[cfg(not(target_family = "wasm"))]
+type ClientId = crate::ClientId;
+
+#[cfg(target_family = "wasm")]
+type ClientId = crate::FfiClientId;
 
 #[derive(Debug)]
 #[cfg_attr(target_family = "wasm", wasm_bindgen)]
@@ -87,22 +96,6 @@ pub async fn core_crypto_deferred_init(
 }
 
 impl CoreCrypto {
-    async fn from_config(configuration: MlsCentralConfiguration) -> CoreCryptoResult<Self> {
-        #[cfg(target_family = "wasm")]
-        console_error_panic_hook::set_once();
-
-        let central = MlsCentral::try_new(configuration).await?;
-        let inner = core_crypto::CoreCrypto::from(central);
-
-        Ok(Self { inner })
-    }
-}
-
-#[cfg_attr(target_family = "wasm", wasm_bindgen)]
-#[cfg_attr(not(target_family = "wasm"), uniffi::export)]
-impl CoreCrypto {
-    #[cfg_attr(target_family = "wasm", wasm_bindgen(constructor))]
-    #[cfg_attr(not(target_family = "wasm"), uniffi::constructor)]
     pub async fn new(
         path: String,
         key: String,
@@ -119,12 +112,37 @@ impl CoreCrypto {
         let configuration = MlsCentralConfiguration::try_new(
             path,
             key,
-            client_id.map(|cid| cid.0.clone()),
+            client_id.map(|cid| cid.as_cc_client_id()),
             (&ciphersuites.unwrap_or_default()).into(),
             entropy_seed,
             nb_key_package,
         )?;
         Self::from_config(configuration).await
+    }
+
+    async fn from_config(configuration: MlsCentralConfiguration) -> CoreCryptoResult<Self> {
+        #[cfg(target_family = "wasm")]
+        console_error_panic_hook::set_once();
+
+        let central = MlsCentral::try_new(configuration).await?;
+        let inner = core_crypto::CoreCrypto::from(central);
+
+        Ok(Self { inner })
+    }
+}
+
+#[cfg(target_family = "wasm")]
+#[wasm_bindgen]
+impl CoreCrypto {
+    pub async fn async_new(
+        path: String,
+        key: String,
+        client_id: Option<ClientId>,
+        ciphersuites: Option<Ciphersuites>,
+        entropy_seed: Option<EntropySeed>,
+        nb_key_package: Option<u32>,
+    ) -> CoreCryptoResult<Self> {
+        Self::new(path, key, client_id, ciphersuites, entropy_seed, nb_key_package).await
     }
 }
 
@@ -163,5 +181,14 @@ impl CoreCrypto {
         };
         inner.take().close().await.map_err(CoreCryptoError::from)?;
         Ok(())
+    }
+}
+
+#[cfg_attr(target_family = "wasm", wasm_bindgen)]
+#[cfg_attr(not(target_family = "wasm"), uniffi::export)]
+impl CoreCrypto {
+    /// see [core_crypto::mls::MlsCentral::can_close]
+    pub async fn can_close(&self) -> bool {
+        self.inner.can_close().await
     }
 }

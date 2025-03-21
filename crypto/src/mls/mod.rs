@@ -318,6 +318,13 @@ impl MlsCentral {
             .map_err(Into::into)
     }
 
+    /// Reports whether the local KeyStore believes that it can currently close.
+    ///
+    /// Beware TOCTOU!
+    pub async fn can_close(&self) -> bool {
+        self.mls_backend.can_close().await
+    }
+
     /// Closes the connection with the local KeyStore
     ///
     /// # Errors

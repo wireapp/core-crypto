@@ -1,9 +1,10 @@
+use js_sys::Uint8Array;
 use wasm_bindgen::prelude::*;
 
 /// We need in a few places to move `Vec<Vec<u8>>` back and forth across the FFI boundary.
 /// Unfortunately, `wasm_bindgen` doesn't like to do that natively. So this struct
 /// bridges that gap.
-#[derive(Debug, Clone, serde::Serialize, serde::Deserialize, derive_more::Constructor)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 #[wasm_bindgen]
 pub struct ArrayOfByteArray(Vec<Vec<u8>>);
 
@@ -37,19 +38,31 @@ impl AsRef<Vec<Vec<u8>>> for ArrayOfByteArray {
     }
 }
 
-impl From<Vec<js_sys::Uint8Array>> for ArrayOfByteArray {
-    fn from(value: Vec<js_sys::Uint8Array>) -> Self {
-        Self(value.iter().map(js_sys::Uint8Array::to_vec).collect::<Vec<_>>())
+impl From<Vec<Uint8Array>> for ArrayOfByteArray {
+    fn from(value: Vec<Uint8Array>) -> Self {
+        Self(value.iter().map(Uint8Array::to_vec).collect::<Vec<_>>())
     }
 }
 
-impl From<ArrayOfByteArray> for Vec<js_sys::Uint8Array> {
+impl From<ArrayOfByteArray> for Vec<Uint8Array> {
     fn from(value: ArrayOfByteArray) -> Self {
         value
             .into_inner()
             .iter()
             .map(Vec::as_slice)
-            .map(js_sys::Uint8Array::from)
-            .collect::<Vec<_>>()
+            .map(Uint8Array::from)
+            .collect()
+    }
+}
+
+#[wasm_bindgen]
+impl ArrayOfByteArray {
+    #[wasm_bindgen(constructor)]
+    pub fn new(aoba: Vec<Uint8Array>) -> Self {
+        aoba.into()
+    }
+
+    pub fn as_arrays(&self) -> Vec<Uint8Array> {
+        self.0.iter().map(Vec::as_slice).map(Uint8Array::from).collect()
     }
 }
