@@ -15,6 +15,7 @@
 // along with this program. If not, see http://www.gnu.org/licenses/.
 
 use std::ops::Deref;
+use std::path::Path;
 
 use zeroize::Zeroize as _;
 
@@ -143,6 +144,31 @@ impl SqlCipherConnection {
         };
 
         Ok(conn)
+    }
+
+    pub async fn migrate_db_key_type_to_bytes(
+        path: &str,
+        old_key: &str,
+        new_key: &DatabaseKey,
+    ) -> CryptoKeystoreResult<()> {
+        let path = Path::new(path);
+        let mut conn = rusqlite::Connection::open(path)?;
+
+        conn.pragma_update(None, "key", old_key)?;
+
+        // ? iOS WAL journaling fix; see details here: https://github.com/sqlcipher/sqlcipher/issues/255
+        #[cfg(feature = "ios-wal-compat")]
+        Self::handle_ios_wal_compat(&conn, path)?;
+
+        // Enable WAL journaling mode
+        conn.pragma_update(None, "journal_mode", "wal")?;
+
+        // Disable FOREIGN KEYs - The 2 step blob writing process invalidates foreign key checks unfortunately
+        conn.pragma_update(None, "foreign_keys", "OFF")?;
+
+        Self::run_migrations(&mut conn)?;
+        Self::set_key(&mut conn, new_key)?;
+        Ok(())
     }
 
     pub async fn conn(&self) -> MutexGuard<rusqlite::Connection> {
