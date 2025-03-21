@@ -1,5 +1,52 @@
 # Changelog
 
+## v5.0.0 - 2025-03-21
+
+### Highlights
+
+New Swift bindings which are more ergonomic and allows for better testing by exposing the transaction 
+context as a protocol.
+
+New API for observing epoch changes through a callback API: `registerEpochObserver`. After adopting
+this API clients can remove their own epoch observers.
+
+### Breaking changes
+
+* New Swift bindings are replacing the old Swift bindings.
+
+### Features
+
+- add API for observing epochs to the swift bindings (47f9a6e)
+- [**breaking**] add Swift wrapper on top of uniffi (ce862d4)
+- add `registerEpochObserver` helper in TS (1e25f4a)
+- add `registerEpochObserver` helper in Kotlin (bc05e13)
+- enable epoch observer registration in wasm (6a5f395)
+- enable epoch observer registration in uniffi (e04b83e)
+- relax `Debug` restriction on `EpochObserver` (ff22e35)
+- add an `EpochObserver` trait and instance to the client (e83f9f5)
+
+### Bug Fixes
+
+- android-uniffi library namespace was conflicting the main android library (a7ec292)
+- kotlin documentation links on the main page (8045031)
+- release swift framework with correct version (f1c6029)
+- the android artefact was still trying to publish to nexus (0b1dfeb)
+- make `EpochObserver` and registration fn visible from the outside (b4a16f8)
+- ensure that local epoch changes are also observed (bc43dc3)
+
+### Documentation
+
+- add note about logs in browser tests (bf6b594)
+
+### Testing
+
+- add test demonstrating epoch observer (a65ab45)
+- add test for epoch observer behavior (c302cb3)
+- add tests of basic behavior (a810259)
+- don't assert a non-epoch-change when the epoch must change (d939255)
+- rm `has_epoch_changed` usage in favor of `EpochObserver` (88cbff2)
+
+
 ## v4.2.3 - 2025-03-14
 
 ### Bug Fixes
