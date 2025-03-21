@@ -652,7 +652,7 @@
             }
 
             <span class="kw">if </span>tables.is_empty() {
-                <span class="macro">log::warn!</span>(<span class="string">"Empty transaction was committed, this could be an indication of a programming error"</span>);
+                <span class="macro">log::debug!</span>(<span class="string">"Empty transaction was committed."</span>);
                 <span class="kw">return </span><span class="prelude-val">Ok</span>(());
             }
 
