@@ -440,6 +440,7 @@ mod tests {
     use crate::prelude::MlsConversationConfiguration;
     use crate::prelude::key_package::INITIAL_KEYING_MATERIAL_COUNT;
     use crate::test_utils::*;
+    use core_crypto_keystore::DatabaseKey;
 
     use super::Client;
 
@@ -449,7 +450,8 @@ mod tests {
     #[wasm_bindgen_test]
     async fn can_assess_keypackage_expiration(case: TestCase) {
         let (cs, ct) = (case.ciphersuite(), case.credential_type);
-        let backend = MlsCryptoProvider::try_new_in_memory("test").await.unwrap();
+        let key = DatabaseKey::generate();
+        let backend = MlsCryptoProvider::try_new_in_memory(&key).await.unwrap();
         let x509_test_chain = if case.is_x509() {
             let x509_test_chain = crate::test_utils::x509::X509TestChain::init_empty(case.signature_scheme());
             x509_test_chain.register_with_provider(&backend).await;
@@ -628,7 +630,8 @@ mod tests {
     async fn automatically_prunes_lifetime_expired_keypackages(case: TestCase) {
         const UNEXPIRED_COUNT: usize = 125;
         const EXPIRED_COUNT: usize = 200;
-        let backend = MlsCryptoProvider::try_new_in_memory("test").await.unwrap();
+        let key = DatabaseKey::generate();
+        let backend = MlsCryptoProvider::try_new_in_memory(&key).await.unwrap();
         let x509_test_chain = if case.is_x509() {
             let x509_test_chain = crate::test_utils::x509::X509TestChain::init_empty(case.signature_scheme());
             x509_test_chain.register_with_provider(&backend).await;

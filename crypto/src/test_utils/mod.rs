@@ -23,6 +23,8 @@ use crate::{
     prelude::{ClientId, ConversationId, MlsCentral, MlsCentralConfiguration},
     test_utils::x509::{CertificateParams, X509TestChain, X509TestChainActorArg, X509TestChainArgs},
 };
+use core_crypto_keystore::DatabaseKey;
+
 use async_lock::RwLock;
 use openmls::framing::MlsMessageOut;
 pub use openmls_traits::types::SignatureScheme;
@@ -329,7 +331,7 @@ async fn create_centrals<const N: usize>(
         async move {
             let configuration = MlsCentralConfiguration::try_new(
                 p,
-                "test".into(),
+                DatabaseKey::generate(),
                 None,
                 vec![case.cfg.ciphersuite],
                 None,
@@ -487,7 +489,7 @@ pub async fn run_test_wo_clients(
             let ciphersuites = vec![case.cfg.ciphersuite];
             let configuration = MlsCentralConfiguration::try_new(
                 p.to_string(),
-                "test".into(),
+                DatabaseKey::generate(),
                 None,
                 ciphersuites,
                 None,

@@ -17,7 +17,7 @@
 use crate::connection::platform::wasm::migrations::open_and_migrate;
 use crate::{
     CryptoKeystoreResult,
-    connection::{DatabaseConnection, DatabaseConnectionRequirements},
+    connection::{DatabaseConnection, DatabaseConnectionRequirements, DatabaseKey},
 };
 use idb::{Factory, TransactionMode};
 
@@ -46,6 +46,14 @@ impl WasmConnection {
     pub async fn conn(&self) -> TransactionCreator {
         TransactionCreator { conn: &self.conn }
     }
+
+    pub async fn migrate_db_key_type_to_bytes(
+        name: &str,
+        old_key: &str,
+        new_key: &DatabaseKey,
+    ) -> CryptoKeystoreResult<()> {
+        migrations::migrate_db_key_type_to_bytes(name, old_key, new_key).await
+    }
 }
 
 impl DatabaseConnectionRequirements for WasmConnection {}
@@ -55,7 +63,7 @@ impl DatabaseConnectionRequirements for WasmConnection {}
 impl<'a> DatabaseConnection<'a> for WasmConnection {
     type Connection = &'a WasmEncryptedStorage;
 
-    async fn open(name: &str, key: &str) -> CryptoKeystoreResult<Self> {
+    async fn open(name: &str, key: &DatabaseKey) -> CryptoKeystoreResult<Self> {
         let name = name.to_string();
         // ? Maybe find a cleaner way to define the schema
 
@@ -68,7 +76,7 @@ impl<'a> DatabaseConnection<'a> for WasmConnection {
         Ok(Self { name, conn })
     }
 
-    async fn open_in_memory(name: &str, key: &str) -> CryptoKeystoreResult<Self> {
+    async fn open_in_memory(name: &str, key: &DatabaseKey) -> CryptoKeystoreResult<Self> {
         let name = name.to_string();
         let storage = WasmStorageWrapper::InMemory(Default::default());
         let conn = WasmEncryptedStorage::new(key, storage);

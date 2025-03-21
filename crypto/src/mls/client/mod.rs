@@ -626,7 +626,7 @@ impl Client {
 mod tests {
     use crate::prelude::ClientId;
     use crate::test_utils::*;
-    use core_crypto_keystore::connection::FetchFromDatabase;
+    use core_crypto_keystore::connection::{DatabaseKey, FetchFromDatabase};
     use core_crypto_keystore::entities::{EntityFindParams, MlsSignatureKeyPair};
     use mls_crypto_provider::MlsCryptoProvider;
     use wasm_bindgen_test::*;
@@ -638,7 +638,8 @@ mod tests {
     #[apply(all_cred_cipher)]
     #[wasm_bindgen_test]
     async fn can_generate_client(case: TestCase) {
-        let backend = MlsCryptoProvider::try_new_in_memory("test").await.unwrap();
+        let key = DatabaseKey::generate();
+        let backend = MlsCryptoProvider::try_new_in_memory(&key).await.unwrap();
         let x509_test_chain = if case.is_x509() {
             let x509_test_chain = crate::test_utils::x509::X509TestChain::init_empty(case.signature_scheme());
             x509_test_chain.register_with_provider(&backend).await;
@@ -663,7 +664,8 @@ mod tests {
         if case.is_basic() {
             run_tests(move |[tmp_dir_argument]| {
                 Box::pin(async move {
-                    let backend = MlsCryptoProvider::try_new(tmp_dir_argument, "test").await.unwrap();
+                    let key = DatabaseKey::generate();
+                    let backend = MlsCryptoProvider::try_new(tmp_dir_argument, &key).await.unwrap();
                     backend.new_transaction().await.unwrap();
                     // phase 1: generate standalone keypair
                     let client_id: ClientId = b"whatever:my:client:is@world.com".to_vec().into();

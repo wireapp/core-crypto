@@ -50,8 +50,9 @@ impl CoreCryptoNativeClient {
         } else {
             None
         };
+        let key = core_crypto::DatabaseKey::generate();
         let configuration =
-            MlsCentralConfiguration::try_new("whatever".into(), "test".into(), cid, ciphersuites, None, Some(100))?;
+            MlsCentralConfiguration::try_new("whatever".into(), key, cid, ciphersuites, None, Some(100))?;
 
         let cc = CoreCrypto::from(MlsCentral::try_new_in_memory(configuration).await?);
 

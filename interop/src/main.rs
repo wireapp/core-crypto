@@ -16,6 +16,8 @@
 
 #![cfg_attr(target_family = "wasm", allow(dead_code, unused_imports))]
 
+use core_crypto::DatabaseKey;
+
 #[cfg(not(target_family = "wasm"))]
 use crate::clients::{EmulatedClient, EmulatedProteusClient};
 #[cfg(not(target_family = "wasm"))]
@@ -144,7 +146,7 @@ async fn run_mls_test(chrome_driver_addr: &std::net::SocketAddr) -> Result<()> {
     let ciphersuites = vec![CIPHERSUITE_IN_USE.into()];
     let configuration = MlsCentralConfiguration::try_new(
         "whatever".into(),
-        "test".into(),
+        DatabaseKey::generate(),
         Some(MLS_MAIN_CLIENTID.into()),
         ciphersuites,
         None,
@@ -339,7 +341,7 @@ async fn run_proteus_test(chrome_driver_addr: &std::net::SocketAddr) -> Result<(
 
     let configuration = MlsCentralConfiguration::try_new(
         "whatever".into(),
-        "test".into(),
+        DatabaseKey::generate(),
         Some(MLS_MAIN_CLIENTID.into()),
         vec![MlsCiphersuite::default()],
         None,
