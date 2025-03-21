@@ -121,7 +121,7 @@ jobs:
 
   create-xcframework:
     needs: build-ios
-    runs-on: macos-latest
+    runs-on: self-hosted
     steps:
       - uses: actions/checkout@v4
       - name: download artifacts for ios
@@ -145,7 +145,7 @@ jobs:
           ./build-xcframework.sh
 
   e2e-interop-test:
-    runs-on: macos-latest
+    runs-on: self-hosted
     needs: build-ios
     steps:
       - uses: actions/checkout@v4
