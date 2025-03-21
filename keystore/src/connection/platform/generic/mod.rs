@@ -87,15 +87,9 @@ unsafe impl Sync for SqlCipherConnection {}
 impl SqlCipherConnection {
     fn init_with_key(path: &str, key: &DatabaseKey) -> CryptoKeystoreResult<Self> {
         let mut conn = rusqlite::Connection::open(path)?;
-        cfg_if::cfg_if! {
-            if #[cfg(feature = "log-queries")] {
-                fn log_query(q: &str) {
-                    log::info!("{}", q);
-                }
 
-                conn.trace(Some(log_query));
-            }
-        }
+        #[cfg(feature = "log-queries")]
+        conn.trace(Some(|q| log::info!("{}", q)));
 
         Self::set_key(&mut conn, key)?;
 
@@ -131,15 +125,9 @@ impl SqlCipherConnection {
 
     fn init_with_key_in_memory(_path: &str, key: &DatabaseKey) -> CryptoKeystoreResult<Self> {
         let mut conn = rusqlite::Connection::open("")?;
-        cfg_if::cfg_if! {
-            if #[cfg(feature = "log-queries")] {
-                fn log_query(q: &str) {
-                    log::info!("{}", q);
-                }
 
-                conn.trace(Some(log_query));
-            }
-        }
+        #[cfg(feature = "log-queries")]
+        conn.trace(Some(|q| log::info!("{}", q)));
 
         Self::set_key(&mut conn, key)?;
 
