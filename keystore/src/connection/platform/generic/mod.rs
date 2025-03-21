@@ -73,7 +73,6 @@ unsafe impl Sync for SqlCipherConnection {}
 
 impl SqlCipherConnection {
     fn init_with_key(path: &str, key: &DatabaseKey) -> CryptoKeystoreResult<Self> {
-        #[allow(unused_mut)]
         let mut conn = rusqlite::Connection::open(path)?;
         cfg_if::cfg_if! {
             if #[cfg(feature = "log-queries")] {
@@ -97,13 +96,12 @@ impl SqlCipherConnection {
         // Disable FOREIGN KEYs - The 2 step blob writing process invalidates foreign key checks unfortunately
         conn.pragma_update(None, "foreign_keys", "OFF")?;
 
-        let conn = Mutex::new(conn);
+        Self::run_migrations(&mut conn)?;
 
-        let mut conn = Self {
+        let conn = Self {
             path: path.into(),
-            conn,
+            conn: Mutex::new(conn),
         };
-        conn.run_migrations()?;
 
         Ok(conn)
     }
@@ -118,7 +116,6 @@ impl SqlCipherConnection {
     }
 
     fn init_with_key_in_memory(_path: &str, key: &DatabaseKey) -> CryptoKeystoreResult<Self> {
-        #[allow(unused_mut)]
         let mut conn = rusqlite::Connection::open("")?;
         cfg_if::cfg_if! {
             if #[cfg(feature = "log-queries")] {
@@ -135,22 +132,19 @@ impl SqlCipherConnection {
         // Disable FOREIGN KEYs - The 2 step blob writing process invalidates foreign key checks unfortunately
         conn.pragma_update(None, "foreign_keys", "OFF")?;
 
-        let conn = Mutex::new(conn);
-
-        let mut conn = Self { path: "".into(), conn };
-
         // Need to run migrations also in memory to make sure expected tables exist.
-        conn.run_migrations()?;
+        Self::run_migrations(&mut conn)?;
+
+        let conn = Self {
+            path: "".into(),
+            conn: Mutex::new(conn),
+        };
 
         Ok(conn)
     }
 
     pub async fn conn(&self) -> MutexGuard<rusqlite::Connection> {
         self.conn.lock().await
-    }
-
-    pub fn conn_blocking(&self) -> MutexGuard<rusqlite::Connection> {
-        self.conn.lock_blocking()
     }
 
     pub async fn wipe(self) -> CryptoKeystoreResult<()> {
@@ -170,8 +164,7 @@ impl SqlCipherConnection {
         conn.close().map_err(|(_, e)| e.into())
     }
 
-    fn run_migrations(&mut self) -> CryptoKeystoreResult<()> {
-        let mut conn = self.conn_blocking();
+    fn run_migrations(conn: &mut rusqlite::Connection) -> CryptoKeystoreResult<()> {
         conn.create_scalar_function("sha256_blob", 1, FunctionFlags::SQLITE_DETERMINISTIC, |ctx| {
             let input_blob = ctx.get::<Vec<u8>>(0)?;
             Ok(crate::sha256(&input_blob))
