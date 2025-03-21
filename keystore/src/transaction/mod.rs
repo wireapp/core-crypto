@@ -293,7 +293,7 @@ macro_rules! commit_transaction {
             }
 
             if tables.is_empty() {
-                log::warn!("Empty transaction was committed, this could be an indication of a programming error");
+                log::debug!("Empty transaction was committed.");
                 return Ok(());
             }
 
