@@ -162,15 +162,13 @@ jobs:
         uses: taiki-e/install-action@v2
         with:
           tool: wasm-pack
-      - uses: wireapp/setup-chrome@master
-        id: setup-chrome
-        with:
-          chrome-version: latest
-      - run: |
-          echo "CHROME_PATH=${{ steps.setup-chrome.outputs.chrome-path }}" >> $GITHUB_ENV
       - uses: oven-sh/setup-bun@v2
         with:
           bun-version: latest
+      - name: Install chrome-headless-shell
+        run: |
+          bun x @puppeteer/browsers install chrome-headless-shell@latest --path $PWD
+          echo "CHROME_PATH=$(echo $PWD/chrome-headless-shell/*/*/chrome-headless-shell)" >> $GITHUB_ENV
       - uses: actions/setup-node@v4
         with:
           node-version: 18

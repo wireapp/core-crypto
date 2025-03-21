@@ -56,7 +56,7 @@ pub(crate) async fn setup_browser(addr: &std::net::SocketAddr, folder: &str) -> 
     let mut caps_json = serde_json::json!({
         "goog:chromeOptions": {
             "args": [
-                "headless",
+                "headless=shell",
                 "disable-dev-shm-usage",
                 "no-sandbox"
             ]
