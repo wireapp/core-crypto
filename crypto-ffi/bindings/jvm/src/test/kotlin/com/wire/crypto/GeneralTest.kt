@@ -5,8 +5,8 @@ import kotlinx.coroutines.test.runTest
 import org.assertj.core.api.AssertionsForInterfaceTypes.assertThat
 import kotlin.test.*
 import java.nio.file.Files
+import kotlin.io.path.*
 
-import com.wire.crypto.DatabaseKey
 import com.wire.crypto.uniffi.version
 import com.wire.crypto.uniffi.buildMetadata
 
@@ -36,5 +36,20 @@ class DatabaseKeyTest {
         val key = DatabaseKey(ByteArray(48))
         val exc = assertFailsWith<CoreCryptoException.Other> { wrapException { CoreCrypto(path, key) } }
         assertEquals("Invalid database key size, expected 32, got 48", exc.message)
+    }
+
+    @Test
+    fun migrating_key_type_to_bytes_works() = runTest {
+        val oldKey = "secret"
+        val tmpdir = createTempDirectory("cc-test-")
+        var path = Path(object {}.javaClass.getResource("/db-v10002003.sqlite")!!.getPath())
+        path = path.copyTo(tmpdir / path.name)
+
+        val newKey = genDatabaseKey()
+        migrateDatabaseKeyTypeToBytes(path.absolutePathString(), oldKey, newKey)
+
+        CoreCrypto(path.absolutePathString(), newKey)
+
+        tmpdir.toFile().deleteRecursively()
     }
 }
