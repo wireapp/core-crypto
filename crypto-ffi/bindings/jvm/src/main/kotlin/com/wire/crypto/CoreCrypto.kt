@@ -9,6 +9,10 @@ typealias EnrollmentHandle = ByteArray
 @JvmInline
 value class DatabaseKey(internal val bytes: ByteArray)
 
+suspend fun migrateDatabaseKeyTypeToBytes(name: String, oldKey: String, newKey: DatabaseKey) {
+    return com.wire.crypto.uniffi.migrateDatabaseKeyTypeToBytes(name, oldKey, newKey.bytes)
+}
+
 /**
  * Defines the log level for a CoreCrypto
  */
