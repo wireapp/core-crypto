@@ -1,6 +1,42 @@
+use core_foundation::{
+    base::TCFType,
+    dictionary::CFDictionary,
+    string::{CFString, CFStringRef},
+};
+use security_framework::base::Error;
+use security_framework_sys::{
+    base::errSecSuccess,
+    item::{kSecAttrAccount, kSecAttrService, kSecClass, kSecClassGenericPassword},
+};
+
 use crate::CryptoKeystoreResult;
 
 const WIRE_SERVICE_NAME: &str = "wire.com";
+
+// Import raw symbols from CoreFoundation
+//
+// SAFETY: we promise that these symbols will appear when we link this
+unsafe extern "C" {
+    pub static kSecAttrAccessibleAfterFirstUnlock: CFStringRef;
+    pub static kSecAttrAccessible: CFStringRef;
+}
+
+macro_rules! wrap_under_get_rule {
+    ($external_ref:expr) => {
+        // SAFETY: The method `CFString::wrap_under_get_rule` is required by rustc to be marked as unsafe
+        // because accessing any static item via FFI is intrinsically unsafe. For this reason, we can't
+        // just create a safe wrapper function here; rustc immediately flags it with an [E0133] because it
+        // needs that FFI static item to be its parameter.
+        //
+        // There isn't safety documentation anywhere in the CFString or TCFType documentation, and
+        // the implementation does only [basic checks], so we can assume that the main property we
+        // need to uphold is "the reference is not null".
+        //
+        // [E0133]: https://doc.rust-lang.org/stable/error_codes/E0133.html
+        // [basic checks]: https://github.com/servo/core-foundation-rs/blob/core-foundation-v0.10.0/core-foundation/src/lib.rs#L91-L95
+        unsafe { CFString::wrap_under_get_rule($external_ref) }
+    };
+}
 
 /// To prevent iOS from killing backgrounded apps using a WAL-journaled file,
 /// we need to leave the first 32 bytes as plaintext, this way, iOS can see the
@@ -54,42 +90,6 @@ pub fn handle_ios_wal_compat(conn: &rusqlite::Connection, path: &str) -> CryptoK
 // More on the topic: https://developer.apple.com/documentation/security/keychain_services/keychain_items/restricting_keychain_item_accessibility
 // More here on the specific attribute: https://developer.apple.com/documentation/security/ksecattraccessibleafterfirstunlock?language=swift
 fn mark_password_as_accessible(key: &str) -> security_framework::base::Result<()> {
-    use core_foundation::{
-        base::TCFType,
-        dictionary::CFDictionary,
-        string::{CFString, CFStringRef},
-    };
-    use security_framework::base::Error;
-    use security_framework_sys::{
-        base::errSecSuccess,
-        item::{kSecAttrAccount, kSecAttrService, kSecClass, kSecClassGenericPassword},
-    };
-
-    // Import raw symbols from CoreFoundation
-    //
-    // SAFETY: we promise that these symbols will appear when we link this
-    unsafe extern "C" {
-        pub static kSecAttrAccessibleAfterFirstUnlock: CFStringRef;
-        pub static kSecAttrAccessible: CFStringRef;
-    }
-
-    macro_rules! wrap_under_get_rule {
-        ($external_ref:expr) => {
-            // SAFETY: The method `CFString::wrap_under_get_rule` is required by rustc to be marked as unsafe
-            // because accessing any static item via FFI is intrinsically unsafe. For this reason, we can't
-            // just create a safe wrapper function here; rustc immediately flags it with an [E0133] because it
-            // needs that FFI static item to be its parameter.
-            //
-            // There isn't safety documentation anywhere in the CFString or TCFType documentation, and
-            // the implementation does only [basic checks], so we can assume that the main property we
-            // need to uphold is "the reference is not null".
-            //
-            // [E0133]: https://doc.rust-lang.org/stable/error_codes/E0133.html
-            // [basic checks]: https://github.com/servo/core-foundation-rs/blob/core-foundation-v0.10.0/core-foundation/src/lib.rs#L91-L95
-            unsafe { CFString::wrap_under_get_rule($external_ref) }
-        };
-    }
-
     // Create a query that matches a:
     let query_params = CFDictionary::from_CFType_pairs(&[
         // Class GenericPassword
