@@ -1170,7 +1170,11 @@ impl CoreCrypto {
 
     /// See [core_crypto::mls::conversation::ImmutableConversation::epoch]
     pub async fn conversation_epoch(&self, conversation_id: Vec<u8>) -> CoreCryptoResult<u64> {
-        let conversation = self.central.get_raw_conversation(&conversation_id).await?;
+        let conversation = self
+            .central
+            .get_raw_conversation(&conversation_id)
+            .await
+            .map_err(RecursiveError::mls_client("getting conversation by id"))?;
         Ok(conversation.epoch().await)
     }
 
@@ -1179,7 +1183,8 @@ impl CoreCrypto {
         let cs = self
             .central
             .get_raw_conversation(conversation_id)
-            .await?
+            .await
+            .map_err(RecursiveError::mls_client("getting conversation by id"))?
             .ciphersuite()
             .await;
         Ok(Ciphersuite::from(core_crypto::prelude::CiphersuiteName::from(cs)))
@@ -1187,7 +1192,12 @@ impl CoreCrypto {
 
     /// See [core_crypto::mls::Client::conversation_exists]
     pub async fn conversation_exists(&self, conversation_id: Vec<u8>) -> CoreCryptoResult<bool> {
-        Ok(self.central.conversation_exists(&conversation_id).await?)
+        let conversation_exists = self
+            .central
+            .conversation_exists(&conversation_id)
+            .await
+            .map_err(RecursiveError::mls_client("getting conversation by id"))?;
+        Ok(conversation_exists)
     }
 
     /// See [core_crypto::mls::Client::random_bytes]
@@ -1210,7 +1220,8 @@ impl CoreCrypto {
         Ok(self
             .central
             .get_raw_conversation(&conversation_id)
-            .await?
+            .await
+            .map_err(RecursiveError::mls_client("getting conversation by id"))?
             .get_client_ids()
             .await
             .into_iter()
@@ -1222,7 +1233,8 @@ impl CoreCrypto {
     pub async fn export_secret_key(&self, conversation_id: Vec<u8>, key_length: u32) -> CoreCryptoResult<Vec<u8>> {
         self.central
             .get_raw_conversation(&conversation_id)
-            .await?
+            .await
+            .map_err(RecursiveError::mls_client("getting conversation by id"))?
             .export_secret_key(key_length as usize)
             .await
             .map_err(Into::into)
@@ -1233,7 +1245,8 @@ impl CoreCrypto {
         Ok(self
             .central
             .get_raw_conversation(&conversation_id)
-            .await?
+            .await
+            .map_err(RecursiveError::mls_client("getting conversation by id"))?
             .get_external_sender()
             .await?)
     }
@@ -1335,7 +1348,8 @@ impl CoreCrypto {
         Ok(self
             .central
             .get_raw_conversation(&conversation_id)
-            .await?
+            .await
+            .map_err(RecursiveError::mls_client("getting conversation by id"))?
             .get_device_identities(&device_ids[..])
             .await?
             .into_iter()
@@ -1352,7 +1366,8 @@ impl CoreCrypto {
         Ok(self
             .central
             .get_raw_conversation(&conversation_id)
-            .await?
+            .await
+            .map_err(RecursiveError::mls_client("getting conversation by id"))?
             .get_user_identities(&user_ids[..])
             .await?
             .into_iter()

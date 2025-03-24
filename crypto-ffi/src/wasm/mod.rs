@@ -1589,7 +1589,8 @@ impl CoreCrypto {
             async move {
                 let epoch = central
                     .get_raw_conversation(&conversation_id)
-                    .await?
+                    .await
+                    .map_err(RecursiveError::mls_client("getting conversation by id"))?
                     .epoch()
                     .await
                     .into();
@@ -1608,7 +1609,8 @@ impl CoreCrypto {
             async move {
                 let ciphersuite: Ciphersuite = central
                     .get_raw_conversation(&conversation_id)
-                    .await?
+                    .await
+                    .map_err(RecursiveError::mls_client("getting conversation by id"))?
                     .ciphersuite()
                     .await
                     .into();
@@ -1625,11 +1627,17 @@ impl CoreCrypto {
         let central = self.inner.clone();
         future_to_promise(
             async move {
-                WasmCryptoResult::Ok(if central.conversation_exists(&conversation_id).await? {
-                    JsValue::TRUE
-                } else {
-                    JsValue::FALSE
-                })
+                WasmCryptoResult::Ok(
+                    if central
+                        .conversation_exists(&conversation_id)
+                        .await
+                        .map_err(RecursiveError::mls_client("getting conversation by id"))?
+                    {
+                        JsValue::TRUE
+                    } else {
+                        JsValue::FALSE
+                    },
+                )
             }
             .err_into(),
         )
@@ -1758,7 +1766,8 @@ impl CoreCrypto {
             async move {
                 let key = central
                     .get_raw_conversation(&conversation_id.to_vec())
-                    .await?
+                    .await
+                    .map_err(RecursiveError::mls_client("getting conversation by id"))?
                     .export_secret_key(key_length)
                     .await
                     .map_err(CoreCryptoError::from)?;
@@ -1777,7 +1786,8 @@ impl CoreCrypto {
             async move {
                 let ext_sender = central
                     .get_raw_conversation(&id.to_vec())
-                    .await?
+                    .await
+                    .map_err(RecursiveError::mls_client("getting conversation by id"))?
                     .get_external_sender()
                     .await
                     .map_err(CoreCryptoError::from)?;
@@ -1796,7 +1806,8 @@ impl CoreCrypto {
             async move {
                 let clients = central
                     .get_raw_conversation(&conversation_id.to_vec())
-                    .await?
+                    .await
+                    .map_err(RecursiveError::mls_client("getting conversation by id"))?
                     .get_client_ids()
                     .await;
                 let clients = js_sys::Array::from_iter(
@@ -1866,7 +1877,8 @@ impl CoreCrypto {
                 let device_ids = device_ids.iter().map(|c| c.to_vec().into()).collect::<Vec<ClientId>>();
                 let identities = central
                     .get_raw_conversation(&conversation_id)
-                    .await?
+                    .await
+                    .map_err(RecursiveError::mls_client("getting conversation by id"))?
                     .get_device_identities(&device_ids[..])
                     .await
                     .map_err(CoreCryptoError::from)?
@@ -1888,7 +1900,8 @@ impl CoreCrypto {
             async move {
                 let identities = central
                     .get_raw_conversation(&conversation_id)
-                    .await?
+                    .await
+                    .map_err(RecursiveError::mls_client("getting conversation by id"))?
                     .get_user_identities(user_ids.deref())
                     .await
                     .map_err(CoreCryptoError::from)?

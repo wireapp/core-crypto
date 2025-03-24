@@ -23,20 +23,25 @@ pub(crate) mod identities;
 pub(crate) mod key_package;
 pub(crate) mod user_id;
 
+use super::conversation::ImmutableConversation;
+use crate::prelude::{ConversationId, INITIAL_KEYING_MATERIAL_COUNT, MlsClientConfiguration};
 use crate::{
     CoreCrypto, KeystoreError, LeafError, MlsError, MlsTransport, RecursiveError,
+    group_store::GroupStore,
     mls::credential::{CredentialBundle, ext::CredentialExt},
     prelude::{
         CertificateBundle, ClientId, MlsCiphersuite, MlsCredentialType, identifier::ClientIdentifier,
         key_package::KEYPACKAGE_DEFAULT_LIFETIME,
     },
 };
+use async_lock::RwLock;
+use core_crypto_keystore::entities::{EntityFindParams, MlsCredential, MlsSignatureKeyPair};
+use core_crypto_keystore::{Connection, CryptoKeystoreError, connection::FetchFromDatabase};
 pub use epoch_observer::EpochObserver;
 pub(crate) use error::{Error, Result};
-
-use async_lock::RwLock;
-use core_crypto_keystore::{Connection, CryptoKeystoreError, connection::FetchFromDatabase};
+use identities::ClientIdentities;
 use log::debug;
+use mls_crypto_provider::{EntropySeed, MlsCryptoProvider, MlsCryptoProviderConfiguration};
 use openmls::prelude::{Credential, CredentialType};
 use openmls_basic_credential::SignatureKeyPair;
 use openmls_traits::{OpenMlsCryptoProvider, crypto::OpenMlsCrypto, types::SignatureScheme};
@@ -45,12 +50,6 @@ use std::ops::{Deref, DerefMut};
 use std::sync::Arc;
 use std::{collections::HashSet, fmt};
 use tls_codec::{Deserialize, Serialize};
-
-use crate::mls::conversation;
-use crate::prelude::{ConversationId, INITIAL_KEYING_MATERIAL_COUNT, MlsClientConfiguration};
-use core_crypto_keystore::entities::{EntityFindParams, MlsCredential, MlsSignatureKeyPair};
-use identities::ClientIdentities;
-use mls_crypto_provider::{EntropySeed, MlsCryptoProvider, MlsCryptoProviderConfiguration};
 
 /// Represents a MLS client which in our case is the equivalent of a device.
 ///
@@ -268,6 +267,18 @@ impl Client {
         *inner_lock = Some(new_inner);
     }
 
+    /// Get an immutable view of an `MlsConversation`.
+    ///
+    /// Because it operates on the raw conversation type, this may be faster than [crate::mls::CentralContext::conversation].
+    /// for transient and immutable purposes. For long-lived or mutable purposes, prefer the other method.
+    pub async fn get_raw_conversation(&self, id: &ConversationId) -> Result<ImmutableConversation> {
+        let raw_conversation = GroupStore::fetch_from_keystore(id, &self.mls_backend.keystore(), None)
+            .await
+            .map_err(RecursiveError::root("getting conversation by id"))?
+            .ok_or_else(|| LeafError::ConversationNotFound(id.clone()))?;
+        Ok(ImmutableConversation::new(raw_conversation, self.clone()))
+    }
+
     /// Returns the client's most recent public signature key as a buffer.
     /// Used to upload a public key to the server in order to verify client's messages signature.
     ///
@@ -327,13 +338,11 @@ impl Client {
     }
 
     /// Checks if a given conversation id exists locally
-    pub async fn conversation_exists(&self, id: &ConversationId) -> crate::mls::Result<bool> {
+    pub async fn conversation_exists(&self, id: &ConversationId) -> Result<bool> {
         match self.get_raw_conversation(id).await {
             Ok(_) => Ok(true),
-            Err(conversation::Error::Leaf(LeafError::ConversationNotFound(_))) => Ok(false),
-            Err(e) => {
-                Err(RecursiveError::mls_conversation("getting conversation by id to check for existence")(e).into())
-            }
+            Err(Error::Leaf(LeafError::ConversationNotFound(_))) => Ok(false),
+            Err(e) => Err(e),
         }
     }
 
@@ -784,9 +793,9 @@ impl Client {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::mls::conversation::db_count::EntitiesCount;
     use crate::prelude::ClientId;
     use crate::test_utils::*;
-    use conversation::db_count::EntitiesCount;
     use core_crypto_keystore::connection::FetchFromDatabase;
     use core_crypto_keystore::entities::*;
     use mls_crypto_provider::MlsCryptoProvider;

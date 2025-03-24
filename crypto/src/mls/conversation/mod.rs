@@ -42,7 +42,6 @@ use std::ops::Deref;
 
 use crate::{
     KeystoreError, LeafError, MlsError, RecursiveError,
-    group_store::GroupStore,
     mls::Client,
     prelude::{MlsCiphersuite, MlsCredentialType},
 };
@@ -435,20 +434,6 @@ impl MlsConversation {
 
     pub(crate) fn signature_scheme(&self) -> SignatureScheme {
         self.ciphersuite().signature_algorithm()
-    }
-}
-
-impl Client {
-    /// Get an immutable view of an `MlsConversation`.
-    ///
-    /// Because it operates on the raw conversation type, this may be faster than [`CentralContext::conversation`]
-    /// for transient and immutable purposes. For long-lived or mutable purposes, prefer the other method.
-    pub async fn get_raw_conversation(&self, id: &ConversationId) -> Result<ImmutableConversation> {
-        let raw_conversation = GroupStore::fetch_from_keystore(id, &self.mls_backend.keystore(), None)
-            .await
-            .map_err(RecursiveError::root("getting conversation by id"))?
-            .ok_or_else(|| LeafError::ConversationNotFound(id.clone()))?;
-        Ok(ImmutableConversation::new(raw_conversation, self.clone()))
     }
 }
 
