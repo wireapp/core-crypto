@@ -30,6 +30,14 @@ impl WasmConnection {
     pub async fn conn(&self) -> TransactionCreator {
         TransactionCreator { conn: &self.conn }
     }
+
+    pub async fn migrate_db_key_type_to_bytes(
+        name: &str,
+        old_key: &str,
+        new_key: &DatabaseKey,
+    ) -> CryptoKeystoreResult<()> {
+        migrations::migrate_db_key_type_to_bytes(name, old_key, new_key).await
+    }
 }
 
 impl DatabaseConnectionRequirements for WasmConnection {}

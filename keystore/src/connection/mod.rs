@@ -196,6 +196,14 @@ impl Connection {
         Ok(self.conn.lock().await)
     }
 
+    pub async fn migrate_db_key_type_to_bytes(
+        name: &str,
+        old_key: &str,
+        new_key: &DatabaseKey,
+    ) -> CryptoKeystoreResult<()> {
+        KeystoreDatabaseConnection::migrate_db_key_type_to_bytes(name, old_key, new_key).await
+    }
+
     pub async fn wipe(self) -> CryptoKeystoreResult<()> {
         if self.transaction.lock().await.is_some() {
             return Err(CryptoKeystoreError::TransactionInProgress {
