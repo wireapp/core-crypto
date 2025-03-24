@@ -1,3 +1,6 @@
+use aes_gcm::KeyInit as _;
+use sha2::Digest as _;
+
 pub mod keystore_v_1_0_0;
 
 use crate::connection::storage::{WasmEncryptedStorage, WasmStorageWrapper};
@@ -38,11 +41,58 @@ const DB_VERSION_0: u32 = db_version_number(0);
 const DB_VERSION_1: u32 = db_version_number(1);
 const DB_VERSION_2: u32 = db_version_number(2);
 const DB_VERSION_3: u32 = db_version_number(3);
+const DB_VERSION_4: u32 = db_version_number(4);
 
-/// Open an existing idb database with the given name and key, and migrate it if needed.
+/// This module runs migrations for databases with version < 4. Migrations here must only
+/// be used by migrate_db_key_type_to_bytes.
+mod pre_v4 {
+    use super::*;
+
+    /// Open an existing idb database with the given name and key, and migrate it if needed.
+    /// The key is only being used for the 0 -> 1 migration, which needs the key as a string.
+    pub(super) async fn open_and_migrate(name: &str, key: &str) -> CryptoKeystoreResult<Database> {
+        /// Do not update this target version. The last version that this function
+        /// should upgrade to is DB_VERSION_3, because to update to DB_VERSION_4,
+        /// clients need to call migrate_db_key_type_to_bytes.
+        const TARGET_VERSION: u32 = DB_VERSION_3;
+        let factory = Factory::new()?;
+
+        let open_existing = factory.open(name, None)?;
+        let existing_db = open_existing.await?;
+        let mut version = existing_db.version()?;
+        if version == TARGET_VERSION {
+            // Migration is not needed, just return existing db
+            Ok(existing_db)
+        } else {
+            // Migration is needed
+            existing_db.close();
+
+            while version < TARGET_VERSION {
+                version = do_migration_step(version, name, key).await?;
+            }
+
+            let open_request = factory.open(name, Some(TARGET_VERSION))?;
+            open_request.await.map_err(Into::into)
+        }
+    }
+
+    // See comments on super::do_migration_step.
+    async fn do_migration_step(from: u32, name: &str, key: &str) -> CryptoKeystoreResult<u32> {
+        match from {
+            // The version that results from the latest migration must match TARGET_VERSION
+            //      to ensure convergence of the while loop this is called from.
+            0..=DB_VERSION_0 => migrate_to_version_1(name, key).await,
+            DB_VERSION_1 => migrate_to_version_2(name).await,
+            DB_VERSION_2 => migrate_to_version_3(name).await,
+            _ => Err(CryptoKeystoreError::MigrationNotSupported(from)),
+        }
+    }
+}
+
+/// Open an existing idb database with the given name, and migrate it if needed.
 pub(crate) async fn open_and_migrate(name: &str, key: &DatabaseKey) -> CryptoKeystoreResult<Database> {
     /// Increment when adding a new migration.
-    const TARGET_VERSION: u32 = DB_VERSION_3;
+    const TARGET_VERSION: u32 = DB_VERSION_4;
     let factory = Factory::new()?;
 
     let open_existing = factory.open(name, None)?;
@@ -74,13 +124,15 @@ pub(crate) async fn open_and_migrate(name: &str, key: &DatabaseKey) -> CryptoKey
 ///
 /// However, do not use the constant but hardcode the value into the function.
 /// This way it will keep working once a new migration is added after it.
-async fn do_migration_step(from: u32, name: &str, key: &DatabaseKey) -> CryptoKeystoreResult<u32> {
+async fn do_migration_step(from: u32, name: &str, _key: &DatabaseKey) -> CryptoKeystoreResult<u32> {
     match from {
-        // The version that results from the latest migration must match TARGET_VERSION
-        //      to ensure convergence of the while loop this is called from.
-        0..=DB_VERSION_0 => migrate_to_version_1(name, key).await,
-        DB_VERSION_1 => migrate_to_version_2(name).await,
-        DB_VERSION_2 => migrate_to_version_3(name).await,
+        1 => {
+            // idb returns version 1 for freshly opened databases so here we just
+            // need to initialize object stores.
+            let db = get_builder_v4(name).build().await?;
+            db.close();
+            Ok(DB_VERSION_4)
+        }
         _ => Err(CryptoKeystoreError::MigrationNotSupported(from)),
     }
 }
@@ -121,6 +173,11 @@ fn get_builder_v2(name: &str) -> DatabaseBuilder {
     )
 }
 
+/// Just initialize object stores.
+fn get_builder_v4(name: &str) -> DatabaseBuilder {
+    get_builder_v3(name).version(DB_VERSION_4)
+}
+
 /// With the current feature set of stable rust macros, we're not aware how to construct an
 /// identifier for each entity inside the macro.
 ///
@@ -151,7 +208,7 @@ macro_rules! migrate_entities_to_version_1 {
             let stores = idb_during_migration.store_names();
             let transaction = idb_during_migration.transaction(&stores, TransactionMode::ReadWrite)?;
             let wrapper_during_migration = WasmStorageWrapper::Persistent(idb_during_migration);
-            let storage_during_migration = WasmEncryptedStorage::new($key, wrapper_during_migration);
+            let storage_during_migration = WasmEncryptedStorage::new_with_pre_v4_key($key, wrapper_during_migration);
             let serializer = serde_wasm_bindgen::Serializer::json_compatible();
 
             // See docstring. Here, alternatively, we'd use the identifiers constructed above for
@@ -192,7 +249,7 @@ macro_rules! migrate_entities_to_version_1 {
 /// Migrates from any old DB version to DB version 1.
 ///
 /// _**Assumption**_: the entire storage fits into memory
-async fn migrate_to_version_1(name: &str, key: &DatabaseKey) -> CryptoKeystoreResult<u32> {
+async fn migrate_to_version_1(name: &str, key: &str) -> CryptoKeystoreResult<u32> {
     migrate_entities_to_version_1!(
         name,
         key,
@@ -445,4 +502,79 @@ impl WasmMigrationExt for ProteusIdentity {
 
 impl WasmMigrationExt for ProteusPrekey {
     type EntityTypeV1_0_0 = ProteusPrekeyV1_0_0;
+}
+
+macro_rules! rekey_entities {
+    ($db: ident, $old_cipher: ident, $new_cipher: ident, [$($entity:ty),*]) => {
+        let serializer = serde_wasm_bindgen::Serializer::json_compatible();
+        let transaction = $db.transaction(&$db.store_names(), TransactionMode::ReadWrite)?;
+
+        $(
+            let store = transaction.object_store(<$entity>::COLLECTION_NAME)?;
+            let js_values = store.get_all(None, None)?.await?;
+            for js_value in js_values {
+                let mut entity: $entity = serde_wasm_bindgen::from_value(js_value)?;
+                entity.decrypt(&$old_cipher)?;
+                let key = entity.id()?;
+                entity.encrypt(&$new_cipher)?;
+                let js_value = entity.serialize(&serializer)?;
+                store.put(&js_value, Some(&key))?.await?;
+            }
+        )*
+
+        let result = transaction.await?;
+        if !result.is_committed() {
+            return Err(CryptoKeystoreError::MigrationFailed);
+        }
+    }
+}
+
+pub(super) async fn migrate_db_key_type_to_bytes(
+    name: &str,
+    old_key: &str,
+    new_key: &DatabaseKey,
+) -> CryptoKeystoreResult<()> {
+    let old_cipher = aes_gcm::Aes256Gcm::new(&sha2::Sha256::digest(old_key));
+    let new_cipher = aes_gcm::Aes256Gcm::new(new_key.as_ref().into());
+
+    let db = pre_v4::open_and_migrate(name, old_key).await?;
+
+    // The database could have been originally at version 3, or some older version,
+    // but after migration, it has to be at 3.
+    let version = db.version()?;
+    assert!(version == DB_VERSION_3);
+
+    rekey_entities!(
+        db,
+        old_cipher,
+        new_cipher,
+        [
+            MlsCredential,
+            MlsSignatureKeyPair,
+            MlsHpkePrivateKey,
+            MlsEncryptionKeyPair,
+            MlsEpochEncryptionKeyPair,
+            MlsPskBundle,
+            MlsKeyPackage,
+            PersistedMlsGroup,
+            PersistedMlsPendingGroup,
+            MlsPendingMessage,
+            E2eiEnrollment,
+            E2eiRefreshToken,
+            E2eiAcmeCA,
+            E2eiIntermediateCert,
+            E2eiCrl,
+            ProteusPrekey,
+            ProteusIdentity,
+            ProteusSession
+        ]
+    );
+
+    db.close();
+
+    // Update the database version to 4.
+    let db = Factory::new()?.open(name, Some(DB_VERSION_4))?.await?;
+    db.close();
+
+    Ok(())
 }

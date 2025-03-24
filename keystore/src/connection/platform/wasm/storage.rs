@@ -1,5 +1,7 @@
+use aes_gcm::KeyInit as _;
 use idb::{CursorDirection, KeyRange, ObjectStore, TransactionMode};
 use js_sys::Uint8Array;
+use sha2::Digest as _;
 use std::{cell::RefCell, collections::HashMap, rc::Rc};
 use wasm_bindgen::JsValue;
 
@@ -122,16 +124,12 @@ impl std::fmt::Debug for WasmEncryptedStorage {
 
 impl WasmEncryptedStorage {
     pub fn new(key: &DatabaseKey, storage: WasmStorageWrapper) -> Self {
-        let hashed_key: aes_gcm::Key<aes_gcm::Aes256Gcm> = {
-            use sha2::Digest as _;
-            let mut hasher = sha2::Sha256::new();
-            hasher.update(key);
-            hasher.finalize()
-        };
+        let cipher = aes_gcm::Aes256Gcm::new(key.as_ref().into());
+        Self { cipher, storage }
+    }
 
-        use aes_gcm::KeyInit as _;
-
-        let cipher = aes_gcm::Aes256Gcm::new(&hashed_key);
+    pub fn new_with_pre_v4_key(key: &str, storage: WasmStorageWrapper) -> Self {
+        let cipher = aes_gcm::Aes256Gcm::new(&sha2::Sha256::digest(key));
         Self { cipher, storage }
     }
 
