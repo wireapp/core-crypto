@@ -4,13 +4,16 @@ use core_foundation::{
     string::{CFString, CFStringRef},
 };
 use security_framework::base::Error;
+use security_framework::passwords as ios_keychain;
 use security_framework_sys::{
     base::errSecSuccess,
     item::{kSecAttrAccount, kSecAttrService, kSecClass, kSecClassGenericPassword},
 };
+use sha2::Digest as _;
 
 use crate::CryptoKeystoreResult;
 
+const ERR_SEC_ITEM_NOT_FOUND: i32 = -25300;
 const WIRE_SERVICE_NAME: &str = "wire.com";
 
 // Import raw symbols from CoreFoundation
@@ -38,17 +41,13 @@ macro_rules! wrap_under_get_rule {
     };
 }
 
-/// To prevent iOS from killing backgrounded apps using a WAL-journaled file,
-/// we need to leave the first 32 bytes as plaintext, this way, iOS can see the
-/// `SQLite Format 3\0` magic bytes and identify the file as a SQLite database
-/// and when it does so, it treats this file "specially" and avoids killing the app
-/// when doing background work
-/// See more: https://github.com/sqlcipher/sqlcipher/issues/255
+// To prevent iOS from killing backgrounded apps using a WAL-journaled file,
+// we need to leave the first 32 bytes as plaintext, this way, iOS can see the
+// `SQLite Format 3\0` magic bytes and identify the file as a SQLite database
+// and when it does so, it treats this file "specially" and avoids killing the app
+// when doing background work
+// See more: https://github.com/sqlcipher/sqlcipher/issues/255
 pub fn handle_ios_wal_compat(conn: &rusqlite::Connection, path: &str) -> CryptoKeystoreResult<()> {
-    const ERR_SEC_ITEM_NOT_FOUND: i32 = -25300;
-    use security_framework::passwords as ios_keychain;
-    use sha2::Digest as _;
-
     let digest = sha2::Sha256::digest(path);
     let keychain_key = format!("keystore_salt_{}", hex::encode(digest));
 
@@ -69,8 +68,11 @@ pub fn handle_ios_wal_compat(conn: &rusqlite::Connection, path: &str) -> CryptoK
     // We're doing it here to make sure we retroactively mark database salts as accessible
     mark_password_as_accessible(&keychain_key)?;
 
-    const CIPHER_PLAINTEXT_BYTES: u32 = 32;
-    conn.pragma_update(None, "cipher_plaintext_header_size", CIPHER_PLAINTEXT_BYTES)?;
+    // Do not encrypt first 32 bytes of the database, so the header can be read by iOS.
+    conn.pragma_update(None, "cipher_plaintext_header_size", 32)?;
+
+    // This is needed to trigger a write of the first database page, which is necessary due
+    // to us changing cipher_plaintext_header_size.
     conn.pragma_update(None, "user_version", 2u32)?;
 
     Ok(())
