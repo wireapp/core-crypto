@@ -46,19 +46,11 @@ macro_rules! wrap_under_get_rule {
 /// See more: https://github.com/sqlcipher/sqlcipher/issues/255
 pub fn handle_ios_wal_compat(conn: &rusqlite::Connection, path: &str) -> CryptoKeystoreResult<()> {
     const ERR_SEC_ITEM_NOT_FOUND: i32 = -25300;
-    const LEGACY_ACCT_NAME: &str = "keystore_salt";
     use security_framework::passwords as ios_keychain;
     use sha2::Digest as _;
 
-    let mut path_hash = sha2::Sha256::default();
-    path_hash.update(path.as_bytes());
-    let keychain_key = format!("{LEGACY_ACCT_NAME}_{}", hex::encode(&path_hash.finalize()));
-
-    // Old version compat fix
-    if let Ok(salt) = ios_keychain::get_generic_password(WIRE_SERVICE_NAME, LEGACY_ACCT_NAME) {
-        ios_keychain::set_generic_password(WIRE_SERVICE_NAME, &keychain_key, salt.as_slice())?;
-        ios_keychain::delete_generic_password(WIRE_SERVICE_NAME, LEGACY_ACCT_NAME)?;
-    }
+    let digest = sha2::Sha256::digest(path);
+    let keychain_key = format!("keystore_salt_{}", hex::encode(digest));
 
     match ios_keychain::get_generic_password(WIRE_SERVICE_NAME, &keychain_key) {
         Ok(salt) => {
