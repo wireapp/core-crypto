@@ -23,6 +23,7 @@ use core_crypto::{
         VerifiableGroupInfo,
     },
 };
+use core_crypto_keystore::Connection as Database;
 
 pub mod context;
 mod epoch_observer;
@@ -1680,3 +1681,12 @@ uniffi::custom_type!(DatabaseKey, Vec<u8>, {
                         .map_err(|err| CoreCryptoError::Other(err.to_string()))?))
     }
 });
+
+/// Updates the key of the CoreCrypto database.
+/// To be used only once, when moving from CoreCrypto <= 5.x to CoreCrypto 6.x.
+#[uniffi::export(name = "migrateDatabaseKeyTypeToBytes")]
+pub async fn migrate_db_key_type_to_bytes(name: &str, old_key: &str, new_key: &DatabaseKey) -> CoreCryptoResult<()> {
+    Database::migrate_db_key_type_to_bytes(name, old_key, &new_key.0)
+        .await
+        .map_err(|err| CoreCryptoError::Other(err.to_string()))
+}
