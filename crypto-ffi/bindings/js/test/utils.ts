@@ -25,7 +25,7 @@ const logLevel = Number(process.env.CC_TEST_LOG_LEVEL || "0");
 declare global {
     interface Window {
         ccModule: ccModuleType;
-        cc: { [key: string]: CoreCrypto | undefined };
+        cc: Map<string, CoreCrypto>;
         defaultCipherSuite: Ciphersuite;
         deliveryService: DeliveryService;
         _latestCommitBundle: CommitBundle;
@@ -99,7 +99,7 @@ export async function setup() {
         };
 
         window.ensureCcDefined = (clientName: string) => {
-            const cc = window.cc[clientName];
+            const cc = window.cc.get(clientName);
             if (cc === undefined) {
                 throw new Error(
                     `Client with name '${clientName}' is not initialized in the browser context.`
@@ -120,11 +120,11 @@ export async function teardown() {
         }
 
         // Delete all core crypto instances.
-        for (const ccKey in window.cc) {
+        for (const ccKey of window.cc.keys()) {
             const cc = window.ensureCcDefined(ccKey);
             await cc.close();
             await promiseForIDBRequest(window.indexedDB.deleteDatabase(ccKey));
-            delete window.cc[ccKey];
+            window.cc.delete(ccKey);
         }
     });
     browser.off("log.entryAdded", logEvents);
@@ -142,6 +142,8 @@ export async function ccInit(clientName: string): Promise<void> {
     return await browser.execute(async (clientName) => {
         const cipherSuite = window.defaultCipherSuite;
         const encoder = new TextEncoder();
+        const clientId = encoder.encode(clientName);
+
         const key = new Uint8Array(32);
         window.crypto.getRandomValues(key);
 
@@ -150,15 +152,15 @@ export async function ccInit(clientName: string): Promise<void> {
             key: new window.ccModule.DatabaseKey(key),
             wasmModule: undefined,
             ciphersuites: [cipherSuite],
-            clientId: encoder.encode(clientName),
+            clientId,
         };
         const instance = await window.ccModule.CoreCrypto.init(clientConfig);
         await instance.provideTransport(window.deliveryService);
 
         if (window.cc === undefined) {
-            window.cc = {};
+            window.cc = new Map();
         }
-        window.cc[clientName] = instance;
+        window.cc.set(clientName, instance);
     }, clientName);
 }
 
@@ -350,9 +352,9 @@ export async function proteusInit(clientName: string): Promise<void> {
         await instance.transaction((ctx) => ctx.proteusInit());
 
         if (window.cc === undefined) {
-            window.cc = {};
+            window.cc = new Map();
         }
-        window.cc[clientName] = instance;
+        window.cc.set(clientName, instance);
     }, clientName);
 }
 
