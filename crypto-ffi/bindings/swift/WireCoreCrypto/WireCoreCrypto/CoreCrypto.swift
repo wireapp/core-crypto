@@ -13,6 +13,7 @@ import WireCoreCryptoUniffi
 @_exported public import protocol WireCoreCryptoUniffi.CoreCryptoLogger
 @_exported public import struct WireCoreCryptoUniffi.CrlRegistration
 @_exported public import struct WireCoreCryptoUniffi.CustomConfiguration
+@_exported public import typealias WireCoreCryptoUniffi.DatabaseKey
 @_exported public import struct WireCoreCryptoUniffi.DecryptedMessage
 @_exported public import enum WireCoreCryptoUniffi.DeviceStatus
 @_exported public import enum WireCoreCryptoUniffi.E2eiConversationState
@@ -81,13 +82,13 @@ public class CoreCrypto: CoreCryptoProtocol {
     /// Initialise CoreCrypto with an encrypted key store.
     ///
     /// - Parameter keystorePath: path to the encrypted key store
-    /// - Parameter keystoreSecret: secret key to for the encrypted key store
+    /// - Parameter key: secret key to unlock the encrypted key store
     ///
-    public init(keystorePath: String, keystoreSecret: Data) async throws {
+    public init(keystorePath: String, key: DatabaseKey) async throws {
         self.coreCrypto =
             try await WireCoreCryptoUniffi.coreCryptoDeferredInit(
                 path: keystorePath,
-                key: String(data: keystoreSecret, encoding: .utf8)!
+                key: key
             )
     }
 
@@ -168,4 +169,11 @@ class TransactionExecutor<Result>: WireCoreCryptoUniffi.CoreCryptoCommand {
         result = try await block(context)
     }
 
+}
+
+public func migrateDatabaseKeyTypeToBytes(path: String, oldKey: String, newKey: DatabaseKey)
+    async throws
+{
+    try await WireCoreCryptoUniffi.migrateDatabaseKeyTypeToBytes(
+        name: path, oldKey: oldKey, newKey: newKey)
 }

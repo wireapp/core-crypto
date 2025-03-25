@@ -418,7 +418,7 @@ final class WireCoreCryptoTests: XCTestCase {
         try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
         let coreCrypto = try await CoreCrypto(
             keystorePath: keystore.absoluteString,
-            keystoreSecret: "secret".data(using: .utf8)!
+            key: genDatabaseKey()
         )
         try await coreCrypto.provideTransport(transport: mockMlsTransport)
         return coreCrypto
@@ -439,6 +439,12 @@ final class WireCoreCryptoTests: XCTestCase {
             clients.append(coreCrypto)
         }
         return clients
+    }
+
+    private func genDatabaseKey() -> DatabaseKey {
+        var bytes = [UInt8](repeating: 0, count: 32)
+        _ = SecRandomCopyBytes(kSecRandomDefault, bytes.count, &bytes)
+        return DatabaseKey(bytes)
     }
 
     /// Assert that an error is thrown when a block is performed.
