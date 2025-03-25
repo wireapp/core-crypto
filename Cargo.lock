@@ -2856,12 +2856,11 @@ dependencies = [
 
 [[package]]
 name = "log-reload"
-version = "0.1.0"
+version = "0.1.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e99df759bfe829042ac9ad2d576ad0b3ffb3bad3c1f124dc0094b54441e89999"
+checksum = "b93bfeb4c6d2c71cbb9207649217abb48814d88b18ed71c6c647ea5c75cf30fe"
 dependencies = [
  "log",
- "thiserror 1.0.69",
 ]
 
 [[package]]
