@@ -24,6 +24,11 @@ jobs:
           - task: ios-simulator-arm
             target: aarch64-apple-ios-sim
     steps:
+      - name: Cleanup on post
+        uses: gacts/run-and-post-run@v1
+        with:
+            post: |
+              sh ./scripts/clean.sh
       - uses: actions/checkout@v4
       - uses: actions-rust-lang/setup-rust-toolchain@v1
         with:

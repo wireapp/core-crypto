@@ -29,6 +29,11 @@ jobs:
     needs: build-ios
     runs-on: macos-latest
     steps:
+      - name: Cleanup on post
+        uses: gacts/run-and-post-run@v1
+        with:
+            post: |
+              sh ./scripts/clean.sh
       - uses: actions/checkout@v4
       - name: download artifacts for ios
         uses: actions/download-artifact@v4
@@ -123,6 +128,11 @@ jobs:
     needs: build-ios
     runs-on: self-hosted
     steps:
+      - name: Cleanup on post
+        uses: gacts/run-and-post-run@v1
+        with:
+            post: |
+              sh ./scripts/clean.sh
       - uses: actions/checkout@v4
       - name: download artifacts for ios
         uses: actions/download-artifact@v4
@@ -148,6 +158,11 @@ jobs:
     runs-on: self-hosted
     needs: build-ios
     steps:
+      - name: Cleanup on post
+        uses: gacts/run-and-post-run@v1
+        with:
+            post: |
+              sh ./scripts/clean.sh
       - uses: actions/checkout@v4
       - uses: actions-rust-lang/setup-rust-toolchain@v1  # this implicitly caches Rust tools and build artifacts
         with:
