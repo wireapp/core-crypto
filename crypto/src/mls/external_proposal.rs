@@ -1,45 +1,12 @@
-use log::trace;
-use openmls::prelude::{GroupEpoch, GroupId, JoinProposal, LeafNodeIndex, MlsMessageOut, Proposal};
-use std::collections::HashSet;
+use openmls::prelude::{GroupEpoch, GroupId, JoinProposal, MlsMessageOut};
 
 use super::Result;
 use crate::{
     LeafError, MlsError, RecursiveError,
     context::CentralContext,
-    mls::{self, ClientId, ConversationId, credential::typ::MlsCredentialType},
-    prelude::{MlsCiphersuite, MlsConversation},
+    mls::{self, ConversationId, credential::typ::MlsCredentialType},
+    prelude::MlsCiphersuite,
 };
-
-impl MlsConversation {
-    /// Get actual group members and subtract pending remove proposals
-    pub fn members_in_next_epoch(&self) -> Vec<ClientId> {
-        let pending_removals = self.pending_removals();
-        let existing_clients = self
-            .group
-            .members()
-            .filter_map(|kp| {
-                if !pending_removals.contains(&kp.index) {
-                    Some(kp.credential.identity().into())
-                } else {
-                    trace!(client_index:% = kp.index; "Client is pending removal");
-                    None
-                }
-            })
-            .collect::<HashSet<_>>();
-        existing_clients.into_iter().collect()
-    }
-
-    /// Gather pending remove proposals
-    fn pending_removals(&self) -> Vec<LeafNodeIndex> {
-        self.group
-            .pending_proposals()
-            .filter_map(|proposal| match proposal.proposal() {
-                Proposal::Remove(remove) => Some(remove.removed()),
-                _ => None,
-            })
-            .collect::<Vec<_>>()
-    }
-}
 
 impl CentralContext {
     /// Crafts a new external Add proposal. Enables a client outside a group to request addition to this group.

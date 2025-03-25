@@ -808,20 +808,3 @@ impl ClientContext {
         ExternalSender::new(signature_key, credential)
     }
 }
-
-impl MlsConversation {
-    pub fn signature_keys(&self) -> impl Iterator<Item = SignaturePublicKey> + '_ {
-        self.group
-            .members()
-            .map(|m| m.signature_key)
-            .map(|mpk| SignaturePublicKey::from(mpk.as_slice()))
-    }
-
-    pub fn encryption_keys(&self) -> impl Iterator<Item = Vec<u8>> + '_ {
-        self.group.members().map(|m| m.encryption_key)
-    }
-
-    pub fn extensions(&self) -> &openmls::prelude::Extensions {
-        self.group.export_group_context().extensions()
-    }
-}

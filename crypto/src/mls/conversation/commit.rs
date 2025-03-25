@@ -11,7 +11,7 @@ use mls_crypto_provider::MlsCryptoProvider;
 
 use super::{Error, Result};
 use crate::{
-    LeafError, RecursiveError,
+    LeafError,
     e2e_identity::init_certificates::NewCrlDistributionPoint,
     mls::{MlsConversation, credential::CredentialBundle},
     prelude::{Client, MlsError, MlsGroupInfoBundle},
@@ -28,10 +28,7 @@ impl MlsConversation {
         leaf_node: Option<LeafNode>,
     ) -> Result<MlsCommitBundle> {
         let cb = match cb {
-            None => &self
-                .find_most_recent_credential_bundle(client)
-                .await
-                .map_err(RecursiveError::mls_client("finding most recent credential bundle"))?,
+            None => &self.find_most_recent_credential_bundle(client).await?,
             Some(cb) => cb,
         };
         let (commit, welcome, group_info) = self
@@ -63,11 +60,7 @@ impl MlsConversation {
         if self.group.pending_proposals().count() == 0 {
             return Ok(None);
         }
-        let signer = &self
-            .find_most_recent_credential_bundle(client)
-            .await
-            .map_err(RecursiveError::mls_client("finding most recent credential bundle"))?
-            .signature_key;
+        let signer = &self.find_most_recent_credential_bundle(client).await?.signature_key;
 
         let (commit, welcome, gi) = self
             .group

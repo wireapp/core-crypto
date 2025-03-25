@@ -30,15 +30,16 @@
 use config::MlsConversationConfiguration;
 use core_crypto_keystore::CryptoKeystoreMls;
 use itertools::Itertools as _;
+use log::trace;
 use mls_crypto_provider::{CryptoKeystore, MlsCryptoProvider};
 use openmls::{
     group::MlsGroup,
-    prelude::{Credential, CredentialWithKey, SignaturePublicKey},
+    prelude::{Credential, CredentialWithKey, LeafNodeIndex, Proposal, SignaturePublicKey},
 };
 use openmls_traits::OpenMlsCryptoProvider;
 use openmls_traits::types::SignatureScheme;
-use std::collections::HashMap;
-use std::ops::Deref;
+use std::{collections::HashMap, sync::Arc};
+use std::{collections::HashSet, ops::Deref};
 
 use crate::{
     KeystoreError, LeafError, MlsError, RecursiveError,
@@ -80,6 +81,8 @@ use core_crypto_keystore::connection::FetchFromDatabase;
 use core_crypto_keystore::entities::PersistedMlsPendingGroup;
 pub use error::{Error, Result};
 pub use immutable_conversation::ImmutableConversation;
+
+use super::credential::CredentialBundle;
 
 /// The base layer for [Conversation].
 /// The trait is only exposed internally.
@@ -386,6 +389,35 @@ impl MlsConversation {
         })
     }
 
+    /// Get actual group members and subtract pending remove proposals
+    pub fn members_in_next_epoch(&self) -> Vec<ClientId> {
+        let pending_removals = self.pending_removals();
+        let existing_clients = self
+            .group
+            .members()
+            .filter_map(|kp| {
+                if !pending_removals.contains(&kp.index) {
+                    Some(kp.credential.identity().into())
+                } else {
+                    trace!(client_index:% = kp.index; "Client is pending removal");
+                    None
+                }
+            })
+            .collect::<HashSet<_>>();
+        existing_clients.into_iter().collect()
+    }
+
+    /// Gather pending remove proposals
+    fn pending_removals(&self) -> Vec<LeafNodeIndex> {
+        self.group
+            .pending_proposals()
+            .filter_map(|proposal| match proposal.proposal() {
+                Proposal::Remove(remove) => Some(remove.removed()),
+                _ => None,
+            })
+            .collect::<Vec<_>>()
+    }
+
     /// Returns all members credentials with their signature public key from the group/conversation
     pub fn members_with_key(&self) -> HashMap<Vec<u8>, CredentialWithKey> {
         self.group.members().fold(HashMap::new(), |mut acc, kp| {
@@ -435,6 +467,33 @@ impl MlsConversation {
     pub(crate) fn signature_scheme(&self) -> SignatureScheme {
         self.ciphersuite().signature_algorithm()
     }
+
+    pub(crate) async fn find_current_credential_bundle(&self, client: &Client) -> Result<Arc<CredentialBundle>> {
+        let own_leaf = self.group.own_leaf().ok_or(LeafError::InternalMlsError)?;
+        let sc = self.ciphersuite().signature_algorithm();
+        let ct = self
+            .own_credential_type()
+            .map_err(RecursiveError::mls_conversation("getting own credential type"))?;
+
+        client
+            .find_credential_bundle_by_public_key(sc, ct, own_leaf.signature_key())
+            .await
+            .map_err(RecursiveError::mls_client("finding current credential bundle"))
+            .map_err(Into::into)
+    }
+
+    pub(crate) async fn find_most_recent_credential_bundle(&self, client: &Client) -> Result<Arc<CredentialBundle>> {
+        let sc = self.ciphersuite().signature_algorithm();
+        let ct = self
+            .own_credential_type()
+            .map_err(RecursiveError::mls_conversation("getting own credential type"))?;
+
+        client
+            .find_most_recent_credential_bundle(sc, ct)
+            .await
+            .map_err(RecursiveError::mls_client("finding most recent credential bundle"))
+            .map_err(Into::into)
+    }
 }
 
 impl CentralContext {
@@ -477,6 +536,28 @@ impl CentralContext {
             return Err(LeafError::ConversationNotFound(id.clone()).into());
         };
         Ok(PendingConversation::new(pending_group, self.clone()))
+    }
+}
+
+#[cfg(test)]
+pub mod test_utils {
+    use super::*;
+
+    impl MlsConversation {
+        pub fn signature_keys(&self) -> impl Iterator<Item = SignaturePublicKey> + '_ {
+            self.group
+                .members()
+                .map(|m| m.signature_key)
+                .map(|mpk| SignaturePublicKey::from(mpk.as_slice()))
+        }
+
+        pub fn encryption_keys(&self) -> impl Iterator<Item = Vec<u8>> + '_ {
+            self.group.members().map(|m| m.encryption_key)
+        }
+
+        pub fn extensions(&self) -> &openmls::prelude::Extensions {
+            self.group.export_group_context().extensions()
+        }
     }
 }
 

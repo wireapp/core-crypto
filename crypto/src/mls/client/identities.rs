@@ -1,13 +1,10 @@
-use crate::{
-    LeafError, RecursiveError,
-    mls::client::{
-        ClientInner,
-        error::{Error, Result},
-    },
+use crate::mls::client::{
+    ClientInner,
+    error::{Error, Result},
 };
 use crate::{
     mls::credential::{CredentialBundle, typ::MlsCredentialType},
-    prelude::{Client, MlsConversation},
+    prelude::Client,
 };
 use openmls::prelude::{Credential, SignaturePublicKey};
 use openmls_traits::types::SignatureScheme;
@@ -86,29 +83,6 @@ impl ClientIdentities {
 
     pub(crate) fn iter(&self) -> impl Iterator<Item = (SignatureScheme, Arc<CredentialBundle>)> + '_ {
         self.0.iter().flat_map(|(sc, cb)| cb.iter().map(|c| (*sc, c.clone())))
-    }
-}
-
-impl MlsConversation {
-    pub(crate) async fn find_current_credential_bundle(&self, client: &Client) -> Result<Arc<CredentialBundle>> {
-        let own_leaf = self.group.own_leaf().ok_or(LeafError::InternalMlsError)?;
-        let sc = self.ciphersuite().signature_algorithm();
-        let ct = self
-            .own_credential_type()
-            .map_err(RecursiveError::mls_conversation("getting own credential type"))?;
-
-        client
-            .find_credential_bundle_by_public_key(sc, ct, own_leaf.signature_key())
-            .await
-    }
-
-    pub(crate) async fn find_most_recent_credential_bundle(&self, client: &Client) -> Result<Arc<CredentialBundle>> {
-        let sc = self.ciphersuite().signature_algorithm();
-        let ct = self
-            .own_credential_type()
-            .map_err(RecursiveError::mls_conversation("getting own credential type"))?;
-
-        client.find_most_recent_credential_bundle(sc, ct).await
     }
 }
 
