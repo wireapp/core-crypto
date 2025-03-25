@@ -1250,14 +1250,7 @@
 <a href="#1249" id="1249">1249</a>
 <a href="#1250" id="1250">1250</a>
 <a href="#1251" id="1251">1251</a>
-<a href="#1252" id="1252">1252</a>
-<a href="#1253" id="1253">1253</a>
-<a href="#1254" id="1254">1254</a>
-<a href="#1255" id="1255">1255</a>
-<a href="#1256" id="1256">1256</a>
-<a href="#1257" id="1257">1257</a>
-<a href="#1258" id="1258">1258</a>
-<a href="#1259" id="1259">1259</a></pre></div><pre class="rust"><code><span class="doccomment">//! This table summarizes when a MLS group can create a commit or proposal:
+<a href="#1252" id="1252">1252</a></pre></div><pre class="rust"><code><span class="doccomment">//! This table summarizes when a MLS group can create a commit or proposal:
 //!
 //! | can create handshake ? | 0 pend. Commit | 1 pend. Commit |
 //! |------------------------|----------------|----------------|
@@ -1270,7 +1263,7 @@
 
 <span class="kw">use super</span>::{Error, <span class="prelude-ty">Result</span>};
 <span class="kw">use crate</span>::{
-    LeafError, RecursiveError,
+    LeafError,
     e2e_identity::init_certificates::NewCrlDistributionPoint,
     mls::{MlsConversation, credential::CredentialBundle},
     prelude::{Client, MlsError, MlsGroupInfoBundle},
@@ -1287,10 +1280,7 @@
         leaf_node: <span class="prelude-ty">Option</span>&lt;LeafNode&gt;,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;MlsCommitBundle&gt; {
         <span class="kw">let </span>cb = <span class="kw">match </span>cb {
-            <span class="prelude-val">None </span>=&gt; <span class="kw-2">&amp;</span><span class="self">self
-                </span>.find_most_recent_credential_bundle(client)
-                .<span class="kw">await
-                </span>.map_err(RecursiveError::mls_client(<span class="string">"finding most recent credential bundle"</span>))<span class="question-mark">?</span>,
+            <span class="prelude-val">None </span>=&gt; <span class="kw-2">&amp;</span><span class="self">self</span>.find_most_recent_credential_bundle(client).<span class="kw">await</span><span class="question-mark">?</span>,
             <span class="prelude-val">Some</span>(cb) =&gt; cb,
         };
         <span class="kw">let </span>(commit, welcome, group_info) = <span class="self">self
@@ -1322,11 +1312,7 @@
         <span class="kw">if </span><span class="self">self</span>.group.pending_proposals().count() == <span class="number">0 </span>{
             <span class="kw">return </span><span class="prelude-val">Ok</span>(<span class="prelude-val">None</span>);
         }
-        <span class="kw">let </span>signer = <span class="kw-2">&amp;</span><span class="self">self
-            </span>.find_most_recent_credential_bundle(client)
-            .<span class="kw">await
-            </span>.map_err(RecursiveError::mls_client(<span class="string">"finding most recent credential bundle"</span>))<span class="question-mark">?
-            </span>.signature_key;
+        <span class="kw">let </span>signer = <span class="kw-2">&amp;</span><span class="self">self</span>.find_most_recent_credential_bundle(client).<span class="kw">await</span><span class="question-mark">?</span>.signature_key;
 
         <span class="kw">let </span>(commit, welcome, gi) = <span class="self">self
             </span>.group

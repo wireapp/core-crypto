@@ -454,11 +454,7 @@
 <a href="#453" id="453">453</a>
 <a href="#454" id="454">454</a>
 <a href="#455" id="455">455</a>
-<a href="#456" id="456">456</a>
-<a href="#457" id="457">457</a>
-<a href="#458" id="458">458</a>
-<a href="#459" id="459">459</a>
-<a href="#460" id="460">460</a></pre></div><pre class="rust"><code><span class="doccomment">//! This table summarizes when a MLS group can create a commit or proposal:
+<a href="#456" id="456">456</a></pre></div><pre class="rust"><code><span class="doccomment">//! This table summarizes when a MLS group can create a commit or proposal:
 //!
 //! | can create handshake ? | 0 pend. Commit | 1 pend. Commit |
 //! |------------------------|----------------|----------------|
@@ -562,11 +558,7 @@
             </span>.signature_key;
 
         <span class="kw">let </span>proposal = <span class="kw">if let </span><span class="prelude-val">Some</span>(leaf_node) = leaf_node {
-            <span class="kw">let </span>leaf_node_signer = <span class="kw-2">&amp;</span><span class="self">self
-                </span>.find_most_recent_credential_bundle(client)
-                .<span class="kw">await
-                </span>.map_err(RecursiveError::mls_client(<span class="string">"finding most recent credential bundle"</span>))<span class="question-mark">?
-                </span>.signature_key;
+            <span class="kw">let </span>leaf_node_signer = <span class="kw-2">&amp;</span><span class="self">self</span>.find_most_recent_credential_bundle(client).<span class="kw">await</span><span class="question-mark">?</span>.signature_key;
 
             <span class="self">self</span>.group
                 .propose_explicit_self_update(backend, msg_signer, leaf_node, leaf_node_signer)
