@@ -2125,10 +2125,10 @@
     </span>}
 }
 
-<span class="doccomment">/// Proteus counterpart of [crate::mls::MlsCentral]
+<span class="doccomment">/// Proteus counterpart of [crate::mls::Client]
 ///
 /// The big difference is that [ProteusCentral] doesn't *own* its own keystore but must borrow it from the outside.
-/// Whether it's exclusively for this struct's purposes or it's shared with our main struct, [crate::mls::MlsCentral]
+/// Whether it's exclusively for this struct's purposes or it's shared with our main struct, [crate::mls::Client]
 </span><span class="attr">#[derive(Debug)]
 </span><span class="kw">pub struct </span>ProteusCentral {
     proteus_identity: Arc&lt;IdentityKeyPair&gt;,
@@ -2949,7 +2949,7 @@
 <span class="attr">#[cfg(test)]
 </span><span class="kw">mod </span>tests {
     <span class="kw">use crate</span>::{
-        prelude::{CertificateBundle, ClientIdentifier, MlsCentral, MlsCentralConfiguration, MlsCredentialType},
+        prelude::{CertificateBundle, Client, ClientIdentifier, MlsClientConfiguration, MlsCredentialType},
         test_utils::{proteus_utils::<span class="kw-2">*</span>, x509::X509TestChain, <span class="kw-2">*</span>},
     };
 
@@ -2969,7 +2969,7 @@
         <span class="attr">#[cfg(target_family = <span class="string">"wasm"</span>)]
         </span><span class="kw">let </span>(path, <span class="kw">_</span>) = tmp_db_file();
         <span class="kw">let </span>client_id = <span class="string">"alice"</span>.into();
-        <span class="kw">let </span>cfg = MlsCentralConfiguration::try_new(
+        <span class="kw">let </span>cfg = MlsClientConfiguration::try_new(
             path,
             <span class="string">"test"</span>.to_string(),
             <span class="prelude-val">Some</span>(client_id),
@@ -2978,7 +2978,7 @@
             <span class="prelude-val">Some</span>(INITIAL_KEYING_MATERIAL_COUNT),
         )
         .unwrap();
-        <span class="kw">let </span>cc: CoreCrypto = MlsCentral::try_new(cfg).<span class="kw">await</span>.unwrap().into();
+        <span class="kw">let </span>cc: CoreCrypto = Client::try_new(cfg).<span class="kw">await</span>.unwrap().into();
         <span class="kw">let </span>context = cc.new_transaction().<span class="kw">await</span>.unwrap();
         <span class="macro">assert!</span>(context.proteus_init().<span class="kw">await</span>.is_ok());
         <span class="macro">assert!</span>(context.proteus_new_prekey(<span class="number">1</span>).<span class="kw">await</span>.is_ok());
@@ -2995,7 +2995,7 @@
         <span class="attr">#[cfg(target_family = <span class="string">"wasm"</span>)]
         </span><span class="kw">let </span>(path, <span class="kw">_</span>) = tmp_db_file();
         <span class="comment">// we are deferring MLS initialization here, not passing a MLS 'client_id' yet
-        </span><span class="kw">let </span>cfg = MlsCentralConfiguration::try_new(
+        </span><span class="kw">let </span>cfg = MlsClientConfiguration::try_new(
             path,
             <span class="string">"test"</span>.to_string(),
             <span class="prelude-val">None</span>,
@@ -3004,7 +3004,7 @@
             <span class="prelude-val">Some</span>(INITIAL_KEYING_MATERIAL_COUNT),
         )
         .unwrap();
-        <span class="kw">let </span>cc: CoreCrypto = MlsCentral::try_new(cfg).<span class="kw">await</span>.unwrap().into();
+        <span class="kw">let </span>cc: CoreCrypto = Client::try_new(cfg).<span class="kw">await</span>.unwrap().into();
         <span class="kw">let </span>transaction = cc.new_transaction().<span class="kw">await</span>.unwrap();
         <span class="kw">let </span>x509_test_chain = X509TestChain::init_empty(case.signature_scheme());
         x509_test_chain.register_with_central(<span class="kw-2">&amp;</span>transaction).<span class="kw">await</span>;

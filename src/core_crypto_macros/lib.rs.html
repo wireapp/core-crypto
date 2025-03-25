@@ -133,7 +133,7 @@
 
 <span class="doccomment">/// !!! Not literally idempotent !!!
 ///
-/// Marker for methods on 'MlsCentral' which leave the number of entities in the keystore even.
+/// Marker for methods on 'core_crypto::Client' which leave the number of entities in the keystore even.
 /// They can create/destroy some but always compensate.
 /// So they are not idempotent, they cannot be safely replayed and they might leave the keystore in
 /// a different state.
@@ -142,7 +142,7 @@
     idempotent::idempotent(item)
 }
 
-<span class="doccomment">/// Neologism to mean the opposite of idempotent. Methods of 'MlsCentral' marked with this have to
+<span class="doccomment">/// Neologism to mean the opposite of idempotent. Methods of 'core_crypto::Client' marked with this have to
 /// insert/delete an entity in the keystore and change the number of entities persisted.
 </span><span class="attr">#[proc_macro_attribute]
 </span><span class="kw">pub fn </span>dispotent(_args: TokenStream, item: TokenStream) -&gt; TokenStream {

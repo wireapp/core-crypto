@@ -1471,23 +1471,7 @@
 <a href="#1470" id="1470">1470</a>
 <a href="#1471" id="1471">1471</a>
 <a href="#1472" id="1472">1472</a>
-<a href="#1473" id="1473">1473</a>
-<a href="#1474" id="1474">1474</a>
-<a href="#1475" id="1475">1475</a>
-<a href="#1476" id="1476">1476</a>
-<a href="#1477" id="1477">1477</a>
-<a href="#1478" id="1478">1478</a>
-<a href="#1479" id="1479">1479</a>
-<a href="#1480" id="1480">1480</a>
-<a href="#1481" id="1481">1481</a>
-<a href="#1482" id="1482">1482</a>
-<a href="#1483" id="1483">1483</a>
-<a href="#1484" id="1484">1484</a>
-<a href="#1485" id="1485">1485</a>
-<a href="#1486" id="1486">1486</a>
-<a href="#1487" id="1487">1487</a>
-<a href="#1488" id="1488">1488</a>
-<a href="#1489" id="1489">1489</a></pre></div><pre class="rust"><code><span class="comment">// Wire
+<a href="#1473" id="1473">1473</a></pre></div><pre class="rust"><code><span class="comment">// Wire
 // Copyright (C) 2022 Wire Swiss GmbH
 
 // This program is free software: you can redistribute it and/or modify
@@ -1531,8 +1515,7 @@
 
 <span class="kw">use crate</span>::{
     KeystoreError, LeafError, MlsError, RecursiveError,
-    group_store::GroupStore,
-    mls::{MlsCentral, client::Client},
+    mls::Client,
     prelude::{MlsCiphersuite, MlsCredentialType},
 };
 
@@ -1543,7 +1526,7 @@
 <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">mod </span>config;
 <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">mod </span>conversation_guard;
 <span class="attr">#[cfg(test)]
-</span><span class="kw">mod </span>db_count;
+</span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">mod </span>db_count;
 <span class="kw">mod </span>duplicate;
 <span class="attr">#[cfg(test)]
 </span><span class="kw">mod </span>durability;
@@ -1560,7 +1543,6 @@
 <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">mod </span>welcome;
 <span class="kw">mod </span>wipe;
 
-<span class="kw">use </span><span class="kw">crate</span>::e2e_identity::conversation_state::compute_state;
 <span class="kw">use </span><span class="kw">crate</span>::mls::HasClientAndProvider;
 <span class="kw">use </span><span class="kw">crate</span>::mls::conversation::pending_conversation::PendingConversation;
 <span class="kw">use </span><span class="kw">crate</span>::mls::credential::ext::CredentialExt <span class="kw">as _</span>;
@@ -1577,17 +1559,17 @@
 </span><span class="attr">#[cfg_attr(target_family = <span class="string">"wasm"</span>, async_trait::async_trait(<span class="question-mark">?</span>Send))]
 #[cfg_attr(not(target_family = <span class="string">"wasm"</span>), async_trait::async_trait)]
 </span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">trait </span>ConversationWithMls&lt;<span class="lifetime">'a</span>&gt; {
-    <span class="doccomment">/// [MlsCentral] or [CentralContext] both implement [HasClientAndProvider].
-    </span><span class="kw">type </span>Central: HasClientAndProvider;
+    <span class="doccomment">/// [Client] or [CentralContext] both implement [HasClientAndProvider].
+    </span><span class="kw">type </span>Context: HasClientAndProvider;
 
     <span class="kw">type </span>Conversation: Deref&lt;Target = MlsConversation&gt; + Send;
 
-    <span class="kw">async fn </span>central(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>::Central&gt;;
+    <span class="kw">async fn </span>context(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>::Context&gt;;
 
     <span class="kw">async fn </span>conversation(<span class="kw-2">&amp;</span><span class="lifetime">'a </span><span class="self">self</span>) -&gt; <span class="self">Self</span>::Conversation;
 
     <span class="kw">async fn </span>mls_provider(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;MlsCryptoProvider&gt; {
-        <span class="self">self</span>.central()
+        <span class="self">self</span>.context()
             .<span class="kw">await</span><span class="question-mark">?
             </span>.mls_provider()
             .<span class="kw">await
@@ -1596,7 +1578,7 @@
     }
 
     <span class="kw">async fn </span>mls_client(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;Client&gt; {
-        <span class="self">self</span>.central()
+        <span class="self">self</span>.context()
             .<span class="kw">await</span><span class="question-mark">?
             </span>.client()
             .<span class="kw">await
@@ -1677,7 +1659,7 @@
         <span class="kw">let </span>authentication_service = backend.authentication_service();
         authentication_service.refresh_time_of_interest().<span class="kw">await</span>;
         <span class="kw">let </span>inner = <span class="self">self</span>.conversation().<span class="kw">await</span>;
-        <span class="kw">let </span>state = compute_state(
+        <span class="kw">let </span>state = Client::compute_conversation_state(
             inner.ciphersuite(),
             inner.group.members_credentials(),
             MlsCredentialType::X509,
@@ -1928,20 +1910,6 @@
     }
 }
 
-<span class="kw">impl </span>MlsCentral {
-    <span class="doccomment">/// Get an immutable view of an `MlsConversation`.
-    ///
-    /// Because it operates on the raw conversation type, this may be faster than [`CentralContext::conversation`]
-    /// for transient and immutable purposes. For long-lived or mutable purposes, prefer the other method.
-    </span><span class="kw">pub async fn </span>get_raw_conversation(<span class="kw-2">&amp;</span><span class="self">self</span>, id: <span class="kw-2">&amp;</span>ConversationId) -&gt; <span class="prelude-ty">Result</span>&lt;ImmutableConversation&gt; {
-        <span class="kw">let </span>raw_conversation = GroupStore::fetch_from_keystore(id, <span class="kw-2">&amp;</span><span class="self">self</span>.mls_backend.keystore(), <span class="prelude-val">None</span>)
-            .<span class="kw">await
-            </span>.map_err(RecursiveError::root(<span class="string">"getting conversation by id"</span>))<span class="question-mark">?
-            </span>.ok_or_else(|| LeafError::ConversationNotFound(id.clone()))<span class="question-mark">?</span>;
-        <span class="prelude-val">Ok</span>(ImmutableConversation::new(raw_conversation, <span class="self">self</span>.clone()))
-    }
-}
-
 <span class="kw">impl </span>CentralContext {
     <span class="doccomment">/// Acquire a conversation guard.
     ///
@@ -1994,7 +1962,7 @@
 
     <span class="kw">use crate</span>::{
         CoreCrypto,
-        prelude::{ClientIdentifier, INITIAL_KEYING_MATERIAL_COUNT, MlsCentralConfiguration},
+        prelude::{ClientIdentifier, INITIAL_KEYING_MATERIAL_COUNT, MlsClientConfiguration},
         test_utils::<span class="kw-2">*</span>,
     };
 
@@ -2109,7 +2077,7 @@
                     <span class="kw">let </span>uuid = uuid::Uuid::new_v4();
                     <span class="kw">let </span>name = uuid.hyphenated().to_string();
                     <span class="kw">let </span>path = tmp_db_file();
-                    <span class="kw">let </span>config = MlsCentralConfiguration::try_new(
+                    <span class="kw">let </span>config = MlsClientConfiguration::try_new(
                         path.<span class="number">0</span>,
                         name.clone(),
                         <span class="prelude-val">None</span>,
@@ -2118,8 +2086,8 @@
                         <span class="prelude-val">Some</span>(INITIAL_KEYING_MATERIAL_COUNT),
                     )
                     .unwrap();
-                    <span class="kw">let </span>central = MlsCentral::try_new(config).<span class="kw">await</span>.unwrap();
-                    <span class="kw">let </span>cc = CoreCrypto::from(central);
+                    <span class="kw">let </span>client = Client::try_new(config).<span class="kw">await</span>.unwrap();
+                    <span class="kw">let </span>cc = CoreCrypto::from(client);
                     <span class="kw">let </span>friend_context = cc.new_transaction().<span class="kw">await</span>.unwrap();
                     <span class="kw">let </span>central = cc.mls;
 
@@ -2152,7 +2120,7 @@
 
                     <span class="kw">let </span>context = ClientContext {
                         context: friend_context,
-                        central,
+                        client: central,
                         mls_transport: Arc::&lt;CoreCryptoTransportSuccessProvider&gt;::default(),
                         x509_test_chain: x509_test_chain_arc.clone(),
                     };

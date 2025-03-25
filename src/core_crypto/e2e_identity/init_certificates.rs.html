@@ -400,27 +400,8 @@
 <a href="#399" id="399">399</a>
 <a href="#400" id="400">400</a>
 <a href="#401" id="401">401</a>
-<a href="#402" id="402">402</a>
-<a href="#403" id="403">403</a>
-<a href="#404" id="404">404</a>
-<a href="#405" id="405">405</a>
-<a href="#406" id="406">406</a>
-<a href="#407" id="407">407</a>
-<a href="#408" id="408">408</a>
-<a href="#409" id="409">409</a>
-<a href="#410" id="410">410</a>
-<a href="#411" id="411">411</a>
-<a href="#412" id="412">412</a>
-<a href="#413" id="413">413</a>
-<a href="#414" id="414">414</a>
-<a href="#415" id="415">415</a>
-<a href="#416" id="416">416</a>
-<a href="#417" id="417">417</a>
-<a href="#418" id="418">418</a>
-<a href="#419" id="419">419</a>
-<a href="#420" id="420">420</a>
-<a href="#421" id="421">421</a></pre></div><pre class="rust"><code><span class="kw">use super</span>::{Error, <span class="prelude-ty">Result</span>};
-<span class="kw">use crate</span>::{MlsError, RecursiveError, context::CentralContext, e2e_identity::CrlRegistration, prelude::MlsCentral};
+<a href="#402" id="402">402</a></pre></div><pre class="rust"><code><span class="kw">use super</span>::{Error, <span class="prelude-ty">Result</span>};
+<span class="kw">use crate</span>::{MlsError, RecursiveError, context::CentralContext, e2e_identity::CrlRegistration};
 <span class="kw">use </span>core_crypto_keystore::{
     connection::FetchFromDatabase,
     entities::{E2eiAcmeCA, E2eiCrl, E2eiIntermediateCert},
@@ -454,8 +435,8 @@
 }
 
 <span class="kw">impl </span>CentralContext {
-    <span class="doccomment">/// See [MlsCentral::e2ei_is_pki_env_setup].
-    /// Unlike [MlsCentral::e2ei_is_pki_env_setup], this function returns a result.
+    <span class="doccomment">/// See [Client::e2ei_is_pki_env_setup].
+    /// Unlike [Client::e2ei_is_pki_env_setup], this function returns a result.
     </span><span class="kw">pub async fn </span>e2ei_is_pki_env_setup(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;bool&gt; {
         <span class="prelude-val">Ok</span>(<span class="self">self
             </span>.mls_provider()
@@ -466,7 +447,7 @@
             .<span class="kw">await</span>)
     }
 
-    <span class="doccomment">/// See [MlsCentral::e2ei_dump_pki_env].
+    <span class="doccomment">/// See [Client::e2ei_dump_pki_env].
     </span><span class="kw">pub async fn </span>e2ei_dump_pki_env(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="prelude-ty">Option</span>&lt;E2eiDumpedPkiEnv&gt;&gt; {
         <span class="kw">if </span>!<span class="self">self</span>.e2ei_is_pki_env_setup().<span class="kw">await</span><span class="question-mark">? </span>{
             <span class="kw">return </span><span class="prelude-val">Ok</span>(<span class="prelude-val">None</span>);
@@ -678,27 +659,8 @@
     }
 }
 
-<span class="kw">impl </span>MlsCentral {
-    <span class="doccomment">/// Returns whether the E2EI PKI environment is setup (i.e. Root CA, Intermediates, CRLs)
-    </span><span class="kw">pub async fn </span>e2ei_is_pki_env_setup(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; bool {
-        <span class="self">self</span>.mls_backend.is_pki_env_setup().<span class="kw">await
-    </span>}
-
-    <span class="doccomment">/// Dumps the PKI environment as PEM
-    </span><span class="kw">pub async fn </span>e2ei_dump_pki_env(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="prelude-ty">Option</span>&lt;E2eiDumpedPkiEnv&gt;&gt; {
-        <span class="kw">if </span>!<span class="self">self</span>.e2ei_is_pki_env_setup().<span class="kw">await </span>{
-            <span class="kw">return </span><span class="prelude-val">Ok</span>(<span class="prelude-val">None</span>);
-        }
-        <span class="kw">let </span>pki_env_lock = <span class="self">self</span>.mls_backend.authentication_service().borrow().<span class="kw">await</span>;
-        <span class="kw">let </span><span class="prelude-val">Some</span>(pki_env) = <span class="kw-2">&amp;*</span>pki_env_lock <span class="kw">else </span>{
-            <span class="kw">return </span><span class="prelude-val">Ok</span>(<span class="prelude-val">None</span>);
-        };
-        E2eiDumpedPkiEnv::from_pki_env(pki_env).<span class="kw">await
-    </span>}
-}
-
 <span class="kw">impl </span>E2eiDumpedPkiEnv {
-    <span class="kw">async fn </span>from_pki_env(pki_env: <span class="kw-2">&amp;</span>PkiEnvironment) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="prelude-ty">Option</span>&lt;E2eiDumpedPkiEnv&gt;&gt; {
+    <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">async fn </span>from_pki_env(pki_env: <span class="kw-2">&amp;</span>PkiEnvironment) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="prelude-ty">Option</span>&lt;E2eiDumpedPkiEnv&gt;&gt; {
         <span class="kw">let </span><span class="prelude-val">Some</span>(root) = pki_env
             .get_trust_anchors()
             .map_err(Error::certificate_validation(<span class="string">"getting pki trust anchors"</span>))<span class="question-mark">?

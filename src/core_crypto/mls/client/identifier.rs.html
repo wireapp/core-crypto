@@ -71,9 +71,7 @@
 <a href="#70" id="70">70</a>
 <a href="#71" id="71">71</a>
 <a href="#72" id="72">72</a>
-<a href="#73" id="73">73</a>
-<a href="#74" id="74">74</a>
-<a href="#75" id="75">75</a></pre></div><pre class="rust"><code><span class="kw">use super</span>::{
+<a href="#73" id="73">73</a></pre></div><pre class="rust"><code><span class="kw">use super</span>::{
     CredentialBundle,
     error::{Error, <span class="prelude-ty">Result</span>},
 };
@@ -125,8 +123,7 @@
             ClientIdentifier::Basic(id) =&gt; signature_schemes.iter().try_fold(
                 Vec::with_capacity(signature_schemes.len()),
                 |<span class="kw-2">mut </span>acc, <span class="kw-2">&amp;</span>sc| -&gt; <span class="prelude-ty">Result</span>&lt;<span class="kw">_</span>&gt; {
-                    <span class="kw">let </span>cb = Client::new_basic_credential_bundle(<span class="kw-2">&amp;</span>id, sc, backend)
-                        .map_err(RecursiveError::mls_credential(<span class="string">"creating new basic credential bundle"</span>))<span class="question-mark">?</span>;
+                    <span class="kw">let </span>cb = Client::new_basic_credential_bundle(<span class="kw-2">&amp;</span>id, sc, backend)<span class="question-mark">?</span>;
                     acc.push((sc, id.clone(), cb));
                     <span class="prelude-val">Ok</span>(acc)
                 },
@@ -139,8 +136,7 @@
                         <span class="kw">let </span>id = cert
                             .get_client_id()
                             .map_err(RecursiveError::mls_credential(<span class="string">"getting client id"</span>))<span class="question-mark">?</span>;
-                        <span class="kw">let </span>cb = Client::new_x509_credential_bundle(cert)
-                            .map_err(RecursiveError::mls_credential(<span class="string">"creating new x509 credential bundle"</span>))<span class="question-mark">?</span>;
+                        <span class="kw">let </span>cb = Client::new_x509_credential_bundle(cert)<span class="question-mark">?</span>;
                         acc.push((sc, id, cb));
                         <span class="prelude-val">Ok</span>(acc)
                     })

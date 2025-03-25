@@ -1613,8 +1613,7 @@
 <a href="#1612" id="1612">1612</a>
 <a href="#1613" id="1613">1613</a>
 <a href="#1614" id="1614">1614</a>
-<a href="#1615" id="1615">1615</a>
-<a href="#1616" id="1616">1616</a></pre></div><pre class="rust"><code><span class="doccomment">//! MLS defines 3 kind of messages: Proposal, Commits and Application messages. Since they can (should)
+<a href="#1615" id="1615">1615</a></pre></div><pre class="rust"><code><span class="doccomment">//! MLS defines 3 kind of messages: Proposal, Commits and Application messages. Since they can (should)
 //! be all encrypted we need to first decrypt them before deciding what to do with them.
 //!
 //! This table summarizes when a MLS group can decrypt any message:
@@ -1628,7 +1627,6 @@
 <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">mod </span>buffer_messages;
 
 <span class="kw">use super</span>::{ConversationGuard, <span class="prelude-ty">Result</span>};
-<span class="kw">use </span><span class="kw">crate</span>::e2e_identity::conversation_state::compute_state;
 <span class="kw">use </span><span class="kw">crate</span>::e2e_identity::init_certificates::NewCrlDistributionPoint;
 <span class="kw">use </span><span class="kw">crate</span>::mls::conversation::renew::Renew;
 <span class="kw">use </span><span class="kw">crate</span>::mls::conversation::{Conversation, ConversationWithMls, Error};
@@ -1637,7 +1635,7 @@
 };
 <span class="kw">use </span><span class="kw">crate</span>::mls::credential::ext::CredentialExt <span class="kw">as _</span>;
 <span class="kw">use </span><span class="kw">crate</span>::obfuscate::Obfuscated;
-<span class="kw">use </span><span class="kw">crate</span>::prelude::{ClientId, E2eiConversationState};
+<span class="kw">use </span><span class="kw">crate</span>::prelude::{Client, ClientId, E2eiConversationState};
 <span class="kw">use </span><span class="kw">crate</span>::prelude::{MlsProposalBundle, WireIdentity};
 <span class="kw">use crate</span>::{MlsError, RecursiveError};
 <span class="kw">use </span>log::{debug, info};
@@ -2142,7 +2140,7 @@
                     <span class="macro">matches!</span>(credential.credential_type(), CredentialType::X509).then(|| credential.clone())
                 })
                 .collect();
-            <span class="kw">let </span>state = compute_state(
+            <span class="kw">let </span>state = Client::compute_conversation_state(
                 <span class="self">self</span>.ciphersuite().<span class="kw">await</span>,
                 credentials.iter(),
                 <span class="kw">crate</span>::prelude::MlsCredentialType::X509,

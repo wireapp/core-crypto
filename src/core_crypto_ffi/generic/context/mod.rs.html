@@ -781,7 +781,7 @@
             .<span class="kw">await</span><span class="question-mark">?</span>)
     }
 
-    <span class="doccomment">/// See [core_crypto::mls::MlsCentral::client_public_key]
+    <span class="doccomment">/// See [core_crypto::mls::Client::client_public_key]
     </span><span class="kw">pub async fn </span>client_public_key(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
         ciphersuite: Ciphersuite,
@@ -805,7 +805,7 @@
         <span class="prelude-val">Ok</span>(Ciphersuite::from(core_crypto::prelude::CiphersuiteName::from(cs)))
     }
 
-    <span class="doccomment">/// See [core_crypto::mls::MlsCentral::conversation_exists]
+    <span class="doccomment">/// See [core_crypto::mls::Client::conversation_exists]
     </span><span class="kw">pub async fn </span>conversation_exists(<span class="kw-2">&amp;</span><span class="self">self</span>, conversation_id: Vec&lt;u8&gt;) -&gt; CoreCryptoResult&lt;bool&gt; {
         <span class="prelude-val">Ok</span>(<span class="self">self</span>.context.conversation_exists(<span class="kw-2">&amp;</span>conversation_id).<span class="kw">await</span><span class="question-mark">?</span>)
     }

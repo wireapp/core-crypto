@@ -224,9 +224,8 @@
 <a href="#223" id="223">223</a>
 <a href="#224" id="224">224</a>
 <a href="#225" id="225">225</a>
-<a href="#226" id="226">226</a>
-<a href="#227" id="227">227</a></pre></div><pre class="rust"><code><span class="doccomment">//! This module contains the primitives to enable transactional support on a higher level within the
-//! [MlsCentral]. All mutating operations need to be done through a [CentralContext].
+<a href="#226" id="226">226</a></pre></div><pre class="rust"><code><span class="doccomment">//! This module contains the primitives to enable transactional support on a higher level within the
+//! [Client]. All mutating operations need to be done through a [CentralContext].
 
 </span><span class="kw">use </span><span class="kw">crate</span>::mls::HasClientAndProvider;
 <span class="attr">#[cfg(feature = <span class="string">"proteus"</span>)]
@@ -234,7 +233,6 @@
 <span class="kw">use crate</span>::{
     CoreCrypto, Error, KeystoreError, MlsError, MlsTransport, RecursiveError, <span class="prelude-ty">Result</span>,
     group_store::GroupStore,
-    mls::MlsCentral,
     prelude::{Client, MlsConversation},
 };
 <span class="kw">use </span>async_lock::{Mutex, RwLock, RwLockReadGuardArc, RwLockWriteGuardArc};
@@ -303,23 +301,23 @@
 
 <span class="kw">impl </span>CentralContext {
     <span class="kw">async fn </span>new(
-        mls_central: <span class="kw-2">&amp;</span>MlsCentral,
+        client: <span class="kw-2">&amp;</span>Client,
         <span class="attr">#[cfg(feature = <span class="string">"proteus"</span>)] </span>proteus_central: Arc&lt;Mutex&lt;<span class="prelude-ty">Option</span>&lt;ProteusCentral&gt;&gt;&gt;,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>&gt; {
-        mls_central
+        client
             .mls_backend
             .new_transaction()
             .<span class="kw">await
             </span>.map_err(MlsError::wrap(<span class="string">"creating new transaction"</span>))<span class="question-mark">?</span>;
         <span class="kw">let </span>mls_groups = Arc::new(RwLock::new(Default::default()));
-        <span class="kw">let </span>callbacks = mls_central.transport.clone();
-        <span class="kw">let </span>mls_client = mls_central.mls_client.clone();
+        <span class="kw">let </span>callbacks = client.transport.clone();
+        <span class="kw">let </span>mls_client = client.clone();
         <span class="prelude-val">Ok</span>(<span class="self">Self </span>{
             state: Arc::new(
                 ContextState::Valid {
                     mls_client,
                     transport: callbacks,
-                    provider: mls_central.mls_backend.clone(),
+                    provider: client.mls_backend.clone(),
                     mls_groups,
                     <span class="attr">#[cfg(feature = <span class="string">"proteus"</span>)]
                     </span>proteus_central,

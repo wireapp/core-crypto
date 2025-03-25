@@ -451,19 +451,19 @@
         <span class="prelude-val">Ok</span>(<span class="self">self</span>.context.e2ei_dump_pki_env().<span class="kw">await</span><span class="question-mark">?</span>.map(Into::into))
     }
 
-    <span class="doccomment">/// See [core_crypto::mls::MlsCentral::e2ei_is_pki_env_setup]
+    <span class="doccomment">/// See [core_crypto::mls::Client::e2ei_is_pki_env_setup]
     </span><span class="kw">pub async fn </span>e2ei_is_pki_env_setup(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; CoreCryptoResult&lt;bool&gt; {
         <span class="prelude-val">Ok</span>(<span class="self">self</span>.context.e2ei_is_pki_env_setup().<span class="kw">await</span><span class="question-mark">?</span>)
     }
 
-    <span class="doccomment">/// See [core_crypto::mls::MlsCentral::e2ei_is_enabled]
+    <span class="doccomment">/// See [core_crypto::mls::Client::e2ei_is_enabled]
     </span><span class="kw">pub async fn </span>e2ei_is_enabled(<span class="kw-2">&amp;</span><span class="self">self</span>, ciphersuite: Ciphersuite) -&gt; CoreCryptoResult&lt;bool&gt; {
         <span class="kw">let </span>sc = core_crypto::prelude::MlsCiphersuite::from(core_crypto::prelude::CiphersuiteName::from(ciphersuite))
             .signature_algorithm();
         <span class="prelude-val">Ok</span>(<span class="self">self</span>.context.e2ei_is_enabled(sc).<span class="kw">await</span><span class="question-mark">?</span>)
     }
 
-    <span class="doccomment">/// See [core_crypto::mls::MlsCentral::get_device_identities]
+    <span class="doccomment">/// See [core_crypto::mls::Client::get_device_identities]
     </span><span class="kw">pub async fn </span>get_device_identities(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
         conversation_id: Vec&lt;u8&gt;,
@@ -481,7 +481,7 @@
             .collect::&lt;Vec&lt;<span class="kw">_</span>&gt;&gt;())
     }
 
-    <span class="doccomment">/// See [core_crypto::mls::MlsCentral::get_user_identities]
+    <span class="doccomment">/// See [core_crypto::mls::Client::get_user_identities]
     </span><span class="kw">pub async fn </span>get_user_identities(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
         conversation_id: Vec&lt;u8&gt;,
@@ -498,7 +498,7 @@
             .collect::&lt;HashMap&lt;String, Vec&lt;WireIdentity&gt;&gt;&gt;())
     }
 
-    <span class="doccomment">/// See [core_crypto::mls::MlsCentral::get_credential_in_use]
+    <span class="doccomment">/// See [core_crypto::mls::Client::get_credential_in_use]
     </span><span class="kw">pub async fn </span>get_credential_in_use(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
         group_info: Vec&lt;u8&gt;,

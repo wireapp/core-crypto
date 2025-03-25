@@ -1655,7 +1655,34 @@
 <a href="#1654" id="1654">1654</a>
 <a href="#1655" id="1655">1655</a>
 <a href="#1656" id="1656">1656</a>
-<a href="#1657" id="1657">1657</a></pre></div><pre class="rust"><code><span class="comment">// Wire
+<a href="#1657" id="1657">1657</a>
+<a href="#1658" id="1658">1658</a>
+<a href="#1659" id="1659">1659</a>
+<a href="#1660" id="1660">1660</a>
+<a href="#1661" id="1661">1661</a>
+<a href="#1662" id="1662">1662</a>
+<a href="#1663" id="1663">1663</a>
+<a href="#1664" id="1664">1664</a>
+<a href="#1665" id="1665">1665</a>
+<a href="#1666" id="1666">1666</a>
+<a href="#1667" id="1667">1667</a>
+<a href="#1668" id="1668">1668</a>
+<a href="#1669" id="1669">1669</a>
+<a href="#1670" id="1670">1670</a>
+<a href="#1671" id="1671">1671</a>
+<a href="#1672" id="1672">1672</a>
+<a href="#1673" id="1673">1673</a>
+<a href="#1674" id="1674">1674</a>
+<a href="#1675" id="1675">1675</a>
+<a href="#1676" id="1676">1676</a>
+<a href="#1677" id="1677">1677</a>
+<a href="#1678" id="1678">1678</a>
+<a href="#1679" id="1679">1679</a>
+<a href="#1680" id="1680">1680</a>
+<a href="#1681" id="1681">1681</a>
+<a href="#1682" id="1682">1682</a>
+<a href="#1683" id="1683">1683</a>
+<a href="#1684" id="1684">1684</a></pre></div><pre class="rust"><code><span class="comment">// Wire
 // Copyright (C) 2022 Wire Swiss GmbH
 
 // This program is free software: you can redistribute it and/or modify
@@ -1691,7 +1718,7 @@
 <span class="kw">use </span>core_crypto::{
     InnermostErrorMessage, RecursiveError,
     prelude::{
-        EntropySeed, MlsBufferedConversationDecryptMessage, MlsCentral, MlsCentralConfiguration, MlsCiphersuite,
+        Client, EntropySeed, MlsBufferedConversationDecryptMessage, MlsCiphersuite, MlsClientConfiguration,
         MlsCommitBundle, MlsConversationDecryptMessage, MlsCustomConfiguration, MlsGroupInfoBundle, MlsProposalBundle,
         VerifiableGroupInfo,
     },
@@ -2757,7 +2784,7 @@
 }
 
 <span class="attr">#[uniffi::export]
-</span><span class="doccomment">/// See [core_crypto::mls::MlsCentral::try_new]
+</span><span class="doccomment">/// See [core_crypto::mls::Client::try_new]
 </span><span class="kw">pub async fn </span>core_crypto_new(
     path: String,
     key: String,
@@ -2790,7 +2817,7 @@
             .map(usize::try_from)
             .transpose()
             .map_err(CoreCryptoError::generic())<span class="question-mark">?</span>;
-        <span class="kw">let </span>configuration = MlsCentralConfiguration::try_new(
+        <span class="kw">let </span>configuration = MlsClientConfiguration::try_new(
             path,
             key,
             client_id.map(|cid| cid.<span class="number">0</span>.clone()),
@@ -2799,13 +2826,13 @@
             nb_key_package,
         )<span class="question-mark">?</span>;
 
-        <span class="kw">let </span>central = MlsCentral::try_new(configuration).<span class="kw">await</span><span class="question-mark">?</span>;
-        <span class="kw">let </span>central = core_crypto::CoreCrypto::from(central);
+        <span class="kw">let </span>client = Client::try_new(configuration).<span class="kw">await</span><span class="question-mark">?</span>;
+        <span class="kw">let </span>central = core_crypto::CoreCrypto::from(client);
 
         <span class="prelude-val">Ok</span>(CoreCrypto { central })
     }
 
-    <span class="doccomment">/// See [core_crypto::mls::MlsCentral::provide_transport]
+    <span class="doccomment">/// See [core_crypto::mls::Client::provide_transport]
     </span><span class="kw">pub async fn </span>provide_transport(<span class="kw-2">&amp;</span><span class="self">self</span>, callbacks: Arc&lt;<span class="kw">dyn </span>MlsTransport&gt;) -&gt; CoreCryptoResult&lt;()&gt; {
         <span class="self">self</span>.central
             .provide_transport(Arc::new(MlsTransportWrapper(callbacks)))
@@ -2813,7 +2840,7 @@
         <span class="prelude-val">Ok</span>(())
     }
 
-    <span class="doccomment">/// See [core_crypto::mls::MlsCentral::client_public_key]
+    <span class="doccomment">/// See [core_crypto::mls::Client::client_public_key]
     </span><span class="kw">pub async fn </span>client_public_key(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
         ciphersuite: Ciphersuite,
@@ -2821,13 +2848,17 @@
     ) -&gt; CoreCryptoResult&lt;Vec&lt;u8&gt;&gt; {
         <span class="prelude-val">Ok</span>(<span class="self">self
             </span>.central
-            .client_public_key(ciphersuite.into(), credential_type.into())
+            .public_key(ciphersuite.into(), credential_type.into())
             .<span class="kw">await</span><span class="question-mark">?</span>)
     }
 
     <span class="doccomment">/// See [core_crypto::mls::conversation::ImmutableConversation::epoch]
     </span><span class="kw">pub async fn </span>conversation_epoch(<span class="kw-2">&amp;</span><span class="self">self</span>, conversation_id: Vec&lt;u8&gt;) -&gt; CoreCryptoResult&lt;u64&gt; {
-        <span class="kw">let </span>conversation = <span class="self">self</span>.central.get_raw_conversation(<span class="kw-2">&amp;</span>conversation_id).<span class="kw">await</span><span class="question-mark">?</span>;
+        <span class="kw">let </span>conversation = <span class="self">self
+            </span>.central
+            .get_raw_conversation(<span class="kw-2">&amp;</span>conversation_id)
+            .<span class="kw">await
+            </span>.map_err(RecursiveError::mls_client(<span class="string">"getting conversation by id"</span>))<span class="question-mark">?</span>;
         <span class="prelude-val">Ok</span>(conversation.epoch().<span class="kw">await</span>)
     }
 
@@ -2836,18 +2867,24 @@
         <span class="kw">let </span>cs = <span class="self">self
             </span>.central
             .get_raw_conversation(conversation_id)
-            .<span class="kw">await</span><span class="question-mark">?
+            .<span class="kw">await
+            </span>.map_err(RecursiveError::mls_client(<span class="string">"getting conversation by id"</span>))<span class="question-mark">?
             </span>.ciphersuite()
             .<span class="kw">await</span>;
         <span class="prelude-val">Ok</span>(Ciphersuite::from(core_crypto::prelude::CiphersuiteName::from(cs)))
     }
 
-    <span class="doccomment">/// See [core_crypto::mls::MlsCentral::conversation_exists]
+    <span class="doccomment">/// See [core_crypto::mls::Client::conversation_exists]
     </span><span class="kw">pub async fn </span>conversation_exists(<span class="kw-2">&amp;</span><span class="self">self</span>, conversation_id: Vec&lt;u8&gt;) -&gt; CoreCryptoResult&lt;bool&gt; {
-        <span class="prelude-val">Ok</span>(<span class="self">self</span>.central.conversation_exists(<span class="kw-2">&amp;</span>conversation_id).<span class="kw">await</span><span class="question-mark">?</span>)
+        <span class="kw">let </span>conversation_exists = <span class="self">self
+            </span>.central
+            .conversation_exists(<span class="kw-2">&amp;</span>conversation_id)
+            .<span class="kw">await
+            </span>.map_err(RecursiveError::mls_client(<span class="string">"getting conversation by id"</span>))<span class="question-mark">?</span>;
+        <span class="prelude-val">Ok</span>(conversation_exists)
     }
 
-    <span class="doccomment">/// See [core_crypto::mls::MlsCentral::random_bytes]
+    <span class="doccomment">/// See [core_crypto::mls::Client::random_bytes]
     </span><span class="kw">pub async fn </span>random_bytes(<span class="kw-2">&amp;</span><span class="self">self</span>, len: u32) -&gt; CoreCryptoResult&lt;Vec&lt;u8&gt;&gt; {
         <span class="prelude-val">Ok</span>(<span class="self">self
             </span>.central
@@ -2867,7 +2904,8 @@
         <span class="prelude-val">Ok</span>(<span class="self">self
             </span>.central
             .get_raw_conversation(<span class="kw-2">&amp;</span>conversation_id)
-            .<span class="kw">await</span><span class="question-mark">?
+            .<span class="kw">await
+            </span>.map_err(RecursiveError::mls_client(<span class="string">"getting conversation by id"</span>))<span class="question-mark">?
             </span>.get_client_ids()
             .<span class="kw">await
             </span>.into_iter()
@@ -2879,7 +2917,8 @@
     </span><span class="kw">pub async fn </span>export_secret_key(<span class="kw-2">&amp;</span><span class="self">self</span>, conversation_id: Vec&lt;u8&gt;, key_length: u32) -&gt; CoreCryptoResult&lt;Vec&lt;u8&gt;&gt; {
         <span class="self">self</span>.central
             .get_raw_conversation(<span class="kw-2">&amp;</span>conversation_id)
-            .<span class="kw">await</span><span class="question-mark">?
+            .<span class="kw">await
+            </span>.map_err(RecursiveError::mls_client(<span class="string">"getting conversation by id"</span>))<span class="question-mark">?
             </span>.export_secret_key(key_length <span class="kw">as </span>usize)
             .<span class="kw">await
             </span>.map_err(Into::into)
@@ -2890,7 +2929,8 @@
         <span class="prelude-val">Ok</span>(<span class="self">self
             </span>.central
             .get_raw_conversation(<span class="kw-2">&amp;</span>conversation_id)
-            .<span class="kw">await</span><span class="question-mark">?
+            .<span class="kw">await
+            </span>.map_err(RecursiveError::mls_client(<span class="string">"getting conversation by id"</span>))<span class="question-mark">?
             </span>.get_external_sender()
             .<span class="kw">await</span><span class="question-mark">?</span>)
     }
@@ -2957,19 +2997,29 @@
 #[uniffi::export]
 </span><span class="kw">impl </span>CoreCrypto {
     <span class="kw">pub async fn </span>e2ei_dump_pki_env(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; CoreCryptoResult&lt;<span class="prelude-ty">Option</span>&lt;E2eiDumpedPkiEnv&gt;&gt; {
-        <span class="prelude-val">Ok</span>(<span class="self">self</span>.central.e2ei_dump_pki_env().<span class="kw">await</span><span class="question-mark">?</span>.map(Into::into))
+        <span class="kw">let </span>dumped_pki_env = <span class="self">self
+            </span>.central
+            .e2ei_dump_pki_env()
+            .<span class="kw">await
+            </span>.map_err(RecursiveError::mls_client(<span class="string">"dumping pki env"</span>))<span class="question-mark">?
+            </span>.map(Into::into);
+        <span class="prelude-val">Ok</span>(dumped_pki_env)
     }
 
-    <span class="doccomment">/// See [core_crypto::mls::MlsCentral::e2ei_is_pki_env_setup]
+    <span class="doccomment">/// See [core_crypto::mls::Client::e2ei_is_pki_env_setup]
     </span><span class="kw">pub async fn </span>e2ei_is_pki_env_setup(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; bool {
         <span class="self">self</span>.central.e2ei_is_pki_env_setup().<span class="kw">await
     </span>}
 
-    <span class="doccomment">/// See [core_crypto::mls::MlsCentral::e2ei_is_enabled]
+    <span class="doccomment">/// See [core_crypto::mls::Client::e2ei_is_enabled]
     </span><span class="kw">pub async fn </span>e2ei_is_enabled(<span class="kw-2">&amp;</span><span class="self">self</span>, ciphersuite: Ciphersuite) -&gt; CoreCryptoResult&lt;bool&gt; {
         <span class="kw">let </span>sc = core_crypto::prelude::MlsCiphersuite::from(core_crypto::prelude::CiphersuiteName::from(ciphersuite))
             .signature_algorithm();
-        <span class="prelude-val">Ok</span>(<span class="self">self</span>.central.e2ei_is_enabled(sc).<span class="kw">await</span><span class="question-mark">?</span>)
+        <span class="self">self</span>.central
+            .e2ei_is_enabled(sc)
+            .<span class="kw">await
+            </span>.map_err(RecursiveError::mls_client(<span class="string">"is e2ei enabled on client?"</span>))
+            .map_err(Into::into)
     }
 
     <span class="doccomment">/// See [core_crypto::mls::conversation::ConversationGuard::get_device_identities]
@@ -2982,7 +3032,8 @@
         <span class="prelude-val">Ok</span>(<span class="self">self
             </span>.central
             .get_raw_conversation(<span class="kw-2">&amp;</span>conversation_id)
-            .<span class="kw">await</span><span class="question-mark">?
+            .<span class="kw">await
+            </span>.map_err(RecursiveError::mls_client(<span class="string">"getting conversation by id"</span>))<span class="question-mark">?
             </span>.get_device_identities(<span class="kw-2">&amp;</span>device_ids[..])
             .<span class="kw">await</span><span class="question-mark">?
             </span>.into_iter()
@@ -2999,7 +3050,8 @@
         <span class="prelude-val">Ok</span>(<span class="self">self
             </span>.central
             .get_raw_conversation(<span class="kw-2">&amp;</span>conversation_id)
-            .<span class="kw">await</span><span class="question-mark">?
+            .<span class="kw">await
+            </span>.map_err(RecursiveError::mls_client(<span class="string">"getting conversation by id"</span>))<span class="question-mark">?
             </span>.get_user_identities(<span class="kw-2">&amp;</span>user_ids[..])
             .<span class="kw">await</span><span class="question-mark">?
             </span>.into_iter()
@@ -3007,7 +3059,7 @@
             .collect::&lt;HashMap&lt;String, Vec&lt;WireIdentity&gt;&gt;&gt;())
     }
 
-    <span class="doccomment">/// See [core_crypto::mls::MlsCentral::get_credential_in_use]
+    <span class="doccomment">/// See [core_crypto::mls::Client::get_credential_in_use]
     </span><span class="kw">pub async fn </span>get_credential_in_use(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
         group_info: Vec&lt;u8&gt;,
@@ -3018,11 +3070,13 @@
                 <span class="string">"verifiable group info"</span>,
             ))
             .map_err(RecursiveError::mls_conversation(<span class="string">"deserializing veriable group info"</span>))<span class="question-mark">?</span>;
-        <span class="prelude-val">Ok</span>(<span class="self">self
+        <span class="kw">let </span>credential = <span class="self">self
             </span>.central
             .get_credential_in_use(group_info, credential_type.into())
-            .<span class="kw">await</span><span class="question-mark">?
-            </span>.into())
+            .<span class="kw">await
+            </span>.map_err(RecursiveError::mls_client(<span class="string">"getting credential in use"</span>))<span class="question-mark">?
+            </span>.into();
+        <span class="prelude-val">Ok</span>(credential)
     }
 }
 

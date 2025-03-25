@@ -746,7 +746,19 @@
 <a href="#745" id="745">745</a>
 <a href="#746" id="746">746</a>
 <a href="#747" id="747">747</a>
-<a href="#748" id="748">748</a></pre></div><pre class="rust"><code><span class="comment">// Wire
+<a href="#748" id="748">748</a>
+<a href="#749" id="749">749</a>
+<a href="#750" id="750">750</a>
+<a href="#751" id="751">751</a>
+<a href="#752" id="752">752</a>
+<a href="#753" id="753">753</a>
+<a href="#754" id="754">754</a>
+<a href="#755" id="755">755</a>
+<a href="#756" id="756">756</a>
+<a href="#757" id="757">757</a>
+<a href="#758" id="758">758</a>
+<a href="#759" id="759">759</a>
+<a href="#760" id="760">760</a></pre></div><pre class="rust"><code><span class="comment">// Wire
 // Copyright (C) 2022 Wire Swiss GmbH
 
 // This program is free software: you can redistribute it and/or modify
@@ -1196,39 +1208,45 @@
     <span class="attr">#[apply(all_cred_cipher)]
     #[wasm_bindgen_test]
     </span><span class="kw">async fn </span>can_assess_keypackage_expiration(case: TestCase) {
-        <span class="kw">let </span>(cs, ct) = (case.ciphersuite(), case.credential_type);
-        <span class="kw">let </span>backend = MlsCryptoProvider::try_new_in_memory(<span class="string">"test"</span>).<span class="kw">await</span>.unwrap();
-        <span class="kw">let </span>x509_test_chain = <span class="kw">if </span>case.is_x509() {
-            <span class="kw">let </span>x509_test_chain = <span class="kw">crate</span>::test_utils::x509::X509TestChain::init_empty(case.signature_scheme());
-            x509_test_chain.register_with_provider(<span class="kw-2">&amp;</span>backend).<span class="kw">await</span>;
-            <span class="prelude-val">Some</span>(x509_test_chain)
-        } <span class="kw">else </span>{
-            <span class="prelude-val">None
-        </span>};
+        run_test_with_central(case.clone(), <span class="kw">move </span>|[central]| {
+            Box::pin(<span class="kw">async move </span>{
+                <span class="kw">let </span>(cs, ct) = (case.ciphersuite(), case.credential_type);
+                <span class="kw">let </span>backend = MlsCryptoProvider::try_new_in_memory(<span class="string">"test"</span>).<span class="kw">await</span>.unwrap();
+                <span class="kw">let </span>x509_test_chain = <span class="kw">if </span>case.is_x509() {
+                    <span class="kw">let </span>x509_test_chain = <span class="kw">crate</span>::test_utils::x509::X509TestChain::init_empty(case.signature_scheme());
+                    x509_test_chain.register_with_provider(<span class="kw-2">&amp;</span>backend).<span class="kw">await</span>;
+                    <span class="prelude-val">Some</span>(x509_test_chain)
+                } <span class="kw">else </span>{
+                    <span class="prelude-val">None
+                </span>};
 
-        backend.new_transaction().<span class="kw">await</span>.unwrap();
-        <span class="kw">let </span>client = Client::random_generate(
-            <span class="kw-2">&amp;</span>case,
-            <span class="kw-2">&amp;</span>backend,
-            x509_test_chain.as_ref().map(|chain| chain.find_local_intermediate_ca()),
-            <span class="bool-val">false</span>,
-        )
-        .<span class="kw">await
-        </span>.unwrap();
+                backend.new_transaction().<span class="kw">await</span>.unwrap();
+                <span class="kw">let </span>client = central.client;
+                client
+                    .random_generate(
+                        <span class="kw-2">&amp;</span>case,
+                        x509_test_chain.as_ref().map(|chain| chain.find_local_intermediate_ca()),
+                        <span class="bool-val">false</span>,
+                    )
+                    .<span class="kw">await
+                    </span>.unwrap();
 
-        <span class="comment">// 90-day standard expiration
-        </span><span class="kw">let </span>kp_std_exp = client.generate_one_keypackage(<span class="kw-2">&amp;</span>backend, cs, ct).<span class="kw">await</span>.unwrap();
-        <span class="macro">assert!</span>(!Client::is_mls_keypackage_expired(<span class="kw-2">&amp;</span>kp_std_exp));
+                <span class="comment">// 90-day standard expiration
+                </span><span class="kw">let </span>kp_std_exp = client.generate_one_keypackage(<span class="kw-2">&amp;</span>backend, cs, ct).<span class="kw">await</span>.unwrap();
+                <span class="macro">assert!</span>(!Client::is_mls_keypackage_expired(<span class="kw-2">&amp;</span>kp_std_exp));
 
-        <span class="comment">// 1-second expiration
-        </span>client
-            .set_keypackage_lifetime(std::time::Duration::from_secs(<span class="number">1</span>))
-            .<span class="kw">await
-            </span>.unwrap();
-        <span class="kw">let </span>kp_1s_exp = client.generate_one_keypackage(<span class="kw-2">&amp;</span>backend, cs, ct).<span class="kw">await</span>.unwrap();
-        <span class="comment">// Sleep 2 seconds to make sure we make the kp expire
-        </span>async_std::task::sleep(std::time::Duration::from_secs(<span class="number">2</span>)).<span class="kw">await</span>;
-        <span class="macro">assert!</span>(Client::is_mls_keypackage_expired(<span class="kw-2">&amp;</span>kp_1s_exp));
+                <span class="comment">// 1-second expiration
+                </span>client
+                    .set_keypackage_lifetime(std::time::Duration::from_secs(<span class="number">1</span>))
+                    .<span class="kw">await
+                    </span>.unwrap();
+                <span class="kw">let </span>kp_1s_exp = client.generate_one_keypackage(<span class="kw-2">&amp;</span>backend, cs, ct).<span class="kw">await</span>.unwrap();
+                <span class="comment">// Sleep 2 seconds to make sure we make the kp expire
+                </span>async_std::task::sleep(std::time::Duration::from_secs(<span class="number">2</span>)).<span class="kw">await</span>;
+                <span class="macro">assert!</span>(Client::is_mls_keypackage_expired(<span class="kw-2">&amp;</span>kp_1s_exp));
+            })
+        })
+        .<span class="kw">await</span>;
     }
 
     <span class="attr">#[apply(all_cred_cipher)]
@@ -1374,85 +1392,91 @@
     <span class="attr">#[apply(all_cred_cipher)]
     #[wasm_bindgen_test]
     </span><span class="kw">async fn </span>automatically_prunes_lifetime_expired_keypackages(case: TestCase) {
-        <span class="kw">const </span>UNEXPIRED_COUNT: usize = <span class="number">125</span>;
-        <span class="kw">const </span>EXPIRED_COUNT: usize = <span class="number">200</span>;
-        <span class="kw">let </span>backend = MlsCryptoProvider::try_new_in_memory(<span class="string">"test"</span>).<span class="kw">await</span>.unwrap();
-        <span class="kw">let </span>x509_test_chain = <span class="kw">if </span>case.is_x509() {
-            <span class="kw">let </span>x509_test_chain = <span class="kw">crate</span>::test_utils::x509::X509TestChain::init_empty(case.signature_scheme());
-            x509_test_chain.register_with_provider(<span class="kw-2">&amp;</span>backend).<span class="kw">await</span>;
-            <span class="prelude-val">Some</span>(x509_test_chain)
-        } <span class="kw">else </span>{
-            <span class="prelude-val">None
-        </span>};
-        backend.new_transaction().<span class="kw">await</span>.unwrap();
-        <span class="kw">let </span>client = Client::random_generate(
-            <span class="kw-2">&amp;</span>case,
-            <span class="kw-2">&amp;</span>backend,
-            x509_test_chain.as_ref().map(|chain| chain.find_local_intermediate_ca()),
-            <span class="bool-val">false</span>,
-        )
+        run_test_with_central(case.clone(), <span class="kw">move </span>|[central]| {
+            Box::pin(<span class="kw">async move </span>{
+                <span class="kw">const </span>UNEXPIRED_COUNT: usize = <span class="number">125</span>;
+                <span class="kw">const </span>EXPIRED_COUNT: usize = <span class="number">200</span>;
+                <span class="kw">let </span>backend = MlsCryptoProvider::try_new_in_memory(<span class="string">"test"</span>).<span class="kw">await</span>.unwrap();
+                <span class="kw">let </span>x509_test_chain = <span class="kw">if </span>case.is_x509() {
+                    <span class="kw">let </span>x509_test_chain = <span class="kw">crate</span>::test_utils::x509::X509TestChain::init_empty(case.signature_scheme());
+                    x509_test_chain.register_with_provider(<span class="kw-2">&amp;</span>backend).<span class="kw">await</span>;
+                    <span class="prelude-val">Some</span>(x509_test_chain)
+                } <span class="kw">else </span>{
+                    <span class="prelude-val">None
+                </span>};
+                backend.new_transaction().<span class="kw">await</span>.unwrap();
+                <span class="kw">let </span>client = central.client().<span class="kw">await</span>;
+                client
+                    .random_generate(
+                        <span class="kw-2">&amp;</span>case,
+                        x509_test_chain.as_ref().map(|chain| chain.find_local_intermediate_ca()),
+                        <span class="bool-val">false</span>,
+                    )
+                    .<span class="kw">await
+                    </span>.unwrap();
+
+                <span class="comment">// Generate `UNEXPIRED_COUNT` kpbs that are with default 3 months expiration. We *should* keep them for the duration of the test
+                </span><span class="kw">let </span>unexpired_kpbs = client
+                    .request_key_packages(UNEXPIRED_COUNT, case.ciphersuite(), case.credential_type, <span class="kw-2">&amp;</span>backend)
+                    .<span class="kw">await
+                    </span>.unwrap();
+                <span class="kw">let </span>len = client
+                    .valid_keypackages_count(<span class="kw-2">&amp;</span>backend, case.ciphersuite(), case.credential_type)
+                    .<span class="kw">await
+                    </span>.unwrap();
+                <span class="macro">assert_eq!</span>(len, unexpired_kpbs.len());
+                <span class="macro">assert_eq!</span>(len, UNEXPIRED_COUNT);
+
+                <span class="comment">// Set the keypackage expiration to be in 2 seconds
+                </span>client
+                    .set_keypackage_lifetime(std::time::Duration::from_secs(<span class="number">10</span>))
+                    .<span class="kw">await
+                    </span>.unwrap();
+
+                <span class="comment">// Generate new keypackages that are normally partially expired 2s after they're requested
+                </span><span class="kw">let </span>partially_expired_kpbs = client
+                    .request_key_packages(EXPIRED_COUNT, case.ciphersuite(), case.credential_type, <span class="kw-2">&amp;</span>backend)
+                    .<span class="kw">await
+                    </span>.unwrap();
+                <span class="macro">assert_eq!</span>(partially_expired_kpbs.len(), EXPIRED_COUNT);
+
+                <span class="comment">// Sleep to trigger the expiration
+                </span>async_std::task::sleep(std::time::Duration::from_secs(<span class="number">10</span>)).<span class="kw">await</span>;
+
+                <span class="comment">// Request the same number of keypackages. The automatic lifetime-based expiration should take
+                // place and remove old expired keypackages and generate fresh ones instead
+                </span><span class="kw">let </span>fresh_kpbs = client
+                    .request_key_packages(EXPIRED_COUNT, case.ciphersuite(), case.credential_type, <span class="kw-2">&amp;</span>backend)
+                    .<span class="kw">await
+                    </span>.unwrap();
+                <span class="kw">let </span>len = client
+                    .valid_keypackages_count(<span class="kw-2">&amp;</span>backend, case.ciphersuite(), case.credential_type)
+                    .<span class="kw">await
+                    </span>.unwrap();
+                <span class="macro">assert_eq!</span>(len, fresh_kpbs.len());
+                <span class="macro">assert_eq!</span>(len, EXPIRED_COUNT);
+
+                <span class="comment">// Try to deep compare and find kps matching expired and non-expired ones
+                </span><span class="kw">let </span>(unexpired_match, expired_match) =
+                    fresh_kpbs
+                        .iter()
+                        .fold((<span class="number">0usize</span>, <span class="number">0usize</span>), |(<span class="kw-2">mut </span>unexpired_match, <span class="kw-2">mut </span>expired_match), fresh| {
+                            <span class="kw">if </span>unexpired_kpbs.iter().any(|kp| kp == fresh) {
+                                unexpired_match += <span class="number">1</span>;
+                            } <span class="kw">else if </span>partially_expired_kpbs.iter().any(|kpb| kpb == fresh) {
+                                expired_match += <span class="number">1</span>;
+                            }
+
+                            (unexpired_match, expired_match)
+                        });
+
+                <span class="comment">// TADA!
+                </span><span class="macro">assert_eq!</span>(unexpired_match, UNEXPIRED_COUNT);
+                <span class="macro">assert_eq!</span>(expired_match, <span class="number">0</span>);
+            })
+        })
         .<span class="kw">await
-        </span>.unwrap();
-
-        <span class="comment">// Generate `UNEXPIRED_COUNT` kpbs that are with default 3 months expiration. We *should* keep them for the duration of the test
-        </span><span class="kw">let </span>unexpired_kpbs = client
-            .request_key_packages(UNEXPIRED_COUNT, case.ciphersuite(), case.credential_type, <span class="kw-2">&amp;</span>backend)
-            .<span class="kw">await
-            </span>.unwrap();
-        <span class="kw">let </span>len = client
-            .valid_keypackages_count(<span class="kw-2">&amp;</span>backend, case.ciphersuite(), case.credential_type)
-            .<span class="kw">await
-            </span>.unwrap();
-        <span class="macro">assert_eq!</span>(len, unexpired_kpbs.len());
-        <span class="macro">assert_eq!</span>(len, UNEXPIRED_COUNT);
-
-        <span class="comment">// Set the keypackage expiration to be in 2 seconds
-        </span>client
-            .set_keypackage_lifetime(std::time::Duration::from_secs(<span class="number">10</span>))
-            .<span class="kw">await
-            </span>.unwrap();
-
-        <span class="comment">// Generate new keypackages that are normally partially expired 2s after they're requested
-        </span><span class="kw">let </span>partially_expired_kpbs = client
-            .request_key_packages(EXPIRED_COUNT, case.ciphersuite(), case.credential_type, <span class="kw-2">&amp;</span>backend)
-            .<span class="kw">await
-            </span>.unwrap();
-        <span class="macro">assert_eq!</span>(partially_expired_kpbs.len(), EXPIRED_COUNT);
-
-        <span class="comment">// Sleep to trigger the expiration
-        </span>async_std::task::sleep(std::time::Duration::from_secs(<span class="number">10</span>)).<span class="kw">await</span>;
-
-        <span class="comment">// Request the same number of keypackages. The automatic lifetime-based expiration should take
-        // place and remove old expired keypackages and generate fresh ones instead
-        </span><span class="kw">let </span>fresh_kpbs = client
-            .request_key_packages(EXPIRED_COUNT, case.ciphersuite(), case.credential_type, <span class="kw-2">&amp;</span>backend)
-            .<span class="kw">await
-            </span>.unwrap();
-        <span class="kw">let </span>len = client
-            .valid_keypackages_count(<span class="kw-2">&amp;</span>backend, case.ciphersuite(), case.credential_type)
-            .<span class="kw">await
-            </span>.unwrap();
-        <span class="macro">assert_eq!</span>(len, fresh_kpbs.len());
-        <span class="macro">assert_eq!</span>(len, EXPIRED_COUNT);
-
-        <span class="comment">// Try to deep compare and find kps matching expired and non-expired ones
-        </span><span class="kw">let </span>(unexpired_match, expired_match) =
-            fresh_kpbs
-                .iter()
-                .fold((<span class="number">0usize</span>, <span class="number">0usize</span>), |(<span class="kw-2">mut </span>unexpired_match, <span class="kw-2">mut </span>expired_match), fresh| {
-                    <span class="kw">if </span>unexpired_kpbs.iter().any(|kp| kp == fresh) {
-                        unexpired_match += <span class="number">1</span>;
-                    } <span class="kw">else if </span>partially_expired_kpbs.iter().any(|kpb| kpb == fresh) {
-                        expired_match += <span class="number">1</span>;
-                    }
-
-                    (unexpired_match, expired_match)
-                });
-
-        <span class="comment">// TADA!
-        </span><span class="macro">assert_eq!</span>(unexpired_match, UNEXPIRED_COUNT);
-        <span class="macro">assert_eq!</span>(expired_match, <span class="number">0</span>);
-    }
+    </span>}
 
     <span class="attr">#[apply(all_cred_cipher)]
     #[wasm_bindgen_test]

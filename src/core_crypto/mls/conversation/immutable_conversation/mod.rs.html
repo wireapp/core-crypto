@@ -31,25 +31,25 @@
 <a href="#30" id="30">30</a>
 <a href="#31" id="31">31</a>
 <a href="#32" id="32">32</a></pre></div><pre class="rust"><code><span class="kw">use super</span>::{ConversationWithMls, MlsConversation, <span class="prelude-ty">Result</span>};
-<span class="kw">use </span><span class="kw">crate</span>::prelude::MlsCentral;
+<span class="kw">use </span><span class="kw">crate</span>::prelude::Client;
 
 <span class="doccomment">/// An ImmutableConversation wraps a `MlsConversation`.
 ///
 /// It only exposes the read-only interface of the conversation.
 </span><span class="kw">pub struct </span>ImmutableConversation {
     inner: MlsConversation,
-    central: MlsCentral,
+    client: Client,
 }
 
 <span class="attr">#[cfg_attr(target_family = <span class="string">"wasm"</span>, async_trait::async_trait(<span class="question-mark">?</span>Send))]
 #[cfg_attr(not(target_family = <span class="string">"wasm"</span>), async_trait::async_trait)]
 </span><span class="kw">impl</span>&lt;<span class="lifetime">'inner</span>&gt; ConversationWithMls&lt;<span class="lifetime">'inner</span>&gt; <span class="kw">for </span>ImmutableConversation {
-    <span class="kw">type </span>Central = MlsCentral;
+    <span class="kw">type </span>Context = Client;
 
     <span class="kw">type </span>Conversation = <span class="kw-2">&amp;</span><span class="lifetime">'inner </span>MlsConversation;
 
-    <span class="kw">async fn </span>central(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;MlsCentral&gt; {
-        <span class="prelude-val">Ok</span>(<span class="self">self</span>.central.clone())
+    <span class="kw">async fn </span>context(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;Client&gt; {
+        <span class="prelude-val">Ok</span>(<span class="self">self</span>.client.clone())
     }
 
     <span class="kw">async fn </span>conversation(<span class="kw-2">&amp;</span><span class="lifetime">'inner </span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span><span class="lifetime">'inner </span>MlsConversation {
@@ -58,8 +58,8 @@
 }
 
 <span class="kw">impl </span>ImmutableConversation {
-    <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>new(inner: MlsConversation, central: MlsCentral) -&gt; <span class="self">Self </span>{
-        <span class="self">Self </span>{ inner, central }
+    <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>new(inner: MlsConversation, client: Client) -&gt; <span class="self">Self </span>{
+        <span class="self">Self </span>{ inner, client }
     }
 }
 </code></pre></div></section></main></body></html>

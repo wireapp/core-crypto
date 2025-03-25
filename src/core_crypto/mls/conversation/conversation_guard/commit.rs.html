@@ -303,7 +303,7 @@
     <span class="doccomment">/// Send the commit via [crate::MlsTransport] and handle the response.
     </span><span class="kw">async fn </span>send_commit(<span class="kw-2">&amp;mut </span><span class="self">self</span>, <span class="kw-2">mut </span>commit: MlsCommitBundle) -&gt; <span class="prelude-ty">Result</span>&lt;TransportedCommitPolicy&gt; {
         <span class="kw">let </span>transport = <span class="self">self
-            </span>.central()
+            </span>.context()
             .<span class="kw">await</span><span class="question-mark">?
             </span>.mls_transport()
             .<span class="kw">await
