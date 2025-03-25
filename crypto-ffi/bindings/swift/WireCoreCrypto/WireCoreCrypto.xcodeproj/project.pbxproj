@@ -8,9 +8,8 @@
 
 /* Begin PBXBuildFile section */
 		167AA1F92D76FF330075DF93 /* WireCoreCrypto.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 167AA1EE2D76FF330075DF93 /* WireCoreCrypto.framework */; };
-		167AC2D32D7F2B5C0075DF93 /* WireCoreCryptoUniffi.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 167AC2D22D7F2B5C0075DF93 /* WireCoreCryptoUniffi.framework */; platformFilter = ios; };
-		167AC2D42D7F2B5C0075DF93 /* WireCoreCryptoUniffi.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 167AC2D22D7F2B5C0075DF93 /* WireCoreCryptoUniffi.framework */; platformFilter = ios; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		167AE3AB2D8050EA0075DF93 /* BuildSettings.xcconfig in Resources */ = {isa = PBXBuildFile; fileRef = 167AE3A92D8050990075DF93 /* BuildSettings.xcconfig */; };
+		169CE1622D92CD5B0093E83A /* WireCoreCryptoUniffi.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 167AC2D22D7F2B5C0075DF93 /* WireCoreCryptoUniffi.framework */; platformFilter = ios; settings = {ATTRIBUTES = (Required, ); }; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -36,20 +35,6 @@
 			remoteInfo = TestHost;
 		};
 /* End PBXContainerItemProxy section */
-
-/* Begin PBXCopyFilesBuildPhase section */
-		167AA21E2D7700B80075DF93 /* Embed Frameworks */ = {
-			isa = PBXCopyFilesBuildPhase;
-			buildActionMask = 2147483647;
-			dstPath = "";
-			dstSubfolderSpec = 10;
-			files = (
-				167AC2D42D7F2B5C0075DF93 /* WireCoreCryptoUniffi.framework in Embed Frameworks */,
-			);
-			name = "Embed Frameworks";
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-/* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
 		167AA1EE2D76FF330075DF93 /* WireCoreCrypto.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = WireCoreCrypto.framework; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -95,7 +80,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				167AC2D32D7F2B5C0075DF93 /* WireCoreCryptoUniffi.framework in Frameworks */,
+				169CE1622D92CD5B0093E83A /* WireCoreCryptoUniffi.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -176,7 +161,6 @@
 				167AA1EA2D76FF330075DF93 /* Sources */,
 				167AA1EB2D76FF330075DF93 /* Frameworks */,
 				167AA1EC2D76FF330075DF93 /* Resources */,
-				167AA21E2D7700B80075DF93 /* Embed Frameworks */,
 			);
 			buildRules = (
 			);
@@ -382,6 +366,10 @@
 				PRODUCT_BUNDLE_IDENTIFIER = com.wire.WireCoreCrypto;
 				PRODUCT_NAME = "$(TARGET_NAME:c99extidentifier)";
 				SKIP_INSTALL = YES;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
+				SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD = NO;
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_INSTALL_OBJC_HEADER = NO;
 				SWIFT_VERSION = 5.0;
@@ -411,6 +399,10 @@
 				PRODUCT_BUNDLE_IDENTIFIER = com.wire.WireCoreCrypto;
 				PRODUCT_NAME = "$(TARGET_NAME:c99extidentifier)";
 				SKIP_INSTALL = YES;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
+				SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD = NO;
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_INSTALL_OBJC_HEADER = NO;
 				SWIFT_VERSION = 5.0;

@@ -16,41 +16,7 @@
 // along with this program. If not, see http://www.gnu.org/licenses/.
 //
 
-import WireCoreCryptoUniffi
-
-@_exported public import struct WireCoreCryptoUniffi.BufferedDecryptedMessage
-@_exported public import struct WireCoreCryptoUniffi.BuildMetadata
-@_exported public import typealias WireCoreCryptoUniffi.Ciphersuite
-@_exported public import typealias WireCoreCryptoUniffi.Ciphersuites
-@_exported public import typealias WireCoreCryptoUniffi.ClientId
-@_exported public import struct WireCoreCryptoUniffi.CommitBundle
-@_exported public import struct WireCoreCryptoUniffi.ConversationConfiguration
-@_exported public import protocol WireCoreCryptoUniffi.CoreCryptoContextProtocol
-@_exported public import enum WireCoreCryptoUniffi.CoreCryptoError
-@_exported public import enum WireCoreCryptoUniffi.CoreCryptoLogLevel
-@_exported public import protocol WireCoreCryptoUniffi.CoreCryptoLogger
-@_exported public import struct WireCoreCryptoUniffi.CrlRegistration
-@_exported public import struct WireCoreCryptoUniffi.CustomConfiguration
-@_exported public import struct WireCoreCryptoUniffi.DecryptedMessage
-@_exported public import enum WireCoreCryptoUniffi.DeviceStatus
-@_exported public import enum WireCoreCryptoUniffi.E2eiConversationState
-@_exported public import struct WireCoreCryptoUniffi.E2eiDumpedPkiEnv
-@_exported public import class WireCoreCryptoUniffi.E2eiEnrollment
-@_exported public import protocol WireCoreCryptoUniffi.EpochObserver
-@_exported public import struct WireCoreCryptoUniffi.GroupInfoBundle
-@_exported public import enum WireCoreCryptoUniffi.MlsCredentialType
-@_exported public import enum WireCoreCryptoUniffi.MlsError
-@_exported public import enum WireCoreCryptoUniffi.MlsGroupInfoEncryptionType
-@_exported public import enum WireCoreCryptoUniffi.MlsRatchetTreeType
-@_exported public import protocol WireCoreCryptoUniffi.MlsTransport
-@_exported public import enum WireCoreCryptoUniffi.MlsTransportResponse
-@_exported public import enum WireCoreCryptoUniffi.MlsWirePolicy
-@_exported public import typealias WireCoreCryptoUniffi.NewCrlDistributionPoints
-@_exported public import struct WireCoreCryptoUniffi.ProteusAutoPrekeyBundle
-@_exported public import enum WireCoreCryptoUniffi.ProteusError
-@_exported public import struct WireCoreCryptoUniffi.WelcomeBundle
-@_exported public import struct WireCoreCryptoUniffi.WireIdentity
-@_exported public import struct WireCoreCryptoUniffi.X509Identity
+@_exported public import WireCoreCryptoUniffi
 
 public protocol CoreCryptoProtocol {
 

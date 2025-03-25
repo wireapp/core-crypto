@@ -9,6 +9,8 @@
 /* Begin PBXBuildFile section */
 		16029C932D37200E007B20A0 /* WireCoreCrypto.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 16029C902D371F0D007B20A0 /* WireCoreCrypto.framework */; };
 		16029C942D37200E007B20A0 /* WireCoreCrypto.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 16029C902D371F0D007B20A0 /* WireCoreCrypto.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
+		16EE08EB2D92EBD5001B372C /* WireCoreCryptoUniffi.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 16EE08EA2D92EBD5001B372C /* WireCoreCryptoUniffi.framework */; };
+		16EE08EC2D92EBD5001B372C /* WireCoreCryptoUniffi.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 16EE08EA2D92EBD5001B372C /* WireCoreCryptoUniffi.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -18,6 +20,7 @@
 			dstPath = "";
 			dstSubfolderSpec = 10;
 			files = (
+				16EE08EC2D92EBD5001B372C /* WireCoreCryptoUniffi.framework in Embed Frameworks */,
 				16029C942D37200E007B20A0 /* WireCoreCrypto.framework in Embed Frameworks */,
 			);
 			name = "Embed Frameworks";
@@ -29,6 +32,7 @@
 		16029C902D371F0D007B20A0 /* WireCoreCrypto.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; path = WireCoreCrypto.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		166BD2BC2D28123F00E9FABB /* InteropClient.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = InteropClient.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		166BD2E12D30296B00E9FABB /* WireCoreCrypto.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; name = WireCoreCrypto.xcodeproj; path = "../../../../crypto-ffi/bindings/swift/WireCoreCrypto/WireCoreCrypto.xcodeproj"; sourceTree = SOURCE_ROOT; };
+		16EE08EA2D92EBD5001B372C /* WireCoreCryptoUniffi.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; path = WireCoreCryptoUniffi.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
@@ -57,6 +61,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				16EE08EB2D92EBD5001B372C /* WireCoreCryptoUniffi.framework in Frameworks */,
 				16029C932D37200E007B20A0 /* WireCoreCrypto.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -85,6 +90,7 @@
 		166BD2E92D311CF100E9FABB /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
+				16EE08EA2D92EBD5001B372C /* WireCoreCryptoUniffi.framework */,
 				16029C902D371F0D007B20A0 /* WireCoreCrypto.framework */,
 			);
 			name = Frameworks;
