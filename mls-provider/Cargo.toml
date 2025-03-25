@@ -65,5 +65,5 @@ rstest = "0.24"
 rstest_reuse = "0.7"
 async-std = { workspace = true, features = ["attributes"] }
 cfg-if.workspace = true
-hex-literal = "0.4"
+hex-literal = "1.0"
 mls-crypto-provider = { workspace = true, features = ["raw-rand-access"] }
