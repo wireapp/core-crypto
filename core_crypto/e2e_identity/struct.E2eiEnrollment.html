@@ -185,7 +185,7 @@ See endpoint <a href="https://staging-nginz-https.zinfra.io/api/swagger-ui/#/def
 </ul>
 </div></details></div></details></div><details class="toggle big-toggle" open><summary><h2 id="deref-methods-RustyE2eIdentity" class="section-header"><span>Methods from <a class="trait" href="https://doc.rust-lang.org/1.85.1/core/ops/deref/trait.Deref.html" title="trait core::ops::deref::Deref">Deref</a>&lt;Target = RustyE2eIdentity&gt;</span><a href="#deref-methods-RustyE2eIdentity" class="anchor">§</a></h2></summary><div id="deref-methods-RustyE2eIdentity-1" class="impl-items"><details class="toggle method-toggle" open><summary><section id="method.acme_directory_response" class="method"><h4 class="code-header">pub fn <a href="#method.acme_directory_response" class="fn">acme_directory_response</a>(
     &amp;self,
-    directory: <a class="enum" href="https://docs.rs/serde_json/1.0.139/serde_json/value/enum.Value.html" title="enum serde_json::value::Value">Value</a>,
+    directory: <a class="enum" href="https://docs.rs/serde_json/1.0.140/serde_json/value/enum.Value.html" title="enum serde_json::value::Value">Value</a>,
 ) -&gt; <a class="enum" href="https://doc.rust-lang.org/1.85.1/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;AcmeDirectory, E2eIdentityError&gt;</h4></section></summary><div class="docblock"><p>Parses the response from <code>GET /acme/{provisioner-name}/directory</code>.
 Use this [AcmeDirectory] in the next step to fetch the first nonce from the acme server. Use
 [AcmeDirectory::new_nonce].</p>
@@ -198,7 +198,7 @@ Use this [AcmeDirectory] in the next step to fetch the first nonce from the acme
     &amp;self,
     directory: &amp;AcmeDirectory,
     previous_nonce: <a class="struct" href="https://doc.rust-lang.org/1.85.1/alloc/string/struct.String.html" title="struct alloc::string::String">String</a>,
-) -&gt; <a class="enum" href="https://doc.rust-lang.org/1.85.1/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;<a class="enum" href="https://docs.rs/serde_json/1.0.139/serde_json/value/enum.Value.html" title="enum serde_json::value::Value">Value</a>, E2eIdentityError&gt;</h4></section></summary><div class="docblock"><p>For creating a new acme account. This returns a signed JWS-alike request body to send to
+) -&gt; <a class="enum" href="https://doc.rust-lang.org/1.85.1/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;<a class="enum" href="https://docs.rs/serde_json/1.0.140/serde_json/value/enum.Value.html" title="enum serde_json::value::Value">Value</a>, E2eIdentityError&gt;</h4></section></summary><div class="docblock"><p>For creating a new acme account. This returns a signed JWS-alike request body to send to
 <code>POST /acme/{provisioner-name}/new-account</code>.</p>
 <p>See <a href="https://www.rfc-editor.org/rfc/rfc8555.html#section-7.3">RFC 8555 Section 7.3</a>.</p>
 <h5 id="parameters-19"><a class="doc-anchor" href="#parameters-19">§</a>Parameters</h5>
@@ -208,7 +208,7 @@ Use this [AcmeDirectory] in the next step to fetch the first nonce from the acme
 </ul>
 </div></details><details class="toggle method-toggle" open><summary><section id="method.acme_new_account_response" class="method"><h4 class="code-header">pub fn <a href="#method.acme_new_account_response" class="fn">acme_new_account_response</a>(
     &amp;self,
-    account: <a class="enum" href="https://docs.rs/serde_json/1.0.139/serde_json/value/enum.Value.html" title="enum serde_json::value::Value">Value</a>,
+    account: <a class="enum" href="https://docs.rs/serde_json/1.0.140/serde_json/value/enum.Value.html" title="enum serde_json::value::Value">Value</a>,
 ) -&gt; <a class="enum" href="https://doc.rust-lang.org/1.85.1/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;E2eiAcmeAccount, E2eIdentityError&gt;</h4></section></summary><div class="docblock"><p>Parses the response from <code>POST /acme/{provisioner-name}/new-account</code>.</p>
 <p>See <a href="https://www.rfc-editor.org/rfc/rfc8555.html#section-7.3">RFC 8555 Section 7.3</a>.</p>
 <h5 id="parameters-20"><a class="doc-anchor" href="#parameters-20">§</a>Parameters</h5>
@@ -224,7 +224,7 @@ Use this [AcmeDirectory] in the next step to fetch the first nonce from the acme
     directory: &amp;AcmeDirectory,
     account: &amp;E2eiAcmeAccount,
     previous_nonce: <a class="struct" href="https://doc.rust-lang.org/1.85.1/alloc/string/struct.String.html" title="struct alloc::string::String">String</a>,
-) -&gt; <a class="enum" href="https://doc.rust-lang.org/1.85.1/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;<a class="enum" href="https://docs.rs/serde_json/1.0.139/serde_json/value/enum.Value.html" title="enum serde_json::value::Value">Value</a>, E2eIdentityError&gt;</h4></section></summary><div class="docblock"><p>Creates a new acme order for the handle (userId + display name) and the clientId.</p>
+) -&gt; <a class="enum" href="https://doc.rust-lang.org/1.85.1/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;<a class="enum" href="https://docs.rs/serde_json/1.0.140/serde_json/value/enum.Value.html" title="enum serde_json::value::Value">Value</a>, E2eIdentityError&gt;</h4></section></summary><div class="docblock"><p>Creates a new acme order for the handle (userId + display name) and the clientId.</p>
 <p>See <a href="https://www.rfc-editor.org/rfc/rfc8555.html#section-7.4">RFC 8555 Section 7.4</a>.</p>
 <h5 id="parameters-21"><a class="doc-anchor" href="#parameters-21">§</a>Parameters</h5>
 <ul>
@@ -239,7 +239,7 @@ Use this [AcmeDirectory] in the next step to fetch the first nonce from the acme
 </ul>
 </div></details><details class="toggle method-toggle" open><summary><section id="method.acme_new_order_response" class="method"><h4 class="code-header">pub fn <a href="#method.acme_new_order_response" class="fn">acme_new_order_response</a>(
     &amp;self,
-    new_order: <a class="enum" href="https://docs.rs/serde_json/1.0.139/serde_json/value/enum.Value.html" title="enum serde_json::value::Value">Value</a>,
+    new_order: <a class="enum" href="https://docs.rs/serde_json/1.0.140/serde_json/value/enum.Value.html" title="enum serde_json::value::Value">Value</a>,
 ) -&gt; <a class="enum" href="https://doc.rust-lang.org/1.85.1/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;E2eiNewAcmeOrder, E2eIdentityError&gt;</h4></section></summary><div class="docblock"><p>Parses the response from <code>POST /acme/{provisioner-name}/new-order</code>.</p>
 <p>See <a href="https://www.rfc-editor.org/rfc/rfc8555.html#section-7.4">RFC 8555 Section 7.4</a>.</p>
 <h5 id="parameters-22"><a class="doc-anchor" href="#parameters-22">§</a>Parameters</h5>
@@ -251,7 +251,7 @@ Use this [AcmeDirectory] in the next step to fetch the first nonce from the acme
     url: &amp;<a class="struct" href="https://docs.rs/url/2.5.4/url/struct.Url.html" title="struct url::Url">Url</a>,
     account: &amp;E2eiAcmeAccount,
     previous_nonce: <a class="struct" href="https://doc.rust-lang.org/1.85.1/alloc/string/struct.String.html" title="struct alloc::string::String">String</a>,
-) -&gt; <a class="enum" href="https://doc.rust-lang.org/1.85.1/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;<a class="enum" href="https://docs.rs/serde_json/1.0.139/serde_json/value/enum.Value.html" title="enum serde_json::value::Value">Value</a>, E2eIdentityError&gt;</h4></section></summary><div class="docblock"><p>Creates a new authorization request.</p>
+) -&gt; <a class="enum" href="https://doc.rust-lang.org/1.85.1/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;<a class="enum" href="https://docs.rs/serde_json/1.0.140/serde_json/value/enum.Value.html" title="enum serde_json::value::Value">Value</a>, E2eIdentityError&gt;</h4></section></summary><div class="docblock"><p>Creates a new authorization request.</p>
 <p>See <a href="https://www.rfc-editor.org/rfc/rfc8555.html#section-7.5">RFC 8555 Section 7.5</a>.</p>
 <h5 id="parameters-23"><a class="doc-anchor" href="#parameters-23">§</a>Parameters</h5>
 <ul>
@@ -262,7 +262,7 @@ Use this [AcmeDirectory] in the next step to fetch the first nonce from the acme
 </ul>
 </div></details><details class="toggle method-toggle" open><summary><section id="method.acme_new_authz_response" class="method"><h4 class="code-header">pub fn <a href="#method.acme_new_authz_response" class="fn">acme_new_authz_response</a>(
     &amp;self,
-    new_authz: <a class="enum" href="https://docs.rs/serde_json/1.0.139/serde_json/value/enum.Value.html" title="enum serde_json::value::Value">Value</a>,
+    new_authz: <a class="enum" href="https://docs.rs/serde_json/1.0.140/serde_json/value/enum.Value.html" title="enum serde_json::value::Value">Value</a>,
 ) -&gt; <a class="enum" href="https://doc.rust-lang.org/1.85.1/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;E2eiAcmeAuthorization, E2eIdentityError&gt;</h4></section></summary><div class="docblock"><p>Parses the response from <code>POST /acme/{provisioner-name}/authz/{authz-id}</code></p>
 <p>You then have to map the challenge from this authorization object. The <code>client_id_challenge</code>
 will be the one with the <code>client_id_host</code> (you supplied to [Self::acme_new_order_request]) identifier,
@@ -303,7 +303,7 @@ See endpoint <a href="https://staging-nginz-https.zinfra.io/api/swagger-ui/#/def
     dpop_challenge: &amp;E2eiAcmeChallenge,
     account: &amp;E2eiAcmeAccount,
     previous_nonce: <a class="struct" href="https://doc.rust-lang.org/1.85.1/alloc/string/struct.String.html" title="struct alloc::string::String">String</a>,
-) -&gt; <a class="enum" href="https://doc.rust-lang.org/1.85.1/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;<a class="enum" href="https://docs.rs/serde_json/1.0.139/serde_json/value/enum.Value.html" title="enum serde_json::value::Value">Value</a>, E2eIdentityError&gt;</h4></section></summary><div class="docblock"><p>Creates a new challenge request.</p>
+) -&gt; <a class="enum" href="https://doc.rust-lang.org/1.85.1/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;<a class="enum" href="https://docs.rs/serde_json/1.0.140/serde_json/value/enum.Value.html" title="enum serde_json::value::Value">Value</a>, E2eIdentityError&gt;</h4></section></summary><div class="docblock"><p>Creates a new challenge request.</p>
 <p>See <a href="https://www.rfc-editor.org/rfc/rfc8555.html#section-7.5.1">RFC 8555 Section 7.5.1</a>.</p>
 <h5 id="parameters-26"><a class="doc-anchor" href="#parameters-26">§</a>Parameters</h5>
 <ul>
@@ -318,7 +318,7 @@ See endpoint <a href="https://staging-nginz-https.zinfra.io/api/swagger-ui/#/def
     oidc_challenge: &amp;E2eiAcmeChallenge,
     account: &amp;E2eiAcmeAccount,
     previous_nonce: <a class="struct" href="https://doc.rust-lang.org/1.85.1/alloc/string/struct.String.html" title="struct alloc::string::String">String</a>,
-) -&gt; <a class="enum" href="https://doc.rust-lang.org/1.85.1/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;<a class="enum" href="https://docs.rs/serde_json/1.0.139/serde_json/value/enum.Value.html" title="enum serde_json::value::Value">Value</a>, E2eIdentityError&gt;</h4></section></summary><div class="docblock"><p>Creates a new challenge request.</p>
+) -&gt; <a class="enum" href="https://doc.rust-lang.org/1.85.1/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;<a class="enum" href="https://docs.rs/serde_json/1.0.140/serde_json/value/enum.Value.html" title="enum serde_json::value::Value">Value</a>, E2eIdentityError&gt;</h4></section></summary><div class="docblock"><p>Creates a new challenge request.</p>
 <p>See <a href="https://www.rfc-editor.org/rfc/rfc8555.html#section-7.5.1">RFC 8555 Section 7.5.1</a>.</p>
 <h5 id="parameters-27"><a class="doc-anchor" href="#parameters-27">§</a>Parameters</h5>
 <ul>
@@ -329,7 +329,7 @@ See endpoint <a href="https://staging-nginz-https.zinfra.io/api/swagger-ui/#/def
 </ul>
 </div></details><details class="toggle method-toggle" open><summary><section id="method.acme_new_challenge_response" class="method"><h4 class="code-header">pub fn <a href="#method.acme_new_challenge_response" class="fn">acme_new_challenge_response</a>(
     &amp;self,
-    challenge: <a class="enum" href="https://docs.rs/serde_json/1.0.139/serde_json/value/enum.Value.html" title="enum serde_json::value::Value">Value</a>,
+    challenge: <a class="enum" href="https://docs.rs/serde_json/1.0.140/serde_json/value/enum.Value.html" title="enum serde_json::value::Value">Value</a>,
 ) -&gt; <a class="enum" href="https://doc.rust-lang.org/1.85.1/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;<a class="primitive" href="https://doc.rust-lang.org/1.85.1/std/primitive.unit.html">()</a>, E2eIdentityError&gt;</h4></section></summary><div class="docblock"><p>Parses the response from <code>POST /acme/{provisioner-name}/challenge/{challenge-id}</code>.</p>
 <p>See <a href="https://www.rfc-editor.org/rfc/rfc8555.html#section-7.5.1">RFC 8555 Section 7.5.1</a>.</p>
 <h5 id="parameters-28"><a class="doc-anchor" href="#parameters-28">§</a>Parameters</h5>
@@ -341,7 +341,7 @@ See endpoint <a href="https://staging-nginz-https.zinfra.io/api/swagger-ui/#/def
     order_url: <a class="struct" href="https://docs.rs/url/2.5.4/url/struct.Url.html" title="struct url::Url">Url</a>,
     account: &amp;E2eiAcmeAccount,
     previous_nonce: <a class="struct" href="https://doc.rust-lang.org/1.85.1/alloc/string/struct.String.html" title="struct alloc::string::String">String</a>,
-) -&gt; <a class="enum" href="https://doc.rust-lang.org/1.85.1/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;<a class="enum" href="https://docs.rs/serde_json/1.0.139/serde_json/value/enum.Value.html" title="enum serde_json::value::Value">Value</a>, E2eIdentityError&gt;</h4></section></summary><div class="docblock"><p>Verifies that the previous challenge has been completed.</p>
+) -&gt; <a class="enum" href="https://doc.rust-lang.org/1.85.1/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;<a class="enum" href="https://docs.rs/serde_json/1.0.140/serde_json/value/enum.Value.html" title="enum serde_json::value::Value">Value</a>, E2eIdentityError&gt;</h4></section></summary><div class="docblock"><p>Verifies that the previous challenge has been completed.</p>
 <p>See <a href="https://www.rfc-editor.org/rfc/rfc8555.html#section-7.4">RFC 8555 Section 7.4</a>.</p>
 <h5 id="parameters-29"><a class="doc-anchor" href="#parameters-29">§</a>Parameters</h5>
 <ul>
@@ -351,7 +351,7 @@ See endpoint <a href="https://staging-nginz-https.zinfra.io/api/swagger-ui/#/def
 </ul>
 </div></details><details class="toggle method-toggle" open><summary><section id="method.acme_check_order_response" class="method"><h4 class="code-header">pub fn <a href="#method.acme_check_order_response" class="fn">acme_check_order_response</a>(
     &amp;self,
-    order: <a class="enum" href="https://docs.rs/serde_json/1.0.139/serde_json/value/enum.Value.html" title="enum serde_json::value::Value">Value</a>,
+    order: <a class="enum" href="https://docs.rs/serde_json/1.0.140/serde_json/value/enum.Value.html" title="enum serde_json::value::Value">Value</a>,
 ) -&gt; <a class="enum" href="https://doc.rust-lang.org/1.85.1/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;E2eiAcmeOrder, E2eIdentityError&gt;</h4></section></summary><div class="docblock"><p>Parses the response from <code>POST /acme/{provisioner-name}/order/{order-id}</code>.</p>
 <p>See <a href="https://www.rfc-editor.org/rfc/rfc8555.html#section-7.4">RFC 8555 Section 7.4</a>.</p>
 <h5 id="parameters-30"><a class="doc-anchor" href="#parameters-30">§</a>Parameters</h5>
@@ -363,7 +363,7 @@ See endpoint <a href="https://staging-nginz-https.zinfra.io/api/swagger-ui/#/def
     order: &amp;E2eiAcmeOrder,
     account: &amp;E2eiAcmeAccount,
     previous_nonce: <a class="struct" href="https://doc.rust-lang.org/1.85.1/alloc/string/struct.String.html" title="struct alloc::string::String">String</a>,
-) -&gt; <a class="enum" href="https://doc.rust-lang.org/1.85.1/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;<a class="enum" href="https://docs.rs/serde_json/1.0.139/serde_json/value/enum.Value.html" title="enum serde_json::value::Value">Value</a>, E2eIdentityError&gt;</h4></section></summary><div class="docblock"><p>Final step before fetching the certificate.</p>
+) -&gt; <a class="enum" href="https://doc.rust-lang.org/1.85.1/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;<a class="enum" href="https://docs.rs/serde_json/1.0.140/serde_json/value/enum.Value.html" title="enum serde_json::value::Value">Value</a>, E2eIdentityError&gt;</h4></section></summary><div class="docblock"><p>Final step before fetching the certificate.</p>
 <p>See <a href="https://www.rfc-editor.org/rfc/rfc8555.html#section-7.4">RFC 8555 Section 7.4</a>.</p>
 <h5 id="parameters-31"><a class="doc-anchor" href="#parameters-31">§</a>Parameters</h5>
 <ul>
@@ -374,7 +374,7 @@ See endpoint <a href="https://staging-nginz-https.zinfra.io/api/swagger-ui/#/def
 </ul>
 </div></details><details class="toggle method-toggle" open><summary><section id="method.acme_finalize_response" class="method"><h4 class="code-header">pub fn <a href="#method.acme_finalize_response" class="fn">acme_finalize_response</a>(
     &amp;self,
-    finalize: <a class="enum" href="https://docs.rs/serde_json/1.0.139/serde_json/value/enum.Value.html" title="enum serde_json::value::Value">Value</a>,
+    finalize: <a class="enum" href="https://docs.rs/serde_json/1.0.140/serde_json/value/enum.Value.html" title="enum serde_json::value::Value">Value</a>,
 ) -&gt; <a class="enum" href="https://doc.rust-lang.org/1.85.1/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;E2eiAcmeFinalize, E2eIdentityError&gt;</h4></section></summary><div class="docblock"><p>Parses the response from <code>POST /acme/{provisioner-name}/order/{order-id}/finalize</code>.</p>
 <p>See <a href="https://www.rfc-editor.org/rfc/rfc8555.html#section-7.4">RFC 8555 Section 7.4</a>.</p>
 <h5 id="parameters-32"><a class="doc-anchor" href="#parameters-32">§</a>Parameters</h5>
@@ -386,7 +386,7 @@ See endpoint <a href="https://staging-nginz-https.zinfra.io/api/swagger-ui/#/def
     finalize: E2eiAcmeFinalize,
     account: E2eiAcmeAccount,
     previous_nonce: <a class="struct" href="https://doc.rust-lang.org/1.85.1/alloc/string/struct.String.html" title="struct alloc::string::String">String</a>,
-) -&gt; <a class="enum" href="https://doc.rust-lang.org/1.85.1/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;<a class="enum" href="https://docs.rs/serde_json/1.0.139/serde_json/value/enum.Value.html" title="enum serde_json::value::Value">Value</a>, E2eIdentityError&gt;</h4></section></summary><div class="docblock"><p>Creates a request for finally fetching the x509 certificate.</p>
+) -&gt; <a class="enum" href="https://doc.rust-lang.org/1.85.1/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;<a class="enum" href="https://docs.rs/serde_json/1.0.140/serde_json/value/enum.Value.html" title="enum serde_json::value::Value">Value</a>, E2eIdentityError&gt;</h4></section></summary><div class="docblock"><p>Creates a request for finally fetching the x509 certificate.</p>
 <p>See <a href="https://www.rfc-editor.org/rfc/rfc8555.html#section-7.4.2">RFC 8555 Section 7.4.2</a>.</p>
 <h5 id="parameters-33"><a class="doc-anchor" href="#parameters-33">§</a>Parameters</h5>
 <ul>
