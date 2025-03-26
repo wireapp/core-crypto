@@ -1,0 +1,30 @@
+name: Setup rust and cache artifacts
+description: Sets up rust, and caches build artifacts. Runs scripts/clean.sh post action.
+inputs:
+  target:
+    description: Rust target
+    required: true
+    default: $CARGO_BUILD_TARGET
+  rustflags:
+    description: Set the value of RUSTFLAGS (set to empty string to avoid overwriting existing flags)
+    required: false
+    default: -D warnings
+runs:
+  using: composite
+  steps:
+    - name:
+      uses: actions-rust-lang/setup-rust-toolchain@v1
+      with:
+        target: ${{ inputs.target }}
+        rustflags: ${{ inputs.rustflags }}
+        cache: false
+    - name: Cleanup on post
+      uses: gacts/run-and-post-run@v1
+      with:
+          post: |
+            sh ./scripts/clean.sh
+    - name: Cache build artifacts
+      uses: Swatinem/rust-cache@v2
+      with:
+        cache-on-failure: true
+        cache-bin: false
