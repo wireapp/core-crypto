@@ -49,7 +49,7 @@ export class CoreCryptoError extends Error {
         try {
             const richError: CoreCryptoRichError = JSON.parse(msg);
             return new this(richError, ...params);
-        } catch (cause) {
+        } catch {
             return this.fallback(msg, ...params);
         }
     }
