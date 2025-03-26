@@ -43,4 +43,6 @@ jobs:
       - name: upload xcframework
         uses: softprops/action-gh-release@v2
         with:
-            files: crypto-ffi/bindings/swift/WireCoreCrypto.xcframework.zip
+            files: |
+              crypto-ffi/bindings/swift/WireCoreCrypto.xcframework.zip
+              crypto-ffi/bindings/swift/WireCoreCryptoUniffi.xcframework.zip
