@@ -27,7 +27,7 @@ args = ["doc", "--no-deps", "--target=wasm32-unknown-unknown"]
 
 [tasks.bun-deps]
 command = "bun"
-args = ["install", "--cwd", "bindings/js"]
+args = ["install", "--frozen-lockfile", "--cwd", "bindings/js"]
 
 [tasks.docs-ts]
 dependencies = ["wasm", "bun-deps"]
