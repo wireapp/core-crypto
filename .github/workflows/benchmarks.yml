@@ -49,7 +49,7 @@ jobs:
       - name: bench wasm/js
         run: |
           cd crypto-ffi/bindings/js
-          bun install
+          bun install --frozen-lockfile
           bun run build
           bun run bench
       - uses: actions/checkout@v4

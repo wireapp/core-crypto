@@ -238,7 +238,7 @@ jobs:
       - name: build ts
         run: |
           cd crypto-ffi/bindings/js
-          bun install
+          bun install --frozen-lockfile
           bun run build
       - name: lint
         run: |
