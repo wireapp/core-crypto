@@ -986,7 +986,7 @@ dependencies = [
  "rstest",
  "rstest_reuse",
  "rusqlite",
- "security-framework 3.0.1",
+ "security-framework 3.2.0",
  "security-framework-sys",
  "serde",
  "serde-big-array",
@@ -4255,9 +4255,9 @@ dependencies = [
 
 [[package]]
 name = "security-framework"
-version = "3.0.1"
+version = "3.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e1415a607e92bec364ea2cf9264646dcce0f91e6d65281bd6f2819cca3bf39c8"
+checksum = "271720403f46ca04f7ba6f55d438f8bd878d6b8ca0a1046e8228c4145bcbb316"
 dependencies = [
  "bitflags 2.9.0",
  "core-foundation 0.10.0",
