@@ -18,7 +18,7 @@ mod tests {
         // just runs the setup and teardown, which creates the store and wipes it afterward.
     }
 
-    #[cfg(feature = "ios-wal-compat")]
+    #[cfg(target_os = "ios")]
     #[cfg_attr(not(target_family = "wasm"), async_std::test)]
     async fn can_preserve_wal_compat_for_ios() {
         let store1 = setup("ios-wal-compat", false).await;

@@ -46,16 +46,11 @@ zeroize.workspace = true
 thiserror.workspace = true
 hex.workspace = true
 async-lock.workspace = true
+core-crypto-keystore.workspace = true
 
 [dependencies.hpke]
 version = "0.12"
 features = ["x25519", "p256", "p384", "p521"]
-
-[target.'cfg(not(target_os = "ios"))'.dependencies]
-core-crypto-keystore.workspace = true
-
-[target.'cfg(target_os = "ios")'.dependencies]
-core-crypto-keystore = { workspace = true, features = ["ios-wal-compat"] }
 
 [dev-dependencies]
 wasm-bindgen-test = "0.3"

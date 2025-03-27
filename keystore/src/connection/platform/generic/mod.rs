@@ -6,7 +6,7 @@ use async_lock::{Mutex, MutexGuard};
 use blocking::unblock;
 use rusqlite::{Transaction, functions::FunctionFlags};
 
-#[cfg(feature = "ios-wal-compat")]
+#[cfg(target_os = "ios")]
 mod ios_wal_compat;
 
 refinery::embed_migrations!("src/connection/platform/generic/migrations");
@@ -86,7 +86,7 @@ impl SqlCipherConnection {
         conn.pragma_update(None, "key", key)?;
 
         // ? iOS WAL journaling fix; see details here: https://github.com/sqlcipher/sqlcipher/issues/255
-        #[cfg(feature = "ios-wal-compat")]
+        #[cfg(target_os = "ios")]
         ios_wal_compat::handle_ios_wal_compat(&conn, path)?;
 
         // Enable WAL journaling mode

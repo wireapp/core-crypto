@@ -122,10 +122,10 @@ pub enum CryptoKeystoreError {
     HexDecodeError(#[from] hex::FromHexError),
     #[error(transparent)]
     FromUtf8Error(#[from] std::string::FromUtf8Error),
-    #[cfg(feature = "ios-wal-compat")]
+    #[cfg(target_os = "ios")]
     #[error(transparent)]
     HexSaltDecodeError(hex::FromHexError),
-    #[cfg(feature = "ios-wal-compat")]
+    #[cfg(target_os = "ios")]
     #[error(transparent)]
     SecurityFrameworkError(#[from] security_framework::base::Error),
     #[cfg(target_family = "wasm")]
