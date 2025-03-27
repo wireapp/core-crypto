@@ -1,3 +1,5 @@
+import CryptoKit
+import Foundation
 import XCTest
 
 @testable import WireCoreCrypto
@@ -28,6 +30,62 @@ final class WireCoreCryptoTests: XCTestCase {
             let updatedData = try await context.getData()
             XCTAssertEqual(updatedData, data)
         }
+    }
+
+    func testMigratingKeyTypeToBytesWorks() async throws {
+        let databaseName = "migrating-key-types-to-bytes-test-E4D08634-D1AE-40C8-ADF4-34CCC472AC38"
+        let databaseFile = "\(databaseName).sqlite"
+
+        // Store salt in keychain
+        let digest = SHA256.hash(data: Data(databaseFile.utf8))
+        let keychainAccount = "keystore_salt_\(digest.map { String(format: "%02x", $0) }.joined())"
+        let saltHex = "d94268ec2a83415b40702a14bb50e2c3"
+        let saltData = Data(hex: saltHex)!
+
+        let keychainQuery: [String: Any] = [
+            kSecClass as String: kSecClassGenericPassword,
+            kSecAttrService as String: "wire.com",
+            kSecAttrAccount as String: keychainAccount,
+            kSecValueData as String: saltData,
+        ]
+        SecItemDelete(keychainQuery as CFDictionary)
+        SecItemAdd(keychainQuery as CFDictionary, nil)
+
+        // Copy test database with the old key format to a temporary directory
+        let tmpdir = FileManager.default.temporaryDirectory.appendingPathComponent(
+            "cc-test-\(UUID().uuidString)")
+        try FileManager.default.createDirectory(at: tmpdir, withIntermediateDirectories: true)
+        let resourceURL = Bundle(for: type(of: self))
+            .url(
+                forResource: databaseName,
+                withExtension: "sqlite"
+            )!
+        let targetPath = tmpdir.appendingPathComponent(resourceURL.lastPathComponent)
+        try FileManager.default.copyItem(at: resourceURL, to: targetPath)
+
+        // The keystore path has to be the same over different instances of the test, because of handle_ios_wal_compat().
+        // Change the working directory so that we can use a relative path for the keystore path.
+        let oldWorkingDirectory = FileManager.default.currentDirectoryPath
+        FileManager.default.changeCurrentDirectoryPath(tmpdir.path())
+
+        // Now migrate the database to the new key format
+        let oldKey = "secret"
+        let newKey = genDatabaseKey()
+        try await migrateDatabaseKeyTypeToBytes(
+            path: targetPath.lastPathComponent, oldKey: oldKey, newKey: newKey)
+
+        // Check if we can read the conversation from the migrated database
+        let alice = try await CoreCrypto(
+            keystorePath: targetPath.lastPathComponent, key: newKey)
+        let conversationId = "conversation1".data(using: .utf8)!
+        let epoch = try await alice.transaction {
+            try await $0.conversationEpoch(conversationId: conversationId)
+        }
+        XCTAssertEqual(1, epoch)
+
+        // The file manager is a singleton used for the entire process, so we better switch back
+        FileManager.default.changeCurrentDirectoryPath(oldWorkingDirectory)
+        try FileManager.default.removeItem(at: tmpdir)
     }
 
     func testExternallyGeneratedClientIdShouldInitTheMLSClient() async throws {
@@ -516,4 +574,22 @@ final class WireCoreCryptoTests: XCTestCase {
         }
     }
 
+}
+
+// Extension to convert hex string to Data
+// https://stackoverflow.com/a/64351862
+extension Data {
+    init?(hex: String) {
+        guard hex.count.isMultiple(of: 2) else {
+            return nil
+        }
+
+        let chars = hex.map { $0 }
+        let bytes = stride(from: 0, to: chars.count, by: 2)
+            .map { String(chars[$0]) + String(chars[$0 + 1]) }
+            .compactMap { UInt8($0, radix: 16) }
+
+        guard hex.count / bytes.count == 2 else { return nil }
+        self.init(bytes)
+    }
 }
