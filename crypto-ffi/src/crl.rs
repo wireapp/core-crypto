@@ -8,6 +8,14 @@ pub struct NewCrlDistributionPoints(Option<Vec<String>>);
 #[cfg(not(target_family = "wasm"))]
 uniffi::custom_newtype!(NewCrlDistributionPoints, Option<Vec<String>>);
 
+#[cfg(target_family = "wasm")]
+#[wasm_bindgen]
+impl NewCrlDistributionPoints {
+    pub fn as_strings(&self) -> Option<Vec<String>> {
+        self.0.as_ref().map(|p| p.iter().map(Clone::clone).collect())
+    }
+}
+
 impl From<core_crypto::e2e_identity::NewCrlDistributionPoints> for NewCrlDistributionPoints {
     fn from(value: core_crypto::e2e_identity::NewCrlDistributionPoints) -> Self {
         let value = value.into_iter().collect::<Vec<_>>();
@@ -33,5 +41,14 @@ impl From<core_crypto::e2e_identity::CrlRegistration> for CrlRegistration {
             dirty: value.dirty,
             expiration: value.expiration,
         }
+    }
+}
+
+#[cfg(target_family = "wasm")]
+#[wasm_bindgen]
+impl CrlRegistration {
+    #[wasm_bindgen(constructor)]
+    pub fn new(dirty: bool, expiration: Option<u64>) -> Self {
+        Self { dirty, expiration }
     }
 }

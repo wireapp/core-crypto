@@ -122,9 +122,7 @@ impl From<core_crypto::Error> for InternalError {
             #[cfg(feature = "proteus")]
             core_crypto::Error::ProteusNotInitialized => Self::Other(error.to_string()),
             #[cfg(not(feature = "proteus"))]
-            core_crypto::Error::ProteusNotInitialized => {
-                unreachable!("we never throw a proteus not initialized error when not using proteus")
-            }
+            core_crypto::Error::ProteusNotInitialized => Self::Other("proteus not initialized".into()),
             #[cfg(feature = "proteus")]
             core_crypto::Error::Proteus(proteus) => {
                 let error_code = proteus.source.error_code();
@@ -188,7 +186,7 @@ impl InternalError {
 
     #[cfg(target_family = "wasm")]
     pub(crate) fn variant_name(&self) -> String {
-        let mut out = self.as_ref().to_string();
+        let mut out = self.as_ref().to_string() + "Error";
         match self {
             Self::Mls(mls) => out += mls.as_ref(),
             Self::Proteus(proteus) => out += proteus.as_ref(),

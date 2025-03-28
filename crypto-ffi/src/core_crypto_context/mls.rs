@@ -198,7 +198,7 @@ impl CoreCryptoContext {
 
         let mut lower_cfg = MlsConversationConfiguration {
             custom: config.custom.into(),
-            ciphersuite: config.ciphersuite.into(),
+            ciphersuite: config.ciphersuite.map(Into::into).unwrap_or_default(),
             ..Default::default()
         };
 

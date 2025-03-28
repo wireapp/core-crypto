@@ -23,7 +23,7 @@ use crate::CoreCrypto;
 #[cfg_attr(not(target_family = "wasm"), derive(uniffi::Enum))]
 #[repr(u8)]
 pub enum CoreCryptoLogLevel {
-    Off,
+    Off = 1,
     Trace,
     Debug,
     Info,
@@ -89,16 +89,7 @@ impl CoreCryptoLogger for DummyLogger {
 impl DummyLogger {
     /// We need a `JsValue` which implements the `CoreCryptoLogger` interface but does nothing. This constructs that.
     fn construct() -> JsValue {
-        let dummy = js_sys::Object::new();
-
-        // can't use the `js_sys::Function` constructor directly because it only accepts a single argument
-        let log_fn =
-            js_sys::eval("function (level, message, context) {}").expect("creating this function always works");
-        let log_fn = log_fn.dyn_ref::<js_sys::Function>().expect("a function is a function");
-        let log_fn = log_fn.bind(&dummy);
-
-        js_sys::Reflect::set(&dummy, &"log".into(), &log_fn).expect("setting a const/static function always works");
-        dummy.into()
+        js_sys::Function::default().into()
     }
 }
 

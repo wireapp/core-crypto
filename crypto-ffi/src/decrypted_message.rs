@@ -16,21 +16,30 @@ use crate::{ClientId, CoreCryptoError, CoreCryptoResult, NewCrlDistributionPoint
 )]
 #[cfg_attr(not(target_family = "wasm"), derive(uniffi::Record))]
 pub struct DecryptedMessage {
+    #[cfg_attr(target_family = "wasm", wasm_bindgen(readonly))]
     pub message: Option<Vec<u8>>,
+    #[cfg_attr(target_family = "wasm", wasm_bindgen(readonly))]
     pub proposals: Vec<ProposalBundle>,
     /// It is set to false if ingesting this MLS message has resulted in the client being removed from the group (i.e. a Remove commit)
+    #[cfg_attr(target_family = "wasm", wasm_bindgen(readonly, js_name = isActive))]
     pub is_active: bool,
     /// Commit delay hint (in milliseconds) to prevent clients from hammering the server with epoch changes
+    #[cfg_attr(target_family = "wasm", wasm_bindgen(readonly, js_name = commitDelay))]
     pub commit_delay: Option<u64>,
+    #[cfg_attr(target_family = "wasm", wasm_bindgen(readonly, js_name = senderClientId))]
     pub sender_client_id: Option<ClientId>,
     /// true when the decrypted message resulted in an epoch change i.e. it was a commit
     ///
     /// Deprecated: this member will be removed in the future. Prefer using the `EpochObserver` interface.
     #[deprecated = "This member will be removed in the future. Prefer using the `EpochObserver` interface."]
+    #[cfg_attr(target_family = "wasm", wasm_bindgen(readonly, js_name = hasEpochChanged))]
     pub has_epoch_changed: bool,
+    #[cfg_attr(target_family = "wasm", wasm_bindgen(readonly))]
     pub identity: WireIdentity,
+    #[cfg_attr(target_family = "wasm", wasm_bindgen(readonly, js_name = bufferedMessages))]
     pub buffered_messages: Option<Vec<BufferedDecryptedMessage>>,
     /// New CRL Distribution of members of this group
+    #[cfg_attr(target_family = "wasm", wasm_bindgen(readonly, js_name = crlNewDistributionPoints))]
     pub crl_new_distribution_points: NewCrlDistributionPoints,
 }
 
@@ -77,20 +86,28 @@ impl TryFrom<MlsConversationDecryptMessage> for DecryptedMessage {
 )]
 #[cfg_attr(not(target_family = "wasm"), derive(uniffi::Record))]
 pub struct BufferedDecryptedMessage {
+    #[cfg_attr(target_family = "wasm", wasm_bindgen(readonly))]
     pub message: Option<Vec<u8>>,
+    #[cfg_attr(target_family = "wasm", wasm_bindgen(readonly))]
     pub proposals: Vec<ProposalBundle>,
     /// It is set to false if ingesting this MLS message has resulted in the client being removed from the group (i.e. a Remove commit)
+    #[cfg_attr(target_family = "wasm", wasm_bindgen(readonly, js_name = isActive))]
     pub is_active: bool,
     /// Commit delay hint (in milliseconds) to prevent clients from hammering the server with epoch changes
+    #[cfg_attr(target_family = "wasm", wasm_bindgen(readonly, js_name = commitDelay))]
     pub commit_delay: Option<u64>,
+    #[cfg_attr(target_family = "wasm", wasm_bindgen(readonly, js_name = senderClientId))]
     pub sender_client_id: Option<ClientId>,
     /// true when the decrypted message resulted in an epoch change i.e. it was a commit
     ///
     /// Deprecated: this member will be removed in the future. Prefer using the `EpochObserver` interface.
     #[deprecated = "This member will be removed in the future. Prefer using the `EpochObserver` interface."]
+    #[cfg_attr(target_family = "wasm", wasm_bindgen(readonly, js_name = hasEpochChanged))]
     pub has_epoch_changed: bool,
+    #[cfg_attr(target_family = "wasm", wasm_bindgen(readonly))]
     pub identity: WireIdentity,
     /// New CRL Distribution of members of this group
+    #[cfg_attr(target_family = "wasm", wasm_bindgen(readonly, js_name = crlNewDistributionPoints))]
     pub crl_new_distribution_points: NewCrlDistributionPoints,
 }
 
