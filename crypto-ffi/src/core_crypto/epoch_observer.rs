@@ -3,9 +3,13 @@ use std::sync::Arc;
 use async_trait::async_trait;
 use core_crypto::prelude::{ConversationId, Obfuscated};
 #[cfg(target_family = "wasm")]
+use js_sys::{Promise, Uint8Array};
+#[cfg(target_family = "wasm")]
 use log::kv;
 #[cfg(target_family = "wasm")]
 use wasm_bindgen::prelude::*;
+#[cfg(target_family = "wasm")]
+use wasm_bindgen_futures::JsFuture;
 
 use crate::{CoreCrypto, CoreCryptoError, CoreCryptoResult};
 
@@ -84,52 +88,84 @@ impl CoreCrypto {
     }
 }
 
+/// An `EpochObserver` is notified whenever a conversation's epoch changes.
 #[cfg(target_family = "wasm")]
 #[wasm_bindgen]
-extern "C" {
-    /// An `EpochObserver` is notified whenever a conversation's epoch changes.
-    pub type EpochObserver;
-
-    /// This function will be called every time a conversation's epoch changes.
-    ///
-    /// The `epoch` parameter is the new epoch.
-    ///
-    /// <div class="warning">
-    /// This function must not block! Foreign implementors of this inteface can
-    /// spawn a task indirecting the notification, or (unblocking) send the notification
-    /// on some kind of channel, or anything else, as long as the operation completes
-    /// quickly.
-    /// </div>
-    ///
-    /// Though the signature includes an error type, that error is only present because
-    /// it is required by `uniffi` in order to handle panics. This function should suppress
-    /// and ignore internal errors instead of propagating them, to the maximum extent possible.
-    #[wasm_bindgen(structural, method, catch)]
-    pub async fn epoch_changed(
-        this: &EpochObserver,
-        conversation_id: ConversationId,
-        epoch: u64,
-    ) -> Result<(), JsValue>;
+pub struct EpochObserver {
+    this_context: JsValue,
+    epoch_changed: js_sys::Function,
 }
 
-/// This shim bridges the public `EpochObserver` interface with the internal one defined by `core-crypto`.
-///
-/// The shim must be `Send + Sync` in order to implement `core_crypto::mls::EpochObserver`, which means
-/// that it cannot simply wrap the `EpochObserver` duck type that Js gives us; `JsValue` instances are
-/// very intentionally _not_ `Sync` or `Send`.
-///
-/// Luckily, we have a mechanism to connect unrelated structs without wrapping: channels! So we'll give
-/// this shim the sender, and then spawn a task to ensure that the messages on the channel get passed
-/// back to the JS side.
 #[cfg(target_family = "wasm")]
-struct ObserverShim(async_channel::Sender<(ConversationId, u64)>);
+// SAFETY: we promise that we're only ever using this in a single-threaded context
+unsafe impl Send for EpochObserver {}
+#[cfg(target_family = "wasm")]
+// SAFETY: we promise that we're only ever using this in a single-threaded context
+unsafe impl Sync for EpochObserver {}
 
 #[cfg(target_family = "wasm")]
-#[async_trait]
-impl core_crypto::mls::EpochObserver for ObserverShim {
+#[wasm_bindgen]
+impl EpochObserver {
+    /// Create a new Epoch Observer.
+    ///
+    /// This function should be hidden on the JS side of things! The JS bindings should have an `interface EpochObserver`
+    /// which has the method defined, and the bindings themselves should destructure an instance implementing that
+    /// interface appropriately to construct this.
+    ///
+    /// - `this_context` is the instance itself, which will be bound to `this` within the function bodies
+    /// - `epoch_changed`: A function of the form `(conversation_id: Uint8Array, epoch: bigint) -> Promise<void>`.
+    ///   Called every time a conversation's epoch changes.
+    #[wasm_bindgen(constructor)]
+    pub fn new(this_context: JsValue, epoch_changed: js_sys::Function) -> CoreCryptoResult<Self> {
+        // we can't do much type-checking here unfortunately, but we can at least validate that the incoming functions have the right length
+        if epoch_changed.length() != 2 {
+            return Err(CoreCryptoError::generic()(format!(
+                "`epoch_changed` must accept 2 arguments but accepts {}",
+                epoch_changed.length()
+            )));
+        }
+        Ok(Self {
+            this_context,
+            epoch_changed,
+        })
+    }
+}
+
+#[cfg(target_family = "wasm")]
+impl EpochObserver {
+    /// Call the JS `epoch_observed` function
+    ///
+    /// This blocks if the JS side of things blocks.
+    ///
+    /// This is extracted as its own function instead of being implemented inline within the
+    /// `impl EpochObserver for EpochObserver` block mostly to consolidate error-handling.
+    async fn epoch_changed(&self, conversation_id: ConversationId, epoch: u64) -> Result<(), JsValue> {
+        let converation_id = Uint8Array::from(conversation_id.as_slice());
+
+        let promise = self
+            .epoch_changed
+            .call2(&self.this_context, &converation_id.into(), &epoch.into())?
+            .dyn_into::<Promise>()?;
+        // we don't actually care what the result of executing the notification promise is; we'll ignore it if it exists
+        JsFuture::from(promise).await?;
+        Ok(())
+    }
+}
+
+#[cfg(target_family = "wasm")]
+#[async_trait(?Send)]
+impl core_crypto::mls::EpochObserver for EpochObserver {
     async fn epoch_changed(&self, conversation_id: ConversationId, epoch: u64) {
-        // if this channel is full or disconnected, drop the message
-        let _ = self.0.try_send((conversation_id, epoch));
+        if let Err(err) = self.epoch_changed(conversation_id.clone(), epoch).await {
+            // we don't _care_ if an error is thrown by the the notification function, per se,
+            // but this would probably be useful information for downstream debugging efforts
+            log::warn!(
+                conversation_id = Obfuscated::new(&conversation_id),
+                epoch,
+                err = LoggableJsValue(err);
+                "caught an error when attempting to notify the epoch observer of an epoch change"
+            );
+        }
     }
 }
 
@@ -141,25 +177,8 @@ impl CoreCrypto {
     /// This function should be called 0 or 1 times in a client's lifetime.
     /// If called when an epoch observer already exists, this will return an error.
     pub async fn register_epoch_observer(&self, epoch_observer: EpochObserver) -> CoreCryptoResult<()> {
-        let (tx, rx) = async_channel::bounded(1);
-        let shim = Arc::new(ObserverShim(tx));
-        wasm_bindgen_futures::spawn_local(async move {
-            while let Ok((conversation_id, epoch)) = rx.recv().await {
-                if let Err(err) = epoch_observer.epoch_changed(conversation_id.clone(), epoch).await {
-                    // we don't _care_ if an error is thrown by the the notification function, per se,
-                    // but this would probably be useful information for downstream debugging efforts
-                    log::warn!(
-                        conversation_id = Obfuscated::new(&conversation_id),
-                        epoch,
-                        err = LoggableJsValue(err);
-                        "caught an error when attempting to notify the epoch observer of an epoch change"
-                    );
-                }
-            }
-            // if the channel ever closes or produces an error, this task will complete
-        });
         self.inner
-            .register_epoch_observer(shim)
+            .register_epoch_observer(Arc::new(epoch_observer))
             .await
             .map_err(CoreCryptoError::generic())
     }
