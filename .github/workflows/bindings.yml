@@ -157,7 +157,7 @@ jobs:
       - name: Setup rust macOS
         uses: ./.github/actions/setup-and-cache-rust
         with:
-          target: "wasm32-unknown-unknown,aarch64-apple-ios,x86_64-apple-ios,aarch64-apple-ios-sim"
+          target: "wasm32-unknown-unknown,aarch64-apple-ios,aarch64-apple-ios-sim"
           rustflags: ''
       - uses: davidB/rust-cargo-make@v1
       - name: setup Xcode

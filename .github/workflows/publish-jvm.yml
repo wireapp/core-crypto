@@ -34,18 +34,13 @@ jobs:
         uses: actions-rust-lang/setup-rust-toolchain@v1  # this implicitly caches Rust tools and build artifacts
         with:
           rustflags: ''
-          target: "x86_64-apple-darwin,aarch64-apple-darwin"
+          target: "aarch64-apple-darwin"
       - name: setup cargo-make
         uses: davidB/rust-cargo-make@v1
       - name: build artifacts
         run: |
           cd crypto-ffi
           cargo make jvm-darwin
-      - name: upload x86_64-apple-darwin artifacts
-        uses: actions/upload-artifact@v4
-        with:
-            name: x86_64-apple-darwin
-            path: target/x86_64-apple-darwin/release/*.dylib
       - name: upload aarch64-apple-darwin artifacts
         uses: actions/upload-artifact@v4
         with:
@@ -82,11 +77,6 @@ jobs:
         with:
           name: jvm-linux-so-file-${{ github.run_id }}
           path: target/x86_64-unknown-linux-gnu/release
-      - name: download x86_64 apple darwin artifact
-        uses: actions/download-artifact@v4
-        with:
-          name: x86_64-apple-darwin
-          path: target/x86_64-apple-darwin/release
       - name: download aarch64 apple darwin artifact
         uses: actions/download-artifact@v4
         with:

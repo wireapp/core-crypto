@@ -71,7 +71,7 @@ Install Xcode & its command-line tools: [https://developer.apple.com/xcode/](htt
 
 Install iOS rust targets:
 ```ignore
-rustup target add aarch64-apple-ios x86_64-apple-ios aarch64-apple-ios-sim
+rustup target add aarch64-apple-ios aarch64-apple-ios-sim
 ```
 
 Build:
@@ -86,7 +86,7 @@ cargo make ios-create-xcframework
 
 Install macOS rust targets:
 ```ignore
-rustup target add x86_64-apple-darwin aarch64-apple-darwin
+rustup target add aarch64-apple-darwin
 ```
 
 ### Linux

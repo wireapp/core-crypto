@@ -27,7 +27,6 @@ fun registerCopyJvmBinaryTask(target: String, jniTarget: String, include: String
 val copyBinariesTasks = listOf(
     registerCopyJvmBinaryTask("x86_64-unknown-linux-gnu", "linux-x86-64"),
     registerCopyJvmBinaryTask("aarch64-apple-darwin", "darwin-aarch64", "*.dylib"),
-    registerCopyJvmBinaryTask("x86_64-apple-darwin", "darwin-x86-64", "*.dylib"),
 )
 
 tasks.withType<ProcessResources> { dependsOn(copyBinariesTasks) }

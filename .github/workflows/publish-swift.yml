@@ -33,7 +33,7 @@ jobs:
         uses: actions-rust-lang/setup-rust-toolchain@v1  # this implicitly caches Rust tools and build artifacts
         with:
           rustflags: ''
-          target: "aarch64-apple-ios,x86_64-apple-ios,aarch64-apple-ios-sim"
+          target: "aarch64-apple-ios,aarch64-apple-ios-sim"
       - name: setup cargo-make
         uses: davidB/rust-cargo-make@v1
       - name: build xcframework

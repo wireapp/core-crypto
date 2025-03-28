@@ -19,8 +19,6 @@ jobs:
         include:
           - task: ios-device
             target: aarch64-apple-ios
-          - task: ios-simulator-x86
-            target: x86_64-apple-ios
           - task: ios-simulator-arm
             target: aarch64-apple-ios-sim
     steps:

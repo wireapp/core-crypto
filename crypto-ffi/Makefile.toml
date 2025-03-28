@@ -129,21 +129,6 @@ args = [
     "-C", "strip=symbols"
 ]
 
-[tasks.ios-simulator-x86]
-dependencies = ["bindings-swift"]
-condition = { platforms = ["mac"] }
-command = "cargo"
-args = [
-    "rustc",
-    "--locked",
-    "--target", "x86_64-apple-ios",
-    "--crate-type=cdylib",
-    "--crate-type=staticlib",
-    "--release",
-    "--",
-    "-C", "strip=symbols"
-]
-
 [tasks.ios-simulator-arm]
 dependencies = ["bindings-swift"]
 # override CFLAGS to fix ring compilation
@@ -163,7 +148,7 @@ args = [
 
 [tasks.ios]
 condition = { platforms = ["mac"] }
-dependencies = ["ios-device", "ios-simulator-x86", "ios-simulator-arm"]
+dependencies = ["ios-device", "ios-simulator-arm"]
 
 [tasks.ios-create-xcframework]
 condition = { platforms = ["mac"] }
@@ -228,22 +213,7 @@ dependencies = ["android-armv7", "android-armv8", "android-x86"]
 
 ####################################  JVM  ####################################
 
-[tasks.jvm-x86-darwin]
-command = "cargo"
-args = [
-    "rustc",
-    "--locked",
-    "--target", "x86_64-apple-darwin",
-    "--crate-type=cdylib",
-    "--crate-type=staticlib",
-    "--release",
-    "--",
-    "-C", "strip=symbols"
-]
-dependencies = ["bindings-kotlin-jvm"]
-condition = { platforms = ["mac"] }
-
-[tasks.jvm-aarch64-darwin]
+[tasks.jvm-darwin]
 command = "cargo"
 args = [
     "rustc",
@@ -273,9 +243,6 @@ args = [
 dependencies = ["bindings-kotlin-jvm"]
 condition = { platforms = ["linux"] }
 
-[tasks.jvm-darwin]
-dependencies = ["jvm-aarch64-darwin", "jvm-x86-darwin"]
-
 [tasks.jvm]
 dependencies = ["jvm-darwin", "jvm-linux"]
 
@@ -296,8 +263,6 @@ fn update_android_env
     platform = os_family
     if eq ${platform} "linux"
         platform_dir = set "linux-x86_64"
-    elseif eq ${platform} "mac"
-        platform_dir = set "darwin-x86_64"
     else
         trigger_error "Unsupported host platform"
     end
