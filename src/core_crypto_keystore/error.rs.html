@@ -355,10 +355,10 @@
     </span>HexDecodeError(<span class="attr">#[from] </span>hex::FromHexError),
     <span class="attr">#[error(transparent)]
     </span>FromUtf8Error(<span class="attr">#[from] </span>std::string::FromUtf8Error),
-    <span class="attr">#[cfg(feature = <span class="string">"ios-wal-compat"</span>)]
+    <span class="attr">#[cfg(target_os = <span class="string">"ios"</span>)]
     #[error(transparent)]
     </span>HexSaltDecodeError(hex::FromHexError),
-    <span class="attr">#[cfg(feature = <span class="string">"ios-wal-compat"</span>)]
+    <span class="attr">#[cfg(target_os = <span class="string">"ios"</span>)]
     #[error(transparent)]
     </span>SecurityFrameworkError(<span class="attr">#[from] </span>security_framework::base::Error),
     <span class="attr">#[cfg(target_family = <span class="string">"wasm"</span>)]

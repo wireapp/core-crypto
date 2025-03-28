@@ -209,7 +209,7 @@
 <span class="kw">use </span>blocking::unblock;
 <span class="kw">use </span>rusqlite::{Transaction, functions::FunctionFlags};
 
-<span class="attr">#[cfg(feature = <span class="string">"ios-wal-compat"</span>)]
+<span class="attr">#[cfg(target_os = <span class="string">"ios"</span>)]
 </span><span class="kw">mod </span>ios_wal_compat;
 
 <span class="macro">refinery::embed_migrations!</span>(<span class="string">"src/connection/platform/generic/migrations"</span>);
@@ -289,7 +289,7 @@
         conn.pragma_update(<span class="prelude-val">None</span>, <span class="string">"key"</span>, key)<span class="question-mark">?</span>;
 
         <span class="comment">// ? iOS WAL journaling fix; see details here: https://github.com/sqlcipher/sqlcipher/issues/255
-        </span><span class="attr">#[cfg(feature = <span class="string">"ios-wal-compat"</span>)]
+        </span><span class="attr">#[cfg(target_os = <span class="string">"ios"</span>)]
         </span>ios_wal_compat::handle_ios_wal_compat(<span class="kw-2">&amp;</span>conn, path)<span class="question-mark">?</span>;
 
         <span class="comment">// Enable WAL journaling mode
