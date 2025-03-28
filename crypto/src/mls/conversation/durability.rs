@@ -1,5 +1,5 @@
-use crate::context::CentralContext;
 use crate::mls::{ConversationId, MlsConversation};
+use crate::transaction_context::TransactionContext;
 
 impl MlsConversation {
     /// Replaces the MLS group in memory with the one from keystore.
@@ -19,7 +19,7 @@ impl MlsConversation {
     }
 }
 
-impl CentralContext {
+impl TransactionContext {
     /// Replaces the MLS group in memory with the one from keystore.
     pub async fn drop_and_restore(&mut self, id: &ConversationId) {
         use core_crypto_keystore::CryptoKeystoreMls as _;

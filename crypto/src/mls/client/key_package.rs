@@ -14,9 +14,9 @@ use super::{Error, Result};
 use crate::{KeystoreError, MlsError};
 use crate::{
     RecursiveError,
-    context::CentralContext,
     mls::{client::ClientInner, credential::CredentialBundle},
     prelude::{Client, MlsCiphersuite, MlsConversationConfiguration, MlsCredentialType},
+    transaction_context::TransactionContext,
 };
 
 /// Default number of KeyPackages a client generates the first time it's created
@@ -328,7 +328,7 @@ impl Client {
     }
 }
 
-impl CentralContext {
+impl TransactionContext {
     /// Returns `amount_requested` OpenMLS [openmls::key_packages::KeyPackage]s.
     /// Will always return the requested amount as it will generate the necessary (lacking) amount on-the-fly
     ///
@@ -389,7 +389,7 @@ impl CentralContext {
     }
 
     /// Prunes local KeyPackages after making sure they also have been deleted on the backend side
-    /// You should only use this after [CentralContext::save_x509_credential]
+    /// You should only use this after [TransactionContext::save_x509_credential]
     #[cfg_attr(test, crate::dispotent)]
     pub async fn delete_keypackages(&self, refs: &[KeyPackageRef]) -> Result<()> {
         if refs.is_empty() {

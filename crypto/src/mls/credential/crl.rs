@@ -1,6 +1,7 @@
 use super::{Error, Result};
 use crate::{
-    KeystoreError, RecursiveError, context::CentralContext, e2e_identity::init_certificates::NewCrlDistributionPoints,
+    KeystoreError, RecursiveError, e2e_identity::init_certificates::NewCrlDistributionPoints,
+    transaction_context::TransactionContext,
 };
 use core_crypto_keystore::{connection::FetchFromDatabase, entities::E2eiCrl};
 use mls_crypto_provider::MlsCryptoProvider;
@@ -84,7 +85,7 @@ pub(crate) async fn get_new_crl_distribution_points(
     Ok(Some(crl_dps).into())
 }
 
-impl CentralContext {
+impl TransactionContext {
     /// When x509 new credentials are registered this extracts the new CRL Distribution Point from the end entity certificate
     /// and all the intermediates
     pub(crate) async fn extract_dp_on_init(&self, certificate_chain: &[Vec<u8>]) -> Result<NewCrlDistributionPoints> {

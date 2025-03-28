@@ -20,9 +20,9 @@ pub type Result<T, E = Error> = core::result::Result<T, E>;
 /// Errors produced by the root module group
 #[derive(Debug, thiserror::Error)]
 pub enum Error {
-    /// Invalid Context. This context has been finished and can no longer be used.
-    #[error("This context has already been finished and can no longer be used.")]
-    InvalidContext,
+    /// Invalid [crate::transaction_context::TransactionContext]. This context has been finished and can no longer be used.
+    #[error("This transaction context has already been finished and can no longer be used.")]
+    InvalidTransactionContext,
     /// The proteus client has been called but has not been initialized yet
     #[error("Proteus client hasn't been initialized")]
     ProteusNotInitialized,
@@ -81,9 +81,9 @@ mod tests {
 
     #[test]
     fn can_unpack_wrapped_error() {
-        let inner = Error::InvalidContext;
+        let inner = Error::InvalidTransactionContext;
         let outer = RecursiveError::root("wrapping the inner for test purposes")(inner);
         let message = outer.innermost_error_message();
-        assert_eq!(message, Error::InvalidContext.to_string());
+        assert_eq!(message, Error::InvalidTransactionContext.to_string());
     }
 }

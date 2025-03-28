@@ -28,10 +28,10 @@ pub mod x509;
 #[cfg(feature = "proteus")]
 pub mod proteus_utils;
 
-use crate::context::CentralContext;
 use crate::e2e_identity::id::{QualifiedE2eiClientId, WireQualifiedClientId};
 pub use crate::prelude::{ClientIdentifier, INITIAL_KEYING_MATERIAL_COUNT, MlsCredentialType};
 use crate::prelude::{MlsCommitBundle, MlsGroupInfoBundle};
+use crate::transaction_context::TransactionContext;
 pub(crate) use epoch_observer::TestEpochObserver;
 pub use error::Error as TestError;
 use error::Result;
@@ -90,7 +90,7 @@ pub(crate) use innermost_source_matches;
 
 #[derive(Debug, Clone)]
 pub struct ClientContext {
-    pub context: CentralContext,
+    pub context: TransactionContext,
     pub client: Client,
     pub mls_transport: Arc<dyn MlsTransportTestExt>,
     pub x509_test_chain: std::sync::Arc<Option<X509TestChain>>,

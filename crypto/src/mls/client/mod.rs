@@ -254,7 +254,7 @@ impl Client {
 
     /// Get an immutable view of an `MlsConversation`.
     ///
-    /// Because it operates on the raw conversation type, this may be faster than [crate::mls::CentralContext::conversation].
+    /// Because it operates on the raw conversation type, this may be faster than [crate::mls::TransactionContext::conversation].
     /// for transient and immutable purposes. For long-lived or mutable purposes, prefer the other method.
     pub async fn get_raw_conversation(&self, id: &ConversationId) -> Result<ImmutableConversation> {
         let raw_conversation = GroupStore::fetch_from_keystore(id, &self.mls_backend.keystore(), None)

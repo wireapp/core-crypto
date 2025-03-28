@@ -1,5 +1,5 @@
 use super::{Error, Result};
-use crate::{MlsError, RecursiveError, context::CentralContext, e2e_identity::CrlRegistration};
+use crate::{MlsError, RecursiveError, e2e_identity::CrlRegistration, transaction_context::TransactionContext};
 use core_crypto_keystore::{
     connection::FetchFromDatabase,
     entities::{E2eiAcmeCA, E2eiCrl, E2eiIntermediateCert},
@@ -44,7 +44,7 @@ pub struct E2eiDumpedPkiEnv {
     pub crls: Vec<String>,
 }
 
-impl CentralContext {
+impl TransactionContext {
     /// See [Client::e2ei_is_pki_env_setup].
     /// Unlike [Client::e2ei_is_pki_env_setup], this function returns a result.
     pub async fn e2ei_is_pki_env_setup(&self) -> Result<bool> {

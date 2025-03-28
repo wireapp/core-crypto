@@ -1,8 +1,8 @@
 use openmls_traits::{OpenMlsCryptoProvider, random::OpenMlsRand};
 
 use super::Result;
-use crate::context::CentralContext;
 use crate::prelude::E2eiEnrollment;
+use crate::transaction_context::TransactionContext;
 use crate::{KeystoreError, MlsError, RecursiveError};
 use core_crypto_keystore::CryptoKeystoreMls;
 use mls_crypto_provider::MlsCryptoProvider;
@@ -39,9 +39,9 @@ impl E2eiEnrollment {
     }
 }
 
-impl CentralContext {
+impl TransactionContext {
     /// Allows persisting an active enrollment (for example while redirecting the user during OAuth)
-    /// in order to resume it later with [CentralContext::e2ei_enrollment_stash_pop]
+    /// in order to resume it later with [TransactionContext::e2ei_enrollment_stash_pop]
     ///
     /// # Arguments
     /// * `enrollment` - the enrollment instance to persist
@@ -62,7 +62,7 @@ impl CentralContext {
     /// Fetches the persisted enrollment and deletes it from the keystore
     ///
     /// # Arguments
-    /// * `handle` - returned by [CentralContext::e2ei_enrollment_stash]
+    /// * `handle` - returned by [TransactionContext::e2ei_enrollment_stash]
     pub async fn e2ei_enrollment_stash_pop(&self, handle: EnrollmentHandle) -> Result<E2eiEnrollment> {
         E2eiEnrollment::stash_pop(
             &self

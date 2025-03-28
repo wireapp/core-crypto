@@ -1,10 +1,10 @@
 use std::{fmt::Display, time::Duration};
 
 use crate::{
-    context::CentralContext,
     e2e_identity::{self, id::QualifiedE2eiClientId},
     mls::client::identifier::ClientIdentifier,
     prelude::CertificateBundle,
+    transaction_context::TransactionContext,
 };
 use mls_crypto_provider::{CertProfile, CertificateGenerationArgs, MlsCryptoProvider, PkiKeypair, RustCrypto};
 use openmls_traits::{crypto::OpenMlsCrypto, random::OpenMlsRand, types::SignatureScheme};
@@ -326,7 +326,7 @@ impl X509TestChain {
         other_chain.actors.extend(self_actors);
     }
 
-    pub async fn register_with_central(&self, context: &CentralContext) {
+    pub async fn register_with_central(&self, context: &TransactionContext) {
         use x509_cert::der::{Encode as _, EncodePem as _};
         match context
             .e2ei_register_acme_ca(

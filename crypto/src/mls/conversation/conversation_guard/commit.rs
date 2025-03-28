@@ -208,9 +208,9 @@ impl ConversationGuard {
 
     /// Send a commit in a conversation for changing the credential. Requires first
     /// having enrolled a new X509 certificate with either
-    /// [crate::context::CentralContext::e2ei_new_activation_enrollment] or
-    /// [crate::context::CentralContext::e2ei_new_rotate_enrollment] and having saved it with
-    /// [crate::context::CentralContext::save_x509_credential].
+    /// [crate::transaction_context::TransactionContext::e2ei_new_activation_enrollment] or
+    /// [crate::transaction_context::TransactionContext::e2ei_new_rotate_enrollment] and having saved it with
+    /// [crate::transaction_context::TransactionContext::save_x509_credential].
     pub async fn e2ei_rotate(&mut self, cb: Option<&CredentialBundle>) -> Result<()> {
         let client = &self.mls_client().await?;
         let backend = &self.mls_provider().await?;

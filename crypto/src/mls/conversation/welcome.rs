@@ -3,11 +3,11 @@ use std::borrow::BorrowMut;
 use super::{Error, Result};
 use crate::{
     LeafError, MlsError, RecursiveError,
-    context::CentralContext,
     e2e_identity::init_certificates::NewCrlDistributionPoints,
     group_store::GroupStore,
     mls::credential::crl::{extract_crl_uris_from_group, get_new_crl_distribution_points},
     prelude::{ConversationId, MlsConversation, MlsConversationConfiguration, MlsCustomConfiguration},
+    transaction_context::TransactionContext,
 };
 use core_crypto_keystore::{connection::FetchFromDatabase, entities::PersistedMlsPendingGroup};
 use mls_crypto_provider::MlsCryptoProvider;
@@ -24,7 +24,7 @@ pub struct WelcomeBundle {
     pub crl_new_distribution_points: NewCrlDistributionPoints,
 }
 
-impl CentralContext {
+impl TransactionContext {
     /// Create a conversation from a TLS serialized MLS Welcome message. The `MlsConversationConfiguration` used in this function will be the default implementation.
     ///
     /// # Arguments
@@ -35,7 +35,7 @@ impl CentralContext {
     /// This function will return the conversation/group id
     ///
     /// # Errors
-    /// see [CentralContext::process_welcome_message]
+    /// see [TransactionContext::process_welcome_message]
     #[cfg_attr(test, crate::dispotent)]
     pub async fn process_raw_welcome_message(
         &self,

@@ -8,10 +8,10 @@ use mls_crypto_provider::MlsCryptoProvider;
 
 use crate::{
     RecursiveError,
-    context::CentralContext,
     e2e_identity::{crypto::E2eiSignatureKeypair, id::QualifiedE2eiClientId},
     mls::credential::x509::CertificatePrivateKey,
     prelude::{CertificateBundle, MlsCiphersuite, id::ClientId, identifier::ClientIdentifier},
+    transaction_context::TransactionContext,
 };
 
 pub(crate) mod conversation_state;
@@ -42,7 +42,7 @@ pub struct CrlRegistration {
     pub expiration: Option<u64>,
 }
 
-impl CentralContext {
+impl TransactionContext {
     /// Creates an enrollment instance with private key material you can use in order to fetch
     /// a new x509 certificate from the acme server.
     ///
@@ -597,10 +597,10 @@ pub(crate) mod tests {
         e2e_identity::{Error, refresh_token::RefreshToken},
     };
     use crate::{
-        context::CentralContext,
         e2e_identity::{Result, id::QualifiedE2eiClientId, tests::x509::X509TestChain},
         prelude::*,
         test_utils::{context::TEAM, *},
+        transaction_context::TransactionContext,
     };
 
     wasm_bindgen_test_configure!(run_in_browser);
@@ -715,7 +715,7 @@ pub(crate) mod tests {
 
     pub(crate) type RestoreFnReturn<'a> = std::pin::Pin<Box<dyn std::future::Future<Output = E2eiEnrollment> + 'a>>;
 
-    pub(crate) fn noop_restore(e: E2eiEnrollment, _cc: &CentralContext) -> RestoreFnReturn<'_> {
+    pub(crate) fn noop_restore(e: E2eiEnrollment, _cc: &TransactionContext) -> RestoreFnReturn<'_> {
         Box::pin(async move { e })
     }
 
@@ -724,7 +724,7 @@ pub(crate) mod tests {
 
     /// Helps the compiler with its lifetime inference rules while passing async closures
     pub(crate) struct E2eiInitWrapper<'a> {
-        pub(crate) context: &'a CentralContext,
+        pub(crate) context: &'a TransactionContext,
         pub(crate) case: &'a TestCase,
     }
 
@@ -737,7 +737,7 @@ pub(crate) mod tests {
         #[cfg(target_family = "wasm")] _is_renewal: bool,
         init: impl Fn(E2eiInitWrapper) -> InitFnReturn<'_>,
         // used to verify persisting the instance actually does restore it entirely
-        restore: impl Fn(E2eiEnrollment, &'a CentralContext) -> RestoreFnReturn<'a>,
+        restore: impl Fn(E2eiEnrollment, &'a TransactionContext) -> RestoreFnReturn<'a>,
     ) -> Result<(E2eiEnrollment, String)> {
         x509_test_chain.register_with_central(&ctx.context).await;
         #[cfg(not(target_family = "wasm"))]

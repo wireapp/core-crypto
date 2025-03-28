@@ -31,9 +31,9 @@ pub mod e2e_identity;
 /// Proteus Abstraction
 pub mod proteus;
 
-pub mod context;
 mod group_store;
 mod obfuscate;
+pub mod transaction_context;
 
 mod build_metadata;
 use crate::prelude::MlsCommitBundle;

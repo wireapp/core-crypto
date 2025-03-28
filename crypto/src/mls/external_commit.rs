@@ -4,17 +4,16 @@ use super::Result;
 use crate::mls::conversation::pending_conversation::PendingConversation;
 use crate::prelude::{MlsCommitBundle, WelcomeBundle};
 use crate::{
-    LeafError, MlsError, RecursiveError,
-    context::CentralContext,
-    mls,
+    LeafError, MlsError, RecursiveError, mls,
     mls::credential::crl::{extract_crl_uris_from_group, get_new_crl_distribution_points},
     prelude::{
         ConversationId, MlsCiphersuite, MlsConversationConfiguration, MlsCredentialType, MlsCustomConfiguration,
         MlsGroupInfoBundle,
     },
+    transaction_context::TransactionContext,
 };
 
-impl CentralContext {
+impl TransactionContext {
     /// Issues an external commit and stores the group in a temporary table. This method is
     /// intended for example when a new client wants to join the user's existing groups.
     /// On success this function will return the group id and a message to be fanned out to other
@@ -23,7 +22,7 @@ impl CentralContext {
     /// If the Delivery Service accepts the external commit, you have to
     /// [PendingConversation::merge] in order to get back
     /// a functional MLS group. On the opposite, if it rejects it, you can either
-    /// retry by just calling again [CentralContext::join_by_external_commit].
+    /// retry by just calling again [TransactionContext::join_by_external_commit].
     ///
     /// # Arguments
     /// * `group_info` - a GroupInfo wrapped in a MLS message. it can be obtained by deserializing a TLS serialized `GroupInfo` object

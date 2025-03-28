@@ -7,8 +7,8 @@ use super::{ConversationWithMls, Error, MlsConversation, Result};
 use crate::mls::credential::CredentialBundle;
 use crate::prelude::ConversationId;
 use crate::{
-    KeystoreError, LeafError, RecursiveError, context::CentralContext, group_store::GroupStoreValue,
-    prelude::MlsGroupInfoBundle,
+    KeystoreError, LeafError, RecursiveError, group_store::GroupStoreValue, prelude::MlsGroupInfoBundle,
+    transaction_context::TransactionContext,
 };
 use async_lock::{RwLockReadGuard, RwLockWriteGuard};
 use core_crypto_keystore::CryptoKeystoreMls;
@@ -20,20 +20,20 @@ use std::sync::Arc;
 ///
 /// By doing so, it permits mutable accesses to the conversation. This in turn
 /// means that we don't have to duplicate the entire `MlsConversation` API
-/// on `CentralContext`.
+/// on `TransactionContext`.
 #[derive(Debug)]
 pub struct ConversationGuard {
     inner: GroupStoreValue<MlsConversation>,
-    central_context: CentralContext,
+    central_context: TransactionContext,
 }
 
 #[cfg_attr(target_family = "wasm", async_trait::async_trait(?Send))]
 #[cfg_attr(not(target_family = "wasm"), async_trait::async_trait)]
 impl<'inner> ConversationWithMls<'inner> for ConversationGuard {
-    type Context = CentralContext;
+    type Context = TransactionContext;
     type Conversation = RwLockReadGuard<'inner, MlsConversation>;
 
-    async fn context(&self) -> Result<CentralContext> {
+    async fn context(&self) -> Result<TransactionContext> {
         Ok(self.central_context.clone())
     }
 
@@ -43,7 +43,7 @@ impl<'inner> ConversationWithMls<'inner> for ConversationGuard {
 }
 
 impl ConversationGuard {
-    pub(crate) fn new(inner: GroupStoreValue<MlsConversation>, central_context: CentralContext) -> Self {
+    pub(crate) fn new(inner: GroupStoreValue<MlsConversation>, central_context: TransactionContext) -> Self {
         Self { inner, central_context }
     }
 

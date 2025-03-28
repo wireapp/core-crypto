@@ -3,12 +3,12 @@ use openmls::prelude::{GroupEpoch, GroupId, JoinProposal, MlsMessageOut};
 use super::Result;
 use crate::{
     LeafError, MlsError, RecursiveError,
-    context::CentralContext,
     mls::{self, ConversationId, credential::typ::MlsCredentialType},
     prelude::MlsCiphersuite,
+    transaction_context::TransactionContext,
 };
 
-impl CentralContext {
+impl TransactionContext {
     /// Crafts a new external Add proposal. Enables a client outside a group to request addition to this group.
     /// For Wire only, the client must belong to an user already in the group
     ///
@@ -24,7 +24,7 @@ impl CentralContext {
     /// # Errors
     /// Errors resulting from the creation of the proposal within OpenMls.
     /// Fails when `credential_type` is [MlsCredentialType::X509] and no Credential has been created
-    /// for it beforehand with [CentralContext::e2ei_mls_init_only] or variants.
+    /// for it beforehand with [TransactionContext::e2ei_mls_init_only] or variants.
     #[cfg_attr(test, crate::dispotent)]
     pub async fn new_external_add_proposal(
         &self,

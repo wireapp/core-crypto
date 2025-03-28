@@ -3,20 +3,20 @@ use super::{Error, Result};
 use crate::e2e_identity::refresh_token::RefreshToken;
 use crate::{
     MlsError, RecursiveError,
-    context::CentralContext,
     e2e_identity::init_certificates::NewCrlDistributionPoints,
     mls::credential::{ext::CredentialExt, x509::CertificatePrivateKey},
     prelude::{CertificateBundle, E2eiEnrollment, MlsCiphersuite, MlsCredentialType},
+    transaction_context::TransactionContext,
 };
 use core_crypto_keystore::{CryptoKeystoreMls, connection::FetchFromDatabase, entities::MlsKeyPackage};
 use openmls::prelude::KeyPackage;
 use openmls_traits::OpenMlsCryptoProvider;
 
-impl CentralContext {
+impl TransactionContext {
     /// Generates an E2EI enrollment instance for a "regular" client (with a Basic credential)
     /// willing to migrate to E2EI. As a consequence, this method does not support changing the
     /// ClientId which should remain the same as the Basic one.
-    /// Once the enrollment is finished, use the instance in [CentralContext::save_x509_credential]
+    /// Once the enrollment is finished, use the instance in [TransactionContext::save_x509_credential]
     /// to save the new credential.
     pub async fn e2ei_new_activation_enrollment(
         &self,
@@ -60,7 +60,7 @@ impl CentralContext {
     /// having to change/rotate their credential, either because the former one is expired or it
     /// has been revoked. As a consequence, this method does not support changing neither ClientId which
     /// should remain the same as the previous one. It lets you change the DisplayName or the handle
-    /// if you need to. Once the enrollment is finished, use the instance in [CentralContext::save_x509_credential] to do the rotation.
+    /// if you need to. Once the enrollment is finished, use the instance in [TransactionContext::save_x509_credential] to do the rotation.
     pub async fn e2ei_new_rotate_enrollment(
         &self,
         display_name: Option<String>,
@@ -108,8 +108,8 @@ impl CentralContext {
     }
 
     /// Saves a new X509 credential. Requires first
-    /// having enrolled a new X509 certificate with either [CentralContext::e2ei_new_activation_enrollment]
-    /// or [CentralContext::e2ei_new_rotate_enrollment].
+    /// having enrolled a new X509 certificate with either [TransactionContext::e2ei_new_activation_enrollment]
+    /// or [TransactionContext::e2ei_new_rotate_enrollment].
     ///
     /// # Expected actions to perform after this function (in this order)
     /// 1. Rotate credentials for each conversation in [crate::mls::conversation::ConversationGuard::e2ei_rotate]

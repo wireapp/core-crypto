@@ -31,7 +31,7 @@ use crate::{
     prelude::{MlsCiphersuite, MlsCredentialType},
 };
 
-use crate::context::CentralContext;
+use crate::transaction_context::TransactionContext;
 
 pub(crate) mod commit;
 mod commit_delay;
@@ -73,7 +73,7 @@ use super::credential::CredentialBundle;
 #[cfg_attr(target_family = "wasm", async_trait::async_trait(?Send))]
 #[cfg_attr(not(target_family = "wasm"), async_trait::async_trait)]
 pub(crate) trait ConversationWithMls<'a> {
-    /// [Client] or [CentralContext] both implement [HasClientAndProvider].
+    /// [Client] or [TransactionContext] both implement [HasClientAndProvider].
     type Context: HasClientAndProvider;
 
     type Conversation: Deref<Target = MlsConversation> + Send;
@@ -480,7 +480,7 @@ impl MlsConversation {
     }
 }
 
-impl CentralContext {
+impl TransactionContext {
     /// Acquire a conversation guard.
     ///
     /// This helper struct permits mutations on a conversation.
@@ -773,9 +773,9 @@ mod tests {
         use wasm_bindgen_test::*;
 
         use super::Error;
-        use crate::context::CentralContext;
         use crate::mls::conversation::Conversation as _;
         use crate::prelude::{ClientId, ConversationId, MlsCredentialType};
+        use crate::transaction_context::TransactionContext;
         use crate::{
             prelude::{DeviceStatus, E2eiConversationState},
             test_utils::*,
@@ -784,7 +784,7 @@ mod tests {
         wasm_bindgen_test_configure!(run_in_browser);
 
         async fn all_identities_check<const N: usize>(
-            central: &CentralContext,
+            central: &TransactionContext,
             id: &ConversationId,
             user_ids: &[String; N],
             expected_sizes: [usize; N],
@@ -817,7 +817,7 @@ mod tests {
         }
 
         async fn check_identities_device_status<const N: usize>(
-            central: &CentralContext,
+            central: &TransactionContext,
             id: &ConversationId,
             client_ids: &[ClientId; N],
             name_status: &[(&'static str, DeviceStatus); N],
