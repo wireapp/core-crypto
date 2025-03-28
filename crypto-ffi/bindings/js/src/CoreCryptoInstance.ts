@@ -30,6 +30,7 @@ import {
     E2eiDumpedPkiEnv,
     version as version_ffi,
     WireIdentity,
+    CoreCryptoLogger as CoreCryptoLoggerFfi,
 } from "./core-crypto-ffi.js";
 
 import { CoreCryptoError } from "./CoreCryptoError.js";
@@ -112,8 +113,8 @@ export interface EpochObserver {
  * @param logger - the interface to be called when something is going to be logged
  * @param _ctx - ignored
  **/
-export function setLogger(logger: CoreCryptoLogger, _ctx: unknown = null): void {
-    CoreCryptoFfi.set_logger(logger);
+export function setLogger(logger: CoreCryptoLogger): void {
+    CoreCryptoFfi.set_logger(loggerIntoFfi(logger));
 }
 
 /**
@@ -127,6 +128,12 @@ export interface CoreCryptoLogger {
      * @param context - additional context captured when the log was made.
      **/
     log: (level: CoreCryptoLogLevel, message: string, context: string) => void;
+}
+
+function loggerIntoFfi(logger: CoreCryptoLogger): CoreCryptoLoggerFfi {
+    const logFn = logger.log;
+    const logThis = logger;
+    return new CoreCryptoLoggerFfi(logFn, logThis);
 }
 
 /**
@@ -183,7 +190,7 @@ export class CoreCrypto {
     }
 
     static setLogger(logger: CoreCryptoLogger) {
-        CoreCryptoFfi.set_logger(logger);
+        CoreCryptoFfi.set_logger(loggerIntoFfi(logger));
     }
 
     static setMaxLogLevel(level: CoreCryptoLogLevel) {

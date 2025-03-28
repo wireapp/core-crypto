@@ -38,7 +38,7 @@ describe("logger", () => {
 
                 const logs: string[] = [];
                 setLogger({
-                    log: (_, json_msg: string) => {
+                    log: (_level, json_msg: string, _context) => {
                         logs.push(json_msg);
                     },
                 });
@@ -70,12 +70,12 @@ describe("logger", () => {
 
                 const logs: string[] = [];
                 setLogger({
-                    log: () => {
+                    log: (_level, _message, _context) => {
                         throw Error("Initial logger should not be active");
                     },
                 });
                 setLogger({
-                    log: (_, json_msg: string) => {
+                    log: (_level, json_msg: string, _context) => {
                         logs.push(json_msg);
                     },
                 });
@@ -107,7 +107,7 @@ describe("logger", () => {
 
                 const logs: string[] = [];
                 setLogger({
-                    log: (_, json_msg: string) => {
+                    log: (_level, json_msg: string, _context) => {
                         logs.push(json_msg);
                     },
                 });
@@ -139,7 +139,7 @@ describe("logger", () => {
                     window.ccModule;
 
                 setLogger({
-                    log: () => {
+                    log: (_level, _message, _context) => {
                         throw Error(expectedErrorMessage);
                     },
                 });
