@@ -7,11 +7,11 @@ use core_crypto::mls::conversation::Conversation as _;
 use core_crypto::mls::conversation::Error as ConversationError;
 use core_crypto::{
     RecursiveError,
-    context::CentralContext,
     prelude::{
         CiphersuiteName, ClientId, ClientIdentifier, ConversationId, KeyPackageIn, KeyPackageRef,
         MlsConversationConfiguration, VerifiableGroupInfo,
     },
+    transaction_context::TransactionContext,
 };
 use futures_util::TryFutureExt;
 use js_sys::{Promise, Uint8Array};
@@ -26,7 +26,7 @@ pub mod proteus;
 #[wasm_bindgen]
 #[derive(Clone)]
 pub struct CoreCryptoContext {
-    pub(crate) inner: Arc<CentralContext>,
+    pub(crate) inner: Arc<TransactionContext>,
 }
 
 #[wasm_bindgen]
@@ -69,7 +69,7 @@ impl CoreCrypto {
 impl CoreCryptoContext {
     /// Returns: [`WasmCryptoResult<()>`]
     ///
-    /// see [core_crypto::context::CentralContext::set_data]
+    /// see [core_crypto::transaction_context::TransactionContext::set_data]
     pub fn set_data(&self, data: Box<[u8]>) -> Promise {
         let context = self.inner.clone();
         future_to_promise(
@@ -83,7 +83,7 @@ impl CoreCryptoContext {
 
     /// Returns: [`WasmCryptoResult<Option<js_sys::Uint8Array>>`]
     ///
-    /// see [core_crypto::context::CentralContext::get_data]
+    /// see [core_crypto::transaction_context::TransactionContext::get_data]
     pub fn get_data(&self) -> Promise {
         let context = self.inner.clone();
         future_to_promise(
@@ -100,7 +100,7 @@ impl CoreCryptoContext {
         )
     }
 
-    /// see [core_crypto::mls::context::CentralContext::mls_init]
+    /// see [core_crypto::mls::context::TransactionContext::mls_init]
     pub fn mls_init(&self, client_id: FfiClientId, ciphersuites: Box<[u16]>, nb_key_package: Option<u32>) -> Promise {
         let context = self.inner.clone();
         future_to_promise(
@@ -126,7 +126,7 @@ impl CoreCryptoContext {
 
     /// Returns [`WasmCryptoResult<Vec<u8>>`]
     ///
-    /// See [core_crypto::mls::context::CentralContext::mls_generate_keypairs]
+    /// See [core_crypto::mls::context::TransactionContext::mls_generate_keypairs]
     pub fn mls_generate_keypair(&self, ciphersuites: Box<[u16]>) -> Promise {
         let context = self.inner.clone();
         future_to_promise(
@@ -150,7 +150,7 @@ impl CoreCryptoContext {
 
     /// Returns [`WasmCryptoResult<()>`]
     ///
-    /// See [core_crypto::mls::context::CentralContext::mls_init_with_client_id]
+    /// See [core_crypto::mls::context::TransactionContext::mls_init_with_client_id]
     pub fn mls_init_with_client_id(
         &self,
         client_id: FfiClientId,
@@ -179,7 +179,7 @@ impl CoreCryptoContext {
 
     /// Returns:: [`WasmCryptoResult<js_sys::Uint8Array>`]
     ///
-    /// see [core_crypto::mls::context::CentralContext::client_public_key]
+    /// see [core_crypto::mls::context::TransactionContext::client_public_key]
     pub fn client_public_key(&self, ciphersuite: Ciphersuite, credential_type: CredentialType) -> Promise {
         let ciphersuite: CiphersuiteName = ciphersuite.into();
         let context = self.inner.clone();
@@ -197,7 +197,7 @@ impl CoreCryptoContext {
 
     /// Returns: [`WasmCryptoResult<js_sys::Array<js_sys::Uint8Array>>`]
     ///
-    /// see [core_crypto::mls::context::CentralContext::get_or_create_client_keypackages]
+    /// see [core_crypto::mls::context::TransactionContext::get_or_create_client_keypackages]
     pub fn client_keypackages(
         &self,
         ciphersuite: Ciphersuite,
@@ -235,7 +235,7 @@ impl CoreCryptoContext {
 
     /// Returns: [`WasmCryptoResult<usize>`]
     ///
-    /// see [core_crypto::mls::context::CentralContext::client_valid_key_packages_count]
+    /// see [core_crypto::mls::context::TransactionContext::client_valid_key_packages_count]
     pub fn client_valid_keypackages_count(&self, ciphersuite: Ciphersuite, credential_type: CredentialType) -> Promise {
         let ciphersuite: CiphersuiteName = ciphersuite.into();
         let context = self.inner.clone();
@@ -253,7 +253,7 @@ impl CoreCryptoContext {
 
     /// Returns: [`WasmCryptoResult<usize>`]
     ///
-    /// see [core_crypto::mls::context::CentralContext::delete_keypackages]
+    /// see [core_crypto::mls::context::TransactionContext::delete_keypackages]
     #[allow(clippy::boxed_local)]
     pub fn delete_keypackages(&self, refs: Box<[Uint8Array]>) -> Promise {
         let refs = refs
@@ -277,7 +277,7 @@ impl CoreCryptoContext {
 
     /// Returns: [`WasmCryptoResult<()>`]
     ///
-    /// see [core_crypto::mls::context::CentralContext::new_conversation]
+    /// see [core_crypto::mls::context::TransactionContext::new_conversation]
     pub fn create_conversation(
         &self,
         conversation_id: ConversationId,
@@ -327,7 +327,7 @@ impl CoreCryptoContext {
 
     /// Returns [`WasmCryptoResult<Ciphersuite>`]
     ///
-    /// see [core_crypto::mls::context::CentralContext::conversation_ciphersuite]
+    /// see [core_crypto::mls::context::TransactionContext::conversation_ciphersuite]
     pub fn conversation_ciphersuite(&self, conversation_id: ConversationId) -> Promise {
         let context = self.inner.clone();
         future_to_promise(
@@ -341,7 +341,7 @@ impl CoreCryptoContext {
 
     /// Returns: [`bool`]
     ///
-    /// see [core_crypto::mls::context::CentralContext::conversation_exists]
+    /// see [core_crypto::mls::context::TransactionContext::conversation_exists]
     pub fn conversation_exists(&self, conversation_id: ConversationId) -> Promise {
         let context = self.inner.clone();
         future_to_promise(
@@ -358,7 +358,7 @@ impl CoreCryptoContext {
 
     /// Returns: [`WasmCryptoResult<Uint8Array>`]
     ///
-    /// see [core_crypto::mls::context::CentralContext::process_raw_welcome_message]
+    /// see [core_crypto::mls::context::TransactionContext::process_raw_welcome_message]
     pub fn process_welcome_message(
         &self,
         welcome_message: Box<[u8]>,
@@ -411,7 +411,7 @@ impl CoreCryptoContext {
 
     /// Returns: [`WasmCryptoResult<()>`]
     ///
-    /// see [core_crypto::mls::context::CentralContext::remove_members_from_conversation]
+    /// see [core_crypto::mls::context::TransactionContext::remove_members_from_conversation]
     pub fn remove_clients_from_conversation(
         &self,
         conversation_id: ConversationId,
@@ -460,7 +460,7 @@ impl CoreCryptoContext {
 
     /// Returns: [`WasmCryptoResult()`]
     ///
-    /// see [core_crypto::mls::context::CentralContext::update_keying_material]
+    /// see [core_crypto::mls::context::TransactionContext::update_keying_material]
     pub fn update_keying_material(&self, conversation_id: ConversationId) -> Promise {
         let context = self.inner.clone();
         future_to_promise(
@@ -480,7 +480,7 @@ impl CoreCryptoContext {
 
     /// Returns: [`WasmCryptoResult()`]
     ///
-    /// see [core_crypto::mls::context::CentralContext::commit_pending_proposals]
+    /// see [core_crypto::mls::context::TransactionContext::commit_pending_proposals]
     pub fn commit_pending_proposals(&self, conversation_id: ConversationId) -> Promise {
         let context = self.inner.clone();
         future_to_promise(
@@ -498,7 +498,7 @@ impl CoreCryptoContext {
 
     /// Returns: [`WasmCryptoResult<()>`]
     ///
-    /// see [core_crypto::mls::context::CentralContext::wipe_conversation]
+    /// see [core_crypto::mls::context::TransactionContext::wipe_conversation]
     pub fn wipe_conversation(&self, conversation_id: ConversationId) -> Promise {
         let context = self.inner.clone();
         future_to_promise(
@@ -561,7 +561,7 @@ impl CoreCryptoContext {
     #[allow(clippy::boxed_local)]
     /// Returns: [`WasmCryptoResult<WelcomeBundle>`]
     ///
-    /// see [core_crypto::mls::context::CentralContext::join_by_external_commit]
+    /// see [core_crypto::mls::context::TransactionContext::join_by_external_commit]
     pub fn join_by_external_commit(
         &self,
         group_info: Box<[u8]>,
@@ -591,7 +591,7 @@ impl CoreCryptoContext {
 
     /// Returns: [`WasmCryptoResult<js_sys::Uint8Array>`]
     ///
-    /// see [core_crypto::mls::context::CentralContext::random_bytes]
+    /// see [core_crypto::mls::context::TransactionContext::random_bytes]
     pub fn random_bytes(&self, len: usize) -> Promise {
         let context = self.inner.clone();
         future_to_promise(

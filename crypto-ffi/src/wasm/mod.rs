@@ -1811,7 +1811,7 @@ impl CoreCrypto {
 // End-to-end identity methods
 #[wasm_bindgen]
 impl CoreCrypto {
-    /// See [core_crypto::mls::context::CentralContext::e2ei_dump_pki_env]
+    /// See [core_crypto::mls::context::TransactionContext::e2ei_dump_pki_env]
     pub async fn e2ei_dump_pki_env(&self) -> Promise {
         let central = self.inner.clone();
         future_to_promise(
@@ -1827,7 +1827,7 @@ impl CoreCrypto {
         )
     }
 
-    /// See [core_crypto::mls::context::CentralContext::e2ei_is_pki_env_setup]
+    /// See [core_crypto::mls::context::TransactionContext::e2ei_is_pki_env_setup]
     pub async fn e2ei_is_pki_env_setup(&self) -> Promise {
         let central = self.inner.clone();
         future_to_promise(async move { WasmCryptoResult::Ok(central.e2ei_is_pki_env_setup().await.into()) }.err_into())
@@ -1835,7 +1835,7 @@ impl CoreCrypto {
 
     /// Returns [`WasmCryptoResult<bool>`]
     ///
-    /// see [core_crypto::mls::context::CentralContext::e2ei_is_enabled]
+    /// see [core_crypto::mls::context::TransactionContext::e2ei_is_enabled]
     pub fn e2ei_is_enabled(&self, ciphersuite: Ciphersuite) -> Promise {
         let sc = MlsCiphersuite::from(ciphersuite).signature_algorithm();
         let central = self.inner.clone();
@@ -1908,7 +1908,7 @@ impl CoreCrypto {
     #[allow(clippy::boxed_local)]
     /// Returns: [`WasmCryptoResult<u8>`]
     ///
-    /// see [core_crypto::mls::context::CentralContext::get_credential_in_use]
+    /// see [core_crypto::mls::context::TransactionContext::get_credential_in_use]
     pub fn get_credential_in_use(&self, group_info: Box<[u8]>, credential_type: CredentialType) -> Promise {
         let central = self.inner.clone();
         future_to_promise(

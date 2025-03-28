@@ -1,10 +1,10 @@
 //! Utility for clients to get the current state of E2EI when the app resumes
 
 use super::Result;
-use crate::{RecursiveError, context::CentralContext};
+use crate::{RecursiveError, transaction_context::TransactionContext};
 use openmls_traits::types::SignatureScheme;
 
-impl CentralContext {
+impl TransactionContext {
     /// See [Client::e2ei_is_enabled]
     pub async fn e2ei_is_enabled(&self, signature_scheme: SignatureScheme) -> Result<bool> {
         let client = self

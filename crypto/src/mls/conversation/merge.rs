@@ -21,7 +21,7 @@ use crate::{MlsError, mls::MlsConversation, prelude::Client};
 
 /// Abstraction over a MLS group capable of merging a commit
 impl MlsConversation {
-    /// see [CentralContext::commit_accepted]
+    /// see [TransactionContext::commit_accepted]
     #[cfg_attr(test, crate::durable)]
     pub(crate) async fn commit_accepted(&mut self, client: &Client, backend: &MlsCryptoProvider) -> Result<()> {
         // openmls stores here all the encryption keypairs used for update proposals..

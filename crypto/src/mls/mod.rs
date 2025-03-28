@@ -10,7 +10,7 @@ use crate::{
 use mls_crypto_provider::MlsCryptoProvider;
 use openmls_traits::OpenMlsCryptoProvider;
 
-use crate::context::CentralContext;
+use crate::transaction_context::TransactionContext;
 
 pub(crate) mod ciphersuite;
 pub(crate) mod client;
@@ -161,7 +161,7 @@ impl HasClientAndProvider for Client {
     }
 }
 
-impl CentralContext {
+impl TransactionContext {
     /// Initializes the MLS client if [super::CoreCrypto] has previously been initialized with
     /// `CoreCrypto::deferred_init` instead of `CoreCrypto::new`.
     /// This should stay as long as proteus is supported. Then it should be removed.
@@ -204,7 +204,7 @@ impl CentralContext {
     }
 
     /// Generates MLS KeyPairs/CredentialBundle with a temporary, random client ID.
-    /// This method is designed to be used in conjunction with [CentralContext::mls_init_with_client_id] and represents the first step in this process.
+    /// This method is designed to be used in conjunction with [TransactionContext::mls_init_with_client_id] and represents the first step in this process.
     ///
     /// This returns the TLS-serialized identity keys (i.e. the signature keypair's public key)
     #[cfg_attr(test, crate::dispotent)]
@@ -226,7 +226,7 @@ impl CentralContext {
 
     /// Updates the current temporary Client ID with the newly provided one. This is the second step in the externally-generated clients process
     ///
-    /// Important: This is designed to be called after [CentralContext::mls_generate_keypairs]
+    /// Important: This is designed to be called after [TransactionContext::mls_generate_keypairs]
     #[cfg_attr(test, crate::dispotent)]
     pub async fn mls_init_with_client_id(
         &self,

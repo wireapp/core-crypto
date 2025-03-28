@@ -18,7 +18,7 @@ use serde::{Deserialize, Serialize};
 use wire_e2e_identity::prelude::parse_json_jwk;
 
 use super::Result;
-use crate::{MlsError, RecursiveError, context::CentralContext, prelude::MlsCiphersuite};
+use crate::{MlsError, RecursiveError, prelude::MlsCiphersuite, transaction_context::TransactionContext};
 
 /// Sets the config in OpenMls for the oldest possible epoch(past current) that a message can be decrypted
 pub(crate) const MAX_PAST_EPOCHS: usize = 3;
@@ -30,7 +30,7 @@ pub(crate) const OUT_OF_ORDER_TOLERANCE: u32 = 2;
 /// How many application messages can be skipped. Use this when the Delivery Service can drop application messages
 pub(crate) const MAXIMUM_FORWARD_DISTANCE: u32 = 1000;
 
-impl CentralContext {
+impl TransactionContext {
     /// Parses supplied key from Delivery Service in order to build back an [ExternalSender]
     pub async fn set_raw_external_senders(
         &self,

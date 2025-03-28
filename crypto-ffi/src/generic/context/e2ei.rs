@@ -13,7 +13,7 @@ use tls_codec::Deserialize;
 
 #[uniffi::export]
 impl CoreCryptoContext {
-    /// See [core_crypto::context::CentralContext::e2ei_new_enrollment]
+    /// See [core_crypto::transaction_context::TransactionContext::e2ei_new_enrollment]
     pub async fn e2ei_new_enrollment(
         &self,
         client_id: String,
@@ -39,7 +39,7 @@ impl CoreCryptoContext {
             .map_err(Into::into)
     }
 
-    /// See [core_crypto::context::CentralContext::e2ei_new_activation_enrollment]
+    /// See [core_crypto::transaction_context::TransactionContext::e2ei_new_activation_enrollment]
     pub async fn e2ei_new_activation_enrollment(
         &self,
         display_name: String,
@@ -57,7 +57,7 @@ impl CoreCryptoContext {
             .map(E2eiEnrollment)?)
     }
 
-    /// See [core_crypto::context::CentralContext::e2ei_new_rotate_enrollment]
+    /// See [core_crypto::transaction_context::TransactionContext::e2ei_new_rotate_enrollment]
     pub async fn e2ei_new_rotate_enrollment(
         &self,
         display_name: Option<String>,
@@ -75,13 +75,13 @@ impl CoreCryptoContext {
             .map(E2eiEnrollment)?)
     }
 
-    /// See [core_crypto::context::CentralContext::e2ei_register_acme_ca]
+    /// See [core_crypto::transaction_context::TransactionContext::e2ei_register_acme_ca]
     pub async fn e2ei_register_acme_ca(&self, trust_anchor_pem: String) -> CoreCryptoResult<()> {
         self.context.e2ei_register_acme_ca(trust_anchor_pem).await?;
         Ok(())
     }
 
-    /// See [core_crypto::context::CentralContext::e2ei_register_intermediate_ca_pem]
+    /// See [core_crypto::transaction_context::TransactionContext::e2ei_register_intermediate_ca_pem]
     pub async fn e2ei_register_intermediate_ca(&self, cert_pem: String) -> CoreCryptoResult<NewCrlDistributionPoints> {
         Ok(self
             .context
@@ -91,12 +91,12 @@ impl CoreCryptoContext {
             .into())
     }
 
-    /// See [core_crypto::context::CentralContext::e2ei_register_crl]
+    /// See [core_crypto::transaction_context::TransactionContext::e2ei_register_crl]
     pub async fn e2ei_register_crl(&self, crl_dp: String, crl_der: Vec<u8>) -> CoreCryptoResult<CrlRegistration> {
         Ok(self.context.e2ei_register_crl(crl_dp, crl_der).await.map(Into::into)?)
     }
 
-    /// See [core_crypto::context::CentralContext::e2ei_mls_init_only]
+    /// See [core_crypto::transaction_context::TransactionContext::e2ei_mls_init_only]
     pub async fn e2ei_mls_init_only(
         &self,
         enrollment: std::sync::Arc<E2eiEnrollment>,
@@ -130,7 +130,7 @@ impl CoreCryptoContext {
             .await?)
     }
 
-    /// See [core_crypto::context::CentralContext::save_x509_credential]
+    /// See [core_crypto::transaction_context::TransactionContext::save_x509_credential]
     pub async fn save_x509_credential(
         &self,
         enrollment: std::sync::Arc<E2eiEnrollment>,
@@ -144,7 +144,7 @@ impl CoreCryptoContext {
             .into())
     }
 
-    /// See [core_crypto::context::CentralContext::delete_stale_key_packages]
+    /// See [core_crypto::transaction_context::TransactionContext::delete_stale_key_packages]
     pub async fn delete_stale_key_packages(&self, ciphersuite: Ciphersuite) -> CoreCryptoResult<()> {
         self.context
             .delete_stale_key_packages(ciphersuite.into())
@@ -152,7 +152,7 @@ impl CoreCryptoContext {
             .map_err(Into::into)
     }
 
-    /// See [core_crypto::context::CentralContext::e2ei_enrollment_stash]
+    /// See [core_crypto::transaction_context::TransactionContext::e2ei_enrollment_stash]
     pub async fn e2ei_enrollment_stash(&self, enrollment: std::sync::Arc<E2eiEnrollment>) -> CoreCryptoResult<Vec<u8>> {
         let enrollment = std::sync::Arc::into_inner(enrollment).ok_or_else(|| {
             CoreCryptoError::Other("enrollment had multiple strong refs and could not be unpacked".into())
@@ -166,7 +166,7 @@ impl CoreCryptoContext {
         Ok(self.context.e2ei_enrollment_stash(enrollment).await?)
     }
 
-    /// See [core_crypto::context::CentralContext::e2ei_enrollment_stash_pop]
+    /// See [core_crypto::transaction_context::TransactionContext::e2ei_enrollment_stash_pop]
     pub async fn e2ei_enrollment_stash_pop(&self, handle: Vec<u8>) -> CoreCryptoResult<E2eiEnrollment> {
         Ok(self
             .context

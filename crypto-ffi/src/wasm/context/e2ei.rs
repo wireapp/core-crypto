@@ -23,7 +23,7 @@ use wasm_bindgen_futures::future_to_promise;
 impl CoreCryptoContext {
     /// Returns: [`WasmCryptoResult<E2eiEnrollment>`]
     ///
-    /// see [core_crypto::mls::context::CentralContext::e2ei_new_enrollment]
+    /// see [core_crypto::mls::context::TransactionContext::e2ei_new_enrollment]
     pub fn e2ei_new_enrollment(
         &self,
         client_id: String,
@@ -59,7 +59,7 @@ impl CoreCryptoContext {
 
     /// Returns: [`WasmCryptoResult<E2eiEnrollment>`]
     ///
-    /// see [core_crypto::mls::context::CentralContext::e2ei_new_activation_enrollment]
+    /// see [core_crypto::mls::context::TransactionContext::e2ei_new_activation_enrollment]
     pub fn e2ei_new_activation_enrollment(
         &self,
         display_name: String,
@@ -87,7 +87,7 @@ impl CoreCryptoContext {
 
     /// Returns: [`WasmCryptoResult<E2eiEnrollment>`]
     ///
-    /// see [core_crypto::mls::context::CentralContext::e2ei_new_rotate_enrollment]
+    /// see [core_crypto::mls::context::TransactionContext::e2ei_new_rotate_enrollment]
     pub fn e2ei_new_rotate_enrollment(
         &self,
         display_name: Option<String>,
@@ -113,7 +113,7 @@ impl CoreCryptoContext {
         )
     }
 
-    /// See [core_crypto::mls::context::CentralContext::e2ei_dump_pki_env]
+    /// See [core_crypto::mls::context::TransactionContext::e2ei_dump_pki_env]
     pub async fn e2ei_dump_pki_env(&self) -> Promise {
         let context = self.inner.clone();
         future_to_promise(
@@ -125,13 +125,13 @@ impl CoreCryptoContext {
         )
     }
 
-    /// See [core_crypto::mls::context::CentralContext::e2ei_is_pki_env_setup]
+    /// See [core_crypto::mls::context::TransactionContext::e2ei_is_pki_env_setup]
     pub async fn e2ei_is_pki_env_setup(&self) -> Promise {
         let context = self.inner.clone();
         future_to_promise(async move { WasmCryptoResult::Ok(context.e2ei_is_pki_env_setup().await?.into()) }.err_into())
     }
 
-    /// See [core_crypto::mls::context::CentralContext::e2ei_register_acme_ca]
+    /// See [core_crypto::mls::context::TransactionContext::e2ei_register_acme_ca]
     pub async fn e2ei_register_acme_ca(&self, trust_anchor_pem: String) -> Promise {
         let context = self.inner.clone();
         future_to_promise(
@@ -143,7 +143,7 @@ impl CoreCryptoContext {
         )
     }
 
-    /// See [core_crypto::mls::context::CentralContext::e2ei_register_intermediate_ca]
+    /// See [core_crypto::mls::context::TransactionContext::e2ei_register_intermediate_ca]
     pub async fn e2ei_register_intermediate_ca(&self, cert_pem: String) -> Promise {
         let context = self.inner.clone();
         future_to_promise(
@@ -161,7 +161,7 @@ impl CoreCryptoContext {
         )
     }
 
-    /// See [core_crypto::mls::context::CentralContext::e2ei_register_crl]
+    /// See [core_crypto::mls::context::TransactionContext::e2ei_register_crl]
     pub async fn e2ei_register_crl(&self, crl_dp: String, crl_der: Box<[u8]>) -> Promise {
         let context = self.inner.clone();
         future_to_promise(
@@ -174,7 +174,7 @@ impl CoreCryptoContext {
         )
     }
 
-    /// see [core_crypto::mls::context::CentralContext::e2ei_mls_init_only]
+    /// see [core_crypto::mls::context::TransactionContext::e2ei_mls_init_only]
     pub fn e2ei_mls_init_only(
         &self,
         enrollment: E2eiEnrollment,
@@ -224,7 +224,7 @@ impl CoreCryptoContext {
 
     /// Returns: [`WasmCryptoResult<Option<Vec<String>>>`]
     ///
-    /// see [core_crypto::mls::context::CentralContext::save_x509_credential]
+    /// see [core_crypto::mls::context::TransactionContext::save_x509_credential]
     pub fn save_x509_credential(&self, enrollment: E2eiEnrollment, certificate_chain: String) -> Promise {
         let context = self.inner.clone();
         future_to_promise(
@@ -241,7 +241,7 @@ impl CoreCryptoContext {
 
     /// Returns: [`WasmCryptoResult<()>`]
     ///
-    /// see [core_crypto::context::CentralContext::delete_stale_key_packages]
+    /// see [core_crypto::transaction_context::TransactionContext::delete_stale_key_packages]
     pub fn delete_stale_key_packages(&self, cipher_suite: Ciphersuite) -> Promise {
         let context = self.inner.clone();
         future_to_promise(
@@ -253,7 +253,7 @@ impl CoreCryptoContext {
         )
     }
 
-    /// see [core_crypto::mls::context::CentralContext::e2ei_enrollment_stash]
+    /// see [core_crypto::mls::context::TransactionContext::e2ei_enrollment_stash]
     pub fn e2ei_enrollment_stash(&self, enrollment: E2eiEnrollment) -> Promise {
         let context = self.inner.clone();
         future_to_promise(
@@ -270,7 +270,7 @@ impl CoreCryptoContext {
         )
     }
 
-    /// see [core_crypto::mls::context::CentralContext::e2ei_enrollment_stash_pop]
+    /// see [core_crypto::mls::context::TransactionContext::e2ei_enrollment_stash_pop]
     pub fn e2ei_enrollment_stash_pop(&self, handle: Box<[u8]>) -> Promise {
         let context = self.inner.clone();
         future_to_promise(
@@ -309,7 +309,7 @@ impl CoreCryptoContext {
 
     /// Returns [`WasmCryptoResult<bool>`]
     ///
-    /// see [core_crypto::mls::context::CentralContext::e2ei_is_enabled]
+    /// see [core_crypto::mls::context::TransactionContext::e2ei_is_enabled]
     pub fn e2ei_is_enabled(&self, ciphersuite: Ciphersuite) -> Promise {
         let sc = MlsCiphersuite::from(ciphersuite).signature_algorithm();
         let context = self.inner.clone();
@@ -324,7 +324,7 @@ impl CoreCryptoContext {
 
     /// Returns [`WasmCryptoResult<Vec<WireIdentity>>`]
     ///
-    /// see [core_crypto::mls::context::CentralContext::get_device_identities]
+    /// see [core_crypto::mls::context::TransactionContext::get_device_identities]
     pub fn get_device_identities(&self, conversation_id: ConversationId, device_ids: Box<[Uint8Array]>) -> Promise {
         let context = self.inner.clone();
         future_to_promise(
@@ -347,7 +347,7 @@ impl CoreCryptoContext {
 
     /// Returns [`WasmCryptoResult<HashMap<String, Vec<WireIdentity>>>`]
     ///
-    /// see [core_crypto::mls::context::CentralContext::get_user_identities]
+    /// see [core_crypto::mls::context::TransactionContext::get_user_identities]
     pub fn get_user_identities(&self, conversation_id: ConversationId, user_ids: Box<[String]>) -> Promise {
         let context = self.inner.clone();
         future_to_promise(
@@ -376,7 +376,7 @@ impl CoreCryptoContext {
     #[allow(clippy::boxed_local)]
     /// Returns: [`WasmCryptoResult<u8>`]
     ///
-    /// see [core_crypto::mls::context::CentralContext::get_credential_in_use]
+    /// see [core_crypto::mls::context::TransactionContext::get_credential_in_use]
     pub fn get_credential_in_use(&self, group_info: Box<[u8]>, credential_type: CredentialType) -> Promise {
         let context = self.inner.clone();
         future_to_promise(

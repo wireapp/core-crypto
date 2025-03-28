@@ -5,7 +5,7 @@ use crate::{
 
 use openmls_traits::OpenMlsCryptoProvider;
 
-use crate::context::CentralContext;
+use crate::transaction_context::TransactionContext;
 use openmls::{messages::group_info::VerifiableGroupInfo, prelude::Node};
 
 use super::Result;
@@ -25,7 +25,7 @@ pub enum E2eiConversationState {
     NotEnabled,
 }
 
-impl CentralContext {
+impl TransactionContext {
     /// See [Client::e2ei_verify_group_state].
     pub async fn e2ei_verify_group_state(&self, group_info: VerifiableGroupInfo) -> Result<E2eiConversationState> {
         let mls_provider = self

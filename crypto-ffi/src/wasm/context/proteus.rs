@@ -30,7 +30,7 @@ impl CoreCryptoContext {
 
     /// Returns: [`WasmCryptoResult<()>`]
     ///
-    /// See [core_crypto::context::CentralContext::proteus_session_from_prekey]
+    /// See [core_crypto::transaction_context::TransactionContext::proteus_session_from_prekey]
     pub fn proteus_session_from_prekey(&self, session_id: String, prekey: Box<[u8]>) -> Promise {
         let context = self.inner.clone();
 
@@ -47,7 +47,7 @@ impl CoreCryptoContext {
 
     /// Returns: [`WasmCryptoResult<Vec<u8>>`]
     ///
-    /// See [core_crypto::context::CentralContext::proteus_session_from_message]
+    /// See [core_crypto::transaction_context::TransactionContext::proteus_session_from_message]
     pub fn proteus_session_from_message(&self, session_id: String, envelope: Box<[u8]>) -> Promise {
         let context = self.inner.clone();
 
@@ -66,7 +66,7 @@ impl CoreCryptoContext {
     ///
     /// /// **Note**: This isn't usually needed as persisting sessions happens automatically when decrypting/encrypting messages and initializing Sessions
     ///
-    /// See [core_crypto::context::CentralContext::proteus_session_save]
+    /// See [core_crypto::transaction_context::TransactionContext::proteus_session_save]
     pub fn proteus_session_save(&self, session_id: String) -> Promise {
         let context = self.inner.clone();
 
@@ -83,7 +83,7 @@ impl CoreCryptoContext {
 
     /// Returns: [`WasmCryptoResult<()>`]
     ///
-    /// See [core_crypto::context::CentralContext::proteus_session_delete]
+    /// See [core_crypto::transaction_context::TransactionContext::proteus_session_delete]
     pub fn proteus_session_delete(&self, session_id: String) -> Promise {
         let context = self.inner.clone();
 
@@ -100,7 +100,7 @@ impl CoreCryptoContext {
 
     /// Returns: [`WasmCryptoResult<bool>`]
     ///
-    /// See [core_crypto::context::CentralContext::proteus_session_exists]
+    /// See [core_crypto::transaction_context::TransactionContext::proteus_session_exists]
     pub fn proteus_session_exists(&self, session_id: String) -> Promise {
         let context = self.inner.clone();
 
@@ -117,7 +117,7 @@ impl CoreCryptoContext {
 
     /// Returns: [`WasmCryptoResult<Vec<u8>>`]
     ///
-    /// See [core_crypto::context::CentralContext::proteus_decrypt]
+    /// See [core_crypto::transaction_context::TransactionContext::proteus_decrypt]
     pub fn proteus_decrypt(&self, session_id: String, ciphertext: Box<[u8]>) -> Promise {
         let context = self.inner.clone();
 
@@ -134,7 +134,7 @@ impl CoreCryptoContext {
 
     /// Returns: [`WasmCryptoResult<js_sys::Uint8Array>`]
     ///
-    /// See [core_crypto::context::CentralContext::proteus_encrypt]
+    /// See [core_crypto::transaction_context::TransactionContext::proteus_encrypt]
     pub fn proteus_encrypt(&self, session_id: String, plaintext: Box<[u8]>) -> Promise {
         let context = self.inner.clone();
 
@@ -150,7 +150,7 @@ impl CoreCryptoContext {
 
     /// Returns: [`WasmCryptoResult<js_sys::Map<string, Uint8Array>>`]
     ///
-    /// See [core_crypto::context::CentralContext::proteus_encrypt_batched]
+    /// See [core_crypto::transaction_context::TransactionContext::proteus_encrypt_batched]
     pub fn proteus_encrypt_batched(&self, sessions: Box<[js_sys::JsString]>, plaintext: Box<[u8]>) -> Promise {
         let context = self.inner.clone();
 
@@ -171,7 +171,7 @@ impl CoreCryptoContext {
 
     /// Returns: [`WasmCryptoResult<Uint8Array>`]
     ///
-    /// See [core_crypto::context::CentralContext::proteus_new_prekey]
+    /// See [core_crypto::transaction_context::TransactionContext::proteus_new_prekey]
     pub fn proteus_new_prekey(&self, prekey_id: u16) -> Promise {
         let context = self.inner.clone();
 
@@ -188,7 +188,7 @@ impl CoreCryptoContext {
 
     /// Returns: [`WasmCryptoResult<ProteusAutoPrekeyBundle>`]
     ///
-    /// See [core_crypto::context::CentralContext::proteus_new_prekey_auto]
+    /// See [core_crypto::transaction_context::TransactionContext::proteus_new_prekey_auto]
     pub fn proteus_new_prekey_auto(&self) -> Promise {
         let context = self.inner.clone();
         future_to_promise(
@@ -204,7 +204,7 @@ impl CoreCryptoContext {
 
     /// Returns [`WasmCryptoResult<Uint8Array>`]
     ///
-    /// See [core_crypto::context::CentralContext::proteus_last_resort_prekey]
+    /// See [core_crypto::transaction_context::TransactionContext::proteus_last_resort_prekey]
     pub fn proteus_last_resort_prekey(&self) -> Promise {
         let context = self.inner.clone();
 
@@ -218,7 +218,7 @@ impl CoreCryptoContext {
 
     /// Returns: [`WasmCryptoResult<u16>`]
     ///
-    /// See [core_crypto::context::CentralContext::proteus_last_resort_prekey_id]
+    /// See [core_crypto::transaction_context::TransactionContext::proteus_last_resort_prekey_id]
     pub fn proteus_last_resort_prekey_id() -> WasmCryptoResult<u16> {
         proteus_impl! {{
             Ok(core_crypto::CoreCrypto::proteus_last_resort_prekey_id())
@@ -227,7 +227,7 @@ impl CoreCryptoContext {
 
     /// Returns: [`WasmCryptoResult<String>`]
     ///
-    /// See [core_crypto::context::CentralContext::proteus_fingerprint]
+    /// See [core_crypto::transaction_context::TransactionContext::proteus_fingerprint]
     pub async fn proteus_fingerprint(&self) -> WasmCryptoResult<String> {
         let context = self.inner.clone();
 
@@ -252,7 +252,7 @@ impl CoreCryptoContext {
 
     /// Returns: [`WasmCryptoResult<String>`]
     ///
-    /// See [core_crypto::context::CentralContext::proteus_fingerprint_remote]
+    /// See [core_crypto::transaction_context::TransactionContext::proteus_fingerprint_remote]
     pub async fn proteus_fingerprint_remote(&self, session_id: String) -> WasmCryptoResult<String> {
         let context = self.inner.clone();
 
@@ -274,7 +274,7 @@ impl CoreCryptoContext {
 
     /// Returns: [`WasmCryptoResult<()>`]
     ///
-    /// See [core_crypto::context::CentralContext::proteus_cryptobox_migrate]
+    /// See [core_crypto::transaction_context::TransactionContext::proteus_cryptobox_migrate]
     pub fn proteus_cryptobox_migrate(&self, path: String) -> Promise {
         let context = self.inner.clone();
         future_to_promise(

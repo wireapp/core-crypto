@@ -1,5 +1,5 @@
 //! This module contains the primitives to enable transactional support on a higher level within the
-//! [Client]. All mutating operations need to be done through a [CentralContext].
+//! [Client]. All mutating operations need to be done through a [TransactionContext].
 
 use crate::mls::HasClientAndProvider;
 #[cfg(feature = "proteus")]
@@ -18,18 +18,18 @@ use std::{ops::Deref, sync::Arc};
 ///
 /// This is struct provides mutable access to the internals of Core Crypto. Every operation that
 /// causes data to be persisted needs to be done through this struct. This struct will buffer all
-/// operations in memory and when [CentralContext::finish] is called, it will persist the data into
+/// operations in memory and when [TransactionContext::finish] is called, it will persist the data into
 /// the keystore.
 #[derive(Debug, Clone)]
-pub struct CentralContext {
-    state: Arc<RwLock<ContextState>>,
+pub struct TransactionContext {
+    inner: Arc<RwLock<TransactionContextInner>>,
 }
 
 /// Due to uniffi's design, we can't force the context to be dropped after the transaction is
 /// committed. To work around that we switch the value to `Invalid` when the context is finished
 /// and throw errors if something is called
 #[derive(Debug, Clone)]
-enum ContextState {
+enum TransactionContextInner {
     Valid {
         provider: MlsCryptoProvider,
         transport: Arc<RwLock<Option<Arc<dyn MlsTransport + 'static>>>>,
@@ -43,10 +43,10 @@ enum ContextState {
 
 impl CoreCrypto {
     /// Creates a new transaction. All operations that persist data will be
-    /// buffered in memory and when [CentralContext::finish] is called, the data will be persisted
+    /// buffered in memory and when [TransactionContext::finish] is called, the data will be persisted
     /// in a single database transaction.
-    pub async fn new_transaction(&self) -> Result<CentralContext> {
-        CentralContext::new(
+    pub async fn new_transaction(&self) -> Result<TransactionContext> {
+        TransactionContext::new(
             &self.mls,
             #[cfg(feature = "proteus")]
             self.proteus.clone(),
@@ -57,7 +57,7 @@ impl CoreCrypto {
 
 #[cfg_attr(target_family = "wasm", async_trait::async_trait(?Send))]
 #[cfg_attr(not(target_family = "wasm"), async_trait::async_trait)]
-impl HasClientAndProvider for CentralContext {
+impl HasClientAndProvider for TransactionContext {
     async fn client(&self) -> crate::mls::Result<Client> {
         self.mls_client()
             .await
@@ -73,7 +73,7 @@ impl HasClientAndProvider for CentralContext {
     }
 }
 
-impl CentralContext {
+impl TransactionContext {
     async fn new(
         client: &Client,
         #[cfg(feature = "proteus")] proteus_central: Arc<Mutex<Option<ProteusCentral>>>,
@@ -87,8 +87,8 @@ impl CentralContext {
         let callbacks = client.transport.clone();
         let mls_client = client.clone();
         Ok(Self {
-            state: Arc::new(
-                ContextState::Valid {
+            inner: Arc::new(
+                TransactionContextInner::Valid {
                     mls_client,
                     transport: callbacks,
                     provider: client.mls_backend.clone(),
@@ -102,18 +102,18 @@ impl CentralContext {
     }
 
     pub(crate) async fn mls_client(&self) -> Result<Client> {
-        match self.state.read().await.deref() {
-            ContextState::Valid { mls_client, .. } => Ok(mls_client.clone()),
-            ContextState::Invalid => Err(Error::InvalidContext),
+        match self.inner.read().await.deref() {
+            TransactionContextInner::Valid { mls_client, .. } => Ok(mls_client.clone()),
+            TransactionContextInner::Invalid => Err(Error::InvalidTransactionContext),
         }
     }
 
     pub(crate) async fn mls_transport(&self) -> Result<RwLockReadGuardArc<Option<Arc<dyn MlsTransport + 'static>>>> {
-        match self.state.read().await.deref() {
-            ContextState::Valid {
+        match self.inner.read().await.deref() {
+            TransactionContextInner::Valid {
                 transport: callbacks, ..
             } => Ok(callbacks.read_arc().await),
-            ContextState::Invalid => Err(Error::InvalidContext),
+            TransactionContextInner::Invalid => Err(Error::InvalidTransactionContext),
         }
     }
 
@@ -122,42 +122,42 @@ impl CentralContext {
         &self,
         callbacks: Option<Arc<dyn MlsTransport + 'static>>,
     ) -> Result<()> {
-        match self.state.read().await.deref() {
-            ContextState::Valid { transport: cbs, .. } => {
+        match self.inner.read().await.deref() {
+            TransactionContextInner::Valid { transport: cbs, .. } => {
                 *cbs.write_arc().await = callbacks;
                 Ok(())
             }
-            ContextState::Invalid => Err(Error::InvalidContext),
+            TransactionContextInner::Invalid => Err(Error::InvalidTransactionContext),
         }
     }
 
     /// Clones all references that the [MlsCryptoProvider] comprises.
     pub async fn mls_provider(&self) -> Result<MlsCryptoProvider> {
-        match self.state.read().await.deref() {
-            ContextState::Valid { provider, .. } => Ok(provider.clone()),
-            ContextState::Invalid => Err(Error::InvalidContext),
+        match self.inner.read().await.deref() {
+            TransactionContextInner::Valid { provider, .. } => Ok(provider.clone()),
+            TransactionContextInner::Invalid => Err(Error::InvalidTransactionContext),
         }
     }
 
     pub(crate) async fn keystore(&self) -> Result<CryptoKeystore> {
-        match self.state.read().await.deref() {
-            ContextState::Valid { provider, .. } => Ok(provider.keystore()),
-            ContextState::Invalid => Err(Error::InvalidContext),
+        match self.inner.read().await.deref() {
+            TransactionContextInner::Valid { provider, .. } => Ok(provider.keystore()),
+            TransactionContextInner::Invalid => Err(Error::InvalidTransactionContext),
         }
     }
 
     pub(crate) async fn mls_groups(&self) -> Result<RwLockWriteGuardArc<GroupStore<MlsConversation>>> {
-        match self.state.read().await.deref() {
-            ContextState::Valid { mls_groups, .. } => Ok(mls_groups.write_arc().await),
-            ContextState::Invalid => Err(Error::InvalidContext),
+        match self.inner.read().await.deref() {
+            TransactionContextInner::Valid { mls_groups, .. } => Ok(mls_groups.write_arc().await),
+            TransactionContextInner::Invalid => Err(Error::InvalidTransactionContext),
         }
     }
 
     #[cfg(feature = "proteus")]
     pub(crate) async fn proteus_central(&self) -> Result<Arc<Mutex<Option<ProteusCentral>>>> {
-        match self.state.read().await.deref() {
-            ContextState::Valid { proteus_central, .. } => Ok(proteus_central.clone()),
-            ContextState::Invalid => Err(Error::InvalidContext),
+        match self.inner.read().await.deref() {
+            TransactionContextInner::Valid { proteus_central, .. } => Ok(proteus_central.clone()),
+            TransactionContextInner::Invalid => Err(Error::InvalidTransactionContext),
         }
     }
 
@@ -165,9 +165,9 @@ impl CentralContext {
     /// the keystore. After that the internal state is switched to invalid, causing errors if
     /// something is called from this object.
     pub async fn finish(&self) -> Result<()> {
-        let mut guard = self.state.write().await;
-        let ContextState::Valid { provider, .. } = guard.deref() else {
-            return Err(Error::InvalidContext);
+        let mut guard = self.inner.write().await;
+        let TransactionContextInner::Valid { provider, .. } = guard.deref() else {
+            return Err(Error::InvalidTransactionContext);
         };
 
         let commit_result = provider
@@ -177,7 +177,7 @@ impl CentralContext {
             .map_err(KeystoreError::wrap("commiting transaction"))
             .map_err(Into::into);
 
-        *guard = ContextState::Invalid;
+        *guard = TransactionContextInner::Invalid;
         commit_result
     }
 
@@ -185,10 +185,10 @@ impl CentralContext {
     /// After that the internal state is switched to invalid, causing errors if
     /// something is called from this object.
     pub async fn abort(&self) -> Result<()> {
-        let mut guard = self.state.write().await;
+        let mut guard = self.inner.write().await;
 
-        let ContextState::Valid { provider, .. } = guard.deref() else {
-            return Err(Error::InvalidContext);
+        let TransactionContextInner::Valid { provider, .. } = guard.deref() else {
+            return Err(Error::InvalidTransactionContext);
         };
 
         let result = provider
@@ -198,11 +198,11 @@ impl CentralContext {
             .map_err(KeystoreError::wrap("rolling back transaction"))
             .map_err(Into::into);
 
-        *guard = ContextState::Invalid;
+        *guard = TransactionContextInner::Invalid;
         result
     }
 
-    /// Set arbitrary data to be retrieved by [CentralContext::get_data].
+    /// Set arbitrary data to be retrieved by [TransactionContext::get_data].
     /// This is meant to be used as a check point at the end of a transaction.
     /// The data should be limited to a reasonable size.
     pub async fn set_data(&self, data: Vec<u8>) -> Result<()> {
@@ -214,7 +214,7 @@ impl CentralContext {
         Ok(())
     }
 
-    /// Get the data that has previously been set by [CentralContext::set_data].
+    /// Get the data that has previously been set by [TransactionContext::set_data].
     /// This is meant to be used as a check point at the end of a transaction.
     pub async fn get_data(&self) -> Result<Option<Vec<u8>>> {
         match self.keystore().await?.find_unique::<ConsumerData>().await {

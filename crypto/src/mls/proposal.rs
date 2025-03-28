@@ -9,7 +9,7 @@ use crate::{
     prelude::{Client, MlsProposalBundle},
 };
 
-use crate::context::CentralContext;
+use crate::transaction_context::TransactionContext;
 
 /// Abstraction over a [openmls::prelude::hash_ref::ProposalRef] to deal with conversions
 #[derive(Debug, Clone, Eq, PartialEq, derive_more::From, derive_more::Deref, derive_more::Display)]
@@ -88,7 +88,7 @@ impl MlsProposal {
     }
 }
 
-impl CentralContext {
+impl TransactionContext {
     /// Creates a new Add proposal
     #[cfg_attr(test, crate::idempotent)]
     pub async fn new_add_proposal(&self, id: &ConversationId, key_package: KeyPackage) -> Result<MlsProposalBundle> {

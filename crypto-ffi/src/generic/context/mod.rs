@@ -8,11 +8,11 @@ use core_crypto::mls::conversation::Conversation as _;
 use core_crypto::mls::conversation::Error as ConversationError;
 use core_crypto::{
     RecursiveError,
-    context::CentralContext,
     prelude::{
         ClientIdentifier, ConversationId, KeyPackageIn, KeyPackageRef, MlsConversationConfiguration,
         VerifiableGroupInfo,
     },
+    transaction_context::TransactionContext,
 };
 use std::{future::Future, ops::Deref, sync::Arc};
 use tls_codec::{Deserialize, Serialize};
@@ -22,11 +22,11 @@ pub mod proteus;
 
 #[derive(uniffi::Object)]
 pub struct CoreCryptoContext {
-    pub(super) context: Arc<CentralContext>,
+    pub(super) context: Arc<TransactionContext>,
 }
 
 impl Deref for CoreCryptoContext {
-    type Target = CentralContext;
+    type Target = TransactionContext;
 
     fn deref(&self) -> &Self::Target {
         self.context.as_ref()
@@ -193,17 +193,17 @@ impl CoreCrypto {
 
 #[uniffi::export]
 impl CoreCryptoContext {
-    /// See [core_crypto::context::CentralContext::set_data].
+    /// See [core_crypto::transaction_context::TransactionContext::set_data].
     pub async fn set_data(&self, data: Vec<u8>) -> CoreCryptoResult<()> {
         self.context.set_data(data).await.map_err(Into::into)
     }
 
-    /// See [core_crypto::context::CentralContext::get_data].
+    /// See [core_crypto::transaction_context::TransactionContext::get_data].
     pub async fn get_data(&self) -> CoreCryptoResult<Option<Vec<u8>>> {
         self.context.get_data().await.map_err(Into::into)
     }
 
-    /// See [core_crypto::context::CentralContext::mls_init]
+    /// See [core_crypto::transaction_context::TransactionContext::mls_init]
     pub async fn mls_init(
         &self,
         client_id: ClientId,
@@ -224,7 +224,7 @@ impl CoreCryptoContext {
         Ok(())
     }
 
-    /// See [core_crypto::context::CentralContext::mls_generate_keypairs]
+    /// See [core_crypto::transaction_context::TransactionContext::mls_generate_keypairs]
     pub async fn mls_generate_keypairs(&self, ciphersuites: Ciphersuites) -> CoreCryptoResult<Vec<ClientId>> {
         Ok(self
             .context
@@ -233,7 +233,7 @@ impl CoreCryptoContext {
             .map(|cids| cids.into_iter().map(ClientId).collect())?)
     }
 
-    /// See [core_crypto::context::CentralContext::mls_init_with_client_id]
+    /// See [core_crypto::transaction_context::TransactionContext::mls_init_with_client_id]
     pub async fn mls_init_with_client_id(
         &self,
         client_id: ClientId,
@@ -313,7 +313,7 @@ impl CoreCryptoContext {
             .map_err(Into::into)
     }
 
-    /// See [core_crypto::context::CentralContext::get_or_create_client_keypackages]
+    /// See [core_crypto::transaction_context::TransactionContext::get_or_create_client_keypackages]
     pub async fn client_keypackages(
         &self,
         ciphersuite: Ciphersuite,
@@ -336,7 +336,7 @@ impl CoreCryptoContext {
             .collect::<CoreCryptoResult<Vec<Vec<u8>>>>()
     }
 
-    /// See [core_crypto::context::CentralContext::client_valid_key_packages_count]
+    /// See [core_crypto::transaction_context::TransactionContext::client_valid_key_packages_count]
     pub async fn client_valid_keypackages_count(
         &self,
         ciphersuite: Ciphersuite,
@@ -351,7 +351,7 @@ impl CoreCryptoContext {
         Ok(count.try_into().unwrap_or(0))
     }
 
-    /// See [core_crypto::context::CentralContext::delete_keypackages]
+    /// See [core_crypto::transaction_context::TransactionContext::delete_keypackages]
     pub async fn delete_keypackages(&self, refs: Vec<Vec<u8>>) -> CoreCryptoResult<()> {
         let refs = refs
             .into_iter()
@@ -365,7 +365,7 @@ impl CoreCryptoContext {
         Ok(())
     }
 
-    /// See [core_crypto::context::CentralContext::new_conversation]
+    /// See [core_crypto::transaction_context::TransactionContext::new_conversation]
     pub async fn create_conversation(
         &self,
         conversation_id: Vec<u8>,
@@ -388,7 +388,7 @@ impl CoreCryptoContext {
         Ok(())
     }
 
-    /// See [core_crypto::context::CentralContext::process_raw_welcome_message]
+    /// See [core_crypto::transaction_context::TransactionContext::process_raw_welcome_message]
     pub async fn process_welcome_message(
         &self,
         welcome_message: Vec<u8>,
@@ -428,7 +428,7 @@ impl CoreCryptoContext {
         Ok(distribution_points.into())
     }
 
-    /// See [core_crypto::context::CentralContext::remove_members_from_conversation]
+    /// See [core_crypto::transaction_context::TransactionContext::remove_members_from_conversation]
     pub async fn remove_clients_from_conversation(
         &self,
         conversation_id: Vec<u8>,
@@ -453,7 +453,7 @@ impl CoreCryptoContext {
             .map_err(Into::into)
     }
 
-    /// See [core_crypto::context::CentralContext::update_keying_material]
+    /// See [core_crypto::transaction_context::TransactionContext::update_keying_material]
     pub async fn update_keying_material(&self, conversation_id: Vec<u8>) -> CoreCryptoResult<()> {
         self.context
             .conversation(&conversation_id)
@@ -473,7 +473,7 @@ impl CoreCryptoContext {
             .map_err(Into::into)
     }
 
-    /// see [core_crypto::context::CentralContext::wipe_conversation]
+    /// see [core_crypto::transaction_context::TransactionContext::wipe_conversation]
     pub async fn wipe_conversation(&self, conversation_id: Vec<u8>) -> CoreCryptoResult<()> {
         self.context.wipe_conversation(&conversation_id).await?;
         Ok(())
@@ -510,7 +510,7 @@ impl CoreCryptoContext {
             .map_err(Into::into)
     }
 
-    /// See [core_crypto::context::CentralContext::join_by_external_commit]
+    /// See [core_crypto::transaction_context::TransactionContext::join_by_external_commit]
     pub async fn join_by_external_commit(
         &self,
         group_info: Vec<u8>,

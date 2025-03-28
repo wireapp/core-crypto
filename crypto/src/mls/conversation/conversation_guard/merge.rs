@@ -7,7 +7,7 @@
 //! * Create a commit
 //! * Send the commit to the Delivery Service
 //! * When Delivery Service responds
-//!     * 200 OK --> use [CentralContext::commit_accepted] to merge the commit
+//!     * 200 OK --> use [TransactionContext::commit_accepted] to merge the commit
 //!     * 409 CONFLICT --> do nothing. [ConversationGuard::decrypt_message] will restore the proposals not committed
 //!     * 5xx --> retry
 

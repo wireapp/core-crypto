@@ -1,13 +1,13 @@
 use super::Result;
 use crate::{
     MlsError,
-    context::CentralContext,
     prelude::{ConversationId, MlsConversation},
+    transaction_context::TransactionContext,
 };
 use mls_crypto_provider::MlsCryptoProvider;
 use openmls_traits::OpenMlsCryptoProvider;
 
-impl CentralContext {
+impl TransactionContext {
     /// Destroys a group locally
     ///
     /// # Errors

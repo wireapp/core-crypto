@@ -1,4 +1,4 @@
-use crate::context::CentralContext;
+use crate::transaction_context::TransactionContext;
 use core_crypto_keystore::{
     connection::FetchFromDatabase,
     entities::{
@@ -23,7 +23,7 @@ pub struct EntitiesCount {
     pub signature_keypair: usize,
 }
 
-impl CentralContext {
+impl TransactionContext {
     /// Count the entities
     pub async fn count_entities(&self) -> EntitiesCount {
         let keystore = self.keystore().await.unwrap();
