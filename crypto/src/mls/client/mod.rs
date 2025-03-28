@@ -93,7 +93,7 @@ impl Client {
         // Init backend (crypto + rand + keystore)
         let mls_backend = MlsCryptoProvider::try_new_with_configuration(MlsCryptoProviderConfiguration {
             db_path: &configuration.store_path,
-            identity_key: &configuration.identity_key,
+            db_key: configuration.database_key.clone(),
             in_memory: false,
             entropy_seed: configuration.external_entropy.clone(),
         })
@@ -102,11 +102,12 @@ impl Client {
         Self::new_with_backend(mls_backend, configuration).await
     }
 
-    /// Same as the [Client::try_new] but instead, it uses an in memory KeyStore. Although required, the `store_path` parameter from the `MlsCentralConfiguration` won't be used here.
+    /// Same as the [Client::try_new] but instead, it uses an in memory KeyStore.
+    /// Although required, the `store_path` parameter from the `MlsClientConfiguration` won't be used here.
     pub async fn try_new_in_memory(configuration: MlsClientConfiguration) -> crate::mls::Result<Self> {
         let mls_backend = MlsCryptoProvider::try_new_with_configuration(MlsCryptoProviderConfiguration {
             db_path: &configuration.store_path,
-            identity_key: &configuration.identity_key,
+            db_key: configuration.database_key.clone(),
             in_memory: true,
             entropy_seed: configuration.external_entropy.clone(),
         })
@@ -780,7 +781,7 @@ mod tests {
     use crate::mls::conversation::db_count::EntitiesCount;
     use crate::prelude::ClientId;
     use crate::test_utils::*;
-    use core_crypto_keystore::connection::FetchFromDatabase;
+    use core_crypto_keystore::connection::{DatabaseKey, FetchFromDatabase};
     use core_crypto_keystore::entities::*;
     use mls_crypto_provider::MlsCryptoProvider;
     use wasm_bindgen_test::*;
@@ -893,7 +894,8 @@ mod tests {
     async fn can_generate_client(case: TestCase) {
         run_test_with_central(case.clone(), move |[alice]| {
             Box::pin(async move {
-                let backend = MlsCryptoProvider::try_new_in_memory("test").await.unwrap();
+                let key = DatabaseKey::generate();
+                let backend = MlsCryptoProvider::try_new_in_memory(&key).await.unwrap();
                 let x509_test_chain = if case.is_x509() {
                     let x509_test_chain = crate::test_utils::x509::X509TestChain::init_empty(case.signature_scheme());
                     x509_test_chain.register_with_provider(&backend).await;
@@ -924,7 +926,8 @@ mod tests {
                 if case.is_basic() {
                     run_tests(move |[tmp_dir_argument]| {
                         Box::pin(async move {
-                            let backend = MlsCryptoProvider::try_new(tmp_dir_argument, "test").await.unwrap();
+                            let key = DatabaseKey::generate();
+                            let backend = MlsCryptoProvider::try_new(tmp_dir_argument, &key).await.unwrap();
                             backend.new_transaction().await.unwrap();
                             // phase 1: generate standalone keypair
                             let client_id: ClientId = b"whatever:my:client:is@world.com".to_vec().into();

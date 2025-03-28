@@ -7,8 +7,6 @@ pub(crate) use rstest_reuse::{self, *};
 
 use mls_crypto_provider::{EntropySeed, MlsCryptoProvider};
 
-const TEST_ENCRYPTION_KEY: &str = "test1234";
-
 pub(crate) fn store_name() -> String {
     use rand::Rng as _;
     let mut rng = rand::thread_rng();
@@ -27,10 +25,11 @@ pub(crate) fn store_name() -> String {
 #[fixture]
 pub(crate) async fn setup(#[default(false)] in_memory: bool) -> MlsCryptoProvider {
     let store_name = store_name();
+    let key = core_crypto_keystore::DatabaseKey::generate();
     let store = if !in_memory {
-        core_crypto_keystore::Connection::open_with_key(store_name, TEST_ENCRYPTION_KEY).await
+        core_crypto_keystore::Connection::open_with_key(store_name, &key).await
     } else {
-        core_crypto_keystore::Connection::open_in_memory_with_key(store_name, TEST_ENCRYPTION_KEY).await
+        core_crypto_keystore::Connection::open_in_memory_with_key(store_name, &key).await
     }
     .unwrap();
 

@@ -3,6 +3,7 @@ package com.wire.crypto
 import com.wire.crypto.MLSTest.Companion.aliceId
 import com.wire.crypto.MLSTest.Companion.bobId
 import com.wire.crypto.MLSTest.Companion.id
+import com.wire.crypto.testutils.genDatabaseKey
 import kotlinx.coroutines.test.runTest
 import org.assertj.core.api.AssertionsForInterfaceTypes.assertThat
 import java.nio.file.Files
@@ -20,7 +21,8 @@ internal class E2EITest {
     fun sample_e2ei_enrollment_should_succeed() = runTest {
         val root = Files.createTempDirectory("mls").toFile()
         val keyStore = root.resolve("keystore-$aliceId")
-        val cc = CoreCrypto(keyStore.absolutePath, "secret")
+        val key = genDatabaseKey()
+        val cc = CoreCrypto(keyStore.absolutePath, key)
         val enrollment = cc.transaction { it.e2eiNewEnrollment(
             clientId = "b7ac11a4-8f01-4527-af88-1c30885a7931:6c1866f567616f31@wire.com",
             displayName = "Alice Smith",

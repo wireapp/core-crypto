@@ -105,6 +105,8 @@ pub enum CryptoKeystoreError {
     #[cfg(test)]
     #[error(transparent)]
     MlsExtensionError(#[from] openmls::prelude::ExtensionError),
+    #[error("Invalid database key size, expected {expected}, got {actual}")]
+    InvalidDbKeySize { expected: usize, actual: usize },
     #[cfg(feature = "proteus-keystore")]
     #[error("Invalid key [{key}] size, expected {expected}, got {actual}")]
     InvalidKeySize {

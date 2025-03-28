@@ -1,7 +1,10 @@
 use std::ops::Deref;
+use std::path::Path;
+
+use zeroize::Zeroize as _;
 
 use crate::CryptoKeystoreResult;
-use crate::connection::{DatabaseConnection, DatabaseConnectionRequirements};
+use crate::connection::{DatabaseConnection, DatabaseConnectionRequirements, DatabaseKey};
 use async_lock::{Mutex, MutexGuard};
 use blocking::unblock;
 use rusqlite::{Transaction, functions::FunctionFlags};
@@ -70,20 +73,13 @@ unsafe impl Send for SqlCipherConnection {}
 unsafe impl Sync for SqlCipherConnection {}
 
 impl SqlCipherConnection {
-    fn init_with_key(path: &str, key: &str) -> CryptoKeystoreResult<Self> {
-        #[allow(unused_mut)]
+    fn init_with_key(path: &str, key: &DatabaseKey) -> CryptoKeystoreResult<Self> {
         let mut conn = rusqlite::Connection::open(path)?;
-        cfg_if::cfg_if! {
-            if #[cfg(feature = "log-queries")] {
-                fn log_query(q: &str) {
-                    log::info!("{}", q);
-                }
 
-                conn.trace(Some(log_query));
-            }
-        }
+        #[cfg(feature = "log-queries")]
+        conn.trace(Some(|q| log::info!("{}", q)));
 
-        conn.pragma_update(None, "key", key)?;
+        Self::set_key(&mut conn, key)?;
 
         // ? iOS WAL journaling fix; see details here: https://github.com/sqlcipher/sqlcipher/issues/255
         #[cfg(target_os = "ios")]
@@ -95,50 +91,78 @@ impl SqlCipherConnection {
         // Disable FOREIGN KEYs - The 2 step blob writing process invalidates foreign key checks unfortunately
         conn.pragma_update(None, "foreign_keys", "OFF")?;
 
-        let conn = Mutex::new(conn);
+        Self::run_migrations(&mut conn)?;
 
-        let mut conn = Self {
+        let conn = Self {
             path: path.into(),
-            conn,
+            conn: Mutex::new(conn),
         };
-        conn.run_migrations()?;
 
         Ok(conn)
     }
 
-    fn init_with_key_in_memory(_path: &str, key: &str) -> CryptoKeystoreResult<Self> {
-        #[allow(unused_mut)]
-        let mut conn = rusqlite::Connection::open("")?;
-        cfg_if::cfg_if! {
-            if #[cfg(feature = "log-queries")] {
-                fn log_query(q: &str) {
-                    log::info!("{}", q);
-                }
+    fn set_key(conn: &mut rusqlite::Connection, key: &DatabaseKey) -> CryptoKeystoreResult<()> {
+        // Make sqlite use raw key data, without key derivation. Also make sure to zeroize
+        // the string containing the key after the call.
+        let mut key = format!("x'{}'", hex::encode(key));
+        let result = conn.pragma_update(None, "key", &key);
+        key.zeroize();
+        result?;
+        Ok(())
+    }
 
-                conn.trace(Some(log_query));
-            }
-        }
-        conn.pragma_update(None, "key", key)?;
+    fn init_with_key_in_memory(_path: &str, key: &DatabaseKey) -> CryptoKeystoreResult<Self> {
+        let mut conn = rusqlite::Connection::open("")?;
+
+        #[cfg(feature = "log-queries")]
+        conn.trace(Some(|q| log::info!("{}", q)));
+
+        Self::set_key(&mut conn, key)?;
 
         // Disable FOREIGN KEYs - The 2 step blob writing process invalidates foreign key checks unfortunately
         conn.pragma_update(None, "foreign_keys", "OFF")?;
 
-        let conn = Mutex::new(conn);
-
-        let mut conn = Self { path: "".into(), conn };
-
         // Need to run migrations also in memory to make sure expected tables exist.
-        conn.run_migrations()?;
+        Self::run_migrations(&mut conn)?;
+
+        let conn = Self {
+            path: "".into(),
+            conn: Mutex::new(conn),
+        };
 
         Ok(conn)
     }
 
-    pub async fn conn(&self) -> MutexGuard<rusqlite::Connection> {
-        self.conn.lock().await
+    pub async fn migrate_db_key_type_to_bytes(
+        path: &str,
+        old_key: &str,
+        new_key: &DatabaseKey,
+    ) -> CryptoKeystoreResult<()> {
+        let mut conn = rusqlite::Connection::open(Path::new(path))?;
+
+        conn.pragma_update(None, "key", old_key)?;
+
+        // ? iOS WAL journaling fix; see details here: https://github.com/sqlcipher/sqlcipher/issues/255
+        #[cfg(target_os = "ios")]
+        ios_wal_compat::handle_ios_wal_compat(&conn, path)?;
+
+        // Enable WAL journaling mode
+        conn.pragma_update(None, "journal_mode", "wal")?;
+
+        // Disable FOREIGN KEYs - The 2 step blob writing process invalidates foreign key checks unfortunately
+        conn.pragma_update(None, "foreign_keys", "OFF")?;
+
+        Self::run_migrations(&mut conn)?;
+
+        // Rekey the database.
+        let mut key = format!("x'{}'", hex::encode(new_key));
+        let result = conn.pragma_update(None, "rekey", &key);
+        key.zeroize();
+        Ok(result?)
     }
 
-    pub fn conn_blocking(&self) -> MutexGuard<rusqlite::Connection> {
-        self.conn.lock_blocking()
+    pub async fn conn(&self) -> MutexGuard<rusqlite::Connection> {
+        self.conn.lock().await
     }
 
     pub async fn wipe(self) -> CryptoKeystoreResult<()> {
@@ -158,8 +182,7 @@ impl SqlCipherConnection {
         conn.close().map_err(|(_, e)| e.into())
     }
 
-    fn run_migrations(&mut self) -> CryptoKeystoreResult<()> {
-        let mut conn = self.conn_blocking();
+    fn run_migrations(conn: &mut rusqlite::Connection) -> CryptoKeystoreResult<()> {
         conn.create_scalar_function("sha256_blob", 1, FunctionFlags::SQLITE_DETERMINISTIC, |ctx| {
             let input_blob = ctx.get::<Vec<u8>>(0)?;
             Ok(crate::sha256(&input_blob))
@@ -180,15 +203,15 @@ impl DatabaseConnectionRequirements for SqlCipherConnection {}
 impl<'a> DatabaseConnection<'a> for SqlCipherConnection {
     type Connection = MutexGuard<'a, rusqlite::Connection>;
 
-    async fn open(name: &str, key: &str) -> CryptoKeystoreResult<Self> {
+    async fn open(name: &str, key: &DatabaseKey) -> CryptoKeystoreResult<Self> {
         let name = name.to_string();
-        let key = key.to_string();
+        let key = key.clone();
         Ok(unblock(move || Self::init_with_key(&name, &key)).await?)
     }
 
-    async fn open_in_memory(name: &str, key: &str) -> CryptoKeystoreResult<Self> {
+    async fn open_in_memory(name: &str, key: &DatabaseKey) -> CryptoKeystoreResult<Self> {
         let name = name.to_string();
-        let key = key.to_string();
+        let key = key.clone();
         Ok(unblock(move || Self::init_with_key_in_memory(&name, &key)).await?)
     }
 

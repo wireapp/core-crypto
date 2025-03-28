@@ -43,7 +43,11 @@ mod tests {
 
         idb.close();
 
-        let store = core_crypto_keystore::Connection::open_with_key(&store_name, TEST_ENCRYPTION_KEY)
+        core_crypto_keystore::Connection::migrate_db_key_type_to_bytes(&store_name, "test1234", &TEST_ENCRYPTION_KEY)
+            .await
+            .unwrap();
+
+        let store = core_crypto_keystore::Connection::open_with_key(&store_name, &TEST_ENCRYPTION_KEY)
             .await
             .unwrap();
 

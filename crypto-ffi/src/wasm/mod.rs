@@ -12,6 +12,7 @@ use std::{
 use crate::proteus_impl;
 use core_crypto::mls::conversation::Conversation as _;
 use core_crypto::{InnermostErrorMessage, MlsTransportResponse, prelude::*};
+use core_crypto_keystore::Connection as Database;
 use futures_util::future::TryFutureExt;
 use js_sys::{Promise, Uint8Array};
 use log::{
@@ -1415,6 +1416,16 @@ impl MlsTransport for MlsTransportProvider {
     }
 }
 
+/// Updates the key of the CoreCrypto database.
+/// To be used only once, when moving from CoreCrypto <= 5.x to CoreCrypto 6.x.
+#[wasm_bindgen(js_name = migrateDatabaseKeyTypeToBytes)]
+pub async fn migrate_db_key_type_to_bytes(name: &str, old_key: &str, new_key: &DatabaseKey) -> WasmCryptoResult<()> {
+    Database::migrate_db_key_type_to_bytes(name, old_key, &new_key.0)
+        .await
+        .map_err(InternalError::generic())
+        .map_err(Into::into)
+}
+
 #[derive(Debug)]
 #[wasm_bindgen]
 pub struct CoreCrypto {
@@ -1446,7 +1457,7 @@ impl CoreCrypto {
     /// see [core_crypto::mls::Client::try_new]
     pub async fn _internal_new(
         path: String,
-        key: String,
+        key: DatabaseKey,
         client_id: FfiClientId,
         ciphersuites: Box<[u16]>,
         entropy_seed: Option<Box<[u8]>>,
@@ -1461,7 +1472,7 @@ impl CoreCrypto {
             .expect("we never run corecrypto on systems with architectures narrower than 32 bits");
         let configuration = MlsClientConfiguration::try_new(
             path,
-            key,
+            key.0,
             Some(client_id.into()),
             ciphersuites,
             entropy_seed,
@@ -1478,11 +1489,11 @@ impl CoreCrypto {
     /// see [core_crypto::mls::Client::try_new]
     pub async fn deferred_init(
         path: String,
-        key: String,
+        key: DatabaseKey,
         entropy_seed: Option<Box<[u8]>>,
     ) -> WasmCryptoResult<CoreCrypto> {
         let entropy_seed = entropy_seed.map(|s| s.to_vec());
-        let configuration = MlsClientConfiguration::try_new(path, key, None, vec![], entropy_seed, None)
+        let configuration = MlsClientConfiguration::try_new(path, key.0, None, vec![], entropy_seed, None)
             .map_err(CoreCryptoError::from)?;
 
         let client = Client::try_new(configuration).await.map_err(CoreCryptoError::from)?;
@@ -2382,5 +2393,19 @@ impl From<core_crypto::e2e_identity::CrlRegistration> for CrlRegistration {
             dirty: value.dirty,
             expiration: value.expiration,
         }
+    }
+}
+
+#[wasm_bindgen]
+#[derive(Debug)]
+pub struct DatabaseKey(core_crypto_keystore::DatabaseKey);
+
+#[wasm_bindgen]
+impl DatabaseKey {
+    #[wasm_bindgen(constructor)]
+    pub fn new(buf: &[u8]) -> Result<DatabaseKey, wasm_bindgen::JsError> {
+        let key =
+            core_crypto_keystore::DatabaseKey::try_from(buf).map_err(|err| InternalError::Other(err.to_string()))?;
+        Ok(DatabaseKey(key))
     }
 }

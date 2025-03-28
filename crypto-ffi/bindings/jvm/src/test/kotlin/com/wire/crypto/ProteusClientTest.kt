@@ -1,5 +1,6 @@
 package com.wire.crypto
 
+import com.wire.crypto.testutils.genDatabaseKey
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
 import java.nio.file.Files
@@ -17,7 +18,8 @@ internal class ProteusClientTest {
     private fun newProteusClient(clientId: ClientId): CoreCrypto = runBlocking {
         val root = Files.createTempDirectory("mls").toFile()
         val keyStore = root.resolve("keystore-$clientId")
-        val cc = CoreCrypto(keyStore.absolutePath, "secret")
+        val key = genDatabaseKey()
+        val cc = CoreCrypto(keyStore.absolutePath, key)
         cc.transaction { it.proteusInit() }
         cc
     }
