@@ -56,7 +56,7 @@ features = ["x25519", "p256", "p384", "p521"]
 wasm-bindgen-test = "0.3"
 uuid = { workspace = true, features = ["v4", "js"] }
 openmls.workspace = true
-rstest = "0.25"
+rstest = "0.24"
 rstest_reuse = "0.7"
 async-std = { workspace = true, features = ["attributes"] }
 cfg-if.workspace = true
