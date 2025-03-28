@@ -72,8 +72,8 @@ export async function setup() {
 
             if (logLevel >= 2) {
                 window.ccModule.setLogger({
-                    log: (_, json_msg: string) => {
-                        console.log(json_msg);
+                    log: (_level, message: string, context) => {
+                        console.log(message, context);
                     },
                 });
                 window.ccModule.setMaxLogLevel(

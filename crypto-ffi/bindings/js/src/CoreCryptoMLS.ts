@@ -7,6 +7,7 @@ import {
     DeviceStatus,
     MlsGroupInfoEncryptionType as GroupInfoEncryptionType,
     MlsRatchetTreeType as RatchetTreeType,
+    MlsTransport as MlsTransportFfi,
     MlsTransportResponse as MlsTransportResponseFfi,
     MlsTransportResponseVariant,
     ProposalBundle as ProposalBundleFfi,
@@ -332,21 +333,26 @@ export interface MlsTransport {
  * This shim wraps an `MlsTransport` according to our public API and implements the inner FFI transport API,
  * mapping appropriately between the two.
  */
-export class MlsTransportFfiShim {
+class MlsTransportFfiShim {
     private inner: MlsTransport;
 
     constructor(inner: MlsTransport) {
         this.inner = inner;
     }
 
-    async send_commit_bundle(commitBundle: CommitBundleFfi): Promise<MlsTransportResponseFfi> {
+    async sendCommitBundle(commitBundle: CommitBundleFfi): Promise<MlsTransportResponseFfi> {
         const cb = commitBundleFromFfi(commitBundle);
         const response = await this.inner.sendCommitBundle(cb);
         return mapTransportResponseToFfi(response);
     }
 
-    async send_message(message: Uint8Array): Promise<MlsTransportResponseFfi> {
+    async sendMessage(message: Uint8Array): Promise<MlsTransportResponseFfi> {
         const response = await this.inner.sendMessage(message);
         return mapTransportResponseToFfi(response);
     }
+}
+
+export function mlsTransportToFfi(mlsTransport: MlsTransport): MlsTransportFfi {
+    const shim = new MlsTransportFfiShim(mlsTransport);
+    return new MlsTransportFfi(shim, shim.sendCommitBundle, shim.sendMessage);
 }

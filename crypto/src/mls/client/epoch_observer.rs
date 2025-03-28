@@ -7,7 +7,8 @@ use crate::{CoreCrypto, RecursiveError, mls::HasClientAndProvider as _, prelude:
 use super::{Client, Error, Result};
 
 /// An `EpochObserver` is notified whenever a conversation's epoch changes.
-#[async_trait]
+#[cfg_attr(target_family = "wasm", async_trait(?Send))]
+#[cfg_attr(not(target_family = "wasm"), async_trait)]
 pub trait EpochObserver: Send + Sync {
     /// This function will be called every time a conversation's epoch changes.
     ///

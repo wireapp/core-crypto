@@ -27,7 +27,9 @@ import {
     Ciphersuites as CiphersuitesFfi,
     ClientId as ClientIdFfi,
     CoreCrypto as CoreCryptoFfi,
+    CoreCryptoLogger as CoreCryptoLoggerFfi,
     E2eiDumpedPkiEnv,
+    EpochObserver as EpochObserverFfi,
     version as version_ffi,
     WireIdentity,
     DatabaseKey,
@@ -40,7 +42,7 @@ import {
     ConversationId,
     CredentialType,
     MlsTransport,
-    MlsTransportFfiShim,
+    mlsTransportToFfi,
 } from "./CoreCryptoMLS.js";
 
 import { CoreCryptoContext } from "./CoreCryptoContext.js";
@@ -93,16 +95,22 @@ export interface CoreCryptoParams extends CoreCryptoDeferredParams {
     nbKeyPackage?: number;
 }
 
-// The interface that `core-crypto-ffi.js` actually expects
-interface InternalEpochObserver {
-    epoch_changed(
-        conversation_id: ConversationId,
-        epoch: number
-    ): Promise<void>;
-}
-
 export interface EpochObserver {
     epochChanged(conversationId: ConversationId, epoch: number): Promise<void>;
+}
+
+class EpochObserverShim {
+    private inner: EpochObserver
+
+    constructor(inner: EpochObserver) {
+        this.inner = inner;
+    }
+
+    // what Rust sends us
+    async epochChanged(conversationId: Uint8Array, epoch: bigint): Promise<void> {
+        // JS-ism: we launch a new task by simply not awaiting; no explicit "spawn"
+        return this.inner.epochChanged(conversationId, safeBigintToNumber(epoch));
+    }
 }
 
 /**
@@ -113,8 +121,8 @@ export interface EpochObserver {
  * @param logger - the interface to be called when something is going to be logged
  * @param _ctx - ignored
  **/
-export function setLogger(logger: CoreCryptoLogger, _ctx: unknown = null): void {
-    CoreCryptoFfi.set_logger(logger);
+export function setLogger(logger: CoreCryptoLogger): void {
+    CoreCryptoFfi.set_logger(loggerIntoFfi(logger));
 }
 
 /**
@@ -128,6 +136,12 @@ export interface CoreCryptoLogger {
      * @param context - additional context captured when the log was made.
      **/
     log: (level: CoreCryptoLogLevel, message: string, context: string) => void;
+}
+
+function loggerIntoFfi(logger: CoreCryptoLogger): CoreCryptoLoggerFfi {
+    const logFn = logger.log;
+    const logThis = logger;
+    return new CoreCryptoLoggerFfi(logFn, logThis);
 }
 
 /**
@@ -184,7 +198,7 @@ export class CoreCrypto {
     }
 
     static setLogger(logger: CoreCryptoLogger) {
-        CoreCryptoFfi.set_logger(logger);
+        CoreCryptoFfi.set_logger(loggerIntoFfi(logger));
     }
 
     static setMaxLogLevel(level: CoreCryptoLogLevel) {
@@ -362,9 +376,9 @@ export class CoreCrypto {
         transportProvider: MlsTransport,
         _ctx: unknown = null
     ): Promise<void> {
-        const shim = new MlsTransportFfiShim(transportProvider);
+        const transport = mlsTransportToFfi(transportProvider);
         return await CoreCryptoError.asyncMapErr(
-            this.#cc.provide_transport(shim)
+            this.#cc.provide_transport(transport)
         );
     }
 
@@ -671,18 +685,10 @@ export class CoreCrypto {
      * @returns nothing
      */
     async registerEpochObserver(observer: EpochObserver): Promise<void> {
-        // we want to wrap the observer here to provide async indirection, so that no matter what
-        // the observer that makes its way to the Rust side of things doesn't end up blocking
-        const observerIndirector: InternalEpochObserver = {
-            async epoch_changed(conversation_id, epoch) {
-                // Note that we intentionally do not await the result of this function
-                // this is a JS peculiarity: instead of explicitly spawning a new task, we just
-                // create the Promise and send it off into the ether, to complete at its own pace
-                observer.epochChanged(conversation_id, epoch);
-            },
-        };
+        const shim = new EpochObserverShim(observer);
+        const ffi = new EpochObserverFfi(shim, shim.epochChanged);
         return await CoreCryptoError.asyncMapErr(
-            this.#cc.register_epoch_observer(observerIndirector)
+            this.#cc.register_epoch_observer(ffi)
         );
     }
 }

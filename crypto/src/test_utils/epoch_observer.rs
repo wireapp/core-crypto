@@ -32,7 +32,8 @@ impl TestEpochObserver {
     }
 }
 
-#[async_trait]
+#[cfg_attr(target_family="wasm", async_trait(?Send))]
+#[cfg_attr(not(target_family = "wasm"), async_trait)]
 impl EpochObserver for TestEpochObserver {
     async fn epoch_changed(&self, conversation_id: ConversationId, epoch: u64) {
         let mut guard = self.0.lock().await;

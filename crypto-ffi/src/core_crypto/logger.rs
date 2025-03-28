@@ -1,9 +1,9 @@
-#[cfg(target_family = "wasm")]
-use std::sync::Mutex;
+#[cfg(not(target_family = "wasm"))]
+use std::sync::Arc;
 use std::{
     collections::BTreeMap,
     ops::Deref as _,
-    sync::{Arc, LazyLock, Once},
+    sync::{LazyLock, Once},
 };
 
 use log::{
@@ -15,7 +15,7 @@ use log_reload::ReloadLog;
 use wasm_bindgen::prelude::*;
 
 #[cfg(target_family = "wasm")]
-use crate::CoreCrypto;
+use crate::{CoreCrypto, CoreCryptoError, CoreCryptoResult};
 
 /// Defines the log level for a CoreCrypto
 #[derive(Debug, Clone, Copy)]
@@ -56,40 +56,88 @@ impl From<Level> for CoreCryptoLogLevel {
     }
 }
 
+#[cfg(not(target_family = "wasm"))]
+#[derive(Debug, thiserror::Error, uniffi::Error)]
+#[uniffi(flat_error)]
+pub enum LoggingError {
+    #[error("panic or otherwise unexpected error from foreign code")]
+    Ffi(#[from] uniffi::UnexpectedUniFFICallbackError),
+}
+
 /// This trait is used to provide a callback mechanism to hook up the respective platform logging system.
 #[cfg(not(target_family = "wasm"))]
 #[uniffi::export(with_foreign)]
 pub trait CoreCryptoLogger: std::fmt::Debug + Send + Sync {
-    /// Function to setup a hook for the logging messages. Core Crypto will call this method
-    /// whenever it needs to log a message.
-    fn log(&self, level: CoreCryptoLogLevel, message: String, context: Option<String>);
+    /// Core Crypto will call this method whenever it needs to log a message.
+    ///
+    /// This function catches panics and other unexpected errors. In those cases, it writes to `stderr`.
+    fn log(&self, level: CoreCryptoLogLevel, message: String, context: Option<String>) -> Result<(), LoggingError>;
 }
 
-/// This duck-typed interface is used to provide a callback mechanism to hook up the respective platform logging system.
+/// This struct stores a log function and its `this` value, which should be a class instance if defined.
 #[cfg(target_family = "wasm")]
 #[wasm_bindgen]
-extern "C" {
-    pub type CoreCryptoLogger;
-
-    #[wasm_bindgen(structural, method)]
-    pub fn log(this: &CoreCryptoLogger, level: CoreCryptoLogLevel, message: String, context: Option<String>);
+#[derive(Debug, Clone, Default)]
+pub struct CoreCryptoLogger {
+    logger: js_sys::Function,
+    this: JsValue,
 }
 
+#[cfg(target_family = "wasm")]
+#[wasm_bindgen]
+impl CoreCryptoLogger {
+    /// Construct a new logger.
+    ///
+    /// The logger itself is a function which accepts three arguments:
+    /// `(level, message, context)`.
+    ///
+    /// The `this` value is the class which should be passed as `this` in the context of that function;
+    /// this is typically useful if the function is a class method instead of a free function.
+    /// It is normal and legal to pass `null` as the `this` value.
+    #[wasm_bindgen(constructor)]
+    pub fn new(logger: js_sys::Function, this: JsValue) -> CoreCryptoResult<Self> {
+        if logger.length() != 3 {
+            return Err(CoreCryptoError::generic()(format!(
+                "logger function must accept 3 arguments but accepts {}",
+                logger.length()
+            )));
+        }
+        // let this = this.unwrap_or(JsValue::NULL);
+        Ok(Self { logger, this })
+    }
+}
+
+#[cfg(target_family = "wasm")]
+impl CoreCryptoLogger {
+    fn log(&self, level: CoreCryptoLogLevel, message: String, context: Option<String>) {
+        if let Err(meta_err) = self
+            .logger
+            .call3(&self.this, &level.into(), &(&message).into(), &context.into())
+        {
+            web_sys::console::error_2(&meta_err, &message.into());
+        }
+    }
+}
+
+#[cfg(target_family = "wasm")]
+// SAFETY: WASM only ever runs in a single-threaded context, so this is intrinsically thread-safe.
+// If that invariant ever varies, we may need to rethink this (but more likely that would be addressed
+// upstream where the types are defined).
+unsafe impl Send for CoreCryptoLogger {}
+#[cfg(target_family = "wasm")]
+// SAFETY: WASM only ever runs in a single-threaded context, so this is intrinsically thread-safe.
+unsafe impl Sync for CoreCryptoLogger {}
+
 /// The dummy logger is a suitable default value for the log shim
+#[cfg(not(target_family = "wasm"))]
 #[derive(Debug)]
 struct DummyLogger;
 
 #[cfg(not(target_family = "wasm"))]
 impl CoreCryptoLogger for DummyLogger {
     #[allow(unused_variables)]
-    fn log(&self, level: CoreCryptoLogLevel, message: String, context: Option<String>) {}
-}
-
-#[cfg(target_family = "wasm")]
-impl DummyLogger {
-    /// We need a `JsValue` which implements the `CoreCryptoLogger` interface but does nothing. This constructs that.
-    fn construct() -> JsValue {
-        js_sys::Function::default().into()
+    fn log(&self, level: CoreCryptoLogLevel, message: String, context: Option<String>) -> Result<(), LoggingError> {
+        Ok(())
     }
 }
 
@@ -121,36 +169,15 @@ impl LogShim {
     }
 }
 
-/// The wasm log shim is a simple wrapper around a duck type implementing the log interface
 #[cfg(target_family = "wasm")]
-#[derive(Clone)]
+#[derive(Clone, Default)]
 struct LogShim {
-    logger: Arc<Mutex<CoreCryptoLogger>>,
-}
-
-#[cfg(target_family = "wasm")]
-// SAFETY: Arc<Mutex<T>> is Send
-unsafe impl Send for LogShim {}
-
-#[cfg(target_family = "wasm")]
-// SAFETY: Arc<Mutex<T>> is Sync
-unsafe impl Sync for LogShim {}
-
-#[cfg(target_family = "wasm")]
-impl Default for LogShim {
-    fn default() -> Self {
-        Self::new(CoreCryptoLogger {
-            obj: DummyLogger::construct(),
-        })
-    }
+    logger: CoreCryptoLogger,
 }
 
 #[cfg(target_family = "wasm")]
 impl LogShim {
     fn new(logger: CoreCryptoLogger) -> Self {
-        // We manually implement Send and Sync for this struct precisely because of this
-        #[expect(clippy::arc_with_non_send_sync)]
-        let logger = Arc::new(Mutex::new(logger));
         Self { logger }
     }
 }
@@ -190,20 +217,21 @@ impl log::Log for LogShim {
 
         // uniffi-style
         #[cfg(not(target_family = "wasm"))]
-        self.logger.log(
-            CoreCryptoLogLevel::from(self.adjusted_log_level(record.metadata())),
-            message,
-            context,
-        );
+        {
+            let log_result = self.logger.log(
+                CoreCryptoLogLevel::from(self.adjusted_log_level(record.metadata())),
+                message.clone(),
+                context,
+            );
+            if let Err(LoggingError::Ffi(meta_err @ uniffi::UnexpectedUniFFICallbackError { .. })) = log_result {
+                eprintln!("{meta_err} while attempting to produce {message}");
+            }
+        }
 
         // wasm-style
         #[cfg(target_family = "wasm")]
         {
-            let guard = self
-                .logger
-                .lock()
-                .expect("we don't panic with the lock so we won't need to panic with the lock");
-            guard.log(record.metadata().level().into(), message, context);
+            self.logger.log(record.metadata().level().into(), message, context);
         }
     }
 
@@ -217,7 +245,6 @@ static LOGGER: LazyLock<ReloadLog<LogShim>> = LazyLock::new(|| ReloadLog::new(Lo
 #[cfg(not(target_family = "wasm"))]
 type Logger = Arc<dyn CoreCryptoLogger>;
 
-/// In wasm the logger interface is a duck-typed `JsValue`
 #[cfg(target_family = "wasm")]
 type Logger = CoreCryptoLogger;
 
@@ -239,7 +266,7 @@ fn set_logger_only_inner(logger: Logger) {
 
     INIT_LOGGER.call_once(|| {
         log::set_logger(LOGGER.deref())
-            .expect("no poisonsed locks should be possible as we never panic while holding the lock");
+            .expect("no poisoned locks should be possible as we never panic while holding the lock");
         log::set_max_level(LevelFilter::Warn);
     });
 }

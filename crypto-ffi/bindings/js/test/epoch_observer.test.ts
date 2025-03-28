@@ -60,9 +60,13 @@ describe("epoch observer", () => {
                     await ctx.updateKeyingMaterial(conv_id);
                 });
 
+                // wait a bit to ensure that the observation, which we have intentionally
+                // not awaited, makes it to us
+                await new Promise(resolve => setTimeout(resolve, 200)); // 200ms should be plenty
+
                 // we have to explicitly return non-primitives, as anything passed by reference won't make it out of the browser context
                 const first_id_hex = Array.from(
-                    observer.observations[0].conversationId,
+                    observer.observations[0]?.conversationId ?? new Uint8Array(),
                     (byte) => {
                         return ("0" + (byte & 0xff).toString(16)).slice(-2);
                     }
