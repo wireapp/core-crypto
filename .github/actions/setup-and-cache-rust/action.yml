@@ -35,4 +35,4 @@ runs:
           ~/.cargo/registry/cache/
           ~/.cargo/git/db/
           target/
-        key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+        key: ${{ inputs.target }}-${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
