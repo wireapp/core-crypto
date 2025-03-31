@@ -43,6 +43,10 @@ const DB_VERSION_2: u32 = db_version_number(2);
 const DB_VERSION_3: u32 = db_version_number(3);
 const DB_VERSION_4: u32 = db_version_number(4);
 
+/// TODO: this is here only because it's needed for the cryptobox migration test.
+///       Once we drop cryptobox migration and the related test, drop this too.
+pub use pre_v4::open_and_migrate as open_and_migrate_pre_v4;
+
 /// This module runs migrations for databases with version < 4. Migrations here must only
 /// be used by migrate_db_key_type_to_bytes.
 mod pre_v4 {
@@ -50,7 +54,10 @@ mod pre_v4 {
 
     /// Open an existing idb database with the given name and key, and migrate it if needed.
     /// The key is only being used for the 0 -> 1 migration, which needs the key as a string.
-    pub(super) async fn open_and_migrate(name: &str, key: &str) -> CryptoKeystoreResult<Database> {
+    ///
+    /// TODO: this is pub only because it's needed for the cryptobox migration test.
+    ///       Once we drop cryptobox migration and the related test, make this pub(super) again.
+    pub async fn open_and_migrate(name: &str, key: &str) -> CryptoKeystoreResult<Database> {
         /// Do not update this target version. The last version that this function
         /// should upgrade to is DB_VERSION_3, because to update to DB_VERSION_4,
         /// clients need to call migrate_db_key_type_to_bytes.

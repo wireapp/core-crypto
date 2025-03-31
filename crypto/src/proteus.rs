@@ -1677,8 +1677,17 @@ mod tests {
                 let alice_session_fingerprint_remote = alice_session.remote_identity().fingerprint();
 
                 let _ = wasm_bindgen_futures::JsFuture::from(run_cryptobox(alice)).await.unwrap();
-                let key = DatabaseKey::generate();
-                let mut keystore = core_crypto_keystore::Connection::open_with_key(&format!("{CRYPTOBOX_JS_DBNAME}-imported"), &key).await.unwrap();
+
+                use sha2::Digest as _;
+                let old_key = "test";
+                let new_key = DatabaseKey::try_from(sha2::Sha256::digest(old_key).as_slice()).unwrap();
+
+                let name = format!("{CRYPTOBOX_JS_DBNAME}-imported");
+                let _ = core_crypto_keystore::connection::platform::open_and_migrate_pre_v4(&name, old_key).await;
+
+                core_crypto_keystore::Connection::migrate_db_key_type_to_bytes(&name, old_key, &new_key).await.unwrap();
+
+                let mut keystore = core_crypto_keystore::Connection::open_with_key(&name, &new_key).await.unwrap();
                 keystore.new_transaction().await.unwrap();
                 let Err(crate::Error::CryptoboxMigration(crate::CryptoboxMigrationError{
                     source: crate::CryptoboxMigrationErrorKind::ProvidedPathDoesNotExist(_),

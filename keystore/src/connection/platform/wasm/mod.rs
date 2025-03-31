@@ -9,6 +9,10 @@ mod migrations;
 pub use migrations::keystore_v_1_0_0;
 pub mod storage;
 
+/// TODO: this is here only because it's needed for the cryptobox migration test.
+///       Once we drop cryptobox migration and the related test, drop this too.
+pub use migrations::open_and_migrate_pre_v4;
+
 use self::storage::{WasmEncryptedStorage, WasmStorageTransaction, WasmStorageWrapper};
 
 #[derive(Debug)]

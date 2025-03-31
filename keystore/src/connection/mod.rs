@@ -12,6 +12,10 @@ pub mod platform {
             pub use self::wasm::WasmConnection as KeystoreDatabaseConnection;
             pub use wasm::storage;
             pub use self::wasm::storage::WasmStorageTransaction as TransactionWrapper;
+
+            /// TODO: this is here only because it's needed for the cryptobox migration test.
+            ///       Once we drop cryptobox migration and the related test, drop this too.
+            pub use wasm::open_and_migrate_pre_v4;
         } else {
             mod generic;
             pub use self::generic::SqlCipherConnection as KeystoreDatabaseConnection;
