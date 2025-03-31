@@ -8,7 +8,8 @@ use crate::{CredentialType, X509Identity};
 #[cfg_attr(
     target_family = "wasm",
     wasm_bindgen(getter_with_clone),
-    derive(serde::Serialize, serde::Deserialize)
+    derive(serde::Serialize, serde::Deserialize),
+    serde(rename_all = "camelCase")
 )]
 #[cfg_attr(not(target_family = "wasm"), derive(uniffi::Record))]
 pub struct WireIdentity {
