@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"fn":["build_wasm","spawn_http_server"]};
+window.SIDEBAR_ITEMS = {"fn":["bind_http_server","build_wasm"]};

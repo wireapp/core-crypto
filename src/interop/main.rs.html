@@ -465,10 +465,7 @@
 <a href="#464" id="464">464</a>
 <a href="#465" id="465">465</a>
 <a href="#466" id="466">466</a>
-<a href="#467" id="467">467</a>
-<a href="#468" id="468">468</a>
-<a href="#469" id="469">469</a>
-<a href="#470" id="470">470</a></pre></div><pre class="rust"><code><span class="attr">#![cfg_attr(target_family = <span class="string">"wasm"</span>, allow(dead_code, unused_imports))]
+<a href="#467" id="467">467</a></pre></div><pre class="rust"><code><span class="attr">#![cfg_attr(target_family = <span class="string">"wasm"</span>, allow(dead_code, unused_imports))]
 
 #[cfg(not(target_family = <span class="string">"wasm"</span>))]
 </span><span class="kw">use </span><span class="kw">crate</span>::clients::{EmulatedClient, EmulatedProteusClient};
@@ -486,11 +483,6 @@
 </span><span class="kw">mod </span>clients;
 <span class="attr">#[cfg(not(target_family = <span class="string">"wasm"</span>))]
 </span><span class="kw">mod </span>util;
-
-<span class="attr">#[cfg(not(target_family = <span class="string">"wasm"</span>))]
-</span><span class="kw">const </span>TEST_SERVER_PORT: <span class="kw-2">&amp;</span>str = <span class="string">"8000"</span>;
-<span class="attr">#[cfg(not(target_family = <span class="string">"wasm"</span>))]
-</span><span class="kw">const </span>TEST_SERVER_URI: <span class="kw-2">&amp;</span>str = <span class="macro">const_format::concatcp!</span>(<span class="string">"http://localhost:"</span>, TEST_SERVER_PORT);
 
 <span class="kw">const </span>MLS_MAIN_CLIENTID: <span class="kw-2">&amp;</span>[u8] = <span class="string">b"test_main"</span>;
 <span class="kw">const </span>MLS_CONVERSATION_ID: <span class="kw-2">&amp;</span>[u8] = <span class="string">b"test_conversation"</span>;
@@ -540,8 +532,9 @@
         build::web::wasm::build_wasm(tempdir.path().to_path_buf()).<span class="kw">await</span><span class="question-mark">?</span>;
 
         <span class="kw">let </span>spinner = util::RunningProcess::new(<span class="string">"Starting HTTP server..."</span>, <span class="bool-val">false</span>);
-        <span class="kw">let </span>http_server_hwnd = tokio::task::spawn(build::web::wasm::spawn_http_server(tempdir.path().to_path_buf()));
-        spinner.success(<span class="macro">format!</span>(<span class="string">"HTTP server started at 0.0.0.0:{TEST_SERVER_PORT} [OK]"</span>));
+        <span class="kw">let </span>(server, server_task) = build::web::wasm::bind_http_server(tempdir.path().to_path_buf());
+        <span class="kw">let </span>http_server_hwnd = tokio::task::spawn(server_task);
+        spinner.success(<span class="macro">format!</span>(<span class="string">"HTTP server started {server} [OK]"</span>));
 
         <span class="kw">let </span><span class="kw-2">mut </span>spinner = util::RunningProcess::new(<span class="string">"Starting WebDriver [ChromeDriver &amp; GeckoDriver]..."</span>, <span class="bool-val">false</span>);
         <span class="kw">let </span>chrome_driver_addr = TcpListener::bind(<span class="string">"127.0.0.1:0"</span>).<span class="kw">await</span><span class="question-mark">?</span>.local_addr()<span class="question-mark">?</span>;
@@ -558,10 +551,10 @@
         }
         spinner.success(<span class="string">"WebDriver [OK]"</span>);
 
-        run_mls_test(<span class="kw-2">&amp;</span>chrome_driver_addr).<span class="kw">await</span><span class="question-mark">?</span>;
+        run_mls_test(<span class="kw-2">&amp;</span>chrome_driver_addr, <span class="kw-2">&amp;</span>server).<span class="kw">await</span><span class="question-mark">?</span>;
 
         <span class="attr">#[cfg(feature = <span class="string">"proteus"</span>)]
-        </span>run_proteus_test(<span class="kw-2">&amp;</span>chrome_driver_addr).<span class="kw">await</span><span class="question-mark">?</span>;
+        </span>run_proteus_test(<span class="kw-2">&amp;</span>chrome_driver_addr, <span class="kw-2">&amp;</span>server).<span class="kw">await</span><span class="question-mark">?</span>;
 
         chrome_webdriver.kill().<span class="kw">await</span><span class="question-mark">?</span>;
         http_server_hwnd.abort();
@@ -575,7 +568,7 @@
 }
 
 <span class="attr">#[cfg(not(target_family = <span class="string">"wasm"</span>))]
-</span><span class="kw">async fn </span>run_mls_test(chrome_driver_addr: <span class="kw-2">&amp;</span>std::net::SocketAddr) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
+</span><span class="kw">async fn </span>run_mls_test(chrome_driver_addr: <span class="kw-2">&amp;</span>std::net::SocketAddr, web_server: <span class="kw-2">&amp;</span>std::net::SocketAddr) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
     <span class="kw">use </span>core_crypto::prelude::<span class="kw-2">*</span>;
     <span class="kw">use </span>rand::distributions::DistString;
 
@@ -586,7 +579,7 @@
     <span class="kw">let </span>ios_client = Rc::new(clients::corecrypto::ios::CoreCryptoIosClient::new().<span class="kw">await</span><span class="question-mark">?</span>);
     <span class="kw">let </span>native_client = Rc::new(clients::corecrypto::native::CoreCryptoNativeClient::new().<span class="kw">await</span><span class="question-mark">?</span>);
     <span class="kw">let </span>ffi_client = Rc::new(clients::corecrypto::ffi::CoreCryptoFfiClient::new().<span class="kw">await</span><span class="question-mark">?</span>);
-    <span class="kw">let </span>web_client = Rc::new(clients::corecrypto::web::CoreCryptoWebClient::new(chrome_driver_addr).<span class="kw">await</span><span class="question-mark">?</span>);
+    <span class="kw">let </span>web_client = Rc::new(clients::corecrypto::web::CoreCryptoWebClient::new(chrome_driver_addr, web_server).<span class="kw">await</span><span class="question-mark">?</span>);
 
     <span class="kw">let </span><span class="kw-2">mut </span>clients: Vec&lt;Rc&lt;<span class="kw">dyn </span>clients::EmulatedMlsClient&gt;&gt; = <span class="macro">vec!</span>[
         native_client.clone(),
@@ -756,7 +749,7 @@
 }
 
 <span class="attr">#[cfg(all(not(target_family = <span class="string">"wasm"</span>), feature = <span class="string">"proteus"</span>))]
-</span><span class="kw">async fn </span>run_proteus_test(chrome_driver_addr: <span class="kw-2">&amp;</span>std::net::SocketAddr) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
+</span><span class="kw">async fn </span>run_proteus_test(chrome_driver_addr: <span class="kw-2">&amp;</span>std::net::SocketAddr, web_server: <span class="kw-2">&amp;</span>std::net::SocketAddr) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
     <span class="kw">use </span>core_crypto::prelude::<span class="kw-2">*</span>;
 
     <span class="kw">let </span>spinner = util::RunningProcess::new(<span class="string">"[Proteus] Step 0: Initializing clients &amp; env..."</span>, <span class="bool-val">true</span>);
@@ -764,9 +757,10 @@
     <span class="kw">let </span><span class="kw-2">mut </span>ios_client = clients::corecrypto::ios::CoreCryptoIosClient::new().<span class="kw">await</span><span class="question-mark">?</span>;
     <span class="kw">let </span><span class="kw-2">mut </span>native_client = clients::corecrypto::native::CoreCryptoNativeClient::new().<span class="kw">await</span><span class="question-mark">?</span>;
     <span class="kw">let </span><span class="kw-2">mut </span>ffi_client = clients::corecrypto::ffi::CoreCryptoFfiClient::new().<span class="kw">await</span><span class="question-mark">?</span>;
-    <span class="kw">let </span><span class="kw-2">mut </span>web_client = clients::corecrypto::web::CoreCryptoWebClient::new(chrome_driver_addr).<span class="kw">await</span><span class="question-mark">?</span>;
+    <span class="kw">let </span><span class="kw-2">mut </span>web_client = clients::corecrypto::web::CoreCryptoWebClient::new(chrome_driver_addr, web_server).<span class="kw">await</span><span class="question-mark">?</span>;
     <span class="kw">let </span><span class="kw-2">mut </span>cryptobox_native_client = clients::cryptobox::native::CryptoboxNativeClient::new();
-    <span class="kw">let </span><span class="kw-2">mut </span>cryptobox_web_client = clients::cryptobox::web::CryptoboxWebClient::new(chrome_driver_addr).<span class="kw">await</span><span class="question-mark">?</span>;
+    <span class="kw">let </span><span class="kw-2">mut </span>cryptobox_web_client =
+        clients::cryptobox::web::CryptoboxWebClient::new(chrome_driver_addr, web_server).<span class="kw">await</span><span class="question-mark">?</span>;
 
     ios_client.init().<span class="kw">await</span><span class="question-mark">?</span>;
     native_client.init().<span class="kw">await</span><span class="question-mark">?</span>;

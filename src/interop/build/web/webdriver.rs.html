@@ -64,8 +64,10 @@
 <a href="#63" id="63">63</a>
 <a href="#64" id="64">64</a>
 <a href="#65" id="65">65</a>
-<a href="#66" id="66">66</a></pre></div><pre class="rust"><code><span class="kw">use </span><span class="kw">crate</span>::TEST_SERVER_URI;
-<span class="kw">use </span><span class="kw">crate</span>::util::RunningProcess;
+<a href="#66" id="66">66</a>
+<a href="#67" id="67">67</a>
+<a href="#68" id="68">68</a>
+<a href="#69" id="69">69</a></pre></div><pre class="rust"><code><span class="kw">use </span><span class="kw">crate</span>::util::RunningProcess;
 <span class="kw">use </span>color_eyre::eyre::Result;
 
 <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">async fn </span>setup_webdriver(force: bool) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
@@ -101,7 +103,11 @@
         .spawn()<span class="question-mark">?</span>)
 }
 
-<span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">async fn </span>setup_browser(addr: <span class="kw-2">&amp;</span>std::net::SocketAddr, folder: <span class="kw-2">&amp;</span>str) -&gt; <span class="prelude-ty">Result</span>&lt;fantoccini::Client&gt; {
+<span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">async fn </span>setup_browser(
+    client: <span class="kw-2">&amp;</span>std::net::SocketAddr,
+    server: <span class="kw-2">&amp;</span>std::net::SocketAddr,
+    folder: <span class="kw-2">&amp;</span>str,
+) -&gt; <span class="prelude-ty">Result</span>&lt;fantoccini::Client&gt; {
     <span class="kw">let </span>spinner = RunningProcess::new(<span class="string">"Starting Fantoccini remote browser..."</span>, <span class="bool-val">false</span>);
     <span class="kw">let </span><span class="kw-2">mut </span>caps_json = <span class="macro">serde_json::json!</span>({
         <span class="string">"goog:chromeOptions"</span>: {
@@ -123,9 +129,9 @@
 
     <span class="kw">let </span>browser = fantoccini::ClientBuilder::native()
         .capabilities(caps)
-        .connect(<span class="kw-2">&amp;</span><span class="macro">format!</span>(<span class="string">"http://{addr}"</span>))
+        .connect(<span class="kw-2">&amp;</span><span class="macro">format!</span>(<span class="string">"http://{client}"</span>))
         .<span class="kw">await</span><span class="question-mark">?</span>;
-    browser.goto(<span class="kw-2">&amp;</span><span class="macro">format!</span>(<span class="string">"{TEST_SERVER_URI}/{folder}/index.html"</span>)).<span class="kw">await</span><span class="question-mark">?</span>;
+    browser.goto(<span class="kw-2">&amp;</span><span class="macro">format!</span>(<span class="string">"http://{server}/{folder}/index.html"</span>)).<span class="kw">await</span><span class="question-mark">?</span>;
 
     spinner.success(<span class="string">"Browser [OK]"</span>);
     <span class="prelude-val">Ok</span>(browser)

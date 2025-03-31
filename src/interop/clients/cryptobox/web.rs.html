@@ -184,9 +184,9 @@
 }
 
 <span class="kw">impl </span>CryptoboxWebClient {
-    <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">async fn </span>new(driver_addr: <span class="kw-2">&amp;</span>SocketAddr) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>&gt; {
+    <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">async fn </span>new(driver_addr: <span class="kw-2">&amp;</span>SocketAddr, server: <span class="kw-2">&amp;</span>SocketAddr) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>&gt; {
         <span class="kw">let </span>client_id = uuid::Uuid::new_v4();
-        <span class="kw">let </span>browser = <span class="kw">crate</span>::build::web::webdriver::setup_browser(driver_addr, <span class="string">"cryptobox"</span>).<span class="kw">await</span><span class="question-mark">?</span>;
+        <span class="kw">let </span>browser = <span class="kw">crate</span>::build::web::webdriver::setup_browser(driver_addr, server, <span class="string">"cryptobox"</span>).<span class="kw">await</span><span class="question-mark">?</span>;
 
         <span class="prelude-val">Ok</span>(<span class="self">Self </span>{
             browser,

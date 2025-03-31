@@ -365,7 +365,7 @@
 }
 
 <span class="kw">impl </span>CoreCryptoWebClient {
-    <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">async fn </span>new(driver_addr: <span class="kw-2">&amp;</span>SocketAddr) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>&gt; {
+    <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">async fn </span>new(driver_addr: <span class="kw-2">&amp;</span>SocketAddr, server: <span class="kw-2">&amp;</span>SocketAddr) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>&gt; {
         <span class="kw">let </span>client_id = uuid::Uuid::new_v4();
         <span class="kw">let </span>client_id_str = client_id.as_hyphenated().to_string();
         <span class="kw">let </span>ciphersuite = CIPHERSUITE_IN_USE <span class="kw">as </span>u16;
@@ -375,7 +375,7 @@
             <span class="string">"ciphersuites"</span>: [ciphersuite],
             <span class="string">"clientId"</span>: client_id_str
         });
-        <span class="kw">let </span>browser = <span class="kw">crate</span>::build::web::webdriver::setup_browser(driver_addr, <span class="string">"core-crypto"</span>).<span class="kw">await</span><span class="question-mark">?</span>;
+        <span class="kw">let </span>browser = <span class="kw">crate</span>::build::web::webdriver::setup_browser(driver_addr, server, <span class="string">"core-crypto"</span>).<span class="kw">await</span><span class="question-mark">?</span>;
 
         <span class="kw">let _ </span>= browser
             .execute_async(

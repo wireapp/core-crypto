@@ -80,14 +80,7 @@
 <a href="#79" id="79">79</a>
 <a href="#80" id="80">80</a>
 <a href="#81" id="81">81</a>
-<a href="#82" id="82">82</a>
-<a href="#83" id="83">83</a>
-<a href="#84" id="84">84</a>
-<a href="#85" id="85">85</a>
-<a href="#86" id="86">86</a>
-<a href="#87" id="87">87</a>
-<a href="#88" id="88">88</a></pre></div><pre class="rust"><code><span class="kw">use </span><span class="kw">crate</span>::TEST_SERVER_PORT;
-<span class="kw">use </span><span class="kw">crate</span>::util::RunningProcess;
+<a href="#82" id="82">82</a></pre></div><pre class="rust"><code><span class="kw">use </span><span class="kw">crate</span>::util::RunningProcess;
 <span class="kw">use </span>color_eyre::eyre::Result;
 <span class="kw">use </span>std::net::SocketAddr;
 <span class="kw">use </span>std::path::PathBuf;
@@ -161,17 +154,12 @@
     <span class="prelude-val">Ok</span>(())
 }
 
-<span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">async fn </span>spawn_http_server(wasm_deploy_path: PathBuf) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
+<span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>bind_http_server(wasm_deploy_path: PathBuf) -&gt; (SocketAddr, <span class="kw">impl </span>Future&lt;Output = ()&gt; + <span class="lifetime">'static</span>) {
     <span class="kw">use </span>warp::Filter <span class="kw">as _</span>;
-    <span class="kw">let </span>addr = SocketAddr::from(([<span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>], TEST_SERVER_PORT.parse()<span class="question-mark">?</span>));
     <span class="kw">let </span>warp_filter_cc = warp::path(<span class="string">"core-crypto"</span>).and(warp::fs::dir(wasm_deploy_path));
     <span class="kw">let </span>warp_filter_cbox =
         warp::path(<span class="string">"cryptobox"</span>).and(warp::fs::dir(<span class="string">"interop/src/build/web/cryptobox-esm/dist"</span>.to_string()));
 
-    warp::serve(warp_filter_cc.or(warp_filter_cbox).boxed())
-        .bind(addr)
-        .<span class="kw">await</span>;
-
-    <span class="prelude-val">Ok</span>(())
+    warp::serve(warp_filter_cc.or(warp_filter_cbox).boxed()).bind_ephemeral(([<span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>], <span class="number">0</span>))
 }
 </code></pre></div></section></main></body></html>
