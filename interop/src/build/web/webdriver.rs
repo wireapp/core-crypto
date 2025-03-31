@@ -1,4 +1,3 @@
-use crate::TEST_SERVER_URI;
 use crate::util::RunningProcess;
 use color_eyre::eyre::Result;
 
@@ -35,7 +34,11 @@ pub(crate) async fn start_webdriver_chrome(addr: &std::net::SocketAddr) -> Resul
         .spawn()?)
 }
 
-pub(crate) async fn setup_browser(addr: &std::net::SocketAddr, folder: &str) -> Result<fantoccini::Client> {
+pub(crate) async fn setup_browser(
+    client: &std::net::SocketAddr,
+    server: &std::net::SocketAddr,
+    folder: &str,
+) -> Result<fantoccini::Client> {
     let spinner = RunningProcess::new("Starting Fantoccini remote browser...", false);
     let mut caps_json = serde_json::json!({
         "goog:chromeOptions": {
@@ -57,9 +60,9 @@ pub(crate) async fn setup_browser(addr: &std::net::SocketAddr, folder: &str) -> 
 
     let browser = fantoccini::ClientBuilder::native()
         .capabilities(caps)
-        .connect(&format!("http://{addr}"))
+        .connect(&format!("http://{client}"))
         .await?;
-    browser.goto(&format!("{TEST_SERVER_URI}/{folder}/index.html")).await?;
+    browser.goto(&format!("http://{server}/{folder}/index.html")).await?;
 
     spinner.success("Browser [OK]");
     Ok(browser)

@@ -17,7 +17,7 @@ pub(crate) struct CoreCryptoWebClient {
 }
 
 impl CoreCryptoWebClient {
-    pub(crate) async fn new(driver_addr: &SocketAddr) -> Result<Self> {
+    pub(crate) async fn new(driver_addr: &SocketAddr, server: &SocketAddr) -> Result<Self> {
         let client_id = uuid::Uuid::new_v4();
         let client_id_str = client_id.as_hyphenated().to_string();
         let ciphersuite = CIPHERSUITE_IN_USE as u16;
@@ -27,7 +27,7 @@ impl CoreCryptoWebClient {
             "ciphersuites": [ciphersuite],
             "clientId": client_id_str
         });
-        let browser = crate::build::web::webdriver::setup_browser(driver_addr, "core-crypto").await?;
+        let browser = crate::build::web::webdriver::setup_browser(driver_addr, server, "core-crypto").await?;
 
         let _ = browser
             .execute_async(

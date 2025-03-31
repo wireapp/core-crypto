@@ -17,11 +17,6 @@ mod clients;
 #[cfg(not(target_family = "wasm"))]
 mod util;
 
-#[cfg(not(target_family = "wasm"))]
-const TEST_SERVER_PORT: &str = "8000";
-#[cfg(not(target_family = "wasm"))]
-const TEST_SERVER_URI: &str = const_format::concatcp!("http://localhost:", TEST_SERVER_PORT);
-
 const MLS_MAIN_CLIENTID: &[u8] = b"test_main";
 const MLS_CONVERSATION_ID: &[u8] = b"test_conversation";
 const ROUNDTRIP_MSG_AMOUNT: usize = 100;
@@ -70,8 +65,9 @@ fn run_test() -> Result<()> {
         build::web::wasm::build_wasm(tempdir.path().to_path_buf()).await?;
 
         let spinner = util::RunningProcess::new("Starting HTTP server...", false);
-        let http_server_hwnd = tokio::task::spawn(build::web::wasm::spawn_http_server(tempdir.path().to_path_buf()));
-        spinner.success(format!("HTTP server started at 0.0.0.0:{TEST_SERVER_PORT} [OK]"));
+        let (server, server_task) = build::web::wasm::bind_http_server(tempdir.path().to_path_buf());
+        let http_server_hwnd = tokio::task::spawn(server_task);
+        spinner.success(format!("HTTP server started {server} [OK]"));
 
         let mut spinner = util::RunningProcess::new("Starting WebDriver [ChromeDriver & GeckoDriver]...", false);
         let chrome_driver_addr = TcpListener::bind("127.0.0.1:0").await?.local_addr()?;
@@ -88,10 +84,10 @@ fn run_test() -> Result<()> {
         }
         spinner.success("WebDriver [OK]");
 
-        run_mls_test(&chrome_driver_addr).await?;
+        run_mls_test(&chrome_driver_addr, &server).await?;
 
         #[cfg(feature = "proteus")]
-        run_proteus_test(&chrome_driver_addr).await?;
+        run_proteus_test(&chrome_driver_addr, &server).await?;
 
         chrome_webdriver.kill().await?;
         http_server_hwnd.abort();
@@ -105,7 +101,7 @@ fn run_test() -> Result<()> {
 }
 
 #[cfg(not(target_family = "wasm"))]
-async fn run_mls_test(chrome_driver_addr: &std::net::SocketAddr) -> Result<()> {
+async fn run_mls_test(chrome_driver_addr: &std::net::SocketAddr, web_server: &std::net::SocketAddr) -> Result<()> {
     use core_crypto::prelude::*;
     use rand::distributions::DistString;
 
@@ -116,7 +112,7 @@ async fn run_mls_test(chrome_driver_addr: &std::net::SocketAddr) -> Result<()> {
     let ios_client = Rc::new(clients::corecrypto::ios::CoreCryptoIosClient::new().await?);
     let native_client = Rc::new(clients::corecrypto::native::CoreCryptoNativeClient::new().await?);
     let ffi_client = Rc::new(clients::corecrypto::ffi::CoreCryptoFfiClient::new().await?);
-    let web_client = Rc::new(clients::corecrypto::web::CoreCryptoWebClient::new(chrome_driver_addr).await?);
+    let web_client = Rc::new(clients::corecrypto::web::CoreCryptoWebClient::new(chrome_driver_addr, web_server).await?);
 
     let mut clients: Vec<Rc<dyn clients::EmulatedMlsClient>> = vec![
         native_client.clone(),
@@ -286,7 +282,7 @@ async fn run_mls_test(chrome_driver_addr: &std::net::SocketAddr) -> Result<()> {
 }
 
 #[cfg(all(not(target_family = "wasm"), feature = "proteus"))]
-async fn run_proteus_test(chrome_driver_addr: &std::net::SocketAddr) -> Result<()> {
+async fn run_proteus_test(chrome_driver_addr: &std::net::SocketAddr, web_server: &std::net::SocketAddr) -> Result<()> {
     use core_crypto::prelude::*;
 
     let spinner = util::RunningProcess::new("[Proteus] Step 0: Initializing clients & env...", true);
@@ -294,9 +290,10 @@ async fn run_proteus_test(chrome_driver_addr: &std::net::SocketAddr) -> Result<(
     let mut ios_client = clients::corecrypto::ios::CoreCryptoIosClient::new().await?;
     let mut native_client = clients::corecrypto::native::CoreCryptoNativeClient::new().await?;
     let mut ffi_client = clients::corecrypto::ffi::CoreCryptoFfiClient::new().await?;
-    let mut web_client = clients::corecrypto::web::CoreCryptoWebClient::new(chrome_driver_addr).await?;
+    let mut web_client = clients::corecrypto::web::CoreCryptoWebClient::new(chrome_driver_addr, web_server).await?;
     let mut cryptobox_native_client = clients::cryptobox::native::CryptoboxNativeClient::new();
-    let mut cryptobox_web_client = clients::cryptobox::web::CryptoboxWebClient::new(chrome_driver_addr).await?;
+    let mut cryptobox_web_client =
+        clients::cryptobox::web::CryptoboxWebClient::new(chrome_driver_addr, web_server).await?;
 
     ios_client.init().await?;
     native_client.init().await?;

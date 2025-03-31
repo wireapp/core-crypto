@@ -11,9 +11,9 @@ pub(crate) struct CryptoboxWebClient {
 }
 
 impl CryptoboxWebClient {
-    pub(crate) async fn new(driver_addr: &SocketAddr) -> Result<Self> {
+    pub(crate) async fn new(driver_addr: &SocketAddr, server: &SocketAddr) -> Result<Self> {
         let client_id = uuid::Uuid::new_v4();
-        let browser = crate::build::web::webdriver::setup_browser(driver_addr, "cryptobox").await?;
+        let browser = crate::build::web::webdriver::setup_browser(driver_addr, server, "cryptobox").await?;
 
         Ok(Self {
             browser,
