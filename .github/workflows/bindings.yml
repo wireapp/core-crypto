@@ -159,6 +159,7 @@ jobs:
         with:
           target: "wasm32-unknown-unknown,aarch64-apple-ios,aarch64-apple-ios-sim"
           rustflags: ''
+          cache-key-prefix: e2e-interop-test 
       - uses: davidB/rust-cargo-make@v1
       - name: setup Xcode
         uses: maxim-lobanov/setup-xcode@v1
