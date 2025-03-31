@@ -1107,23 +1107,9 @@ export class CoreCryptoContext {
         conversationId: ConversationId,
         userIds: string[]
     ): Promise<Map<string, WireIdentity[]>> {
-        const map: Map<string, CoreCryptoFfiTypes.WireIdentity[]> =
-            await CoreCryptoError.asyncMapErr(
-                this.#ctx.get_user_identities(conversationId, userIds)
-            );
-
-        const mapFixed: Map<string, WireIdentity[]> = new Map();
-
-        for (const [userId, identities] of map) {
-            mapFixed.set(
-                userId,
-                identities.flatMap((identity) => {
-                    return identity ? [identity] : [];
-                })
-            );
-        }
-
-        return mapFixed;
+        return await CoreCryptoError.asyncMapErr(
+            this.#ctx.get_user_identities(conversationId, userIds)
+        );
     }
 
     /**
