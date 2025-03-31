@@ -96,7 +96,7 @@ jobs:
 
   build-and-test-jvm:
     if: github.repository == 'wireapp/core-crypto'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     needs: build-jvm-linux
     steps:
       - uses: actions/checkout@v4
