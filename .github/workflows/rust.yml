@@ -38,7 +38,7 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
-      - uses: actions-rust-lang/setup-rust-toolchain@v1  # this implicitly caches Rust tools and build artifacts
+      - uses: ./.github/actions/setup-and-cache-rust
         with:
           components: rustfmt, clippy
           rustflags: ''
@@ -49,7 +49,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: actions-rust-lang/setup-rust-toolchain@v1  # this implicitly caches Rust tools and build artifacts
+      - uses: ./.github/actions/setup-and-cache-rust
         with:
           rustflags: ''
       - uses: taiki-e/install-action@nextest
@@ -67,7 +67,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: actions-rust-lang/setup-rust-toolchain@v1  # this implicitly caches Rust tools and build artifacts
+      - uses: ./.github/actions/setup-and-cache-rust
         with:
           rustflags: ''
       - uses: taiki-e/install-action@nextest
@@ -99,7 +99,7 @@ jobs:
             module: -- proteus
     steps:
       - uses: actions/checkout@v4
-      - uses: actions-rust-lang/setup-rust-toolchain@v1
+      - uses: ./.github/actions/setup-and-cache-rust
         with:
           target: wasm32-unknown-unknown
           rustflags: ''
@@ -118,7 +118,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: actions-rust-lang/setup-rust-toolchain@v1  # this implicitly caches Rust tools and build artifacts
+      - uses: ./.github/actions/setup-and-cache-rust
         with:
           rustflags: ''
       - uses: taiki-e/install-action@cargo-hack

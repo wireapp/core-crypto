@@ -3,12 +3,15 @@ description: Sets up rust, and caches build artifacts. Runs scripts/clean.sh pos
 inputs:
   target:
     description: Rust target
-    required: true
-    default: $CARGO_BUILD_TARGET
+    required: false
   rustflags:
     description: Set the value of RUSTFLAGS (set to empty string to avoid overwriting existing flags)
     required: false
     default: -D warnings
+  components:
+    description: Additional components to install that don't come with the toolchain by default.
+    required: false
+    default: ''
 runs:
   using: composite
   steps:
@@ -17,6 +20,7 @@ runs:
       with:
         target: ${{ inputs.target }}
         rustflags: ${{ inputs.rustflags }}
+        components: ${{ inputs.components }}
         cache: false
     - name: Cleanup on post
       uses: gacts/run-and-post-run@v1
@@ -24,7 +28,11 @@ runs:
           post: |
             sh ./scripts/clean.sh
     - name: Cache build artifacts
-      uses: Swatinem/rust-cache@v2
+      uses: actions/cache@v4
       with:
-        cache-on-failure: true
-        cache-bin: false
+        path: |
+          ~/.cargo/registry/index/
+          ~/.cargo/registry/cache/
+          ~/.cargo/git/db/
+          target/
+        key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
