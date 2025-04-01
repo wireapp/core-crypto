@@ -40,6 +40,7 @@ pub use client_id::{ClientId, FfiClientId};
 pub use configuration::{ConversationConfiguration, CustomConfiguration, WirePolicy};
 pub use core_crypto::CoreCrypto;
 pub(crate) use core_crypto::conversation::ConversationId;
+pub use core_crypto::e2ei::E2eiDumpedPkiEnv;
 pub use core_crypto::logger::{CoreCryptoLogLevel, CoreCryptoLogger};
 #[cfg(not(target_family = "wasm"))]
 pub use core_crypto::logger::{set_logger, set_logger_only, set_max_log_level};

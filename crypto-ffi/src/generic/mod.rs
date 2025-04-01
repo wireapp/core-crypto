@@ -1,58 +1,8 @@
-use core_crypto::RecursiveError;
-
 use self::context::CoreCryptoContext;
 use crate::{Ciphersuite, Ciphersuites, ClientId, CoreCrypto, CoreCryptoError, CoreCryptoResult, CredentialType};
 
 pub mod context;
 mod epoch_observer;
-
-#[derive(Debug, Clone, uniffi::Record)]
-pub struct E2eiDumpedPkiEnv {
-    pub root_ca: String,
-    pub intermediates: Vec<String>,
-    pub crls: Vec<String>,
-}
-
-impl From<core_crypto::e2e_identity::E2eiDumpedPkiEnv> for E2eiDumpedPkiEnv {
-    fn from(value: core_crypto::e2e_identity::E2eiDumpedPkiEnv) -> Self {
-        Self {
-            root_ca: value.root_ca,
-            intermediates: value.intermediates,
-            crls: value.crls,
-        }
-    }
-}
-
-// End-to-end identity methods
-#[allow(dead_code, unused_variables)]
-#[uniffi::export]
-impl CoreCrypto {
-    pub async fn e2ei_dump_pki_env(&self) -> CoreCryptoResult<Option<E2eiDumpedPkiEnv>> {
-        let dumped_pki_env = self
-            .inner
-            .e2ei_dump_pki_env()
-            .await
-            .map(|option| option.map(Into::into))
-            .map_err(RecursiveError::mls_client("dumping pki env"))?;
-        Ok(dumped_pki_env)
-    }
-
-    /// See [core_crypto::mls::Client::e2ei_is_pki_env_setup]
-    pub async fn e2ei_is_pki_env_setup(&self) -> bool {
-        self.inner.e2ei_is_pki_env_setup().await
-    }
-
-    /// See [core_crypto::mls::Client::e2ei_is_enabled]
-    pub async fn e2ei_is_enabled(&self, ciphersuite: Ciphersuite) -> CoreCryptoResult<bool> {
-        let sc = core_crypto::prelude::MlsCiphersuite::from(core_crypto::prelude::CiphersuiteName::from(ciphersuite))
-            .signature_algorithm();
-        self.inner
-            .e2ei_is_enabled(sc)
-            .await
-            .map_err(RecursiveError::mls_client("is e2ei enabled on client?"))
-            .map_err(Into::into)
-    }
-}
 
 #[derive(Debug, uniffi::Object)]
 /// See [core_crypto::e2e_identity::E2eiEnrollment]
@@ -301,8 +251,7 @@ mod tests {
     use crate::{DatabaseKey, MlsError};
 
     use super::*;
-    use core_crypto::LeafError;
-    use log::Level;
+    use core_crypto::{LeafError, RecursiveError};
 
     #[test]
     fn test_error_mapping() {
