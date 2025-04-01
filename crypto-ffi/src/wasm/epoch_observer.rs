@@ -5,9 +5,7 @@ use core_crypto::prelude::{ConversationId, Obfuscated};
 use log::kv;
 use wasm_bindgen::prelude::*;
 
-use crate::{CoreCryptoResult, InternalError};
-
-use super::CoreCrypto;
+use crate::{CoreCrypto, CoreCryptoResult, InternalError};
 
 #[wasm_bindgen]
 extern "C" {
