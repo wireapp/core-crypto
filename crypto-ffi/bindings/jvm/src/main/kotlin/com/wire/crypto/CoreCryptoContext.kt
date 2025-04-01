@@ -605,6 +605,7 @@ class CoreCryptoContext(private val cc: com.wire.crypto.uniffi.CoreCryptoContext
      * @param enrollment the enrollment instance to persist
      * @return a handle to fetch the enrollment later with [e2eiEnrollmentStashPop]
      */
+    @kotlin.ExperimentalUnsignedTypes
     suspend fun e2eiEnrollmentStash(enrollment: E2EIEnrollment): EnrollmentHandle {
         return wrapException { cc.e2eiEnrollmentStash(enrollment.lower()).toUByteArray().asByteArray() }
     }
