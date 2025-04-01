@@ -1,9 +1,8 @@
 use std::{collections::HashMap, ops::DerefMut};
 
 use crate::{
-    CoreCryptoError, CrlRegistration, E2eiConversationState, E2eiDumpedPkiEnv, E2eiEnrollment,
-    NewCrlDistributionPoints, WireIdentity,
-    generic::{Ciphersuite, ClientId, CoreCryptoResult, CredentialType, context::CoreCryptoContext},
+    Ciphersuite, ClientId, CoreCryptoError, CoreCryptoResult, CredentialType, CrlRegistration, E2eiConversationState,
+    E2eiDumpedPkiEnv, E2eiEnrollment, NewCrlDistributionPoints, WireIdentity, context::CoreCryptoContext,
 };
 use core_crypto::mls::conversation::Conversation as _;
 use core_crypto::{RecursiveError, prelude::VerifiableGroupInfo};
@@ -21,7 +20,7 @@ impl CoreCryptoContext {
         expiry_sec: u32,
         ciphersuite: Ciphersuite,
     ) -> CoreCryptoResult<E2eiEnrollment> {
-        self.context
+        self.inner
             .e2ei_new_enrollment(
                 client_id.into_bytes().into(),
                 display_name,
@@ -45,7 +44,7 @@ impl CoreCryptoContext {
         ciphersuite: Ciphersuite,
     ) -> CoreCryptoResult<E2eiEnrollment> {
         Ok(self
-            .context
+            .inner
             .e2ei_new_activation_enrollment(display_name, handle, team, expiry_sec, ciphersuite.into())
             .await
             .map(E2eiEnrollment::new)?)
@@ -61,7 +60,7 @@ impl CoreCryptoContext {
         ciphersuite: Ciphersuite,
     ) -> CoreCryptoResult<E2eiEnrollment> {
         Ok(self
-            .context
+            .inner
             .e2ei_new_rotate_enrollment(display_name, handle, team, expiry_sec, ciphersuite.into())
             .await
             .map(E2eiEnrollment::new)?)
@@ -69,14 +68,14 @@ impl CoreCryptoContext {
 
     /// See [core_crypto::context::CentralContext::e2ei_register_acme_ca]
     pub async fn e2ei_register_acme_ca(&self, trust_anchor_pem: String) -> CoreCryptoResult<()> {
-        self.context.e2ei_register_acme_ca(trust_anchor_pem).await?;
+        self.inner.e2ei_register_acme_ca(trust_anchor_pem).await?;
         Ok(())
     }
 
     /// See [core_crypto::context::CentralContext::e2ei_register_intermediate_ca_pem]
     pub async fn e2ei_register_intermediate_ca(&self, cert_pem: String) -> CoreCryptoResult<NewCrlDistributionPoints> {
         Ok(self
-            .context
+            .inner
             .e2ei_register_intermediate_ca_pem(cert_pem)
             .await
             .map(|new_crl_distribution_point| -> Option<Vec<_>> { new_crl_distribution_point.into() })?
@@ -85,7 +84,7 @@ impl CoreCryptoContext {
 
     /// See [core_crypto::context::CentralContext::e2ei_register_crl]
     pub async fn e2ei_register_crl(&self, crl_dp: String, crl_der: Vec<u8>) -> CoreCryptoResult<CrlRegistration> {
-        Ok(self.context.e2ei_register_crl(crl_dp, crl_der).await.map(Into::into)?)
+        Ok(self.inner.e2ei_register_crl(crl_dp, crl_der).await.map(Into::into)?)
     }
 
     /// See [core_crypto::context::CentralContext::e2ei_mls_init_only]
@@ -101,7 +100,7 @@ impl CoreCryptoContext {
             .map_err(CoreCryptoError::generic())?;
 
         Ok(self
-            .context
+            .inner
             .e2ei_mls_init_only(enrollment.write().await.deref_mut(), certificate_chain, nb_key_package)
             .await
             .map(|new_crl_distribution_point| -> Option<Vec<_>> { new_crl_distribution_point.into() })?
@@ -111,7 +110,7 @@ impl CoreCryptoContext {
     /// See [core_crypto::mls::conversation::ConversationGuard::e2ei_rotate]
     pub async fn e2ei_rotate(&self, conversation_id: Vec<u8>) -> CoreCryptoResult<()> {
         Ok(self
-            .context
+            .inner
             .conversation(&conversation_id)
             .await?
             .e2ei_rotate(None)
@@ -125,7 +124,7 @@ impl CoreCryptoContext {
         certificate_chain: String,
     ) -> CoreCryptoResult<NewCrlDistributionPoints> {
         Ok(self
-            .context
+            .inner
             .save_x509_credential(enrollment.write().await.deref_mut(), certificate_chain)
             .await
             .map(|new_crl_distribution_point| -> Option<Vec<_>> { new_crl_distribution_point.into() })?
@@ -134,7 +133,7 @@ impl CoreCryptoContext {
 
     /// See [core_crypto::context::CentralContext::delete_stale_key_packages]
     pub async fn delete_stale_key_packages(&self, ciphersuite: Ciphersuite) -> CoreCryptoResult<()> {
-        self.context
+        self.inner
             .delete_stale_key_packages(ciphersuite.into())
             .await
             .map_err(Into::into)
@@ -149,13 +148,13 @@ impl CoreCryptoContext {
             CoreCryptoError::Other("inner enrollment had multiple strong refs and could not be unpacked".into())
         })?;
 
-        Ok(self.context.e2ei_enrollment_stash(enrollment).await?)
+        Ok(self.inner.e2ei_enrollment_stash(enrollment).await?)
     }
 
     /// See [core_crypto::context::CentralContext::e2ei_enrollment_stash_pop]
     pub async fn e2ei_enrollment_stash_pop(&self, handle: Vec<u8>) -> CoreCryptoResult<E2eiEnrollment> {
         Ok(self
-            .context
+            .inner
             .e2ei_enrollment_stash_pop(handle)
             .await
             .map(E2eiEnrollment::new)?)
@@ -164,7 +163,7 @@ impl CoreCryptoContext {
     /// See [core_crypto::mls::conversation::conversation_guard::ConversationGuard::e2ei_conversation_state]
     pub async fn e2ei_conversation_state(&self, conversation_id: Vec<u8>) -> CoreCryptoResult<E2eiConversationState> {
         Ok(self
-            .context
+            .inner
             .conversation(&conversation_id)
             .await?
             .e2ei_conversation_state()
@@ -173,19 +172,19 @@ impl CoreCryptoContext {
     }
 
     pub async fn e2ei_dump_pki_env(&self) -> CoreCryptoResult<Option<E2eiDumpedPkiEnv>> {
-        Ok(self.context.e2ei_dump_pki_env().await?.map(Into::into))
+        Ok(self.inner.e2ei_dump_pki_env().await?.map(Into::into))
     }
 
     /// See [core_crypto::mls::Client::e2ei_is_pki_env_setup]
     pub async fn e2ei_is_pki_env_setup(&self) -> CoreCryptoResult<bool> {
-        Ok(self.context.e2ei_is_pki_env_setup().await?)
+        Ok(self.inner.e2ei_is_pki_env_setup().await?)
     }
 
     /// See [core_crypto::mls::Client::e2ei_is_enabled]
     pub async fn e2ei_is_enabled(&self, ciphersuite: Ciphersuite) -> CoreCryptoResult<bool> {
         let sc = core_crypto::prelude::MlsCiphersuite::from(core_crypto::prelude::CiphersuiteName::from(ciphersuite))
             .signature_algorithm();
-        Ok(self.context.e2ei_is_enabled(sc).await?)
+        Ok(self.inner.e2ei_is_enabled(sc).await?)
     }
 
     /// See [core_crypto::mls::Client::get_device_identities]
@@ -196,7 +195,7 @@ impl CoreCryptoContext {
     ) -> CoreCryptoResult<Vec<WireIdentity>> {
         let device_ids = device_ids.into_iter().map(|cid| cid.0).collect::<Vec<_>>();
         Ok(self
-            .context
+            .inner
             .conversation(&conversation_id)
             .await?
             .get_device_identities(&device_ids[..])
@@ -213,7 +212,7 @@ impl CoreCryptoContext {
         user_ids: Vec<String>,
     ) -> CoreCryptoResult<HashMap<String, Vec<WireIdentity>>> {
         Ok(self
-            .context
+            .inner
             .conversation(&conversation_id)
             .await?
             .get_user_identities(&user_ids[..])
@@ -235,7 +234,7 @@ impl CoreCryptoContext {
             ))
             .map_err(RecursiveError::mls_conversation("getting credential in use"))?;
         Ok(self
-            .context
+            .inner
             .get_credential_in_use(group_info, credential_type.into())
             .await?
             .into())

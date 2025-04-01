@@ -1,12 +1,10 @@
-use super::{Ciphersuite, Ciphersuites, ClientId, CoreCrypto, CoreCryptoError, CoreCryptoResult, CredentialType};
 use crate::{
-    ConversationConfiguration, CustomConfiguration, DecryptedMessage, NewCrlDistributionPoints, WelcomeBundle,
+    Ciphersuite, Ciphersuites, ClientId, ConversationConfiguration, CoreCryptoContext, CoreCryptoError,
+    CoreCryptoResult, CredentialType, CustomConfiguration, DecryptedMessage, NewCrlDistributionPoints, WelcomeBundle,
 };
 
-use async_lock::{Mutex, OnceCell};
 use core_crypto::{
     RecursiveError,
-    context::CentralContext,
     mls::conversation::{Conversation as _, Error as ConversationError},
     prelude::{
         ClientIdentifier, ConversationId, KeyPackageIn, KeyPackageRef, MlsConversationConfiguration,
@@ -15,192 +13,19 @@ use core_crypto::{
 };
 use tls_codec::{Deserialize, Serialize};
 
-use std::{future::Future, ops::Deref, sync::Arc};
-
 pub mod e2ei;
 pub mod proteus;
-
-#[derive(uniffi::Object)]
-pub struct CoreCryptoContext {
-    pub(crate) context: Arc<CentralContext>,
-}
-
-impl Deref for CoreCryptoContext {
-    type Target = CentralContext;
-
-    fn deref(&self) -> &Self::Target {
-        self.context.as_ref()
-    }
-}
-
-#[uniffi::export(with_foreign)]
-#[async_trait::async_trait]
-pub trait CoreCryptoCommand: Send + Sync {
-    /// Will be called inside a transaction in CoreCrypto
-    async fn execute(&self, context: Arc<CoreCryptoContext>) -> CoreCryptoResult<()>;
-}
-
-#[async_trait::async_trait]
-impl<F, Fut> CoreCryptoCommand for F
-where
-    F: Fn(Arc<CoreCryptoContext>) -> Fut + Send + Sync,
-    Fut: Future<Output = CoreCryptoResult<()>> + Send,
-{
-    async fn execute(&self, context: Arc<CoreCryptoContext>) -> CoreCryptoResult<()> {
-        self(context).await
-    }
-}
-
-/// Helper for working with the new transasction interface.
-///
-/// This helper serves two purposes: to present a `FnOnce` interface for transactions,
-/// and to allow the extraction of data from within transactions.
-///
-/// ## Extracting Data
-///
-/// The `CoreCryptoCommand` interface requires some kind of interior mutability to extract
-/// any data: it takes an immutable reference to the implementing item, and returns the unit struct
-/// in the success case.
-///
-/// That pattern is relatively arcane and verbose, particularly when we just want to smuggle out
-/// some data from within the transaction. This helper is intended to ease and automate
-/// that process.
-///
-/// Use it like this (pseudocode):
-///
-/// ```ignore
-/// // an extractor is always `Arc`-wrapped
-/// let extractor: Arc<_> = TransactionHelper::new(move |context| async move {
-///     // return whatever you need from the transaction here
-/// });
-/// core_crypto.transaction(extractor.clone()).await?;
-/// let return_value = extractor.into_return_value();
-/// ```
-///
-/// ## Panics
-///
-/// `TransactionHelper` is a one-shot item. Attempting to use the
-/// same extractor in two different transactions will cause a panic.
-pub struct TransactionHelper<T, F> {
-    func: Mutex<Option<F>>,
-    return_value: OnceCell<T>,
-}
-
-impl<T, F, Fut> TransactionHelper<T, F>
-where
-    F: FnOnce(Arc<CoreCryptoContext>) -> Fut + Send + Sync,
-    Fut: Future<Output = CoreCryptoResult<T>> + Send,
-    T: Send + Sync,
-{
-    pub fn new(func: F) -> Arc<Self> {
-        Arc::new(Self {
-            func: Mutex::new(Some(func)),
-            return_value: OnceCell::new(),
-        })
-    }
-
-    /// Get the return value from the internal function.
-    ///
-    /// ## Panics
-    ///
-    /// - If there exists more than one strong reference to this extractor
-    /// - If the inner function was never called
-    /// - If the inner function returned an `Err` variant
-    ///
-    /// In general if you call this after a call like
-    ///
-    /// ```ignore
-    /// core_crypto.transaction(extractor.clone())?;
-    /// ```
-    ///
-    /// then this will be fine.
-    pub fn into_return_value(self: Arc<Self>) -> T {
-        Arc::into_inner(self)
-            .expect("there should exist exactly one strong ref right now")
-            .return_value
-            .into_inner()
-            .expect("return value should be initialized")
-    }
-
-    /// Safely get the return value from the internal function.
-    ///
-    /// If there exists more than one strong reference to this item, or
-    /// the inner function was never called or returned an `Err` variant,
-    /// this will return `None`.
-    pub fn try_into_return_value(self: Arc<Self>) -> Option<T> {
-        Arc::into_inner(self)?.return_value.into_inner()
-    }
-}
-
-#[async_trait::async_trait]
-impl<T, F, Fut> CoreCryptoCommand for TransactionHelper<T, F>
-where
-    F: FnOnce(Arc<CoreCryptoContext>) -> Fut + Send + Sync,
-    Fut: Future<Output = CoreCryptoResult<T>> + Send,
-    T: Send + Sync,
-{
-    async fn execute(&self, context: Arc<CoreCryptoContext>) -> CoreCryptoResult<()> {
-        let func = self
-            .func
-            .lock()
-            .await
-            .take()
-            .expect("inner function must only be called once");
-        let return_value = func(context).await?;
-        let set_result = self.return_value.set(return_value).await;
-        if set_result.is_err() {
-            // can't just `.expect()` here because `T` is not `Debug`
-            // though TBH this would be a really weird case; we should already have
-            // paniced getting `func` above
-            panic!("return value was previously set");
-        }
-        Ok(())
-    }
-}
-
-#[uniffi::export]
-impl CoreCrypto {
-    /// Starts a new transaction in Core Crypto. If the callback succeeds, it will be committed,
-    /// otherwise, every operation performed with the context will be discarded.
-    ///
-    /// When calling this function from within Rust, async functions accepting a context
-    /// implement `CoreCryptoCommand`, so operations can be defined inline as follows:
-    ///
-    /// ```ignore
-    /// core_crypto.transaction(Arc::new(|context| async {
-    ///     // your implementation here
-    ///     Ok(())
-    /// }))?;
-    /// ```
-    pub async fn transaction(&self, command: Arc<dyn CoreCryptoCommand>) -> CoreCryptoResult<()> {
-        let context = Arc::new(CoreCryptoContext {
-            context: Arc::new(self.inner.new_transaction().await?),
-        });
-
-        let result = command.execute(context.clone()).await;
-        match result {
-            Ok(result) => {
-                context.context.finish().await?;
-                Ok(result)
-            }
-            Err(err) => {
-                context.context.abort().await?;
-                Err(err)
-            }
-        }
-    }
-}
 
 #[uniffi::export]
 impl CoreCryptoContext {
     /// See [core_crypto::context::CentralContext::set_data].
     pub async fn set_data(&self, data: Vec<u8>) -> CoreCryptoResult<()> {
-        self.context.set_data(data).await.map_err(Into::into)
+        self.inner.set_data(data).await.map_err(Into::into)
     }
 
     /// See [core_crypto::context::CentralContext::get_data].
     pub async fn get_data(&self) -> CoreCryptoResult<Option<Vec<u8>>> {
-        self.context.get_data().await.map_err(Into::into)
+        self.inner.get_data().await.map_err(Into::into)
     }
 
     /// See [core_crypto::context::CentralContext::mls_init]
@@ -214,7 +39,7 @@ impl CoreCryptoContext {
             .map(usize::try_from)
             .transpose()
             .map_err(CoreCryptoError::generic())?;
-        self.context
+        self.inner
             .mls_init(
                 ClientIdentifier::Basic(client_id.0),
                 (&ciphersuites).into(),
@@ -227,7 +52,7 @@ impl CoreCryptoContext {
     /// See [core_crypto::context::CentralContext::mls_generate_keypairs]
     pub async fn mls_generate_keypairs(&self, ciphersuites: Ciphersuites) -> CoreCryptoResult<Vec<ClientId>> {
         Ok(self
-            .context
+            .inner
             .mls_generate_keypairs((&ciphersuites).into())
             .await
             .map(|cids| cids.into_iter().map(ClientId).collect())?)
@@ -241,7 +66,7 @@ impl CoreCryptoContext {
         ciphersuites: Ciphersuites,
     ) -> CoreCryptoResult<()> {
         Ok(self
-            .context
+            .inner
             .mls_init_with_client_id(
                 client_id.0,
                 tmp_client_ids.into_iter().map(|cid| cid.0).collect(),
@@ -257,32 +82,32 @@ impl CoreCryptoContext {
         credential_type: CredentialType,
     ) -> CoreCryptoResult<Vec<u8>> {
         Ok(self
-            .context
+            .inner
             .client_public_key(ciphersuite.into(), credential_type.into())
             .await?)
     }
 
     /// See [core_crypto::mls::conversation::ConversationGuard::epoch]
     pub async fn conversation_epoch(&self, conversation_id: Vec<u8>) -> CoreCryptoResult<u64> {
-        let conversation = self.context.conversation(&conversation_id).await?;
+        let conversation = self.inner.conversation(&conversation_id).await?;
         Ok(conversation.epoch().await)
     }
 
     /// See [core_crypto::mls::conversation::ConversationGuard::ciphersuite]
     pub async fn conversation_ciphersuite(&self, conversation_id: &ConversationId) -> CoreCryptoResult<Ciphersuite> {
-        let cs = self.context.conversation(conversation_id).await?.ciphersuite().await;
+        let cs = self.inner.conversation(conversation_id).await?.ciphersuite().await;
         Ok(Ciphersuite::from(core_crypto::prelude::CiphersuiteName::from(cs)))
     }
 
     /// See [core_crypto::mls::Client::conversation_exists]
     pub async fn conversation_exists(&self, conversation_id: Vec<u8>) -> CoreCryptoResult<bool> {
-        Ok(self.context.conversation_exists(&conversation_id).await?)
+        Ok(self.inner.conversation_exists(&conversation_id).await?)
     }
 
     /// See [core_crypto::mls::conversation::ImmutableConversation::get_client_ids]
     pub async fn get_client_ids(&self, conversation_id: Vec<u8>) -> CoreCryptoResult<Vec<ClientId>> {
         let client_ids = self
-            .context
+            .inner
             .conversation(&conversation_id)
             .await?
             .get_client_ids()
@@ -295,7 +120,7 @@ impl CoreCryptoContext {
 
     /// See [core_crypto::mls::conversation::ImmutableConversation::export_secret_key]
     pub async fn export_secret_key(&self, conversation_id: Vec<u8>, key_length: u32) -> CoreCryptoResult<Vec<u8>> {
-        self.context
+        self.inner
             .conversation(&conversation_id)
             .await?
             .export_secret_key(key_length as usize)
@@ -305,7 +130,7 @@ impl CoreCryptoContext {
 
     /// See [core_crypto::mls::conversation::ImmutableConversation::get_external_sender]
     pub async fn get_external_sender(&self, conversation_id: Vec<u8>) -> CoreCryptoResult<Vec<u8>> {
-        self.context
+        self.inner
             .conversation(&conversation_id)
             .await?
             .get_external_sender()
@@ -321,7 +146,7 @@ impl CoreCryptoContext {
         amount_requested: u32,
     ) -> CoreCryptoResult<Vec<Vec<u8>>> {
         let kps = self
-            .context
+            .inner
             .get_or_create_client_keypackages(ciphersuite.into(), credential_type.into(), amount_requested as usize)
             .await
             .map_err(RecursiveError::mls_client("getting or creating client keypackages"))?;
@@ -343,7 +168,7 @@ impl CoreCryptoContext {
         credential_type: CredentialType,
     ) -> CoreCryptoResult<u64> {
         let count = self
-            .context
+            .inner
             .client_valid_key_packages_count(ciphersuite.into(), credential_type.into())
             .await
             .map_err(RecursiveError::mls_client("counting client valid keypackages"))?;
@@ -358,7 +183,7 @@ impl CoreCryptoContext {
             .map(|r| KeyPackageRef::from_slice(&r))
             .collect::<Vec<_>>();
 
-        self.context
+        self.inner
             .delete_keypackages(&refs[..])
             .await
             .map_err(RecursiveError::mls_client("deleting keypackages"))?;
@@ -378,11 +203,11 @@ impl CoreCryptoContext {
             ..Default::default()
         };
 
-        self.context
+        self.inner
             .set_raw_external_senders(&mut lower_cfg, config.external_senders)
             .await?;
 
-        self.context
+        self.inner
             .new_conversation(&conversation_id, creator_credential_type.into(), lower_cfg)
             .await?;
         Ok(())
@@ -395,7 +220,7 @@ impl CoreCryptoContext {
         custom_configuration: CustomConfiguration,
     ) -> CoreCryptoResult<WelcomeBundle> {
         let result = self
-            .context
+            .inner
             .process_raw_welcome_message(welcome_message, custom_configuration.into())
             .await?
             .into();
@@ -419,7 +244,7 @@ impl CoreCryptoContext {
             .collect::<CoreCryptoResult<Vec<_>>>()?;
 
         let distribution_points: Option<Vec<_>> = self
-            .context
+            .inner
             .conversation(&conversation_id)
             .await?
             .add_members(key_packages)
@@ -435,7 +260,7 @@ impl CoreCryptoContext {
         clients: Vec<ClientId>,
     ) -> CoreCryptoResult<()> {
         let clients: Vec<core_crypto::prelude::ClientId> = clients.into_iter().map(|c| c.0).collect();
-        self.context
+        self.inner
             .conversation(&conversation_id)
             .await?
             .remove_members(&clients)
@@ -445,7 +270,7 @@ impl CoreCryptoContext {
 
     /// See [core_crypto::mls::conversation::ConversationGuard::mark_as_child_of]
     pub async fn mark_conversation_as_child_of(&self, child_id: Vec<u8>, parent_id: Vec<u8>) -> CoreCryptoResult<()> {
-        self.context
+        self.inner
             .conversation(&child_id)
             .await?
             .mark_as_child_of(&parent_id)
@@ -455,7 +280,7 @@ impl CoreCryptoContext {
 
     /// See [core_crypto::context::CentralContext::update_keying_material]
     pub async fn update_keying_material(&self, conversation_id: Vec<u8>) -> CoreCryptoResult<()> {
-        self.context
+        self.inner
             .conversation(&conversation_id)
             .await?
             .update_key_material()
@@ -465,7 +290,7 @@ impl CoreCryptoContext {
 
     /// See [core_crypto::mls::conversation::conversation_guard::ConversationGuard::commit_pending_proposals]
     pub async fn commit_pending_proposals(&self, conversation_id: Vec<u8>) -> CoreCryptoResult<()> {
-        self.context
+        self.inner
             .conversation(&conversation_id)
             .await?
             .commit_pending_proposals()
@@ -475,7 +300,7 @@ impl CoreCryptoContext {
 
     /// see [core_crypto::context::CentralContext::wipe_conversation]
     pub async fn wipe_conversation(&self, conversation_id: Vec<u8>) -> CoreCryptoResult<()> {
-        self.context.wipe_conversation(&conversation_id).await?;
+        self.inner.wipe_conversation(&conversation_id).await?;
         Ok(())
     }
 
@@ -486,7 +311,7 @@ impl CoreCryptoContext {
         payload: Vec<u8>,
     ) -> CoreCryptoResult<DecryptedMessage> {
         let result = self
-            .context
+            .inner
             .conversation(&conversation_id)
             .await?
             .decrypt_message(&payload)
@@ -502,7 +327,7 @@ impl CoreCryptoContext {
 
     /// See [core_crypto::mls::conversation::conversation_guard::ConversationGuard::encrypt_message]
     pub async fn encrypt_message(&self, conversation_id: Vec<u8>, message: Vec<u8>) -> CoreCryptoResult<Vec<u8>> {
-        self.context
+        self.inner
             .conversation(&conversation_id)
             .await?
             .encrypt_message(message)
@@ -523,7 +348,7 @@ impl CoreCryptoContext {
             ))
             .map_err(RecursiveError::mls_conversation("joining by external commmit"))?;
         Ok(self
-            .context
+            .inner
             .join_by_external_commit(group_info, custom_configuration.into(), credential_type.into())
             .await?
             .into())

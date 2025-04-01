@@ -5,7 +5,7 @@ use async_lock::RwLock;
 use wasm_bindgen::prelude::*;
 
 #[cfg(not(target_family = "wasm"))]
-use crate::context::CoreCryptoContext;
+use crate::CoreCryptoContext;
 use crate::{AcmeDirectory, CoreCryptoResult, NewAcmeAuthz, NewAcmeOrder};
 
 /// See [core_crypto::e2e_identity::E2eiEnrollment]
@@ -198,7 +198,7 @@ impl E2eiEnrollment {
         cc: Arc<CoreCryptoContext>,
         challenge: Vec<u8>,
     ) -> CoreCryptoResult<()> {
-        let provider = cc.context.mls_provider().await?;
+        let provider = cc.inner.mls_provider().await?;
         self.write()
             .await
             .new_oidc_challenge_response(&provider, challenge)
