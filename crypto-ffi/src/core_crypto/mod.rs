@@ -2,6 +2,7 @@ mod client;
 mod conversation;
 pub mod logger;
 pub mod mls_transport;
+mod proteus;
 mod randomness;
 
 use core_crypto::prelude::{Client, MlsClientConfiguration};

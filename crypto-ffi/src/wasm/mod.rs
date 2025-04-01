@@ -5,7 +5,6 @@ mod utils;
 
 use std::{collections::HashMap, ops::Deref, sync::Arc};
 
-use crate::proteus_impl;
 use core_crypto::mls::conversation::Conversation as _;
 use core_crypto::prelude::*;
 use futures_util::future::TryFutureExt;
@@ -47,85 +46,6 @@ impl From<core_crypto::e2e_identity::E2eiDumpedPkiEnv> for E2eiDumpedPkiEnv {
 
 #[wasm_bindgen]
 impl CoreCrypto {
-    /// Returns: [`WasmCryptoResult<bool>`]
-    ///
-    /// see [core_crypto::proteus::ProteusCentral::session_exists]
-    #[cfg_attr(not(feature = "proteus"), allow(unused_variables))]
-    pub fn proteus_session_exists(&self, session_id: String) -> Promise {
-        let central = self.inner.clone();
-
-        future_to_promise(
-            async move {
-                proteus_impl! {{
-                    let exists = central.proteus_session_exists(&session_id).await.map_err(CoreCryptoError::from)?;
-                    WasmCryptoResult::Ok(JsValue::from_bool(exists))
-                } or throw WasmCryptoResult<_> }
-            }
-            .err_into(),
-        )
-    }
-
-    /// Returns: [`WasmCryptoResult<u16>`]
-    ///
-    /// see [core_crypto::proteus::ProteusCentral::last_resort_prekey_id]
-    #[cfg_attr(not(feature = "proteus"), allow(unused_variables))]
-    pub fn proteus_last_resort_prekey_id() -> WasmCryptoResult<u16> {
-        proteus_impl! {{
-            Ok(core_crypto::CoreCrypto::proteus_last_resort_prekey_id())
-        } or throw WasmCryptoResult<_> }
-    }
-
-    /// Returns: [`WasmCryptoResult<String>`]
-    ///
-    /// see [core_crypto::proteus::ProteusCentral::fingerprint]
-    #[cfg_attr(not(feature = "proteus"), allow(unused_variables))]
-    pub async fn proteus_fingerprint(&self) -> WasmCryptoResult<String> {
-        let central = self.inner.clone();
-
-        proteus_impl! {{
-            central.proteus_fingerprint().await.map_err(CoreCryptoError::from)
-        } or throw WasmCryptoResult<_> }
-    }
-
-    /// Returns: [`WasmCryptoResult<String>`]
-    ///
-    /// see [core_crypto::proteus::ProteusCentral::fingerprint_local]
-    #[cfg_attr(not(feature = "proteus"), allow(unused_variables))]
-    pub async fn proteus_fingerprint_local(&self, session_id: String) -> WasmCryptoResult<String> {
-        let central = self.inner.clone();
-
-        proteus_impl! {{
-            central
-                .proteus_fingerprint_local(&session_id)
-                .await
-                .map_err(CoreCryptoError::from)
-        } or throw WasmCryptoResult<_> }
-    }
-
-    /// Returns: [`WasmCryptoResult<String>`]
-    ///
-    /// see [core_crypto::proteus::ProteusCentral::fingerprint_remote]
-    #[cfg_attr(not(feature = "proteus"), allow(unused_variables))]
-    pub async fn proteus_fingerprint_remote(&self, session_id: String) -> WasmCryptoResult<String> {
-        let central = self.inner.clone();
-
-        proteus_impl! {{
-            central.proteus_fingerprint_remote(&session_id).await
-                .map_err(CoreCryptoError::from)
-        } or throw WasmCryptoResult<_> }
-    }
-
-    /// Returns: [`WasmCryptoResult<String>`]
-    ///
-    /// see [core_crypto::proteus::ProteusCproteus_fingerprint_prekeybundle]
-    #[cfg_attr(not(feature = "proteus"), allow(unused_variables))]
-    pub fn proteus_fingerprint_prekeybundle(prekey: Box<[u8]>) -> WasmCryptoResult<String> {
-        proteus_impl!({
-            core_crypto::proteus::ProteusCentral::fingerprint_prekeybundle(&prekey)
-                .map_err(Into::into)
-        } or throw WasmCryptoResult<_>)
-    }
-
     /// Returns: [`WasmCryptoResult<Vec<u8>>`]
     ///
     /// See [crate::mls::conversation::ImmutableConversation::export_secret_key]
