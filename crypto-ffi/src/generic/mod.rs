@@ -13,16 +13,14 @@ use tls_codec::Deserialize;
 
 use self::context::CoreCryptoContext;
 use crate::{
-    Ciphersuite, Ciphersuites, ClientId, CommitBundle, CoreCryptoError, CoreCryptoResult, CredentialType,
-    ProposalBundle, proteus_impl,
+    Ciphersuite, Ciphersuites, ClientId, CommitBundle, CoreCryptoError, CoreCryptoResult, CredentialType, proteus_impl,
 };
 use core_crypto::mls::conversation::Conversation as _;
 pub use core_crypto::prelude::ConversationId;
 use core_crypto::{
     RecursiveError,
     prelude::{
-        Client, EntropySeed, MlsBufferedConversationDecryptMessage, MlsClientConfiguration, MlsCommitBundle,
-        MlsConversationDecryptMessage, MlsCustomConfiguration, VerifiableGroupInfo,
+        Client, EntropySeed, MlsClientConfiguration, MlsCommitBundle, MlsCustomConfiguration, VerifiableGroupInfo,
     },
 };
 use core_crypto_keystore::Connection as Database;
@@ -30,94 +28,7 @@ use core_crypto_keystore::Connection as Database;
 pub mod context;
 mod epoch_observer;
 
-#[derive(Debug, uniffi::Record)]
-/// See [core_crypto::prelude::decrypt::MlsConversationDecryptMessage]
-pub struct DecryptedMessage {
-    pub message: Option<Vec<u8>>,
-    pub proposals: Vec<ProposalBundle>,
-    pub is_active: bool,
-    pub commit_delay: Option<u64>,
-    pub sender_client_id: Option<ClientId>,
-    pub has_epoch_changed: bool,
-    pub identity: WireIdentity,
-    pub buffered_messages: Option<Vec<BufferedDecryptedMessage>>,
-    pub crl_new_distribution_points: Option<Vec<String>>,
-}
-
-#[derive(Debug, uniffi::Record)]
-/// because Uniffi does not support recursive structs
-pub struct BufferedDecryptedMessage {
-    pub message: Option<Vec<u8>>,
-    pub proposals: Vec<ProposalBundle>,
-    pub is_active: bool,
-    pub commit_delay: Option<u64>,
-    pub sender_client_id: Option<ClientId>,
-    /// Deprecated: this member will be removed in the future. Prefer using the `EpochObserver` interface.
-    #[deprecated = "This member will be removed in the future. Prefer using the `EpochObserver` interface."]
-    pub has_epoch_changed: bool,
-    pub identity: WireIdentity,
-    pub crl_new_distribution_points: Option<Vec<String>>,
-}
-
-impl TryFrom<MlsConversationDecryptMessage> for DecryptedMessage {
-    type Error = CoreCryptoError;
-
-    fn try_from(from: MlsConversationDecryptMessage) -> Result<Self, Self::Error> {
-        let proposals = from
-            .proposals
-            .into_iter()
-            .map(ProposalBundle::try_from)
-            .collect::<CoreCryptoResult<Vec<_>>>()?;
-
-        let buffered_messages = from
-            .buffered_messages
-            .map(|bm| {
-                bm.into_iter()
-                    .map(TryInto::try_into)
-                    .collect::<CoreCryptoResult<Vec<_>>>()
-            })
-            .transpose()?;
-
-        #[expect(deprecated)]
-        Ok(Self {
-            message: from.app_msg,
-            proposals,
-            is_active: from.is_active,
-            commit_delay: from.delay,
-            sender_client_id: from.sender_client_id.map(ClientId),
-            has_epoch_changed: from.has_epoch_changed,
-            identity: from.identity.into(),
-            buffered_messages,
-            crl_new_distribution_points: from.crl_new_distribution_points.into(),
-        })
-    }
-}
-
-impl TryFrom<MlsBufferedConversationDecryptMessage> for BufferedDecryptedMessage {
-    type Error = CoreCryptoError;
-
-    fn try_from(from: MlsBufferedConversationDecryptMessage) -> Result<Self, Self::Error> {
-        let proposals = from
-            .proposals
-            .into_iter()
-            .map(ProposalBundle::try_from)
-            .collect::<CoreCryptoResult<Vec<_>>>()?;
-
-        #[expect(deprecated)]
-        Ok(Self {
-            message: from.app_msg,
-            proposals,
-            is_active: from.is_active,
-            commit_delay: from.delay,
-            sender_client_id: from.sender_client_id.map(ClientId),
-            has_epoch_changed: from.has_epoch_changed,
-            identity: from.identity.into(),
-            crl_new_distribution_points: from.crl_new_distribution_points.into(),
-        })
-    }
-}
-
-#[derive(Debug, uniffi::Record)]
+#[derive(Debug, Clone, uniffi::Record)]
 /// See [core_crypto::prelude::WireIdentity]
 pub struct WireIdentity {
     pub client_id: String,
@@ -160,7 +71,7 @@ impl From<core_crypto::prelude::DeviceStatus> for DeviceStatus {
     }
 }
 
-#[derive(Debug, uniffi::Record)]
+#[derive(Debug, Clone, uniffi::Record)]
 /// See [core_crypto::prelude::X509Identity]
 pub struct X509Identity {
     pub handle: String,
