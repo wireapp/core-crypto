@@ -11,7 +11,7 @@ use std::{
 
 use crate::proteus_impl;
 use core_crypto::mls::conversation::Conversation as _;
-use core_crypto::{MlsTransportResponse, prelude::*};
+use core_crypto::prelude::*;
 use core_crypto_keystore::Connection as Database;
 use futures_util::future::TryFutureExt;
 use js_sys::{Promise, Uint8Array};
@@ -22,12 +22,12 @@ use log::{
 use log_reload::ReloadLog;
 use tls_codec::Deserialize;
 use utils::*;
-use wasm_bindgen::{JsCast, prelude::*};
+use wasm_bindgen::prelude::*;
 use wasm_bindgen_futures::future_to_promise;
 
 use crate::{
-    Ciphersuite, CommitBundle, CoreCryptoError, CredentialType, FfiClientId, InternalError, MlsError, WasmCryptoResult,
-    WireIdentity, lower_ciphersuites,
+    Ciphersuite, CoreCryptoError, CredentialType, FfiClientId, InternalError, MlsError, MlsTransport, MlsTransportShim,
+    WasmCryptoResult, WireIdentity, lower_ciphersuites,
 };
 
 #[wasm_bindgen(getter_with_clone)]
@@ -159,158 +159,6 @@ impl log::Log for CoreCryptoWasmLogger {
     fn flush(&self) {}
 }
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq, serde::Serialize, serde::Deserialize, strum::FromRepr)]
-#[repr(u8)]
-#[serde(from = "u8")]
-#[wasm_bindgen]
-pub enum MlsTransportResponseVariant {
-    Success = 1,
-    Retry = 2,
-    Abort = 3,
-}
-
-impl From<u8> for MlsTransportResponseVariant {
-    fn from(value: u8) -> Self {
-        match Self::from_repr(value) {
-            Some(variant) => variant,
-            // This is unreachable because deserialization is only done on a value that was
-            // serialized directly from our type (this happens in js_sys::Function::call1, where the
-            // constructed and returned MlsTransportResponse is serialized to a JsValue).
-            // In drive_js_func_call(), we deserialize it without any transformations.
-            // Hence, we can never have a u8 value other than the ones assigned to a variant.
-            None => unreachable!("{} is not member of enum MlsTransportResponseVariant", value),
-        }
-    }
-}
-
-#[derive(serde::Serialize, serde::Deserialize, Debug)]
-#[serde(rename_all = "camelCase")]
-#[wasm_bindgen(getter_with_clone)]
-pub struct WasmMlsTransportResponse {
-    #[wasm_bindgen(readonly)]
-    pub variant: MlsTransportResponseVariant,
-    #[wasm_bindgen(readonly)]
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub abort_reason: Option<String>,
-}
-
-#[wasm_bindgen]
-impl WasmMlsTransportResponse {
-    #[wasm_bindgen(constructor)]
-    pub fn new(variant: MlsTransportResponseVariant, abort_reason: Option<String>) -> WasmMlsTransportResponse {
-        WasmMlsTransportResponse { variant, abort_reason }
-    }
-}
-
-impl From<WasmMlsTransportResponse> for MlsTransportResponse {
-    fn from(response: WasmMlsTransportResponse) -> Self {
-        match response.variant {
-            MlsTransportResponseVariant::Success => MlsTransportResponse::Success,
-            MlsTransportResponseVariant::Retry => MlsTransportResponse::Retry,
-            MlsTransportResponseVariant::Abort => MlsTransportResponse::Abort {
-                reason: response.abort_reason.unwrap_or_default(),
-            },
-        }
-    }
-}
-
-impl From<MlsTransportResponse> for WasmMlsTransportResponse {
-    fn from(response: MlsTransportResponse) -> Self {
-        match response {
-            MlsTransportResponse::Success => WasmMlsTransportResponse {
-                variant: MlsTransportResponseVariant::Success,
-                abort_reason: None,
-            },
-            MlsTransportResponse::Retry => WasmMlsTransportResponse {
-                variant: MlsTransportResponseVariant::Retry,
-                abort_reason: None,
-            },
-            MlsTransportResponse::Abort { reason } => WasmMlsTransportResponse {
-                variant: MlsTransportResponseVariant::Abort,
-                abort_reason: (!reason.is_empty()).then_some(reason),
-            },
-        }
-    }
-}
-
-#[wasm_bindgen]
-#[derive(Debug, Clone)]
-/// see [core_crypto::prelude::MlsTransport]
-pub struct MlsTransportProvider {
-    send_commit_bundle: Arc<async_lock::RwLock<js_sys::Function>>,
-    send_message: Arc<async_lock::RwLock<js_sys::Function>>,
-    ctx: Arc<async_lock::RwLock<JsValue>>,
-}
-
-#[wasm_bindgen]
-impl MlsTransportProvider {
-    #[wasm_bindgen(constructor)]
-    pub fn new(send_commit_bundle: js_sys::Function, send_message: js_sys::Function, ctx: JsValue) -> Self {
-        #[allow(clippy::arc_with_non_send_sync)] // see https://github.com/rustwasm/wasm-bindgen/pull/955
-        Self {
-            send_commit_bundle: Arc::new(send_commit_bundle.into()),
-            send_message: Arc::new(send_message.into()),
-            ctx: Arc::new(ctx.into()),
-        }
-    }
-}
-
-impl MlsTransportProvider {
-    async fn drive_js_func_call(
-        function_return_value: Result<JsValue, JsValue>,
-    ) -> Result<WasmMlsTransportResponse, JsValue> {
-        let promise: Promise = match function_return_value?.dyn_into() {
-            Ok(promise) => promise,
-            Err(e) => {
-                web_sys::console::error_1(&js_sys::JsString::from(
-                    r#"
-[CoreCrypto] One or more transport functions are not returning a `Promise`
-Please make all callbacks `async` or manually return a `Promise` via `Promise.resolve()`"#,
-                ));
-                return Err(e);
-            }
-        };
-        let js_future = wasm_bindgen_futures::JsFuture::from(promise);
-        let serialized_response = js_future.await?;
-        let response = serde_wasm_bindgen::from_value(serialized_response)?;
-        Ok(response)
-    }
-}
-
-// SAFETY: All callback instances are wrapped into Arc<RwLock> so this is safe to mark
-unsafe impl Send for MlsTransportProvider {}
-// SAFETY: All callback instances are wrapped into Arc<RwLock> so this is safe to mark
-unsafe impl Sync for MlsTransportProvider {}
-
-#[async_trait::async_trait(?Send)]
-impl MlsTransport for MlsTransportProvider {
-    async fn send_commit_bundle(
-        &self,
-        commit_bundle: MlsCommitBundle,
-    ) -> core_crypto::Result<core_crypto::MlsTransportResponse> {
-        let send_commit_bundle = self.send_commit_bundle.read().await;
-        let this = self.ctx.read().await;
-        let commit_bundle = CommitBundle::try_from(commit_bundle)
-            .map_err(|e| core_crypto::Error::ErrorDuringMlsTransport(e.to_string()))?;
-        Ok(
-            Self::drive_js_func_call(send_commit_bundle.call1(&this, &commit_bundle.into()))
-                .await
-                .map_err(|e| core_crypto::Error::ErrorDuringMlsTransport(format!("JsError: {e:?}")))?
-                .into(),
-        )
-    }
-
-    async fn send_message(&self, mls_message: Vec<u8>) -> core_crypto::Result<MlsTransportResponse> {
-        let send_message = self.send_message.read().await;
-        let this = self.ctx.read().await;
-        let mls_message = js_sys::Uint8Array::from(mls_message.as_slice());
-        Ok(Self::drive_js_func_call(send_message.call1(&this, &mls_message))
-            .await
-            .map_err(|e| Error::ErrorDuringMlsTransport(format!("JsError: {e:?}")))?
-            .into())
-    }
-}
-
 /// Updates the key of the CoreCrypto database.
 /// To be used only once, when moving from CoreCrypto <= 5.x to CoreCrypto 6.x.
 #[wasm_bindgen(js_name = migrateDatabaseKeyTypeToBytes)]
@@ -421,11 +269,13 @@ impl CoreCrypto {
     /// Returns: [`WasmCryptoResult<()>`]
     ///
     /// see [core_crypto::mls::Client::provide_transport]
-    pub fn provide_transport(&self, callbacks: MlsTransportProvider) -> Promise {
+    pub fn provide_transport(&self, callbacks: MlsTransport) -> Promise {
         let central = self.inner.clone();
         future_to_promise(
             async move {
-                central.provide_transport(Arc::new(callbacks)).await;
+                central
+                    .provide_transport(Arc::new(MlsTransportShim::new(callbacks)))
+                    .await;
 
                 WasmCryptoResult::Ok(JsValue::UNDEFINED)
             }

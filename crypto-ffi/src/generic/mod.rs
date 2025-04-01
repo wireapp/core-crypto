@@ -13,14 +13,14 @@ use tls_codec::Deserialize;
 
 use self::context::CoreCryptoContext;
 use crate::{
-    Ciphersuite, Ciphersuites, ClientId, CommitBundle, CoreCryptoError, CoreCryptoResult, CredentialType, WireIdentity,
-    proteus_impl,
+    Ciphersuite, Ciphersuites, ClientId, CoreCryptoError, CoreCryptoResult, CredentialType, MlsTransport,
+    MlsTransportShim, WireIdentity, proteus_impl,
 };
 use core_crypto::mls::conversation::Conversation as _;
 pub use core_crypto::prelude::ConversationId;
 use core_crypto::{
     RecursiveError,
-    prelude::{Client, EntropySeed, MlsClientConfiguration, MlsCommitBundle, VerifiableGroupInfo},
+    prelude::{Client, EntropySeed, MlsClientConfiguration, VerifiableGroupInfo},
 };
 use core_crypto_keystore::Connection as Database;
 
@@ -43,64 +43,6 @@ impl From<core_crypto::e2e_identity::E2eiDumpedPkiEnv> for E2eiDumpedPkiEnv {
             crls: value.crls,
         }
     }
-}
-
-#[derive(Debug, Clone, PartialEq, Eq, uniffi::Enum)]
-pub enum MlsTransportResponse {
-    /// The message was accepted by the distribution service
-    Success,
-    /// A client should have consumed all incoming messages before re-trying.
-    Retry,
-    /// The message was rejected by the delivery service and there's no recovery.
-    Abort { reason: String },
-}
-
-impl From<MlsTransportResponse> for core_crypto::MlsTransportResponse {
-    fn from(value: MlsTransportResponse) -> Self {
-        match value {
-            MlsTransportResponse::Success => Self::Success,
-            MlsTransportResponse::Retry => Self::Retry,
-            MlsTransportResponse::Abort { reason } => Self::Abort { reason },
-        }
-    }
-}
-
-impl From<core_crypto::MlsTransportResponse> for MlsTransportResponse {
-    fn from(value: core_crypto::MlsTransportResponse) -> Self {
-        match value {
-            core_crypto::MlsTransportResponse::Success => Self::Success,
-            core_crypto::MlsTransportResponse::Retry => Self::Retry,
-            core_crypto::MlsTransportResponse::Abort { reason } => Self::Abort { reason },
-        }
-    }
-}
-
-#[derive(Debug)]
-struct MlsTransportWrapper(Arc<dyn MlsTransport>);
-
-#[async_trait::async_trait]
-impl core_crypto::prelude::MlsTransport for MlsTransportWrapper {
-    async fn send_commit_bundle(
-        &self,
-        commit_bundle: MlsCommitBundle,
-    ) -> core_crypto::Result<core_crypto::MlsTransportResponse> {
-        let commit_bundle = CommitBundle::try_from(commit_bundle)
-            .map_err(|e| core_crypto::Error::ErrorDuringMlsTransport(e.to_string()))?;
-        Ok(self.0.send_commit_bundle(commit_bundle).await.into())
-    }
-
-    async fn send_message(&self, mls_message: Vec<u8>) -> core_crypto::Result<core_crypto::MlsTransportResponse> {
-        Ok(self.0.send_message(mls_message).await.into())
-    }
-}
-
-/// Used by core crypto to send commits or application messages to the delivery service.
-/// This trait must be implemented before calling any functions that produce commits.
-#[uniffi::export(with_foreign)]
-#[async_trait::async_trait]
-pub trait MlsTransport: std::fmt::Debug + Send + Sync {
-    async fn send_commit_bundle(&self, commit_bundle: CommitBundle) -> MlsTransportResponse;
-    async fn send_message(&self, mls_message: Vec<u8>) -> MlsTransportResponse;
 }
 
 static INIT_LOGGER: Once = Once::new();
@@ -297,7 +239,7 @@ impl CoreCrypto {
     /// See [core_crypto::mls::Client::provide_transport]
     pub async fn provide_transport(&self, callbacks: Arc<dyn MlsTransport>) -> CoreCryptoResult<()> {
         self.central
-            .provide_transport(Arc::new(MlsTransportWrapper(callbacks)))
+            .provide_transport(Arc::new(MlsTransportShim(callbacks)))
             .await;
         Ok(())
     }
