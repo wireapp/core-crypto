@@ -1,20 +1,12 @@
-use std::collections::HashMap;
-
-use tls_codec::Deserialize;
+use core_crypto::RecursiveError;
 
 use self::context::CoreCryptoContext;
-use crate::{
-    Ciphersuite, Ciphersuites, ClientId, CoreCrypto, CoreCryptoError, CoreCryptoResult, CredentialType, WireIdentity,
-};
-use core_crypto::mls::conversation::Conversation as _;
-pub use core_crypto::prelude::ConversationId;
-use core_crypto::{RecursiveError, prelude::VerifiableGroupInfo};
+use crate::{Ciphersuite, Ciphersuites, ClientId, CoreCrypto, CoreCryptoError, CoreCryptoResult, CredentialType};
 
 pub mod context;
 mod epoch_observer;
 
 #[derive(Debug, Clone, uniffi::Record)]
-/// Dummy comment
 pub struct E2eiDumpedPkiEnv {
     pub root_ca: String,
     pub intermediates: Vec<String>,
@@ -27,27 +19,6 @@ impl From<core_crypto::e2e_identity::E2eiDumpedPkiEnv> for E2eiDumpedPkiEnv {
             root_ca: value.root_ca,
             intermediates: value.intermediates,
             crls: value.crls,
-        }
-    }
-}
-
-#[derive(Debug, Copy, Clone, uniffi::Enum)]
-#[repr(u8)]
-pub enum E2eiConversationState {
-    /// All clients have a valid E2EI certificate
-    Verified = 1,
-    /// Some clients are either still Basic or their certificate is expired
-    NotVerified,
-    /// All clients are still Basic. If all client have expired certificates, [E2eiConversationState::NotVerified] is returned.
-    NotEnabled,
-}
-
-impl From<core_crypto::prelude::E2eiConversationState> for E2eiConversationState {
-    fn from(value: core_crypto::prelude::E2eiConversationState) -> Self {
-        match value {
-            core_crypto::prelude::E2eiConversationState::Verified => Self::Verified,
-            core_crypto::prelude::E2eiConversationState::NotVerified => Self::NotVerified,
-            core_crypto::prelude::E2eiConversationState::NotEnabled => Self::NotEnabled,
         }
     }
 }
@@ -80,63 +51,6 @@ impl CoreCrypto {
             .await
             .map_err(RecursiveError::mls_client("is e2ei enabled on client?"))
             .map_err(Into::into)
-    }
-
-    /// See [core_crypto::mls::conversation::ConversationGuard::get_device_identities]
-    pub async fn get_device_identities(
-        &self,
-        conversation_id: Vec<u8>,
-        device_ids: Vec<ClientId>,
-    ) -> CoreCryptoResult<Vec<WireIdentity>> {
-        let device_ids = device_ids.into_iter().map(|cid| cid.0).collect::<Vec<_>>();
-        Ok(self
-            .inner
-            .get_raw_conversation(&conversation_id)
-            .await
-            .map_err(RecursiveError::mls_client("getting conversation by id"))?
-            .get_device_identities(&device_ids[..])
-            .await?
-            .into_iter()
-            .map(Into::into)
-            .collect::<Vec<_>>())
-    }
-
-    /// See [core_crypto::mls::conversation::ConversationGuard::get_user_identities]
-    pub async fn get_user_identities(
-        &self,
-        conversation_id: Vec<u8>,
-        user_ids: Vec<String>,
-    ) -> CoreCryptoResult<HashMap<String, Vec<WireIdentity>>> {
-        Ok(self
-            .inner
-            .get_raw_conversation(&conversation_id)
-            .await
-            .map_err(RecursiveError::mls_client("getting conversation by id"))?
-            .get_user_identities(&user_ids[..])
-            .await?
-            .into_iter()
-            .map(|(k, v)| (k, v.into_iter().map(Into::into).collect()))
-            .collect::<HashMap<String, Vec<WireIdentity>>>())
-    }
-
-    /// See [core_crypto::mls::Client::get_credential_in_use]
-    pub async fn get_credential_in_use(
-        &self,
-        group_info: Vec<u8>,
-        credential_type: CredentialType,
-    ) -> CoreCryptoResult<E2eiConversationState> {
-        let group_info = VerifiableGroupInfo::tls_deserialize(&mut group_info.as_slice())
-            .map_err(core_crypto::mls::conversation::Error::tls_deserialize(
-                "verifiable group info",
-            ))
-            .map_err(RecursiveError::mls_conversation("deserializing veriable group info"))?;
-        let credential = self
-            .inner
-            .get_credential_in_use(group_info, credential_type.into())
-            .await
-            .map_err(RecursiveError::mls_client("getting credential in use"))?
-            .into();
-        Ok(credential)
     }
 }
 

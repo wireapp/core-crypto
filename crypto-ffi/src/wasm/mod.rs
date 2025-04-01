@@ -3,21 +3,16 @@ pub mod context;
 mod epoch_observer;
 mod utils;
 
-use std::{collections::HashMap, ops::Deref, sync::Arc};
+use std::sync::Arc;
 
-use core_crypto::mls::conversation::Conversation as _;
 use core_crypto::prelude::*;
 use futures_util::future::TryFutureExt;
 use js_sys::{Promise, Uint8Array};
-use tls_codec::Deserialize;
 use utils::*;
 use wasm_bindgen::prelude::*;
 use wasm_bindgen_futures::future_to_promise;
 
-use crate::{
-    Ciphersuite, CoreCrypto, CoreCryptoError, CredentialType, InternalError, MlsError, WasmCryptoResult, WireIdentity,
-    lower_ciphersuites,
-};
+use crate::{Ciphersuite, CoreCrypto, CoreCryptoError, InternalError, WasmCryptoResult, lower_ciphersuites};
 
 #[wasm_bindgen(getter_with_clone)]
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
@@ -83,83 +78,6 @@ impl CoreCrypto {
                     .map_err(RecursiveError::mls_client("is e2ei enabled for client"))?
                     .into();
                 WasmCryptoResult::Ok(is_enabled)
-            }
-            .err_into(),
-        )
-    }
-
-    /// Returns [`WasmCryptoResult<Vec<WireIdentity>>`]
-    ///
-    /// see [core_crypto::mls::conversation::ConversationGuard::get_device_identities]
-    pub fn get_device_identities(&self, conversation_id: ConversationId, device_ids: Box<[Uint8Array]>) -> Promise {
-        let central = self.inner.clone();
-        future_to_promise(
-            async move {
-                let device_ids = device_ids.iter().map(|c| c.to_vec().into()).collect::<Vec<ClientId>>();
-                let identities = central
-                    .get_raw_conversation(&conversation_id)
-                    .await
-                    .map_err(RecursiveError::mls_client("getting conversation by id"))?
-                    .get_device_identities(&device_ids[..])
-                    .await
-                    .map_err(CoreCryptoError::from)?
-                    .into_iter()
-                    .map(Into::into)
-                    .collect::<Vec<WireIdentity>>();
-                WasmCryptoResult::Ok(identities.into())
-            }
-            .err_into(),
-        )
-    }
-
-    /// Returns [`WasmCryptoResult<HashMap<String, Vec<WireIdentity>>>`]
-    ///
-    /// see [core_crypto::mls::conversation::ConversationGuard::get_user_identities]
-    pub fn get_user_identities(&self, conversation_id: ConversationId, user_ids: Box<[String]>) -> Promise {
-        let central = self.inner.clone();
-        future_to_promise(
-            async move {
-                let identities = central
-                    .get_raw_conversation(&conversation_id)
-                    .await
-                    .map_err(RecursiveError::mls_client("getting conversation by id"))?
-                    .get_user_identities(user_ids.deref())
-                    .await
-                    .map_err(CoreCryptoError::from)?
-                    .into_iter()
-                    .map(|(k, v)| (k, v.into_iter().map(Into::into).collect()))
-                    .collect::<HashMap<String, Vec<WireIdentity>>>();
-                let js_obj = js_sys::Map::new();
-                for (uid, identities) in identities.into_iter() {
-                    let uid = js_sys::JsString::from(uid).into();
-                    let identities = JsValue::from(identities);
-                    js_obj.set(&uid, &identities);
-                }
-                WasmCryptoResult::Ok(js_obj.into())
-            }
-            .err_into(),
-        )
-    }
-
-    #[allow(clippy::boxed_local)]
-    /// Returns: [`WasmCryptoResult<u8>`]
-    ///
-    /// see [core_crypto::mls::context::CentralContext::get_credential_in_use]
-    pub fn get_credential_in_use(&self, group_info: Box<[u8]>, credential_type: CredentialType) -> Promise {
-        let central = self.inner.clone();
-        future_to_promise(
-            async move {
-                let group_info = VerifiableGroupInfo::tls_deserialize(&mut group_info.as_ref())
-                    .map_err(|e| MlsError::Other(e.to_string()))
-                    .map_err(CoreCryptoError::from)?;
-
-                let state: E2eiConversationState = central
-                    .get_credential_in_use(group_info, credential_type.into())
-                    .await
-                    .map(Into::into)
-                    .map_err(RecursiveError::mls_client("getting credential in use"))?;
-
-                WasmCryptoResult::Ok((state as u8).into())
             }
             .err_into(),
         )
