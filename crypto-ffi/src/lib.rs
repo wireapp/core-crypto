@@ -42,6 +42,7 @@ mod crl;
 mod decrypted_message;
 mod error;
 mod identity;
+mod logger;
 mod metadata;
 mod mls_transport;
 
@@ -66,6 +67,11 @@ pub use identity::{
     wire::{DeviceStatus, WireIdentity},
     x509::X509Identity,
 };
+pub use logger::{CoreCryptoLogLevel, CoreCryptoLogger};
+#[cfg(not(target_family = "wasm"))]
+pub use logger::{set_logger, set_logger_only, set_max_log_level};
+#[cfg(target_family = "wasm")]
+pub(crate) use logger::{set_logger_only, set_max_log_level_inner};
 pub use metadata::{BuildMetadata, build_metadata, version};
 pub(crate) use mls_transport::MlsTransportShim;
 pub use mls_transport::{MlsTransport, MlsTransportResponse};
