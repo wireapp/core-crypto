@@ -283,7 +283,7 @@ impl CoreCryptoContext {
         &self,
         conversation_id: ConversationId,
         creator_credential_type: CredentialType,
-        mut config: ConversationConfiguration,
+        config: ConversationConfiguration,
     ) -> Promise {
         let context = self.inner.clone();
         future_to_promise(
@@ -293,10 +293,8 @@ impl CoreCryptoContext {
                     ..Default::default()
                 };
 
-                if let Some(ciphersuite) = config.ciphersuite.take() {
-                    let mls_ciphersuite: CiphersuiteName = ciphersuite.into();
-                    lower_cfg.ciphersuite = mls_ciphersuite.into();
-                }
+                let mls_ciphersuite: CiphersuiteName = config.ciphersuite.into();
+                lower_cfg.ciphersuite = mls_ciphersuite.into();
 
                 context
                     .set_raw_external_senders(&mut lower_cfg, config.external_senders)
