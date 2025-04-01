@@ -34,8 +34,6 @@ pub use bundles::{
     commit::CommitBundle, group_info::GroupInfoBundle, proposal::ProposalBundle,
     proteus_auto_prekey::ProteusAutoPrekeyBundle, welcome::WelcomeBundle,
 };
-#[cfg(target_family = "wasm")]
-pub(crate) use ciphersuite::lower_ciphersuites;
 pub use ciphersuite::{Ciphersuite, Ciphersuites};
 pub use client_id::{ClientId, FfiClientId};
 pub use configuration::{ConversationConfiguration, CustomConfiguration, WirePolicy};
