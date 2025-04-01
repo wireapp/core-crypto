@@ -1,12 +1,6 @@
 import { browser, expect } from "@wdio/globals";
-import {
-    ALICE_ID,
-    ccInit,
-    setup,
-    teardown,
-} from "./utils.js";
+import { ALICE_ID, ccInit, setup, teardown } from "./utils.js";
 import { afterEach, beforeEach, describe } from "mocha";
-
 
 beforeEach(async () => {
     await setup();
@@ -15,7 +9,6 @@ beforeEach(async () => {
 afterEach(async () => {
     await teardown();
 });
-
 
 describe("set_data()", () => {
     it("should persist data to DB", async () => {

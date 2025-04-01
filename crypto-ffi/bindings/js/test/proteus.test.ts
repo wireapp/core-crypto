@@ -19,7 +19,6 @@ afterEach(async () => {
     await teardown();
 });
 
-
 describe("proteus", () => {
     it("should initialize correctly", async () => {
         await proteusInit(ALICE_ID);

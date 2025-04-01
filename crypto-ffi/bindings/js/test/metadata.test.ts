@@ -1,8 +1,5 @@
 import { browser, expect } from "@wdio/globals";
-import {
-    setup,
-    teardown,
-} from "./utils.js";
+import { setup, teardown } from "./utils.js";
 import { afterEach, beforeEach, describe } from "mocha";
 
 beforeEach(async () => {
@@ -12,8 +9,6 @@ beforeEach(async () => {
 afterEach(async () => {
     await teardown();
 });
-
-
 
 describe("metadata", () => {
     it("metadata can be retrieved and contains key 'gitDescribe'", async () => {

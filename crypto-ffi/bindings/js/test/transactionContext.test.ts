@@ -1,15 +1,7 @@
 import { browser, expect } from "@wdio/globals";
-import {
-    ALICE_ID,
-    ccInit,
-    setup,
-    teardown,
-} from "./utils.js";
+import { ALICE_ID, ccInit, setup, teardown } from "./utils.js";
 import { afterEach, beforeEach, describe } from "mocha";
-import {
-    CoreCryptoError,
-    CoreCryptoContext,
-} from "../src/CoreCrypto.js";
+import { CoreCryptoError, CoreCryptoContext } from "../src/CoreCrypto.js";
 
 beforeEach(async () => {
     await setup();
@@ -18,7 +10,6 @@ beforeEach(async () => {
 afterEach(async () => {
     await teardown();
 });
-
 
 describe("transaction context", () => {
     it("should propagate JS error", async () => {

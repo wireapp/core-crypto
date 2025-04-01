@@ -8,9 +8,7 @@ import {
     teardown,
 } from "./utils.js";
 import { afterEach, beforeEach, describe } from "mocha";
-import {
-    E2eiConversationState,
-} from "../src/CoreCrypto.js";
+import { E2eiConversationState } from "../src/CoreCrypto.js";
 
 beforeEach(async () => {
     await setup();
@@ -19,7 +17,6 @@ beforeEach(async () => {
 afterEach(async () => {
     await teardown();
 });
-
 
 describe("end to end identity", () => {
     it("enrollment flow should succeed", async () => {

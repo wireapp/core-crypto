@@ -1,7 +1,11 @@
 import { safeBigintToNumber } from "./Conversions.js";
 import * as CoreCryptoFfiTypes from "./core-crypto-ffi.d.js";
 
-import { NewAcmeAuthz, NewAcmeOrder, CrlRegistration as CrlRegistrationFfi } from "./core-crypto-ffi.js";
+import {
+    NewAcmeAuthz,
+    NewAcmeOrder,
+    CrlRegistration as CrlRegistrationFfi,
+} from "./core-crypto-ffi.js";
 
 import { CoreCryptoError } from "./CoreCryptoError.js";
 
@@ -27,7 +31,7 @@ export function crlRegistrationFromFfi(r: CrlRegistrationFfi): CRLRegistration {
     return {
         dirty: r.dirty,
         expiration: r.expiration ? safeBigintToNumber(r.expiration) : undefined,
-    }
+    };
 }
 
 export function normalizeEnum<T>(enumType: T, value: number): T[keyof T] {
@@ -191,7 +195,7 @@ export class E2eiEnrollment {
         const token = await CoreCryptoError.asyncMapErr(
             this.#enrollment.create_dpop_token(expirySecs, backendNonce)
         );
-        return new TextEncoder().encode(token)
+        return new TextEncoder().encode(token);
     }
 
     /**
