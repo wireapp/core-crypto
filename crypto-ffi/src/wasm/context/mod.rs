@@ -1,14 +1,13 @@
-use crate::InternalError;
+#[cfg(target_family = "wasm")]
 use crate::lower_ciphersuites;
 use crate::{
-    Ciphersuite, ConversationConfiguration, CoreCrypto, CoreCryptoError, CoreCryptoResult, CredentialType,
+    Ciphersuite, ConversationConfiguration, CoreCryptoContext, CoreCryptoError, CoreCryptoResult, CredentialType,
     CustomConfiguration, DecryptedMessage, FfiClientId, WasmCryptoResult, WelcomeBundle,
 };
 use core_crypto::mls::conversation::Conversation as _;
 use core_crypto::mls::conversation::Error as ConversationError;
 use core_crypto::{
     RecursiveError,
-    context::CentralContext,
     prelude::{
         CiphersuiteName, ClientId, ClientIdentifier, ConversationId, KeyPackageIn, KeyPackageRef,
         MlsConversationConfiguration, VerifiableGroupInfo,
@@ -16,55 +15,12 @@ use core_crypto::{
 };
 use futures_util::TryFutureExt;
 use js_sys::{Promise, Uint8Array};
-use std::sync::Arc;
 use tls_codec::{Deserialize, Serialize};
 use wasm_bindgen::{JsValue, prelude::wasm_bindgen};
 use wasm_bindgen_futures::future_to_promise;
 
 pub mod e2ei;
 pub mod proteus;
-
-#[wasm_bindgen]
-#[derive(Clone)]
-pub struct CoreCryptoContext {
-    pub(crate) inner: Arc<CentralContext>,
-}
-
-#[wasm_bindgen]
-extern "C" {
-    pub type CoreCryptoCommand;
-
-    #[wasm_bindgen(structural, method, catch)]
-    pub async fn execute(this: &CoreCryptoCommand, ctx: CoreCryptoContext) -> Result<(), JsValue>;
-}
-
-#[wasm_bindgen]
-impl CoreCrypto {
-    /// Starts a new transaction in Core Crypto. If the callback succeeds, it will be committed,
-    /// otherwise, every operation performed with the context will be discarded.
-    pub async fn transaction(&self, command: CoreCryptoCommand) -> Promise {
-        let context = self.inner.clone();
-        future_to_promise(
-            async move {
-                let context = CoreCryptoContext {
-                    inner: Arc::new(context.new_transaction().await?),
-                };
-                let result = command.execute(context.clone()).await;
-                match result {
-                    Ok(_) => {
-                        context.inner.finish().await?;
-                        WasmCryptoResult::Ok(JsValue::UNDEFINED)
-                    }
-                    Err(uncaught_error) => {
-                        context.inner.abort().await?;
-                        Err(InternalError::TransactionFailed { uncaught_error }.into())
-                    }
-                }
-            }
-            .err_into(),
-        )
-    }
-}
 
 #[wasm_bindgen]
 impl CoreCryptoContext {

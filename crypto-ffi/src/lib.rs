@@ -19,6 +19,7 @@ mod ciphersuite;
 mod client_id;
 mod configuration;
 mod core_crypto;
+mod core_crypto_context;
 mod credential_type;
 mod crl;
 mod database_key;
@@ -41,6 +42,7 @@ pub use configuration::{ConversationConfiguration, CustomConfiguration, WirePoli
 pub(crate) use core_crypto::conversation::ConversationId;
 pub use core_crypto::{
     CoreCrypto,
+    command::CoreCryptoCommand,
     e2ei::E2eiDumpedPkiEnv,
     epoch_observer::EpochObserver,
     logger::{CoreCryptoLogLevel, CoreCryptoLogger},
@@ -48,9 +50,11 @@ pub use core_crypto::{
 };
 #[cfg(not(target_family = "wasm"))]
 pub use core_crypto::{
+    command::transaction_helper::TransactionHelper,
     core_crypto_deferred_init, core_crypto_new,
     logger::{set_logger, set_logger_only, set_max_log_level},
 };
+pub use core_crypto_context::CoreCryptoContext;
 pub use credential_type::CredentialType;
 pub use crl::{CrlRegistration, NewCrlDistributionPoints};
 pub use database_key::{DatabaseKey, migrate_db_key_type_to_bytes};
