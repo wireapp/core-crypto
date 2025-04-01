@@ -100,16 +100,22 @@ export interface EpochObserver {
 }
 
 class EpochObserverShim {
-    private inner: EpochObserver
+    private inner: EpochObserver;
 
     constructor(inner: EpochObserver) {
         this.inner = inner;
     }
 
     // what Rust sends us
-    async epochChanged(conversationId: Uint8Array, epoch: bigint): Promise<void> {
+    async epochChanged(
+        conversationId: Uint8Array,
+        epoch: bigint
+    ): Promise<void> {
         // JS-ism: we launch a new task by simply not awaiting; no explicit "spawn"
-        return this.inner.epochChanged(conversationId, safeBigintToNumber(epoch));
+        return this.inner.epochChanged(
+            conversationId,
+            safeBigintToNumber(epoch)
+        );
     }
 }
 
@@ -248,7 +254,9 @@ export class CoreCrypto {
         entropySeed,
         nbKeyPackage,
     }: CoreCryptoParams): Promise<CoreCrypto> {
-        const cs = new CiphersuitesFfi(Uint16Array.from(ciphersuites.map((cs) => cs.valueOf())));
+        const cs = new CiphersuitesFfi(
+            Uint16Array.from(ciphersuites.map((cs) => cs.valueOf()))
+        );
         const cc = await CoreCryptoError.asyncMapErr(
             CoreCryptoFfi.async_new(
                 databaseName,
@@ -609,9 +617,7 @@ export class CoreCrypto {
      */
     async e2eiIsEnabled(ciphersuite: Ciphersuite): Promise<boolean> {
         const cs = new CiphersuiteFfi(ciphersuite);
-        return await CoreCryptoError.asyncMapErr(
-            this.#cc.e2ei_is_enabled(cs)
-        );
+        return await CoreCryptoError.asyncMapErr(this.#cc.e2ei_is_enabled(cs));
     }
 
     /**

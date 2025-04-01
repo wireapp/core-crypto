@@ -19,7 +19,6 @@ afterEach(async () => {
     await teardown();
 });
 
-
 describe("logger", () => {
     type BrowserLog = {
         level: string;

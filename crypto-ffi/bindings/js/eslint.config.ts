@@ -9,5 +9,23 @@ export default tseslint.config(
     eslint.configs.recommended,
     tseslint.configs.recommended,
     prettier,
-    wdioConfig["flat/recommended"]
+    wdioConfig["flat/recommended"],
+    {
+        rules: {
+            "@typescript-eslint/no-unused-vars": [
+                "error",
+                {
+                    // ignore vars, errors, etc which begin with an underscore
+                    args: "all",
+                    argsIgnorePattern: "^_",
+                    caughtErrors: "all",
+                    caughtErrorsIgnorePattern: "^_",
+                    destructuredArrayIgnorePattern: "^_",
+                    varsIgnorePattern: "^_",
+                    // ignore `...rest` params when destructuring
+                    ignoreRestSiblings: true,
+                },
+            ],
+        },
+    }
 );

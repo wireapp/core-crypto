@@ -100,9 +100,7 @@ export interface CommitBundle {
     groupInfo: GroupInfoBundle;
 }
 
-function commitBundleFromFfi(
-    commitBundle: CommitBundleFfi
-): CommitBundle {
+function commitBundleFromFfi(commitBundle: CommitBundleFfi): CommitBundle {
     return {
         commit: commitBundle.commit,
         welcome: commitBundle.welcome,
@@ -182,11 +180,16 @@ export interface DecryptedMessage {
     crlNewDistributionPoints?: string[];
 }
 
-export function decryptedMessageFromFfi(m: DecryptedMessageFfi): DecryptedMessage {
+export function decryptedMessageFromFfi(
+    m: DecryptedMessageFfi
+): DecryptedMessage {
     return {
-        bufferedMessages: m.bufferedMessages?.map((msg) => bufferedDecryptedMessageFromFfi(msg)) ?? undefined,
+        bufferedMessages:
+            m.bufferedMessages?.map((msg) =>
+                bufferedDecryptedMessageFromFfi(msg)
+            ) ?? undefined,
         ...bufferedDecryptedMessageFromFfi(m),
-    }
+    };
 }
 
 /**
@@ -227,17 +230,23 @@ export interface BufferedDecryptedMessage {
     crlNewDistributionPoints?: string[];
 }
 
-export function bufferedDecryptedMessageFromFfi(m: BufferedDecryptedMessageFfi): BufferedDecryptedMessage {
+export function bufferedDecryptedMessageFromFfi(
+    m: BufferedDecryptedMessageFfi
+): BufferedDecryptedMessage {
     return {
         message: m.message,
-        proposals: m.proposals.map((proposal) => proposalBundleFromFfi(proposal)),
+        proposals: m.proposals.map((proposal) =>
+            proposalBundleFromFfi(proposal)
+        ),
         isActive: m.isActive,
-        commitDelay: m.commitDelay ? safeBigintToNumber(m.commitDelay) : undefined,
+        commitDelay: m.commitDelay
+            ? safeBigintToNumber(m.commitDelay)
+            : undefined,
         senderClientId: m.senderClientId?.as_bytes(),
         hasEpochChanged: m.hasEpochChanged,
         identity: m.identity,
         crlNewDistributionPoints: m.crlNewDistributionPoints.as_strings(),
-    }
+    };
 }
 
 /**
@@ -269,7 +278,7 @@ export function proposalBundleFromFfi(p: ProposalBundleFfi): ProposalBundle {
         proposal: p.proposal,
         proposalRef: p.proposal_ref,
         crlNewDistributionPoints: p.crl_new_distribution_points,
-    }
+    };
 }
 
 /**
@@ -279,11 +288,11 @@ export type MlsTransportResponse =
     | "success"
     | "retry"
     | {
-        /**
-         * The message was rejected by the delivery service and there's no recovery.
-         */
-        abort: { reason: string };
-    };
+          /**
+           * The message was rejected by the delivery service and there's no recovery.
+           */
+          abort: { reason: string };
+      };
 
 function mapTransportResponseToFfi(
     response: MlsTransportResponse
@@ -340,7 +349,9 @@ class MlsTransportFfiShim {
         this.inner = inner;
     }
 
-    async sendCommitBundle(commitBundle: CommitBundleFfi): Promise<MlsTransportResponseFfi> {
+    async sendCommitBundle(
+        commitBundle: CommitBundleFfi
+    ): Promise<MlsTransportResponseFfi> {
         const cb = commitBundleFromFfi(commitBundle);
         const response = await this.inner.sendCommitBundle(cb);
         return mapTransportResponseToFfi(response);

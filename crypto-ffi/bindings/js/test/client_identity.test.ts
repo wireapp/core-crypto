@@ -1,10 +1,5 @@
 import { browser, expect } from "@wdio/globals";
-import {
-    ALICE_ID,
-    ccInit,
-    setup,
-    teardown,
-} from "./utils.js";
+import { ALICE_ID, ccInit, setup, teardown } from "./utils.js";
 import { afterEach, beforeEach, describe } from "mocha";
 
 beforeEach(async () => {
@@ -14,7 +9,6 @@ beforeEach(async () => {
 afterEach(async () => {
     await teardown();
 });
-
 
 describe("client identity", () => {
     it("get client public key should work", async () => {

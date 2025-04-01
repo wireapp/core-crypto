@@ -8,10 +8,7 @@ import {
     teardown,
 } from "./utils.js";
 import { afterEach, beforeEach, describe } from "mocha";
-import {
-    CoreCryptoError,
-    CoreCryptoRichError,
-} from "../src/CoreCrypto.js";
+import { CoreCryptoError, CoreCryptoRichError } from "../src/CoreCrypto.js";
 
 beforeEach(async () => {
     await setup();
@@ -53,7 +50,6 @@ describe("core crypto errors", () => {
         expect(result.proteusErrorCodeIsCorrect).toBe(true);
     });
 });
-
 
 describe("Error type mapping", () => {
     it("should work for conversation already exists", async () => {
