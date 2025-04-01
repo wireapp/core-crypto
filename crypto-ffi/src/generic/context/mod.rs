@@ -1,22 +1,22 @@
 use super::{
     Ciphersuite, Ciphersuites, ClientId, ConversationConfiguration, CoreCrypto, CoreCryptoError, CoreCryptoResult,
-    CredentialType, CustomConfiguration, DecryptedMessage,
+    CredentialType, CustomConfiguration,
 };
-use crate::NewCrlDistributionPoints;
-use crate::WelcomeBundle;
+use crate::{DecryptedMessage, NewCrlDistributionPoints, WelcomeBundle};
+
 use async_lock::{Mutex, OnceCell};
-use core_crypto::mls::conversation::Conversation as _;
-use core_crypto::mls::conversation::Error as ConversationError;
 use core_crypto::{
     RecursiveError,
     context::CentralContext,
+    mls::conversation::{Conversation as _, Error as ConversationError},
     prelude::{
         ClientIdentifier, ConversationId, KeyPackageIn, KeyPackageRef, MlsConversationConfiguration,
         VerifiableGroupInfo,
     },
 };
-use std::{future::Future, ops::Deref, sync::Arc};
 use tls_codec::{Deserialize, Serialize};
+
+use std::{future::Future, ops::Deref, sync::Arc};
 
 pub mod e2ei;
 pub mod proteus;
