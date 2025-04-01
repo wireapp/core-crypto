@@ -1,3 +1,7 @@
+#[cfg(target_family = "wasm")]
+pub(crate) mod array_of_byte_array;
+mod mls;
+
 use std::{ops::Deref, sync::Arc};
 
 #[cfg(target_family = "wasm")]

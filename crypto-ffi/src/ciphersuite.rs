@@ -45,18 +45,3 @@ uniffi::custom_type!(Ciphersuites, Vec<u16>, {
         })
     }
 });
-
-/// Helper to lower arrays of Ciphersuites (js -> rust)
-#[cfg(target_family = "wasm")]
-pub(crate) fn lower_ciphersuites(ciphersuites: &[u16]) -> crate::WasmCryptoResult<Vec<MlsCiphersuite>> {
-    use crate::error::internal::InternalError;
-
-    ciphersuites
-        .iter()
-        .copied()
-        .map(|cs| {
-            let cs = CiphersuiteName::try_from(cs).map_err(|_| InternalError::UnknownCiphersuite)?;
-            Ok(MlsCiphersuite::from(Ciphersuite::from(cs)))
-        })
-        .collect::<Result<Vec<_>, _>>()
-}

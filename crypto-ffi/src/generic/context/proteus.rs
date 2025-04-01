@@ -1,6 +1,6 @@
+use crate::CoreCryptoContext;
 use crate::CoreCryptoResult;
 use crate::ProteusAutoPrekeyBundle;
-use crate::context::CoreCryptoContext;
 use crate::proteus_impl;
 
 #[uniffi::export]
