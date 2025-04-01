@@ -1,13 +1,3 @@
-cfg_if::cfg_if! {
-    if #[cfg(target_family = "wasm")] {
-        mod wasm;
-        pub use self::wasm::*;
-    } else {
-        mod generic;
-        pub use self::generic::*;
-    }
-}
-
 #[cfg(doc)]
 pub mod bindings;
 
@@ -37,7 +27,6 @@ pub use bundles::{
 pub use ciphersuite::{Ciphersuite, Ciphersuites};
 pub use client_id::{ClientId, FfiClientId};
 pub use configuration::{ConversationConfiguration, CustomConfiguration, WirePolicy};
-pub(crate) use core_crypto::conversation::ConversationId;
 pub use core_crypto::{
     CoreCrypto,
     command::CoreCryptoCommand,
@@ -52,6 +41,7 @@ pub use core_crypto::{
     core_crypto_deferred_init, core_crypto_new,
     logger::{set_logger, set_logger_only, set_max_log_level},
 };
+pub(crate) use core_crypto::{conversation::ConversationId, e2ei::identities::UserIdentities};
 pub use core_crypto_context::CoreCryptoContext;
 pub use credential_type::CredentialType;
 pub use crl::{CrlRegistration, NewCrlDistributionPoints};
