@@ -1,3 +1,4 @@
+mod client;
 pub mod logger;
 pub mod mls_transport;
 

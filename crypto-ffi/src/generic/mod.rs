@@ -38,18 +38,6 @@ impl From<core_crypto::e2e_identity::E2eiDumpedPkiEnv> for E2eiDumpedPkiEnv {
 #[allow(dead_code, unused_variables)]
 #[uniffi::export]
 impl CoreCrypto {
-    /// See [core_crypto::mls::Client::client_public_key]
-    pub async fn client_public_key(
-        &self,
-        ciphersuite: Ciphersuite,
-        credential_type: CredentialType,
-    ) -> CoreCryptoResult<Vec<u8>> {
-        Ok(self
-            .inner
-            .public_key(ciphersuite.into(), credential_type.into())
-            .await?)
-    }
-
     /// See [core_crypto::mls::conversation::ImmutableConversation::epoch]
     pub async fn conversation_epoch(&self, conversation_id: Vec<u8>) -> CoreCryptoResult<u64> {
         let conversation = self
