@@ -4,7 +4,7 @@ use super::{Error, Result};
 use crate::{
     LeafError, MlsError, RecursiveError,
     context::CentralContext,
-    e2e_identity::init_certificates::NewCrlDistributionPoint,
+    e2e_identity::init_certificates::NewCrlDistributionPoints,
     group_store::GroupStore,
     mls::credential::crl::{extract_crl_uris_from_group, get_new_crl_distribution_points},
     prelude::{ConversationId, MlsConversation, MlsConversationConfiguration, MlsCustomConfiguration},
@@ -21,7 +21,7 @@ pub struct WelcomeBundle {
     /// MLS Group Id
     pub id: ConversationId,
     /// New CRL distribution points that appeared by the introduction of a new credential
-    pub crl_new_distribution_points: NewCrlDistributionPoint,
+    pub crl_new_distribution_points: NewCrlDistributionPoints,
 }
 
 impl CentralContext {

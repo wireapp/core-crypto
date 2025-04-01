@@ -12,7 +12,7 @@ use mls_crypto_provider::MlsCryptoProvider;
 use super::{Error, Result};
 use crate::{
     LeafError,
-    e2e_identity::init_certificates::NewCrlDistributionPoint,
+    e2e_identity::NewCrlDistributionPoints,
     mls::{MlsConversation, credential::CredentialBundle},
     prelude::{Client, MlsError, MlsGroupInfoBundle},
 };
@@ -90,7 +90,7 @@ pub struct MlsConversationCreationMessage {
     /// `GroupInfo` if the commit is merged
     pub group_info: MlsGroupInfoBundle,
     /// New CRL distribution points that appeared by the introduction of a new credential
-    pub crl_new_distribution_points: NewCrlDistributionPoint,
+    pub crl_new_distribution_points: NewCrlDistributionPoints,
 }
 
 impl MlsConversationCreationMessage {
@@ -99,7 +99,7 @@ impl MlsConversationCreationMessage {
     /// 1 -> commit
     /// 2 -> group_info
     #[allow(clippy::type_complexity)]
-    pub fn to_bytes(self) -> Result<(Vec<u8>, Vec<u8>, MlsGroupInfoBundle, NewCrlDistributionPoint)> {
+    pub fn to_bytes(self) -> Result<(Vec<u8>, Vec<u8>, MlsGroupInfoBundle, NewCrlDistributionPoints)> {
         use openmls::prelude::TlsSerializeTrait as _;
         let welcome = self
             .welcome

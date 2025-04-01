@@ -12,7 +12,7 @@ use mls_crypto_provider::MlsCryptoProvider;
 use super::{Error, Result};
 use crate::{
     MlsError, RecursiveError,
-    e2e_identity::init_certificates::NewCrlDistributionPoint,
+    e2e_identity::init_certificates::NewCrlDistributionPoints,
     mls::credential::crl::{extract_crl_uris_from_credentials, get_new_crl_distribution_points},
     prelude::{Client, MlsConversation, MlsProposalRef},
 };
@@ -126,7 +126,7 @@ pub struct MlsProposalBundle {
     /// A unique identifier of the proposal to rollback it later if required
     pub proposal_ref: MlsProposalRef,
     /// New CRL distribution points that appeared by the introduction of a new credential
-    pub crl_new_distribution_points: NewCrlDistributionPoint,
+    pub crl_new_distribution_points: NewCrlDistributionPoints,
 }
 
 impl From<(MlsMessageOut, openmls::prelude::hash_ref::ProposalRef)> for MlsProposalBundle {
@@ -144,7 +144,7 @@ impl MlsProposalBundle {
     /// 0 -> proposal
     /// 1 -> proposal reference
     #[allow(clippy::type_complexity)]
-    pub fn to_bytes(self) -> Result<(Vec<u8>, Vec<u8>, NewCrlDistributionPoint)> {
+    pub fn to_bytes(self) -> Result<(Vec<u8>, Vec<u8>, NewCrlDistributionPoints)> {
         use openmls::prelude::TlsSerializeTrait as _;
         let proposal = self
             .proposal

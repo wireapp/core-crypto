@@ -1,6 +1,6 @@
 use super::{Error, Result};
 use crate::{
-    KeystoreError, RecursiveError, context::CentralContext, e2e_identity::init_certificates::NewCrlDistributionPoint,
+    KeystoreError, RecursiveError, context::CentralContext, e2e_identity::init_certificates::NewCrlDistributionPoints,
 };
 use core_crypto_keystore::{connection::FetchFromDatabase, entities::E2eiCrl};
 use mls_crypto_provider::MlsCryptoProvider;
@@ -68,7 +68,7 @@ pub(crate) fn extract_dp(cert: &Certificate) -> Result<HashSet<String>> {
 pub(crate) async fn get_new_crl_distribution_points(
     backend: &MlsCryptoProvider,
     mut crl_dps: HashSet<String>,
-) -> Result<NewCrlDistributionPoint> {
+) -> Result<NewCrlDistributionPoints> {
     if crl_dps.is_empty() {
         return Ok(None.into());
     }
@@ -87,7 +87,7 @@ pub(crate) async fn get_new_crl_distribution_points(
 impl CentralContext {
     /// When x509 new credentials are registered this extracts the new CRL Distribution Point from the end entity certificate
     /// and all the intermediates
-    pub(crate) async fn extract_dp_on_init(&self, certificate_chain: &[Vec<u8>]) -> Result<NewCrlDistributionPoint> {
+    pub(crate) async fn extract_dp_on_init(&self, certificate_chain: &[Vec<u8>]) -> Result<NewCrlDistributionPoints> {
         use x509_cert::der::Decode as _;
 
         // Own intermediates are not provided by smallstep in the /federation endpoint so we got to intercept them here, at issuance

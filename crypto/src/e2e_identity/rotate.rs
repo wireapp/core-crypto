@@ -4,7 +4,7 @@ use crate::e2e_identity::refresh_token::RefreshToken;
 use crate::{
     MlsError, RecursiveError,
     context::CentralContext,
-    e2e_identity::init_certificates::NewCrlDistributionPoint,
+    e2e_identity::init_certificates::NewCrlDistributionPoints,
     mls::credential::{ext::CredentialExt, x509::CertificatePrivateKey},
     prelude::{CertificateBundle, E2eiEnrollment, MlsCiphersuite, MlsCredentialType},
 };
@@ -122,7 +122,7 @@ impl CentralContext {
         &self,
         enrollment: &mut E2eiEnrollment,
         certificate_chain: String,
-    ) -> Result<NewCrlDistributionPoint> {
+    ) -> Result<NewCrlDistributionPoints> {
         let sk = enrollment.get_sign_key_for_mls()?;
         let cs = enrollment.ciphersuite;
         let certificate_chain = enrollment
