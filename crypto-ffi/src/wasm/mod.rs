@@ -3,11 +3,7 @@ pub mod context;
 mod epoch_observer;
 mod utils;
 
-use std::{
-    collections::{BTreeMap, HashMap},
-    ops::Deref,
-    sync::{Arc, LazyLock, Once},
-};
+use std::{collections::HashMap, ops::Deref, sync::Arc};
 
 use crate::proteus_impl;
 use core_crypto::mls::conversation::Conversation as _;
@@ -15,19 +11,15 @@ use core_crypto::prelude::*;
 use core_crypto_keystore::Connection as Database;
 use futures_util::future::TryFutureExt;
 use js_sys::{Promise, Uint8Array};
-use log::{
-    Level, LevelFilter, Metadata, Record,
-    kv::{self, Key, Value, VisitSource},
-};
-use log_reload::ReloadLog;
 use tls_codec::Deserialize;
 use utils::*;
 use wasm_bindgen::prelude::*;
 use wasm_bindgen_futures::future_to_promise;
 
 use crate::{
-    Ciphersuite, CoreCryptoError, CredentialType, FfiClientId, InternalError, MlsError, MlsTransport, MlsTransportShim,
-    WasmCryptoResult, WireIdentity, lower_ciphersuites,
+    Ciphersuite, CoreCryptoError, CoreCryptoLogLevel, CoreCryptoLogger, CredentialType, FfiClientId, InternalError,
+    MlsError, MlsTransport, MlsTransportShim, WasmCryptoResult, WireIdentity, lower_ciphersuites, set_logger_only,
+    set_max_log_level_inner,
 };
 
 #[wasm_bindgen(getter_with_clone)]
@@ -53,110 +45,6 @@ impl From<core_crypto::e2e_identity::E2eiDumpedPkiEnv> for E2eiDumpedPkiEnv {
             crls: value.crls,
         }
     }
-}
-
-static INIT_LOGGER: Once = Once::new();
-static LOGGER: LazyLock<ReloadLog<CoreCryptoWasmLogger>> = LazyLock::new(|| {
-    ReloadLog::new(CoreCryptoWasmLogger {
-        logger: Default::default(),
-        ctx: Default::default(),
-    })
-});
-
-#[wasm_bindgen]
-#[derive(Debug, Clone)]
-pub struct CoreCryptoWasmLogger {
-    logger: js_sys::Function,
-    ctx: JsValue,
-}
-
-// SAFETY: WASM only ever runs in a single-threaded context, so this is intrinsically thread-safe.
-// If that invariant ever varies, we may need to rethink this (but more likely that would be addressed
-// upstream where the types are defined).
-unsafe impl Send for CoreCryptoWasmLogger {}
-// SAFETY: WASM only ever runs in a single-threaded context, so this is intrinsically thread-safe.
-unsafe impl Sync for CoreCryptoWasmLogger {}
-
-#[wasm_bindgen]
-#[derive(Debug, Clone, Copy)]
-#[repr(u8)]
-pub enum CoreCryptoLogLevel {
-    Off = 1,
-    Trace = 2,
-    Debug = 3,
-    Info = 4,
-    Warn = 5,
-    Error = 6,
-}
-
-impl From<CoreCryptoLogLevel> for LevelFilter {
-    fn from(value: CoreCryptoLogLevel) -> LevelFilter {
-        match value {
-            CoreCryptoLogLevel::Off => LevelFilter::Off,
-            CoreCryptoLogLevel::Trace => LevelFilter::Trace,
-            CoreCryptoLogLevel::Debug => LevelFilter::Debug,
-            CoreCryptoLogLevel::Info => LevelFilter::Info,
-            CoreCryptoLogLevel::Warn => LevelFilter::Warn,
-            CoreCryptoLogLevel::Error => LevelFilter::Error,
-        }
-    }
-}
-
-impl From<Level> for CoreCryptoLogLevel {
-    fn from(value: Level) -> CoreCryptoLogLevel {
-        match value {
-            Level::Warn => CoreCryptoLogLevel::Warn,
-            Level::Error => CoreCryptoLogLevel::Error,
-            Level::Info => CoreCryptoLogLevel::Info,
-            Level::Debug => CoreCryptoLogLevel::Debug,
-            Level::Trace => CoreCryptoLogLevel::Trace,
-        }
-    }
-}
-
-struct KeyValueVisitor<'kvs>(BTreeMap<Key<'kvs>, Value<'kvs>>);
-
-impl<'kvs> VisitSource<'kvs> for KeyValueVisitor<'kvs> {
-    #[inline]
-    fn visit_pair(&mut self, key: Key<'kvs>, value: Value<'kvs>) -> Result<(), kv::Error> {
-        self.0.insert(key, value);
-        Ok(())
-    }
-}
-
-#[wasm_bindgen]
-impl CoreCryptoWasmLogger {
-    #[wasm_bindgen(constructor)]
-    pub fn new(logger: js_sys::Function, ctx: JsValue) -> Self {
-        Self { logger, ctx }
-    }
-}
-
-impl log::Log for CoreCryptoWasmLogger {
-    fn enabled(&self, metadata: &Metadata) -> bool {
-        true
-    }
-
-    fn log(&self, record: &Record) {
-        let kvs = record.key_values();
-        let mut visitor = KeyValueVisitor(BTreeMap::new());
-        let _ = kvs.visit(&mut visitor);
-
-        let message = format!("{}", record.args());
-        let level: CoreCryptoLogLevel = CoreCryptoLogLevel::from(record.level());
-        let context = serde_json::to_string(&visitor.0).ok();
-
-        if let Err(e) = self.logger.call3(
-            &self.ctx,
-            &JsValue::from(level),
-            &JsValue::from(message),
-            &JsValue::from(context),
-        ) {
-            web_sys::console::error_1(&e);
-        }
-    }
-
-    fn flush(&self) {}
 }
 
 /// Updates the key of the CoreCrypto database.
@@ -252,18 +140,12 @@ impl CoreCrypto {
         }
     }
 
-    pub fn set_logger(logger: CoreCryptoWasmLogger) {
-        // unwrapping poisoned lock error which shouldn't happen since we don't panic while replacing the logger
-        LOGGER.handle().replace(logger).unwrap();
-
-        INIT_LOGGER.call_once(|| {
-            log::set_logger(LOGGER.deref()).unwrap();
-            log::set_max_level(LevelFilter::Warn);
-        });
+    pub fn set_logger(logger: CoreCryptoLogger) {
+        set_logger_only(logger);
     }
 
     pub fn set_max_log_level(level: CoreCryptoLogLevel) {
-        log::set_max_level(level.into());
+        set_max_log_level_inner(level)
     }
 
     /// Returns: [`WasmCryptoResult<()>`]
