@@ -20,67 +20,12 @@ use core_crypto::mls::conversation::Conversation as _;
 pub use core_crypto::prelude::ConversationId;
 use core_crypto::{
     RecursiveError,
-    prelude::{
-        Client, EntropySeed, MlsClientConfiguration, MlsCommitBundle, MlsCustomConfiguration, VerifiableGroupInfo,
-    },
+    prelude::{Client, EntropySeed, MlsClientConfiguration, MlsCommitBundle, VerifiableGroupInfo},
 };
 use core_crypto_keystore::Connection as Database;
 
 pub mod context;
 mod epoch_observer;
-
-#[derive(Debug, Clone, uniffi::Record)]
-/// See [core_crypto::prelude::MlsConversationConfiguration]
-pub struct ConversationConfiguration {
-    pub ciphersuite: Ciphersuite,
-    pub external_senders: Vec<Vec<u8>>,
-    pub custom: CustomConfiguration,
-}
-
-#[derive(Debug, Copy, Clone, Default, Eq, PartialEq, uniffi::Enum)]
-#[repr(u8)]
-pub enum MlsWirePolicy {
-    /// Handshake messages are never encrypted
-    #[default]
-    Plaintext = 1,
-    /// Handshake messages are always encrypted
-    Ciphertext = 2,
-}
-
-impl From<core_crypto::prelude::MlsWirePolicy> for MlsWirePolicy {
-    fn from(value: core_crypto::prelude::MlsWirePolicy) -> Self {
-        match value {
-            core_crypto::prelude::MlsWirePolicy::Plaintext => Self::Plaintext,
-            core_crypto::prelude::MlsWirePolicy::Ciphertext => Self::Ciphertext,
-        }
-    }
-}
-
-impl From<MlsWirePolicy> for core_crypto::prelude::MlsWirePolicy {
-    fn from(value: MlsWirePolicy) -> core_crypto::prelude::MlsWirePolicy {
-        match value {
-            MlsWirePolicy::Plaintext => core_crypto::prelude::MlsWirePolicy::Plaintext,
-            MlsWirePolicy::Ciphertext => core_crypto::prelude::MlsWirePolicy::Ciphertext,
-        }
-    }
-}
-
-#[derive(Debug, Clone, uniffi::Record)]
-/// See [core_crypto::prelude::MlsCustomConfiguration]
-pub struct CustomConfiguration {
-    pub key_rotation_span: Option<std::time::Duration>,
-    pub wire_policy: Option<MlsWirePolicy>,
-}
-
-impl From<CustomConfiguration> for MlsCustomConfiguration {
-    fn from(cfg: CustomConfiguration) -> Self {
-        Self {
-            key_rotation_span: cfg.key_rotation_span,
-            wire_policy: cfg.wire_policy.unwrap_or_default().into(),
-            ..Default::default()
-        }
-    }
-}
 
 #[derive(Debug, Clone, uniffi::Record)]
 /// Dummy comment

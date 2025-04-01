@@ -36,6 +36,7 @@ uniffi::setup_scaffolding!("core_crypto_ffi");
 mod bundles;
 mod ciphersuite;
 mod client_id;
+mod configuration;
 mod credential_type;
 mod crl;
 mod decrypted_message;
@@ -51,6 +52,7 @@ pub use bundles::{
 pub(crate) use ciphersuite::lower_ciphersuites;
 pub use ciphersuite::{Ciphersuite, Ciphersuites};
 pub use client_id::{ClientId, FfiClientId};
+pub use configuration::{ConversationConfiguration, CustomConfiguration, WirePolicy};
 pub use credential_type::CredentialType;
 pub use crl::{CrlRegistration, NewCrlDistributionPoints};
 pub use decrypted_message::{BufferedDecryptedMessage, DecryptedMessage};
