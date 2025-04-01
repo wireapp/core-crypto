@@ -5,7 +5,6 @@ use tls_codec::Deserialize;
 use self::context::CoreCryptoContext;
 use crate::{
     Ciphersuite, Ciphersuites, ClientId, CoreCrypto, CoreCryptoError, CoreCryptoResult, CredentialType, WireIdentity,
-    proteus_impl,
 };
 use core_crypto::mls::conversation::Conversation as _;
 pub use core_crypto::prelude::ConversationId;
@@ -90,41 +89,6 @@ impl From<core_crypto::prelude::E2eiConversationState> for E2eiConversationState
             core_crypto::prelude::E2eiConversationState::NotVerified => Self::NotVerified,
             core_crypto::prelude::E2eiConversationState::NotEnabled => Self::NotEnabled,
         }
-    }
-}
-
-#[cfg_attr(not(feature = "proteus"), allow(unused_variables))]
-#[uniffi::export]
-impl CoreCrypto {
-    /// See [core_crypto::proteus::ProteusCentral::session_exists]
-    pub async fn proteus_session_exists(&self, session_id: String) -> CoreCryptoResult<bool> {
-        proteus_impl!({ Ok(self.inner.proteus_session_exists(&session_id).await?) })
-    }
-
-    /// See [core_crypto::proteus::ProteusCentral::last_resort_prekey_id]
-    pub fn proteus_last_resort_prekey_id(&self) -> CoreCryptoResult<u16> {
-        proteus_impl!({ Ok(core_crypto::CoreCrypto::proteus_last_resort_prekey_id()) })
-    }
-
-    /// See [core_crypto::proteus::ProteusCentral::fingerprint]
-    pub async fn proteus_fingerprint(&self) -> CoreCryptoResult<String> {
-        proteus_impl!({ Ok(self.inner.proteus_fingerprint().await?) })
-    }
-
-    /// See [core_crypto::proteus::ProteusCentral::fingerprint_local]
-    pub async fn proteus_fingerprint_local(&self, session_id: String) -> CoreCryptoResult<String> {
-        proteus_impl!({ Ok(self.inner.proteus_fingerprint_local(&session_id).await?) })
-    }
-
-    /// See [core_crypto::proteus::ProteusCentral::fingerprint_remote]
-    pub async fn proteus_fingerprint_remote(&self, session_id: String) -> CoreCryptoResult<String> {
-        proteus_impl!({ Ok(self.inner.proteus_fingerprint_remote(&session_id).await?) })
-    }
-
-    /// See [core_crypto::proteus::ProteusCentral::fingerprint_prekeybundle]
-    /// NOTE: uniffi doesn't support associated functions, so we have to have the self here
-    pub fn proteus_fingerprint_prekeybundle(&self, prekey: Vec<u8>) -> CoreCryptoResult<String> {
-        proteus_impl!({ Ok(core_crypto::proteus::ProteusCentral::fingerprint_prekeybundle(&prekey)?) })
     }
 }
 
