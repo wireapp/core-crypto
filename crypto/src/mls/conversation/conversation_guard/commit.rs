@@ -7,7 +7,7 @@ use crate::mls::credential::CredentialBundle;
 use crate::prelude::MlsCredentialType;
 use crate::{
     LeafError, MlsError, MlsTransportResponse, RecursiveError,
-    e2e_identity::init_certificates::NewCrlDistributionPoint,
+    e2e_identity::init_certificates::NewCrlDistributionPoints,
     mls::{
         conversation::{ConversationGuard, Result, commit::MlsCommitBundle},
         credential::crl::{extract_crl_uris_from_credentials, get_new_crl_distribution_points},
@@ -100,7 +100,7 @@ impl ConversationGuard {
     }
 
     /// Adds new members to the group/conversation
-    pub async fn add_members(&mut self, key_packages: Vec<KeyPackageIn>) -> Result<NewCrlDistributionPoint> {
+    pub async fn add_members(&mut self, key_packages: Vec<KeyPackageIn>) -> Result<NewCrlDistributionPoints> {
         let backend = self.mls_provider().await?;
         let credential = self.credential_bundle().await?;
         let signer = credential.signature_key();

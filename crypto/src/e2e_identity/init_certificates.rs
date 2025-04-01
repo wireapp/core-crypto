@@ -12,12 +12,24 @@ use wire_e2e_identity::prelude::x509::{
 };
 use x509_cert::der::{Decode, EncodePem, pem::LineEnding};
 
+/// New Certificate Revocation List distribution points.
 #[derive(Debug, Clone, derive_more::From, derive_more::Into, derive_more::Deref, derive_more::DerefMut)]
-pub struct NewCrlDistributionPoint(Option<HashSet<String>>);
+pub struct NewCrlDistributionPoints(Option<HashSet<String>>);
 
-impl From<NewCrlDistributionPoint> for Option<Vec<String>> {
-    fn from(mut dp: NewCrlDistributionPoint) -> Self {
+impl From<NewCrlDistributionPoints> for Option<Vec<String>> {
+    fn from(mut dp: NewCrlDistributionPoints) -> Self {
         dp.take().map(|d| d.into_iter().collect())
+    }
+}
+
+impl IntoIterator for NewCrlDistributionPoints {
+    type Item = String;
+
+    type IntoIter = std::collections::hash_set::IntoIter<String>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        let items = self.0.unwrap_or_default();
+        items.into_iter()
     }
 }
 
@@ -142,18 +154,21 @@ impl CentralContext {
     ///
     /// # Parameters
     /// * `cert_pem` - PEM certificate to register as an Intermediate CA
-    pub async fn e2ei_register_intermediate_ca_pem(&self, cert_pem: String) -> Result<NewCrlDistributionPoint> {
+    pub async fn e2ei_register_intermediate_ca_pem(&self, cert_pem: String) -> Result<NewCrlDistributionPoints> {
         // Parse/decode PEM cert
         let inter_ca = PkiEnvironment::decode_pem_cert(cert_pem)?;
         self.e2ei_register_intermediate_ca(inter_ca).await
     }
 
-    pub(crate) async fn e2ei_register_intermediate_ca_der(&self, cert_der: &[u8]) -> Result<NewCrlDistributionPoint> {
+    pub(crate) async fn e2ei_register_intermediate_ca_der(&self, cert_der: &[u8]) -> Result<NewCrlDistributionPoints> {
         let inter_ca = x509_cert::Certificate::from_der(cert_der)?;
         self.e2ei_register_intermediate_ca(inter_ca).await
     }
 
-    async fn e2ei_register_intermediate_ca(&self, inter_ca: x509_cert::Certificate) -> Result<NewCrlDistributionPoint> {
+    async fn e2ei_register_intermediate_ca(
+        &self,
+        inter_ca: x509_cert::Certificate,
+    ) -> Result<NewCrlDistributionPoints> {
         // TrustAnchor must have been registered at this point
         let keystore = self
             .keystore()
