@@ -47,69 +47,6 @@ impl From<core_crypto::e2e_identity::E2eiDumpedPkiEnv> for E2eiDumpedPkiEnv {
 
 #[wasm_bindgen]
 impl CoreCrypto {
-    /// Returns [`WasmCryptoResult<u64>`]
-    ///
-    /// see [core_crypto::mls::conversation::ImmutableConversation::epoch]
-    pub fn conversation_epoch(&self, conversation_id: ConversationId) -> Promise {
-        let central = self.inner.clone();
-        future_to_promise(
-            async move {
-                let epoch = central
-                    .get_raw_conversation(&conversation_id)
-                    .await
-                    .map_err(RecursiveError::mls_client("getting conversation by id"))?
-                    .epoch()
-                    .await
-                    .into();
-                WasmCryptoResult::Ok(epoch)
-            }
-            .err_into(),
-        )
-    }
-
-    /// Returns [`WasmCryptoResult<Ciphersuite>`]
-    ///
-    /// see [core_crypto::mls::conversation::ImmutableConversation::ciphersuite]
-    pub fn conversation_ciphersuite(&self, conversation_id: ConversationId) -> Promise {
-        let central = self.inner.clone();
-        future_to_promise(
-            async move {
-                let ciphersuite: Ciphersuite = central
-                    .get_raw_conversation(&conversation_id)
-                    .await
-                    .map_err(RecursiveError::mls_client("getting conversation by id"))?
-                    .ciphersuite()
-                    .await
-                    .into();
-                WasmCryptoResult::Ok(ciphersuite.into())
-            }
-            .err_into(),
-        )
-    }
-
-    /// Returns: [`bool`]
-    ///
-    /// see [core_crypto::mls::Client::conversation_exists]
-    pub fn conversation_exists(&self, conversation_id: ConversationId) -> Promise {
-        let central = self.inner.clone();
-        future_to_promise(
-            async move {
-                WasmCryptoResult::Ok(
-                    if central
-                        .conversation_exists(&conversation_id)
-                        .await
-                        .map_err(RecursiveError::mls_client("getting conversation by id"))?
-                    {
-                        JsValue::TRUE
-                    } else {
-                        JsValue::FALSE
-                    },
-                )
-            }
-            .err_into(),
-        )
-    }
-
     /// Returns: [`WasmCryptoResult<js_sys::Uint8Array>`]
     ///
     /// see [core_crypto::mls::Client::random_bytes]
