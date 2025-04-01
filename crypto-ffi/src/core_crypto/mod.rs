@@ -1,5 +1,6 @@
 mod client;
-mod conversation;
+pub(crate) mod conversation;
+pub(crate) mod e2ei;
 pub mod logger;
 pub mod mls_transport;
 mod proteus;
