@@ -6,7 +6,7 @@ use crate::{CoreCryptoError, CoreCryptoResult};
 
 // TODO: We derive Constructor here only because we need to construct an instance in interop.
 // Remove it once we drop the FFI client from interop.
-#[derive(Debug, derive_more::Into)]
+#[derive(Debug, derive_more::From, derive_more::Into)]
 #[cfg_attr(target_family = "wasm", wasm_bindgen)]
 #[cfg_attr(not(target_family = "wasm"), derive(derive_more::Deref, derive_more::Constructor))]
 pub struct DatabaseKey(core_crypto_keystore::DatabaseKey);
