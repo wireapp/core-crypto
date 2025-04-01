@@ -46,7 +46,6 @@ mod error;
 mod identity;
 mod logger;
 mod metadata;
-mod mls_transport;
 
 pub use bundles::{
     commit::CommitBundle, group_info::GroupInfoBundle, proposal::ProposalBundle,
@@ -58,6 +57,7 @@ pub use ciphersuite::{Ciphersuite, Ciphersuites};
 pub use client_id::{ClientId, FfiClientId};
 pub use configuration::{ConversationConfiguration, CustomConfiguration, WirePolicy};
 pub use core_crypto::CoreCrypto;
+pub use core_crypto::mls_transport::{MlsTransport, MlsTransportResponse};
 #[cfg(not(target_family = "wasm"))]
 pub use core_crypto::{core_crypto_deferred_init, core_crypto_new};
 pub use credential_type::CredentialType;
@@ -79,5 +79,3 @@ pub use logger::{set_logger, set_logger_only, set_max_log_level};
 #[cfg(target_family = "wasm")]
 pub(crate) use logger::{set_logger_only, set_max_log_level_inner};
 pub use metadata::{BuildMetadata, build_metadata, version};
-pub(crate) use mls_transport::MlsTransportShim;
-pub use mls_transport::{MlsTransport, MlsTransportResponse};

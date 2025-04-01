@@ -1,4 +1,6 @@
 use core_crypto::prelude::{Client, MlsClientConfiguration};
+pub mod mls_transport;
+
 #[cfg(target_family = "wasm")]
 use wasm_bindgen::prelude::*;
 

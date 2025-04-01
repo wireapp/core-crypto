@@ -17,8 +17,7 @@ use wasm_bindgen_futures::future_to_promise;
 
 use crate::{
     Ciphersuite, CoreCrypto, CoreCryptoError, CoreCryptoLogLevel, CoreCryptoLogger, CredentialType, InternalError,
-    MlsError, MlsTransport, MlsTransportShim, WasmCryptoResult, WireIdentity, lower_ciphersuites, set_logger_only,
-    set_max_log_level_inner,
+    MlsError, WasmCryptoResult, WireIdentity, lower_ciphersuites, set_logger_only, set_max_log_level_inner,
 };
 
 #[wasm_bindgen(getter_with_clone)]
@@ -67,23 +66,6 @@ impl CoreCrypto {
 
     pub fn set_max_log_level(level: CoreCryptoLogLevel) {
         set_max_log_level_inner(level)
-    }
-
-    /// Returns: [`WasmCryptoResult<()>`]
-    ///
-    /// see [core_crypto::mls::Client::provide_transport]
-    pub fn provide_transport(&self, callbacks: MlsTransport) -> Promise {
-        let central = self.inner.clone();
-        future_to_promise(
-            async move {
-                central
-                    .provide_transport(Arc::new(MlsTransportShim::new(callbacks)))
-                    .await;
-
-                WasmCryptoResult::Ok(JsValue::UNDEFINED)
-            }
-            .err_into(),
-        )
     }
 
     /// Returns:: [`WasmCryptoResult<js_sys::Uint8Array>`]
