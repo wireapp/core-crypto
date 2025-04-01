@@ -58,3 +58,13 @@ impl From<CoreCryptoError> for wasm_bindgen::JsValue {
         stacked_error.into()
     }
 }
+
+#[cfg(target_family = "wasm")]
+impl CoreCryptoError {
+    pub(crate) fn generic<E>() -> impl FnOnce(E) -> Self
+    where
+        E: ToString,
+    {
+        |err| Self(InternalError::generic()(err))
+    }
+}

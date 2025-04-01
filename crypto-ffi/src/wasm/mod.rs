@@ -47,41 +47,6 @@ impl From<core_crypto::e2e_identity::E2eiDumpedPkiEnv> for E2eiDumpedPkiEnv {
 
 #[wasm_bindgen]
 impl CoreCrypto {
-    /// Returns: [`WasmCryptoResult<js_sys::Uint8Array>`]
-    ///
-    /// see [core_crypto::mls::Client::random_bytes]
-    pub fn random_bytes(&self, len: usize) -> Promise {
-        let central = self.inner.clone();
-        future_to_promise(
-            async move {
-                let bytes = central.random_bytes(len).map_err(CoreCryptoError::from)?;
-                WasmCryptoResult::Ok(Uint8Array::from(bytes.as_slice()).into())
-            }
-            .err_into(),
-        )
-    }
-
-    #[allow(rustdoc::broken_intra_doc_links)]
-    /// Returns: [`WasmCryptoResult<()>`]
-    ///
-    /// see [mls_crypto_provider::MlsCryptoProvider::reseed]
-    pub fn reseed_rng(&self, seed: Box<[u8]>) -> Promise {
-        let central = self.inner.clone();
-        future_to_promise(
-            async move {
-                let seed = EntropySeed::try_from_slice(&seed)
-                    .map_err(core_crypto::MlsError::wrap(
-                        "trying to construct entropy seed from slice",
-                    ))
-                    .map_err(core_crypto::Error::Mls)?;
-
-                central.reseed(Some(seed)).await?;
-                WasmCryptoResult::Ok(JsValue::UNDEFINED)
-            }
-            .err_into(),
-        )
-    }
-
     /// Returns: [`WasmCryptoResult<bool>`]
     ///
     /// see [core_crypto::proteus::ProteusCentral::session_exists]

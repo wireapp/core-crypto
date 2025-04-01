@@ -2,6 +2,7 @@ mod client;
 mod conversation;
 pub mod logger;
 pub mod mls_transport;
+mod randomness;
 
 use core_crypto::prelude::{Client, MlsClientConfiguration};
 #[cfg(target_family = "wasm")]
@@ -13,19 +14,19 @@ use crate::{Ciphersuites, ClientId, CoreCryptoResult, DatabaseKey, error::intern
 
 /// In Wasm, boxed slices are the natural way to communicate an immutable byte slice
 #[cfg(target_family = "wasm")]
-type EntropySeed = Box<[u8]>;
+pub(crate) type EntropySeed = Box<[u8]>;
 
 /// In uniffi, a vector is the natural way to communicate a byte slice
 #[cfg(not(target_family = "wasm"))]
-type EntropySeed = Vec<u8>;
+pub(crate) type EntropySeed = Vec<u8>;
 
 #[cfg(target_family = "wasm")]
-fn entropy_seed_map(e: EntropySeed) -> Vec<u8> {
+pub(crate) fn entropy_seed_map(e: EntropySeed) -> Vec<u8> {
     e.into()
 }
 
 #[cfg(not(target_family = "wasm"))]
-fn entropy_seed_map(e: EntropySeed) -> Vec<u8> {
+pub(crate) fn entropy_seed_map(e: EntropySeed) -> Vec<u8> {
     e
 }
 

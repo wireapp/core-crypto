@@ -9,10 +9,7 @@ use crate::{
 };
 use core_crypto::mls::conversation::Conversation as _;
 pub use core_crypto::prelude::ConversationId;
-use core_crypto::{
-    RecursiveError,
-    prelude::{EntropySeed, VerifiableGroupInfo},
-};
+use core_crypto::{RecursiveError, prelude::VerifiableGroupInfo};
 
 pub mod context;
 mod epoch_observer;
@@ -38,21 +35,6 @@ impl From<core_crypto::e2e_identity::E2eiDumpedPkiEnv> for E2eiDumpedPkiEnv {
 #[allow(dead_code, unused_variables)]
 #[uniffi::export]
 impl CoreCrypto {
-    /// See [core_crypto::mls::Client::random_bytes]
-    pub async fn random_bytes(&self, len: u32) -> CoreCryptoResult<Vec<u8>> {
-        Ok(self
-            .inner
-            .random_bytes(len.try_into().map_err(CoreCryptoError::generic())?)?)
-    }
-
-    /// see [core_crypto::prelude::MlsCryptoProvider::reseed]
-    pub async fn reseed_rng(&self, seed: Vec<u8>) -> CoreCryptoResult<()> {
-        let seed = EntropySeed::try_from_slice(&seed).map_err(CoreCryptoError::generic())?;
-        self.inner.reseed(Some(seed)).await?;
-
-        Ok(())
-    }
-
     /// See [core_crypto::mls::conversation::ImmutableConversation::get_client_ids]
     pub async fn get_client_ids(&self, conversation_id: Vec<u8>) -> CoreCryptoResult<Vec<ClientId>> {
         Ok(self
