@@ -12,158 +12,23 @@ use log_reload::ReloadLog;
 use tls_codec::Deserialize;
 
 use self::context::CoreCryptoContext;
-use crate::{Ciphersuite, Ciphersuites, ClientId, CoreCryptoError, CoreCryptoResult, CredentialType, proteus_impl};
+use crate::{
+    Ciphersuite, Ciphersuites, ClientId, CommitBundle, CoreCryptoError, CoreCryptoResult, CredentialType,
+    ProposalBundle, proteus_impl,
+};
 use core_crypto::mls::conversation::Conversation as _;
 pub use core_crypto::prelude::ConversationId;
 use core_crypto::{
     RecursiveError,
     prelude::{
         Client, EntropySeed, MlsBufferedConversationDecryptMessage, MlsClientConfiguration, MlsCommitBundle,
-        MlsConversationDecryptMessage, MlsCustomConfiguration, MlsGroupInfoBundle, MlsProposalBundle,
-        VerifiableGroupInfo,
+        MlsConversationDecryptMessage, MlsCustomConfiguration, VerifiableGroupInfo,
     },
 };
 use core_crypto_keystore::Connection as Database;
 
 pub mod context;
 mod epoch_observer;
-
-#[derive(Debug, Clone, uniffi::Record)]
-pub struct ProteusAutoPrekeyBundle {
-    pub id: u16,
-    pub pkb: Vec<u8>,
-}
-
-#[derive(Debug, uniffi::Record)]
-/// see [core_crypto::prelude::MlsConversationCreationMessage]
-pub struct WelcomeBundle {
-    pub id: ConversationId,
-    pub crl_new_distribution_points: Option<Vec<String>>,
-}
-
-impl From<core_crypto::prelude::WelcomeBundle> for WelcomeBundle {
-    fn from(w: core_crypto::prelude::WelcomeBundle) -> Self {
-        Self {
-            id: w.id,
-            crl_new_distribution_points: w.crl_new_distribution_points.into(),
-        }
-    }
-}
-
-#[derive(Debug, uniffi::Record)]
-pub struct CommitBundle {
-    pub welcome: Option<Vec<u8>>,
-    pub commit: Vec<u8>,
-    pub group_info: GroupInfoBundle,
-}
-
-impl TryFrom<MlsCommitBundle> for CommitBundle {
-    type Error = CoreCryptoError;
-
-    fn try_from(msg: MlsCommitBundle) -> Result<Self, Self::Error> {
-        let (welcome, commit, group_info) = msg.to_bytes_triple()?;
-        Ok(Self {
-            welcome,
-            commit,
-            group_info: group_info.into(),
-        })
-    }
-}
-
-#[derive(Debug, Clone, Copy, uniffi::Enum)]
-#[repr(u8)]
-pub enum MlsGroupInfoEncryptionType {
-    /// Unencrypted `GroupInfo`
-    Plaintext = 1,
-    /// `GroupInfo` encrypted in a JWE
-    JweEncrypted = 2,
-}
-
-impl From<core_crypto::prelude::MlsGroupInfoEncryptionType> for MlsGroupInfoEncryptionType {
-    fn from(value: core_crypto::prelude::MlsGroupInfoEncryptionType) -> Self {
-        match value {
-            core_crypto::prelude::MlsGroupInfoEncryptionType::Plaintext => Self::Plaintext,
-            core_crypto::prelude::MlsGroupInfoEncryptionType::JweEncrypted => Self::JweEncrypted,
-        }
-    }
-}
-
-impl From<MlsGroupInfoEncryptionType> for core_crypto::prelude::MlsGroupInfoEncryptionType {
-    fn from(value: MlsGroupInfoEncryptionType) -> Self {
-        match value {
-            MlsGroupInfoEncryptionType::Plaintext => Self::Plaintext,
-            MlsGroupInfoEncryptionType::JweEncrypted => Self::JweEncrypted,
-        }
-    }
-}
-
-#[derive(Debug, Clone, Copy, uniffi::Enum)]
-#[repr(u8)]
-pub enum MlsRatchetTreeType {
-    /// Plain old and complete `GroupInfo`
-    Full = 1,
-    /// Contains `GroupInfo` changes since previous epoch (not yet implemented)
-    /// (see [draft](https://github.com/rohan-wire/ietf-drafts/blob/main/mahy-mls-ratchet-tree-delta/draft-mahy-mls-ratchet-tree-delta.md))
-    Delta = 2,
-    ByRef = 3,
-}
-
-impl From<core_crypto::prelude::MlsRatchetTreeType> for MlsRatchetTreeType {
-    fn from(value: core_crypto::prelude::MlsRatchetTreeType) -> Self {
-        match value {
-            core_crypto::prelude::MlsRatchetTreeType::Full => Self::Full,
-            core_crypto::prelude::MlsRatchetTreeType::Delta => Self::Delta,
-            core_crypto::prelude::MlsRatchetTreeType::ByRef => Self::ByRef,
-        }
-    }
-}
-
-impl From<MlsRatchetTreeType> for core_crypto::prelude::MlsRatchetTreeType {
-    fn from(value: MlsRatchetTreeType) -> Self {
-        match value {
-            MlsRatchetTreeType::Full => Self::Full,
-            MlsRatchetTreeType::Delta => Self::Delta,
-            MlsRatchetTreeType::ByRef => Self::ByRef,
-        }
-    }
-}
-
-#[derive(Debug, Clone, uniffi::Record)]
-pub struct GroupInfoBundle {
-    pub encryption_type: MlsGroupInfoEncryptionType,
-    pub ratchet_tree_type: MlsRatchetTreeType,
-    pub payload: Vec<u8>,
-}
-
-impl From<MlsGroupInfoBundle> for GroupInfoBundle {
-    fn from(gi: MlsGroupInfoBundle) -> Self {
-        Self {
-            encryption_type: gi.encryption_type.into(),
-            ratchet_tree_type: gi.ratchet_tree_type.into(),
-            payload: gi.payload.bytes(),
-        }
-    }
-}
-
-#[derive(Debug, uniffi::Record)]
-pub struct ProposalBundle {
-    pub proposal: Vec<u8>,
-    pub proposal_ref: Vec<u8>,
-    pub crl_new_distribution_points: Option<Vec<String>>,
-}
-
-impl TryFrom<MlsProposalBundle> for ProposalBundle {
-    type Error = CoreCryptoError;
-
-    fn try_from(msg: MlsProposalBundle) -> Result<Self, Self::Error> {
-        let (proposal, proposal_ref, crl_new_distribution_points) = msg.to_bytes()?;
-        Ok(Self {
-            proposal,
-            proposal_ref,
-            crl_new_distribution_points: crl_new_distribution_points.into(),
-        })
-    }
-}
 
 #[derive(Debug, uniffi::Record)]
 /// See [core_crypto::prelude::decrypt::MlsConversationDecryptMessage]
