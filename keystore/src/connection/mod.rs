@@ -219,13 +219,24 @@ impl Connection {
         Ok(())
     }
 
+    pub async fn can_close(&self) -> bool {
+        // transaction in progress
+        if self.transaction.lock().await.is_some() {
+            return false;
+        }
+        Arc::strong_count(&self.conn) <= 1
+    }
+
     pub async fn close(self) -> CryptoKeystoreResult<()> {
         if self.transaction.lock().await.is_some() {
             return Err(CryptoKeystoreError::TransactionInProgress {
                 attempted_operation: "close()".to_string(),
             });
         }
-        let conn: KeystoreDatabaseConnection = Arc::into_inner(self.conn).unwrap().into_inner();
+        let Some(conn) = Arc::into_inner(self.conn) else {
+            return Err(CryptoKeystoreError::CannotClose);
+        };
+        let conn = conn.into_inner();
         conn.close().await?;
         Ok(())
     }

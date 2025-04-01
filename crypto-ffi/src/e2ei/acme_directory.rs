@@ -14,16 +14,16 @@ use wasm_bindgen::prelude::*;
 #[cfg_attr(not(target_family = "wasm"), derive(uniffi::Record))]
 pub struct AcmeDirectory {
     /// URL for fetching a new nonce. Use this only for creating a new account.
-    #[cfg_attr(target_family = "wasm", wasm_bindgen(readonly))]
+    #[cfg_attr(target_family = "wasm", wasm_bindgen(readonly, js_name = newNonce))]
     pub new_nonce: String,
     /// URL for creating a new account.
-    #[cfg_attr(target_family = "wasm", wasm_bindgen(readonly))]
+    #[cfg_attr(target_family = "wasm", wasm_bindgen(readonly, js_name = newAccount))]
     pub new_account: String,
     /// URL for creating a new order.
-    #[cfg_attr(target_family = "wasm", wasm_bindgen(readonly))]
+    #[cfg_attr(target_family = "wasm", wasm_bindgen(readonly, js_name = newOrder))]
     pub new_order: String,
     /// Revocation URL
-    #[cfg_attr(target_family = "wasm", wasm_bindgen(readonly))]
+    #[cfg_attr(target_family = "wasm", wasm_bindgen(readonly, js_name = revokeCert))]
     pub revoke_cert: String,
 }
 

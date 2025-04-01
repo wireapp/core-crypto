@@ -120,7 +120,7 @@ export async function teardown() {
         }
 
         // Delete all core crypto instances.
-        for (const ccKey of window.cc.keys()) {
+        for (const ccKey of window.cc?.keys() ?? []) {
             const cc = window.ensureCcDefined(ccKey);
             await cc.close();
             await promiseForIDBRequest(window.indexedDB.deleteDatabase(ccKey));

@@ -99,7 +99,7 @@ impl EmulatedMlsClient for CoreCryptoFfiClient {
         let conversation_id = conversation_id.to_vec();
         if !self.cc.conversation_exists(&conversation_id).await? {
             let cfg = core_crypto_ffi::ConversationConfiguration {
-                ciphersuite: CIPHERSUITE_IN_USE.into(),
+                ciphersuite: Some(CIPHERSUITE_IN_USE.into()),
                 external_senders: Default::default(),
                 custom: Default::default(),
             };

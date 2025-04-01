@@ -1,4 +1,6 @@
 #[cfg(target_family = "wasm")]
+use js_sys::Uint8Array;
+#[cfg(target_family = "wasm")]
 use wasm_bindgen::prelude::*;
 
 use core_crypto::prelude::MlsCustomConfiguration;
@@ -43,9 +45,11 @@ impl From<WirePolicy> for core_crypto::prelude::MlsWirePolicy {
 pub struct CustomConfiguration {
     ///  Duration in seconds after which we will automatically force a self-update commit
     ///  Note: This isn't currently implemented
+    #[cfg_attr(target_family = "wasm", wasm_bindgen(js_name = "keyRotationSpan"))]
     pub key_rotation_span: Option<u32>,
     /// Defines if handshake messages are encrypted or not
     /// Note: encrypted handshake messages are not supported by wire-server
+    #[cfg_attr(target_family = "wasm", wasm_bindgen(js_name = "wirePolicy"))]
     pub wire_policy: Option<WirePolicy>,
 }
 
@@ -63,6 +67,18 @@ impl From<CustomConfiguration> for MlsCustomConfiguration {
     }
 }
 
+#[cfg(target_family = "wasm")]
+#[wasm_bindgen]
+impl CustomConfiguration {
+    #[wasm_bindgen(constructor)]
+    pub fn new(key_rotation_span: Option<u32>, wire_policy: Option<WirePolicy>) -> Self {
+        Self {
+            key_rotation_span,
+            wire_policy,
+        }
+    }
+}
+
 /// See [core_crypto::prelude::MlsConversationConfiguration]
 #[derive(Debug, Clone)]
 #[cfg_attr(
@@ -73,9 +89,44 @@ impl From<CustomConfiguration> for MlsCustomConfiguration {
 #[cfg_attr(not(target_family = "wasm"), derive(uniffi::Record))]
 pub struct ConversationConfiguration {
     #[cfg_attr(target_family = "wasm", wasm_bindgen(readonly))]
-    pub ciphersuite: Ciphersuite,
+    pub ciphersuite: Option<Ciphersuite>,
     #[cfg_attr(target_family = "wasm", wasm_bindgen(skip))]
     pub external_senders: Vec<Vec<u8>>,
     #[cfg_attr(target_family = "wasm", wasm_bindgen(readonly))]
     pub custom: CustomConfiguration,
+}
+
+#[cfg(target_family = "wasm")]
+#[wasm_bindgen]
+impl ConversationConfiguration {
+    #[wasm_bindgen(constructor)]
+    pub fn new(
+        ciphersuite: Option<Ciphersuite>,
+        external_senders: Option<Vec<Uint8Array>>,
+        key_rotation_span: Option<u32>,
+        wire_policy: Option<WirePolicy>,
+    ) -> crate::CoreCryptoResult<ConversationConfiguration> {
+        let external_senders = external_senders
+            .unwrap_or_default()
+            .iter()
+            .map(|arr| arr.to_vec())
+            .collect();
+        Ok(Self {
+            ciphersuite,
+            external_senders,
+            custom: CustomConfiguration {
+                key_rotation_span,
+                wire_policy,
+            },
+        })
+    }
+
+    /// List of client IDs that are allowed to be external senders
+    #[wasm_bindgen(getter, js_name = externalSenders)]
+    pub fn external_senders(&self) -> Vec<Uint8Array> {
+        self.external_senders
+            .iter()
+            .map(|sender| sender.as_slice().into())
+            .collect()
+    }
 }

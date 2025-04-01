@@ -2,6 +2,8 @@ use core_crypto::prelude::{CiphersuiteName, MlsCiphersuite};
 #[cfg(target_family = "wasm")]
 use wasm_bindgen::prelude::*;
 
+use crate::{CoreCryptoError, CoreCryptoResult};
+
 #[derive(Debug, Clone, Copy, derive_more::From, derive_more::Into)]
 #[cfg_attr(target_family = "wasm", wasm_bindgen, derive(serde::Serialize, serde::Deserialize))]
 pub struct Ciphersuite(CiphersuiteName);
@@ -9,11 +11,7 @@ pub struct Ciphersuite(CiphersuiteName);
 #[cfg(not(target_family = "wasm"))]
 uniffi::custom_type!(Ciphersuite, u16, {
     lower: |ciphersuite| (&ciphersuite.0).into(),
-    try_lift: |val| {
-        CiphersuiteName::try_from(val)
-            .map(Into::into)
-            .map_err(Into::into)
-    }
+    try_lift: |val| Ciphersuite::new(val).map_err(Into::into),
 });
 
 impl From<MlsCiphersuite> for Ciphersuite {
@@ -25,6 +23,24 @@ impl From<MlsCiphersuite> for Ciphersuite {
 impl From<Ciphersuite> for MlsCiphersuite {
     fn from(cs: Ciphersuite) -> Self {
         cs.0.into()
+    }
+}
+
+#[cfg(target_family = "wasm")]
+#[wasm_bindgen]
+impl Ciphersuite {
+    pub fn as_u16(&self) -> u16 {
+        self.0.into()
+    }
+}
+
+#[cfg_attr(target_family = "wasm", wasm_bindgen)]
+impl Ciphersuite {
+    #[cfg_attr(target_family = "wasm", wasm_bindgen(constructor))]
+    pub fn new(discriminant: u16) -> CoreCryptoResult<Self> {
+        CiphersuiteName::try_from(discriminant)
+            .map(Into::into)
+            .map_err(CoreCryptoError::generic())
     }
 }
 
@@ -49,3 +65,17 @@ uniffi::custom_type!(Ciphersuites, Vec<u16>, {
         })
     }
 });
+
+#[cfg(target_family = "wasm")]
+#[wasm_bindgen]
+impl Ciphersuites {
+    #[wasm_bindgen(constructor)]
+    pub fn from_u16s(ids: Vec<u16>) -> CoreCryptoResult<Self> {
+        let names = ids
+            .into_iter()
+            .map(CiphersuiteName::try_from)
+            .collect::<Result<Vec<_>, _>>()
+            .map_err(CoreCryptoError::generic())?;
+        Ok(Self(names))
+    }
+}
