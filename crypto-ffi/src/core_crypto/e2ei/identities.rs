@@ -17,10 +17,10 @@ type DeviceIdentities = Vec<WireIdentity>;
 type DeviceIdentities = JsValue;
 
 #[cfg(not(target_family = "wasm"))]
-type UserIdentities = HashMap<String, Vec<WireIdentity>>;
+pub(crate) type UserIdentities = HashMap<String, Vec<WireIdentity>>;
 
 #[cfg(target_family = "wasm")]
-type UserIdentities = JsValue;
+pub(crate) type UserIdentities = JsValue;
 
 #[cfg_attr(not(target_family = "wasm"), uniffi::export)]
 #[cfg_attr(target_family = "wasm", wasm_bindgen)]
