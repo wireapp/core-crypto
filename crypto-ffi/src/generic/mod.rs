@@ -31,46 +31,6 @@ impl From<core_crypto::e2e_identity::E2eiDumpedPkiEnv> for E2eiDumpedPkiEnv {
     }
 }
 
-#[allow(dead_code, unused_variables)]
-#[uniffi::export]
-impl CoreCrypto {
-    /// See [core_crypto::mls::conversation::ImmutableConversation::get_client_ids]
-    pub async fn get_client_ids(&self, conversation_id: Vec<u8>) -> CoreCryptoResult<Vec<ClientId>> {
-        Ok(self
-            .inner
-            .get_raw_conversation(&conversation_id)
-            .await
-            .map_err(RecursiveError::mls_client("getting conversation by id"))?
-            .get_client_ids()
-            .await
-            .into_iter()
-            .map(ClientId)
-            .collect())
-    }
-
-    /// See [core_crypto::mls::conversation::ImmutableConversation::export_secret_key]
-    pub async fn export_secret_key(&self, conversation_id: Vec<u8>, key_length: u32) -> CoreCryptoResult<Vec<u8>> {
-        self.inner
-            .get_raw_conversation(&conversation_id)
-            .await
-            .map_err(RecursiveError::mls_client("getting conversation by id"))?
-            .export_secret_key(key_length as usize)
-            .await
-            .map_err(Into::into)
-    }
-
-    /// See [core_crypto::mls::conversation::ImmutableConversation::get_external_sender]
-    pub async fn get_external_sender(&self, conversation_id: Vec<u8>) -> CoreCryptoResult<Vec<u8>> {
-        Ok(self
-            .inner
-            .get_raw_conversation(&conversation_id)
-            .await
-            .map_err(RecursiveError::mls_client("getting conversation by id"))?
-            .get_external_sender()
-            .await?)
-    }
-}
-
 #[derive(Debug, Copy, Clone, uniffi::Enum)]
 #[repr(u8)]
 pub enum E2eiConversationState {
