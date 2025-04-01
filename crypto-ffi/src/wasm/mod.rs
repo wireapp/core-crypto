@@ -5,84 +5,13 @@ mod utils;
 
 use std::sync::Arc;
 
-use core_crypto::prelude::*;
 use futures_util::future::TryFutureExt;
 use js_sys::{Promise, Uint8Array};
 use utils::*;
 use wasm_bindgen::prelude::*;
 use wasm_bindgen_futures::future_to_promise;
 
-use crate::{Ciphersuite, CoreCrypto, CoreCryptoError, InternalError, WasmCryptoResult, lower_ciphersuites};
-
-#[wasm_bindgen(getter_with_clone)]
-#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
-/// Dump of the PKI environemnt as PEM
-pub struct E2eiDumpedPkiEnv {
-    #[wasm_bindgen(readonly)]
-    /// Root CA in use (i.e. Trust Anchor)
-    pub root_ca: String,
-    #[wasm_bindgen(readonly)]
-    /// Intermediate CAs that are loaded
-    pub intermediates: Vec<String>,
-    #[wasm_bindgen(readonly)]
-    /// CRLs registered in the PKI env
-    pub crls: Vec<String>,
-}
-
-impl From<core_crypto::e2e_identity::E2eiDumpedPkiEnv> for E2eiDumpedPkiEnv {
-    fn from(value: core_crypto::e2e_identity::E2eiDumpedPkiEnv) -> Self {
-        Self {
-            root_ca: value.root_ca,
-            intermediates: value.intermediates,
-            crls: value.crls,
-        }
-    }
-}
-
-// End-to-end identity methods
-#[wasm_bindgen]
-impl CoreCrypto {
-    /// See [core_crypto::mls::context::CentralContext::e2ei_dump_pki_env]
-    pub async fn e2ei_dump_pki_env(&self) -> Promise {
-        let central = self.inner.clone();
-        future_to_promise(
-            async move {
-                let dump: Option<E2eiDumpedPkiEnv> = central
-                    .e2ei_dump_pki_env()
-                    .await
-                    .map_err(RecursiveError::mls_client("dumping pki env"))?
-                    .map(Into::into);
-                WasmCryptoResult::Ok(serde_wasm_bindgen::to_value(&dump)?)
-            }
-            .err_into(),
-        )
-    }
-
-    /// See [core_crypto::mls::context::CentralContext::e2ei_is_pki_env_setup]
-    pub async fn e2ei_is_pki_env_setup(&self) -> Promise {
-        let central = self.inner.clone();
-        future_to_promise(async move { WasmCryptoResult::Ok(central.e2ei_is_pki_env_setup().await.into()) }.err_into())
-    }
-
-    /// Returns [`WasmCryptoResult<bool>`]
-    ///
-    /// see [core_crypto::mls::context::CentralContext::e2ei_is_enabled]
-    pub fn e2ei_is_enabled(&self, ciphersuite: Ciphersuite) -> Promise {
-        let sc = MlsCiphersuite::from(ciphersuite).signature_algorithm();
-        let central = self.inner.clone();
-        future_to_promise(
-            async move {
-                let is_enabled = central
-                    .e2ei_is_enabled(sc)
-                    .await
-                    .map_err(RecursiveError::mls_client("is e2ei enabled for client"))?
-                    .into();
-                WasmCryptoResult::Ok(is_enabled)
-            }
-            .err_into(),
-        )
-    }
-}
+use crate::{CoreCrypto, CoreCryptoError, InternalError, WasmCryptoResult, lower_ciphersuites};
 
 #[derive(Debug)]
 #[wasm_bindgen(js_name = FfiWireE2EIdentity)]
