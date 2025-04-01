@@ -1,8 +1,9 @@
 use std::{collections::HashMap, ops::DerefMut};
 
 use crate::{
-    CoreCryptoError, CrlRegistration, E2eiConversationState, E2eiDumpedPkiEnv, NewCrlDistributionPoints, WireIdentity,
-    generic::{Ciphersuite, ClientId, CoreCryptoResult, CredentialType, E2eiEnrollment, context::CoreCryptoContext},
+    CoreCryptoError, CrlRegistration, E2eiConversationState, E2eiDumpedPkiEnv, E2eiEnrollment,
+    NewCrlDistributionPoints, WireIdentity,
+    generic::{Ciphersuite, ClientId, CoreCryptoResult, CredentialType, context::CoreCryptoContext},
 };
 use core_crypto::mls::conversation::Conversation as _;
 use core_crypto::{RecursiveError, prelude::VerifiableGroupInfo};
@@ -30,9 +31,7 @@ impl CoreCryptoContext {
                 ciphersuite.into(),
             )
             .await
-            .map(async_lock::RwLock::new)
-            .map(std::sync::Arc::new)
-            .map(E2eiEnrollment)
+            .map(E2eiEnrollment::new)
             .map_err(Into::into)
     }
 
@@ -49,9 +48,7 @@ impl CoreCryptoContext {
             .context
             .e2ei_new_activation_enrollment(display_name, handle, team, expiry_sec, ciphersuite.into())
             .await
-            .map(async_lock::RwLock::new)
-            .map(std::sync::Arc::new)
-            .map(E2eiEnrollment)?)
+            .map(E2eiEnrollment::new)?)
     }
 
     /// See [core_crypto::context::CentralContext::e2ei_new_rotate_enrollment]
@@ -67,9 +64,7 @@ impl CoreCryptoContext {
             .context
             .e2ei_new_rotate_enrollment(display_name, handle, team, expiry_sec, ciphersuite.into())
             .await
-            .map(async_lock::RwLock::new)
-            .map(std::sync::Arc::new)
-            .map(E2eiEnrollment)?)
+            .map(E2eiEnrollment::new)?)
     }
 
     /// See [core_crypto::context::CentralContext::e2ei_register_acme_ca]
@@ -107,11 +102,7 @@ impl CoreCryptoContext {
 
         Ok(self
             .context
-            .e2ei_mls_init_only(
-                enrollment.0.write().await.deref_mut(),
-                certificate_chain,
-                nb_key_package,
-            )
+            .e2ei_mls_init_only(enrollment.write().await.deref_mut(), certificate_chain, nb_key_package)
             .await
             .map(|new_crl_distribution_point| -> Option<Vec<_>> { new_crl_distribution_point.into() })?
             .into())
@@ -135,7 +126,7 @@ impl CoreCryptoContext {
     ) -> CoreCryptoResult<NewCrlDistributionPoints> {
         Ok(self
             .context
-            .save_x509_credential(enrollment.0.write().await.deref_mut(), certificate_chain)
+            .save_x509_credential(enrollment.write().await.deref_mut(), certificate_chain)
             .await
             .map(|new_crl_distribution_point| -> Option<Vec<_>> { new_crl_distribution_point.into() })?
             .into())
@@ -152,13 +143,11 @@ impl CoreCryptoContext {
     /// See [core_crypto::context::CentralContext::e2ei_enrollment_stash]
     pub async fn e2ei_enrollment_stash(&self, enrollment: std::sync::Arc<E2eiEnrollment>) -> CoreCryptoResult<Vec<u8>> {
         let enrollment = std::sync::Arc::into_inner(enrollment).ok_or_else(|| {
-            CoreCryptoError::Other("enrollment had multiple strong refs and could not be unpacked".into())
+            CoreCryptoError::Other("outer enrollment had multiple strong refs and could not be unpacked".into())
         })?;
-        let enrollment = std::sync::Arc::into_inner(enrollment.0)
-            .ok_or_else(|| {
-                CoreCryptoError::Other("enrollment.0 had multiple strong refs and could not be unpacked".into())
-            })?
-            .into_inner();
+        let enrollment = enrollment.into_inner().ok_or_else(|| {
+            CoreCryptoError::Other("inner enrollment had multiple strong refs and could not be unpacked".into())
+        })?;
 
         Ok(self.context.e2ei_enrollment_stash(enrollment).await?)
     }
@@ -169,9 +158,7 @@ impl CoreCryptoContext {
             .context
             .e2ei_enrollment_stash_pop(handle)
             .await
-            .map(async_lock::RwLock::new)
-            .map(std::sync::Arc::new)
-            .map(E2eiEnrollment)?)
+            .map(E2eiEnrollment::new)?)
     }
 
     /// See [core_crypto::mls::conversation::conversation_guard::ConversationGuard::e2ei_conversation_state]

@@ -4,9 +4,8 @@ use std::{
 };
 
 use crate::{
-    Ciphersuite, CoreCryptoError, CredentialType, CrlRegistration, E2eiDumpedPkiEnv, E2eiEnrollment, InternalError,
-    WasmCryptoResult, WireIdentity,
-    wasm::{E2eiConversationState, context::CoreCryptoContext},
+    Ciphersuite, CoreCryptoError, CredentialType, CrlRegistration, E2eiConversationState, E2eiDumpedPkiEnv,
+    E2eiEnrollment, InternalError, WasmCryptoResult, WireIdentity, wasm::context::CoreCryptoContext,
 };
 use core_crypto::mls::conversation::Conversation as _;
 use core_crypto::{
@@ -47,9 +46,7 @@ impl CoreCryptoContext {
                         ciphersuite.into(),
                     )
                     .await
-                    .map(async_lock::RwLock::new)
-                    .map(std::sync::Arc::new)
-                    .map(E2eiEnrollment)
+                    .map(E2eiEnrollment::new)
                     .map_err(CoreCryptoError::from)?;
                 WasmCryptoResult::Ok(enrollment.into())
             }
@@ -75,9 +72,7 @@ impl CoreCryptoContext {
                 let enrollment = context
                     .e2ei_new_activation_enrollment(display_name, handle, team, expiry_sec, ciphersuite.into())
                     .await
-                    .map(async_lock::RwLock::new)
-                    .map(std::sync::Arc::new)
-                    .map(E2eiEnrollment)
+                    .map(E2eiEnrollment::new)
                     .map_err(CoreCryptoError::from)?;
                 WasmCryptoResult::Ok(enrollment.into())
             }
@@ -103,9 +98,7 @@ impl CoreCryptoContext {
                 let enrollment = context
                     .e2ei_new_rotate_enrollment(display_name, handle, team, expiry_sec, ciphersuite.into())
                     .await
-                    .map(async_lock::RwLock::new)
-                    .map(std::sync::Arc::new)
-                    .map(E2eiEnrollment)
+                    .map(E2eiEnrollment::new)
                     .map_err(CoreCryptoError::from)?;
                 WasmCryptoResult::Ok(enrollment.into())
             }
@@ -190,11 +183,7 @@ impl CoreCryptoContext {
                     .expect("we never run corecrypto on systems with architectures narrower than 32 bits");
 
                 let crls = context
-                    .e2ei_mls_init_only(
-                        enrollment.0.write().await.deref_mut(),
-                        certificate_chain,
-                        nb_key_package,
-                    )
+                    .e2ei_mls_init_only(enrollment.write().await.deref_mut(), certificate_chain, nb_key_package)
                     .await?;
 
                 let crls = if let Some(crls) = &*crls {
@@ -230,7 +219,7 @@ impl CoreCryptoContext {
         future_to_promise(
             async move {
                 let new_crl_distribution_point: Option<Vec<String>> = context
-                    .save_x509_credential(enrollment.0.write().await.deref_mut(), certificate_chain)
+                    .save_x509_credential(enrollment.write().await.deref_mut(), certificate_chain)
                     .await?
                     .into();
                 WasmCryptoResult::Ok(serde_wasm_bindgen::to_value(&new_crl_distribution_point)?)
@@ -258,11 +247,9 @@ impl CoreCryptoContext {
         let context = self.inner.clone();
         future_to_promise(
             async move {
-                let enrollment = std::sync::Arc::try_unwrap(enrollment.0)
-                    .map_err(|_| {
-                        InternalError::Other("enrollment had multiple strong refs and could not be unwrapped".into())
-                    })?
-                    .into_inner();
+                let enrollment = enrollment.into_inner().ok_or_else(|| {
+                    InternalError::Other("enrollment had multiple strong refs and could not be unwrapped".into())
+                })?;
                 let handle = context.e2ei_enrollment_stash(enrollment).await?;
                 WasmCryptoResult::Ok(Uint8Array::from(handle.as_slice()).into())
             }
@@ -278,9 +265,7 @@ impl CoreCryptoContext {
                 let enrollment = context
                     .e2ei_enrollment_stash_pop(handle.to_vec())
                     .await
-                    .map(async_lock::RwLock::new)
-                    .map(std::sync::Arc::new)
-                    .map(E2eiEnrollment)
+                    .map(E2eiEnrollment::new)
                     .map_err(CoreCryptoError::from)?;
                 WasmCryptoResult::Ok(enrollment.into())
             }

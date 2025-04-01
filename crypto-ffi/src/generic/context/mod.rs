@@ -22,7 +22,7 @@ pub mod proteus;
 
 #[derive(uniffi::Object)]
 pub struct CoreCryptoContext {
-    pub(super) context: Arc<CentralContext>,
+    pub(crate) context: Arc<CentralContext>,
 }
 
 impl Deref for CoreCryptoContext {
