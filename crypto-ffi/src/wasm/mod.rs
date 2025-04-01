@@ -47,24 +47,6 @@ impl From<core_crypto::e2e_identity::E2eiDumpedPkiEnv> for E2eiDumpedPkiEnv {
 
 #[wasm_bindgen]
 impl CoreCrypto {
-    /// Returns:: [`WasmCryptoResult<js_sys::Uint8Array>`]
-    ///
-    /// see [core_crypto::mls::Client::client_public_key]
-    pub fn client_public_key(&self, ciphersuite: Ciphersuite, credential_type: CredentialType) -> Promise {
-        let ciphersuite: CiphersuiteName = ciphersuite.into();
-        let central = self.inner.clone();
-        future_to_promise(
-            async move {
-                let pk = central
-                    .public_key(ciphersuite.into(), credential_type.into())
-                    .await
-                    .map_err(CoreCryptoError::from)?;
-                WasmCryptoResult::Ok(Uint8Array::from(pk.as_slice()).into())
-            }
-            .err_into(),
-        )
-    }
-
     /// Returns [`WasmCryptoResult<u64>`]
     ///
     /// see [core_crypto::mls::conversation::ImmutableConversation::epoch]
