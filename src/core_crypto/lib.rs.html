@@ -152,7 +152,9 @@
 <a href="#151" id="151">151</a>
 <a href="#152" id="152">152</a>
 <a href="#153" id="153">153</a>
-<a href="#154" id="154">154</a></pre></div><pre class="rust"><code><span class="doccomment">//! Core Crypto is a wrapper on top of OpenMLS aimed to provide an ergonomic API for usage in web
+<a href="#154" id="154">154</a>
+<a href="#155" id="155">155</a>
+<a href="#156" id="156">156</a></pre></div><pre class="rust"><code><span class="doccomment">//! Core Crypto is a wrapper on top of OpenMLS aimed to provide an ergonomic API for usage in web
 //! through Web Assembly and in mobile devices through FFI.
 //!
 //! The goal is provide a easier and less verbose API to create, manage and interact with MLS
@@ -192,6 +194,8 @@
 <span class="kw">mod </span>build_metadata;
 <span class="kw">use </span><span class="kw">crate</span>::prelude::MlsCommitBundle;
 <span class="kw">pub use </span>build_metadata::{BUILD_METADATA, BuildMetadata};
+
+<span class="kw">pub use </span>core_crypto_keystore::DatabaseKey;
 
 <span class="doccomment">/// Common imports that should be useful for most uses of the crate
 </span><span class="kw">pub mod </span>prelude {

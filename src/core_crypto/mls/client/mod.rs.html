@@ -979,7 +979,10 @@
 <a href="#978" id="978">978</a>
 <a href="#979" id="979">979</a>
 <a href="#980" id="980">980</a>
-<a href="#981" id="981">981</a></pre></div><pre class="rust"><code><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">mod </span>e2e_identity;
+<a href="#981" id="981">981</a>
+<a href="#982" id="982">982</a>
+<a href="#983" id="983">983</a>
+<a href="#984" id="984">984</a></pre></div><pre class="rust"><code><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">mod </span>e2e_identity;
 <span class="kw">mod </span>epoch_observer;
 <span class="kw">mod </span>error;
 <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">mod </span>id;
@@ -1074,7 +1077,7 @@
         <span class="comment">// Init backend (crypto + rand + keystore)
         </span><span class="kw">let </span>mls_backend = MlsCryptoProvider::try_new_with_configuration(MlsCryptoProviderConfiguration {
             db_path: <span class="kw-2">&amp;</span>configuration.store_path,
-            identity_key: <span class="kw-2">&amp;</span>configuration.identity_key,
+            db_key: configuration.database_key.clone(),
             in_memory: <span class="bool-val">false</span>,
             entropy_seed: configuration.external_entropy.clone(),
         })
@@ -1083,11 +1086,12 @@
         <span class="self">Self</span>::new_with_backend(mls_backend, configuration).<span class="kw">await
     </span>}
 
-    <span class="doccomment">/// Same as the [Client::try_new] but instead, it uses an in memory KeyStore. Although required, the `store_path` parameter from the `MlsCentralConfiguration` won't be used here.
+    <span class="doccomment">/// Same as the [Client::try_new] but instead, it uses an in memory KeyStore.
+    /// Although required, the `store_path` parameter from the `MlsClientConfiguration` won't be used here.
     </span><span class="kw">pub async fn </span>try_new_in_memory(configuration: MlsClientConfiguration) -&gt; <span class="kw">crate</span>::mls::Result&lt;<span class="self">Self</span>&gt; {
         <span class="kw">let </span>mls_backend = MlsCryptoProvider::try_new_with_configuration(MlsCryptoProviderConfiguration {
             db_path: <span class="kw-2">&amp;</span>configuration.store_path,
-            identity_key: <span class="kw-2">&amp;</span>configuration.identity_key,
+            db_key: configuration.database_key.clone(),
             in_memory: <span class="bool-val">true</span>,
             entropy_seed: configuration.external_entropy.clone(),
         })
@@ -1761,7 +1765,7 @@
     <span class="kw">use </span><span class="kw">crate</span>::mls::conversation::db_count::EntitiesCount;
     <span class="kw">use </span><span class="kw">crate</span>::prelude::ClientId;
     <span class="kw">use </span><span class="kw">crate</span>::test_utils::<span class="kw-2">*</span>;
-    <span class="kw">use </span>core_crypto_keystore::connection::FetchFromDatabase;
+    <span class="kw">use </span>core_crypto_keystore::connection::{DatabaseKey, FetchFromDatabase};
     <span class="kw">use </span>core_crypto_keystore::entities::<span class="kw-2">*</span>;
     <span class="kw">use </span>mls_crypto_provider::MlsCryptoProvider;
     <span class="kw">use </span>wasm_bindgen_test::<span class="kw-2">*</span>;
@@ -1874,7 +1878,8 @@
     </span><span class="kw">async fn </span>can_generate_client(case: TestCase) {
         run_test_with_central(case.clone(), <span class="kw">move </span>|[alice]| {
             Box::pin(<span class="kw">async move </span>{
-                <span class="kw">let </span>backend = MlsCryptoProvider::try_new_in_memory(<span class="string">"test"</span>).<span class="kw">await</span>.unwrap();
+                <span class="kw">let </span>key = DatabaseKey::generate();
+                <span class="kw">let </span>backend = MlsCryptoProvider::try_new_in_memory(<span class="kw-2">&amp;</span>key).<span class="kw">await</span>.unwrap();
                 <span class="kw">let </span>x509_test_chain = <span class="kw">if </span>case.is_x509() {
                     <span class="kw">let </span>x509_test_chain = <span class="kw">crate</span>::test_utils::x509::X509TestChain::init_empty(case.signature_scheme());
                     x509_test_chain.register_with_provider(<span class="kw-2">&amp;</span>backend).<span class="kw">await</span>;
@@ -1905,7 +1910,8 @@
                 <span class="kw">if </span>case.is_basic() {
                     run_tests(<span class="kw">move </span>|[tmp_dir_argument]| {
                         Box::pin(<span class="kw">async move </span>{
-                            <span class="kw">let </span>backend = MlsCryptoProvider::try_new(tmp_dir_argument, <span class="string">"test"</span>).<span class="kw">await</span>.unwrap();
+                            <span class="kw">let </span>key = DatabaseKey::generate();
+                            <span class="kw">let </span>backend = MlsCryptoProvider::try_new(tmp_dir_argument, <span class="kw-2">&amp;</span>key).<span class="kw">await</span>.unwrap();
                             backend.new_transaction().<span class="kw">await</span>.unwrap();
                             <span class="comment">// phase 1: generate standalone keypair
                             </span><span class="kw">let </span>client_id: ClientId = <span class="string">b"whatever:my:client:is@world.com"</span>.to_vec().into();

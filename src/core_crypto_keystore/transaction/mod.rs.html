@@ -366,7 +366,7 @@
 <span class="kw">use </span><span class="kw">crate</span>::transaction::dynamic_dispatch::EntityId;
 <span class="kw">use crate</span>::{
     CryptoKeystoreError, CryptoKeystoreResult,
-    connection::{Connection, FetchFromDatabase, KeystoreDatabaseConnection},
+    connection::{Connection, DatabaseKey, FetchFromDatabase, KeystoreDatabaseConnection},
 };
 <span class="kw">use </span>async_lock::{RwLock, SemaphoreGuardArc};
 <span class="kw">use </span>itertools::Itertools;
@@ -385,10 +385,10 @@
 
 <span class="kw">impl </span>KeystoreTransaction {
     <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">async fn </span>new(semaphore_guard: SemaphoreGuardArc) -&gt; CryptoKeystoreResult&lt;<span class="self">Self</span>&gt; {
+        <span class="comment">// We don't really care about the key and we're not going to store it anywhere.
+        </span><span class="kw">let </span>key = DatabaseKey::from([<span class="number">0u8</span>; <span class="number">32</span>]);
         <span class="prelude-val">Ok</span>(<span class="self">Self </span>{
-            <span class="comment">// We're not using a proper key because we're not using the DB for security (memory is unencrypted).
-            // We're using it for its API.
-            </span>cache: Connection::open_in_memory_with_key(<span class="string">"core_crypto_transaction_cache"</span>, <span class="string">""</span>).<span class="kw">await</span><span class="question-mark">?</span>,
+            cache: Connection::open_in_memory_with_key(<span class="string">"core_crypto_transaction_cache"</span>, <span class="kw-2">&amp;</span>key).<span class="kw">await</span><span class="question-mark">?</span>,
             deleted: Arc::new(Default::default()),
             deleted_credentials: Arc::new(Default::default()),
             _semaphore_guard: Arc::new(semaphore_guard),

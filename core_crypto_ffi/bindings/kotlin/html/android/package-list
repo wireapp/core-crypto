@@ -21,6 +21,7 @@ $dokka.location:com.wire.crypto//lift/[Error type: Unresolved type for com.wire.
 $dokka.location:com.wire.crypto//lower/com.wire.crypto.CustomConfiguration#/PointingToDeclaration/android/com.wire.crypto/lower.html
 $dokka.location:com.wire.crypto//lower/com.wire.crypto.MlsTransportResponse#/PointingToDeclaration/android/com.wire.crypto/lower.html
 $dokka.location:com.wire.crypto//lower/com.wire.crypto.MlsWirePolicy#/PointingToDeclaration/android/com.wire.crypto/lower.html
+$dokka.location:com.wire.crypto//migrateDatabaseKeyTypeToBytes/#kotlin.String#kotlin.String#com.wire.crypto.DatabaseKey/PointingToDeclaration/android/com.wire.crypto/migrate-database-key-type-to-bytes.html
 $dokka.location:com.wire.crypto//setLogger/#com.wire.crypto.CoreCryptoLogger/PointingToDeclaration/android/com.wire.crypto/set-logger.html
 $dokka.location:com.wire.crypto//setMaxLogLevel/#com.wire.crypto.CoreCryptoLogLevel/PointingToDeclaration/android/com.wire.crypto/set-max-log-level.html
 $dokka.location:com.wire.crypto//toAcmeChallenge/[Error type: Unresolved type for com.wire.crypto.uniffi.AcmeChallenge]#/PointingToDeclaration/android/com.wire.crypto/to-acme-challenge.html
@@ -109,7 +110,7 @@ $dokka.location:com.wire.crypto/CommitBundle/crlNewDistributionPoints/#/Pointing
 $dokka.location:com.wire.crypto/CommitBundle/groupInfoBundle/#/PointingToDeclaration/android/com.wire.crypto/-commit-bundle/group-info-bundle.html
 $dokka.location:com.wire.crypto/CommitBundle/welcome/#/PointingToDeclaration/android/com.wire.crypto/-commit-bundle/welcome.html
 $dokka.location:com.wire.crypto/CoreCrypto.Companion///PointingToDeclaration/android/com.wire.crypto/-core-crypto/-companion/index.html
-$dokka.location:com.wire.crypto/CoreCrypto.Companion/invoke/#kotlin.String#kotlin.String/PointingToDeclaration/android/com.wire.crypto/-core-crypto/-companion/invoke.html
+$dokka.location:com.wire.crypto/CoreCrypto.Companion/invoke/#kotlin.String#com.wire.crypto.DatabaseKey/PointingToDeclaration/android/com.wire.crypto/-core-crypto/-companion/invoke.html
 $dokka.location:com.wire.crypto/CoreCrypto///PointingToDeclaration/android/com.wire.crypto/-core-crypto/index.html
 $dokka.location:com.wire.crypto/CoreCrypto/CoreCrypto/#[Error type: Unresolved type for com.wire.crypto.uniffi.CoreCrypto]/PointingToDeclaration/android/com.wire.crypto/-core-crypto/-core-crypto.html
 $dokka.location:com.wire.crypto/CoreCrypto/close/#/PointingToDeclaration/android/com.wire.crypto/-core-crypto/close.html
@@ -224,6 +225,8 @@ $dokka.location:com.wire.crypto/CustomConfiguration///PointingToDeclaration/and
 $dokka.location:com.wire.crypto/CustomConfiguration/CustomConfiguration/#java.time.Duration?#com.wire.crypto.MlsWirePolicy?/PointingToDeclaration/android/com.wire.crypto/-custom-configuration/-custom-configuration.html
 $dokka.location:com.wire.crypto/CustomConfiguration/keyRotationSpan/#/PointingToDeclaration/android/com.wire.crypto/-custom-configuration/key-rotation-span.html
 $dokka.location:com.wire.crypto/CustomConfiguration/wirePolicy/#/PointingToDeclaration/android/com.wire.crypto/-custom-configuration/wire-policy.html
+$dokka.location:com.wire.crypto/DatabaseKey///PointingToDeclaration/android/com.wire.crypto/-database-key/index.html
+$dokka.location:com.wire.crypto/DatabaseKey/DatabaseKey/#kotlin.ByteArray/PointingToDeclaration/android/com.wire.crypto/-database-key/-database-key.html
 $dokka.location:com.wire.crypto/DecryptedMessage///PointingToDeclaration/android/com.wire.crypto/-decrypted-message/index.html
 $dokka.location:com.wire.crypto/DecryptedMessage/DecryptedMessage/#kotlin.ByteArray?#kotlin.collections.Set[com.wire.crypto.ProposalBundle]#kotlin.Boolean#kotlin.Long?#com.wire.crypto.ClientId?#kotlin.Boolean#com.wire.crypto.WireIdentity#kotlin.collections.List[com.wire.crypto.BufferedDecryptedMessage]?#com.wire.crypto.CrlDistributionPoints?/PointingToDeclaration/android/com.wire.crypto/-decrypted-message/-decrypted-message.html
 $dokka.location:com.wire.crypto/DecryptedMessage/bufferedMessages/#/PointingToDeclaration/android/com.wire.crypto/-decrypted-message/buffered-messages.html

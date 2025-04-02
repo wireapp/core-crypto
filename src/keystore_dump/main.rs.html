@@ -160,7 +160,9 @@
 <a href="#159" id="159">159</a>
 <a href="#160" id="160">160</a>
 <a href="#161" id="161">161</a>
-<a href="#162" id="162">162</a></pre></div><pre class="rust"><code><span class="kw">use </span>color_eyre::eyre::Result;
+<a href="#162" id="162">162</a>
+<a href="#163" id="163">163</a>
+<a href="#164" id="164">164</a></pre></div><pre class="rust"><code><span class="kw">use </span>color_eyre::eyre::Result;
 <span class="attr">#[cfg(target_family = <span class="string">"wasm"</span>)]
 </span><span class="kw">fn </span>main() -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
     <span class="macro">println!</span>(<span class="string">"the keystore dump tool is not available for WASM"</span>);
@@ -174,6 +176,7 @@
     #[command(author, version, about, long_about = <span class="prelude-val">None</span>)]
     </span><span class="kw">struct </span>Args {
         <span class="attr">#[arg(short, long)]
+        </span><span class="doccomment">/// The 256-bit database key, hex-encoded.
         </span>key: String,
 
         path: String,
@@ -182,7 +185,7 @@
     <span class="kw">use </span>chrono::TimeZone;
     <span class="kw">use </span>clap::Parser <span class="kw">as _</span>;
     <span class="kw">use </span>color_eyre::eyre::eyre;
-    <span class="kw">use </span>core_crypto_keystore::{Connection <span class="kw">as </span>Keystore, connection::FetchFromDatabase, entities::<span class="kw-2">*</span>};
+    <span class="kw">use </span>core_crypto_keystore::{Connection <span class="kw">as </span>Keystore, DatabaseKey, connection::FetchFromDatabase, entities::<span class="kw-2">*</span>};
     <span class="kw">use </span>openmls::prelude::TlsDeserializeTrait;
     <span class="kw">use </span>serde::ser::{SerializeMap, Serializer};
 
@@ -194,7 +197,8 @@
         <span class="kw">return </span><span class="prelude-val">Err</span>(<span class="macro">eyre!</span>(<span class="string">"File not found: {}"</span>, args.path));
     }
 
-    <span class="kw">let </span>keystore = Keystore::open_with_key(<span class="kw-2">&amp;</span>args.path, <span class="kw-2">&amp;</span>args.key)
+    <span class="kw">let </span>key = DatabaseKey::try_from(hex::decode(<span class="kw-2">&amp;</span>args.key)<span class="question-mark">?</span>.as_slice())<span class="question-mark">?</span>;
+    <span class="kw">let </span>keystore = Keystore::open_with_key(<span class="kw-2">&amp;</span>args.path, <span class="kw-2">&amp;</span>key)
         .<span class="kw">await
         </span>.map_err(|e| <span class="macro">eyre!</span>(<span class="string">"The passkey is probably wrong; [err: {e}]"</span>))<span class="question-mark">?</span>;
 

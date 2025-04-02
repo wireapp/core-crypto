@@ -346,7 +346,9 @@
 <a href="#345" id="345">345</a>
 <a href="#346" id="346">346</a>
 <a href="#347" id="347">347</a>
-<a href="#348" id="348">348</a></pre></div><pre class="rust"><code><span class="kw">use crate</span>::{
+<a href="#348" id="348">348</a>
+<a href="#349" id="349">349</a>
+<a href="#350" id="350">350</a></pre></div><pre class="rust"><code><span class="kw">use crate</span>::{
     CIPHERSUITE_IN_USE,
     clients::{EmulatedClient, EmulatedClientProtocol, EmulatedClientType, EmulatedMlsClient},
 };
@@ -371,7 +373,6 @@
         <span class="kw">let </span>ciphersuite = CIPHERSUITE_IN_USE <span class="kw">as </span>u16;
         <span class="kw">let </span>client_config = <span class="macro">serde_json::json!</span>({
             <span class="string">"databaseName"</span>: <span class="macro">format!</span>(<span class="string">"db-{client_id_str}"</span>),
-            <span class="string">"key"</span>: <span class="string">"test"</span>,
             <span class="string">"ciphersuites"</span>: [ciphersuite],
             <span class="string">"clientId"</span>: client_id_str
         });
@@ -381,7 +382,10 @@
             .execute_async(
                 <span class="string">r#"
 const [clientConfig, callback] = arguments;
-const { CoreCrypto, Ciphersuite, CredentialType } = await import("./corecrypto.js");
+const { CoreCrypto, Ciphersuite, CredentialType, DatabaseKey } = await import("./corecrypto.js");
+const key = new Uint8Array(32);
+window.crypto.getRandomValues(key);
+clientConfig.key = new DatabaseKey(key);
 window.CoreCrypto = CoreCrypto;
 window.cc = await window.CoreCrypto.init(clientConfig);
 window.ciphersuite = Ciphersuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519;

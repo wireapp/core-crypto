@@ -221,7 +221,8 @@
 <a href="#220" id="220">220</a>
 <a href="#221" id="221">221</a>
 <a href="#222" id="222">222</a>
-<a href="#223" id="223">223</a></pre></div><pre class="rust"><code><span class="kw">use </span>color_eyre::eyre::Result;
+<a href="#223" id="223">223</a>
+<a href="#224" id="224">224</a></pre></div><pre class="rust"><code><span class="kw">use </span>color_eyre::eyre::Result;
 <span class="kw">use </span>std::cell::Cell;
 <span class="kw">use </span>std::sync::Arc;
 <span class="kw">use </span>tls_codec::Serialize;
@@ -257,8 +258,9 @@
         } <span class="kw">else </span>{
             <span class="prelude-val">None
         </span>};
+        <span class="kw">let </span>key = core_crypto::DatabaseKey::generate();
         <span class="kw">let </span>configuration =
-            MlsClientConfiguration::try_new(<span class="string">"whatever"</span>.into(), <span class="string">"test"</span>.into(), cid, ciphersuites, <span class="prelude-val">None</span>, <span class="prelude-val">Some</span>(<span class="number">100</span>))<span class="question-mark">?</span>;
+            MlsClientConfiguration::try_new(<span class="string">"whatever"</span>.into(), key, cid, ciphersuites, <span class="prelude-val">None</span>, <span class="prelude-val">Some</span>(<span class="number">100</span>))<span class="question-mark">?</span>;
 
         <span class="kw">let </span>cc = CoreCrypto::from(Client::try_new_in_memory(configuration).<span class="kw">await</span><span class="question-mark">?</span>);
 

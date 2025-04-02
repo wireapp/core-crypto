@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"enum":["CertProfile","MlsProviderError","PkiKeypair"],"mod":["reexports"],"struct":["CertificateGenerationArgs","CryptoKeystore","EntropySeed","MlsCryptoProvider","MlsCryptoProviderConfiguration","RustCrypto"],"type":["MlsProviderResult","RawEntropySeed"]};
+window.SIDEBAR_ITEMS = {"enum":["CertProfile","MlsProviderError","PkiKeypair"],"mod":["reexports"],"struct":["CertificateGenerationArgs","CryptoKeystore","DatabaseKey","EntropySeed","MlsCryptoProvider","MlsCryptoProviderConfiguration","RustCrypto"],"type":["MlsProviderResult","RawEntropySeed"]};

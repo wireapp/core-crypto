@@ -191,10 +191,9 @@
 <a href="#190" id="190">190</a>
 <a href="#191" id="191">191</a>
 <a href="#192" id="192">192</a>
-<a href="#193" id="193">193</a>
-<a href="#194" id="194">194</a></pre></div><pre class="rust"><code><span class="attr">#![doc = <span class="macro">include_str!</span>(<span class="string">"../README.md"</span>)]
+<a href="#193" id="193">193</a></pre></div><pre class="rust"><code><span class="attr">#![doc = <span class="macro">include_str!</span>(<span class="string">"../README.md"</span>)]
 
-</span><span class="kw">pub use </span>core_crypto_keystore::Connection <span class="kw">as </span>CryptoKeystore;
+</span><span class="kw">pub use </span>core_crypto_keystore::{Connection <span class="kw">as </span>CryptoKeystore, DatabaseKey};
 
 <span class="kw">mod </span>crypto_provider;
 <span class="kw">mod </span>error;
@@ -255,12 +254,11 @@
     </span>}
 }
 
-<span class="attr">#[derive(Debug, Clone, PartialEq, Eq)]
-</span><span class="kw">pub struct </span>MlsCryptoProviderConfiguration&lt;<span class="lifetime">'a</span>&gt; {
+<span class="kw">pub struct </span>MlsCryptoProviderConfiguration&lt;<span class="lifetime">'a</span>&gt; {
     <span class="doccomment">/// File path or database name of the persistent storage
     </span><span class="kw">pub </span>db_path: <span class="kw-2">&amp;</span><span class="lifetime">'a </span>str,
     <span class="doccomment">/// Encryption master key of the encrypted-at-rest persistent storage
-    </span><span class="kw">pub </span>identity_key: <span class="kw-2">&amp;</span><span class="lifetime">'a </span>str,
+    </span><span class="kw">pub </span>db_key: DatabaseKey,
     <span class="doccomment">/// Dictates whether or not the backend storage is in memory or not
     </span><span class="kw">pub </span>in_memory: bool,
     <span class="doccomment">/// External seed for the ChaCha20 PRNG entropy pool
@@ -279,9 +277,9 @@
     </span><span class="kw">pub async fn </span>try_new_with_configuration(config: MlsCryptoProviderConfiguration&lt;<span class="lifetime">'_</span>&gt;) -&gt; MlsProviderResult&lt;<span class="self">Self</span>&gt; {
         <span class="kw">let </span>crypto = config.entropy_seed.map(RustCrypto::new_with_seed).unwrap_or_default();
         <span class="kw">let </span>key_store = <span class="kw">if </span>config.in_memory {
-            CryptoKeystore::open_in_memory_with_key(<span class="string">""</span>, config.identity_key).<span class="kw">await</span><span class="question-mark">?
+            CryptoKeystore::open_in_memory_with_key(<span class="string">""</span>, <span class="kw-2">&amp;</span>config.db_key).<span class="kw">await</span><span class="question-mark">?
         </span>} <span class="kw">else </span>{
-            CryptoKeystore::open_with_key(config.db_path, config.identity_key).<span class="kw">await</span><span class="question-mark">?
+            CryptoKeystore::open_with_key(config.db_path, <span class="kw-2">&amp;</span>config.db_key).<span class="kw">await</span><span class="question-mark">?
         </span>};
         <span class="prelude-val">Ok</span>(<span class="self">Self </span>{
             crypto,
@@ -290,9 +288,9 @@
         })
     }
 
-    <span class="kw">pub async fn </span>try_new(db_path: <span class="kw">impl </span>AsRef&lt;str&gt;, identity_key: <span class="kw">impl </span>AsRef&lt;str&gt;) -&gt; MlsProviderResult&lt;<span class="self">Self</span>&gt; {
+    <span class="kw">pub async fn </span>try_new(db_path: <span class="kw">impl </span>AsRef&lt;str&gt;, db_key: <span class="kw-2">&amp;</span>DatabaseKey) -&gt; MlsProviderResult&lt;<span class="self">Self</span>&gt; {
         <span class="kw">let </span>crypto = RustCrypto::default();
-        <span class="kw">let </span>key_store = CryptoKeystore::open_with_key(db_path, identity_key.as_ref()).<span class="kw">await</span><span class="question-mark">?</span>;
+        <span class="kw">let </span>key_store = CryptoKeystore::open_with_key(db_path, db_key).<span class="kw">await</span><span class="question-mark">?</span>;
         <span class="prelude-val">Ok</span>(<span class="self">Self </span>{
             crypto,
             key_store,
@@ -300,9 +298,9 @@
         })
     }
 
-    <span class="kw">pub async fn </span>try_new_in_memory(identity_key: <span class="kw">impl </span>AsRef&lt;str&gt;) -&gt; MlsProviderResult&lt;<span class="self">Self</span>&gt; {
+    <span class="kw">pub async fn </span>try_new_in_memory(db_key: <span class="kw-2">&amp;</span>DatabaseKey) -&gt; MlsProviderResult&lt;<span class="self">Self</span>&gt; {
         <span class="kw">let </span>crypto = RustCrypto::default();
-        <span class="kw">let </span>key_store = CryptoKeystore::open_in_memory_with_key(<span class="string">""</span>, identity_key.as_ref()).<span class="kw">await</span><span class="question-mark">?</span>;
+        <span class="kw">let </span>key_store = CryptoKeystore::open_in_memory_with_key(<span class="string">""</span>, db_key).<span class="kw">await</span><span class="question-mark">?</span>;
         <span class="prelude-val">Ok</span>(<span class="self">Self </span>{
             crypto,
             key_store,

@@ -1740,7 +1740,24 @@
 <a href="#1739" id="1739">1739</a>
 <a href="#1740" id="1740">1740</a>
 <a href="#1741" id="1741">1741</a>
-<a href="#1742" id="1742">1742</a></pre></div><pre class="rust"><code><span class="kw">use crate</span>::{
+<a href="#1742" id="1742">1742</a>
+<a href="#1743" id="1743">1743</a>
+<a href="#1744" id="1744">1744</a>
+<a href="#1745" id="1745">1745</a>
+<a href="#1746" id="1746">1746</a>
+<a href="#1747" id="1747">1747</a>
+<a href="#1748" id="1748">1748</a>
+<a href="#1749" id="1749">1749</a>
+<a href="#1750" id="1750">1750</a>
+<a href="#1751" id="1751">1751</a>
+<a href="#1752" id="1752">1752</a>
+<a href="#1753" id="1753">1753</a>
+<a href="#1754" id="1754">1754</a>
+<a href="#1755" id="1755">1755</a>
+<a href="#1756" id="1756">1756</a>
+<a href="#1757" id="1757">1757</a>
+<a href="#1758" id="1758">1758</a>
+<a href="#1759" id="1759">1759</a></pre></div><pre class="rust"><code><span class="kw">use crate</span>::{
     CoreCrypto, Error, KeystoreError, LeafError, ProteusError, <span class="prelude-ty">Result</span>,
     context::CentralContext,
     group_store::{GroupStore, GroupStoreValue},
@@ -2929,6 +2946,8 @@
 
     <span class="macro">wasm_bindgen_test_configure!</span>(run_in_browser);
 
+    <span class="kw">use </span>core_crypto_keystore::DatabaseKey;
+
     <span class="attr">#[apply(all_cred_cipher)]
     #[wasm_bindgen_test]
     </span><span class="kw">async fn </span>cc_can_init(case: TestCase) {
@@ -2939,7 +2958,7 @@
         <span class="kw">let </span>client_id = <span class="string">"alice"</span>.into();
         <span class="kw">let </span>cfg = MlsClientConfiguration::try_new(
             path,
-            <span class="string">"test"</span>.to_string(),
+            DatabaseKey::generate(),
             <span class="prelude-val">Some</span>(client_id),
             <span class="macro">vec!</span>[case.ciphersuite()],
             <span class="prelude-val">None</span>,
@@ -2965,7 +2984,7 @@
         <span class="comment">// we are deferring MLS initialization here, not passing a MLS 'client_id' yet
         </span><span class="kw">let </span>cfg = MlsClientConfiguration::try_new(
             path,
-            <span class="string">"test"</span>.to_string(),
+            DatabaseKey::generate(),
             <span class="prelude-val">None</span>,
             <span class="macro">vec!</span>[case.ciphersuite()],
             <span class="prelude-val">None</span>,
@@ -3015,7 +3034,8 @@
         </span><span class="kw">let </span>(path, db_file) = tmp_db_file();
         <span class="attr">#[cfg(target_family = <span class="string">"wasm"</span>)]
         </span><span class="kw">let </span>(path, <span class="kw">_</span>) = tmp_db_file();
-        <span class="kw">let </span>keystore = core_crypto_keystore::Connection::open_with_key(<span class="kw-2">&amp;</span>path, <span class="string">"test"</span>)
+        <span class="kw">let </span>key = DatabaseKey::generate();
+        <span class="kw">let </span>keystore = core_crypto_keystore::Connection::open_with_key(<span class="kw-2">&amp;</span>path, <span class="kw-2">&amp;</span>key)
             .<span class="kw">await
             </span>.unwrap();
         keystore.new_transaction().<span class="kw">await</span>.unwrap();
@@ -3023,7 +3043,7 @@
         <span class="kw">let </span>identity = (<span class="kw-2">*</span>central.proteus_identity).clone();
         keystore.commit_transaction().<span class="kw">await</span>.unwrap();
 
-        <span class="kw">let </span>keystore = core_crypto_keystore::Connection::open_with_key(path, <span class="string">"test"</span>)
+        <span class="kw">let </span>keystore = core_crypto_keystore::Connection::open_with_key(path, <span class="kw-2">&amp;</span>key)
             .<span class="kw">await
             </span>.unwrap();
         keystore.new_transaction().<span class="kw">await</span>.unwrap();
@@ -3046,7 +3066,8 @@
 
         <span class="kw">let </span>session_id = uuid::Uuid::new_v4().hyphenated().to_string();
 
-        <span class="kw">let </span><span class="kw-2">mut </span>keystore = core_crypto_keystore::Connection::open_with_key(path, <span class="string">"test"</span>)
+        <span class="kw">let </span>key = DatabaseKey::generate();
+        <span class="kw">let </span><span class="kw-2">mut </span>keystore = core_crypto_keystore::Connection::open_with_key(path, <span class="kw-2">&amp;</span>key)
             .<span class="kw">await
             </span>.unwrap();
         keystore.new_transaction().<span class="kw">await</span>.unwrap();
@@ -3087,7 +3108,8 @@
 
         <span class="kw">let </span>session_id = uuid::Uuid::new_v4().hyphenated().to_string();
 
-        <span class="kw">let </span><span class="kw-2">mut </span>keystore = core_crypto_keystore::Connection::open_with_key(path, <span class="string">"test"</span>)
+        <span class="kw">let </span>key = DatabaseKey::generate();
+        <span class="kw">let </span><span class="kw-2">mut </span>keystore = core_crypto_keystore::Connection::open_with_key(path, <span class="kw-2">&amp;</span>key)
             .<span class="kw">await
             </span>.unwrap();
         keystore.new_transaction().<span class="kw">await</span>.unwrap();
@@ -3130,7 +3152,8 @@
         <span class="attr">#[cfg(target_family = <span class="string">"wasm"</span>)]
         </span><span class="kw">let </span>(path, <span class="kw">_</span>) = tmp_db_file();
 
-        <span class="kw">let </span>keystore = core_crypto_keystore::Connection::open_with_key(path, <span class="string">"test"</span>)
+        <span class="kw">let </span>key = DatabaseKey::generate();
+        <span class="kw">let </span>keystore = core_crypto_keystore::Connection::open_with_key(path, <span class="kw-2">&amp;</span>key)
             .<span class="kw">await
             </span>.unwrap();
         keystore.new_transaction().<span class="kw">await</span>.unwrap();
@@ -3232,8 +3255,9 @@
         <span class="kw">let </span>keystore_dir = tempfile::tempdir().unwrap();
         <span class="kw">let </span>keystore_file = keystore_dir.path().join(<span class="string">"keystore"</span>);
 
+        <span class="kw">let </span>key = DatabaseKey::generate();
         <span class="kw">let </span><span class="kw-2">mut </span>keystore =
-            core_crypto_keystore::Connection::open_with_key(keystore_file.as_os_str().to_string_lossy(), <span class="string">"test"</span>)
+            core_crypto_keystore::Connection::open_with_key(keystore_file.as_os_str().to_string_lossy(), <span class="kw-2">&amp;</span>key)
                 .<span class="kw">await
                 </span>.unwrap();
         keystore.new_transaction().<span class="kw">await</span>.unwrap();
@@ -3412,7 +3436,17 @@
                 <span class="kw">let </span>alice_session_fingerprint_remote = alice_session.remote_identity().fingerprint();
 
                 <span class="kw">let _ </span>= wasm_bindgen_futures::JsFuture::from(run_cryptobox(alice)).<span class="kw">await</span>.unwrap();
-                <span class="kw">let </span><span class="kw-2">mut </span>keystore = core_crypto_keystore::Connection::open_with_key(<span class="kw-2">&amp;</span><span class="macro">format!</span>(<span class="string">"{CRYPTOBOX_JS_DBNAME}-imported"</span>), <span class="string">"test"</span>).<span class="kw">await</span>.unwrap();
+
+                <span class="kw">use </span>sha2::Digest <span class="kw">as _</span>;
+                <span class="kw">let </span>old_key = <span class="string">"test"</span>;
+                <span class="kw">let </span>new_key = DatabaseKey::try_from(sha2::Sha256::digest(old_key).as_slice()).unwrap();
+
+                <span class="kw">let </span>name = <span class="macro">format!</span>(<span class="string">"{CRYPTOBOX_JS_DBNAME}-imported"</span>);
+                <span class="kw">let _ </span>= core_crypto_keystore::connection::platform::open_and_migrate_pre_v4(<span class="kw-2">&amp;</span>name, old_key).<span class="kw">await</span>;
+
+                core_crypto_keystore::Connection::migrate_db_key_type_to_bytes(<span class="kw-2">&amp;</span>name, old_key, <span class="kw-2">&amp;</span>new_key).<span class="kw">await</span>.unwrap();
+
+                <span class="kw">let </span><span class="kw-2">mut </span>keystore = core_crypto_keystore::Connection::open_with_key(<span class="kw-2">&amp;</span>name, <span class="kw-2">&amp;</span>new_key).<span class="kw">await</span>.unwrap();
                 keystore.new_transaction().<span class="kw">await</span>.unwrap();
                 <span class="kw">let </span><span class="prelude-val">Err</span>(<span class="kw">crate</span>::Error::CryptoboxMigration(<span class="kw">crate</span>::CryptoboxMigrationError{
                     source: <span class="kw">crate</span>::CryptoboxMigrationErrorKind::ProvidedPathDoesNotExist(<span class="kw">_</span>),

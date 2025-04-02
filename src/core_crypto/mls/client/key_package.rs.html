@@ -742,7 +742,10 @@
 <a href="#741" id="741">741</a>
 <a href="#742" id="742">742</a>
 <a href="#743" id="743">743</a>
-<a href="#744" id="744">744</a></pre></div><pre class="rust"><code><span class="kw">use </span>openmls::prelude::{Credential, CredentialWithKey, CryptoConfig, KeyPackage, KeyPackageRef, Lifetime};
+<a href="#744" id="744">744</a>
+<a href="#745" id="745">745</a>
+<a href="#746" id="746">746</a>
+<a href="#747" id="747">747</a></pre></div><pre class="rust"><code><span class="kw">use </span>openmls::prelude::{Credential, CredentialWithKey, CryptoConfig, KeyPackage, KeyPackageRef, Lifetime};
 <span class="kw">use </span>openmls_traits::OpenMlsCryptoProvider;
 <span class="kw">use </span>std::collections::HashMap;
 <span class="kw">use </span>std::ops::{Deref, DerefMut};
@@ -1168,6 +1171,7 @@
     <span class="kw">use </span><span class="kw">crate</span>::prelude::MlsConversationConfiguration;
     <span class="kw">use </span><span class="kw">crate</span>::prelude::key_package::INITIAL_KEYING_MATERIAL_COUNT;
     <span class="kw">use </span><span class="kw">crate</span>::test_utils::<span class="kw-2">*</span>;
+    <span class="kw">use </span>core_crypto_keystore::DatabaseKey;
 
     <span class="kw">use </span><span class="kw">super</span>::Client;
 
@@ -1179,7 +1183,8 @@
         run_test_with_central(case.clone(), <span class="kw">move </span>|[central]| {
             Box::pin(<span class="kw">async move </span>{
                 <span class="kw">let </span>(cs, ct) = (case.ciphersuite(), case.credential_type);
-                <span class="kw">let </span>backend = MlsCryptoProvider::try_new_in_memory(<span class="string">"test"</span>).<span class="kw">await</span>.unwrap();
+                <span class="kw">let </span>key = DatabaseKey::generate();
+                <span class="kw">let </span>backend = MlsCryptoProvider::try_new_in_memory(<span class="kw-2">&amp;</span>key).<span class="kw">await</span>.unwrap();
                 <span class="kw">let </span>x509_test_chain = <span class="kw">if </span>case.is_x509() {
                     <span class="kw">let </span>x509_test_chain = <span class="kw">crate</span>::test_utils::x509::X509TestChain::init_empty(case.signature_scheme());
                     x509_test_chain.register_with_provider(<span class="kw-2">&amp;</span>backend).<span class="kw">await</span>;
@@ -1364,7 +1369,8 @@
             Box::pin(<span class="kw">async move </span>{
                 <span class="kw">const </span>UNEXPIRED_COUNT: usize = <span class="number">125</span>;
                 <span class="kw">const </span>EXPIRED_COUNT: usize = <span class="number">200</span>;
-                <span class="kw">let </span>backend = MlsCryptoProvider::try_new_in_memory(<span class="string">"test"</span>).<span class="kw">await</span>.unwrap();
+                <span class="kw">let </span>key = DatabaseKey::generate();
+                <span class="kw">let </span>backend = MlsCryptoProvider::try_new_in_memory(<span class="kw-2">&amp;</span>key).<span class="kw">await</span>.unwrap();
                 <span class="kw">let </span>x509_test_chain = <span class="kw">if </span>case.is_x509() {
                     <span class="kw">let </span>x509_test_chain = <span class="kw">crate</span>::test_utils::x509::X509TestChain::init_empty(case.signature_scheme());
                     x509_test_chain.register_with_provider(<span class="kw-2">&amp;</span>backend).<span class="kw">await</span>;

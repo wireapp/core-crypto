@@ -201,10 +201,35 @@
 <a href="#200" id="200">200</a>
 <a href="#201" id="201">201</a>
 <a href="#202" id="202">202</a>
-<a href="#203" id="203">203</a></pre></div><pre class="rust"><code><span class="kw">use </span>std::ops::Deref;
+<a href="#203" id="203">203</a>
+<a href="#204" id="204">204</a>
+<a href="#205" id="205">205</a>
+<a href="#206" id="206">206</a>
+<a href="#207" id="207">207</a>
+<a href="#208" id="208">208</a>
+<a href="#209" id="209">209</a>
+<a href="#210" id="210">210</a>
+<a href="#211" id="211">211</a>
+<a href="#212" id="212">212</a>
+<a href="#213" id="213">213</a>
+<a href="#214" id="214">214</a>
+<a href="#215" id="215">215</a>
+<a href="#216" id="216">216</a>
+<a href="#217" id="217">217</a>
+<a href="#218" id="218">218</a>
+<a href="#219" id="219">219</a>
+<a href="#220" id="220">220</a>
+<a href="#221" id="221">221</a>
+<a href="#222" id="222">222</a>
+<a href="#223" id="223">223</a>
+<a href="#224" id="224">224</a>
+<a href="#225" id="225">225</a></pre></div><pre class="rust"><code><span class="kw">use </span>std::ops::Deref;
+<span class="kw">use </span>std::path::Path;
+
+<span class="kw">use </span>zeroize::Zeroize <span class="kw">as _</span>;
 
 <span class="kw">use </span><span class="kw">crate</span>::CryptoKeystoreResult;
-<span class="kw">use </span><span class="kw">crate</span>::connection::{DatabaseConnection, DatabaseConnectionRequirements};
+<span class="kw">use </span><span class="kw">crate</span>::connection::{DatabaseConnection, DatabaseConnectionRequirements, DatabaseKey};
 <span class="kw">use </span>async_lock::{Mutex, MutexGuard};
 <span class="kw">use </span>blocking::unblock;
 <span class="kw">use </span>rusqlite::{Transaction, functions::FunctionFlags};
@@ -273,20 +298,13 @@
 </span><span class="kw">unsafe impl </span>Sync <span class="kw">for </span>SqlCipherConnection {}
 
 <span class="kw">impl </span>SqlCipherConnection {
-    <span class="kw">fn </span>init_with_key(path: <span class="kw-2">&amp;</span>str, key: <span class="kw-2">&amp;</span>str) -&gt; CryptoKeystoreResult&lt;<span class="self">Self</span>&gt; {
-        <span class="attr">#[allow(unused_mut)]
-        </span><span class="kw">let </span><span class="kw-2">mut </span>conn = rusqlite::Connection::open(path)<span class="question-mark">?</span>;
-        <span class="macro">cfg_if::cfg_if!</span> {
-            <span class="kw">if </span><span class="attr">#[cfg(feature = <span class="string">"log-queries"</span>)] </span>{
-                <span class="kw">fn </span>log_query(q: <span class="kw-2">&amp;</span>str) {
-                    <span class="macro">log::info!</span>(<span class="string">"{}"</span>, q);
-                }
+    <span class="kw">fn </span>init_with_key(path: <span class="kw-2">&amp;</span>str, key: <span class="kw-2">&amp;</span>DatabaseKey) -&gt; CryptoKeystoreResult&lt;<span class="self">Self</span>&gt; {
+        <span class="kw">let </span><span class="kw-2">mut </span>conn = rusqlite::Connection::open(path)<span class="question-mark">?</span>;
 
-                conn.trace(<span class="prelude-val">Some</span>(log_query));
-            }
-        }
+        <span class="attr">#[cfg(feature = <span class="string">"log-queries"</span>)]
+        </span>conn.trace(<span class="prelude-val">Some</span>(|q| <span class="macro">log::info!</span>(<span class="string">"{}"</span>, q)));
 
-        conn.pragma_update(<span class="prelude-val">None</span>, <span class="string">"key"</span>, key)<span class="question-mark">?</span>;
+        <span class="self">Self</span>::set_key(<span class="kw-2">&amp;mut </span>conn, key)<span class="question-mark">?</span>;
 
         <span class="comment">// ? iOS WAL journaling fix; see details here: https://github.com/sqlcipher/sqlcipher/issues/255
         </span><span class="attr">#[cfg(target_os = <span class="string">"ios"</span>)]
@@ -298,51 +316,78 @@
         <span class="comment">// Disable FOREIGN KEYs - The 2 step blob writing process invalidates foreign key checks unfortunately
         </span>conn.pragma_update(<span class="prelude-val">None</span>, <span class="string">"foreign_keys"</span>, <span class="string">"OFF"</span>)<span class="question-mark">?</span>;
 
-        <span class="kw">let </span>conn = Mutex::new(conn);
+        <span class="self">Self</span>::run_migrations(<span class="kw-2">&amp;mut </span>conn)<span class="question-mark">?</span>;
 
-        <span class="kw">let </span><span class="kw-2">mut </span>conn = <span class="self">Self </span>{
+        <span class="kw">let </span>conn = <span class="self">Self </span>{
             path: path.into(),
-            conn,
+            conn: Mutex::new(conn),
         };
-        conn.run_migrations()<span class="question-mark">?</span>;
 
         <span class="prelude-val">Ok</span>(conn)
     }
 
-    <span class="kw">fn </span>init_with_key_in_memory(_path: <span class="kw-2">&amp;</span>str, key: <span class="kw-2">&amp;</span>str) -&gt; CryptoKeystoreResult&lt;<span class="self">Self</span>&gt; {
-        <span class="attr">#[allow(unused_mut)]
-        </span><span class="kw">let </span><span class="kw-2">mut </span>conn = rusqlite::Connection::open(<span class="string">""</span>)<span class="question-mark">?</span>;
-        <span class="macro">cfg_if::cfg_if!</span> {
-            <span class="kw">if </span><span class="attr">#[cfg(feature = <span class="string">"log-queries"</span>)] </span>{
-                <span class="kw">fn </span>log_query(q: <span class="kw-2">&amp;</span>str) {
-                    <span class="macro">log::info!</span>(<span class="string">"{}"</span>, q);
-                }
+    <span class="kw">fn </span>set_key(conn: <span class="kw-2">&amp;mut </span>rusqlite::Connection, key: <span class="kw-2">&amp;</span>DatabaseKey) -&gt; CryptoKeystoreResult&lt;()&gt; {
+        <span class="comment">// Make sqlite use raw key data, without key derivation. Also make sure to zeroize
+        // the string containing the key after the call.
+        </span><span class="kw">let </span><span class="kw-2">mut </span>key = <span class="macro">format!</span>(<span class="string">"x'{}'"</span>, hex::encode(key));
+        <span class="kw">let </span>result = conn.pragma_update(<span class="prelude-val">None</span>, <span class="string">"key"</span>, <span class="kw-2">&amp;</span>key);
+        key.zeroize();
+        result.map_err(Into::into)
+    }
 
-                conn.trace(<span class="prelude-val">Some</span>(log_query));
-            }
-        }
-        conn.pragma_update(<span class="prelude-val">None</span>, <span class="string">"key"</span>, key)<span class="question-mark">?</span>;
+    <span class="kw">fn </span>init_with_key_in_memory(_path: <span class="kw-2">&amp;</span>str, key: <span class="kw-2">&amp;</span>DatabaseKey) -&gt; CryptoKeystoreResult&lt;<span class="self">Self</span>&gt; {
+        <span class="kw">let </span><span class="kw-2">mut </span>conn = rusqlite::Connection::open(<span class="string">""</span>)<span class="question-mark">?</span>;
+
+        <span class="attr">#[cfg(feature = <span class="string">"log-queries"</span>)]
+        </span>conn.trace(<span class="prelude-val">Some</span>(|q| <span class="macro">log::info!</span>(<span class="string">"{}"</span>, q)));
+
+        <span class="self">Self</span>::set_key(<span class="kw-2">&amp;mut </span>conn, key)<span class="question-mark">?</span>;
 
         <span class="comment">// Disable FOREIGN KEYs - The 2 step blob writing process invalidates foreign key checks unfortunately
         </span>conn.pragma_update(<span class="prelude-val">None</span>, <span class="string">"foreign_keys"</span>, <span class="string">"OFF"</span>)<span class="question-mark">?</span>;
 
-        <span class="kw">let </span>conn = Mutex::new(conn);
-
-        <span class="kw">let </span><span class="kw-2">mut </span>conn = <span class="self">Self </span>{ path: <span class="string">""</span>.into(), conn };
-
         <span class="comment">// Need to run migrations also in memory to make sure expected tables exist.
-        </span>conn.run_migrations()<span class="question-mark">?</span>;
+        </span><span class="self">Self</span>::run_migrations(<span class="kw-2">&amp;mut </span>conn)<span class="question-mark">?</span>;
+
+        <span class="kw">let </span>conn = <span class="self">Self </span>{
+            path: <span class="string">""</span>.into(),
+            conn: Mutex::new(conn),
+        };
 
         <span class="prelude-val">Ok</span>(conn)
+    }
+
+    <span class="kw">pub async fn </span>migrate_db_key_type_to_bytes(
+        path: <span class="kw-2">&amp;</span>str,
+        old_key: <span class="kw-2">&amp;</span>str,
+        new_key: <span class="kw-2">&amp;</span>DatabaseKey,
+    ) -&gt; CryptoKeystoreResult&lt;()&gt; {
+        <span class="kw">let </span><span class="kw-2">mut </span>conn = rusqlite::Connection::open(Path::new(path))<span class="question-mark">?</span>;
+
+        conn.pragma_update(<span class="prelude-val">None</span>, <span class="string">"key"</span>, old_key)<span class="question-mark">?</span>;
+
+        <span class="comment">// ? iOS WAL journaling fix; see details here: https://github.com/sqlcipher/sqlcipher/issues/255
+        </span><span class="attr">#[cfg(target_os = <span class="string">"ios"</span>)]
+        </span>ios_wal_compat::handle_ios_wal_compat(<span class="kw-2">&amp;</span>conn, path)<span class="question-mark">?</span>;
+
+        <span class="comment">// Enable WAL journaling mode
+        </span>conn.pragma_update(<span class="prelude-val">None</span>, <span class="string">"journal_mode"</span>, <span class="string">"wal"</span>)<span class="question-mark">?</span>;
+
+        <span class="comment">// Disable FOREIGN KEYs - The 2 step blob writing process invalidates foreign key checks unfortunately
+        </span>conn.pragma_update(<span class="prelude-val">None</span>, <span class="string">"foreign_keys"</span>, <span class="string">"OFF"</span>)<span class="question-mark">?</span>;
+
+        <span class="self">Self</span>::run_migrations(<span class="kw-2">&amp;mut </span>conn)<span class="question-mark">?</span>;
+
+        <span class="comment">// Rekey the database.
+        </span><span class="kw">let </span><span class="kw-2">mut </span>key = <span class="macro">format!</span>(<span class="string">"x'{}'"</span>, hex::encode(new_key));
+        <span class="kw">let </span>result = conn.pragma_update(<span class="prelude-val">None</span>, <span class="string">"rekey"</span>, <span class="kw-2">&amp;</span>key);
+        key.zeroize();
+        <span class="prelude-val">Ok</span>(result<span class="question-mark">?</span>)
     }
 
     <span class="kw">pub async fn </span>conn(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; MutexGuard&lt;rusqlite::Connection&gt; {
         <span class="self">self</span>.conn.lock().<span class="kw">await
     </span>}
-
-    <span class="kw">pub fn </span>conn_blocking(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; MutexGuard&lt;rusqlite::Connection&gt; {
-        <span class="self">self</span>.conn.lock_blocking()
-    }
 
     <span class="kw">pub async fn </span>wipe(<span class="self">self</span>) -&gt; CryptoKeystoreResult&lt;()&gt; {
         <span class="kw">if </span><span class="self">self</span>.path.is_empty() {
@@ -361,8 +406,7 @@
         conn.close().map_err(|(<span class="kw">_</span>, e)| e.into())
     }
 
-    <span class="kw">fn </span>run_migrations(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; CryptoKeystoreResult&lt;()&gt; {
-        <span class="kw">let </span><span class="kw-2">mut </span>conn = <span class="self">self</span>.conn_blocking();
+    <span class="kw">fn </span>run_migrations(conn: <span class="kw-2">&amp;mut </span>rusqlite::Connection) -&gt; CryptoKeystoreResult&lt;()&gt; {
         conn.create_scalar_function(<span class="string">"sha256_blob"</span>, <span class="number">1</span>, FunctionFlags::SQLITE_DETERMINISTIC, |ctx| {
             <span class="kw">let </span>input_blob = ctx.get::&lt;Vec&lt;u8&gt;&gt;(<span class="number">0</span>)<span class="question-mark">?</span>;
             <span class="prelude-val">Ok</span>(<span class="kw">crate</span>::sha256(<span class="kw-2">&amp;</span>input_blob))
@@ -383,15 +427,15 @@
 </span><span class="kw">impl</span>&lt;<span class="lifetime">'a</span>&gt; DatabaseConnection&lt;<span class="lifetime">'a</span>&gt; <span class="kw">for </span>SqlCipherConnection {
     <span class="kw">type </span>Connection = MutexGuard&lt;<span class="lifetime">'a</span>, rusqlite::Connection&gt;;
 
-    <span class="kw">async fn </span>open(name: <span class="kw-2">&amp;</span>str, key: <span class="kw-2">&amp;</span>str) -&gt; CryptoKeystoreResult&lt;<span class="self">Self</span>&gt; {
+    <span class="kw">async fn </span>open(name: <span class="kw-2">&amp;</span>str, key: <span class="kw-2">&amp;</span>DatabaseKey) -&gt; CryptoKeystoreResult&lt;<span class="self">Self</span>&gt; {
         <span class="kw">let </span>name = name.to_string();
-        <span class="kw">let </span>key = key.to_string();
+        <span class="kw">let </span>key = key.clone();
         <span class="prelude-val">Ok</span>(unblock(<span class="kw">move </span>|| <span class="self">Self</span>::init_with_key(<span class="kw-2">&amp;</span>name, <span class="kw-2">&amp;</span>key)).<span class="kw">await</span><span class="question-mark">?</span>)
     }
 
-    <span class="kw">async fn </span>open_in_memory(name: <span class="kw-2">&amp;</span>str, key: <span class="kw-2">&amp;</span>str) -&gt; CryptoKeystoreResult&lt;<span class="self">Self</span>&gt; {
+    <span class="kw">async fn </span>open_in_memory(name: <span class="kw-2">&amp;</span>str, key: <span class="kw-2">&amp;</span>DatabaseKey) -&gt; CryptoKeystoreResult&lt;<span class="self">Self</span>&gt; {
         <span class="kw">let </span>name = name.to_string();
-        <span class="kw">let </span>key = key.to_string();
+        <span class="kw">let </span>key = key.clone();
         <span class="prelude-val">Ok</span>(unblock(<span class="kw">move </span>|| <span class="self">Self</span>::init_with_key_in_memory(<span class="kw-2">&amp;</span>name, <span class="kw-2">&amp;</span>key)).<span class="kw">await</span><span class="question-mark">?</span>)
     }
 

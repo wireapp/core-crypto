@@ -596,39 +596,7 @@
 <a href="#595" id="595">595</a>
 <a href="#596" id="596">596</a>
 <a href="#597" id="597">597</a>
-<a href="#598" id="598">598</a>
-<a href="#599" id="599">599</a>
-<a href="#600" id="600">600</a>
-<a href="#601" id="601">601</a>
-<a href="#602" id="602">602</a>
-<a href="#603" id="603">603</a>
-<a href="#604" id="604">604</a>
-<a href="#605" id="605">605</a>
-<a href="#606" id="606">606</a>
-<a href="#607" id="607">607</a>
-<a href="#608" id="608">608</a>
-<a href="#609" id="609">609</a>
-<a href="#610" id="610">610</a>
-<a href="#611" id="611">611</a>
-<a href="#612" id="612">612</a>
-<a href="#613" id="613">613</a>
-<a href="#614" id="614">614</a>
-<a href="#615" id="615">615</a>
-<a href="#616" id="616">616</a>
-<a href="#617" id="617">617</a>
-<a href="#618" id="618">618</a>
-<a href="#619" id="619">619</a>
-<a href="#620" id="620">620</a>
-<a href="#621" id="621">621</a>
-<a href="#622" id="622">622</a>
-<a href="#623" id="623">623</a>
-<a href="#624" id="624">624</a>
-<a href="#625" id="625">625</a>
-<a href="#626" id="626">626</a>
-<a href="#627" id="627">627</a>
-<a href="#628" id="628">628</a>
-<a href="#629" id="629">629</a>
-<a href="#630" id="630">630</a></pre></div><pre class="rust"><code><span class="kw">use </span>log::trace;
+<a href="#598" id="598">598</a></pre></div><pre class="rust"><code><span class="kw">use </span>log::trace;
 
 <span class="kw">use crate</span>::{
     LeafError, MlsError, RecursiveError,
@@ -637,6 +605,7 @@
         MlsCredentialType, identifier::ClientIdentifier, key_package::INITIAL_KEYING_MATERIAL_COUNT,
     },
 };
+<span class="kw">use </span>core_crypto_keystore::DatabaseKey;
 <span class="kw">use </span>mls_crypto_provider::MlsCryptoProvider;
 <span class="kw">use </span>openmls_traits::OpenMlsCryptoProvider;
 
@@ -667,9 +636,9 @@
     </span><span class="kw">pub struct </span>MlsClientConfiguration {
         <span class="doccomment">/// Location where the SQLite/IndexedDB database will be stored
         </span><span class="kw">pub </span>store_path: String,
-        <span class="doccomment">/// Identity key to be used to instantiate the [MlsCryptoProvider]
-        </span><span class="kw">pub </span>identity_key: String,
-        <span class="doccomment">/// Identifier for the client to be used by [Client]
+        <span class="doccomment">/// Database key to be used to instantiate the [MlsCryptoProvider]
+        </span><span class="kw">pub </span>database_key: DatabaseKey,
+        <span class="doccomment">/// Identifier for the client to be used by [MlsCentral]
         </span><span class="kw">pub </span>client_id: <span class="prelude-ty">Option</span>&lt;ClientId&gt;,
         <span class="doccomment">/// Entropy pool seed for the internal PRNG
         </span><span class="kw">pub </span>external_entropy: <span class="prelude-ty">Option</span>&lt;EntropySeed&gt;,
@@ -684,8 +653,8 @@
         ///
         /// # Arguments
         /// * `store_path` - location where the SQLite/IndexedDB database will be stored
-        /// * `identity_key` - identity key to be used to instantiate the [MlsCryptoProvider]
-        /// * `client_id` - identifier for the client to be used by [Client]
+        /// * `database_key` - key to be used to instantiate the [MlsCryptoProvider]
+        /// * `client_id` - identifier for the client to be used by [MlsCentral]
         /// * `ciphersuites` - Ciphersuites supported by this device
         /// * `entropy` - External source of entropy for platforms where default source insufficient
         ///
@@ -694,21 +663,13 @@
         ///
         /// # Examples
         ///
-        /// This should fail:
-        /// ```
-        /// use core_crypto::{prelude::MlsClientConfiguration, mls::Error};
-        ///
-        /// let result = MlsClientConfiguration::try_new(String::new(), String::new(), Some(b"".to_vec().into()), vec![], None, Some(100));
-        /// assert!(matches!(result.unwrap_err(), Error::MalformedIdentifier(_)));
-        /// ```
-        ///
-        /// This should work:
         /// ```
         /// use core_crypto::prelude::{MlsClientConfiguration, MlsCiphersuite};
+        /// use core_crypto::DatabaseKey;
         ///
         /// let result = MlsClientConfiguration::try_new(
         ///     "/tmp/crypto".to_string(),
-        ///     "MY_IDENTITY_KEY".to_string(),
+        ///     DatabaseKey::generate(),
         ///     Some(b"MY_CLIENT_ID".to_vec().into()),
         ///     vec![MlsCiphersuite::default()],
         ///     None,
@@ -718,7 +679,7 @@
         /// ```
         </span><span class="kw">pub fn </span>try_new(
             store_path: String,
-            identity_key: String,
+            database_key: DatabaseKey,
             client_id: <span class="prelude-ty">Option</span>&lt;ClientId&gt;,
             ciphersuites: Vec&lt;MlsCiphersuite&gt;,
             entropy: <span class="prelude-ty">Option</span>&lt;Vec&lt;u8&gt;&gt;,
@@ -727,10 +688,6 @@
             <span class="comment">// TODO: probably more complex rules to enforce. Tracking issue: WPB-9598
             </span><span class="kw">if </span>store_path.trim().is_empty() {
                 <span class="kw">return </span><span class="prelude-val">Err</span>(Error::MalformedIdentifier(<span class="string">"store_path"</span>));
-            }
-            <span class="comment">// TODO: probably more complex rules to enforce. Tracking issue: WPB-9598
-            </span><span class="kw">if </span>identity_key.trim().is_empty() {
-                <span class="kw">return </span><span class="prelude-val">Err</span>(Error::MalformedIdentifier(<span class="string">"identity_key"</span>));
             }
             <span class="comment">// TODO: probably more complex rules to enforce. Tracking issue: WPB-9598
             </span><span class="kw">if let </span><span class="prelude-val">Some</span>(client_id) = client_id.as_ref() {
@@ -746,7 +703,7 @@
                 .map_err(MlsError::wrap(<span class="string">"gathering external entropy"</span>))<span class="question-mark">?</span>;
             <span class="prelude-val">Ok</span>(<span class="self">Self </span>{
                 store_path,
-                identity_key,
+                database_key,
                 client_id,
                 ciphersuites,
                 external_entropy,
@@ -1004,6 +961,8 @@
 
     <span class="macro">wasm_bindgen_test_configure!</span>(run_in_browser);
 
+    <span class="kw">use </span>core_crypto_keystore::DatabaseKey;
+
     <span class="kw">mod </span>conversation_epoch {
         <span class="kw">use super</span>::<span class="kw-2">*</span>;
         <span class="kw">use </span><span class="kw">crate</span>::mls::conversation::Conversation <span class="kw">as _</span>;
@@ -1076,7 +1035,7 @@
                 Box::pin(<span class="kw">async move </span>{
                     <span class="kw">let </span>configuration = MlsClientConfiguration::try_new(
                         tmp_dir_argument,
-                        <span class="string">"test"</span>.to_string(),
+                        DatabaseKey::generate(),
                         <span class="prelude-val">Some</span>(<span class="string">"alice"</span>.into()),
                         <span class="macro">vec!</span>[case.ciphersuite()],
                         <span class="prelude-val">None</span>,
@@ -1097,7 +1056,7 @@
             <span class="kw">let </span>ciphersuites = <span class="macro">vec!</span>[MlsCiphersuite::default()];
             <span class="kw">let </span>configuration = MlsClientConfiguration::try_new(
                 <span class="string">" "</span>.to_string(),
-                <span class="string">"test"</span>.to_string(),
+                DatabaseKey::generate(),
                 <span class="prelude-val">Some</span>(<span class="string">"alice"</span>.into()),
                 ciphersuites,
                 <span class="prelude-val">None</span>,
@@ -1111,36 +1070,13 @@
 
         <span class="attr">#[cfg_attr(not(target_family = <span class="string">"wasm"</span>), async_std::test)]
         #[wasm_bindgen_test]
-        </span><span class="kw">async fn </span>identity_key_should_not_be_empty_nor_blank() {
-            run_tests(|[tmp_dir_argument]| {
-                Box::pin(<span class="kw">async move </span>{
-                    <span class="kw">let </span>ciphersuites = <span class="macro">vec!</span>[MlsCiphersuite::default()];
-                    <span class="kw">let </span>configuration = MlsClientConfiguration::try_new(
-                        tmp_dir_argument,
-                        <span class="string">" "</span>.to_string(),
-                        <span class="prelude-val">Some</span>(<span class="string">"alice"</span>.into()),
-                        ciphersuites,
-                        <span class="prelude-val">None</span>,
-                        <span class="prelude-val">Some</span>(INITIAL_KEYING_MATERIAL_COUNT),
-                    );
-                    <span class="macro">assert!</span>(<span class="macro">matches!</span>(
-                        configuration.unwrap_err(),
-                        mls::Error::MalformedIdentifier(<span class="string">"identity_key"</span>)
-                    ));
-                })
-            })
-            .<span class="kw">await
-        </span>}
-
-        <span class="attr">#[cfg_attr(not(target_family = <span class="string">"wasm"</span>), async_std::test)]
-        #[wasm_bindgen_test]
         </span><span class="kw">async fn </span>client_id_should_not_be_empty() {
             run_tests(|[tmp_dir_argument]| {
                 Box::pin(<span class="kw">async move </span>{
                     <span class="kw">let </span>ciphersuites = <span class="macro">vec!</span>[MlsCiphersuite::default()];
                     <span class="kw">let </span>configuration = MlsClientConfiguration::try_new(
                         tmp_dir_argument,
-                        <span class="string">"test"</span>.to_string(),
+                        DatabaseKey::generate(),
                         <span class="prelude-val">Some</span>(<span class="string">""</span>.into()),
                         ciphersuites,
                         <span class="prelude-val">None</span>,
@@ -1189,7 +1125,7 @@
             Box::pin(<span class="kw">async move </span>{
                 <span class="kw">let </span>configuration = MlsClientConfiguration::try_new(
                     tmp_dir_argument,
-                    <span class="string">"test"</span>.to_string(),
+                    DatabaseKey::generate(),
                     <span class="prelude-val">Some</span>(<span class="string">"potato"</span>.into()),
                     <span class="macro">vec!</span>[case.ciphersuite()],
                     <span class="prelude-val">None</span>,
@@ -1213,7 +1149,7 @@
                 <span class="kw">let </span>x509_test_chain = X509TestChain::init_empty(case.signature_scheme());
                 <span class="kw">let </span>configuration = MlsClientConfiguration::try_new(
                     tmp_dir_argument,
-                    <span class="string">"test"</span>.to_string(),
+                    DatabaseKey::generate(),
                     <span class="prelude-val">None</span>,
                     <span class="macro">vec!</span>[case.ciphersuite()],
                     <span class="prelude-val">None</span>,

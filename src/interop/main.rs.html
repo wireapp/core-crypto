@@ -465,9 +465,13 @@
 <a href="#464" id="464">464</a>
 <a href="#465" id="465">465</a>
 <a href="#466" id="466">466</a>
-<a href="#467" id="467">467</a></pre></div><pre class="rust"><code><span class="attr">#![cfg_attr(target_family = <span class="string">"wasm"</span>, allow(dead_code, unused_imports))]
+<a href="#467" id="467">467</a>
+<a href="#468" id="468">468</a>
+<a href="#469" id="469">469</a></pre></div><pre class="rust"><code><span class="attr">#![cfg_attr(target_family = <span class="string">"wasm"</span>, allow(dead_code, unused_imports))]
 
-#[cfg(not(target_family = <span class="string">"wasm"</span>))]
+</span><span class="kw">use </span>core_crypto::DatabaseKey;
+
+<span class="attr">#[cfg(not(target_family = <span class="string">"wasm"</span>))]
 </span><span class="kw">use </span><span class="kw">crate</span>::clients::{EmulatedClient, EmulatedProteusClient};
 <span class="attr">#[cfg(not(target_family = <span class="string">"wasm"</span>))]
 </span><span class="kw">use </span><span class="kw">crate</span>::util::{MlsTransportSuccessProvider, MlsTransportTestExt};
@@ -591,7 +595,7 @@
     <span class="kw">let </span>ciphersuites = <span class="macro">vec!</span>[CIPHERSUITE_IN_USE.into()];
     <span class="kw">let </span>configuration = MlsClientConfiguration::try_new(
         <span class="string">"whatever"</span>.into(),
-        <span class="string">"test"</span>.into(),
+        DatabaseKey::generate(),
         <span class="prelude-val">Some</span>(MLS_MAIN_CLIENTID.into()),
         ciphersuites,
         <span class="prelude-val">None</span>,
@@ -787,7 +791,7 @@
 
     <span class="kw">let </span>configuration = MlsClientConfiguration::try_new(
         <span class="string">"whatever"</span>.into(),
-        <span class="string">"test"</span>.into(),
+        DatabaseKey::generate(),
         <span class="prelude-val">Some</span>(MLS_MAIN_CLIENTID.into()),
         <span class="macro">vec!</span>[MlsCiphersuite::default()],
         <span class="prelude-val">None</span>,

@@ -270,7 +270,7 @@
 
         <span class="kw">let </span>cc = CoreCrypto::new(
             temp_file.path().to_string_lossy().into_owned(),
-            <span class="string">"key"</span>.to_string(),
+            core_crypto_ffi::DatabaseKey::new(core_crypto::DatabaseKey::generate()),
             <span class="prelude-val">Some</span>(client_id),
             <span class="prelude-val">Some</span>(<span class="macro">vec!</span>[ciphersuite].into()),
             <span class="prelude-val">None</span>,
