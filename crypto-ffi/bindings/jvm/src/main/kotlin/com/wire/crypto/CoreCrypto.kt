@@ -9,7 +9,7 @@ typealias EnrollmentHandle = ByteArray
 value class DatabaseKey(internal val bytes: ByteArray)
 
 suspend fun migrateDatabaseKeyTypeToBytes(name: String, oldKey: String, newKey: DatabaseKey) {
-    return com.wire.crypto.uniffi.migrateDatabaseKeyTypeToBytes(name, oldKey, newKey.bytes)
+    return com.wire.crypto.uniffi.migrateDbKeyTypeToBytes(name, oldKey, newKey.bytes)
 }
 
 /**
@@ -106,7 +106,7 @@ class CoreCrypto(private val cc: com.wire.crypto.uniffi.CoreCrypto) {
             keystore: String,
             databaseKey: DatabaseKey
         ): CoreCrypto {
-            val cc = com.wire.crypto.uniffi.coreCryptoDeferredInit(keystore, databaseKey.bytes)
+            val cc = com.wire.crypto.uniffi.coreCryptoDeferredInit(keystore, databaseKey.bytes, null)
             return CoreCrypto(cc)
         }
     }

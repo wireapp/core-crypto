@@ -127,10 +127,10 @@ sealed class CoreCryptoException: kotlin.Exception() {
 
 fun com.wire.crypto.uniffi.CoreCryptoException.lift() =
     when (this) {
-        is com.wire.crypto.uniffi.CoreCryptoException.ClientException -> CoreCryptoException.ClientException(this.v1)
-        is com.wire.crypto.uniffi.CoreCryptoException.E2eiException -> CoreCryptoException.E2eiException(this.v1)
         is com.wire.crypto.uniffi.CoreCryptoException.Mls -> CoreCryptoException.Mls(this.v1.lift())
         is com.wire.crypto.uniffi.CoreCryptoException.Proteus -> CoreCryptoException.Proteus(this.v1.lift())
+        is com.wire.crypto.uniffi.CoreCryptoException.E2ei -> CoreCryptoException.E2eiException(this.v1)
+        is com.wire.crypto.uniffi.CoreCryptoException.TransactionFailed -> CoreCryptoException.Other(this.v1)
         is com.wire.crypto.uniffi.CoreCryptoException.Other -> CoreCryptoException.Other(this.v1)
     }
 

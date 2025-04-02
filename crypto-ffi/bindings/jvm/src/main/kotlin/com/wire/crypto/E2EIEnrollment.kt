@@ -241,7 +241,7 @@ class E2EIEnrollment(private val delegate: com.wire.crypto.uniffi.E2eiEnrollment
      * @see https://www.rfc-editor.org/rfc/rfc8555.html#section-7.5.1
      */
     suspend fun contextOidcChallengeResponse(cc: CoreCryptoContext, challenge: JsonRawData) =
-        delegate.contextNewOidcChallengeResponse(cc.lower(), challenge)
+        delegate.newOidcChallengeResponse(cc.lower(), challenge)
 
     /**
      * Verifies that the previous challenge has been completed.
