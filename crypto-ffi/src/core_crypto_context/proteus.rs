@@ -146,7 +146,7 @@ impl CoreCryptoContext {
 
     /// See [core_crypto::context::CentralContext::proteus_reload_sessions]
     pub async fn proteus_reload_sessions(&self) -> CoreCryptoResult<()> {
-        proteus_impl!({ Ok(self.context.proteus_reload_sessions().await?) })
+        proteus_impl!({ self.inner.proteus_reload_sessions().await.map_err(Into::into) })
     }
 }
 
