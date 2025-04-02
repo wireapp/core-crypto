@@ -20,6 +20,7 @@
     "esModuleInterop": true,
     "types": ["node", "@wdio/globals/types", "@types/mocha"],
     "skipLibCheck": true,
+    "resolveJsonModule": true,
     "forceConsistentCasingInFileNames": true
   },
   "exclude": [
