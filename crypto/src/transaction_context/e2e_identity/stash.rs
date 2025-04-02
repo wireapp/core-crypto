@@ -1,43 +1,8 @@
-use openmls_traits::{OpenMlsCryptoProvider, random::OpenMlsRand};
-
 use super::Result;
+use crate::RecursiveError;
+use crate::e2e_identity::EnrollmentHandle;
 use crate::prelude::E2eiEnrollment;
 use crate::transaction_context::TransactionContext;
-use crate::{KeystoreError, MlsError, RecursiveError};
-use core_crypto_keystore::CryptoKeystoreMls;
-use mls_crypto_provider::MlsCryptoProvider;
-
-/// A unique identifier for an enrollment a consumer can use to fetch it from the keystore when he
-/// wants to resume the process
-pub(crate) type EnrollmentHandle = Vec<u8>;
-
-impl E2eiEnrollment {
-    pub(crate) async fn stash(self, backend: &MlsCryptoProvider) -> Result<EnrollmentHandle> {
-        // should be enough to prevent collisions
-        const HANDLE_SIZE: usize = 32;
-
-        let content = serde_json::to_vec(&self)?;
-        let handle = backend
-            .crypto()
-            .random_vec(HANDLE_SIZE)
-            .map_err(MlsError::wrap("generating random vector of bytes"))?;
-        backend
-            .key_store()
-            .save_e2ei_enrollment(&handle, &content)
-            .await
-            .map_err(KeystoreError::wrap("saving e2ei enrollment"))?;
-        Ok(handle)
-    }
-
-    pub(crate) async fn stash_pop(backend: &MlsCryptoProvider, handle: EnrollmentHandle) -> Result<Self> {
-        let content = backend
-            .key_store()
-            .pop_e2ei_enrollment(&handle)
-            .await
-            .map_err(KeystoreError::wrap("popping e2ei enrollment"))?;
-        Ok(serde_json::from_slice(&content)?)
-    }
-}
 
 impl TransactionContext {
     /// Allows persisting an active enrollment (for example while redirecting the user during OAuth)
@@ -54,9 +19,11 @@ impl TransactionContext {
                 &self
                     .mls_provider()
                     .await
-                    .map_err(RecursiveError::root("getting mls provider"))?,
+                    .map_err(RecursiveError::transaction("getting mls provider"))?,
             )
             .await
+            .map_err(RecursiveError::e2e_identity("stashing enrollment"))
+            .map_err(Into::into)
     }
 
     /// Fetches the persisted enrollment and deletes it from the keystore
@@ -68,25 +35,25 @@ impl TransactionContext {
             &self
                 .mls_provider()
                 .await
-                .map_err(RecursiveError::root("getting mls provider"))?,
+                .map_err(RecursiveError::transaction("getting mls provider"))?,
             handle,
         )
         .await
+        .map_err(RecursiveError::e2e_identity("popping stashed enrollment"))
+        .map_err(Into::into)
     }
 }
 
 #[cfg(test)]
 mod tests {
-
-    use mls_crypto_provider::MlsCryptoProvider;
-    use wasm_bindgen_test::*;
-
     use crate::{
         e2e_identity::id::WireQualifiedClientId,
-        e2e_identity::tests::*,
+        e2e_identity::test_utils::*,
         prelude::{E2eiEnrollment, INITIAL_KEYING_MATERIAL_COUNT},
         test_utils::{x509::X509TestChain, *},
     };
+    use mls_crypto_provider::MlsCryptoProvider;
+    use wasm_bindgen_test::*;
 
     use core_crypto_keystore::DatabaseKey;
 
@@ -150,15 +117,15 @@ mod tests {
                             let key = DatabaseKey::generate();
                             let backend = MlsCryptoProvider::try_new_in_memory(&key).await.unwrap();
                             backend.new_transaction().await.unwrap();
-                            let client_id = e.client_id.parse::<WireQualifiedClientId>().unwrap();
+                            let client_id = e.client_id().parse::<WireQualifiedClientId>().unwrap();
                             E2eiEnrollment::try_new(
                                 client_id.into(),
-                                e.display_name,
-                                e.handle,
-                                e.team,
+                                e.display_name().to_string(),
+                                e.handle().to_string(),
+                                e.team().map(ToString::to_string),
                                 1,
                                 &backend,
-                                e.ciphersuite,
+                                e.ciphersuite().clone(),
                                 None,
                                 #[cfg(not(target_family = "wasm"))]
                                 None,

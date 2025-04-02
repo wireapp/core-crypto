@@ -1,7 +1,6 @@
 use super::{Error, Result};
 use crate::{
-    KeystoreError, RecursiveError, e2e_identity::init_certificates::NewCrlDistributionPoints,
-    transaction_context::TransactionContext,
+    KeystoreError, RecursiveError, e2e_identity::NewCrlDistributionPoints, transaction_context::TransactionContext,
 };
 use core_crypto_keystore::{connection::FetchFromDatabase, entities::E2eiCrl};
 use mls_crypto_provider::MlsCryptoProvider;

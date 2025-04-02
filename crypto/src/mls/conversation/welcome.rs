@@ -3,7 +3,7 @@ use std::borrow::BorrowMut;
 use super::{Error, Result};
 use crate::{
     LeafError, MlsError, RecursiveError,
-    e2e_identity::init_certificates::NewCrlDistributionPoints,
+    e2e_identity::NewCrlDistributionPoints,
     group_store::GroupStore,
     mls::credential::crl::{extract_crl_uris_from_group, get_new_crl_distribution_points},
     prelude::{ConversationId, MlsConversation, MlsConversationConfiguration, MlsCustomConfiguration},

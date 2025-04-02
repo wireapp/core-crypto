@@ -7,7 +7,7 @@ use crate::mls::credential::CredentialBundle;
 use crate::prelude::MlsCredentialType;
 use crate::{
     LeafError, MlsError, MlsTransportResponse, RecursiveError,
-    e2e_identity::init_certificates::NewCrlDistributionPoints,
+    e2e_identity::NewCrlDistributionPoints,
     mls::{
         conversation::{ConversationGuard, Result, commit::MlsCommitBundle},
         credential::crl::{extract_crl_uris_from_credentials, get_new_crl_distribution_points},

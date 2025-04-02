@@ -1,35 +1,28 @@
-use openmls_traits::OpenMlsCryptoProvider;
-use std::collections::HashMap;
-
+use crate::{
+    KeystoreError, MlsError,
+    e2e_identity::{crypto::E2eiSignatureKeypair, id::QualifiedE2eiClientId},
+    prelude::{MlsCiphersuite, id::ClientId},
+};
+use core_crypto_keystore::CryptoKeystoreMls as _;
+use mls_crypto_provider::MlsCryptoProvider;
+use openmls_traits::OpenMlsCryptoProvider as _;
+use openmls_traits::random::OpenMlsRand as _;
 use wire_e2e_identity::prelude::{E2eiAcmeAuthorization, RustyE2eIdentity};
 use zeroize::Zeroize;
 
-use mls_crypto_provider::MlsCryptoProvider;
-
-use crate::{
-    RecursiveError,
-    e2e_identity::{crypto::E2eiSignatureKeypair, id::QualifiedE2eiClientId},
-    mls::credential::x509::CertificatePrivateKey,
-    prelude::{CertificateBundle, MlsCiphersuite, id::ClientId, identifier::ClientIdentifier},
-    transaction_context::TransactionContext,
-};
-
-pub(crate) mod conversation_state;
 mod crypto;
 pub(crate) mod device_status;
-pub mod enabled;
 mod error;
 pub(crate) mod id;
 pub(crate) mod identity;
-pub(crate) mod init_certificates;
+mod pki_env;
+pub(crate) use pki_env::restore_pki_env;
+pub use pki_env::{E2eiDumpedPkiEnv, NewCrlDistributionPoints};
 #[cfg(not(target_family = "wasm"))]
 pub(crate) mod refresh_token;
-pub(crate) mod rotate;
-pub(crate) mod stash;
 pub mod types;
 
 pub use error::{Error, Result};
-pub use init_certificates::{E2eiDumpedPkiEnv, NewCrlDistributionPoints};
 
 type Json = Vec<u8>;
 
@@ -40,88 +33,6 @@ pub struct CrlRegistration {
     pub dirty: bool,
     /// Optional expiration timestamp
     pub expiration: Option<u64>,
-}
-
-impl TransactionContext {
-    /// Creates an enrollment instance with private key material you can use in order to fetch
-    /// a new x509 certificate from the acme server.
-    ///
-    /// # Parameters
-    /// * `client_id` - client identifier e.g. `b7ac11a4-8f01-4527-af88-1c30885a7931:6add501bacd1d90e@example.com`
-    /// * `display_name` - human readable name displayed in the application e.g. `Smith, Alice M (QA)`
-    /// * `handle` - user handle e.g. `alice.smith.qa@example.com`
-    /// * `expiry_sec` - generated x509 certificate expiry in seconds
-    pub async fn e2ei_new_enrollment(
-        &self,
-        client_id: ClientId,
-        display_name: String,
-        handle: String,
-        team: Option<String>,
-        expiry_sec: u32,
-        ciphersuite: MlsCiphersuite,
-    ) -> Result<E2eiEnrollment> {
-        let signature_keypair = None; // fresh install without a Basic client. Supplying None will generate a new keypair
-        E2eiEnrollment::try_new(
-            client_id,
-            display_name,
-            handle,
-            team,
-            expiry_sec,
-            &self
-                .mls_provider()
-                .await
-                .map_err(RecursiveError::root("getting mls provider"))?,
-            ciphersuite,
-            signature_keypair,
-            #[cfg(not(target_family = "wasm"))]
-            None, // fresh install so no refresh token registered yet
-        )
-    }
-
-    /// Parses the ACME server response from the endpoint fetching x509 certificates and uses it
-    /// to initialize the MLS client with a certificate
-    pub async fn e2ei_mls_init_only(
-        &self,
-        enrollment: &mut E2eiEnrollment,
-        certificate_chain: String,
-        nb_init_key_packages: Option<usize>,
-    ) -> Result<NewCrlDistributionPoints> {
-        let sk = enrollment.get_sign_key_for_mls()?;
-        let cs = enrollment.ciphersuite;
-        let certificate_chain = enrollment
-            .certificate_response(
-                certificate_chain,
-                self.mls_provider()
-                    .await
-                    .map_err(RecursiveError::root("getting mls provider"))?
-                    .authentication_service()
-                    .borrow()
-                    .await
-                    .as_ref()
-                    .ok_or(Error::PkiEnvironmentUnset)?,
-            )
-            .await?;
-
-        let crl_new_distribution_points = self
-            .extract_dp_on_init(&certificate_chain[..])
-            .await
-            .map_err(RecursiveError::mls_credential("extracting dp on init"))?;
-
-        let private_key = CertificatePrivateKey {
-            value: sk,
-            signature_scheme: cs.signature_algorithm(),
-        };
-
-        let cert_bundle = CertificateBundle {
-            certificate_chain,
-            private_key,
-        };
-        let identifier = ClientIdentifier::X509(HashMap::from([(cs.signature_algorithm(), cert_bundle)]));
-        self.mls_init(identifier, vec![cs], nb_init_key_packages)
-            .await
-            .map_err(RecursiveError::mls("initializing mls"))?;
-        Ok(crl_new_distribution_points)
-    }
 }
 
 /// Wire end to end identity solution for fetching a x509 certificate which identifies a client.
@@ -152,6 +63,10 @@ impl std::ops::Deref for E2eiEnrollment {
         &self.delegate
     }
 }
+
+/// A unique identifier for an enrollment a consumer can use to fetch it from the keystore when he
+/// wants to resume the process
+pub(crate) type EnrollmentHandle = Vec<u8>;
 
 impl E2eiEnrollment {
     /// Builds an instance holding private key material. This instance has to be used in the whole
@@ -202,6 +117,10 @@ impl E2eiEnrollment {
             #[cfg(not(target_family = "wasm"))]
             refresh_token,
         })
+    }
+
+    pub(crate) fn ciphersuite(&self) -> &MlsCiphersuite {
+        &self.ciphersuite
     }
 
     /// Parses the response from `GET /acme/{provisioner-name}/directory`.
@@ -557,7 +476,7 @@ impl E2eiEnrollment {
         Ok(certificate)
     }
 
-    async fn certificate_response(
+    pub(crate) async fn certificate_response(
         &mut self,
         certificate_chain: String,
         env: &wire_e2e_identity::prelude::x509::revocation::PkiEnvironment,
@@ -577,39 +496,80 @@ impl E2eiEnrollment {
 
         Ok(certificates)
     }
+
+    pub(crate) async fn stash(self, backend: &MlsCryptoProvider) -> Result<EnrollmentHandle> {
+        // should be enough to prevent collisions
+        const HANDLE_SIZE: usize = 32;
+
+        let content = serde_json::to_vec(&self)?;
+        let handle = backend
+            .crypto()
+            .random_vec(HANDLE_SIZE)
+            .map_err(MlsError::wrap("generating random vector of bytes"))?;
+        backend
+            .key_store()
+            .save_e2ei_enrollment(&handle, &content)
+            .await
+            .map_err(KeystoreError::wrap("saving e2ei enrollment"))?;
+        Ok(handle)
+    }
+
+    pub(crate) async fn stash_pop(backend: &MlsCryptoProvider, handle: EnrollmentHandle) -> Result<Self> {
+        let content = backend
+            .key_store()
+            .pop_e2ei_enrollment(&handle)
+            .await
+            .map_err(KeystoreError::wrap("popping e2ei enrollment"))?;
+        Ok(serde_json::from_slice(&content)?)
+    }
 }
 
 #[cfg(test)]
-// This is pub(crate), to make constants below usable
-pub(crate) mod tests {
-    use itertools::Itertools;
-    use mls_crypto_provider::PkiKeypair;
-
-    #[cfg(not(target_family = "wasm"))]
-    use openmls_traits::OpenMlsCryptoProvider;
-    use serde_json::json;
-    use wasm_bindgen_test::*;
-
-    use crate::mls::conversation::Conversation as _;
-    #[cfg(not(target_family = "wasm"))]
+pub mod test_utils {
+    use super::*;
     use crate::{
         RecursiveError,
-        e2e_identity::{Error, refresh_token::RefreshToken},
-    };
-    use crate::{
-        e2e_identity::{Result, id::QualifiedE2eiClientId, tests::x509::X509TestChain},
-        prelude::*,
-        test_utils::{context::TEAM, *},
+        prelude::{CertificateBundle, MlsCredentialType},
+        test_utils::{ClientContext, TestCase, context::TEAM, x509::X509TestChain},
         transaction_context::TransactionContext,
     };
-
-    wasm_bindgen_test_configure!(run_in_browser);
+    use itertools::Itertools as _;
+    use mls_crypto_provider::PkiKeypair;
+    use openmls::prelude::SignatureScheme;
+    #[cfg(not(target_family = "wasm"))]
+    use refresh_token::RefreshToken;
+    use serde_json::json;
 
     pub(crate) const E2EI_DISPLAY_NAME: &str = "Alice Smith";
     pub(crate) const E2EI_HANDLE: &str = "alice_wire";
     pub(crate) const E2EI_CLIENT_ID: &str = "bd4c7053-1c5a-4020-9559-cd7bf7961954:4959bc6ab12f2846@world.com";
     pub(crate) const E2EI_CLIENT_ID_URI: &str = "vUxwUxxaQCCVWc1795YZVA!4959bc6ab12f2846@world.com";
     pub(crate) const E2EI_EXPIRY: u32 = 90 * 24 * 3600;
+    pub(crate) const NEW_HANDLE: &str = "new_alice_wire";
+    pub(crate) const NEW_DISPLAY_NAME: &str = "New Alice Smith";
+
+    impl E2eiEnrollment {
+        #[cfg(not(target_family = "wasm"))]
+        pub(crate) fn refresh_token(&self) -> Option<&RefreshToken> {
+            self.refresh_token.as_ref()
+        }
+
+        pub(crate) fn display_name(&self) -> &str {
+            &self.display_name
+        }
+
+        pub(crate) fn handle(&self) -> &str {
+            &self.handle
+        }
+
+        pub(crate) fn client_id(&self) -> &str {
+            &self.client_id
+        }
+
+        pub(crate) fn team(&self) -> Option<&str> {
+            self.team.as_deref()
+        }
+    }
 
     pub(crate) fn init_enrollment(wrapper: E2eiInitWrapper) -> InitFnReturn<'_> {
         Box::pin(async move {
@@ -624,11 +584,11 @@ pub(crate) mod tests {
                 cs,
             )
             .await
+            .map_err(RecursiveError::transaction("creating new enrollment"))
+            .map_err(Into::into)
         })
     }
 
-    pub(crate) const NEW_HANDLE: &str = "new_alice_wire";
-    pub(crate) const NEW_DISPLAY_NAME: &str = "New Alice Smith";
     pub(crate) fn init_activation_or_rotation(wrapper: E2eiInitWrapper) -> InitFnReturn<'_> {
         Box::pin(async move {
             let E2eiInitWrapper { context: cc, case } = wrapper;
@@ -655,62 +615,38 @@ pub(crate) mod tests {
                     .await
                 }
             }
+            .map_err(RecursiveError::transaction("creating new enrollment"))
+            .map_err(Into::into)
         })
     }
 
-    #[apply(all_cred_cipher)]
-    #[wasm_bindgen_test]
-    async fn e2e_identity_should_work(case: TestCase) {
-        run_test_wo_clients(case.clone(), move |mut cc| {
-            Box::pin(async move {
-                let x509_test_chain = X509TestChain::init_empty(case.signature_scheme());
+    pub(crate) async fn failsafe_ctx(
+        ctxs: &mut [&mut ClientContext],
+        sc: SignatureScheme,
+    ) -> std::sync::Arc<Option<X509TestChain>> {
+        let mut found_test_chain = None;
+        for ctx in ctxs.iter() {
+            if ctx.x509_test_chain.is_some() {
+                found_test_chain.replace(ctx.x509_test_chain.clone());
+                break;
+            }
+        }
 
-                let is_renewal = false;
+        let found_test_chain = found_test_chain.unwrap_or_else(|| Some(X509TestChain::init_empty(sc)).into());
 
-                let (mut enrollment, cert) = e2ei_enrollment(
-                    &mut cc,
-                    &case,
-                    &x509_test_chain,
-                    Some(E2EI_CLIENT_ID_URI),
-                    is_renewal,
-                    init_enrollment,
-                    noop_restore,
-                )
-                .await
-                .unwrap();
+        // Propagate the chain
+        for ctx in ctxs.iter_mut() {
+            if ctx.x509_test_chain.is_none() {
+                ctx.replace_x509_chain(found_test_chain.clone());
+            }
+        }
 
-                cc.context
-                    .e2ei_mls_init_only(&mut enrollment, cert, Some(INITIAL_KEYING_MATERIAL_COUNT))
-                    .await
-                    .unwrap();
+        let x509_test_chain = found_test_chain.as_ref().as_ref().unwrap();
 
-                // verify the created client can create a conversation
-                let id = conversation_id();
-                cc.context
-                    .new_conversation(&id, MlsCredentialType::X509, case.cfg.clone())
-                    .await
-                    .unwrap();
-                cc.context
-                    .conversation(&id)
-                    .await
-                    .unwrap()
-                    .encrypt_message("Hello e2e identity !")
-                    .await
-                    .unwrap();
-                assert_eq!(
-                    cc.context
-                        .conversation(&id)
-                        .await
-                        .unwrap()
-                        .e2ei_conversation_state()
-                        .await
-                        .unwrap(),
-                    E2eiConversationState::Verified
-                );
-                assert!(cc.context.e2ei_is_enabled(case.signature_scheme()).await.unwrap());
-            })
-        })
-        .await
+        for ctx in ctxs {
+            let _ = x509_test_chain.register_with_central(&ctx.context).await;
+        }
+        found_test_chain
     }
 
     pub(crate) type RestoreFnReturn<'a> = std::pin::Pin<Box<dyn std::future::Future<Output = E2eiEnrollment> + 'a>>;
@@ -746,7 +682,7 @@ pub(crate) mod tests {
                 .context
                 .mls_provider()
                 .await
-                .map_err(RecursiveError::root("getting mls provider"))?;
+                .map_err(RecursiveError::transaction("getting mls provider"))?;
             let keystore = backend.key_store();
             if is_renewal {
                 let initial_refresh_token =
@@ -769,10 +705,10 @@ pub(crate) mod tests {
                 .context
                 .mls_provider()
                 .await
-                .map_err(RecursiveError::root("getting mls provider"))?;
+                .map_err(RecursiveError::transaction("getting mls provider"))?;
             let keystore = backend.key_store();
             if is_renewal {
-                assert!(enrollment.refresh_token.is_some());
+                assert!(enrollment.refresh_token().is_some());
                 assert!(RefreshToken::find(keystore).await.is_ok());
             } else {
                 assert!(matches!(
@@ -783,7 +719,7 @@ pub(crate) mod tests {
             }
         }
 
-        let (display_name, handle) = (enrollment.display_name.clone(), &enrollment.handle.clone());
+        let (display_name, handle) = (enrollment.display_name.clone(), enrollment.handle.clone());
 
         let directory = json!({
             "newNonce": "https://example.com/acme/new-nonce",
@@ -943,7 +879,7 @@ pub(crate) mod tests {
                 .context
                 .mls_provider()
                 .await
-                .map_err(RecursiveError::root("getting mls provider"))?;
+                .map_err(RecursiveError::transaction("getting mls provider"))?;
             let keystore = backend.key_store();
             enrollment
                 .new_oidc_challenge_response(&ctx.context.mls_provider().await.unwrap(), oidc_chall_resp)
@@ -1019,9 +955,9 @@ pub(crate) mod tests {
 
         let existing_keypair = PkiKeypair::new(case.signature_scheme(), enrollment.sign_sk.to_vec()).unwrap();
 
-        let client_id = QualifiedE2eiClientId::from_str_unchecked(enrollment.client_id.as_str());
+        let client_id = QualifiedE2eiClientId::from_str_unchecked(enrollment.client_id());
         let cert = CertificateBundle::new(
-            handle,
+            &handle,
             &display_name,
             Some(&client_id),
             Some(existing_keypair),

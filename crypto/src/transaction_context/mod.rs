@@ -5,14 +5,16 @@ use crate::mls::HasClientAndProvider;
 #[cfg(feature = "proteus")]
 use crate::proteus::ProteusCentral;
 use crate::{
-    CoreCrypto, Error, KeystoreError, MlsError, MlsTransport, RecursiveError, Result,
+    CoreCrypto, KeystoreError, MlsError, MlsTransport, RecursiveError,
     group_store::GroupStore,
     prelude::{Client, MlsConversation},
 };
 use async_lock::{Mutex, RwLock, RwLockReadGuardArc, RwLockWriteGuardArc};
 use core_crypto_keystore::{CryptoKeystoreError, connection::FetchFromDatabase, entities::ConsumerData};
+pub use error::{Error, Result};
 use mls_crypto_provider::{CryptoKeystore, MlsCryptoProvider};
 use std::{ops::Deref, sync::Arc};
+pub mod e2e_identity;
 
 /// This struct provides transactional support for Core Crypto.
 ///
@@ -61,14 +63,14 @@ impl HasClientAndProvider for TransactionContext {
     async fn client(&self) -> crate::mls::Result<Client> {
         self.mls_client()
             .await
-            .map_err(RecursiveError::root("getting mls client"))
+            .map_err(RecursiveError::transaction("getting mls client"))
             .map_err(Into::into)
     }
 
     async fn mls_provider(&self) -> crate::mls::Result<MlsCryptoProvider> {
         self.mls_provider()
             .await
-            .map_err(RecursiveError::root("getting mls provider"))
+            .map_err(RecursiveError::transaction("getting mls provider"))
             .map_err(Into::into)
     }
 }

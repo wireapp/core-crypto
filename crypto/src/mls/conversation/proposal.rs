@@ -12,7 +12,7 @@ use mls_crypto_provider::MlsCryptoProvider;
 use super::{Error, Result};
 use crate::{
     MlsError, RecursiveError,
-    e2e_identity::init_certificates::NewCrlDistributionPoints,
+    e2e_identity::NewCrlDistributionPoints,
     mls::credential::crl::{extract_crl_uris_from_credentials, get_new_crl_distribution_points},
     prelude::{Client, MlsConversation, MlsProposalRef},
 };

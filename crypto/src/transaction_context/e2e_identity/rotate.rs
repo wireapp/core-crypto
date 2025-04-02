@@ -1,9 +1,9 @@
-use super::{Error, Result};
+use super::{error::Error, error::Result};
 #[cfg(not(target_family = "wasm"))]
 use crate::e2e_identity::refresh_token::RefreshToken;
 use crate::{
     MlsError, RecursiveError,
-    e2e_identity::init_certificates::NewCrlDistributionPoints,
+    e2e_identity::NewCrlDistributionPoints,
     mls::credential::{ext::CredentialExt, x509::CertificatePrivateKey},
     prelude::{CertificateBundle, E2eiEnrollment, MlsCiphersuite, MlsCredentialType},
     transaction_context::TransactionContext,
@@ -29,18 +29,22 @@ impl TransactionContext {
         let mls_provider = self
             .mls_provider()
             .await
-            .map_err(RecursiveError::root("getting mls provider"))?;
+            .map_err(RecursiveError::transaction("getting mls provider"))?;
         // look for existing credential of type basic. If there isn't, then this method has been misused
         let cb = self
             .mls_client()
             .await
-            .map_err(RecursiveError::root("getting mls client"))?
+            .map_err(RecursiveError::transaction("getting mls client"))?
             .find_most_recent_credential_bundle(ciphersuite.signature_algorithm(), MlsCredentialType::Basic)
             .await
             .map_err(|_| Error::MissingExistingClient(MlsCredentialType::Basic))?;
         let client_id = cb.credential().identity().into();
 
-        let sign_keypair = Some((&cb.signature_key).try_into()?);
+        let sign_keypair = Some(
+            cb.signature_key()
+                .try_into()
+                .map_err(RecursiveError::e2e_identity("creating E2eiSignatureKeypair"))?,
+        );
 
         E2eiEnrollment::try_new(
             client_id,
@@ -54,6 +58,8 @@ impl TransactionContext {
             #[cfg(not(target_family = "wasm"))]
             None, // no x509 credential yet at this point so no OIDC authn yet so no refresh token to restore
         )
+        .map_err(RecursiveError::e2e_identity("creating new enrollment"))
+        .map_err(Into::into)
     }
 
     /// Generates an E2EI enrollment instance for a E2EI client (with a X509 certificate credential)
@@ -72,17 +78,21 @@ impl TransactionContext {
         let mls_provider = self
             .mls_provider()
             .await
-            .map_err(RecursiveError::root("getting mls provider"))?;
+            .map_err(RecursiveError::transaction("getting mls provider"))?;
         // look for existing credential of type x509. If there isn't, then this method has been misused
         let cb = self
             .mls_client()
             .await
-            .map_err(RecursiveError::root("getting mls client"))?
+            .map_err(RecursiveError::transaction("getting mls client"))?
             .find_most_recent_credential_bundle(ciphersuite.signature_algorithm(), MlsCredentialType::X509)
             .await
             .map_err(|_| Error::MissingExistingClient(MlsCredentialType::X509))?;
         let client_id = cb.credential().identity().into();
-        let sign_keypair = Some((&cb.signature_key).try_into()?);
+        let sign_keypair = Some(
+            cb.signature_key()
+                .try_into()
+                .map_err(RecursiveError::e2e_identity("creating E2eiSignatureKeypair"))?,
+        );
         let existing_identity = cb
             .to_mls_credential_with_key()
             .extract_identity(ciphersuite, None)
@@ -103,8 +113,14 @@ impl TransactionContext {
             ciphersuite,
             sign_keypair,
             #[cfg(not(target_family = "wasm"))]
-            Some(RefreshToken::find(&mls_provider.keystore()).await?), // Since we are renewing an e2ei certificate we MUST have already generated one hence we MUST already have done an OIDC authn and gotten a refresh token from it we also MUST have stored in CoreCrypto
+            Some(
+                RefreshToken::find(&mls_provider.keystore())
+                    .await
+                    .map_err(RecursiveError::e2e_identity("finding refreh token"))?,
+            ), // Since we are renewing an e2ei certificate we MUST have already generated one hence we MUST already have done an OIDC authn and gotten a refresh token from it we also MUST have stored in CoreCrypto
         )
+        .map_err(RecursiveError::e2e_identity("creating new enrollment"))
+        .map_err(Into::into)
     }
 
     /// Saves a new X509 credential. Requires first
@@ -123,21 +139,24 @@ impl TransactionContext {
         enrollment: &mut E2eiEnrollment,
         certificate_chain: String,
     ) -> Result<NewCrlDistributionPoints> {
-        let sk = enrollment.get_sign_key_for_mls()?;
-        let cs = enrollment.ciphersuite;
+        let sk = enrollment
+            .get_sign_key_for_mls()
+            .map_err(RecursiveError::e2e_identity("getting sign key for mls"))?;
+        let cs = *enrollment.ciphersuite();
         let certificate_chain = enrollment
             .certificate_response(
                 certificate_chain,
                 self.mls_provider()
                     .await
-                    .map_err(RecursiveError::root("getting mls provider"))?
+                    .map_err(RecursiveError::transaction("getting provider"))?
                     .authentication_service()
                     .borrow()
                     .await
                     .as_ref()
                     .ok_or(Error::PkiEnvironmentUnset)?,
             )
-            .await?;
+            .await
+            .map_err(RecursiveError::e2e_identity("getting certificate response"))?;
 
         let private_key = CertificatePrivateKey {
             value: sk,
@@ -156,14 +175,14 @@ impl TransactionContext {
         let client = &self
             .mls_client()
             .await
-            .map_err(RecursiveError::root("getting mls client"))?;
+            .map_err(RecursiveError::transaction("getting mls provider"))?;
 
         client
             .save_new_x509_credential_bundle(
                 &self
                     .mls_provider()
                     .await
-                    .map_err(RecursiveError::root("getting mls provider"))?
+                    .map_err(RecursiveError::transaction("getting mls provider"))?
                     .keystore(),
                 cs.signature_algorithm(),
                 cert_bundle,
@@ -181,13 +200,13 @@ impl TransactionContext {
         let keystore = self
             .keystore()
             .await
-            .map_err(RecursiveError::root("getting keystore"))?;
+            .map_err(RecursiveError::transaction("getting keystore"))?;
         let nb_kp = keystore.count::<MlsKeyPackage>().await?;
         let kps: Vec<KeyPackage> = keystore.mls_fetch_keypackages(nb_kp as u32).await?;
         let client = self
             .mls_client()
             .await
-            .map_err(RecursiveError::root("getting mls client"))?;
+            .map_err(RecursiveError::transaction("getting mls client"))?;
 
         let cb = client
             .find_most_recent_credential_bundle(signature_scheme, MlsCredentialType::X509)
@@ -199,7 +218,7 @@ impl TransactionContext {
         let provider = self
             .mls_provider()
             .await
-            .map_err(RecursiveError::root("getting mls provider"))?;
+            .map_err(RecursiveError::transaction("getting mls provider"))?;
         for kp in kps {
             let kp_cred = kp.leaf_node().credential().mls_credential();
             let local_cred = cb.credential().mls_credential();
@@ -218,62 +237,25 @@ impl TransactionContext {
 }
 
 #[cfg(test)]
-// This is pub(crate) because failsafe_ctx() is used in other modules
-pub(crate) mod tests {
-    use std::collections::HashSet;
-
+mod tests {
+    use super::*;
+    use crate::{
+        e2e_identity::test_utils as e2ei_utils, mls::credential::ext::CredentialExt,
+        prelude::key_package::INITIAL_KEYING_MATERIAL_COUNT, test_utils::*,
+    };
+    use core_crypto_keystore::entities::{EntityFindParams, MlsCredential};
     use openmls::prelude::SignaturePublicKey;
+    use std::collections::HashSet;
     use tls_codec::Deserialize;
     use wasm_bindgen_test::*;
-
-    use core_crypto_keystore::entities::{EntityFindParams, MlsCredential};
-
-    use crate::{
-        e2e_identity::tests::*,
-        mls::credential::ext::CredentialExt,
-        prelude::key_package::INITIAL_KEYING_MATERIAL_COUNT,
-        test_utils::{x509::X509TestChain, *},
-    };
-
-    use super::*;
 
     wasm_bindgen_test_configure!(run_in_browser);
 
     pub(crate) mod all {
-        use crate::test_utils::context::TEAM;
-        use openmls_traits::types::SignatureScheme;
+        use e2ei_utils::E2EI_EXPIRY;
 
         use super::*;
-
-        pub(crate) async fn failsafe_ctx(
-            ctxs: &mut [&mut ClientContext],
-            sc: SignatureScheme,
-        ) -> std::sync::Arc<Option<X509TestChain>> {
-            let mut found_test_chain = None;
-            for ctx in ctxs.iter() {
-                if ctx.x509_test_chain.is_some() {
-                    found_test_chain.replace(ctx.x509_test_chain.clone());
-                    break;
-                }
-            }
-
-            let found_test_chain = found_test_chain.unwrap_or_else(|| Some(X509TestChain::init_empty(sc)).into());
-
-            // Propagate the chain
-            for ctx in ctxs.iter_mut() {
-                if ctx.x509_test_chain.is_none() {
-                    ctx.replace_x509_chain(found_test_chain.clone());
-                }
-            }
-
-            let x509_test_chain = found_test_chain.as_ref().as_ref().unwrap();
-
-            for ctx in ctxs {
-                let _ = x509_test_chain.register_with_central(&ctx.context).await;
-            }
-
-            found_test_chain
-        }
+        use crate::test_utils::context::TEAM;
 
         #[apply(all_cred_cipher)]
         #[wasm_bindgen_test]
@@ -288,7 +270,7 @@ pub(crate) mod tests {
 
                         let mut ids = vec![];
 
-                        let x509_test_chain_arc = failsafe_ctx(
+                        let x509_test_chain_arc = e2ei_utils::failsafe_ctx(
                             &mut [&mut alice_central, &mut bob_central, &mut charlie_central],
                             case.signature_scheme(),
                         )
@@ -325,14 +307,14 @@ pub(crate) mod tests {
 
                         let is_renewal = case.credential_type == MlsCredentialType::X509;
 
-                        let (mut enrollment, cert) = e2ei_enrollment(
+                        let (mut enrollment, cert) = e2ei_utils::e2ei_enrollment(
                             &mut alice_central,
                             &case,
                             x509_test_chain,
                             None,
                             is_renewal,
-                            init_activation_or_rotation,
-                            noop_restore,
+                            e2ei_utils::init_activation_or_rotation,
+                            e2ei_utils::noop_restore,
                         )
                         .await
                         .unwrap();
@@ -351,7 +333,7 @@ pub(crate) mod tests {
                         let result = alice_central
                             .create_key_packages_and_update_credential_in_all_conversations(
                                 &cb,
-                                enrollment.ciphersuite,
+                                *enrollment.ciphersuite(),
                                 NB_KEY_PACKAGE,
                             )
                             .await
@@ -376,7 +358,11 @@ pub(crate) mod tests {
                             alice_central.verify_sender_identity(&case, &decrypted).await;
 
                             alice_central
-                                .verify_local_credential_rotated(&id, NEW_HANDLE, NEW_DISPLAY_NAME)
+                                .verify_local_credential_rotated(
+                                    &id,
+                                    e2ei_utils::NEW_HANDLE,
+                                    e2ei_utils::NEW_DISPLAY_NAME,
+                                )
                                 .await;
                         }
 
@@ -388,10 +374,13 @@ pub(crate) mod tests {
                         for c in new_credentials {
                             assert_eq!(c.credential.credential_type(), openmls::prelude::CredentialType::X509);
                             let identity = c.extract_identity(case.ciphersuite(), None).unwrap();
-                            assert_eq!(identity.x509_identity.as_ref().unwrap().display_name, NEW_DISPLAY_NAME);
+                            assert_eq!(
+                                identity.x509_identity.as_ref().unwrap().display_name,
+                                e2ei_utils::NEW_DISPLAY_NAME
+                            );
                             assert_eq!(
                                 identity.x509_identity.as_ref().unwrap().handle,
-                                format!("wireapp://%40{NEW_HANDLE}@world.com")
+                                format!("wireapp://%40{}@world.com", e2ei_utils::NEW_HANDLE)
                             );
                         }
 
@@ -493,7 +482,8 @@ pub(crate) mod tests {
         async fn should_restore_credentials_in_order(case: TestCase) {
             run_test_with_client_ids(case.clone(), ["alice"], move |[mut alice_central]| {
                 Box::pin(async move {
-                    let x509_test_chain_arc = failsafe_ctx(&mut [&mut alice_central], case.signature_scheme()).await;
+                    let x509_test_chain_arc =
+                        e2ei_utils::failsafe_ctx(&mut [&mut alice_central], case.signature_scheme()).await;
 
                     let x509_test_chain = x509_test_chain_arc.as_ref().as_ref().unwrap();
 
@@ -516,14 +506,14 @@ pub(crate) mod tests {
 
                     let is_renewal = case.credential_type == MlsCredentialType::X509;
 
-                    let (mut enrollment, cert) = e2ei_enrollment(
+                    let (mut enrollment, cert) = e2ei_utils::e2ei_enrollment(
                         &mut alice_central,
                         &case,
                         x509_test_chain,
                         None,
                         is_renewal,
-                        init_activation_or_rotation,
-                        noop_restore,
+                        e2ei_utils::init_activation_or_rotation,
+                        e2ei_utils::noop_restore,
                     )
                     .await
                     .unwrap();
@@ -543,10 +533,13 @@ pub(crate) mod tests {
                         .to_mls_credential_with_key()
                         .extract_identity(case.ciphersuite(), None)
                         .unwrap();
-                    assert_eq!(identity.x509_identity.as_ref().unwrap().display_name, NEW_DISPLAY_NAME);
+                    assert_eq!(
+                        identity.x509_identity.as_ref().unwrap().display_name,
+                        e2ei_utils::NEW_DISPLAY_NAME
+                    );
                     assert_eq!(
                         identity.x509_identity.as_ref().unwrap().handle,
-                        format!("wireapp://%40{NEW_HANDLE}@world.com")
+                        format!("wireapp://%40{}@world.com", e2ei_utils::NEW_HANDLE)
                     );
 
                     // but keeps her old one since it's referenced from some KeyPackages
@@ -601,10 +594,13 @@ pub(crate) mod tests {
                         .extract_identity(case.ciphersuite(), None)
                         .unwrap();
 
-                    assert_eq!(identity.x509_identity.as_ref().unwrap().display_name, NEW_DISPLAY_NAME);
+                    assert_eq!(
+                        identity.x509_identity.as_ref().unwrap().display_name,
+                        e2ei_utils::NEW_DISPLAY_NAME
+                    );
                     assert_eq!(
                         identity.x509_identity.as_ref().unwrap().handle,
-                        format!("wireapp://%40{NEW_HANDLE}@world.com")
+                        format!("wireapp://%40{}@world.com", e2ei_utils::NEW_HANDLE)
                     );
 
                     assert_eq!(new_client.identities_count().await.unwrap(), old_nb_identities);
@@ -621,8 +617,11 @@ pub(crate) mod tests {
                 ["alice", "bob"],
                 move |[mut alice_central, mut bob_central]| {
                     Box::pin(async move {
-                        let x509_test_chain_arc =
-                            failsafe_ctx(&mut [&mut alice_central, &mut bob_central], case.signature_scheme()).await;
+                        let x509_test_chain_arc = e2ei_utils::failsafe_ctx(
+                            &mut [&mut alice_central, &mut bob_central],
+                            case.signature_scheme(),
+                        )
+                        .await;
 
                         let x509_test_chain = x509_test_chain_arc.as_ref().as_ref().unwrap();
 
@@ -638,9 +637,9 @@ pub(crate) mod tests {
                         const ALICE_NEW_HANDLE: &str = "new_alice_wire";
                         const ALICE_NEW_DISPLAY_NAME: &str = "New Alice Smith";
 
-                        fn init_alice(wrapper: E2eiInitWrapper) -> InitFnReturn<'_> {
+                        fn init_alice(wrapper: e2ei_utils::E2eiInitWrapper) -> e2ei_utils::InitFnReturn<'_> {
                             Box::pin(async move {
-                                let E2eiInitWrapper { context: cc, case } = wrapper;
+                                let e2ei_utils::E2eiInitWrapper { context: cc, case } = wrapper;
                                 let cs = case.ciphersuite();
                                 match case.credential_type {
                                     MlsCredentialType::Basic => {
@@ -648,7 +647,7 @@ pub(crate) mod tests {
                                             ALICE_NEW_DISPLAY_NAME.to_string(),
                                             ALICE_NEW_HANDLE.to_string(),
                                             Some(TEAM.to_string()),
-                                            E2EI_EXPIRY,
+                                            e2ei_utils::E2EI_EXPIRY,
                                             cs,
                                         )
                                         .await
@@ -664,19 +663,21 @@ pub(crate) mod tests {
                                         .await
                                     }
                                 }
+                                .map_err(RecursiveError::transaction("creating new enrollment"))
+                                .map_err(Into::into)
                             })
                         }
 
                         let is_renewal = case.credential_type == MlsCredentialType::X509;
 
-                        let (mut enrollment, cert) = e2ei_enrollment(
+                        let (mut enrollment, cert) = e2ei_utils::e2ei_enrollment(
                             &mut alice_central,
                             &case,
                             x509_test_chain,
                             None,
                             is_renewal,
                             init_alice,
-                            noop_restore,
+                            e2ei_utils::noop_restore,
                         )
                         .await
                         .unwrap();
@@ -715,9 +716,9 @@ pub(crate) mod tests {
                         const BOB_NEW_HANDLE: &str = "new_bob_wire";
                         const BOB_NEW_DISPLAY_NAME: &str = "New Bob Smith";
 
-                        fn init_bob(wrapper: E2eiInitWrapper) -> InitFnReturn<'_> {
+                        fn init_bob(wrapper: e2ei_utils::E2eiInitWrapper) -> e2ei_utils::InitFnReturn<'_> {
                             Box::pin(async move {
-                                let E2eiInitWrapper { context: cc, case } = wrapper;
+                                let e2ei_utils::E2eiInitWrapper { context: cc, case } = wrapper;
                                 let cs = case.ciphersuite();
                                 match case.credential_type {
                                     MlsCredentialType::Basic => {
@@ -741,18 +742,20 @@ pub(crate) mod tests {
                                         .await
                                     }
                                 }
+                                .map_err(RecursiveError::transaction("creating new enrollment"))
+                                .map_err(Into::into)
                             })
                         }
                         let is_renewal = case.credential_type == MlsCredentialType::X509;
 
-                        let (mut enrollment, cert) = e2ei_enrollment(
+                        let (mut enrollment, cert) = e2ei_utils::e2ei_enrollment(
                             &mut bob_central,
                             &case,
                             x509_test_chain,
                             None,
                             is_renewal,
                             init_bob,
-                            noop_restore,
+                            e2ei_utils::noop_restore,
                         )
                         .await
                         .unwrap();

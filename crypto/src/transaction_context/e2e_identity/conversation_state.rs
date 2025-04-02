@@ -31,7 +31,7 @@ impl TransactionContext {
         let mls_provider = self
             .mls_provider()
             .await
-            .map_err(RecursiveError::root("getting mls provider"))?;
+            .map_err(RecursiveError::transaction("getting mls provider"))?;
         let auth_service = mls_provider.authentication_service();
         auth_service.refresh_time_of_interest().await;
         let cs = group_info.ciphersuite().into();
@@ -42,7 +42,7 @@ impl TransactionContext {
                 &self
                     .mls_provider()
                     .await
-                    .map_err(RecursiveError::root("getting mls provider"))?,
+                    .map_err(RecursiveError::transaction("getting mls provider"))?,
                 is_sender,
             )
             .await
@@ -75,7 +75,7 @@ impl TransactionContext {
                 &self
                     .mls_provider()
                     .await
-                    .map_err(RecursiveError::root("getting mls provider"))?,
+                    .map_err(RecursiveError::transaction("getting mls provider"))?,
                 false,
             )
             .await
@@ -83,7 +83,7 @@ impl TransactionContext {
         let mls_provider = self
             .mls_provider()
             .await
-            .map_err(RecursiveError::root("getting mls provider"))?;
+            .map_err(RecursiveError::transaction("getting mls provider"))?;
         let auth_service = mls_provider.authentication_service().borrow().await;
         Client::get_credential_in_use_in_ratchet_tree(cs, rt, credential_type, auth_service.as_ref())
             .await
@@ -94,15 +94,13 @@ impl TransactionContext {
 
 #[cfg(test)]
 mod tests {
-    use crate::e2e_identity::rotate::tests::all::failsafe_ctx;
-    use wasm_bindgen_test::*;
-
     use super::*;
     use crate::mls::conversation::Conversation as _;
     use crate::{
         prelude::{CertificateBundle, Client, MlsCredentialType},
         test_utils::*,
     };
+    use wasm_bindgen_test::*;
 
     wasm_bindgen_test_configure!(run_in_browser);
 
@@ -190,6 +188,8 @@ mod tests {
     #[apply(all_cred_cipher)]
     #[wasm_bindgen_test]
     async fn heterogeneous_conversation_should_be_not_verified(case: TestCase) {
+        use crate::e2e_identity::test_utils::failsafe_ctx;
+
         run_test_with_client_ids(
             case.clone(),
             ["alice", "bob"],

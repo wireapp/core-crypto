@@ -10,7 +10,7 @@ impl TransactionContext {
         let client = self
             .mls_client()
             .await
-            .map_err(RecursiveError::root("getting mls client"))?;
+            .map_err(RecursiveError::transaction("getting mls client"))?;
         client
             .e2ei_is_enabled(signature_scheme)
             .await
@@ -21,7 +21,8 @@ impl TransactionContext {
 
 #[cfg(test)]
 mod tests {
-    use crate::{RecursiveError, e2e_identity::error::Error, mls, prelude::MlsCredentialType, test_utils::*};
+    use super::super::Error;
+    use crate::{RecursiveError, mls, prelude::MlsCredentialType, test_utils::*};
     use openmls_traits::types::SignatureScheme;
     use wasm_bindgen_test::*;
 

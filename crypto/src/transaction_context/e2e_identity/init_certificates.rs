@@ -1,48 +1,20 @@
 use super::{Error, Result};
-use crate::{MlsError, RecursiveError, e2e_identity::CrlRegistration, transaction_context::TransactionContext};
+use crate::e2e_identity::E2eiDumpedPkiEnv;
+use crate::{
+    MlsError, RecursiveError,
+    e2e_identity::{CrlRegistration, NewCrlDistributionPoints, restore_pki_env},
+    transaction_context::TransactionContext,
+};
 use core_crypto_keystore::{
     connection::FetchFromDatabase,
     entities::{E2eiAcmeCA, E2eiCrl, E2eiIntermediateCert},
 };
 use openmls_traits::OpenMlsCryptoProvider;
-use std::collections::HashSet;
 use wire_e2e_identity::prelude::x509::{
     extract_crl_uris, extract_expiration_from_crl,
     revocation::{PkiEnvironment, PkiEnvironmentParams},
 };
-use x509_cert::der::{Decode, EncodePem, pem::LineEnding};
-
-/// New Certificate Revocation List distribution points.
-#[derive(Debug, Clone, derive_more::From, derive_more::Into, derive_more::Deref, derive_more::DerefMut)]
-pub struct NewCrlDistributionPoints(Option<HashSet<String>>);
-
-impl From<NewCrlDistributionPoints> for Option<Vec<String>> {
-    fn from(mut dp: NewCrlDistributionPoints) -> Self {
-        dp.take().map(|d| d.into_iter().collect())
-    }
-}
-
-impl IntoIterator for NewCrlDistributionPoints {
-    type Item = String;
-
-    type IntoIter = std::collections::hash_set::IntoIter<String>;
-
-    fn into_iter(self) -> Self::IntoIter {
-        let items = self.0.unwrap_or_default();
-        items.into_iter()
-    }
-}
-
-#[derive(Debug, Clone)]
-/// Dump of the PKI environemnt as PEM
-pub struct E2eiDumpedPkiEnv {
-    /// Root CA in use (i.e. Trust Anchor)
-    pub root_ca: String,
-    /// Intermediate CAs that are loaded
-    pub intermediates: Vec<String>,
-    /// CRLs registered in the PKI env
-    pub crls: Vec<String>,
-}
+use x509_cert::der::Decode;
 
 impl TransactionContext {
     /// See [Client::e2ei_is_pki_env_setup].
@@ -51,7 +23,7 @@ impl TransactionContext {
         Ok(self
             .mls_provider()
             .await
-            .map_err(RecursiveError::root("getting mls provider"))?
+            .map_err(RecursiveError::transaction("getting mls provider"))?
             .authentication_service()
             .is_env_setup()
             .await)
@@ -65,11 +37,14 @@ impl TransactionContext {
         let mls_provider = self
             .mls_provider()
             .await
-            .map_err(RecursiveError::root("getting mls provider"))?;
+            .map_err(RecursiveError::transaction("getting mls provider"))?;
         let Some(pki_env) = &*mls_provider.authentication_service().borrow().await else {
             return Ok(None);
         };
-        E2eiDumpedPkiEnv::from_pki_env(pki_env).await
+        E2eiDumpedPkiEnv::from_pki_env(pki_env)
+            .await
+            .map_err(RecursiveError::e2e_identity("dumping pki env"))
+            .map_err(Into::into)
     }
 
     /// Registers a Root Trust Anchor CA for the use in E2EI processing.
@@ -84,7 +59,7 @@ impl TransactionContext {
             if self
                 .mls_provider()
                 .await
-                .map_err(RecursiveError::root("getting mls provider"))?
+                .map_err(RecursiveError::transaction("getting mls provider"))?
                 .keystore()
                 .find_unique::<E2eiAcmeCA>()
                 .await
@@ -112,7 +87,7 @@ impl TransactionContext {
         let acme_ca = E2eiAcmeCA { content: cert_der };
         self.mls_provider()
             .await
-            .map_err(RecursiveError::root("getting mls provider"))?
+            .map_err(RecursiveError::transaction("getting mls provider"))?
             .keystore()
             .save(acme_ca)
             .await?;
@@ -128,15 +103,16 @@ impl TransactionContext {
             &self
                 .mls_provider()
                 .await
-                .map_err(RecursiveError::root("getting mls provider"))?
+                .map_err(RecursiveError::transaction("getting mls provider"))?
                 .keystore(),
         )
-        .await?
+        .await
+        .map_err(RecursiveError::e2e_identity("restoring pki env"))?
         {
             let provider = self
                 .mls_provider()
                 .await
-                .map_err(RecursiveError::root("getting mls provider"))?;
+                .map_err(RecursiveError::transaction("getting mls provider"))?;
             provider
                 .authentication_service()
                 .update_env(pki_env)
@@ -173,7 +149,7 @@ impl TransactionContext {
         let keystore = self
             .keystore()
             .await
-            .map_err(RecursiveError::root("getting keystore"))?;
+            .map_err(RecursiveError::transaction("getting keystore"))?;
         let trust_anchor = keystore.find_unique::<E2eiAcmeCA>().await?;
         let trust_anchor = x509_cert::Certificate::from_der(&trust_anchor.content)?;
 
@@ -194,7 +170,7 @@ impl TransactionContext {
             let provider = self
                 .mls_provider()
                 .await
-                .map_err(RecursiveError::root("getting mls provider"))?;
+                .map_err(RecursiveError::transaction("getting mls provider"))?;
             let auth_service_arc = provider.authentication_service().borrow().await;
             let Some(pki_env) = auth_service_arc.as_ref() else {
                 return Err(Error::PkiEnvironmentUnset);
@@ -232,7 +208,7 @@ impl TransactionContext {
             let provider = self
                 .mls_provider()
                 .await
-                .map_err(RecursiveError::root("getting mls provider"))?;
+                .map_err(RecursiveError::transaction("getting mls provider"))?;
             let auth_service_arc = provider.authentication_service().borrow().await;
             let Some(pki_env) = auth_service_arc.as_ref() else {
                 return Err(Error::PkiEnvironmentUnset);
@@ -245,7 +221,7 @@ impl TransactionContext {
         let ks = self
             .keystore()
             .await
-            .map_err(RecursiveError::root("getting keystore"))?;
+            .map_err(RecursiveError::transaction("getting keystore"))?;
 
         let dirty = ks
             .find::<E2eiCrl>(crl_dp.as_bytes())
@@ -270,86 +246,6 @@ impl TransactionContext {
 
         Ok(CrlRegistration { expiration, dirty })
     }
-}
-
-impl E2eiDumpedPkiEnv {
-    pub(crate) async fn from_pki_env(pki_env: &PkiEnvironment) -> Result<Option<E2eiDumpedPkiEnv>> {
-        let Some(root) = pki_env
-            .get_trust_anchors()
-            .map_err(Error::certificate_validation("getting pki trust anchors"))?
-            .pop()
-        else {
-            return Ok(None);
-        };
-
-        let x509_cert::anchor::TrustAnchorChoice::Certificate(root) = &root.decoded_ta else {
-            return Ok(None);
-        };
-
-        let root_ca = root.to_pem(LineEnding::LF)?;
-
-        let inner_intermediates = pki_env
-            .get_intermediates()
-            .map_err(Error::certificate_validation("getting pki intermediates"))?;
-
-        let mut intermediates = Vec::with_capacity(inner_intermediates.len());
-
-        for inter in inner_intermediates {
-            let pem_inter = inter.decoded_cert.to_pem(LineEnding::LF)?;
-            intermediates.push(pem_inter);
-        }
-
-        let inner_crls: Vec<Vec<u8>> = pki_env
-            .get_all_crls()
-            .map_err(Error::certificate_validation("getting all crls"))?;
-
-        let mut crls = Vec::with_capacity(inner_crls.len());
-        for crl in inner_crls.into_iter() {
-            let crl_pem = x509_cert::der::pem::encode_string("X509 CRL", LineEnding::LF, &crl)
-                .map_err(Error::certificate_validation("encoding crl title to pem"))?;
-            crls.push(crl_pem);
-        }
-
-        Ok(Some(E2eiDumpedPkiEnv {
-            root_ca,
-            intermediates,
-            crls,
-        }))
-    }
-}
-
-pub(crate) async fn restore_pki_env(data_provider: &impl FetchFromDatabase) -> Result<Option<PkiEnvironment>> {
-    let mut trust_roots = vec![];
-    let Ok(ta_raw) = data_provider.find_unique::<E2eiAcmeCA>().await else {
-        return Ok(None);
-    };
-
-    trust_roots.push(
-        x509_cert::Certificate::from_der(&ta_raw.content).map(x509_cert::anchor::TrustAnchorChoice::Certificate)?,
-    );
-
-    let intermediates = data_provider
-        .find_all::<E2eiIntermediateCert>(Default::default())
-        .await?
-        .into_iter()
-        .map(|inter| x509_cert::Certificate::from_der(&inter.content))
-        .collect::<Result<Vec<_>, _>>()?;
-
-    let crls = data_provider
-        .find_all::<E2eiCrl>(Default::default())
-        .await?
-        .into_iter()
-        .map(|crl| x509_cert::crl::CertificateList::from_der(&crl.content))
-        .collect::<Result<Vec<_>, _>>()?;
-
-    let params = PkiEnvironmentParams {
-        trust_roots: &trust_roots,
-        intermediates: &intermediates,
-        crls: &crls,
-        time_of_interest: None,
-    };
-
-    Ok(Some(PkiEnvironment::init(params)?))
 }
 
 #[cfg(test)]
