@@ -2,7 +2,7 @@ use super::{error::Error, error::Result};
 #[cfg(not(target_family = "wasm"))]
 use crate::e2e_identity::refresh_token::RefreshToken;
 use crate::{
-    MlsError, RecursiveError,
+    KeystoreError, MlsError, RecursiveError,
     e2e_identity::NewCrlDistributionPoints,
     mls::credential::{ext::CredentialExt, x509::CertificatePrivateKey},
     prelude::{CertificateBundle, E2eiEnrollment, MlsCiphersuite, MlsCredentialType},
@@ -201,8 +201,14 @@ impl TransactionContext {
             .keystore()
             .await
             .map_err(RecursiveError::transaction("getting keystore"))?;
-        let nb_kp = keystore.count::<MlsKeyPackage>().await?;
-        let kps: Vec<KeyPackage> = keystore.mls_fetch_keypackages(nb_kp as u32).await?;
+        let nb_kp = keystore
+            .count::<MlsKeyPackage>()
+            .await
+            .map_err(KeystoreError::wrap("counting key packages"))?;
+        let kps: Vec<KeyPackage> = keystore
+            .mls_fetch_keypackages(nb_kp as u32)
+            .await
+            .map_err(KeystoreError::wrap("fetching key packages"))?;
         let client = self
             .mls_client()
             .await

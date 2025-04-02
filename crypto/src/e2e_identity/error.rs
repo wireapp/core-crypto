@@ -3,8 +3,6 @@
 // We allow missing documentation in the error module because the types are generally self-descriptive.
 #![allow(missing_docs)]
 
-use core_crypto_keystore::CryptoKeystoreError;
-
 pub type Result<T, E = Error> = core::result::Result<T, E>;
 
 #[derive(Debug, thiserror::Error)]
@@ -21,8 +19,6 @@ pub enum Error {
     InvalidClientId,
     #[error("This function accepts a list of IDs as a parameter, but that list was empty")]
     EmptyInputIdList,
-    #[error("An error occurred while trying to persist the RefreshToken in the keystore")]
-    KeyStoreError(#[from] CryptoKeystoreError),
     #[error(transparent)]
     IdentityError(#[from] wire_e2e_identity::prelude::E2eIdentityError),
     #[error(transparent)]

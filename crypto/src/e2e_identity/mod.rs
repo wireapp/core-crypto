@@ -689,7 +689,10 @@ pub mod test_utils {
                     crate::e2e_identity::refresh_token::RefreshToken::from("initial-refresh-token".to_string());
                 let initial_refresh_token =
                     core_crypto_keystore::entities::E2eiRefreshToken::from(initial_refresh_token);
-                keystore.save(initial_refresh_token).await?;
+                keystore
+                    .save(initial_refresh_token)
+                    .await
+                    .map_err(KeystoreError::wrap("saving refresh token"))?;
             }
         }
 

@@ -4,7 +4,6 @@
 #![allow(missing_docs)]
 
 use crate::prelude::MlsCredentialType;
-use core_crypto_keystore::CryptoKeystoreError;
 
 pub type Result<T, E = Error> = core::result::Result<T, E>;
 
@@ -20,8 +19,6 @@ pub enum Error {
     TrustAnchorAlreadyRegistered,
     #[error("PKI Environment must be set before calling this function")]
     PkiEnvironmentUnset,
-    #[error(transparent)]
-    KeyStoreError(#[from] CryptoKeystoreError),
     #[error(transparent)]
     X509Error(#[from] wire_e2e_identity::prelude::x509::RustyX509CheckError),
     #[error(transparent)]

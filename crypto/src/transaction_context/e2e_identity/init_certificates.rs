@@ -1,7 +1,7 @@
 use super::{Error, Result};
 use crate::e2e_identity::E2eiDumpedPkiEnv;
 use crate::{
-    MlsError, RecursiveError,
+    KeystoreError, MlsError, RecursiveError,
     e2e_identity::{CrlRegistration, NewCrlDistributionPoints, restore_pki_env},
     transaction_context::TransactionContext,
 };
@@ -90,7 +90,8 @@ impl TransactionContext {
             .map_err(RecursiveError::transaction("getting mls provider"))?
             .keystore()
             .save(acme_ca)
-            .await?;
+            .await
+            .map_err(KeystoreError::wrap("saving acme ca"))?;
 
         // To do that, tear down and recreate the pki env
         self.init_pki_env().await?;
@@ -150,7 +151,10 @@ impl TransactionContext {
             .keystore()
             .await
             .map_err(RecursiveError::transaction("getting keystore"))?;
-        let trust_anchor = keystore.find_unique::<E2eiAcmeCA>().await?;
+        let trust_anchor = keystore
+            .find_unique::<E2eiAcmeCA>()
+            .await
+            .map_err(KeystoreError::wrap("finding acme ca"))?;
         let trust_anchor = x509_cert::Certificate::from_der(&trust_anchor.content)?;
 
         // the `/federation` endpoint from smallstep repeats the root CA
@@ -184,7 +188,10 @@ impl TransactionContext {
             content: cert_der,
             ski_aki_pair,
         };
-        keystore.save(intermediate_ca).await?;
+        keystore
+            .save(intermediate_ca)
+            .await
+            .map_err(KeystoreError::wrap("saving intermediate ca"))?;
 
         self.init_pki_env().await?;
 
@@ -240,7 +247,7 @@ impl TransactionContext {
             content: PkiEnvironment::encode_crl_to_der(&crl)?,
             distribution_point: crl_dp,
         };
-        ks.save(crl_data).await?;
+        ks.save(crl_data).await.map_err(KeystoreError::wrap("saving crl"))?;
 
         self.init_pki_env().await?;
 

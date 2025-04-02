@@ -1,3 +1,5 @@
+use crate::KeystoreError;
+
 use super::{Error, Result};
 use core_crypto_keystore::{
     connection::FetchFromDatabase,
@@ -92,14 +94,16 @@ pub(crate) async fn restore_pki_env(data_provider: &impl FetchFromDatabase) -> R
 
     let intermediates = data_provider
         .find_all::<E2eiIntermediateCert>(Default::default())
-        .await?
+        .await
+        .map_err(KeystoreError::wrap("finding intermediate certificates"))?
         .into_iter()
         .map(|inter| x509_cert::Certificate::from_der(&inter.content))
         .collect::<Result<Vec<_>, _>>()?;
 
     let crls = data_provider
         .find_all::<E2eiCrl>(Default::default())
-        .await?
+        .await
+        .map_err(KeystoreError::wrap("finding crls"))?
         .into_iter()
         .map(|crl| x509_cert::crl::CertificateList::from_der(&crl.content))
         .collect::<Result<Vec<_>, _>>()?;

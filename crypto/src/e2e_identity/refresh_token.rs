@@ -2,8 +2,9 @@ use super::{
     E2eiEnrollment,
     error::{Error, Result},
 };
+use crate::KeystoreError;
 use core_crypto_keystore::connection::FetchFromDatabase;
-use core_crypto_keystore::{CryptoKeystoreResult, entities::E2eiRefreshToken};
+use core_crypto_keystore::entities::E2eiRefreshToken;
 use mls_crypto_provider::MlsCryptoProvider;
 use zeroize::Zeroize;
 
@@ -14,13 +15,20 @@ pub struct RefreshToken(String);
 
 impl RefreshToken {
     pub(crate) async fn find(key_store: &impl FetchFromDatabase) -> Result<RefreshToken> {
-        key_store.find_unique::<E2eiRefreshToken>().await?.try_into()
+        key_store
+            .find_unique::<E2eiRefreshToken>()
+            .await
+            .map_err(KeystoreError::wrap("finding refresh token"))?
+            .try_into()
     }
 
-    pub(crate) async fn replace(self, backend: &MlsCryptoProvider) -> CryptoKeystoreResult<()> {
+    pub(crate) async fn replace(self, backend: &MlsCryptoProvider) -> Result<()> {
         let keystore = backend.keystore();
         let rt = E2eiRefreshToken::from(self);
-        keystore.save(rt).await?;
+        keystore
+            .save(rt)
+            .await
+            .map_err(KeystoreError::wrap("replacing refresh token"))?;
         Ok(())
     }
 }
