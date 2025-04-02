@@ -15,6 +15,7 @@ pub use error::{Error, Result};
 use mls_crypto_provider::{CryptoKeystore, MlsCryptoProvider};
 use std::{ops::Deref, sync::Arc};
 pub mod e2e_identity;
+mod error;
 
 /// This struct provides transactional support for Core Crypto.
 ///
