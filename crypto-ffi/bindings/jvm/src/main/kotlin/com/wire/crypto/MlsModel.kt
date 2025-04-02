@@ -50,15 +50,15 @@ enum class CredentialType {
 
     fun lower() =
         when (this) {
-            Basic -> com.wire.crypto.uniffi.MlsCredentialType.BASIC
-            X509 -> com.wire.crypto.uniffi.MlsCredentialType.X509
+            Basic -> com.wire.crypto.uniffi.CredentialType.BASIC
+            X509 -> com.wire.crypto.uniffi.CredentialType.X509
         }
 }
 
-fun com.wire.crypto.uniffi.MlsCredentialType.lift() =
+fun com.wire.crypto.uniffi.CredentialType.lift() =
     when (this) {
-        com.wire.crypto.uniffi.MlsCredentialType.BASIC -> CredentialType.Basic
-        com.wire.crypto.uniffi.MlsCredentialType.X509 -> CredentialType.X509
+        com.wire.crypto.uniffi.CredentialType.BASIC -> CredentialType.Basic
+        com.wire.crypto.uniffi.CredentialType.X509 -> CredentialType.X509
     }
 
 @JvmInline
@@ -540,7 +540,7 @@ data class CustomConfiguration (
 
 fun CustomConfiguration.lower() =
     com.wire.crypto.uniffi.CustomConfiguration(
-        keyRotationSpan = keyRotationSpan,
+        keyRotationSpan = keyRotationSpan?.getSeconds().takeIf { it in 0..UInt.MAX_VALUE.toLong() }?.toUInt(),
         wirePolicy = wirePolicy?.lower()
     )
 
@@ -561,8 +561,8 @@ enum class MlsWirePolicy {
 
 fun MlsWirePolicy.lower() =
     when (this) {
-        MlsWirePolicy.PLAINTEXT -> com.wire.crypto.uniffi.MlsWirePolicy.PLAINTEXT
-        MlsWirePolicy.CIPHERTEXT -> com.wire.crypto.uniffi.MlsWirePolicy.CIPHERTEXT
+        MlsWirePolicy.PLAINTEXT -> com.wire.crypto.uniffi.WirePolicy.PLAINTEXT
+        MlsWirePolicy.CIPHERTEXT -> com.wire.crypto.uniffi.WirePolicy.CIPHERTEXT
     }
 
 sealed class MlsTransportResponse {

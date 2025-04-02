@@ -8,7 +8,7 @@ use wasm_bindgen::JsValue;
 
 #[derive(Debug, thiserror::Error)]
 #[cfg_attr(target_family = "wasm", derive(strum::AsRefStr))]
-#[cfg_attr(not(target_family = "wasm"), derive(uniffi::Error), uniffi(flat_error))]
+#[cfg_attr(not(target_family = "wasm"), derive(uniffi::Error))]
 pub enum CoreCryptoError {
     #[error(transparent)]
     Mls(#[from] MlsError),
@@ -28,9 +28,16 @@ pub enum CoreCryptoError {
     TransactionFailed(JsValue),
     #[cfg(not(target_family = "wasm"))]
     #[error("Transaction rolled back due to unexpected uniffi error: {0:?}")]
-    TransactionFailed(#[from] uniffi::UnexpectedUniFFICallbackError),
+    TransactionFailed(String),
     #[error("{0}")]
     Other(String),
+}
+
+#[cfg(not(target_family = "wasm"))]
+impl From<uniffi::UnexpectedUniFFICallbackError> for CoreCryptoError {
+    fn from(value: uniffi::UnexpectedUniFFICallbackError) -> Self {
+        Self::TransactionFailed(value.to_string())
+    }
 }
 
 impl From<RecursiveError> for CoreCryptoError {
