@@ -97,7 +97,7 @@ impl CoreCryptoLogger {
     #[wasm_bindgen(constructor)]
     pub fn new(logger: js_sys::Function, this: JsValue) -> CoreCryptoResult<Self> {
         if logger.length() != 3 {
-            return Err(CoreCryptoError::generic()(format!(
+            return Err(CoreCryptoError::ad_hoc(format!(
                 "logger function must accept 3 arguments but accepts {}",
                 logger.length()
             )));

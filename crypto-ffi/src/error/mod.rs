@@ -1,12 +1,16 @@
 pub(crate) mod core_crypto;
-pub(crate) mod internal;
 pub(crate) mod mls;
 #[cfg(feature = "proteus")]
 pub(crate) mod proteus;
-
-pub type CoreCryptoResult<T, E = core_crypto::CoreCryptoError> = Result<T, E>;
 #[cfg(target_family = "wasm")]
-pub type WasmCryptoResult<T> = CoreCryptoResult<T, core_crypto::CoreCryptoError>;
+pub(crate) mod wasm;
+
+#[cfg(target_family = "wasm")]
+pub type CoreCryptoError = wasm::CoreCryptoError;
+#[cfg(not(target_family = "wasm"))]
+pub type CoreCryptoError = core_crypto::CoreCryptoError;
+
+pub type CoreCryptoResult<T, E = CoreCryptoError> = Result<T, E>;
 
 /// Prepare and dispatch a log message reporting this error.
 ///

@@ -12,11 +12,7 @@ use core_crypto::prelude::{Client, MlsClientConfiguration};
 #[cfg(target_family = "wasm")]
 use wasm_bindgen::prelude::*;
 
-#[cfg(target_family = "wasm")]
-use crate::WasmCryptoResult;
-use crate::{
-    Ciphersuites, CoreCryptoResult, DatabaseKey, client_id::AsCoreCryptoClientId as _, error::internal::InternalError,
-};
+use crate::{Ciphersuites, CoreCryptoError, CoreCryptoResult, DatabaseKey, client_id::AsCoreCryptoClientId as _};
 
 /// In Wasm, boxed slices are the natural way to communicate an immutable byte slice
 #[cfg(target_family = "wasm")]
@@ -103,7 +99,7 @@ impl CoreCrypto {
         let nb_key_package = nb_key_package
             .map(usize::try_from)
             .transpose()
-            .map_err(InternalError::generic())?;
+            .map_err(CoreCryptoError::generic())?;
         let entropy_seed = entropy_seed.map(entropy_seed_map);
         let configuration = MlsClientConfiguration::try_new(
             path,
@@ -149,10 +145,10 @@ impl CoreCrypto {
         path: String,
         key: DatabaseKey,
         entropy_seed: Option<Box<[u8]>>,
-    ) -> WasmCryptoResult<CoreCrypto> {
+    ) -> CoreCryptoResult<CoreCrypto> {
         let entropy_seed = entropy_seed.map(|s| s.to_vec());
         let configuration = MlsClientConfiguration::try_new(path, key.into(), None, vec![], entropy_seed, None)
-            .map_err(InternalError::from)?;
+            .map_err(CoreCryptoError::from)?;
 
         Self::from_config(configuration).await
     }
