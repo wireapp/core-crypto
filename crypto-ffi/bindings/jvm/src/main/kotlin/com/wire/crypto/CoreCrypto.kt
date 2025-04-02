@@ -1,6 +1,5 @@
 package com.wire.crypto
 
-import com.wire.crypto.uniffi.EpochObserver
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.CoroutineScope
 
@@ -11,6 +10,30 @@ value class DatabaseKey(internal val bytes: ByteArray)
 
 suspend fun migrateDatabaseKeyTypeToBytes(name: String, oldKey: String, newKey: DatabaseKey) {
     return com.wire.crypto.uniffi.migrateDatabaseKeyTypeToBytes(name, oldKey, newKey.bytes)
+}
+
+/**
+ * An `EpochObserver` is notified whenever a conversation's epoch changes.
+ */
+public interface EpochObserver {
+
+    /**
+     * This function will be called every time a conversation's epoch changes.
+     *
+     * The `epoch` parameter is the new epoch.
+     *
+     * <div class="warning">
+     * This function must not block! Foreign implementors of this inteface can
+     * spawn a task indirecting the notification, or (unblocking) send the notification
+     * on some kind of channel, or anything else, as long as the operation completes
+     * quickly.
+     * </div>
+     *
+     * Though the signature includes an error type, that error is only present because
+     * it is required by `uniffi` in order to handle panics. This function should suppress
+     * and ignore internal errors instead of propagating them, to the maximum extent possible.
+     */
+    suspend fun `epochChanged`(`conversationId`: kotlin.ByteArray, `epoch`: kotlin.ULong)
 }
 
 /**
@@ -147,7 +170,7 @@ class CoreCrypto(private val cc: com.wire.crypto.uniffi.CoreCrypto) {
     suspend fun registerEpochObserver(scope: CoroutineScope, epochObserver: EpochObserver) {
         // we want to wrap the observer here to provide async indirection, so that no matter what
         // the observer that makes its way to the Rust side of things doesn't end up blocking
-        val observerIndirector = object: EpochObserver {
+        val observerIndirector = object: com.wire.crypto.uniffi.EpochObserver {
             override suspend fun epochChanged(conversationId: kotlin.ByteArray, epoch: kotlin.ULong) {
                 scope.launch { epochObserver.epochChanged(conversationId, epoch) }
             }

@@ -312,7 +312,7 @@ class MLSTest {
         return scope.runTest {
             // set up the observer. this just keeps a list of all observations.
             data class EpochChanged(val conversationId: kotlin.ByteArray, val epoch: kotlin.ULong)
-            class Observer: com.wire.crypto.uniffi.EpochObserver {
+            class Observer: EpochObserver {
                 val observed_events = emptyList<EpochChanged>().toMutableList();
                 override suspend fun epochChanged(conversationId: kotlin.ByteArray, epoch: kotlin.ULong) {
                     observed_events.add(EpochChanged(conversationId, epoch))
