@@ -179,13 +179,13 @@ impl MlsTransport {
     ) -> CoreCryptoResult<Self> {
         // we can't do much type-checking here unfortunately, but we can at least validate that the incoming functions have the right length
         if send_commit_bundle.length() != 1 {
-            return Err(CoreCryptoError::generic()(format!(
+            return Err(CoreCryptoError::ad_hoc(format!(
                 "`send_commit_bundle` must accept 1 argument but accepts {}",
                 send_commit_bundle.length()
             )));
         }
         if send_message.length() != 1 {
-            return Err(CoreCryptoError::generic()(format!(
+            return Err(CoreCryptoError::ad_hoc(format!(
                 "`send_message` must accept 1 argument but accepts {}",
                 send_message.length()
             )));

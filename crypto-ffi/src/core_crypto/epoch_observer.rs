@@ -119,7 +119,7 @@ impl EpochObserver {
     pub fn new(this_context: JsValue, epoch_changed: js_sys::Function) -> CoreCryptoResult<Self> {
         // we can't do much type-checking here unfortunately, but we can at least validate that the incoming functions have the right length
         if epoch_changed.length() != 2 {
-            return Err(CoreCryptoError::generic()(format!(
+            return Err(CoreCryptoError::ad_hoc(format!(
                 "`epoch_changed` must accept 2 arguments but accepts {}",
                 epoch_changed.length()
             )));

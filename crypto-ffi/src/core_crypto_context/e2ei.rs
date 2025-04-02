@@ -156,10 +156,10 @@ impl CoreCryptoContext {
     pub async fn e2ei_enrollment_stash(&self, enrollment: EnrollmentParameter) -> CoreCryptoResult<Vec<u8>> {
         #[cfg(not(target_family = "wasm"))]
         let enrollment = Arc::into_inner(enrollment).ok_or_else(|| {
-            CoreCryptoError::generic()("outer enrollment had multiple strong refs and could not be unpacked")
+            CoreCryptoError::ad_hoc("outer enrollment had multiple strong refs and could not be unpacked")
         })?;
         let enrollment = enrollment.into_inner().ok_or_else(|| {
-            CoreCryptoError::generic()("inner enrollment had multiple strong refs and could not be unpacked")
+            CoreCryptoError::ad_hoc("inner enrollment had multiple strong refs and could not be unpacked")
         })?;
 
         Ok(self.inner.e2ei_enrollment_stash(enrollment).await?)
