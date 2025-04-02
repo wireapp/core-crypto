@@ -71,7 +71,8 @@ public class CoreCrypto: CoreCryptoProtocol {
         self.coreCrypto =
             try await WireCoreCryptoUniffi.coreCryptoDeferredInit(
                 path: keystorePath,
-                key: key
+                key: key,
+                entropySeed: nil
             )
     }
 
@@ -157,6 +158,6 @@ class TransactionExecutor<Result>: WireCoreCryptoUniffi.CoreCryptoCommand {
 public func migrateDatabaseKeyTypeToBytes(path: String, oldKey: String, newKey: DatabaseKey)
     async throws
 {
-    try await WireCoreCryptoUniffi.migrateDatabaseKeyTypeToBytes(
+    try await WireCoreCryptoUniffi.migrateDbKeyTypeToBytes(
         name: path, oldKey: oldKey, newKey: newKey)
 }
