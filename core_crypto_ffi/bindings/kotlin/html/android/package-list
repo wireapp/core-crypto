@@ -115,7 +115,7 @@ $dokka.location:com.wire.crypto/CoreCrypto///PointingToDeclaration/android/com.
 $dokka.location:com.wire.crypto/CoreCrypto/CoreCrypto/#[Error type: Unresolved type for com.wire.crypto.uniffi.CoreCrypto]/PointingToDeclaration/android/com.wire.crypto/-core-crypto/-core-crypto.html
 $dokka.location:com.wire.crypto/CoreCrypto/close/#/PointingToDeclaration/android/com.wire.crypto/-core-crypto/close.html
 $dokka.location:com.wire.crypto/CoreCrypto/provideTransport/#com.wire.crypto.MlsTransport/PointingToDeclaration/android/com.wire.crypto/-core-crypto/provide-transport.html
-$dokka.location:com.wire.crypto/CoreCrypto/registerEpochObserver/#kotlinx.coroutines.CoroutineScope#[Error type: Unresolved type for EpochObserver]/PointingToDeclaration/android/com.wire.crypto/-core-crypto/register-epoch-observer.html
+$dokka.location:com.wire.crypto/CoreCrypto/registerEpochObserver/#kotlinx.coroutines.CoroutineScope#com.wire.crypto.EpochObserver/PointingToDeclaration/android/com.wire.crypto/-core-crypto/register-epoch-observer.html
 $dokka.location:com.wire.crypto/CoreCrypto/transaction/#kotlin.coroutines.SuspendFunction1[com.wire.crypto.CoreCryptoContext,TypeParam(bounds=[kotlin.Any?])]/PointingToDeclaration/android/com.wire.crypto/-core-crypto/transaction.html
 $dokka.location:com.wire.crypto/CoreCryptoContext.Companion///PointingToDeclaration/android/com.wire.crypto/-core-crypto-context/-companion/index.html
 $dokka.location:com.wire.crypto/CoreCryptoContext///PointingToDeclaration/android/com.wire.crypto/-core-crypto-context/index.html
@@ -280,6 +280,8 @@ $dokka.location:com.wire.crypto/E2eiDumpedPkiEnv/crls/#/PointingToDeclaration/a
 $dokka.location:com.wire.crypto/E2eiDumpedPkiEnv/intermediates/#/PointingToDeclaration/android/com.wire.crypto/-e2ei-dumped-pki-env/intermediates.html
 $dokka.location:com.wire.crypto/E2eiDumpedPkiEnv/rootCa/#/PointingToDeclaration/android/com.wire.crypto/-e2ei-dumped-pki-env/root-ca.html
 $dokka.location:com.wire.crypto/EnrollmentHandle///PointingToDeclaration/android/com.wire.crypto/-enrollment-handle/index.html
+$dokka.location:com.wire.crypto/EpochObserver///PointingToDeclaration/android/com.wire.crypto/-epoch-observer/index.html
+$dokka.location:com.wire.crypto/EpochObserver/epochChanged/#kotlin.ByteArray#kotlin.ULong/PointingToDeclaration/android/com.wire.crypto/-epoch-observer/epoch-changed.html
 $dokka.location:com.wire.crypto/ExternalSenderKey///PointingToDeclaration/android/com.wire.crypto/-external-sender-key/index.html
 $dokka.location:com.wire.crypto/ExternalSenderKey/ExternalSenderKey/#kotlin.ByteArray/PointingToDeclaration/android/com.wire.crypto/-external-sender-key/-external-sender-key.html
 $dokka.location:com.wire.crypto/ExternalSenderKey/toString/#/PointingToDeclaration/android/com.wire.crypto/-external-sender-key/to-string.html
