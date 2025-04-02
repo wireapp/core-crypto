@@ -11,6 +11,13 @@ pub enum RecursiveError {
         /// What happened
         source: Box<crate::Error>,
     },
+    /// Wrap a [crate::transaction_context::Error] for recursion.
+    TransactionContext {
+        /// What was happening in the caller
+        context: &'static str,
+        /// What happened
+        source: Box<crate::transaction_context::Error>,
+    },
     /// Wrap a [crate::e2e_identity::Error] for recursion.
     E2e {
         /// What was happening in the caller
@@ -55,6 +62,14 @@ impl RecursiveError {
     /// Convert a [crate::Error] into a [RecursiveError], with context
     pub fn root<E: Into<crate::Error>>(context: &'static str) -> impl FnOnce(E) -> Self {
         move |into_source| Self::Root {
+            context,
+            source: Box::new(into_source.into()),
+        }
+    }
+
+    /// Convert a [crate::transaction_context::Error] into a [RecursiveError], with context
+    pub fn transaction<E: Into<crate::transaction_context::Error>>(context: &'static str) -> impl FnOnce(E) -> Self {
+        move |into_source| Self::TransactionContext {
             context,
             source: Box::new(into_source.into()),
         }
@@ -118,6 +133,7 @@ impl std::fmt::Display for RecursiveError {
             RecursiveError::MlsClient { context, .. } => context,
             RecursiveError::MlsConversation { context, .. } => context,
             RecursiveError::MlsCredential { context, .. } => context,
+            RecursiveError::TransactionContext { context, .. } => context,
             #[cfg(test)]
             RecursiveError::Test(e) => return e.deref().fmt(f),
         };
@@ -134,6 +150,7 @@ impl std::error::Error for RecursiveError {
             RecursiveError::MlsClient { source, .. } => Some(source.as_ref()),
             RecursiveError::MlsConversation { source, .. } => Some(source.as_ref()),
             RecursiveError::MlsCredential { source, .. } => Some(source.as_ref()),
+            RecursiveError::TransactionContext { source, .. } => Some(source.as_ref()),
             #[cfg(test)]
             RecursiveError::Test(source) => Some(source.as_ref()),
         }
@@ -170,4 +187,5 @@ impl_to_recursive_error_for!(
     crate::mls::client::Error => MlsClient,
     crate::mls::conversation::Error => MlsConversation,
     crate::mls::credential::Error => MlsCredential,
+    crate::transaction_context::Error => TransactionContext,
 );
