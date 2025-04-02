@@ -119,4 +119,9 @@ impl CoreCryptoContext {
     pub async fn proteus_cryptobox_migrate(&self, path: String) -> CoreCryptoResult<()> {
         proteus_impl!({ Ok(self.context.proteus_cryptobox_migrate(&path).await?) })
     }
+
+    /// See [core_crypto::context::CentralContext::proteus_reload_sessions]
+    pub async fn proteus_reload_sessions(&self) -> CoreCryptoResult<()> {
+        proteus_impl!({ Ok(self.context.proteus_reload_sessions().await?) })
+    }
 }
