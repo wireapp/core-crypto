@@ -545,7 +545,7 @@ mod tests {
         let creator_transaction = cc
             .new_transaction()
             .await
-            .map_err(RecursiveError::root("creating new transaction"))?;
+            .map_err(RecursiveError::transaction("creating new transaction"))?;
         let creator_central = cc.mls;
 
         if let Some(x509_test_chain) = &x509_test_chain {
@@ -587,7 +587,7 @@ mod tests {
         let guest_transaction = cc
             .new_transaction()
             .await
-            .map_err(RecursiveError::root("creating new transaction"))?;
+            .map_err(RecursiveError::transaction("creating new transaction"))?;
         let guest_central = cc.mls;
         if let Some(x509_test_chain) = &x509_test_chain {
             x509_test_chain.register_with_central(&guest_transaction).await;

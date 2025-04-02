@@ -351,7 +351,7 @@ impl TransactionContext {
         let client = self
             .mls_client()
             .await
-            .map_err(RecursiveError::root("getting mls client"))?;
+            .map_err(RecursiveError::transaction("getting mls client"))?;
         client
             .request_key_packages(
                 amount_requested,
@@ -360,7 +360,7 @@ impl TransactionContext {
                 &self
                     .mls_provider()
                     .await
-                    .map_err(RecursiveError::root("getting mls provider"))?,
+                    .map_err(RecursiveError::transaction("getting mls provider"))?,
             )
             .await
     }
@@ -375,13 +375,13 @@ impl TransactionContext {
         let client = self
             .mls_client()
             .await
-            .map_err(RecursiveError::root("getting mls client"))?;
+            .map_err(RecursiveError::transaction("getting mls client"))?;
         client
             .valid_keypackages_count(
                 &self
                     .mls_provider()
                     .await
-                    .map_err(RecursiveError::root("getting mls provider"))?,
+                    .map_err(RecursiveError::transaction("getting mls provider"))?,
                 ciphersuite,
                 credential_type,
             )
@@ -398,13 +398,13 @@ impl TransactionContext {
         let mut client = self
             .mls_client()
             .await
-            .map_err(RecursiveError::root("getting mls client"))?;
+            .map_err(RecursiveError::transaction("getting mls client"))?;
         client
             .prune_keypackages_and_credential(
                 &self
                     .mls_provider()
                     .await
-                    .map_err(RecursiveError::root("getting mls provider"))?,
+                    .map_err(RecursiveError::transaction("getting mls provider"))?,
                 refs,
             )
             .await
@@ -420,7 +420,7 @@ mod tests {
 
     use mls_crypto_provider::MlsCryptoProvider;
 
-    use crate::e2e_identity::tests::{e2ei_enrollment, init_activation_or_rotation, noop_restore};
+    use crate::e2e_identity::test_utils::{e2ei_enrollment, init_activation_or_rotation, noop_restore};
     use crate::prelude::MlsConversationConfiguration;
     use crate::prelude::key_package::INITIAL_KEYING_MATERIAL_COUNT;
     use crate::test_utils::*;

@@ -163,7 +163,7 @@ impl TransactionContext {
         let mls_client = self
             .mls_client()
             .await
-            .map_err(RecursiveError::root("getting mls client"))?;
+            .map_err(RecursiveError::transaction("getting mls client"))?;
         mls_client
             .init(
                 identifier,
@@ -171,7 +171,7 @@ impl TransactionContext {
                 &self
                     .mls_provider()
                     .await
-                    .map_err(RecursiveError::root("getting mls provider"))?,
+                    .map_err(RecursiveError::transaction("getting mls provider"))?,
                 nb_key_package,
             )
             .await
@@ -185,7 +185,7 @@ impl TransactionContext {
             trace!(client_id:% = client_id; "Initializing PKI environment");
             self.init_pki_env()
                 .await
-                .map_err(RecursiveError::e2e_identity("initializing pki env"))?;
+                .map_err(RecursiveError::transaction("initializing pki env"))?;
         }
 
         Ok(())
@@ -199,13 +199,13 @@ impl TransactionContext {
     pub async fn mls_generate_keypairs(&self, ciphersuites: Vec<MlsCiphersuite>) -> Result<Vec<ClientId>> {
         self.mls_client()
             .await
-            .map_err(RecursiveError::root("getting mls client"))?
+            .map_err(RecursiveError::transaction("getting mls client"))?
             .generate_raw_keypairs(
                 &ciphersuites,
                 &self
                     .mls_provider()
                     .await
-                    .map_err(RecursiveError::root("getting mls provider"))?,
+                    .map_err(RecursiveError::transaction("getting mls provider"))?,
             )
             .await
             .map_err(RecursiveError::mls_client("generating raw keypairs"))
@@ -224,7 +224,7 @@ impl TransactionContext {
     ) -> Result<()> {
         self.mls_client()
             .await
-            .map_err(RecursiveError::root("getting mls client"))?
+            .map_err(RecursiveError::transaction("getting mls client"))?
             .init_with_external_client_id(
                 client_id,
                 tmp_client_ids,
@@ -232,7 +232,7 @@ impl TransactionContext {
                 &self
                     .mls_provider()
                     .await
-                    .map_err(RecursiveError::root("getting mls provider"))?,
+                    .map_err(RecursiveError::transaction("getting mls provider"))?,
             )
             .await
             .map_err(RecursiveError::mls_client(
@@ -250,7 +250,7 @@ impl TransactionContext {
         let cb = self
             .mls_client()
             .await
-            .map_err(RecursiveError::root("getting mls client"))?
+            .map_err(RecursiveError::transaction("getting mls client"))?
             .find_most_recent_credential_bundle(ciphersuite.signature_algorithm(), credential_type)
             .await
             .map_err(RecursiveError::mls_client("finding most recent credential bundle"))?;
@@ -261,7 +261,7 @@ impl TransactionContext {
     pub async fn client_id(&self) -> Result<ClientId> {
         self.mls_client()
             .await
-            .map_err(RecursiveError::root("getting mls client"))?
+            .map_err(RecursiveError::transaction("getting mls client"))?
             .id()
             .await
             .map_err(RecursiveError::mls_client("getting client id"))
@@ -294,20 +294,20 @@ impl TransactionContext {
             &self
                 .mls_client()
                 .await
-                .map_err(RecursiveError::root("getting mls client"))?,
+                .map_err(RecursiveError::transaction("getting mls client"))?,
             creator_credential_type,
             config,
             &self
                 .mls_provider()
                 .await
-                .map_err(RecursiveError::root("getting mls provider"))?,
+                .map_err(RecursiveError::transaction("getting mls provider"))?,
         )
         .await
         .map_err(RecursiveError::mls_conversation("creating conversation"))?;
 
         self.mls_groups()
             .await
-            .map_err(RecursiveError::root("getting mls groups"))?
+            .map_err(RecursiveError::transaction("getting mls groups"))?
             .insert(id.clone(), conversation);
 
         Ok(())
@@ -318,13 +318,13 @@ impl TransactionContext {
         Ok(self
             .mls_groups()
             .await
-            .map_err(RecursiveError::root("getting mls groups"))?
+            .map_err(RecursiveError::transaction("getting mls groups"))?
             .get_fetch(
                 id,
                 &self
                     .mls_provider()
                     .await
-                    .map_err(RecursiveError::root("getting mls provider"))?
+                    .map_err(RecursiveError::transaction("getting mls provider"))?
                     .keystore(),
                 None,
             )
@@ -339,7 +339,7 @@ impl TransactionContext {
         use openmls_traits::random::OpenMlsRand as _;
         self.mls_provider()
             .await
-            .map_err(RecursiveError::root("getting mls provider"))?
+            .map_err(RecursiveError::transaction("getting mls provider"))?
             .rand()
             .random_vec(len)
             .map_err(MlsError::wrap("generating random vector"))

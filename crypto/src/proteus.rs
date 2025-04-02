@@ -1,5 +1,5 @@
 use crate::{
-    CoreCrypto, Error, KeystoreError, LeafError, ProteusError, Result,
+    CoreCrypto, Error, KeystoreError, LeafError, ProteusError, RecursiveError, Result,
     group_store::{GroupStore, GroupStoreValue},
     transaction_context::TransactionContext,
 };
@@ -127,13 +127,19 @@ impl CoreCrypto {
 impl TransactionContext {
     /// Initializes the proteus client
     pub async fn proteus_init(&self) -> Result<()> {
-        let keystore = self.keystore().await?;
+        let keystore = self
+            .keystore()
+            .await
+            .map_err(RecursiveError::transaction("getting keystore"))?;
         let proteus_client = ProteusCentral::try_new(&keystore).await?;
 
         // ? Make sure the last resort prekey exists
         let _ = proteus_client.last_resort_prekey(&keystore).await?;
 
-        let mutex = self.proteus_central().await?;
+        let mutex = self
+            .proteus_central()
+            .await
+            .map_err(RecursiveError::transaction("getting proteus client"))?;
         let mut guard = mutex.lock().await;
         *guard = Some(proteus_client);
         Ok(())
@@ -143,10 +149,16 @@ impl TransactionContext {
     ///
     /// Warning: The Proteus client **MUST** be initialized with [TransactionContext::proteus_init] first or it will do nothing
     pub async fn proteus_reload_sessions(&self) -> Result<()> {
-        let arc = self.proteus_central().await?;
+        let arc = self
+            .proteus_central()
+            .await
+            .map_err(RecursiveError::transaction("getting proteus client"))?;
         let mut mutex = arc.lock().await;
         let proteus = mutex.as_mut().ok_or(Error::ProteusNotInitialized)?;
-        let keystore = self.keystore().await?;
+        let keystore = self
+            .keystore()
+            .await
+            .map_err(RecursiveError::transaction("getting keystore"))?;
         proteus.reload_sessions(&keystore).await
     }
 
@@ -158,10 +170,16 @@ impl TransactionContext {
         session_id: &str,
         prekey: &[u8],
     ) -> Result<GroupStoreValue<ProteusConversationSession>> {
-        let arc = self.proteus_central().await?;
+        let arc = self
+            .proteus_central()
+            .await
+            .map_err(RecursiveError::transaction("getting proteus client"))?;
         let mut mutex = arc.lock().await;
         let proteus = mutex.as_mut().ok_or(Error::ProteusNotInitialized)?;
-        let keystore = self.keystore().await?;
+        let keystore = self
+            .keystore()
+            .await
+            .map_err(RecursiveError::transaction("getting keystore"))?;
         let session = proteus.session_from_prekey(session_id, prekey).await?;
         ProteusCentral::session_save_by_ref(&keystore, session.clone()).await?;
 
@@ -176,10 +194,16 @@ impl TransactionContext {
         session_id: &str,
         envelope: &[u8],
     ) -> Result<(GroupStoreValue<ProteusConversationSession>, Vec<u8>)> {
-        let arc = self.proteus_central().await?;
+        let arc = self
+            .proteus_central()
+            .await
+            .map_err(RecursiveError::transaction("getting proteus client"))?;
         let mut mutex = arc.lock().await;
         let proteus = mutex.as_mut().ok_or(Error::ProteusNotInitialized)?;
-        let mut keystore = self.keystore().await?;
+        let mut keystore = self
+            .keystore()
+            .await
+            .map_err(RecursiveError::transaction("getting keystore"))?;
         let (session, message) = proteus
             .session_from_message(&mut keystore, session_id, envelope)
             .await?;
@@ -192,10 +216,16 @@ impl TransactionContext {
     ///
     /// Warning: The Proteus client **MUST** be initialized with [TransactionContext::proteus_init] first or an error will be returned
     pub async fn proteus_session_save(&self, session_id: &str) -> Result<()> {
-        let arc = self.proteus_central().await?;
+        let arc = self
+            .proteus_central()
+            .await
+            .map_err(RecursiveError::transaction("getting proteus client"))?;
         let mut mutex = arc.lock().await;
         let proteus = mutex.as_mut().ok_or(Error::ProteusNotInitialized)?;
-        let keystore = self.keystore().await?;
+        let keystore = self
+            .keystore()
+            .await
+            .map_err(RecursiveError::transaction("getting keystore"))?;
         proteus.session_save(&keystore, session_id).await
     }
 
@@ -203,10 +233,16 @@ impl TransactionContext {
     ///
     /// Warning: The Proteus client **MUST** be initialized with [TransactionContext::proteus_init] first or an error will be returned
     pub async fn proteus_session_delete(&self, session_id: &str) -> Result<()> {
-        let arc = self.proteus_central().await?;
+        let arc = self
+            .proteus_central()
+            .await
+            .map_err(RecursiveError::transaction("getting proteus client"))?;
         let mut mutex = arc.lock().await;
         let proteus = mutex.as_mut().ok_or(Error::ProteusNotInitialized)?;
-        let keystore = self.keystore().await?;
+        let keystore = self
+            .keystore()
+            .await
+            .map_err(RecursiveError::transaction("getting keystore"))?;
         proteus.session_delete(&keystore, session_id).await
     }
 
@@ -217,10 +253,16 @@ impl TransactionContext {
         &self,
         session_id: &str,
     ) -> Result<Option<GroupStoreValue<ProteusConversationSession>>> {
-        let arc = self.proteus_central().await?;
+        let arc = self
+            .proteus_central()
+            .await
+            .map_err(RecursiveError::transaction("getting proteus client"))?;
         let mut mutex = arc.lock().await;
         let proteus = mutex.as_mut().ok_or(Error::ProteusNotInitialized)?;
-        let keystore = self.keystore().await?;
+        let keystore = self
+            .keystore()
+            .await
+            .map_err(RecursiveError::transaction("getting keystore"))?;
         proteus.session(session_id, &keystore).await
     }
 
@@ -228,10 +270,16 @@ impl TransactionContext {
     ///
     /// Warning: The Proteus client **MUST** be initialized with [TransactionContext::proteus_init] first or an error will be returned
     pub async fn proteus_session_exists(&self, session_id: &str) -> Result<bool> {
-        let arc = self.proteus_central().await?;
+        let arc = self
+            .proteus_central()
+            .await
+            .map_err(RecursiveError::transaction("getting proteus client"))?;
         let mut mutex = arc.lock().await;
         let proteus = mutex.as_mut().ok_or(Error::ProteusNotInitialized)?;
-        let keystore = self.keystore().await?;
+        let keystore = self
+            .keystore()
+            .await
+            .map_err(RecursiveError::transaction("getting keystore"))?;
         Ok(proteus.session_exists(session_id, &keystore).await)
     }
 
@@ -239,10 +287,16 @@ impl TransactionContext {
     ///
     /// Warning: The Proteus client **MUST** be initialized with [TransactionContext::proteus_init] first or an error will be returned
     pub async fn proteus_decrypt(&self, session_id: &str, ciphertext: &[u8]) -> Result<Vec<u8>> {
-        let arc = self.proteus_central().await?;
+        let arc = self
+            .proteus_central()
+            .await
+            .map_err(RecursiveError::transaction("getting proteus client"))?;
         let mut mutex = arc.lock().await;
         let proteus = mutex.as_mut().ok_or(Error::ProteusNotInitialized)?;
-        let mut keystore = self.keystore().await?;
+        let mut keystore = self
+            .keystore()
+            .await
+            .map_err(RecursiveError::transaction("getting keystore"))?;
         proteus.decrypt(&mut keystore, session_id, ciphertext).await
     }
 
@@ -250,10 +304,16 @@ impl TransactionContext {
     ///
     /// Warning: The Proteus client **MUST** be initialized with [TransactionContext::proteus_init] first or an error will be returned
     pub async fn proteus_encrypt(&self, session_id: &str, plaintext: &[u8]) -> Result<Vec<u8>> {
-        let arc = self.proteus_central().await?;
+        let arc = self
+            .proteus_central()
+            .await
+            .map_err(RecursiveError::transaction("getting proteus client"))?;
         let mut mutex = arc.lock().await;
         let proteus = mutex.as_mut().ok_or(Error::ProteusNotInitialized)?;
-        let mut keystore = self.keystore().await?;
+        let mut keystore = self
+            .keystore()
+            .await
+            .map_err(RecursiveError::transaction("getting keystore"))?;
         proteus.encrypt(&mut keystore, session_id, plaintext).await
     }
 
@@ -266,10 +326,16 @@ impl TransactionContext {
         sessions: &[impl AsRef<str>],
         plaintext: &[u8],
     ) -> Result<std::collections::HashMap<String, Vec<u8>>> {
-        let arc = self.proteus_central().await?;
+        let arc = self
+            .proteus_central()
+            .await
+            .map_err(RecursiveError::transaction("getting proteus client"))?;
         let mut mutex = arc.lock().await;
         let proteus = mutex.as_mut().ok_or(Error::ProteusNotInitialized)?;
-        let mut keystore = self.keystore().await?;
+        let mut keystore = self
+            .keystore()
+            .await
+            .map_err(RecursiveError::transaction("getting keystore"))?;
         proteus.encrypt_batched(&mut keystore, sessions, plaintext).await
     }
 
@@ -277,10 +343,16 @@ impl TransactionContext {
     ///
     /// Warning: The Proteus client **MUST** be initialized with [TransactionContext::proteus_init] first or an error will be returned
     pub async fn proteus_new_prekey(&self, prekey_id: u16) -> Result<Vec<u8>> {
-        let arc = self.proteus_central().await?;
+        let arc = self
+            .proteus_central()
+            .await
+            .map_err(RecursiveError::transaction("getting proteus client"))?;
         let mut mutex = arc.lock().await;
         let proteus = mutex.as_mut().ok_or(Error::ProteusNotInitialized)?;
-        let keystore = self.keystore().await?;
+        let keystore = self
+            .keystore()
+            .await
+            .map_err(RecursiveError::transaction("getting keystore"))?;
         proteus.new_prekey(prekey_id, &keystore).await
     }
 
@@ -288,19 +360,31 @@ impl TransactionContext {
     ///
     /// Warning: The Proteus client **MUST** be initialized with [TransactionContext::proteus_init] first or an error will be returned
     pub async fn proteus_new_prekey_auto(&self) -> Result<(u16, Vec<u8>)> {
-        let arc = self.proteus_central().await?;
+        let arc = self
+            .proteus_central()
+            .await
+            .map_err(RecursiveError::transaction("getting proteus client"))?;
         let mut mutex = arc.lock().await;
         let proteus = mutex.as_mut().ok_or(Error::ProteusNotInitialized)?;
-        let keystore = self.keystore().await?;
+        let keystore = self
+            .keystore()
+            .await
+            .map_err(RecursiveError::transaction("getting keystore"))?;
         proteus.new_prekey_auto(&keystore).await
     }
 
     /// Returns the last resort prekey
     pub async fn proteus_last_resort_prekey(&self) -> Result<Vec<u8>> {
-        let arc = self.proteus_central().await?;
+        let arc = self
+            .proteus_central()
+            .await
+            .map_err(RecursiveError::transaction("getting proteus client"))?;
         let mut mutex = arc.lock().await;
         let proteus = mutex.as_mut().ok_or(Error::ProteusNotInitialized)?;
-        let keystore = self.keystore().await?;
+        let keystore = self
+            .keystore()
+            .await
+            .map_err(RecursiveError::transaction("getting keystore"))?;
 
         proteus.last_resort_prekey(&keystore).await
     }
@@ -314,7 +398,10 @@ impl TransactionContext {
     ///
     /// Warning: The Proteus client **MUST** be initialized with [TransactionContext::proteus_init] first or an error will be returned
     pub async fn proteus_fingerprint(&self) -> Result<String> {
-        let arc = self.proteus_central().await?;
+        let arc = self
+            .proteus_central()
+            .await
+            .map_err(RecursiveError::transaction("getting proteus client"))?;
         let mut mutex = arc.lock().await;
         let proteus = mutex.as_mut().ok_or(Error::ProteusNotInitialized)?;
         Ok(proteus.fingerprint())
@@ -324,10 +411,16 @@ impl TransactionContext {
     ///
     /// Warning: The Proteus client **MUST** be initialized with [TransactionContext::proteus_init] first or an error will be returned
     pub async fn proteus_fingerprint_local(&self, session_id: &str) -> Result<String> {
-        let arc = self.proteus_central().await?;
+        let arc = self
+            .proteus_central()
+            .await
+            .map_err(RecursiveError::transaction("getting proteus client"))?;
         let mut mutex = arc.lock().await;
         let proteus = mutex.as_mut().ok_or(Error::ProteusNotInitialized)?;
-        let keystore = self.keystore().await?;
+        let keystore = self
+            .keystore()
+            .await
+            .map_err(RecursiveError::transaction("getting keystore"))?;
         proteus.fingerprint_local(session_id, &keystore).await
     }
 
@@ -335,10 +428,16 @@ impl TransactionContext {
     ///
     /// Warning: The Proteus client **MUST** be initialized with [TransactionContext::proteus_init] first or an error will be returned
     pub async fn proteus_fingerprint_remote(&self, session_id: &str) -> Result<String> {
-        let arc = self.proteus_central().await?;
+        let arc = self
+            .proteus_central()
+            .await
+            .map_err(RecursiveError::transaction("getting proteus client"))?;
         let mut mutex = arc.lock().await;
         let proteus = mutex.as_mut().ok_or(Error::ProteusNotInitialized)?;
-        let keystore = self.keystore().await?;
+        let keystore = self
+            .keystore()
+            .await
+            .map_err(RecursiveError::transaction("getting keystore"))?;
         proteus.fingerprint_remote(session_id, &keystore).await
     }
 
@@ -346,7 +445,10 @@ impl TransactionContext {
     ///
     ///The client can then be initialized with [TransactionContext::proteus_init]
     pub async fn proteus_cryptobox_migrate(&self, path: &str) -> Result<()> {
-        let keystore = self.keystore().await?;
+        let keystore = self
+            .keystore()
+            .await
+            .map_err(RecursiveError::transaction("getting keystore"))?;
         ProteusCentral::cryptobox_migrate(&keystore, path).await
     }
 }

@@ -40,7 +40,7 @@ impl TransactionContext {
         let mls_provider = self
             .mls_provider()
             .await
-            .map_err(RecursiveError::root("getting mls provider"))?;
+            .map_err(RecursiveError::transaction("getting mls provider"))?;
         cfg.external_senders = external_senders
             .into_iter()
             .map(|key| {

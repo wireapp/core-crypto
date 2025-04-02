@@ -135,7 +135,7 @@ impl Client {
         let context = cc
             .new_transaction()
             .await
-            .map_err(RecursiveError::root("starting new transaction"))?;
+            .map_err(RecursiveError::transaction("starting new transaction"))?;
 
         if let Some(id) = configuration.client_id {
             client
@@ -155,11 +155,11 @@ impl Client {
         context
             .init_pki_env()
             .await
-            .map_err(RecursiveError::e2e_identity("initializing pki environment"))?;
+            .map_err(RecursiveError::transaction("initializing pki environment"))?;
         context
             .finish()
             .await
-            .map_err(RecursiveError::root("finishing transaction"))?;
+            .map_err(RecursiveError::transaction("finishing transaction"))?;
         Ok(central)
     }
 

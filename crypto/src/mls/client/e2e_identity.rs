@@ -6,9 +6,8 @@ use wire_e2e_identity::prelude::WireIdentityReader as _;
 
 use crate::{
     MlsError, RecursiveError,
-    e2e_identity::E2eiDumpedPkiEnv,
     mls::client::CredentialExt as _,
-    prelude::{E2eiConversationState, MlsCiphersuite, MlsCredentialType},
+    prelude::{E2eiConversationState, E2eiDumpedPkiEnv, MlsCiphersuite, MlsCredentialType},
 };
 use openmls_traits::OpenMlsCryptoProvider as _;
 

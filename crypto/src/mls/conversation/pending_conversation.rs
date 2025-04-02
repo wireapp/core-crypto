@@ -58,7 +58,7 @@ impl PendingConversation {
         self.context
             .mls_provider()
             .await
-            .map_err(RecursiveError::root("getting mls provider"))
+            .map_err(RecursiveError::transaction("getting mls provider"))
             .map_err(Into::into)
     }
 
@@ -86,7 +86,7 @@ impl PendingConversation {
             .context
             .mls_transport()
             .await
-            .map_err(RecursiveError::root("getting mls transport"))?;
+            .map_err(RecursiveError::transaction("getting mls transport"))?;
         let transport = transport.as_ref().ok_or::<Error>(
             RecursiveError::root("getting mls transport")(crate::Error::MlsTransportNotProvided).into(),
         )?;
@@ -263,7 +263,7 @@ impl PendingConversation {
         context
             .mls_groups()
             .await
-            .map_err(RecursiveError::root("getting mls groups"))?
+            .map_err(RecursiveError::transaction("getting mls groups"))?
             .insert(id.clone(), conversation);
 
         // This is the now merged conversation

@@ -57,7 +57,6 @@ pub mod prelude {
         CoreCrypto, MlsTransport,
         e2e_identity::{
             E2eiEnrollment,
-            conversation_state::E2eiConversationState,
             device_status::DeviceStatus,
             identity::{WireIdentity, X509Identity},
             types::{E2eiAcmeChallenge, E2eiAcmeDirectory, E2eiNewAcmeAuthz, E2eiNewAcmeOrder},
@@ -84,6 +83,7 @@ pub mod prelude {
             proposal::{MlsProposal, MlsProposalRef},
         },
         obfuscate::Obfuscated,
+        transaction_context::e2e_identity::{E2eiDumpedPkiEnv, conversation_state::E2eiConversationState},
     };
 }
 

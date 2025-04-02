@@ -542,12 +542,12 @@ impl ClientContext {
             .context
             .keystore()
             .await
-            .map_err(RecursiveError::root("getting keystore"))?;
+            .map_err(RecursiveError::transaction("getting keystore"))?;
         let all_conversations = self
             .context
             .mls_groups()
             .await
-            .map_err(RecursiveError::root("getting mls groups"))?
+            .map_err(RecursiveError::transaction("getting mls groups"))?
             .get_fetch_all(&keystore)
             .await
             .map_err(RecursiveError::root("getting all conversations"))?;

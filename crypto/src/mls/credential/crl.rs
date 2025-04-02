@@ -98,7 +98,7 @@ impl TransactionContext {
                 let mut crl_dp = self
                     .e2ei_register_intermediate_ca_der(int)
                     .await
-                    .map_err(RecursiveError::e2e_identity("registering intermediate ca der"))?;
+                    .map_err(RecursiveError::transaction("registering intermediate ca der"))?;
                 if let Some(crl_dp) = crl_dp.take() {
                     crl_new_distribution_points.extend(crl_dp);
                 }
@@ -117,7 +117,7 @@ impl TransactionContext {
             &self
                 .mls_provider()
                 .await
-                .map_err(RecursiveError::root("getting mls provider"))?,
+                .map_err(RecursiveError::transaction("getting mls provider"))?,
             crl_new_distribution_points,
         )
         .await

@@ -37,12 +37,12 @@ impl TransactionContext {
         let mls_provider = self
             .mls_provider()
             .await
-            .map_err(RecursiveError::root("getting mls provider"))?;
+            .map_err(RecursiveError::transaction("getting mls provider"))?;
 
         let client = self
             .mls_client()
             .await
-            .map_err(RecursiveError::root("getting mls client"))?;
+            .map_err(RecursiveError::transaction("getting mls client"))?;
         let cb = client
             .find_most_recent_credential_bundle(ciphersuite.signature_algorithm(), credential_type)
             .await;

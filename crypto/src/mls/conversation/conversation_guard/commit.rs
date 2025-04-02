@@ -49,7 +49,7 @@ impl ConversationGuard {
             .await?
             .mls_transport()
             .await
-            .map_err(RecursiveError::root("getting mls transport"))?;
+            .map_err(RecursiveError::transaction("getting mls transport"))?;
         let transport = transport.as_ref().ok_or::<Error>(
             RecursiveError::root("getting mls transport")(crate::Error::MlsTransportNotProvided).into(),
         )?;

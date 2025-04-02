@@ -488,12 +488,12 @@ impl TransactionContext {
         let keystore = self
             .mls_provider()
             .await
-            .map_err(RecursiveError::root("getting mls provider"))?
+            .map_err(RecursiveError::transaction("getting mls provider"))?
             .keystore();
         let inner = self
             .mls_groups()
             .await
-            .map_err(RecursiveError::root("getting mls groups"))?
+            .map_err(RecursiveError::transaction("getting mls groups"))?
             .get_fetch(id, &keystore, None)
             .await
             .map_err(RecursiveError::root("fetching conversation from mls groups by id"))?;
@@ -511,7 +511,7 @@ impl TransactionContext {
         let keystore = self
             .keystore()
             .await
-            .map_err(RecursiveError::root("getting keystore"))?;
+            .map_err(RecursiveError::transaction("getting keystore"))?;
         let Some(pending_group) = keystore
             .find::<PersistedMlsPendingGroup>(id)
             .await
@@ -547,19 +547,15 @@ pub mod test_utils {
 
 #[cfg(test)]
 mod tests {
-    use crate::e2e_identity::rotate::tests::all::failsafe_ctx;
-    use std::sync::Arc;
-
-    use wasm_bindgen_test::*;
-
+    use super::*;
     use crate::{
         CoreCrypto,
         prelude::{ClientIdentifier, INITIAL_KEYING_MATERIAL_COUNT, MlsClientConfiguration},
         test_utils::*,
     };
-
-    use super::*;
     use core_crypto_keystore::DatabaseKey;
+    use std::sync::Arc;
+    use wasm_bindgen_test::*;
 
     wasm_bindgen_test_configure!(run_in_browser);
 
@@ -653,6 +649,8 @@ mod tests {
     #[apply(all_cred_cipher)]
     #[wasm_bindgen_test]
     pub async fn create_many_people_conversation(case: TestCase) {
+        use crate::e2e_identity::test_utils::failsafe_ctx;
+
         run_test_with_client_ids(case.clone(), ["alice"], move |[mut alice_central]| {
             Box::pin(async move {
                 let x509_test_chain_arc = failsafe_ctx(&mut [&mut alice_central], case.signature_scheme()).await;

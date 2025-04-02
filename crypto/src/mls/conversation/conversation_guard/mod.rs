@@ -61,7 +61,7 @@ impl ConversationGuard {
             .central_context
             .mls_groups()
             .await
-            .map_err(RecursiveError::root("getting mls groups"))?;
+            .map_err(RecursiveError::transaction("getting mls groups"))?;
         let mut conversation = self.conversation_mut().await;
         conversation.wipe_associated_entities(&provider).await?;
         provider

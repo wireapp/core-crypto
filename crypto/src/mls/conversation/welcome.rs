@@ -81,11 +81,11 @@ impl TransactionContext {
         let mls_provider = self
             .mls_provider()
             .await
-            .map_err(RecursiveError::root("getting mls provider"))?;
+            .map_err(RecursiveError::transaction("getting mls provider"))?;
         let mut mls_groups = self
             .mls_groups()
             .await
-            .map_err(RecursiveError::root("getting mls groups"))?;
+            .map_err(RecursiveError::transaction("getting mls groups"))?;
         let conversation =
             MlsConversation::from_welcome_message(welcome, configuration, &mls_provider, mls_groups.borrow_mut())
                 .await?;

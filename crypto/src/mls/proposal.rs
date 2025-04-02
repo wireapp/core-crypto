@@ -127,14 +127,14 @@ impl TransactionContext {
         let client = &self
             .mls_client()
             .await
-            .map_err(RecursiveError::root("getting mls client"))?;
+            .map_err(RecursiveError::transaction("getting mls client"))?;
         proposal
             .create(
                 client,
                 &self
                     .mls_provider()
                     .await
-                    .map_err(RecursiveError::root("getting mls provider"))?,
+                    .map_err(RecursiveError::transaction("getting mls provider"))?,
                 conversation.conversation_mut().await,
             )
             .await
