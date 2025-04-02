@@ -136,11 +136,7 @@ impl CoreCrypto {
     ) -> CoreCryptoResult<Self> {
         Self::new(path, key, client_id, ciphersuites, entropy_seed, nb_key_package).await
     }
-}
 
-#[cfg(target_family = "wasm")]
-#[wasm_bindgen]
-impl CoreCrypto {
     pub async fn deferred_init(
         path: String,
         key: DatabaseKey,
@@ -151,6 +147,12 @@ impl CoreCrypto {
             .map_err(CoreCryptoError::from)?;
 
         Self::from_config(configuration).await
+    }
+
+    /// see [core_crypto::mls::Client::close]
+    // Note that this is implemented only for Wasm; Uniffi already generates a `close` method which suffices.
+    pub async fn close(self) -> CoreCryptoResult<()> {
+        self.inner.take().close().await.map_err(Into::into)
     }
 }
 
