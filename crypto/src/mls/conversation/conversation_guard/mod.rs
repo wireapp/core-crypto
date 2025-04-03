@@ -118,3 +118,30 @@ impl ConversationGuard {
         MlsGroupInfoBundle::try_new_full_plaintext(group_info)
     }
 }
+
+#[cfg(test)]
+pub mod test_utils {
+    use super::ConversationGuard;
+    use crate::{mls::conversation::ConversationWithMls as _, prelude::MlsConversation};
+
+    impl ConversationGuard {
+        /// Replaces the MLS group in memory with the one from keystore.
+        pub async fn drop_and_restore(&mut self) {
+            use core_crypto_keystore::CryptoKeystoreMls as _;
+            let context = self.context().await.unwrap();
+            let inner = self.conversation().await;
+            let id = inner.id();
+
+            let (parent_id, group) = context
+                .keystore()
+                .await
+                .unwrap()
+                .mls_groups_restore()
+                .await
+                .map(|mut groups| groups.remove(id.as_slice()).unwrap())
+                .unwrap();
+            let group = MlsConversation::from_serialized_state(group, parent_id).unwrap();
+            context.mls_groups().await.unwrap().insert(id.clone(), group);
+        }
+    }
+}
