@@ -1,5 +1,13 @@
 # Changelog
 
+## v5.0.1 - 2025-04-03
+
+### Bug Fixes
+
+- broken swift bindings by publishing uniffi framework separately (2b950cc)
+- don't refer to the internal uniffi EpochObserver type in the public API (7833300)
+- re-expose proteus_reload_session which removed by mistake (36f2b87)
+
 ## v5.0.0 - 2025-03-21
 
 ### Highlights
