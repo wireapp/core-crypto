@@ -43,6 +43,7 @@ mod decrypted_message;
 mod error;
 mod identity;
 mod metadata;
+mod mls_transport;
 
 pub use bundles::{
     commit::CommitBundle, group_info::GroupInfoBundle, proposal::ProposalBundle,
@@ -66,3 +67,5 @@ pub use identity::{
     x509::X509Identity,
 };
 pub use metadata::{BuildMetadata, build_metadata, version};
+pub(crate) use mls_transport::MlsTransportShim;
+pub use mls_transport::{MlsTransport, MlsTransportResponse};
