@@ -175,68 +175,58 @@ mod tests {
     #[apply(all_cred_cipher)]
     #[wasm_bindgen_test]
     async fn join_by_external_commit_should_succeed(case: TestCase) {
-        run_test_with_client_ids(
-            case.clone(),
-            ["alice", "bob"],
-            move |[alice_central, mut bob_central]| {
-                Box::pin(async move {
-                    let id = conversation_id();
-                    alice_central
-                        .context
-                        .new_conversation(&id, case.credential_type, case.cfg.clone())
-                        .await
-                        .unwrap();
+        run_test_with_client_ids(case.clone(), ["alice", "bob"], move |[alice, bob]| {
+            Box::pin(async move {
+                let id = conversation_id();
+                alice
+                    .context
+                    .new_conversation(&id, case.credential_type, case.cfg.clone())
+                    .await
+                    .unwrap();
 
-                    // export Alice group info
-                    let group_info = alice_central.get_group_info(&id).await;
+                // export Alice group info
+                let group_info = alice.get_group_info(&id).await;
 
-                    // Bob tries to join Alice's group
-                    let (external_commit, mut pending_conversation) = bob_central
-                        .create_unmerged_external_commit(group_info.clone(), case.custom_cfg(), case.credential_type)
-                        .await;
+                // Bob tries to join Alice's group
+                let (external_commit, mut pending_conversation) = bob
+                    .create_unmerged_external_commit(group_info.clone(), case.custom_cfg(), case.credential_type)
+                    .await;
 
-                    // Alice acks the request and adds the new member
-                    assert_eq!(alice_central.get_conversation_unchecked(&id).await.members().len(), 1);
-                    let decrypted = alice_central
-                        .context
-                        .conversation(&id)
-                        .await
-                        .unwrap()
-                        .decrypt_message(&external_commit.commit.to_bytes().unwrap())
-                        .await
-                        .unwrap();
-                    assert_eq!(alice_central.get_conversation_unchecked(&id).await.members().len(), 2);
+                // Alice acks the request and adds the new member
+                assert_eq!(alice.get_conversation_unchecked(&id).await.members().len(), 1);
+                let decrypted = alice
+                    .context
+                    .conversation(&id)
+                    .await
+                    .unwrap()
+                    .decrypt_message(&external_commit.commit.to_bytes().unwrap())
+                    .await
+                    .unwrap();
+                assert_eq!(alice.get_conversation_unchecked(&id).await.members().len(), 2);
 
-                    // verify Bob's (sender) identity
-                    bob_central.verify_sender_identity(&case, &decrypted).await;
+                // verify Bob's (sender) identity
+                bob.verify_sender_identity(&case, &decrypted).await;
 
-                    // Let's say backend accepted our external commit.
-                    // So Bob can merge the commit and update the local state
-                    assert!(bob_central.context.conversation(&id).await.is_err());
-                    pending_conversation.merge().await.unwrap();
-                    assert!(bob_central.context.conversation(&id).await.is_ok());
-                    assert_eq!(bob_central.get_conversation_unchecked(&id).await.members().len(), 2);
-                    assert!(alice_central.try_talk_to(&id, &bob_central).await.is_ok());
+                // Let's say backend accepted our external commit.
+                // So Bob can merge the commit and update the local state
+                assert!(bob.context.conversation(&id).await.is_err());
+                pending_conversation.merge().await.unwrap();
+                assert!(bob.context.conversation(&id).await.is_ok());
+                assert_eq!(bob.get_conversation_unchecked(&id).await.members().len(), 2);
+                assert!(alice.try_talk_to(&id, &bob).await.is_ok());
 
-                    // Pending group removed from keystore
-                    let error = bob_central
-                        .context
-                        .keystore()
-                        .await
-                        .unwrap()
-                        .mls_pending_groups_load(&id)
-                        .await;
-                    assert!(matches!(
-                        error.unwrap_err(),
-                        CryptoKeystoreError::MissingKeyInStore(MissingKeyErrorKind::MlsPendingGroup)
-                    ));
+                // Pending group removed from keystore
+                let error = bob.context.keystore().await.unwrap().mls_pending_groups_load(&id).await;
+                assert!(matches!(
+                    error.unwrap_err(),
+                    CryptoKeystoreError::MissingKeyInStore(MissingKeyErrorKind::MlsPendingGroup)
+                ));
 
-                    // Ensure it's durable i.e. MLS group has been persisted
-                    bob_central.context.drop_and_restore(&id).await;
-                    assert!(bob_central.try_talk_to(&id, &alice_central).await.is_ok());
-                })
-            },
-        )
+                // Ensure it's durable i.e. MLS group has been persisted
+                bob.context.conversation(&id).await.unwrap().drop_and_restore().await;
+                assert!(bob.try_talk_to(&id, &alice).await.is_ok());
+            })
+        })
         .await
     }
 
