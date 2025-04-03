@@ -7,7 +7,7 @@
 <a href=#7 id=7 data-nosnippet>7</a><span class="kw">use </span><span class="kw">crate</span>::prelude::MlsCredentialType;
 <a href=#8 id=8 data-nosnippet>8</a><span class="kw">use crate</span>::{
 <a href=#9 id=9 data-nosnippet>9</a>    LeafError, MlsError, MlsTransportResponse, RecursiveError,
-<a href=#10 id=10 data-nosnippet>10</a>    e2e_identity::init_certificates::NewCrlDistributionPoint,
+<a href=#10 id=10 data-nosnippet>10</a>    e2e_identity::init_certificates::NewCrlDistributionPoints,
 <a href=#11 id=11 data-nosnippet>11</a>    mls::{
 <a href=#12 id=12 data-nosnippet>12</a>        conversation::{ConversationGuard, <span class="prelude-ty">Result</span>, commit::MlsCommitBundle},
 <a href=#13 id=13 data-nosnippet>13</a>        credential::crl::{extract_crl_uris_from_credentials, get_new_crl_distribution_points},
@@ -100,7 +100,7 @@
 <a href=#100 id=100 data-nosnippet>100</a>    }
 <a href=#101 id=101 data-nosnippet>101</a>
 <a href=#102 id=102 data-nosnippet>102</a>    <span class="doccomment">/// Adds new members to the group/conversation
-<a href=#103 id=103 data-nosnippet>103</a>    </span><span class="kw">pub async fn </span>add_members(<span class="kw-2">&amp;mut </span><span class="self">self</span>, key_packages: Vec&lt;KeyPackageIn&gt;) -&gt; <span class="prelude-ty">Result</span>&lt;NewCrlDistributionPoint&gt; {
+<a href=#103 id=103 data-nosnippet>103</a>    </span><span class="kw">pub async fn </span>add_members(<span class="kw-2">&amp;mut </span><span class="self">self</span>, key_packages: Vec&lt;KeyPackageIn&gt;) -&gt; <span class="prelude-ty">Result</span>&lt;NewCrlDistributionPoints&gt; {
 <a href=#104 id=104 data-nosnippet>104</a>        <span class="kw">let </span>backend = <span class="self">self</span>.mls_provider().<span class="kw">await</span><span class="question-mark">?</span>;
 <a href=#105 id=105 data-nosnippet>105</a>        <span class="kw">let </span>credential = <span class="self">self</span>.credential_bundle().<span class="kw">await</span><span class="question-mark">?</span>;
 <a href=#106 id=106 data-nosnippet>106</a>        <span class="kw">let </span>signer = credential.signature_key();

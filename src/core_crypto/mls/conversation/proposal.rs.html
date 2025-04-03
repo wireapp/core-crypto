@@ -12,7 +12,7 @@
 <a href=#12 id=12 data-nosnippet>12</a><span class="kw">use super</span>::{Error, <span class="prelude-ty">Result</span>};
 <a href=#13 id=13 data-nosnippet>13</a><span class="kw">use crate</span>::{
 <a href=#14 id=14 data-nosnippet>14</a>    MlsError, RecursiveError,
-<a href=#15 id=15 data-nosnippet>15</a>    e2e_identity::init_certificates::NewCrlDistributionPoint,
+<a href=#15 id=15 data-nosnippet>15</a>    e2e_identity::init_certificates::NewCrlDistributionPoints,
 <a href=#16 id=16 data-nosnippet>16</a>    mls::credential::crl::{extract_crl_uris_from_credentials, get_new_crl_distribution_points},
 <a href=#17 id=17 data-nosnippet>17</a>    prelude::{Client, MlsConversation, MlsProposalRef},
 <a href=#18 id=18 data-nosnippet>18</a>};
@@ -126,7 +126,7 @@
 <a href=#126 id=126 data-nosnippet>126</a>    <span class="doccomment">/// A unique identifier of the proposal to rollback it later if required
 <a href=#127 id=127 data-nosnippet>127</a>    </span><span class="kw">pub </span>proposal_ref: MlsProposalRef,
 <a href=#128 id=128 data-nosnippet>128</a>    <span class="doccomment">/// New CRL distribution points that appeared by the introduction of a new credential
-<a href=#129 id=129 data-nosnippet>129</a>    </span><span class="kw">pub </span>crl_new_distribution_points: NewCrlDistributionPoint,
+<a href=#129 id=129 data-nosnippet>129</a>    </span><span class="kw">pub </span>crl_new_distribution_points: NewCrlDistributionPoints,
 <a href=#130 id=130 data-nosnippet>130</a>}
 <a href=#131 id=131 data-nosnippet>131</a>
 <a href=#132 id=132 data-nosnippet>132</a><span class="kw">impl </span>From&lt;(MlsMessageOut, openmls::prelude::hash_ref::ProposalRef)&gt; <span class="kw">for </span>MlsProposalBundle {
@@ -144,7 +144,7 @@
 <a href=#144 id=144 data-nosnippet>144</a>    /// 0 -&gt; proposal
 <a href=#145 id=145 data-nosnippet>145</a>    /// 1 -&gt; proposal reference
 <a href=#146 id=146 data-nosnippet>146</a>    </span><span class="attr">#[allow(clippy::type_complexity)]
-<a href=#147 id=147 data-nosnippet>147</a>    </span><span class="kw">pub fn </span>to_bytes(<span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;(Vec&lt;u8&gt;, Vec&lt;u8&gt;, NewCrlDistributionPoint)&gt; {
+<a href=#147 id=147 data-nosnippet>147</a>    </span><span class="kw">pub fn </span>to_bytes(<span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;(Vec&lt;u8&gt;, Vec&lt;u8&gt;, NewCrlDistributionPoints)&gt; {
 <a href=#148 id=148 data-nosnippet>148</a>        <span class="kw">use </span>openmls::prelude::TlsSerializeTrait <span class="kw">as _</span>;
 <a href=#149 id=149 data-nosnippet>149</a>        <span class="kw">let </span>proposal = <span class="self">self
 <a href=#150 id=150 data-nosnippet>150</a>            </span>.proposal

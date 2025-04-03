@@ -4,12 +4,12 @@ $dokka.location:com.wire.crypto////PointingToDeclaration/android/com.wire.crypt
 $dokka.location:com.wire.crypto//lift/[Error type: Unresolved type for com.wire.crypto.uniffi.BufferedDecryptedMessage]#/PointingToDeclaration/android/com.wire.crypto/lift.html
 $dokka.location:com.wire.crypto//lift/[Error type: Unresolved type for com.wire.crypto.uniffi.CommitBundle]#/PointingToDeclaration/android/com.wire.crypto/lift.html
 $dokka.location:com.wire.crypto//lift/[Error type: Unresolved type for com.wire.crypto.uniffi.CoreCryptoException]#/PointingToDeclaration/android/com.wire.crypto/lift.html
+$dokka.location:com.wire.crypto//lift/[Error type: Unresolved type for com.wire.crypto.uniffi.CredentialType]#/PointingToDeclaration/android/com.wire.crypto/lift.html
 $dokka.location:com.wire.crypto//lift/[Error type: Unresolved type for com.wire.crypto.uniffi.CrlRegistration]#/PointingToDeclaration/android/com.wire.crypto/lift.html
 $dokka.location:com.wire.crypto//lift/[Error type: Unresolved type for com.wire.crypto.uniffi.DecryptedMessage]#/PointingToDeclaration/android/com.wire.crypto/lift.html
 $dokka.location:com.wire.crypto//lift/[Error type: Unresolved type for com.wire.crypto.uniffi.DeviceStatus]#/PointingToDeclaration/android/com.wire.crypto/lift.html
 $dokka.location:com.wire.crypto//lift/[Error type: Unresolved type for com.wire.crypto.uniffi.E2eiDumpedPkiEnv]#/PointingToDeclaration/android/com.wire.crypto/lift.html
 $dokka.location:com.wire.crypto//lift/[Error type: Unresolved type for com.wire.crypto.uniffi.GroupInfoBundle]#/PointingToDeclaration/android/com.wire.crypto/lift.html
-$dokka.location:com.wire.crypto//lift/[Error type: Unresolved type for com.wire.crypto.uniffi.MlsCredentialType]#/PointingToDeclaration/android/com.wire.crypto/lift.html
 $dokka.location:com.wire.crypto//lift/[Error type: Unresolved type for com.wire.crypto.uniffi.MlsException]#/PointingToDeclaration/android/com.wire.crypto/lift.html
 $dokka.location:com.wire.crypto//lift/[Error type: Unresolved type for com.wire.crypto.uniffi.MlsGroupInfoEncryptionType]#/PointingToDeclaration/android/com.wire.crypto/lift.html
 $dokka.location:com.wire.crypto//lift/[Error type: Unresolved type for com.wire.crypto.uniffi.MlsRatchetTreeType]#/PointingToDeclaration/android/com.wire.crypto/lift.html

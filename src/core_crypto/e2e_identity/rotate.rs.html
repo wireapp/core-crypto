@@ -4,7 +4,7 @@
 <a href=#4 id=4 data-nosnippet>4</a><span class="kw">use crate</span>::{
 <a href=#5 id=5 data-nosnippet>5</a>    MlsError, RecursiveError,
 <a href=#6 id=6 data-nosnippet>6</a>    context::CentralContext,
-<a href=#7 id=7 data-nosnippet>7</a>    e2e_identity::init_certificates::NewCrlDistributionPoint,
+<a href=#7 id=7 data-nosnippet>7</a>    e2e_identity::init_certificates::NewCrlDistributionPoints,
 <a href=#8 id=8 data-nosnippet>8</a>    mls::credential::{ext::CredentialExt, x509::CertificatePrivateKey},
 <a href=#9 id=9 data-nosnippet>9</a>    prelude::{CertificateBundle, E2eiEnrollment, MlsCiphersuite, MlsCredentialType},
 <a href=#10 id=10 data-nosnippet>10</a>};
@@ -122,7 +122,7 @@
 <a href=#122 id=122 data-nosnippet>122</a>        <span class="kw-2">&amp;</span><span class="self">self</span>,
 <a href=#123 id=123 data-nosnippet>123</a>        enrollment: <span class="kw-2">&amp;mut </span>E2eiEnrollment,
 <a href=#124 id=124 data-nosnippet>124</a>        certificate_chain: String,
-<a href=#125 id=125 data-nosnippet>125</a>    ) -&gt; <span class="prelude-ty">Result</span>&lt;NewCrlDistributionPoint&gt; {
+<a href=#125 id=125 data-nosnippet>125</a>    ) -&gt; <span class="prelude-ty">Result</span>&lt;NewCrlDistributionPoints&gt; {
 <a href=#126 id=126 data-nosnippet>126</a>        <span class="kw">let </span>sk = enrollment.get_sign_key_for_mls()<span class="question-mark">?</span>;
 <a href=#127 id=127 data-nosnippet>127</a>        <span class="kw">let </span>cs = enrollment.ciphersuite;
 <a href=#128 id=128 data-nosnippet>128</a>        <span class="kw">let </span>certificate_chain = enrollment
