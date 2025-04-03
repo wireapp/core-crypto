@@ -1,6 +1,6 @@
-use crate::transaction_context::TransactionContext;
+use super::TransactionContext;
 use core_crypto_keystore::{
-    connection::FetchFromDatabase,
+    connection::FetchFromDatabase as _,
     entities::{
         E2eiEnrollment, MlsCredential, MlsEncryptionKeyPair, MlsEpochEncryptionKeyPair, MlsHpkePrivateKey,
         MlsKeyPackage, MlsPendingMessage, MlsPskBundle, MlsSignatureKeyPair, PersistedMlsGroup,

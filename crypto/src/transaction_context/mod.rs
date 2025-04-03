@@ -14,8 +14,11 @@ use core_crypto_keystore::{CryptoKeystoreError, connection::FetchFromDatabase, e
 pub use error::{Error, Result};
 use mls_crypto_provider::{CryptoKeystore, MlsCryptoProvider};
 use std::{ops::Deref, sync::Arc};
+pub mod conversation;
 pub mod e2e_identity;
 mod error;
+#[cfg(test)]
+pub mod test_utils;
 
 /// This struct provides transactional support for Core Crypto.
 ///

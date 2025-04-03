@@ -806,9 +806,9 @@ impl Session {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::mls::conversation::db_count::EntitiesCount;
     use crate::prelude::ClientId;
     use crate::test_utils::*;
+    use crate::transaction_context::test_utils::EntitiesCount;
     use core_crypto_keystore::connection::{DatabaseKey, FetchFromDatabase};
     use core_crypto_keystore::entities::*;
     use mls_crypto_provider::MlsCryptoProvider;
