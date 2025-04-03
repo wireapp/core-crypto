@@ -74,6 +74,8 @@ pub enum CryptoKeystoreError {
     AlreadyExists,
     #[error("The provided buffer is too big to be persisted in the store")]
     BlobTooBig,
+    #[error("Cannot close as multiple strong refs exist")]
+    CannotClose,
     #[error(transparent)]
     KeyStoreValueTransformError(#[from] postcard::Error),
     #[error(transparent)]

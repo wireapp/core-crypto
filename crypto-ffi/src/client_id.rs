@@ -16,6 +16,19 @@ uniffi::custom_type!(ClientId, Vec<u8>, {
     try_lift: |vec| Ok(Self(vec.into()))
 });
 
+#[cfg(target_family = "wasm")]
+#[wasm_bindgen]
+impl ClientId {
+    #[wasm_bindgen(constructor)]
+    pub fn new(bytes: Vec<u8>) -> Self {
+        Self(bytes.into())
+    }
+
+    pub fn as_bytes(&self) -> Vec<u8> {
+        self.0.to_vec()
+    }
+}
+
 pub type FfiClientId = Box<[u8]>;
 
 #[cfg(target_family = "wasm")]
@@ -33,5 +46,21 @@ impl From<ClientId> for ClientIdSerializationShim {
 impl From<ClientIdSerializationShim> for ClientId {
     fn from(value: ClientIdSerializationShim) -> Self {
         Self(value.0.into())
+    }
+}
+
+pub(crate) trait AsCoreCryptoClientId {
+    fn as_cc_client_id(&self) -> core_crypto::prelude::ClientId;
+}
+
+impl AsCoreCryptoClientId for ClientId {
+    fn as_cc_client_id(&self) -> core_crypto::prelude::ClientId {
+        self.0.clone()
+    }
+}
+
+impl AsCoreCryptoClientId for FfiClientId {
+    fn as_cc_client_id(&self) -> core_crypto::prelude::ClientId {
+        self.clone().into()
     }
 }

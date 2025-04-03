@@ -1,6 +1,7 @@
+import { safeBigintToNumber } from "./Conversions.js";
 import * as CoreCryptoFfiTypes from "./core-crypto-ffi.d.js";
 
-import { NewAcmeAuthz, NewAcmeOrder } from "./core-crypto-ffi.js";
+import { NewAcmeAuthz, NewAcmeOrder, CrlRegistration as CrlRegistrationFfi } from "./core-crypto-ffi.js";
 
 import { CoreCryptoError } from "./CoreCryptoError.js";
 
@@ -20,6 +21,13 @@ export interface CRLRegistration {
      * @readonly
      */
     expiration?: number;
+}
+
+export function crlRegistrationFromFfi(r: CrlRegistrationFfi): CRLRegistration {
+    return {
+        dirty: r.dirty,
+        expiration: r.expiration ? safeBigintToNumber(r.expiration) : undefined,
+    }
 }
 
 export function normalizeEnum<T>(enumType: T, value: number): T[keyof T] {
@@ -59,8 +67,8 @@ export class E2eiEnrollment {
     #enrollment: CoreCryptoFfiTypes.FfiWireE2EIdentity;
 
     /** @hidden */
-    constructor(e2ei: unknown) {
-        this.#enrollment = e2ei as CoreCryptoFfiTypes.FfiWireE2EIdentity;
+    constructor(e2ei: CoreCryptoFfiTypes.FfiWireE2EIdentity) {
+        this.#enrollment = e2ei;
     }
 
     free() {
@@ -83,17 +91,9 @@ export class E2eiEnrollment {
      * @see https://www.rfc-editor.org/rfc/rfc8555.html#section-7.1.1
      */
     async directoryResponse(directory: JsonRawData): Promise<AcmeDirectory> {
-        const ffiRet: CoreCryptoFfiTypes.AcmeDirectory =
-            await CoreCryptoError.asyncMapErr(
-                this.#enrollment.directory_response(directory)
-            );
-
-        return {
-            newNonce: ffiRet.new_nonce,
-            newAccount: ffiRet.new_account,
-            newOrder: ffiRet.new_order,
-            revokeCert: ffiRet.revoke_cert,
-        };
+        return await CoreCryptoError.asyncMapErr(
+            this.#enrollment.directory_response(directory)
+        );
     }
 
     /**
@@ -188,9 +188,10 @@ export class E2eiEnrollment {
         expirySecs: number,
         backendNonce: string
     ): Promise<Uint8Array> {
-        return await CoreCryptoError.asyncMapErr(
+        const token = await CoreCryptoError.asyncMapErr(
             this.#enrollment.create_dpop_token(expirySecs, backendNonce)
         );
+        return new TextEncoder().encode(token)
     }
 
     /**

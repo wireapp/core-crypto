@@ -8,7 +8,7 @@ pub enum ProteusError {
     DuplicateMessage,
     #[error("The remote identity has changed")]
     RemoteIdentityChanged,
-    #[error("Another Proteus error occurred but the details are probably irrelevant to clients")]
+    #[error("Another Proteus error occurred but the details are probably irrelevant to clients ({0})")]
     Other(u16),
 }
 

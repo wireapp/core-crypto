@@ -1,11 +1,28 @@
+import { safeBigintToNumber } from "./Conversions.js";
 import {
-    MlsTransportResponseVariant,
-    WasmMlsTransportResponse as MlsTransportResponseFfi,
+    BufferedDecryptedMessage as BufferedDecryptedMessageFfi,
     CommitBundle as CommitBundleFfi,
+    CredentialType,
+    DecryptedMessage as DecryptedMessageFfi,
+    DeviceStatus,
+    MlsGroupInfoEncryptionType as GroupInfoEncryptionType,
+    MlsRatchetTreeType as RatchetTreeType,
+    MlsTransportResponse as MlsTransportResponseFfi,
+    MlsTransportResponseVariant,
+    ProposalBundle as ProposalBundleFfi,
+    WelcomeBundle,
     WireIdentity,
+    WirePolicy,
 } from "./core-crypto-ffi.js";
 
-export { WelcomeBundle } from "./core-crypto-ffi.js";
+export {
+    CredentialType,
+    DeviceStatus,
+    GroupInfoEncryptionType,
+    RatchetTreeType,
+    WelcomeBundle,
+    WirePolicy,
+};
 
 /**
  * see [core_crypto::prelude::CiphersuiteName]
@@ -39,31 +56,6 @@ export enum Ciphersuite {
      * DH KEM P384 | AES-GCM 256 | SHA2-384 | EcDSA P384
      */
     MLS_256_DHKEMP384_AES256GCM_SHA384_P384 = 0x0007,
-}
-
-export enum CredentialType {
-    /**
-     * Just a KeyPair
-     */
-    Basic = 0x0001,
-    /**
-     * A certificate obtained through e2e identity enrollment process
-     */
-    X509 = 0x0002,
-}
-
-/**
- * see [core_crypto::prelude::MlsWirePolicy]
- */
-export enum WirePolicy {
-    /**
-     * Handshake messages are never encrypted
-     */
-    Plaintext = 0x0001,
-    /**
-     * Handshake messages are always encrypted
-     */
-    Ciphertext = 0x0002,
 }
 
 /**
@@ -107,7 +99,7 @@ export interface CommitBundle {
     groupInfo: GroupInfoBundle;
 }
 
-export function commitBundleFromFfi(
+function commitBundleFromFfi(
     commitBundle: CommitBundleFfi
 ): CommitBundle {
     return {
@@ -138,40 +130,6 @@ export interface GroupInfoBundle {
      * TLS-serialized GroupInfo
      */
     payload: Uint8Array;
-}
-
-/**
- * Informs whether the GroupInfo is confidential
- * see [core_crypto::mls::conversation::group_info::GroupInfoEncryptionType]
- */
-export enum GroupInfoEncryptionType {
-    /**
-     * Unencrypted
-     */
-    Plaintext = 0x01,
-    /**
-     * Encrypted in a JWE (not yet implemented)
-     */
-    JweEncrypted = 0x02,
-}
-
-/**
- * Represents different ways of carrying the Ratchet Tree with some optimizations to save some space
- * see [core_crypto::mls::conversation::group_info::RatchetTreeType]
- */
-export enum RatchetTreeType {
-    /**
-     * Complete GroupInfo
-     */
-    Full = 0x01,
-    /**
-     * Contains the difference since previous epoch (not yet implemented)
-     */
-    Delta = 0x02,
-    /**
-     * To define (not yet implemented)
-     */
-    ByRef = 0x03,
 }
 
 /**
@@ -223,6 +181,13 @@ export interface DecryptedMessage {
     crlNewDistributionPoints?: string[];
 }
 
+export function decryptedMessageFromFfi(m: DecryptedMessageFfi): DecryptedMessage {
+    return {
+        bufferedMessages: m.bufferedMessages?.map((msg) => bufferedDecryptedMessageFromFfi(msg)) ?? undefined,
+        ...bufferedDecryptedMessageFromFfi(m),
+    }
+}
+
 /**
  * Almost same as {@link DecryptedMessage} but avoids recursion
  */
@@ -261,23 +226,17 @@ export interface BufferedDecryptedMessage {
     crlNewDistributionPoints?: string[];
 }
 
-/**
- * Indicates the standalone status of a device Credential in a MLS group at a moment T.
- * This does not represent the states where a device is not using MLS or is not using end-to-end identity
- */
-export enum DeviceStatus {
-    /**
-     * All is fine
-     */
-    Valid = 1,
-    /**
-     * The Credential's certificate is expired
-     */
-    Expired = 2,
-    /**
-     * The Credential's certificate is revoked
-     */
-    Revoked = 3,
+export function bufferedDecryptedMessageFromFfi(m: BufferedDecryptedMessageFfi): BufferedDecryptedMessage {
+    return {
+        message: m.message,
+        proposals: m.proposals.map((proposal) => proposalBundleFromFfi(proposal)),
+        isActive: m.isActive,
+        commitDelay: m.commitDelay ? safeBigintToNumber(m.commitDelay) : undefined,
+        senderClientId: m.senderClientId?.as_bytes(),
+        hasEpochChanged: m.hasEpochChanged,
+        identity: m.identity,
+        crlNewDistributionPoints: m.crlNewDistributionPoints.as_strings(),
+    }
 }
 
 /**
@@ -304,6 +263,14 @@ export interface ProposalBundle {
     crlNewDistributionPoints?: string[];
 }
 
+export function proposalBundleFromFfi(p: ProposalBundleFfi): ProposalBundle {
+    return {
+        proposal: p.proposal,
+        proposalRef: p.proposal_ref,
+        crlNewDistributionPoints: p.crl_new_distribution_points,
+    }
+}
+
 /**
  * Returned by {@link MlsTransport} callbacks.
  */
@@ -311,13 +278,13 @@ export type MlsTransportResponse =
     | "success"
     | "retry"
     | {
-          /**
-           * The message was rejected by the delivery service and there's no recovery.
-           */
-          abort: { reason: string };
-      };
+        /**
+         * The message was rejected by the delivery service and there's no recovery.
+         */
+        abort: { reason: string };
+    };
 
-export function mapTransportResponseToFfi(
+function mapTransportResponseToFfi(
     response: MlsTransportResponse
 ): MlsTransportResponseFfi {
     if (response === "success") {
@@ -359,4 +326,27 @@ export interface MlsTransport {
      * @returns a promise resolving to a {@link MlsTransportResponse}
      */
     sendMessage: (message: Uint8Array) => Promise<MlsTransportResponse>;
+}
+
+/**
+ * This shim wraps an `MlsTransport` according to our public API and implements the inner FFI transport API,
+ * mapping appropriately between the two.
+ */
+export class MlsTransportFfiShim {
+    private inner: MlsTransport;
+
+    constructor(inner: MlsTransport) {
+        this.inner = inner;
+    }
+
+    async send_commit_bundle(commitBundle: CommitBundleFfi): Promise<MlsTransportResponseFfi> {
+        const cb = commitBundleFromFfi(commitBundle);
+        const response = await this.inner.sendCommitBundle(cb);
+        return mapTransportResponseToFfi(response);
+    }
+
+    async send_message(message: Uint8Array): Promise<MlsTransportResponseFfi> {
+        const response = await this.inner.sendMessage(message);
+        return mapTransportResponseToFfi(response);
+    }
 }

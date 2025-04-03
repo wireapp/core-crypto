@@ -151,11 +151,25 @@ impl MlsCryptoProvider {
         self.crypto.reseed(entropy_seed)
     }
 
+    /// Returns whether or not it is currently possible to close this provider.
+    ///
+    /// Reasons why it may not currently be possible:
+    ///
+    /// - A transaction is currently in progress
+    /// - Multiple strong references currently exist to the keystore
+    ///
+    /// As with all such checks, this is vulnerable to TOCTOU issues, but as the current implementation
+    /// of the [`close`] function consumes `self`, this is the only way to check in advance whether
+    /// this will in principle work.
+    pub async fn can_close(&self) -> bool {
+        self.key_store.can_close().await
+    }
+
     /// Closes this provider, which in turns tears down the backing store
     ///
     /// Note: This does **not** destroy the data on-disk in case of persistent backing store
     pub async fn close(self) -> MlsProviderResult<()> {
-        Ok(self.key_store.close().await?)
+        self.key_store.close().await.map_err(Into::into)
     }
 
     /// Clone keystore (its an `Arc` internnaly)
