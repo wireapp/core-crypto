@@ -1,5 +1,5 @@
 (function() {
-    var implementors = Object.fromEntries([["interop",[["impl <a class=\"trait\" href=\"https://doc.rust-lang.org/1.85.1/core/fmt/trait.UpperHex.html\" title=\"trait core::fmt::UpperHex\">UpperHex</a> for <a class=\"struct\" href=\"interop/clients/struct.EmulatedClientProtocol.html\" title=\"struct interop::clients::EmulatedClientProtocol\">EmulatedClientProtocol</a>"]]]]);
+    var implementors = Object.fromEntries([["interop",[["impl <a class=\"trait\" href=\"https://doc.rust-lang.org/1.86.0/core/fmt/trait.UpperHex.html\" title=\"trait core::fmt::UpperHex\">UpperHex</a> for <a class=\"struct\" href=\"interop/clients/struct.EmulatedClientProtocol.html\" title=\"struct interop::clients::EmulatedClientProtocol\">EmulatedClientProtocol</a>"]]]]);
     if (window.register_implementors) {
         window.register_implementors(implementors);
     } else {
