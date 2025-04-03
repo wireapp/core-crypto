@@ -51,8 +51,7 @@ sha2 = { version = "0.10", features = ["force-soft"] }
 uniffi.workspace = true
 
 [target.wasm32-unknown-unknown.dependencies]
-# caution! wasm-bindgen v0.2.100 causes our CI to fail
-wasm-bindgen = "=0.2.99"
+wasm-bindgen = "0.2.100"
 wasm-bindgen-futures = "0.4"
 serde-wasm-bindgen = "0.6"
 serde_json.workspace = true
