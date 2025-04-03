@@ -292,8 +292,8 @@ impl CoreCryptoContext {
     /// see [core_crypto::context::CentralContext::wipe_conversation]
     pub async fn wipe_conversation(&self, conversation_id: &ConversationId) -> CoreCryptoResult<()> {
         let conversation_id = conversation_id_vec!(conversation_id);
-        self.inner.wipe_conversation(&conversation_id).await?;
-        Ok(())
+        let mut conversation = self.inner.conversation(&conversation_id).await?;
+        conversation.wipe().await.map_err(Into::into)
     }
 
     /// See [core_crypto::mls::conversation::conversation_guard::ConversationGuard::decrypt_message]
