@@ -38,7 +38,9 @@ args = [
     "--basePath", "./bindings/js",
     "--entryPoints", "./bindings/js/src/CoreCrypto.ts",
     "--tsconfig", "./bindings/js/tsconfig.json",
-    "--out", "../target/doc/core_crypto_ffi/bindings/typescript"
+    "--out", "../target/doc/core_crypto_ffi/bindings/typescript",
+    "--readme", "none",
+    "--treatWarningsAsErrors",
 ]
 
 ##################################### WASM ####################################
