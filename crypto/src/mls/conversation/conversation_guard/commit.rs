@@ -29,8 +29,8 @@ impl ConversationGuard {
         match self.send_commit(commit).await {
             Ok(TransportedCommitPolicy::None) => Ok(()),
             Ok(TransportedCommitPolicy::Merge) => {
-                let client = self.mls_client().await?;
-                let backend = self.mls_provider().await?;
+                let client = self.session().await?;
+                let backend = self.crypto_provider().await?;
                 let mut conversation = self.inner.write().await;
                 conversation.commit_accepted(&client, &backend).await
             }
@@ -53,8 +53,8 @@ impl ConversationGuard {
         let transport = transport.as_ref().ok_or::<Error>(
             RecursiveError::root("getting mls transport")(crate::Error::MlsTransportNotProvided).into(),
         )?;
-        let client = self.mls_client().await?;
-        let backend = self.mls_provider().await?;
+        let client = self.session().await?;
+        let backend = self.crypto_provider().await?;
 
         let inner = self.conversation().await;
         let epoch_before_sending = inner.group().epoch().as_u64();
@@ -101,7 +101,7 @@ impl ConversationGuard {
 
     /// Adds new members to the group/conversation
     pub async fn add_members(&mut self, key_packages: Vec<KeyPackageIn>) -> Result<NewCrlDistributionPoints> {
-        let backend = self.mls_provider().await?;
+        let backend = self.crypto_provider().await?;
         let credential = self.credential_bundle().await?;
         let signer = credential.signature_key();
         let mut conversation = self.conversation_mut().await;
@@ -150,7 +150,7 @@ impl ConversationGuard {
     /// * `id` - group/conversation id
     /// * `clients` - list of client ids to be removed from the group
     pub async fn remove_members(&mut self, clients: &[ClientId]) -> Result<()> {
-        let backend = self.mls_provider().await?;
+        let backend = self.crypto_provider().await?;
         let credential = self.credential_bundle().await?;
         let signer = credential.signature_key();
         let mut conversation = self.inner.write().await;
@@ -196,8 +196,8 @@ impl ConversationGuard {
     ///
     /// see [MlsCentral::update_keying_material]
     pub async fn update_key_material(&mut self) -> Result<()> {
-        let client = self.mls_client().await?;
-        let backend = self.mls_provider().await?;
+        let client = self.session().await?;
+        let backend = self.crypto_provider().await?;
         let mut conversation = self.inner.write().await;
         let commit = conversation
             .update_keying_material(&client, &backend, None, None)
@@ -212,8 +212,8 @@ impl ConversationGuard {
     /// [crate::transaction_context::TransactionContext::e2ei_new_rotate_enrollment] and having saved it with
     /// [crate::transaction_context::TransactionContext::save_x509_credential].
     pub async fn e2ei_rotate(&mut self, cb: Option<&CredentialBundle>) -> Result<()> {
-        let client = &self.mls_client().await?;
-        let backend = &self.mls_provider().await?;
+        let client = &self.session().await?;
+        let backend = &self.crypto_provider().await?;
         let mut conversation = self.inner.write().await;
 
         let cb = match cb {
@@ -245,8 +245,8 @@ impl ConversationGuard {
 
     /// Commits all pending proposals of the group
     pub async fn commit_pending_proposals(&mut self) -> Result<()> {
-        let client = self.mls_client().await?;
-        let backend = self.mls_provider().await?;
+        let client = self.session().await?;
+        let backend = self.crypto_provider().await?;
         let mut conversation = self.inner.write().await;
         let commit = conversation.commit_pending_proposals(&client, &backend).await?;
         drop(conversation);

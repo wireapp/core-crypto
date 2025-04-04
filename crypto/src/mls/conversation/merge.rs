@@ -88,7 +88,7 @@ mod tests {
         #[apply(all_cred_cipher)]
         #[wasm_bindgen_test]
         async fn should_clear_pending_commit_and_proposals(case: TestCase) {
-            use crate::mls::HasClientAndProvider as _;
+            use crate::mls::HasSessionAndCrypto as _;
 
             run_test_with_client_ids(case.clone(), ["alice"], move |[mut alice_central]| {
                 Box::pin(async move {
@@ -106,7 +106,7 @@ mod tests {
                         .get_conversation_unchecked(&id)
                         .await
                         .commit_accepted(
-                            &alice_central.context.client().await.unwrap(),
+                            &alice_central.context.session().await.unwrap(),
                             &alice_central.session.crypto_provider,
                         )
                         .await

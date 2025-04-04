@@ -36,7 +36,7 @@ impl ConversationGuard {
     /// When the conversation is not found or the proposal reference does not identify a proposal
     /// in the local pending proposal store
     pub async fn clear_pending_proposal(&mut self, proposal_ref: MlsProposalRef) -> Result<()> {
-        let keystore = self.mls_provider().await?.keystore();
+        let keystore = self.crypto_provider().await?.keystore();
         let mut conversation = self.conversation_mut().await;
         conversation
             .group
@@ -64,7 +64,7 @@ impl ConversationGuard {
     /// # Errors
     /// When the conversation is not found or there is no pending commit
     pub(crate) async fn clear_pending_commit(&mut self) -> Result<()> {
-        let keystore = self.mls_provider().await?.keystore();
+        let keystore = self.crypto_provider().await?.keystore();
         let mut conversation = self.conversation_mut().await;
         if conversation.group.pending_commit().is_some() {
             conversation.group.clear_pending_commit();

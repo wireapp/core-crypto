@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use async_trait::async_trait;
 
-use crate::{CoreCrypto, RecursiveError, mls::HasClientAndProvider as _, prelude::ConversationId};
+use crate::{CoreCrypto, RecursiveError, mls::HasSessionAndCrypto as _, prelude::ConversationId};
 
 use super::{Error, Result, Session};
 
@@ -56,7 +56,7 @@ impl CoreCrypto {
     /// If called when an epoch observer already exists, this will return an error.
     pub async fn register_epoch_observer(&self, epoch_observer: Arc<dyn EpochObserver>) -> Result<()> {
         let session = self
-            .client()
+            .session()
             .await
             .map_err(RecursiveError::mls("getting mls session"))?;
         session.register_epoch_observer(epoch_observer).await

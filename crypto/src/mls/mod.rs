@@ -132,19 +132,19 @@ pub(crate) mod config {
 
 #[cfg_attr(target_family = "wasm", async_trait::async_trait(?Send))]
 #[cfg_attr(not(target_family = "wasm"), async_trait::async_trait)]
-pub(crate) trait HasClientAndProvider: Send {
-    async fn client(&self) -> Result<Session>;
-    async fn mls_provider(&self) -> Result<MlsCryptoProvider>;
+pub(crate) trait HasSessionAndCrypto: Send {
+    async fn session(&self) -> Result<Session>;
+    async fn crypto_provider(&self) -> Result<MlsCryptoProvider>;
 }
 
 #[cfg_attr(target_family = "wasm", async_trait::async_trait(?Send))]
 #[cfg_attr(not(target_family = "wasm"), async_trait::async_trait)]
-impl HasClientAndProvider for Session {
-    async fn client(&self) -> Result<Session> {
+impl HasSessionAndCrypto for Session {
+    async fn session(&self) -> Result<Session> {
         Ok(self.clone())
     }
 
-    async fn mls_provider(&self) -> Result<MlsCryptoProvider> {
+    async fn crypto_provider(&self) -> Result<MlsCryptoProvider> {
         Ok(self.crypto_provider.clone())
     }
 }

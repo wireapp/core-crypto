@@ -23,7 +23,7 @@ impl ConversationGuard {
 
         let buffered_commit = MlsBufferedCommit::new(conversation.id().clone(), commit.as_ref().to_owned());
 
-        self.mls_provider()
+        self.crypto_provider()
             .await?
             .key_store()
             .save(buffered_commit)
@@ -36,7 +36,7 @@ impl ConversationGuard {
     pub(super) async fn retrieve_buffered_commit(&self) -> Result<Option<Vec<u8>>> {
         let conversation = self.conversation().await;
         info!(group_id = Obfuscated::from(conversation.id()); "attempting to retrieve buffered commit");
-        self.mls_provider()
+        self.crypto_provider()
             .await?
             .keystore()
             .find::<MlsBufferedCommit>(conversation.id())
@@ -71,7 +71,7 @@ impl ConversationGuard {
     pub(super) async fn clear_buffered_commit(&self) -> Result<()> {
         let conversation = self.conversation().await;
         info!(group_id = Obfuscated::from(conversation.id()); "attempting to delete buffered commit");
-        self.mls_provider()
+        self.crypto_provider()
             .await?
             .keystore()
             .remove::<MlsBufferedCommit, _>(conversation.id())

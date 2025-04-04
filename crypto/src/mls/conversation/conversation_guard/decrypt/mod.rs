@@ -162,8 +162,8 @@ impl ConversationGuard {
         message: MlsMessageIn,
         recursion_policy: RecursionPolicy,
     ) -> Result<MlsConversationDecryptMessage> {
-        let client = &self.mls_client().await?;
-        let backend = &self.mls_provider().await?;
+        let client = &self.session().await?;
+        let backend = &self.crypto_provider().await?;
         let parsed_message = self.parse_message(message.clone()).await?;
 
         let message_result = self.process_message(parsed_message).await;
@@ -431,7 +431,7 @@ impl ConversationGuard {
     async fn parse_message(&self, msg_in: MlsMessageIn) -> Result<ParsedMessage> {
         let mut is_duplicate = false;
         let conversation = self.conversation().await;
-        let backend = self.mls_provider().await?;
+        let backend = self.crypto_provider().await?;
         let (protocol_message, content_type) = match msg_in.extract() {
             MlsMessageInBody::PublicMessage(m) => {
                 is_duplicate = conversation.is_duplicate_message(&backend, &m)?;
@@ -464,7 +464,7 @@ impl ConversationGuard {
         }: ParsedMessage,
     ) -> Result<ProcessedMessage> {
         let msg_epoch = protocol_message.epoch().as_u64();
-        let backend = self.mls_provider().await?;
+        let backend = self.crypto_provider().await?;
         let mut conversation = self.conversation_mut().await;
         let group_epoch = conversation.group.epoch().as_u64();
         let processed_msg = conversation
@@ -515,7 +515,7 @@ impl ConversationGuard {
     }
 
     async fn validate_commit(&self, commit: &StagedCommit) -> Result<()> {
-        let backend = self.mls_provider().await?;
+        let backend = self.crypto_provider().await?;
         if backend.authentication_service().is_env_setup().await {
             let credentials: Vec<_> = commit
                 .add_proposals()

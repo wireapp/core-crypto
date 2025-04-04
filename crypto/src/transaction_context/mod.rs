@@ -1,7 +1,7 @@
 //! This module contains the primitives to enable transactional support on a higher level within the
 //! [Client]. All mutating operations need to be done through a [TransactionContext].
 
-use crate::mls::HasClientAndProvider;
+use crate::mls::HasSessionAndCrypto;
 #[cfg(feature = "proteus")]
 use crate::proteus::ProteusCentral;
 use crate::{
@@ -60,15 +60,15 @@ impl CoreCrypto {
 
 #[cfg_attr(target_family = "wasm", async_trait::async_trait(?Send))]
 #[cfg_attr(not(target_family = "wasm"), async_trait::async_trait)]
-impl HasClientAndProvider for TransactionContext {
-    async fn client(&self) -> crate::mls::Result<Session> {
+impl HasSessionAndCrypto for TransactionContext {
+    async fn session(&self) -> crate::mls::Result<Session> {
         self.mls_client()
             .await
             .map_err(RecursiveError::transaction("getting mls client"))
             .map_err(Into::into)
     }
 
-    async fn mls_provider(&self) -> crate::mls::Result<MlsCryptoProvider> {
+    async fn crypto_provider(&self) -> crate::mls::Result<MlsCryptoProvider> {
         self.mls_provider()
             .await
             .map_err(RecursiveError::transaction("getting mls provider"))

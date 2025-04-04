@@ -25,7 +25,7 @@ pub(crate) enum MessageRestorePolicy {
 
 impl ConversationGuard {
     pub(super) async fn buffer_future_message(&self, message: impl AsRef<[u8]>) -> Result<()> {
-        let backend = self.mls_provider().await?;
+        let backend = self.crypto_provider().await?;
         let keystore = backend.keystore();
         let conversation = self.conversation().await;
         let pending_msg = MlsPendingMessage {
@@ -48,7 +48,7 @@ impl ConversationGuard {
 
         if pending_messages.is_some() {
             let conversation = self.conversation().await;
-            let backend = self.mls_provider().await?;
+            let backend = self.crypto_provider().await?;
             info!(group_id = Obfuscated::from(conversation.id()); "Clearing all buffered messages for conversation");
             backend
                 .key_store()
@@ -69,7 +69,7 @@ impl ConversationGuard {
         let result = async move {
             let conversation = self.conversation().await;
             let conversation_id = conversation.id();
-            let backend = self.mls_provider().await?;
+            let backend = self.crypto_provider().await?;
             let keystore = backend.keystore();
             if policy == MessageRestorePolicy::ClearOnly {
                 if keystore

@@ -56,7 +56,7 @@ impl ConversationGuard {
     /// # Errors
     /// KeyStore errors, such as IO
     pub async fn wipe(&mut self) -> Result<()> {
-        let provider = self.mls_provider().await?;
+        let provider = self.crypto_provider().await?;
         let mut group_store = self
             .central_context
             .mls_groups()
@@ -92,7 +92,7 @@ impl ConversationGuard {
     /// Marks this conversation as child of another.
     /// Prerequisite: Must be a member of the parent group, and it must exist in the keystore
     pub async fn mark_as_child_of(&mut self, parent_id: &ConversationId) -> Result<()> {
-        let backend = self.mls_provider().await?;
+        let backend = self.crypto_provider().await?;
         let keystore = &backend.keystore();
         let mut conversation = self.conversation_mut().await;
         if keystore.mls_group_exists(parent_id).await {
@@ -105,7 +105,7 @@ impl ConversationGuard {
     }
 
     async fn credential_bundle(&self) -> Result<Arc<CredentialBundle>> {
-        let client = self.mls_client().await?;
+        let client = self.session().await?;
         let inner = self.conversation().await;
         inner
             .find_current_credential_bundle(&client)

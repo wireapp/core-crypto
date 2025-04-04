@@ -20,7 +20,7 @@ impl ConversationGuard {
     /// If the conversation can't be found, an error will be returned. Other errors are originating
     /// from OpenMls and the KeyStore
     pub async fn encrypt_message(&mut self, message: impl AsRef<[u8]>) -> Result<Vec<u8>> {
-        let backend = self.mls_provider().await?;
+        let backend = self.crypto_provider().await?;
         let credential = self.credential_bundle().await?;
         let signer = credential.signature_key();
         let mut inner = self.conversation_mut().await;
