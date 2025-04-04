@@ -73,7 +73,7 @@ impl TransactionContext {
         credential_type: MlsCredentialType,
     ) -> Result<(MlsCommitBundle, WelcomeBundle, PendingConversation)> {
         let client = &self
-            .mls_client()
+            .session()
             .await
             .map_err(RecursiveError::transaction("getting mls client"))?;
 

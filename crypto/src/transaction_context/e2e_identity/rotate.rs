@@ -32,7 +32,7 @@ impl TransactionContext {
             .map_err(RecursiveError::transaction("getting mls provider"))?;
         // look for existing credential of type basic. If there isn't, then this method has been misused
         let cb = self
-            .mls_client()
+            .session()
             .await
             .map_err(RecursiveError::transaction("getting mls client"))?
             .find_most_recent_credential_bundle(ciphersuite.signature_algorithm(), MlsCredentialType::Basic)
@@ -81,7 +81,7 @@ impl TransactionContext {
             .map_err(RecursiveError::transaction("getting mls provider"))?;
         // look for existing credential of type x509. If there isn't, then this method has been misused
         let cb = self
-            .mls_client()
+            .session()
             .await
             .map_err(RecursiveError::transaction("getting mls client"))?
             .find_most_recent_credential_bundle(ciphersuite.signature_algorithm(), MlsCredentialType::X509)
@@ -173,7 +173,7 @@ impl TransactionContext {
             private_key,
         };
         let client = &self
-            .mls_client()
+            .session()
             .await
             .map_err(RecursiveError::transaction("getting mls provider"))?;
 
@@ -210,7 +210,7 @@ impl TransactionContext {
             .await
             .map_err(KeystoreError::wrap("fetching key packages"))?;
         let client = self
-            .mls_client()
+            .session()
             .await
             .map_err(RecursiveError::transaction("getting mls client"))?;
 

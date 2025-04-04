@@ -202,7 +202,7 @@ mod tests {
                     let x509_test_chain = x509_test_chain_arc.as_ref().as_ref().unwrap();
 
                     // That way the conversation creator (Alice) will have a different credential type than Bob
-                    let alice_client = alice_central.context.mls_client().await.unwrap();
+                    let alice_client = alice_central.context.session().await.unwrap();
                     let alice_provider = alice_central.context.mls_provider().await.unwrap();
                     let creator_ct = match case.credential_type {
                         MlsCredentialType::Basic => {
@@ -314,7 +314,7 @@ mod tests {
                     .await
                     .unwrap();
 
-                let alice_client = alice_central.context.mls_client().await.unwrap();
+                let alice_client = alice_central.context.session().await.unwrap();
                 let alice_provider = alice_central.context.mls_provider().await.unwrap();
                 // Needed because 'e2ei_rotate' does not do it directly and it's required for 'get_group_info'
                 alice_client

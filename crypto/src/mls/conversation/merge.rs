@@ -88,8 +88,6 @@ mod tests {
         #[apply(all_cred_cipher)]
         #[wasm_bindgen_test]
         async fn should_clear_pending_commit_and_proposals(case: TestCase) {
-            use crate::mls::HasSessionAndCrypto as _;
-
             run_test_with_client_ids(case.clone(), ["alice"], move |[mut alice_central]| {
                 Box::pin(async move {
                     let id = conversation_id();

@@ -62,7 +62,7 @@ impl CoreCrypto {
 #[cfg_attr(not(target_family = "wasm"), async_trait::async_trait)]
 impl HasSessionAndCrypto for TransactionContext {
     async fn session(&self) -> crate::mls::Result<Session> {
-        self.mls_client()
+        self.session()
             .await
             .map_err(RecursiveError::transaction("getting mls client"))
             .map_err(Into::into)
@@ -104,7 +104,7 @@ impl TransactionContext {
         })
     }
 
-    pub(crate) async fn mls_client(&self) -> Result<Session> {
+    pub(crate) async fn session(&self) -> Result<Session> {
         match self.inner.read().await.deref() {
             TransactionContextInner::Valid { mls_client, .. } => Ok(mls_client.clone()),
             TransactionContextInner::Invalid => Err(Error::InvalidTransactionContext),

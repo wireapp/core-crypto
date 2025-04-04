@@ -149,7 +149,7 @@ impl TransactionContext {
     ) -> Result<()> {
         let nb_key_package = nb_init_key_packages.unwrap_or(INITIAL_KEYING_MATERIAL_COUNT);
         let mls_client = self
-            .mls_client()
+            .session()
             .await
             .map_err(RecursiveError::transaction("getting mls client"))?;
         mls_client
@@ -185,7 +185,7 @@ impl TransactionContext {
     /// This returns the TLS-serialized identity keys (i.e. the signature keypair's public key)
     #[cfg_attr(test, crate::dispotent)]
     pub async fn mls_generate_keypairs(&self, ciphersuites: Vec<MlsCiphersuite>) -> Result<Vec<ClientId>> {
-        self.mls_client()
+        self.session()
             .await
             .map_err(RecursiveError::transaction("getting mls client"))?
             .generate_raw_keypairs(
@@ -210,7 +210,7 @@ impl TransactionContext {
         tmp_client_ids: Vec<ClientId>,
         ciphersuites: Vec<MlsCiphersuite>,
     ) -> Result<()> {
-        self.mls_client()
+        self.session()
             .await
             .map_err(RecursiveError::transaction("getting mls client"))?
             .init_with_external_client_id(
@@ -236,7 +236,7 @@ impl TransactionContext {
         credential_type: MlsCredentialType,
     ) -> Result<Vec<u8>> {
         let cb = self
-            .mls_client()
+            .session()
             .await
             .map_err(RecursiveError::transaction("getting mls client"))?
             .find_most_recent_credential_bundle(ciphersuite.signature_algorithm(), credential_type)
@@ -247,7 +247,7 @@ impl TransactionContext {
 
     /// see [Client::id]
     pub async fn client_id(&self) -> Result<ClientId> {
-        self.mls_client()
+        self.session()
             .await
             .map_err(RecursiveError::transaction("getting mls client"))?
             .id()
@@ -280,7 +280,7 @@ impl TransactionContext {
         let conversation = MlsConversation::create(
             id.clone(),
             &self
-                .mls_client()
+                .session()
                 .await
                 .map_err(RecursiveError::transaction("getting mls client"))?,
             creator_credential_type,
@@ -551,7 +551,7 @@ mod tests {
                 let context = cc.new_transaction().await.unwrap();
                 x509_test_chain.register_with_central(&context).await;
 
-                assert!(!context.mls_client().await.unwrap().is_ready().await);
+                assert!(!context.session().await.unwrap().is_ready().await);
                 // phase 2: init mls_client
                 let client_id = "alice";
                 let identifier = match case.credential_type {
@@ -568,7 +568,7 @@ mod tests {
                     )
                     .await
                     .unwrap();
-                assert!(context.mls_client().await.unwrap().is_ready().await);
+                assert!(context.session().await.unwrap().is_ready().await);
                 // expect mls_client to work
                 assert_eq!(
                     context

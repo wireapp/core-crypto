@@ -99,7 +99,7 @@ impl SessionContext {
     }
 
     pub async fn rand_key_package_of_type(&self, case: &TestCase, ct: MlsCredentialType) -> KeyPackageIn {
-        let client = self.context.mls_client().await.unwrap();
+        let client = self.context.session().await.unwrap();
         client
             .generate_one_keypackage(&self.context.mls_provider().await.unwrap(), case.ciphersuite(), ct)
             .await

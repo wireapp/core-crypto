@@ -348,7 +348,7 @@ impl TransactionContext {
         amount_requested: usize,
     ) -> Result<Vec<KeyPackage>> {
         let client = self
-            .mls_client()
+            .session()
             .await
             .map_err(RecursiveError::transaction("getting mls client"))?;
         client
@@ -372,7 +372,7 @@ impl TransactionContext {
         credential_type: MlsCredentialType,
     ) -> Result<usize> {
         let client = self
-            .mls_client()
+            .session()
             .await
             .map_err(RecursiveError::transaction("getting mls client"))?;
         client
@@ -395,7 +395,7 @@ impl TransactionContext {
             return Err(Error::EmptyKeypackageList);
         }
         let mut client = self
-            .mls_client()
+            .session()
             .await
             .map_err(RecursiveError::transaction("getting mls client"))?;
         client

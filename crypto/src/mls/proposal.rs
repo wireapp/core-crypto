@@ -125,7 +125,7 @@ impl TransactionContext {
             .await
             .map_err(RecursiveError::mls_conversation("getting conversation by id"))?;
         let client = &self
-            .mls_client()
+            .session()
             .await
             .map_err(RecursiveError::transaction("getting mls client"))?;
         proposal

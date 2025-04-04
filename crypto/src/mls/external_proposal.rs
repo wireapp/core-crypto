@@ -40,7 +40,7 @@ impl TransactionContext {
             .map_err(RecursiveError::transaction("getting mls provider"))?;
 
         let client = self
-            .mls_client()
+            .session()
             .await
             .map_err(RecursiveError::transaction("getting mls client"))?;
         let cb = client

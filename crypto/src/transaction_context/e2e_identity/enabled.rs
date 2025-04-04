@@ -8,7 +8,7 @@ impl TransactionContext {
     /// See [Client::e2ei_is_enabled]
     pub async fn e2ei_is_enabled(&self, signature_scheme: SignatureScheme) -> Result<bool> {
         let client = self
-            .mls_client()
+            .session()
             .await
             .map_err(RecursiveError::transaction("getting mls client"))?;
         client
