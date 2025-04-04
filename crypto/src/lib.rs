@@ -67,7 +67,7 @@ pub mod prelude {
             config::MlsClientConfiguration,
             conversation::{
                 ConversationId, MlsConversation,
-                commit::{MlsCommitBundle, MlsConversationCreationMessage},
+                commit::MlsCommitBundle,
                 config::{MlsConversationConfiguration, MlsCustomConfiguration, MlsWirePolicy},
                 conversation_guard::decrypt::{MlsBufferedConversationDecryptMessage, MlsConversationDecryptMessage},
                 group_info::{GroupInfoPayload, MlsGroupInfoBundle, MlsGroupInfoEncryptionType, MlsRatchetTreeType},

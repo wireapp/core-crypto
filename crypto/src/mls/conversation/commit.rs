@@ -12,7 +12,6 @@ use mls_crypto_provider::MlsCryptoProvider;
 use super::{Error, Result};
 use crate::{
     LeafError,
-    e2e_identity::NewCrlDistributionPoints,
     mls::{MlsConversation, credential::CredentialBundle},
     prelude::{MlsError, MlsGroupInfoBundle, Session},
 };
@@ -76,40 +75,6 @@ impl MlsConversation {
             commit,
             group_info,
         }))
-    }
-}
-
-/// Returned when initializing a conversation through a commit.
-/// Different from conversation created from a [`openmls::prelude::Welcome`] message or an external commit.
-#[derive(Debug)]
-pub struct MlsConversationCreationMessage {
-    /// A welcome message for new members to join the group
-    pub welcome: MlsMessageOut,
-    /// Commit message adding members to the group
-    pub commit: MlsMessageOut,
-    /// `GroupInfo` if the commit is merged
-    pub group_info: MlsGroupInfoBundle,
-    /// New CRL distribution points that appeared by the introduction of a new credential
-    pub crl_new_distribution_points: NewCrlDistributionPoints,
-}
-
-impl MlsConversationCreationMessage {
-    /// Serializes both wrapped objects into TLS and return them as a tuple of byte arrays.
-    /// 0 -> welcome
-    /// 1 -> commit
-    /// 2 -> group_info
-    #[allow(clippy::type_complexity)]
-    pub fn to_bytes(self) -> Result<(Vec<u8>, Vec<u8>, MlsGroupInfoBundle, NewCrlDistributionPoints)> {
-        use openmls::prelude::TlsSerializeTrait as _;
-        let welcome = self
-            .welcome
-            .tls_serialize_detached()
-            .map_err(Error::tls_serialize("serialize welcome"))?;
-        let msg = self
-            .commit
-            .tls_serialize_detached()
-            .map_err(Error::tls_serialize("serialize commit"))?;
-        Ok((welcome, msg, self.group_info, self.crl_new_distribution_points))
     }
 }
 
