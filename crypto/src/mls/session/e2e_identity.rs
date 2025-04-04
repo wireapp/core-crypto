@@ -6,14 +6,15 @@ use wire_e2e_identity::prelude::WireIdentityReader as _;
 
 use crate::{
     MlsError, RecursiveError,
-    mls::client::CredentialExt as _,
-    prelude::{E2eiConversationState, E2eiDumpedPkiEnv, MlsCiphersuite, MlsCredentialType},
+    e2e_identity::E2eiDumpedPkiEnv,
+    mls::session::CredentialExt as _,
+    prelude::{E2eiConversationState, MlsCiphersuite, MlsCredentialType},
 };
 use openmls_traits::OpenMlsCryptoProvider as _;
 
-use super::{Client, Error, Result};
+use super::{Error, Result, Session};
 
-impl Client {
+impl Session {
     /// Returns whether the E2EI PKI environment is setup (i.e. Root CA, Intermediates, CRLs)
     pub async fn e2ei_is_pki_env_setup(&self) -> bool {
         self.mls_backend.is_pki_env_setup().await

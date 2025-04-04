@@ -6,7 +6,7 @@ use super::{Error, Result};
 use crate::{
     RecursiveError,
     mls::{ClientId, ConversationId, MlsConversation},
-    prelude::{Client, MlsProposalBundle},
+    prelude::{MlsProposalBundle, Session},
 };
 
 use crate::transaction_context::TransactionContext;
@@ -58,7 +58,7 @@ impl MlsProposal {
     /// Creates a new proposal within the specified `MlsGroup`
     async fn create(
         self,
-        client: &Client,
+        client: &Session,
         backend: &MlsCryptoProvider,
         mut conversation: impl std::ops::DerefMut<Target = MlsConversation>,
     ) -> Result<MlsProposalBundle> {

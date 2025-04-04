@@ -17,13 +17,13 @@ use openmls_traits::OpenMlsCryptoProvider;
 use mls_crypto_provider::MlsCryptoProvider;
 
 use super::Result;
-use crate::{MlsError, mls::MlsConversation, prelude::Client};
+use crate::{MlsError, mls::MlsConversation, prelude::Session};
 
 /// Abstraction over a MLS group capable of merging a commit
 impl MlsConversation {
     /// see [TransactionContext::commit_accepted]
     #[cfg_attr(test, crate::durable)]
-    pub(crate) async fn commit_accepted(&mut self, client: &Client, backend: &MlsCryptoProvider) -> Result<()> {
+    pub(crate) async fn commit_accepted(&mut self, client: &Session, backend: &MlsCryptoProvider) -> Result<()> {
         // openmls stores here all the encryption keypairs used for update proposals..
         let previous_own_leaf_nodes = self.group.own_leaf_nodes.clone();
 

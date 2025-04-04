@@ -1,22 +1,22 @@
 use super::{ConversationWithMls, MlsConversation, Result};
-use crate::prelude::Client;
+use crate::prelude::Session;
 
 /// An ImmutableConversation wraps a `MlsConversation`.
 ///
 /// It only exposes the read-only interface of the conversation.
 pub struct ImmutableConversation {
     inner: MlsConversation,
-    client: Client,
+    client: Session,
 }
 
 #[cfg_attr(target_family = "wasm", async_trait::async_trait(?Send))]
 #[cfg_attr(not(target_family = "wasm"), async_trait::async_trait)]
 impl<'inner> ConversationWithMls<'inner> for ImmutableConversation {
-    type Context = Client;
+    type Context = Session;
 
     type Conversation = &'inner MlsConversation;
 
-    async fn context(&self) -> Result<Client> {
+    async fn context(&self) -> Result<Session> {
         Ok(self.client.clone())
     }
 
@@ -26,7 +26,7 @@ impl<'inner> ConversationWithMls<'inner> for ImmutableConversation {
 }
 
 impl ImmutableConversation {
-    pub(crate) fn new(inner: MlsConversation, client: Client) -> Self {
+    pub(crate) fn new(inner: MlsConversation, client: Session) -> Self {
         Self { inner, client }
     }
 }

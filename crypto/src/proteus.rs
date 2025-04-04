@@ -1277,7 +1277,7 @@ impl ProteusCentral {
 #[cfg(test)]
 mod tests {
     use crate::{
-        prelude::{CertificateBundle, Client, ClientIdentifier, MlsClientConfiguration, MlsCredentialType},
+        prelude::{CertificateBundle, ClientIdentifier, MlsClientConfiguration, MlsCredentialType, Session},
         test_utils::{proteus_utils::*, x509::X509TestChain, *},
     };
 
@@ -1308,7 +1308,7 @@ mod tests {
             Some(INITIAL_KEYING_MATERIAL_COUNT),
         )
         .unwrap();
-        let cc: CoreCrypto = Client::try_new(cfg).await.unwrap().into();
+        let cc: CoreCrypto = Session::try_new(cfg).await.unwrap().into();
         let context = cc.new_transaction().await.unwrap();
         assert!(context.proteus_init().await.is_ok());
         assert!(context.proteus_new_prekey(1).await.is_ok());
@@ -1334,7 +1334,7 @@ mod tests {
             Some(INITIAL_KEYING_MATERIAL_COUNT),
         )
         .unwrap();
-        let cc: CoreCrypto = Client::try_new(cfg).await.unwrap().into();
+        let cc: CoreCrypto = Session::try_new(cfg).await.unwrap().into();
         let transaction = cc.new_transaction().await.unwrap();
         let x509_test_chain = X509TestChain::init_empty(case.signature_scheme());
         x509_test_chain.register_with_central(&transaction).await;

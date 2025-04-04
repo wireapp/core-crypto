@@ -1,10 +1,10 @@
-use crate::mls::client::{
+use crate::mls::session::{
     ClientInner,
     error::{Error, Result},
 };
 use crate::{
     mls::credential::{CredentialBundle, typ::MlsCredentialType},
-    prelude::Client,
+    prelude::Session,
 };
 use openmls::prelude::{Credential, SignaturePublicKey};
 use openmls_traits::types::SignatureScheme;
@@ -12,15 +12,15 @@ use std::collections::HashMap;
 use std::ops::Deref;
 use std::sync::Arc;
 
-/// In memory Map of a Client's identities: one per SignatureScheme.
+/// In memory Map of a Session's identities: one per SignatureScheme.
 /// We need `indexmap::IndexSet` because each `CredentialBundle` has to be unique and insertion
 /// order matters in order to keep values sorted by time `created_at` so that we can identify most recent ones.
 ///
 /// We keep each credential bundle inside an arc to avoid cloning them, as X509 credentials can get quite large.
 #[derive(Debug, Clone)]
-pub(crate) struct ClientIdentities(HashMap<SignatureScheme, indexmap::IndexSet<Arc<CredentialBundle>>>);
+pub(crate) struct Identities(HashMap<SignatureScheme, indexmap::IndexSet<Arc<CredentialBundle>>>);
 
-impl ClientIdentities {
+impl Identities {
     pub(crate) fn new(capacity: usize) -> Self {
         Self(HashMap::with_capacity(capacity))
     }
@@ -86,7 +86,7 @@ impl ClientIdentities {
     }
 }
 
-impl Client {
+impl Session {
     pub(crate) async fn find_most_recent_credential_bundle(
         &self,
         sc: SignatureScheme,
@@ -229,7 +229,7 @@ mod tests {
                         .await;
                     assert!(matches!(
                         push.unwrap_err(),
-                        mls::client::Error::CredentialBundleConflict
+                        mls::session::Error::CredentialBundleConflict
                     ));
                 })
             })

@@ -51,7 +51,7 @@ mod tests {
                 assert!(matches!(
                     cc.context.e2ei_is_enabled(case.signature_scheme()).await.unwrap_err(),
                     Error::Recursive(RecursiveError::MlsClient {  source, .. })
-                    if matches!(*source, mls::client::Error::MlsNotInitialized)
+                    if matches!(*source, mls::session::Error::MlsNotInitialized)
                 ));
             })
         })
@@ -71,7 +71,7 @@ mod tests {
                 assert!(matches!(
                     cc.context.e2ei_is_enabled(other_sc).await.unwrap_err(),
                     Error::Recursive(RecursiveError::MlsClient {  source, .. })
-                    if matches!(*source, mls::client::Error::CredentialNotFound(_))
+                    if matches!(*source, mls::session::Error::CredentialNotFound(_))
                 ));
             })
         })

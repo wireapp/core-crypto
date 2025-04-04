@@ -27,7 +27,7 @@ use std::{collections::HashSet, ops::Deref};
 
 use crate::{
     KeystoreError, LeafError, MlsError, RecursiveError,
-    mls::Client,
+    mls::Session,
     prelude::{MlsCiphersuite, MlsCredentialType},
 };
 
@@ -91,7 +91,7 @@ pub(crate) trait ConversationWithMls<'a> {
             .map_err(Into::into)
     }
 
-    async fn mls_client(&self) -> Result<Client> {
+    async fn mls_client(&self) -> Result<Session> {
         self.context()
             .await?
             .client()
@@ -173,7 +173,7 @@ pub trait Conversation<'a>: ConversationWithMls<'a> {
         let authentication_service = backend.authentication_service();
         authentication_service.refresh_time_of_interest().await;
         let inner = self.conversation().await;
-        let state = Client::compute_conversation_state(
+        let state = Session::compute_conversation_state(
             inner.ciphersuite(),
             inner.group.members_credentials(),
             MlsCredentialType::X509,
@@ -279,7 +279,7 @@ impl MlsConversation {
     /// Errors can happen from OpenMls or from the KeyStore
     pub async fn create(
         id: ConversationId,
-        author_client: &Client,
+        author_client: &Session,
         creator_credential_type: MlsCredentialType,
         configuration: MlsConversationConfiguration,
         backend: &MlsCryptoProvider,
@@ -452,7 +452,7 @@ impl MlsConversation {
         self.ciphersuite().signature_algorithm()
     }
 
-    pub(crate) async fn find_current_credential_bundle(&self, client: &Client) -> Result<Arc<CredentialBundle>> {
+    pub(crate) async fn find_current_credential_bundle(&self, client: &Session) -> Result<Arc<CredentialBundle>> {
         let own_leaf = self.group.own_leaf().ok_or(LeafError::InternalMlsError)?;
         let sc = self.ciphersuite().signature_algorithm();
         let ct = self
@@ -466,7 +466,7 @@ impl MlsConversation {
             .map_err(Into::into)
     }
 
-    pub(crate) async fn find_most_recent_credential_bundle(&self, client: &Client) -> Result<Arc<CredentialBundle>> {
+    pub(crate) async fn find_most_recent_credential_bundle(&self, client: &Session) -> Result<Arc<CredentialBundle>> {
         let sc = self.ciphersuite().signature_algorithm();
         let ct = self
             .own_credential_type()
@@ -677,7 +677,7 @@ mod tests {
                         Some(INITIAL_KEYING_MATERIAL_COUNT),
                     )
                     .unwrap();
-                    let client = Client::try_new(config).await.unwrap();
+                    let client = Session::try_new(config).await.unwrap();
                     let cc = CoreCrypto::from(client);
                     let friend_context = cc.new_transaction().await.unwrap();
                     let central = cc.mls;

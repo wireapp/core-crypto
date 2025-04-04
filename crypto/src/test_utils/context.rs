@@ -12,9 +12,8 @@ use crate::{
     },
     mls::credential::{CredentialBundle, ext::CredentialExt},
     prelude::{
-        CertificateBundle, Client, ClientId, ConversationId, MlsCiphersuite, MlsConversation,
-        MlsConversationConfiguration, MlsConversationDecryptMessage, MlsCredentialType, MlsCustomConfiguration,
-        MlsError, WireIdentity,
+        CertificateBundle, ClientId, ConversationId, MlsCiphersuite, MlsConversation, MlsConversationConfiguration,
+        MlsConversationDecryptMessage, MlsCredentialType, MlsCustomConfiguration, MlsError, Session, WireIdentity,
     },
     test_utils::{MessageExt, TestCase, x509::X509Certificate},
 };
@@ -390,7 +389,7 @@ impl ClientContext {
 
         match case.credential_type {
             MlsCredentialType::Basic => {
-                let cb = Client::new_basic_credential_bundle(&client_id, case.signature_scheme(), backend).unwrap();
+                let cb = Session::new_basic_credential_bundle(&client_id, case.signature_scheme(), backend).unwrap();
                 client
                     .save_identity(&backend.keystore(), None, case.signature_scheme(), cb)
                     .await

@@ -4,7 +4,7 @@
 
 use crate::{
     CoreCrypto, MlsTransport, MlsTransportResponse,
-    prelude::{Client, ClientId, ConversationId, MlsClientConfiguration},
+    prelude::{ClientId, ConversationId, MlsClientConfiguration, Session},
     test_utils::x509::{CertificateParams, X509TestChain, X509TestChainActorArg, X509TestChainArgs},
 };
 use core_crypto_keystore::DatabaseKey;
@@ -91,7 +91,7 @@ pub(crate) use innermost_source_matches;
 #[derive(Debug, Clone)]
 pub struct ClientContext {
     pub context: TransactionContext,
-    pub client: Client,
+    pub client: Session,
     pub mls_transport: Arc<dyn MlsTransportTestExt>,
     pub x509_test_chain: std::sync::Arc<Option<X509TestChain>>,
 }
@@ -108,7 +108,7 @@ impl ClientContext {
         self.x509_test_chain = new_chain;
     }
 
-    pub async fn client(&self) -> Client {
+    pub async fn client(&self) -> Session {
         self.client.clone()
     }
 
@@ -309,7 +309,7 @@ async fn create_centrals<const N: usize>(
     paths: [String; N],
     chain: Option<&X509TestChain>,
     transport: Arc<dyn MlsTransport>,
-) -> [Client; N] {
+) -> [Session; N] {
     let transport = &transport.clone();
     let stream = paths.into_iter().enumerate().map(|(i, p)| {
         async move {
@@ -322,7 +322,7 @@ async fn create_centrals<const N: usize>(
                 Some(INITIAL_KEYING_MATERIAL_COUNT),
             )
             .unwrap();
-            let client = Client::try_new(configuration).await.unwrap();
+            let client = Session::try_new(configuration).await.unwrap();
             let cc = CoreCrypto::from(client);
             let context = cc.new_transaction().await.unwrap();
             let central = cc.mls;
@@ -480,7 +480,7 @@ pub async fn run_test_wo_clients(
                 Some(INITIAL_KEYING_MATERIAL_COUNT),
             )
             .unwrap();
-            let client = Client::try_new(configuration).await.unwrap();
+            let client = Session::try_new(configuration).await.unwrap();
             let transport = Arc::<CoreCryptoTransportSuccessProvider>::default();
             client.provide_transport(transport.clone()).await;
             let cc = CoreCrypto::from(client);

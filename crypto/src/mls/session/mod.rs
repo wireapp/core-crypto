@@ -23,7 +23,7 @@ use core_crypto_keystore::entities::{EntityFindParams, MlsCredential, MlsSignatu
 use core_crypto_keystore::{Connection, CryptoKeystoreError, connection::FetchFromDatabase};
 pub use epoch_observer::EpochObserver;
 pub(crate) use error::{Error, Result};
-use identities::ClientIdentities;
+use identities::Identities;
 use log::debug;
 use mls_crypto_provider::{EntropySeed, MlsCryptoProvider, MlsCryptoProviderConfiguration};
 use openmls::prelude::{Credential, CredentialType};
@@ -35,15 +35,18 @@ use std::sync::Arc;
 use std::{collections::HashSet, fmt};
 use tls_codec::{Deserialize, Serialize};
 
-/// Represents a MLS client which in our case is the equivalent of a device.
+/// A MLS Session enables a user device to communicate via the MLS protocol.
 ///
-/// It can be the Android, iOS, web or desktop application which the authenticated user is using.
-/// A user has many client, a client has only one user.
-/// A client can belong to many MLS groups
+/// This closely maps to the `Client` term in [RFC 9720], but we avoid that term to avoid ambiguity;
+/// `Client` is very overloaded with distinct meanings.
 ///
-/// It is cheap to clone a `Client` because everything heavy is wrapped inside an [Arc].
+/// There is one `Session` per user per device. A session can contain many MLS groups/conversations.
+///
+/// It is cheap to clone a `Session` because everything heavy is wrapped inside an [Arc].
+///
+/// [RFC 9720]: https://www.rfc-editor.org/rfc/rfc9420.html
 #[derive(Clone, Debug)]
-pub struct Client {
+pub struct Session {
     pub(crate) state: Arc<RwLock<Option<ClientInner>>>,
     pub(crate) mls_backend: MlsCryptoProvider,
     pub(crate) transport: Arc<RwLock<Option<Arc<dyn MlsTransport + 'static>>>>,
@@ -52,7 +55,7 @@ pub struct Client {
 #[derive(Clone)]
 pub(crate) struct ClientInner {
     id: ClientId,
-    pub(crate) identities: ClientIdentities,
+    pub(crate) identities: Identities,
     keypackage_lifetime: std::time::Duration,
     epoch_observer: Option<Arc<dyn EpochObserver>>,
 }
@@ -73,7 +76,7 @@ impl fmt::Debug for ClientInner {
     }
 }
 
-impl Client {
+impl Session {
     /// Tries to initialize the [Client].
     /// Takes a store path (i.e. Disk location of the embedded database, should be consistent between messaging sessions)
     /// And a root identity key (i.e. enclaved encryption key for this device)
@@ -464,7 +467,7 @@ impl Client {
 
         self.replace_inner(ClientInner {
             id: client_id.clone(),
-            identities: ClientIdentities::new(stored_skp.len()),
+            identities: Identities::new(stored_skp.len()),
             keypackage_lifetime: KEYPACKAGE_DEFAULT_LIFETIME,
             epoch_observer: None,
         })
@@ -525,7 +528,7 @@ impl Client {
             .collect::<HashSet<_>>();
         self.replace_inner(ClientInner {
             id: id.into_owned(),
-            identities: ClientIdentities::new(signature_schemes.len()),
+            identities: Identities::new(signature_schemes.len()),
             keypackage_lifetime: KEYPACKAGE_DEFAULT_LIFETIME,
             epoch_observer: None,
         })
@@ -568,7 +571,7 @@ impl Client {
         signature_schemes: HashSet<SignatureScheme>,
     ) -> Result<()> {
         self.ensure_unready().await?;
-        let mut identities = ClientIdentities::new(signature_schemes.len());
+        let mut identities = Identities::new(signature_schemes.len());
 
         // ensures we load credentials in chronological order
         credentials.sort_by_key(|(_, timestamp)| *timestamp);
@@ -793,7 +796,7 @@ mod tests {
     use mls_crypto_provider::MlsCryptoProvider;
     use wasm_bindgen_test::*;
 
-    impl Client {
+    impl Session {
         // test functions are not held to the same documentation standard as proper functions
         #![allow(missing_docs)]
 

@@ -37,7 +37,7 @@ pub enum RecursiveError {
         /// What was happening in the caller
         context: &'static str,
         /// What happened
-        source: Box<crate::mls::client::Error>,
+        source: Box<crate::mls::session::Error>,
     },
     /// Wrap a [crate::mls::conversation::Error] for recursion.
     MlsConversation {
@@ -92,7 +92,7 @@ impl RecursiveError {
     }
 
     /// Convert a [crate::mls::client::Error] into a [RecursiveError], with context
-    pub fn mls_client<E: Into<crate::mls::client::Error>>(context: &'static str) -> impl FnOnce(E) -> Self {
+    pub fn mls_client<E: Into<crate::mls::session::Error>>(context: &'static str) -> impl FnOnce(E) -> Self {
         move |into_source| Self::MlsClient {
             context,
             source: Box::new(into_source.into()),
@@ -184,7 +184,7 @@ impl_to_recursive_error_for!(
     crate::Error => Root,
     crate::e2e_identity::Error => E2e,
     crate::mls::Error => Mls,
-    crate::mls::client::Error => MlsClient,
+    crate::mls::session::Error => MlsClient,
     crate::mls::conversation::Error => MlsConversation,
     crate::mls::credential::Error => MlsCredential,
     crate::transaction_context::Error => TransactionContext,

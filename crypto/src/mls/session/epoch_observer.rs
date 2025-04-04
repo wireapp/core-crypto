@@ -4,7 +4,7 @@ use async_trait::async_trait;
 
 use crate::{CoreCrypto, RecursiveError, mls::HasClientAndProvider as _, prelude::ConversationId};
 
-use super::{Client, Error, Result};
+use super::{Error, Result, Session};
 
 /// An `EpochObserver` is notified whenever a conversation's epoch changes.
 #[cfg_attr(target_family = "wasm", async_trait(?Send))]
@@ -23,10 +23,10 @@ pub trait EpochObserver: Send + Sync {
     async fn epoch_changed(&self, conversation_id: ConversationId, epoch: u64);
 }
 
-impl Client {
-    /// Add an epoch observer to this client.
+impl Session {
+    /// Add an epoch observer to this session.
     ///
-    /// This function should be called 0 or 1 times in a client's lifetime. If called
+    /// This function should be called 0 or 1 times in a session's lifetime. If called
     /// when an epoch observer already exists, this will return an error.
     pub(crate) async fn register_epoch_observer(&self, epoch_observer: Arc<dyn EpochObserver>) -> Result<()> {
         let mut guard = self.state.write().await;
@@ -50,13 +50,16 @@ impl Client {
 }
 
 impl CoreCrypto {
-    /// Add an epoch observer to this client.
+    /// Add an epoch observer to this session.
     ///
-    /// This function should be called 0 or 1 times in a client's lifetime.
+    /// This function should be called 0 or 1 times in a session's lifetime.
     /// If called when an epoch observer already exists, this will return an error.
     pub async fn register_epoch_observer(&self, epoch_observer: Arc<dyn EpochObserver>) -> Result<()> {
-        let client = self.client().await.map_err(RecursiveError::mls("getting mls client"))?;
-        client.register_epoch_observer(epoch_observer).await
+        let session = self
+            .client()
+            .await
+            .map_err(RecursiveError::mls("getting mls session"))?;
+        session.register_epoch_observer(epoch_observer).await
     }
 }
 
@@ -71,17 +74,17 @@ mod tests {
     #[apply(all_cred_cipher)]
     #[wasm_bindgen_test]
     pub async fn observe_local_epoch_change(case: TestCase) {
-        run_test_with_client_ids(case.clone(), ["alice"], move |[client]| {
+        run_test_with_client_ids(case.clone(), ["alice"], move |[session]| {
             Box::pin(async move {
                 let id = conversation_id();
-                client
+                session
                     .context
                     .new_conversation(&id, case.credential_type, case.cfg.clone())
                     .await
                     .unwrap();
 
                 let observer = TestEpochObserver::new();
-                client
+                session
                     .client()
                     .await
                     .register_epoch_observer(observer.clone())
@@ -89,7 +92,7 @@ mod tests {
                     .unwrap();
 
                 // trigger an epoch
-                client
+                session
                     .context
                     .conversation(&id)
                     .await

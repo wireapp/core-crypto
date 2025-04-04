@@ -3,8 +3,8 @@ use log::trace;
 use crate::{
     LeafError, MlsError, RecursiveError,
     prelude::{
-        Client, ClientId, ConversationId, MlsCiphersuite, MlsConversation, MlsConversationConfiguration,
-        MlsCredentialType, identifier::ClientIdentifier, key_package::INITIAL_KEYING_MATERIAL_COUNT,
+        ClientId, ConversationId, MlsCiphersuite, MlsConversation, MlsConversationConfiguration, MlsCredentialType,
+        Session, identifier::ClientIdentifier, key_package::INITIAL_KEYING_MATERIAL_COUNT,
     },
 };
 use core_crypto_keystore::DatabaseKey;
@@ -14,16 +14,16 @@ use openmls_traits::OpenMlsCryptoProvider;
 use crate::transaction_context::TransactionContext;
 
 pub(crate) mod ciphersuite;
-pub(crate) mod client;
 pub mod conversation;
 pub(crate) mod credential;
 mod error;
 pub(crate) mod external_commit;
 pub(crate) mod external_proposal;
 pub(crate) mod proposal;
+pub(crate) mod session;
 
-pub use client::EpochObserver;
 pub use error::{Error, Result};
+pub use session::EpochObserver;
 
 /// Prevents direct instantiation of [MlsClientConfiguration]
 pub(crate) mod config {
@@ -133,14 +133,14 @@ pub(crate) mod config {
 #[cfg_attr(target_family = "wasm", async_trait::async_trait(?Send))]
 #[cfg_attr(not(target_family = "wasm"), async_trait::async_trait)]
 pub(crate) trait HasClientAndProvider: Send {
-    async fn client(&self) -> Result<Client>;
+    async fn client(&self) -> Result<Session>;
     async fn mls_provider(&self) -> Result<MlsCryptoProvider>;
 }
 
 #[cfg_attr(target_family = "wasm", async_trait::async_trait(?Send))]
 #[cfg_attr(not(target_family = "wasm"), async_trait::async_trait)]
-impl HasClientAndProvider for Client {
-    async fn client(&self) -> Result<Client> {
+impl HasClientAndProvider for Session {
+    async fn client(&self) -> Result<Session> {
         Ok(self.clone())
     }
 
@@ -356,7 +356,7 @@ mod tests {
     };
     use crate::{
         CoreCrypto,
-        mls::Client,
+        mls::Session,
         test_utils::{x509::X509TestChain, *},
     };
 
@@ -444,7 +444,7 @@ mod tests {
                     )
                     .unwrap();
 
-                    let new_client_result = Client::try_new(configuration).await;
+                    let new_client_result = Session::try_new(configuration).await;
                     assert!(new_client_result.is_ok())
                 })
             })
@@ -534,7 +534,7 @@ mod tests {
                 )
                 .unwrap();
 
-                let result = Client::try_new(configuration.clone()).await;
+                let result = Session::try_new(configuration.clone()).await;
                 println!("{:?}", result);
                 assert!(result.is_ok());
             })
@@ -558,7 +558,7 @@ mod tests {
                 )
                 .unwrap();
                 // phase 1: init without initialized mls_client
-                let client = Client::try_new(configuration).await.unwrap();
+                let client = Session::try_new(configuration).await.unwrap();
                 let cc = CoreCrypto::from(client);
                 let context = cc.new_transaction().await.unwrap();
                 x509_test_chain.register_with_central(&context).await;

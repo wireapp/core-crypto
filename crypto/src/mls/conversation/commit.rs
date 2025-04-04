@@ -14,7 +14,7 @@ use crate::{
     LeafError,
     e2e_identity::NewCrlDistributionPoints,
     mls::{MlsConversation, credential::CredentialBundle},
-    prelude::{Client, MlsError, MlsGroupInfoBundle},
+    prelude::{MlsError, MlsGroupInfoBundle, Session},
 };
 
 impl MlsConversation {
@@ -22,7 +22,7 @@ impl MlsConversation {
     #[cfg_attr(test, crate::durable)]
     pub(crate) async fn update_keying_material(
         &mut self,
-        client: &Client,
+        client: &Session,
         backend: &MlsCryptoProvider,
         cb: Option<&CredentialBundle>,
         leaf_node: Option<LeafNode>,
@@ -54,7 +54,7 @@ impl MlsConversation {
     #[cfg_attr(test, crate::durable)]
     pub(crate) async fn commit_pending_proposals(
         &mut self,
-        client: &Client,
+        client: &Session,
         backend: &MlsCryptoProvider,
     ) -> Result<Option<MlsCommitBundle>> {
         if self.group.pending_proposals().count() == 0 {

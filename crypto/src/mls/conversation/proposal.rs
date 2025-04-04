@@ -14,7 +14,7 @@ use crate::{
     MlsError, RecursiveError,
     e2e_identity::NewCrlDistributionPoints,
     mls::credential::crl::{extract_crl_uris_from_credentials, get_new_crl_distribution_points},
-    prelude::{Client, MlsConversation, MlsProposalRef},
+    prelude::{MlsConversation, MlsProposalRef, Session},
 };
 
 /// Creating proposals
@@ -23,7 +23,7 @@ impl MlsConversation {
     #[cfg_attr(test, crate::durable)]
     pub async fn propose_add_member(
         &mut self,
-        client: &Client,
+        client: &Session,
         backend: &MlsCryptoProvider,
         key_package: KeyPackageIn,
     ) -> Result<MlsProposalBundle> {
@@ -59,7 +59,7 @@ impl MlsConversation {
     #[cfg_attr(test, crate::durable)]
     pub async fn propose_remove_member(
         &mut self,
-        client: &Client,
+        client: &Session,
         backend: &MlsCryptoProvider,
         member: LeafNodeIndex,
     ) -> Result<MlsProposalBundle> {
@@ -81,7 +81,7 @@ impl MlsConversation {
     #[cfg_attr(test, crate::durable)]
     pub async fn propose_self_update(
         &mut self,
-        client: &Client,
+        client: &Session,
         backend: &MlsCryptoProvider,
     ) -> Result<MlsProposalBundle> {
         self.propose_explicit_self_update(client, backend, None).await
@@ -91,7 +91,7 @@ impl MlsConversation {
     #[cfg_attr(test, crate::durable)]
     pub async fn propose_explicit_self_update(
         &mut self,
-        client: &Client,
+        client: &Session,
         backend: &MlsCryptoProvider,
         leaf_node: Option<LeafNode>,
     ) -> Result<MlsProposalBundle> {

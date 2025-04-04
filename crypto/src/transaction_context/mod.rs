@@ -7,7 +7,7 @@ use crate::proteus::ProteusCentral;
 use crate::{
     CoreCrypto, KeystoreError, MlsError, MlsTransport, RecursiveError,
     group_store::GroupStore,
-    prelude::{Client, MlsConversation},
+    prelude::{MlsConversation, Session},
 };
 use async_lock::{Mutex, RwLock, RwLockReadGuardArc, RwLockWriteGuardArc};
 use core_crypto_keystore::{CryptoKeystoreError, connection::FetchFromDatabase, entities::ConsumerData};
@@ -36,7 +36,7 @@ enum TransactionContextInner {
     Valid {
         provider: MlsCryptoProvider,
         transport: Arc<RwLock<Option<Arc<dyn MlsTransport + 'static>>>>,
-        mls_client: Client,
+        mls_client: Session,
         mls_groups: Arc<RwLock<GroupStore<MlsConversation>>>,
         #[cfg(feature = "proteus")]
         proteus_central: Arc<Mutex<Option<ProteusCentral>>>,
@@ -61,7 +61,7 @@ impl CoreCrypto {
 #[cfg_attr(target_family = "wasm", async_trait::async_trait(?Send))]
 #[cfg_attr(not(target_family = "wasm"), async_trait::async_trait)]
 impl HasClientAndProvider for TransactionContext {
-    async fn client(&self) -> crate::mls::Result<Client> {
+    async fn client(&self) -> crate::mls::Result<Session> {
         self.mls_client()
             .await
             .map_err(RecursiveError::transaction("getting mls client"))
@@ -78,7 +78,7 @@ impl HasClientAndProvider for TransactionContext {
 
 impl TransactionContext {
     async fn new(
-        client: &Client,
+        client: &Session,
         #[cfg(feature = "proteus")] proteus_central: Arc<Mutex<Option<ProteusCentral>>>,
     ) -> Result<Self> {
         client
@@ -104,7 +104,7 @@ impl TransactionContext {
         })
     }
 
-    pub(crate) async fn mls_client(&self) -> Result<Client> {
+    pub(crate) async fn mls_client(&self) -> Result<Session> {
         match self.inner.read().await.deref() {
             TransactionContextInner::Valid { mls_client, .. } => Ok(mls_client.clone()),
             TransactionContextInner::Invalid => Err(Error::InvalidTransactionContext),

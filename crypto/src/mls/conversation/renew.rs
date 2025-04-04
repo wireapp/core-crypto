@@ -7,7 +7,7 @@ use mls_crypto_provider::MlsCryptoProvider;
 use super::{Error, Result};
 use crate::{
     KeystoreError, RecursiveError,
-    prelude::{Client, MlsConversation, MlsProposalBundle},
+    prelude::{MlsConversation, MlsProposalBundle, Session},
 };
 
 /// Marker struct holding methods responsible for restoring (renewing) proposals (or pending commit)
@@ -97,7 +97,7 @@ impl MlsConversation {
     /// This will also add them to the local proposal store
     pub(crate) async fn renew_proposals_for_current_epoch(
         &mut self,
-        client: &Client,
+        client: &Session,
         backend: &MlsCryptoProvider,
         proposals: impl Iterator<Item = QueuedProposal>,
         needs_update: bool,
@@ -126,7 +126,7 @@ impl MlsConversation {
     /// At this point, we have already verified we are only operating on proposals created by self.
     async fn renew_update(
         &mut self,
-        client: &Client,
+        client: &Session,
         backend: &MlsCryptoProvider,
         leaf_node: Option<&LeafNode>,
     ) -> Result<MlsProposalBundle> {

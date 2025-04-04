@@ -64,11 +64,6 @@ pub mod prelude {
         error::{CryptoboxMigrationError, Error, KeystoreError, LeafError, MlsError, ProteusError, RecursiveError},
         mls::{
             ciphersuite::MlsCiphersuite,
-            client::Client,
-            client::id::ClientId,
-            client::identifier::ClientIdentifier,
-            client::key_package::INITIAL_KEYING_MATERIAL_COUNT,
-            client::*,
             config::MlsClientConfiguration,
             conversation::{
                 ConversationId, MlsConversation,
@@ -81,6 +76,11 @@ pub mod prelude {
             },
             credential::{typ::MlsCredentialType, x509::CertificateBundle},
             proposal::{MlsProposal, MlsProposalRef},
+            session::Session,
+            session::id::ClientId,
+            session::identifier::ClientIdentifier,
+            session::key_package::INITIAL_KEYING_MATERIAL_COUNT,
+            session::*,
         },
         obfuscate::Obfuscated,
         transaction_context::e2e_identity::{E2eiDumpedPkiEnv, conversation_state::E2eiConversationState},
@@ -118,7 +118,7 @@ pub trait MlsTransport: std::fmt::Debug + Send + Sync {
 /// This is cheap to clone as all internal members have `Arc` wrappers or are `Copy`.
 #[derive(Debug, Clone)]
 pub struct CoreCrypto {
-    mls: mls::client::Client,
+    mls: mls::session::Session,
     #[cfg(feature = "proteus")]
     proteus: Arc<Mutex<Option<proteus::ProteusCentral>>>,
     #[cfg(not(feature = "proteus"))]
@@ -126,8 +126,8 @@ pub struct CoreCrypto {
     proteus: (),
 }
 
-impl From<mls::client::Client> for CoreCrypto {
-    fn from(mls: mls::client::Client) -> Self {
+impl From<mls::session::Session> for CoreCrypto {
+    fn from(mls: mls::session::Session) -> Self {
         Self {
             mls,
             proteus: Default::default(),
@@ -136,7 +136,7 @@ impl From<mls::client::Client> for CoreCrypto {
 }
 
 impl std::ops::Deref for CoreCrypto {
-    type Target = mls::client::Client;
+    type Target = mls::session::Session;
 
     fn deref(&self) -> &Self::Target {
         &self.mls
@@ -152,7 +152,7 @@ impl std::ops::DerefMut for CoreCrypto {
 impl CoreCrypto {
     /// Allows to extract the MLS Client from the wrapper superstruct
     #[inline]
-    pub fn take(self) -> mls::client::Client {
+    pub fn take(self) -> mls::session::Session {
         self.mls
     }
 }

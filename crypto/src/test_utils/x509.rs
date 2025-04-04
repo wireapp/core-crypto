@@ -1,7 +1,7 @@
 use std::{fmt::Display, time::Duration};
 
 use crate::{
-    e2e_identity::id::QualifiedE2eiClientId, mls::client::identifier::ClientIdentifier, prelude::CertificateBundle,
+    e2e_identity::id::QualifiedE2eiClientId, mls::session::identifier::ClientIdentifier, prelude::CertificateBundle,
     transaction_context::TransactionContext,
 };
 use mls_crypto_provider::{CertProfile, CertificateGenerationArgs, MlsCryptoProvider, PkiKeypair, RustCrypto};

@@ -11,11 +11,10 @@ use core_crypto_keystore::{
 use mls_crypto_provider::{CryptoKeystore, MlsCryptoProvider};
 
 use super::{Error, Result};
-use crate::{KeystoreError, MlsError};
 use crate::{
-    RecursiveError,
-    mls::{client::ClientInner, credential::CredentialBundle},
-    prelude::{Client, MlsCiphersuite, MlsConversationConfiguration, MlsCredentialType},
+    KeystoreError, MlsError, RecursiveError,
+    mls::{credential::CredentialBundle, session::ClientInner},
+    prelude::{MlsCiphersuite, MlsConversationConfiguration, MlsCredentialType, Session},
     transaction_context::TransactionContext,
 };
 
@@ -30,7 +29,7 @@ pub const INITIAL_KEYING_MATERIAL_COUNT: usize = 10;
 pub(crate) const KEYPACKAGE_DEFAULT_LIFETIME: std::time::Duration =
     std::time::Duration::from_secs(60 * 60 * 24 * 28 * 3); // ~3 months
 
-impl Client {
+impl Session {
     /// Generates a single new keypackage
     ///
     /// # Arguments
@@ -426,7 +425,7 @@ mod tests {
     use crate::test_utils::*;
     use core_crypto_keystore::DatabaseKey;
 
-    use super::Client;
+    use super::Session;
 
     wasm_bindgen_test_configure!(run_in_browser);
 
@@ -459,7 +458,7 @@ mod tests {
 
                 // 90-day standard expiration
                 let kp_std_exp = client.generate_one_keypackage(&backend, cs, ct).await.unwrap();
-                assert!(!Client::is_mls_keypackage_expired(&kp_std_exp));
+                assert!(!Session::is_mls_keypackage_expired(&kp_std_exp));
 
                 // 1-second expiration
                 client
@@ -469,7 +468,7 @@ mod tests {
                 let kp_1s_exp = client.generate_one_keypackage(&backend, cs, ct).await.unwrap();
                 // Sleep 2 seconds to make sure we make the kp expire
                 async_std::task::sleep(std::time::Duration::from_secs(2)).await;
-                assert!(Client::is_mls_keypackage_expired(&kp_1s_exp));
+                assert!(Session::is_mls_keypackage_expired(&kp_1s_exp));
             })
         })
         .await;

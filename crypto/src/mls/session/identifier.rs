@@ -4,7 +4,7 @@ use super::{
 };
 use crate::{
     RecursiveError,
-    prelude::{CertificateBundle, Client, ClientId},
+    prelude::{CertificateBundle, ClientId, Session},
 };
 use mls_crypto_provider::MlsCryptoProvider;
 use openmls_traits::types::SignatureScheme;
@@ -50,7 +50,7 @@ impl ClientIdentifier {
             ClientIdentifier::Basic(id) => signature_schemes.iter().try_fold(
                 Vec::with_capacity(signature_schemes.len()),
                 |mut acc, &sc| -> Result<_> {
-                    let cb = Client::new_basic_credential_bundle(&id, sc, backend)?;
+                    let cb = Session::new_basic_credential_bundle(&id, sc, backend)?;
                     acc.push((sc, id.clone(), cb));
                     Ok(acc)
                 },
@@ -63,7 +63,7 @@ impl ClientIdentifier {
                         let id = cert
                             .get_client_id()
                             .map_err(RecursiveError::mls_credential("getting client id"))?;
-                        let cb = Client::new_x509_credential_bundle(cert)?;
+                        let cb = Session::new_x509_credential_bundle(cert)?;
                         acc.push((sc, id, cb));
                         Ok(acc)
                     })

@@ -114,8 +114,8 @@ mod tests {
         CoreCrypto, RecursiveError,
         mls::credential::x509::CertificatePrivateKey,
         prelude::{
-            Client, ClientIdentifier, ConversationId, E2eiConversationState, INITIAL_KEYING_MATERIAL_COUNT,
-            MlsClientConfiguration, MlsCredentialType,
+            ClientIdentifier, ConversationId, E2eiConversationState, INITIAL_KEYING_MATERIAL_COUNT,
+            MlsClientConfiguration, MlsCredentialType, Session,
         },
         test_utils::{
             x509::{CertificateParams, X509TestChain},
@@ -384,7 +384,7 @@ mod tests {
 
             let ciphersuites = vec![case.ciphersuite()];
 
-            let charlie_central = Client::try_new(
+            let charlie_central = Session::try_new(
                 MlsClientConfiguration::try_new(
                     charlie_path.0,
                     DatabaseKey::generate(),
@@ -536,7 +536,7 @@ mod tests {
         )
         .map_err(RecursiveError::mls("making creator config"))?;
 
-        let creator_central = Client::try_new(creator_cfg)
+        let creator_central = Session::try_new(creator_cfg)
             .await
             .map_err(RecursiveError::mls("creating mls central"))?;
         let creator_transport = Arc::<CoreCryptoTransportSuccessProvider>::default();
@@ -578,7 +578,7 @@ mod tests {
         )
         .map_err(RecursiveError::mls("creating mls config"))?;
 
-        let guest_central = Client::try_new(guest_cfg)
+        let guest_central = Session::try_new(guest_cfg)
             .await
             .map_err(RecursiveError::mls("creating mls central"))?;
         let guest_transport = Arc::<CoreCryptoTransportSuccessProvider>::default();

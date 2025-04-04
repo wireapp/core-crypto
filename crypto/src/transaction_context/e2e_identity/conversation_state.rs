@@ -1,6 +1,6 @@
 use crate::{
     MlsError, RecursiveError,
-    prelude::{Client, MlsCredentialType},
+    prelude::{MlsCredentialType, Session},
 };
 
 use openmls_traits::OpenMlsCryptoProvider;
@@ -56,7 +56,7 @@ impl TransactionContext {
         });
 
         let auth_service = auth_service.borrow().await;
-        Ok(Client::compute_conversation_state(cs, credentials, MlsCredentialType::X509, auth_service.as_ref()).await)
+        Ok(Session::compute_conversation_state(cs, credentials, MlsCredentialType::X509, auth_service.as_ref()).await)
     }
 
     /// See [Client::get_credential_in_use].
@@ -85,7 +85,7 @@ impl TransactionContext {
             .await
             .map_err(RecursiveError::transaction("getting mls provider"))?;
         let auth_service = mls_provider.authentication_service().borrow().await;
-        Client::get_credential_in_use_in_ratchet_tree(cs, rt, credential_type, auth_service.as_ref())
+        Session::get_credential_in_use_in_ratchet_tree(cs, rt, credential_type, auth_service.as_ref())
             .await
             .map_err(RecursiveError::mls_client("getting credentials in use"))
             .map_err(Into::into)
@@ -97,7 +97,7 @@ mod tests {
     use super::*;
     use crate::mls::conversation::Conversation as _;
     use crate::{
-        prelude::{CertificateBundle, Client, MlsCredentialType},
+        prelude::{CertificateBundle, MlsCredentialType, Session},
         test_utils::*,
     };
     use wasm_bindgen_test::*;
@@ -295,7 +295,7 @@ mod tests {
                     .expect("No x509 test chain")
                     .find_local_intermediate_ca();
                 let cert = CertificateBundle::new_with_default_values(intermediate_ca, Some(expiration_time));
-                let cb = Client::new_x509_credential_bundle(cert.clone()).unwrap();
+                let cb = Session::new_x509_credential_bundle(cert.clone()).unwrap();
                 alice_central
                     .context
                     .conversation(&id)
@@ -390,7 +390,7 @@ mod tests {
 
                     let cert_bundle =
                         CertificateBundle::from_certificate_and_issuer(&alice_cert.certificate, alice_intermediate_ca);
-                    let cb = Client::new_x509_credential_bundle(cert_bundle.clone()).unwrap();
+                    let cb = Session::new_x509_credential_bundle(cert_bundle.clone()).unwrap();
                     alice_central
                         .context
                         .conversation(&id)

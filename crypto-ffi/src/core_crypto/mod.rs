@@ -8,7 +8,7 @@ pub(crate) mod mls_transport;
 mod proteus;
 mod randomness;
 
-use core_crypto::prelude::{Client, MlsClientConfiguration};
+use core_crypto::prelude::{MlsClientConfiguration, Session};
 #[cfg(target_family = "wasm")]
 use wasm_bindgen::prelude::*;
 
@@ -116,7 +116,7 @@ impl CoreCrypto {
         #[cfg(target_family = "wasm")]
         console_error_panic_hook::set_once();
 
-        let client = Client::try_new(configuration).await?;
+        let client = Session::try_new(configuration).await?;
         let inner = core_crypto::CoreCrypto::from(client);
 
         Ok(Self { inner })
