@@ -1,22 +1,7 @@
 use super::Result;
-use crate::{
-    MlsError,
-    prelude::{ConversationId, MlsConversation},
-    transaction_context::TransactionContext,
-};
+use crate::{MlsError, prelude::MlsConversation};
 use mls_crypto_provider::MlsCryptoProvider;
 use openmls_traits::OpenMlsCryptoProvider;
-
-impl TransactionContext {
-    /// Destroys a group locally
-    ///
-    /// # Errors
-    /// KeyStore errors, such as IO
-    #[cfg_attr(test, crate::dispotent)]
-    pub async fn wipe_conversation(&self, id: &ConversationId) -> Result<()> {
-        self.conversation(id).await?.wipe().await
-    }
-}
 
 impl MlsConversation {
     pub(crate) async fn wipe_associated_entities(&mut self, backend: &MlsCryptoProvider) -> Result<()> {
@@ -39,47 +24,10 @@ impl MlsConversation {
 
 #[cfg(test)]
 mod tests {
+    use crate::test_utils::*;
     use wasm_bindgen_test::*;
 
-    use super::super::error::Error;
-    use crate::test_utils::*;
-
     wasm_bindgen_test_configure!(run_in_browser);
-
-    #[apply(all_cred_cipher)]
-    #[wasm_bindgen_test]
-    async fn can_wipe_group(case: TestCase) {
-        run_test_with_central(case.clone(), move |[central]| {
-            Box::pin(async move {
-                let id = conversation_id();
-                central
-                    .context
-                    .new_conversation(&id, case.credential_type, case.cfg.clone())
-                    .await
-                    .unwrap();
-                assert!(central.get_conversation_unchecked(&id).await.group.is_active());
-
-                central.context.wipe_conversation(&id).await.unwrap();
-                assert!(!central.context.conversation_exists(&id).await.unwrap());
-            })
-        })
-        .await;
-    }
-
-    #[apply(all_cred_cipher)]
-    #[wasm_bindgen_test]
-    async fn cannot_wipe_group_non_existent(case: TestCase) {
-        use crate::LeafError;
-
-        run_test_with_central(case.clone(), move |[central]| {
-            Box::pin(async move {
-                let id = conversation_id();
-                let err = central.context.wipe_conversation(&id).await.unwrap_err();
-                assert!(matches!(err, Error::Leaf(LeafError::ConversationNotFound(conv_id)) if conv_id == id));
-            })
-        })
-        .await;
-    }
 
     // should delete anything related to this conversation
     #[apply(all_cred_cipher)]
@@ -92,6 +40,7 @@ mod tests {
                     .new_conversation(&id, case.credential_type, case.cfg.clone())
                     .await
                     .unwrap();
+                assert!(cc.get_conversation_unchecked(&id).await.group.is_active());
                 let initial_count = cc.context.count_entities().await;
 
                 cc.context.new_update_proposal(&id).await.unwrap();
@@ -101,9 +50,10 @@ mod tests {
                     initial_count.encryption_keypair + 1
                 );
 
-                cc.context.wipe_conversation(&id).await.unwrap();
+                cc.context.conversation(&id).await.unwrap().wipe().await.unwrap();
 
                 let final_count = cc.context.count_entities().await;
+                assert!(!cc.context.conversation_exists(&id).await.unwrap());
                 assert_eq!(final_count.group, 0);
                 assert_eq!(final_count.encryption_keypair, final_count.key_package);
                 assert_eq!(final_count.epoch_encryption_keypair, 0);
