@@ -145,7 +145,7 @@ impl HasClientAndProvider for Session {
     }
 
     async fn mls_provider(&self) -> Result<MlsCryptoProvider> {
-        Ok(self.mls_backend.clone())
+        Ok(self.crypto_provider.clone())
     }
 }
 

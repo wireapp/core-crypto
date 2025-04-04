@@ -13,7 +13,7 @@ use mls_crypto_provider::{CryptoKeystore, MlsCryptoProvider};
 use super::{Error, Result};
 use crate::{
     KeystoreError, MlsError, RecursiveError,
-    mls::{credential::CredentialBundle, session::ClientInner},
+    mls::{credential::CredentialBundle, session::SessionInner},
     prelude::{MlsCiphersuite, MlsConversationConfiguration, MlsCredentialType, Session},
     transaction_context::TransactionContext,
 };
@@ -43,9 +43,9 @@ impl Session {
         cs: MlsCiphersuite,
         cb: &CredentialBundle,
     ) -> Result<KeyPackage> {
-        match self.state.read().await.deref() {
+        match self.inner.read().await.deref() {
             None => Err(Error::MlsNotInitialized),
-            Some(ClientInner {
+            Some(SessionInner {
                 keypackage_lifetime, ..
             }) => {
                 let keypackage = KeyPackage::builder()
@@ -199,9 +199,9 @@ impl Session {
         backend: &MlsCryptoProvider,
         refs: &[KeyPackageRef],
     ) -> Result<()> {
-        match self.state.write().await.deref_mut() {
+        match self.inner.write().await.deref_mut() {
             None => Err(Error::MlsNotInitialized),
-            Some(ClientInner { identities, .. }) => {
+            Some(SessionInner { identities, .. }) => {
                 let keystore = backend.key_store();
                 let kps = self.find_all_keypackages(keystore).await?;
                 let kp_to_delete = self._prune_keypackages(&kps, keystore, refs).await?;
@@ -315,9 +315,9 @@ impl Session {
     #[cfg(test)]
     pub async fn set_keypackage_lifetime(&self, duration: std::time::Duration) -> Result<()> {
         use std::ops::DerefMut;
-        match self.state.write().await.deref_mut() {
+        match self.inner.write().await.deref_mut() {
             None => Err(Error::MlsNotInitialized),
-            Some(ClientInner {
+            Some(SessionInner {
                 keypackage_lifetime, ..
             }) => {
                 *keypackage_lifetime = duration;

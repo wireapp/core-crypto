@@ -47,20 +47,20 @@ use tls_codec::{Deserialize, Serialize};
 /// [RFC 9720]: https://www.rfc-editor.org/rfc/rfc9420.html
 #[derive(Clone, Debug)]
 pub struct Session {
-    pub(crate) state: Arc<RwLock<Option<ClientInner>>>,
+    pub(crate) inner: Arc<RwLock<Option<SessionInner>>>,
     pub(crate) crypto_provider: MlsCryptoProvider,
     pub(crate) transport: Arc<RwLock<Option<Arc<dyn MlsTransport + 'static>>>>,
 }
 
 #[derive(Clone)]
-pub(crate) struct ClientInner {
+pub(crate) struct SessionInner {
     id: ClientId,
     pub(crate) identities: Identities,
     keypackage_lifetime: std::time::Duration,
     epoch_observer: Option<Arc<dyn EpochObserver>>,
 }
 
-impl fmt::Debug for ClientInner {
+impl fmt::Debug for SessionInner {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let observer_debug = if self.epoch_observer.is_some() {
             "Some(Arc<dyn EpochObserver>)"
@@ -130,7 +130,7 @@ impl Session {
         // a few Arcs and locks.
         let client = Self {
             crypto_provider: mls_backend.clone(),
-            state: Default::default(),
+            inner: Default::default(),
             transport: Arc::new(None.into()),
         };
 
@@ -233,12 +233,12 @@ impl Session {
     /// Resets the client to an uninitialized state.
     #[cfg(test)]
     pub(crate) async fn reset(&self) {
-        let mut inner_lock = self.state.write().await;
+        let mut inner_lock = self.inner.write().await;
         *inner_lock = None;
     }
 
     pub(crate) async fn is_ready(&self) -> bool {
-        let inner_lock = self.state.read().await;
+        let inner_lock = self.inner.read().await;
         inner_lock.is_some()
     }
 
@@ -250,8 +250,8 @@ impl Session {
         }
     }
 
-    async fn replace_inner(&self, new_inner: ClientInner) {
-        let mut inner_lock = self.state.write().await;
+    async fn replace_inner(&self, new_inner: SessionInner) {
+        let mut inner_lock = self.inner.write().await;
         *inner_lock = Some(new_inner);
     }
 
@@ -465,7 +465,7 @@ impl Session {
 
         let identities = stored_skp.iter().zip(ciphersuites);
 
-        self.replace_inner(ClientInner {
+        self.replace_inner(SessionInner {
             id: client_id.clone(),
             identities: Identities::new(stored_skp.len()),
             keypackage_lifetime: KEYPACKAGE_DEFAULT_LIFETIME,
@@ -526,7 +526,7 @@ impl Session {
             .iter()
             .map(|cs| cs.signature_algorithm())
             .collect::<HashSet<_>>();
-        self.replace_inner(ClientInner {
+        self.replace_inner(SessionInner {
             id: id.into_owned(),
             identities: Identities::new(signature_schemes.len()),
             keypackage_lifetime: KEYPACKAGE_DEFAULT_LIFETIME,
@@ -540,12 +540,12 @@ impl Session {
             self.save_identity(&backend.keystore(), Some(&id), sc, cb).await?;
         }
 
-        let identities = match self.state.read().await.deref() {
+        let identities = match self.inner.read().await.deref() {
             None => return Err(Error::MlsNotInitialized),
             // Cloning is fine because identities is an arc internally.
             // We can't keep the lock for longer because requesting the key packages below will also
             // acquire it.
-            Some(ClientInner { identities, .. }) => identities.clone(),
+            Some(SessionInner { identities, .. }) => identities.clone(),
         };
 
         if nb_key_package != 0 {
@@ -632,7 +632,7 @@ impl Session {
                 identities.push_credential_bundle(sc, cb).await?;
             }
         }
-        self.replace_inner(ClientInner {
+        self.replace_inner(SessionInner {
             id: id.clone(),
             identities,
             keypackage_lifetime: KEYPACKAGE_DEFAULT_LIFETIME,
@@ -668,9 +668,9 @@ impl Session {
         sc: SignatureScheme,
         mut cb: CredentialBundle,
     ) -> Result<CredentialBundle> {
-        match self.state.write().await.deref_mut() {
+        match self.inner.write().await.deref_mut() {
             None => Err(Error::MlsNotInitialized),
-            Some(ClientInner {
+            Some(SessionInner {
                 id: existing_id,
                 identities,
                 ..
@@ -717,17 +717,17 @@ impl Session {
 
     /// Retrieves the client's client id. This is free-form and not inspected.
     pub async fn id(&self) -> Result<ClientId> {
-        match self.state.read().await.deref() {
+        match self.inner.read().await.deref() {
             None => Err(Error::MlsNotInitialized),
-            Some(ClientInner { id, .. }) => Ok(id.clone()),
+            Some(SessionInner { id, .. }) => Ok(id.clone()),
         }
     }
 
     /// Returns whether this client is E2EI capable
     pub async fn is_e2ei_capable(&self) -> bool {
-        match self.state.read().await.deref() {
+        match self.inner.read().await.deref() {
             None => false,
-            Some(ClientInner { identities, .. }) => identities
+            Some(SessionInner { identities, .. }) => identities
                 .iter()
                 .any(|(_, cred)| cred.credential().credential_type() == CredentialType::X509),
         }

@@ -29,7 +29,7 @@ impl Session {
     /// This function should be called 0 or 1 times in a session's lifetime. If called
     /// when an epoch observer already exists, this will return an error.
     pub(crate) async fn register_epoch_observer(&self, epoch_observer: Arc<dyn EpochObserver>) -> Result<()> {
-        let mut guard = self.state.write().await;
+        let mut guard = self.inner.write().await;
         let inner = guard.as_mut().ok_or(Error::MlsNotInitialized)?;
         if inner.epoch_observer.is_some() {
             return Err(Error::EpochObserverAlreadyExists);
@@ -40,7 +40,7 @@ impl Session {
 
     /// Notify the observer that the epoch has changed, if one is present.
     pub(crate) async fn notify_epoch_changed(&self, conversation_id: ConversationId, epoch: u64) {
-        let guard = self.state.read().await;
+        let guard = self.inner.read().await;
         if let Some(inner) = guard.as_ref() {
             if let Some(observer) = inner.epoch_observer.as_ref() {
                 observer.epoch_changed(conversation_id, epoch).await;

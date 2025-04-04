@@ -1,5 +1,5 @@
 use crate::mls::session::{
-    ClientInner,
+    SessionInner,
     error::{Error, Result},
 };
 use crate::{
@@ -92,9 +92,9 @@ impl Session {
         sc: SignatureScheme,
         ct: MlsCredentialType,
     ) -> Result<Arc<CredentialBundle>> {
-        match self.state.read().await.deref() {
+        match self.inner.read().await.deref() {
             None => Err(Error::MlsNotInitialized),
-            Some(ClientInner { identities, .. }) => identities
+            Some(SessionInner { identities, .. }) => identities
                 .find_most_recent_credential_bundle(sc, ct)
                 .await
                 .ok_or(Error::CredentialNotFound(ct)),
@@ -107,9 +107,9 @@ impl Session {
         ct: MlsCredentialType,
         pk: &SignaturePublicKey,
     ) -> Result<Arc<CredentialBundle>> {
-        match self.state.read().await.deref() {
+        match self.inner.read().await.deref() {
             None => Err(Error::MlsNotInitialized),
-            Some(ClientInner { identities, .. }) => identities
+            Some(SessionInner { identities, .. }) => identities
                 .find_credential_bundle_by_public_key(sc, ct, pk)
                 .await
                 .ok_or(Error::CredentialNotFound(ct)),
@@ -118,9 +118,9 @@ impl Session {
 
     #[cfg(test)]
     pub(crate) async fn identities_count(&self) -> Result<usize> {
-        match self.state.read().await.deref() {
+        match self.inner.read().await.deref() {
             None => Err(Error::MlsNotInitialized),
-            Some(ClientInner { identities, .. }) => Ok(identities.iter().count()),
+            Some(SessionInner { identities, .. }) => Ok(identities.iter().count()),
         }
     }
 }
