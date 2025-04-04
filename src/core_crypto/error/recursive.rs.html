@@ -37,7 +37,7 @@
 <a href=#37 id=37 data-nosnippet>37</a>        <span class="doccomment">/// What was happening in the caller
 <a href=#38 id=38 data-nosnippet>38</a>        </span>context: <span class="kw-2">&amp;</span><span class="lifetime">'static </span>str,
 <a href=#39 id=39 data-nosnippet>39</a>        <span class="doccomment">/// What happened
-<a href=#40 id=40 data-nosnippet>40</a>        </span>source: Box&lt;<span class="kw">crate</span>::mls::client::Error&gt;,
+<a href=#40 id=40 data-nosnippet>40</a>        </span>source: Box&lt;<span class="kw">crate</span>::mls::session::Error&gt;,
 <a href=#41 id=41 data-nosnippet>41</a>    },
 <a href=#42 id=42 data-nosnippet>42</a>    <span class="doccomment">/// Wrap a [crate::mls::conversation::Error] for recursion.
 <a href=#43 id=43 data-nosnippet>43</a>    </span>MlsConversation {
@@ -92,7 +92,7 @@
 <a href=#92 id=92 data-nosnippet>92</a>    }
 <a href=#93 id=93 data-nosnippet>93</a>
 <a href=#94 id=94 data-nosnippet>94</a>    <span class="doccomment">/// Convert a [crate::mls::client::Error] into a [RecursiveError], with context
-<a href=#95 id=95 data-nosnippet>95</a>    </span><span class="kw">pub fn </span>mls_client&lt;E: Into&lt;<span class="kw">crate</span>::mls::client::Error&gt;&gt;(context: <span class="kw-2">&amp;</span><span class="lifetime">'static </span>str) -&gt; <span class="kw">impl </span>FnOnce(E) -&gt; <span class="self">Self </span>{
+<a href=#95 id=95 data-nosnippet>95</a>    </span><span class="kw">pub fn </span>mls_client&lt;E: Into&lt;<span class="kw">crate</span>::mls::session::Error&gt;&gt;(context: <span class="kw-2">&amp;</span><span class="lifetime">'static </span>str) -&gt; <span class="kw">impl </span>FnOnce(E) -&gt; <span class="self">Self </span>{
 <a href=#96 id=96 data-nosnippet>96</a>        <span class="kw">move </span>|into_source| <span class="self">Self</span>::MlsClient {
 <a href=#97 id=97 data-nosnippet>97</a>            context,
 <a href=#98 id=98 data-nosnippet>98</a>            source: Box::new(into_source.into()),
@@ -184,7 +184,7 @@
 <a href=#184 id=184 data-nosnippet>184</a>    <span class="kw">crate</span>::Error =&gt; Root,
 <a href=#185 id=185 data-nosnippet>185</a>    <span class="kw">crate</span>::e2e_identity::Error =&gt; E2e,
 <a href=#186 id=186 data-nosnippet>186</a>    <span class="kw">crate</span>::mls::Error =&gt; Mls,
-<a href=#187 id=187 data-nosnippet>187</a>    <span class="kw">crate</span>::mls::client::Error =&gt; MlsClient,
+<a href=#187 id=187 data-nosnippet>187</a>    <span class="kw">crate</span>::mls::session::Error =&gt; MlsClient,
 <a href=#188 id=188 data-nosnippet>188</a>    <span class="kw">crate</span>::mls::conversation::Error =&gt; MlsConversation,
 <a href=#189 id=189 data-nosnippet>189</a>    <span class="kw">crate</span>::mls::credential::Error =&gt; MlsCredential,
 <a href=#190 id=190 data-nosnippet>190</a>    <span class="kw">crate</span>::transaction_context::Error =&gt; TransactionContext,

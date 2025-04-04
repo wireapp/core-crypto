@@ -14,7 +14,7 @@
 <a href=#14 id=14 data-nosnippet>14</a>    LeafError,
 <a href=#15 id=15 data-nosnippet>15</a>    e2e_identity::NewCrlDistributionPoints,
 <a href=#16 id=16 data-nosnippet>16</a>    mls::{MlsConversation, credential::CredentialBundle},
-<a href=#17 id=17 data-nosnippet>17</a>    prelude::{Client, MlsError, MlsGroupInfoBundle},
+<a href=#17 id=17 data-nosnippet>17</a>    prelude::{MlsError, MlsGroupInfoBundle, Session},
 <a href=#18 id=18 data-nosnippet>18</a>};
 <a href=#19 id=19 data-nosnippet>19</a>
 <a href=#20 id=20 data-nosnippet>20</a><span class="kw">impl </span>MlsConversation {
@@ -22,7 +22,7 @@
 <a href=#22 id=22 data-nosnippet>22</a>    </span><span class="attr">#[cfg_attr(test, <span class="kw">crate</span>::durable)]
 <a href=#23 id=23 data-nosnippet>23</a>    </span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">async fn </span>update_keying_material(
 <a href=#24 id=24 data-nosnippet>24</a>        <span class="kw-2">&amp;mut </span><span class="self">self</span>,
-<a href=#25 id=25 data-nosnippet>25</a>        client: <span class="kw-2">&amp;</span>Client,
+<a href=#25 id=25 data-nosnippet>25</a>        client: <span class="kw-2">&amp;</span>Session,
 <a href=#26 id=26 data-nosnippet>26</a>        backend: <span class="kw-2">&amp;</span>MlsCryptoProvider,
 <a href=#27 id=27 data-nosnippet>27</a>        cb: <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;</span>CredentialBundle&gt;,
 <a href=#28 id=28 data-nosnippet>28</a>        leaf_node: <span class="prelude-ty">Option</span>&lt;LeafNode&gt;,
@@ -54,7 +54,7 @@
 <a href=#54 id=54 data-nosnippet>54</a>    </span><span class="attr">#[cfg_attr(test, <span class="kw">crate</span>::durable)]
 <a href=#55 id=55 data-nosnippet>55</a>    </span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">async fn </span>commit_pending_proposals(
 <a href=#56 id=56 data-nosnippet>56</a>        <span class="kw-2">&amp;mut </span><span class="self">self</span>,
-<a href=#57 id=57 data-nosnippet>57</a>        client: <span class="kw-2">&amp;</span>Client,
+<a href=#57 id=57 data-nosnippet>57</a>        client: <span class="kw-2">&amp;</span>Session,
 <a href=#58 id=58 data-nosnippet>58</a>        backend: <span class="kw-2">&amp;</span>MlsCryptoProvider,
 <a href=#59 id=59 data-nosnippet>59</a>    ) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="prelude-ty">Option</span>&lt;MlsCommitBundle&gt;&gt; {
 <a href=#60 id=60 data-nosnippet>60</a>        <span class="kw">if </span><span class="self">self</span>.group.pending_proposals().count() == <span class="number">0 </span>{

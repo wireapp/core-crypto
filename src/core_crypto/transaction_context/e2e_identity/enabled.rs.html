@@ -8,7 +8,7 @@
 <a href=#8 id=8 data-nosnippet>8</a>    <span class="doccomment">/// See [Client::e2ei_is_enabled]
 <a href=#9 id=9 data-nosnippet>9</a>    </span><span class="kw">pub async fn </span>e2ei_is_enabled(<span class="kw-2">&amp;</span><span class="self">self</span>, signature_scheme: SignatureScheme) -&gt; <span class="prelude-ty">Result</span>&lt;bool&gt; {
 <a href=#10 id=10 data-nosnippet>10</a>        <span class="kw">let </span>client = <span class="self">self
-<a href=#11 id=11 data-nosnippet>11</a>            </span>.mls_client()
+<a href=#11 id=11 data-nosnippet>11</a>            </span>.session()
 <a href=#12 id=12 data-nosnippet>12</a>            .<span class="kw">await
 <a href=#13 id=13 data-nosnippet>13</a>            </span>.map_err(RecursiveError::transaction(<span class="string">"getting mls client"</span>))<span class="question-mark">?</span>;
 <a href=#14 id=14 data-nosnippet>14</a>        client
@@ -51,7 +51,7 @@
 <a href=#51 id=51 data-nosnippet>51</a>                <span class="macro">assert!</span>(<span class="macro">matches!</span>(
 <a href=#52 id=52 data-nosnippet>52</a>                    cc.context.e2ei_is_enabled(case.signature_scheme()).<span class="kw">await</span>.unwrap_err(),
 <a href=#53 id=53 data-nosnippet>53</a>                    Error::Recursive(RecursiveError::MlsClient {  source, .. })
-<a href=#54 id=54 data-nosnippet>54</a>                    <span class="kw">if </span><span class="macro">matches!</span>(<span class="kw-2">*</span>source, mls::client::Error::MlsNotInitialized)
+<a href=#54 id=54 data-nosnippet>54</a>                    <span class="kw">if </span><span class="macro">matches!</span>(<span class="kw-2">*</span>source, mls::session::Error::MlsNotInitialized)
 <a href=#55 id=55 data-nosnippet>55</a>                ));
 <a href=#56 id=56 data-nosnippet>56</a>            })
 <a href=#57 id=57 data-nosnippet>57</a>        })
@@ -71,7 +71,7 @@
 <a href=#71 id=71 data-nosnippet>71</a>                <span class="macro">assert!</span>(<span class="macro">matches!</span>(
 <a href=#72 id=72 data-nosnippet>72</a>                    cc.context.e2ei_is_enabled(other_sc).<span class="kw">await</span>.unwrap_err(),
 <a href=#73 id=73 data-nosnippet>73</a>                    Error::Recursive(RecursiveError::MlsClient {  source, .. })
-<a href=#74 id=74 data-nosnippet>74</a>                    <span class="kw">if </span><span class="macro">matches!</span>(<span class="kw-2">*</span>source, mls::client::Error::CredentialNotFound(<span class="kw">_</span>))
+<a href=#74 id=74 data-nosnippet>74</a>                    <span class="kw">if </span><span class="macro">matches!</span>(<span class="kw-2">*</span>source, mls::session::Error::CredentialNotFound(<span class="kw">_</span>))
 <a href=#75 id=75 data-nosnippet>75</a>                ));
 <a href=#76 id=76 data-nosnippet>76</a>            })
 <a href=#77 id=77 data-nosnippet>77</a>        })

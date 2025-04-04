@@ -132,7 +132,7 @@
 <a href=#132 id=132 data-nosnippet>132</a>        <span class="prelude-val">None</span>,
 <a href=#133 id=133 data-nosnippet>133</a>        <span class="prelude-val">Some</span>(<span class="number">100</span>),
 <a href=#134 id=134 data-nosnippet>134</a>    )<span class="question-mark">?</span>;
-<a href=#135 id=135 data-nosnippet>135</a>    <span class="kw">let </span>master_client = Client::try_new_in_memory(configuration).<span class="kw">await</span><span class="question-mark">?</span>;
+<a href=#135 id=135 data-nosnippet>135</a>    <span class="kw">let </span>master_client = Session::try_new_in_memory(configuration).<span class="kw">await</span><span class="question-mark">?</span>;
 <a href=#136 id=136 data-nosnippet>136</a>
 <a href=#137 id=137 data-nosnippet>137</a>    <span class="kw">let </span>conversation_id = MLS_CONVERSATION_ID.to_vec();
 <a href=#138 id=138 data-nosnippet>138</a>    <span class="kw">let </span>config = MlsConversationConfiguration {
@@ -328,7 +328,7 @@
 <a href=#328 id=328 data-nosnippet>328</a>        <span class="prelude-val">None</span>,
 <a href=#329 id=329 data-nosnippet>329</a>        <span class="prelude-val">Some</span>(<span class="number">100</span>),
 <a href=#330 id=330 data-nosnippet>330</a>    )<span class="question-mark">?</span>;
-<a href=#331 id=331 data-nosnippet>331</a>    <span class="kw">let </span>master_client = CoreCrypto::from(Client::try_new_in_memory(configuration).<span class="kw">await</span><span class="question-mark">?</span>);
+<a href=#331 id=331 data-nosnippet>331</a>    <span class="kw">let </span>master_client = CoreCrypto::from(Session::try_new_in_memory(configuration).<span class="kw">await</span><span class="question-mark">?</span>);
 <a href=#332 id=332 data-nosnippet>332</a>    <span class="kw">let </span>transaction = master_client.new_transaction().<span class="kw">await</span><span class="question-mark">?</span>;
 <a href=#333 id=333 data-nosnippet>333</a>    transaction.proteus_init().<span class="kw">await</span><span class="question-mark">?</span>;
 <a href=#334 id=334 data-nosnippet>334</a>

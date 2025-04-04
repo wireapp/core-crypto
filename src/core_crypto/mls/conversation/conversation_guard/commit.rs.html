@@ -29,8 +29,8 @@
 <a href=#29 id=29 data-nosnippet>29</a>        <span class="kw">match </span><span class="self">self</span>.send_commit(commit).<span class="kw">await </span>{
 <a href=#30 id=30 data-nosnippet>30</a>            <span class="prelude-val">Ok</span>(TransportedCommitPolicy::None) =&gt; <span class="prelude-val">Ok</span>(()),
 <a href=#31 id=31 data-nosnippet>31</a>            <span class="prelude-val">Ok</span>(TransportedCommitPolicy::Merge) =&gt; {
-<a href=#32 id=32 data-nosnippet>32</a>                <span class="kw">let </span>client = <span class="self">self</span>.mls_client().<span class="kw">await</span><span class="question-mark">?</span>;
-<a href=#33 id=33 data-nosnippet>33</a>                <span class="kw">let </span>backend = <span class="self">self</span>.mls_provider().<span class="kw">await</span><span class="question-mark">?</span>;
+<a href=#32 id=32 data-nosnippet>32</a>                <span class="kw">let </span>client = <span class="self">self</span>.session().<span class="kw">await</span><span class="question-mark">?</span>;
+<a href=#33 id=33 data-nosnippet>33</a>                <span class="kw">let </span>backend = <span class="self">self</span>.crypto_provider().<span class="kw">await</span><span class="question-mark">?</span>;
 <a href=#34 id=34 data-nosnippet>34</a>                <span class="kw">let </span><span class="kw-2">mut </span>conversation = <span class="self">self</span>.inner.write().<span class="kw">await</span>;
 <a href=#35 id=35 data-nosnippet>35</a>                conversation.commit_accepted(<span class="kw-2">&amp;</span>client, <span class="kw-2">&amp;</span>backend).<span class="kw">await
 <a href=#36 id=36 data-nosnippet>36</a>            </span>}
@@ -53,8 +53,8 @@
 <a href=#53 id=53 data-nosnippet>53</a>        <span class="kw">let </span>transport = transport.as_ref().ok_or::&lt;Error&gt;(
 <a href=#54 id=54 data-nosnippet>54</a>            RecursiveError::root(<span class="string">"getting mls transport"</span>)(<span class="kw">crate</span>::Error::MlsTransportNotProvided).into(),
 <a href=#55 id=55 data-nosnippet>55</a>        )<span class="question-mark">?</span>;
-<a href=#56 id=56 data-nosnippet>56</a>        <span class="kw">let </span>client = <span class="self">self</span>.mls_client().<span class="kw">await</span><span class="question-mark">?</span>;
-<a href=#57 id=57 data-nosnippet>57</a>        <span class="kw">let </span>backend = <span class="self">self</span>.mls_provider().<span class="kw">await</span><span class="question-mark">?</span>;
+<a href=#56 id=56 data-nosnippet>56</a>        <span class="kw">let </span>client = <span class="self">self</span>.session().<span class="kw">await</span><span class="question-mark">?</span>;
+<a href=#57 id=57 data-nosnippet>57</a>        <span class="kw">let </span>backend = <span class="self">self</span>.crypto_provider().<span class="kw">await</span><span class="question-mark">?</span>;
 <a href=#58 id=58 data-nosnippet>58</a>
 <a href=#59 id=59 data-nosnippet>59</a>        <span class="kw">let </span>inner = <span class="self">self</span>.conversation().<span class="kw">await</span>;
 <a href=#60 id=60 data-nosnippet>60</a>        <span class="kw">let </span>epoch_before_sending = inner.group().epoch().as_u64();
@@ -101,7 +101,7 @@
 <a href=#101 id=101 data-nosnippet>101</a>
 <a href=#102 id=102 data-nosnippet>102</a>    <span class="doccomment">/// Adds new members to the group/conversation
 <a href=#103 id=103 data-nosnippet>103</a>    </span><span class="kw">pub async fn </span>add_members(<span class="kw-2">&amp;mut </span><span class="self">self</span>, key_packages: Vec&lt;KeyPackageIn&gt;) -&gt; <span class="prelude-ty">Result</span>&lt;NewCrlDistributionPoints&gt; {
-<a href=#104 id=104 data-nosnippet>104</a>        <span class="kw">let </span>backend = <span class="self">self</span>.mls_provider().<span class="kw">await</span><span class="question-mark">?</span>;
+<a href=#104 id=104 data-nosnippet>104</a>        <span class="kw">let </span>backend = <span class="self">self</span>.crypto_provider().<span class="kw">await</span><span class="question-mark">?</span>;
 <a href=#105 id=105 data-nosnippet>105</a>        <span class="kw">let </span>credential = <span class="self">self</span>.credential_bundle().<span class="kw">await</span><span class="question-mark">?</span>;
 <a href=#106 id=106 data-nosnippet>106</a>        <span class="kw">let </span>signer = credential.signature_key();
 <a href=#107 id=107 data-nosnippet>107</a>        <span class="kw">let </span><span class="kw-2">mut </span>conversation = <span class="self">self</span>.conversation_mut().<span class="kw">await</span>;
@@ -150,7 +150,7 @@
 <a href=#150 id=150 data-nosnippet>150</a>    /// * `id` - group/conversation id
 <a href=#151 id=151 data-nosnippet>151</a>    /// * `clients` - list of client ids to be removed from the group
 <a href=#152 id=152 data-nosnippet>152</a>    </span><span class="kw">pub async fn </span>remove_members(<span class="kw-2">&amp;mut </span><span class="self">self</span>, clients: <span class="kw-2">&amp;</span>[ClientId]) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
-<a href=#153 id=153 data-nosnippet>153</a>        <span class="kw">let </span>backend = <span class="self">self</span>.mls_provider().<span class="kw">await</span><span class="question-mark">?</span>;
+<a href=#153 id=153 data-nosnippet>153</a>        <span class="kw">let </span>backend = <span class="self">self</span>.crypto_provider().<span class="kw">await</span><span class="question-mark">?</span>;
 <a href=#154 id=154 data-nosnippet>154</a>        <span class="kw">let </span>credential = <span class="self">self</span>.credential_bundle().<span class="kw">await</span><span class="question-mark">?</span>;
 <a href=#155 id=155 data-nosnippet>155</a>        <span class="kw">let </span>signer = credential.signature_key();
 <a href=#156 id=156 data-nosnippet>156</a>        <span class="kw">let </span><span class="kw-2">mut </span>conversation = <span class="self">self</span>.inner.write().<span class="kw">await</span>;
@@ -196,8 +196,8 @@
 <a href=#196 id=196 data-nosnippet>196</a>    ///
 <a href=#197 id=197 data-nosnippet>197</a>    /// see [MlsCentral::update_keying_material]
 <a href=#198 id=198 data-nosnippet>198</a>    </span><span class="kw">pub async fn </span>update_key_material(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
-<a href=#199 id=199 data-nosnippet>199</a>        <span class="kw">let </span>client = <span class="self">self</span>.mls_client().<span class="kw">await</span><span class="question-mark">?</span>;
-<a href=#200 id=200 data-nosnippet>200</a>        <span class="kw">let </span>backend = <span class="self">self</span>.mls_provider().<span class="kw">await</span><span class="question-mark">?</span>;
+<a href=#199 id=199 data-nosnippet>199</a>        <span class="kw">let </span>client = <span class="self">self</span>.session().<span class="kw">await</span><span class="question-mark">?</span>;
+<a href=#200 id=200 data-nosnippet>200</a>        <span class="kw">let </span>backend = <span class="self">self</span>.crypto_provider().<span class="kw">await</span><span class="question-mark">?</span>;
 <a href=#201 id=201 data-nosnippet>201</a>        <span class="kw">let </span><span class="kw-2">mut </span>conversation = <span class="self">self</span>.inner.write().<span class="kw">await</span>;
 <a href=#202 id=202 data-nosnippet>202</a>        <span class="kw">let </span>commit = conversation
 <a href=#203 id=203 data-nosnippet>203</a>            .update_keying_material(<span class="kw-2">&amp;</span>client, <span class="kw-2">&amp;</span>backend, <span class="prelude-val">None</span>, <span class="prelude-val">None</span>)
@@ -212,8 +212,8 @@
 <a href=#212 id=212 data-nosnippet>212</a>    /// [crate::transaction_context::TransactionContext::e2ei_new_rotate_enrollment] and having saved it with
 <a href=#213 id=213 data-nosnippet>213</a>    /// [crate::transaction_context::TransactionContext::save_x509_credential].
 <a href=#214 id=214 data-nosnippet>214</a>    </span><span class="kw">pub async fn </span>e2ei_rotate(<span class="kw-2">&amp;mut </span><span class="self">self</span>, cb: <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;</span>CredentialBundle&gt;) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
-<a href=#215 id=215 data-nosnippet>215</a>        <span class="kw">let </span>client = <span class="kw-2">&amp;</span><span class="self">self</span>.mls_client().<span class="kw">await</span><span class="question-mark">?</span>;
-<a href=#216 id=216 data-nosnippet>216</a>        <span class="kw">let </span>backend = <span class="kw-2">&amp;</span><span class="self">self</span>.mls_provider().<span class="kw">await</span><span class="question-mark">?</span>;
+<a href=#215 id=215 data-nosnippet>215</a>        <span class="kw">let </span>client = <span class="kw-2">&amp;</span><span class="self">self</span>.session().<span class="kw">await</span><span class="question-mark">?</span>;
+<a href=#216 id=216 data-nosnippet>216</a>        <span class="kw">let </span>backend = <span class="kw-2">&amp;</span><span class="self">self</span>.crypto_provider().<span class="kw">await</span><span class="question-mark">?</span>;
 <a href=#217 id=217 data-nosnippet>217</a>        <span class="kw">let </span><span class="kw-2">mut </span>conversation = <span class="self">self</span>.inner.write().<span class="kw">await</span>;
 <a href=#218 id=218 data-nosnippet>218</a>
 <a href=#219 id=219 data-nosnippet>219</a>        <span class="kw">let </span>cb = <span class="kw">match </span>cb {
@@ -245,8 +245,8 @@
 <a href=#245 id=245 data-nosnippet>245</a>
 <a href=#246 id=246 data-nosnippet>246</a>    <span class="doccomment">/// Commits all pending proposals of the group
 <a href=#247 id=247 data-nosnippet>247</a>    </span><span class="kw">pub async fn </span>commit_pending_proposals(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
-<a href=#248 id=248 data-nosnippet>248</a>        <span class="kw">let </span>client = <span class="self">self</span>.mls_client().<span class="kw">await</span><span class="question-mark">?</span>;
-<a href=#249 id=249 data-nosnippet>249</a>        <span class="kw">let </span>backend = <span class="self">self</span>.mls_provider().<span class="kw">await</span><span class="question-mark">?</span>;
+<a href=#248 id=248 data-nosnippet>248</a>        <span class="kw">let </span>client = <span class="self">self</span>.session().<span class="kw">await</span><span class="question-mark">?</span>;
+<a href=#249 id=249 data-nosnippet>249</a>        <span class="kw">let </span>backend = <span class="self">self</span>.crypto_provider().<span class="kw">await</span><span class="question-mark">?</span>;
 <a href=#250 id=250 data-nosnippet>250</a>        <span class="kw">let </span><span class="kw-2">mut </span>conversation = <span class="self">self</span>.inner.write().<span class="kw">await</span>;
 <a href=#251 id=251 data-nosnippet>251</a>        <span class="kw">let </span>commit = conversation.commit_pending_proposals(<span class="kw-2">&amp;</span>client, <span class="kw-2">&amp;</span>backend).<span class="kw">await</span><span class="question-mark">?</span>;
 <a href=#252 id=252 data-nosnippet>252</a>        drop(conversation);

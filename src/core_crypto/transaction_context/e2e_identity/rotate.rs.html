@@ -32,7 +32,7 @@
 <a href=#32 id=32 data-nosnippet>32</a>            </span>.map_err(RecursiveError::transaction(<span class="string">"getting mls provider"</span>))<span class="question-mark">?</span>;
 <a href=#33 id=33 data-nosnippet>33</a>        <span class="comment">// look for existing credential of type basic. If there isn't, then this method has been misused
 <a href=#34 id=34 data-nosnippet>34</a>        </span><span class="kw">let </span>cb = <span class="self">self
-<a href=#35 id=35 data-nosnippet>35</a>            </span>.mls_client()
+<a href=#35 id=35 data-nosnippet>35</a>            </span>.session()
 <a href=#36 id=36 data-nosnippet>36</a>            .<span class="kw">await
 <a href=#37 id=37 data-nosnippet>37</a>            </span>.map_err(RecursiveError::transaction(<span class="string">"getting mls client"</span>))<span class="question-mark">?
 <a href=#38 id=38 data-nosnippet>38</a>            </span>.find_most_recent_credential_bundle(ciphersuite.signature_algorithm(), MlsCredentialType::Basic)
@@ -81,7 +81,7 @@
 <a href=#81 id=81 data-nosnippet>81</a>            </span>.map_err(RecursiveError::transaction(<span class="string">"getting mls provider"</span>))<span class="question-mark">?</span>;
 <a href=#82 id=82 data-nosnippet>82</a>        <span class="comment">// look for existing credential of type x509. If there isn't, then this method has been misused
 <a href=#83 id=83 data-nosnippet>83</a>        </span><span class="kw">let </span>cb = <span class="self">self
-<a href=#84 id=84 data-nosnippet>84</a>            </span>.mls_client()
+<a href=#84 id=84 data-nosnippet>84</a>            </span>.session()
 <a href=#85 id=85 data-nosnippet>85</a>            .<span class="kw">await
 <a href=#86 id=86 data-nosnippet>86</a>            </span>.map_err(RecursiveError::transaction(<span class="string">"getting mls client"</span>))<span class="question-mark">?
 <a href=#87 id=87 data-nosnippet>87</a>            </span>.find_most_recent_credential_bundle(ciphersuite.signature_algorithm(), MlsCredentialType::X509)
@@ -173,7 +173,7 @@
 <a href=#173 id=173 data-nosnippet>173</a>            private_key,
 <a href=#174 id=174 data-nosnippet>174</a>        };
 <a href=#175 id=175 data-nosnippet>175</a>        <span class="kw">let </span>client = <span class="kw-2">&amp;</span><span class="self">self
-<a href=#176 id=176 data-nosnippet>176</a>            </span>.mls_client()
+<a href=#176 id=176 data-nosnippet>176</a>            </span>.session()
 <a href=#177 id=177 data-nosnippet>177</a>            .<span class="kw">await
 <a href=#178 id=178 data-nosnippet>178</a>            </span>.map_err(RecursiveError::transaction(<span class="string">"getting mls provider"</span>))<span class="question-mark">?</span>;
 <a href=#179 id=179 data-nosnippet>179</a>
@@ -210,7 +210,7 @@
 <a href=#210 id=210 data-nosnippet>210</a>            .<span class="kw">await
 <a href=#211 id=211 data-nosnippet>211</a>            </span>.map_err(KeystoreError::wrap(<span class="string">"fetching key packages"</span>))<span class="question-mark">?</span>;
 <a href=#212 id=212 data-nosnippet>212</a>        <span class="kw">let </span>client = <span class="self">self
-<a href=#213 id=213 data-nosnippet>213</a>            </span>.mls_client()
+<a href=#213 id=213 data-nosnippet>213</a>            </span>.session()
 <a href=#214 id=214 data-nosnippet>214</a>            .<span class="kw">await
 <a href=#215 id=215 data-nosnippet>215</a>            </span>.map_err(RecursiveError::transaction(<span class="string">"getting mls client"</span>))<span class="question-mark">?</span>;
 <a href=#216 id=216 data-nosnippet>216</a>
@@ -556,7 +556,7 @@
 <a href=#556 id=556 data-nosnippet>556</a>                        </span>.unwrap();
 <a href=#557 id=557 data-nosnippet>557</a>                    <span class="macro">assert_eq!</span>(old_cb, old_cb_found);
 <a href=#558 id=558 data-nosnippet>558</a>                    <span class="kw">let </span>(cid, all_credentials, scs, old_nb_identities) = {
-<a href=#559 id=559 data-nosnippet>559</a>                        <span class="kw">let </span>alice_client = alice_central.client().<span class="kw">await</span>;
+<a href=#559 id=559 data-nosnippet>559</a>                        <span class="kw">let </span>alice_client = alice_central.session().<span class="kw">await</span>;
 <a href=#560 id=560 data-nosnippet>560</a>                        <span class="kw">let </span>old_nb_identities = alice_client.identities_count().<span class="kw">await</span>.unwrap();
 <a href=#561 id=561 data-nosnippet>561</a>
 <a href=#562 id=562 data-nosnippet>562</a>                        <span class="comment">// Let's simulate an app crash, client gets deleted and restored from keystore
@@ -585,7 +585,7 @@
 <a href=#585 id=585 data-nosnippet>585</a>                    backend.keystore().commit_transaction().<span class="kw">await</span>.unwrap();
 <a href=#586 id=586 data-nosnippet>586</a>                    backend.keystore().new_transaction().<span class="kw">await</span>.unwrap();
 <a href=#587 id=587 data-nosnippet>587</a>
-<a href=#588 id=588 data-nosnippet>588</a>                    <span class="kw">let </span>new_client = alice_central.client.clone();
+<a href=#588 id=588 data-nosnippet>588</a>                    <span class="kw">let </span>new_client = alice_central.session.clone();
 <a href=#589 id=589 data-nosnippet>589</a>                    new_client.reset().<span class="kw">await</span>;
 <a href=#590 id=590 data-nosnippet>590</a>
 <a href=#591 id=591 data-nosnippet>591</a>                    new_client.load(backend, <span class="kw-2">&amp;</span>cid, all_credentials, scs).<span class="kw">await</span>.unwrap();

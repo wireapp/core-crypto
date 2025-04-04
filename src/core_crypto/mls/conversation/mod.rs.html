@@ -27,7 +27,7 @@
 <a href=#27 id=27 data-nosnippet>27</a>
 <a href=#28 id=28 data-nosnippet>28</a><span class="kw">use crate</span>::{
 <a href=#29 id=29 data-nosnippet>29</a>    KeystoreError, LeafError, MlsError, RecursiveError,
-<a href=#30 id=30 data-nosnippet>30</a>    mls::Client,
+<a href=#30 id=30 data-nosnippet>30</a>    mls::Session,
 <a href=#31 id=31 data-nosnippet>31</a>    prelude::{MlsCiphersuite, MlsCredentialType},
 <a href=#32 id=32 data-nosnippet>32</a>};
 <a href=#33 id=33 data-nosnippet>33</a>
@@ -55,7 +55,7 @@
 <a href=#55 id=55 data-nosnippet>55</a><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">mod </span>welcome;
 <a href=#56 id=56 data-nosnippet>56</a><span class="kw">mod </span>wipe;
 <a href=#57 id=57 data-nosnippet>57</a>
-<a href=#58 id=58 data-nosnippet>58</a><span class="kw">use </span><span class="kw">crate</span>::mls::HasClientAndProvider;
+<a href=#58 id=58 data-nosnippet>58</a><span class="kw">use </span><span class="kw">crate</span>::mls::HasSessionAndCrypto;
 <a href=#59 id=59 data-nosnippet>59</a><span class="kw">use </span><span class="kw">crate</span>::mls::conversation::pending_conversation::PendingConversation;
 <a href=#60 id=60 data-nosnippet>60</a><span class="kw">use </span><span class="kw">crate</span>::mls::credential::ext::CredentialExt <span class="kw">as _</span>;
 <a href=#61 id=61 data-nosnippet>61</a><span class="kw">use </span><span class="kw">crate</span>::prelude::user_id::UserId;
@@ -73,8 +73,8 @@
 <a href=#73 id=73 data-nosnippet>73</a></span><span class="attr">#[cfg_attr(target_family = <span class="string">"wasm"</span>, async_trait::async_trait(<span class="question-mark">?</span>Send))]
 <a href=#74 id=74 data-nosnippet>74</a>#[cfg_attr(not(target_family = <span class="string">"wasm"</span>), async_trait::async_trait)]
 <a href=#75 id=75 data-nosnippet>75</a></span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">trait </span>ConversationWithMls&lt;<span class="lifetime">'a</span>&gt; {
-<a href=#76 id=76 data-nosnippet>76</a>    <span class="doccomment">/// [Client] or [TransactionContext] both implement [HasClientAndProvider].
-<a href=#77 id=77 data-nosnippet>77</a>    </span><span class="kw">type </span>Context: HasClientAndProvider;
+<a href=#76 id=76 data-nosnippet>76</a>    <span class="doccomment">/// [Session] or [TransactionContext] both implement [HasSessionAndCrypto].
+<a href=#77 id=77 data-nosnippet>77</a>    </span><span class="kw">type </span>Context: HasSessionAndCrypto;
 <a href=#78 id=78 data-nosnippet>78</a>
 <a href=#79 id=79 data-nosnippet>79</a>    <span class="kw">type </span>Conversation: Deref&lt;Target = MlsConversation&gt; + Send;
 <a href=#80 id=80 data-nosnippet>80</a>
@@ -82,19 +82,19 @@
 <a href=#82 id=82 data-nosnippet>82</a>
 <a href=#83 id=83 data-nosnippet>83</a>    <span class="kw">async fn </span>conversation(<span class="kw-2">&amp;</span><span class="lifetime">'a </span><span class="self">self</span>) -&gt; <span class="self">Self</span>::Conversation;
 <a href=#84 id=84 data-nosnippet>84</a>
-<a href=#85 id=85 data-nosnippet>85</a>    <span class="kw">async fn </span>mls_provider(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;MlsCryptoProvider&gt; {
+<a href=#85 id=85 data-nosnippet>85</a>    <span class="kw">async fn </span>crypto_provider(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;MlsCryptoProvider&gt; {
 <a href=#86 id=86 data-nosnippet>86</a>        <span class="self">self</span>.context()
 <a href=#87 id=87 data-nosnippet>87</a>            .<span class="kw">await</span><span class="question-mark">?
-<a href=#88 id=88 data-nosnippet>88</a>            </span>.mls_provider()
+<a href=#88 id=88 data-nosnippet>88</a>            </span>.crypto_provider()
 <a href=#89 id=89 data-nosnippet>89</a>            .<span class="kw">await
 <a href=#90 id=90 data-nosnippet>90</a>            </span>.map_err(RecursiveError::mls(<span class="string">"getting mls provider"</span>))
 <a href=#91 id=91 data-nosnippet>91</a>            .map_err(Into::into)
 <a href=#92 id=92 data-nosnippet>92</a>    }
 <a href=#93 id=93 data-nosnippet>93</a>
-<a href=#94 id=94 data-nosnippet>94</a>    <span class="kw">async fn </span>mls_client(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;Client&gt; {
+<a href=#94 id=94 data-nosnippet>94</a>    <span class="kw">async fn </span>session(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;Session&gt; {
 <a href=#95 id=95 data-nosnippet>95</a>        <span class="self">self</span>.context()
 <a href=#96 id=96 data-nosnippet>96</a>            .<span class="kw">await</span><span class="question-mark">?
-<a href=#97 id=97 data-nosnippet>97</a>            </span>.client()
+<a href=#97 id=97 data-nosnippet>97</a>            </span>.session()
 <a href=#98 id=98 data-nosnippet>98</a>            .<span class="kw">await
 <a href=#99 id=99 data-nosnippet>99</a>            </span>.map_err(RecursiveError::mls(<span class="string">"getting mls client"</span>))
 <a href=#100 id=100 data-nosnippet>100</a>            .map_err(Into::into)
@@ -130,7 +130,7 @@
 <a href=#130 id=130 data-nosnippet>130</a>    </span><span class="kw">async fn </span>export_secret_key(<span class="kw-2">&amp;</span><span class="lifetime">'a </span><span class="self">self</span>, key_length: usize) -&gt; <span class="prelude-ty">Result</span>&lt;Vec&lt;u8&gt;&gt; {
 <a href=#131 id=131 data-nosnippet>131</a>        <span class="kw">const </span>EXPORTER_LABEL: <span class="kw-2">&amp;</span>str = <span class="string">"exporter"</span>;
 <a href=#132 id=132 data-nosnippet>132</a>        <span class="kw">const </span>EXPORTER_CONTEXT: <span class="kw-2">&amp;</span>[u8] = <span class="kw-2">&amp;</span>[];
-<a href=#133 id=133 data-nosnippet>133</a>        <span class="kw">let </span>backend = <span class="self">self</span>.mls_provider().<span class="kw">await</span><span class="question-mark">?</span>;
+<a href=#133 id=133 data-nosnippet>133</a>        <span class="kw">let </span>backend = <span class="self">self</span>.crypto_provider().<span class="kw">await</span><span class="question-mark">?</span>;
 <a href=#134 id=134 data-nosnippet>134</a>        <span class="kw">let </span>inner = <span class="self">self</span>.conversation().<span class="kw">await</span>;
 <a href=#135 id=135 data-nosnippet>135</a>        inner
 <a href=#136 id=136 data-nosnippet>136</a>            .group()
@@ -169,11 +169,11 @@
 <a href=#169 id=169 data-nosnippet>169</a>    <span class="doccomment">/// Indicates when to mark a conversation as not verified i.e. when not all its members have a X509
 <a href=#170 id=170 data-nosnippet>170</a>    /// Credential generated by Wire's end-to-end identity enrollment
 <a href=#171 id=171 data-nosnippet>171</a>    </span><span class="kw">async fn </span>e2ei_conversation_state(<span class="kw-2">&amp;</span><span class="lifetime">'a </span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;E2eiConversationState&gt; {
-<a href=#172 id=172 data-nosnippet>172</a>        <span class="kw">let </span>backend = <span class="self">self</span>.mls_provider().<span class="kw">await</span><span class="question-mark">?</span>;
+<a href=#172 id=172 data-nosnippet>172</a>        <span class="kw">let </span>backend = <span class="self">self</span>.crypto_provider().<span class="kw">await</span><span class="question-mark">?</span>;
 <a href=#173 id=173 data-nosnippet>173</a>        <span class="kw">let </span>authentication_service = backend.authentication_service();
 <a href=#174 id=174 data-nosnippet>174</a>        authentication_service.refresh_time_of_interest().<span class="kw">await</span>;
 <a href=#175 id=175 data-nosnippet>175</a>        <span class="kw">let </span>inner = <span class="self">self</span>.conversation().<span class="kw">await</span>;
-<a href=#176 id=176 data-nosnippet>176</a>        <span class="kw">let </span>state = Client::compute_conversation_state(
+<a href=#176 id=176 data-nosnippet>176</a>        <span class="kw">let </span>state = Session::compute_conversation_state(
 <a href=#177 id=177 data-nosnippet>177</a>            inner.ciphersuite(),
 <a href=#178 id=178 data-nosnippet>178</a>            inner.group.members_credentials(),
 <a href=#179 id=179 data-nosnippet>179</a>            MlsCredentialType::X509,
@@ -192,7 +192,7 @@
 <a href=#192 id=192 data-nosnippet>192</a>                <span class="string">"This function accepts a list of IDs as a parameter, but that list was empty."</span>,
 <a href=#193 id=193 data-nosnippet>193</a>            ));
 <a href=#194 id=194 data-nosnippet>194</a>        }
-<a href=#195 id=195 data-nosnippet>195</a>        <span class="kw">let </span>mls_provider = <span class="self">self</span>.mls_provider().<span class="kw">await</span><span class="question-mark">?</span>;
+<a href=#195 id=195 data-nosnippet>195</a>        <span class="kw">let </span>mls_provider = <span class="self">self</span>.crypto_provider().<span class="kw">await</span><span class="question-mark">?</span>;
 <a href=#196 id=196 data-nosnippet>196</a>        <span class="kw">let </span>auth_service = mls_provider.authentication_service();
 <a href=#197 id=197 data-nosnippet>197</a>        auth_service.refresh_time_of_interest().<span class="kw">await</span>;
 <a href=#198 id=198 data-nosnippet>198</a>        <span class="kw">let </span>auth_service = auth_service.borrow().<span class="kw">await</span>;
@@ -222,7 +222,7 @@
 <a href=#222 id=222 data-nosnippet>222</a>                <span class="string">"This function accepts a list of IDs as a parameter, but that list was empty."</span>,
 <a href=#223 id=223 data-nosnippet>223</a>            ));
 <a href=#224 id=224 data-nosnippet>224</a>        }
-<a href=#225 id=225 data-nosnippet>225</a>        <span class="kw">let </span>mls_provider = <span class="self">self</span>.mls_provider().<span class="kw">await</span><span class="question-mark">?</span>;
+<a href=#225 id=225 data-nosnippet>225</a>        <span class="kw">let </span>mls_provider = <span class="self">self</span>.crypto_provider().<span class="kw">await</span><span class="question-mark">?</span>;
 <a href=#226 id=226 data-nosnippet>226</a>        <span class="kw">let </span>auth_service = mls_provider.authentication_service();
 <a href=#227 id=227 data-nosnippet>227</a>        auth_service.refresh_time_of_interest().<span class="kw">await</span>;
 <a href=#228 id=228 data-nosnippet>228</a>        <span class="kw">let </span>auth_service = auth_service.borrow().<span class="kw">await</span>;
@@ -279,7 +279,7 @@
 <a href=#279 id=279 data-nosnippet>279</a>    /// Errors can happen from OpenMls or from the KeyStore
 <a href=#280 id=280 data-nosnippet>280</a>    </span><span class="kw">pub async fn </span>create(
 <a href=#281 id=281 data-nosnippet>281</a>        id: ConversationId,
-<a href=#282 id=282 data-nosnippet>282</a>        author_client: <span class="kw-2">&amp;</span>Client,
+<a href=#282 id=282 data-nosnippet>282</a>        author_client: <span class="kw-2">&amp;</span>Session,
 <a href=#283 id=283 data-nosnippet>283</a>        creator_credential_type: MlsCredentialType,
 <a href=#284 id=284 data-nosnippet>284</a>        configuration: MlsConversationConfiguration,
 <a href=#285 id=285 data-nosnippet>285</a>        backend: <span class="kw-2">&amp;</span>MlsCryptoProvider,
@@ -452,7 +452,7 @@
 <a href=#452 id=452 data-nosnippet>452</a>        <span class="self">self</span>.ciphersuite().signature_algorithm()
 <a href=#453 id=453 data-nosnippet>453</a>    }
 <a href=#454 id=454 data-nosnippet>454</a>
-<a href=#455 id=455 data-nosnippet>455</a>    <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">async fn </span>find_current_credential_bundle(<span class="kw-2">&amp;</span><span class="self">self</span>, client: <span class="kw-2">&amp;</span>Client) -&gt; <span class="prelude-ty">Result</span>&lt;Arc&lt;CredentialBundle&gt;&gt; {
+<a href=#455 id=455 data-nosnippet>455</a>    <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">async fn </span>find_current_credential_bundle(<span class="kw-2">&amp;</span><span class="self">self</span>, client: <span class="kw-2">&amp;</span>Session) -&gt; <span class="prelude-ty">Result</span>&lt;Arc&lt;CredentialBundle&gt;&gt; {
 <a href=#456 id=456 data-nosnippet>456</a>        <span class="kw">let </span>own_leaf = <span class="self">self</span>.group.own_leaf().ok_or(LeafError::InternalMlsError)<span class="question-mark">?</span>;
 <a href=#457 id=457 data-nosnippet>457</a>        <span class="kw">let </span>sc = <span class="self">self</span>.ciphersuite().signature_algorithm();
 <a href=#458 id=458 data-nosnippet>458</a>        <span class="kw">let </span>ct = <span class="self">self
@@ -466,7 +466,7 @@
 <a href=#466 id=466 data-nosnippet>466</a>            .map_err(Into::into)
 <a href=#467 id=467 data-nosnippet>467</a>    }
 <a href=#468 id=468 data-nosnippet>468</a>
-<a href=#469 id=469 data-nosnippet>469</a>    <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">async fn </span>find_most_recent_credential_bundle(<span class="kw-2">&amp;</span><span class="self">self</span>, client: <span class="kw-2">&amp;</span>Client) -&gt; <span class="prelude-ty">Result</span>&lt;Arc&lt;CredentialBundle&gt;&gt; {
+<a href=#469 id=469 data-nosnippet>469</a>    <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">async fn </span>find_most_recent_credential_bundle(<span class="kw-2">&amp;</span><span class="self">self</span>, client: <span class="kw-2">&amp;</span>Session) -&gt; <span class="prelude-ty">Result</span>&lt;Arc&lt;CredentialBundle&gt;&gt; {
 <a href=#470 id=470 data-nosnippet>470</a>        <span class="kw">let </span>sc = <span class="self">self</span>.ciphersuite().signature_algorithm();
 <a href=#471 id=471 data-nosnippet>471</a>        <span class="kw">let </span>ct = <span class="self">self
 <a href=#472 id=472 data-nosnippet>472</a>            </span>.own_credential_type()
@@ -663,7 +663,7 @@
 <a href=#663 id=663 data-nosnippet>663</a>                    .<span class="kw">await
 <a href=#664 id=664 data-nosnippet>664</a>                    </span>.unwrap();
 <a href=#665 id=665 data-nosnippet>665</a>
-<a href=#666 id=666 data-nosnippet>666</a>                <span class="kw">let </span><span class="kw-2">mut </span>bob_and_friends: Vec&lt;ClientContext&gt; = Vec::with_capacity(GROUP_SAMPLE_SIZE);
+<a href=#666 id=666 data-nosnippet>666</a>                <span class="kw">let </span><span class="kw-2">mut </span>bob_and_friends: Vec&lt;SessionContext&gt; = Vec::with_capacity(GROUP_SAMPLE_SIZE);
 <a href=#667 id=667 data-nosnippet>667</a>                <span class="kw">for _ in </span><span class="number">0</span>..GROUP_SAMPLE_SIZE {
 <a href=#668 id=668 data-nosnippet>668</a>                    <span class="kw">let </span>uuid = uuid::Uuid::new_v4();
 <a href=#669 id=669 data-nosnippet>669</a>                    <span class="kw">let </span>name = uuid.hyphenated().to_string();
@@ -677,7 +677,7 @@
 <a href=#677 id=677 data-nosnippet>677</a>                        <span class="prelude-val">Some</span>(INITIAL_KEYING_MATERIAL_COUNT),
 <a href=#678 id=678 data-nosnippet>678</a>                    )
 <a href=#679 id=679 data-nosnippet>679</a>                    .unwrap();
-<a href=#680 id=680 data-nosnippet>680</a>                    <span class="kw">let </span>client = Client::try_new(config).<span class="kw">await</span>.unwrap();
+<a href=#680 id=680 data-nosnippet>680</a>                    <span class="kw">let </span>client = Session::try_new(config).<span class="kw">await</span>.unwrap();
 <a href=#681 id=681 data-nosnippet>681</a>                    <span class="kw">let </span>cc = CoreCrypto::from(client);
 <a href=#682 id=682 data-nosnippet>682</a>                    <span class="kw">let </span>friend_context = cc.new_transaction().<span class="kw">await</span>.unwrap();
 <a href=#683 id=683 data-nosnippet>683</a>                    <span class="kw">let </span>central = cc.mls;
@@ -709,9 +709,9 @@
 <a href=#709 id=709 data-nosnippet>709</a>                        .<span class="kw">await
 <a href=#710 id=710 data-nosnippet>710</a>                        </span>.unwrap();
 <a href=#711 id=711 data-nosnippet>711</a>
-<a href=#712 id=712 data-nosnippet>712</a>                    <span class="kw">let </span>context = ClientContext {
+<a href=#712 id=712 data-nosnippet>712</a>                    <span class="kw">let </span>context = SessionContext {
 <a href=#713 id=713 data-nosnippet>713</a>                        context: friend_context,
-<a href=#714 id=714 data-nosnippet>714</a>                        client: central,
+<a href=#714 id=714 data-nosnippet>714</a>                        session: central,
 <a href=#715 id=715 data-nosnippet>715</a>                        mls_transport: Arc::&lt;CoreCryptoTransportSuccessProvider&gt;::default(),
 <a href=#716 id=716 data-nosnippet>716</a>                        x509_test_chain: x509_test_chain_arc.clone(),
 <a href=#717 id=717 data-nosnippet>717</a>                    };

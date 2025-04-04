@@ -6,7 +6,7 @@
 <a href=#6 id=6 data-nosnippet>6</a><span class="kw">use crate</span>::{
 <a href=#7 id=7 data-nosnippet>7</a>    RecursiveError,
 <a href=#8 id=8 data-nosnippet>8</a>    mls::{ClientId, ConversationId, MlsConversation},
-<a href=#9 id=9 data-nosnippet>9</a>    prelude::{Client, MlsProposalBundle},
+<a href=#9 id=9 data-nosnippet>9</a>    prelude::{MlsProposalBundle, Session},
 <a href=#10 id=10 data-nosnippet>10</a>};
 <a href=#11 id=11 data-nosnippet>11</a>
 <a href=#12 id=12 data-nosnippet>12</a><span class="kw">use </span><span class="kw">crate</span>::transaction_context::TransactionContext;
@@ -58,7 +58,7 @@
 <a href=#58 id=58 data-nosnippet>58</a>    <span class="doccomment">/// Creates a new proposal within the specified `MlsGroup`
 <a href=#59 id=59 data-nosnippet>59</a>    </span><span class="kw">async fn </span>create(
 <a href=#60 id=60 data-nosnippet>60</a>        <span class="self">self</span>,
-<a href=#61 id=61 data-nosnippet>61</a>        client: <span class="kw-2">&amp;</span>Client,
+<a href=#61 id=61 data-nosnippet>61</a>        client: <span class="kw-2">&amp;</span>Session,
 <a href=#62 id=62 data-nosnippet>62</a>        backend: <span class="kw-2">&amp;</span>MlsCryptoProvider,
 <a href=#63 id=63 data-nosnippet>63</a>        <span class="kw-2">mut </span>conversation: <span class="kw">impl </span>std::ops::DerefMut&lt;Target = MlsConversation&gt;,
 <a href=#64 id=64 data-nosnippet>64</a>    ) -&gt; <span class="prelude-ty">Result</span>&lt;MlsProposalBundle&gt; {
@@ -125,7 +125,7 @@
 <a href=#125 id=125 data-nosnippet>125</a>            .<span class="kw">await
 <a href=#126 id=126 data-nosnippet>126</a>            </span>.map_err(RecursiveError::mls_conversation(<span class="string">"getting conversation by id"</span>))<span class="question-mark">?</span>;
 <a href=#127 id=127 data-nosnippet>127</a>        <span class="kw">let </span>client = <span class="kw-2">&amp;</span><span class="self">self
-<a href=#128 id=128 data-nosnippet>128</a>            </span>.mls_client()
+<a href=#128 id=128 data-nosnippet>128</a>            </span>.session()
 <a href=#129 id=129 data-nosnippet>129</a>            .<span class="kw">await
 <a href=#130 id=130 data-nosnippet>130</a>            </span>.map_err(RecursiveError::transaction(<span class="string">"getting mls client"</span>))<span class="question-mark">?</span>;
 <a href=#131 id=131 data-nosnippet>131</a>        proposal

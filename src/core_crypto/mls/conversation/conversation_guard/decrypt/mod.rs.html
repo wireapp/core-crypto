@@ -20,7 +20,7 @@
 <a href=#20 id=20 data-nosnippet>20</a>};
 <a href=#21 id=21 data-nosnippet>21</a><span class="kw">use </span><span class="kw">crate</span>::mls::credential::ext::CredentialExt <span class="kw">as _</span>;
 <a href=#22 id=22 data-nosnippet>22</a><span class="kw">use </span><span class="kw">crate</span>::obfuscate::Obfuscated;
-<a href=#23 id=23 data-nosnippet>23</a><span class="kw">use </span><span class="kw">crate</span>::prelude::{Client, ClientId, E2eiConversationState};
+<a href=#23 id=23 data-nosnippet>23</a><span class="kw">use </span><span class="kw">crate</span>::prelude::{ClientId, E2eiConversationState, Session};
 <a href=#24 id=24 data-nosnippet>24</a><span class="kw">use </span><span class="kw">crate</span>::prelude::{MlsProposalBundle, WireIdentity};
 <a href=#25 id=25 data-nosnippet>25</a><span class="kw">use crate</span>::{MlsError, RecursiveError};
 <a href=#26 id=26 data-nosnippet>26</a><span class="kw">use </span>log::{debug, info};
@@ -162,8 +162,8 @@
 <a href=#162 id=162 data-nosnippet>162</a>        message: MlsMessageIn,
 <a href=#163 id=163 data-nosnippet>163</a>        recursion_policy: RecursionPolicy,
 <a href=#164 id=164 data-nosnippet>164</a>    ) -&gt; <span class="prelude-ty">Result</span>&lt;MlsConversationDecryptMessage&gt; {
-<a href=#165 id=165 data-nosnippet>165</a>        <span class="kw">let </span>client = <span class="kw-2">&amp;</span><span class="self">self</span>.mls_client().<span class="kw">await</span><span class="question-mark">?</span>;
-<a href=#166 id=166 data-nosnippet>166</a>        <span class="kw">let </span>backend = <span class="kw-2">&amp;</span><span class="self">self</span>.mls_provider().<span class="kw">await</span><span class="question-mark">?</span>;
+<a href=#165 id=165 data-nosnippet>165</a>        <span class="kw">let </span>client = <span class="kw-2">&amp;</span><span class="self">self</span>.session().<span class="kw">await</span><span class="question-mark">?</span>;
+<a href=#166 id=166 data-nosnippet>166</a>        <span class="kw">let </span>backend = <span class="kw-2">&amp;</span><span class="self">self</span>.crypto_provider().<span class="kw">await</span><span class="question-mark">?</span>;
 <a href=#167 id=167 data-nosnippet>167</a>        <span class="kw">let </span>parsed_message = <span class="self">self</span>.parse_message(message.clone()).<span class="kw">await</span><span class="question-mark">?</span>;
 <a href=#168 id=168 data-nosnippet>168</a>
 <a href=#169 id=169 data-nosnippet>169</a>        <span class="kw">let </span>message_result = <span class="self">self</span>.process_message(parsed_message).<span class="kw">await</span>;
@@ -431,7 +431,7 @@
 <a href=#431 id=431 data-nosnippet>431</a>    <span class="kw">async fn </span>parse_message(<span class="kw-2">&amp;</span><span class="self">self</span>, msg_in: MlsMessageIn) -&gt; <span class="prelude-ty">Result</span>&lt;ParsedMessage&gt; {
 <a href=#432 id=432 data-nosnippet>432</a>        <span class="kw">let </span><span class="kw-2">mut </span>is_duplicate = <span class="bool-val">false</span>;
 <a href=#433 id=433 data-nosnippet>433</a>        <span class="kw">let </span>conversation = <span class="self">self</span>.conversation().<span class="kw">await</span>;
-<a href=#434 id=434 data-nosnippet>434</a>        <span class="kw">let </span>backend = <span class="self">self</span>.mls_provider().<span class="kw">await</span><span class="question-mark">?</span>;
+<a href=#434 id=434 data-nosnippet>434</a>        <span class="kw">let </span>backend = <span class="self">self</span>.crypto_provider().<span class="kw">await</span><span class="question-mark">?</span>;
 <a href=#435 id=435 data-nosnippet>435</a>        <span class="kw">let </span>(protocol_message, content_type) = <span class="kw">match </span>msg_in.extract() {
 <a href=#436 id=436 data-nosnippet>436</a>            MlsMessageInBody::PublicMessage(m) =&gt; {
 <a href=#437 id=437 data-nosnippet>437</a>                is_duplicate = conversation.is_duplicate_message(<span class="kw-2">&amp;</span>backend, <span class="kw-2">&amp;</span>m)<span class="question-mark">?</span>;
@@ -464,7 +464,7 @@
 <a href=#464 id=464 data-nosnippet>464</a>        }: ParsedMessage,
 <a href=#465 id=465 data-nosnippet>465</a>    ) -&gt; <span class="prelude-ty">Result</span>&lt;ProcessedMessage&gt; {
 <a href=#466 id=466 data-nosnippet>466</a>        <span class="kw">let </span>msg_epoch = protocol_message.epoch().as_u64();
-<a href=#467 id=467 data-nosnippet>467</a>        <span class="kw">let </span>backend = <span class="self">self</span>.mls_provider().<span class="kw">await</span><span class="question-mark">?</span>;
+<a href=#467 id=467 data-nosnippet>467</a>        <span class="kw">let </span>backend = <span class="self">self</span>.crypto_provider().<span class="kw">await</span><span class="question-mark">?</span>;
 <a href=#468 id=468 data-nosnippet>468</a>        <span class="kw">let </span><span class="kw-2">mut </span>conversation = <span class="self">self</span>.conversation_mut().<span class="kw">await</span>;
 <a href=#469 id=469 data-nosnippet>469</a>        <span class="kw">let </span>group_epoch = conversation.group.epoch().as_u64();
 <a href=#470 id=470 data-nosnippet>470</a>        <span class="kw">let </span>processed_msg = conversation
@@ -515,7 +515,7 @@
 <a href=#515 id=515 data-nosnippet>515</a>    }
 <a href=#516 id=516 data-nosnippet>516</a>
 <a href=#517 id=517 data-nosnippet>517</a>    <span class="kw">async fn </span>validate_commit(<span class="kw-2">&amp;</span><span class="self">self</span>, commit: <span class="kw-2">&amp;</span>StagedCommit) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
-<a href=#518 id=518 data-nosnippet>518</a>        <span class="kw">let </span>backend = <span class="self">self</span>.mls_provider().<span class="kw">await</span><span class="question-mark">?</span>;
+<a href=#518 id=518 data-nosnippet>518</a>        <span class="kw">let </span>backend = <span class="self">self</span>.crypto_provider().<span class="kw">await</span><span class="question-mark">?</span>;
 <a href=#519 id=519 data-nosnippet>519</a>        <span class="kw">if </span>backend.authentication_service().is_env_setup().<span class="kw">await </span>{
 <a href=#520 id=520 data-nosnippet>520</a>            <span class="kw">let </span>credentials: Vec&lt;<span class="kw">_</span>&gt; = commit
 <a href=#521 id=521 data-nosnippet>521</a>                .add_proposals()
@@ -525,7 +525,7 @@
 <a href=#525 id=525 data-nosnippet>525</a>                    <span class="macro">matches!</span>(credential.credential_type(), CredentialType::X509).then(|| credential.clone())
 <a href=#526 id=526 data-nosnippet>526</a>                })
 <a href=#527 id=527 data-nosnippet>527</a>                .collect();
-<a href=#528 id=528 data-nosnippet>528</a>            <span class="kw">let </span>state = Client::compute_conversation_state(
+<a href=#528 id=528 data-nosnippet>528</a>            <span class="kw">let </span>state = Session::compute_conversation_state(
 <a href=#529 id=529 data-nosnippet>529</a>                <span class="self">self</span>.ciphersuite().<span class="kw">await</span>,
 <a href=#530 id=530 data-nosnippet>530</a>                credentials.iter(),
 <a href=#531 id=531 data-nosnippet>531</a>                <span class="kw">crate</span>::prelude::MlsCredentialType::X509,
@@ -648,7 +648,7 @@
 <a href=#648 id=648 data-nosnippet>648</a>
 <a href=#649 id=649 data-nosnippet>649</a>                    <span class="kw">let </span>bob_observer = TestEpochObserver::new();
 <a href=#650 id=650 data-nosnippet>650</a>                    bob_central
-<a href=#651 id=651 data-nosnippet>651</a>                        .client()
+<a href=#651 id=651 data-nosnippet>651</a>                        .session()
 <a href=#652 id=652 data-nosnippet>652</a>                        .<span class="kw">await
 <a href=#653 id=653 data-nosnippet>653</a>                        </span>.register_epoch_observer(bob_observer.clone())
 <a href=#654 id=654 data-nosnippet>654</a>                        .<span class="kw">await
@@ -704,7 +704,7 @@
 <a href=#704 id=704 data-nosnippet>704</a>
 <a href=#705 id=705 data-nosnippet>705</a>                        <span class="kw">let </span>alice_observer = TestEpochObserver::new();
 <a href=#706 id=706 data-nosnippet>706</a>                        alice_central
-<a href=#707 id=707 data-nosnippet>707</a>                            .client()
+<a href=#707 id=707 data-nosnippet>707</a>                            .session()
 <a href=#708 id=708 data-nosnippet>708</a>                            .<span class="kw">await
 <a href=#709 id=709 data-nosnippet>709</a>                            </span>.register_epoch_observer(alice_observer.clone())
 <a href=#710 id=710 data-nosnippet>710</a>                            .<span class="kw">await
@@ -774,7 +774,7 @@
 <a href=#774 id=774 data-nosnippet>774</a>
 <a href=#775 id=775 data-nosnippet>775</a>                        <span class="kw">let </span>alice_observer = TestEpochObserver::new();
 <a href=#776 id=776 data-nosnippet>776</a>                        alice_central
-<a href=#777 id=777 data-nosnippet>777</a>                            .client()
+<a href=#777 id=777 data-nosnippet>777</a>                            .session()
 <a href=#778 id=778 data-nosnippet>778</a>                            .<span class="kw">await
 <a href=#779 id=779 data-nosnippet>779</a>                            </span>.register_epoch_observer(alice_observer.clone())
 <a href=#780 id=780 data-nosnippet>780</a>                            .<span class="kw">await
@@ -1010,7 +1010,7 @@
 <a href=#1010 id=1010 data-nosnippet>1010</a>
 <a href=#1011 id=1011 data-nosnippet>1011</a>                        <span class="kw">let </span>bob_observer = TestEpochObserver::new();
 <a href=#1012 id=1012 data-nosnippet>1012</a>                        bob_central
-<a href=#1013 id=1013 data-nosnippet>1013</a>                            .client()
+<a href=#1013 id=1013 data-nosnippet>1013</a>                            .session()
 <a href=#1014 id=1014 data-nosnippet>1014</a>                            .<span class="kw">await
 <a href=#1015 id=1015 data-nosnippet>1015</a>                            </span>.register_epoch_observer(bob_observer.clone())
 <a href=#1016 id=1016 data-nosnippet>1016</a>                            .<span class="kw">await
@@ -1157,14 +1157,14 @@
 <a href=#1157 id=1157 data-nosnippet>1157</a>
 <a href=#1158 id=1158 data-nosnippet>1158</a>                    <span class="kw">let </span>alice_observer = TestEpochObserver::new();
 <a href=#1159 id=1159 data-nosnippet>1159</a>                    alice_central
-<a href=#1160 id=1160 data-nosnippet>1160</a>                        .client()
+<a href=#1160 id=1160 data-nosnippet>1160</a>                        .session()
 <a href=#1161 id=1161 data-nosnippet>1161</a>                        .<span class="kw">await
 <a href=#1162 id=1162 data-nosnippet>1162</a>                        </span>.register_epoch_observer(alice_observer.clone())
 <a href=#1163 id=1163 data-nosnippet>1163</a>                        .<span class="kw">await
 <a href=#1164 id=1164 data-nosnippet>1164</a>                        </span>.unwrap();
 <a href=#1165 id=1165 data-nosnippet>1165</a>                    <span class="kw">let </span>bob_observer = TestEpochObserver::new();
 <a href=#1166 id=1166 data-nosnippet>1166</a>                    bob_central
-<a href=#1167 id=1167 data-nosnippet>1167</a>                        .client()
+<a href=#1167 id=1167 data-nosnippet>1167</a>                        .session()
 <a href=#1168 id=1168 data-nosnippet>1168</a>                        .<span class="kw">await
 <a href=#1169 id=1169 data-nosnippet>1169</a>                        </span>.register_epoch_observer(bob_observer.clone())
 <a href=#1170 id=1170 data-nosnippet>1170</a>                        .<span class="kw">await

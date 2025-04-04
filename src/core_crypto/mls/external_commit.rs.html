@@ -73,7 +73,7 @@
 <a href=#73 id=73 data-nosnippet>73</a>        credential_type: MlsCredentialType,
 <a href=#74 id=74 data-nosnippet>74</a>    ) -&gt; <span class="prelude-ty">Result</span>&lt;(MlsCommitBundle, WelcomeBundle, PendingConversation)&gt; {
 <a href=#75 id=75 data-nosnippet>75</a>        <span class="kw">let </span>client = <span class="kw-2">&amp;</span><span class="self">self
-<a href=#76 id=76 data-nosnippet>76</a>            </span>.mls_client()
+<a href=#76 id=76 data-nosnippet>76</a>            </span>.session()
 <a href=#77 id=77 data-nosnippet>77</a>            .<span class="kw">await
 <a href=#78 id=78 data-nosnippet>78</a>            </span>.map_err(RecursiveError::transaction(<span class="string">"getting mls client"</span>))<span class="question-mark">?</span>;
 <a href=#79 id=79 data-nosnippet>79</a>

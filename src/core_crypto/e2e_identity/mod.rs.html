@@ -530,7 +530,7 @@
 <a href=#530 id=530 data-nosnippet>530</a>    <span class="kw">use crate</span>::{
 <a href=#531 id=531 data-nosnippet>531</a>        RecursiveError,
 <a href=#532 id=532 data-nosnippet>532</a>        prelude::{CertificateBundle, MlsCredentialType},
-<a href=#533 id=533 data-nosnippet>533</a>        test_utils::{ClientContext, TestCase, context::TEAM, x509::X509TestChain},
+<a href=#533 id=533 data-nosnippet>533</a>        test_utils::{SessionContext, TestCase, context::TEAM, x509::X509TestChain},
 <a href=#534 id=534 data-nosnippet>534</a>        transaction_context::TransactionContext,
 <a href=#535 id=535 data-nosnippet>535</a>    };
 <a href=#536 id=536 data-nosnippet>536</a>    <span class="kw">use </span>itertools::Itertools <span class="kw">as _</span>;
@@ -621,7 +621,7 @@
 <a href=#621 id=621 data-nosnippet>621</a>    }
 <a href=#622 id=622 data-nosnippet>622</a>
 <a href=#623 id=623 data-nosnippet>623</a>    <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">async fn </span>failsafe_ctx(
-<a href=#624 id=624 data-nosnippet>624</a>        ctxs: <span class="kw-2">&amp;mut </span>[<span class="kw-2">&amp;mut </span>ClientContext],
+<a href=#624 id=624 data-nosnippet>624</a>        ctxs: <span class="kw-2">&amp;mut </span>[<span class="kw-2">&amp;mut </span>SessionContext],
 <a href=#625 id=625 data-nosnippet>625</a>        sc: SignatureScheme,
 <a href=#626 id=626 data-nosnippet>626</a>    ) -&gt; std::sync::Arc&lt;<span class="prelude-ty">Option</span>&lt;X509TestChain&gt;&gt; {
 <a href=#627 id=627 data-nosnippet>627</a>        <span class="kw">let </span><span class="kw-2">mut </span>found_test_chain = <span class="prelude-val">None</span>;
@@ -665,7 +665,7 @@
 <a href=#665 id=665 data-nosnippet>665</a>    }
 <a href=#666 id=666 data-nosnippet>666</a>
 <a href=#667 id=667 data-nosnippet>667</a>    <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">async fn </span>e2ei_enrollment&lt;<span class="lifetime">'a</span>&gt;(
-<a href=#668 id=668 data-nosnippet>668</a>        ctx: <span class="kw-2">&amp;</span><span class="lifetime">'a </span><span class="kw-2">mut </span>ClientContext,
+<a href=#668 id=668 data-nosnippet>668</a>        ctx: <span class="kw-2">&amp;</span><span class="lifetime">'a </span><span class="kw-2">mut </span>SessionContext,
 <a href=#669 id=669 data-nosnippet>669</a>        case: <span class="kw-2">&amp;</span>TestCase,
 <a href=#670 id=670 data-nosnippet>670</a>        x509_test_chain: <span class="kw-2">&amp;</span>X509TestChain,
 <a href=#671 id=671 data-nosnippet>671</a>        client_id: <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;</span>str&gt;,

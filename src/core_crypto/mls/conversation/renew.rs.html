@@ -7,7 +7,7 @@
 <a href=#7 id=7 data-nosnippet>7</a><span class="kw">use super</span>::{Error, <span class="prelude-ty">Result</span>};
 <a href=#8 id=8 data-nosnippet>8</a><span class="kw">use crate</span>::{
 <a href=#9 id=9 data-nosnippet>9</a>    KeystoreError, RecursiveError,
-<a href=#10 id=10 data-nosnippet>10</a>    prelude::{Client, MlsConversation, MlsProposalBundle},
+<a href=#10 id=10 data-nosnippet>10</a>    prelude::{MlsConversation, MlsProposalBundle, Session},
 <a href=#11 id=11 data-nosnippet>11</a>};
 <a href=#12 id=12 data-nosnippet>12</a>
 <a href=#13 id=13 data-nosnippet>13</a><span class="doccomment">/// Marker struct holding methods responsible for restoring (renewing) proposals (or pending commit)
@@ -97,7 +97,7 @@
 <a href=#97 id=97 data-nosnippet>97</a>    /// This will also add them to the local proposal store
 <a href=#98 id=98 data-nosnippet>98</a>    </span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">async fn </span>renew_proposals_for_current_epoch(
 <a href=#99 id=99 data-nosnippet>99</a>        <span class="kw-2">&amp;mut </span><span class="self">self</span>,
-<a href=#100 id=100 data-nosnippet>100</a>        client: <span class="kw-2">&amp;</span>Client,
+<a href=#100 id=100 data-nosnippet>100</a>        client: <span class="kw-2">&amp;</span>Session,
 <a href=#101 id=101 data-nosnippet>101</a>        backend: <span class="kw-2">&amp;</span>MlsCryptoProvider,
 <a href=#102 id=102 data-nosnippet>102</a>        proposals: <span class="kw">impl </span>Iterator&lt;Item = QueuedProposal&gt;,
 <a href=#103 id=103 data-nosnippet>103</a>        needs_update: bool,
@@ -126,7 +126,7 @@
 <a href=#126 id=126 data-nosnippet>126</a>    /// At this point, we have already verified we are only operating on proposals created by self.
 <a href=#127 id=127 data-nosnippet>127</a>    </span><span class="kw">async fn </span>renew_update(
 <a href=#128 id=128 data-nosnippet>128</a>        <span class="kw-2">&amp;mut </span><span class="self">self</span>,
-<a href=#129 id=129 data-nosnippet>129</a>        client: <span class="kw-2">&amp;</span>Client,
+<a href=#129 id=129 data-nosnippet>129</a>        client: <span class="kw-2">&amp;</span>Session,
 <a href=#130 id=130 data-nosnippet>130</a>        backend: <span class="kw-2">&amp;</span>MlsCryptoProvider,
 <a href=#131 id=131 data-nosnippet>131</a>        leaf_node: <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;</span>LeafNode&gt;,
 <a href=#132 id=132 data-nosnippet>132</a>    ) -&gt; <span class="prelude-ty">Result</span>&lt;MlsProposalBundle&gt; {

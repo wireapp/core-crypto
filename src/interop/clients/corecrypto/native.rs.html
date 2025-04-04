@@ -38,7 +38,7 @@
 <a href=#38 id=38 data-nosnippet>38</a>        <span class="kw">let </span>configuration =
 <a href=#39 id=39 data-nosnippet>39</a>            MlsClientConfiguration::try_new(<span class="string">"whatever"</span>.into(), key, cid, ciphersuites, <span class="prelude-val">None</span>, <span class="prelude-val">Some</span>(<span class="number">100</span>))<span class="question-mark">?</span>;
 <a href=#40 id=40 data-nosnippet>40</a>
-<a href=#41 id=41 data-nosnippet>41</a>        <span class="kw">let </span>cc = CoreCrypto::from(Client::try_new_in_memory(configuration).<span class="kw">await</span><span class="question-mark">?</span>);
+<a href=#41 id=41 data-nosnippet>41</a>        <span class="kw">let </span>cc = CoreCrypto::from(Session::try_new_in_memory(configuration).<span class="kw">await</span><span class="question-mark">?</span>);
 <a href=#42 id=42 data-nosnippet>42</a>
 <a href=#43 id=43 data-nosnippet>43</a>        cc.provide_transport(Arc::new(MlsTransportSuccessProvider::default()))
 <a href=#44 id=44 data-nosnippet>44</a>            .<span class="kw">await</span>;

@@ -36,7 +36,7 @@
 <a href=#36 id=36 data-nosnippet>36</a>    /// When the conversation is not found or the proposal reference does not identify a proposal
 <a href=#37 id=37 data-nosnippet>37</a>    /// in the local pending proposal store
 <a href=#38 id=38 data-nosnippet>38</a>    </span><span class="kw">pub async fn </span>clear_pending_proposal(<span class="kw-2">&amp;mut </span><span class="self">self</span>, proposal_ref: MlsProposalRef) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
-<a href=#39 id=39 data-nosnippet>39</a>        <span class="kw">let </span>keystore = <span class="self">self</span>.mls_provider().<span class="kw">await</span><span class="question-mark">?</span>.keystore();
+<a href=#39 id=39 data-nosnippet>39</a>        <span class="kw">let </span>keystore = <span class="self">self</span>.crypto_provider().<span class="kw">await</span><span class="question-mark">?</span>.keystore();
 <a href=#40 id=40 data-nosnippet>40</a>        <span class="kw">let </span><span class="kw-2">mut </span>conversation = <span class="self">self</span>.conversation_mut().<span class="kw">await</span>;
 <a href=#41 id=41 data-nosnippet>41</a>        conversation
 <a href=#42 id=42 data-nosnippet>42</a>            .group
@@ -64,7 +64,7 @@
 <a href=#64 id=64 data-nosnippet>64</a>    /// # Errors
 <a href=#65 id=65 data-nosnippet>65</a>    /// When the conversation is not found or there is no pending commit
 <a href=#66 id=66 data-nosnippet>66</a>    </span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">async fn </span>clear_pending_commit(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
-<a href=#67 id=67 data-nosnippet>67</a>        <span class="kw">let </span>keystore = <span class="self">self</span>.mls_provider().<span class="kw">await</span><span class="question-mark">?</span>.keystore();
+<a href=#67 id=67 data-nosnippet>67</a>        <span class="kw">let </span>keystore = <span class="self">self</span>.crypto_provider().<span class="kw">await</span><span class="question-mark">?</span>.keystore();
 <a href=#68 id=68 data-nosnippet>68</a>        <span class="kw">let </span><span class="kw-2">mut </span>conversation = <span class="self">self</span>.conversation_mut().<span class="kw">await</span>;
 <a href=#69 id=69 data-nosnippet>69</a>        <span class="kw">if </span>conversation.group.pending_commit().is_some() {
 <a href=#70 id=70 data-nosnippet>70</a>            conversation.group.clear_pending_commit();

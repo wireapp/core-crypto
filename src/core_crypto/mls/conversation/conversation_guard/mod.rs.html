@@ -56,7 +56,7 @@
 <a href=#56 id=56 data-nosnippet>56</a>    /// # Errors
 <a href=#57 id=57 data-nosnippet>57</a>    /// KeyStore errors, such as IO
 <a href=#58 id=58 data-nosnippet>58</a>    </span><span class="kw">pub async fn </span>wipe(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
-<a href=#59 id=59 data-nosnippet>59</a>        <span class="kw">let </span>provider = <span class="self">self</span>.mls_provider().<span class="kw">await</span><span class="question-mark">?</span>;
+<a href=#59 id=59 data-nosnippet>59</a>        <span class="kw">let </span>provider = <span class="self">self</span>.crypto_provider().<span class="kw">await</span><span class="question-mark">?</span>;
 <a href=#60 id=60 data-nosnippet>60</a>        <span class="kw">let </span><span class="kw-2">mut </span>group_store = <span class="self">self
 <a href=#61 id=61 data-nosnippet>61</a>            </span>.central_context
 <a href=#62 id=62 data-nosnippet>62</a>            .mls_groups()
@@ -92,7 +92,7 @@
 <a href=#92 id=92 data-nosnippet>92</a>    <span class="doccomment">/// Marks this conversation as child of another.
 <a href=#93 id=93 data-nosnippet>93</a>    /// Prerequisite: Must be a member of the parent group, and it must exist in the keystore
 <a href=#94 id=94 data-nosnippet>94</a>    </span><span class="kw">pub async fn </span>mark_as_child_of(<span class="kw-2">&amp;mut </span><span class="self">self</span>, parent_id: <span class="kw-2">&amp;</span>ConversationId) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
-<a href=#95 id=95 data-nosnippet>95</a>        <span class="kw">let </span>backend = <span class="self">self</span>.mls_provider().<span class="kw">await</span><span class="question-mark">?</span>;
+<a href=#95 id=95 data-nosnippet>95</a>        <span class="kw">let </span>backend = <span class="self">self</span>.crypto_provider().<span class="kw">await</span><span class="question-mark">?</span>;
 <a href=#96 id=96 data-nosnippet>96</a>        <span class="kw">let </span>keystore = <span class="kw-2">&amp;</span>backend.keystore();
 <a href=#97 id=97 data-nosnippet>97</a>        <span class="kw">let </span><span class="kw-2">mut </span>conversation = <span class="self">self</span>.conversation_mut().<span class="kw">await</span>;
 <a href=#98 id=98 data-nosnippet>98</a>        <span class="kw">if </span>keystore.mls_group_exists(parent_id).<span class="kw">await </span>{
@@ -105,7 +105,7 @@
 <a href=#105 id=105 data-nosnippet>105</a>    }
 <a href=#106 id=106 data-nosnippet>106</a>
 <a href=#107 id=107 data-nosnippet>107</a>    <span class="kw">async fn </span>credential_bundle(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;Arc&lt;CredentialBundle&gt;&gt; {
-<a href=#108 id=108 data-nosnippet>108</a>        <span class="kw">let </span>client = <span class="self">self</span>.mls_client().<span class="kw">await</span><span class="question-mark">?</span>;
+<a href=#108 id=108 data-nosnippet>108</a>        <span class="kw">let </span>client = <span class="self">self</span>.session().<span class="kw">await</span><span class="question-mark">?</span>;
 <a href=#109 id=109 data-nosnippet>109</a>        <span class="kw">let </span>inner = <span class="self">self</span>.conversation().<span class="kw">await</span>;
 <a href=#110 id=110 data-nosnippet>110</a>        inner
 <a href=#111 id=111 data-nosnippet>111</a>            .find_current_credential_bundle(<span class="kw-2">&amp;</span>client)
