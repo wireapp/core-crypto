@@ -137,18 +137,6 @@ pub(crate) trait HasSessionAndCrypto: Send {
     async fn crypto_provider(&self) -> Result<MlsCryptoProvider>;
 }
 
-#[cfg_attr(target_family = "wasm", async_trait::async_trait(?Send))]
-#[cfg_attr(not(target_family = "wasm"), async_trait::async_trait)]
-impl HasSessionAndCrypto for Session {
-    async fn session(&self) -> Result<Session> {
-        Ok(self.clone())
-    }
-
-    async fn crypto_provider(&self) -> Result<MlsCryptoProvider> {
-        Ok(self.crypto_provider.clone())
-    }
-}
-
 impl TransactionContext {
     /// Initializes the MLS client if [super::CoreCrypto] has previously been initialized with
     /// `CoreCrypto::deferred_init` instead of `CoreCrypto::new`.

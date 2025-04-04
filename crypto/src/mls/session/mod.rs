@@ -7,20 +7,26 @@ pub(crate) mod identities;
 pub(crate) mod key_package;
 pub(crate) mod user_id;
 
-use super::conversation::ImmutableConversation;
-use crate::prelude::{ConversationId, INITIAL_KEYING_MATERIAL_COUNT, MlsClientConfiguration};
 use crate::{
     CoreCrypto, KeystoreError, LeafError, MlsError, MlsTransport, RecursiveError,
     group_store::GroupStore,
-    mls::credential::{CredentialBundle, ext::CredentialExt},
+    mls::{
+        self, HasSessionAndCrypto,
+        conversation::ImmutableConversation,
+        credential::{CredentialBundle, ext::CredentialExt},
+    },
     prelude::{
-        CertificateBundle, ClientId, MlsCiphersuite, MlsCredentialType, identifier::ClientIdentifier,
+        CertificateBundle, ClientId, ConversationId, INITIAL_KEYING_MATERIAL_COUNT, MlsCiphersuite,
+        MlsClientConfiguration, MlsCredentialType, identifier::ClientIdentifier,
         key_package::KEYPACKAGE_DEFAULT_LIFETIME,
     },
 };
 use async_lock::RwLock;
-use core_crypto_keystore::entities::{EntityFindParams, MlsCredential, MlsSignatureKeyPair};
-use core_crypto_keystore::{Connection, CryptoKeystoreError, connection::FetchFromDatabase};
+use core_crypto_keystore::{
+    Connection, CryptoKeystoreError,
+    connection::FetchFromDatabase,
+    entities::{EntityFindParams, MlsCredential, MlsSignatureKeyPair},
+};
 pub use epoch_observer::EpochObserver;
 pub(crate) use error::{Error, Result};
 use identities::Identities;
@@ -50,6 +56,18 @@ pub struct Session {
     pub(crate) inner: Arc<RwLock<Option<SessionInner>>>,
     pub(crate) crypto_provider: MlsCryptoProvider,
     pub(crate) transport: Arc<RwLock<Option<Arc<dyn MlsTransport + 'static>>>>,
+}
+
+#[cfg_attr(target_family = "wasm", async_trait::async_trait(?Send))]
+#[cfg_attr(not(target_family = "wasm"), async_trait::async_trait)]
+impl HasSessionAndCrypto for Session {
+    async fn session(&self) -> mls::Result<Session> {
+        Ok(self.clone())
+    }
+
+    async fn crypto_provider(&self) -> mls::Result<MlsCryptoProvider> {
+        Ok(self.crypto_provider.clone())
+    }
 }
 
 #[derive(Clone)]
