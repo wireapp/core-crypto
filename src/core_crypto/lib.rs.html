@@ -31,9 +31,9 @@
 <a href=#31 id=31 data-nosnippet>31</a></span><span class="doccomment">/// Proteus Abstraction
 <a href=#32 id=32 data-nosnippet>32</a></span><span class="kw">pub mod </span>proteus;
 <a href=#33 id=33 data-nosnippet>33</a>
-<a href=#34 id=34 data-nosnippet>34</a><span class="kw">pub mod </span>context;
-<a href=#35 id=35 data-nosnippet>35</a><span class="kw">mod </span>group_store;
-<a href=#36 id=36 data-nosnippet>36</a><span class="kw">mod </span>obfuscate;
+<a href=#34 id=34 data-nosnippet>34</a><span class="kw">mod </span>group_store;
+<a href=#35 id=35 data-nosnippet>35</a><span class="kw">mod </span>obfuscate;
+<a href=#36 id=36 data-nosnippet>36</a><span class="kw">pub mod </span>transaction_context;
 <a href=#37 id=37 data-nosnippet>37</a>
 <a href=#38 id=38 data-nosnippet>38</a><span class="kw">mod </span>build_metadata;
 <a href=#39 id=39 data-nosnippet>39</a><span class="kw">use </span><span class="kw">crate</span>::prelude::MlsCommitBundle;
@@ -57,33 +57,33 @@
 <a href=#57 id=57 data-nosnippet>57</a>        CoreCrypto, MlsTransport,
 <a href=#58 id=58 data-nosnippet>58</a>        e2e_identity::{
 <a href=#59 id=59 data-nosnippet>59</a>            E2eiEnrollment,
-<a href=#60 id=60 data-nosnippet>60</a>            conversation_state::E2eiConversationState,
-<a href=#61 id=61 data-nosnippet>61</a>            device_status::DeviceStatus,
-<a href=#62 id=62 data-nosnippet>62</a>            identity::{WireIdentity, X509Identity},
-<a href=#63 id=63 data-nosnippet>63</a>            types::{E2eiAcmeChallenge, E2eiAcmeDirectory, E2eiNewAcmeAuthz, E2eiNewAcmeOrder},
-<a href=#64 id=64 data-nosnippet>64</a>        },
-<a href=#65 id=65 data-nosnippet>65</a>        error::{CryptoboxMigrationError, Error, KeystoreError, LeafError, MlsError, ProteusError, RecursiveError},
-<a href=#66 id=66 data-nosnippet>66</a>        mls::{
-<a href=#67 id=67 data-nosnippet>67</a>            ciphersuite::MlsCiphersuite,
-<a href=#68 id=68 data-nosnippet>68</a>            client::Client,
-<a href=#69 id=69 data-nosnippet>69</a>            client::id::ClientId,
-<a href=#70 id=70 data-nosnippet>70</a>            client::identifier::ClientIdentifier,
-<a href=#71 id=71 data-nosnippet>71</a>            client::key_package::INITIAL_KEYING_MATERIAL_COUNT,
-<a href=#72 id=72 data-nosnippet>72</a>            client::<span class="kw-2">*</span>,
-<a href=#73 id=73 data-nosnippet>73</a>            config::MlsClientConfiguration,
-<a href=#74 id=74 data-nosnippet>74</a>            conversation::{
-<a href=#75 id=75 data-nosnippet>75</a>                ConversationId, MlsConversation,
-<a href=#76 id=76 data-nosnippet>76</a>                commit::{MlsCommitBundle, MlsConversationCreationMessage},
-<a href=#77 id=77 data-nosnippet>77</a>                config::{MlsConversationConfiguration, MlsCustomConfiguration, MlsWirePolicy},
-<a href=#78 id=78 data-nosnippet>78</a>                conversation_guard::decrypt::{MlsBufferedConversationDecryptMessage, MlsConversationDecryptMessage},
-<a href=#79 id=79 data-nosnippet>79</a>                group_info::{GroupInfoPayload, MlsGroupInfoBundle, MlsGroupInfoEncryptionType, MlsRatchetTreeType},
-<a href=#80 id=80 data-nosnippet>80</a>                proposal::MlsProposalBundle,
-<a href=#81 id=81 data-nosnippet>81</a>                welcome::WelcomeBundle,
-<a href=#82 id=82 data-nosnippet>82</a>            },
-<a href=#83 id=83 data-nosnippet>83</a>            credential::{typ::MlsCredentialType, x509::CertificateBundle},
-<a href=#84 id=84 data-nosnippet>84</a>            proposal::{MlsProposal, MlsProposalRef},
-<a href=#85 id=85 data-nosnippet>85</a>        },
-<a href=#86 id=86 data-nosnippet>86</a>        obfuscate::Obfuscated,
+<a href=#60 id=60 data-nosnippet>60</a>            device_status::DeviceStatus,
+<a href=#61 id=61 data-nosnippet>61</a>            identity::{WireIdentity, X509Identity},
+<a href=#62 id=62 data-nosnippet>62</a>            types::{E2eiAcmeChallenge, E2eiAcmeDirectory, E2eiNewAcmeAuthz, E2eiNewAcmeOrder},
+<a href=#63 id=63 data-nosnippet>63</a>        },
+<a href=#64 id=64 data-nosnippet>64</a>        error::{CryptoboxMigrationError, Error, KeystoreError, LeafError, MlsError, ProteusError, RecursiveError},
+<a href=#65 id=65 data-nosnippet>65</a>        mls::{
+<a href=#66 id=66 data-nosnippet>66</a>            ciphersuite::MlsCiphersuite,
+<a href=#67 id=67 data-nosnippet>67</a>            client::Client,
+<a href=#68 id=68 data-nosnippet>68</a>            client::id::ClientId,
+<a href=#69 id=69 data-nosnippet>69</a>            client::identifier::ClientIdentifier,
+<a href=#70 id=70 data-nosnippet>70</a>            client::key_package::INITIAL_KEYING_MATERIAL_COUNT,
+<a href=#71 id=71 data-nosnippet>71</a>            client::<span class="kw-2">*</span>,
+<a href=#72 id=72 data-nosnippet>72</a>            config::MlsClientConfiguration,
+<a href=#73 id=73 data-nosnippet>73</a>            conversation::{
+<a href=#74 id=74 data-nosnippet>74</a>                ConversationId, MlsConversation,
+<a href=#75 id=75 data-nosnippet>75</a>                commit::{MlsCommitBundle, MlsConversationCreationMessage},
+<a href=#76 id=76 data-nosnippet>76</a>                config::{MlsConversationConfiguration, MlsCustomConfiguration, MlsWirePolicy},
+<a href=#77 id=77 data-nosnippet>77</a>                conversation_guard::decrypt::{MlsBufferedConversationDecryptMessage, MlsConversationDecryptMessage},
+<a href=#78 id=78 data-nosnippet>78</a>                group_info::{GroupInfoPayload, MlsGroupInfoBundle, MlsGroupInfoEncryptionType, MlsRatchetTreeType},
+<a href=#79 id=79 data-nosnippet>79</a>                proposal::MlsProposalBundle,
+<a href=#80 id=80 data-nosnippet>80</a>                welcome::WelcomeBundle,
+<a href=#81 id=81 data-nosnippet>81</a>            },
+<a href=#82 id=82 data-nosnippet>82</a>            credential::{typ::MlsCredentialType, x509::CertificateBundle},
+<a href=#83 id=83 data-nosnippet>83</a>            proposal::{MlsProposal, MlsProposalRef},
+<a href=#84 id=84 data-nosnippet>84</a>        },
+<a href=#85 id=85 data-nosnippet>85</a>        obfuscate::Obfuscated,
+<a href=#86 id=86 data-nosnippet>86</a>        transaction_context::e2e_identity::{E2eiDumpedPkiEnv, conversation_state::E2eiConversationState},
 <a href=#87 id=87 data-nosnippet>87</a>    };
 <a href=#88 id=88 data-nosnippet>88</a>}
 <a href=#89 id=89 data-nosnippet>89</a>

@@ -11,7 +11,7 @@
 <a href=#11 id=11 data-nosnippet>11</a><span class="kw">use </span>mls_crypto_provider::MlsCryptoProvider;
 <a href=#12 id=12 data-nosnippet>12</a><span class="kw">use </span>openmls_traits::OpenMlsCryptoProvider;
 <a href=#13 id=13 data-nosnippet>13</a>
-<a href=#14 id=14 data-nosnippet>14</a><span class="kw">use </span><span class="kw">crate</span>::context::CentralContext;
+<a href=#14 id=14 data-nosnippet>14</a><span class="kw">use </span><span class="kw">crate</span>::transaction_context::TransactionContext;
 <a href=#15 id=15 data-nosnippet>15</a>
 <a href=#16 id=16 data-nosnippet>16</a><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">mod </span>ciphersuite;
 <a href=#17 id=17 data-nosnippet>17</a><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">mod </span>client;
@@ -149,7 +149,7 @@
 <a href=#149 id=149 data-nosnippet>149</a>    }
 <a href=#150 id=150 data-nosnippet>150</a>}
 <a href=#151 id=151 data-nosnippet>151</a>
-<a href=#152 id=152 data-nosnippet>152</a><span class="kw">impl </span>CentralContext {
+<a href=#152 id=152 data-nosnippet>152</a><span class="kw">impl </span>TransactionContext {
 <a href=#153 id=153 data-nosnippet>153</a>    <span class="doccomment">/// Initializes the MLS client if [super::CoreCrypto] has previously been initialized with
 <a href=#154 id=154 data-nosnippet>154</a>    /// `CoreCrypto::deferred_init` instead of `CoreCrypto::new`.
 <a href=#155 id=155 data-nosnippet>155</a>    /// This should stay as long as proteus is supported. Then it should be removed.
@@ -163,7 +163,7 @@
 <a href=#163 id=163 data-nosnippet>163</a>        <span class="kw">let </span>mls_client = <span class="self">self
 <a href=#164 id=164 data-nosnippet>164</a>            </span>.mls_client()
 <a href=#165 id=165 data-nosnippet>165</a>            .<span class="kw">await
-<a href=#166 id=166 data-nosnippet>166</a>            </span>.map_err(RecursiveError::root(<span class="string">"getting mls client"</span>))<span class="question-mark">?</span>;
+<a href=#166 id=166 data-nosnippet>166</a>            </span>.map_err(RecursiveError::transaction(<span class="string">"getting mls client"</span>))<span class="question-mark">?</span>;
 <a href=#167 id=167 data-nosnippet>167</a>        mls_client
 <a href=#168 id=168 data-nosnippet>168</a>            .init(
 <a href=#169 id=169 data-nosnippet>169</a>                identifier,
@@ -171,7 +171,7 @@
 <a href=#171 id=171 data-nosnippet>171</a>                <span class="kw-2">&amp;</span><span class="self">self
 <a href=#172 id=172 data-nosnippet>172</a>                    </span>.mls_provider()
 <a href=#173 id=173 data-nosnippet>173</a>                    .<span class="kw">await
-<a href=#174 id=174 data-nosnippet>174</a>                    </span>.map_err(RecursiveError::root(<span class="string">"getting mls provider"</span>))<span class="question-mark">?</span>,
+<a href=#174 id=174 data-nosnippet>174</a>                    </span>.map_err(RecursiveError::transaction(<span class="string">"getting mls provider"</span>))<span class="question-mark">?</span>,
 <a href=#175 id=175 data-nosnippet>175</a>                nb_key_package,
 <a href=#176 id=176 data-nosnippet>176</a>            )
 <a href=#177 id=177 data-nosnippet>177</a>            .<span class="kw">await
@@ -185,27 +185,27 @@
 <a href=#185 id=185 data-nosnippet>185</a>            <span class="macro">trace!</span>(client_id:% = client_id; <span class="string">"Initializing PKI environment"</span>);
 <a href=#186 id=186 data-nosnippet>186</a>            <span class="self">self</span>.init_pki_env()
 <a href=#187 id=187 data-nosnippet>187</a>                .<span class="kw">await
-<a href=#188 id=188 data-nosnippet>188</a>                </span>.map_err(RecursiveError::e2e_identity(<span class="string">"initializing pki env"</span>))<span class="question-mark">?</span>;
+<a href=#188 id=188 data-nosnippet>188</a>                </span>.map_err(RecursiveError::transaction(<span class="string">"initializing pki env"</span>))<span class="question-mark">?</span>;
 <a href=#189 id=189 data-nosnippet>189</a>        }
 <a href=#190 id=190 data-nosnippet>190</a>
 <a href=#191 id=191 data-nosnippet>191</a>        <span class="prelude-val">Ok</span>(())
 <a href=#192 id=192 data-nosnippet>192</a>    }
 <a href=#193 id=193 data-nosnippet>193</a>
 <a href=#194 id=194 data-nosnippet>194</a>    <span class="doccomment">/// Generates MLS KeyPairs/CredentialBundle with a temporary, random client ID.
-<a href=#195 id=195 data-nosnippet>195</a>    /// This method is designed to be used in conjunction with [CentralContext::mls_init_with_client_id] and represents the first step in this process.
+<a href=#195 id=195 data-nosnippet>195</a>    /// This method is designed to be used in conjunction with [TransactionContext::mls_init_with_client_id] and represents the first step in this process.
 <a href=#196 id=196 data-nosnippet>196</a>    ///
 <a href=#197 id=197 data-nosnippet>197</a>    /// This returns the TLS-serialized identity keys (i.e. the signature keypair's public key)
 <a href=#198 id=198 data-nosnippet>198</a>    </span><span class="attr">#[cfg_attr(test, <span class="kw">crate</span>::dispotent)]
 <a href=#199 id=199 data-nosnippet>199</a>    </span><span class="kw">pub async fn </span>mls_generate_keypairs(<span class="kw-2">&amp;</span><span class="self">self</span>, ciphersuites: Vec&lt;MlsCiphersuite&gt;) -&gt; <span class="prelude-ty">Result</span>&lt;Vec&lt;ClientId&gt;&gt; {
 <a href=#200 id=200 data-nosnippet>200</a>        <span class="self">self</span>.mls_client()
 <a href=#201 id=201 data-nosnippet>201</a>            .<span class="kw">await
-<a href=#202 id=202 data-nosnippet>202</a>            </span>.map_err(RecursiveError::root(<span class="string">"getting mls client"</span>))<span class="question-mark">?
+<a href=#202 id=202 data-nosnippet>202</a>            </span>.map_err(RecursiveError::transaction(<span class="string">"getting mls client"</span>))<span class="question-mark">?
 <a href=#203 id=203 data-nosnippet>203</a>            </span>.generate_raw_keypairs(
 <a href=#204 id=204 data-nosnippet>204</a>                <span class="kw-2">&amp;</span>ciphersuites,
 <a href=#205 id=205 data-nosnippet>205</a>                <span class="kw-2">&amp;</span><span class="self">self
 <a href=#206 id=206 data-nosnippet>206</a>                    </span>.mls_provider()
 <a href=#207 id=207 data-nosnippet>207</a>                    .<span class="kw">await
-<a href=#208 id=208 data-nosnippet>208</a>                    </span>.map_err(RecursiveError::root(<span class="string">"getting mls provider"</span>))<span class="question-mark">?</span>,
+<a href=#208 id=208 data-nosnippet>208</a>                    </span>.map_err(RecursiveError::transaction(<span class="string">"getting mls provider"</span>))<span class="question-mark">?</span>,
 <a href=#209 id=209 data-nosnippet>209</a>            )
 <a href=#210 id=210 data-nosnippet>210</a>            .<span class="kw">await
 <a href=#211 id=211 data-nosnippet>211</a>            </span>.map_err(RecursiveError::mls_client(<span class="string">"generating raw keypairs"</span>))
@@ -214,7 +214,7 @@
 <a href=#214 id=214 data-nosnippet>214</a>
 <a href=#215 id=215 data-nosnippet>215</a>    <span class="doccomment">/// Updates the current temporary Client ID with the newly provided one. This is the second step in the externally-generated clients process
 <a href=#216 id=216 data-nosnippet>216</a>    ///
-<a href=#217 id=217 data-nosnippet>217</a>    /// Important: This is designed to be called after [CentralContext::mls_generate_keypairs]
+<a href=#217 id=217 data-nosnippet>217</a>    /// Important: This is designed to be called after [TransactionContext::mls_generate_keypairs]
 <a href=#218 id=218 data-nosnippet>218</a>    </span><span class="attr">#[cfg_attr(test, <span class="kw">crate</span>::dispotent)]
 <a href=#219 id=219 data-nosnippet>219</a>    </span><span class="kw">pub async fn </span>mls_init_with_client_id(
 <a href=#220 id=220 data-nosnippet>220</a>        <span class="kw-2">&amp;</span><span class="self">self</span>,
@@ -224,7 +224,7 @@
 <a href=#224 id=224 data-nosnippet>224</a>    ) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
 <a href=#225 id=225 data-nosnippet>225</a>        <span class="self">self</span>.mls_client()
 <a href=#226 id=226 data-nosnippet>226</a>            .<span class="kw">await
-<a href=#227 id=227 data-nosnippet>227</a>            </span>.map_err(RecursiveError::root(<span class="string">"getting mls client"</span>))<span class="question-mark">?
+<a href=#227 id=227 data-nosnippet>227</a>            </span>.map_err(RecursiveError::transaction(<span class="string">"getting mls client"</span>))<span class="question-mark">?
 <a href=#228 id=228 data-nosnippet>228</a>            </span>.init_with_external_client_id(
 <a href=#229 id=229 data-nosnippet>229</a>                client_id,
 <a href=#230 id=230 data-nosnippet>230</a>                tmp_client_ids,
@@ -232,7 +232,7 @@
 <a href=#232 id=232 data-nosnippet>232</a>                <span class="kw-2">&amp;</span><span class="self">self
 <a href=#233 id=233 data-nosnippet>233</a>                    </span>.mls_provider()
 <a href=#234 id=234 data-nosnippet>234</a>                    .<span class="kw">await
-<a href=#235 id=235 data-nosnippet>235</a>                    </span>.map_err(RecursiveError::root(<span class="string">"getting mls provider"</span>))<span class="question-mark">?</span>,
+<a href=#235 id=235 data-nosnippet>235</a>                    </span>.map_err(RecursiveError::transaction(<span class="string">"getting mls provider"</span>))<span class="question-mark">?</span>,
 <a href=#236 id=236 data-nosnippet>236</a>            )
 <a href=#237 id=237 data-nosnippet>237</a>            .<span class="kw">await
 <a href=#238 id=238 data-nosnippet>238</a>            </span>.map_err(RecursiveError::mls_client(
@@ -250,7 +250,7 @@
 <a href=#250 id=250 data-nosnippet>250</a>        <span class="kw">let </span>cb = <span class="self">self
 <a href=#251 id=251 data-nosnippet>251</a>            </span>.mls_client()
 <a href=#252 id=252 data-nosnippet>252</a>            .<span class="kw">await
-<a href=#253 id=253 data-nosnippet>253</a>            </span>.map_err(RecursiveError::root(<span class="string">"getting mls client"</span>))<span class="question-mark">?
+<a href=#253 id=253 data-nosnippet>253</a>            </span>.map_err(RecursiveError::transaction(<span class="string">"getting mls client"</span>))<span class="question-mark">?
 <a href=#254 id=254 data-nosnippet>254</a>            </span>.find_most_recent_credential_bundle(ciphersuite.signature_algorithm(), credential_type)
 <a href=#255 id=255 data-nosnippet>255</a>            .<span class="kw">await
 <a href=#256 id=256 data-nosnippet>256</a>            </span>.map_err(RecursiveError::mls_client(<span class="string">"finding most recent credential bundle"</span>))<span class="question-mark">?</span>;
@@ -261,7 +261,7 @@
 <a href=#261 id=261 data-nosnippet>261</a>    </span><span class="kw">pub async fn </span>client_id(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;ClientId&gt; {
 <a href=#262 id=262 data-nosnippet>262</a>        <span class="self">self</span>.mls_client()
 <a href=#263 id=263 data-nosnippet>263</a>            .<span class="kw">await
-<a href=#264 id=264 data-nosnippet>264</a>            </span>.map_err(RecursiveError::root(<span class="string">"getting mls client"</span>))<span class="question-mark">?
+<a href=#264 id=264 data-nosnippet>264</a>            </span>.map_err(RecursiveError::transaction(<span class="string">"getting mls client"</span>))<span class="question-mark">?
 <a href=#265 id=265 data-nosnippet>265</a>            </span>.id()
 <a href=#266 id=266 data-nosnippet>266</a>            .<span class="kw">await
 <a href=#267 id=267 data-nosnippet>267</a>            </span>.map_err(RecursiveError::mls_client(<span class="string">"getting client id"</span>))
@@ -294,20 +294,20 @@
 <a href=#294 id=294 data-nosnippet>294</a>            <span class="kw-2">&amp;</span><span class="self">self
 <a href=#295 id=295 data-nosnippet>295</a>                </span>.mls_client()
 <a href=#296 id=296 data-nosnippet>296</a>                .<span class="kw">await
-<a href=#297 id=297 data-nosnippet>297</a>                </span>.map_err(RecursiveError::root(<span class="string">"getting mls client"</span>))<span class="question-mark">?</span>,
+<a href=#297 id=297 data-nosnippet>297</a>                </span>.map_err(RecursiveError::transaction(<span class="string">"getting mls client"</span>))<span class="question-mark">?</span>,
 <a href=#298 id=298 data-nosnippet>298</a>            creator_credential_type,
 <a href=#299 id=299 data-nosnippet>299</a>            config,
 <a href=#300 id=300 data-nosnippet>300</a>            <span class="kw-2">&amp;</span><span class="self">self
 <a href=#301 id=301 data-nosnippet>301</a>                </span>.mls_provider()
 <a href=#302 id=302 data-nosnippet>302</a>                .<span class="kw">await
-<a href=#303 id=303 data-nosnippet>303</a>                </span>.map_err(RecursiveError::root(<span class="string">"getting mls provider"</span>))<span class="question-mark">?</span>,
+<a href=#303 id=303 data-nosnippet>303</a>                </span>.map_err(RecursiveError::transaction(<span class="string">"getting mls provider"</span>))<span class="question-mark">?</span>,
 <a href=#304 id=304 data-nosnippet>304</a>        )
 <a href=#305 id=305 data-nosnippet>305</a>        .<span class="kw">await
 <a href=#306 id=306 data-nosnippet>306</a>        </span>.map_err(RecursiveError::mls_conversation(<span class="string">"creating conversation"</span>))<span class="question-mark">?</span>;
 <a href=#307 id=307 data-nosnippet>307</a>
 <a href=#308 id=308 data-nosnippet>308</a>        <span class="self">self</span>.mls_groups()
 <a href=#309 id=309 data-nosnippet>309</a>            .<span class="kw">await
-<a href=#310 id=310 data-nosnippet>310</a>            </span>.map_err(RecursiveError::root(<span class="string">"getting mls groups"</span>))<span class="question-mark">?
+<a href=#310 id=310 data-nosnippet>310</a>            </span>.map_err(RecursiveError::transaction(<span class="string">"getting mls groups"</span>))<span class="question-mark">?
 <a href=#311 id=311 data-nosnippet>311</a>            </span>.insert(id.clone(), conversation);
 <a href=#312 id=312 data-nosnippet>312</a>
 <a href=#313 id=313 data-nosnippet>313</a>        <span class="prelude-val">Ok</span>(())
@@ -318,13 +318,13 @@
 <a href=#318 id=318 data-nosnippet>318</a>        <span class="prelude-val">Ok</span>(<span class="self">self
 <a href=#319 id=319 data-nosnippet>319</a>            </span>.mls_groups()
 <a href=#320 id=320 data-nosnippet>320</a>            .<span class="kw">await
-<a href=#321 id=321 data-nosnippet>321</a>            </span>.map_err(RecursiveError::root(<span class="string">"getting mls groups"</span>))<span class="question-mark">?
+<a href=#321 id=321 data-nosnippet>321</a>            </span>.map_err(RecursiveError::transaction(<span class="string">"getting mls groups"</span>))<span class="question-mark">?
 <a href=#322 id=322 data-nosnippet>322</a>            </span>.get_fetch(
 <a href=#323 id=323 data-nosnippet>323</a>                id,
 <a href=#324 id=324 data-nosnippet>324</a>                <span class="kw-2">&amp;</span><span class="self">self
 <a href=#325 id=325 data-nosnippet>325</a>                    </span>.mls_provider()
 <a href=#326 id=326 data-nosnippet>326</a>                    .<span class="kw">await
-<a href=#327 id=327 data-nosnippet>327</a>                    </span>.map_err(RecursiveError::root(<span class="string">"getting mls provider"</span>))<span class="question-mark">?
+<a href=#327 id=327 data-nosnippet>327</a>                    </span>.map_err(RecursiveError::transaction(<span class="string">"getting mls provider"</span>))<span class="question-mark">?
 <a href=#328 id=328 data-nosnippet>328</a>                    </span>.keystore(),
 <a href=#329 id=329 data-nosnippet>329</a>                <span class="prelude-val">None</span>,
 <a href=#330 id=330 data-nosnippet>330</a>            )
@@ -339,7 +339,7 @@
 <a href=#339 id=339 data-nosnippet>339</a>        <span class="kw">use </span>openmls_traits::random::OpenMlsRand <span class="kw">as _</span>;
 <a href=#340 id=340 data-nosnippet>340</a>        <span class="self">self</span>.mls_provider()
 <a href=#341 id=341 data-nosnippet>341</a>            .<span class="kw">await
-<a href=#342 id=342 data-nosnippet>342</a>            </span>.map_err(RecursiveError::root(<span class="string">"getting mls provider"</span>))<span class="question-mark">?
+<a href=#342 id=342 data-nosnippet>342</a>            </span>.map_err(RecursiveError::transaction(<span class="string">"getting mls provider"</span>))<span class="question-mark">?
 <a href=#343 id=343 data-nosnippet>343</a>            </span>.rand()
 <a href=#344 id=344 data-nosnippet>344</a>            .random_vec(len)
 <a href=#345 id=345 data-nosnippet>345</a>            .map_err(MlsError::wrap(<span class="string">"generating random vector"</span>))

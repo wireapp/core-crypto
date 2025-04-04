@@ -135,7 +135,7 @@
 <a href=#135 id=135 data-nosnippet>135</a>        <span class="kw">let </span>context = cc
 <a href=#136 id=136 data-nosnippet>136</a>            .new_transaction()
 <a href=#137 id=137 data-nosnippet>137</a>            .<span class="kw">await
-<a href=#138 id=138 data-nosnippet>138</a>            </span>.map_err(RecursiveError::root(<span class="string">"starting new transaction"</span>))<span class="question-mark">?</span>;
+<a href=#138 id=138 data-nosnippet>138</a>            </span>.map_err(RecursiveError::transaction(<span class="string">"starting new transaction"</span>))<span class="question-mark">?</span>;
 <a href=#139 id=139 data-nosnippet>139</a>
 <a href=#140 id=140 data-nosnippet>140</a>        <span class="kw">if let </span><span class="prelude-val">Some</span>(id) = configuration.client_id {
 <a href=#141 id=141 data-nosnippet>141</a>            client
@@ -155,11 +155,11 @@
 <a href=#155 id=155 data-nosnippet>155</a>        context
 <a href=#156 id=156 data-nosnippet>156</a>            .init_pki_env()
 <a href=#157 id=157 data-nosnippet>157</a>            .<span class="kw">await
-<a href=#158 id=158 data-nosnippet>158</a>            </span>.map_err(RecursiveError::e2e_identity(<span class="string">"initializing pki environment"</span>))<span class="question-mark">?</span>;
+<a href=#158 id=158 data-nosnippet>158</a>            </span>.map_err(RecursiveError::transaction(<span class="string">"initializing pki environment"</span>))<span class="question-mark">?</span>;
 <a href=#159 id=159 data-nosnippet>159</a>        context
 <a href=#160 id=160 data-nosnippet>160</a>            .finish()
 <a href=#161 id=161 data-nosnippet>161</a>            .<span class="kw">await
-<a href=#162 id=162 data-nosnippet>162</a>            </span>.map_err(RecursiveError::root(<span class="string">"finishing transaction"</span>))<span class="question-mark">?</span>;
+<a href=#162 id=162 data-nosnippet>162</a>            </span>.map_err(RecursiveError::transaction(<span class="string">"finishing transaction"</span>))<span class="question-mark">?</span>;
 <a href=#163 id=163 data-nosnippet>163</a>        <span class="prelude-val">Ok</span>(central)
 <a href=#164 id=164 data-nosnippet>164</a>    }
 <a href=#165 id=165 data-nosnippet>165</a>
@@ -254,7 +254,7 @@
 <a href=#254 id=254 data-nosnippet>254</a>
 <a href=#255 id=255 data-nosnippet>255</a>    <span class="doccomment">/// Get an immutable view of an `MlsConversation`.
 <a href=#256 id=256 data-nosnippet>256</a>    ///
-<a href=#257 id=257 data-nosnippet>257</a>    /// Because it operates on the raw conversation type, this may be faster than [crate::mls::CentralContext::conversation].
+<a href=#257 id=257 data-nosnippet>257</a>    /// Because it operates on the raw conversation type, this may be faster than [crate::mls::TransactionContext::conversation].
 <a href=#258 id=258 data-nosnippet>258</a>    /// for transient and immutable purposes. For long-lived or mutable purposes, prefer the other method.
 <a href=#259 id=259 data-nosnippet>259</a>    </span><span class="kw">pub async fn </span>get_raw_conversation(<span class="kw-2">&amp;</span><span class="self">self</span>, id: <span class="kw-2">&amp;</span>ConversationId) -&gt; <span class="prelude-ty">Result</span>&lt;ImmutableConversation&gt; {
 <a href=#260 id=260 data-nosnippet>260</a>        <span class="kw">let </span>raw_conversation = GroupStore::fetch_from_keystore(id, <span class="kw-2">&amp;</span><span class="self">self</span>.mls_backend.keystore(), <span class="prelude-val">None</span>)

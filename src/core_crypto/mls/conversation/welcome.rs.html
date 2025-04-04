@@ -3,11 +3,11 @@
 <a href=#3 id=3 data-nosnippet>3</a><span class="kw">use super</span>::{Error, <span class="prelude-ty">Result</span>};
 <a href=#4 id=4 data-nosnippet>4</a><span class="kw">use crate</span>::{
 <a href=#5 id=5 data-nosnippet>5</a>    LeafError, MlsError, RecursiveError,
-<a href=#6 id=6 data-nosnippet>6</a>    context::CentralContext,
-<a href=#7 id=7 data-nosnippet>7</a>    e2e_identity::init_certificates::NewCrlDistributionPoints,
-<a href=#8 id=8 data-nosnippet>8</a>    group_store::GroupStore,
-<a href=#9 id=9 data-nosnippet>9</a>    mls::credential::crl::{extract_crl_uris_from_group, get_new_crl_distribution_points},
-<a href=#10 id=10 data-nosnippet>10</a>    prelude::{ConversationId, MlsConversation, MlsConversationConfiguration, MlsCustomConfiguration},
+<a href=#6 id=6 data-nosnippet>6</a>    e2e_identity::NewCrlDistributionPoints,
+<a href=#7 id=7 data-nosnippet>7</a>    group_store::GroupStore,
+<a href=#8 id=8 data-nosnippet>8</a>    mls::credential::crl::{extract_crl_uris_from_group, get_new_crl_distribution_points},
+<a href=#9 id=9 data-nosnippet>9</a>    prelude::{ConversationId, MlsConversation, MlsConversationConfiguration, MlsCustomConfiguration},
+<a href=#10 id=10 data-nosnippet>10</a>    transaction_context::TransactionContext,
 <a href=#11 id=11 data-nosnippet>11</a>};
 <a href=#12 id=12 data-nosnippet>12</a><span class="kw">use </span>core_crypto_keystore::{connection::FetchFromDatabase, entities::PersistedMlsPendingGroup};
 <a href=#13 id=13 data-nosnippet>13</a><span class="kw">use </span>mls_crypto_provider::MlsCryptoProvider;
@@ -24,7 +24,7 @@
 <a href=#24 id=24 data-nosnippet>24</a>    </span><span class="kw">pub </span>crl_new_distribution_points: NewCrlDistributionPoints,
 <a href=#25 id=25 data-nosnippet>25</a>}
 <a href=#26 id=26 data-nosnippet>26</a>
-<a href=#27 id=27 data-nosnippet>27</a><span class="kw">impl </span>CentralContext {
+<a href=#27 id=27 data-nosnippet>27</a><span class="kw">impl </span>TransactionContext {
 <a href=#28 id=28 data-nosnippet>28</a>    <span class="doccomment">/// Create a conversation from a TLS serialized MLS Welcome message. The `MlsConversationConfiguration` used in this function will be the default implementation.
 <a href=#29 id=29 data-nosnippet>29</a>    ///
 <a href=#30 id=30 data-nosnippet>30</a>    /// # Arguments
@@ -35,7 +35,7 @@
 <a href=#35 id=35 data-nosnippet>35</a>    /// This function will return the conversation/group id
 <a href=#36 id=36 data-nosnippet>36</a>    ///
 <a href=#37 id=37 data-nosnippet>37</a>    /// # Errors
-<a href=#38 id=38 data-nosnippet>38</a>    /// see [CentralContext::process_welcome_message]
+<a href=#38 id=38 data-nosnippet>38</a>    /// see [TransactionContext::process_welcome_message]
 <a href=#39 id=39 data-nosnippet>39</a>    </span><span class="attr">#[cfg_attr(test, <span class="kw">crate</span>::dispotent)]
 <a href=#40 id=40 data-nosnippet>40</a>    </span><span class="kw">pub async fn </span>process_raw_welcome_message(
 <a href=#41 id=41 data-nosnippet>41</a>        <span class="kw-2">&amp;</span><span class="self">self</span>,
@@ -81,11 +81,11 @@
 <a href=#81 id=81 data-nosnippet>81</a>        <span class="kw">let </span>mls_provider = <span class="self">self
 <a href=#82 id=82 data-nosnippet>82</a>            </span>.mls_provider()
 <a href=#83 id=83 data-nosnippet>83</a>            .<span class="kw">await
-<a href=#84 id=84 data-nosnippet>84</a>            </span>.map_err(RecursiveError::root(<span class="string">"getting mls provider"</span>))<span class="question-mark">?</span>;
+<a href=#84 id=84 data-nosnippet>84</a>            </span>.map_err(RecursiveError::transaction(<span class="string">"getting mls provider"</span>))<span class="question-mark">?</span>;
 <a href=#85 id=85 data-nosnippet>85</a>        <span class="kw">let </span><span class="kw-2">mut </span>mls_groups = <span class="self">self
 <a href=#86 id=86 data-nosnippet>86</a>            </span>.mls_groups()
 <a href=#87 id=87 data-nosnippet>87</a>            .<span class="kw">await
-<a href=#88 id=88 data-nosnippet>88</a>            </span>.map_err(RecursiveError::root(<span class="string">"getting mls groups"</span>))<span class="question-mark">?</span>;
+<a href=#88 id=88 data-nosnippet>88</a>            </span>.map_err(RecursiveError::transaction(<span class="string">"getting mls groups"</span>))<span class="question-mark">?</span>;
 <a href=#89 id=89 data-nosnippet>89</a>        <span class="kw">let </span>conversation =
 <a href=#90 id=90 data-nosnippet>90</a>            MlsConversation::from_welcome_message(welcome, configuration, <span class="kw-2">&amp;</span>mls_provider, mls_groups.borrow_mut())
 <a href=#91 id=91 data-nosnippet>91</a>                .<span class="kw">await</span><span class="question-mark">?</span>;

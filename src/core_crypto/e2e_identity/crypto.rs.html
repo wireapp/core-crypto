@@ -22,7 +22,7 @@
 <a href=#22 id=22 data-nosnippet>22</a>        E2eiSignatureKeypair::try_new(ciphersuite.signature_algorithm(), sk)
 <a href=#23 id=23 data-nosnippet>23</a>    }
 <a href=#24 id=24 data-nosnippet>24</a>
-<a href=#25 id=25 data-nosnippet>25</a>    <span class="kw">pub</span>(<span class="kw">super</span>) <span class="kw">fn </span>get_sign_key_for_mls(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;Vec&lt;u8&gt;&gt; {
+<a href=#25 id=25 data-nosnippet>25</a>    <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn </span>get_sign_key_for_mls(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;Vec&lt;u8&gt;&gt; {
 <a href=#26 id=26 data-nosnippet>26</a>        <span class="kw">let </span>sk = <span class="kw">match </span><span class="self">self</span>.ciphersuite.signature_algorithm() {
 <a href=#27 id=27 data-nosnippet>27</a>            SignatureScheme::ECDSA_SECP256R1_SHA256 | SignatureScheme::ECDSA_SECP384R1_SHA384 =&gt; <span class="self">self</span>.sign_sk.to_vec(),
 <a href=#28 id=28 data-nosnippet>28</a>            SignatureScheme::ECDSA_SECP521R1_SHA512 =&gt; RustCrypto::normalize_p521_secret_key(<span class="kw-2">&amp;</span><span class="self">self</span>.sign_sk).to_vec(),

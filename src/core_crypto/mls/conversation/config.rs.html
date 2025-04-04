@@ -18,7 +18,7 @@
 <a href=#18 id=18 data-nosnippet>18</a><span class="kw">use </span>wire_e2e_identity::prelude::parse_json_jwk;
 <a href=#19 id=19 data-nosnippet>19</a>
 <a href=#20 id=20 data-nosnippet>20</a><span class="kw">use </span><span class="kw">super</span>::Result;
-<a href=#21 id=21 data-nosnippet>21</a><span class="kw">use crate</span>::{MlsError, RecursiveError, context::CentralContext, prelude::MlsCiphersuite};
+<a href=#21 id=21 data-nosnippet>21</a><span class="kw">use crate</span>::{MlsError, RecursiveError, prelude::MlsCiphersuite, transaction_context::TransactionContext};
 <a href=#22 id=22 data-nosnippet>22</a>
 <a href=#23 id=23 data-nosnippet>23</a><span class="doccomment">/// Sets the config in OpenMls for the oldest possible epoch(past current) that a message can be decrypted
 <a href=#24 id=24 data-nosnippet>24</a></span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">const </span>MAX_PAST_EPOCHS: usize = <span class="number">3</span>;
@@ -30,7 +30,7 @@
 <a href=#30 id=30 data-nosnippet>30</a><span class="doccomment">/// How many application messages can be skipped. Use this when the Delivery Service can drop application messages
 <a href=#31 id=31 data-nosnippet>31</a></span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">const </span>MAXIMUM_FORWARD_DISTANCE: u32 = <span class="number">1000</span>;
 <a href=#32 id=32 data-nosnippet>32</a>
-<a href=#33 id=33 data-nosnippet>33</a><span class="kw">impl </span>CentralContext {
+<a href=#33 id=33 data-nosnippet>33</a><span class="kw">impl </span>TransactionContext {
 <a href=#34 id=34 data-nosnippet>34</a>    <span class="doccomment">/// Parses supplied key from Delivery Service in order to build back an [ExternalSender]
 <a href=#35 id=35 data-nosnippet>35</a>    </span><span class="kw">pub async fn </span>set_raw_external_senders(
 <a href=#36 id=36 data-nosnippet>36</a>        <span class="kw-2">&amp;</span><span class="self">self</span>,
@@ -40,7 +40,7 @@
 <a href=#40 id=40 data-nosnippet>40</a>        <span class="kw">let </span>mls_provider = <span class="self">self
 <a href=#41 id=41 data-nosnippet>41</a>            </span>.mls_provider()
 <a href=#42 id=42 data-nosnippet>42</a>            .<span class="kw">await
-<a href=#43 id=43 data-nosnippet>43</a>            </span>.map_err(RecursiveError::root(<span class="string">"getting mls provider"</span>))<span class="question-mark">?</span>;
+<a href=#43 id=43 data-nosnippet>43</a>            </span>.map_err(RecursiveError::transaction(<span class="string">"getting mls provider"</span>))<span class="question-mark">?</span>;
 <a href=#44 id=44 data-nosnippet>44</a>        cfg.external_senders = external_senders
 <a href=#45 id=45 data-nosnippet>45</a>            .into_iter()
 <a href=#46 id=46 data-nosnippet>46</a>            .map(|key| {

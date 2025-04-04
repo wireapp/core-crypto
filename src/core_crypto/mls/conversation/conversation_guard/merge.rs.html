@@ -7,7 +7,7 @@
 <a href=#7 id=7 data-nosnippet>7</a>//! * Create a commit
 <a href=#8 id=8 data-nosnippet>8</a>//! * Send the commit to the Delivery Service
 <a href=#9 id=9 data-nosnippet>9</a>//! * When Delivery Service responds
-<a href=#10 id=10 data-nosnippet>10</a>//!     * 200 OK --&gt; use [CentralContext::commit_accepted] to merge the commit
+<a href=#10 id=10 data-nosnippet>10</a>//!     * 200 OK --&gt; use [TransactionContext::commit_accepted] to merge the commit
 <a href=#11 id=11 data-nosnippet>11</a>//!     * 409 CONFLICT --&gt; do nothing. [ConversationGuard::decrypt_message] will restore the proposals not committed
 <a href=#12 id=12 data-nosnippet>12</a>//!     * 5xx --&gt; retry
 <a href=#13 id=13 data-nosnippet>13</a>
