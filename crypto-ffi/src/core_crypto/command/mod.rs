@@ -1,9 +1,8 @@
 #[cfg(not(target_family = "wasm"))]
 pub(crate) mod transaction_helper;
 
-use std::sync::Arc;
-
 use crate::{CoreCrypto, CoreCryptoContext, CoreCryptoResult};
+use std::sync::Arc;
 #[cfg(target_family = "wasm")]
 use wasm_bindgen::prelude::*;
 

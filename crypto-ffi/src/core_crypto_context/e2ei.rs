@@ -1,17 +1,16 @@
-use std::collections::HashMap;
-#[cfg(not(target_family = "wasm"))]
-use std::sync::Arc;
-
-use core_crypto::{RecursiveError, mls::conversation::Conversation as _, prelude::VerifiableGroupInfo};
-use tls_codec::Deserialize as _;
-#[cfg(target_family = "wasm")]
-use wasm_bindgen::prelude::*;
-
 use crate::{
     Ciphersuite, ClientId, ConversationId, CoreCryptoContext, CoreCryptoError, CoreCryptoResult, CredentialType,
     CrlRegistration, E2eiConversationState, E2eiDumpedPkiEnv, E2eiEnrollment, NewCrlDistributionPoints, UserIdentities,
     WireIdentity, conversation_id_vec,
 };
+use core_crypto::transaction_context::Error as TransactionError;
+use core_crypto::{RecursiveError, mls::conversation::Conversation as _, prelude::VerifiableGroupInfo};
+use std::collections::HashMap;
+#[cfg(not(target_family = "wasm"))]
+use std::sync::Arc;
+use tls_codec::Deserialize as _;
+#[cfg(target_family = "wasm")]
+use wasm_bindgen::prelude::*;
 
 #[cfg(not(target_family = "wasm"))]
 type EnrollmentParameter = Arc<E2eiEnrollment>;
@@ -43,6 +42,7 @@ impl CoreCryptoContext {
             )
             .await
             .map(E2eiEnrollment::new)
+            .map_err(Into::<TransactionError>::into)
             .map_err(Into::into)
     }
 
@@ -59,6 +59,7 @@ impl CoreCryptoContext {
             .e2ei_new_activation_enrollment(display_name, handle, team, expiry_sec, ciphersuite.into())
             .await
             .map(E2eiEnrollment::new)
+            .map_err(Into::<TransactionError>::into)
             .map_err(Into::into)
     }
 
@@ -75,13 +76,17 @@ impl CoreCryptoContext {
             .e2ei_new_rotate_enrollment(display_name, handle, team, expiry_sec, ciphersuite.into())
             .await
             .map(E2eiEnrollment::new)
+            .map_err(Into::<TransactionError>::into)
             .map_err(Into::into)
     }
 
     /// See [core_crypto::transaction_context::TransactionContext::e2ei_register_acme_ca]
     pub async fn e2ei_register_acme_ca(&self, trust_anchor_pem: String) -> CoreCryptoResult<()> {
-        self.inner.e2ei_register_acme_ca(trust_anchor_pem).await?;
-        Ok(())
+        self.inner
+            .e2ei_register_acme_ca(trust_anchor_pem)
+            .await
+            .map_err(Into::<TransactionError>::into)
+            .map_err(Into::into)
     }
 
     /// See [core_crypto::transaction_context::TransactionContext::e2ei_register_intermediate_ca_pem]
@@ -90,6 +95,7 @@ impl CoreCryptoContext {
             .e2ei_register_intermediate_ca_pem(cert_pem)
             .await
             .map(Into::into)
+            .map_err(Into::<TransactionError>::into)
             .map_err(Into::into)
     }
 
@@ -99,6 +105,7 @@ impl CoreCryptoContext {
             .e2ei_register_crl(crl_dp, crl_der)
             .await
             .map(Into::into)
+            .map_err(Into::<TransactionError>::into)
             .map_err(Into::into)
     }
 
@@ -118,6 +125,7 @@ impl CoreCryptoContext {
             .e2ei_mls_init_only(&mut enrollment, certificate_chain, nb_key_package)
             .await
             .map(Into::into)
+            .map_err(Into::<TransactionError>::into)
             .map_err(Into::into)
     }
 
@@ -139,6 +147,7 @@ impl CoreCryptoContext {
             .save_x509_credential(&mut enrollment, certificate_chain)
             .await
             .map(Into::into)
+            .map_err(Into::<TransactionError>::into)
             .map_err(Into::into)
     }
 
@@ -147,6 +156,7 @@ impl CoreCryptoContext {
         self.inner
             .delete_stale_key_packages(ciphersuite.into())
             .await
+            .map_err(Into::<TransactionError>::into)
             .map_err(Into::into)
     }
 
@@ -162,7 +172,11 @@ impl CoreCryptoContext {
             CoreCryptoError::ad_hoc("inner enrollment had multiple strong refs and could not be unpacked")
         })?;
 
-        Ok(self.inner.e2ei_enrollment_stash(enrollment).await?)
+        self.inner
+            .e2ei_enrollment_stash(enrollment)
+            .await
+            .map_err(Into::<TransactionError>::into)
+            .map_err(Into::into)
     }
 
     /// See [core_crypto::transaction_context::TransactionContext::e2ei_enrollment_stash_pop]
@@ -171,6 +185,7 @@ impl CoreCryptoContext {
             .e2ei_enrollment_stash_pop(handle)
             .await
             .map(E2eiEnrollment::new)
+            .map_err(Into::<TransactionError>::into)
             .map_err(Into::into)
     }
 
@@ -192,7 +207,11 @@ impl CoreCryptoContext {
     pub async fn e2ei_is_enabled(&self, ciphersuite: Ciphersuite) -> CoreCryptoResult<bool> {
         let sc = core_crypto::prelude::MlsCiphersuite::from(core_crypto::prelude::CiphersuiteName::from(ciphersuite))
             .signature_algorithm();
-        self.inner.e2ei_is_enabled(sc).await.map_err(Into::into)
+        self.inner
+            .e2ei_is_enabled(sc)
+            .await
+            .map_err(Into::<TransactionError>::into)
+            .map_err(Into::into)
     }
 
     /// See [core_crypto::mls::Client::get_device_identities]
@@ -245,16 +264,25 @@ impl CoreCryptoContext {
             .get_credential_in_use(group_info, credential_type.into())
             .await
             .map(Into::into)
+            .map_err(Into::<TransactionError>::into)
             .map_err(Into::into)
     }
 
     pub async fn e2ei_dump_pki_env(&self) -> CoreCryptoResult<Option<E2eiDumpedPkiEnv>> {
-        let pki_env = self.inner.e2ei_dump_pki_env().await?;
-        Ok(pki_env.map(Into::into))
+        self.inner
+            .e2ei_dump_pki_env()
+            .await
+            .map(|option| option.map(Into::into))
+            .map_err(Into::<TransactionError>::into)
+            .map_err(Into::into)
     }
 
     /// See [core_crypto::mls::MlsCentral::e2ei_is_pki_env_setup]
     pub async fn e2ei_is_pki_env_setup(&self) -> CoreCryptoResult<bool> {
-        self.inner.e2ei_is_pki_env_setup().await.map_err(Into::into)
+        self.inner
+            .e2ei_is_pki_env_setup()
+            .await
+            .map_err(Into::<TransactionError>::into)
+            .map_err(Into::into)
     }
 }

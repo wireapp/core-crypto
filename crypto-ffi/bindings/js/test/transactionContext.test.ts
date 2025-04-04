@@ -60,7 +60,7 @@ describe("transaction context", () => {
         expect(error).not.toBeNull();
         expect(error?.name).toEqual("MlsErrorOther");
         expect(error?.message).toEqual(
-            "This context has already been finished and can no longer be used."
+            "This transaction context has already been finished and can no longer be used."
         );
     });
 

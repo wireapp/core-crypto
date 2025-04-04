@@ -144,7 +144,7 @@ impl From<core_crypto::Error> for CoreCryptoError {
                 unreachable!("we don't raise proteus errors when building without proteus")
             }
             core_crypto::Error::Mls(mls) => Self::Mls(MlsError::from(mls)),
-            core_crypto::Error::InvalidContext => Self::Other(error.to_string()),
+            core_crypto::Error::InvalidTransactionContext => Self::Other(error.to_string()),
             core_crypto::Error::MlsTransportNotProvided => Self::Other(error.to_string()),
             core_crypto::Error::ErrorDuringMlsTransport(error_message) => Self::Other(error_message),
             core_crypto::Error::Keystore(keystore_error) => Self::Other(keystore_error.innermost_error_message()),
@@ -181,6 +181,7 @@ impl_from_via_recursive_error!(
     core_crypto::mls::Error,
     core_crypto::mls::conversation::Error,
     core_crypto::e2e_identity::Error,
+    core_crypto::transaction_context::Error,
 );
 
 impl CoreCryptoError {

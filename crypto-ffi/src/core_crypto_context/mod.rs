@@ -9,7 +9,7 @@ use std::{ops::Deref, sync::Arc};
 #[cfg(target_family = "wasm")]
 use wasm_bindgen::prelude::*;
 
-use core_crypto::context::CentralContext;
+use core_crypto::transaction_context::TransactionContext;
 
 use crate::CoreCryptoResult;
 
@@ -17,11 +17,11 @@ use crate::CoreCryptoResult;
 #[cfg_attr(target_family = "wasm", wasm_bindgen)]
 #[cfg_attr(not(target_family = "wasm"), derive(uniffi::Object))]
 pub struct CoreCryptoContext {
-    pub(crate) inner: Arc<CentralContext>,
+    pub(crate) inner: Arc<TransactionContext>,
 }
 
 impl Deref for CoreCryptoContext {
-    type Target = CentralContext;
+    type Target = TransactionContext;
 
     fn deref(&self) -> &Self::Target {
         self.inner.deref()
