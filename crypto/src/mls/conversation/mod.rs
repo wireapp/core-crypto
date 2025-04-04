@@ -663,7 +663,7 @@ mod tests {
                     .await
                     .unwrap();
 
-                let mut bob_and_friends: Vec<ClientContext> = Vec::with_capacity(GROUP_SAMPLE_SIZE);
+                let mut bob_and_friends: Vec<SessionContext> = Vec::with_capacity(GROUP_SAMPLE_SIZE);
                 for _ in 0..GROUP_SAMPLE_SIZE {
                     let uuid = uuid::Uuid::new_v4();
                     let name = uuid.hyphenated().to_string();
@@ -709,9 +709,9 @@ mod tests {
                         .await
                         .unwrap();
 
-                    let context = ClientContext {
+                    let context = SessionContext {
                         context: friend_context,
-                        client: central,
+                        session: central,
                         mls_transport: Arc::<CoreCryptoTransportSuccessProvider>::default(),
                         x509_test_chain: x509_test_chain_arc.clone(),
                     };

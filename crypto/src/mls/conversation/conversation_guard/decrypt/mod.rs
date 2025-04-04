@@ -648,7 +648,7 @@ mod tests {
 
                     let bob_observer = TestEpochObserver::new();
                     bob_central
-                        .client()
+                        .session()
                         .await
                         .register_epoch_observer(bob_observer.clone())
                         .await
@@ -704,7 +704,7 @@ mod tests {
 
                         let alice_observer = TestEpochObserver::new();
                         alice_central
-                            .client()
+                            .session()
                             .await
                             .register_epoch_observer(alice_observer.clone())
                             .await
@@ -774,7 +774,7 @@ mod tests {
 
                         let alice_observer = TestEpochObserver::new();
                         alice_central
-                            .client()
+                            .session()
                             .await
                             .register_epoch_observer(alice_observer.clone())
                             .await
@@ -1010,7 +1010,7 @@ mod tests {
 
                         let bob_observer = TestEpochObserver::new();
                         bob_central
-                            .client()
+                            .session()
                             .await
                             .register_epoch_observer(bob_observer.clone())
                             .await
@@ -1157,14 +1157,14 @@ mod tests {
 
                     let alice_observer = TestEpochObserver::new();
                     alice_central
-                        .client()
+                        .session()
                         .await
                         .register_epoch_observer(alice_observer.clone())
                         .await
                         .unwrap();
                     let bob_observer = TestEpochObserver::new();
                     bob_central
-                        .client()
+                        .session()
                         .await
                         .register_epoch_observer(bob_observer.clone())
                         .await

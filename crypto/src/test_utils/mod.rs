@@ -89,14 +89,14 @@ macro_rules! innermost_source_matches {
 pub(crate) use innermost_source_matches;
 
 #[derive(Debug, Clone)]
-pub struct ClientContext {
+pub struct SessionContext {
     pub context: TransactionContext,
-    pub client: Session,
+    pub session: Session,
     pub mls_transport: Arc<dyn MlsTransportTestExt>,
     pub x509_test_chain: std::sync::Arc<Option<X509TestChain>>,
 }
 
-impl ClientContext {
+impl SessionContext {
     pub fn x509_chain_unchecked(&self) -> &X509TestChain {
         self.x509_test_chain
             .as_ref()
@@ -108,12 +108,12 @@ impl ClientContext {
         self.x509_test_chain = new_chain;
     }
 
-    pub async fn client(&self) -> Session {
-        self.client.clone()
+    pub async fn session(&self) -> Session {
+        self.session.clone()
     }
 
     pub async fn get_client_id(&self) -> ClientId {
-        self.client.id().await.unwrap()
+        self.session.id().await.unwrap()
     }
 }
 
@@ -169,7 +169,7 @@ fn init_x509_test_chain(
 
 pub async fn run_test_with_central(
     case: TestCase,
-    test: impl FnOnce([ClientContext; 1]) -> std::pin::Pin<Box<dyn std::future::Future<Output = ()> + 'static>> + 'static,
+    test: impl FnOnce([SessionContext; 1]) -> std::pin::Pin<Box<dyn std::future::Future<Output = ()> + 'static>> + 'static,
 ) {
     run_test_with_client_ids(case.clone(), ["alice"], test).await
 }
@@ -177,7 +177,7 @@ pub async fn run_test_with_central(
 pub async fn run_test_with_client_ids<const N: usize>(
     case: TestCase,
     client_ids: [&'static str; N],
-    test: impl FnOnce([ClientContext; N]) -> std::pin::Pin<Box<dyn std::future::Future<Output = ()> + 'static>> + 'static,
+    test: impl FnOnce([SessionContext; N]) -> std::pin::Pin<Box<dyn std::future::Future<Output = ()> + 'static>> + 'static,
 ) {
     run_test_with_deterministic_client_ids(case, client_ids.map(|display_name| ["", "", display_name]), test).await
 }
@@ -188,8 +188,8 @@ pub async fn run_test_with_client_ids_and_revocation<const N: usize, const F: us
     other_client_ids: [&'static str; F],
     revoked_display_names: &'static [&'static str],
     test: impl FnOnce(
-        [ClientContext; N],
-        [ClientContext; F],
+        [SessionContext; N],
+        [SessionContext; F],
     ) -> std::pin::Pin<Box<dyn std::future::Future<Output = ()> + 'static>>
     + 'static,
 ) {
@@ -206,7 +206,7 @@ pub async fn run_test_with_client_ids_and_revocation<const N: usize, const F: us
 pub async fn run_test_with_deterministic_client_ids<const N: usize>(
     case: TestCase,
     client_ids: [[&'static str; 3]; N],
-    test: impl FnOnce([ClientContext; N]) -> std::pin::Pin<Box<dyn std::future::Future<Output = ()> + 'static>> + 'static,
+    test: impl FnOnce([SessionContext; N]) -> std::pin::Pin<Box<dyn std::future::Future<Output = ()> + 'static>> + 'static,
 ) {
     run_test_with_deterministic_client_ids_and_revocation(case, client_ids, [], &[], |context1, _| {
         Box::pin(async move { test(context1).await })
@@ -234,8 +234,8 @@ pub async fn run_cross_signed_tests_with_client_ids<const N: usize, const F: usi
     other_client_ids: [[&'static str; 3]; F],
     (domain1, domain2): (&'static str, &'static str),
     test: impl FnOnce(
-        [ClientContext; N],
-        [ClientContext; F],
+        [SessionContext; N],
+        [SessionContext; F],
     ) -> std::pin::Pin<Box<dyn std::future::Future<Output = ()> + 'static>>
     + 'static,
 ) {
@@ -267,9 +267,9 @@ pub async fn run_cross_signed_tests_with_client_ids<const N: usize, const F: usi
                 let cc = CoreCrypto::from(central);
                 let context = cc.new_transaction().await.unwrap();
                 let central = cc.mls;
-                contexts1.push(ClientContext {
+                contexts1.push(SessionContext {
                     context,
-                    client: central,
+                    session: central,
                     mls_transport: transport1.clone(),
                     x509_test_chain: Arc::new(None),
                 });
@@ -280,9 +280,9 @@ pub async fn run_cross_signed_tests_with_client_ids<const N: usize, const F: usi
                 let cc = CoreCrypto::from(central);
                 let context = cc.new_transaction().await.unwrap();
                 let central = cc.mls;
-                contexts2.push(ClientContext {
+                contexts2.push(SessionContext {
                     context,
-                    client: central,
+                    session: central,
                     mls_transport: transport2.clone(),
                     x509_test_chain: Arc::new(None),
                 });
@@ -376,8 +376,8 @@ pub async fn run_test_with_deterministic_client_ids_and_revocation<const N: usiz
     cross_signed_client_ids: [[&'static str; 3]; F],
     revoked_display_names: &'static [&'static str],
     test: impl FnOnce(
-        [ClientContext; N],
-        [ClientContext; F],
+        [SessionContext; N],
+        [SessionContext; F],
     ) -> std::pin::Pin<Box<dyn std::future::Future<Output = ()> + 'static>>
     + 'static,
 ) {
@@ -422,9 +422,9 @@ pub async fn run_test_with_deterministic_client_ids_and_revocation<const N: usiz
             let mut centrals1 = Vec::new();
             for (index, client) in centrals.into_iter().enumerate() {
                 let cc = CoreCrypto::from(client);
-                let context = ClientContext {
+                let context = SessionContext {
                     context: cc.new_transaction().await.unwrap(),
-                    client: cc.mls,
+                    session: cc.mls,
                     mls_transport: transport.clone(),
                     x509_test_chain: Arc::new(chain1.clone()),
                 };
@@ -435,9 +435,9 @@ pub async fn run_test_with_deterministic_client_ids_and_revocation<const N: usiz
             let mut centrals2 = Vec::new();
             for (index, client) in centrals.into_iter().enumerate() {
                 let cc = CoreCrypto::from(client);
-                let context = ClientContext {
+                let context = SessionContext {
                     context: cc.new_transaction().await.unwrap(),
-                    client: cc.mls,
+                    session: cc.mls,
                     mls_transport: transport.clone(),
                     x509_test_chain: Arc::new(chain2.clone()),
                 };
@@ -463,7 +463,7 @@ pub async fn run_test_with_deterministic_client_ids_and_revocation<const N: usiz
 
 pub async fn run_test_wo_clients(
     case: TestCase,
-    test: impl FnOnce(ClientContext) -> std::pin::Pin<Box<dyn std::future::Future<Output = ()> + 'static>> + 'static,
+    test: impl FnOnce(SessionContext) -> std::pin::Pin<Box<dyn std::future::Future<Output = ()> + 'static>> + 'static,
 ) {
     run_tests(move |paths: [String; 1]| {
         Box::pin(async move {
@@ -485,9 +485,9 @@ pub async fn run_test_wo_clients(
             client.provide_transport(transport.clone()).await;
             let cc = CoreCrypto::from(client);
             let context = cc.new_transaction().await.unwrap();
-            test(ClientContext {
+            test(SessionContext {
                 context: context.clone(),
-                client: cc.mls,
+                session: cc.mls,
                 mls_transport: transport.clone(),
                 x509_test_chain: None.into(),
             })
@@ -656,7 +656,7 @@ pub struct CoreCryptoTransportRetrySuccessProvider {
 
 #[derive(Debug, Clone)]
 struct IntermediateCommits {
-    receiver: ClientContext,
+    receiver: SessionContext,
     conversation_id: ConversationId,
     commits: Arc<[MlsMessageOut]>,
 }
@@ -665,7 +665,7 @@ impl CoreCryptoTransportRetrySuccessProvider {
     /// Adds intermediate commits that will be consumed and processed before the next time `Retry` is returned.
     pub fn with_intermediate_commits(
         mut self,
-        receiver: ClientContext,
+        receiver: SessionContext,
         commits: &[MlsMessageOut],
         conversation_id: &ConversationId,
     ) -> Self {

@@ -914,7 +914,7 @@ mod tests {
                     None
                 };
                 backend.new_transaction().await.unwrap();
-                let client = alice.client().await;
+                let client = alice.session().await;
                 client
                     .random_generate(
                         &case,
@@ -941,7 +941,7 @@ mod tests {
                             backend.new_transaction().await.unwrap();
                             // phase 1: generate standalone keypair
                             let client_id: ClientId = b"whatever:my:client:is@world.com".to_vec().into();
-                            let alice = alice.client().await;
+                            let alice = alice.session().await;
                             alice.reset().await;
                             // TODO: test with multi-ciphersuite. Tracking issue: WPB-9601
                             let handles = alice

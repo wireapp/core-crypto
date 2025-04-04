@@ -530,7 +530,7 @@ pub mod test_utils {
     use crate::{
         RecursiveError,
         prelude::{CertificateBundle, MlsCredentialType},
-        test_utils::{ClientContext, TestCase, context::TEAM, x509::X509TestChain},
+        test_utils::{SessionContext, TestCase, context::TEAM, x509::X509TestChain},
         transaction_context::TransactionContext,
     };
     use itertools::Itertools as _;
@@ -621,7 +621,7 @@ pub mod test_utils {
     }
 
     pub(crate) async fn failsafe_ctx(
-        ctxs: &mut [&mut ClientContext],
+        ctxs: &mut [&mut SessionContext],
         sc: SignatureScheme,
     ) -> std::sync::Arc<Option<X509TestChain>> {
         let mut found_test_chain = None;
@@ -665,7 +665,7 @@ pub mod test_utils {
     }
 
     pub(crate) async fn e2ei_enrollment<'a>(
-        ctx: &'a mut ClientContext,
+        ctx: &'a mut SessionContext,
         case: &TestCase,
         x509_test_chain: &X509TestChain,
         client_id: Option<&str>,

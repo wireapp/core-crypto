@@ -107,7 +107,7 @@ mod tests {
                         .await
                         .commit_accepted(
                             &alice_central.context.client().await.unwrap(),
-                            &alice_central.client.crypto_provider,
+                            &alice_central.session.crypto_provider,
                         )
                         .await
                         .unwrap();

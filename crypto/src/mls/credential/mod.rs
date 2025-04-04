@@ -409,9 +409,9 @@ mod tests {
                 .await
                 .unwrap();
 
-            let charlie_context = ClientContext {
+            let charlie_context = SessionContext {
                 context: charlie_transaction,
-                client: charlie_central,
+                session: charlie_central,
                 mls_transport: Arc::<CoreCryptoTransportSuccessProvider>::default(),
                 x509_test_chain: Arc::new(Some(x509_test_chain)),
             };
@@ -511,7 +511,7 @@ mod tests {
         x509_test_chain: Option<&X509TestChain>,
         creator_identifier: ClientIdentifier,
         guest_identifier: ClientIdentifier,
-    ) -> Result<(ClientContext, ClientContext, ConversationId)> {
+    ) -> Result<(SessionContext, SessionContext, ConversationId)> {
         let id = conversation_id();
         let ciphersuites = vec![case.ciphersuite()];
 
@@ -551,9 +551,9 @@ mod tests {
         if let Some(x509_test_chain) = &x509_test_chain {
             x509_test_chain.register_with_central(&creator_transaction).await;
         }
-        let creator_client_context = ClientContext {
+        let creator_session_context = SessionContext {
             context: creator_transaction.clone(),
-            client: creator_central,
+            session: creator_central,
             mls_transport: creator_transport.clone(),
             x509_test_chain: Arc::new(x509_test_chain.cloned()),
         };
@@ -606,23 +606,23 @@ mod tests {
             .await
             .map_err(RecursiveError::mls("creating new transaction"))?;
 
-        let guest_client_context = ClientContext {
+        let guest_session_context = SessionContext {
             context: guest_transaction.clone(),
-            client: guest_central,
+            session: guest_central,
             mls_transport: guest_transport.clone(),
             x509_test_chain: Arc::new(x509_test_chain.cloned()),
         };
 
-        let guest = guest_client_context.rand_key_package_of_type(case, guest_ct).await;
-        creator_client_context
-            .invite_all_members(case, &id, [(&guest_client_context, guest)])
+        let guest = guest_session_context.rand_key_package_of_type(case, guest_ct).await;
+        creator_session_context
+            .invite_all_members(case, &id, [(&guest_session_context, guest)])
             .await
             .map_err(RecursiveError::test())?;
 
-        creator_client_context
-            .try_talk_to(&id, &guest_client_context)
+        creator_session_context
+            .try_talk_to(&id, &guest_session_context)
             .await
             .map_err(RecursiveError::test())?;
-        Ok((creator_client_context, guest_client_context, id))
+        Ok((creator_session_context, guest_session_context, id))
     }
 }

@@ -556,7 +556,7 @@ mod tests {
                         .unwrap();
                     assert_eq!(old_cb, old_cb_found);
                     let (cid, all_credentials, scs, old_nb_identities) = {
-                        let alice_client = alice_central.client().await;
+                        let alice_client = alice_central.session().await;
                         let old_nb_identities = alice_client.identities_count().await.unwrap();
 
                         // Let's simulate an app crash, client gets deleted and restored from keystore
@@ -585,7 +585,7 @@ mod tests {
                     backend.keystore().commit_transaction().await.unwrap();
                     backend.keystore().new_transaction().await.unwrap();
 
-                    let new_client = alice_central.client.clone();
+                    let new_client = alice_central.session.clone();
                     new_client.reset().await;
 
                     new_client.load(backend, &cid, all_credentials, scs).await.unwrap();

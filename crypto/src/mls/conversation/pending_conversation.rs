@@ -413,7 +413,7 @@ mod tests {
 
                     let observer = TestEpochObserver::new();
                     bob_central
-                        .client()
+                        .session()
                         .await
                         .register_epoch_observer(observer.clone())
                         .await

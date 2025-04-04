@@ -3,7 +3,7 @@ use crate::group_store::GroupStore;
 use crate::mls::conversation::pending_conversation::PendingConversation;
 use crate::mls::conversation::{Conversation as _, ConversationWithMls as _};
 use crate::prelude::{MlsCommitBundle, WelcomeBundle};
-use crate::test_utils::{ClientContext, TestError};
+use crate::test_utils::{SessionContext, TestError};
 use crate::{
     RecursiveError,
     e2e_identity::{
@@ -41,7 +41,7 @@ pub struct RotateAllResult {
     pub(crate) new_key_packages: Vec<KeyPackage>,
 }
 
-impl ClientContext {
+impl SessionContext {
     pub async fn get_one_key_package(&self, case: &TestCase) -> KeyPackage {
         let kps = self
             .context
@@ -287,7 +287,7 @@ impl ClientContext {
         let group = &mut conversation.group;
         let ct = group.credential().unwrap().credential_type();
         let cs = group.ciphersuite();
-        let client = self.client().await;
+        let client = self.session().await;
         let cb = client
             .find_most_recent_credential_bundle(cs.into(), ct.into())
             .await
@@ -361,7 +361,7 @@ impl ClientContext {
 
     pub async fn client_signature_key(&self, case: &TestCase) -> SignaturePublicKey {
         let (sc, ct) = (case.signature_scheme(), case.credential_type);
-        let client = self.client().await;
+        let client = self.session().await;
         let cb = client.find_most_recent_credential_bundle(sc, ct).await.unwrap();
         SignaturePublicKey::from(cb.signature_key.public())
     }
@@ -384,7 +384,7 @@ impl ClientContext {
     ) -> CredentialBundle {
         let backend = &self.context.mls_provider().await.unwrap();
         let transaction = &self.context.keystore().await.unwrap();
-        let client = self.client().await;
+        let client = self.session().await;
         let client_id = client.id().await.unwrap();
 
         match case.credential_type {
@@ -415,7 +415,7 @@ impl ClientContext {
             .unwrap()
             .conversation()
             .await
-            .find_most_recent_credential_bundle(&self.client().await)
+            .find_most_recent_credential_bundle(&self.session().await)
             .await
             .ok()
     }
@@ -425,7 +425,7 @@ impl ClientContext {
         sc: SignatureScheme,
         ct: MlsCredentialType,
     ) -> Option<Arc<CredentialBundle>> {
-        self.client.find_most_recent_credential_bundle(sc, ct).await.ok()
+        self.session.find_most_recent_credential_bundle(sc, ct).await.ok()
     }
 
     pub async fn find_credential_bundle(
@@ -434,7 +434,7 @@ impl ClientContext {
         ct: MlsCredentialType,
         pk: &SignaturePublicKey,
     ) -> Option<Arc<CredentialBundle>> {
-        self.client()
+        self.session()
             .await
             .find_credential_bundle_by_public_key(sc, ct, pk)
             .await
@@ -520,7 +520,7 @@ impl ClientContext {
             Some(existing_cert.pki_keypair.clone()),
             signer,
         );
-        let client = self.client().await;
+        let client = self.session().await;
         client
             .save_new_x509_credential_bundle(
                 &self.context.keystore().await.unwrap(),
@@ -564,9 +564,9 @@ impl ClientContext {
             conversation_ids_and_commits.push((id, commit));
         }
         let new_key_packages = self
-            .client()
+            .session()
             .await
-            .generate_new_keypackages(&self.client.crypto_provider, cipher_suite, cb, key_package_count)
+            .generate_new_keypackages(&self.session.crypto_provider, cipher_suite, cb, key_package_count)
             .await
             .map_err(RecursiveError::mls_client("generating new key packages"))?;
         Ok(RotateAllResult {
@@ -583,7 +583,7 @@ impl ClientContext {
             .unwrap()
             .conversation_mut()
             .await
-            .update_keying_material(&self.client().await, &self.client.crypto_provider, None, None)
+            .update_keying_material(&self.session().await, &self.session.crypto_provider, None, None)
             .await
             .unwrap()
     }
@@ -595,7 +595,7 @@ impl ClientContext {
             .unwrap()
             .conversation_mut()
             .await
-            .commit_pending_proposals(&self.client().await, &self.client.crypto_provider)
+            .commit_pending_proposals(&self.session().await, &self.session.crypto_provider)
             .await
             .expect("comitting pending proposals")
             .expect("expect committing pending proposals to produce a commit")
@@ -621,7 +621,7 @@ impl ClientContext {
         id: &ConversationId,
         cb: &CredentialBundle,
     ) -> MlsCommitBundle {
-        let client = self.client().await;
+        let client = self.session().await;
         let backend = self.context.mls_provider().await.unwrap();
         let mut conversation_guard = self.context.conversation(id).await.unwrap();
         let mut conversation = conversation_guard.conversation_mut().await;
@@ -713,7 +713,7 @@ impl ClientContext {
 
     pub async fn verify_sender_identity(&self, case: &TestCase, decrypted: &MlsConversationDecryptMessage) {
         let (sc, ct) = (case.signature_scheme(), case.credential_type);
-        let client = self.client().await;
+        let client = self.session().await;
         let sender_cb = client.find_most_recent_credential_bundle(sc, ct).await.unwrap();
 
         if let openmls::prelude::MlsCredentialType::X509(certificate) = &sender_cb.credential().mls_credential() {

@@ -1,7 +1,7 @@
 pub use crate::prelude::{
     MlsCiphersuite, MlsConversationConfiguration, MlsCredentialType, MlsCustomConfiguration, MlsWirePolicy,
 };
-use crate::test_utils::ClientContext;
+use crate::test_utils::SessionContext;
 pub use openmls_traits::types::SignatureScheme;
 pub use rstest::*;
 pub use rstest_reuse::{self, *};
@@ -76,7 +76,7 @@ pub fn all_cred_cipher(case: TestCase) {}
 pub struct TestCase {
     pub credential_type: MlsCredentialType,
     pub cfg: MlsConversationConfiguration,
-    pub contexts: Vec<ClientContext>,
+    pub contexts: Vec<SessionContext>,
 }
 
 impl TestCase {

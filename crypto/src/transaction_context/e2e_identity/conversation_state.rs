@@ -400,7 +400,7 @@ mod tests {
                         .await
                         .unwrap();
 
-                    let alice_client = alice_central.client().await;
+                    let alice_client = alice_central.session().await;
                     let alice_provider = alice_central.context.mls_provider().await.unwrap();
 
                     // Needed because 'e2ei_rotate' does not do it directly and it's required for 'get_group_info'

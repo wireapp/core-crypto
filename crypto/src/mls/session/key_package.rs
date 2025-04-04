@@ -446,7 +446,7 @@ mod tests {
                 };
 
                 backend.new_transaction().await.unwrap();
-                let client = central.client;
+                let client = central.session;
                 client
                     .random_generate(
                         &case,
@@ -481,13 +481,13 @@ mod tests {
         if !case.is_basic() {
             return;
         }
-        run_test_with_client_ids(case.clone(), ["alice"], move |[mut client_context]| {
+        run_test_with_client_ids(case.clone(), ["alice"], move |[mut session_context]| {
             Box::pin(async move {
                 let signature_scheme = case.signature_scheme();
                 let cipher_suite = case.ciphersuite();
 
                 // Generate 5 Basic key packages first
-                let _basic_key_packages = client_context
+                let _basic_key_packages = session_context
                     .context
                     .get_or_create_client_keypackages(cipher_suite, MlsCredentialType::Basic, 5)
                     .await
@@ -497,7 +497,7 @@ mod tests {
                 let test_chain = x509::X509TestChain::init_for_random_clients(signature_scheme, 1);
 
                 let (mut enrollment, cert_chain) = e2ei_enrollment(
-                    &mut client_context,
+                    &mut session_context,
                     &case,
                     &test_chain,
                     None,
@@ -508,17 +508,17 @@ mod tests {
                 .await
                 .unwrap();
 
-                let _rotate_bundle = client_context
+                let _rotate_bundle = session_context
                     .context
                     .save_x509_credential(&mut enrollment, cert_chain)
                     .await
                     .unwrap();
 
                 // E2E identity has been set up correctly
-                assert!(client_context.context.e2ei_is_enabled(signature_scheme).await.unwrap());
+                assert!(session_context.context.e2ei_is_enabled(signature_scheme).await.unwrap());
 
                 // Request X509 key packages
-                let x509_key_packages = client_context
+                let x509_key_packages = session_context
                     .context
                     .get_or_create_client_keypackages(cipher_suite, MlsCredentialType::X509, 5)
                     .await
@@ -631,7 +631,7 @@ mod tests {
                     None
                 };
                 backend.new_transaction().await.unwrap();
-                let client = central.client().await;
+                let client = central.session().await;
                 client
                     .random_generate(
                         &case,

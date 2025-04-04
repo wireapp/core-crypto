@@ -74,25 +74,25 @@ mod tests {
     #[apply(all_cred_cipher)]
     #[wasm_bindgen_test]
     pub async fn observe_local_epoch_change(case: TestCase) {
-        run_test_with_client_ids(case.clone(), ["alice"], move |[session]| {
+        run_test_with_client_ids(case.clone(), ["alice"], move |[session_context]| {
             Box::pin(async move {
                 let id = conversation_id();
-                session
+                session_context
                     .context
                     .new_conversation(&id, case.credential_type, case.cfg.clone())
                     .await
                     .unwrap();
 
                 let observer = TestEpochObserver::new();
-                session
-                    .client()
+                session_context
+                    .session()
                     .await
                     .register_epoch_observer(observer.clone())
                     .await
                     .unwrap();
 
                 // trigger an epoch
-                session
+                session_context
                     .context
                     .conversation(&id)
                     .await
@@ -133,7 +133,7 @@ mod tests {
 
                 //  bob has the observer
                 let observer = TestEpochObserver::new();
-                bob.client()
+                bob.session()
                     .await
                     .register_epoch_observer(observer.clone())
                     .await

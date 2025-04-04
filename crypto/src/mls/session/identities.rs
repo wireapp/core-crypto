@@ -199,7 +199,7 @@ mod tests {
         async fn should_add_credential(case: TestCase) {
             run_test_with_client_ids(case.clone(), ["alice"], move |[mut central]| {
                 Box::pin(async move {
-                    let client = central.client().await;
+                    let client = central.session().await;
                     let prev_count = client.identities_count().await.unwrap();
                     let cert = central.get_intermediate_ca().cloned();
                     // this calls 'push_credential_bundle' under the hood

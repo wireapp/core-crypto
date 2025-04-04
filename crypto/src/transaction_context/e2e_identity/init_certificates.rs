@@ -300,7 +300,7 @@ mod tests {
         }
         run_test_with_client_ids(case.clone(), ["alice"], move |[alice_ctx]| {
             Box::pin(async move {
-                let ClientContext {
+                let SessionContext {
                     context,
                     x509_test_chain,
                     ..
