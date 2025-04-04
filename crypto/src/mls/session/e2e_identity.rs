@@ -17,7 +17,7 @@ use super::{Error, Result, Session};
 impl Session {
     /// Returns whether the E2EI PKI environment is setup (i.e. Root CA, Intermediates, CRLs)
     pub async fn e2ei_is_pki_env_setup(&self) -> bool {
-        self.mls_backend.is_pki_env_setup().await
+        self.crypto_provider.is_pki_env_setup().await
     }
 
     /// Dumps the PKI environment as PEM
@@ -25,7 +25,7 @@ impl Session {
         if !self.e2ei_is_pki_env_setup().await {
             return Ok(None);
         }
-        let pki_env_lock = self.mls_backend.authentication_service().borrow().await;
+        let pki_env_lock = self.crypto_provider.authentication_service().borrow().await;
         let Some(pki_env) = &*pki_env_lock else {
             return Ok(None);
         };
@@ -53,7 +53,7 @@ impl Session {
 
     /// Verifies a Group state before joining it
     pub async fn e2ei_verify_group_state(&self, group_info: VerifiableGroupInfo) -> Result<E2eiConversationState> {
-        self.mls_backend
+        self.crypto_provider
             .authentication_service()
             .refresh_time_of_interest()
             .await;
@@ -61,7 +61,7 @@ impl Session {
         let cs = group_info.ciphersuite().into();
 
         let is_sender = true; // verify the ratchet tree as sender to turn on hardened verification
-        let Ok(rt) = group_info.take_ratchet_tree(&self.mls_backend, is_sender).await else {
+        let Ok(rt) = group_info.take_ratchet_tree(&self.crypto_provider, is_sender).await else {
             return Ok(E2eiConversationState::NotVerified);
         };
 
@@ -74,7 +74,7 @@ impl Session {
             cs,
             credentials,
             MlsCredentialType::X509,
-            self.mls_backend.authentication_service().borrow().await.as_ref(),
+            self.crypto_provider.authentication_service().borrow().await.as_ref(),
         )
         .await)
     }
@@ -92,14 +92,14 @@ impl Session {
         // participants once joining it.
         // This 👇 verifies the GroupInfo and the RatchetTree btw
         let rt = group_info
-            .take_ratchet_tree(&self.mls_backend, false)
+            .take_ratchet_tree(&self.crypto_provider, false)
             .await
             .map_err(MlsError::wrap("taking ratchet tree"))?;
         Self::get_credential_in_use_in_ratchet_tree(
             cs,
             rt,
             credential_type,
-            self.mls_backend.authentication_service().borrow().await.as_ref(),
+            self.crypto_provider.authentication_service().borrow().await.as_ref(),
         )
         .await
     }

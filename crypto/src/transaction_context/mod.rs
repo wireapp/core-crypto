@@ -82,7 +82,7 @@ impl TransactionContext {
         #[cfg(feature = "proteus")] proteus_central: Arc<Mutex<Option<ProteusCentral>>>,
     ) -> Result<Self> {
         client
-            .mls_backend
+            .crypto_provider
             .new_transaction()
             .await
             .map_err(MlsError::wrap("creating new transaction"))?;
@@ -94,7 +94,7 @@ impl TransactionContext {
                 TransactionContextInner::Valid {
                     mls_client,
                     transport: callbacks,
-                    provider: client.mls_backend.clone(),
+                    provider: client.crypto_provider.clone(),
                     mls_groups,
                     #[cfg(feature = "proteus")]
                     proteus_central,

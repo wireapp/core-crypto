@@ -48,7 +48,7 @@ use tls_codec::{Deserialize, Serialize};
 #[derive(Clone, Debug)]
 pub struct Session {
     pub(crate) state: Arc<RwLock<Option<ClientInner>>>,
-    pub(crate) mls_backend: MlsCryptoProvider,
+    pub(crate) crypto_provider: MlsCryptoProvider,
     pub(crate) transport: Arc<RwLock<Option<Arc<dyn MlsTransport + 'static>>>>,
 }
 
@@ -129,7 +129,7 @@ impl Session {
         // doing all subsequent actions inside a single transaction, though it forces us to clone
         // a few Arcs and locks.
         let client = Self {
-            mls_backend: mls_backend.clone(),
+            crypto_provider: mls_backend.clone(),
             state: Default::default(),
             transport: Arc::new(None.into()),
         };
@@ -260,7 +260,7 @@ impl Session {
     /// Because it operates on the raw conversation type, this may be faster than [crate::mls::TransactionContext::conversation].
     /// for transient and immutable purposes. For long-lived or mutable purposes, prefer the other method.
     pub async fn get_raw_conversation(&self, id: &ConversationId) -> Result<ImmutableConversation> {
-        let raw_conversation = GroupStore::fetch_from_keystore(id, &self.mls_backend.keystore(), None)
+        let raw_conversation = GroupStore::fetch_from_keystore(id, &self.crypto_provider.keystore(), None)
             .await
             .map_err(RecursiveError::root("getting conversation by id"))?
             .ok_or_else(|| LeafError::ConversationNotFound(id.clone()))?;
@@ -337,7 +337,7 @@ impl Session {
     /// Generates a random byte array of the specified size
     pub fn random_bytes(&self, len: usize) -> crate::mls::Result<Vec<u8>> {
         use openmls_traits::random::OpenMlsRand as _;
-        self.mls_backend
+        self.crypto_provider
             .rand()
             .random_vec(len)
             .map_err(MlsError::wrap("generating random vector"))
@@ -348,7 +348,7 @@ impl Session {
     ///
     /// Beware TOCTOU!
     pub async fn can_close(&self) -> bool {
-        self.mls_backend.can_close().await
+        self.crypto_provider.can_close().await
     }
 
     /// Closes the connection with the local KeyStore
@@ -356,7 +356,7 @@ impl Session {
     /// # Errors
     /// KeyStore errors, such as IO
     pub async fn close(self) -> crate::mls::Result<()> {
-        self.mls_backend
+        self.crypto_provider
             .close()
             .await
             .map_err(MlsError::wrap("closing connection with keystore"))
@@ -365,7 +365,7 @@ impl Session {
 
     /// see [mls_crypto_provider::MlsCryptoProvider::reseed]
     pub async fn reseed(&self, seed: Option<EntropySeed>) -> crate::mls::Result<()> {
-        self.mls_backend
+        self.crypto_provider
             .reseed(seed)
             .map_err(MlsError::wrap("reseeding mls backend"))
             .map_err(Into::into)
@@ -822,7 +822,7 @@ mod tests {
             } else {
                 0
             };
-            let backend = self.mls_backend.clone();
+            let backend = self.crypto_provider.clone();
             self.generate(identity, &backend, &[case.ciphersuite()], nb_key_package)
                 .await?;
             Ok(())
@@ -870,7 +870,7 @@ mod tests {
 
         /// Count the entities
         pub async fn count_entities(&self) -> EntitiesCount {
-            let keystore = self.mls_backend.keystore();
+            let keystore = self.crypto_provider.keystore();
             let credential = keystore.count::<MlsCredential>().await.unwrap();
             let encryption_keypair = keystore.count::<MlsEncryptionKeyPair>().await.unwrap();
             let epoch_encryption_keypair = keystore.count::<MlsEpochEncryptionKeyPair>().await.unwrap();

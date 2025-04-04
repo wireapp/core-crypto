@@ -566,7 +566,7 @@ impl ClientContext {
         let new_key_packages = self
             .client()
             .await
-            .generate_new_keypackages(&self.client.mls_backend, cipher_suite, cb, key_package_count)
+            .generate_new_keypackages(&self.client.crypto_provider, cipher_suite, cb, key_package_count)
             .await
             .map_err(RecursiveError::mls_client("generating new key packages"))?;
         Ok(RotateAllResult {
@@ -583,7 +583,7 @@ impl ClientContext {
             .unwrap()
             .conversation_mut()
             .await
-            .update_keying_material(&self.client().await, &self.client.mls_backend, None, None)
+            .update_keying_material(&self.client().await, &self.client.crypto_provider, None, None)
             .await
             .unwrap()
     }
@@ -595,7 +595,7 @@ impl ClientContext {
             .unwrap()
             .conversation_mut()
             .await
-            .commit_pending_proposals(&self.client().await, &self.client.mls_backend)
+            .commit_pending_proposals(&self.client().await, &self.client.crypto_provider)
             .await
             .expect("comitting pending proposals")
             .expect("expect committing pending proposals to produce a commit")
