@@ -130,7 +130,7 @@ impl SessionContext {
             .context
             .conversation(id)
             .await
-            .map_err(RecursiveError::mls_conversation("getting conversation by id"))?
+            .map_err(RecursiveError::transaction("getting conversation by id"))?
             .encrypt_message(msg)
             .await
             .map_err(RecursiveError::mls_conversation("encrypting message; self -> other"))?;
@@ -138,7 +138,7 @@ impl SessionContext {
             .context
             .conversation(id)
             .await
-            .map_err(RecursiveError::mls_conversation("getting conversation by id"))?
+            .map_err(RecursiveError::transaction("getting conversation by id"))?
             .decrypt_message(encrypted)
             .await
             .map_err(RecursiveError::mls_conversation("decrypting message; other <- self"))?
@@ -151,7 +151,7 @@ impl SessionContext {
             .context
             .conversation(id)
             .await
-            .map_err(RecursiveError::mls_conversation("getting conversation by id"))?
+            .map_err(RecursiveError::transaction("getting conversation by id"))?
             .encrypt_message(msg)
             .await
             .map_err(RecursiveError::mls_conversation("encrypting message; other -> self"))?;
@@ -159,7 +159,7 @@ impl SessionContext {
             .context
             .conversation(id)
             .await
-            .map_err(RecursiveError::mls_conversation("getting conversation by id"))?
+            .map_err(RecursiveError::transaction("getting conversation by id"))?
             .decrypt_message(encrypted)
             .await
             .map_err(RecursiveError::mls_conversation("decrypting message; self <- other"))?
@@ -197,7 +197,7 @@ impl SessionContext {
         self.context
             .conversation(&id)
             .await
-            .map_err(RecursiveError::mls_conversation("getting conversation by id"))?
+            .map_err(RecursiveError::transaction("getting conversation by id"))?
             .add_members(kps)
             .await
             .map_err(RecursiveError::mls_conversation("adding members"))?;
@@ -208,7 +208,7 @@ impl SessionContext {
                 .context
                 .process_welcome_message(welcome.clone().into(), case.custom_cfg())
                 .await
-                .map_err(RecursiveError::mls_conversation("processing welcome message"))?;
+                .map_err(RecursiveError::transaction("processing welcome message"))?;
         }
 
         assert_eq!(
@@ -242,7 +242,7 @@ impl SessionContext {
             .context
             .join_by_external_commit(group_info, case.custom_cfg(), case.credential_type)
             .await
-            .map_err(RecursiveError::mls("joining by external commit"))?;
+            .map_err(RecursiveError::transaction("joining by external commit"))?;
 
         let commit = self.mls_transport.latest_commit().await;
 
@@ -274,7 +274,7 @@ impl SessionContext {
         self.context
             .process_welcome_message(welcome, custom_cfg)
             .await
-            .map_err(RecursiveError::mls_conversation("processing welcome message"))?;
+            .map_err(RecursiveError::transaction("processing welcome message"))?;
         for other in others {
             self.try_talk_to(id, other).await?;
         }
@@ -556,7 +556,7 @@ impl SessionContext {
             self.context
                 .conversation(&id)
                 .await
-                .map_err(RecursiveError::mls_conversation("getting conversation by id"))?
+                .map_err(RecursiveError::transaction("getting conversation by id"))?
                 .e2ei_rotate(None)
                 .await
                 .map_err(RecursiveError::mls_conversation("e2ei rotating"))?;

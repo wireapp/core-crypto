@@ -41,7 +41,7 @@ impl TransactionContext {
     async fn new_proposal(&self, id: &ConversationId, proposal: MlsProposal) -> Result<MlsProposalBundle> {
         let mut conversation = self.conversation(id).await?;
         let mut conversation = conversation.conversation_mut().await;
-        let client = &self.mls_client().await?;
+        let client = &self.session().await?;
         let backend = &self.mls_provider().await?;
         let proposal = match proposal {
             MlsProposal::Add(key_package) => conversation
@@ -76,6 +76,7 @@ mod tests {
     use crate::{prelude::*, test_utils::*};
 
     wasm_bindgen_test_configure!(run_in_browser);
+    use super::Error;
 
     mod add {
         use super::*;
@@ -166,8 +167,6 @@ mod tests {
         #[apply(all_cred_cipher)]
         #[wasm_bindgen_test]
         pub async fn should_remove_member(case: TestCase) {
-            use crate::mls;
-
             run_test_with_client_ids(case.clone(), ["alice", "bob"], |[alice_central, bob_central]| {
                 Box::pin(async move {
                     let id = conversation_id();
@@ -214,7 +213,7 @@ mod tests {
                         .unwrap();
                     assert!(matches!(
                         bob_central.context.conversation(&id).await.unwrap_err(),
-                        mls::conversation::Error::Leaf(LeafError::ConversationNotFound(conv_id)) if conv_id == id
+                        Error::Leaf(LeafError::ConversationNotFound(conv_id)) if conv_id == id
                     ));
                 })
             })
@@ -224,8 +223,6 @@ mod tests {
         #[apply(all_cred_cipher)]
         #[wasm_bindgen_test]
         pub async fn should_fail_when_unknown_client(case: TestCase) {
-            use crate::mls;
-
             run_test_with_client_ids(case.clone(), ["alice"], move |[alice_central]| {
                 Box::pin(async move {
                     let id = conversation_id();
@@ -241,7 +238,7 @@ mod tests {
                         .await;
                     assert!(matches!(
                         remove_proposal.unwrap_err(),
-                        mls::Error::ClientNotFound(client_id) if client_id == b"unknown"[..].into()
+                        Error::ClientNotFound(client_id) if client_id == b"unknown"[..].into()
                     ));
                 })
             })

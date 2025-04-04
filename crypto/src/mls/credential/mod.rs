@@ -604,7 +604,7 @@ mod tests {
         creator_transaction
             .new_conversation(&id, creator_ct, case.cfg.clone())
             .await
-            .map_err(RecursiveError::mls("creating new transaction"))?;
+            .map_err(RecursiveError::transaction("creating new transaction"))?;
 
         let guest_session_context = SessionContext {
             context: guest_transaction.clone(),

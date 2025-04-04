@@ -7,8 +7,6 @@ pub type Result<T, E = Error> = core::result::Result<T, E>;
 
 #[derive(Debug, thiserror::Error)]
 pub enum Error {
-    #[error("Couldn't find client")]
-    ClientNotFound(crate::prelude::ClientId),
     /// The ciphersuite identifier presented does not map to a known ciphersuite.
     #[error("Unknown ciphersuite")]
     UnknownCiphersuite,

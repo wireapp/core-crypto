@@ -169,6 +169,7 @@ mod tests {
         LeafError,
         prelude::{MlsConversationConfiguration, WelcomeBundle},
         test_utils::*,
+        transaction_context,
     };
 
     wasm_bindgen_test_configure!(run_in_browser);
@@ -572,8 +573,9 @@ mod tests {
 
                 assert!(matches!(
                     conflict_welcome.unwrap_err(),
-                    mls::conversation::Error::Leaf(LeafError::ConversationAlreadyExists(i))
-                    if i == id
+                    transaction_context::Error::Recursive(crate::RecursiveError::MlsConversation { source, .. })
+                        if matches!(*source, mls::conversation::Error::Leaf(LeafError::ConversationAlreadyExists(ref i)) if i == &id
+                        )
                 ));
             })
         })

@@ -1,6 +1,8 @@
 // We allow missing documentation in the error module because the types are generally self-descriptive.
 #![allow(missing_docs)]
 
+use crate::mls::conversation::pending_conversation::PendingConversation;
+
 use super::e2e_identity;
 
 /// A module-specific [Result][core::result::Result] type with a default error variant.
@@ -13,6 +15,10 @@ pub enum Error {
     CallerError(&'static str),
     #[error("This transaction context has already been finished and can no longer be used.")]
     InvalidTransactionContext,
+    #[error("The conversation with the specified id is pending")]
+    PendingConversation(PendingConversation),
+    #[error("Couldn't find client")]
+    ClientNotFound(crate::prelude::ClientId),
     #[error("Serializing {item} for TLS")]
     TlsSerialize {
         item: &'static str,
