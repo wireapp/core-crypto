@@ -70,10 +70,15 @@ export type {
 export type { ProteusAutoPrekeyBundle } from "./CoreCryptoProteus.js";
 
 export {
+    AcmeChallenge,
+    Ciphersuite as CiphersuiteFfi,
     ConversationConfiguration,
     CustomConfiguration,
     DatabaseKey,
+    E2eiDumpedPkiEnv,
     migrateDatabaseKeyTypeToBytes,
+    NewAcmeAuthz,
+    NewAcmeOrder,
 } from "./core-crypto-ffi.js";
 import initWasm from "./core-crypto-ffi.js";
 

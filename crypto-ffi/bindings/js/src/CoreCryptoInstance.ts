@@ -125,7 +125,6 @@ class EpochObserverShim {
  * **NOTE:** you must call this after `await CoreCrypto.init(params)` or `await CoreCrypto.deferredInit(params)`.
  *
  * @param logger - the interface to be called when something is going to be logged
- * @param _ctx - ignored
  **/
 export function setLogger(logger: CoreCryptoLogger): void {
     CoreCryptoFfi.set_logger(loggerIntoFfi(logger));
