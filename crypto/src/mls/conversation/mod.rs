@@ -28,10 +28,8 @@ use std::{collections::HashSet, ops::Deref};
 use crate::{
     KeystoreError, LeafError, MlsError, RecursiveError,
     mls::Session,
-    prelude::{MlsCiphersuite, MlsCredentialType},
+    prelude::{ClientId, E2eiConversationState, MlsCiphersuite, MlsCredentialType, WireIdentity},
 };
-
-use crate::transaction_context::TransactionContext;
 
 pub(crate) mod commit;
 mod commit_delay;
@@ -54,13 +52,9 @@ pub(crate) mod welcome;
 mod wipe;
 
 use crate::mls::HasSessionAndCrypto;
-use crate::mls::conversation::pending_conversation::PendingConversation;
 use crate::mls::credential::ext::CredentialExt as _;
 use crate::prelude::user_id::UserId;
-use crate::prelude::{ClientId, E2eiConversationState, WireIdentity};
 pub use conversation_guard::ConversationGuard;
-use core_crypto_keystore::connection::FetchFromDatabase;
-use core_crypto_keystore::entities::PersistedMlsPendingGroup;
 pub use error::{Error, Result};
 pub use immutable_conversation::ImmutableConversation;
 
@@ -475,49 +469,6 @@ impl MlsConversation {
             .await
             .map_err(RecursiveError::mls_client("finding most recent credential bundle"))
             .map_err(Into::into)
-    }
-}
-
-impl TransactionContext {
-    /// Acquire a conversation guard.
-    ///
-    /// This helper struct permits mutations on a conversation.
-    pub async fn conversation(&self, id: &ConversationId) -> Result<ConversationGuard> {
-        let keystore = self
-            .mls_provider()
-            .await
-            .map_err(RecursiveError::transaction("getting mls provider"))?
-            .keystore();
-        let inner = self
-            .mls_groups()
-            .await
-            .map_err(RecursiveError::transaction("getting mls groups"))?
-            .get_fetch(id, &keystore, None)
-            .await
-            .map_err(RecursiveError::root("fetching conversation from mls groups by id"))?;
-
-        if let Some(inner) = inner {
-            return Ok(ConversationGuard::new(inner, self.clone()));
-        }
-        // Check if there is a pending conversation with
-        // the same id
-        let pending = self.pending_conversation(id).await.map(Error::PendingConversation)?;
-        Err(pending)
-    }
-
-    pub(crate) async fn pending_conversation(&self, id: &ConversationId) -> Result<PendingConversation> {
-        let keystore = self
-            .keystore()
-            .await
-            .map_err(RecursiveError::transaction("getting keystore"))?;
-        let Some(pending_group) = keystore
-            .find::<PersistedMlsPendingGroup>(id)
-            .await
-            .map_err(KeystoreError::wrap("finding persisted mls pending group"))?
-        else {
-            return Err(LeafError::ConversationNotFound(id.clone()).into());
-        };
-        Ok(PendingConversation::new(pending_group, self.clone()))
     }
 }
 
