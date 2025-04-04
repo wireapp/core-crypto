@@ -53,7 +53,10 @@ mod tests {
                     .context
                     .process_welcome_message(welcome.into(), case.custom_cfg())
                     .await;
-                assert!(matches!(process_welcome.unwrap_err(), Error::OrphanWelcome));
+                assert!(matches!(
+                    process_welcome.unwrap_err(),
+                    crate::transaction_context::Error::Recursive(crate::RecursiveError::MlsConversation { source, .. }) if matches!(*source, Error::OrphanWelcome)
+                ));
             })
         })
         .await;

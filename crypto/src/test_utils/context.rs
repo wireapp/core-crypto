@@ -209,7 +209,7 @@ impl ClientContext {
                 .context
                 .process_welcome_message(welcome.clone().into(), case.custom_cfg())
                 .await
-                .map_err(RecursiveError::mls_conversation("processing welcome message"))?;
+                .map_err(RecursiveError::transaction("processing welcome message"))?;
         }
 
         assert_eq!(
@@ -275,7 +275,7 @@ impl ClientContext {
         self.context
             .process_welcome_message(welcome, custom_cfg)
             .await
-            .map_err(RecursiveError::mls_conversation("processing welcome message"))?;
+            .map_err(RecursiveError::transaction("processing welcome message"))?;
         for other in others {
             self.try_talk_to(id, other).await?;
         }
