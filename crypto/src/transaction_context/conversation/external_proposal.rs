@@ -3,8 +3,8 @@ use openmls::prelude::{GroupEpoch, GroupId, JoinProposal, MlsMessageOut};
 use super::Result;
 use crate::{
     LeafError, MlsError, RecursiveError,
-    mls::{self, ConversationId, credential::typ::MlsCredentialType},
-    prelude::MlsCiphersuite,
+    mls::{self, credential::typ::MlsCredentialType},
+    prelude::{ConversationId, MlsCiphersuite},
     transaction_context::TransactionContext,
 };
 

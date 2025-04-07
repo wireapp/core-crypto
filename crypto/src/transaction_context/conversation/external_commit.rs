@@ -1,6 +1,8 @@
+//! This module contains the implementation of [TransactionContext::join_by_external_commit].
+
 use openmls::prelude::{MlsGroup, group_info::VerifiableGroupInfo};
 
-use super::Result;
+use super::{Error, Result};
 use crate::mls::conversation::pending_conversation::PendingConversation;
 use crate::prelude::{MlsCommitBundle, WelcomeBundle};
 use crate::{
@@ -149,10 +151,8 @@ impl TransactionContext {
     pub(crate) async fn pending_conversation_exists(&self, id: &ConversationId) -> Result<bool> {
         match self.pending_conversation(id).await {
             Ok(_) => Ok(true),
-            Err(mls::conversation::Error::Leaf(LeafError::ConversationNotFound(_))) => Ok(false),
-            Err(e) => Err(e)
-                .map_err(RecursiveError::mls_conversation("checking if pending group exists"))
-                .map_err(Into::into),
+            Err(Error::Leaf(LeafError::ConversationNotFound(_))) => Ok(false),
+            Err(e) => Err(e),
         }
     }
 }
@@ -164,6 +164,7 @@ mod tests {
 
     use core_crypto_keystore::{CryptoKeystoreError, CryptoKeystoreMls, MissingKeyErrorKind};
 
+    use super::Error;
     use crate::{
         LeafError,
         prelude::{MlsConversationConfiguration, WelcomeBundle},
@@ -360,8 +361,6 @@ mod tests {
     #[apply(all_cred_cipher)]
     #[wasm_bindgen_test]
     async fn should_fail_when_no_pending_external_commit(case: TestCase) {
-        use crate::mls;
-
         run_test_with_central(case.clone(), move |[central]| {
             Box::pin(async move {
                 let non_existent_id = conversation_id();
@@ -373,7 +372,7 @@ mod tests {
                     .unwrap_err();
 
                 assert!(matches!(
-                   err, mls::conversation::Error::Leaf(LeafError::ConversationNotFound(id)) if non_existent_id == id
+                   err, Error::Leaf(LeafError::ConversationNotFound(id)) if non_existent_id == id
                 ));
             })
         })
@@ -498,8 +497,6 @@ mod tests {
     #[apply(all_cred_cipher)]
     #[wasm_bindgen_test]
     async fn new_with_inflight_join_should_fail_when_already_exists(case: TestCase) {
-        use crate::mls;
-
         run_test_with_client_ids(case.clone(), ["alice", "bob"], move |[alice_central, bob_central]| {
             Box::pin(async move {
                 let id = conversation_id();
@@ -524,7 +521,8 @@ mod tests {
                     .await;
                 assert!(matches!(
                     conflict_join.unwrap_err(),
-                    mls::Error::Leaf(LeafError::ConversationAlreadyExists(i))
+
+                    Error::Leaf(LeafError::ConversationAlreadyExists(i))
                     if i == id
                 ));
             })
