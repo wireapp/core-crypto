@@ -1,10 +1,10 @@
 use log::trace;
 
 use crate::{
-    LeafError, MlsError, RecursiveError,
+    MlsError, RecursiveError,
     prelude::{
-        ClientId, ConversationId, MlsCiphersuite, MlsConversation, MlsConversationConfiguration, MlsCredentialType,
-        Session, identifier::ClientIdentifier, key_package::INITIAL_KEYING_MATERIAL_COUNT,
+        ClientId, MlsCiphersuite, MlsConversation, MlsCredentialType, Session, identifier::ClientIdentifier,
+        key_package::INITIAL_KEYING_MATERIAL_COUNT,
     },
 };
 use core_crypto_keystore::DatabaseKey;
@@ -17,8 +17,6 @@ pub(crate) mod ciphersuite;
 pub mod conversation;
 pub(crate) mod credential;
 mod error;
-pub(crate) mod external_commit;
-pub(crate) mod external_proposal;
 pub(crate) mod proposal;
 pub(crate) mod session;
 
@@ -256,72 +254,6 @@ impl TransactionContext {
             .map_err(Into::into)
     }
 
-    /// Create a new empty conversation
-    ///
-    /// # Arguments
-    /// * `id` - identifier of the group/conversation (must be unique otherwise the existing group
-    ///   will be overridden)
-    /// * `creator_credential_type` - kind of credential the creator wants to create the group with
-    /// * `config` - configuration of the group/conversation
-    ///
-    /// # Errors
-    /// Errors can happen from the KeyStore or from OpenMls for ex if no [openmls::key_packages::KeyPackage] can
-    /// be found in the KeyStore
-    #[cfg_attr(test, crate::dispotent)]
-    pub async fn new_conversation(
-        &self,
-        id: &ConversationId,
-        creator_credential_type: MlsCredentialType,
-        config: MlsConversationConfiguration,
-    ) -> Result<()> {
-        if self.conversation_exists(id).await? || self.pending_conversation_exists(id).await? {
-            return Err(LeafError::ConversationAlreadyExists(id.clone()).into());
-        }
-        let conversation = MlsConversation::create(
-            id.clone(),
-            &self
-                .session()
-                .await
-                .map_err(RecursiveError::transaction("getting mls client"))?,
-            creator_credential_type,
-            config,
-            &self
-                .mls_provider()
-                .await
-                .map_err(RecursiveError::transaction("getting mls provider"))?,
-        )
-        .await
-        .map_err(RecursiveError::mls_conversation("creating conversation"))?;
-
-        self.mls_groups()
-            .await
-            .map_err(RecursiveError::transaction("getting mls groups"))?
-            .insert(id.clone(), conversation);
-
-        Ok(())
-    }
-
-    /// Checks if a given conversation id exists locally
-    pub async fn conversation_exists(&self, id: &ConversationId) -> Result<bool> {
-        Ok(self
-            .mls_groups()
-            .await
-            .map_err(RecursiveError::transaction("getting mls groups"))?
-            .get_fetch(
-                id,
-                &self
-                    .mls_provider()
-                    .await
-                    .map_err(RecursiveError::transaction("getting mls provider"))?
-                    .keystore(),
-                None,
-            )
-            .await
-            .ok()
-            .flatten()
-            .is_some())
-    }
-
     /// Generates a random byte array of the specified size
     pub async fn random_bytes(&self, len: usize) -> Result<Vec<u8>> {
         use openmls_traits::random::OpenMlsRand as _;
@@ -337,6 +269,7 @@ impl TransactionContext {
 
 #[cfg(test)]
 mod tests {
+    use crate::transaction_context::Error as TransactionError;
     use wasm_bindgen_test::*;
 
     use crate::prelude::{
@@ -396,7 +329,7 @@ mod tests {
         #[apply(all_cred_cipher)]
         #[wasm_bindgen_test]
         async fn conversation_not_found(case: TestCase) {
-            use crate::{LeafError, mls};
+            use crate::LeafError;
 
             run_test_with_central(case.clone(), move |[central]| {
                 Box::pin(async move {
@@ -404,7 +337,7 @@ mod tests {
                     let err = central.context.conversation(&id).await.unwrap_err();
                     assert!(matches!(
                         err,
-                        mls::conversation::Error::Leaf(LeafError::ConversationNotFound(i)) if i == id
+                        TransactionError::Leaf(LeafError::ConversationNotFound(i)) if i == id
                     ));
                 })
             })
@@ -484,7 +417,7 @@ mod tests {
     #[apply(all_cred_cipher)]
     #[wasm_bindgen_test]
     async fn create_conversation_should_fail_when_already_exists(case: TestCase) {
-        use crate::{LeafError, mls};
+        use crate::LeafError;
 
         run_test_with_client_ids(case.clone(), ["alice"], move |[alice_central]| {
             Box::pin(async move {
@@ -501,7 +434,7 @@ mod tests {
                     .context
                     .new_conversation(&id, case.credential_type, case.cfg.clone())
                     .await;
-                assert!(matches!(repeat_create.unwrap_err(), mls::Error::Leaf(LeafError::ConversationAlreadyExists(i)) if i == id));
+                assert!(matches!(repeat_create.unwrap_err(), TransactionError::Leaf(LeafError::ConversationAlreadyExists(i)) if i == id));
             })
         })
         .await;
