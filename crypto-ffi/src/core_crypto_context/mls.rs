@@ -1,7 +1,8 @@
 use core_crypto::{
     RecursiveError,
-    mls::conversation::{Conversation as _, Error as ConversationError},
+    mls::conversation::Conversation as _,
     prelude::{ClientIdentifier, KeyPackageIn, KeyPackageRef, MlsConversationConfiguration, VerifiableGroupInfo},
+    transaction_context::Error as TransactionError,
 };
 use tls_codec::{Deserialize as _, Serialize as _};
 #[cfg(target_family = "wasm")]
@@ -303,12 +304,13 @@ impl CoreCryptoContext {
         payload: Vec<u8>,
     ) -> CoreCryptoResult<DecryptedMessage> {
         let conversation_id = conversation_id_vec!(conversation_id);
-        let mut conversation = self.inner.conversation(&conversation_id).await?;
-        let result = conversation.decrypt_message(&payload).await;
-        let decrypted_message = if let Err(ConversationError::PendingConversation(mut pending)) = result {
-            pending.try_process_own_join_commit(&payload).await?
-        } else {
-            result?
+        let conversation_result = self.inner.conversation(&conversation_id).await;
+        let decrypted_message = match conversation_result {
+            Err(TransactionError::PendingConversation(mut pending)) => {
+                pending.try_process_own_join_commit(&payload).await?
+            }
+            Ok(mut conversation) => conversation.decrypt_message(&payload).await?,
+            Err(e) => Err(e)?,
         };
 
         decrypted_message.try_into()
