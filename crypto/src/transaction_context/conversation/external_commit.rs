@@ -74,16 +74,10 @@ impl TransactionContext {
         custom_cfg: MlsCustomConfiguration,
         credential_type: MlsCredentialType,
     ) -> Result<(MlsCommitBundle, WelcomeBundle, PendingConversation)> {
-        let client = &self
-            .session()
-            .await
-            .map_err(RecursiveError::transaction("getting mls client"))?;
+        let client = &self.session().await?;
 
         let cs: MlsCiphersuite = group_info.ciphersuite().into();
-        let mls_provider = self
-            .mls_provider()
-            .await
-            .map_err(RecursiveError::transaction("getting mls provider"))?;
+        let mls_provider = self.mls_provider().await?;
         let cb = client
             .get_most_recent_or_create_credential_bundle(&mls_provider, cs.signature_algorithm(), credential_type)
             .await
