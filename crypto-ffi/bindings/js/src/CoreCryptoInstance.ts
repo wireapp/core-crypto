@@ -37,13 +37,13 @@ import {
     CredentialType,
     ConversationId,
     ClientId,
-    Ciphersuite,
     MlsTransport,
 } from "./CoreCryptoMLS.js";
 
 import { CoreCryptoContext } from "./CoreCryptoContext.js";
 
 import { E2eiConversationState, normalizeEnum } from "./CoreCryptoE2EI.js";
+import { Ciphersuite } from "./Ciphersuite.js";
 
 /**
  * Params for CoreCrypto deferred initialization

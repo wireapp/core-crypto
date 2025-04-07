@@ -14,6 +14,8 @@
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see http://www.gnu.org/licenses/.
 
+export { Ciphersuite } from "./Ciphersuite.js";
+export type { ConversationConfiguration } from "./ConversationConfiguration.js";
 export type { CoreCryptoRichError } from "./CoreCryptoError.js";
 export { CoreCryptoError } from "./CoreCryptoError.js";
 
@@ -38,7 +40,6 @@ export type {
 } from "./CoreCryptoInstance.js";
 
 export {
-    Ciphersuite,
     CredentialType,
     WirePolicy,
     GroupInfoEncryptionType,
@@ -69,10 +70,7 @@ export type {
 
 export type { ProteusAutoPrekeyBundle } from "./CoreCryptoProteus.js";
 
-export {
-    ConversationConfiguration,
-    CustomConfiguration,
-} from "./core-crypto-ffi.js";
+export { AcmeChallenge, CustomConfiguration } from "./core-crypto-ffi.js";
 import initWasm from "./core-crypto-ffi.js";
 
 if (typeof window !== "undefined") {

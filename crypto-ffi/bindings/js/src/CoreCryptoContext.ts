@@ -1,6 +1,5 @@
 import {
     CoreCryptoContext as CoreCryptoContextFfi,
-    ConversationConfiguration,
     CustomConfiguration,
     E2eiDumpedPkiEnv,
     WireIdentity,
@@ -9,7 +8,6 @@ import * as CoreCryptoFfiTypes from "./core-crypto-ffi.d.js";
 
 import { CoreCryptoError } from "./CoreCryptoError.js";
 import {
-    Ciphersuite,
     ClientId,
     ConversationId,
     CredentialType,
@@ -26,6 +24,11 @@ import {
 } from "./CoreCryptoE2EI.js";
 
 import { ProteusAutoPrekeyBundle } from "./CoreCryptoProteus.js";
+import { Ciphersuite } from "./Ciphersuite.js";
+import {
+    ConversationConfiguration,
+    conversationConfigurationToFfi,
+} from "./ConversationConfiguration.js";
 
 export class CoreCryptoContext {
     /** @hidden */
@@ -212,19 +215,9 @@ export class CoreCryptoContext {
     async createConversation(
         conversationId: ConversationId,
         creatorCredentialType: CredentialType,
-        configuration: Partial<ConversationConfiguration> = {}
+        configuration: ConversationConfiguration = {}
     ) {
-        const {
-            ciphersuite,
-            externalSenders,
-            custom = {},
-        } = configuration || {};
-        const config = new ConversationConfiguration(
-            ciphersuite,
-            externalSenders,
-            (custom as CustomConfiguration)?.keyRotationSpan,
-            (custom as CustomConfiguration)?.wirePolicy
-        );
+        const config = conversationConfigurationToFfi(configuration);
         return await CoreCryptoError.asyncMapErr(
             this.#ctx.create_conversation(
                 conversationId,
