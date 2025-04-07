@@ -71,7 +71,6 @@ export type { ProteusAutoPrekeyBundle } from "./CoreCryptoProteus.js";
 
 export {
     AcmeChallenge,
-    Ciphersuite as CiphersuiteFfi,
     ConversationConfiguration,
     CustomConfiguration,
     DatabaseKey,
