@@ -18,7 +18,7 @@ use serde::{Deserialize, Serialize};
 use wire_e2e_identity::prelude::parse_json_jwk;
 
 use super::Result;
-use crate::{MlsError, RecursiveError, prelude::MlsCiphersuite, transaction_context::TransactionContext};
+use crate::{MlsError, RecursiveError, prelude::MlsCiphersuite};
 
 /// Sets the config in OpenMls for the oldest possible epoch(past current) that a message can be decrypted
 pub(crate) const MAX_PAST_EPOCHS: usize = 3;
@@ -29,33 +29,6 @@ pub(crate) const OUT_OF_ORDER_TOLERANCE: u32 = 2;
 
 /// How many application messages can be skipped. Use this when the Delivery Service can drop application messages
 pub(crate) const MAXIMUM_FORWARD_DISTANCE: u32 = 1000;
-
-impl TransactionContext {
-    /// Parses supplied key from Delivery Service in order to build back an [ExternalSender]
-    pub async fn set_raw_external_senders(
-        &self,
-        cfg: &mut MlsConversationConfiguration,
-        external_senders: Vec<Vec<u8>>,
-    ) -> Result<()> {
-        let mls_provider = self
-            .mls_provider()
-            .await
-            .map_err(RecursiveError::transaction("getting mls provider"))?;
-        cfg.external_senders = external_senders
-            .into_iter()
-            .map(|key| {
-                MlsConversationConfiguration::parse_external_sender(&key).or_else(|_| {
-                    MlsConversationConfiguration::legacy_external_sender(
-                        key,
-                        cfg.ciphersuite.signature_algorithm(),
-                        &mls_provider,
-                    )
-                })
-            })
-            .collect::<Result<_>>()?;
-        Ok(())
-    }
-}
 
 /// The configuration parameters for a group/conversation
 #[derive(Debug, Clone, Default)]
@@ -132,7 +105,7 @@ impl MlsConversationConfiguration {
     }
 
     /// This expects a raw json serialized JWK. It works with any Signature scheme
-    fn parse_external_sender(jwk: &[u8]) -> Result<ExternalSender> {
+    pub(crate) fn parse_external_sender(jwk: &[u8]) -> Result<ExternalSender> {
         let pk = parse_json_jwk(jwk)
             .map_err(wire_e2e_identity::prelude::E2eIdentityError::from)
             .map_err(crate::e2e_identity::Error::from)
@@ -146,7 +119,7 @@ impl MlsConversationConfiguration {
     /// This supports the legacy behaviour where the server was providing the external sender public key
     /// raw.
     // TODO: remove at some point when the backend API is not used anymore. Tracking issue: WPB-9614
-    fn legacy_external_sender(
+    pub(crate) fn legacy_external_sender(
         key: Vec<u8>,
         signature_scheme: SignatureScheme,
         backend: &MlsCryptoProvider,
