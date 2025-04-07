@@ -120,6 +120,7 @@ mod tests {
     use wasm_bindgen_test::*;
 
     use crate::test_utils::*;
+    use crate::transaction_context::Error as TransactionError;
 
     use super::{Error, *};
 
@@ -399,8 +400,6 @@ mod tests {
         #[apply(all_cred_cipher)]
         #[wasm_bindgen_test]
         async fn alice_can_remove_bob_from_conversation(case: TestCase) {
-            use crate::mls;
-
             run_test_with_client_ids(case.clone(), ["alice", "bob"], move |[alice_central, bob_central]| {
                 Box::pin(async move {
                     let id = conversation_id();
@@ -437,8 +436,9 @@ mod tests {
 
                     // But has been removed from the conversation
                     assert!(matches!(
-                       bob_central.context.conversation(&id).await.unwrap_err(),
-                        mls::conversation::error::Error::Leaf(LeafError::ConversationNotFound(conv_id)) if conv_id == id
+                    bob_central.context.conversation(&id).await.unwrap_err(),
+                    TransactionError::Leaf(LeafError::ConversationNotFound(ref i))
+                        if i == &id
                     ));
                     assert!(alice_central.try_talk_to(&id, &bob_central).await.is_err());
                 })

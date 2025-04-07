@@ -169,7 +169,10 @@ impl PendingConversation {
         let id = self.id();
 
         // This is the now merged conversation
-        let conversation = context.conversation(id).await?;
+        let conversation = context
+            .conversation(id)
+            .await
+            .map_err(RecursiveError::transaction("getting conversation by id"))?;
         let conversation = conversation.conversation().await;
         let own_leaf = conversation.group.own_leaf().ok_or(LeafError::InternalMlsError)?;
 
@@ -267,7 +270,10 @@ impl PendingConversation {
             .insert(id.clone(), conversation);
 
         // This is the now merged conversation
-        let mut conversation = context.conversation(id).await?;
+        let mut conversation = context
+            .conversation(id)
+            .await
+            .map_err(RecursiveError::transaction("getting conversation by id"))?;
         let pending_messages = conversation
             .restore_pending_messages(restore_policy)
             .await
@@ -396,7 +402,7 @@ mod tests {
                     let messages = vec![commit.commit, external_proposal, proposal]
                         .into_iter()
                         .map(|m| m.to_bytes().unwrap());
-                    let Err(Error::PendingConversation(mut pending_conversation)) =
+                    let Err(crate::transaction_context::Error::PendingConversation(mut pending_conversation)) =
                         bob_central.context.conversation(&id).await
                     else {
                         panic!("Bob should not have the conversation yet")
