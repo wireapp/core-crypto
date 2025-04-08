@@ -117,4 +117,31 @@
 <a href=#117 id=117 data-nosnippet>117</a>        <span class="kw">let </span>group_info = group_info.ok_or(LeafError::MissingGroupInfo)<span class="question-mark">?</span>;
 <a href=#118 id=118 data-nosnippet>118</a>        MlsGroupInfoBundle::try_new_full_plaintext(group_info)
 <a href=#119 id=119 data-nosnippet>119</a>    }
-<a href=#120 id=120 data-nosnippet>120</a>}</code></pre></div></section></main></body></html>
+<a href=#120 id=120 data-nosnippet>120</a>}
+<a href=#121 id=121 data-nosnippet>121</a>
+<a href=#122 id=122 data-nosnippet>122</a><span class="attr">#[cfg(test)]
+<a href=#123 id=123 data-nosnippet>123</a></span><span class="kw">pub mod </span>test_utils {
+<a href=#124 id=124 data-nosnippet>124</a>    <span class="kw">use </span><span class="kw">super</span>::ConversationGuard;
+<a href=#125 id=125 data-nosnippet>125</a>    <span class="kw">use crate</span>::{mls::conversation::ConversationWithMls <span class="kw">as _</span>, prelude::MlsConversation};
+<a href=#126 id=126 data-nosnippet>126</a>
+<a href=#127 id=127 data-nosnippet>127</a>    <span class="kw">impl </span>ConversationGuard {
+<a href=#128 id=128 data-nosnippet>128</a>        <span class="doccomment">/// Replaces the MLS group in memory with the one from keystore.
+<a href=#129 id=129 data-nosnippet>129</a>        </span><span class="kw">pub async fn </span>drop_and_restore(<span class="kw-2">&amp;mut </span><span class="self">self</span>) {
+<a href=#130 id=130 data-nosnippet>130</a>            <span class="kw">use </span>core_crypto_keystore::CryptoKeystoreMls <span class="kw">as _</span>;
+<a href=#131 id=131 data-nosnippet>131</a>            <span class="kw">let </span>context = <span class="self">self</span>.context().<span class="kw">await</span>.unwrap();
+<a href=#132 id=132 data-nosnippet>132</a>            <span class="kw">let </span>inner = <span class="self">self</span>.conversation().<span class="kw">await</span>;
+<a href=#133 id=133 data-nosnippet>133</a>            <span class="kw">let </span>id = inner.id();
+<a href=#134 id=134 data-nosnippet>134</a>
+<a href=#135 id=135 data-nosnippet>135</a>            <span class="kw">let </span>(parent_id, group) = context
+<a href=#136 id=136 data-nosnippet>136</a>                .keystore()
+<a href=#137 id=137 data-nosnippet>137</a>                .<span class="kw">await
+<a href=#138 id=138 data-nosnippet>138</a>                </span>.unwrap()
+<a href=#139 id=139 data-nosnippet>139</a>                .mls_groups_restore()
+<a href=#140 id=140 data-nosnippet>140</a>                .<span class="kw">await
+<a href=#141 id=141 data-nosnippet>141</a>                </span>.map(|<span class="kw-2">mut </span>groups| groups.remove(id.as_slice()).unwrap())
+<a href=#142 id=142 data-nosnippet>142</a>                .unwrap();
+<a href=#143 id=143 data-nosnippet>143</a>            <span class="kw">let </span>group = MlsConversation::from_serialized_state(group, parent_id).unwrap();
+<a href=#144 id=144 data-nosnippet>144</a>            context.mls_groups().<span class="kw">await</span>.unwrap().insert(id.clone(), group);
+<a href=#145 id=145 data-nosnippet>145</a>        }
+<a href=#146 id=146 data-nosnippet>146</a>    }
+<a href=#147 id=147 data-nosnippet>147</a>}</code></pre></div></section></main></body></html>

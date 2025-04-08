@@ -53,9 +53,12 @@
 <a href=#53 id=53 data-nosnippet>53</a>                    .context
 <a href=#54 id=54 data-nosnippet>54</a>                    .process_welcome_message(welcome.into(), case.custom_cfg())
 <a href=#55 id=55 data-nosnippet>55</a>                    .<span class="kw">await</span>;
-<a href=#56 id=56 data-nosnippet>56</a>                <span class="macro">assert!</span>(<span class="macro">matches!</span>(process_welcome.unwrap_err(), Error::OrphanWelcome));
-<a href=#57 id=57 data-nosnippet>57</a>            })
-<a href=#58 id=58 data-nosnippet>58</a>        })
-<a href=#59 id=59 data-nosnippet>59</a>        .<span class="kw">await</span>;
-<a href=#60 id=60 data-nosnippet>60</a>    }
-<a href=#61 id=61 data-nosnippet>61</a>}</code></pre></div></section></main></body></html>
+<a href=#56 id=56 data-nosnippet>56</a>                <span class="macro">assert!</span>(<span class="macro">matches!</span>(
+<a href=#57 id=57 data-nosnippet>57</a>                    process_welcome.unwrap_err(),
+<a href=#58 id=58 data-nosnippet>58</a>                    <span class="kw">crate</span>::transaction_context::Error::Recursive(<span class="kw">crate</span>::RecursiveError::MlsConversation { source, .. }) <span class="kw">if </span><span class="macro">matches!</span>(<span class="kw-2">*</span>source, Error::OrphanWelcome)
+<a href=#59 id=59 data-nosnippet>59</a>                ));
+<a href=#60 id=60 data-nosnippet>60</a>            })
+<a href=#61 id=61 data-nosnippet>61</a>        })
+<a href=#62 id=62 data-nosnippet>62</a>        .<span class="kw">await</span>;
+<a href=#63 id=63 data-nosnippet>63</a>    }
+<a href=#64 id=64 data-nosnippet>64</a>}</code></pre></div></section></main></body></html>
