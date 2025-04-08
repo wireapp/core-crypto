@@ -26,40 +26,6 @@ export {
 };
 
 /**
- * see [core_crypto::prelude::CiphersuiteName]
- */
-export enum Ciphersuite {
-    /**
-     * DH KEM x25519 | AES-GCM 128 | SHA2-256 | Ed25519
-     */
-    MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519 = 0x0001,
-    /**
-     * DH KEM P256 | AES-GCM 128 | SHA2-256 | EcDSA P256
-     */
-    MLS_128_DHKEMP256_AES128GCM_SHA256_P256 = 0x0002,
-    /**
-     * DH KEM x25519 | Chacha20Poly1305 | SHA2-256 | Ed25519
-     */
-    MLS_128_DHKEMX25519_CHACHA20POLY1305_SHA256_Ed25519 = 0x0003,
-    /**
-     * DH KEM x448 | AES-GCM 256 | SHA2-512 | Ed448
-     */
-    MLS_256_DHKEMX448_AES256GCM_SHA512_Ed448 = 0x0004,
-    /**
-     * DH KEM P521 | AES-GCM 256 | SHA2-512 | EcDSA P521
-     */
-    MLS_256_DHKEMP521_AES256GCM_SHA512_P521 = 0x0005,
-    /**
-     * DH KEM x448 | Chacha20Poly1305 | SHA2-512 | Ed448
-     */
-    MLS_256_DHKEMX448_CHACHA20POLY1305_SHA512_Ed448 = 0x0006,
-    /**
-     * DH KEM P384 | AES-GCM 256 | SHA2-384 | EcDSA P384
-     */
-    MLS_256_DHKEMP384_AES256GCM_SHA384_P384 = 0x0007,
-}
-
-/**
  * Alias for conversation IDs.
  * This is a freeform, uninspected buffer.
  */
@@ -288,11 +254,11 @@ export type MlsTransportResponse =
     | "success"
     | "retry"
     | {
-          /**
-           * The message was rejected by the delivery service and there's no recovery.
-           */
-          abort: { reason: string };
-      };
+        /**
+         * The message was rejected by the delivery service and there's no recovery.
+         */
+        abort: { reason: string };
+    };
 
 function mapTransportResponseToFfi(
     response: MlsTransportResponse

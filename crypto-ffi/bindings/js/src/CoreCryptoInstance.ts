@@ -37,7 +37,6 @@ import {
 
 import { CoreCryptoError } from "./CoreCryptoError.js";
 import {
-    Ciphersuite,
     ClientId,
     ConversationId,
     CredentialType,
@@ -49,6 +48,7 @@ import { CoreCryptoContext } from "./CoreCryptoContext.js";
 
 import { E2eiConversationState, normalizeEnum } from "./CoreCryptoE2EI.js";
 import { safeBigintToNumber } from "./Conversions.js";
+import { Ciphersuite } from "./Ciphersuite.js";
 
 /**
  * Params for CoreCrypto deferred initialization
