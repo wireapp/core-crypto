@@ -1,5 +1,9 @@
 import { Ciphersuite } from "./Ciphersuite.js";
-import { WirePolicy, ConversationConfiguration as ConversationConfigurationFfi, Ciphersuite as CiphersuiteFfi } from "./core-crypto-ffi.js";
+import {
+    Ciphersuite as CiphersuiteFfi,
+    ConversationConfiguration as ConversationConfigurationFfi,
+    WirePolicy,
+} from "./core-crypto-ffi.js";
 
 export interface ConversationConfiguration {
     /**
@@ -22,7 +26,16 @@ export interface ConversationConfiguration {
     wirePolicy?: WirePolicy;
 }
 
-export function conversationConfigurationToFfi(cc: ConversationConfiguration): ConversationConfigurationFfi {
-    const ciphersuite = cc.ciphersuite ? new CiphersuiteFfi(cc.ciphersuite) : null;
-    return new ConversationConfigurationFfi(ciphersuite, cc.externalSenders, cc.keyRotationSpan, cc.wirePolicy);
+export function conversationConfigurationToFfi(
+    cc: ConversationConfiguration
+): ConversationConfigurationFfi {
+    const ciphersuite = cc.ciphersuite
+        ? new CiphersuiteFfi(cc.ciphersuite)
+        : null;
+    return new ConversationConfigurationFfi(
+        ciphersuite,
+        cc.externalSenders,
+        cc.keyRotationSpan,
+        cc.wirePolicy
+    );
 }

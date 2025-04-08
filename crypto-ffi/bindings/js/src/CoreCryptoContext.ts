@@ -32,7 +32,10 @@ import {
 import { ProteusAutoPrekeyBundle } from "./CoreCryptoProteus.js";
 import { safeBigintToNumber } from "./Conversions.js";
 import { Ciphersuite } from "./Ciphersuite.js";
-import { ConversationConfiguration, conversationConfigurationToFfi } from "./ConversationConfiguration.js";
+import {
+    ConversationConfiguration,
+    conversationConfigurationToFfi,
+} from "./ConversationConfiguration.js";
 
 export class CoreCryptoContext {
     /** @hidden */
