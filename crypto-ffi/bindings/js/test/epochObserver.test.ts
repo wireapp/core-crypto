@@ -1,5 +1,5 @@
 import { browser, expect } from "@wdio/globals";
-import { ALICE_ID, ccInit, CONV_ID, setup, teardown } from "./utils.js";
+import { ALICE_ID, ccInit, CONV_ID, setup, teardown } from "./utils";
 import { afterEach, beforeEach, describe } from "mocha";
 
 beforeEach(async () => {

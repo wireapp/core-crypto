@@ -9,9 +9,9 @@ import {
     roundTripMessage,
     setup,
     teardown,
-} from "./utils.js";
+} from "./utils";
 import { afterEach, beforeEach, describe } from "mocha";
-import { GroupInfoEncryptionType, RatchetTreeType } from "../src/CoreCrypto.js";
+import { GroupInfoEncryptionType, RatchetTreeType } from "../src/CoreCrypto";
 
 beforeEach(async () => {
     await setup();

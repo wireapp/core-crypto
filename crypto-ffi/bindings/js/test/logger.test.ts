@@ -8,7 +8,7 @@ import {
     invite,
     setup,
     teardown,
-} from "./utils.js";
+} from "./utils";
 import { afterEach, beforeEach, describe } from "mocha";
 
 beforeEach(async () => {
@@ -163,7 +163,7 @@ describe("logger", () => {
         });
 
         expect(errorLogs.length).toBeGreaterThan(0);
-        expect(errorLogs[0].message).toEqual(
+        expect(errorLogs[0]!.message).toEqual(
             expect.stringContaining(expectedErrorMessage)
         );
     });

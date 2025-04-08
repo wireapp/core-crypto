@@ -8,7 +8,7 @@ import {
     SESSION_ID,
     setup,
     teardown,
-} from "./utils.js";
+} from "./utils";
 import { afterEach, beforeEach, describe } from "mocha";
 
 beforeEach(async () => {

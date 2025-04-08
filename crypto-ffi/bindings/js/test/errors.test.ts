@@ -6,9 +6,9 @@ import {
     createConversation,
     setup,
     teardown,
-} from "./utils.js";
+} from "./utils";
 import { afterEach, beforeEach, describe } from "mocha";
-import { CoreCryptoError, CoreCryptoRichError } from "../src/CoreCrypto.js";
+import { CoreCryptoError, type CoreCryptoRichError } from "../src/CoreCrypto";
 
 beforeEach(async () => {
     await setup();

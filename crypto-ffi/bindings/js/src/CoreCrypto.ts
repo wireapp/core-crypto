@@ -14,12 +14,11 @@
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see http://www.gnu.org/licenses/.
 
-export { Ciphersuite } from "./Ciphersuite.js";
-export type { ConversationConfiguration } from "./ConversationConfiguration.js";
-export type { CoreCryptoRichError } from "./CoreCryptoError.js";
-export { CoreCryptoError } from "./CoreCryptoError.js";
+export { Ciphersuite } from "./Ciphersuite";
+export type { ConversationConfiguration } from "./ConversationConfiguration";
+export { CoreCryptoError, type CoreCryptoRichError } from "./CoreCryptoError";
 
-export { CoreCryptoContext } from "./CoreCryptoContext.js";
+export { CoreCryptoContext } from "./CoreCryptoContext";
 
 export {
     BuildMetadata,
@@ -31,13 +30,13 @@ export {
     buildMetadata,
     version,
     CoreCrypto,
-} from "./CoreCryptoInstance.js";
+} from "./CoreCryptoInstance";
 export type {
     CoreCryptoDeferredParams,
     CoreCryptoParams,
     CoreCryptoLogger,
     EpochObserver,
-} from "./CoreCryptoInstance.js";
+} from "./CoreCryptoInstance";
 
 export {
     CredentialType,
@@ -46,7 +45,7 @@ export {
     RatchetTreeType,
     DeviceStatus,
     WelcomeBundle,
-} from "./CoreCryptoMLS.js";
+} from "./CoreCryptoMLS";
 export type {
     ProposalRef,
     MlsTransportResponse,
@@ -58,17 +57,17 @@ export type {
     BufferedDecryptedMessage,
     CommitBundle,
     DecryptedMessage,
-} from "./CoreCryptoMLS.js";
+} from "./CoreCryptoMLS";
 
-export { E2eiEnrollment, E2eiConversationState } from "./CoreCryptoE2EI.js";
+export { E2eiEnrollment, E2eiConversationState } from "./CoreCryptoE2EI";
 export type {
     CRLRegistration,
     AcmeDirectory,
     NewCrlDistributionPoints,
     JsonRawData,
-} from "./CoreCryptoE2EI.js";
+} from "./CoreCryptoE2EI";
 
-export type { ProteusAutoPrekeyBundle } from "./CoreCryptoProteus.js";
+export type { ProteusAutoPrekeyBundle } from "./CoreCryptoProteus";
 
 export {
     AcmeChallenge,
@@ -78,8 +77,8 @@ export {
     migrateDatabaseKeyTypeToBytes,
     NewAcmeAuthz,
     NewAcmeOrder,
-} from "./core-crypto-ffi.js";
-import initWasm from "./core-crypto-ffi.js";
+} from "./core-crypto-ffi";
+import initWasm from "./core-crypto-ffi";
 
 if (typeof window !== "undefined") {
     // browser context
