@@ -1,4 +1,4 @@
-import { ccInit, setup, teardown } from "./utils.js";
+import { ccInit, setup, teardown } from "./utils";
 import { afterEach, beforeEach, describe } from "mocha";
 
 beforeEach(async () => {

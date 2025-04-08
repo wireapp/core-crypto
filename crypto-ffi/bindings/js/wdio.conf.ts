@@ -10,7 +10,7 @@ const log = logger("wdio.conf.ts");
 // Since only the main wdio process needs to create the static path for static-server
 // service, only create the temporary directory if we're not a worker.
 let staticPath: string | undefined;
-if (process.env.WDIO_WORKER_ID === undefined) {
+if (process.env["WDIO_WORKER_ID"] === undefined) {
     staticPath = await fs.mkdtemp(
         path.join(tmpdir(), "core-crypto-wdio-test-")
     );

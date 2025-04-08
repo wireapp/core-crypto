@@ -3,13 +3,13 @@ import type { local } from "webdriver";
 
 import {
     Ciphersuite,
-    CommitBundle,
+    type CommitBundle,
     CoreCrypto,
-    GroupInfoBundle,
-    MlsTransport,
-} from "../src/CoreCrypto.js";
+    type GroupInfoBundle,
+    type MlsTransport,
+} from "../src/CoreCrypto";
 
-type ccModuleType = typeof import("../src/CoreCrypto.js");
+type ccModuleType = typeof import("../src/CoreCrypto");
 
 export const ALICE_ID = "alice";
 export const BOB_ID = "bob";
@@ -20,7 +20,7 @@ export const SESSION_ID = "proteusSessionId";
 // 0 = no logs
 // 1 = browser logs
 // 2 = browser logs + CoreCrypto logs
-const logLevel = Number(process.env.CC_TEST_LOG_LEVEL || "0");
+const logLevel = Number(process.env["CC_TEST_LOG_LEVEL"] || "0");
 
 declare global {
     interface Window {
@@ -231,7 +231,7 @@ export async function invite(
             const encoder = new TextEncoder();
             const conversationIdBytes = encoder.encode(conversationId);
             await cc1.transaction((ctx) =>
-                ctx.addClientsToConversation(conversationIdBytes, [kp])
+                ctx.addClientsToConversation(conversationIdBytes, [kp!])
             );
             const { groupInfo, welcome } =
                 await window.deliveryService.getLatestCommitBundle();

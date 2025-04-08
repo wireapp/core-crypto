@@ -1,5 +1,5 @@
 import { browser, expect } from "@wdio/globals";
-import { ALICE_ID, ccInit, setup, teardown } from "./utils.js";
+import { ALICE_ID, ccInit, setup, teardown } from "./utils";
 import { afterEach, beforeEach, describe } from "mocha";
 
 beforeEach(async () => {
@@ -29,7 +29,7 @@ describe("external entropy", () => {
 
         await ccInit(ALICE_ID);
 
-        const result = await browser.execute(
+        const [result1, result2] = await browser.execute(
             async (clientName, length1, length2) => {
                 const cc = window.ensureCcDefined(clientName);
                 // Null byte seed
@@ -45,8 +45,8 @@ describe("external entropy", () => {
             vector2.length * vector2.BYTES_PER_ELEMENT
         );
 
-        const resultByteVector1 = new Uint8Array(result[0]);
-        const resultByteVector2 = new Uint8Array(result[1]);
+        const resultByteVector1 = new Uint8Array(result1);
+        const resultByteVector2 = new Uint8Array(result2);
 
         // Use a DataView to solve endianness issues
         const resultVector1 = new Uint32Array(resultByteVector1.buffer);

@@ -5,7 +5,7 @@ import prettier from "eslint-plugin-prettier/recommended";
 import { configs as wdioConfig } from "eslint-plugin-wdio";
 
 export default tseslint.config(
-    globalIgnores(["src/*.js", "src/*.d.ts"]),
+    globalIgnores(["src/*.js", "src/*.d.ts", "wasm/core-crypto-ffi.js"]),
     eslint.configs.recommended,
     tseslint.configs.recommended,
     prettier,

@@ -14,12 +14,8 @@
 // You should have received a copy of the GNU General Public License
 // along with this program. If not, see http://www.gnu.org/licenses/.
 
-import * as CoreCryptoFfiTypes from "./core-crypto-ffi.d.js";
-export {
-    BuildMetadata,
-    WireIdentity,
-    X509Identity,
-} from "./core-crypto-ffi.d.js";
+import * as CoreCryptoFfiTypes from "./core-crypto-ffi.d";
+export { BuildMetadata, WireIdentity, X509Identity } from "./core-crypto-ffi.d";
 
 import {
     build_metadata,
@@ -33,22 +29,22 @@ import {
     version as version_ffi,
     WireIdentity,
     DatabaseKey,
-} from "./core-crypto-ffi.js";
+} from "./core-crypto-ffi";
 
-import { CoreCryptoError } from "./CoreCryptoError.js";
+import { CoreCryptoError } from "./CoreCryptoError";
 import {
-    ClientId,
-    ConversationId,
+    type ClientId,
+    type ConversationId,
     CredentialType,
-    MlsTransport,
+    type MlsTransport,
     mlsTransportToFfi,
-} from "./CoreCryptoMLS.js";
+} from "./CoreCryptoMLS";
 
-import { CoreCryptoContext } from "./CoreCryptoContext.js";
+import { CoreCryptoContext } from "./CoreCryptoContext";
 
-import { E2eiConversationState, normalizeEnum } from "./CoreCryptoE2EI.js";
-import { safeBigintToNumber } from "./Conversions.js";
-import { Ciphersuite } from "./Ciphersuite.js";
+import { E2eiConversationState, normalizeEnum } from "./CoreCryptoE2EI";
+import { safeBigintToNumber } from "./Conversions";
+import { Ciphersuite } from "./Ciphersuite";
 
 /**
  * Params for CoreCrypto deferred initialization

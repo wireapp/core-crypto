@@ -7,7 +7,7 @@ import {
     invite,
     setup,
     teardown,
-} from "../test/utils.js";
+} from "../test/utils";
 import { afterEach, beforeEach, describe } from "mocha";
 import { browser, expect } from "@wdio/globals";
 import { writeFile } from "fs/promises";
@@ -50,22 +50,21 @@ async function measureDecryption(
     return await cc2.transaction(async (ctx) => {
         const start = performance.now();
 
-        let decryptedMessages = [];
-        for (let i = 0; i < messageCount; i++) {
-            const result = await ctx.decryptMessage(
+        const decryptedMessages: (Uint8Array | undefined)[] = [];
+        for (const encryptedMessage of encryptedMessages) {
+            const decrypted = await ctx.decryptMessage(
                 conversationIdBytes,
-                encryptedMessages[i]
+                encryptedMessage
             );
-            decryptedMessages.push(result.message);
+            decryptedMessages.push(decrypted.message);
         }
-
         const end = performance.now();
         const duration = end - start;
-        decryptedMessages = decryptedMessages
+        const decryptedTextMessages = decryptedMessages
             .filter((message): message is Uint8Array => message !== undefined)
             .map((x) => String.fromCharCode(...x));
         return {
-            decryptedMessages: decryptedMessages,
+            decryptedMessages: decryptedTextMessages,
             durationMilliSeconds: duration,
         };
     });
@@ -97,7 +96,7 @@ describe("messages", () => {
 
         console.log(`Decrypted ${MESSAGE_COUNT} messages in ${duration} ms`);
 
-        if (!process.env.CI) return;
+        if (!process.env["CI"]) return;
 
         // This format can directly be used by bencher
         const bencherJson = {
