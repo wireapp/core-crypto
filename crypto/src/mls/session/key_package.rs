@@ -419,7 +419,7 @@ mod tests {
 
     use mls_crypto_provider::MlsCryptoProvider;
 
-    use crate::e2e_identity::test_utils::{e2ei_enrollment, init_activation_or_rotation, noop_restore};
+    use crate::e2e_identity::enrollment::test_utils::{e2ei_enrollment, init_activation_or_rotation, noop_restore};
     use crate::prelude::MlsConversationConfiguration;
     use crate::prelude::key_package::INITIAL_KEYING_MATERIAL_COUNT;
     use crate::test_utils::*;

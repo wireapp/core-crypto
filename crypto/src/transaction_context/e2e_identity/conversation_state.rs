@@ -188,7 +188,7 @@ mod tests {
     #[apply(all_cred_cipher)]
     #[wasm_bindgen_test]
     async fn heterogeneous_conversation_should_be_not_verified(case: TestCase) {
-        use crate::e2e_identity::test_utils::failsafe_ctx;
+        use crate::e2e_identity::enrollment::test_utils::failsafe_ctx;
 
         run_test_with_client_ids(
             case.clone(),

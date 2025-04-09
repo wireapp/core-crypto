@@ -1,4 +1,6 @@
 mod crypto;
+#[cfg(test)]
+pub mod test_utils;
 
 use core_crypto_keystore::CryptoKeystoreMls as _;
 use mls_crypto_provider::MlsCryptoProvider;

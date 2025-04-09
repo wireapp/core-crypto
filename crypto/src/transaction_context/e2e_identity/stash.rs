@@ -47,8 +47,7 @@ impl TransactionContext {
 #[cfg(test)]
 mod tests {
     use crate::{
-        e2e_identity::id::WireQualifiedClientId,
-        e2e_identity::test_utils::*,
+        e2e_identity::{enrollment::test_utils::*, id::WireQualifiedClientId},
         prelude::{E2eiEnrollment, INITIAL_KEYING_MATERIAL_COUNT},
         test_utils::{x509::X509TestChain, *},
     };

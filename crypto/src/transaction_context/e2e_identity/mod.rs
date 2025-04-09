@@ -110,7 +110,7 @@ impl TransactionContext {
 
 #[cfg(test)]
 mod tests {
-    use crate::e2e_identity::test_utils as e2ei_utils;
+    use crate::e2e_identity::enrollment::test_utils as e2ei_utils;
     use crate::mls::conversation::Conversation as _;
     use crate::test_utils::x509::X509TestChain;
     use crate::{prelude::*, test_utils::*};
@@ -121,7 +121,7 @@ mod tests {
     #[apply(all_cred_cipher)]
     #[wasm_bindgen_test]
     async fn e2e_identity_should_work(case: TestCase) {
-        use crate::e2e_identity::test_utils::E2EI_CLIENT_ID_URI;
+        use e2ei_utils::E2EI_CLIENT_ID_URI;
 
         run_test_wo_clients(case.clone(), move |mut cc| {
             Box::pin(async move {

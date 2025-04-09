@@ -246,7 +246,7 @@ impl TransactionContext {
 mod tests {
     use super::*;
     use crate::{
-        e2e_identity::test_utils as e2ei_utils, mls::credential::ext::CredentialExt,
+        e2e_identity::enrollment::test_utils as e2ei_utils, mls::credential::ext::CredentialExt,
         prelude::key_package::INITIAL_KEYING_MATERIAL_COUNT, test_utils::*,
     };
     use core_crypto_keystore::entities::{EntityFindParams, MlsCredential};
