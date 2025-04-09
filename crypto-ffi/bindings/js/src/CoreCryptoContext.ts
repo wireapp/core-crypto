@@ -225,7 +225,6 @@ export class CoreCryptoContext {
      * @param configuration - configuration of the MLS group
      * @param configuration.ciphersuite - The {@link Ciphersuite} that is chosen to be the group's
      * @param configuration.externalSenders - Array of Client IDs that are qualified as external senders within the group
-     * @param configuration.custom - {@link CustomConfiguration}
      */
     async createConversation(
         conversationId: ConversationId,
