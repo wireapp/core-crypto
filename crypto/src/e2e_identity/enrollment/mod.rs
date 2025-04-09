@@ -1,3 +1,5 @@
+mod crypto;
+
 use core_crypto_keystore::CryptoKeystoreMls as _;
 use mls_crypto_provider::MlsCryptoProvider;
 use openmls_traits::{OpenMlsCryptoProvider as _, random::OpenMlsRand as _};
