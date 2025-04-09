@@ -9,7 +9,7 @@
   "main": "src/CoreCrypto.ts",
   "module": "src/corecrypto.js",
   "devDependencies": {
-    "@types/bun": "^1.2.6",
+    "@types/bun": "latest",
     "@types/mocha": "^10.0.10",
     "@wdio/browser-runner": "^9.12.1",
     "@wdio/cli": "^9.12.1",

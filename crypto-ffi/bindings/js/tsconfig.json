@@ -35,6 +35,6 @@
     "forceConsistentCasingInFileNames": true,
 
     // Custom types
-    "types": ["node", "@wdio/globals/types", "@types/mocha"]
+    "types": ["node", "bun", "@wdio/globals/types", "@types/mocha"]
   }
 }
