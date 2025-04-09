@@ -1,7 +1,4 @@
-use super::{
-    E2eiEnrollment,
-    error::{Error, Result},
-};
+use super::error::{Error, Result};
 use crate::KeystoreError;
 use core_crypto_keystore::connection::FetchFromDatabase;
 use core_crypto_keystore::entities::E2eiRefreshToken;
@@ -30,20 +27,6 @@ impl RefreshToken {
             .await
             .map_err(KeystoreError::wrap("replacing refresh token"))?;
         Ok(())
-    }
-}
-
-impl E2eiEnrollment {
-    /// Lets clients retrieve the OIDC refresh token to try to renew the user's authorization.
-    /// If it's expired, the user needs to reauthenticate and they will update the refresh token
-    /// in [E2eiEnrollment::new_oidc_challenge_request]
-    pub fn get_refresh_token(&self) -> Result<&str> {
-        self.refresh_token
-            .as_ref()
-            .map(|rt| rt.as_str())
-            .ok_or(Error::OutOfOrderEnrollment(
-                "No OIDC refresh token registered yet or it has been persisted",
-            ))
     }
 }
 

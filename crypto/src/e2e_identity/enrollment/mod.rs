@@ -11,10 +11,9 @@ use crate::{
     prelude::{ClientId, MlsCiphersuite},
 };
 
-use super::{
-    EnrollmentHandle, Error, Json, Result, crypto::E2eiSignatureKeypair, id::QualifiedE2eiClientId, refresh_token,
-    types,
-};
+#[cfg(not(target_family = "wasm"))]
+use super::refresh_token;
+use super::{EnrollmentHandle, Error, Json, Result, crypto::E2eiSignatureKeypair, id::QualifiedE2eiClientId, types};
 
 /// Wire end to end identity solution for fetching a x509 certificate which identifies a client.
 #[derive(Debug, serde::Serialize, serde::Deserialize)]
@@ -497,5 +496,18 @@ impl E2eiEnrollment {
             .await
             .map_err(KeystoreError::wrap("popping e2ei enrollment"))?;
         Ok(serde_json::from_slice(&content)?)
+    }
+
+    /// Lets clients retrieve the OIDC refresh token to try to renew the user's authorization.
+    /// If it's expired, the user needs to reauthenticate and they will update the refresh token
+    /// in [E2eiEnrollment::new_oidc_challenge_request]
+    #[cfg(not(target_family = "wasm"))]
+    pub fn get_refresh_token(&self) -> Result<&str> {
+        self.refresh_token
+            .as_ref()
+            .map(|rt| rt.as_str())
+            .ok_or(Error::OutOfOrderEnrollment(
+                "No OIDC refresh token registered yet or it has been persisted",
+            ))
     }
 }
