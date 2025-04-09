@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use crate::{KeystoreError, ProteusError, RecursiveError, Result, prelude::MlsConversation};
+use crate::{KeystoreError, RecursiveError, Result, prelude::MlsConversation};
 use core_crypto_keystore::connection::FetchFromDatabase;
 #[cfg(test)]
 use core_crypto_keystore::entities::EntityFindParams;
@@ -71,53 +71,6 @@ impl GroupStoreEntity for MlsConversation {
                 conversation.group.is_active().then_some(conversation)
             })
             .collect::<Vec<_>>())
-    }
-}
-
-#[cfg(feature = "proteus")]
-#[cfg_attr(target_family = "wasm", async_trait::async_trait(?Send))]
-#[cfg_attr(not(target_family = "wasm"), async_trait::async_trait)]
-impl GroupStoreEntity for crate::proteus::ProteusConversationSession {
-    type RawStoreValue = core_crypto_keystore::entities::ProteusSession;
-    type IdentityType = Arc<proteus_wasm::keys::IdentityKeyPair>;
-
-    #[cfg(test)]
-    fn id(&self) -> &[u8] {
-        unreachable!()
-    }
-
-    async fn fetch_from_id(
-        id: &[u8],
-        identity: Option<Self::IdentityType>,
-        keystore: &impl FetchFromDatabase,
-    ) -> crate::Result<Option<Self>> {
-        let result = keystore
-            .find::<Self::RawStoreValue>(id)
-            .await
-            .map_err(KeystoreError::wrap("finding raw group store entity by id"))?;
-        let Some(store_value) = result else {
-            return Ok(None);
-        };
-
-        let Some(identity) = identity else {
-            return Err(crate::Error::ProteusNotInitialized);
-        };
-
-        let session = proteus_wasm::session::Session::deserialise(identity, &store_value.session)
-            .map_err(ProteusError::wrap("deserializing session"))?;
-
-        Ok(Some(Self {
-            identifier: store_value.id.clone(),
-            session,
-        }))
-    }
-
-    #[cfg(test)]
-    async fn fetch_all(_keystore: &impl FetchFromDatabase) -> Result<Vec<Self>>
-    where
-        Self: Sized,
-    {
-        unreachable!()
     }
 }
 

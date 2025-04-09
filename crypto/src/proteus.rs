@@ -1,6 +1,6 @@
 use crate::{
     CoreCrypto, Error, KeystoreError, LeafError, ProteusError, RecursiveError, Result,
-    group_store::{GroupStore, GroupStoreValue},
+    group_store::{GroupStore, GroupStoreEntity, GroupStoreValue},
     transaction_context::TransactionContext,
 };
 use core_crypto_keystore::{
@@ -62,6 +62,52 @@ impl ProteusConversationSession {
     /// Returns the public key fingerprint of the remote identity (= client you're communicating with)
     pub fn fingerprint_remote(&self) -> String {
         self.session.remote_identity().fingerprint()
+    }
+}
+
+#[cfg_attr(target_family = "wasm", async_trait::async_trait(?Send))]
+#[cfg_attr(not(target_family = "wasm"), async_trait::async_trait)]
+impl GroupStoreEntity for ProteusConversationSession {
+    type RawStoreValue = core_crypto_keystore::entities::ProteusSession;
+    type IdentityType = Arc<proteus_wasm::keys::IdentityKeyPair>;
+
+    #[cfg(test)]
+    fn id(&self) -> &[u8] {
+        unreachable!()
+    }
+
+    async fn fetch_from_id(
+        id: &[u8],
+        identity: Option<Self::IdentityType>,
+        keystore: &impl FetchFromDatabase,
+    ) -> crate::Result<Option<Self>> {
+        let result = keystore
+            .find::<Self::RawStoreValue>(id)
+            .await
+            .map_err(KeystoreError::wrap("finding raw group store entity by id"))?;
+        let Some(store_value) = result else {
+            return Ok(None);
+        };
+
+        let Some(identity) = identity else {
+            return Err(crate::Error::ProteusNotInitialized);
+        };
+
+        let session = proteus_wasm::session::Session::deserialise(identity, &store_value.session)
+            .map_err(ProteusError::wrap("deserializing session"))?;
+
+        Ok(Some(Self {
+            identifier: store_value.id.clone(),
+            session,
+        }))
+    }
+
+    #[cfg(test)]
+    async fn fetch_all(_keystore: &impl FetchFromDatabase) -> Result<Vec<Self>>
+    where
+        Self: Sized,
+    {
+        unreachable!()
     }
 }
 

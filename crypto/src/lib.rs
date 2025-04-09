@@ -27,8 +27,8 @@ pub mod mls;
 /// re-export [rusty-jwt-tools](https://github.com/wireapp/rusty-jwt-tools) API
 pub mod e2e_identity;
 
-#[cfg(feature = "proteus")]
 /// Proteus Abstraction
+#[cfg(feature = "proteus")]
 pub mod proteus;
 
 mod group_store;
