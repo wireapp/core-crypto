@@ -192,7 +192,7 @@ impl RustyE2eIdentity {
     /// * `url` - one of the URL in new order's authorizations (from [Self::acme_new_order_response])
     /// * `account` - you got from [Self::acme_new_account_response]
     /// * `previous_nonce` - "replay-nonce" response header from `POST /acme/{provisioner-name}/new-order`
-    ///     (or from the previous to this method if you are creating the second authorization)
+    ///   (or from the previous to this method if you are creating the second authorization)
     pub fn acme_new_authz_request(
         &self,
         url: &url::Url,
@@ -251,7 +251,7 @@ impl RustyE2eIdentity {
     /// * `dpop_challenge` - you found after [Self::acme_new_authz_response]
     /// * `backend_nonce` - you get by calling `GET /clients/token/nonce` on wire-server.
     /// * `handle` - user handle e.g. `alice.smith.qa@example.com`
-    ///     See endpoint [definition](https://staging-nginz-https.zinfra.io/api/swagger-ui/#/default/get_clients__client__nonce)
+    ///   See endpoint [definition](https://staging-nginz-https.zinfra.io/api/swagger-ui/#/default/get_clients__client__nonce)
     /// * `expiry` - token expiry
     #[allow(clippy::too_many_arguments)]
     pub fn new_dpop_token(
