@@ -36,6 +36,16 @@ public protocol CoreCryptoProtocol {
     ///
     func provideTransport(transport: any MlsTransport) async throws
 
+    ///
+    /// Register an Epoch Observer which will be notified every time a conversation's epoch changes.
+    ///
+    /// - Parameter epochObserver: epoch observer to register
+    ///
+    /// This function should be called 0 or 1 times in the lifetime of CoreCrypto,
+    /// regardless of the number of transactions.
+    ///
+    func registerEpochObserver(_ epochObserver: EpochObserver) async throws
+
     /// Register CoreCrypto a logger
     ///
     static func setLogger(_ logger: CoreCryptoLogger)
@@ -89,14 +99,6 @@ public class CoreCrypto: CoreCryptoProtocol {
             callbacks: transport)
     }
 
-    ///
-    /// Register an Epoch Observer which will be notified every time a conversation's epoch changes.
-    ///
-    /// - Parameter epochObserver: epoch observer to register
-    ///
-    /// This function should be called 0 or 1 times in the lifetime of CoreCrypto,
-    /// regardless of the number of transactions.
-    ///
     public func registerEpochObserver(_ epochObserver: EpochObserver) async throws {
         // we want to wrap the observer here to provide async indirection, so that no matter what
         // the observer that makes its way to the Rust side of things doesn't end up blocking
