@@ -110,7 +110,7 @@
 <a href=#110 id=110 data-nosnippet>110</a>
 <a href=#111 id=111 data-nosnippet>111</a><span class="attr">#[cfg(test)]
 <a href=#112 id=112 data-nosnippet>112</a></span><span class="kw">mod </span>tests {
-<a href=#113 id=113 data-nosnippet>113</a>    <span class="kw">use </span><span class="kw">crate</span>::e2e_identity::test_utils <span class="kw">as </span>e2ei_utils;
+<a href=#113 id=113 data-nosnippet>113</a>    <span class="kw">use </span><span class="kw">crate</span>::e2e_identity::enrollment::test_utils <span class="kw">as </span>e2ei_utils;
 <a href=#114 id=114 data-nosnippet>114</a>    <span class="kw">use </span><span class="kw">crate</span>::mls::conversation::Conversation <span class="kw">as _</span>;
 <a href=#115 id=115 data-nosnippet>115</a>    <span class="kw">use </span><span class="kw">crate</span>::test_utils::x509::X509TestChain;
 <a href=#116 id=116 data-nosnippet>116</a>    <span class="kw">use crate</span>::{prelude::<span class="kw-2">*</span>, test_utils::<span class="kw-2">*</span>};
@@ -121,7 +121,7 @@
 <a href=#121 id=121 data-nosnippet>121</a>    <span class="attr">#[apply(all_cred_cipher)]
 <a href=#122 id=122 data-nosnippet>122</a>    #[wasm_bindgen_test]
 <a href=#123 id=123 data-nosnippet>123</a>    </span><span class="kw">async fn </span>e2e_identity_should_work(case: TestCase) {
-<a href=#124 id=124 data-nosnippet>124</a>        <span class="kw">use </span><span class="kw">crate</span>::e2e_identity::test_utils::E2EI_CLIENT_ID_URI;
+<a href=#124 id=124 data-nosnippet>124</a>        <span class="kw">use </span>e2ei_utils::E2EI_CLIENT_ID_URI;
 <a href=#125 id=125 data-nosnippet>125</a>
 <a href=#126 id=126 data-nosnippet>126</a>        run_test_wo_clients(case.clone(), <span class="kw">move </span>|<span class="kw-2">mut </span>cc| {
 <a href=#127 id=127 data-nosnippet>127</a>            Box::pin(<span class="kw">async move </span>{

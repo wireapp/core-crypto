@@ -598,7 +598,7 @@
 <a href=#598 id=598 data-nosnippet>598</a>    <span class="attr">#[apply(all_cred_cipher)]
 <a href=#599 id=599 data-nosnippet>599</a>    #[wasm_bindgen_test]
 <a href=#600 id=600 data-nosnippet>600</a>    </span><span class="kw">pub async fn </span>create_many_people_conversation(case: TestCase) {
-<a href=#601 id=601 data-nosnippet>601</a>        <span class="kw">use </span><span class="kw">crate</span>::e2e_identity::test_utils::failsafe_ctx;
+<a href=#601 id=601 data-nosnippet>601</a>        <span class="kw">use </span><span class="kw">crate</span>::e2e_identity::enrollment::test_utils::failsafe_ctx;
 <a href=#602 id=602 data-nosnippet>602</a>
 <a href=#603 id=603 data-nosnippet>603</a>        run_test_with_client_ids(case.clone(), [<span class="string">"alice"</span>], <span class="kw">move </span>|[<span class="kw-2">mut </span>alice_central]| {
 <a href=#604 id=604 data-nosnippet>604</a>            Box::pin(<span class="kw">async move </span>{
