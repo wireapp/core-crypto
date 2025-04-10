@@ -92,7 +92,7 @@ impl E2eTest {
         let [idp_host, ca_host, ldap_host, domain] = if is_demo {
             hosts.map(|h| h.to_string())
         } else {
-            hosts.map(|h| format!("{h}.{}", rand_str(6).to_lowercase()))
+            hosts.map(|h| format!("{}.{h}", rand_str(6).to_lowercase()))
         };
 
         let (firstname, lastname) = ("Alice", "Smith");
