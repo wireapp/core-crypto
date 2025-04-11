@@ -6,9 +6,9 @@ import {
     createConversation,
     setup,
     teardown,
-} from "./utils.js";
+} from "./utils";
 import { afterEach, beforeEach, describe } from "mocha";
-import { E2eiConversationState } from "../src/CoreCrypto.js";
+import { E2eiConversationState } from "../src/CoreCrypto";
 
 beforeEach(async () => {
     await setup();

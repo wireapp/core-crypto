@@ -1,7 +1,7 @@
 import { browser, expect } from "@wdio/globals";
-import { ALICE_ID, ccInit, setup, teardown } from "./utils.js";
+import { ALICE_ID, ccInit, setup, teardown } from "./utils";
 import { afterEach, beforeEach, describe } from "mocha";
-import { CoreCryptoError, CoreCryptoContext } from "../src/CoreCrypto.js";
+import { CoreCryptoError, CoreCryptoContext } from "../src/CoreCrypto";
 
 beforeEach(async () => {
     await setup();

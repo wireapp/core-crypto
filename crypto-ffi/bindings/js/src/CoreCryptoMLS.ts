@@ -1,4 +1,4 @@
-import { safeBigintToNumber } from "./Conversions.js";
+import { safeBigintToNumber } from "./Conversions";
 import {
     BufferedDecryptedMessage as BufferedDecryptedMessageFfi,
     CommitBundle as CommitBundleFfi,
@@ -14,7 +14,7 @@ import {
     WelcomeBundle,
     WireIdentity,
     WirePolicy,
-} from "./core-crypto-ffi.js";
+} from "./core-crypto-ffi";
 
 export {
     CredentialType,

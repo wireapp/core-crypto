@@ -253,3 +253,4 @@ jobs:
         run: |
           cd crypto-ffi/bindings/js
           bun run test
+          bun test
