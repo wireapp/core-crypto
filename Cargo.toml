@@ -59,7 +59,7 @@ sha1 = "0.10"
 sha2 = "0.10"
 strum = { version = "0.26", features = ["derive"] }
 thiserror = "2.0"
-tls_codec = "0.4.1"
+tls_codec = "0.4.2"
 uniffi = "0.29"
 url = "2.5"
 uuid = "1.12"
