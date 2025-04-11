@@ -162,6 +162,14 @@ pub async fn start_acme_server(ca_cfg: &CaCfg) -> AcmeServer {
     let host_volume = std::env::temp_dir().join(rand_str());
     std::fs::create_dir(&host_volume).unwrap();
 
+    #[cfg(unix)]
+    {
+        // Allow container user to write to our host volume.
+        use std::os::unix::fs::PermissionsExt;
+        let permissions = std::fs::Permissions::from_mode(0o777);
+        std::fs::set_permissions(&host_volume, permissions).unwrap();
+    }
+
     // Prepare the container image. Note that instead of just starting the image as-is, we're
     // overriding the command to be a long sleep, in order to be able to issue commands inside
     // the container, to generate exactly the root & intermediate certificates we need. Otherwise,
@@ -225,6 +233,11 @@ pub async fn start_acme_server(ca_cfg: &CaCfg) -> AcmeServer {
     run_command(&node, "mv intermediate-ca.crt certs/intermediate_ca.crt").await;
     run_command(&node, "mv intermediate-ca.key secrets/intermediate_ca_key").await;
 
+    // Allow the user outside the container to read certificates and modify CA configuration.
+    run_command(&node, "chmod -R o+r certs").await;
+    run_command(&node, "chmod o+rx config certs").await;
+    run_command(&node, "chmod o+rw config/ca.json").await;
+
     // Alter the CA configuration by substituting our provisioner.
     alter_configuration(&host_volume, ca_cfg).await;
 
@@ -234,8 +247,6 @@ pub async fn start_acme_server(ca_cfg: &CaCfg) -> AcmeServer {
     let port = node.get_host_port_ipv4(PORT).await.unwrap();
     let uri = format!("https://{}:{}", &ca_cfg.host, port);
     let ca_cert = ca_cert(&host_volume);
-    dbg!(&uri);
-    dbg!(&ca_cert);
 
     let ip = std::net::IpAddr::V4("127.0.0.1".parse().unwrap());
     let socket = SocketAddr::new(ip, port);
