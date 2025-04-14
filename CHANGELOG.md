@@ -1,5 +1,10 @@
 # Changelog
 
+## v3.1.1 - 2025-04-14
+
+- This release bumps the version of rusty-jwt-tools to 0.13.0, which includes
+  additional end-to-end identity tests and test markers relevant to Bund.
+
 ## v3.1.0 - 2025-02-12
 
 ### Highlights
