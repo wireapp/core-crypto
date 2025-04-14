@@ -1,4 +1,9 @@
 use base64::Engine;
+use const_oid::db::{
+    rfc5912::{ID_EC_PUBLIC_KEY, SECP_256_R_1, SECP_384_R_1, SECP_521_R_1},
+    rfc8410::ID_ED_25519,
+};
+use const_oid::{AssociatedOid as _, ObjectIdentifier};
 use itertools::Itertools;
 use jwt_simple::prelude::*;
 use oauth2::{ClientSecret, CsrfToken, PkceCodeChallenge, RedirectUrl, RefreshToken, Scope};
@@ -13,7 +18,12 @@ use std::{
     sync::{Mutex, mpsc},
 };
 use url::Url;
-use x509_cert::der::{DecodePem, Encode};
+use x509_cert::Certificate;
+use x509_cert::der::asn1::Ia5String;
+use x509_cert::der::{Decode as _, DecodePem, Encode as _};
+use x509_cert::ext::pkix::constraints::name::GeneralSubtree;
+use x509_cert::ext::pkix::name::GeneralName;
+use x509_cert::ext::pkix::{KeyUsage, KeyUsages, NameConstraints};
 
 use http::header;
 use rusty_acme::prelude::x509::revocation::PkiEnvironment;
@@ -60,6 +70,15 @@ fn keypair_to_pubkey(alg: JwsAlgorithm, keypair: &Pem) -> Pem {
             .unwrap()
             .into(),
         JwsAlgorithm::Ed25519 => Ed25519KeyPair::from_pem(keypair).unwrap().public_key().to_pem().into(),
+    }
+}
+
+fn jws_algorithm_to_x509_oids(alg: JwsAlgorithm) -> (ObjectIdentifier, Option<ObjectIdentifier>) {
+    match alg {
+        JwsAlgorithm::Ed25519 => (ID_ED_25519, None),
+        JwsAlgorithm::P256 => (ID_EC_PUBLIC_KEY, Some(SECP_256_R_1)),
+        JwsAlgorithm::P384 => (ID_EC_PUBLIC_KEY, Some(SECP_384_R_1)),
+        JwsAlgorithm::P521 => (ID_EC_PUBLIC_KEY, Some(SECP_521_R_1)),
     }
 }
 
@@ -984,14 +1003,91 @@ impl E2eTest {
         let resp = resp.text().await?;
         self.display_body(&resp);
         let mut certificates = RustyAcme::certificate_response(resp, order, self.hash_alg, env)?;
+
         let root_ca = self.fetch_acme_root_ca().await;
-        let root_ca_der = x509_cert::Certificate::from_pem(root_ca).unwrap().to_der().unwrap();
-        certificates.push(root_ca_der);
+        let root_cert = x509_cert::Certificate::from_pem(root_ca).unwrap();
+        certificates.push(root_cert.to_der().unwrap());
+
+        let mut certs = vec![];
+
         for (i, cert) in certificates.iter().enumerate() {
             self.display_cert(&format!("Certificate #{}", i + 1), cert, false);
+            certs.push(Certificate::from_der(cert).unwrap());
         }
         self.verify_cert_chain();
+
+        let leaf_cert = &certs[0];
+        Self::verify_key_type(leaf_cert, self.alg);
+        Self::verify_key_usage_is_signature_only(leaf_cert);
+        Self::verify_intermediate_ca_cert(&certs[1]);
+
         Ok(certificates)
+    }
+
+    fn verify_key_usage_is_signature_only(cert: &Certificate) {
+        let key_usage = cert
+            .tbs_certificate
+            .extensions
+            .as_ref()
+            .unwrap()
+            .iter()
+            .find_map(|ext| {
+                (ext.extn_id == KeyUsage::OID).then(|| KeyUsage::from_der(ext.extn_value.as_bytes()).unwrap())
+            })
+            .unwrap();
+        assert_eq!(key_usage, KeyUsage(KeyUsages::DigitalSignature.into()));
+    }
+
+    fn verify_key_type(cert: &Certificate, alg: JwsAlgorithm) {
+        let (oid, curve_oid) = jws_algorithm_to_x509_oids(alg);
+
+        let spki = &cert.tbs_certificate.subject_public_key_info;
+        assert_eq!(spki.algorithm.oid, oid);
+
+        let maybe_curve_oid = spki
+            .algorithm
+            .parameters
+            .as_ref()
+            .and_then(|param| x509_cert::spki::ObjectIdentifier::from_bytes(param.value()).ok());
+        assert_eq!(maybe_curve_oid, curve_oid);
+    }
+
+    fn verify_intermediate_ca_cert(cert: &Certificate) {
+        let name_constraints = cert
+            .tbs_certificate
+            .extensions
+            .as_ref()
+            .unwrap()
+            .iter()
+            .find_map(|ext| {
+                (ext.extn_id == NameConstraints::OID)
+                    .then(|| NameConstraints::from_der(ext.extn_value.as_bytes()).unwrap())
+            })
+            .unwrap();
+
+        assert_eq!(
+            name_constraints,
+            NameConstraints {
+                permitted_subtrees: Some(vec![
+                    GeneralSubtree {
+                        base: GeneralName::DnsName(Ia5String::new("localhost").unwrap()),
+                        minimum: 0,
+                        maximum: None,
+                    },
+                    GeneralSubtree {
+                        base: GeneralName::DnsName(Ia5String::new("stepca").unwrap()),
+                        minimum: 0,
+                        maximum: None,
+                    },
+                    GeneralSubtree {
+                        base: GeneralName::UniformResourceIdentifier(Ia5String::new("wire.com").unwrap()),
+                        minimum: 0,
+                        maximum: None,
+                    },
+                ]),
+                excluded_subtrees: None,
+            }
+        );
     }
 }
 

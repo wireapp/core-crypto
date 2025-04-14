@@ -122,8 +122,6 @@ mod alg {
         assert!(test.nominal_enrollment().await.is_ok());
     }
 
-    // TODO: Fails because of hardcoded SHA-256 hash algorithm in stepca
-    #[ignore]
     #[tokio::test]
     async fn p384_should_succeed() {
         let test = E2eTest::new_internal(false, JwsAlgorithm::P384, OidcProvider::Keycloak)
