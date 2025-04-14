@@ -106,6 +106,16 @@ async fn refresh_token_can_be_used_to_renew() {
 mod alg {
     use super::*;
 
+    // This and the following tests in this module test nominal enrollment with various key types
+    // (Ed25519, P256, P384, P521). For each key type, a comprehensive set of checks is done,
+    // including:
+    // - a check that the key type in the leaf certificate matches what was requested
+    // - a check that the key usage in the leaf certificate is signing only
+    // - a check that the intermediate CA cert has expected name constraints
+    // - a check that all certificates in the chain parse successfully
+    // - a check that invokes `openssl verify` to verify the entire certificate chain
+    //
+    // @SF.PROVISIONING @TSFI.E2EI-PKI-Admin @S8
     #[tokio::test]
     async fn ed25519_should_succeed() {
         let test = E2eTest::new_internal(false, JwsAlgorithm::Ed25519, OidcProvider::Keycloak)
@@ -114,6 +124,7 @@ mod alg {
         assert!(test.nominal_enrollment().await.is_ok());
     }
 
+    // @SF.PROVISIONING @TSFI.E2EI-PKI-Admin @S8
     #[tokio::test]
     async fn p256_should_succeed() {
         let test = E2eTest::new_internal(false, JwsAlgorithm::P256, OidcProvider::Keycloak)
@@ -122,6 +133,7 @@ mod alg {
         assert!(test.nominal_enrollment().await.is_ok());
     }
 
+    // @SF.PROVISIONING @TSFI.E2EI-PKI-Admin @S8
     #[tokio::test]
     async fn p384_should_succeed() {
         let test = E2eTest::new_internal(false, JwsAlgorithm::P384, OidcProvider::Keycloak)
@@ -130,6 +142,7 @@ mod alg {
         assert!(test.nominal_enrollment().await.is_ok());
     }
 
+    // @SF.PROVISIONING @TSFI.E2EI-PKI-Admin @S8
     #[tokio::test]
     async fn p521_should_succeed() {
         let test = E2eTest::new_internal(false, JwsAlgorithm::P521, OidcProvider::Keycloak)
