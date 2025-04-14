@@ -59,7 +59,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e89da841a80418a9b391ebaea17f5c112ffaaa96f621d2c285b5174da76b9011"
 dependencies = [
  "cfg-if",
- "getrandom",
+ "getrandom 0.2.15",
  "once_cell",
  "version_check",
  "zerocopy",
@@ -531,7 +531,7 @@ dependencies = [
  "semver",
  "serde",
  "serde_json",
- "thiserror",
+ "thiserror 1.0.65",
 ]
 
 [[package]]
@@ -545,7 +545,7 @@ dependencies = [
  "semver",
  "serde",
  "serde_json",
- "thiserror",
+ "thiserror 1.0.65",
 ]
 
 [[package]]
@@ -920,7 +920,7 @@ dependencies = [
  "core-crypto-macros",
  "criterion",
  "cryptobox",
- "derive_more",
+ "derive_more 0.99.18",
  "fluvio-wasm-timer",
  "futures-lite",
  "futures-util",
@@ -952,7 +952,7 @@ dependencies = [
  "strum",
  "sysinfo",
  "tempfile",
- "thiserror",
+ "thiserror 1.0.65",
  "time",
  "tls_codec",
  "uniffi",
@@ -986,7 +986,7 @@ dependencies = [
  "serde_json",
  "sha2",
  "strum",
- "thiserror",
+ "thiserror 1.0.65",
  "tls_codec",
  "uniffi",
  "wasm-bindgen",
@@ -1012,7 +1012,7 @@ dependencies = [
  "criterion",
  "fluvio-wasm-timer",
  "futures-lite",
- "getrandom",
+ "getrandom 0.2.15",
  "hex",
  "idb",
  "itertools 0.13.0",
@@ -1040,7 +1040,7 @@ dependencies = [
  "serde-wasm-bindgen",
  "serde_json",
  "sha2",
- "thiserror",
+ "thiserror 1.0.65",
  "uuid",
  "wasm-bindgen",
  "wasm-bindgen-futures",
@@ -1406,6 +1406,26 @@ dependencies = [
  "proc-macro2",
  "quote",
  "rustc_version",
+ "syn 2.0.87",
+]
+
+[[package]]
+name = "derive_more"
+version = "2.0.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "093242cf7570c207c83073cf82f79706fe7b8317e98620a47d5be7c3d8497678"
+dependencies = [
+ "derive_more-impl",
+]
+
+[[package]]
+name = "derive_more-impl"
+version = "2.0.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "bda628edc44c4bb645fbe0f758797143e4e07926f7ebf4e9bdfbd3d2ce621df3"
+dependencies = [
+ "proc-macro2",
+ "quote",
  "syn 2.0.87",
 ]
 
@@ -1918,8 +1938,20 @@ dependencies = [
  "cfg-if",
  "js-sys",
  "libc",
- "wasi",
+ "wasi 0.11.0+wasi-snapshot-preview1",
  "wasm-bindgen",
+]
+
+[[package]]
+name = "getrandom"
+version = "0.3.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "73fea8450eea4bac3940448fb7ae50d91f034f941199fcd9d909a5a07aa455f0"
+dependencies = [
+ "cfg-if",
+ "libc",
+ "r-efi",
+ "wasi 0.14.2+wasi-0.2.4",
 ]
 
 [[package]]
@@ -2497,7 +2529,7 @@ checksum = "3afe8830d5802f769dc0be20a87f9f116798c896650cb6266eb5c19a3c109eed"
 dependencies = [
  "js-sys",
  "num-traits",
- "thiserror",
+ "thiserror 1.0.65",
  "tokio",
  "wasm-bindgen",
  "web-sys",
@@ -2705,7 +2737,7 @@ checksum = "e712e62827c382a77b87f590532febb1f8b2fdbc3eefa1ee37fe7281687075ef"
 dependencies = [
  "serde",
  "serde_json",
- "thiserror",
+ "thiserror 1.0.65",
 ]
 
 [[package]]
@@ -2720,7 +2752,7 @@ dependencies = [
  "digest",
  "ecdsa",
  "ed25519-dalek",
- "getrandom",
+ "getrandom 0.2.15",
  "hmac",
  "k256",
  "p256",
@@ -2732,7 +2764,7 @@ dependencies = [
  "sha-1",
  "sha2",
  "spki",
- "thiserror",
+ "thiserror 1.0.65",
  "zeroize",
 ]
 
@@ -2877,7 +2909,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e99df759bfe829042ac9ad2d576ad0b3ffb3bad3c1f124dc0094b54441e89999"
 dependencies = [
  "log",
- "thiserror",
+ "thiserror 1.0.65",
 ]
 
 [[package]]
@@ -2945,7 +2977,7 @@ checksum = "80e04d1dcff3aae0704555fe5fee3bcfaf3d1fdf8a7e521d5b9d2b42acb52cec"
 dependencies = [
  "hermit-abi 0.3.9",
  "libc",
- "wasi",
+ "wasi 0.11.0+wasi-snapshot-preview1",
  "windows-sys 0.52.0",
 ]
 
@@ -2963,7 +2995,7 @@ dependencies = [
  "ecdsa",
  "ed25519-dalek",
  "fluvio-wasm-timer",
- "getrandom",
+ "getrandom 0.2.15",
  "hex",
  "hex-literal",
  "hkdf 0.12.4",
@@ -2984,7 +3016,7 @@ dependencies = [
  "sha2",
  "signature",
  "spki",
- "thiserror",
+ "thiserror 1.0.65",
  "tls_codec",
  "uuid",
  "wasm-bindgen-test",
@@ -3152,7 +3184,7 @@ dependencies = [
  "openmls_x509_credential",
  "serde",
  "subtle",
- "thiserror",
+ "thiserror 1.0.65",
  "tls_codec",
  "x509-cert",
 ]
@@ -3164,7 +3196,7 @@ source = "git+https://github.com/wireapp/openmls?rev=6d2f5a2046fc12aca602af207e6
 dependencies = [
  "async-trait",
  "ed25519-dalek",
- "getrandom",
+ "getrandom 0.2.15",
  "openmls_traits",
  "p256",
  "p384",
@@ -3674,7 +3706,7 @@ dependencies = [
  "ed25519-dalek",
  "eyre",
  "generic-array",
- "getrandom",
+ "getrandom 0.2.15",
  "hex",
  "hkdf 0.12.4",
  "hmac",
@@ -3685,7 +3717,7 @@ dependencies = [
  "serde",
  "sha2",
  "subtle",
- "thiserror",
+ "thiserror 1.0.65",
  "x25519-dalek",
  "zeroize",
 ]
@@ -3698,6 +3730,12 @@ checksum = "b5b9d34b8991d19d98081b46eacdd8eb58c6f2b201139f7c5f643cc155a633af"
 dependencies = [
  "proc-macro2",
 ]
+
+[[package]]
+name = "r-efi"
+version = "5.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "74765f6d916ee2faa39bc8e68e4f3ed8949b48cccdac59983d287a7cb71ce9c5"
 
 [[package]]
 name = "rand"
@@ -3727,7 +3765,7 @@ version = "0.6.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ec0be4795e2f6a28069bec0b5ff3e2ac9bafc99e6a9a7dc3547996c5c816922c"
 dependencies = [
- "getrandom",
+ "getrandom 0.2.15",
  "serde",
 ]
 
@@ -3792,9 +3830,9 @@ version = "0.4.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "bd283d9651eeda4b2a83a43c1c91b266c40fd76ecd39a50a8c630ae69dc72891"
 dependencies = [
- "getrandom",
+ "getrandom 0.2.15",
  "libredox",
- "thiserror",
+ "thiserror 1.0.65",
 ]
 
 [[package]]
@@ -3819,7 +3857,7 @@ dependencies = [
  "regex",
  "rusqlite",
  "siphasher 1.0.1",
- "thiserror",
+ "thiserror 1.0.65",
  "time",
  "url",
  "walkdir",
@@ -3923,7 +3961,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "887466cfa8a12c08ee4b174998135cea8ff0fd84858627cd793e56535a045bc9"
 dependencies = [
  "idb",
- "thiserror",
+ "thiserror 1.0.65",
  "wasm-bindgen",
 ]
 
@@ -4038,15 +4076,14 @@ checksum = "955d28af4278de8121b7ebeb796b6a45735dc01436d898801014aced2773a3d6"
 
 [[package]]
 name = "rusty-acme"
-version = "0.11.0"
-source = "git+https://github.com/wireapp/rusty-jwt-tools?tag=v0.11.0#8e95b38867ef631925cb34aabee0b4e6a42f6ace"
+version = "0.13.0"
+source = "git+https://github.com/wireapp/rusty-jwt-tools?tag=v0.13.0#e5c97c4f85cf890df6e647d267fd2625e79b09f1"
 dependencies = [
  "base64 0.22.1",
  "const-oid",
  "ecdsa",
  "ed25519-dalek",
- "fluvio-wasm-timer",
- "getrandom",
+ "getrandom 0.2.15",
  "hex",
  "jwt-simple",
  "p256",
@@ -4058,22 +4095,23 @@ dependencies = [
  "serde",
  "serde_json",
  "signature",
- "thiserror",
+ "thiserror 2.0.12",
  "time",
  "url",
+ "web-time",
  "x509-cert",
 ]
 
 [[package]]
 name = "rusty-jwt-tools"
-version = "0.11.0"
-source = "git+https://github.com/wireapp/rusty-jwt-tools?tag=v0.11.0#8e95b38867ef631925cb34aabee0b4e6a42f6ace"
+version = "0.13.0"
+source = "git+https://github.com/wireapp/rusty-jwt-tools?tag=v0.13.0#e5c97c4f85cf890df6e647d267fd2625e79b09f1"
 dependencies = [
  "base64 0.22.1",
  "const_format",
- "derive_more",
+ "derive_more 2.0.1",
  "either",
- "getrandom",
+ "getrandom 0.2.15",
  "json-patch",
  "jwt-simple",
  "lazy_static",
@@ -4085,7 +4123,7 @@ dependencies = [
  "serde",
  "serde_json",
  "sha2",
- "thiserror",
+ "thiserror 2.0.12",
  "time",
  "url",
  "uuid",
@@ -4094,16 +4132,16 @@ dependencies = [
 
 [[package]]
 name = "rusty-x509-check"
-version = "0.11.0"
-source = "git+https://github.com/wireapp/rusty-jwt-tools?tag=v0.11.0#8e95b38867ef631925cb34aabee0b4e6a42f6ace"
+version = "0.13.0"
+source = "git+https://github.com/wireapp/rusty-jwt-tools?tag=v0.13.0#e5c97c4f85cf890df6e647d267fd2625e79b09f1"
 dependencies = [
  "certval",
  "const-oid",
  "der",
  "flagset",
- "fluvio-wasm-timer",
  "hex",
- "thiserror",
+ "thiserror 2.0.12",
+ "web-time",
  "x509-cert",
 ]
 
@@ -4766,7 +4804,16 @@ version = "1.0.65"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "5d11abd9594d9b38965ef50805c5e469ca9cc6f197f883f717e0269a3057b3d5"
 dependencies = [
- "thiserror-impl",
+ "thiserror-impl 1.0.65",
+]
+
+[[package]]
+name = "thiserror"
+version = "2.0.12"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "567b8a2dae586314f7be2a752ec7474332959c6460e02bde30d702a66d488708"
+dependencies = [
+ "thiserror-impl 2.0.12",
 ]
 
 [[package]]
@@ -4774,6 +4821,17 @@ name = "thiserror-impl"
 version = "1.0.65"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ae71770322cbd277e69d762a16c444af02aa0575ac0d174f0b9562d3b37f8602"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn 2.0.87",
+]
+
+[[package]]
+name = "thiserror-impl"
+version = "2.0.12"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "7f7cf42b4507d8ea322120659672cf1b9dbb93f8f2d4ecfd6e51350ff5b17a1d"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -5068,7 +5126,7 @@ dependencies = [
  "log",
  "rand",
  "sha1",
- "thiserror",
+ "thiserror 1.0.65",
  "url",
  "utf-8",
 ]
@@ -5295,11 +5353,12 @@ checksum = "06abde3611657adf66d383f00b093d7faecc7fa57071cce2578660c9f1010821"
 
 [[package]]
 name = "uuid"
-version = "1.11.0"
+version = "1.16.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f8c5f0a0af699448548ad1a2fbf920fb4bee257eae39953ba95cb84891a0446a"
+checksum = "458f7a779bf54acc9f347480ac654f68407d3aab21269a6e3c9f922acd9e2da9"
 dependencies = [
- "getrandom",
+ "getrandom 0.3.2",
+ "js-sys",
  "sha1_smol",
  "wasm-bindgen",
 ]
@@ -5481,12 +5540,21 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "9c8d87e72b64a3b4db28d11ce29237c246188f4f51057d65a7eab63b7987e423"
 
 [[package]]
+name = "wasi"
+version = "0.14.2+wasi-0.2.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "9683f9a5a998d873c0d21fcbe3c083009670149a8fab228644b8bd36b2c48cb3"
+dependencies = [
+ "wit-bindgen-rt",
+]
+
+[[package]]
 name = "wasix"
 version = "0.12.21"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c1fbb4ef9bbca0c1170e0b00dd28abc9e3b68669821600cad1caaed606583c6d"
 dependencies = [
- "wasi",
+ "wasi 0.11.0+wasi-snapshot-preview1",
 ]
 
 [[package]]
@@ -5711,6 +5779,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "web-time"
+version = "1.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "5a6580f308b1fad9207618087a65c04e7a10bc77e02c8e84e9b00dd4b12fa0bb"
+dependencies = [
+ "js-sys",
+ "wasm-bindgen",
+]
+
+[[package]]
 name = "webdriver"
 version = "0.50.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -5724,7 +5802,7 @@ dependencies = [
  "serde",
  "serde_derive",
  "serde_json",
- "thiserror",
+ "thiserror 1.0.65",
  "time",
  "unicode-segmentation",
  "url",
@@ -5752,7 +5830,7 @@ dependencies = [
  "serde_json",
  "tar",
  "tempfile",
- "thiserror",
+ "thiserror 1.0.65",
  "tokio",
  "tokio-stream",
  "tokio-tungstenite",
@@ -6037,19 +6115,29 @@ dependencies = [
 
 [[package]]
 name = "wire-e2e-identity"
-version = "0.11.0"
-source = "git+https://github.com/wireapp/rusty-jwt-tools?tag=v0.11.0#8e95b38867ef631925cb34aabee0b4e6a42f6ace"
+version = "0.13.0"
+source = "git+https://github.com/wireapp/rusty-jwt-tools?tag=v0.13.0#e5c97c4f85cf890df6e647d267fd2625e79b09f1"
 dependencies = [
- "derive_more",
+ "derive_more 2.0.1",
  "jwt-simple",
  "rusty-acme",
  "rusty-jwt-tools",
  "serde",
  "serde_json",
- "thiserror",
+ "thiserror 2.0.12",
  "url",
+ "uuid",
  "x509-cert",
  "zeroize",
+]
+
+[[package]]
+name = "wit-bindgen-rt"
+version = "0.39.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "6f42320e61fe2cfd34354ecb597f86f413484a798ba44a8ca1165c58d42da6c1"
+dependencies = [
+ "bitflags 2.6.0",
 ]
 
 [[package]]
