@@ -129,6 +129,14 @@ mod alg {
             .await;
         assert!(test.nominal_enrollment().await.is_ok());
     }
+
+    #[tokio::test]
+    async fn p521_should_succeed() {
+        let test = E2eTest::new_internal(false, JwsAlgorithm::P521, OidcProvider::Keycloak)
+            .start()
+            .await;
+        assert!(test.nominal_enrollment().await.is_ok());
+    }
 }
 
 /// Since the acme server is a fork, verify its invariants are respected
