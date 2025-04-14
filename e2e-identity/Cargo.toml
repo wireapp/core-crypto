@@ -25,7 +25,6 @@ url = { workspace = true }
 zeroize = { workspace = true }
 uuid = { workspace = true, optional = true }
 x509-cert = { workspace = true, optional = true }
-const-oid = { workspace = true, optional = true }
 time = { workspace = true, optional = true }
 rand = { workspace = true, optional = true }
 ed25519-dalek = { workspace = true, optional = true }
@@ -45,6 +44,7 @@ wasm-bindgen-test = { workspace = true }
 hex = { workspace = true }
 webbrowser = { workspace = true }
 shlex = "1"
+const-oid.workspace = true
 
 openidconnect = { workspace = true }
 html_parser = { workspace = true }
