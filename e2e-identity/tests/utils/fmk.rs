@@ -83,6 +83,7 @@ fn jws_algorithm_to_x509_oids(alg: JwsAlgorithm) -> (ObjectIdentifier, Option<Ob
 }
 
 impl E2eTest {
+    // @SF.PROVISIONING @TSFI.E2EI-PKI-Admin @S8
     pub async fn nominal_enrollment(self) -> TestResult<Self> {
         self.enrollment(EnrollmentFlow::default()).await
     }
