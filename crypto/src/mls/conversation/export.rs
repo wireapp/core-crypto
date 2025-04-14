@@ -79,7 +79,7 @@ impl MlsCentral {
     /// # Arguments
     /// * `conversation_id` - the group/conversation id
     /// * `key_length` - the length of the key to be derived. If the value is higher than the
-    ///     bounds of `u16` or the context hash * 255, an error will be returned
+    ///   bounds of `u16` or the context hash * 255, an error will be returned
     ///
     /// # Errors
     /// OpenMls secret generation error or conversation not found

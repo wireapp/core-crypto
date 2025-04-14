@@ -469,8 +469,7 @@ impl TryFrom<MlsConversationCreationMessage> for MemberAddedMessages {
     type Error = CoreCryptoError;
 
     fn try_from(msg: MlsConversationCreationMessage) -> Result<Self, Self::Error> {
-        let (welcome, commit, pgs, crl_new_distribution_points) =
-            msg.to_bytes().map_err(CryptoError::from).map_err(Self::Error::from)?;
+        let (welcome, commit, pgs, crl_new_distribution_points) = msg.to_bytes().map_err(Self::Error::from)?;
 
         Ok(Self {
             welcome,
@@ -519,10 +518,7 @@ impl TryFrom<MlsCommitBundle> for CommitBundle {
     type Error = CoreCryptoError;
 
     fn try_from(msg: MlsCommitBundle) -> Result<Self, Self::Error> {
-        let (welcome, commit, pgs) = msg
-            .to_bytes_triple()
-            .map_err(CryptoError::from)
-            .map_err(Self::Error::from)?;
+        let (welcome, commit, pgs) = msg.to_bytes_triple().map_err(Self::Error::from)?;
 
         Ok(Self {
             welcome,
@@ -620,7 +616,7 @@ impl TryFrom<MlsRotateBundle> for RotateBundle {
 
     fn try_from(msg: MlsRotateBundle) -> Result<Self, Self::Error> {
         let (commits, new_key_packages, key_package_refs_to_remove, crl_new_distribution_points) =
-            msg.to_bytes().map_err(CryptoError::from).map_err(Self::Error::from)?;
+            msg.to_bytes().map_err(Self::Error::from)?;
 
         let commits_size = commits.len();
         let commits = commits
@@ -674,8 +670,7 @@ impl TryFrom<MlsProposalBundle> for ProposalBundle {
     type Error = CoreCryptoError;
 
     fn try_from(msg: MlsProposalBundle) -> Result<Self, Self::Error> {
-        let (proposal, proposal_ref, crl_new_distribution_points) =
-            msg.to_bytes().map_err(CryptoError::from).map_err(Self::Error::from)?;
+        let (proposal, proposal_ref, crl_new_distribution_points) = msg.to_bytes().map_err(Self::Error::from)?;
 
         Ok(Self {
             proposal,
@@ -725,8 +720,7 @@ impl TryFrom<MlsConversationInitBundle> for ConversationInitBundle {
 
     fn try_from(mut from: MlsConversationInitBundle) -> Result<Self, Self::Error> {
         let conversation_id = std::mem::take(&mut from.conversation_id);
-        let (commit, pgs, crl_new_distribution_points) =
-            from.to_bytes().map_err(CryptoError::from).map_err(Self::Error::from)?;
+        let (commit, pgs, crl_new_distribution_points) = from.to_bytes().map_err(Self::Error::from)?;
 
         Ok(Self {
             conversation_id,
@@ -1769,7 +1763,7 @@ impl CoreCrypto {
         let central = self.inner.clone();
 
         proteus_impl! { errcode_dest => {
-            central.proteus_fingerprint().await.map_err(CoreCryptoError::from).map(Into::into)
+            central.proteus_fingerprint().await.map_err(CoreCryptoError::from)
         } or throw WasmCryptoResult<_> }
     }
 
@@ -1786,7 +1780,6 @@ impl CoreCrypto {
                 .proteus_fingerprint_local(&session_id)
                 .await
                 .map_err(CoreCryptoError::from)
-                .map(Into::into)
         } or throw WasmCryptoResult<_> }
     }
 
@@ -1800,7 +1793,7 @@ impl CoreCrypto {
 
         proteus_impl! { errcode_dest => {
             central.proteus_fingerprint_remote(&session_id).await
-                .map_err(CoreCryptoError::from).map(Into::into)
+                .map_err(CoreCryptoError::from)
         } or throw WasmCryptoResult<_> }
     }
 
@@ -1811,7 +1804,7 @@ impl CoreCrypto {
     pub fn proteus_fingerprint_prekeybundle(prekey: Box<[u8]>) -> WasmCryptoResult<String> {
         proteus_impl!({
             core_crypto::proteus::ProteusCentral::fingerprint_prekeybundle(&prekey)
-                .map_err(Into::into).map(Into::into)
+                .map_err(Into::into)
         } or throw WasmCryptoResult<_>)
     }
 

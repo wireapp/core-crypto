@@ -183,7 +183,7 @@ impl crate::clients::EmulatedProteusClient for CoreCryptoFfiClient {
     async fn init(&mut self) -> Result<()> {
         self.cc
             .transaction(TransactionHelper::new(move |context| async move {
-                context.proteus_init().await.map_err(Into::into)
+                context.proteus_init().await
             }))
             .await?;
         Ok(())

@@ -230,7 +230,6 @@ impl CoreCryptoContext {
                         kpb.tls_serialize_detached()
                             .map_err(MlsError::from)
                             .map_err(CryptoError::from)
-                            .map(Into::into)
                     })
                     .collect::<CryptoResult<Vec<Vec<u8>>>>()
                     .map_err(CoreCryptoError::from)?;

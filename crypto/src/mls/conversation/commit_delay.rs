@@ -58,7 +58,6 @@ impl MlsConversation {
 
                     Result::<_, MlsError>::Ok(acc)
                 })
-                .map_err(MlsError::from)
                 .unwrap_or_default();
 
             // Post-commit visualization of the number of members after remove proposals

@@ -342,9 +342,8 @@ impl UniffiCustomTypeConverter for Ciphersuites {
 
     fn into_custom(val: Self::Builtin) -> uniffi::Result<Self> {
         val.iter().try_fold(Self(vec![]), |mut acc, c| -> uniffi::Result<Self> {
-            let cs = core_crypto::prelude::CiphersuiteName::try_from(*c)
-                .map(Into::into)
-                .map_err(|_| CryptoError::ImplementationError)?;
+            let cs =
+                core_crypto::prelude::CiphersuiteName::try_from(*c).map_err(|_| CryptoError::ImplementationError)?;
             acc.0.push(cs);
             Ok(acc)
         })
