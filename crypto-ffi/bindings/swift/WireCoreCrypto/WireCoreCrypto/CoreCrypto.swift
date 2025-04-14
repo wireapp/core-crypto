@@ -90,7 +90,11 @@ public class CoreCrypto: CoreCryptoProtocol {
         _ block: @escaping (_ context: CoreCryptoContextProtocol) async throws -> Result
     ) async throws -> Result {
         let transactionExecutor = TransactionExecutor<Result>(block)
-        try await coreCrypto.transaction(command: transactionExecutor)
+        do {
+            try await coreCrypto.transaction(command: transactionExecutor)
+        } catch {
+            throw transactionExecutor.innerError ?? error
+        }
         return transactionExecutor.result!
     }
 
@@ -144,6 +148,7 @@ class TransactionExecutor<Result>: WireCoreCryptoUniffi.CoreCryptoCommand {
 
     let block: (_ context: CoreCryptoContextProtocol) async throws -> Result
     var result: Result?
+    var innerError: Error?
 
     init(
         _ block: @escaping (_ context: CoreCryptoContextProtocol) async throws -> Result
@@ -152,7 +157,12 @@ class TransactionExecutor<Result>: WireCoreCryptoUniffi.CoreCryptoCommand {
     }
 
     func execute(context: WireCoreCryptoUniffi.CoreCryptoContext) async throws {
-        result = try await block(context)
+        do {
+            result = try await block(context)
+        } catch {
+            innerError = error
+            throw error
+        }
     }
 
 }

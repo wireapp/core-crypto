@@ -122,20 +122,22 @@ final class WireCoreCryptoTests: XCTestCase {
     }
 
     func testErrorIsPropagatedByTransaction() async throws {
-        struct MyError: Error {}
+        struct MyError: Error, Equatable {}
 
         let coreCrypto = try await createCoreCrypto()
         let expectedError = MyError()
 
-        await XCTAssertThrowsErrorAsync({
-            try await coreCrypto.transaction { _ in
-                throw expectedError
-            }
-        })
+        await XCTAssertThrowsErrorAsync(
+            expectedError,
+            when: {
+                try await coreCrypto.transaction { _ in
+                    throw expectedError
+                }
+            })
     }
 
     func testTransactionRollsBackOnError() async throws {
-        struct MyError: Error {}
+        struct MyError: Error, Equatable {}
 
         let aliceId = "alice1".data(using: .utf8)!
         let conversationId = "conversation1".data(using: .utf8)!
@@ -155,16 +157,18 @@ final class WireCoreCryptoTests: XCTestCase {
             try await $0.mlsInit(clientId: aliceId, ciphersuites: [ciphersuite], nbKeyPackage: nil)
         }
 
-        await XCTAssertThrowsErrorAsync({
-            try await coreCrypto.transaction { ctx in
-                try await ctx.createConversation(
-                    conversationId: conversationId,
-                    creatorCredentialType: .basic,
-                    config: configuration
-                )
-                throw expectedError
-            }
-        })
+        await XCTAssertThrowsErrorAsync(
+            expectedError,
+            when: {
+                try await coreCrypto.transaction { ctx in
+                    try await ctx.createConversation(
+                        conversationId: conversationId,
+                        creatorCredentialType: .basic,
+                        config: configuration
+                    )
+                    throw expectedError
+                }
+            })
 
         // This would fail with a "Conversation already exists" exception, if the above
         // transaction hadn't been rolled back.
