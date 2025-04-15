@@ -7,8 +7,8 @@
   "types": "platforms/web/corecrypto.d.ts",
   "scripts": {
     "clean": "rm -f ./platforms/web/*.{js,ts,wasm,html} && rm -rf ./platforms/web/assets",
-    "test": "[ \"$(basename $PWD)\" != \"crypto-ffi\" ] && echo \"Error: Not in crypto-ffi directory, do:\" && echo cd crypto-ffi && exit 1 || bun run build_ts.ts && wdio run bindings/js/wdio.conf.ts --spec bindings/js/test/**/*.test.ts",
-    "bench": "[ \"$(basename $PWD)\" != \"crypto-ffi\" ] && echo \"Error: Not in crypto-ffi directory, do:\" && echo cd crypto-ffi && exit 1 ||bun run build_ts.ts && wdio run bindings/js/wdio.conf.ts --spec bindings/js/benches/**/*.bench.ts --log-level warn"
+    "test": "[ \"$(basename $PWD)\" != \"crypto-ffi\" ] && echo \"Error: Not in crypto-ffi directory, do:\" && echo cd crypto-ffi && exit 1 || bun run build_ts.ts && wdio run bindings/js/wdio.conf.ts --spec bindings/js/test/*.test.ts",
+    "bench": "[ \"$(basename $PWD)\" != \"crypto-ffi\" ] && echo \"Error: Not in crypto-ffi directory, do:\" && echo cd crypto-ffi && exit 1 ||bun run build_ts.ts && wdio run bindings/js/wdio.conf.ts --spec bindings/js/benches/*.bench.ts --log-level warn"
   },
   "publishConfig": {
     "access": "public"
