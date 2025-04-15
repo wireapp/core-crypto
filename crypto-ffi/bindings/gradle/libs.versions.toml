@@ -1,5 +1,5 @@
 [versions]
-kotlin = "1.9.0"
+kotlin = "1.9.20"
 app-compat = "1.6.1"
 coroutines = "1.7.3"
 jna = "5.13.0"
@@ -13,8 +13,8 @@ android-tools = "8.0.0"
 sdk-compile = "34"
 sdk-min = "26"
 gradle = "8.2.1"
-vanniktech-publish = "0.25.3"
-kotlin-gradle = "1.9.0"
+vanniktech-publish = "0.28.0"
+kotlin-gradle = "1.9.20"
 
 [plugins]
 vanniktech-publish = { id = "com.vanniktech.maven.publish", version.ref = "vanniktech-publish" }
