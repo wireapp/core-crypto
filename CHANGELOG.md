@@ -1,6 +1,14 @@
 # Changelog
 
-## v5.0.1 - 2025-04-03
+## v5.2.0 - 2025-04-15
+
+### Bug Fixes
+
+- add registerEpochObserver to CoreCryptoProtocol (eadf388)
+- create an interface for `ConversationConfiguration` (b1e82bf)
+- swift publishing failing due to not running on latest macos runner (dcc1890)
+
+## v5.1.0 - 2025-04-03
 
 ### Bug Fixes
 
