@@ -330,6 +330,11 @@ it references.
 - crypto-ffi: use the module level function buildMetadata [WPB-14827] (2a35392)
 - parallel transactions are performed serially (20d47c1)
 
+## v3.1.1 - 2025-04-15
+
+- This release bumps the version of rusty-jwt-tools to 0.13.0, which includes
+  additional end-to-end identity tests and test markers relevant to Bund.
+
 ## v3.1.0 - 2025-02-12
 
 ### Highlights
