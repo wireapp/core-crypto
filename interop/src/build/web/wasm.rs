@@ -49,7 +49,7 @@ pub(crate) async fn build_wasm(wasm_deploy_path: PathBuf) -> Result<()> {
         .await?;
 
     std::fs::copy(
-        cwd.join("crypto-ffi/bindings/js/test/index.html"),
+        cwd.join("crypto-ffi/bindings/js/test/wdio/index.html"),
         wasm_deploy_path.join("index.html"),
     )?;
 

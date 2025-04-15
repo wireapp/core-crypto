@@ -8,7 +8,7 @@ import {
     teardown,
 } from "./utils";
 import { afterEach, beforeEach, describe } from "mocha";
-import { E2eiConversationState } from "../src/CoreCrypto";
+import { E2eiConversationState } from "../../src/CoreCrypto";
 
 beforeEach(async () => {
     await setup();

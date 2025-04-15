@@ -7,9 +7,9 @@ import {
     CoreCrypto,
     type GroupInfoBundle,
     type MlsTransport,
-} from "../src/CoreCrypto";
+} from "../../src/CoreCrypto";
 
-type ccModuleType = typeof import("../src/CoreCrypto");
+type ccModuleType = typeof import("../../src/CoreCrypto");
 
 export const ALICE_ID = "alice";
 export const BOB_ID = "bob";

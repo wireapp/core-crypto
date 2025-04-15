@@ -11,7 +11,7 @@ import {
     teardown,
 } from "./utils";
 import { afterEach, beforeEach, describe } from "mocha";
-import { GroupInfoEncryptionType, RatchetTreeType } from "../src/CoreCrypto";
+import { GroupInfoEncryptionType, RatchetTreeType } from "../../src/CoreCrypto";
 
 beforeEach(async () => {
     await setup();

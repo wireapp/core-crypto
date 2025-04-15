@@ -8,7 +8,10 @@ import {
     teardown,
 } from "./utils";
 import { afterEach, beforeEach, describe } from "mocha";
-import { CoreCryptoError, type CoreCryptoRichError } from "../src/CoreCrypto";
+import {
+    CoreCryptoError,
+    type CoreCryptoRichError,
+} from "../../src/CoreCrypto";
 
 beforeEach(async () => {
     await setup();

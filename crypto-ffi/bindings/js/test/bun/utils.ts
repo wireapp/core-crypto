@@ -11,10 +11,10 @@ import {
     type MlsTransportResponse,
     setLogger,
     setMaxLogLevel,
-} from "../src/CoreCrypto";
-import { CONV_ID as WEB_CONV_ID } from "../test/utils";
+} from "../../src/CoreCrypto";
+import { CONV_ID as WEB_CONV_ID } from "../wdio/utils";
 
-export { ALICE_ID, BOB_ID, SESSION_ID } from "../test/utils";
+export { ALICE_ID, BOB_ID, SESSION_ID } from "../wdio/utils";
 export const CONV_ID = new TextEncoder().encode(WEB_CONV_ID);
 
 const CC_INSTANCES: CoreCrypto[] = [];

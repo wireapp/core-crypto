@@ -7,7 +7,7 @@ import {
     invite,
     setup,
     teardown,
-} from "../test/utils";
+} from "../test/wdio/utils";
 import { afterEach, beforeEach, describe } from "mocha";
 import { browser, expect } from "@wdio/globals";
 import { writeFile } from "fs/promises";
