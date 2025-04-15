@@ -1,0 +1,166 @@
+[package]
+name = "core-crypto"
+description = "Abstraction over OpenMLS with persistent keystore"
+repository = "https://github.com/wireapp/core-crypto"
+version = "3.1.1"
+edition = "2021"
+license = "GPL-3.0-only"
+publish = false
+
+[lib]
+name = "core_crypto"
+crate-type = ["lib", "cdylib"]
+
+[lints]
+workspace = true
+
+[features]
+default = ["proteus", "cryptobox-migrate"]
+proteus = [
+    "dep:proteus-wasm",
+    "dep:proteus-traits",
+    "core-crypto-keystore/proteus-keystore",
+]
+cryptobox-migrate = [
+    "proteus",
+    "proteus-wasm?/cryptobox-identity",
+    "dep:async-fs",
+    "dep:futures-lite",
+    "dep:rexie",
+    "dep:idb",
+    "dep:base64",
+]
+# for test/bench all ciphersuites
+test-all-cipher = []
+# execute benches with also real db to better see overhead
+bench-in-db = []
+uniffi = ["dep:uniffi"]
+
+[dependencies]
+derive_more.workspace = true
+thiserror.workspace = true
+strum.workspace = true
+cfg-if.workspace = true
+hex.workspace = true
+futures-util.workspace = true
+
+openmls = { workspace = true, features = ["crypto-subtle"] }
+openmls_basic_credential.workspace = true
+openmls_x509_credential.workspace = true
+openmls_traits.workspace = true
+mls-crypto-provider.workspace = true
+
+tls_codec.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+url.workspace = true
+async-trait.workspace = true
+async-lock.workspace = true
+schnellru.workspace = true
+zeroize.workspace = true
+wire-e2e-identity.workspace = true
+indexmap.workspace = true
+x509-cert.workspace = true
+pem.workspace = true
+async-recursion.workspace = true
+uniffi = { workspace = true, optional = true }
+itertools.workspace = true
+uuid.workspace = true
+base64.workspace = true
+log.workspace = true
+proteus-wasm = { workspace = true, features = ["hazmat"], optional = true }
+proteus-traits = { workspace = true, optional = true }
+sha2 = "0.10.8"
+
+[target.'cfg(not(target_family = "wasm"))'.dependencies]
+sysinfo = { version = "0.32", default-features = false, features = [
+    "apple-app-store",
+    "system",
+] }
+async-fs = { version = "2.1", optional = true }
+futures-lite = { version = "2.3", optional = true }
+
+[target.'cfg(target_family = "wasm")'.dependencies]
+serde-wasm-bindgen = "0.6"
+rexie = { workspace = true, optional = true }
+idb = { workspace = true, optional = true }
+base64 = { workspace = true, optional = true }
+
+[target.'cfg(not(target_os = "ios"))'.dependencies]
+core-crypto-keystore = { workspace = true }
+
+[target.'cfg(target_os = "ios")'.dependencies]
+core-crypto-keystore = { workspace = true, features = ["ios-wal-compat"] }
+
+[dev-dependencies]
+itertools.workspace = true
+uuid = { workspace = true, features = ["v4", "v5"] }
+rand.workspace = true
+tempfile = "3.13"
+wasm-bindgen = "0.2"
+wasm-bindgen-futures = "0.4"
+wasm-bindgen-test = "0.3"
+js-sys = "0.3"
+rstest = "0.23"
+rstest_reuse = "0.7"
+pretty_env_logger = "0.5"
+async-std = { workspace = true, features = ["attributes"] }
+futures-util = { workspace = true, features = ["std", "alloc"] }
+proteus-traits = { workspace = true }
+async-trait.workspace = true
+wire-e2e-identity = { workspace = true, features = ["builder"] }
+fluvio-wasm-timer = "0.2"
+time = { version = "0.3", features = ["wasm-bindgen"] }
+core-crypto-keystore = { workspace = true, features = ["dummy-entity"] }
+core-crypto-macros = { workspace = true }
+
+[target.'cfg(not(target_family = "wasm"))'.dev-dependencies]
+cryptobox = { git = "https://github.com/wireapp/cryptobox" }
+proteus = { git = "https://github.com/wireapp/proteus", branch = "otak/fix-1.0.3" }
+
+[target.'cfg(not(target_family = "wasm"))'.dev-dependencies.criterion]
+version = "0.5"
+features = ["async_std", "html_reports"]
+
+[package.metadata.wasm-pack.profile.release]
+wasm-opt = [
+    "-Os",
+    "--enable-mutable-globals",
+    "--enable-threads",
+    "--detect-features",
+]
+
+[[bench]]
+name = "key_package"
+harness = false
+
+[[bench]]
+name = "proposal"
+harness = false
+
+[[bench]]
+name = "commit"
+harness = false
+
+[[bench]]
+name = "encryption"
+harness = false
+
+[[bench]]
+name = "create_group"
+harness = false
+
+[[bench]]
+name = "mls_proteus"
+harness = false
+
+[[bench]]
+name = "transaction"
+harness = false
+
+[build-dependencies]
+anyhow = "1.0.93"
+# this is appropriate if we always and only build in environments where `git`
+# is available on the command line. If not, we should replace this with
+# `vergen-gix` or `vergen-git2`.
+vergen-gitcl = { version = "1.0.1", features = ["build", "cargo"] }
