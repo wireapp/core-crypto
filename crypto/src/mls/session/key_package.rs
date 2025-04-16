@@ -12,10 +12,9 @@ use mls_crypto_provider::{CryptoKeystore, MlsCryptoProvider};
 
 use super::{Error, Result};
 use crate::{
-    KeystoreError, MlsError, RecursiveError,
+    KeystoreError, MlsError,
     mls::{credential::CredentialBundle, session::SessionInner},
     prelude::{MlsCiphersuite, MlsConversationConfiguration, MlsCredentialType, Session},
-    transaction_context::TransactionContext,
 };
 
 /// Default number of KeyPackages a client generates the first time it's created
@@ -324,89 +323,6 @@ impl Session {
                 Ok(())
             }
         }
-    }
-}
-
-impl TransactionContext {
-    /// Returns `amount_requested` OpenMLS [openmls::key_packages::KeyPackage]s.
-    /// Will always return the requested amount as it will generate the necessary (lacking) amount on-the-fly
-    ///
-    /// Note: Keypackage pruning is performed as a first step
-    ///
-    /// # Arguments
-    /// * `amount_requested` - number of KeyPackages to request and fill the `KeyPackageBundle`
-    ///
-    /// # Return type
-    /// A vector of `KeyPackageBundle`
-    ///
-    /// # Errors
-    /// Errors can happen when accessing the KeyStore
-    pub async fn get_or_create_client_keypackages(
-        &self,
-        ciphersuite: MlsCiphersuite,
-        credential_type: MlsCredentialType,
-        amount_requested: usize,
-    ) -> Result<Vec<KeyPackage>> {
-        let client = self
-            .session()
-            .await
-            .map_err(RecursiveError::transaction("getting mls client"))?;
-        client
-            .request_key_packages(
-                amount_requested,
-                ciphersuite,
-                credential_type,
-                &self
-                    .mls_provider()
-                    .await
-                    .map_err(RecursiveError::transaction("getting mls provider"))?,
-            )
-            .await
-    }
-
-    /// Returns the count of valid, non-expired, unclaimed keypackages in store for the given [MlsCiphersuite] and [MlsCredentialType]
-    #[cfg_attr(test, crate::idempotent)]
-    pub async fn client_valid_key_packages_count(
-        &self,
-        ciphersuite: MlsCiphersuite,
-        credential_type: MlsCredentialType,
-    ) -> Result<usize> {
-        let client = self
-            .session()
-            .await
-            .map_err(RecursiveError::transaction("getting mls client"))?;
-        client
-            .valid_keypackages_count(
-                &self
-                    .mls_provider()
-                    .await
-                    .map_err(RecursiveError::transaction("getting mls provider"))?,
-                ciphersuite,
-                credential_type,
-            )
-            .await
-    }
-
-    /// Prunes local KeyPackages after making sure they also have been deleted on the backend side
-    /// You should only use this after [TransactionContext::save_x509_credential]
-    #[cfg_attr(test, crate::dispotent)]
-    pub async fn delete_keypackages(&self, refs: &[KeyPackageRef]) -> Result<()> {
-        if refs.is_empty() {
-            return Err(Error::EmptyKeypackageList);
-        }
-        let mut client = self
-            .session()
-            .await
-            .map_err(RecursiveError::transaction("getting mls client"))?;
-        client
-            .prune_keypackages_and_credential(
-                &self
-                    .mls_provider()
-                    .await
-                    .map_err(RecursiveError::transaction("getting mls provider"))?,
-                refs,
-            )
-            .await
     }
 }
 

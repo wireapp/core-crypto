@@ -1,7 +1,5 @@
 use super::{Error, Result};
-use crate::{
-    KeystoreError, RecursiveError, e2e_identity::NewCrlDistributionPoints, transaction_context::TransactionContext,
-};
+use crate::{KeystoreError, RecursiveError, e2e_identity::NewCrlDistributionPoints};
 use core_crypto_keystore::{connection::FetchFromDatabase, entities::E2eiCrl};
 use mls_crypto_provider::MlsCryptoProvider;
 use openmls::{
@@ -82,44 +80,4 @@ pub(crate) async fn get_new_crl_distribution_points(
     crl_dps.retain(|dp| !stored_crl_dps.contains(&dp.as_str()));
 
     Ok(Some(crl_dps).into())
-}
-
-impl TransactionContext {
-    /// When x509 new credentials are registered this extracts the new CRL Distribution Point from the end entity certificate
-    /// and all the intermediates
-    pub(crate) async fn extract_dp_on_init(&self, certificate_chain: &[Vec<u8>]) -> Result<NewCrlDistributionPoints> {
-        use x509_cert::der::Decode as _;
-
-        // Own intermediates are not provided by smallstep in the /federation endpoint so we got to intercept them here, at issuance
-        let size = certificate_chain.len();
-        let mut crl_new_distribution_points = HashSet::new();
-        if size > 1 {
-            for int in certificate_chain.iter().skip(1).rev() {
-                let mut crl_dp = self
-                    .e2ei_register_intermediate_ca_der(int)
-                    .await
-                    .map_err(RecursiveError::transaction("registering intermediate ca der"))?;
-                if let Some(crl_dp) = crl_dp.take() {
-                    crl_new_distribution_points.extend(crl_dp);
-                }
-            }
-        }
-
-        let ee = certificate_chain.first().ok_or(Error::InvalidCertificateChain)?;
-
-        let ee = x509_cert::Certificate::from_der(ee).map_err(Error::DecodeX509)?;
-        let mut ee_crl_dp = extract_crl_uris(&ee).map_err(RecursiveError::e2e_identity("extracting crl urls"))?;
-        if let Some(crl_dp) = ee_crl_dp.take() {
-            crl_new_distribution_points.extend(crl_dp);
-        }
-
-        get_new_crl_distribution_points(
-            &self
-                .mls_provider()
-                .await
-                .map_err(RecursiveError::transaction("getting mls provider"))?,
-            crl_new_distribution_points,
-        )
-        .await
-    }
 }
