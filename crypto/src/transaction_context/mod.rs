@@ -22,6 +22,8 @@ pub mod conversation;
 pub mod e2e_identity;
 mod error;
 pub mod key_package;
+#[cfg(feature = "proteus")]
+pub mod proteus;
 #[cfg(test)]
 pub mod test_utils;
 
