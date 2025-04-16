@@ -369,11 +369,11 @@
 
     "@wdio/repl": ["@wdio/repl@9.4.4", "", { "dependencies": { "@types/node": "^20.1.0" } }, "sha512-kchPRhoG/pCn4KhHGiL/ocNhdpR8OkD2e6sANlSUZ4TGBVi86YSIEjc2yXUwLacHknC/EnQk/SFnqd4MsNjGGg=="],
 
-    "@wdio/reporter": ["@wdio/reporter@9.11.0", "", { "dependencies": { "@types/node": "^20.1.0", "@wdio/logger": "9.4.4", "@wdio/types": "9.10.1", "diff": "^7.0.0", "object-inspect": "^1.12.0" } }, "sha512-YTUlrTsJU2XT5olFOk+tsYm6DcUwmowk0us1gt5Me2zFI3UdUQpuUMfPEqFtayRsfcHwSaPGLKR7Eng+r3uXGQ=="],
+    "@wdio/reporter": ["@wdio/reporter@9.12.3", "", { "dependencies": { "@types/node": "^20.1.0", "@wdio/logger": "9.4.4", "@wdio/types": "9.12.3", "diff": "^7.0.0", "object-inspect": "^1.12.0" } }, "sha512-T0dO6xQ3AYTwvgmHpVP/w/8pgDtv3SFo8JKO0EDBFM6uNOyKlh+9ChvU2KednY1Qt7Pw11sUrSFsFzY7TXW1iQ=="],
 
     "@wdio/runner": ["@wdio/runner@9.12.1", "", { "dependencies": { "@types/node": "^20.11.28", "@wdio/config": "9.12.1", "@wdio/dot-reporter": "9.11.0", "@wdio/globals": "9.12.1", "@wdio/logger": "9.4.4", "@wdio/types": "9.10.1", "@wdio/utils": "9.12.1", "deepmerge-ts": "^7.0.3", "expect-webdriverio": "^5.1.0", "webdriver": "9.12.1", "webdriverio": "9.12.1" } }, "sha512-aKI/oIwjBreJclEgxxHTTorOa8PUtwVctrtoVNDzzOux2S6X7rFBufKIYbexc02EFjvNqCgFcHnLd438WP4C7g=="],
 
-    "@wdio/spec-reporter": ["@wdio/spec-reporter@9.11.0", "", { "dependencies": { "@wdio/reporter": "9.11.0", "@wdio/types": "9.10.1", "chalk": "^5.1.2", "easy-table": "^1.2.0", "pretty-ms": "^9.0.0" } }, "sha512-S8pd2hm8zWbE2yiAZqpDSgZ0gRnZRwV4xWAKO/dhHgAYWzHamQ1Hk7P0Sp1sQA/Pu+gyRId3uJ+WDiWVos8ftA=="],
+    "@wdio/spec-reporter": ["@wdio/spec-reporter@9.12.3", "", { "dependencies": { "@wdio/reporter": "9.12.3", "@wdio/types": "9.12.3", "chalk": "^5.1.2", "easy-table": "^1.2.0", "pretty-ms": "^9.0.0" } }, "sha512-d/ZLu6gwzuuzYMObfC8Kaf2Lv8GkxfrrPr+ZUVbwWiJI0MxRJJc2STb2fchbSc1eTRkzKpuTHVPYF932yaCrsA=="],
 
     "@wdio/static-server-service": ["@wdio/static-server-service@9.10.1", "", { "dependencies": { "@wdio/logger": "9.4.4", "@wdio/types": "9.10.1", "express": "^4.14.0", "morgan": "^1.7.0" } }, "sha512-MqhmGhNnRNbX6CZWrQeEZSwjkDN/wFbjUcAvkdx9w4ykk7WkrSL+pYNgevHPag8L4Kzx2XWHlFoHpl+jxZUjUg=="],
 
@@ -1527,7 +1527,13 @@
 
     "@vitest/snapshot/pathe": ["pathe@1.1.2", "", {}, "sha512-whLdWMYL2TwI08hn8/ZqAbrVemu0LNaNNJZX73O6qaIdCTfXutsLhMkjdENX0qhsQ9uIimo4/aQOmXkoon2nDQ=="],
 
+    "@wdio/dot-reporter/@wdio/reporter": ["@wdio/reporter@9.11.0", "", { "dependencies": { "@types/node": "^20.1.0", "@wdio/logger": "9.4.4", "@wdio/types": "9.10.1", "diff": "^7.0.0", "object-inspect": "^1.12.0" } }, "sha512-YTUlrTsJU2XT5olFOk+tsYm6DcUwmowk0us1gt5Me2zFI3UdUQpuUMfPEqFtayRsfcHwSaPGLKR7Eng+r3uXGQ=="],
+
+    "@wdio/reporter/@wdio/types": ["@wdio/types@9.12.3", "", { "dependencies": { "@types/node": "^20.1.0" } }, "sha512-MlnQ3WG1CQAjmUmeKtv3timGR91hSsCwQW9T1kqpu0VaJ/qbw3sWgtArMqRvgWB2H6IGueqQwDQ9qHlP013w9Q=="],
+
     "@wdio/reporter/diff": ["diff@7.0.0", "", {}, "sha512-PJWHUb1RFevKCwaFA9RlG5tCd+FO5iRh9A8HEtkmBH2Li03iJriB6m6JIN4rGz3K3JLawI7/veA1xzRKP6ISBw=="],
+
+    "@wdio/spec-reporter/@wdio/types": ["@wdio/types@9.12.3", "", { "dependencies": { "@types/node": "^20.1.0" } }, "sha512-MlnQ3WG1CQAjmUmeKtv3timGR91hSsCwQW9T1kqpu0VaJ/qbw3sWgtArMqRvgWB2H6IGueqQwDQ9qHlP013w9Q=="],
 
     "ajv-formats/ajv": ["ajv@8.17.1", "", { "dependencies": { "fast-deep-equal": "^3.1.3", "fast-uri": "^3.0.1", "json-schema-traverse": "^1.0.0", "require-from-string": "^2.0.2" } }, "sha512-B/gBuNg5SiMTrPkC+A2+cW0RszwxYmn6VYxB/inlBStS5nx6xHIt/ehKRhIMhqusl7a8LjQoZnjCs5vhwxOQ1g=="],
 
@@ -1764,6 +1770,8 @@
     "@types/yauzl/@types/node/undici-types": ["undici-types@6.20.0", "", {}, "sha512-Ny6QZ2Nju20vw1SRHe3d9jVu6gJ+4e3+MMpqu7pqE5HT6WsTSlce++GQmK5UXS8mzV8DSYHrQH+Xrf2jVcuKNg=="],
 
     "@typescript-eslint/typescript-estree/minimatch/brace-expansion": ["brace-expansion@2.0.1", "", { "dependencies": { "balanced-match": "^1.0.0" } }, "sha512-XnAIvQ8eM+kC6aULx6wuQiwVsnzsi9d3WxzV3FpWTGA19F621kwdbsAcFKXgKUHZWsy+mY6iL1sHTxWEFCytDA=="],
+
+    "@wdio/dot-reporter/@wdio/reporter/diff": ["diff@7.0.0", "", {}, "sha512-PJWHUb1RFevKCwaFA9RlG5tCd+FO5iRh9A8HEtkmBH2Li03iJriB6m6JIN4rGz3K3JLawI7/veA1xzRKP6ISBw=="],
 
     "ajv-formats/ajv/json-schema-traverse": ["json-schema-traverse@1.0.0", "", {}, "sha512-NM8/P9n3XjXhIZn1lLhkFaACTOURQXjWhV4BA/RnOv8xvgqtqpAX9IO4mRQxSx1Rlo4tqzeqb0sOlruaOy3dug=="],
 
