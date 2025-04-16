@@ -40,8 +40,14 @@ impl ProteusError {
 
 impl From<core_crypto::ProteusError> for ProteusError {
     fn from(value: core_crypto::ProteusError) -> Self {
+        (&value.source).into()
+    }
+}
+
+impl From<&core_crypto::ProteusErrorKind> for ProteusError {
+    fn from(value: &core_crypto::ProteusErrorKind) -> Self {
         type SessionError = proteus_wasm::session::Error<core_crypto_keystore::CryptoKeystoreError>;
-        match value.source {
+        match value {
             core_crypto::ProteusErrorKind::ProteusSessionError(SessionError::InternalError(
                 proteus_wasm::internal::types::InternalError::NoSessionForTag,
             )) => Self::SessionNotFound,
@@ -51,7 +57,7 @@ impl From<core_crypto::ProteusError> for ProteusError {
             core_crypto::ProteusErrorKind::ProteusSessionError(SessionError::RemoteIdentityChanged) => {
                 Self::RemoteIdentityChanged
             }
-            _ => Self::Other(value.source.error_code().unwrap_or_default()),
+            _ => Self::Other(value.error_code().unwrap_or_default()),
         }
     }
 }

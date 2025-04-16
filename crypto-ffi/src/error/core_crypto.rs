@@ -44,7 +44,6 @@ impl From<RecursiveError> for CoreCryptoError {
     fn from(error: RecursiveError) -> Self {
         log_error(&error);
 
-        // check if the innermost error is any kind of e2e error
         let innermost = {
             let mut err: &dyn std::error::Error = &error;
             while let Some(inner) = err.source() {
@@ -53,6 +52,7 @@ impl From<RecursiveError> for CoreCryptoError {
             err
         };
 
+        // check if the innermost error is any kind of e2e error
         if let Some(err) = innermost.downcast_ref::<core_crypto::e2e_identity::Error>() {
             return CoreCryptoError::E2ei(err.to_string());
         }
@@ -107,6 +107,13 @@ impl From<RecursiveError> for CoreCryptoError {
             core_crypto::mls::conversation::Error::BufferedCommit => MlsError::BufferedCommit.into(),
             core_crypto::mls::conversation::Error::MessageRejected { reason } => MlsError::MessageRejected { reason: reason.clone() }.into(),
             core_crypto::mls::conversation::Error::OrphanWelcome => MlsError::OrphanWelcome.into(),
+            e @ (
+                core_crypto::ProteusErrorKind::ProteusDecodeError(_)
+                | core_crypto::ProteusErrorKind::ProteusEncodeError(_)
+                | core_crypto::ProteusErrorKind::ProteusInternalError(_)
+                | core_crypto::ProteusErrorKind::ProteusSessionError(_)
+                | core_crypto::ProteusErrorKind::Leaf(_)
+            ) => ProteusError::from(e).into(),
             // The internal name is what we want, but renaming the external variant is a breaking change.
             // Since we're re-designing the `BufferedMessage` errors soon, it's not worth producing
             // an additional breaking change until then, so the names are inconsistent.
