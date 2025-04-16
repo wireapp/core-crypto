@@ -197,6 +197,19 @@ in the table, ordering by version number, descending. Search and replace the fir
 <li>Create a new release on github, copying the relevant section from <code>CHANGELOG.md</code></li>
 <li>Voilà!</li>
 </ol>
+<h5 id="consider-when-making-a-release-from-a-release-branch"><a class="doc-anchor" href="#consider-when-making-a-release-from-a-release-branch">§</a>Consider when making a release from a release branch</h5>
+<ol>
+<li>Isolate the changes to <a href="docs/index.md">index.md</a> and <code>CHANGELOG.md</code> from the release commit itself</li>
+<li>After the release is finished, cherry-pick the changes to <a href="docs/index.md">index.md</a> and <code>CHANGELOG.md</code> and get them into <code>main</code></li>
+<li>For release series <code>4.x</code> and newer, docs upload happens automatically.
+If you released from the series <code>3.x</code> or older, you need to trigger docs upload manually:
+<ol>
+<li>On GitHub, go to the <a href="https://github.com/wireapp/core-crypto/actions/workflows/docs.yml">docs workflow</a></li>
+<li>Click the <code>Run workflow</code> button</li>
+<li>In the <code>Use workflow from</code> dropdown, choose <code>release/5.x</code>, in <code>Tag to checkout</code> provide your release tag</li>
+</ol>
+</li>
+</ol>
 <h4 id="publishing-android--jvm-bindings"><a class="doc-anchor" href="#publishing-android--jvm-bindings">§</a>Publishing Android / JVM bindings</h4>
 <p>Publishing Android / JVM bindings happens automatically by a github workflow when a release tag is pushed.</p>
 <p>If you would like to publish the bindings to a local maven cache, run:</p>
