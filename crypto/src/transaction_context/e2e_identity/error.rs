@@ -19,6 +19,8 @@ pub enum Error {
     TrustAnchorAlreadyRegistered,
     #[error("PKI Environment must be set before calling this function")]
     PkiEnvironmentUnset,
+    #[error("The certificate chain is invalid or not complete")]
+    InvalidCertificateChain,
     #[error(transparent)]
     X509Error(#[from] wire_e2e_identity::prelude::x509::RustyX509CheckError),
     #[error(transparent)]

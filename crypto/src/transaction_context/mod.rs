@@ -1,22 +1,27 @@
 //! This module contains the primitives to enable transactional support on a higher level within the
 //! [Client]. All mutating operations need to be done through a [TransactionContext].
 
-use crate::mls::HasSessionAndCrypto;
 #[cfg(feature = "proteus")]
 use crate::proteus::ProteusCentral;
 use crate::{
     CoreCrypto, KeystoreError, MlsError, MlsTransport, RecursiveError,
     group_store::GroupStore,
-    prelude::{MlsConversation, Session},
+    prelude::{ClientId, INITIAL_KEYING_MATERIAL_COUNT, MlsConversation, MlsCredentialType, Session},
+};
+use crate::{
+    mls::HasSessionAndCrypto,
+    prelude::{ClientIdentifier, MlsCiphersuite},
 };
 use async_lock::{Mutex, RwLock, RwLockReadGuardArc, RwLockWriteGuardArc};
 use core_crypto_keystore::{CryptoKeystoreError, connection::FetchFromDatabase, entities::ConsumerData};
 pub use error::{Error, Result};
 use mls_crypto_provider::{CryptoKeystore, MlsCryptoProvider};
+use openmls_traits::OpenMlsCryptoProvider as _;
 use std::{ops::Deref, sync::Arc};
 pub mod conversation;
 pub mod e2e_identity;
 mod error;
+pub mod key_package;
 #[cfg(test)]
 pub mod test_utils;
 
@@ -206,6 +211,104 @@ impl TransactionContext {
 
         *guard = TransactionContextInner::Invalid;
         result
+    }
+
+    /// Initializes the MLS client if [super::CoreCrypto] has previously been initialized with
+    /// `CoreCrypto::deferred_init` instead of `CoreCrypto::new`.
+    /// This should stay as long as proteus is supported. Then it should be removed.
+    pub async fn mls_init(
+        &self,
+        identifier: ClientIdentifier,
+        ciphersuites: Vec<MlsCiphersuite>,
+        nb_init_key_packages: Option<usize>,
+    ) -> Result<()> {
+        let nb_key_package = nb_init_key_packages.unwrap_or(INITIAL_KEYING_MATERIAL_COUNT);
+        let mls_client = self.session().await?;
+        mls_client
+            .init(identifier, &ciphersuites, &self.mls_provider().await?, nb_key_package)
+            .await
+            .map_err(RecursiveError::mls_client("initializing mls client"))?;
+
+        if mls_client.is_e2ei_capable().await {
+            let client_id = mls_client
+                .id()
+                .await
+                .map_err(RecursiveError::mls_client("getting client id"))?;
+            log::trace!(client_id:% = client_id; "Initializing PKI environment");
+            self.init_pki_env().await?;
+        }
+
+        Ok(())
+    }
+
+    /// Generates MLS KeyPairs/CredentialBundle with a temporary, random client ID.
+    /// This method is designed to be used in conjunction with [TransactionContext::mls_init_with_client_id] and represents the first step in this process.
+    ///
+    /// This returns the TLS-serialized identity keys (i.e. the signature keypair's public key)
+    #[cfg_attr(test, crate::dispotent)]
+    pub async fn mls_generate_keypairs(&self, ciphersuites: Vec<MlsCiphersuite>) -> Result<Vec<ClientId>> {
+        self.session()
+            .await?
+            .generate_raw_keypairs(&ciphersuites, &self.mls_provider().await?)
+            .await
+            .map_err(RecursiveError::mls_client("generating raw keypairs"))
+            .map_err(Into::into)
+    }
+
+    /// Updates the current temporary Client ID with the newly provided one. This is the second step in the externally-generated clients process
+    ///
+    /// Important: This is designed to be called after [TransactionContext::mls_generate_keypairs]
+    #[cfg_attr(test, crate::dispotent)]
+    pub async fn mls_init_with_client_id(
+        &self,
+        client_id: ClientId,
+        tmp_client_ids: Vec<ClientId>,
+        ciphersuites: Vec<MlsCiphersuite>,
+    ) -> Result<()> {
+        self.session()
+            .await?
+            .init_with_external_client_id(client_id, tmp_client_ids, &ciphersuites, &self.mls_provider().await?)
+            .await
+            .map_err(RecursiveError::mls_client(
+                "initializing mls client with external client id",
+            ))
+            .map_err(Into::into)
+    }
+
+    /// see [Client::client_public_key]
+    pub async fn client_public_key(
+        &self,
+        ciphersuite: MlsCiphersuite,
+        credential_type: MlsCredentialType,
+    ) -> Result<Vec<u8>> {
+        let cb = self
+            .session()
+            .await?
+            .find_most_recent_credential_bundle(ciphersuite.signature_algorithm(), credential_type)
+            .await
+            .map_err(RecursiveError::mls_client("finding most recent credential bundle"))?;
+        Ok(cb.signature_key.to_public_vec())
+    }
+
+    /// see [Client::id]
+    pub async fn client_id(&self) -> Result<ClientId> {
+        self.session()
+            .await?
+            .id()
+            .await
+            .map_err(RecursiveError::mls_client("getting client id"))
+            .map_err(Into::into)
+    }
+
+    /// Generates a random byte array of the specified size
+    pub async fn random_bytes(&self, len: usize) -> Result<Vec<u8>> {
+        use openmls_traits::random::OpenMlsRand as _;
+        self.mls_provider()
+            .await?
+            .rand()
+            .random_vec(len)
+            .map_err(MlsError::wrap("generating random vector"))
+            .map_err(Into::into)
     }
 
     /// Set arbitrary data to be retrieved by [TransactionContext::get_data].

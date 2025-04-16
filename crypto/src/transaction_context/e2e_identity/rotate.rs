@@ -163,10 +163,7 @@ impl TransactionContext {
             signature_scheme: cs.signature_algorithm(),
         };
 
-        let crl_new_distribution_points = self
-            .extract_dp_on_init(&certificate_chain[..])
-            .await
-            .map_err(RecursiveError::mls_credential("extracting dp on init"))?;
+        let crl_new_distribution_points = self.extract_dp_on_init(&certificate_chain[..]).await?;
 
         let cert_bundle = CertificateBundle {
             certificate_chain,
@@ -237,7 +234,7 @@ impl TransactionContext {
         }
         self.delete_keypackages(&kp_refs)
             .await
-            .map_err(RecursiveError::mls_client("deleting keypackages"))?;
+            .map_err(RecursiveError::transaction("deleting keypackages"))?;
         Ok(())
     }
 }

@@ -7,8 +7,6 @@ pub(crate) type Result<T, E = Error> = core::result::Result<T, E>;
 
 #[derive(Debug, thiserror::Error)]
 pub enum Error {
-    #[error("The certificate chain is invalid or not complete")]
-    InvalidCertificateChain,
     #[error("decoding X509 certificate")]
     DecodeX509(#[source] x509_cert::der::Error),
     #[error("client presented an invalid identity")]

@@ -565,7 +565,7 @@ mod tests {
                 Some(INITIAL_KEYING_MATERIAL_COUNT),
             )
             .await
-            .map_err(RecursiveError::mls("initializing mls"))?;
+            .map_err(RecursiveError::transaction("initializing mls"))?;
 
         let guest_path = tmp_db_file();
         let guest_cfg = MlsClientConfiguration::try_new(
@@ -599,7 +599,7 @@ mod tests {
                 Some(INITIAL_KEYING_MATERIAL_COUNT),
             )
             .await
-            .map_err(RecursiveError::mls("initializing mls guest transaction"))?;
+            .map_err(RecursiveError::transaction("initializing mls guest transaction"))?;
 
         creator_transaction
             .new_conversation(&id, creator_ct, case.cfg.clone())

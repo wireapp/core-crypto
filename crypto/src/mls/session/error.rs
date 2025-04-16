@@ -19,8 +19,6 @@ pub enum Error {
     CredentialNotFound(crate::prelude::MlsCredentialType),
     #[error("supplied signature scheme was not valid")]
     InvalidSignatureScheme,
-    #[error("Keypackage list was empty")]
-    EmptyKeypackageList,
     /// The keystore has no knowledge of such client; this shouldn't happen as Client::init is failsafe (find-else-create)
     #[error("The provided client signature has not been found in the keystore")]
     ClientSignatureNotFound,
