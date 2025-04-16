@@ -15,10 +15,9 @@ class MLSTest {
 
     companion object {
         internal val id = "JfflcPtUivbg+1U3Iyrzsh5D2ui/OGS5Rvf52ipH5KY=".toGroupId()
-        internal val aliceId = "alice1"
-        internal val aliceId2 = "alice2"
-        internal val bobId = "bob"
-        internal val carolId = "carol"
+        internal const val aliceId = "alice1"
+        internal const val bobId = "bob"
+        internal const val carolId = "carol"
         internal lateinit var mockDeliveryService: MockDeliveryService
     }
 
@@ -310,42 +309,58 @@ class MLSTest {
     fun registerEpochObserver_should_notify_observer_on_new_epoch(): TestResult {
         val scope = TestScope()
         return scope.runTest {
-            // set up the observer. this just keeps a list of all observations.
-            data class EpochChanged(val conversationId: kotlin.ByteArray, val epoch: kotlin.ULong)
+            // Set up the observer. this just keeps a list of all observations.
+            data class EpochChanged(val conversationId: ByteArray, val epoch: ULong)
             class Observer: EpochObserver {
-                val observed_events = emptyList<EpochChanged>().toMutableList();
-                override suspend fun epochChanged(conversationId: kotlin.ByteArray, epoch: kotlin.ULong) {
-                    observed_events.add(EpochChanged(conversationId, epoch))
+                val observedEvents = emptyList<EpochChanged>().toMutableList();
+                override suspend fun epochChanged(conversationId: ByteArray, epoch: ULong) {
+                    observedEvents.add(EpochChanged(conversationId, epoch))
                 }
             }
-            var observer = Observer()
+            val bobObserver = Observer()
+            val aliceObserver = Observer()
 
-            // set up the conversation in one transaction
-            val cc = initCc()
-            cc.transaction { ctx ->
-                ctx.mlsInit(aliceId.toClientId())
-                ctx.createConversation(id)
-            }
+            // Set up the conversation in one transaction
+            val (alice, bob) = newClients(aliceId, bobId)
+            bob.transaction { it.createConversation(id) }
 
-            // register the observer
-            cc.registerEpochObserver(scope, observer)
+            // Register observers
+            bob.registerEpochObserver(scope, bobObserver)
+            alice.registerEpochObserver(scope, aliceObserver)
 
-            // in another transaction, change the epoch
-            cc.transaction { ctx ->
-                ctx.updateKeyingMaterial(id)
-                // ctx.commitPendingProposals(id)
-            }
+            // In another transaction, change the epoch
+            bob.transaction { it.updateKeyingMaterial(id) }
 
-            // observer must have observed an epoch change event
-            assertEquals(1, observer.observed_events.size, "we triggered exactly 1 epoch change and must have observed that")
-            val observed_group_id = observer.observed_events[0].conversationId.toGroupId()
+            // Alice joins the group
+            val aliceKp = alice.transaction { it.generateKeyPackages(1U).first() }
+            bob.transaction { it.addMember(id, listOf(aliceKp)) }
+            val welcome = mockDeliveryService.getLatestWelcome()
+            val groupId = alice.transaction { it.processWelcomeMessage(welcome).id }
+
+            // Change the epoch again, this should be seen by both observers
+            bob.transaction { it.updateKeyingMaterial(id) }
+            val commit = mockDeliveryService.getLatestCommit()
+            alice.transaction { it.decryptMessage(groupId, commit) }
+
+            // Bob's observer must have observed all epoch change events, Alice's observer saw only the
+            // last one
+            assertEquals(3, bobObserver.observedEvents.size, "we triggered exactly 3 epoch changes and must have observed that")
+            assertEquals(1, aliceObserver.observedEvents.size, "we triggered exactly 1 epoch change and must have observed that")
             // println("observed group id: $observed_group_id")
             // println("expected group id: $id")
             //
             // This doesn't work without the string cast for what I can only assume to be Kotlin Reasons, which
             // are sensible if you are an experienced kotlin developer, which I am not.
             // If you want to observe a nonsense failure, un-comment the printlns above, and the `.toString()` calls below
-            assertTrue(observed_group_id.toString() == id.toString(), "the observed event must be for this conversation")
+            val expected = id.toString()
+            assertTrue(
+                bobObserver.observedEvents.all { it.conversationId.toGroupId().toString() == expected },
+                "the events observed by bob must be for this conversation"
+            )
+            assertTrue(
+                aliceObserver.observedEvents.all { it.conversationId.toGroupId().toString() == expected },
+                "the event observed by alice must be for this conversation"
+            )
         }
     }
 }
