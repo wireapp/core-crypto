@@ -156,4 +156,4 @@ anyhow = "1.0.97"
 # this is appropriate if we always and only build in environments where `git`
 # is available on the command line. If not, we should replace this with
 # `vergen-gix` or `vergen-git2`.
-vergen-gitcl = { version = "1.0.5", features = ["build", "cargo"] }
+vergen-gitcl = { version = "1.0.8", features = ["build", "cargo"] }
