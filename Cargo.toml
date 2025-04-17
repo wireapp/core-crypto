@@ -62,7 +62,7 @@ thiserror = "2.0"
 tls_codec = "0.4.2"
 uniffi = "0.29"
 url = "2.5"
-uuid = "1.12"
+uuid = "1.16"
 x509-cert = "0.2"
 zeroize = "1.8"
 
@@ -76,7 +76,7 @@ openmls_x509_credential = { git = "https://github.com/wireapp/openmls", rev = "5
 proteus-traits = { git = "https://github.com/wireapp/proteus", tag = "v2.1.1" }
 proteus-wasm = { git = "https://github.com/wireapp/proteus", tag = "v2.1.1" }
 
-wire-e2e-identity = { git = "https://github.com/wireapp/rusty-jwt-tools", tag = "v0.12.0" }
+wire-e2e-identity = { git = "https://github.com/wireapp/rusty-jwt-tools", tag = "v0.13.0" }
 
 [profile.release]
 lto = true
