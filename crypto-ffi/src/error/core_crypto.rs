@@ -44,7 +44,6 @@ impl From<RecursiveError> for CoreCryptoError {
     fn from(error: RecursiveError) -> Self {
         log_error(&error);
 
-        // check if the innermost error is any kind of e2e error
         let innermost = {
             let mut err: &dyn std::error::Error = &error;
             while let Some(inner) = err.source() {
@@ -53,6 +52,7 @@ impl From<RecursiveError> for CoreCryptoError {
             err
         };
 
+        // check if the innermost error is any kind of e2e error
         if let Some(err) = innermost.downcast_ref::<core_crypto::e2e_identity::Error>() {
             return CoreCryptoError::E2ei(err.to_string());
         }
@@ -67,10 +67,31 @@ impl From<RecursiveError> for CoreCryptoError {
         /// Hopefully only ever use this in conjunction with `interior_matches!`, because for most sane
         /// circumstances, `if let` is the better design pattern.
         macro_rules! matches_option {
-            ($val:expr, $pattern:pat $(if $guard:expr)? => $out:expr) => {
+            // Without cfg attribute
+            (
+                $val:expr,
+                $pattern:pat $(if $guard:expr)? => $out:expr
+            ) => {
                 match ($val) {
                     $pattern $(if $guard)? => Some($out),
                     _ => None,
+                }
+            };
+            // With cfg attribute
+            (
+                $val:expr,
+                #[cfg($meta:meta)]
+                $pattern:pat $(if $guard:expr)? => $out:expr
+            ) => {
+                {
+                    #[cfg($meta)]
+                    let result = match ($val) {
+                        $pattern $(if $guard)? => Some($out),
+                        _ => None,
+                    };
+                    #[cfg(not($meta))]
+                    let result = None;
+                    result
                 }
             };
         }
@@ -79,13 +100,22 @@ impl From<RecursiveError> for CoreCryptoError {
         /// it solves a real problem here: how do we match against the innermost error variants,
         /// when we have a heterogenous set of types to match against?
         macro_rules! match_heterogenous {
-            ($err:expr => {
-                $( $pattern:pat $(if $guard:expr)? => $var:expr, )*
-                ||=> $default:expr,
-            }) => {{
-                if false {unreachable!()}
+            (
+                $err:expr => {
+                    $(
+                        $( #[cfg($meta:meta)] )?
+                        $pattern:pat $(if $guard:expr)? => $var:expr,
+                    )*
+                    ||=> $default:expr,
+                }
+            ) => {{
+                if false { unreachable!() }
                 $(
-                    else if let Some(v) = matches_option!($err.downcast_ref(), Some($pattern) $(if $guard)? => $var) {
+                    else if let Some(v) = matches_option!(
+                        $err.downcast_ref(),
+                        $( #[cfg($meta)] )?
+                        Some($pattern) $(if $guard)? => $var
+                    ) {
                         v
                     }
                 )*
@@ -107,6 +137,14 @@ impl From<RecursiveError> for CoreCryptoError {
             core_crypto::mls::conversation::Error::BufferedCommit => MlsError::BufferedCommit.into(),
             core_crypto::mls::conversation::Error::MessageRejected { reason } => MlsError::MessageRejected { reason: reason.clone() }.into(),
             core_crypto::mls::conversation::Error::OrphanWelcome => MlsError::OrphanWelcome.into(),
+            #[cfg(feature="proteus")]
+            e @ (
+                core_crypto::ProteusErrorKind::ProteusDecodeError(_)
+                | core_crypto::ProteusErrorKind::ProteusEncodeError(_)
+                | core_crypto::ProteusErrorKind::ProteusInternalError(_)
+                | core_crypto::ProteusErrorKind::ProteusSessionError(_)
+                | core_crypto::ProteusErrorKind::Leaf(_)
+            ) => ProteusError::from(e).into(),
             // The internal name is what we want, but renaming the external variant is a breaking change.
             // Since we're re-designing the `BufferedMessage` errors soon, it's not worth producing
             // an additional breaking change until then, so the names are inconsistent.

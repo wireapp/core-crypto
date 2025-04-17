@@ -19,6 +19,8 @@ pub enum Error {
     PendingConversation(PendingConversation),
     #[error("Couldn't find client")]
     ClientNotFound(crate::prelude::ClientId),
+    #[error("Proteus client hasn't been initialized")]
+    ProteusNotInitialized,
     #[error("Serializing {item} for TLS")]
     TlsSerialize {
         item: &'static str,

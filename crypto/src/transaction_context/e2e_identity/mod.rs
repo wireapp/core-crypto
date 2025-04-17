@@ -7,14 +7,15 @@ mod init_certificates;
 mod rotate;
 mod stash;
 
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 
 use crate::{
     RecursiveError,
-    mls::credential::x509::CertificatePrivateKey,
+    mls::credential::{crl::get_new_crl_distribution_points, x509::CertificatePrivateKey},
     prelude::{CertificateBundle, ClientId, ClientIdentifier, E2eiEnrollment, MlsCiphersuite},
 };
 use openmls_traits::OpenMlsCryptoProvider as _;
+use wire_e2e_identity::prelude::x509::extract_crl_uris;
 
 use super::TransactionContext;
 pub use crate::e2e_identity::E2eiDumpedPkiEnv;
@@ -86,10 +87,7 @@ impl TransactionContext {
             .await
             .map_err(RecursiveError::e2e_identity("getting certificate response"))?;
 
-        let crl_new_distribution_points = self
-            .extract_dp_on_init(&certificate_chain[..])
-            .await
-            .map_err(RecursiveError::mls_credential("extracting dp on init"))?;
+        let crl_new_distribution_points = self.extract_dp_on_init(&certificate_chain[..]).await?;
 
         let private_key = CertificatePrivateKey {
             value: sk,
@@ -103,8 +101,49 @@ impl TransactionContext {
         let identifier = ClientIdentifier::X509(HashMap::from([(cs.signature_algorithm(), cert_bundle)]));
         self.mls_init(identifier, vec![cs], nb_init_key_packages)
             .await
-            .map_err(RecursiveError::mls("initializing mls"))?;
+            .map_err(RecursiveError::transaction("initializing mls"))?;
         Ok(crl_new_distribution_points)
+    }
+
+    /// When x509 new credentials are registered this extracts the new CRL Distribution Point from the end entity certificate
+    /// and all the intermediates
+    async fn extract_dp_on_init(&self, certificate_chain: &[Vec<u8>]) -> Result<NewCrlDistributionPoints> {
+        use x509_cert::der::Decode as _;
+
+        // Own intermediates are not provided by smallstep in the /federation endpoint so we got to intercept them here, at issuance
+        let size = certificate_chain.len();
+        let mut crl_new_distribution_points = HashSet::new();
+        if size > 1 {
+            for int in certificate_chain.iter().skip(1).rev() {
+                let mut crl_dp = self
+                    .e2ei_register_intermediate_ca_der(int)
+                    .await
+                    .map_err(RecursiveError::transaction("registering intermediate ca der"))?;
+                if let Some(crl_dp) = crl_dp.take() {
+                    crl_new_distribution_points.extend(crl_dp);
+                }
+            }
+        }
+
+        let ee = certificate_chain.first().ok_or(Error::InvalidCertificateChain)?;
+        let ee = x509_cert::Certificate::from_der(ee)
+            .map_err(crate::mls::credential::Error::DecodeX509)
+            .map_err(RecursiveError::mls_credential("decoding x509 credential"))?;
+        let mut ee_crl_dp = extract_crl_uris(&ee).map_err(RecursiveError::e2e_identity("extracting crl urls"))?;
+        if let Some(crl_dp) = ee_crl_dp.take() {
+            crl_new_distribution_points.extend(crl_dp);
+        }
+
+        get_new_crl_distribution_points(
+            &self
+                .mls_provider()
+                .await
+                .map_err(RecursiveError::transaction("getting mls provider"))?,
+            crl_new_distribution_points,
+        )
+        .await
+        .map_err(RecursiveError::mls_credential("getting new crl distribution points"))
+        .map_err(Into::into)
     }
 }
 

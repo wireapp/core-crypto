@@ -145,7 +145,7 @@ impl CoreCryptoContext {
             .inner
             .get_or_create_client_keypackages(ciphersuite.into(), credential_type.into(), amount_requested as usize)
             .await
-            .map_err(RecursiveError::mls_client("getting or creating client keypackages"))?;
+            .map_err(RecursiveError::transaction("getting or creating client keypackages"))?;
 
         kps.into_iter()
             .map(|kp| {
@@ -167,7 +167,7 @@ impl CoreCryptoContext {
             .inner
             .client_valid_key_packages_count(ciphersuite.into(), credential_type.into())
             .await
-            .map_err(RecursiveError::mls_client("counting client valid keypackages"))?;
+            .map_err(RecursiveError::transaction("counting client valid keypackages"))?;
 
         Ok(count.try_into().unwrap_or(0))
     }
@@ -184,7 +184,7 @@ impl CoreCryptoContext {
         self.inner
             .delete_keypackages(&refs[..])
             .await
-            .map_err(RecursiveError::mls_client("deleting keypackages"))?;
+            .map_err(RecursiveError::transaction("deleting keypackages"))?;
         Ok(())
     }
 

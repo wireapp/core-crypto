@@ -1,17 +1,9 @@
-use log::trace;
-
 use crate::{
-    MlsError, RecursiveError,
-    prelude::{
-        ClientId, MlsCiphersuite, MlsConversation, MlsCredentialType, Session, identifier::ClientIdentifier,
-        key_package::INITIAL_KEYING_MATERIAL_COUNT,
-    },
+    MlsError,
+    prelude::{ClientId, MlsConversation, Session},
 };
 use core_crypto_keystore::DatabaseKey;
 use mls_crypto_provider::MlsCryptoProvider;
-use openmls_traits::OpenMlsCryptoProvider;
-
-use crate::transaction_context::TransactionContext;
 
 pub(crate) mod ciphersuite;
 pub mod conversation;
@@ -133,138 +125,6 @@ pub(crate) mod config {
 pub(crate) trait HasSessionAndCrypto: Send {
     async fn session(&self) -> Result<Session>;
     async fn crypto_provider(&self) -> Result<MlsCryptoProvider>;
-}
-
-impl TransactionContext {
-    /// Initializes the MLS client if [super::CoreCrypto] has previously been initialized with
-    /// `CoreCrypto::deferred_init` instead of `CoreCrypto::new`.
-    /// This should stay as long as proteus is supported. Then it should be removed.
-    pub async fn mls_init(
-        &self,
-        identifier: ClientIdentifier,
-        ciphersuites: Vec<MlsCiphersuite>,
-        nb_init_key_packages: Option<usize>,
-    ) -> Result<()> {
-        let nb_key_package = nb_init_key_packages.unwrap_or(INITIAL_KEYING_MATERIAL_COUNT);
-        let mls_client = self
-            .session()
-            .await
-            .map_err(RecursiveError::transaction("getting mls client"))?;
-        mls_client
-            .init(
-                identifier,
-                &ciphersuites,
-                &self
-                    .mls_provider()
-                    .await
-                    .map_err(RecursiveError::transaction("getting mls provider"))?,
-                nb_key_package,
-            )
-            .await
-            .map_err(RecursiveError::mls_client("initializing mls client"))?;
-
-        if mls_client.is_e2ei_capable().await {
-            let client_id = mls_client
-                .id()
-                .await
-                .map_err(RecursiveError::mls_client("getting client id"))?;
-            trace!(client_id:% = client_id; "Initializing PKI environment");
-            self.init_pki_env()
-                .await
-                .map_err(RecursiveError::transaction("initializing pki env"))?;
-        }
-
-        Ok(())
-    }
-
-    /// Generates MLS KeyPairs/CredentialBundle with a temporary, random client ID.
-    /// This method is designed to be used in conjunction with [TransactionContext::mls_init_with_client_id] and represents the first step in this process.
-    ///
-    /// This returns the TLS-serialized identity keys (i.e. the signature keypair's public key)
-    #[cfg_attr(test, crate::dispotent)]
-    pub async fn mls_generate_keypairs(&self, ciphersuites: Vec<MlsCiphersuite>) -> Result<Vec<ClientId>> {
-        self.session()
-            .await
-            .map_err(RecursiveError::transaction("getting mls client"))?
-            .generate_raw_keypairs(
-                &ciphersuites,
-                &self
-                    .mls_provider()
-                    .await
-                    .map_err(RecursiveError::transaction("getting mls provider"))?,
-            )
-            .await
-            .map_err(RecursiveError::mls_client("generating raw keypairs"))
-            .map_err(Into::into)
-    }
-
-    /// Updates the current temporary Client ID with the newly provided one. This is the second step in the externally-generated clients process
-    ///
-    /// Important: This is designed to be called after [TransactionContext::mls_generate_keypairs]
-    #[cfg_attr(test, crate::dispotent)]
-    pub async fn mls_init_with_client_id(
-        &self,
-        client_id: ClientId,
-        tmp_client_ids: Vec<ClientId>,
-        ciphersuites: Vec<MlsCiphersuite>,
-    ) -> Result<()> {
-        self.session()
-            .await
-            .map_err(RecursiveError::transaction("getting mls client"))?
-            .init_with_external_client_id(
-                client_id,
-                tmp_client_ids,
-                &ciphersuites,
-                &self
-                    .mls_provider()
-                    .await
-                    .map_err(RecursiveError::transaction("getting mls provider"))?,
-            )
-            .await
-            .map_err(RecursiveError::mls_client(
-                "initializing mls client with external client id",
-            ))
-            .map_err(Into::into)
-    }
-
-    /// see [Client::client_public_key]
-    pub async fn client_public_key(
-        &self,
-        ciphersuite: MlsCiphersuite,
-        credential_type: MlsCredentialType,
-    ) -> Result<Vec<u8>> {
-        let cb = self
-            .session()
-            .await
-            .map_err(RecursiveError::transaction("getting mls client"))?
-            .find_most_recent_credential_bundle(ciphersuite.signature_algorithm(), credential_type)
-            .await
-            .map_err(RecursiveError::mls_client("finding most recent credential bundle"))?;
-        Ok(cb.signature_key.to_public_vec())
-    }
-
-    /// see [Client::id]
-    pub async fn client_id(&self) -> Result<ClientId> {
-        self.session()
-            .await
-            .map_err(RecursiveError::transaction("getting mls client"))?
-            .id()
-            .await
-            .map_err(RecursiveError::mls_client("getting client id"))
-            .map_err(Into::into)
-    }
-
-    /// Generates a random byte array of the specified size
-    pub async fn random_bytes(&self, len: usize) -> Result<Vec<u8>> {
-        use openmls_traits::random::OpenMlsRand as _;
-        self.mls_provider()
-            .await
-            .map_err(RecursiveError::transaction("getting mls provider"))?
-            .rand()
-            .random_vec(len)
-            .map_err(MlsError::wrap("generating random vector"))
-            .map_err(Into::into)
-    }
 }
 
 #[cfg(test)]
