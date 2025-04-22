@@ -173,7 +173,7 @@ mod tests {
 
         #[apply(all_cred_cipher)]
         #[wasm_bindgen_test]
-        async fn can_propose_adding_members_to_conversation(case: TestCase) {
+        async fn can_propose_adding_members_to_conversation(case: TestContext) {
             run_test_with_client_ids(
                 case.clone(),
                 ["alice", "bob", "charlie"],
@@ -250,7 +250,7 @@ mod tests {
 
         #[apply(all_cred_cipher)]
         #[wasm_bindgen_test]
-        async fn can_propose_removing_members_from_conversation(case: TestCase) {
+        async fn can_propose_removing_members_from_conversation(case: TestContext) {
             run_test_with_client_ids(
                 case.clone(),
                 ["alice", "bob", "charlie"],
@@ -317,7 +317,7 @@ mod tests {
 
         #[apply(all_cred_cipher)]
         #[wasm_bindgen_test]
-        async fn can_propose_updating(case: TestCase) {
+        async fn can_propose_updating(case: TestContext) {
             run_test_with_client_ids(case.clone(), ["alice", "bob"], move |[alice_central, bob_central]| {
                 Box::pin(async move {
                     let id = conversation_id();
@@ -408,7 +408,7 @@ mod tests {
 
         #[apply(all_cred_cipher)]
         #[wasm_bindgen_test]
-        async fn should_prevent_out_of_order_proposals(case: TestCase) {
+        async fn should_prevent_out_of_order_proposals(case: TestContext) {
             run_test_with_client_ids(case.clone(), ["alice", "bob"], move |[alice_central, bob_central]| {
                 Box::pin(async move {
                     let id = conversation_id();

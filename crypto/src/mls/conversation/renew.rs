@@ -176,7 +176,7 @@ mod tests {
 
         #[apply(all_cred_cipher)]
         #[wasm_bindgen_test]
-        pub async fn renewable_when_created_by_self(case: TestCase) {
+        pub async fn renewable_when_created_by_self(case: TestContext) {
             run_test_with_client_ids(
                 case.clone(),
                 ["alice", "bob"],
@@ -249,7 +249,7 @@ mod tests {
 
         #[apply(all_cred_cipher)]
         #[wasm_bindgen_test]
-        pub async fn not_renewable_when_in_valid_commit(case: TestCase) {
+        pub async fn not_renewable_when_in_valid_commit(case: TestContext) {
             run_test_with_client_ids(
                 case.clone(),
                 ["alice", "bob"],
@@ -339,7 +339,7 @@ mod tests {
 
         #[apply(all_cred_cipher)]
         #[wasm_bindgen_test]
-        pub async fn not_renewable_by_ref(case: TestCase) {
+        pub async fn not_renewable_by_ref(case: TestContext) {
             run_test_with_client_ids(
                 case.clone(),
                 ["alice", "bob", "charlie"],
@@ -402,7 +402,7 @@ mod tests {
 
         #[apply(all_cred_cipher)]
         #[wasm_bindgen_test]
-        pub async fn not_renewable_when_valid_commit_adds_same(case: TestCase) {
+        pub async fn not_renewable_when_valid_commit_adds_same(case: TestContext) {
             run_test_with_client_ids(
                 case.clone(),
                 ["alice", "bob", "charlie"],
@@ -451,7 +451,7 @@ mod tests {
 
         #[apply(all_cred_cipher)]
         #[wasm_bindgen_test]
-        pub async fn not_renewable_in_pending_commit_when_valid_commit_adds_same(case: TestCase) {
+        pub async fn not_renewable_in_pending_commit_when_valid_commit_adds_same(case: TestContext) {
             run_test_with_client_ids(
                 case.clone(),
                 ["alice", "bob", "charlie"],
@@ -504,7 +504,7 @@ mod tests {
 
         #[apply(all_cred_cipher)]
         #[wasm_bindgen_test]
-        pub async fn not_renewable_by_ref(case: TestCase) {
+        pub async fn not_renewable_by_ref(case: TestContext) {
             run_test_with_client_ids(
                 case.clone(),
                 ["alice", "bob", "charlie", "debbie"],
@@ -569,7 +569,7 @@ mod tests {
 
         #[apply(all_cred_cipher)]
         #[wasm_bindgen_test]
-        pub async fn renewable_when_valid_commit_doesnt_adds_same(case: TestCase) {
+        pub async fn renewable_when_valid_commit_doesnt_adds_same(case: TestContext) {
             run_test_with_client_ids(
                 case.clone(),
                 ["alice", "bob", "charlie"],
@@ -645,7 +645,7 @@ mod tests {
 
         #[apply(all_cred_cipher)]
         #[wasm_bindgen_test]
-        pub async fn renews_pending_commit_when_valid_commit_doesnt_add_same(case: TestCase) {
+        pub async fn renews_pending_commit_when_valid_commit_doesnt_add_same(case: TestContext) {
             run_test_with_client_ids(
                 case.clone(),
                 ["alice", "bob"],
@@ -697,7 +697,7 @@ mod tests {
 
         #[apply(all_cred_cipher)]
         #[wasm_bindgen_test]
-        pub async fn not_renewable_when_valid_commit_removes_same(case: TestCase) {
+        pub async fn not_renewable_when_valid_commit_removes_same(case: TestContext) {
             run_test_with_client_ids(
                 case.clone(),
                 ["alice", "bob", "charlie"],
@@ -751,7 +751,7 @@ mod tests {
 
         #[apply(all_cred_cipher)]
         #[wasm_bindgen_test]
-        pub async fn not_renewable_by_ref(case: TestCase) {
+        pub async fn not_renewable_by_ref(case: TestContext) {
             run_test_with_client_ids(
                 case.clone(),
                 ["alice", "bob", "charlie"],
@@ -814,7 +814,7 @@ mod tests {
 
         #[apply(all_cred_cipher)]
         #[wasm_bindgen_test]
-        pub async fn renewable_when_valid_commit_doesnt_remove_same(case: TestCase) {
+        pub async fn renewable_when_valid_commit_doesnt_remove_same(case: TestContext) {
             run_test_with_client_ids(
                 case.clone(),
                 ["alice", "bob", "charlie", "debbie"],
@@ -870,7 +870,7 @@ mod tests {
 
         #[apply(all_cred_cipher)]
         #[wasm_bindgen_test]
-        pub async fn renews_pending_commit_when_commit_doesnt_remove_same(case: TestCase) {
+        pub async fn renews_pending_commit_when_commit_doesnt_remove_same(case: TestContext) {
             run_test_with_client_ids(
                 case.clone(),
                 ["alice", "bob", "charlie", "debbie"],
@@ -926,7 +926,7 @@ mod tests {
 
         #[apply(all_cred_cipher)]
         #[wasm_bindgen_test]
-        pub async fn renews_pending_commit_from_proposal_when_commit_doesnt_remove_same(case: TestCase) {
+        pub async fn renews_pending_commit_from_proposal_when_commit_doesnt_remove_same(case: TestContext) {
             run_test_with_client_ids(
                 case.clone(),
                 ["alice", "bob", "charlie", "debbie"],

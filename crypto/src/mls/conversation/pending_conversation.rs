@@ -321,7 +321,7 @@ mod tests {
 
     #[apply(all_cred_cipher)]
     #[wasm_bindgen_test]
-    async fn should_buffer_and_reapply_messages_after_external_commit_merged(case: TestCase) {
+    async fn should_buffer_and_reapply_messages_after_external_commit_merged(case: TestContext) {
         run_test_with_client_ids(
             case.clone(),
             ["alice", "bob", "charlie", "debbie"],
@@ -471,7 +471,7 @@ mod tests {
 
     #[apply(all_cred_cipher)]
     #[wasm_bindgen_test]
-    async fn should_not_reapply_buffered_messages_when_external_commit_contains_remove(case: TestCase) {
+    async fn should_not_reapply_buffered_messages_when_external_commit_contains_remove(case: TestContext) {
         use crate::mls;
 
         run_test_with_client_ids(

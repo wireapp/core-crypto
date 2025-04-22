@@ -165,7 +165,7 @@ mod tests {
 
     #[apply(all_cred_cipher)]
     #[wasm_bindgen_test]
-    async fn calculate_delay_creator_removed(case: TestCase) {
+    async fn calculate_delay_creator_removed(case: TestContext) {
         run_test_with_client_ids(
             case.clone(),
             ["alice", "bob", "charlie"],

@@ -170,7 +170,7 @@ mod tests {
 
     #[apply(all_cred_cipher)]
     #[wasm_bindgen_test]
-    async fn join_by_external_commit_should_succeed(case: TestCase) {
+    async fn join_by_external_commit_should_succeed(case: TestContext) {
         run_test_with_client_ids(case.clone(), ["alice", "bob"], move |[alice, bob]| {
             Box::pin(async move {
                 let id = conversation_id();
@@ -228,7 +228,7 @@ mod tests {
 
     #[apply(all_cred_cipher)]
     #[wasm_bindgen_test]
-    async fn join_by_external_commit_should_be_retriable(case: TestCase) {
+    async fn join_by_external_commit_should_be_retriable(case: TestContext) {
         run_test_with_client_ids(case.clone(), ["alice", "bob"], move |[alice_central, bob_central]| {
             Box::pin(async move {
                 let id = conversation_id();
@@ -282,7 +282,7 @@ mod tests {
 
     #[apply(all_cred_cipher)]
     #[wasm_bindgen_test]
-    async fn should_fail_when_bad_epoch(case: TestCase) {
+    async fn should_fail_when_bad_epoch(case: TestContext) {
         use crate::mls;
 
         run_test_with_client_ids(case.clone(), ["alice", "bob"], move |[alice_central, bob_central]| {
@@ -331,7 +331,7 @@ mod tests {
 
     #[apply(all_cred_cipher)]
     #[wasm_bindgen_test]
-    async fn existing_clients_can_join(case: TestCase) {
+    async fn existing_clients_can_join(case: TestContext) {
         run_test_with_client_ids(case.clone(), ["alice", "bob"], move |[alice_central, bob_central]| {
             Box::pin(async move {
                 let id = conversation_id();
@@ -355,7 +355,7 @@ mod tests {
 
     #[apply(all_cred_cipher)]
     #[wasm_bindgen_test]
-    async fn should_fail_when_no_pending_external_commit(case: TestCase) {
+    async fn should_fail_when_no_pending_external_commit(case: TestContext) {
         run_test_with_central(case.clone(), move |[central]| {
             Box::pin(async move {
                 let non_existent_id = conversation_id();
@@ -376,7 +376,7 @@ mod tests {
 
     #[apply(all_cred_cipher)]
     #[wasm_bindgen_test]
-    async fn should_return_valid_group_info(case: TestCase) {
+    async fn should_return_valid_group_info(case: TestContext) {
         run_test_with_client_ids(
             case.clone(),
             ["alice", "bob", "charlie"],
@@ -459,7 +459,7 @@ mod tests {
 
     #[apply(all_cred_cipher)]
     #[wasm_bindgen_test]
-    async fn clear_pending_group_should_succeed(case: TestCase) {
+    async fn clear_pending_group_should_succeed(case: TestContext) {
         run_test_with_client_ids(case.clone(), ["alice", "bob"], move |[alice_central, bob_central]| {
             Box::pin(async move {
                 let id = conversation_id();
@@ -491,7 +491,7 @@ mod tests {
 
     #[apply(all_cred_cipher)]
     #[wasm_bindgen_test]
-    async fn new_with_inflight_join_should_fail_when_already_exists(case: TestCase) {
+    async fn new_with_inflight_join_should_fail_when_already_exists(case: TestContext) {
         run_test_with_client_ids(case.clone(), ["alice", "bob"], move |[alice_central, bob_central]| {
             Box::pin(async move {
                 let id = conversation_id();
@@ -527,7 +527,7 @@ mod tests {
 
     #[apply(all_cred_cipher)]
     #[wasm_bindgen_test]
-    async fn new_with_inflight_welcome_should_fail_when_already_exists(case: TestCase) {
+    async fn new_with_inflight_welcome_should_fail_when_already_exists(case: TestContext) {
         use crate::mls;
 
         run_test_with_client_ids(case.clone(), ["alice", "bob"], move |[alice_central, bob_central]| {
@@ -578,7 +578,7 @@ mod tests {
 
     #[apply(all_cred_cipher)]
     #[wasm_bindgen_test]
-    async fn should_fail_when_invalid_group_info(case: TestCase) {
+    async fn should_fail_when_invalid_group_info(case: TestContext) {
         run_test_with_client_ids(
             case.clone(),
             ["alice", "bob", "guest"],
@@ -635,7 +635,7 @@ mod tests {
 
     #[apply(all_cred_cipher)]
     #[wasm_bindgen_test]
-    async fn group_should_have_right_config(case: TestCase) {
+    async fn group_should_have_right_config(case: TestContext) {
         run_test_with_client_ids(case.clone(), ["alice", "bob"], move |[alice_central, bob_central]| {
             Box::pin(async move {
                 let id = conversation_id();

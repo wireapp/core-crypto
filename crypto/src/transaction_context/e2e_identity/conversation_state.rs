@@ -107,7 +107,7 @@ mod tests {
     // testing the case where both Bob & Alice have the same Credential type
     #[apply(all_cred_cipher)]
     #[wasm_bindgen_test]
-    async fn uniform_conversation_should_be_not_verified_when_basic(case: TestCase) {
+    async fn uniform_conversation_should_be_not_verified_when_basic(case: TestContext) {
         run_test_with_client_ids(case.clone(), ["alice", "bob"], move |[alice_central, bob_central]| {
             Box::pin(async move {
                 let id = conversation_id();
@@ -187,7 +187,7 @@ mod tests {
     // testing the case where Bob & Alice have different Credential type
     #[apply(all_cred_cipher)]
     #[wasm_bindgen_test]
-    async fn heterogeneous_conversation_should_be_not_verified(case: TestCase) {
+    async fn heterogeneous_conversation_should_be_not_verified(case: TestContext) {
         use crate::e2e_identity::enrollment::test_utils::failsafe_ctx;
 
         run_test_with_client_ids(
@@ -270,7 +270,7 @@ mod tests {
 
     #[apply(all_cred_cipher)]
     #[wasm_bindgen_test]
-    async fn should_be_not_verified_when_one_expired(case: TestCase) {
+    async fn should_be_not_verified_when_one_expired(case: TestContext) {
         if !case.is_x509() {
             return;
         }
@@ -363,7 +363,7 @@ mod tests {
 
     #[apply(all_cred_cipher)]
     #[wasm_bindgen_test]
-    async fn should_be_not_verified_when_all_expired(case: TestCase) {
+    async fn should_be_not_verified_when_all_expired(case: TestContext) {
         if case.is_x509() {
             run_test_with_client_ids(case.clone(), ["alice"], move |[alice_central]| {
                 Box::pin(async move {

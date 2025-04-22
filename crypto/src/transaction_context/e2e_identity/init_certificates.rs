@@ -268,7 +268,7 @@ mod tests {
 
     #[apply(all_cred_cipher)]
     #[wasm_bindgen_test]
-    async fn register_acme_ca_should_fail_when_already_set(case: TestCase) {
+    async fn register_acme_ca_should_fail_when_already_set(case: TestContext) {
         use x509_cert::der::pem::LineEnding;
 
         if !case.is_x509() {
@@ -294,7 +294,7 @@ mod tests {
 
     #[apply(all_cred_cipher)]
     #[wasm_bindgen_test]
-    async fn x509_restore_should_not_happen_if_basic(case: TestCase) {
+    async fn x509_restore_should_not_happen_if_basic(case: TestContext) {
         if case.is_x509() {
             return;
         }

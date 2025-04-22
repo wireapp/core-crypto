@@ -54,7 +54,7 @@ mod tests {
 
     #[apply(all_cred_cipher)]
     #[wasm_bindgen_test]
-    async fn decrypting_duplicate_member_commit_should_fail(case: TestCase) {
+    async fn decrypting_duplicate_member_commit_should_fail(case: TestContext) {
         // cannot work in pure ciphertext since we'd have to decrypt the message first
         if !case.is_pure_ciphertext() {
             run_test_with_client_ids(case.clone(), ["alice", "bob"], move |[alice_central, bob_central]| {
@@ -125,7 +125,7 @@ mod tests {
 
     #[apply(all_cred_cipher)]
     #[wasm_bindgen_test]
-    async fn decrypting_duplicate_external_commit_should_fail(case: TestCase) {
+    async fn decrypting_duplicate_external_commit_should_fail(case: TestContext) {
         run_test_with_client_ids(case.clone(), ["alice", "bob"], move |[alice_central, bob_central]| {
             Box::pin(async move {
                 let id = conversation_id();
@@ -187,7 +187,7 @@ mod tests {
 
     #[apply(all_cred_cipher)]
     #[wasm_bindgen_test]
-    async fn decrypting_duplicate_proposal_should_fail(case: TestCase) {
+    async fn decrypting_duplicate_proposal_should_fail(case: TestContext) {
         run_test_with_client_ids(case.clone(), ["alice", "bob"], move |[alice_central, bob_central]| {
             Box::pin(async move {
                 let id = conversation_id();
@@ -246,7 +246,7 @@ mod tests {
 
     #[apply(all_cred_cipher)]
     #[wasm_bindgen_test]
-    async fn decrypting_duplicate_external_proposal_should_fail(case: TestCase) {
+    async fn decrypting_duplicate_external_proposal_should_fail(case: TestContext) {
         run_test_with_client_ids(case.clone(), ["alice", "bob"], move |[alice_central, bob_central]| {
             Box::pin(async move {
                 let id = conversation_id();
@@ -311,7 +311,7 @@ mod tests {
     // Ensures decrypting an application message is durable (we increment the messages generation & persist the group)
     #[apply(all_cred_cipher)]
     #[wasm_bindgen_test]
-    async fn decrypting_duplicate_application_message_should_fail(case: TestCase) {
+    async fn decrypting_duplicate_application_message_should_fail(case: TestContext) {
         run_test_with_client_ids(case.clone(), ["alice", "bob"], move |[alice_central, bob_central]| {
             Box::pin(async move {
                 let id = conversation_id();

@@ -30,7 +30,7 @@ mod tests {
 
     #[apply(all_cred_cipher)]
     #[wasm_bindgen_test]
-    async fn should_be_false_when_basic_and_true_when_x509(case: TestCase) {
+    async fn should_be_false_when_basic_and_true_when_x509(case: TestContext) {
         run_test_with_client_ids(case.clone(), ["alice"], move |[cc]| {
             Box::pin(async move {
                 let e2ei_is_enabled = cc.context.e2ei_is_enabled(case.signature_scheme()).await.unwrap();
@@ -45,7 +45,7 @@ mod tests {
 
     #[apply(all_cred_cipher)]
     #[wasm_bindgen_test]
-    async fn should_fail_when_no_client(case: TestCase) {
+    async fn should_fail_when_no_client(case: TestContext) {
         run_test_wo_clients(case.clone(), move |cc| {
             Box::pin(async move {
                 assert!(matches!(
@@ -60,7 +60,7 @@ mod tests {
 
     #[apply(all_cred_cipher)]
     #[wasm_bindgen_test]
-    async fn should_fail_when_no_credential_for_given_signature_scheme(case: TestCase) {
+    async fn should_fail_when_no_credential_for_given_signature_scheme(case: TestContext) {
         run_test_with_client_ids(case.clone(), ["alice"], move |[cc]| {
             Box::pin(async move {
                 // just return something different from the signature scheme the MlsCentral was initialized with

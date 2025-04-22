@@ -145,7 +145,7 @@ mod tests {
 
     #[apply(all_cred_cipher)]
     #[wasm_bindgen_test]
-    async fn should_buffer_and_reapply_messages_after_commit_merged_for_sender(case: TestCase) {
+    async fn should_buffer_and_reapply_messages_after_commit_merged_for_sender(case: TestContext) {
         if case.is_pure_ciphertext() {
             // The use case tested here requires inspecting your own commit.
             // Openmls does not support this currently when protocol messages are encrypted.
@@ -307,7 +307,7 @@ mod tests {
 
     #[apply(all_cred_cipher)]
     #[wasm_bindgen_test]
-    async fn should_buffer_and_reapply_messages_after_commit_merged_for_receivers(case: TestCase) {
+    async fn should_buffer_and_reapply_messages_after_commit_merged_for_receivers(case: TestContext) {
         if case.is_pure_ciphertext() {
             // The use case tested here requires inspecting your own commit.
             // Openmls does not support this currently when protocol messages are encrypted.
@@ -474,7 +474,7 @@ mod tests {
     ///
     /// [WPB-15810]: https://wearezeta.atlassian.net/browse/WPB-15810
     #[apply(all_cred_cipher)]
-    async fn wpb_15810(case: TestCase) {
+    async fn wpb_15810(case: TestContext) {
         use openmls::{
             group::GroupId,
             prelude::{ExternalProposal, SenderExtensionIndex},

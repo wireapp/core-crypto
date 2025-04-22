@@ -32,7 +32,7 @@ mod tests {
     // should delete anything related to this conversation
     #[apply(all_cred_cipher)]
     #[wasm_bindgen_test]
-    async fn should_cascade_deletion(case: TestCase) {
+    async fn should_cascade_deletion(case: TestContext) {
         run_test_with_client_ids(case.clone(), ["alice"], move |[cc]| {
             Box::pin(async move {
                 let id = conversation_id();

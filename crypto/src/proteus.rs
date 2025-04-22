@@ -1339,7 +1339,7 @@ mod tests {
 
     #[apply(all_cred_cipher)]
     #[wasm_bindgen_test]
-    async fn cc_can_init(case: TestCase) {
+    async fn cc_can_init(case: TestContext) {
         #[cfg(not(target_family = "wasm"))]
         let (path, db_file) = tmp_db_file();
         #[cfg(target_family = "wasm")]
@@ -1365,7 +1365,7 @@ mod tests {
 
     #[apply(all_cred_cipher)]
     #[wasm_bindgen_test]
-    async fn cc_can_2_phase_init(case: TestCase) {
+    async fn cc_can_2_phase_init(case: TestContext) {
         #[cfg(not(target_family = "wasm"))]
         let (path, db_file) = tmp_db_file();
         #[cfg(target_family = "wasm")]

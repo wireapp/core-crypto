@@ -204,7 +204,7 @@ mod tests {
     #[cfg_attr(not(target_family = "wasm"), async_std::test)]
     #[wasm_bindgen_test]
     pub async fn group_should_have_required_capabilities() {
-        let case = TestCase::default();
+        let case = TestContext::default();
         run_test_with_client_ids(case.clone(), ["alice"], move |[cc]| {
             Box::pin(async move {
                 let id = conversation_id();
@@ -231,7 +231,7 @@ mod tests {
 
     #[apply(all_cred_cipher)]
     #[wasm_bindgen_test]
-    pub async fn creator_leaf_node_should_have_default_capabilities(case: TestCase) {
+    pub async fn creator_leaf_node_should_have_default_capabilities(case: TestContext) {
         run_test_with_client_ids(case.clone(), ["alice"], move |[cc]| {
             Box::pin(async move {
                 let id = conversation_id();
@@ -276,7 +276,7 @@ mod tests {
 
     #[apply(all_cred_cipher)]
     #[wasm_bindgen_test]
-    pub async fn should_support_raw_external_sender(case: TestCase) {
+    pub async fn should_support_raw_external_sender(case: TestContext) {
         run_test_with_client_ids(case.clone(), ["alice"], move |[cc]| {
             Box::pin(async move {
                 let (_sk, pk) = cc
@@ -301,7 +301,7 @@ mod tests {
 
     #[apply(all_cred_cipher)]
     #[wasm_bindgen_test]
-    pub async fn should_support_jwk_external_sender(case: TestCase) {
+    pub async fn should_support_jwk_external_sender(case: TestContext) {
         run_test_with_client_ids(case.clone(), ["alice"], move |[cc]| {
             Box::pin(async move {
                 let sc = case.signature_scheme();

@@ -4,7 +4,7 @@ use crate::{
     KeystoreError, RecursiveError,
     e2e_identity::{E2eiEnrollment, Error, Result, id::QualifiedE2eiClientId},
     prelude::{CertificateBundle, MlsCredentialType},
-    test_utils::{SessionContext, TestCase, context::TEAM, x509::X509TestChain},
+    test_utils::{SessionContext, TestContext, context::TEAM, x509::X509TestChain},
     transaction_context::TransactionContext,
 };
 use itertools::Itertools as _;
@@ -133,12 +133,12 @@ pub(crate) type InitFnReturn<'a> = std::pin::Pin<Box<dyn std::future::Future<Out
 /// Helps the compiler with its lifetime inference rules while passing async closures
 pub(crate) struct E2eiInitWrapper<'a> {
     pub(crate) context: &'a TransactionContext,
-    pub(crate) case: &'a TestCase,
+    pub(crate) case: &'a TestContext,
 }
 
 pub(crate) async fn e2ei_enrollment<'a>(
     ctx: &'a mut SessionContext,
-    case: &TestCase,
+    case: &TestContext,
     x509_test_chain: &X509TestChain,
     client_id: Option<&str>,
     #[cfg(not(target_family = "wasm"))] is_renewal: bool,

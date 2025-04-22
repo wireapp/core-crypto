@@ -431,7 +431,7 @@ mod tests {
 
     #[apply(all_cred_cipher)]
     #[wasm_bindgen_test]
-    async fn can_assess_keypackage_expiration(case: TestCase) {
+    async fn can_assess_keypackage_expiration(case: TestContext) {
         run_test_with_central(case.clone(), move |[central]| {
             Box::pin(async move {
                 let (cs, ct) = (case.ciphersuite(), case.credential_type);
@@ -476,7 +476,7 @@ mod tests {
 
     #[apply(all_cred_cipher)]
     #[wasm_bindgen_test]
-    async fn requesting_x509_key_packages_after_basic(case: TestCase) {
+    async fn requesting_x509_key_packages_after_basic(case: TestContext) {
         // Basic test case
         if !case.is_basic() {
             return;
@@ -534,7 +534,7 @@ mod tests {
 
     #[apply(all_cred_cipher)]
     #[wasm_bindgen_test]
-    async fn generates_correct_number_of_kpbs(case: TestCase) {
+    async fn generates_correct_number_of_kpbs(case: TestContext) {
         run_test_with_client_ids(case.clone(), ["alice"], move |[cc]| {
             Box::pin(async move {
                 const N: usize = 2;
@@ -616,7 +616,7 @@ mod tests {
 
     #[apply(all_cred_cipher)]
     #[wasm_bindgen_test]
-    async fn automatically_prunes_lifetime_expired_keypackages(case: TestCase) {
+    async fn automatically_prunes_lifetime_expired_keypackages(case: TestContext) {
         run_test_with_central(case.clone(), move |[central]| {
             Box::pin(async move {
                 const UNEXPIRED_COUNT: usize = 125;
@@ -706,7 +706,7 @@ mod tests {
 
     #[apply(all_cred_cipher)]
     #[wasm_bindgen_test]
-    async fn new_keypackage_has_correct_extensions(case: TestCase) {
+    async fn new_keypackage_has_correct_extensions(case: TestContext) {
         run_test_with_client_ids(case.clone(), ["alice"], move |[cc]| {
             Box::pin(async move {
                 let kps = cc

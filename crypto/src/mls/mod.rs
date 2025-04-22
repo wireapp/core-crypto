@@ -291,7 +291,7 @@ mod tests {
 
         #[apply(all_cred_cipher)]
         #[wasm_bindgen_test]
-        async fn can_get_newly_created_conversation_epoch(case: TestCase) {
+        async fn can_get_newly_created_conversation_epoch(case: TestContext) {
             run_test_with_central(case.clone(), move |[central]| {
                 Box::pin(async move {
                     let id = conversation_id();
@@ -309,7 +309,7 @@ mod tests {
 
         #[apply(all_cred_cipher)]
         #[wasm_bindgen_test]
-        async fn can_get_conversation_epoch(case: TestCase) {
+        async fn can_get_conversation_epoch(case: TestContext) {
             run_test_with_client_ids(case.clone(), ["alice", "bob"], move |[alice_central, bob_central]| {
                 Box::pin(async move {
                     let id = conversation_id();
@@ -328,7 +328,7 @@ mod tests {
 
         #[apply(all_cred_cipher)]
         #[wasm_bindgen_test]
-        async fn conversation_not_found(case: TestCase) {
+        async fn conversation_not_found(case: TestContext) {
             use crate::LeafError;
 
             run_test_with_central(case.clone(), move |[central]| {
@@ -352,7 +352,7 @@ mod tests {
 
         #[apply(all_cred_cipher)]
         #[wasm_bindgen_test]
-        async fn can_create_from_valid_configuration(case: TestCase) {
+        async fn can_create_from_valid_configuration(case: TestContext) {
             run_tests(move |[tmp_dir_argument]| {
                 Box::pin(async move {
                     let configuration = MlsClientConfiguration::try_new(
@@ -416,7 +416,7 @@ mod tests {
 
     #[apply(all_cred_cipher)]
     #[wasm_bindgen_test]
-    async fn create_conversation_should_fail_when_already_exists(case: TestCase) {
+    async fn create_conversation_should_fail_when_already_exists(case: TestContext) {
         use crate::LeafError;
 
         run_test_with_client_ids(case.clone(), ["alice"], move |[alice_central]| {
@@ -442,7 +442,7 @@ mod tests {
 
     #[apply(all_cred_cipher)]
     #[wasm_bindgen_test]
-    async fn can_fetch_client_public_key(case: TestCase) {
+    async fn can_fetch_client_public_key(case: TestContext) {
         run_tests(move |[tmp_dir_argument]| {
             Box::pin(async move {
                 let configuration = MlsClientConfiguration::try_new(
@@ -465,7 +465,7 @@ mod tests {
 
     #[apply(all_cred_cipher)]
     #[wasm_bindgen_test]
-    async fn can_2_phase_init_central(case: TestCase) {
+    async fn can_2_phase_init_central(case: TestContext) {
         run_tests(move |[tmp_dir_argument]| {
             Box::pin(async move {
                 let x509_test_chain = X509TestChain::init_empty(case.signature_scheme());

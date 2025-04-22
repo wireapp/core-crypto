@@ -92,7 +92,7 @@ mod tests {
 
         #[apply(all_cred_cipher)]
         #[wasm_bindgen_test]
-        pub async fn should_remove_proposal(case: TestCase) {
+        pub async fn should_remove_proposal(case: TestContext) {
             run_test_with_client_ids(
                 case.clone(),
                 ["alice", "bob", "charlie"],
@@ -188,7 +188,7 @@ mod tests {
 
         #[apply(all_cred_cipher)]
         #[wasm_bindgen_test]
-        pub async fn should_fail_when_proposal_ref_not_found(case: TestCase) {
+        pub async fn should_fail_when_proposal_ref_not_found(case: TestContext) {
             run_test_with_client_ids(case.clone(), ["alice"], move |[mut alice_central]| {
                 Box::pin(async move {
                     let id = conversation_id();
@@ -216,7 +216,7 @@ mod tests {
 
         #[apply(all_cred_cipher)]
         #[wasm_bindgen_test]
-        pub async fn should_clean_associated_key_material(case: TestCase) {
+        pub async fn should_clean_associated_key_material(case: TestContext) {
             run_test_with_client_ids(case.clone(), ["alice"], move |[mut cc]| {
                 Box::pin(async move {
                     let id = conversation_id();
@@ -256,7 +256,7 @@ mod tests {
 
         #[apply(all_cred_cipher)]
         #[wasm_bindgen_test]
-        pub async fn should_remove_commit(case: TestCase) {
+        pub async fn should_remove_commit(case: TestContext) {
             run_test_with_client_ids(case.clone(), ["alice"], move |[alice_central]| {
                 Box::pin(async move {
                     let id = conversation_id();
@@ -285,7 +285,7 @@ mod tests {
 
         #[apply(all_cred_cipher)]
         #[wasm_bindgen_test]
-        pub async fn should_fail_when_pending_commit_absent(case: TestCase) {
+        pub async fn should_fail_when_pending_commit_absent(case: TestContext) {
             run_test_with_client_ids(case.clone(), ["alice"], move |[alice_central]| {
                 Box::pin(async move {
                     let id = conversation_id();
@@ -310,7 +310,7 @@ mod tests {
 
         #[apply(all_cred_cipher)]
         #[wasm_bindgen_test]
-        pub async fn should_clean_associated_key_material(case: TestCase) {
+        pub async fn should_clean_associated_key_material(case: TestContext) {
             run_test_with_client_ids(case.clone(), ["alice"], move |[cc]| {
                 Box::pin(async move {
                     let id = conversation_id();

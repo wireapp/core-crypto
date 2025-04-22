@@ -83,7 +83,7 @@ mod tests {
 
         #[apply(all_cred_cipher)]
         #[wasm_bindgen_test]
-        pub async fn should_add_member(case: TestCase) {
+        pub async fn should_add_member(case: TestContext) {
             run_test_with_client_ids(case.clone(), ["alice", "bob"], move |[alice_central, bob_central]| {
                 Box::pin(async move {
                     let id = conversation_id();
@@ -124,7 +124,7 @@ mod tests {
 
         #[apply(all_cred_cipher)]
         #[wasm_bindgen_test]
-        pub async fn should_update_hpke_key(case: TestCase) {
+        pub async fn should_update_hpke_key(case: TestContext) {
             run_test_with_central(case.clone(), move |[central]| {
                 Box::pin(async move {
                     let id = conversation_id();
@@ -166,7 +166,7 @@ mod tests {
 
         #[apply(all_cred_cipher)]
         #[wasm_bindgen_test]
-        pub async fn should_remove_member(case: TestCase) {
+        pub async fn should_remove_member(case: TestContext) {
             run_test_with_client_ids(case.clone(), ["alice", "bob"], |[alice_central, bob_central]| {
                 Box::pin(async move {
                     let id = conversation_id();
@@ -222,7 +222,7 @@ mod tests {
 
         #[apply(all_cred_cipher)]
         #[wasm_bindgen_test]
-        pub async fn should_fail_when_unknown_client(case: TestCase) {
+        pub async fn should_fail_when_unknown_client(case: TestContext) {
             run_test_with_client_ids(case.clone(), ["alice"], move |[alice_central]| {
                 Box::pin(async move {
                     let id = conversation_id();

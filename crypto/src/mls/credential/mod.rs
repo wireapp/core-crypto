@@ -129,7 +129,7 @@ mod tests {
 
     #[apply(all_cred_cipher)]
     #[wasm_bindgen_test]
-    async fn basic_clients_can_send_messages(case: TestCase) {
+    async fn basic_clients_can_send_messages(case: TestContext) {
         if case.is_basic() {
             let alice_identifier = ClientIdentifier::Basic("alice".into());
             let bob_identifier = ClientIdentifier::Basic("bob".into());
@@ -139,7 +139,7 @@ mod tests {
 
     #[apply(all_cred_cipher)]
     #[wasm_bindgen_test]
-    async fn certificate_clients_can_send_messages(case: TestCase) {
+    async fn certificate_clients_can_send_messages(case: TestContext) {
         if case.is_x509() {
             let mut x509_test_chain = X509TestChain::init_empty(case.signature_scheme());
 
@@ -155,7 +155,7 @@ mod tests {
 
     #[apply(all_cred_cipher)]
     #[wasm_bindgen_test]
-    async fn heterogeneous_clients_can_send_messages(case: TestCase) {
+    async fn heterogeneous_clients_can_send_messages(case: TestContext) {
         let mut x509_test_chain = X509TestChain::init_empty(case.signature_scheme());
 
         // check that both credentials can initiate/join a group
@@ -182,7 +182,7 @@ mod tests {
 
     #[apply(all_cred_cipher)]
     #[wasm_bindgen_test]
-    async fn should_fail_when_certificate_chain_is_empty(case: TestCase) {
+    async fn should_fail_when_certificate_chain_is_empty(case: TestContext) {
         let mut x509_test_chain = X509TestChain::init_empty(case.signature_scheme());
 
         let x509_intermediate = x509_test_chain.find_local_intermediate_ca();
@@ -200,7 +200,7 @@ mod tests {
 
     #[apply(all_cred_cipher)]
     #[wasm_bindgen_test]
-    async fn should_fail_when_certificate_chain_has_a_single_self_signed(case: TestCase) {
+    async fn should_fail_when_certificate_chain_has_a_single_self_signed(case: TestContext) {
         use crate::MlsErrorKind;
 
         if case.is_x509() {
@@ -227,7 +227,7 @@ mod tests {
 
     #[apply(all_cred_cipher)]
     #[wasm_bindgen_test]
-    async fn should_fail_when_signature_key_doesnt_match_certificate_public_key(case: TestCase) {
+    async fn should_fail_when_signature_key_doesnt_match_certificate_public_key(case: TestContext) {
         if case.is_x509() {
             let mut x509_test_chain = X509TestChain::init_empty(case.signature_scheme());
             let x509_intermediate = x509_test_chain.find_local_intermediate_ca();
@@ -258,7 +258,7 @@ mod tests {
 
     #[apply(all_cred_cipher)]
     #[wasm_bindgen_test]
-    async fn should_not_fail_but_degrade_when_certificate_expired(case: TestCase) {
+    async fn should_not_fail_but_degrade_when_certificate_expired(case: TestContext) {
         if !case.is_x509() {
             return;
         }
@@ -313,7 +313,7 @@ mod tests {
 
     #[apply(all_cred_cipher)]
     #[wasm_bindgen_test]
-    async fn should_not_fail_but_degrade_when_basic_joins(case: TestCase) {
+    async fn should_not_fail_but_degrade_when_basic_joins(case: TestContext) {
         if !case.is_x509() {
             return;
         }
@@ -456,7 +456,7 @@ mod tests {
 
     #[apply(all_cred_cipher)]
     #[wasm_bindgen_test]
-    async fn should_fail_when_certificate_not_valid_yet(case: TestCase) {
+    async fn should_fail_when_certificate_not_valid_yet(case: TestContext) {
         use crate::MlsErrorKind;
 
         if case.is_x509() {
@@ -507,7 +507,7 @@ mod tests {
     }
 
     async fn try_talk(
-        case: &TestCase,
+        case: &TestContext,
         x509_test_chain: Option<&X509TestChain>,
         creator_identifier: ClientIdentifier,
         guest_identifier: ClientIdentifier,

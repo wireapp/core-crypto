@@ -120,7 +120,7 @@ mod tests {
 
     #[apply(all_cred_cipher)]
     #[wasm_bindgen_test]
-    async fn e2e_identity_should_work(case: TestCase) {
+    async fn e2e_identity_should_work(case: TestContext) {
         use e2ei_utils::E2EI_CLIENT_ID_URI;
 
         run_test_wo_clients(case.clone(), move |mut cc| {

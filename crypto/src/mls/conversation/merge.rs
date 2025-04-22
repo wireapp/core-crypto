@@ -60,7 +60,7 @@ mod tests {
 
         #[apply(all_cred_cipher)]
         #[wasm_bindgen_test]
-        async fn should_apply_pending_commit(case: TestCase) {
+        async fn should_apply_pending_commit(case: TestContext) {
             run_test_with_client_ids(case.clone(), ["alice", "bob"], move |[alice_central, bob_central]| {
                 Box::pin(async move {
                     let id = conversation_id();
@@ -87,7 +87,7 @@ mod tests {
 
         #[apply(all_cred_cipher)]
         #[wasm_bindgen_test]
-        async fn should_clear_pending_commit_and_proposals(case: TestCase) {
+        async fn should_clear_pending_commit_and_proposals(case: TestContext) {
             run_test_with_client_ids(case.clone(), ["alice"], move |[mut alice_central]| {
                 Box::pin(async move {
                     let id = conversation_id();
@@ -118,7 +118,7 @@ mod tests {
 
         #[apply(all_cred_cipher)]
         #[wasm_bindgen_test]
-        async fn should_clean_associated_key_material(case: TestCase) {
+        async fn should_clean_associated_key_material(case: TestContext) {
             run_test_with_client_ids(case.clone(), ["alice"], move |[alice_central]| {
                 Box::pin(async move {
                     let id = conversation_id();

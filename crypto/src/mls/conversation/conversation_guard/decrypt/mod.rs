@@ -559,7 +559,7 @@ mod tests {
 
         #[apply(all_cred_cipher)]
         #[wasm_bindgen_test]
-        pub async fn decrypting_a_regular_commit_should_leave_conversation_active(case: TestCase) {
+        pub async fn decrypting_a_regular_commit_should_leave_conversation_active(case: TestContext) {
             run_test_with_client_ids(case.clone(), ["alice", "bob"], move |[alice_central, bob_central]| {
                 Box::pin(async move {
                     let id = conversation_id();
@@ -595,7 +595,7 @@ mod tests {
 
         #[apply(all_cred_cipher)]
         #[wasm_bindgen_test]
-        pub async fn decrypting_a_commit_removing_self_should_set_conversation_inactive(case: TestCase) {
+        pub async fn decrypting_a_commit_removing_self_should_set_conversation_inactive(case: TestContext) {
             run_test_with_client_ids(case.clone(), ["alice", "bob"], move |[alice_central, bob_central]| {
                 Box::pin(async move {
                     let id = conversation_id();
@@ -635,7 +635,7 @@ mod tests {
 
         #[apply(all_cred_cipher)]
         #[wasm_bindgen_test]
-        pub async fn decrypting_a_commit_should_succeed(case: TestCase) {
+        pub async fn decrypting_a_commit_should_succeed(case: TestContext) {
             run_test_with_client_ids(case.clone(), ["alice", "bob"], move |[alice_central, bob_central]| {
                 Box::pin(async move {
                     let id = conversation_id();
@@ -688,7 +688,7 @@ mod tests {
 
         #[apply(all_cred_cipher)]
         #[wasm_bindgen_test]
-        pub async fn decrypting_a_commit_should_not_renew_proposals_in_valid_commit(case: TestCase) {
+        pub async fn decrypting_a_commit_should_not_renew_proposals_in_valid_commit(case: TestContext) {
             run_test_with_client_ids(
                 case.clone(),
                 ["alice", "bob", "charlie"],
@@ -758,7 +758,7 @@ mod tests {
         // orphan proposal = not backed by the pending commit
         #[apply(all_cred_cipher)]
         #[wasm_bindgen_test]
-        pub async fn decrypting_a_commit_should_renew_orphan_pending_proposals(case: TestCase) {
+        pub async fn decrypting_a_commit_should_renew_orphan_pending_proposals(case: TestContext) {
             run_test_with_client_ids(
                 case.clone(),
                 ["alice", "bob", "charlie"],
@@ -885,7 +885,7 @@ mod tests {
 
         #[apply(all_cred_cipher)]
         #[wasm_bindgen_test]
-        pub async fn decrypting_a_commit_should_discard_pending_external_proposals(case: TestCase) {
+        pub async fn decrypting_a_commit_should_discard_pending_external_proposals(case: TestContext) {
             run_test_with_client_ids(
                 case.clone(),
                 ["alice", "bob", "charlie"],
@@ -952,7 +952,7 @@ mod tests {
 
         #[apply(all_cred_cipher)]
         #[wasm_bindgen_test]
-        async fn should_not_return_sender_client_id(case: TestCase) {
+        async fn should_not_return_sender_client_id(case: TestContext) {
             run_test_with_client_ids(case.clone(), ["alice", "bob"], move |[alice_central, bob_central]| {
                 Box::pin(async move {
                     let id = conversation_id();
@@ -994,7 +994,7 @@ mod tests {
 
         #[apply(all_cred_cipher)]
         #[wasm_bindgen_test]
-        async fn can_decrypt_external_proposal(case: TestCase) {
+        async fn can_decrypt_external_proposal(case: TestContext) {
             run_test_with_client_ids(
                 case.clone(),
                 ["alice", "bob", "alice2"],
@@ -1058,7 +1058,7 @@ mod tests {
         // Ensures decrypting an proposal is durable
         #[apply(all_cred_cipher)]
         #[wasm_bindgen_test]
-        async fn can_decrypt_proposal(case: TestCase) {
+        async fn can_decrypt_proposal(case: TestContext) {
             run_test_with_client_ids(
                 case.clone(),
                 ["alice", "bob", "charlie"],
@@ -1110,7 +1110,7 @@ mod tests {
 
         #[apply(all_cred_cipher)]
         #[wasm_bindgen_test]
-        async fn should_not_return_sender_client_id(case: TestCase) {
+        async fn should_not_return_sender_client_id(case: TestContext) {
             run_test_with_client_ids(case.clone(), ["alice", "bob"], move |[alice_central, bob_central]| {
                 Box::pin(async move {
                     let id = conversation_id();
@@ -1144,7 +1144,7 @@ mod tests {
 
         #[apply(all_cred_cipher)]
         #[wasm_bindgen_test]
-        async fn can_decrypt_app_message(case: TestCase) {
+        async fn can_decrypt_app_message(case: TestContext) {
             run_test_with_client_ids(case.clone(), ["alice", "bob"], move |[alice_central, bob_central]| {
                 Box::pin(async move {
                     let id = conversation_id();
@@ -1222,7 +1222,7 @@ mod tests {
 
         #[apply(all_cred_cipher)]
         #[wasm_bindgen_test]
-        async fn cannot_decrypt_app_message_after_rejoining(case: TestCase) {
+        async fn cannot_decrypt_app_message_after_rejoining(case: TestContext) {
             run_test_with_client_ids(case.clone(), ["alice", "bob"], move |[alice_central, bob_central]| {
                 Box::pin(async move {
                     let id = conversation_id();
@@ -1269,7 +1269,7 @@ mod tests {
 
         #[apply(all_cred_cipher)]
         #[wasm_bindgen_test]
-        async fn cannot_decrypt_app_message_from_future_epoch(case: TestCase) {
+        async fn cannot_decrypt_app_message_from_future_epoch(case: TestContext) {
             run_test_with_client_ids(case.clone(), ["alice", "bob"], move |[alice_central, bob_central]| {
                 Box::pin(async move {
                     let id = conversation_id();
@@ -1330,7 +1330,7 @@ mod tests {
 
         #[apply(all_cred_cipher)]
         #[wasm_bindgen_test]
-        async fn can_decrypt_app_message_in_any_order(mut case: TestCase) {
+        async fn can_decrypt_app_message_in_any_order(mut case: TestContext) {
             // otherwise the test would fail because we decrypt messages in reverse order which is
             // kinda dropping them
             case.cfg.custom.maximum_forward_distance = 0;
@@ -1386,7 +1386,7 @@ mod tests {
 
         #[apply(all_cred_cipher)]
         #[wasm_bindgen_test]
-        async fn returns_sender_client_id(case: TestCase) {
+        async fn returns_sender_client_id(case: TestContext) {
             run_test_with_client_ids(case.clone(), ["alice", "bob"], move |[alice_central, bob_central]| {
                 Box::pin(async move {
                     let id = conversation_id();
@@ -1430,7 +1430,7 @@ mod tests {
 
         #[apply(all_cred_cipher)]
         #[wasm_bindgen_test]
-        async fn should_throw_specialized_error_when_epoch_too_old(mut case: TestCase) {
+        async fn should_throw_specialized_error_when_epoch_too_old(mut case: TestContext) {
             case.cfg.custom.out_of_order_tolerance = 0;
             run_test_with_client_ids(case.clone(), ["alice", "bob"], move |[alice_central, bob_central]| {
                 Box::pin(async move {
@@ -1525,7 +1525,7 @@ mod tests {
 
         #[apply(all_cred_cipher)]
         #[wasm_bindgen_test]
-        async fn should_throw_specialized_error_when_epoch_desynchronized(mut case: TestCase) {
+        async fn should_throw_specialized_error_when_epoch_desynchronized(mut case: TestContext) {
             case.cfg.custom.out_of_order_tolerance = 0;
             run_test_with_client_ids(case.clone(), ["alice", "bob"], move |[alice_central, bob_central]| {
                 Box::pin(async move {

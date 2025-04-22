@@ -510,7 +510,7 @@ mod tests {
 
     #[apply(all_cred_cipher)]
     #[wasm_bindgen_test]
-    pub async fn create_self_conversation_should_succeed(case: TestCase) {
+    pub async fn create_self_conversation_should_succeed(case: TestContext) {
         run_test_with_client_ids(case.clone(), ["alice"], move |[alice_central]| {
             Box::pin(async move {
                 let id = conversation_id();
@@ -545,7 +545,7 @@ mod tests {
 
     #[apply(all_cred_cipher)]
     #[wasm_bindgen_test]
-    pub async fn create_1_1_conversation_should_succeed(case: TestCase) {
+    pub async fn create_1_1_conversation_should_succeed(case: TestContext) {
         run_test_with_client_ids(case.clone(), ["alice", "bob"], move |[alice_central, bob_central]| {
             Box::pin(async move {
                 let id = conversation_id();
@@ -597,7 +597,7 @@ mod tests {
 
     #[apply(all_cred_cipher)]
     #[wasm_bindgen_test]
-    pub async fn create_many_people_conversation(case: TestCase) {
+    pub async fn create_many_people_conversation(case: TestContext) {
         use crate::e2e_identity::enrollment::test_utils::failsafe_ctx;
 
         run_test_with_client_ids(case.clone(), ["alice"], move |[mut alice_central]| {
@@ -803,7 +803,7 @@ mod tests {
         #[async_std::test]
         #[wasm_bindgen_test]
         async fn should_read_device_identities() {
-            let case = TestCase::default_x509();
+            let case = TestContext::default_x509();
             run_test_with_client_ids(
                 case.clone(),
                 ["alice_android", "alice_ios"],
@@ -893,7 +893,7 @@ mod tests {
         #[async_std::test]
         #[wasm_bindgen_test]
         async fn should_read_revoked_device_cross_signed() {
-            let case = TestCase::default_x509();
+            let case = TestContext::default_x509();
             run_test_with_client_ids_and_revocation(
                 case.clone(),
                 ["alice", "bob", "rupert"],
@@ -945,7 +945,7 @@ mod tests {
         #[async_std::test]
         #[wasm_bindgen_test]
         async fn should_read_revoked_device() {
-            let case = TestCase::default_x509();
+            let case = TestContext::default_x509();
             run_test_with_client_ids_and_revocation(
                 case.clone(),
                 ["alice", "bob", "rupert"],
@@ -989,7 +989,7 @@ mod tests {
         #[async_std::test]
         #[wasm_bindgen_test]
         async fn should_not_fail_when_basic() {
-            let case = TestCase::default();
+            let case = TestContext::default();
             run_test_with_client_ids(
                 case.clone(),
                 ["alice_android", "alice_ios"],
@@ -1052,7 +1052,7 @@ mod tests {
         #[async_std::test]
         #[wasm_bindgen_test]
         async fn should_read_users_cross_signed() {
-            let case = TestCase::default_x509();
+            let case = TestContext::default_x509();
 
             let (alice_android, alice_ios) = (
                 "satICT30SbiIpjj1n-XQtA:7684f3f95a5e6848@world.com",
@@ -1164,7 +1164,7 @@ mod tests {
         #[async_std::test]
         #[wasm_bindgen_test]
         async fn should_read_users() {
-            let case = TestCase::default_x509();
+            let case = TestContext::default_x509();
 
             let (alice_android, alice_ios) = (
                 "satICT30SbiIpjj1n-XQtA:7684f3f95a5e6848@world.com",
@@ -1262,7 +1262,7 @@ mod tests {
             let bob_android = "I_7X5oRAToKy9z_kvhDKKQ:8b1fd601510d102a@wire.com";
             let bobt_android = "HSLU78bpQCOYwh4FWCac5g:68db8bac6a65d@zeta.com";
 
-            let case = TestCase::default_x509();
+            let case = TestContext::default_x509();
 
             run_cross_signed_tests_with_client_ids(
                 case.clone(),
@@ -1347,7 +1347,7 @@ mod tests {
 
         #[apply(all_cred_cipher)]
         #[wasm_bindgen_test]
-        pub async fn can_export_secret_key(case: TestCase) {
+        pub async fn can_export_secret_key(case: TestContext) {
             run_test_with_client_ids(case.clone(), ["alice"], move |[alice_central]| {
                 Box::pin(async move {
                     let id = conversation_id();
@@ -1374,7 +1374,7 @@ mod tests {
 
         #[apply(all_cred_cipher)]
         #[wasm_bindgen_test]
-        pub async fn cannot_export_secret_key_invalid_length(case: TestCase) {
+        pub async fn cannot_export_secret_key_invalid_length(case: TestContext) {
             run_test_with_client_ids(case.clone(), ["alice"], move |[alice_central]| {
                 Box::pin(async move {
                     let id = conversation_id();
@@ -1407,7 +1407,7 @@ mod tests {
 
         #[apply(all_cred_cipher)]
         #[wasm_bindgen_test]
-        pub async fn can_get_client_ids(case: TestCase) {
+        pub async fn can_get_client_ids(case: TestContext) {
             run_test_with_client_ids(case.clone(), ["alice", "bob"], move |[alice_central, bob_central]| {
                 Box::pin(async move {
                     let id = conversation_id();
@@ -1452,7 +1452,7 @@ mod tests {
 
         #[apply(all_cred_cipher)]
         #[wasm_bindgen_test]
-        pub async fn should_fetch_ext_sender(case: TestCase) {
+        pub async fn should_fetch_ext_sender(case: TestContext) {
             run_test_with_client_ids(case.clone(), ["alice"], move |[alice_central]| {
                 Box::pin(async move {
                     let id = conversation_id();

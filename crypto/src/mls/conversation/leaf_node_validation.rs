@@ -19,7 +19,7 @@ mod tests {
         /// When a LeafNode is downloaded in a KeyPackage, before it is used to add the client to the group
         #[apply(all_cred_cipher)]
         #[wasm_bindgen_test]
-        async fn should_validate_leaf_node_when_adding(case: TestCase) {
+        async fn should_validate_leaf_node_when_adding(case: TestContext) {
             run_test_with_client_ids(
                 case.clone(),
                 ["alice", "bob"],
@@ -98,7 +98,7 @@ mod tests {
         /// When a LeafNode is received by a group member in an Add, Update, or Commit message
         #[apply(all_cred_cipher)]
         #[wasm_bindgen_test]
-        async fn should_validate_leaf_node_when_receiving_expired_add_proposal(case: TestCase) {
+        async fn should_validate_leaf_node_when_receiving_expired_add_proposal(case: TestContext) {
             run_test_with_client_ids(
                 case.clone(),
                 ["alice", "bob", "charlie"],
@@ -157,7 +157,7 @@ mod tests {
         /// When a LeafNode is received by a group member in an Add, Update, or Commit message
         #[apply(all_cred_cipher)]
         #[wasm_bindgen_test]
-        async fn should_validate_leaf_node_when_receiving_add_commit(case: TestCase) {
+        async fn should_validate_leaf_node_when_receiving_add_commit(case: TestContext) {
             run_test_with_client_ids(
                 case.clone(),
                 ["alice", "bob", "charlie"],
@@ -223,7 +223,7 @@ mod tests {
         /// When a client validates a ratchet tree, e.g., when joining a group or after processing a Commit
         #[apply(all_cred_cipher)]
         #[wasm_bindgen_test]
-        async fn should_validate_leaf_node_when_receiving_welcome(case: TestCase) {
+        async fn should_validate_leaf_node_when_receiving_welcome(case: TestContext) {
             run_test_with_client_ids(case.clone(), ["alice", "bob"], move |[alice_central, bob_central]| {
                 Box::pin(async move {
                     let expiration_time = 14;

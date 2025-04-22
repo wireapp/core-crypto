@@ -265,7 +265,7 @@ mod tests {
 
         #[apply(all_cred_cipher)]
         #[wasm_bindgen_test]
-        async fn enrollment_should_rotate_all(case: TestCase) {
+        async fn enrollment_should_rotate_all(case: TestContext) {
             run_test_with_client_ids(
                 case.clone(),
                 ["alice", "bob", "charlie"],
@@ -485,7 +485,7 @@ mod tests {
 
         #[apply(all_cred_cipher)]
         #[wasm_bindgen_test]
-        async fn should_restore_credentials_in_order(case: TestCase) {
+        async fn should_restore_credentials_in_order(case: TestContext) {
             run_test_with_client_ids(case.clone(), ["alice"], move |[mut alice_central]| {
                 Box::pin(async move {
                     let x509_test_chain_arc =
@@ -617,7 +617,7 @@ mod tests {
 
         #[apply(all_cred_cipher)]
         #[wasm_bindgen_test]
-        async fn rotate_should_roundtrip(case: TestCase) {
+        async fn rotate_should_roundtrip(case: TestContext) {
             run_test_with_client_ids(
                 case.clone(),
                 ["alice", "bob"],
@@ -809,7 +809,7 @@ mod tests {
 
         #[apply(all_cred_cipher)]
         #[wasm_bindgen_test]
-        pub async fn should_rotate_one_conversations_credential(case: TestCase) {
+        pub async fn should_rotate_one_conversations_credential(case: TestContext) {
             if case.is_x509() {
                 run_test_with_client_ids(case.clone(), ["alice", "bob"], move |[alice_central, bob_central]| {
                     Box::pin(async move {
@@ -902,7 +902,7 @@ mod tests {
 
         #[apply(all_cred_cipher)]
         #[wasm_bindgen_test]
-        pub async fn rotate_should_be_renewable_when_commit_denied(case: TestCase) {
+        pub async fn rotate_should_be_renewable_when_commit_denied(case: TestContext) {
             if !case.is_x509() {
                 return;
             }
@@ -1015,7 +1015,7 @@ mod tests {
 
         #[apply(all_cred_cipher)]
         #[wasm_bindgen_test]
-        pub async fn rotate_should_replace_existing_basic_credentials(case: TestCase) {
+        pub async fn rotate_should_replace_existing_basic_credentials(case: TestContext) {
             if case.is_x509() {
                 run_test_with_client_ids(case.clone(), ["alice", "bob"], move |[alice_central, bob_central]| {
                     Box::pin(async move {

@@ -109,7 +109,7 @@ mod tests {
 
     #[apply(all_cred_cipher)]
     #[wasm_bindgen_test]
-    async fn joining_from_welcome_should_prune_local_key_material(case: TestCase) {
+    async fn joining_from_welcome_should_prune_local_key_material(case: TestContext) {
         run_test_with_client_ids(case.clone(), ["alice", "bob"], move |[alice_central, bob_central]| {
             Box::pin(async move {
                 let id = conversation_id();
@@ -154,7 +154,7 @@ mod tests {
 
     #[apply(all_cred_cipher)]
     #[wasm_bindgen_test]
-    async fn process_welcome_should_fail_when_already_exists(case: TestCase) {
+    async fn process_welcome_should_fail_when_already_exists(case: TestContext) {
         use crate::LeafError;
 
         run_test_with_client_ids(case.clone(), ["alice", "bob"], move |[alice_central, bob_central]| {

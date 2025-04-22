@@ -141,7 +141,7 @@ mod tests {
     // If there’s a pending commit & it matches the incoming commit: mark pending commit as accepted
     #[apply(all_cred_cipher)]
     #[wasm_bindgen_test]
-    pub async fn should_succeed_when_incoming_commit_same_as_pending(case: TestCase) {
+    pub async fn should_succeed_when_incoming_commit_same_as_pending(case: TestContext) {
         if !case.is_pure_ciphertext() && case.is_x509() {
             run_test_with_client_ids(case.clone(), ["alice"], move |[alice_central]| {
                 Box::pin(async move {
@@ -214,7 +214,7 @@ mod tests {
     // If there’s a pending commit & it does not match the self incoming commit: fail with dedicated error
     #[apply(all_cred_cipher)]
     #[wasm_bindgen_test]
-    pub async fn should_succeed_when_incoming_commit_mismatches_pending_commit(case: TestCase) {
+    pub async fn should_succeed_when_incoming_commit_mismatches_pending_commit(case: TestContext) {
         if !case.is_pure_ciphertext() {
             run_test_with_client_ids(case.clone(), ["alice"], move |[alice_central]| {
                 Box::pin(async move {
@@ -261,7 +261,7 @@ mod tests {
     // if there’s no pending commit & and the incoming commit originates from self: succeed by ignoring the incoming commit
     #[apply(all_cred_cipher)]
     #[wasm_bindgen_test]
-    pub async fn should_ignore_self_incoming_commit_when_no_pending_commit(case: TestCase) {
+    pub async fn should_ignore_self_incoming_commit_when_no_pending_commit(case: TestContext) {
         if !case.is_pure_ciphertext() {
             run_test_with_client_ids(case.clone(), ["alice"], move |[alice_central]| {
                 Box::pin(async move {
@@ -306,7 +306,7 @@ mod tests {
 
     #[apply(all_cred_cipher)]
     #[wasm_bindgen_test]
-    pub async fn should_fail_when_tampering_with_incoming_own_commit_same_as_pending(case: TestCase) {
+    pub async fn should_fail_when_tampering_with_incoming_own_commit_same_as_pending(case: TestContext) {
         use crate::MlsErrorKind;
 
         if case.is_pure_ciphertext() {

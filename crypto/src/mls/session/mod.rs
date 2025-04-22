@@ -820,7 +820,7 @@ mod tests {
 
         pub async fn random_generate(
             &self,
-            case: &crate::test_utils::TestCase,
+            case: &crate::test_utils::TestContext,
             signer: Option<&crate::test_utils::x509::X509Certificate>,
             provision: bool,
         ) -> Result<()> {
@@ -919,7 +919,7 @@ mod tests {
 
     #[apply(all_cred_cipher)]
     #[wasm_bindgen_test]
-    async fn can_generate_client(case: TestCase) {
+    async fn can_generate_client(case: TestContext) {
         run_test_with_central(case.clone(), move |[alice]| {
             Box::pin(async move {
                 let key = DatabaseKey::generate();
@@ -948,7 +948,7 @@ mod tests {
 
     #[apply(all_cred_cipher)]
     #[wasm_bindgen_test]
-    async fn can_externally_generate_client(case: TestCase) {
+    async fn can_externally_generate_client(case: TestContext) {
         run_test_with_central(case.clone(), move |[alice]| {
             Box::pin(async move {
                 if case.is_basic() {

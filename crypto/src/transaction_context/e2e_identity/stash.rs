@@ -60,7 +60,7 @@ mod tests {
 
     #[apply(all_cred_cipher)]
     #[wasm_bindgen_test]
-    async fn stash_and_pop_should_not_abort_enrollment(case: TestCase) {
+    async fn stash_and_pop_should_not_abort_enrollment(case: TestContext) {
         run_test_wo_clients(case.clone(), move |mut cc| {
             Box::pin(async move {
                 let x509_test_chain = X509TestChain::init_empty(case.signature_scheme());
@@ -97,7 +97,7 @@ mod tests {
     // this ensures the nominal test does its job
     #[apply(all_cred_cipher)]
     #[wasm_bindgen_test]
-    async fn should_fail_when_restoring_invalid(case: TestCase) {
+    async fn should_fail_when_restoring_invalid(case: TestContext) {
         run_test_wo_clients(case.clone(), move |mut cc| {
             Box::pin(async move {
                 let x509_test_chain = X509TestChain::init_empty(case.signature_scheme());

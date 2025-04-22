@@ -95,7 +95,7 @@ mod tests {
 
         #[apply(all_cred_cipher)]
         #[wasm_bindgen_test]
-        async fn guest_should_externally_propose_adding_itself_to_owner_group(case: TestCase) {
+        async fn guest_should_externally_propose_adding_itself_to_owner_group(case: TestContext) {
             run_test_with_client_ids(
                 case.clone(),
                 ["owner", "guest"],
@@ -168,7 +168,7 @@ mod tests {
 
         #[apply(all_cred_cipher)]
         #[wasm_bindgen_test]
-        async fn ds_should_remove_guest_from_conversation(case: TestCase) {
+        async fn ds_should_remove_guest_from_conversation(case: TestContext) {
             run_test_with_client_ids(case.clone(), ["owner", "guest", "ds"], move |[owner, guest, ds]| {
                 Box::pin(async move {
                     let owner_central = &owner.context;
@@ -245,7 +245,7 @@ mod tests {
 
         #[apply(all_cred_cipher)]
         #[wasm_bindgen_test]
-        async fn should_fail_when_invalid_external_sender(case: TestCase) {
+        async fn should_fail_when_invalid_external_sender(case: TestContext) {
             use crate::mls;
 
             run_test_with_client_ids(
@@ -325,7 +325,7 @@ mod tests {
 
         #[apply(all_cred_cipher)]
         #[wasm_bindgen_test]
-        async fn should_fail_when_wrong_signature_key(case: TestCase) {
+        async fn should_fail_when_wrong_signature_key(case: TestContext) {
             use crate::mls;
 
             run_test_with_client_ids(case.clone(), ["owner", "guest", "ds"], move |[owner, guest, ds]| {
@@ -400,7 +400,7 @@ mod tests {
 
         #[apply(all_cred_cipher)]
         #[wasm_bindgen_test]
-        async fn joiners_from_welcome_can_accept_external_remove_proposals(case: TestCase) {
+        async fn joiners_from_welcome_can_accept_external_remove_proposals(case: TestContext) {
             run_test_with_client_ids(
                 case.clone(),
                 ["alice", "bob", "charlie", "ds"],
@@ -526,7 +526,7 @@ mod tests {
 
         #[apply(all_cred_cipher)]
         #[wasm_bindgen_test]
-        async fn joiners_from_external_commit_can_accept_external_remove_proposals(case: TestCase) {
+        async fn joiners_from_external_commit_can_accept_external_remove_proposals(case: TestContext) {
             run_test_with_client_ids(
                 case.clone(),
                 ["alice", "bob", "charlie", "ds"],

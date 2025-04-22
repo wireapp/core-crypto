@@ -15,7 +15,7 @@ use crate::{
         CertificateBundle, ClientId, ConversationId, MlsCiphersuite, MlsConversation, MlsConversationConfiguration,
         MlsConversationDecryptMessage, MlsCredentialType, MlsCustomConfiguration, MlsError, Session, WireIdentity,
     },
-    test_utils::{MessageExt, TestCase, x509::X509Certificate},
+    test_utils::{MessageExt, TestContext, x509::X509Certificate},
 };
 use core_crypto_keystore::connection::FetchFromDatabase;
 use core_crypto_keystore::entities::{
@@ -42,7 +42,7 @@ pub struct RotateAllResult {
 }
 
 impl SessionContext {
-    pub async fn get_one_key_package(&self, case: &TestCase) -> KeyPackage {
+    pub async fn get_one_key_package(&self, case: &TestContext) -> KeyPackage {
         let kps = self
             .context
             .get_or_create_client_keypackages(case.ciphersuite(), case.credential_type, 1)
@@ -51,7 +51,7 @@ impl SessionContext {
         kps.first().unwrap().clone()
     }
 
-    pub async fn new_keypackage(&self, case: &TestCase, lifetime: Lifetime) -> KeyPackage {
+    pub async fn new_keypackage(&self, case: &TestContext, lifetime: Lifetime) -> KeyPackage {
         let cb = self
             .find_most_recent_credential_bundle(case.signature_scheme(), case.credential_type)
             .await
@@ -94,11 +94,11 @@ impl SessionContext {
             .count()
     }
 
-    pub async fn rand_key_package(&self, case: &TestCase) -> KeyPackageIn {
+    pub async fn rand_key_package(&self, case: &TestContext) -> KeyPackageIn {
         self.rand_key_package_of_type(case, case.credential_type).await
     }
 
-    pub async fn rand_key_package_of_type(&self, case: &TestCase, ct: MlsCredentialType) -> KeyPackageIn {
+    pub async fn rand_key_package_of_type(&self, case: &TestContext, ct: MlsCredentialType) -> KeyPackageIn {
         let client = self.context.session().await.unwrap();
         client
             .generate_one_keypackage(&self.context.mls_provider().await.unwrap(), case.ciphersuite(), ct)
@@ -172,7 +172,7 @@ impl SessionContext {
     /// Streamlines the ceremony of adding a client and process its welcome message
     pub async fn invite_all<const N: usize>(
         &self,
-        case: &TestCase,
+        case: &TestContext,
         id: &ConversationId,
         others: [&Self; N],
     ) -> Result<()> {
@@ -187,7 +187,7 @@ impl SessionContext {
     /// Streamlines the ceremony of adding a client and process its welcome message
     pub async fn invite_all_members<const N: usize>(
         &self,
-        case: &TestCase,
+        case: &TestContext,
         id: &ConversationId,
         others: [(&Self, KeyPackageIn); N],
     ) -> Result<()> {
@@ -229,7 +229,7 @@ impl SessionContext {
 
     pub async fn try_join_from_group_info(
         &mut self,
-        case: &TestCase,
+        case: &TestContext,
         id: &ConversationId,
         group_info: VerifiableGroupInfo,
         others: Vec<&Self>,
@@ -359,7 +359,7 @@ impl SessionContext {
             .index
     }
 
-    pub async fn client_signature_key(&self, case: &TestCase) -> SignaturePublicKey {
+    pub async fn client_signature_key(&self, case: &TestContext) -> SignaturePublicKey {
         let (sc, ct) = (case.signature_scheme(), case.credential_type);
         let client = self.session().await;
         let cb = client.find_most_recent_credential_bundle(sc, ct).await.unwrap();
@@ -379,7 +379,7 @@ impl SessionContext {
 
     pub async fn new_credential_bundle(
         &mut self,
-        case: &TestCase,
+        case: &TestContext,
         signer: Option<&X509Certificate>,
     ) -> CredentialBundle {
         let backend = &self.context.mls_provider().await.unwrap();
@@ -506,7 +506,7 @@ impl SessionContext {
 
     pub async fn save_new_credential(
         &self,
-        case: &TestCase,
+        case: &TestContext,
         handle: &str,
         display_name: &str,
         existing_cert: &X509Certificate,
@@ -711,7 +711,7 @@ impl SessionContext {
         assert!(!keystore_identity.thumbprint.is_empty());
     }
 
-    pub async fn verify_sender_identity(&self, case: &TestCase, decrypted: &MlsConversationDecryptMessage) {
+    pub async fn verify_sender_identity(&self, case: &TestContext, decrypted: &MlsConversationDecryptMessage) {
         let (sc, ct) = (case.signature_scheme(), case.credential_type);
         let client = self.session().await;
         let sender_cb = client.find_most_recent_credential_bundle(sc, ct).await.unwrap();
@@ -777,7 +777,7 @@ impl SessionContext {
         self.get_conversation_unchecked(id).await.members().len() as u32
     }
 
-    pub async fn rand_external_sender(&self, case: &TestCase) -> ExternalSender {
+    pub async fn rand_external_sender(&self, case: &TestContext) -> ExternalSender {
         let sc = case.signature_scheme();
 
         let provider = self.context.mls_provider().await.unwrap();

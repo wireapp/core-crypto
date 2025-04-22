@@ -21,8 +21,8 @@ use std::sync::Arc;
 pub mod context;
 mod epoch_observer;
 mod error;
-pub mod fixtures;
 pub mod message;
+pub mod test_context;
 pub mod x509;
 // Cannot name it `proteus` because then it conflicts with proteus the crate :(
 #[cfg(feature = "proteus")]
@@ -35,8 +35,8 @@ use crate::transaction_context::TransactionContext;
 pub(crate) use epoch_observer::TestEpochObserver;
 pub use error::Error as TestError;
 use error::Result;
-pub use fixtures::{TestCase, *};
 pub use message::*;
+pub use test_context::{TestContext, *};
 
 pub const GROUP_SAMPLE_SIZE: usize = 9;
 
@@ -118,7 +118,7 @@ impl SessionContext {
 }
 
 fn init_x509_test_chain(
-    case: &TestCase,
+    case: &TestContext,
     client_ids: &[[&str; 3]],
     revoked_display_names: &[&str],
     cert_params: CertificateParams,
@@ -168,14 +168,14 @@ fn init_x509_test_chain(
 }
 
 pub async fn run_test_with_central(
-    case: TestCase,
+    case: TestContext,
     test: impl FnOnce([SessionContext; 1]) -> std::pin::Pin<Box<dyn std::future::Future<Output = ()> + 'static>> + 'static,
 ) {
     run_test_with_client_ids(case.clone(), ["alice"], test).await
 }
 
 pub async fn run_test_with_client_ids<const N: usize>(
-    case: TestCase,
+    case: TestContext,
     client_ids: [&'static str; N],
     test: impl FnOnce([SessionContext; N]) -> std::pin::Pin<Box<dyn std::future::Future<Output = ()> + 'static>> + 'static,
 ) {
@@ -183,7 +183,7 @@ pub async fn run_test_with_client_ids<const N: usize>(
 }
 
 pub async fn run_test_with_client_ids_and_revocation<const N: usize, const F: usize>(
-    case: TestCase,
+    case: TestContext,
     client_ids: [&'static str; N],
     other_client_ids: [&'static str; F],
     revoked_display_names: &'static [&'static str],
@@ -204,7 +204,7 @@ pub async fn run_test_with_client_ids_and_revocation<const N: usize, const F: us
 }
 
 pub async fn run_test_with_deterministic_client_ids<const N: usize>(
-    case: TestCase,
+    case: TestContext,
     client_ids: [[&'static str; 3]; N],
     test: impl FnOnce([SessionContext; N]) -> std::pin::Pin<Box<dyn std::future::Future<Output = ()> + 'static>> + 'static,
 ) {
@@ -216,7 +216,7 @@ pub async fn run_test_with_deterministic_client_ids<const N: usize>(
 
 /// Generates 2 x509 test chains, where the intermediate certificates are also cross-signed.
 pub fn init_cross_signed_x509_test_chains<const N: usize, const F: usize>(
-    case: &TestCase,
+    case: &TestContext,
     client_ids: [[&'static str; 3]; N],
     other_client_ids: [[&'static str; 3]; F],
     (params1, params2): (CertificateParams, CertificateParams),
@@ -229,7 +229,7 @@ pub fn init_cross_signed_x509_test_chains<const N: usize, const F: usize>(
 }
 
 pub async fn run_cross_signed_tests_with_client_ids<const N: usize, const F: usize>(
-    case: TestCase,
+    case: TestContext,
     client_ids: [[&'static str; 3]; N],
     other_client_ids: [[&'static str; 3]; F],
     (domain1, domain2): (&'static str, &'static str),
@@ -305,7 +305,7 @@ pub async fn run_cross_signed_tests_with_client_ids<const N: usize, const F: usi
 }
 
 async fn create_centrals<const N: usize>(
-    case: &TestCase,
+    case: &TestContext,
     paths: [String; N],
     chain: Option<&X509TestChain>,
     transport: Arc<dyn MlsTransport>,
@@ -371,7 +371,7 @@ async fn create_centrals<const N: usize>(
 }
 
 pub async fn run_test_with_deterministic_client_ids_and_revocation<const N: usize, const F: usize>(
-    case: TestCase,
+    case: TestContext,
     client_ids: [[&'static str; 3]; N],
     cross_signed_client_ids: [[&'static str; 3]; F],
     revoked_display_names: &'static [&'static str],
@@ -462,7 +462,7 @@ pub async fn run_test_with_deterministic_client_ids_and_revocation<const N: usiz
 }
 
 pub async fn run_test_wo_clients(
-    case: TestCase,
+    case: TestContext,
     test: impl FnOnce(SessionContext) -> std::pin::Pin<Box<dyn std::future::Future<Output = ()> + 'static>> + 'static,
 ) {
     run_tests(move |paths: [String; 1]| {

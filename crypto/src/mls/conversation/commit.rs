@@ -132,7 +132,7 @@ mod tests {
 
         #[apply(all_cred_cipher)]
         #[wasm_bindgen_test]
-        async fn retry_should_work(case: TestCase) {
+        async fn retry_should_work(case: TestContext) {
             run_test_with_client_ids(
                 case.clone(),
                 ["alice", "bob", "charlie"],
@@ -242,7 +242,7 @@ mod tests {
 
         #[apply(all_cred_cipher)]
         #[wasm_bindgen_test]
-        async fn can_add_members_to_conversation(case: TestCase) {
+        async fn can_add_members_to_conversation(case: TestContext) {
             run_test_with_client_ids(case.clone(), ["alice", "bob"], move |[alice_central, bob_central]| {
                 Box::pin(async move {
                     let id = conversation_id();
@@ -316,7 +316,7 @@ mod tests {
 
         #[apply(all_cred_cipher)]
         #[wasm_bindgen_test]
-        async fn should_return_valid_welcome(case: TestCase) {
+        async fn should_return_valid_welcome(case: TestContext) {
             run_test_with_client_ids(case.clone(), ["alice", "bob"], move |[alice_central, bob_central]| {
                 Box::pin(async move {
                     let id = conversation_id();
@@ -356,7 +356,7 @@ mod tests {
 
         #[apply(all_cred_cipher)]
         #[wasm_bindgen_test]
-        async fn should_return_valid_group_info(case: TestCase) {
+        async fn should_return_valid_group_info(case: TestContext) {
             run_test_with_client_ids(
                 case.clone(),
                 ["alice", "bob", "guest"],
@@ -399,7 +399,7 @@ mod tests {
 
         #[apply(all_cred_cipher)]
         #[wasm_bindgen_test]
-        async fn alice_can_remove_bob_from_conversation(case: TestCase) {
+        async fn alice_can_remove_bob_from_conversation(case: TestContext) {
             run_test_with_client_ids(case.clone(), ["alice", "bob"], move |[alice_central, bob_central]| {
                 Box::pin(async move {
                     let id = conversation_id();
@@ -448,7 +448,7 @@ mod tests {
 
         #[apply(all_cred_cipher)]
         #[wasm_bindgen_test]
-        async fn should_return_valid_welcome(case: TestCase) {
+        async fn should_return_valid_welcome(case: TestContext) {
             run_test_with_client_ids(
                 case.clone(),
                 ["alice", "bob", "guest"],
@@ -504,7 +504,7 @@ mod tests {
 
         #[apply(all_cred_cipher)]
         #[wasm_bindgen_test]
-        async fn should_return_valid_group_info(case: TestCase) {
+        async fn should_return_valid_group_info(case: TestContext) {
             run_test_with_client_ids(
                 case.clone(),
                 ["alice", "bob", "guest"],
@@ -552,7 +552,7 @@ mod tests {
 
         #[apply(all_cred_cipher)]
         #[wasm_bindgen_test]
-        async fn should_succeed(case: TestCase) {
+        async fn should_succeed(case: TestContext) {
             run_test_with_client_ids(case.clone(), ["alice", "bob"], move |[alice_central, bob_central]| {
                 Box::pin(async move {
                     let id = conversation_id();
@@ -640,7 +640,7 @@ mod tests {
 
         #[apply(all_cred_cipher)]
         #[wasm_bindgen_test]
-        async fn should_create_welcome_for_pending_add_proposals(case: TestCase) {
+        async fn should_create_welcome_for_pending_add_proposals(case: TestContext) {
             run_test_with_client_ids(
                 case.clone(),
                 ["alice", "bob", "charlie"],
@@ -764,7 +764,7 @@ mod tests {
 
         #[apply(all_cred_cipher)]
         #[wasm_bindgen_test]
-        async fn should_return_valid_welcome(case: TestCase) {
+        async fn should_return_valid_welcome(case: TestContext) {
             run_test_with_client_ids(
                 case.clone(),
                 ["alice", "bob", "guest"],
@@ -832,7 +832,7 @@ mod tests {
 
         #[apply(all_cred_cipher)]
         #[wasm_bindgen_test]
-        async fn should_return_valid_group_info(case: TestCase) {
+        async fn should_return_valid_group_info(case: TestContext) {
             run_test_with_client_ids(
                 case.clone(),
                 ["alice", "bob", "guest"],
@@ -875,7 +875,7 @@ mod tests {
 
         #[apply(all_cred_cipher)]
         #[wasm_bindgen_test]
-        async fn should_create_a_commit_out_of_self_pending_proposals(case: TestCase) {
+        async fn should_create_a_commit_out_of_self_pending_proposals(case: TestContext) {
             run_test_with_client_ids(
                 case.clone(),
                 ["alice", "bob"],
@@ -919,7 +919,7 @@ mod tests {
 
         #[apply(all_cred_cipher)]
         #[wasm_bindgen_test]
-        async fn should_create_a_commit_out_of_pending_proposals_by_ref(case: TestCase) {
+        async fn should_create_a_commit_out_of_pending_proposals_by_ref(case: TestContext) {
             run_test_with_client_ids(
                 case.clone(),
                 ["alice", "bob", "charlie"],
@@ -977,7 +977,7 @@ mod tests {
 
         #[apply(all_cred_cipher)]
         #[wasm_bindgen_test]
-        async fn should_return_valid_welcome(case: TestCase) {
+        async fn should_return_valid_welcome(case: TestContext) {
             run_test_with_client_ids(case.clone(), ["alice", "bob"], move |[alice_central, bob_central]| {
                 Box::pin(async move {
                     let id = conversation_id();
@@ -1015,7 +1015,7 @@ mod tests {
 
         #[apply(all_cred_cipher)]
         #[wasm_bindgen_test]
-        async fn should_return_valid_group_info(case: TestCase) {
+        async fn should_return_valid_group_info(case: TestContext) {
             run_test_with_client_ids(
                 case.clone(),
                 ["alice", "bob", "guest"],
@@ -1061,7 +1061,7 @@ mod tests {
 
         #[apply(all_cred_cipher)]
         #[wasm_bindgen_test]
-        async fn should_prevent_out_of_order_commits(case: TestCase) {
+        async fn should_prevent_out_of_order_commits(case: TestContext) {
             run_test_with_client_ids(case.clone(), ["alice", "bob"], move |[alice_central, bob_central]| {
                 Box::pin(async move {
                     let id = conversation_id();
@@ -1130,7 +1130,7 @@ mod tests {
 
         #[apply(all_cred_cipher)]
         #[wasm_bindgen_test]
-        async fn should_prevent_replayed_encrypted_handshake_messages(case: TestCase) {
+        async fn should_prevent_replayed_encrypted_handshake_messages(case: TestContext) {
             if !case.is_pure_ciphertext() {
                 return;
             }

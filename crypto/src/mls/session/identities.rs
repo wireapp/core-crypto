@@ -139,7 +139,7 @@ mod tests {
 
         #[apply(all_cred_cipher)]
         #[wasm_bindgen_test]
-        async fn should_find_most_recent(case: TestCase) {
+        async fn should_find_most_recent(case: TestContext) {
             run_test_with_client_ids(case.clone(), ["alice"], move |[mut central]| {
                 Box::pin(async move {
                     let cert = central.get_intermediate_ca().cloned();
@@ -163,7 +163,7 @@ mod tests {
 
         #[apply(all_cred_cipher)]
         #[wasm_bindgen_test]
-        async fn should_find_by_public_key(case: TestCase) {
+        async fn should_find_by_public_key(case: TestContext) {
             run_test_with_client_ids(case.clone(), ["alice"], move |[mut central]| {
                 Box::pin(async move {
                     const N: usize = 50;
@@ -196,7 +196,7 @@ mod tests {
 
         #[apply(all_cred_cipher)]
         #[wasm_bindgen_test]
-        async fn should_add_credential(case: TestCase) {
+        async fn should_add_credential(case: TestContext) {
             run_test_with_client_ids(case.clone(), ["alice"], move |[mut central]| {
                 Box::pin(async move {
                     let client = central.session().await;
@@ -213,7 +213,7 @@ mod tests {
 
         #[apply(all_cred_cipher)]
         #[wasm_bindgen_test]
-        async fn pushing_duplicates_should_fail(case: TestCase) {
+        async fn pushing_duplicates_should_fail(case: TestContext) {
             run_test_with_client_ids(case.clone(), ["alice"], move |[mut central]| {
                 Box::pin(async move {
                     let cert = central.get_intermediate_ca().cloned();

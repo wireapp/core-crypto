@@ -16,7 +16,7 @@ mod tests {
 
     #[apply(all_cred_cipher)]
     #[wasm_bindgen_test]
-    pub async fn orphan_welcome_should_generate_external_commit(case: TestCase) {
+    pub async fn orphan_welcome_should_generate_external_commit(case: TestContext) {
         run_test_with_client_ids(case.clone(), ["alice", "bob"], move |[alice_central, bob_central]| {
             Box::pin(async move {
                 let id = conversation_id();

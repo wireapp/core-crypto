@@ -69,11 +69,13 @@ mod tests {
     use rstest_reuse::apply;
     use wasm_bindgen_test::*;
 
-    use crate::test_utils::{TestCase, TestEpochObserver, all_cred_cipher, conversation_id, run_test_with_client_ids};
+    use crate::test_utils::{
+        TestContext, TestEpochObserver, all_cred_cipher, conversation_id, run_test_with_client_ids,
+    };
 
     #[apply(all_cred_cipher)]
     #[wasm_bindgen_test]
-    pub async fn observe_local_epoch_change(case: TestCase) {
+    pub async fn observe_local_epoch_change(case: TestContext) {
         run_test_with_client_ids(case.clone(), ["alice"], move |[session_context]| {
             Box::pin(async move {
                 let id = conversation_id();
@@ -119,7 +121,7 @@ mod tests {
 
     #[apply(all_cred_cipher)]
     #[wasm_bindgen_test]
-    pub async fn observe_remote_epoch_change(case: TestCase) {
+    pub async fn observe_remote_epoch_change(case: TestContext) {
         run_test_with_client_ids(case.clone(), ["alice", "bob"], move |[alice, bob]| {
             Box::pin(async move {
                 let id = conversation_id();
