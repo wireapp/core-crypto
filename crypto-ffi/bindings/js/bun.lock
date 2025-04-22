@@ -363,7 +363,7 @@
 
     "@wdio/logger": ["@wdio/logger@9.4.4", "", { "dependencies": { "chalk": "^5.1.2", "loglevel": "^1.6.0", "loglevel-plugin-prefix": "^0.8.4", "strip-ansi": "^7.1.0" } }, "sha512-BXx8RXFUW2M4dcO6t5Le95Hi2ZkTQBRsvBQqLekT2rZ6Xmw8ZKZBPf0FptnoftFGg6dYmwnDidYv/0+4PiHjpQ=="],
 
-    "@wdio/mocha-framework": ["@wdio/mocha-framework@9.12.1", "", { "dependencies": { "@types/mocha": "^10.0.6", "@types/node": "^20.11.28", "@wdio/logger": "9.4.4", "@wdio/types": "9.10.1", "@wdio/utils": "9.12.1", "mocha": "^10.3.0" } }, "sha512-gWRpSizXyhFFE5MaHtyf/O51nVL08bEoAqrAtZ8ZDRMhmjnVY6KA64Shxw+ULoK1ta1dpxpIyrsiloyLaBTPuA=="],
+    "@wdio/mocha-framework": ["@wdio/mocha-framework@9.12.6", "", { "dependencies": { "@types/mocha": "^10.0.6", "@types/node": "^20.11.28", "@wdio/logger": "9.4.4", "@wdio/types": "9.12.6", "@wdio/utils": "9.12.6", "mocha": "^10.3.0" } }, "sha512-vBAtVY+PLCGTZqTqsfxNtPVthk6tKI4JSffgGNlWDK/uCcjUOZdvsRRs7VRLr8COyeP1QQFzJ8cHDpCu8nd7Fw=="],
 
     "@wdio/protocols": ["@wdio/protocols@9.12.5", "", {}, "sha512-i+yc0EZtZOh5fFuwHxvcnXeTXk2ZjFICRbcAxTNE0F2Jr4uOydvcAOw4EIIRmb9NWUSPf/bGZAA+4SEXmxmjUA=="],
 
@@ -1527,17 +1527,11 @@
 
     "@vitest/snapshot/pathe": ["pathe@1.1.2", "", {}, "sha512-whLdWMYL2TwI08hn8/ZqAbrVemu0LNaNNJZX73O6qaIdCTfXutsLhMkjdENX0qhsQ9uIimo4/aQOmXkoon2nDQ=="],
 
-    "@wdio/browser-runner/@wdio/mocha-framework": ["@wdio/mocha-framework@9.12.6", "", { "dependencies": { "@types/mocha": "^10.0.6", "@types/node": "^20.11.28", "@wdio/logger": "9.4.4", "@wdio/types": "9.12.6", "@wdio/utils": "9.12.6", "mocha": "^10.3.0" } }, "sha512-vBAtVY+PLCGTZqTqsfxNtPVthk6tKI4JSffgGNlWDK/uCcjUOZdvsRRs7VRLr8COyeP1QQFzJ8cHDpCu8nd7Fw=="],
-
     "@wdio/cli/@wdio/globals": ["@wdio/globals@9.12.7", "", { "optionalDependencies": { "expect-webdriverio": "^5.1.0", "webdriverio": "9.12.7" } }, "sha512-WanmrLXRMmW3hwsXCm+x618gDsdGwkrxhiirgMC9Ny0g78qt7JLSOvAHKx+dCZtk77QwvFuNpLCd+Nxnszon9Q=="],
 
     "@wdio/cli/webdriverio": ["webdriverio@9.12.7", "", { "dependencies": { "@types/node": "^20.11.30", "@types/sinonjs__fake-timers": "^8.1.5", "@wdio/config": "9.12.6", "@wdio/logger": "9.4.4", "@wdio/protocols": "9.12.5", "@wdio/repl": "9.4.4", "@wdio/types": "9.12.6", "@wdio/utils": "9.12.6", "archiver": "^7.0.1", "aria-query": "^5.3.0", "cheerio": "^1.0.0-rc.12", "css-shorthand-properties": "^1.1.1", "css-value": "^0.0.1", "grapheme-splitter": "^1.0.4", "htmlfy": "^0.6.0", "is-plain-obj": "^4.1.0", "jszip": "^3.10.1", "lodash.clonedeep": "^4.5.0", "lodash.zip": "^4.2.0", "query-selector-shadow-dom": "^1.0.1", "resq": "^1.11.0", "rgb2hex": "0.2.5", "serialize-error": "^11.0.3", "urlpattern-polyfill": "^10.0.0", "webdriver": "9.12.6" }, "peerDependencies": { "puppeteer-core": ">=22.x || <=24.x" }, "optionalPeers": ["puppeteer-core"] }, "sha512-HxpLQrFuadfE65dqh+Qc2pdvz18FbsdpdiZogy8VUBtxRanijbOsi4cV84ffGXab8Ownzu+bNBJuJjlTBDX00Q=="],
 
     "@wdio/dot-reporter/@wdio/reporter": ["@wdio/reporter@9.12.6", "", { "dependencies": { "@types/node": "^20.1.0", "@wdio/logger": "9.4.4", "@wdio/types": "9.12.6", "diff": "^7.0.0", "object-inspect": "^1.12.0" } }, "sha512-8cR74tEp5nzC8nP59n4hkDUpoaHUNDbJvP3jD9EfX+ZO4OgPMyJMVTGubo1o88Wuty/Gd2jvOZLHoGD8KlHcKw=="],
-
-    "@wdio/mocha-framework/@wdio/types": ["@wdio/types@9.10.1", "", { "dependencies": { "@types/node": "^20.1.0" } }, "sha512-/t1VXPU5Ad1FQjRUP0WlK7IR0dCTX5hSkul8SpCuUpWbeyI4Iol/Wx2b1YU6nS+Ydh78rJCyHxtV0eE5TM1rbw=="],
-
-    "@wdio/mocha-framework/@wdio/utils": ["@wdio/utils@9.12.1", "", { "dependencies": { "@puppeteer/browsers": "^2.2.0", "@wdio/logger": "9.4.4", "@wdio/types": "9.10.1", "decamelize": "^6.0.0", "deepmerge-ts": "^7.0.3", "edgedriver": "^6.1.1", "geckodriver": "^5.0.0", "get-port": "^7.0.0", "import-meta-resolve": "^4.0.0", "locate-app": "^2.2.24", "safaridriver": "^1.0.0", "split2": "^4.2.0", "wait-port": "^1.1.0" } }, "sha512-WrkBdglOwKMpwvCZbOatlLUCghxNWyVfKRDyl92RBX3DuRqqq+uZK8fSHHAJMvXfax5TxcTRzHZUKrQO3ASSXw=="],
 
     "@wdio/reporter/@wdio/types": ["@wdio/types@9.12.3", "", { "dependencies": { "@types/node": "^20.1.0" } }, "sha512-MlnQ3WG1CQAjmUmeKtv3timGR91hSsCwQW9T1kqpu0VaJ/qbw3sWgtArMqRvgWB2H6IGueqQwDQ9qHlP013w9Q=="],
 
