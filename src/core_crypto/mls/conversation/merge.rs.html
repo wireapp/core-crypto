@@ -60,7 +60,7 @@
 <a href=#60 id=60 data-nosnippet>60</a>
 <a href=#61 id=61 data-nosnippet>61</a>        <span class="attr">#[apply(all_cred_cipher)]
 <a href=#62 id=62 data-nosnippet>62</a>        #[wasm_bindgen_test]
-<a href=#63 id=63 data-nosnippet>63</a>        </span><span class="kw">async fn </span>should_apply_pending_commit(case: TestCase) {
+<a href=#63 id=63 data-nosnippet>63</a>        </span><span class="kw">async fn </span>should_apply_pending_commit(case: TestContext) {
 <a href=#64 id=64 data-nosnippet>64</a>            run_test_with_client_ids(case.clone(), [<span class="string">"alice"</span>, <span class="string">"bob"</span>], <span class="kw">move </span>|[alice_central, bob_central]| {
 <a href=#65 id=65 data-nosnippet>65</a>                Box::pin(<span class="kw">async move </span>{
 <a href=#66 id=66 data-nosnippet>66</a>                    <span class="kw">let </span>id = conversation_id();
@@ -87,7 +87,7 @@
 <a href=#87 id=87 data-nosnippet>87</a>
 <a href=#88 id=88 data-nosnippet>88</a>        <span class="attr">#[apply(all_cred_cipher)]
 <a href=#89 id=89 data-nosnippet>89</a>        #[wasm_bindgen_test]
-<a href=#90 id=90 data-nosnippet>90</a>        </span><span class="kw">async fn </span>should_clear_pending_commit_and_proposals(case: TestCase) {
+<a href=#90 id=90 data-nosnippet>90</a>        </span><span class="kw">async fn </span>should_clear_pending_commit_and_proposals(case: TestContext) {
 <a href=#91 id=91 data-nosnippet>91</a>            run_test_with_client_ids(case.clone(), [<span class="string">"alice"</span>], <span class="kw">move </span>|[<span class="kw-2">mut </span>alice_central]| {
 <a href=#92 id=92 data-nosnippet>92</a>                Box::pin(<span class="kw">async move </span>{
 <a href=#93 id=93 data-nosnippet>93</a>                    <span class="kw">let </span>id = conversation_id();
@@ -118,7 +118,7 @@
 <a href=#118 id=118 data-nosnippet>118</a>
 <a href=#119 id=119 data-nosnippet>119</a>        <span class="attr">#[apply(all_cred_cipher)]
 <a href=#120 id=120 data-nosnippet>120</a>        #[wasm_bindgen_test]
-<a href=#121 id=121 data-nosnippet>121</a>        </span><span class="kw">async fn </span>should_clean_associated_key_material(case: TestCase) {
+<a href=#121 id=121 data-nosnippet>121</a>        </span><span class="kw">async fn </span>should_clean_associated_key_material(case: TestContext) {
 <a href=#122 id=122 data-nosnippet>122</a>            run_test_with_client_ids(case.clone(), [<span class="string">"alice"</span>], <span class="kw">move </span>|[alice_central]| {
 <a href=#123 id=123 data-nosnippet>123</a>                Box::pin(<span class="kw">async move </span>{
 <a href=#124 id=124 data-nosnippet>124</a>                    <span class="kw">let </span>id = conversation_id();

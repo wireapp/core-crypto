@@ -141,7 +141,7 @@
 <a href=#141 id=141 data-nosnippet>141</a>    <span class="comment">// If there’s a pending commit &amp; it matches the incoming commit: mark pending commit as accepted
 <a href=#142 id=142 data-nosnippet>142</a>    </span><span class="attr">#[apply(all_cred_cipher)]
 <a href=#143 id=143 data-nosnippet>143</a>    #[wasm_bindgen_test]
-<a href=#144 id=144 data-nosnippet>144</a>    </span><span class="kw">pub async fn </span>should_succeed_when_incoming_commit_same_as_pending(case: TestCase) {
+<a href=#144 id=144 data-nosnippet>144</a>    </span><span class="kw">pub async fn </span>should_succeed_when_incoming_commit_same_as_pending(case: TestContext) {
 <a href=#145 id=145 data-nosnippet>145</a>        <span class="kw">if </span>!case.is_pure_ciphertext() &amp;&amp; case.is_x509() {
 <a href=#146 id=146 data-nosnippet>146</a>            run_test_with_client_ids(case.clone(), [<span class="string">"alice"</span>], <span class="kw">move </span>|[alice_central]| {
 <a href=#147 id=147 data-nosnippet>147</a>                Box::pin(<span class="kw">async move </span>{
@@ -214,7 +214,7 @@
 <a href=#214 id=214 data-nosnippet>214</a>    <span class="comment">// If there’s a pending commit &amp; it does not match the self incoming commit: fail with dedicated error
 <a href=#215 id=215 data-nosnippet>215</a>    </span><span class="attr">#[apply(all_cred_cipher)]
 <a href=#216 id=216 data-nosnippet>216</a>    #[wasm_bindgen_test]
-<a href=#217 id=217 data-nosnippet>217</a>    </span><span class="kw">pub async fn </span>should_succeed_when_incoming_commit_mismatches_pending_commit(case: TestCase) {
+<a href=#217 id=217 data-nosnippet>217</a>    </span><span class="kw">pub async fn </span>should_succeed_when_incoming_commit_mismatches_pending_commit(case: TestContext) {
 <a href=#218 id=218 data-nosnippet>218</a>        <span class="kw">if </span>!case.is_pure_ciphertext() {
 <a href=#219 id=219 data-nosnippet>219</a>            run_test_with_client_ids(case.clone(), [<span class="string">"alice"</span>], <span class="kw">move </span>|[alice_central]| {
 <a href=#220 id=220 data-nosnippet>220</a>                Box::pin(<span class="kw">async move </span>{
@@ -261,7 +261,7 @@
 <a href=#261 id=261 data-nosnippet>261</a>    <span class="comment">// if there’s no pending commit &amp; and the incoming commit originates from self: succeed by ignoring the incoming commit
 <a href=#262 id=262 data-nosnippet>262</a>    </span><span class="attr">#[apply(all_cred_cipher)]
 <a href=#263 id=263 data-nosnippet>263</a>    #[wasm_bindgen_test]
-<a href=#264 id=264 data-nosnippet>264</a>    </span><span class="kw">pub async fn </span>should_ignore_self_incoming_commit_when_no_pending_commit(case: TestCase) {
+<a href=#264 id=264 data-nosnippet>264</a>    </span><span class="kw">pub async fn </span>should_ignore_self_incoming_commit_when_no_pending_commit(case: TestContext) {
 <a href=#265 id=265 data-nosnippet>265</a>        <span class="kw">if </span>!case.is_pure_ciphertext() {
 <a href=#266 id=266 data-nosnippet>266</a>            run_test_with_client_ids(case.clone(), [<span class="string">"alice"</span>], <span class="kw">move </span>|[alice_central]| {
 <a href=#267 id=267 data-nosnippet>267</a>                Box::pin(<span class="kw">async move </span>{
@@ -306,7 +306,7 @@
 <a href=#306 id=306 data-nosnippet>306</a>
 <a href=#307 id=307 data-nosnippet>307</a>    <span class="attr">#[apply(all_cred_cipher)]
 <a href=#308 id=308 data-nosnippet>308</a>    #[wasm_bindgen_test]
-<a href=#309 id=309 data-nosnippet>309</a>    </span><span class="kw">pub async fn </span>should_fail_when_tampering_with_incoming_own_commit_same_as_pending(case: TestCase) {
+<a href=#309 id=309 data-nosnippet>309</a>    </span><span class="kw">pub async fn </span>should_fail_when_tampering_with_incoming_own_commit_same_as_pending(case: TestContext) {
 <a href=#310 id=310 data-nosnippet>310</a>        <span class="kw">use </span><span class="kw">crate</span>::MlsErrorKind;
 <a href=#311 id=311 data-nosnippet>311</a>
 <a href=#312 id=312 data-nosnippet>312</a>        <span class="kw">if </span>case.is_pure_ciphertext() {

@@ -431,7 +431,7 @@
 <a href=#431 id=431 data-nosnippet>431</a>
 <a href=#432 id=432 data-nosnippet>432</a>    <span class="attr">#[apply(all_cred_cipher)]
 <a href=#433 id=433 data-nosnippet>433</a>    #[wasm_bindgen_test]
-<a href=#434 id=434 data-nosnippet>434</a>    </span><span class="kw">async fn </span>can_assess_keypackage_expiration(case: TestCase) {
+<a href=#434 id=434 data-nosnippet>434</a>    </span><span class="kw">async fn </span>can_assess_keypackage_expiration(case: TestContext) {
 <a href=#435 id=435 data-nosnippet>435</a>        run_test_with_central(case.clone(), <span class="kw">move </span>|[central]| {
 <a href=#436 id=436 data-nosnippet>436</a>            Box::pin(<span class="kw">async move </span>{
 <a href=#437 id=437 data-nosnippet>437</a>                <span class="kw">let </span>(cs, ct) = (case.ciphersuite(), case.credential_type);
@@ -476,7 +476,7 @@
 <a href=#476 id=476 data-nosnippet>476</a>
 <a href=#477 id=477 data-nosnippet>477</a>    <span class="attr">#[apply(all_cred_cipher)]
 <a href=#478 id=478 data-nosnippet>478</a>    #[wasm_bindgen_test]
-<a href=#479 id=479 data-nosnippet>479</a>    </span><span class="kw">async fn </span>requesting_x509_key_packages_after_basic(case: TestCase) {
+<a href=#479 id=479 data-nosnippet>479</a>    </span><span class="kw">async fn </span>requesting_x509_key_packages_after_basic(case: TestContext) {
 <a href=#480 id=480 data-nosnippet>480</a>        <span class="comment">// Basic test case
 <a href=#481 id=481 data-nosnippet>481</a>        </span><span class="kw">if </span>!case.is_basic() {
 <a href=#482 id=482 data-nosnippet>482</a>            <span class="kw">return</span>;
@@ -534,7 +534,7 @@
 <a href=#534 id=534 data-nosnippet>534</a>
 <a href=#535 id=535 data-nosnippet>535</a>    <span class="attr">#[apply(all_cred_cipher)]
 <a href=#536 id=536 data-nosnippet>536</a>    #[wasm_bindgen_test]
-<a href=#537 id=537 data-nosnippet>537</a>    </span><span class="kw">async fn </span>generates_correct_number_of_kpbs(case: TestCase) {
+<a href=#537 id=537 data-nosnippet>537</a>    </span><span class="kw">async fn </span>generates_correct_number_of_kpbs(case: TestContext) {
 <a href=#538 id=538 data-nosnippet>538</a>        run_test_with_client_ids(case.clone(), [<span class="string">"alice"</span>], <span class="kw">move </span>|[cc]| {
 <a href=#539 id=539 data-nosnippet>539</a>            Box::pin(<span class="kw">async move </span>{
 <a href=#540 id=540 data-nosnippet>540</a>                <span class="kw">const </span>N: usize = <span class="number">2</span>;
@@ -616,7 +616,7 @@
 <a href=#616 id=616 data-nosnippet>616</a>
 <a href=#617 id=617 data-nosnippet>617</a>    <span class="attr">#[apply(all_cred_cipher)]
 <a href=#618 id=618 data-nosnippet>618</a>    #[wasm_bindgen_test]
-<a href=#619 id=619 data-nosnippet>619</a>    </span><span class="kw">async fn </span>automatically_prunes_lifetime_expired_keypackages(case: TestCase) {
+<a href=#619 id=619 data-nosnippet>619</a>    </span><span class="kw">async fn </span>automatically_prunes_lifetime_expired_keypackages(case: TestContext) {
 <a href=#620 id=620 data-nosnippet>620</a>        run_test_with_central(case.clone(), <span class="kw">move </span>|[central]| {
 <a href=#621 id=621 data-nosnippet>621</a>            Box::pin(<span class="kw">async move </span>{
 <a href=#622 id=622 data-nosnippet>622</a>                <span class="kw">const </span>UNEXPIRED_COUNT: usize = <span class="number">125</span>;
@@ -706,7 +706,7 @@
 <a href=#706 id=706 data-nosnippet>706</a>
 <a href=#707 id=707 data-nosnippet>707</a>    <span class="attr">#[apply(all_cred_cipher)]
 <a href=#708 id=708 data-nosnippet>708</a>    #[wasm_bindgen_test]
-<a href=#709 id=709 data-nosnippet>709</a>    </span><span class="kw">async fn </span>new_keypackage_has_correct_extensions(case: TestCase) {
+<a href=#709 id=709 data-nosnippet>709</a>    </span><span class="kw">async fn </span>new_keypackage_has_correct_extensions(case: TestContext) {
 <a href=#710 id=710 data-nosnippet>710</a>        run_test_with_client_ids(case.clone(), [<span class="string">"alice"</span>], <span class="kw">move </span>|[cc]| {
 <a href=#711 id=711 data-nosnippet>711</a>            Box::pin(<span class="kw">async move </span>{
 <a href=#712 id=712 data-nosnippet>712</a>                <span class="kw">let </span>kps = cc

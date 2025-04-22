@@ -16,7 +16,7 @@
 <a href=#16 id=16 data-nosnippet>16</a>
 <a href=#17 id=17 data-nosnippet>17</a>    <span class="attr">#[apply(all_cred_cipher)]
 <a href=#18 id=18 data-nosnippet>18</a>    #[wasm_bindgen_test]
-<a href=#19 id=19 data-nosnippet>19</a>    </span><span class="kw">pub async fn </span>orphan_welcome_should_generate_external_commit(case: TestCase) {
+<a href=#19 id=19 data-nosnippet>19</a>    </span><span class="kw">pub async fn </span>orphan_welcome_should_generate_external_commit(case: TestContext) {
 <a href=#20 id=20 data-nosnippet>20</a>        run_test_with_client_ids(case.clone(), [<span class="string">"alice"</span>, <span class="string">"bob"</span>], <span class="kw">move </span>|[alice_central, bob_central]| {
 <a href=#21 id=21 data-nosnippet>21</a>            Box::pin(<span class="kw">async move </span>{
 <a href=#22 id=22 data-nosnippet>22</a>                <span class="kw">let </span>id = conversation_id();

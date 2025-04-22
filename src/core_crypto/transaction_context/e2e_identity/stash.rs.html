@@ -60,7 +60,7 @@
 <a href=#60 id=60 data-nosnippet>60</a>
 <a href=#61 id=61 data-nosnippet>61</a>    <span class="attr">#[apply(all_cred_cipher)]
 <a href=#62 id=62 data-nosnippet>62</a>    #[wasm_bindgen_test]
-<a href=#63 id=63 data-nosnippet>63</a>    </span><span class="kw">async fn </span>stash_and_pop_should_not_abort_enrollment(case: TestCase) {
+<a href=#63 id=63 data-nosnippet>63</a>    </span><span class="kw">async fn </span>stash_and_pop_should_not_abort_enrollment(case: TestContext) {
 <a href=#64 id=64 data-nosnippet>64</a>        run_test_wo_clients(case.clone(), <span class="kw">move </span>|<span class="kw-2">mut </span>cc| {
 <a href=#65 id=65 data-nosnippet>65</a>            Box::pin(<span class="kw">async move </span>{
 <a href=#66 id=66 data-nosnippet>66</a>                <span class="kw">let </span>x509_test_chain = X509TestChain::init_empty(case.signature_scheme());
@@ -97,7 +97,7 @@
 <a href=#97 id=97 data-nosnippet>97</a>    <span class="comment">// this ensures the nominal test does its job
 <a href=#98 id=98 data-nosnippet>98</a>    </span><span class="attr">#[apply(all_cred_cipher)]
 <a href=#99 id=99 data-nosnippet>99</a>    #[wasm_bindgen_test]
-<a href=#100 id=100 data-nosnippet>100</a>    </span><span class="kw">async fn </span>should_fail_when_restoring_invalid(case: TestCase) {
+<a href=#100 id=100 data-nosnippet>100</a>    </span><span class="kw">async fn </span>should_fail_when_restoring_invalid(case: TestContext) {
 <a href=#101 id=101 data-nosnippet>101</a>        run_test_wo_clients(case.clone(), <span class="kw">move </span>|<span class="kw-2">mut </span>cc| {
 <a href=#102 id=102 data-nosnippet>102</a>            Box::pin(<span class="kw">async move </span>{
 <a href=#103 id=103 data-nosnippet>103</a>                <span class="kw">let </span>x509_test_chain = X509TestChain::init_empty(case.signature_scheme());

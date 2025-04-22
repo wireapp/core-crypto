@@ -204,7 +204,7 @@
 <a href=#204 id=204 data-nosnippet>204</a>    <span class="attr">#[cfg_attr(not(target_family = <span class="string">"wasm"</span>), async_std::test)]
 <a href=#205 id=205 data-nosnippet>205</a>    #[wasm_bindgen_test]
 <a href=#206 id=206 data-nosnippet>206</a>    </span><span class="kw">pub async fn </span>group_should_have_required_capabilities() {
-<a href=#207 id=207 data-nosnippet>207</a>        <span class="kw">let </span>case = TestCase::default();
+<a href=#207 id=207 data-nosnippet>207</a>        <span class="kw">let </span>case = TestContext::default();
 <a href=#208 id=208 data-nosnippet>208</a>        run_test_with_client_ids(case.clone(), [<span class="string">"alice"</span>], <span class="kw">move </span>|[cc]| {
 <a href=#209 id=209 data-nosnippet>209</a>            Box::pin(<span class="kw">async move </span>{
 <a href=#210 id=210 data-nosnippet>210</a>                <span class="kw">let </span>id = conversation_id();
@@ -231,7 +231,7 @@
 <a href=#231 id=231 data-nosnippet>231</a>
 <a href=#232 id=232 data-nosnippet>232</a>    <span class="attr">#[apply(all_cred_cipher)]
 <a href=#233 id=233 data-nosnippet>233</a>    #[wasm_bindgen_test]
-<a href=#234 id=234 data-nosnippet>234</a>    </span><span class="kw">pub async fn </span>creator_leaf_node_should_have_default_capabilities(case: TestCase) {
+<a href=#234 id=234 data-nosnippet>234</a>    </span><span class="kw">pub async fn </span>creator_leaf_node_should_have_default_capabilities(case: TestContext) {
 <a href=#235 id=235 data-nosnippet>235</a>        run_test_with_client_ids(case.clone(), [<span class="string">"alice"</span>], <span class="kw">move </span>|[cc]| {
 <a href=#236 id=236 data-nosnippet>236</a>            Box::pin(<span class="kw">async move </span>{
 <a href=#237 id=237 data-nosnippet>237</a>                <span class="kw">let </span>id = conversation_id();
@@ -276,7 +276,7 @@
 <a href=#276 id=276 data-nosnippet>276</a>
 <a href=#277 id=277 data-nosnippet>277</a>    <span class="attr">#[apply(all_cred_cipher)]
 <a href=#278 id=278 data-nosnippet>278</a>    #[wasm_bindgen_test]
-<a href=#279 id=279 data-nosnippet>279</a>    </span><span class="kw">pub async fn </span>should_support_raw_external_sender(case: TestCase) {
+<a href=#279 id=279 data-nosnippet>279</a>    </span><span class="kw">pub async fn </span>should_support_raw_external_sender(case: TestContext) {
 <a href=#280 id=280 data-nosnippet>280</a>        run_test_with_client_ids(case.clone(), [<span class="string">"alice"</span>], <span class="kw">move </span>|[cc]| {
 <a href=#281 id=281 data-nosnippet>281</a>            Box::pin(<span class="kw">async move </span>{
 <a href=#282 id=282 data-nosnippet>282</a>                <span class="kw">let </span>(_sk, pk) = cc
@@ -301,7 +301,7 @@
 <a href=#301 id=301 data-nosnippet>301</a>
 <a href=#302 id=302 data-nosnippet>302</a>    <span class="attr">#[apply(all_cred_cipher)]
 <a href=#303 id=303 data-nosnippet>303</a>    #[wasm_bindgen_test]
-<a href=#304 id=304 data-nosnippet>304</a>    </span><span class="kw">pub async fn </span>should_support_jwk_external_sender(case: TestCase) {
+<a href=#304 id=304 data-nosnippet>304</a>    </span><span class="kw">pub async fn </span>should_support_jwk_external_sender(case: TestContext) {
 <a href=#305 id=305 data-nosnippet>305</a>        run_test_with_client_ids(case.clone(), [<span class="string">"alice"</span>], <span class="kw">move </span>|[cc]| {
 <a href=#306 id=306 data-nosnippet>306</a>            Box::pin(<span class="kw">async move </span>{
 <a href=#307 id=307 data-nosnippet>307</a>                <span class="kw">let </span>sc = case.signature_scheme();

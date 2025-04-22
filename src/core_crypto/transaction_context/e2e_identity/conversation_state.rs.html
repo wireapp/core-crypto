@@ -107,7 +107,7 @@
 <a href=#107 id=107 data-nosnippet>107</a>    <span class="comment">// testing the case where both Bob &amp; Alice have the same Credential type
 <a href=#108 id=108 data-nosnippet>108</a>    </span><span class="attr">#[apply(all_cred_cipher)]
 <a href=#109 id=109 data-nosnippet>109</a>    #[wasm_bindgen_test]
-<a href=#110 id=110 data-nosnippet>110</a>    </span><span class="kw">async fn </span>uniform_conversation_should_be_not_verified_when_basic(case: TestCase) {
+<a href=#110 id=110 data-nosnippet>110</a>    </span><span class="kw">async fn </span>uniform_conversation_should_be_not_verified_when_basic(case: TestContext) {
 <a href=#111 id=111 data-nosnippet>111</a>        run_test_with_client_ids(case.clone(), [<span class="string">"alice"</span>, <span class="string">"bob"</span>], <span class="kw">move </span>|[alice_central, bob_central]| {
 <a href=#112 id=112 data-nosnippet>112</a>            Box::pin(<span class="kw">async move </span>{
 <a href=#113 id=113 data-nosnippet>113</a>                <span class="kw">let </span>id = conversation_id();
@@ -187,7 +187,7 @@
 <a href=#187 id=187 data-nosnippet>187</a>    <span class="comment">// testing the case where Bob &amp; Alice have different Credential type
 <a href=#188 id=188 data-nosnippet>188</a>    </span><span class="attr">#[apply(all_cred_cipher)]
 <a href=#189 id=189 data-nosnippet>189</a>    #[wasm_bindgen_test]
-<a href=#190 id=190 data-nosnippet>190</a>    </span><span class="kw">async fn </span>heterogeneous_conversation_should_be_not_verified(case: TestCase) {
+<a href=#190 id=190 data-nosnippet>190</a>    </span><span class="kw">async fn </span>heterogeneous_conversation_should_be_not_verified(case: TestContext) {
 <a href=#191 id=191 data-nosnippet>191</a>        <span class="kw">use </span><span class="kw">crate</span>::e2e_identity::enrollment::test_utils::failsafe_ctx;
 <a href=#192 id=192 data-nosnippet>192</a>
 <a href=#193 id=193 data-nosnippet>193</a>        run_test_with_client_ids(
@@ -270,7 +270,7 @@
 <a href=#270 id=270 data-nosnippet>270</a>
 <a href=#271 id=271 data-nosnippet>271</a>    <span class="attr">#[apply(all_cred_cipher)]
 <a href=#272 id=272 data-nosnippet>272</a>    #[wasm_bindgen_test]
-<a href=#273 id=273 data-nosnippet>273</a>    </span><span class="kw">async fn </span>should_be_not_verified_when_one_expired(case: TestCase) {
+<a href=#273 id=273 data-nosnippet>273</a>    </span><span class="kw">async fn </span>should_be_not_verified_when_one_expired(case: TestContext) {
 <a href=#274 id=274 data-nosnippet>274</a>        <span class="kw">if </span>!case.is_x509() {
 <a href=#275 id=275 data-nosnippet>275</a>            <span class="kw">return</span>;
 <a href=#276 id=276 data-nosnippet>276</a>        }
@@ -363,7 +363,7 @@
 <a href=#363 id=363 data-nosnippet>363</a>
 <a href=#364 id=364 data-nosnippet>364</a>    <span class="attr">#[apply(all_cred_cipher)]
 <a href=#365 id=365 data-nosnippet>365</a>    #[wasm_bindgen_test]
-<a href=#366 id=366 data-nosnippet>366</a>    </span><span class="kw">async fn </span>should_be_not_verified_when_all_expired(case: TestCase) {
+<a href=#366 id=366 data-nosnippet>366</a>    </span><span class="kw">async fn </span>should_be_not_verified_when_all_expired(case: TestContext) {
 <a href=#367 id=367 data-nosnippet>367</a>        <span class="kw">if </span>case.is_x509() {
 <a href=#368 id=368 data-nosnippet>368</a>            run_test_with_client_ids(case.clone(), [<span class="string">"alice"</span>], <span class="kw">move </span>|[alice_central]| {
 <a href=#369 id=369 data-nosnippet>369</a>                Box::pin(<span class="kw">async move </span>{

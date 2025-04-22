@@ -95,7 +95,7 @@
 <a href=#95 id=95 data-nosnippet>95</a>
 <a href=#96 id=96 data-nosnippet>96</a>        <span class="attr">#[apply(all_cred_cipher)]
 <a href=#97 id=97 data-nosnippet>97</a>        #[wasm_bindgen_test]
-<a href=#98 id=98 data-nosnippet>98</a>        </span><span class="kw">async fn </span>guest_should_externally_propose_adding_itself_to_owner_group(case: TestCase) {
+<a href=#98 id=98 data-nosnippet>98</a>        </span><span class="kw">async fn </span>guest_should_externally_propose_adding_itself_to_owner_group(case: TestContext) {
 <a href=#99 id=99 data-nosnippet>99</a>            run_test_with_client_ids(
 <a href=#100 id=100 data-nosnippet>100</a>                case.clone(),
 <a href=#101 id=101 data-nosnippet>101</a>                [<span class="string">"owner"</span>, <span class="string">"guest"</span>],
@@ -168,7 +168,7 @@
 <a href=#168 id=168 data-nosnippet>168</a>
 <a href=#169 id=169 data-nosnippet>169</a>        <span class="attr">#[apply(all_cred_cipher)]
 <a href=#170 id=170 data-nosnippet>170</a>        #[wasm_bindgen_test]
-<a href=#171 id=171 data-nosnippet>171</a>        </span><span class="kw">async fn </span>ds_should_remove_guest_from_conversation(case: TestCase) {
+<a href=#171 id=171 data-nosnippet>171</a>        </span><span class="kw">async fn </span>ds_should_remove_guest_from_conversation(case: TestContext) {
 <a href=#172 id=172 data-nosnippet>172</a>            run_test_with_client_ids(case.clone(), [<span class="string">"owner"</span>, <span class="string">"guest"</span>, <span class="string">"ds"</span>], <span class="kw">move </span>|[owner, guest, ds]| {
 <a href=#173 id=173 data-nosnippet>173</a>                Box::pin(<span class="kw">async move </span>{
 <a href=#174 id=174 data-nosnippet>174</a>                    <span class="kw">let </span>owner_central = <span class="kw-2">&amp;</span>owner.context;
@@ -245,7 +245,7 @@
 <a href=#245 id=245 data-nosnippet>245</a>
 <a href=#246 id=246 data-nosnippet>246</a>        <span class="attr">#[apply(all_cred_cipher)]
 <a href=#247 id=247 data-nosnippet>247</a>        #[wasm_bindgen_test]
-<a href=#248 id=248 data-nosnippet>248</a>        </span><span class="kw">async fn </span>should_fail_when_invalid_external_sender(case: TestCase) {
+<a href=#248 id=248 data-nosnippet>248</a>        </span><span class="kw">async fn </span>should_fail_when_invalid_external_sender(case: TestContext) {
 <a href=#249 id=249 data-nosnippet>249</a>            <span class="kw">use </span><span class="kw">crate</span>::mls;
 <a href=#250 id=250 data-nosnippet>250</a>
 <a href=#251 id=251 data-nosnippet>251</a>            run_test_with_client_ids(
@@ -325,7 +325,7 @@
 <a href=#325 id=325 data-nosnippet>325</a>
 <a href=#326 id=326 data-nosnippet>326</a>        <span class="attr">#[apply(all_cred_cipher)]
 <a href=#327 id=327 data-nosnippet>327</a>        #[wasm_bindgen_test]
-<a href=#328 id=328 data-nosnippet>328</a>        </span><span class="kw">async fn </span>should_fail_when_wrong_signature_key(case: TestCase) {
+<a href=#328 id=328 data-nosnippet>328</a>        </span><span class="kw">async fn </span>should_fail_when_wrong_signature_key(case: TestContext) {
 <a href=#329 id=329 data-nosnippet>329</a>            <span class="kw">use </span><span class="kw">crate</span>::mls;
 <a href=#330 id=330 data-nosnippet>330</a>
 <a href=#331 id=331 data-nosnippet>331</a>            run_test_with_client_ids(case.clone(), [<span class="string">"owner"</span>, <span class="string">"guest"</span>, <span class="string">"ds"</span>], <span class="kw">move </span>|[owner, guest, ds]| {
@@ -400,7 +400,7 @@
 <a href=#400 id=400 data-nosnippet>400</a>
 <a href=#401 id=401 data-nosnippet>401</a>        <span class="attr">#[apply(all_cred_cipher)]
 <a href=#402 id=402 data-nosnippet>402</a>        #[wasm_bindgen_test]
-<a href=#403 id=403 data-nosnippet>403</a>        </span><span class="kw">async fn </span>joiners_from_welcome_can_accept_external_remove_proposals(case: TestCase) {
+<a href=#403 id=403 data-nosnippet>403</a>        </span><span class="kw">async fn </span>joiners_from_welcome_can_accept_external_remove_proposals(case: TestContext) {
 <a href=#404 id=404 data-nosnippet>404</a>            run_test_with_client_ids(
 <a href=#405 id=405 data-nosnippet>405</a>                case.clone(),
 <a href=#406 id=406 data-nosnippet>406</a>                [<span class="string">"alice"</span>, <span class="string">"bob"</span>, <span class="string">"charlie"</span>, <span class="string">"ds"</span>],
@@ -526,7 +526,7 @@
 <a href=#526 id=526 data-nosnippet>526</a>
 <a href=#527 id=527 data-nosnippet>527</a>        <span class="attr">#[apply(all_cred_cipher)]
 <a href=#528 id=528 data-nosnippet>528</a>        #[wasm_bindgen_test]
-<a href=#529 id=529 data-nosnippet>529</a>        </span><span class="kw">async fn </span>joiners_from_external_commit_can_accept_external_remove_proposals(case: TestCase) {
+<a href=#529 id=529 data-nosnippet>529</a>        </span><span class="kw">async fn </span>joiners_from_external_commit_can_accept_external_remove_proposals(case: TestContext) {
 <a href=#530 id=530 data-nosnippet>530</a>            run_test_with_client_ids(
 <a href=#531 id=531 data-nosnippet>531</a>                case.clone(),
 <a href=#532 id=532 data-nosnippet>532</a>                [<span class="string">"alice"</span>, <span class="string">"bob"</span>, <span class="string">"charlie"</span>, <span class="string">"ds"</span>],

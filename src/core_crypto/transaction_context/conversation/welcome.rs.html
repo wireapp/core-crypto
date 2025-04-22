@@ -109,7 +109,7 @@
 <a href=#109 id=109 data-nosnippet>109</a>
 <a href=#110 id=110 data-nosnippet>110</a>    <span class="attr">#[apply(all_cred_cipher)]
 <a href=#111 id=111 data-nosnippet>111</a>    #[wasm_bindgen_test]
-<a href=#112 id=112 data-nosnippet>112</a>    </span><span class="kw">async fn </span>joining_from_welcome_should_prune_local_key_material(case: TestCase) {
+<a href=#112 id=112 data-nosnippet>112</a>    </span><span class="kw">async fn </span>joining_from_welcome_should_prune_local_key_material(case: TestContext) {
 <a href=#113 id=113 data-nosnippet>113</a>        run_test_with_client_ids(case.clone(), [<span class="string">"alice"</span>, <span class="string">"bob"</span>], <span class="kw">move </span>|[alice_central, bob_central]| {
 <a href=#114 id=114 data-nosnippet>114</a>            Box::pin(<span class="kw">async move </span>{
 <a href=#115 id=115 data-nosnippet>115</a>                <span class="kw">let </span>id = conversation_id();
@@ -154,7 +154,7 @@
 <a href=#154 id=154 data-nosnippet>154</a>
 <a href=#155 id=155 data-nosnippet>155</a>    <span class="attr">#[apply(all_cred_cipher)]
 <a href=#156 id=156 data-nosnippet>156</a>    #[wasm_bindgen_test]
-<a href=#157 id=157 data-nosnippet>157</a>    </span><span class="kw">async fn </span>process_welcome_should_fail_when_already_exists(case: TestCase) {
+<a href=#157 id=157 data-nosnippet>157</a>    </span><span class="kw">async fn </span>process_welcome_should_fail_when_already_exists(case: TestContext) {
 <a href=#158 id=158 data-nosnippet>158</a>        <span class="kw">use </span><span class="kw">crate</span>::LeafError;
 <a href=#159 id=159 data-nosnippet>159</a>
 <a href=#160 id=160 data-nosnippet>160</a>        run_test_with_client_ids(case.clone(), [<span class="string">"alice"</span>, <span class="string">"bob"</span>], <span class="kw">move </span>|[alice_central, bob_central]| {

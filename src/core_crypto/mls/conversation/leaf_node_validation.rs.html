@@ -19,7 +19,7 @@
 <a href=#19 id=19 data-nosnippet>19</a>        /// When a LeafNode is downloaded in a KeyPackage, before it is used to add the client to the group
 <a href=#20 id=20 data-nosnippet>20</a>        </span><span class="attr">#[apply(all_cred_cipher)]
 <a href=#21 id=21 data-nosnippet>21</a>        #[wasm_bindgen_test]
-<a href=#22 id=22 data-nosnippet>22</a>        </span><span class="kw">async fn </span>should_validate_leaf_node_when_adding(case: TestCase) {
+<a href=#22 id=22 data-nosnippet>22</a>        </span><span class="kw">async fn </span>should_validate_leaf_node_when_adding(case: TestContext) {
 <a href=#23 id=23 data-nosnippet>23</a>            run_test_with_client_ids(
 <a href=#24 id=24 data-nosnippet>24</a>                case.clone(),
 <a href=#25 id=25 data-nosnippet>25</a>                [<span class="string">"alice"</span>, <span class="string">"bob"</span>],
@@ -98,7 +98,7 @@
 <a href=#98 id=98 data-nosnippet>98</a>        /// When a LeafNode is received by a group member in an Add, Update, or Commit message
 <a href=#99 id=99 data-nosnippet>99</a>        </span><span class="attr">#[apply(all_cred_cipher)]
 <a href=#100 id=100 data-nosnippet>100</a>        #[wasm_bindgen_test]
-<a href=#101 id=101 data-nosnippet>101</a>        </span><span class="kw">async fn </span>should_validate_leaf_node_when_receiving_expired_add_proposal(case: TestCase) {
+<a href=#101 id=101 data-nosnippet>101</a>        </span><span class="kw">async fn </span>should_validate_leaf_node_when_receiving_expired_add_proposal(case: TestContext) {
 <a href=#102 id=102 data-nosnippet>102</a>            run_test_with_client_ids(
 <a href=#103 id=103 data-nosnippet>103</a>                case.clone(),
 <a href=#104 id=104 data-nosnippet>104</a>                [<span class="string">"alice"</span>, <span class="string">"bob"</span>, <span class="string">"charlie"</span>],
@@ -157,7 +157,7 @@
 <a href=#157 id=157 data-nosnippet>157</a>        /// When a LeafNode is received by a group member in an Add, Update, or Commit message
 <a href=#158 id=158 data-nosnippet>158</a>        </span><span class="attr">#[apply(all_cred_cipher)]
 <a href=#159 id=159 data-nosnippet>159</a>        #[wasm_bindgen_test]
-<a href=#160 id=160 data-nosnippet>160</a>        </span><span class="kw">async fn </span>should_validate_leaf_node_when_receiving_add_commit(case: TestCase) {
+<a href=#160 id=160 data-nosnippet>160</a>        </span><span class="kw">async fn </span>should_validate_leaf_node_when_receiving_add_commit(case: TestContext) {
 <a href=#161 id=161 data-nosnippet>161</a>            run_test_with_client_ids(
 <a href=#162 id=162 data-nosnippet>162</a>                case.clone(),
 <a href=#163 id=163 data-nosnippet>163</a>                [<span class="string">"alice"</span>, <span class="string">"bob"</span>, <span class="string">"charlie"</span>],
@@ -223,7 +223,7 @@
 <a href=#223 id=223 data-nosnippet>223</a>        /// When a client validates a ratchet tree, e.g., when joining a group or after processing a Commit
 <a href=#224 id=224 data-nosnippet>224</a>        </span><span class="attr">#[apply(all_cred_cipher)]
 <a href=#225 id=225 data-nosnippet>225</a>        #[wasm_bindgen_test]
-<a href=#226 id=226 data-nosnippet>226</a>        </span><span class="kw">async fn </span>should_validate_leaf_node_when_receiving_welcome(case: TestCase) {
+<a href=#226 id=226 data-nosnippet>226</a>        </span><span class="kw">async fn </span>should_validate_leaf_node_when_receiving_welcome(case: TestContext) {
 <a href=#227 id=227 data-nosnippet>227</a>            run_test_with_client_ids(case.clone(), [<span class="string">"alice"</span>, <span class="string">"bob"</span>], <span class="kw">move </span>|[alice_central, bob_central]| {
 <a href=#228 id=228 data-nosnippet>228</a>                Box::pin(<span class="kw">async move </span>{
 <a href=#229 id=229 data-nosnippet>229</a>                    <span class="kw">let </span>expiration_time = <span class="number">14</span>;

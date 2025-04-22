@@ -321,7 +321,7 @@
 <a href=#321 id=321 data-nosnippet>321</a>
 <a href=#322 id=322 data-nosnippet>322</a>    <span class="attr">#[apply(all_cred_cipher)]
 <a href=#323 id=323 data-nosnippet>323</a>    #[wasm_bindgen_test]
-<a href=#324 id=324 data-nosnippet>324</a>    </span><span class="kw">async fn </span>should_buffer_and_reapply_messages_after_external_commit_merged(case: TestCase) {
+<a href=#324 id=324 data-nosnippet>324</a>    </span><span class="kw">async fn </span>should_buffer_and_reapply_messages_after_external_commit_merged(case: TestContext) {
 <a href=#325 id=325 data-nosnippet>325</a>        run_test_with_client_ids(
 <a href=#326 id=326 data-nosnippet>326</a>            case.clone(),
 <a href=#327 id=327 data-nosnippet>327</a>            [<span class="string">"alice"</span>, <span class="string">"bob"</span>, <span class="string">"charlie"</span>, <span class="string">"debbie"</span>],
@@ -471,7 +471,7 @@
 <a href=#471 id=471 data-nosnippet>471</a>
 <a href=#472 id=472 data-nosnippet>472</a>    <span class="attr">#[apply(all_cred_cipher)]
 <a href=#473 id=473 data-nosnippet>473</a>    #[wasm_bindgen_test]
-<a href=#474 id=474 data-nosnippet>474</a>    </span><span class="kw">async fn </span>should_not_reapply_buffered_messages_when_external_commit_contains_remove(case: TestCase) {
+<a href=#474 id=474 data-nosnippet>474</a>    </span><span class="kw">async fn </span>should_not_reapply_buffered_messages_when_external_commit_contains_remove(case: TestContext) {
 <a href=#475 id=475 data-nosnippet>475</a>        <span class="kw">use </span><span class="kw">crate</span>::mls;
 <a href=#476 id=476 data-nosnippet>476</a>
 <a href=#477 id=477 data-nosnippet>477</a>        run_test_with_client_ids(

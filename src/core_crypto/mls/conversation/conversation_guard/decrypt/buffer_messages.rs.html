@@ -145,7 +145,7 @@
 <a href=#145 id=145 data-nosnippet>145</a>
 <a href=#146 id=146 data-nosnippet>146</a>    <span class="attr">#[apply(all_cred_cipher)]
 <a href=#147 id=147 data-nosnippet>147</a>    #[wasm_bindgen_test]
-<a href=#148 id=148 data-nosnippet>148</a>    </span><span class="kw">async fn </span>should_buffer_and_reapply_messages_after_commit_merged_for_sender(case: TestCase) {
+<a href=#148 id=148 data-nosnippet>148</a>    </span><span class="kw">async fn </span>should_buffer_and_reapply_messages_after_commit_merged_for_sender(case: TestContext) {
 <a href=#149 id=149 data-nosnippet>149</a>        <span class="kw">if </span>case.is_pure_ciphertext() {
 <a href=#150 id=150 data-nosnippet>150</a>            <span class="comment">// The use case tested here requires inspecting your own commit.
 <a href=#151 id=151 data-nosnippet>151</a>            // Openmls does not support this currently when protocol messages are encrypted.
@@ -307,7 +307,7 @@
 <a href=#307 id=307 data-nosnippet>307</a>
 <a href=#308 id=308 data-nosnippet>308</a>    <span class="attr">#[apply(all_cred_cipher)]
 <a href=#309 id=309 data-nosnippet>309</a>    #[wasm_bindgen_test]
-<a href=#310 id=310 data-nosnippet>310</a>    </span><span class="kw">async fn </span>should_buffer_and_reapply_messages_after_commit_merged_for_receivers(case: TestCase) {
+<a href=#310 id=310 data-nosnippet>310</a>    </span><span class="kw">async fn </span>should_buffer_and_reapply_messages_after_commit_merged_for_receivers(case: TestContext) {
 <a href=#311 id=311 data-nosnippet>311</a>        <span class="kw">if </span>case.is_pure_ciphertext() {
 <a href=#312 id=312 data-nosnippet>312</a>            <span class="comment">// The use case tested here requires inspecting your own commit.
 <a href=#313 id=313 data-nosnippet>313</a>            // Openmls does not support this currently when protocol messages are encrypted.
@@ -474,7 +474,7 @@
 <a href=#474 id=474 data-nosnippet>474</a>    ///
 <a href=#475 id=475 data-nosnippet>475</a>    /// [WPB-15810]: https://wearezeta.atlassian.net/browse/WPB-15810
 <a href=#476 id=476 data-nosnippet>476</a>    </span><span class="attr">#[apply(all_cred_cipher)]
-<a href=#477 id=477 data-nosnippet>477</a>    </span><span class="kw">async fn </span>wpb_15810(case: TestCase) {
+<a href=#477 id=477 data-nosnippet>477</a>    </span><span class="kw">async fn </span>wpb_15810(case: TestContext) {
 <a href=#478 id=478 data-nosnippet>478</a>        <span class="kw">use </span>openmls::{
 <a href=#479 id=479 data-nosnippet>479</a>            group::GroupId,
 <a href=#480 id=480 data-nosnippet>480</a>            prelude::{ExternalProposal, SenderExtensionIndex},

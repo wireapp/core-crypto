@@ -139,7 +139,7 @@
 <a href=#139 id=139 data-nosnippet>139</a>
 <a href=#140 id=140 data-nosnippet>140</a>        <span class="attr">#[apply(all_cred_cipher)]
 <a href=#141 id=141 data-nosnippet>141</a>        #[wasm_bindgen_test]
-<a href=#142 id=142 data-nosnippet>142</a>        </span><span class="kw">async fn </span>should_find_most_recent(case: TestCase) {
+<a href=#142 id=142 data-nosnippet>142</a>        </span><span class="kw">async fn </span>should_find_most_recent(case: TestContext) {
 <a href=#143 id=143 data-nosnippet>143</a>            run_test_with_client_ids(case.clone(), [<span class="string">"alice"</span>], <span class="kw">move </span>|[<span class="kw-2">mut </span>central]| {
 <a href=#144 id=144 data-nosnippet>144</a>                Box::pin(<span class="kw">async move </span>{
 <a href=#145 id=145 data-nosnippet>145</a>                    <span class="kw">let </span>cert = central.get_intermediate_ca().cloned();
@@ -163,7 +163,7 @@
 <a href=#163 id=163 data-nosnippet>163</a>
 <a href=#164 id=164 data-nosnippet>164</a>        <span class="attr">#[apply(all_cred_cipher)]
 <a href=#165 id=165 data-nosnippet>165</a>        #[wasm_bindgen_test]
-<a href=#166 id=166 data-nosnippet>166</a>        </span><span class="kw">async fn </span>should_find_by_public_key(case: TestCase) {
+<a href=#166 id=166 data-nosnippet>166</a>        </span><span class="kw">async fn </span>should_find_by_public_key(case: TestContext) {
 <a href=#167 id=167 data-nosnippet>167</a>            run_test_with_client_ids(case.clone(), [<span class="string">"alice"</span>], <span class="kw">move </span>|[<span class="kw-2">mut </span>central]| {
 <a href=#168 id=168 data-nosnippet>168</a>                Box::pin(<span class="kw">async move </span>{
 <a href=#169 id=169 data-nosnippet>169</a>                    <span class="kw">const </span>N: usize = <span class="number">50</span>;
@@ -196,7 +196,7 @@
 <a href=#196 id=196 data-nosnippet>196</a>
 <a href=#197 id=197 data-nosnippet>197</a>        <span class="attr">#[apply(all_cred_cipher)]
 <a href=#198 id=198 data-nosnippet>198</a>        #[wasm_bindgen_test]
-<a href=#199 id=199 data-nosnippet>199</a>        </span><span class="kw">async fn </span>should_add_credential(case: TestCase) {
+<a href=#199 id=199 data-nosnippet>199</a>        </span><span class="kw">async fn </span>should_add_credential(case: TestContext) {
 <a href=#200 id=200 data-nosnippet>200</a>            run_test_with_client_ids(case.clone(), [<span class="string">"alice"</span>], <span class="kw">move </span>|[<span class="kw-2">mut </span>central]| {
 <a href=#201 id=201 data-nosnippet>201</a>                Box::pin(<span class="kw">async move </span>{
 <a href=#202 id=202 data-nosnippet>202</a>                    <span class="kw">let </span>client = central.session().<span class="kw">await</span>;
@@ -213,7 +213,7 @@
 <a href=#213 id=213 data-nosnippet>213</a>
 <a href=#214 id=214 data-nosnippet>214</a>        <span class="attr">#[apply(all_cred_cipher)]
 <a href=#215 id=215 data-nosnippet>215</a>        #[wasm_bindgen_test]
-<a href=#216 id=216 data-nosnippet>216</a>        </span><span class="kw">async fn </span>pushing_duplicates_should_fail(case: TestCase) {
+<a href=#216 id=216 data-nosnippet>216</a>        </span><span class="kw">async fn </span>pushing_duplicates_should_fail(case: TestContext) {
 <a href=#217 id=217 data-nosnippet>217</a>            run_test_with_client_ids(case.clone(), [<span class="string">"alice"</span>], <span class="kw">move </span>|[<span class="kw-2">mut </span>central]| {
 <a href=#218 id=218 data-nosnippet>218</a>                Box::pin(<span class="kw">async move </span>{
 <a href=#219 id=219 data-nosnippet>219</a>                    <span class="kw">let </span>cert = central.get_intermediate_ca().cloned();

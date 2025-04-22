@@ -51,7 +51,7 @@
 <a href=#51 id=51 data-nosnippet>51</a>
 <a href=#52 id=52 data-nosnippet>52</a>    <span class="attr">#[apply(all_cred_cipher)]
 <a href=#53 id=53 data-nosnippet>53</a>    #[wasm_bindgen_test]
-<a href=#54 id=54 data-nosnippet>54</a>    </span><span class="kw">async fn </span>can_encrypt_app_message(case: TestCase) {
+<a href=#54 id=54 data-nosnippet>54</a>    </span><span class="kw">async fn </span>can_encrypt_app_message(case: TestContext) {
 <a href=#55 id=55 data-nosnippet>55</a>        run_test_with_client_ids(case.clone(), [<span class="string">"alice"</span>, <span class="string">"bob"</span>], <span class="kw">move </span>|[alice_central, bob_central]| {
 <a href=#56 id=56 data-nosnippet>56</a>            Box::pin(<span class="kw">async move </span>{
 <a href=#57 id=57 data-nosnippet>57</a>                <span class="kw">let </span>id = conversation_id();
@@ -91,7 +91,7 @@
 <a href=#91 id=91 data-nosnippet>91</a>    <span class="comment">// Ensures encrypting an application message is durable
 <a href=#92 id=92 data-nosnippet>92</a>    </span><span class="attr">#[apply(all_cred_cipher)]
 <a href=#93 id=93 data-nosnippet>93</a>    #[wasm_bindgen_test]
-<a href=#94 id=94 data-nosnippet>94</a>    </span><span class="kw">async fn </span>can_encrypt_consecutive_messages(case: TestCase) {
+<a href=#94 id=94 data-nosnippet>94</a>    </span><span class="kw">async fn </span>can_encrypt_consecutive_messages(case: TestContext) {
 <a href=#95 id=95 data-nosnippet>95</a>        run_test_with_client_ids(case.clone(), [<span class="string">"alice"</span>, <span class="string">"bob"</span>], <span class="kw">move </span>|[alice_central, bob_central]| {
 <a href=#96 id=96 data-nosnippet>96</a>            Box::pin(<span class="kw">async move </span>{
 <a href=#97 id=97 data-nosnippet>97</a>                <span class="kw">let </span>id = conversation_id();

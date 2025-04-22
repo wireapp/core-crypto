@@ -83,7 +83,7 @@
 <a href=#83 id=83 data-nosnippet>83</a>
 <a href=#84 id=84 data-nosnippet>84</a>        <span class="attr">#[apply(all_cred_cipher)]
 <a href=#85 id=85 data-nosnippet>85</a>        #[wasm_bindgen_test]
-<a href=#86 id=86 data-nosnippet>86</a>        </span><span class="kw">pub async fn </span>should_add_member(case: TestCase) {
+<a href=#86 id=86 data-nosnippet>86</a>        </span><span class="kw">pub async fn </span>should_add_member(case: TestContext) {
 <a href=#87 id=87 data-nosnippet>87</a>            run_test_with_client_ids(case.clone(), [<span class="string">"alice"</span>, <span class="string">"bob"</span>], <span class="kw">move </span>|[alice_central, bob_central]| {
 <a href=#88 id=88 data-nosnippet>88</a>                Box::pin(<span class="kw">async move </span>{
 <a href=#89 id=89 data-nosnippet>89</a>                    <span class="kw">let </span>id = conversation_id();
@@ -124,7 +124,7 @@
 <a href=#124 id=124 data-nosnippet>124</a>
 <a href=#125 id=125 data-nosnippet>125</a>        <span class="attr">#[apply(all_cred_cipher)]
 <a href=#126 id=126 data-nosnippet>126</a>        #[wasm_bindgen_test]
-<a href=#127 id=127 data-nosnippet>127</a>        </span><span class="kw">pub async fn </span>should_update_hpke_key(case: TestCase) {
+<a href=#127 id=127 data-nosnippet>127</a>        </span><span class="kw">pub async fn </span>should_update_hpke_key(case: TestContext) {
 <a href=#128 id=128 data-nosnippet>128</a>            run_test_with_central(case.clone(), <span class="kw">move </span>|[central]| {
 <a href=#129 id=129 data-nosnippet>129</a>                Box::pin(<span class="kw">async move </span>{
 <a href=#130 id=130 data-nosnippet>130</a>                    <span class="kw">let </span>id = conversation_id();
@@ -166,7 +166,7 @@
 <a href=#166 id=166 data-nosnippet>166</a>
 <a href=#167 id=167 data-nosnippet>167</a>        <span class="attr">#[apply(all_cred_cipher)]
 <a href=#168 id=168 data-nosnippet>168</a>        #[wasm_bindgen_test]
-<a href=#169 id=169 data-nosnippet>169</a>        </span><span class="kw">pub async fn </span>should_remove_member(case: TestCase) {
+<a href=#169 id=169 data-nosnippet>169</a>        </span><span class="kw">pub async fn </span>should_remove_member(case: TestContext) {
 <a href=#170 id=170 data-nosnippet>170</a>            run_test_with_client_ids(case.clone(), [<span class="string">"alice"</span>, <span class="string">"bob"</span>], |[alice_central, bob_central]| {
 <a href=#171 id=171 data-nosnippet>171</a>                Box::pin(<span class="kw">async move </span>{
 <a href=#172 id=172 data-nosnippet>172</a>                    <span class="kw">let </span>id = conversation_id();
@@ -222,7 +222,7 @@
 <a href=#222 id=222 data-nosnippet>222</a>
 <a href=#223 id=223 data-nosnippet>223</a>        <span class="attr">#[apply(all_cred_cipher)]
 <a href=#224 id=224 data-nosnippet>224</a>        #[wasm_bindgen_test]
-<a href=#225 id=225 data-nosnippet>225</a>        </span><span class="kw">pub async fn </span>should_fail_when_unknown_client(case: TestCase) {
+<a href=#225 id=225 data-nosnippet>225</a>        </span><span class="kw">pub async fn </span>should_fail_when_unknown_client(case: TestContext) {
 <a href=#226 id=226 data-nosnippet>226</a>            run_test_with_client_ids(case.clone(), [<span class="string">"alice"</span>], <span class="kw">move </span>|[alice_central]| {
 <a href=#227 id=227 data-nosnippet>227</a>                Box::pin(<span class="kw">async move </span>{
 <a href=#228 id=228 data-nosnippet>228</a>                    <span class="kw">let </span>id = conversation_id();
