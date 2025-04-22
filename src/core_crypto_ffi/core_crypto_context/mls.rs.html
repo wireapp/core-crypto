@@ -145,7 +145,7 @@
 <a href=#145 id=145 data-nosnippet>145</a>            </span>.inner
 <a href=#146 id=146 data-nosnippet>146</a>            .get_or_create_client_keypackages(ciphersuite.into(), credential_type.into(), amount_requested <span class="kw">as </span>usize)
 <a href=#147 id=147 data-nosnippet>147</a>            .<span class="kw">await
-<a href=#148 id=148 data-nosnippet>148</a>            </span>.map_err(RecursiveError::mls_client(<span class="string">"getting or creating client keypackages"</span>))<span class="question-mark">?</span>;
+<a href=#148 id=148 data-nosnippet>148</a>            </span>.map_err(RecursiveError::transaction(<span class="string">"getting or creating client keypackages"</span>))<span class="question-mark">?</span>;
 <a href=#149 id=149 data-nosnippet>149</a>
 <a href=#150 id=150 data-nosnippet>150</a>        kps.into_iter()
 <a href=#151 id=151 data-nosnippet>151</a>            .map(|kp| {
@@ -167,7 +167,7 @@
 <a href=#167 id=167 data-nosnippet>167</a>            </span>.inner
 <a href=#168 id=168 data-nosnippet>168</a>            .client_valid_key_packages_count(ciphersuite.into(), credential_type.into())
 <a href=#169 id=169 data-nosnippet>169</a>            .<span class="kw">await
-<a href=#170 id=170 data-nosnippet>170</a>            </span>.map_err(RecursiveError::mls_client(<span class="string">"counting client valid keypackages"</span>))<span class="question-mark">?</span>;
+<a href=#170 id=170 data-nosnippet>170</a>            </span>.map_err(RecursiveError::transaction(<span class="string">"counting client valid keypackages"</span>))<span class="question-mark">?</span>;
 <a href=#171 id=171 data-nosnippet>171</a>
 <a href=#172 id=172 data-nosnippet>172</a>        <span class="prelude-val">Ok</span>(count.try_into().unwrap_or(<span class="number">0</span>))
 <a href=#173 id=173 data-nosnippet>173</a>    }
@@ -184,7 +184,7 @@
 <a href=#184 id=184 data-nosnippet>184</a>        <span class="self">self</span>.inner
 <a href=#185 id=185 data-nosnippet>185</a>            .delete_keypackages(<span class="kw-2">&amp;</span>refs[..])
 <a href=#186 id=186 data-nosnippet>186</a>            .<span class="kw">await
-<a href=#187 id=187 data-nosnippet>187</a>            </span>.map_err(RecursiveError::mls_client(<span class="string">"deleting keypackages"</span>))<span class="question-mark">?</span>;
+<a href=#187 id=187 data-nosnippet>187</a>            </span>.map_err(RecursiveError::transaction(<span class="string">"deleting keypackages"</span>))<span class="question-mark">?</span>;
 <a href=#188 id=188 data-nosnippet>188</a>        <span class="prelude-val">Ok</span>(())
 <a href=#189 id=189 data-nosnippet>189</a>    }
 <a href=#190 id=190 data-nosnippet>190</a>

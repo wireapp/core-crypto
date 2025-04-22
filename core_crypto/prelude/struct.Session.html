@@ -19,7 +19,7 @@
     credential_type: <a class="enum" href="enum.MlsCredentialType.html" title="enum core_crypto::prelude::MlsCredentialType">MlsCredentialType</a>,
 ) -&gt; <a class="enum" href="https://doc.rust-lang.org/1.86.0/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;<a class="enum" href="enum.E2eiConversationState.html" title="enum core_crypto::prelude::E2eiConversationState">E2eiConversationState</a>, Error&gt;</h4></section></summary><div class="docblock"><p>Gets the e2ei conversation state from a <code>GroupInfo</code>. Useful to check if the group has e2ei
 turned on or not before joining it.</p>
-</div></details></div></details><details class="toggle implementors-toggle" open><summary><section id="impl-Session-1" class="impl"><a class="src rightside" href="../../src/core_crypto/mls/session/key_package.rs.html#32-328">Source</a><a href="#impl-Session-1" class="anchor">§</a><h3 class="code-header">impl <a class="struct" href="struct.Session.html" title="struct core_crypto::prelude::Session">Session</a></h3></section></summary><div class="impl-items"><details class="toggle method-toggle" open><summary><section id="method.generate_one_keypackage_from_credential_bundle" class="method"><a class="src rightside" href="../../src/core_crypto/mls/session/key_package.rs.html#40-72">Source</a><h4 class="code-header">pub async fn <a href="#method.generate_one_keypackage_from_credential_bundle" class="fn">generate_one_keypackage_from_credential_bundle</a>(
+</div></details></div></details><details class="toggle implementors-toggle" open><summary><section id="impl-Session-1" class="impl"><a class="src rightside" href="../../src/core_crypto/mls/session/key_package.rs.html#31-327">Source</a><a href="#impl-Session-1" class="anchor">§</a><h3 class="code-header">impl <a class="struct" href="struct.Session.html" title="struct core_crypto::prelude::Session">Session</a></h3></section></summary><div class="impl-items"><details class="toggle method-toggle" open><summary><section id="method.generate_one_keypackage_from_credential_bundle" class="method"><a class="src rightside" href="../../src/core_crypto/mls/session/key_package.rs.html#39-71">Source</a><h4 class="code-header">pub async fn <a href="#method.generate_one_keypackage_from_credential_bundle" class="fn">generate_one_keypackage_from_credential_bundle</a>(
     &amp;self,
     backend: &amp;<a class="struct" href="struct.MlsCryptoProvider.html" title="struct core_crypto::prelude::MlsCryptoProvider">MlsCryptoProvider</a>,
     cs: <a class="struct" href="struct.MlsCiphersuite.html" title="struct core_crypto::prelude::MlsCiphersuite">MlsCiphersuite</a>,
@@ -31,7 +31,7 @@ turned on or not before joining it.</p>
 </ul>
 <h5 id="errors"><a class="doc-anchor" href="#errors">§</a>Errors</h5>
 <p>KeyStore and OpenMls errors</p>
-</div></details><details class="toggle method-toggle" open><summary><section id="method.request_key_packages" class="method"><a class="src rightside" href="../../src/core_crypto/mls/session/key_package.rs.html#84-121">Source</a><h4 class="code-header">pub async fn <a href="#method.request_key_packages" class="fn">request_key_packages</a>(
+</div></details><details class="toggle method-toggle" open><summary><section id="method.request_key_packages" class="method"><a class="src rightside" href="../../src/core_crypto/mls/session/key_package.rs.html#83-120">Source</a><h4 class="code-header">pub async fn <a href="#method.request_key_packages" class="fn">request_key_packages</a>(
     &amp;self,
     count: <a class="primitive" href="https://doc.rust-lang.org/1.86.0/std/primitive.usize.html">usize</a>,
     ciphersuite: <a class="struct" href="struct.MlsCiphersuite.html" title="struct core_crypto::prelude::MlsCiphersuite">MlsCiphersuite</a>,
@@ -47,13 +47,13 @@ a reference to it for the consumer to copy/clone.</p>
 </ul>
 <h5 id="errors-1"><a class="doc-anchor" href="#errors-1">§</a>Errors</h5>
 <p>KeyStore and OpenMls errors</p>
-</div></details><details class="toggle method-toggle" open><summary><section id="method.valid_keypackages_count" class="method"><a class="src rightside" href="../../src/core_crypto/mls/session/key_package.rs.html#143-173">Source</a><h4 class="code-header">pub async fn <a href="#method.valid_keypackages_count" class="fn">valid_keypackages_count</a>(
+</div></details><details class="toggle method-toggle" open><summary><section id="method.valid_keypackages_count" class="method"><a class="src rightside" href="../../src/core_crypto/mls/session/key_package.rs.html#142-172">Source</a><h4 class="code-header">pub async fn <a href="#method.valid_keypackages_count" class="fn">valid_keypackages_count</a>(
     &amp;self,
     backend: &amp;<a class="struct" href="struct.MlsCryptoProvider.html" title="struct core_crypto::prelude::MlsCryptoProvider">MlsCryptoProvider</a>,
     ciphersuite: <a class="struct" href="struct.MlsCiphersuite.html" title="struct core_crypto::prelude::MlsCiphersuite">MlsCiphersuite</a>,
     credential_type: <a class="enum" href="enum.MlsCredentialType.html" title="enum core_crypto::prelude::MlsCredentialType">MlsCredentialType</a>,
 ) -&gt; <a class="enum" href="https://doc.rust-lang.org/1.86.0/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;<a class="primitive" href="https://doc.rust-lang.org/1.86.0/std/primitive.usize.html">usize</a>, Error&gt;</h4></section></summary><div class="docblock"><p>Returns the count of valid, non-expired, unclaimed keypackages in store</p>
-</div></details><details class="toggle method-toggle" open><summary><section id="method.prune_keypackages" class="method"><a class="src rightside" href="../../src/core_crypto/mls/session/key_package.rs.html#190-195">Source</a><h4 class="code-header">pub async fn <a href="#method.prune_keypackages" class="fn">prune_keypackages</a>(
+</div></details><details class="toggle method-toggle" open><summary><section id="method.prune_keypackages" class="method"><a class="src rightside" href="../../src/core_crypto/mls/session/key_package.rs.html#189-194">Source</a><h4 class="code-header">pub async fn <a href="#method.prune_keypackages" class="fn">prune_keypackages</a>(
     &amp;self,
     backend: &amp;<a class="struct" href="struct.MlsCryptoProvider.html" title="struct core_crypto::prelude::MlsCryptoProvider">MlsCryptoProvider</a>,
     refs: &amp;[<a class="type" href="type.KeyPackageRef.html" title="type core_crypto::prelude::KeyPackageRef">KeyPackageRef</a>],
@@ -105,7 +105,7 @@ Otherwise, it is being created.</p>
     &amp;self,
     id: &amp;<a class="type" href="../mls/conversation/type.ConversationId.html" title="type core_crypto::mls::conversation::ConversationId">ConversationId</a>,
 ) -&gt; <a class="enum" href="https://doc.rust-lang.org/1.86.0/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;<a class="struct" href="../mls/conversation/struct.ImmutableConversation.html" title="struct core_crypto::mls::conversation::ImmutableConversation">ImmutableConversation</a>, Error&gt;</h4></section></summary><div class="docblock"><p>Get an immutable view of an <code>MlsConversation</code>.</p>
-<p>Because it operates on the raw conversation type, this may be faster than <a href="../transaction_context/struct.TransactionContext.html#method.conversation" title="method core_crypto::transaction_context::TransactionContext::conversation">crate::mls::TransactionContext::conversation</a>.
+<p>Because it operates on the raw conversation type, this may be faster than [crate::mls::TransactionContext::conversation].
 for transient and immutable purposes. For long-lived or mutable purposes, prefer the other method.</p>
 </div></details><details class="toggle method-toggle" open><summary><section id="method.public_key" class="method"><a class="src rightside" href="../../src/core_crypto/mls/session/mod.rs.html#294-304">Source</a><h4 class="code-header">pub async fn <a href="#method.public_key" class="fn">public_key</a>(
     &amp;self,
