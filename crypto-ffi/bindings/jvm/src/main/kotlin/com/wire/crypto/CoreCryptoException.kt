@@ -1,7 +1,6 @@
 package com.wire.crypto
 
-sealed class ProteusException: Exception() {
-
+sealed class ProteusException : Exception() {
     class SessionNotFound() : ProteusException() {
         override val message
             get() = ""
@@ -23,25 +22,25 @@ sealed class ProteusException: Exception() {
     }
 
     override fun equals(other: Any?): Boolean =
-        other is ProteusException && when (other) {
-            is SessionNotFound -> this is SessionNotFound
-            is DuplicateMessage -> this is DuplicateMessage
-            is RemoteIdentityChanged -> this is RemoteIdentityChanged
-            is Other -> this is Other && errorCode == other.errorCode
-        }
+        other is ProteusException &&
+            when (other) {
+                is SessionNotFound -> this is SessionNotFound
+                is DuplicateMessage -> this is DuplicateMessage
+                is RemoteIdentityChanged -> this is RemoteIdentityChanged
+                is Other -> this is Other && errorCode == other.errorCode
+            }
 
     override fun hashCode(): Int {
         return javaClass.hashCode()
     }
 }
 
-sealed class MlsException: Exception() {
-
+sealed class MlsException : Exception() {
     class ConversationAlreadyExists(
         val conversationId: kotlin.ByteArray
     ) : MlsException() {
         override val message
-            get() = "conversationId=${conversationId}"
+            get() = "conversationId=$conversationId"
     }
 
     class DuplicateMessage() : MlsException() {
@@ -98,14 +97,13 @@ sealed class MlsException: Exception() {
         private val reason: kotlin.String
     ) : MlsException() {
         override val message
-            get() = "reason=${reason}"
+            get() = "reason=$reason"
     }
 
     class Other(override val message: String) : MlsException()
 }
 
-sealed class CoreCryptoException: kotlin.Exception() {
-
+sealed class CoreCryptoException : kotlin.Exception() {
     class Mls(val exception: MlsException) : CoreCryptoException() {
         override val message
             get() = "exception=${ exception }"

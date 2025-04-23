@@ -1,14 +1,13 @@
 package com.wire.crypto
 
 import com.wire.crypto.testutils.genDatabaseKey
+import com.wire.crypto.uniffi.buildMetadata
+import com.wire.crypto.uniffi.version
 import kotlinx.coroutines.test.runTest
 import org.assertj.core.api.AssertionsForInterfaceTypes.assertThat
-import kotlin.test.*
 import java.nio.file.Files
 import kotlin.io.path.*
-
-import com.wire.crypto.uniffi.version
-import com.wire.crypto.uniffi.buildMetadata
+import kotlin.test.*
 
 class GeneralTest {
     @Test

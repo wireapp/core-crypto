@@ -1,7 +1,7 @@
 package com.wire.crypto
 
-import kotlinx.coroutines.launch
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.launch
 
 typealias EnrollmentHandle = ByteArray
 
@@ -16,7 +16,6 @@ suspend fun migrateDatabaseKeyTypeToBytes(name: String, oldKey: String, newKey: 
  * An `EpochObserver` is notified whenever a conversation's epoch changes.
  */
 public interface EpochObserver {
-
     /**
      * This function will be called every time a conversation's epoch changes.
      *
@@ -45,7 +44,7 @@ enum class CoreCryptoLogLevel {
     DEBUG,
     INFO,
     WARN,
-    ERROR;
+    ERROR
 }
 
 internal fun CoreCryptoLogLevel.lower() = when (this) {
@@ -67,7 +66,6 @@ internal fun com.wire.crypto.uniffi.CoreCryptoLogLevel.lift() = when (this) {
 }
 
 interface CoreCryptoLogger {
-
     /**
      *  Core Crypto will call this method whenever it needs to log a message.
      */
@@ -80,25 +78,23 @@ interface CoreCryptoLogger {
  * @param logger a callback to implement the platform specific logging. It will receive the string with the log text from Core Crypto
  **/
 fun setLogger(logger: CoreCryptoLogger) {
-    com.wire.crypto.uniffi.setLoggerOnly(object: com.wire.crypto.uniffi.CoreCryptoLogger {
+    com.wire.crypto.uniffi.setLoggerOnly(object : com.wire.crypto.uniffi.CoreCryptoLogger {
         override fun log(level: com.wire.crypto.uniffi.CoreCryptoLogLevel, message: String, context: String?) {
             logger.log(level.lift(), message, context)
         }
-
     })
 }
 
 /**
  * Set maximum log level of logs which are forwarded to the [CoreCryptoLogger].
  *
- * @param  level the max level that should be logged, by default it will be WARN
+ * @param level the max level that should be logged, by default it will be WARN
  */
 fun setMaxLogLevel(level: CoreCryptoLogLevel) {
     com.wire.crypto.uniffi.setMaxLogLevel(level.lower())
 }
 
 class CoreCrypto(private val cc: com.wire.crypto.uniffi.CoreCrypto) {
-
     companion object {
         internal const val DEFAULT_NB_KEY_PACKAGE: UInt = 100U
 
@@ -140,7 +136,7 @@ class CoreCrypto(private val cc: com.wire.crypto.uniffi.CoreCrypto) {
             })
         } catch (e: Throwable) {
             // We prefer the closure error if it's available since the transaction won't include it
-            error = error?: e
+            error = error ?: e
         }
         if (error != null) {
             throw error as Throwable
@@ -152,7 +148,9 @@ class CoreCrypto(private val cc: com.wire.crypto.uniffi.CoreCrypto) {
 
     suspend fun provideTransport(transport: MlsTransport) {
         cc.provideTransport(object : com.wire.crypto.uniffi.MlsTransport {
-            override suspend fun sendCommitBundle(commitBundle: com.wire.crypto.uniffi.CommitBundle): com.wire.crypto.uniffi.MlsTransportResponse {
+            override suspend fun sendCommitBundle(
+                commitBundle: com.wire.crypto.uniffi.CommitBundle
+            ): com.wire.crypto.uniffi.MlsTransportResponse {
                 return transport.sendCommitBundle(commitBundle.lift()).lower()
             }
 
@@ -170,13 +168,13 @@ class CoreCrypto(private val cc: com.wire.crypto.uniffi.CoreCrypto) {
     suspend fun registerEpochObserver(scope: CoroutineScope, epochObserver: EpochObserver) {
         // we want to wrap the observer here to provide async indirection, so that no matter what
         // the observer that makes its way to the Rust side of things doesn't end up blocking
-        val observerIndirector = object: com.wire.crypto.uniffi.EpochObserver {
+        val observerIndirector = object : com.wire.crypto.uniffi.EpochObserver {
             override suspend fun epochChanged(conversationId: kotlin.ByteArray, epoch: kotlin.ULong) {
                 scope.launch { epochObserver.epochChanged(conversationId, epoch) }
             }
         }
         return wrapException {
-            cc.registerEpochObserver(observerIndirector);
+            cc.registerEpochObserver(observerIndirector)
         }
     }
 

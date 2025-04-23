@@ -2,9 +2,9 @@ package com.wire.crypto
 
 import com.wire.crypto.testutils.genDatabaseKey
 import kotlinx.coroutines.*
-import kotlinx.coroutines.test.runTest
-import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.TestResult
+import kotlinx.coroutines.test.TestScope
+import kotlinx.coroutines.test.runTest
 import org.assertj.core.api.AssertionsForInterfaceTypes.assertThat
 import org.assertj.core.api.AssertionsForInterfaceTypes.assertThatNoException
 import java.nio.file.Files
@@ -12,7 +12,6 @@ import kotlin.test.*
 import kotlin.time.Duration.Companion.milliseconds
 
 class MLSTest {
-
     companion object {
         internal val id = "JfflcPtUivbg+1U3Iyrzsh5D2ui/OGS5Rvf52ipH5KY=".toGroupId()
         internal const val aliceId = "alice1"
@@ -96,7 +95,7 @@ class MLSTest {
     }
 
     @Test
-    fun parallel_transactions_are_performed_serially() = runTest() {
+    fun parallel_transactions_are_performed_serially() = runTest {
         withContext(Dispatchers.Default) {
             val (alice) = newClients(aliceId)
             val jobs: MutableList<Job> = mutableListOf()
@@ -220,7 +219,7 @@ class MLSTest {
         val plaintextMsg = bob.transaction { it.decryptMessage(groupId, ciphertextMsg).message!! }
         assertThat(String(plaintextMsg)).isNotEmpty().isEqualTo(msg)
 
-        val expectedException = assertFailsWith<CoreCryptoException.Mls>{ bob.transaction { it.decryptMessage(groupId, ciphertextMsg) } }
+        val expectedException = assertFailsWith<CoreCryptoException.Mls> { bob.transaction { it.decryptMessage(groupId, ciphertextMsg) } }
         assertIs<MlsException.DuplicateMessage>(expectedException.exception)
     }
 
@@ -311,8 +310,10 @@ class MLSTest {
         return scope.runTest {
             // Set up the observer. this just keeps a list of all observations.
             data class EpochChanged(val conversationId: ByteArray, val epoch: ULong)
-            class Observer: EpochObserver {
-                val observedEvents = emptyList<EpochChanged>().toMutableList();
+
+            class Observer : EpochObserver {
+                val observedEvents = emptyList<EpochChanged>().toMutableList()
+
                 override suspend fun epochChanged(conversationId: ByteArray, epoch: ULong) {
                     observedEvents.add(EpochChanged(conversationId, epoch))
                 }
@@ -397,8 +398,7 @@ interface MockDeliveryService : MlsTransport {
     suspend fun getLatestCommit(): MlsMessage
 }
 
-class  MockMlsTransportSuccessProvider : MockDeliveryService {
-
+class MockMlsTransportSuccessProvider : MockDeliveryService {
     private var latestCommitBundle: CommitBundle? = null
 
     override suspend fun sendMessage(mlsMessage: ByteArray): MlsTransportResponse =

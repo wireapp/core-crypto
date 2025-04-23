@@ -7,7 +7,6 @@ import java.nio.file.Files
 import kotlin.test.*
 
 internal class ProteusClientTest {
-
     companion object {
         private val alice = "alice1".toClientId()
         private val bob = "bob1".toClientId()
@@ -44,7 +43,7 @@ internal class ProteusClientTest {
         val bobClient = newProteusClient(bob)
 
         val message = "Hi Alice!"
-        val aliceKey = aliceClient.transaction {  it.proteusNewPreKeys(0, 10).first() }
+        val aliceKey = aliceClient.transaction { it.proteusNewPreKeys(0, 10).first() }
         val encryptedMessage = bobClient.transaction { it.proteusEncryptWithPreKey(message.encodeToByteArray(), aliceKey, aliceSessionId) }
         val decryptedMessage = aliceClient.transaction { it.proteusDecrypt(encryptedMessage, bobSessionId) }
         assertEquals(message, decryptedMessage.decodeToString())
@@ -56,7 +55,9 @@ internal class ProteusClientTest {
         val bobClient = newProteusClient(bob)
         val aliceKey = aliceClient.transaction { it.proteusNewPreKeys(0, 10).first() }
         val message1 = "Hi Alice!"
-        val encryptedMessage1 = bobClient.transaction { it.proteusEncryptWithPreKey(message1.encodeToByteArray(), aliceKey, aliceSessionId) }
+        val encryptedMessage1 = bobClient.transaction {
+            it.proteusEncryptWithPreKey(message1.encodeToByteArray(), aliceKey, aliceSessionId)
+        }
         aliceClient.transaction { it.proteusDecrypt(encryptedMessage1, bobSessionId) }
 
         val message2 = "Hi again Alice!"
@@ -72,7 +73,9 @@ internal class ProteusClientTest {
         val bobClient = newProteusClient(bob)
         val aliceKey = aliceClient.transaction { it.proteusNewPreKeys(0, 10).first() }
         val message1 = "Hi Alice!"
-        val encryptedMessage1 = bobClient.transaction { it.proteusEncryptWithPreKey(message1.encodeToByteArray(), aliceKey, aliceSessionId) }
+        val encryptedMessage1 = bobClient.transaction {
+            it.proteusEncryptWithPreKey(message1.encodeToByteArray(), aliceKey, aliceSessionId)
+        }
         aliceClient.transaction { it.proteusDecrypt(encryptedMessage1, bobSessionId) }
 
         val exception: CoreCryptoException.Proteus = assertFailsWith {

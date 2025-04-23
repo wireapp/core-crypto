@@ -11,7 +11,6 @@ import kotlin.test.BeforeTest
 import kotlin.test.Test
 
 internal class E2EITest {
-
     @BeforeTest
     fun setup() {
         MLSTest.mockDeliveryService = MockMlsTransportSuccessProvider()
@@ -23,21 +22,23 @@ internal class E2EITest {
         val keyStore = root.resolve("keystore-$aliceId")
         val key = genDatabaseKey()
         val cc = CoreCrypto(keyStore.absolutePath, key)
-        val enrollment = cc.transaction { it.e2eiNewEnrollment(
-            clientId = "b7ac11a4-8f01-4527-af88-1c30885a7931:6c1866f567616f31@wire.com",
-            displayName = "Alice Smith",
-            handle = "alice_wire",
-            expirySec = (90 * 24 * 3600).toUInt(),
-            ciphersuite = Ciphersuite.DEFAULT
-        )}
+        val enrollment = cc.transaction {
+            it.e2eiNewEnrollment(
+                clientId = "b7ac11a4-8f01-4527-af88-1c30885a7931:6c1866f567616f31@wire.com",
+                displayName = "Alice Smith",
+                handle = "alice_wire",
+                expirySec = (90 * 24 * 3600).toUInt(),
+                ciphersuite = Ciphersuite.DEFAULT
+            )
+        }
         val directoryResponse = """{
             "newNonce": "https://example.com/acme/new-nonce",
             "newAccount": "https://example.com/acme/new-account",
             "newOrder": "https://example.com/acme/new-order",
             "revokeCert": "https://example.com/acme/revoke-cert"
         }"""
-                .trimIndent()
-                .toByteArray()
+            .trimIndent()
+            .toByteArray()
         enrollment.directoryResponse(directoryResponse)
 
         val previousNonce = "YUVndEZQVTV6ZUNlUkJxRG10c0syQmNWeW1kanlPbjM"
@@ -210,20 +211,20 @@ internal class E2EITest {
         runTest {
             val (alice, bob) = newClients(aliceId, bobId)
 
-        bob.transaction { it.createConversation(id) }
+            bob.transaction { it.createConversation(id) }
 
-        val aliceKp = alice.transaction { it.generateKeyPackages(1U, Ciphersuite.DEFAULT, CredentialType.DEFAULT).first() }
-        bob.transaction { it.addMember(id, listOf(aliceKp)) }
-        val welcome = MLSTest.mockDeliveryService.getLatestWelcome()
-        val groupId = alice.transaction { it.processWelcomeMessage(welcome).id }
+            val aliceKp = alice.transaction { it.generateKeyPackages(1U, Ciphersuite.DEFAULT, CredentialType.DEFAULT).first() }
+            bob.transaction { it.addMember(id, listOf(aliceKp)) }
+            val welcome = MLSTest.mockDeliveryService.getLatestWelcome()
+            val groupId = alice.transaction { it.processWelcomeMessage(welcome).id }
 
-        assertThat(alice.transaction { it.e2eiConversationState(groupId) }).isEqualTo(E2eiConversationState.NotEnabled)
-        assertThat(bob.transaction { it.e2eiConversationState(groupId) }).isEqualTo(E2eiConversationState.NotEnabled)
-    }
+            assertThat(alice.transaction { it.e2eiConversationState(groupId) }).isEqualTo(E2eiConversationState.NotEnabled)
+            assertThat(bob.transaction { it.e2eiConversationState(groupId) }).isEqualTo(E2eiConversationState.NotEnabled)
+        }
 
     @Test
     fun e2ei_should_not_be_enabled_for_a_Basic_Credential() = runTest {
         val (alice) = newClients(aliceId)
-        assertThat(alice.transaction { it.e2eiIsEnabled()}).isFalse()
+        assertThat(alice.transaction { it.e2eiIsEnabled() }).isFalse()
     }
 }

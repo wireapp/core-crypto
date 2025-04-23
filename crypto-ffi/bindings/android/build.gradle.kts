@@ -1,5 +1,5 @@
-import org.gradle.api.tasks.bundling.Jar
 import com.vanniktech.maven.publish.SonatypeHost
+import org.gradle.api.tasks.bundling.Jar
 
 plugins {
     id("com.android.library")

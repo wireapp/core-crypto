@@ -41,7 +41,7 @@ class CoreCryptoContext(private val cc: com.wire.crypto.uniffi.CoreCryptoContext
         ciphersuites: Ciphersuites = Ciphersuites.DEFAULT,
         nbKeyPackage: UInt? = DEFAULT_NB_KEY_PACKAGE,
     ) {
-       wrapException { cc.mlsInit(id.lower(), ciphersuites.lower(), nbKeyPackage) }
+        wrapException { cc.mlsInit(id.lower(), ciphersuites.lower(), nbKeyPackage) }
     }
 
     /**
@@ -696,10 +696,10 @@ class CoreCryptoContext(private val cc: com.wire.crypto.uniffi.CoreCryptoContext
         message: ByteArray,
     ): Map<SessionId, ByteArray> {
         return wrapException {
-                cc.proteusEncryptBatched(sessionIds.map { it }, message).mapNotNull { entry ->
-                    entry.key to entry.value
-                }
+            cc.proteusEncryptBatched(sessionIds.map { it }, message).mapNotNull { entry ->
+                entry.key to entry.value
             }
+        }
             .toMap()
     }
 

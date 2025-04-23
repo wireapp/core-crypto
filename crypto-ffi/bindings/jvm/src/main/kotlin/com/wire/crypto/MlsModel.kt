@@ -3,7 +3,6 @@ package com.wire.crypto
 @JvmInline
 value class Ciphersuites(private val value: Set<Ciphersuite>) {
     companion object {
-
         val DEFAULT = Ciphersuites(setOf(Ciphersuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519))
     }
 
@@ -33,7 +32,6 @@ enum class Ciphersuite {
     MLS_256_DHKEMP384_AES256GCM_SHA384_P384;
 
     companion object {
-
         val DEFAULT = MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519
     }
 
@@ -72,7 +70,6 @@ fun String.toGroupId() = MLSGroupId(toByteArray())
 
 @JvmInline
 value class ClientId(override val value: String) : FfiType<String, com.wire.crypto.uniffi.ClientId> {
-
     override fun lower() = value.toByteArray()
 }
 
@@ -179,7 +176,7 @@ enum class MlsGroupInfoEncryptionType {
     /**
      * `GroupInfo` encrypted in a JWE
      */
-    JWE_ENCRYPTED;
+    JWE_ENCRYPTED
 }
 
 fun com.wire.crypto.uniffi.MlsGroupInfoEncryptionType.lift() =
@@ -200,7 +197,7 @@ enum class MlsRatchetTreeType {
      */
     DELTA,
 
-    BY_REF;
+    BY_REF
 }
 
 fun com.wire.crypto.uniffi.MlsRatchetTreeType.lift() =
@@ -323,7 +320,6 @@ data class DecryptedMessage(
     /** New CRL distribution points that appeared by the introduction of a new credential */
     val crlNewDistributionPoints: CrlDistributionPoints?,
 ) {
-
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
         if (javaClass != other?.javaClass) return false
@@ -333,7 +329,9 @@ data class DecryptedMessage(
         if (message != null) {
             if (other.message == null) return false
             if (!message.contentEquals(other.message)) return false
-        } else if (other.message != null) return false
+        } else if (other.message != null) {
+            return false
+        }
         if (proposals != other.proposals) return false
         if (isActive != other.isActive) return false
         if (commitDelay != other.commitDelay) return false
@@ -390,7 +388,6 @@ data class BufferedDecryptedMessage(
     /** @see DecryptedMessage.crlNewDistributionPoints */
     val crlNewDistributionPoints: CrlDistributionPoints?,
 ) {
-
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
         if (javaClass != other?.javaClass) return false
@@ -400,7 +397,9 @@ data class BufferedDecryptedMessage(
         if (message != null) {
             if (other.message == null) return false
             if (!message.contentEquals(other.message)) return false
-        } else if (other.message != null) return false
+        } else if (other.message != null) {
+            return false
+        }
         if (proposals != other.proposals) return false
         if (isActive != other.isActive) return false
         if (commitDelay != other.commitDelay) return false
@@ -513,14 +512,16 @@ enum class E2eiConversationState {
      * All clients have a valid E2EI certificate
      */
     Verified,
+
     /**
      * Some clients are either still Basic or their certificate is expired
      */
     NotVerified,
+
     /**
      * All clients are still Basic. If all client have expired certificates, [E2eiConversationState::NotVerified] is returned.
      */
-    NotEnabled;
+    NotEnabled
 }
 
 internal fun com.wire.crypto.uniffi.E2eiConversationState.lift() =
@@ -533,7 +534,7 @@ internal fun com.wire.crypto.uniffi.E2eiConversationState.lift() =
 /**
  * Configuration of MLS group
  */
-data class CustomConfiguration (
+data class CustomConfiguration(
     var keyRotationSpan: java.time.Duration?,
     var wirePolicy: MlsWirePolicy?
 )
@@ -548,11 +549,11 @@ fun CustomConfiguration.lower() =
  * Encrypting policy in MLS group
  */
 enum class MlsWirePolicy {
-
     /**
      * Handshake messages are never encrypted
      */
     PLAINTEXT,
+
     /**
      * Handshake messages are always encrypted
      */
@@ -566,24 +567,22 @@ fun MlsWirePolicy.lower() =
     }
 
 sealed class MlsTransportResponse {
-
     /**
      * The message was accepted by the distribution service
      */
     object Success : MlsTransportResponse()
-
 
     /**
      * A client should have consumed all incoming messages before re-trying.
      */
     object Retry : MlsTransportResponse()
 
-
     /**
      * The message was rejected by the delivery service and there's no recovery.
      */
     data class Abort(
-        val `reason`: kotlin.String) : MlsTransportResponse() {
+        val `reason`: kotlin.String
+    ) : MlsTransportResponse() {
         companion object
     }
 }

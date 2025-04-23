@@ -2,7 +2,7 @@ package com.wire.crypto
 
 typealias JsonRawData = ByteArray
 
-data class E2eiDumpedPkiEnv (
+data class E2eiDumpedPkiEnv(
     var rootCa: String,
     var intermediates: List<String>,
     var crls: List<String>
@@ -107,7 +107,6 @@ fun com.wire.crypto.uniffi.NewAcmeAuthz.toNewAcmeAuthz() = NewAcmeAuthz(this)
 
 @Suppress("TooManyFunctions")
 class E2EIEnrollment(private val delegate: com.wire.crypto.uniffi.E2eiEnrollment) {
-
     internal fun lower() = delegate
 
     /**
