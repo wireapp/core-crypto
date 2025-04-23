@@ -75,7 +75,7 @@ args = [
     "--bin", "uniffi-bindgen",
     "generate",
     "--language", "swift",
-    "--out-dir", "./bindings/swift/WireCoreCryptoUniffi/WireCoreCryptoUniffi",
+    "--out-dir", "./bindings/swift/WireCoreCryptoUniffi/generated",
     "--library", "../target/release/deps/libcore_crypto_ffi.${LIBRARY_EXTENSION}"
 ]
 
@@ -124,8 +124,6 @@ args = [
     "rustc",
     "--locked",
     "--target", "aarch64-apple-ios",
-    "--crate-type=cdylib",
-    "--crate-type=staticlib",
     "--release",
     "--",
     "-C", "strip=symbols"
@@ -141,8 +139,6 @@ args = [
     "rustc",
     "--locked",
     "--target", "aarch64-apple-ios-sim",
-    "--crate-type=cdylib",
-    "--crate-type=staticlib",
     "--release",
     "--",
     "-C", "strip=symbols"
@@ -154,12 +150,37 @@ dependencies = ["ios-device", "ios-simulator-arm"]
 
 [tasks.ios-create-xcframework]
 condition = { platforms = ["mac"] }
+dependencies = ["ios"]
 script = '''
     cd bindings/swift
 
     ./build-xcframework.sh
 '''
-dependencies = ["ios"]
+
+[tasks.swift-package]
+condition = { platforms = ["mac"] }
+dependencies = ["darwin", "ios"]
+script = '''
+cd bindings/swift
+
+cp WireCoreCryptoUniffi/generated/core_crypto_ffi.swift WireCoreCryptoUniffi/Sources
+mkdir -p WireCoreCryptoUniffi/generated/headers
+cp WireCoreCryptoUniffi/generated/core_crypto_ffiFFI.h WireCoreCryptoUniffi/generated/headers
+cp WireCoreCryptoUniffi/generated/core_crypto_ffiFFI.modulemap WireCoreCryptoUniffi/generated/headers/module.modulemap
+
+rm -r WireCoreCryptoUniffi/RustFramework.xcframework
+
+# with mac os
+xcodebuild -create-xcframework \
+-library ../../../target/aarch64-apple-ios/release/libcore_crypto_ffi.a \
+-headers ./WireCoreCryptoUniffi/generated/headers \
+-library ../../../target/aarch64-apple-ios-sim/release/libcore_crypto_ffi.a \
+-headers ./WireCoreCryptoUniffi/generated/headers \
+-library ../../../target/aarch64-apple-darwin/release/libcore_crypto_ffi.a \
+-headers ./WireCoreCryptoUniffi/generated/headers \
+-output WireCoreCryptoUniffi/RustFramework.xcframework
+
+'''
 
 ################################### Android ###################################
 
@@ -172,8 +193,6 @@ args = [
     "rustc",
     "--locked",
     "--target", "armv7-linux-androideabi",
-    "--crate-type=cdylib",
-    "--crate-type=staticlib",
     "--release",
     "--",
     "-C", "strip=symbols"
@@ -186,8 +205,6 @@ args = [
     "rustc",
     "--locked",
     "--target", "aarch64-linux-android",
-    "--crate-type=cdylib",
-    "--crate-type=staticlib",
     "--release",
     "--",
     "-C", "strip=symbols"
@@ -200,8 +217,6 @@ args = [
     "rustc",
     "--locked",
     "--target", "x86_64-linux-android",
-    "--crate-type=cdylib",
-    "--crate-type=staticlib",
     "--release",
     "--",
     "-C", "strip=symbols",
@@ -214,20 +229,19 @@ dependencies = ["android-env"]
 dependencies = ["android-armv7", "android-armv8", "android-x86"]
 
 ####################################  JVM  ####################################
-
-[tasks.jvm-darwin]
+[tasks.darwin]
 command = "cargo"
 args = [
     "rustc",
     "--locked",
     "--target", "aarch64-apple-darwin",
-    "--crate-type=cdylib",
-    "--crate-type=staticlib",
     "--release",
     "--",
     "-C", "strip=symbols"
 ]
-dependencies = ["bindings-kotlin-jvm"]
+
+[tasks.jvm-darwin]
+dependencies = ["darwin", "bindings-kotlin-jvm"]
 condition = { platforms = ["mac"] }
 
 [tasks.jvm-linux]
@@ -236,8 +250,6 @@ args = [
     "rustc",
     "--locked",
     "--target", "x86_64-unknown-linux-gnu",
-    "--crate-type=cdylib",
-    "--crate-type=staticlib",
     "--release",
     "--",
     "-C", "strip=symbols"
