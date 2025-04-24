@@ -1,0 +1,2 @@
+[uniffi-{android,jvm}/**]
+ktlint = disabled
