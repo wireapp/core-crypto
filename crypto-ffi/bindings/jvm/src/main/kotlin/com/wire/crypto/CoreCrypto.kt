@@ -32,7 +32,7 @@ public interface EpochObserver {
      * it is required by `uniffi` in order to handle panics. This function should suppress
      * and ignore internal errors instead of propagating them, to the maximum extent possible.
      */
-    suspend fun `epochChanged`(`conversationId`: kotlin.ByteArray, `epoch`: kotlin.ULong)
+    suspend fun epochChanged(`conversationId`: kotlin.ByteArray, `epoch`: kotlin.ULong)
 }
 
 /**

@@ -9,6 +9,7 @@ value class Ciphersuites(private val value: Set<Ciphersuite>) {
     fun lower() = value.map { it.lower() }
 }
 
+@Suppress("ktlint:standard:enum-entry-name-case")
 enum class Ciphersuite {
     // DH KEM x25519 | AES-GCM 128 | SHA2-256 | Ed25519
     MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519,

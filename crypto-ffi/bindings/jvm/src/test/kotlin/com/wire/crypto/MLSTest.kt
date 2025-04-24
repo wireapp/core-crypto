@@ -1,3 +1,5 @@
+@file:Suppress("ktlint:standard:no-wildcard-imports")
+
 package com.wire.crypto
 
 import com.wire.crypto.testutils.genDatabaseKey
@@ -14,9 +16,9 @@ import kotlin.time.Duration.Companion.milliseconds
 class MLSTest {
     companion object {
         internal val id = "JfflcPtUivbg+1U3Iyrzsh5D2ui/OGS5Rvf52ipH5KY=".toGroupId()
-        internal const val aliceId = "alice1"
-        internal const val bobId = "bob"
-        internal const val carolId = "carol"
+        internal const val ALICE_ID = "alice1"
+        internal const val BOB_ID = "bob"
+        internal const val CAROL_ID = "carol"
         internal lateinit var mockDeliveryService: MockDeliveryService
     }
 
@@ -43,7 +45,7 @@ class MLSTest {
     fun externally_generated_ClientId_should_init_the_MLS_client() = runTest {
         val alice = initCc()
         val handle = alice.transaction { it.mlsGenerateKeypairs() }
-        alice.transaction { it.mlsInitWithClientId(aliceId.toClientId(), handle) }
+        alice.transaction { it.mlsInitWithClientId(ALICE_ID.toClientId(), handle) }
     }
 
     @Test
@@ -55,7 +57,7 @@ class MLSTest {
 
         val expectedException =
             assertFailsWith<CoreCryptoException.Mls> {
-                context!!.mlsInit(aliceId.toClientId())
+                context!!.mlsInit(ALICE_ID.toClientId())
             }
 
         assertIs<MlsException.Other>(expectedException.exception)
@@ -75,7 +77,7 @@ class MLSTest {
     @Test
     fun transaction_rolls_back_on_error() = runTest {
         val cc = initCc()
-        cc.transaction { ctx -> ctx.mlsInit(aliceId.toClientId()) }
+        cc.transaction { ctx -> ctx.mlsInit(ALICE_ID.toClientId()) }
 
         val expectedException = RuntimeException("Expected Exception")
 
@@ -97,7 +99,7 @@ class MLSTest {
     @Test
     fun parallel_transactions_are_performed_serially() = runTest {
         withContext(Dispatchers.Default) {
-            val (alice) = newClients(aliceId)
+            val (alice) = newClients(ALICE_ID)
             val jobs: MutableList<Job> = mutableListOf()
             val token = "t"
             val transactionCount = 3
@@ -129,7 +131,7 @@ class MLSTest {
 
     @Test
     fun errorTypeMapping_should_work() = runTest {
-        val (alice) = newClients(aliceId)
+        val (alice) = newClients(ALICE_ID)
         alice.transaction { it.createConversation(id) }
         val expectedException = assertFailsWith<CoreCryptoException.Mls> { alice.transaction { it.createConversation(id) } }
         assertIs<MlsException.ConversationAlreadyExists>(expectedException.exception)
@@ -137,13 +139,13 @@ class MLSTest {
 
     @Test
     fun getPublicKey_should_return_non_empty_result() = runTest {
-        val (alice) = newClients(aliceId)
+        val (alice) = newClients(ALICE_ID)
         assertThat(alice.transaction { it.getPublicKey(Ciphersuite.DEFAULT).value }).isNotEmpty()
     }
 
     @Test
     fun conversationExists_should_return_true() = runTest {
-        val (alice) = newClients(aliceId)
+        val (alice) = newClients(ALICE_ID)
         assertThat(alice.transaction { it.conversationExists(id) }).isFalse()
         alice.transaction { it.createConversation(id) }
         assertThat(alice.transaction { it.conversationExists(id) }).isTrue()
@@ -151,7 +153,7 @@ class MLSTest {
 
     @Test
     fun calling_generateKeyPackages_should_return_expected_number() = runTest {
-        val (alice) = newClients(aliceId)
+        val (alice) = newClients(ALICE_ID)
 
         // by default
         assertThat(alice.transaction { it.validKeyPackageCount() }).isEqualTo(100.toULong())
@@ -161,14 +163,14 @@ class MLSTest {
 
     @Test
     fun given_new_conversation_when_calling_conversationEpoch_should_return_epoch_0() = runTest {
-        val (alice) = newClients(aliceId)
+        val (alice) = newClients(ALICE_ID)
         alice.transaction { it.createConversation(id) }
         assertThat(alice.transaction { it.conversationEpoch(id) }).isEqualTo(0UL)
     }
 
     @Test
     fun updateKeyingMaterial_should_process_the_commit_message() = runTest {
-        val (alice, bob) = newClients(aliceId, bobId)
+        val (alice, bob) = newClients(ALICE_ID, BOB_ID)
 
         bob.transaction { it.createConversation(id) }
 
@@ -188,7 +190,7 @@ class MLSTest {
 
     @Test
     fun addMember_should_allow_joining_a_conversation_with_a_Welcome() = runTest {
-        val (alice, bob) = newClients(aliceId, bobId)
+        val (alice, bob) = newClients(ALICE_ID, BOB_ID)
 
         bob.transaction { it.createConversation(id) }
 
@@ -203,7 +205,7 @@ class MLSTest {
 
     @Test
     fun encryptMessage_should_encrypt_then_receiver_should_decrypt() = runTest {
-        val (alice, bob) = newClients(aliceId, bobId)
+        val (alice, bob) = newClients(ALICE_ID, BOB_ID)
 
         bob.transaction { it.createConversation(id) }
 
@@ -225,7 +227,7 @@ class MLSTest {
 
     @Test
     fun addMember_should_add_members_to_the_MLS_group() = runTest {
-        val (alice, bob, carol) = newClients(aliceId, bobId, carolId)
+        val (alice, bob, carol) = newClients(ALICE_ID, BOB_ID, CAROL_ID)
 
         bob.transaction { it.createConversation(id) }
         val aliceKp = alice.transaction { it.generateKeyPackages(1U).first() }
@@ -243,13 +245,13 @@ class MLSTest {
 
         val members = alice.transaction { it.members(id) }
         assertThat(
-            members.containsAll(listOf(aliceId, bobId, carolId).map { it.toClientId() })
+            members.containsAll(listOf(ALICE_ID, BOB_ID, CAROL_ID).map { it.toClientId() })
         )
     }
 
     @Test
     fun addMember_should_return_a_valid_Welcome_message() = runTest {
-        val (alice, bob) = newClients(aliceId, bobId)
+        val (alice, bob) = newClients(ALICE_ID, BOB_ID)
 
         bob.transaction { it.createConversation(id) }
 
@@ -264,7 +266,7 @@ class MLSTest {
 
     @Test
     fun removeMember_should_remove_members_from_the_MLS_group() = runTest {
-        val (alice, bob, carol) = newClients(aliceId, bobId, carolId)
+        val (alice, bob, carol) = newClients(ALICE_ID, BOB_ID, CAROL_ID)
 
         bob.transaction { it.createConversation(id) }
 
@@ -274,7 +276,7 @@ class MLSTest {
         val welcome = mockDeliveryService.getLatestWelcome()
         val conversationId = alice.transaction { it.processWelcomeMessage(welcome).id }
 
-        val carolMember = listOf(carolId.toClientId())
+        val carolMember = listOf(CAROL_ID.toClientId())
         bob.transaction { it.removeMember(conversationId, carolMember) }
         val commit = mockDeliveryService.getLatestCommit()
 
@@ -284,7 +286,7 @@ class MLSTest {
 
     @Test
     fun wipeConversation_should_delete_the_conversation_from_the_keystore() = runTest {
-        val (alice) = newClients(aliceId)
+        val (alice) = newClients(ALICE_ID)
         alice.transaction { it.createConversation(id) }
         assertThatNoException().isThrownBy {
             runBlocking { alice.transaction { it.wipeConversation(id) } }
@@ -293,7 +295,7 @@ class MLSTest {
 
     @Test
     fun deriveAvsSecret_should_generate_a_secret_with_the_right_length() = runTest {
-        val (alice) = newClients(aliceId)
+        val (alice) = newClients(ALICE_ID)
         alice.transaction { it.createConversation(id) }
         val n = 50
         val secrets = (0 until n).map {
@@ -322,7 +324,7 @@ class MLSTest {
             val aliceObserver = Observer()
 
             // Set up the conversation in one transaction
-            val (alice, bob) = newClients(aliceId, bobId)
+            val (alice, bob) = newClients(ALICE_ID, BOB_ID)
             bob.transaction { it.createConversation(id) }
 
             // Register observers

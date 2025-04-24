@@ -1,7 +1,7 @@
 package com.wire.crypto
 
-import com.wire.crypto.MLSTest.Companion.aliceId
-import com.wire.crypto.MLSTest.Companion.bobId
+import com.wire.crypto.MLSTest.Companion.ALICE_ID
+import com.wire.crypto.MLSTest.Companion.BOB_ID
 import com.wire.crypto.MLSTest.Companion.id
 import com.wire.crypto.testutils.genDatabaseKey
 import kotlinx.coroutines.test.runTest
@@ -19,7 +19,7 @@ internal class E2EITest {
     @Test
     fun sample_e2ei_enrollment_should_succeed() = runTest {
         val root = Files.createTempDirectory("mls").toFile()
-        val keyStore = root.resolve("keystore-$aliceId")
+        val keyStore = root.resolve("keystore-$ALICE_ID")
         val key = genDatabaseKey()
         val cc = CoreCrypto(keyStore.absolutePath, key)
         val enrollment = cc.transaction {
@@ -209,7 +209,7 @@ internal class E2EITest {
     @Test
     fun conversation_should_be_not_verified_when_at_least_1_of_the_members_uses_a_Basic_credential() =
         runTest {
-            val (alice, bob) = newClients(aliceId, bobId)
+            val (alice, bob) = newClients(ALICE_ID, BOB_ID)
 
             bob.transaction { it.createConversation(id) }
 
@@ -224,7 +224,7 @@ internal class E2EITest {
 
     @Test
     fun e2ei_should_not_be_enabled_for_a_Basic_Credential() = runTest {
-        val (alice) = newClients(aliceId)
+        val (alice) = newClients(ALICE_ID)
         assertThat(alice.transaction { it.e2eiIsEnabled() }).isFalse()
     }
 }

@@ -1,3 +1,5 @@
+@file:Suppress("ktlint:standard:no-wildcard-imports")
+
 package com.wire.crypto
 
 import com.wire.crypto.testutils.genDatabaseKey
@@ -20,11 +22,11 @@ class GeneralTest {
 
     @Test
     fun get_build_metadata() = runTest {
-        val build_metadata = buildMetadata()
+        val metadata = buildMetadata()
 
-        assertThat(build_metadata).isNotNull()
-        assertThat(build_metadata.gitDescribe).isNotNull()
-        assertThat(build_metadata.gitDescribe).isNotEmpty()
+        assertThat(metadata).isNotNull()
+        assertThat(metadata.gitDescribe).isNotNull()
+        assertThat(metadata.gitDescribe).isNotEmpty()
     }
 }
 

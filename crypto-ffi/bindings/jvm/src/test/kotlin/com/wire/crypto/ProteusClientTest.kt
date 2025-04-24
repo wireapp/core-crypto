@@ -1,3 +1,5 @@
+@file:Suppress("ktlint:standard:no-wildcard-imports")
+
 package com.wire.crypto
 
 import com.wire.crypto.testutils.genDatabaseKey
@@ -10,8 +12,8 @@ internal class ProteusClientTest {
     companion object {
         private val alice = "alice1".toClientId()
         private val bob = "bob1".toClientId()
-        private const val aliceSessionId = "alice1_session1"
-        private const val bobSessionId = "bob1_session1"
+        private const val ALICE_SESSION_ID = "alice1_session1"
+        private const val BOB_SESSION_ID = "bob1_session1"
     }
 
     private fun newProteusClient(clientId: ClientId): CoreCrypto = runBlocking {
@@ -44,8 +46,10 @@ internal class ProteusClientTest {
 
         val message = "Hi Alice!"
         val aliceKey = aliceClient.transaction { it.proteusNewPreKeys(0, 10).first() }
-        val encryptedMessage = bobClient.transaction { it.proteusEncryptWithPreKey(message.encodeToByteArray(), aliceKey, aliceSessionId) }
-        val decryptedMessage = aliceClient.transaction { it.proteusDecrypt(encryptedMessage, bobSessionId) }
+        val encryptedMessage = bobClient.transaction {
+            it.proteusEncryptWithPreKey(message.encodeToByteArray(), aliceKey, ALICE_SESSION_ID)
+        }
+        val decryptedMessage = aliceClient.transaction { it.proteusDecrypt(encryptedMessage, BOB_SESSION_ID) }
         assertEquals(message, decryptedMessage.decodeToString())
     }
 
@@ -56,13 +60,13 @@ internal class ProteusClientTest {
         val aliceKey = aliceClient.transaction { it.proteusNewPreKeys(0, 10).first() }
         val message1 = "Hi Alice!"
         val encryptedMessage1 = bobClient.transaction {
-            it.proteusEncryptWithPreKey(message1.encodeToByteArray(), aliceKey, aliceSessionId)
+            it.proteusEncryptWithPreKey(message1.encodeToByteArray(), aliceKey, ALICE_SESSION_ID)
         }
-        aliceClient.transaction { it.proteusDecrypt(encryptedMessage1, bobSessionId) }
+        aliceClient.transaction { it.proteusDecrypt(encryptedMessage1, BOB_SESSION_ID) }
 
         val message2 = "Hi again Alice!"
-        val encryptedMessage2 = bobClient.transaction { it.proteusEncrypt(message2.encodeToByteArray(), aliceSessionId) }
-        val decryptedMessage2 = aliceClient.transaction { it.proteusDecrypt(encryptedMessage2, bobSessionId) }
+        val encryptedMessage2 = bobClient.transaction { it.proteusEncrypt(message2.encodeToByteArray(), ALICE_SESSION_ID) }
+        val decryptedMessage2 = aliceClient.transaction { it.proteusDecrypt(encryptedMessage2, BOB_SESSION_ID) }
 
         assertEquals(message2, decryptedMessage2.decodeToString())
     }
@@ -74,12 +78,12 @@ internal class ProteusClientTest {
         val aliceKey = aliceClient.transaction { it.proteusNewPreKeys(0, 10).first() }
         val message1 = "Hi Alice!"
         val encryptedMessage1 = bobClient.transaction {
-            it.proteusEncryptWithPreKey(message1.encodeToByteArray(), aliceKey, aliceSessionId)
+            it.proteusEncryptWithPreKey(message1.encodeToByteArray(), aliceKey, ALICE_SESSION_ID)
         }
-        aliceClient.transaction { it.proteusDecrypt(encryptedMessage1, bobSessionId) }
+        aliceClient.transaction { it.proteusDecrypt(encryptedMessage1, BOB_SESSION_ID) }
 
         val exception: CoreCryptoException.Proteus = assertFailsWith {
-            aliceClient.transaction { it.proteusDecrypt(encryptedMessage1, bobSessionId) }
+            aliceClient.transaction { it.proteusDecrypt(encryptedMessage1, BOB_SESSION_ID) }
         }
         assertEquals(ProteusException.DuplicateMessage(), exception.exception)
     }
@@ -90,14 +94,16 @@ internal class ProteusClientTest {
         val bobClient = newProteusClient(bob)
         val aliceKey = aliceClient.transaction { it.proteusNewPreKeys(0, 10).first() }
         val message1 = "Hi Alice!"
-        bobClient.transaction { it.proteusCreateSession(aliceKey, aliceSessionId) }
+        bobClient.transaction { it.proteusCreateSession(aliceKey, ALICE_SESSION_ID) }
 
         val missingAliceSessionId = "missing_session"
         val encryptedMessages =
-            bobClient.transaction { it.proteusEncryptBatched(listOf(aliceSessionId, missingAliceSessionId), message1.encodeToByteArray()) }
+            bobClient.transaction {
+                it.proteusEncryptBatched(listOf(ALICE_SESSION_ID, missingAliceSessionId), message1.encodeToByteArray())
+            }
 
         assertEquals(1, encryptedMessages.size)
-        assertTrue(encryptedMessages.containsKey(aliceSessionId))
+        assertTrue(encryptedMessages.containsKey(ALICE_SESSION_ID))
     }
 
     @Test
@@ -106,7 +112,7 @@ internal class ProteusClientTest {
         val bobClient = newProteusClient(bob)
 
         val aliceKey = aliceClient.transaction { it.proteusNewPreKeys(0, 10).first() }
-        bobClient.transaction { it.proteusCreateSession(aliceKey, aliceSessionId) }
-        assertNotNull(bobClient.transaction { it.proteusEncrypt("Hello World".encodeToByteArray(), aliceSessionId) })
+        bobClient.transaction { it.proteusCreateSession(aliceKey, ALICE_SESSION_ID) }
+        assertNotNull(bobClient.transaction { it.proteusEncrypt("Hello World".encodeToByteArray(), ALICE_SESSION_ID) })
     }
 }
