@@ -9,6 +9,9 @@ use async_lock::{Mutex, MutexGuard};
 use blocking::unblock;
 use rusqlite::{Transaction, functions::FunctionFlags};
 
+#[cfg(feature = "log-queries")]
+use rusqlite::trace::{TraceEvent, TraceEventCodes};
+
 #[cfg(target_os = "ios")]
 mod ios_wal_compat;
 
@@ -77,7 +80,7 @@ impl SqlCipherConnection {
         let mut conn = rusqlite::Connection::open(path)?;
 
         #[cfg(feature = "log-queries")]
-        conn.trace(Some(|q| log::info!("{}", q)));
+        conn.trace_v2(TraceEventCodes::SQLITE_TRACE_STMT, Some(Self::log_query));
 
         Self::set_key(&mut conn, key)?;
 
@@ -101,6 +104,14 @@ impl SqlCipherConnection {
         Ok(conn)
     }
 
+    #[cfg(feature = "log-queries")]
+    fn log_query(event: TraceEvent) {
+        match event {
+            TraceEvent::Stmt(_, sql) => log::info!("{}", sql),
+            _ => {}
+        }
+    }
+
     fn set_key(conn: &mut rusqlite::Connection, key: &DatabaseKey) -> CryptoKeystoreResult<()> {
         // Make sqlite use raw key data, without key derivation. Also make sure to zeroize
         // the string containing the key after the call.
@@ -114,7 +125,7 @@ impl SqlCipherConnection {
         let mut conn = rusqlite::Connection::open("")?;
 
         #[cfg(feature = "log-queries")]
-        conn.trace(Some(|q| log::info!("{}", q)));
+        conn.trace_v2(TraceEventCodes::SQLITE_TRACE_STMT, Some(Self::log_query));
 
         Self::set_key(&mut conn, key)?;
 
