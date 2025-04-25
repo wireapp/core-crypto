@@ -1,0 +1,10 @@
+*.build
+*.swiftpm
+*.xcodeproj
+*.plist
+*resource_bundle_accessor.swiftdeps
+*core_crypto_ffi.swift
+*.xcframework
+WireCoreCryptoUniffi/generated/*
+WireCoreCrypto/TestHost/TestHost.entitlements
+
