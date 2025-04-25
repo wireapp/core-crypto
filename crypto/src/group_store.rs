@@ -226,24 +226,8 @@ pub(crate) const MEMORY_LIMIT: usize = 100_000_000;
 pub(crate) const ITEM_LIMIT: u32 = 100;
 
 impl HybridMemoryLimiter {
-    // in the wasm case, we ignore the suggested memory limit
-    #[cfg_attr(target_family = "wasm", expect(unused_variables))]
     pub(crate) fn new(count: Option<u32>, memory: Option<usize>) -> Self {
-        #[cfg(target_family = "wasm")]
-        let memory_limit = MEMORY_LIMIT;
-
-        #[cfg(not(target_family = "wasm"))]
-        let memory_limit = memory
-            .or_else(|| {
-                let system = sysinfo::System::new_with_specifics(
-                    sysinfo::RefreshKind::nothing().with_memory(sysinfo::MemoryRefreshKind::nothing().with_ram()),
-                );
-
-                let available_sys_memory = system.available_memory();
-                (available_sys_memory > 0).then_some(available_sys_memory as usize)
-            })
-            .unwrap_or(MEMORY_LIMIT);
-
+        let memory_limit = memory.unwrap_or(MEMORY_LIMIT);
         let mem = schnellru::ByMemoryUsage::new(memory_limit);
         let len = schnellru::ByLength::new(count.unwrap_or(ITEM_LIMIT));
 
