@@ -124,22 +124,21 @@ impl<V: GroupStoreEntity> std::ops::DerefMut for GroupStore<V> {
 }
 
 impl<V: GroupStoreEntity> GroupStore<V> {
-    #[allow(dead_code)]
     pub(crate) fn new_with_limit(len: u32) -> Self {
         let limiter = HybridMemoryLimiter::new(Some(len), None);
         let store = schnellru::LruMap::new(limiter);
         Self(store)
     }
 
-    #[allow(dead_code)]
-    pub(crate) fn new(count: Option<u32>, memory: Option<usize>) -> Self {
+    #[cfg(test)]
+    fn new(count: Option<u32>, memory: Option<usize>) -> Self {
         let limiter = HybridMemoryLimiter::new(count, memory);
         let store = schnellru::LruMap::new(limiter);
         Self(store)
     }
 
-    #[allow(dead_code)]
-    pub(crate) fn contains_key(&self, k: &[u8]) -> bool {
+    #[cfg(test)]
+    fn contains_key(&self, k: &[u8]) -> bool {
         self.0.peek(k).is_some()
     }
 
