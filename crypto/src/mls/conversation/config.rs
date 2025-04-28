@@ -208,11 +208,11 @@ mod tests {
         run_test_with_client_ids(case.clone(), ["alice"], move |[cc]| {
             Box::pin(async move {
                 let id = conversation_id();
-                cc.context
+                cc.transaction
                     .new_conversation(&id, case.credential_type, case.cfg.clone())
                     .await
                     .unwrap();
-                let conv = cc.context.conversation(&id).await.unwrap();
+                let conv = cc.transaction.conversation(&id).await.unwrap();
                 let group = conv.conversation().await;
 
                 let capabilities = group.group.group_context_extensions().required_capabilities().unwrap();
@@ -235,11 +235,11 @@ mod tests {
         run_test_with_client_ids(case.clone(), ["alice"], move |[cc]| {
             Box::pin(async move {
                 let id = conversation_id();
-                cc.context
+                cc.transaction
                     .new_conversation(&id, case.credential_type, case.cfg.clone())
                     .await
                     .unwrap();
-                let conv = cc.context.conversation(&id).await.unwrap();
+                let conv = cc.transaction.conversation(&id).await.unwrap();
                 let group = conv.conversation().await;
 
                 // verifying https://www.rfc-editor.org/rfc/rfc9420.html#section-7.2
@@ -280,7 +280,7 @@ mod tests {
         run_test_with_client_ids(case.clone(), ["alice"], move |[cc]| {
             Box::pin(async move {
                 let (_sk, pk) = cc
-                    .context
+                    .transaction
                     .mls_provider()
                     .await
                     .unwrap()
@@ -289,7 +289,7 @@ mod tests {
                     .unwrap();
 
                 assert!(
-                    cc.context
+                    cc.transaction
                         .set_raw_external_senders(&mut case.cfg.clone(), vec![pk])
                         .await
                         .is_ok()
@@ -315,7 +315,7 @@ mod tests {
                 };
 
                 let jwk = wire_e2e_identity::prelude::generate_jwk(alg);
-                cc.context
+                cc.transaction
                     .set_raw_external_senders(&mut case.cfg.clone(), vec![jwk])
                     .await
                     .unwrap();

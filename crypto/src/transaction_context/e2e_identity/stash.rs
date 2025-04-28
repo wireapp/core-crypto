@@ -84,7 +84,7 @@ mod tests {
                 .unwrap();
 
                 assert!(
-                    cc.context
+                    cc.transaction
                         .e2ei_mls_init_only(&mut enrollment, cert, Some(INITIAL_KEYING_MATERIAL_COUNT))
                         .await
                         .is_ok()

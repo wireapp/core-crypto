@@ -329,7 +329,7 @@ mod tests {
                 Box::pin(async move {
                     let id = conversation_id();
                     alice_central
-                        .context
+                        .transaction
                         .new_conversation(&id, case.credential_type, case.cfg.clone())
                         .await
                         .unwrap();
@@ -341,7 +341,7 @@ mod tests {
 
                     // Alice decrypts the external commit...
                     alice_central
-                        .context
+                        .transaction
                         .conversation(&id)
                         .await
                         .unwrap()
@@ -350,25 +350,30 @@ mod tests {
                         .unwrap();
 
                     // Meanwhile Debbie joins the party by creating an external proposal
-                    let epoch = alice_central.context.conversation(&id).await.unwrap().epoch().await;
+                    let epoch = alice_central.transaction.conversation(&id).await.unwrap().epoch().await;
                     let external_proposal = debbie_central
-                        .context
+                        .transaction
                         .new_external_add_proposal(id.clone(), epoch.into(), case.ciphersuite(), case.credential_type)
                         .await
                         .unwrap();
 
                     // ...then Alice generates new messages for this epoch
                     let app_msg = alice_central
-                        .context
+                        .transaction
                         .conversation(&id)
                         .await
                         .unwrap()
                         .encrypt_message(b"Hello Bob !")
                         .await
                         .unwrap();
-                    let proposal = alice_central.context.new_update_proposal(&id).await.unwrap().proposal;
+                    let proposal = alice_central
+                        .transaction
+                        .new_update_proposal(&id)
+                        .await
+                        .unwrap()
+                        .proposal;
                     alice_central
-                        .context
+                        .transaction
                         .conversation(&id)
                         .await
                         .unwrap()
@@ -377,7 +382,7 @@ mod tests {
                         .unwrap();
                     let charlie = charlie_central.rand_key_package(&case).await;
                     alice_central
-                        .context
+                        .transaction
                         .conversation(&id)
                         .await
                         .unwrap()
@@ -386,12 +391,12 @@ mod tests {
                         .unwrap();
                     let commit = alice_central.mls_transport.latest_commit_bundle().await;
                     charlie_central
-                        .context
+                        .transaction
                         .process_welcome_message(commit.welcome.clone().unwrap().into(), case.custom_cfg())
                         .await
                         .unwrap();
                     debbie_central
-                        .context
+                        .transaction
                         .process_welcome_message(commit.welcome.clone().unwrap().into(), case.custom_cfg())
                         .await
                         .unwrap();
@@ -403,7 +408,7 @@ mod tests {
                         .into_iter()
                         .map(|m| m.to_bytes().unwrap());
                     let Err(crate::transaction_context::Error::PendingConversation(mut pending_conversation)) =
-                        bob_central.context.conversation(&id).await
+                        bob_central.transaction.conversation(&id).await
                     else {
                         panic!("Bob should not have the conversation yet")
                     };
@@ -415,7 +420,7 @@ mod tests {
                     assert!(matches!(decrypt.unwrap_err(), Error::BufferedForPendingConversation));
 
                     // Bob should have buffered the messages
-                    assert_eq!(bob_central.context.count_entities().await.pending_messages, 4);
+                    assert_eq!(bob_central.transaction.count_entities().await.pending_messages, 4);
 
                     let observer = TestEpochObserver::new();
                     bob_central
@@ -462,7 +467,7 @@ mod tests {
                     assert!(bob_central.try_talk_to(&id, &debbie_central).await.is_ok());
 
                     // After merging we should erase all those pending messages
-                    assert_eq!(bob_central.context.count_entities().await.pending_messages, 0);
+                    assert_eq!(bob_central.transaction.count_entities().await.pending_messages, 0);
                 })
             },
         )
@@ -481,7 +486,7 @@ mod tests {
                 Box::pin(async move {
                     let id = conversation_id();
                     alice_central
-                        .context
+                        .transaction
                         .new_conversation(&id, case.credential_type, case.cfg.clone())
                         .await
                         .unwrap();
@@ -489,7 +494,7 @@ mod tests {
 
                     // Alice will never see this commit
                     bob_central
-                        .context
+                        .transaction
                         .conversation(&id)
                         .await
                         .unwrap()
@@ -498,7 +503,7 @@ mod tests {
                         .unwrap();
 
                     let msg1 = bob_central
-                        .context
+                        .transaction
                         .conversation(&id)
                         .await
                         .unwrap()
@@ -506,7 +511,7 @@ mod tests {
                         .await
                         .unwrap();
                     let msg2 = bob_central
-                        .context
+                        .transaction
                         .conversation(&id)
                         .await
                         .unwrap()
@@ -516,7 +521,7 @@ mod tests {
 
                     // Since Alice missed Bob's commit she should buffer this message
                     let decrypt = alice_central
-                        .context
+                        .transaction
                         .conversation(&id)
                         .await
                         .unwrap()
@@ -527,7 +532,7 @@ mod tests {
                         mls::conversation::Error::BufferedFutureMessage { .. }
                     ));
                     let decrypt = alice_central
-                        .context
+                        .transaction
                         .conversation(&id)
                         .await
                         .unwrap()
@@ -537,11 +542,11 @@ mod tests {
                         decrypt.unwrap_err(),
                         mls::conversation::Error::BufferedFutureMessage { .. }
                     ));
-                    assert_eq!(alice_central.context.count_entities().await.pending_messages, 2);
+                    assert_eq!(alice_central.transaction.count_entities().await.pending_messages, 2);
 
                     let gi = bob_central.get_group_info(&id).await;
                     alice_central
-                        .context
+                        .transaction
                         .join_by_external_commit(gi, case.custom_cfg(), case.credential_type)
                         .await
                         .unwrap();
@@ -549,7 +554,7 @@ mod tests {
                     let ext_commit = alice_central.mls_transport.latest_commit_bundle().await;
 
                     bob_central
-                        .context
+                        .transaction
                         .conversation(&id)
                         .await
                         .unwrap()
@@ -557,7 +562,7 @@ mod tests {
                         .await
                         .unwrap();
                     // Alice should have deleted all her buffered messages
-                    assert_eq!(alice_central.context.count_entities().await.pending_messages, 0);
+                    assert_eq!(alice_central.transaction.count_entities().await.pending_messages, 0);
                 })
             },
         )

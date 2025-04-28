@@ -158,7 +158,7 @@ mod tests {
                 Box::pin(async move {
                     let id = conversation_id();
                     alice_central
-                        .context
+                        .transaction
                         .new_conversation(&id, case.credential_type, case.cfg.clone())
                         .await
                         .unwrap();
@@ -169,7 +169,7 @@ mod tests {
 
                     // Alice decrypts the commit...
                     alice_central
-                        .context
+                        .transaction
                         .conversation(&id)
                         .await
                         .unwrap()
@@ -178,25 +178,30 @@ mod tests {
                         .unwrap();
 
                     // Meanwhile Debbie joins the party by creating an external proposal
-                    let epoch = alice_central.context.conversation(&id).await.unwrap().epoch().await;
+                    let epoch = alice_central.transaction.conversation(&id).await.unwrap().epoch().await;
                     let external_proposal = debbie_central
-                        .context
+                        .transaction
                         .new_external_add_proposal(id.clone(), epoch.into(), case.ciphersuite(), case.credential_type)
                         .await
                         .unwrap();
 
                     // ...then Alice generates new messages for this epoch
                     let app_msg = alice_central
-                        .context
+                        .transaction
                         .conversation(&id)
                         .await
                         .unwrap()
                         .encrypt_message(b"Hello Bob !")
                         .await
                         .unwrap();
-                    let proposal = alice_central.context.new_update_proposal(&id).await.unwrap().proposal;
+                    let proposal = alice_central
+                        .transaction
+                        .new_update_proposal(&id)
+                        .await
+                        .unwrap()
+                        .proposal;
                     alice_central
-                        .context
+                        .transaction
                         .conversation(&id)
                         .await
                         .unwrap()
@@ -205,7 +210,7 @@ mod tests {
                         .unwrap();
                     let charlie = charlie_central.rand_key_package(&case).await;
                     alice_central
-                        .context
+                        .transaction
                         .conversation(&id)
                         .await
                         .unwrap()
@@ -214,12 +219,12 @@ mod tests {
                         .unwrap();
                     let commit = alice_central.mls_transport.latest_commit_bundle().await;
                     charlie_central
-                        .context
+                        .transaction
                         .process_welcome_message(commit.welcome.clone().unwrap().into(), case.custom_cfg())
                         .await
                         .unwrap();
                     debbie_central
-                        .context
+                        .transaction
                         .process_welcome_message(commit.welcome.clone().unwrap().into(), case.custom_cfg())
                         .await
                         .unwrap();
@@ -233,7 +238,7 @@ mod tests {
                         .chain(std::iter::once(app_msg));
                     for m in messages {
                         let decrypt = bob_central
-                            .context
+                            .transaction
                             .conversation(&id)
                             .await
                             .unwrap()
@@ -243,7 +248,7 @@ mod tests {
                     }
 
                     // Bob should have buffered the messages
-                    assert_eq!(bob_central.context.count_entities().await.pending_messages, 4);
+                    assert_eq!(bob_central.transaction.count_entities().await.pending_messages, 4);
 
                     let observer = TestEpochObserver::new();
                     bob_central
@@ -258,7 +263,7 @@ mod tests {
                         buffered_messages: Some(restored_messages),
                         ..
                     } = bob_central
-                        .context
+                        .transaction
                         .conversation(&id)
                         .await
                         .unwrap()
@@ -298,7 +303,7 @@ mod tests {
                     assert!(bob_central.try_talk_to(&id, &debbie_central).await.is_ok());
 
                     // After merging we should erase all those pending messages
-                    assert_eq!(bob_central.context.count_entities().await.pending_messages, 0);
+                    assert_eq!(bob_central.transaction.count_entities().await.pending_messages, 0);
                 })
             },
         )
@@ -320,7 +325,7 @@ mod tests {
                 Box::pin(async move {
                     let id = conversation_id();
                     alice_central
-                        .context
+                        .transaction
                         .new_conversation(&id, case.credential_type, case.cfg.clone())
                         .await
                         .unwrap();
@@ -328,7 +333,7 @@ mod tests {
                     // Bob joins the group with an external commit...
                     let gi = alice_central.get_group_info(&id).await;
                     bob_central
-                        .context
+                        .transaction
                         .join_by_external_commit(gi, case.custom_cfg(), case.credential_type)
                         .await
                         .unwrap();
@@ -338,23 +343,23 @@ mod tests {
                     // And before others had the chance to get the commit, Bob will create & send messages in the next epoch
                     // which Alice will have to buffer until she receives the commit.
                     // This simulates what the DS does with unordered messages
-                    let epoch = bob_central.context.conversation(&id).await.unwrap().epoch().await;
+                    let epoch = bob_central.transaction.conversation(&id).await.unwrap().epoch().await;
                     let external_proposal = charlie_central
-                        .context
+                        .transaction
                         .new_external_add_proposal(id.clone(), epoch.into(), case.ciphersuite(), case.credential_type)
                         .await
                         .unwrap();
                     let app_msg = bob_central
-                        .context
+                        .transaction
                         .conversation(&id)
                         .await
                         .unwrap()
                         .encrypt_message(b"Hello Alice !")
                         .await
                         .unwrap();
-                    let proposal = bob_central.context.new_update_proposal(&id).await.unwrap().proposal;
+                    let proposal = bob_central.transaction.new_update_proposal(&id).await.unwrap().proposal;
                     bob_central
-                        .context
+                        .transaction
                         .conversation(&id)
                         .await
                         .unwrap()
@@ -363,7 +368,7 @@ mod tests {
                         .unwrap();
                     let debbie = debbie_central.rand_key_package(&case).await;
                     bob_central
-                        .context
+                        .transaction
                         .conversation(&id)
                         .await
                         .unwrap()
@@ -372,12 +377,12 @@ mod tests {
                         .unwrap();
                     let commit = bob_central.mls_transport.latest_commit_bundle().await;
                     charlie_central
-                        .context
+                        .transaction
                         .process_welcome_message(commit.welcome.clone().unwrap().into(), case.custom_cfg())
                         .await
                         .unwrap();
                     debbie_central
-                        .context
+                        .transaction
                         .process_welcome_message(commit.welcome.clone().unwrap().into(), case.custom_cfg())
                         .await
                         .unwrap();
@@ -390,7 +395,7 @@ mod tests {
                         .map(|m| m.to_bytes().unwrap());
                     for m in messages {
                         let decrypt = alice_central
-                            .context
+                            .transaction
                             .conversation(&id)
                             .await
                             .unwrap()
@@ -399,7 +404,7 @@ mod tests {
                         assert!(matches!(decrypt.unwrap_err(), Error::BufferedFutureMessage { .. }));
                     }
                     let decrypt = alice_central
-                        .context
+                        .transaction
                         .conversation(&id)
                         .await
                         .unwrap()
@@ -408,7 +413,7 @@ mod tests {
                     assert!(matches!(decrypt.unwrap_err(), Error::BufferedFutureMessage { .. }));
 
                     // Alice should have buffered the messages
-                    assert_eq!(alice_central.context.count_entities().await.pending_messages, 4);
+                    assert_eq!(alice_central.transaction.count_entities().await.pending_messages, 4);
 
                     let observer = TestEpochObserver::new();
                     alice_central
@@ -424,7 +429,7 @@ mod tests {
                         buffered_messages: Some(restored_messages),
                         ..
                     } = alice_central
-                        .context
+                        .transaction
                         .conversation(&id)
                         .await
                         .unwrap()
@@ -463,7 +468,7 @@ mod tests {
                     assert!(alice_central.try_talk_to(&id, &debbie_central).await.is_ok());
 
                     // After merging we should erase all those pending messages
-                    assert_eq!(alice_central.context.count_entities().await.pending_messages, 0);
+                    assert_eq!(alice_central.transaction.count_entities().await.pending_messages, 0);
                 })
             },
         )
@@ -499,14 +504,14 @@ mod tests {
                     let signature_key = external_0.client_signature_key(&case).await.as_slice().to_vec();
                     let mut config = case.cfg.clone();
                     observer
-                        .context
+                        .transaction
                         .set_raw_external_senders(&mut config, vec![signature_key])
                         .await
                         .unwrap();
 
                     // create and initialize the conversation
                     observer
-                        .context
+                        .transaction
                         .new_conversation(&conv_id, case.credential_type, config)
                         .await
                         .unwrap();
@@ -565,7 +570,7 @@ mod tests {
                     // now our observer receives these messages out of order
                     println!("observer executing first proposal");
                     observer
-                        .context
+                        .transaction
                         .conversation(&conv_id)
                         .await
                         .unwrap()
@@ -574,7 +579,7 @@ mod tests {
                         .unwrap();
                     println!("observer executing second proposal");
                     let result = observer
-                        .context
+                        .transaction
                         .conversation(&conv_id)
                         .await
                         .unwrap()
@@ -586,7 +591,7 @@ mod tests {
                     ));
                     println!("executing commit adding new user");
                     observer
-                        .context
+                        .transaction
                         .conversation(&conv_id)
                         .await
                         .unwrap()
@@ -598,7 +603,7 @@ mod tests {
                     println!("new_member executing first proposal");
                     assert!(matches!(
                         new_member
-                            .context
+                            .transaction
                             .conversation(&conv_id)
                             .await
                             .unwrap()
@@ -609,7 +614,7 @@ mod tests {
                     ));
                     println!("new_member executing second proposal");
                     new_member
-                        .context
+                        .transaction
                         .conversation(&conv_id)
                         .await
                         .unwrap()
@@ -629,7 +634,7 @@ mod tests {
                             .unwrap();
 
                     member_27
-                        .context
+                        .transaction
                         .conversation(&conv_id)
                         .await
                         .unwrap()
@@ -637,7 +642,7 @@ mod tests {
                         .await
                         .unwrap();
                     let result = member_27
-                        .context
+                        .transaction
                         .conversation(&conv_id)
                         .await
                         .unwrap()
@@ -648,7 +653,7 @@ mod tests {
                         Error::BufferedFutureMessage { message_epoch: 2 }
                     ));
                     member_27
-                        .context
+                        .transaction
                         .conversation(&conv_id)
                         .await
                         .unwrap()
@@ -656,7 +661,7 @@ mod tests {
                         .await
                         .unwrap();
                     member_27
-                        .context
+                        .transaction
                         .conversation(&conv_id)
                         .await
                         .unwrap()
@@ -665,7 +670,7 @@ mod tests {
                         .unwrap();
 
                     member_27
-                        .context
+                        .transaction
                         .conversation(&conv_id)
                         .await
                         .unwrap()
@@ -677,7 +682,7 @@ mod tests {
                     // In this case, note that observer receives the proposal before the commit.
                     // This is the straightforward ordering and easy to deal with.
                     observer
-                        .context
+                        .transaction
                         .conversation(&conv_id)
                         .await
                         .unwrap()
@@ -685,7 +690,7 @@ mod tests {
                         .await
                         .unwrap();
                     observer
-                        .context
+                        .transaction
                         .conversation(&conv_id)
                         .await
                         .unwrap()
@@ -696,7 +701,7 @@ mod tests {
                     // In this case, new_member receives the commit before the proposal. This means that
                     // the commit has to be buffered until the proposal it references is received.
                     let result = new_member
-                        .context
+                        .transaction
                         .conversation(&conv_id)
                         .await
                         .unwrap()
@@ -704,7 +709,7 @@ mod tests {
                         .await;
                     assert!(matches!(result.unwrap_err(), Error::BufferedCommit));
                     new_member
-                        .context
+                        .transaction
                         .conversation(&conv_id)
                         .await
                         .unwrap()

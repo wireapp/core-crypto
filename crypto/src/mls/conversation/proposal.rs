@@ -181,7 +181,7 @@ mod tests {
                     Box::pin(async move {
                         let id = conversation_id();
                         alice_central
-                            .context
+                            .transaction
                             .new_conversation(&id, case.credential_type, case.cfg.clone())
                             .await
                             .unwrap();
@@ -190,14 +190,14 @@ mod tests {
 
                         assert!(alice_central.pending_proposals(&id).await.is_empty());
                         let proposal = alice_central
-                            .context
+                            .transaction
                             .new_add_proposal(&id, charlie_kp)
                             .await
                             .unwrap()
                             .proposal;
                         assert_eq!(alice_central.pending_proposals(&id).await.len(), 1);
                         bob_central
-                            .context
+                            .transaction
                             .conversation(&id)
                             .await
                             .unwrap()
@@ -205,7 +205,7 @@ mod tests {
                             .await
                             .unwrap();
                         bob_central
-                            .context
+                            .transaction
                             .conversation(&id)
                             .await
                             .unwrap()
@@ -219,7 +219,7 @@ mod tests {
                         // if 'new_proposal' wasn't durable this would fail because proposal would
                         // not be referenced in commit
                         alice_central
-                            .context
+                            .transaction
                             .conversation(&id)
                             .await
                             .unwrap()
@@ -258,7 +258,7 @@ mod tests {
                     Box::pin(async move {
                         let id = conversation_id();
                         alice_central
-                            .context
+                            .transaction
                             .new_conversation(&id, case.credential_type, case.cfg.clone())
                             .await
                             .unwrap();
@@ -269,14 +269,14 @@ mod tests {
 
                         assert!(alice_central.pending_proposals(&id).await.is_empty());
                         let proposal = alice_central
-                            .context
+                            .transaction
                             .new_remove_proposal(&id, charlie_central.get_client_id().await)
                             .await
                             .unwrap()
                             .proposal;
                         assert_eq!(alice_central.pending_proposals(&id).await.len(), 1);
                         bob_central
-                            .context
+                            .transaction
                             .conversation(&id)
                             .await
                             .unwrap()
@@ -284,7 +284,7 @@ mod tests {
                             .await
                             .unwrap();
                         bob_central
-                            .context
+                            .transaction
                             .conversation(&id)
                             .await
                             .unwrap()
@@ -297,7 +297,7 @@ mod tests {
                         // if 'new_proposal' wasn't durable this would fail because proposal would
                         // not be referenced in commit
                         alice_central
-                            .context
+                            .transaction
                             .conversation(&id)
                             .await
                             .unwrap()
@@ -322,7 +322,7 @@ mod tests {
                 Box::pin(async move {
                     let id = conversation_id();
                     alice_central
-                        .context
+                        .transaction
                         .new_conversation(&id, case.credential_type, case.cfg.clone())
                         .await
                         .unwrap();
@@ -343,9 +343,14 @@ mod tests {
                         .encryption_key_of(&id, alice_central.get_client_id().await)
                         .await;
 
-                    let proposal = alice_central.context.new_update_proposal(&id).await.unwrap().proposal;
+                    let proposal = alice_central
+                        .transaction
+                        .new_update_proposal(&id)
+                        .await
+                        .unwrap()
+                        .proposal;
                     bob_central
-                        .context
+                        .transaction
                         .conversation(&id)
                         .await
                         .unwrap()
@@ -353,7 +358,7 @@ mod tests {
                         .await
                         .unwrap();
                     bob_central
-                        .context
+                        .transaction
                         .conversation(&id)
                         .await
                         .unwrap()
@@ -380,7 +385,7 @@ mod tests {
                     // if 'new_proposal' wasn't durable this would fail because proposal would
                     // not be referenced in commit
                     alice_central
-                        .context
+                        .transaction
                         .conversation(&id)
                         .await
                         .unwrap()
@@ -413,16 +418,21 @@ mod tests {
                 Box::pin(async move {
                     let id = conversation_id();
                     alice_central
-                        .context
+                        .transaction
                         .new_conversation(&id, case.credential_type, case.cfg.clone())
                         .await
                         .unwrap();
                     alice_central.invite_all(&case, &id, [&bob_central]).await.unwrap();
 
-                    let proposal = alice_central.context.new_update_proposal(&id).await.unwrap().proposal;
+                    let proposal = alice_central
+                        .transaction
+                        .new_update_proposal(&id)
+                        .await
+                        .unwrap()
+                        .proposal;
 
                     bob_central
-                        .context
+                        .transaction
                         .conversation(&id)
                         .await
                         .unwrap()
@@ -430,7 +440,7 @@ mod tests {
                         .await
                         .unwrap();
                     bob_central
-                        .context
+                        .transaction
                         .conversation(&id)
                         .await
                         .unwrap()
@@ -441,7 +451,7 @@ mod tests {
 
                     // fails when we try to decrypt a proposal for past epoch
                     let past_proposal = bob_central
-                        .context
+                        .transaction
                         .conversation(&id)
                         .await
                         .unwrap()

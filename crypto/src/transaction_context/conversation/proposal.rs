@@ -88,14 +88,14 @@ mod tests {
                 Box::pin(async move {
                     let id = conversation_id();
                     alice_central
-                        .context
+                        .transaction
                         .new_conversation(&id, case.credential_type, case.cfg.clone())
                         .await
                         .unwrap();
                     let bob_kp = bob_central.get_one_key_package(&case).await;
-                    alice_central.context.new_add_proposal(&id, bob_kp).await.unwrap();
+                    alice_central.transaction.new_add_proposal(&id, bob_kp).await.unwrap();
                     alice_central
-                        .context
+                        .transaction
                         .conversation(&id)
                         .await
                         .unwrap()
@@ -105,7 +105,7 @@ mod tests {
                     let welcome = alice_central.mls_transport.latest_welcome_message().await;
                     assert_eq!(alice_central.get_conversation_unchecked(&id).await.members().len(), 2);
                     let new_id = bob_central
-                        .context
+                        .transaction
                         .process_welcome_message(welcome.into(), case.custom_cfg())
                         .await
                         .unwrap()
@@ -129,7 +129,7 @@ mod tests {
                 Box::pin(async move {
                     let id = conversation_id();
                     central
-                        .context
+                        .transaction
                         .new_conversation(&id, case.credential_type, case.cfg.clone())
                         .await
                         .unwrap();
@@ -139,9 +139,9 @@ mod tests {
                         .encryption_keys()
                         .find_or_first(|_| true)
                         .unwrap();
-                    central.context.new_update_proposal(&id).await.unwrap();
+                    central.transaction.new_update_proposal(&id).await.unwrap();
                     central
-                        .context
+                        .transaction
                         .conversation(&id)
                         .await
                         .unwrap()
@@ -171,7 +171,7 @@ mod tests {
                 Box::pin(async move {
                     let id = conversation_id();
                     alice_central
-                        .context
+                        .transaction
                         .new_conversation(&id, case.credential_type, case.cfg.clone())
                         .await
                         .unwrap();
@@ -180,12 +180,12 @@ mod tests {
                     assert_eq!(bob_central.get_conversation_unchecked(&id).await.members().len(), 2);
 
                     let remove_proposal = alice_central
-                        .context
+                        .transaction
                         .new_remove_proposal(&id, bob_central.get_client_id().await)
                         .await
                         .unwrap();
                     bob_central
-                        .context
+                        .transaction
                         .conversation(&id)
                         .await
                         .unwrap()
@@ -193,7 +193,7 @@ mod tests {
                         .await
                         .unwrap();
                     alice_central
-                        .context
+                        .transaction
                         .conversation(&id)
                         .await
                         .unwrap()
@@ -204,7 +204,7 @@ mod tests {
 
                     let commit = alice_central.mls_transport.latest_commit().await;
                     bob_central
-                        .context
+                        .transaction
                         .conversation(&id)
                         .await
                         .unwrap()
@@ -212,7 +212,7 @@ mod tests {
                         .await
                         .unwrap();
                     assert!(matches!(
-                        bob_central.context.conversation(&id).await.unwrap_err(),
+                        bob_central.transaction.conversation(&id).await.unwrap_err(),
                         Error::Leaf(LeafError::ConversationNotFound(conv_id)) if conv_id == id
                     ));
                 })
@@ -227,13 +227,13 @@ mod tests {
                 Box::pin(async move {
                     let id = conversation_id();
                     alice_central
-                        .context
+                        .transaction
                         .new_conversation(&id, case.credential_type, case.cfg.clone())
                         .await
                         .unwrap();
 
                     let remove_proposal = alice_central
-                        .context
+                        .transaction
                         .new_remove_proposal(&id, b"unknown"[..].into())
                         .await;
                     assert!(matches!(

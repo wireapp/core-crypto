@@ -279,7 +279,7 @@ mod tests {
 
             assert_eq!(
                 alice_central
-                    .context
+                    .transaction
                     .conversation(&id)
                     .await
                     .unwrap()
@@ -298,7 +298,7 @@ mod tests {
             alice_central.try_talk_to(&id, &bob_central).await.unwrap();
             assert_eq!(
                 alice_central
-                    .context
+                    .transaction
                     .conversation(&id)
                     .await
                     .unwrap()
@@ -331,7 +331,7 @@ mod tests {
 
             assert_eq!(
                 alice_central
-                    .context
+                    .transaction
                     .conversation(&id)
                     .await
                     .unwrap()
@@ -343,7 +343,7 @@ mod tests {
 
             assert_eq!(
                 bob_central
-                    .context
+                    .transaction
                     .conversation(&id)
                     .await
                     .unwrap()
@@ -356,7 +356,7 @@ mod tests {
             alice_central.try_talk_to(&id, &bob_central).await.unwrap();
             assert_eq!(
                 alice_central
-                    .context
+                    .transaction
                     .conversation(&id)
                     .await
                     .unwrap()
@@ -368,7 +368,7 @@ mod tests {
 
             assert_eq!(
                 bob_central
-                    .context
+                    .transaction
                     .conversation(&id)
                     .await
                     .unwrap()
@@ -410,7 +410,7 @@ mod tests {
                 .unwrap();
 
             let charlie_context = SessionContext {
-                context: charlie_transaction,
+                transaction: charlie_transaction,
                 session: charlie_central,
                 mls_transport: Arc::<CoreCryptoTransportSuccessProvider>::default(),
                 x509_test_chain: Arc::new(Some(x509_test_chain)),
@@ -427,7 +427,7 @@ mod tests {
 
             assert_eq!(
                 alice_central
-                    .context
+                    .transaction
                     .conversation(&id)
                     .await
                     .unwrap()
@@ -441,7 +441,7 @@ mod tests {
 
             assert_eq!(
                 alice_central
-                    .context
+                    .transaction
                     .conversation(&id)
                     .await
                     .unwrap()
@@ -552,7 +552,7 @@ mod tests {
             x509_test_chain.register_with_central(&creator_transaction).await;
         }
         let creator_session_context = SessionContext {
-            context: creator_transaction.clone(),
+            transaction: creator_transaction.clone(),
             session: creator_central,
             mls_transport: creator_transport.clone(),
             x509_test_chain: Arc::new(x509_test_chain.cloned()),
@@ -607,7 +607,7 @@ mod tests {
             .map_err(RecursiveError::transaction("creating new transaction"))?;
 
         let guest_session_context = SessionContext {
-            context: guest_transaction.clone(),
+            transaction: guest_transaction.clone(),
             session: guest_central,
             mls_transport: guest_transport.clone(),
             x509_test_chain: Arc::new(x509_test_chain.cloned()),

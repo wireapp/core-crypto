@@ -184,19 +184,19 @@ mod tests {
                     Box::pin(async move {
                         let id = conversation_id();
                         alice_central
-                            .context
+                            .transaction
                             .new_conversation(&id, case.credential_type, case.cfg.clone())
                             .await
                             .unwrap();
                         alice_central.invite_all(&case, &id, [&bob_central]).await.unwrap();
 
                         assert!(alice_central.pending_proposals(&id).await.is_empty());
-                        alice_central.context.new_update_proposal(&id).await.unwrap();
+                        alice_central.transaction.new_update_proposal(&id).await.unwrap();
                         assert_eq!(alice_central.pending_proposals(&id).await.len(), 1);
 
                         // Bob hasn't Alice's proposal but creates a commit
                         bob_central
-                            .context
+                            .transaction
                             .conversation(&id)
                             .await
                             .unwrap()
@@ -206,7 +206,7 @@ mod tests {
                         let commit = bob_central.mls_transport.latest_commit().await;
 
                         let proposals = alice_central
-                            .context
+                            .transaction
                             .conversation(&id)
                             .await
                             .unwrap()
@@ -220,7 +220,7 @@ mod tests {
 
                         // It should also renew the proposal when in pending_commit
                         bob_central
-                            .context
+                            .transaction
                             .conversation(&id)
                             .await
                             .unwrap()
@@ -229,7 +229,7 @@ mod tests {
                             .unwrap();
                         let commit = bob_central.mls_transport.latest_commit().await;
                         let proposals = alice_central
-                            .context
+                            .transaction
                             .conversation(&id)
                             .await
                             .unwrap()
@@ -257,19 +257,24 @@ mod tests {
                     Box::pin(async move {
                         let id = conversation_id();
                         alice_central
-                            .context
+                            .transaction
                             .new_conversation(&id, case.credential_type, case.cfg.clone())
                             .await
                             .unwrap();
                         alice_central.invite_all(&case, &id, [&bob_central]).await.unwrap();
 
                         assert!(alice_central.pending_proposals(&id).await.is_empty());
-                        let proposal = alice_central.context.new_update_proposal(&id).await.unwrap().proposal;
+                        let proposal = alice_central
+                            .transaction
+                            .new_update_proposal(&id)
+                            .await
+                            .unwrap()
+                            .proposal;
                         assert_eq!(alice_central.pending_proposals(&id).await.len(), 1);
 
                         // Bob has Alice's update proposal
                         bob_central
-                            .context
+                            .transaction
                             .conversation(&id)
                             .await
                             .unwrap()
@@ -278,7 +283,7 @@ mod tests {
                             .unwrap();
 
                         bob_central
-                            .context
+                            .transaction
                             .conversation(&id)
                             .await
                             .unwrap()
@@ -289,7 +294,7 @@ mod tests {
 
                         // Bob's commit has Alice's proposal
                         let proposals = alice_central
-                            .context
+                            .transaction
                             .conversation(&id)
                             .await
                             .unwrap()
@@ -301,9 +306,14 @@ mod tests {
                         assert!(alice_central.pending_proposals(&id).await.is_empty());
                         assert_eq!(proposals.len(), alice_central.pending_proposals(&id).await.len());
 
-                        let proposal = alice_central.context.new_update_proposal(&id).await.unwrap().proposal;
+                        let proposal = alice_central
+                            .transaction
+                            .new_update_proposal(&id)
+                            .await
+                            .unwrap()
+                            .proposal;
                         bob_central
-                            .context
+                            .transaction
                             .conversation(&id)
                             .await
                             .unwrap()
@@ -311,7 +321,7 @@ mod tests {
                             .await
                             .unwrap();
                         bob_central
-                            .context
+                            .transaction
                             .conversation(&id)
                             .await
                             .unwrap()
@@ -320,7 +330,7 @@ mod tests {
                             .unwrap();
                         let commit = bob_central.mls_transport.latest_commit().await;
                         let proposals = alice_central
-                            .context
+                            .transaction
                             .conversation(&id)
                             .await
                             .unwrap()
@@ -347,7 +357,7 @@ mod tests {
                     Box::pin(async move {
                         let id = conversation_id();
                         alice_central
-                            .context
+                            .transaction
                             .new_conversation(&id, case.credential_type, case.cfg.clone())
                             .await
                             .unwrap();
@@ -356,10 +366,10 @@ mod tests {
                             .await
                             .unwrap();
 
-                        let proposal = bob_central.context.new_update_proposal(&id).await.unwrap().proposal;
+                        let proposal = bob_central.transaction.new_update_proposal(&id).await.unwrap().proposal;
                         assert!(alice_central.pending_proposals(&id).await.is_empty());
                         alice_central
-                            .context
+                            .transaction
                             .conversation(&id)
                             .await
                             .unwrap()
@@ -370,7 +380,7 @@ mod tests {
 
                         // Charlie does not have other proposals, it creates a commit
                         charlie_central
-                            .context
+                            .transaction
                             .conversation(&id)
                             .await
                             .unwrap()
@@ -379,7 +389,7 @@ mod tests {
                             .unwrap();
                         let commit = charlie_central.mls_transport.latest_commit().await;
                         let proposals = alice_central
-                            .context
+                            .transaction
                             .conversation(&id)
                             .await
                             .unwrap()
@@ -410,7 +420,7 @@ mod tests {
                     Box::pin(async move {
                         let id = conversation_id();
                         alice_central
-                            .context
+                            .transaction
                             .new_conversation(&id, case.credential_type, case.cfg.clone())
                             .await
                             .unwrap();
@@ -418,12 +428,16 @@ mod tests {
 
                         let charlie_kp = charlie_central.get_one_key_package(&case).await;
                         assert!(alice_central.pending_proposals(&id).await.is_empty());
-                        alice_central.context.new_add_proposal(&id, charlie_kp).await.unwrap();
+                        alice_central
+                            .transaction
+                            .new_add_proposal(&id, charlie_kp)
+                            .await
+                            .unwrap();
                         assert_eq!(alice_central.pending_proposals(&id).await.len(), 1);
 
                         let charlie = charlie_central.rand_key_package(&case).await;
                         bob_central
-                            .context
+                            .transaction
                             .conversation(&id)
                             .await
                             .unwrap()
@@ -432,7 +446,7 @@ mod tests {
                             .unwrap();
                         let commit = bob_central.mls_transport.latest_commit().await;
                         let proposals = alice_central
-                            .context
+                            .transaction
                             .conversation(&id)
                             .await
                             .unwrap()
@@ -459,7 +473,7 @@ mod tests {
                     Box::pin(async move {
                         let id = conversation_id();
                         alice_central
-                            .context
+                            .transaction
                             .new_conversation(&id, case.credential_type, case.cfg.clone())
                             .await
                             .unwrap();
@@ -467,7 +481,11 @@ mod tests {
 
                         let charlie_kp = charlie_central.get_one_key_package(&case).await;
                         assert!(alice_central.pending_proposals(&id).await.is_empty());
-                        alice_central.context.new_add_proposal(&id, charlie_kp).await.unwrap();
+                        alice_central
+                            .transaction
+                            .new_add_proposal(&id, charlie_kp)
+                            .await
+                            .unwrap();
                         assert_eq!(alice_central.pending_proposals(&id).await.len(), 1);
 
                         // Here Alice also creates a commit
@@ -476,7 +494,7 @@ mod tests {
 
                         let charlie = charlie_central.rand_key_package(&case).await;
                         bob_central
-                            .context
+                            .transaction
                             .conversation(&id)
                             .await
                             .unwrap()
@@ -485,7 +503,7 @@ mod tests {
                             .unwrap();
                         let commit = bob_central.mls_transport.latest_commit().await;
                         let proposals = alice_central
-                            .context
+                            .transaction
                             .conversation(&id)
                             .await
                             .unwrap()
@@ -512,7 +530,7 @@ mod tests {
                     Box::pin(async move {
                         let id = conversation_id();
                         alice_central
-                            .context
+                            .transaction
                             .new_conversation(&id, case.credential_type, case.cfg.clone())
                             .await
                             .unwrap();
@@ -524,13 +542,13 @@ mod tests {
                         // Bob will propose adding Debbie
                         let debbie_kp = debbie_central.get_one_key_package(&case).await;
                         let proposal = bob_central
-                            .context
+                            .transaction
                             .new_add_proposal(&id, debbie_kp)
                             .await
                             .unwrap()
                             .proposal;
                         alice_central
-                            .context
+                            .transaction
                             .conversation(&id)
                             .await
                             .unwrap()
@@ -541,7 +559,7 @@ mod tests {
 
                         // But Charlie will commit meanwhile
                         charlie_central
-                            .context
+                            .transaction
                             .conversation(&id)
                             .await
                             .unwrap()
@@ -550,7 +568,7 @@ mod tests {
                             .unwrap();
                         let commit = charlie_central.mls_transport.latest_commit().await;
                         let proposals = alice_central
-                            .context
+                            .transaction
                             .conversation(&id)
                             .await
                             .unwrap()
@@ -577,7 +595,7 @@ mod tests {
                     Box::pin(async move {
                         let id = conversation_id();
                         alice_central
-                            .context
+                            .transaction
                             .new_conversation(&id, case.credential_type, case.cfg.clone())
                             .await
                             .unwrap();
@@ -586,12 +604,16 @@ mod tests {
                         // Alice proposes adding Charlie
                         let charlie_kp = charlie_central.get_one_key_package(&case).await;
                         assert!(alice_central.pending_proposals(&id).await.is_empty());
-                        alice_central.context.new_add_proposal(&id, charlie_kp).await.unwrap();
+                        alice_central
+                            .transaction
+                            .new_add_proposal(&id, charlie_kp)
+                            .await
+                            .unwrap();
                         assert_eq!(alice_central.pending_proposals(&id).await.len(), 1);
 
                         // But meanwhile Bob will create a commit without Alice's proposal
                         bob_central
-                            .context
+                            .transaction
                             .conversation(&id)
                             .await
                             .unwrap()
@@ -600,7 +622,7 @@ mod tests {
                             .unwrap();
                         let commit = bob_central.mls_transport.latest_commit().await;
                         let proposals = alice_central
-                            .context
+                            .transaction
                             .conversation(&id)
                             .await
                             .unwrap()
@@ -616,7 +638,7 @@ mod tests {
                         alice_central.commit_pending_proposals_unmerged(&id).await;
                         assert!(alice_central.pending_commit(&id).await.is_some());
                         bob_central
-                            .context
+                            .transaction
                             .conversation(&id)
                             .await
                             .unwrap()
@@ -625,7 +647,7 @@ mod tests {
                             .unwrap();
                         let commit = bob_central.mls_transport.latest_commit().await;
                         let proposals = alice_central
-                            .context
+                            .transaction
                             .conversation(&id)
                             .await
                             .unwrap()
@@ -653,7 +675,7 @@ mod tests {
                     Box::pin(async move {
                         let id = conversation_id();
                         alice_central
-                            .context
+                            .transaction
                             .new_conversation(&id, case.credential_type, case.cfg.clone())
                             .await
                             .unwrap();
@@ -665,7 +687,7 @@ mod tests {
 
                         // But meanwhile Bob will create a commit
                         bob_central
-                            .context
+                            .transaction
                             .conversation(&id)
                             .await
                             .unwrap()
@@ -674,7 +696,7 @@ mod tests {
                             .unwrap();
                         let commit = bob_central.mls_transport.latest_commit().await;
                         let proposals = alice_central
-                            .context
+                            .transaction
                             .conversation(&id)
                             .await
                             .unwrap()
@@ -705,7 +727,7 @@ mod tests {
                     Box::pin(async move {
                         let id = conversation_id();
                         alice_central
-                            .context
+                            .transaction
                             .new_conversation(&id, case.credential_type, case.cfg.clone())
                             .await
                             .unwrap();
@@ -716,14 +738,14 @@ mod tests {
 
                         assert!(alice_central.pending_proposals(&id).await.is_empty());
                         alice_central
-                            .context
+                            .transaction
                             .new_remove_proposal(&id, charlie_central.get_client_id().await)
                             .await
                             .unwrap();
                         assert_eq!(alice_central.pending_proposals(&id).await.len(), 1);
 
                         bob_central
-                            .context
+                            .transaction
                             .conversation(&id)
                             .await
                             .unwrap()
@@ -732,7 +754,7 @@ mod tests {
                             .unwrap();
                         let commit = bob_central.mls_transport.latest_commit().await;
                         let proposals = alice_central
-                            .context
+                            .transaction
                             .conversation(&id)
                             .await
                             .unwrap()
@@ -759,7 +781,7 @@ mod tests {
                     Box::pin(async move {
                         let id = conversation_id();
                         alice_central
-                            .context
+                            .transaction
                             .new_conversation(&id, case.credential_type, case.cfg.clone())
                             .await
                             .unwrap();
@@ -769,14 +791,14 @@ mod tests {
                             .unwrap();
 
                         let proposal = bob_central
-                            .context
+                            .transaction
                             .new_remove_proposal(&id, charlie_central.get_client_id().await)
                             .await
                             .unwrap()
                             .proposal;
                         assert!(alice_central.pending_proposals(&id).await.is_empty());
                         alice_central
-                            .context
+                            .transaction
                             .conversation(&id)
                             .await
                             .unwrap()
@@ -786,7 +808,7 @@ mod tests {
                         assert_eq!(alice_central.pending_proposals(&id).await.len(), 1);
 
                         charlie_central
-                            .context
+                            .transaction
                             .conversation(&id)
                             .await
                             .unwrap()
@@ -795,7 +817,7 @@ mod tests {
                             .unwrap();
                         let commit = charlie_central.mls_transport.latest_commit().await;
                         let proposals = alice_central
-                            .context
+                            .transaction
                             .conversation(&id)
                             .await
                             .unwrap()
@@ -822,7 +844,7 @@ mod tests {
                     Box::pin(async move {
                         let id = conversation_id();
                         alice_central
-                            .context
+                            .transaction
                             .new_conversation(&id, case.credential_type, case.cfg.clone())
                             .await
                             .unwrap();
@@ -834,7 +856,7 @@ mod tests {
                         // Alice wants to remove Charlie
                         assert!(alice_central.pending_proposals(&id).await.is_empty());
                         alice_central
-                            .context
+                            .transaction
                             .new_remove_proposal(&id, charlie_central.get_client_id().await)
                             .await
                             .unwrap();
@@ -842,7 +864,7 @@ mod tests {
 
                         // Whereas Bob wants to remove Debbie
                         bob_central
-                            .context
+                            .transaction
                             .conversation(&id)
                             .await
                             .unwrap()
@@ -851,7 +873,7 @@ mod tests {
                             .unwrap();
                         let commit = bob_central.mls_transport.latest_commit().await;
                         let proposals = alice_central
-                            .context
+                            .transaction
                             .conversation(&id)
                             .await
                             .unwrap()
@@ -878,7 +900,7 @@ mod tests {
                     Box::pin(async move {
                         let id = conversation_id();
                         alice_central
-                            .context
+                            .transaction
                             .new_conversation(&id, case.credential_type, case.cfg.clone())
                             .await
                             .unwrap();
@@ -889,7 +911,7 @@ mod tests {
 
                         // Alice wants to remove Charlie
                         alice_central
-                            .context
+                            .transaction
                             .new_remove_proposal(&id, charlie_central.get_client_id().await)
                             .await
                             .unwrap();
@@ -898,7 +920,7 @@ mod tests {
 
                         // Whereas Bob wants to remove Debbie
                         bob_central
-                            .context
+                            .transaction
                             .conversation(&id)
                             .await
                             .unwrap()
@@ -907,7 +929,7 @@ mod tests {
                             .unwrap();
                         let commit = bob_central.mls_transport.latest_commit().await;
                         let proposals = alice_central
-                            .context
+                            .transaction
                             .conversation(&id)
                             .await
                             .unwrap()
@@ -934,7 +956,7 @@ mod tests {
                     Box::pin(async move {
                         let id = conversation_id();
                         alice_central
-                            .context
+                            .transaction
                             .new_conversation(&id, case.credential_type, case.cfg.clone())
                             .await
                             .unwrap();
@@ -945,7 +967,7 @@ mod tests {
 
                         // Alice wants to remove Charlie
                         alice_central
-                            .context
+                            .transaction
                             .new_remove_proposal(&id, charlie_central.get_client_id().await)
                             .await
                             .unwrap();
@@ -953,7 +975,7 @@ mod tests {
 
                         // Whereas Bob wants to remove Debbie
                         bob_central
-                            .context
+                            .transaction
                             .conversation(&id)
                             .await
                             .unwrap()
@@ -962,7 +984,7 @@ mod tests {
                             .unwrap();
                         let commit = bob_central.mls_transport.latest_commit().await;
                         let proposals = alice_central
-                            .context
+                            .transaction
                             .conversation(&id)
                             .await
                             .unwrap()

@@ -117,7 +117,7 @@ pub(crate) async fn failsafe_ctx(
     let x509_test_chain = found_test_chain.as_ref().as_ref().unwrap();
 
     for ctx in ctxs {
-        let _ = x509_test_chain.register_with_central(&ctx.context).await;
+        let _ = x509_test_chain.register_with_central(&ctx.transaction).await;
     }
     found_test_chain
 }
@@ -147,11 +147,11 @@ pub(crate) async fn e2ei_enrollment<'a>(
     // used to verify persisting the instance actually does restore it entirely
     restore: impl Fn(E2eiEnrollment, &'a TransactionContext) -> RestoreFnReturn<'a>,
 ) -> Result<(E2eiEnrollment, String)> {
-    x509_test_chain.register_with_central(&ctx.context).await;
+    x509_test_chain.register_with_central(&ctx.transaction).await;
     #[cfg(not(target_family = "wasm"))]
     {
         let backend = ctx
-            .context
+            .transaction
             .mls_provider()
             .await
             .map_err(RecursiveError::transaction("getting mls provider"))?;
@@ -168,7 +168,7 @@ pub(crate) async fn e2ei_enrollment<'a>(
     }
 
     let wrapper = E2eiInitWrapper {
-        context: &ctx.context,
+        context: &ctx.transaction,
         case,
     };
     let mut enrollment = init(wrapper).await?;
@@ -176,7 +176,7 @@ pub(crate) async fn e2ei_enrollment<'a>(
     #[cfg(not(target_family = "wasm"))]
     {
         let backend = ctx
-            .context
+            .transaction
             .mls_provider()
             .await
             .map_err(RecursiveError::transaction("getting mls provider"))?;
@@ -204,7 +204,7 @@ pub(crate) async fn e2ei_enrollment<'a>(
     let directory = serde_json::to_vec(&directory)?;
     enrollment.directory_response(directory)?;
 
-    let mut enrollment = restore(enrollment, &ctx.context).await;
+    let mut enrollment = restore(enrollment, &ctx.transaction).await;
 
     let previous_nonce = "YUVndEZQVTV6ZUNlUkJxRG10c0syQmNWeW1kanlPbjM";
     let _account_req = enrollment.new_account_request(previous_nonce.to_string())?;
@@ -216,7 +216,7 @@ pub(crate) async fn e2ei_enrollment<'a>(
     let account_resp = serde_json::to_vec(&account_resp)?;
     enrollment.new_account_response(account_resp)?;
 
-    let enrollment = restore(enrollment, &ctx.context).await;
+    let enrollment = restore(enrollment, &ctx.transaction).await;
 
     let _order_req = enrollment.new_order_request(previous_nonce.to_string()).unwrap();
     let client_id = match client_id {
@@ -253,7 +253,7 @@ pub(crate) async fn e2ei_enrollment<'a>(
     let order_resp = serde_json::to_vec(&order_resp)?;
     let new_order = enrollment.new_order_response(order_resp)?;
 
-    let mut enrollment = restore(enrollment, &ctx.context).await;
+    let mut enrollment = restore(enrollment, &ctx.transaction).await;
 
     let order_url = "https://example.com/acme/wire-acme/order/C7uOXEgg5KPMPtbdE3aVMzv7cJjwUVth";
 
@@ -305,7 +305,7 @@ pub(crate) async fn e2ei_enrollment<'a>(
     let device_authz_resp = serde_json::to_vec(&device_authz_resp)?;
     enrollment.new_authz_response(device_authz_resp)?;
 
-    let enrollment = restore(enrollment, &ctx.context).await;
+    let enrollment = restore(enrollment, &ctx.transaction).await;
 
     let backend_nonce = "U09ZR0tnWE5QS1ozS2d3bkF2eWJyR3ZVUHppSTJsMnU";
     let _dpop_token = enrollment.create_dpop_token(3600, backend_nonce.to_string())?;
@@ -322,7 +322,7 @@ pub(crate) async fn e2ei_enrollment<'a>(
     let dpop_chall_resp = serde_json::to_vec(&dpop_chall_resp)?;
     enrollment.new_dpop_challenge_response(dpop_chall_resp)?;
 
-    let mut enrollment = restore(enrollment, &ctx.context).await;
+    let mut enrollment = restore(enrollment, &ctx.transaction).await;
 
     let id_token = "eyJhbGciOiJFZERTQSIsInR5cCI6IkpXVCJ9.eyJpYXQiOjE2NzU5NjE3NTYsImV4cCI6MTY3NjA0ODE1NiwibmJmIjoxNjc1OTYxNzU2LCJpc3MiOiJodHRwOi8vaWRwLyIsInN1YiI6ImltcHA6d2lyZWFwcD1OREV5WkdZd05qYzJNekZrTkRCaU5UbGxZbVZtTWpReVpUSXpOVGM0TldRLzY1YzNhYzFhMTYzMWMxMzZAZXhhbXBsZS5jb20iLCJhdWQiOiJodHRwOi8vaWRwLyIsIm5hbWUiOiJTbWl0aCwgQWxpY2UgTSAoUUEpIiwiaGFuZGxlIjoiaW1wcDp3aXJlYXBwPWFsaWNlLnNtaXRoLnFhQGV4YW1wbGUuY29tIiwia2V5YXV0aCI6IlNZNzR0Sm1BSUloZHpSdEp2cHgzODlmNkVLSGJYdXhRLi15V29ZVDlIQlYwb0ZMVElSRGw3cjhPclZGNFJCVjhOVlFObEw3cUxjbWcifQ.0iiq3p5Bmmp8ekoFqv4jQu_GrnPbEfxJ36SCuw-UvV6hCi6GlxOwU7gwwtguajhsd1sednGWZpN8QssKI5_CDQ".to_string();
     #[cfg(not(target_family = "wasm"))]
@@ -349,13 +349,13 @@ pub(crate) async fn e2ei_enrollment<'a>(
     #[cfg(not(target_family = "wasm"))]
     {
         let backend = ctx
-            .context
+            .transaction
             .mls_provider()
             .await
             .map_err(RecursiveError::transaction("getting mls provider"))?;
         let keystore = backend.key_store();
         enrollment
-            .new_oidc_challenge_response(&ctx.context.mls_provider().await.unwrap(), oidc_chall_resp)
+            .new_oidc_challenge_response(&ctx.transaction.mls_provider().await.unwrap(), oidc_chall_resp)
             .await?;
         // Now Refresh token is persisted in the keystore
         assert_eq!(RefreshToken::find(keystore).await?.as_str(), new_refresh_token);
@@ -366,7 +366,7 @@ pub(crate) async fn e2ei_enrollment<'a>(
     #[cfg(target_family = "wasm")]
     enrollment.new_oidc_challenge_response(oidc_chall_resp).await?;
 
-    let mut enrollment = restore(enrollment, &ctx.context).await;
+    let mut enrollment = restore(enrollment, &ctx.transaction).await;
 
     let _get_order_req = enrollment.check_order_request(order_url.to_string(), previous_nonce.to_string())?;
 
@@ -394,7 +394,7 @@ pub(crate) async fn e2ei_enrollment<'a>(
     let order_resp = serde_json::to_vec(&order_resp)?;
     enrollment.check_order_response(order_resp)?;
 
-    let mut enrollment = restore(enrollment, &ctx.context).await;
+    let mut enrollment = restore(enrollment, &ctx.transaction).await;
 
     let _finalize_req = enrollment.finalize_request(previous_nonce.to_string())?;
     let finalize_resp = json!({
@@ -422,7 +422,7 @@ pub(crate) async fn e2ei_enrollment<'a>(
     let finalize_resp = serde_json::to_vec(&finalize_resp)?;
     enrollment.finalize_response(finalize_resp)?;
 
-    let mut enrollment = restore(enrollment, &ctx.context).await;
+    let mut enrollment = restore(enrollment, &ctx.transaction).await;
 
     let _certificate_req = enrollment.certificate_request(previous_nonce.to_string())?;
 

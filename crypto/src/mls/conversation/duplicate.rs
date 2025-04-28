@@ -61,7 +61,7 @@ mod tests {
                 Box::pin(async move {
                     let id = conversation_id();
                     alice_central
-                        .context
+                        .transaction
                         .new_conversation(&id, case.credential_type, case.cfg.clone())
                         .await
                         .unwrap();
@@ -70,7 +70,7 @@ mod tests {
                     // an commit to verify that we can still detect wrong epoch correctly
                     let unknown_commit = alice_central.create_unmerged_commit(&id).await.commit;
                     alice_central
-                        .context
+                        .transaction
                         .conversation(&id)
                         .await
                         .unwrap()
@@ -79,7 +79,7 @@ mod tests {
                         .unwrap();
 
                     alice_central
-                        .context
+                        .transaction
                         .conversation(&id)
                         .await
                         .unwrap()
@@ -90,7 +90,7 @@ mod tests {
 
                     // decrypt once ... ok
                     bob_central
-                        .context
+                        .transaction
                         .conversation(&id)
                         .await
                         .unwrap()
@@ -99,7 +99,7 @@ mod tests {
                         .unwrap();
                     // decrypt twice ... not ok
                     let decrypt_duplicate = bob_central
-                        .context
+                        .transaction
                         .conversation(&id)
                         .await
                         .unwrap()
@@ -110,7 +110,7 @@ mod tests {
                     // Decrypting unknown commit.
                     // It fails with this error since it's not the commit who has created this epoch
                     let decrypt_lost_commit = bob_central
-                        .context
+                        .transaction
                         .conversation(&id)
                         .await
                         .unwrap()
@@ -130,7 +130,7 @@ mod tests {
             Box::pin(async move {
                 let id = conversation_id();
                 alice_central
-                    .context
+                    .transaction
                     .new_conversation(&id, case.credential_type, case.cfg.clone())
                     .await
                     .unwrap();
@@ -145,7 +145,7 @@ mod tests {
                 pending_conversation.clear().await.unwrap();
 
                 bob_central
-                    .context
+                    .transaction
                     .join_by_external_commit(gi, case.custom_cfg(), case.credential_type)
                     .await
                     .unwrap();
@@ -153,7 +153,7 @@ mod tests {
 
                 // decrypt once ... ok
                 alice_central
-                    .context
+                    .transaction
                     .conversation(&id)
                     .await
                     .unwrap()
@@ -162,7 +162,7 @@ mod tests {
                     .unwrap();
                 // decrypt twice ... not ok
                 let decryption = alice_central
-                    .context
+                    .transaction
                     .conversation(&id)
                     .await
                     .unwrap()
@@ -173,7 +173,7 @@ mod tests {
                 // Decrypting unknown external commit.
                 // It fails with this error since it's not the external commit who has created this epoch
                 let decryption = alice_central
-                    .context
+                    .transaction
                     .conversation(&id)
                     .await
                     .unwrap()
@@ -192,17 +192,22 @@ mod tests {
             Box::pin(async move {
                 let id = conversation_id();
                 alice_central
-                    .context
+                    .transaction
                     .new_conversation(&id, case.credential_type, case.cfg.clone())
                     .await
                     .unwrap();
                 alice_central.invite_all(&case, &id, [&bob_central]).await.unwrap();
 
-                let proposal = alice_central.context.new_update_proposal(&id).await.unwrap().proposal;
+                let proposal = alice_central
+                    .transaction
+                    .new_update_proposal(&id)
+                    .await
+                    .unwrap()
+                    .proposal;
 
                 // decrypt once ... ok
                 bob_central
-                    .context
+                    .transaction
                     .conversation(&id)
                     .await
                     .unwrap()
@@ -212,7 +217,7 @@ mod tests {
 
                 // decrypt twice ... not ok
                 let decryption = bob_central
-                    .context
+                    .transaction
                     .conversation(&id)
                     .await
                     .unwrap()
@@ -222,7 +227,7 @@ mod tests {
 
                 // advance Bob's epoch to trigger failure
                 bob_central
-                    .context
+                    .transaction
                     .conversation(&id)
                     .await
                     .unwrap()
@@ -232,7 +237,7 @@ mod tests {
 
                 // Epoch has advanced so we cannot detect duplicates anymore
                 let decryption = bob_central
-                    .context
+                    .transaction
                     .conversation(&id)
                     .await
                     .unwrap()
@@ -251,22 +256,22 @@ mod tests {
             Box::pin(async move {
                 let id = conversation_id();
                 alice_central
-                    .context
+                    .transaction
                     .new_conversation(&id, case.credential_type, case.cfg.clone())
                     .await
                     .unwrap();
 
-                let epoch = alice_central.context.conversation(&id).await.unwrap().epoch().await;
+                let epoch = alice_central.transaction.conversation(&id).await.unwrap().epoch().await;
 
                 let ext_proposal = bob_central
-                    .context
+                    .transaction
                     .new_external_add_proposal(id.clone(), epoch.into(), case.ciphersuite(), case.credential_type)
                     .await
                     .unwrap();
 
                 // decrypt once ... ok
                 alice_central
-                    .context
+                    .transaction
                     .conversation(&id)
                     .await
                     .unwrap()
@@ -276,7 +281,7 @@ mod tests {
 
                 // decrypt twice ... not ok
                 let decryption = alice_central
-                    .context
+                    .transaction
                     .conversation(&id)
                     .await
                     .unwrap()
@@ -286,7 +291,7 @@ mod tests {
 
                 // advance alice's epoch
                 alice_central
-                    .context
+                    .transaction
                     .conversation(&id)
                     .await
                     .unwrap()
@@ -296,7 +301,7 @@ mod tests {
 
                 // Epoch has advanced so we cannot detect duplicates anymore
                 let decryption = alice_central
-                    .context
+                    .transaction
                     .conversation(&id)
                     .await
                     .unwrap()
@@ -316,7 +321,7 @@ mod tests {
             Box::pin(async move {
                 let id = conversation_id();
                 alice_central
-                    .context
+                    .transaction
                     .new_conversation(&id, case.credential_type, case.cfg.clone())
                     .await
                     .unwrap();
@@ -324,7 +329,7 @@ mod tests {
 
                 let msg = b"Hello bob";
                 let encrypted = alice_central
-                    .context
+                    .transaction
                     .conversation(&id)
                     .await
                     .unwrap()
@@ -334,7 +339,7 @@ mod tests {
 
                 // decrypt once .. ok
                 bob_central
-                    .context
+                    .transaction
                     .conversation(&id)
                     .await
                     .unwrap()
@@ -343,7 +348,7 @@ mod tests {
                     .unwrap();
                 // decrypt twice .. not ok
                 let decryption = bob_central
-                    .context
+                    .transaction
                     .conversation(&id)
                     .await
                     .unwrap()

@@ -103,7 +103,7 @@ mod tests {
                     Box::pin(async move {
                         let id = conversation_id();
                         owner_central
-                            .context
+                            .transaction
                             .new_conversation(&id, case.credential_type, case.cfg.clone())
                             .await
                             .unwrap();
@@ -111,14 +111,14 @@ mod tests {
 
                         // Craft an external proposal from guest
                         let external_add = guest_central
-                            .context
+                            .transaction
                             .new_external_add_proposal(id.clone(), epoch, case.ciphersuite(), case.credential_type)
                             .await
                             .unwrap();
 
                         // Owner receives external proposal message from server
                         let decrypted = owner_central
-                            .context
+                            .transaction
                             .conversation(&id)
                             .await
                             .unwrap()
@@ -133,7 +133,7 @@ mod tests {
 
                         // simulate commit message reception from server
                         owner_central
-                            .context
+                            .transaction
                             .conversation(&id)
                             .await
                             .unwrap()
@@ -145,7 +145,7 @@ mod tests {
 
                         let welcome = guest_central.mls_transport.latest_welcome_message().await;
                         guest_central
-                            .context
+                            .transaction
                             .process_welcome_message(welcome.into(), case.custom_cfg())
                             .await
                             .unwrap();
@@ -171,8 +171,8 @@ mod tests {
         async fn ds_should_remove_guest_from_conversation(case: TestContext) {
             run_test_with_client_ids(case.clone(), ["owner", "guest", "ds"], move |[owner, guest, ds]| {
                 Box::pin(async move {
-                    let owner_central = &owner.context;
-                    let guest_central = &guest.context;
+                    let owner_central = &owner.transaction;
+                    let guest_central = &guest.transaction;
                     let id = conversation_id();
 
                     let ds_signature_key = ds.client_signature_key(&case).await.as_slice().to_vec();
@@ -258,12 +258,12 @@ mod tests {
                         let ds_signature_key = ds.client_signature_key(&case).await.as_slice().to_vec();
                         let mut cfg = case.cfg.clone();
                         owner
-                            .context
+                            .transaction
                             .set_raw_external_senders(&mut cfg, vec![ds_signature_key])
                             .await
                             .unwrap();
                         owner
-                            .context
+                            .transaction
                             .new_conversation(&id, case.credential_type, cfg)
                             .await
                             .unwrap();
@@ -284,7 +284,7 @@ mod tests {
                                 .unwrap();
 
                         let owner_decrypt = owner
-                            .context
+                            .transaction
                             .conversation(&id)
                             .await
                             .unwrap()
@@ -302,7 +302,7 @@ mod tests {
                         ));
 
                         let guest_decrypt = owner
-                            .context
+                            .transaction
                             .conversation(&id)
                             .await
                             .unwrap()
@@ -338,12 +338,12 @@ mod tests {
                     let key = ds.client_signature_key(&case).await.as_slice().to_vec();
                     let mut cfg = case.cfg.clone();
                     owner
-                        .context
+                        .transaction
                         .set_raw_external_senders(&mut cfg, vec![key.as_slice().to_vec()])
                         .await
                         .unwrap();
                     owner
-                        .context
+                        .transaction
                         .new_conversation(&id, case.credential_type, cfg)
                         .await
                         .unwrap();
@@ -365,7 +365,7 @@ mod tests {
                             .unwrap();
 
                     let owner_decrypt = owner
-                        .context
+                        .transaction
                         .conversation(&id)
                         .await
                         .unwrap()
@@ -380,7 +380,7 @@ mod tests {
                     ));
 
                     let guest_decrypt = owner
-                        .context
+                        .transaction
                         .conversation(&id)
                         .await
                         .unwrap()
@@ -406,9 +406,9 @@ mod tests {
                 ["alice", "bob", "charlie", "ds"],
                 move |[alice, bob, charlie, ds]| {
                     Box::pin(async move {
-                        let alice_central = &alice.context;
-                        let bob_central = &bob.context;
-                        let charlie_central = &charlie.context;
+                        let alice_central = &alice.transaction;
+                        let bob_central = &bob.transaction;
+                        let charlie_central = &charlie.transaction;
                         let id = conversation_id();
 
                         let ds_signature_key = ds.client_signature_key(&case).await.as_slice().to_vec();
@@ -532,9 +532,9 @@ mod tests {
                 ["alice", "bob", "charlie", "ds"],
                 move |[alice, bob, charlie, ds]| {
                     Box::pin(async move {
-                        let alice_central = &alice.context;
-                        let bob_central = &bob.context;
-                        let charlie_central = &charlie.context;
+                        let alice_central = &alice.transaction;
+                        let bob_central = &bob.transaction;
+                        let charlie_central = &charlie.transaction;
                         let id = conversation_id();
 
                         let ds_signature_key = ds.client_signature_key(&case).await.as_slice().to_vec();

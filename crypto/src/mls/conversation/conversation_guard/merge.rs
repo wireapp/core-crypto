@@ -100,7 +100,7 @@ mod tests {
                     Box::pin(async move {
                         let id = conversation_id();
                         alice_central
-                            .context
+                            .transaction
                             .new_conversation(&id, case.credential_type, case.cfg.clone())
                             .await
                             .unwrap();
@@ -109,21 +109,21 @@ mod tests {
 
                         let charlie_kp = charlie_central.get_one_key_package(&case).await;
                         let add_ref = alice_central
-                            .context
+                            .transaction
                             .new_add_proposal(&id, charlie_kp)
                             .await
                             .unwrap()
                             .proposal_ref;
 
                         let remove_ref = alice_central
-                            .context
+                            .transaction
                             .new_remove_proposal(&id, bob_central.get_client_id().await)
                             .await
                             .unwrap()
                             .proposal_ref;
 
                         let update_ref = alice_central
-                            .context
+                            .transaction
                             .new_update_proposal(&id)
                             .await
                             .unwrap()
@@ -131,7 +131,7 @@ mod tests {
 
                         assert_eq!(alice_central.pending_proposals(&id).await.len(), 3);
                         alice_central
-                            .context
+                            .transaction
                             .conversation(&id)
                             .await
                             .unwrap()
@@ -148,7 +148,7 @@ mod tests {
                         );
 
                         alice_central
-                            .context
+                            .transaction
                             .conversation(&id)
                             .await
                             .unwrap()
@@ -165,7 +165,7 @@ mod tests {
                         );
 
                         alice_central
-                            .context
+                            .transaction
                             .conversation(&id)
                             .await
                             .unwrap()
@@ -193,14 +193,14 @@ mod tests {
                 Box::pin(async move {
                     let id = conversation_id();
                     alice_central
-                        .context
+                        .transaction
                         .new_conversation(&id, case.credential_type, case.cfg.clone())
                         .await
                         .unwrap();
                     assert!(alice_central.pending_proposals(&id).await.is_empty());
                     let any_ref = MlsProposalRef::from(vec![0; case.ciphersuite().hash_length()]);
                     let clear = alice_central
-                        .context
+                        .transaction
                         .conversation(&id)
                         .await
                         .unwrap()
@@ -220,18 +220,18 @@ mod tests {
             run_test_with_client_ids(case.clone(), ["alice"], move |[mut cc]| {
                 Box::pin(async move {
                     let id = conversation_id();
-                    cc.context
+                    cc.transaction
                         .new_conversation(&id, case.credential_type, case.cfg.clone())
                         .await
                         .unwrap();
                     assert!(cc.pending_proposals(&id).await.is_empty());
 
-                    let init = cc.context.count_entities().await;
+                    let init = cc.transaction.count_entities().await;
 
-                    let proposal_ref = cc.context.new_update_proposal(&id).await.unwrap().proposal_ref;
+                    let proposal_ref = cc.transaction.new_update_proposal(&id).await.unwrap().proposal_ref;
                     assert_eq!(cc.pending_proposals(&id).await.len(), 1);
 
-                    cc.context
+                    cc.transaction
                         .conversation(&id)
                         .await
                         .unwrap()
@@ -243,7 +243,7 @@ mod tests {
                     // This whole flow should be idempotent.
                     // Here we verify that we are indeed deleting the `EncryptionKeyPair` created
                     // for the Update proposal
-                    let after_clear_proposal = cc.context.count_entities().await;
+                    let after_clear_proposal = cc.transaction.count_entities().await;
                     assert_eq!(init, after_clear_proposal);
                 })
             })
@@ -261,7 +261,7 @@ mod tests {
                 Box::pin(async move {
                     let id = conversation_id();
                     alice_central
-                        .context
+                        .transaction
                         .new_conversation(&id, case.credential_type, case.cfg.clone())
                         .await
                         .unwrap();
@@ -270,7 +270,7 @@ mod tests {
                     alice_central.create_unmerged_commit(&id).await;
                     assert!(alice_central.pending_commit(&id).await.is_some());
                     alice_central
-                        .context
+                        .transaction
                         .conversation(&id)
                         .await
                         .unwrap()
@@ -290,13 +290,13 @@ mod tests {
                 Box::pin(async move {
                     let id = conversation_id();
                     alice_central
-                        .context
+                        .transaction
                         .new_conversation(&id, case.credential_type, case.cfg.clone())
                         .await
                         .unwrap();
                     assert!(alice_central.pending_commit(&id).await.is_none());
                     let clear = alice_central
-                        .context
+                        .transaction
                         .conversation(&id)
                         .await
                         .unwrap()
@@ -314,18 +314,18 @@ mod tests {
             run_test_with_client_ids(case.clone(), ["alice"], move |[cc]| {
                 Box::pin(async move {
                     let id = conversation_id();
-                    cc.context
+                    cc.transaction
                         .new_conversation(&id, case.credential_type, case.cfg.clone())
                         .await
                         .unwrap();
                     assert!(cc.pending_commit(&id).await.is_none());
 
-                    let init = cc.context.count_entities().await;
+                    let init = cc.transaction.count_entities().await;
 
                     cc.create_unmerged_commit(&id).await;
                     assert!(cc.pending_commit(&id).await.is_some());
 
-                    cc.context
+                    cc.transaction
                         .conversation(&id)
                         .await
                         .unwrap()
@@ -337,7 +337,7 @@ mod tests {
                     // This whole flow should be idempotent.
                     // Here we verify that we are indeed deleting the `EncryptionKeyPair` created
                     // for the Update commit
-                    let after_clear_commit = cc.context.count_entities().await;
+                    let after_clear_commit = cc.transaction.count_entities().await;
                     assert_eq!(init, after_clear_commit);
                 })
             })

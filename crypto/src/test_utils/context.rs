@@ -44,7 +44,7 @@ pub struct RotateAllResult {
 impl SessionContext {
     pub async fn get_one_key_package(&self, case: &TestContext) -> KeyPackage {
         let kps = self
-            .context
+            .transaction
             .get_or_create_client_keypackages(case.ciphersuite(), case.credential_type, 1)
             .await
             .unwrap();
@@ -64,7 +64,7 @@ impl SessionContext {
                     ciphersuite: case.ciphersuite().into(),
                     version: openmls::versions::ProtocolVersion::default(),
                 },
-                &self.context.mls_provider().await.unwrap(),
+                &self.transaction.mls_provider().await.unwrap(),
                 &cb.signature_key,
                 CredentialWithKey {
                     credential: cb.credential.clone(),
@@ -76,7 +76,7 @@ impl SessionContext {
     }
 
     pub async fn count_key_package(&self, cs: MlsCiphersuite, ct: Option<MlsCredentialType>) -> usize {
-        self.context
+        self.transaction
             .mls_provider()
             .await
             .unwrap()
@@ -99,9 +99,9 @@ impl SessionContext {
     }
 
     pub async fn rand_key_package_of_type(&self, case: &TestContext, ct: MlsCredentialType) -> KeyPackageIn {
-        let client = self.context.session().await.unwrap();
+        let client = self.transaction.session().await.unwrap();
         client
-            .generate_one_keypackage(&self.context.mls_provider().await.unwrap(), case.ciphersuite(), ct)
+            .generate_one_keypackage(&self.transaction.mls_provider().await.unwrap(), case.ciphersuite(), ct)
             .await
             .unwrap()
             .into()
@@ -127,7 +127,7 @@ impl SessionContext {
     pub async fn try_talk_to(&self, id: &ConversationId, other: &Self) -> Result<()> {
         let msg = b"Hello other";
         let encrypted = self
-            .context
+            .transaction
             .conversation(id)
             .await
             .map_err(RecursiveError::transaction("getting conversation by id"))?
@@ -135,7 +135,7 @@ impl SessionContext {
             .await
             .map_err(RecursiveError::mls_conversation("encrypting message; self -> other"))?;
         let decrypted = other
-            .context
+            .transaction
             .conversation(id)
             .await
             .map_err(RecursiveError::transaction("getting conversation by id"))?
@@ -148,7 +148,7 @@ impl SessionContext {
         // other --> self
         let msg = b"Hello self";
         let encrypted = other
-            .context
+            .transaction
             .conversation(id)
             .await
             .map_err(RecursiveError::transaction("getting conversation by id"))?
@@ -156,7 +156,7 @@ impl SessionContext {
             .await
             .map_err(RecursiveError::mls_conversation("encrypting message; other -> self"))?;
         let decrypted = self
-            .context
+            .transaction
             .conversation(id)
             .await
             .map_err(RecursiveError::transaction("getting conversation by id"))?
@@ -194,7 +194,7 @@ impl SessionContext {
         let size_before = self.get_conversation_unchecked(id).await.members().len();
 
         let kps = others.iter().map(|(_, kp)| kp).cloned().collect::<Vec<_>>();
-        self.context
+        self.transaction
             .conversation(&id)
             .await
             .map_err(RecursiveError::transaction("getting conversation by id"))?
@@ -205,7 +205,7 @@ impl SessionContext {
 
         for (other, ..) in &others {
             other
-                .context
+                .transaction
                 .process_welcome_message(welcome.clone().into(), case.custom_cfg())
                 .await
                 .map_err(RecursiveError::transaction("processing welcome message"))?;
@@ -239,7 +239,7 @@ impl SessionContext {
         let WelcomeBundle {
             id: conversation_id, ..
         } = self
-            .context
+            .transaction
             .join_by_external_commit(group_info, case.custom_cfg(), case.credential_type)
             .await
             .map_err(RecursiveError::transaction("joining by external commit"))?;
@@ -252,7 +252,7 @@ impl SessionContext {
                 .tls_serialize_detached()
                 .map_err(MlsError::wrap("serializing detached tls"))?;
             other
-                .context
+                .transaction
                 .conversation(id)
                 .await
                 .unwrap()
@@ -271,7 +271,7 @@ impl SessionContext {
         custom_cfg: MlsCustomConfiguration,
         others: Vec<&Self>,
     ) -> Result<()> {
-        self.context
+        self.transaction
             .process_welcome_message(welcome, custom_cfg)
             .await
             .map_err(RecursiveError::transaction("processing welcome message"))?;
@@ -282,7 +282,7 @@ impl SessionContext {
     }
 
     pub async fn get_group_info(&self, id: &ConversationId) -> VerifiableGroupInfo {
-        let mut conversation = self.context.conversation(id).await.unwrap();
+        let mut conversation = self.transaction.conversation(id).await.unwrap();
         let mut conversation = conversation.conversation_mut().await;
         let group = &mut conversation.group;
         let ct = group.credential().unwrap().credential_type();
@@ -294,7 +294,7 @@ impl SessionContext {
             .unwrap();
 
         let gi = group
-            .export_group_info(&self.context.mls_provider().await.unwrap(), &cb.signature_key, true)
+            .export_group_info(&self.transaction.mls_provider().await.unwrap(), &cb.signature_key, true)
             .unwrap();
         gi.group_info().unwrap()
     }
@@ -302,11 +302,11 @@ impl SessionContext {
     /// Finds the [SignaturePublicKey] of a [Client] within a [MlsGroup]
     pub async fn signature_key_of(&self, conv_id: &ConversationId, client_id: ClientId) -> SignaturePublicKey {
         let sign_key = self
-            .context
+            .transaction
             .mls_groups()
             .await
             .unwrap()
-            .get_fetch(conv_id, &self.context.keystore().await.unwrap(), None)
+            .get_fetch(conv_id, &self.transaction.keystore().await.unwrap(), None)
             .await
             .unwrap()
             .unwrap()
@@ -323,11 +323,11 @@ impl SessionContext {
 
     /// Finds the HPKE Public key of a [Client] within a [MlsGroup]
     pub async fn encryption_key_of(&self, conv_id: &ConversationId, client_id: ClientId) -> Vec<u8> {
-        self.context
+        self.transaction
             .mls_groups()
             .await
             .unwrap()
-            .get_fetch(conv_id, &self.context.keystore().await.unwrap(), None)
+            .get_fetch(conv_id, &self.transaction.keystore().await.unwrap(), None)
             .await
             .unwrap()
             .unwrap()
@@ -342,11 +342,11 @@ impl SessionContext {
 
     /// Finds the [LeafNodeIndex] of a [Client] within a [MlsGroup]
     pub async fn index_of(&self, conv_id: &ConversationId, client_id: ClientId) -> LeafNodeIndex {
-        self.context
+        self.transaction
             .mls_groups()
             .await
             .unwrap()
-            .get_fetch(conv_id, &self.context.keystore().await.unwrap(), None)
+            .get_fetch(conv_id, &self.transaction.keystore().await.unwrap(), None)
             .await
             .unwrap()
             .unwrap()
@@ -367,7 +367,7 @@ impl SessionContext {
     }
 
     pub async fn get_conversation_unchecked(&self, conv_id: &ConversationId) -> MlsConversation {
-        GroupStore::fetch_from_keystore(conv_id, &self.context.keystore().await.unwrap(), None)
+        GroupStore::fetch_from_keystore(conv_id, &self.transaction.keystore().await.unwrap(), None)
             .await
             .unwrap()
             .unwrap()
@@ -382,8 +382,8 @@ impl SessionContext {
         case: &TestContext,
         signer: Option<&X509Certificate>,
     ) -> CredentialBundle {
-        let backend = &self.context.mls_provider().await.unwrap();
-        let transaction = &self.context.keystore().await.unwrap();
+        let backend = &self.transaction.mls_provider().await.unwrap();
+        let transaction = &self.transaction.keystore().await.unwrap();
         let client = self.session().await;
         let client_id = client.id().await.unwrap();
 
@@ -409,7 +409,7 @@ impl SessionContext {
         &self,
         id: &ConversationId,
     ) -> Option<Arc<CredentialBundle>> {
-        self.context
+        self.transaction
             .conversation(id)
             .await
             .unwrap()
@@ -442,7 +442,7 @@ impl SessionContext {
     }
 
     pub async fn find_signature_keypair_from_keystore(&self, id: &[u8]) -> Option<MlsSignatureKeyPair> {
-        self.context
+        self.transaction
             .keystore()
             .await
             .unwrap()
@@ -452,7 +452,7 @@ impl SessionContext {
     }
 
     pub async fn find_hpke_private_key_from_keystore(&self, skp: &HpkePublicKey) -> Option<MlsHpkePrivateKey> {
-        self.context
+        self.transaction
             .keystore()
             .await
             .unwrap()
@@ -463,7 +463,7 @@ impl SessionContext {
 
     pub async fn find_credential_from_keystore(&self, cb: &CredentialBundle) -> Option<MlsCredential> {
         let credential = cb.credential.tls_serialize_detached().unwrap();
-        self.context
+        self.transaction
             .keystore()
             .await
             .unwrap()
@@ -475,7 +475,7 @@ impl SessionContext {
     }
 
     pub async fn count_hpke_private_key(&self) -> usize {
-        self.context
+        self.transaction
             .keystore()
             .await
             .unwrap()
@@ -485,7 +485,7 @@ impl SessionContext {
     }
 
     pub async fn count_encryption_keypairs(&self) -> usize {
-        self.context
+        self.transaction
             .keystore()
             .await
             .unwrap()
@@ -495,7 +495,7 @@ impl SessionContext {
     }
 
     pub async fn count_credentials_in_keystore(&self) -> usize {
-        self.context
+        self.transaction
             .keystore()
             .await
             .unwrap()
@@ -523,7 +523,7 @@ impl SessionContext {
         let client = self.session().await;
         client
             .save_new_x509_credential_bundle(
-                &self.context.keystore().await.unwrap(),
+                &self.transaction.keystore().await.unwrap(),
                 case.signature_scheme(),
                 new_cert,
             )
@@ -538,12 +538,12 @@ impl SessionContext {
         key_package_count: usize,
     ) -> Result<RotateAllResult> {
         let keystore = self
-            .context
+            .transaction
             .keystore()
             .await
             .map_err(RecursiveError::transaction("getting keystore"))?;
         let all_conversations = self
-            .context
+            .transaction
             .mls_groups()
             .await
             .map_err(RecursiveError::transaction("getting mls groups"))?
@@ -553,7 +553,7 @@ impl SessionContext {
         let mut conversation_ids_and_commits = Vec::with_capacity(all_conversations.len());
         for conv in all_conversations {
             let id = conv.read().await.id().clone();
-            self.context
+            self.transaction
                 .conversation(&id)
                 .await
                 .map_err(RecursiveError::transaction("getting conversation by id"))?
@@ -577,7 +577,7 @@ impl SessionContext {
 
     /// Creates a commit but don't merge it immediately (e.g, because the app crashes before he receives the success response from the ds via MlsTransport api)
     pub(crate) async fn create_unmerged_commit(&self, id: &ConversationId) -> MlsCommitBundle {
-        self.context
+        self.transaction
             .conversation(&id)
             .await
             .unwrap()
@@ -589,7 +589,7 @@ impl SessionContext {
     }
 
     pub(crate) async fn commit_pending_proposals_unmerged(&self, id: &ConversationId) -> MlsCommitBundle {
-        self.context
+        self.transaction
             .conversation(&id)
             .await
             .unwrap()
@@ -608,7 +608,7 @@ impl SessionContext {
         credential_type: MlsCredentialType,
     ) -> (MlsCommitBundle, PendingConversation) {
         let (commit_bundle, _, pending_conversation) = self
-            .context
+            .transaction
             .create_external_join_commit(group_info, custom_cfg, credential_type)
             .await
             .unwrap();
@@ -622,8 +622,8 @@ impl SessionContext {
         cb: &CredentialBundle,
     ) -> MlsCommitBundle {
         let client = self.session().await;
-        let backend = self.context.mls_provider().await.unwrap();
-        let mut conversation_guard = self.context.conversation(id).await.unwrap();
+        let backend = self.transaction.mls_provider().await.unwrap();
+        let mut conversation_guard = self.transaction.conversation(id).await.unwrap();
         let mut conversation = conversation_guard.conversation_mut().await;
         let mut leaf_node = conversation.group.own_leaf().unwrap().clone();
         leaf_node.set_credential_with_key(cb.to_mls_credential_with_key());
@@ -653,7 +653,7 @@ impl SessionContext {
         // the MLS group
         let cid = self.get_client_id().await;
         let group_identities = self
-            .context
+            .transaction
             .conversation(id)
             .await
             .unwrap()
@@ -780,7 +780,7 @@ impl SessionContext {
     pub async fn rand_external_sender(&self, case: &TestContext) -> ExternalSender {
         let sc = case.signature_scheme();
 
-        let provider = self.context.mls_provider().await.unwrap();
+        let provider = self.transaction.mls_provider().await.unwrap();
         let crypto = provider.crypto();
         let (_, pk) = crypto.signature_key_gen(sc).unwrap();
 

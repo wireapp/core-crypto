@@ -180,18 +180,18 @@ mod tests {
                 .await
                 .unwrap();
 
-                cc.context
+                cc.transaction
                     .e2ei_mls_init_only(&mut enrollment, cert, Some(INITIAL_KEYING_MATERIAL_COUNT))
                     .await
                     .unwrap();
 
                 // verify the created client can create a conversation
                 let id = conversation_id();
-                cc.context
+                cc.transaction
                     .new_conversation(&id, MlsCredentialType::X509, case.cfg.clone())
                     .await
                     .unwrap();
-                cc.context
+                cc.transaction
                     .conversation(&id)
                     .await
                     .unwrap()
@@ -199,7 +199,7 @@ mod tests {
                     .await
                     .unwrap();
                 assert_eq!(
-                    cc.context
+                    cc.transaction
                         .conversation(&id)
                         .await
                         .unwrap()
@@ -208,7 +208,7 @@ mod tests {
                         .unwrap(),
                     E2eiConversationState::Verified
                 );
-                assert!(cc.context.e2ei_is_enabled(case.signature_scheme()).await.unwrap());
+                assert!(cc.transaction.e2ei_is_enabled(case.signature_scheme()).await.unwrap());
             })
         })
         .await

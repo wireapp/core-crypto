@@ -179,7 +179,7 @@ mod tests {
                     }
                     let to_search = to_search.unwrap();
                     let pk = SignaturePublicKey::from(to_search.signature_key.public());
-                    let client = central.context.session().await.unwrap();
+                    let client = central.transaction.session().await.unwrap();
                     let found = client
                         .find_credential_bundle_by_public_key(case.signature_scheme(), case.credential_type, &pk)
                         .await
@@ -218,10 +218,10 @@ mod tests {
                 Box::pin(async move {
                     let cert = central.get_intermediate_ca().cloned();
                     let cb = central.new_credential_bundle(&case, cert.as_ref()).await;
-                    let client = central.context.session().await.unwrap();
+                    let client = central.transaction.session().await.unwrap();
                     let push = client
                         .save_identity(
-                            &central.context.keystore().await.unwrap(),
+                            &central.transaction.keystore().await.unwrap(),
                             None,
                             case.signature_scheme(),
                             cb,

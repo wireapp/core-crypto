@@ -90,7 +90,7 @@ pub(crate) use innermost_source_matches;
 
 #[derive(Debug, Clone)]
 pub struct SessionContext {
-    pub context: TransactionContext,
+    pub transaction: TransactionContext,
     pub session: Session,
     pub mls_transport: Arc<dyn MlsTransportTestExt>,
     pub x509_test_chain: std::sync::Arc<Option<X509TestChain>>,
@@ -268,7 +268,7 @@ pub async fn run_cross_signed_tests_with_client_ids<const N: usize, const F: usi
                 let context = cc.new_transaction().await.unwrap();
                 let central = cc.mls;
                 contexts1.push(SessionContext {
-                    context,
+                    transaction: context,
                     session: central,
                     mls_transport: transport1.clone(),
                     x509_test_chain: Arc::new(None),
@@ -281,7 +281,7 @@ pub async fn run_cross_signed_tests_with_client_ids<const N: usize, const F: usi
                 let context = cc.new_transaction().await.unwrap();
                 let central = cc.mls;
                 contexts2.push(SessionContext {
-                    context,
+                    transaction: context,
                     session: central,
                     mls_transport: transport2.clone(),
                     x509_test_chain: Arc::new(None),
@@ -294,10 +294,10 @@ pub async fn run_cross_signed_tests_with_client_ids<const N: usize, const F: usi
             )
             .await;
             for c in contexts1 {
-                c.context.finish().await.unwrap();
+                c.transaction.finish().await.unwrap();
             }
             for c in contexts2 {
-                c.context.finish().await.unwrap();
+                c.transaction.finish().await.unwrap();
             }
         })
     })
@@ -423,7 +423,7 @@ pub async fn run_test_with_deterministic_client_ids_and_revocation<const N: usiz
             for (index, client) in centrals.into_iter().enumerate() {
                 let cc = CoreCrypto::from(client);
                 let context = SessionContext {
-                    context: cc.new_transaction().await.unwrap(),
+                    transaction: cc.new_transaction().await.unwrap(),
                     session: cc.mls,
                     mls_transport: transport.clone(),
                     x509_test_chain: Arc::new(chain1.clone()),
@@ -436,7 +436,7 @@ pub async fn run_test_with_deterministic_client_ids_and_revocation<const N: usiz
             for (index, client) in centrals.into_iter().enumerate() {
                 let cc = CoreCrypto::from(client);
                 let context = SessionContext {
-                    context: cc.new_transaction().await.unwrap(),
+                    transaction: cc.new_transaction().await.unwrap(),
                     session: cc.mls,
                     mls_transport: transport.clone(),
                     x509_test_chain: Arc::new(chain2.clone()),
@@ -451,10 +451,10 @@ pub async fn run_test_with_deterministic_client_ids_and_revocation<const N: usiz
             .await;
 
             for c in centrals1 {
-                c.context.finish().await.unwrap();
+                c.transaction.finish().await.unwrap();
             }
             for c in centrals2 {
-                c.context.finish().await.unwrap();
+                c.transaction.finish().await.unwrap();
             }
         })
     })
@@ -486,7 +486,7 @@ pub async fn run_test_wo_clients(
             let cc = CoreCrypto::from(client);
             let context = cc.new_transaction().await.unwrap();
             test(SessionContext {
-                context: context.clone(),
+                transaction: context.clone(),
                 session: cc.mls,
                 mls_transport: transport.clone(),
                 x509_test_chain: None.into(),

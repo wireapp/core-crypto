@@ -115,7 +115,7 @@ mod tests {
                 // That way the conversation creator (Alice) will have the same credential type as Bob
                 let creator_ct = case.credential_type;
                 alice_central
-                    .context
+                    .transaction
                     .new_conversation(&id, creator_ct, case.cfg.clone())
                     .await
                     .unwrap();
@@ -124,7 +124,7 @@ mod tests {
                 match case.credential_type {
                     MlsCredentialType::Basic => {
                         let alice_state = alice_central
-                            .context
+                            .transaction
                             .conversation(&id)
                             .await
                             .unwrap()
@@ -132,7 +132,7 @@ mod tests {
                             .await
                             .unwrap();
                         let bob_state = bob_central
-                            .context
+                            .transaction
                             .conversation(&id)
                             .await
                             .unwrap()
@@ -144,7 +144,7 @@ mod tests {
 
                         let gi = alice_central.get_group_info(&id).await;
                         let state = alice_central
-                            .context
+                            .transaction
                             .get_credential_in_use(gi, MlsCredentialType::X509)
                             .await
                             .unwrap();
@@ -152,7 +152,7 @@ mod tests {
                     }
                     MlsCredentialType::X509 => {
                         let alice_state = alice_central
-                            .context
+                            .transaction
                             .conversation(&id)
                             .await
                             .unwrap()
@@ -160,7 +160,7 @@ mod tests {
                             .await
                             .unwrap();
                         let bob_state = bob_central
-                            .context
+                            .transaction
                             .conversation(&id)
                             .await
                             .unwrap()
@@ -172,7 +172,7 @@ mod tests {
 
                         let gi = alice_central.get_group_info(&id).await;
                         let state = alice_central
-                            .context
+                            .transaction
                             .get_credential_in_use(gi, MlsCredentialType::X509)
                             .await
                             .unwrap();
@@ -202,8 +202,8 @@ mod tests {
                     let x509_test_chain = x509_test_chain_arc.as_ref().as_ref().unwrap();
 
                     // That way the conversation creator (Alice) will have a different credential type than Bob
-                    let alice_client = alice_central.context.session().await.unwrap();
-                    let alice_provider = alice_central.context.mls_provider().await.unwrap();
+                    let alice_client = alice_central.transaction.session().await.unwrap();
+                    let alice_provider = alice_central.transaction.mls_provider().await.unwrap();
                     let creator_ct = match case.credential_type {
                         MlsCredentialType::Basic => {
                             let intermediate_ca = x509_test_chain.find_local_intermediate_ca();
@@ -229,7 +229,7 @@ mod tests {
                     };
 
                     alice_central
-                        .context
+                        .transaction
                         .new_conversation(&id, creator_ct, case.cfg.clone())
                         .await
                         .unwrap();
@@ -237,7 +237,7 @@ mod tests {
 
                     // since in that case both have a different credential type the conversation is always not verified
                     let alice_state = alice_central
-                        .context
+                        .transaction
                         .conversation(&id)
                         .await
                         .unwrap()
@@ -245,7 +245,7 @@ mod tests {
                         .await
                         .unwrap();
                     let bob_state = bob_central
-                        .context
+                        .transaction
                         .conversation(&id)
                         .await
                         .unwrap()
@@ -257,7 +257,7 @@ mod tests {
 
                     let gi = alice_central.get_group_info(&id).await;
                     let state = alice_central
-                        .context
+                        .transaction
                         .get_credential_in_use(gi, MlsCredentialType::X509)
                         .await
                         .unwrap();
@@ -279,7 +279,7 @@ mod tests {
                 let id = conversation_id();
 
                 alice_central
-                    .context
+                    .transaction
                     .new_conversation(&id, case.credential_type, case.cfg.clone())
                     .await
                     .unwrap();
@@ -297,7 +297,7 @@ mod tests {
                 let cert = CertificateBundle::new_with_default_values(intermediate_ca, Some(expiration_time));
                 let cb = Session::new_x509_credential_bundle(cert.clone()).unwrap();
                 alice_central
-                    .context
+                    .transaction
                     .conversation(&id)
                     .await
                     .unwrap()
@@ -306,7 +306,7 @@ mod tests {
                     .unwrap();
                 let commit = alice_central.mls_transport.latest_commit().await;
                 bob_central
-                    .context
+                    .transaction
                     .conversation(&id)
                     .await
                     .unwrap()
@@ -314,8 +314,8 @@ mod tests {
                     .await
                     .unwrap();
 
-                let alice_client = alice_central.context.session().await.unwrap();
-                let alice_provider = alice_central.context.mls_provider().await.unwrap();
+                let alice_client = alice_central.transaction.session().await.unwrap();
+                let alice_provider = alice_central.transaction.mls_provider().await.unwrap();
                 // Needed because 'e2ei_rotate' does not do it directly and it's required for 'get_group_info'
                 alice_client
                     .save_new_x509_credential_bundle(&alice_provider.keystore(), case.signature_scheme(), cert)
@@ -332,7 +332,7 @@ mod tests {
                 }
 
                 let alice_state = alice_central
-                    .context
+                    .transaction
                     .conversation(&id)
                     .await
                     .unwrap()
@@ -340,7 +340,7 @@ mod tests {
                     .await
                     .unwrap();
                 let bob_state = bob_central
-                    .context
+                    .transaction
                     .conversation(&id)
                     .await
                     .unwrap()
@@ -351,7 +351,7 @@ mod tests {
                 assert_eq!(bob_state, E2eiConversationState::NotVerified);
 
                 let state = alice_central
-                    .context
+                    .transaction
                     .get_credential_in_use(gi, MlsCredentialType::X509)
                     .await
                     .unwrap();
@@ -370,7 +370,7 @@ mod tests {
                     let id = conversation_id();
 
                     alice_central
-                        .context
+                        .transaction
                         .new_conversation(&id, case.credential_type, case.cfg.clone())
                         .await
                         .unwrap();
@@ -392,7 +392,7 @@ mod tests {
                         CertificateBundle::from_certificate_and_issuer(&alice_cert.certificate, alice_intermediate_ca);
                     let cb = Session::new_x509_credential_bundle(cert_bundle.clone()).unwrap();
                     alice_central
-                        .context
+                        .transaction
                         .conversation(&id)
                         .await
                         .unwrap()
@@ -401,7 +401,7 @@ mod tests {
                         .unwrap();
 
                     let alice_client = alice_central.session().await;
-                    let alice_provider = alice_central.context.mls_provider().await.unwrap();
+                    let alice_provider = alice_central.transaction.mls_provider().await.unwrap();
 
                     // Needed because 'e2ei_rotate' does not do it directly and it's required for 'get_group_info'
                     alice_client
@@ -420,7 +420,7 @@ mod tests {
                     }
 
                     let alice_state = alice_central
-                        .context
+                        .transaction
                         .conversation(&id)
                         .await
                         .unwrap()
@@ -433,7 +433,7 @@ mod tests {
                     let gi = alice_central.get_group_info(&id).await;
 
                     let state = alice_central
-                        .context
+                        .transaction
                         .get_credential_in_use(gi, MlsCredentialType::X509)
                         .await
                         .unwrap();

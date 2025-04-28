@@ -284,7 +284,7 @@ mod tests {
                         for _ in 0..N {
                             let id = conversation_id();
                             alice_central
-                                .context
+                                .transaction
                                 .new_conversation(&id, case.credential_type, case.cfg.clone())
                                 .await
                                 .unwrap();
@@ -293,7 +293,7 @@ mod tests {
                         }
 
                         // Count the key material before the rotation to compare it later
-                        let before_rotate = alice_central.context.count_entities().await;
+                        let before_rotate = alice_central.transaction.count_entities().await;
                         assert_eq!(before_rotate.key_package, INITIAL_KEYING_MATERIAL_COUNT);
 
                         assert_eq!(before_rotate.hpke_private_key, INITIAL_KEYING_MATERIAL_COUNT);
@@ -323,7 +323,7 @@ mod tests {
                         .unwrap();
 
                         alice_central
-                            .context
+                            .transaction
                             .save_x509_credential(&mut enrollment, cert)
                             .await
                             .unwrap();
@@ -342,7 +342,7 @@ mod tests {
                             .await
                             .unwrap();
 
-                        let after_rotate = alice_central.context.count_entities().await;
+                        let after_rotate = alice_central.transaction.count_entities().await;
                         // verify we have indeed created the right amount of new X509 KeyPackages
                         assert_eq!(after_rotate.key_package - before_rotate.key_package, NB_KEY_PACKAGE);
 
@@ -351,7 +351,7 @@ mod tests {
 
                         for (id, commit) in result.conversation_ids_and_commits.into_iter() {
                             let decrypted = bob_central
-                                .context
+                                .transaction
                                 .conversation(&id)
                                 .await
                                 .unwrap()
@@ -402,7 +402,7 @@ mod tests {
                         );
 
                         // we also have generated the right amount of private encryption keys
-                        let before_delete = alice_central.context.count_entities().await;
+                        let before_delete = alice_central.transaction.count_entities().await;
                         assert_eq!(
                             before_delete.hpke_private_key - before_rotate.hpke_private_key,
                             NB_KEY_PACKAGE
@@ -422,7 +422,7 @@ mod tests {
                         // Checks are done, now let's delete ALL the deprecated KeyPackages.
                         // This should have the consequence to purge the previous credential material as well.
                         alice_central
-                            .context
+                            .transaction
                             .delete_stale_key_packages(case.ciphersuite())
                             .await
                             .unwrap();
@@ -441,7 +441,7 @@ mod tests {
                         // and since all of Alice's unclaimed KeyPackages have been purged, so should be her old Credential
 
                         // Also the old Credential has been removed from the keystore
-                        let after_delete = alice_central.context.count_entities().await;
+                        let after_delete = alice_central.transaction.count_entities().await;
                         assert_eq!(after_delete.credential, 1);
                         assert!(
                             alice_central
@@ -462,7 +462,7 @@ mod tests {
                         // Now charlie tries to add Alice to a conversation with her new KeyPackages
                         let id = conversation_id();
                         charlie_central
-                            .context
+                            .transaction
                             .new_conversation(&id, case.credential_type, case.cfg.clone())
                             .await
                             .unwrap();
@@ -492,7 +492,7 @@ mod tests {
 
                     let id = conversation_id();
                     alice_central
-                        .context
+                        .transaction
                         .new_conversation(&id, case.credential_type, case.cfg.clone())
                         .await
                         .unwrap();
@@ -522,7 +522,7 @@ mod tests {
                     .unwrap();
 
                     alice_central
-                        .context
+                        .transaction
                         .save_x509_credential(&mut enrollment, cert)
                         .await
                         .unwrap();
@@ -560,7 +560,7 @@ mod tests {
                         let cid = alice_client.id().await.unwrap();
                         let scs = HashSet::from([case.signature_scheme()]);
                         let all_credentials = alice_central
-                            .context
+                            .transaction
                             .keystore()
                             .await
                             .unwrap()
@@ -578,7 +578,7 @@ mod tests {
                         assert_eq!(all_credentials.len(), 2);
                         (cid, all_credentials, scs, old_nb_identities)
                     };
-                    let backend = &alice_central.context.mls_provider().await.unwrap();
+                    let backend = &alice_central.transaction.mls_provider().await.unwrap();
                     backend.keystore().commit_transaction().await.unwrap();
                     backend.keystore().new_transaction().await.unwrap();
 
@@ -630,7 +630,7 @@ mod tests {
 
                         let id = conversation_id();
                         alice_central
-                            .context
+                            .transaction
                             .new_conversation(&id, case.credential_type, case.cfg.clone())
                             .await
                             .unwrap();
@@ -686,12 +686,12 @@ mod tests {
                         .unwrap();
 
                         alice_central
-                            .context
+                            .transaction
                             .save_x509_credential(&mut enrollment, cert)
                             .await
                             .unwrap();
                         alice_central
-                            .context
+                            .transaction
                             .conversation(&id)
                             .await
                             .unwrap()
@@ -702,7 +702,7 @@ mod tests {
                         let commit = alice_central.mls_transport.latest_commit().await;
 
                         let decrypted = bob_central
-                            .context
+                            .transaction
                             .conversation(&id)
                             .await
                             .unwrap()
@@ -764,13 +764,13 @@ mod tests {
                         .unwrap();
 
                         bob_central
-                            .context
+                            .transaction
                             .save_x509_credential(&mut enrollment, cert)
                             .await
                             .unwrap();
 
                         bob_central
-                            .context
+                            .transaction
                             .conversation(&id)
                             .await
                             .unwrap()
@@ -781,7 +781,7 @@ mod tests {
                         let commit = bob_central.mls_transport.latest_commit().await;
 
                         let decrypted = alice_central
-                            .context
+                            .transaction
                             .conversation(&id)
                             .await
                             .unwrap()
@@ -812,14 +812,14 @@ mod tests {
                     Box::pin(async move {
                         let id = conversation_id();
                         alice_central
-                            .context
+                            .transaction
                             .new_conversation(&id, case.credential_type, case.cfg.clone())
                             .await
                             .unwrap();
 
                         alice_central.invite_all(&case, &id, [&bob_central]).await.unwrap();
 
-                        let init_count = alice_central.context.count_entities().await;
+                        let init_count = alice_central.transaction.count_entities().await;
                         let x509_test_chain = alice_central.x509_test_chain.as_ref().as_ref().unwrap();
 
                         let intermediate_ca = x509_test_chain.find_local_intermediate_ca();
@@ -839,7 +839,7 @@ mod tests {
 
                         // Verify old identity is still there in the MLS group
                         let alice_old_identities = alice_central
-                            .context
+                            .transaction
                             .conversation(&id)
                             .await
                             .unwrap()
@@ -858,7 +858,7 @@ mod tests {
 
                         // Alice issues an Update commit to replace her current identity
                         alice_central
-                            .context
+                            .transaction
                             .conversation(&id)
                             .await
                             .unwrap()
@@ -869,7 +869,7 @@ mod tests {
 
                         // Bob decrypts the commit...
                         let decrypted = bob_central
-                            .context
+                            .transaction
                             .conversation(&id)
                             .await
                             .unwrap()
@@ -884,7 +884,7 @@ mod tests {
                             .verify_local_credential_rotated(&id, new_handle, new_display_name)
                             .await;
 
-                        let final_count = alice_central.context.count_entities().await;
+                        let final_count = alice_central.transaction.count_entities().await;
                         assert_eq!(init_count.encryption_keypair, final_count.encryption_keypair);
                         assert_eq!(
                             init_count.epoch_encryption_keypair,
@@ -907,14 +907,14 @@ mod tests {
                 Box::pin(async move {
                     let id = conversation_id();
                     alice_central
-                        .context
+                        .transaction
                         .new_conversation(&id, case.credential_type, case.cfg.clone())
                         .await
                         .unwrap();
 
                     alice_central.invite_all(&case, &id, [&bob_central]).await.unwrap();
 
-                    let init_count = alice_central.context.count_entities().await;
+                    let init_count = alice_central.transaction.count_entities().await;
 
                     let x509_test_chain = alice_central.x509_test_chain.as_ref().as_ref().unwrap();
 
@@ -940,7 +940,7 @@ mod tests {
 
                     // Meanwhile, Bob creates a simple commit
                     bob_central
-                        .context
+                        .transaction
                         .conversation(&id)
                         .await
                         .unwrap()
@@ -952,7 +952,7 @@ mod tests {
 
                     // Alice decrypts the commit...
                     let decrypted = alice_central
-                        .context
+                        .transaction
                         .conversation(&id)
                         .await
                         .unwrap()
@@ -964,7 +964,7 @@ mod tests {
                     assert_eq!(decrypted.proposals.len(), 1);
                     let renewed_proposal = decrypted.proposals.first().unwrap();
                     bob_central
-                        .context
+                        .transaction
                         .conversation(&id)
                         .await
                         .unwrap()
@@ -973,7 +973,7 @@ mod tests {
                         .unwrap();
 
                     alice_central
-                        .context
+                        .transaction
                         .conversation(&id)
                         .await
                         .unwrap()
@@ -989,7 +989,7 @@ mod tests {
                     let rotate_commit = alice_central.mls_transport.latest_commit().await;
                     // Bob verifies that now Alice is represented with her new identity
                     let decrypted = bob_central
-                        .context
+                        .transaction
                         .conversation(&id)
                         .await
                         .unwrap()
@@ -998,7 +998,7 @@ mod tests {
                         .unwrap();
                     alice_central.verify_sender_identity(&case, &decrypted).await;
 
-                    let final_count = alice_central.context.count_entities().await;
+                    let final_count = alice_central.transaction.count_entities().await;
                     assert_eq!(init_count.encryption_keypair, final_count.encryption_keypair);
                     // TODO: there is no efficient way to clean a credential when alice merges her pending commit. Tracking issue: WPB-9594
                     // One option would be to fetch all conversations and see if Alice is never represented with the said Credential
@@ -1018,7 +1018,7 @@ mod tests {
                     Box::pin(async move {
                         let id = conversation_id();
                         alice_central
-                            .context
+                            .transaction
                             .new_conversation(&id, MlsCredentialType::Basic, case.cfg.clone())
                             .await
                             .unwrap();
@@ -1043,7 +1043,7 @@ mod tests {
 
                         // Verify old identity is a basic identity in the MLS group
                         let alice_old_identities = alice_central
-                            .context
+                            .transaction
                             .conversation(&id)
                             .await
                             .unwrap()
@@ -1056,7 +1056,7 @@ mod tests {
 
                         // Alice issues an Update commit to replace her current identity
                         alice_central
-                            .context
+                            .transaction
                             .conversation(&id)
                             .await
                             .unwrap()
@@ -1067,7 +1067,7 @@ mod tests {
 
                         // Bob decrypts the commit...
                         let decrypted = bob_central
-                            .context
+                            .transaction
                             .conversation(&id)
                             .await
                             .unwrap()

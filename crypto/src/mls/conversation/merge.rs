@@ -65,14 +65,14 @@ mod tests {
                 Box::pin(async move {
                     let id = conversation_id();
                     alice_central
-                        .context
+                        .transaction
                         .new_conversation(&id, case.credential_type, case.cfg.clone())
                         .await
                         .unwrap();
                     alice_central.invite_all(&case, &id, [&bob_central]).await.unwrap();
                     assert_eq!(alice_central.get_conversation_unchecked(&id).await.members().len(), 2);
                     alice_central
-                        .context
+                        .transaction
                         .conversation(&id)
                         .await
                         .unwrap()
@@ -92,11 +92,11 @@ mod tests {
                 Box::pin(async move {
                     let id = conversation_id();
                     alice_central
-                        .context
+                        .transaction
                         .new_conversation(&id, case.credential_type, case.cfg.clone())
                         .await
                         .unwrap();
-                    alice_central.context.new_update_proposal(&id).await.unwrap();
+                    alice_central.transaction.new_update_proposal(&id).await.unwrap();
                     alice_central.create_unmerged_commit(&id).await;
                     assert!(!alice_central.pending_proposals(&id).await.is_empty());
                     assert!(alice_central.pending_commit(&id).await.is_some());
@@ -104,7 +104,7 @@ mod tests {
                         .get_conversation_unchecked(&id)
                         .await
                         .commit_accepted(
-                            &alice_central.context.session().await.unwrap(),
+                            &alice_central.transaction.session().await.unwrap(),
                             &alice_central.session.crypto_provider,
                         )
                         .await
@@ -123,22 +123,22 @@ mod tests {
                 Box::pin(async move {
                     let id = conversation_id();
                     alice_central
-                        .context
+                        .transaction
                         .new_conversation(&id, case.credential_type, case.cfg.clone())
                         .await
                         .unwrap();
 
-                    let initial_count = alice_central.context.count_entities().await;
+                    let initial_count = alice_central.transaction.count_entities().await;
 
-                    alice_central.context.new_update_proposal(&id).await.unwrap();
-                    let post_proposal_count = alice_central.context.count_entities().await;
+                    alice_central.transaction.new_update_proposal(&id).await.unwrap();
+                    let post_proposal_count = alice_central.transaction.count_entities().await;
                     assert_eq!(
                         post_proposal_count.encryption_keypair,
                         initial_count.encryption_keypair + 1
                     );
 
                     alice_central
-                        .context
+                        .transaction
                         .conversation(&id)
                         .await
                         .unwrap()
@@ -146,7 +146,7 @@ mod tests {
                         .await
                         .unwrap();
 
-                    let final_count = alice_central.context.count_entities().await;
+                    let final_count = alice_central.transaction.count_entities().await;
                     assert_eq!(initial_count, final_count);
                 })
             })

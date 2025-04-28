@@ -80,7 +80,7 @@ mod tests {
             Box::pin(async move {
                 let id = conversation_id();
                 session_context
-                    .context
+                    .transaction
                     .new_conversation(&id, case.credential_type, case.cfg.clone())
                     .await
                     .unwrap();
@@ -95,7 +95,7 @@ mod tests {
 
                 // trigger an epoch
                 session_context
-                    .context
+                    .transaction
                     .conversation(&id)
                     .await
                     .unwrap()
@@ -126,7 +126,7 @@ mod tests {
             Box::pin(async move {
                 let id = conversation_id();
                 alice
-                    .context
+                    .transaction
                     .new_conversation(&id, case.credential_type, case.cfg.clone())
                     .await
                     .unwrap();
@@ -143,7 +143,7 @@ mod tests {
 
                 // alice triggers an epoch
                 alice
-                    .context
+                    .transaction
                     .conversation(&id)
                     .await
                     .unwrap()
@@ -153,7 +153,7 @@ mod tests {
 
                 // communicate that to bob
                 let commit = alice.mls_transport.latest_commit().await;
-                bob.context
+                bob.transaction
                     .conversation(&id)
                     .await
                     .unwrap()

@@ -156,11 +156,11 @@ mod tests {
                 Box::pin(async move {
                     let id = conversation_id();
                     central
-                        .context
+                        .transaction
                         .new_conversation(&id, case.credential_type, case.cfg.clone())
                         .await
                         .unwrap();
-                    let epoch = central.context.conversation(&id).await.unwrap().epoch().await;
+                    let epoch = central.transaction.conversation(&id).await.unwrap().epoch().await;
                     assert_eq!(epoch, 0);
                 })
             })
@@ -174,12 +174,12 @@ mod tests {
                 Box::pin(async move {
                     let id = conversation_id();
                     alice_central
-                        .context
+                        .transaction
                         .new_conversation(&id, case.credential_type, case.cfg.clone())
                         .await
                         .unwrap();
                     alice_central.invite_all(&case, &id, [&bob_central]).await.unwrap();
-                    let epoch = alice_central.context.conversation(&id).await.unwrap().epoch().await;
+                    let epoch = alice_central.transaction.conversation(&id).await.unwrap().epoch().await;
                     assert_eq!(epoch, 1);
                 })
             })
@@ -194,7 +194,7 @@ mod tests {
             run_test_with_central(case.clone(), move |[central]| {
                 Box::pin(async move {
                     let id = conversation_id();
-                    let err = central.context.conversation(&id).await.unwrap_err();
+                    let err = central.transaction.conversation(&id).await.unwrap_err();
                     assert!(matches!(
                         err,
                         TransactionError::Leaf(LeafError::ConversationNotFound(i)) if i == id
@@ -284,14 +284,14 @@ mod tests {
                 let id = conversation_id();
 
                 let create = alice_central
-                    .context
+                    .transaction
                     .new_conversation(&id, case.credential_type, case.cfg.clone())
                     .await;
                 assert!(create.is_ok());
 
                 // creating a conversation should first verify that the conversation does not already exist ; only then create it
                 let repeat_create = alice_central
-                    .context
+                    .transaction
                     .new_conversation(&id, case.credential_type, case.cfg.clone())
                     .await;
                 assert!(matches!(repeat_create.unwrap_err(), TransactionError::Leaf(LeafError::ConversationAlreadyExists(i)) if i == id));

@@ -564,14 +564,14 @@ mod tests {
                 Box::pin(async move {
                     let id = conversation_id();
                     alice_central
-                        .context
+                        .transaction
                         .new_conversation(&id, case.credential_type, case.cfg.clone())
                         .await
                         .unwrap();
                     alice_central.invite_all(&case, &id, [&bob_central]).await.unwrap();
 
                     bob_central
-                        .context
+                        .transaction
                         .conversation(&id)
                         .await
                         .unwrap()
@@ -580,7 +580,7 @@ mod tests {
                         .unwrap();
                     let commit = bob_central.mls_transport.latest_commit().await;
                     let MlsConversationDecryptMessage { is_active, .. } = alice_central
-                        .context
+                        .transaction
                         .conversation(&id)
                         .await
                         .unwrap()
@@ -600,14 +600,14 @@ mod tests {
                 Box::pin(async move {
                     let id = conversation_id();
                     alice_central
-                        .context
+                        .transaction
                         .new_conversation(&id, case.credential_type, case.cfg.clone())
                         .await
                         .unwrap();
                     alice_central.invite_all(&case, &id, [&bob_central]).await.unwrap();
 
                     bob_central
-                        .context
+                        .transaction
                         .conversation(&id)
                         .await
                         .unwrap()
@@ -616,7 +616,7 @@ mod tests {
                         .unwrap();
                     let commit = bob_central.mls_transport.latest_commit().await;
                     let MlsConversationDecryptMessage { is_active, .. } = alice_central
-                        .context
+                        .transaction
                         .conversation(&id)
                         .await
                         .unwrap()
@@ -640,7 +640,7 @@ mod tests {
                 Box::pin(async move {
                     let id = conversation_id();
                     alice_central
-                        .context
+                        .transaction
                         .new_conversation(&id, case.credential_type, case.cfg.clone())
                         .await
                         .unwrap();
@@ -654,10 +654,10 @@ mod tests {
                         .await
                         .unwrap();
 
-                    let epoch_before = alice_central.context.conversation(&id).await.unwrap().epoch().await;
+                    let epoch_before = alice_central.transaction.conversation(&id).await.unwrap().epoch().await;
 
                     alice_central
-                        .context
+                        .transaction
                         .conversation(&id)
                         .await
                         .unwrap()
@@ -667,14 +667,14 @@ mod tests {
                     let commit = alice_central.mls_transport.latest_commit().await;
 
                     let decrypted = bob_central
-                        .context
+                        .transaction
                         .conversation(&id)
                         .await
                         .unwrap()
                         .decrypt_message(commit.to_bytes().unwrap())
                         .await
                         .unwrap();
-                    let epoch_after = bob_central.context.conversation(&id).await.unwrap().epoch().await;
+                    let epoch_after = bob_central.transaction.conversation(&id).await.unwrap().epoch().await;
                     assert_eq!(epoch_after, epoch_before + 1);
                     assert!(bob_observer.has_changed().await);
                     assert!(decrypted.delay.is_none());
@@ -696,7 +696,7 @@ mod tests {
                     Box::pin(async move {
                         let id = conversation_id();
                         alice_central
-                            .context
+                            .transaction
                             .new_conversation(&id, case.credential_type, case.cfg.clone())
                             .await
                             .unwrap();
@@ -716,9 +716,10 @@ mod tests {
                         // Alice will decrypt the commit but musn't renew the proposal to add Charlie
                         let charlie_kp = charlie_central.get_one_key_package(&case).await;
 
-                        let add_charlie_proposal = bob_central.context.new_add_proposal(&id, charlie_kp).await.unwrap();
+                        let add_charlie_proposal =
+                            bob_central.transaction.new_add_proposal(&id, charlie_kp).await.unwrap();
                         alice_central
-                            .context
+                            .transaction
                             .conversation(&id)
                             .await
                             .unwrap()
@@ -729,7 +730,7 @@ mod tests {
                         alice_observer.reset().await;
 
                         bob_central
-                            .context
+                            .transaction
                             .conversation(&id)
                             .await
                             .unwrap()
@@ -738,7 +739,7 @@ mod tests {
                             .unwrap();
                         let commit = bob_central.mls_transport.latest_commit().await;
                         let MlsConversationDecryptMessage { proposals, delay, .. } = alice_central
-                            .context
+                            .transaction
                             .conversation(&id)
                             .await
                             .unwrap()
@@ -766,7 +767,7 @@ mod tests {
                     Box::pin(async move {
                         let id = conversation_id();
                         alice_central
-                            .context
+                            .transaction
                             .new_conversation(&id, case.credential_type, case.cfg.clone())
                             .await
                             .unwrap();
@@ -784,7 +785,7 @@ mod tests {
                         // Bob will create a commit which Alice will decrypt
                         // Then Alice will renew her proposal
                         bob_central
-                            .context
+                            .transaction
                             .conversation(&id)
                             .await
                             .unwrap()
@@ -796,12 +797,16 @@ mod tests {
 
                         // Alice propose to add Charlie
                         let charlie_kp = charlie_central.get_one_key_package(&case).await;
-                        alice_central.context.new_add_proposal(&id, charlie_kp).await.unwrap();
+                        alice_central
+                            .transaction
+                            .new_add_proposal(&id, charlie_kp)
+                            .await
+                            .unwrap();
                         assert_eq!(alice_central.pending_proposals(&id).await.len(), 1);
 
                         // But first she receives Bob commit
                         let MlsConversationDecryptMessage { proposals, delay, .. } = alice_central
-                            .context
+                            .transaction
                             .conversation(&id)
                             .await
                             .unwrap()
@@ -834,7 +839,7 @@ mod tests {
 
                         // Let's use this proposal to see if it works
                         bob_central
-                            .context
+                            .transaction
                             .conversation(&id)
                             .await
                             .unwrap()
@@ -843,7 +848,7 @@ mod tests {
                             .unwrap();
                         assert_eq!(bob_central.pending_proposals(&id).await.len(), 1);
                         bob_central
-                            .context
+                            .transaction
                             .conversation(&id)
                             .await
                             .unwrap()
@@ -852,7 +857,7 @@ mod tests {
                             .unwrap();
                         let commit = bob_central.mls_transport.latest_commit().await;
                         let _decrypted = alice_central
-                            .context
+                            .transaction
                             .conversation(&id)
                             .await
                             .unwrap()
@@ -893,7 +898,7 @@ mod tests {
                     Box::pin(async move {
                         let id = conversation_id();
                         alice_central
-                            .context
+                            .transaction
                             .new_conversation(&id, case.credential_type, case.cfg.clone())
                             .await
                             .unwrap();
@@ -904,7 +909,7 @@ mod tests {
                         // will create a commit and send it to Alice.
                         // Alice will not renew the external proposal
                         let ext_proposal = charlie_central
-                            .context
+                            .transaction
                             .new_external_add_proposal(
                                 id.clone(),
                                 alice_central.get_conversation_unchecked(&id).await.group.epoch(),
@@ -915,7 +920,7 @@ mod tests {
                             .unwrap();
                         assert!(alice_central.pending_proposals(&id).await.is_empty());
                         alice_central
-                            .context
+                            .transaction
                             .conversation(&id)
                             .await
                             .unwrap()
@@ -925,7 +930,7 @@ mod tests {
                         assert_eq!(alice_central.pending_proposals(&id).await.len(), 1);
 
                         bob_central
-                            .context
+                            .transaction
                             .conversation(&id)
                             .await
                             .unwrap()
@@ -934,7 +939,7 @@ mod tests {
                             .unwrap();
                         let commit = bob_central.mls_transport.latest_commit().await;
                         let alice_renewed_proposals = alice_central
-                            .context
+                            .transaction
                             .conversation(&id)
                             .await
                             .unwrap()
@@ -957,14 +962,14 @@ mod tests {
                 Box::pin(async move {
                     let id = conversation_id();
                     alice_central
-                        .context
+                        .transaction
                         .new_conversation(&id, case.credential_type, case.cfg.clone())
                         .await
                         .unwrap();
                     alice_central.invite_all(&case, &id, [&bob_central]).await.unwrap();
 
                     alice_central
-                        .context
+                        .transaction
                         .conversation(&id)
                         .await
                         .unwrap()
@@ -974,7 +979,7 @@ mod tests {
                     let commit = alice_central.mls_transport.latest_commit().await;
 
                     let sender_client_id = bob_central
-                        .context
+                        .transaction
                         .conversation(&id)
                         .await
                         .unwrap()
@@ -1002,7 +1007,7 @@ mod tests {
                     Box::pin(async move {
                         let id = conversation_id();
                         alice_central
-                            .context
+                            .transaction
                             .new_conversation(&id, case.credential_type, case.cfg.clone())
                             .await
                             .unwrap();
@@ -1018,13 +1023,13 @@ mod tests {
 
                         let epoch = alice_central.get_conversation_unchecked(&id).await.group.epoch();
                         let ext_proposal = alice2_central
-                            .context
+                            .transaction
                             .new_external_add_proposal(id.clone(), epoch, case.ciphersuite(), case.credential_type)
                             .await
                             .unwrap();
 
                         let decrypted = alice_central
-                            .context
+                            .transaction
                             .conversation(&id)
                             .await
                             .unwrap()
@@ -1035,7 +1040,7 @@ mod tests {
                         assert!(decrypted.delay.is_some());
 
                         let decrypted = bob_central
-                            .context
+                            .transaction
                             .conversation(&id)
                             .await
                             .unwrap()
@@ -1066,7 +1071,7 @@ mod tests {
                     Box::pin(async move {
                         let id = conversation_id();
                         alice_central
-                            .context
+                            .transaction
                             .new_conversation(&id, case.credential_type, case.cfg.clone())
                             .await
                             .unwrap();
@@ -1074,14 +1079,14 @@ mod tests {
 
                         let charlie_kp = charlie_central.get_one_key_package(&case).await;
                         let proposal = alice_central
-                            .context
+                            .transaction
                             .new_add_proposal(&id, charlie_kp)
                             .await
                             .unwrap()
                             .proposal;
 
                         let decrypted = bob_central
-                            .context
+                            .transaction
                             .conversation(&id)
                             .await
                             .unwrap()
@@ -1092,7 +1097,7 @@ mod tests {
                         assert_eq!(bob_central.get_conversation_unchecked(&id).await.members().len(), 2);
                         // if 'decrypt_message' is not durable the commit won't contain the add proposal
                         bob_central
-                            .context
+                            .transaction
                             .conversation(&id)
                             .await
                             .unwrap()
@@ -1115,16 +1120,21 @@ mod tests {
                 Box::pin(async move {
                     let id = conversation_id();
                     alice_central
-                        .context
+                        .transaction
                         .new_conversation(&id, case.credential_type, case.cfg.clone())
                         .await
                         .unwrap();
                     alice_central.invite_all(&case, &id, [&bob_central]).await.unwrap();
 
-                    let proposal = alice_central.context.new_update_proposal(&id).await.unwrap().proposal;
+                    let proposal = alice_central
+                        .transaction
+                        .new_update_proposal(&id)
+                        .await
+                        .unwrap()
+                        .proposal;
 
                     let sender_client_id = bob_central
-                        .context
+                        .transaction
                         .conversation(&id)
                         .await
                         .unwrap()
@@ -1149,7 +1159,7 @@ mod tests {
                 Box::pin(async move {
                     let id = conversation_id();
                     alice_central
-                        .context
+                        .transaction
                         .new_conversation(&id, case.credential_type, case.cfg.clone())
                         .await
                         .unwrap();
@@ -1172,7 +1182,7 @@ mod tests {
 
                     let msg = b"Hello bob";
                     let encrypted = alice_central
-                        .context
+                        .transaction
                         .conversation(&id)
                         .await
                         .unwrap()
@@ -1181,7 +1191,7 @@ mod tests {
                         .unwrap();
                     assert_ne!(&msg[..], &encrypted[..]);
                     let decrypted = bob_central
-                        .context
+                        .transaction
                         .conversation(&id)
                         .await
                         .unwrap()
@@ -1195,7 +1205,7 @@ mod tests {
 
                     let msg = b"Hello alice";
                     let encrypted = bob_central
-                        .context
+                        .transaction
                         .conversation(&id)
                         .await
                         .unwrap()
@@ -1204,7 +1214,7 @@ mod tests {
                         .unwrap();
                     assert_ne!(&msg[..], &encrypted[..]);
                     let decrypted = alice_central
-                        .context
+                        .transaction
                         .conversation(&id)
                         .await
                         .unwrap()
@@ -1227,7 +1237,7 @@ mod tests {
                 Box::pin(async move {
                     let id = conversation_id();
                     alice_central
-                        .context
+                        .transaction
                         .new_conversation(&id, case.credential_type, case.cfg.clone())
                         .await
                         .unwrap();
@@ -1236,7 +1246,7 @@ mod tests {
                     // encrypt a message in epoch 1
                     let msg = b"Hello bob";
                     let encrypted = alice_central
-                        .context
+                        .transaction
                         .conversation(&id)
                         .await
                         .unwrap()
@@ -1248,14 +1258,14 @@ mod tests {
                     // in epoch 2 which should fail
                     let gi = alice_central.get_group_info(&id).await;
                     bob_central
-                        .context
+                        .transaction
                         .join_by_external_commit(gi, case.custom_cfg(), case.credential_type)
                         .await
                         .unwrap();
 
                     // fails because of Forward Secrecy
                     let decrypt = bob_central
-                        .context
+                        .transaction
                         .conversation(&id)
                         .await
                         .unwrap()
@@ -1274,7 +1284,7 @@ mod tests {
                 Box::pin(async move {
                     let id = conversation_id();
                     alice_central
-                        .context
+                        .transaction
                         .new_conversation(&id, case.credential_type, case.cfg.clone())
                         .await
                         .unwrap();
@@ -1282,7 +1292,7 @@ mod tests {
 
                     // only Alice will change epoch without notifying Bob
                     alice_central
-                        .context
+                        .transaction
                         .conversation(&id)
                         .await
                         .unwrap()
@@ -1294,7 +1304,7 @@ mod tests {
                     // Now in epoch 2 Alice will encrypt a message
                     let msg = b"Hello bob";
                     let encrypted = alice_central
-                        .context
+                        .transaction
                         .conversation(&id)
                         .await
                         .unwrap()
@@ -1304,7 +1314,7 @@ mod tests {
 
                     // which Bob cannot decrypt because of Post CompromiseSecurity
                     let decrypt = bob_central
-                        .context
+                        .transaction
                         .conversation(&id)
                         .await
                         .unwrap()
@@ -1313,7 +1323,7 @@ mod tests {
                     assert!(matches!(decrypt.unwrap_err(), Error::BufferedFutureMessage { .. }));
 
                     let decrypted_commit = bob_central
-                        .context
+                        .transaction
                         .conversation(&id)
                         .await
                         .unwrap()
@@ -1338,7 +1348,7 @@ mod tests {
                 Box::pin(async move {
                     let id = conversation_id();
                     alice_central
-                        .context
+                        .transaction
                         .new_conversation(&id, case.credential_type, case.cfg.clone())
                         .await
                         .unwrap();
@@ -1352,7 +1362,7 @@ mod tests {
                     for i in 0..nb_messages {
                         let msg = format!("Hello {i}");
                         let encrypted = alice_central
-                            .context
+                            .transaction
                             .conversation(&id)
                             .await
                             .unwrap()
@@ -1366,7 +1376,7 @@ mod tests {
                     messages.reverse();
                     for (i, (original, encrypted)) in messages.iter().enumerate() {
                         let decrypt = bob_central
-                            .context
+                            .transaction
                             .conversation(&id)
                             .await
                             .unwrap()
@@ -1391,7 +1401,7 @@ mod tests {
                 Box::pin(async move {
                     let id = conversation_id();
                     alice_central
-                        .context
+                        .transaction
                         .new_conversation(&id, case.credential_type, case.cfg.clone())
                         .await
                         .unwrap();
@@ -1399,7 +1409,7 @@ mod tests {
 
                     let msg = b"Hello bob";
                     let encrypted = alice_central
-                        .context
+                        .transaction
                         .conversation(&id)
                         .await
                         .unwrap()
@@ -1409,7 +1419,7 @@ mod tests {
                     assert_ne!(&msg[..], &encrypted[..]);
 
                     let sender_client_id = bob_central
-                        .context
+                        .transaction
                         .conversation(&id)
                         .await
                         .unwrap()
@@ -1436,7 +1446,7 @@ mod tests {
                 Box::pin(async move {
                     let id = conversation_id();
                     alice_central
-                        .context
+                        .transaction
                         .new_conversation(&id, case.credential_type, case.cfg.clone())
                         .await
                         .unwrap();
@@ -1444,7 +1454,7 @@ mod tests {
 
                     // Alice encrypts a message to Bob
                     let bob_message1 = alice_central
-                        .context
+                        .transaction
                         .conversation(&id)
                         .await
                         .unwrap()
@@ -1452,7 +1462,7 @@ mod tests {
                         .await
                         .unwrap();
                     let bob_message2 = alice_central
-                        .context
+                        .transaction
                         .conversation(&id)
                         .await
                         .unwrap()
@@ -1463,7 +1473,7 @@ mod tests {
                     // Move group's epoch forward by self updating
                     for _ in 0..MAX_PAST_EPOCHS {
                         alice_central
-                            .context
+                            .transaction
                             .conversation(&id)
                             .await
                             .unwrap()
@@ -1472,7 +1482,7 @@ mod tests {
                             .unwrap();
                         let commit = alice_central.mls_transport.latest_commit().await;
                         bob_central
-                            .context
+                            .transaction
                             .conversation(&id)
                             .await
                             .unwrap()
@@ -1482,7 +1492,7 @@ mod tests {
                     }
                     // Decrypt should work
                     let decrypt = bob_central
-                        .context
+                        .transaction
                         .conversation(&id)
                         .await
                         .unwrap()
@@ -1493,7 +1503,7 @@ mod tests {
 
                     // Moving the epochs once more should cause an error
                     alice_central
-                        .context
+                        .transaction
                         .conversation(&id)
                         .await
                         .unwrap()
@@ -1502,7 +1512,7 @@ mod tests {
                         .unwrap();
                     let commit = alice_central.mls_transport.latest_commit().await;
                     bob_central
-                        .context
+                        .transaction
                         .conversation(&id)
                         .await
                         .unwrap()
@@ -1511,7 +1521,7 @@ mod tests {
                         .unwrap();
 
                     let decrypt = bob_central
-                        .context
+                        .transaction
                         .conversation(&id)
                         .await
                         .unwrap()
@@ -1531,7 +1541,7 @@ mod tests {
                 Box::pin(async move {
                     let id = conversation_id();
                     alice_central
-                        .context
+                        .transaction
                         .new_conversation(&id, case.credential_type, case.cfg.clone())
                         .await
                         .unwrap();
@@ -1539,7 +1549,7 @@ mod tests {
 
                     // Alice generates a bunch of soon to be outdated messages
                     let old_proposal = alice_central
-                        .context
+                        .transaction
                         .new_update_proposal(&id)
                         .await
                         .unwrap()
@@ -1558,7 +1568,7 @@ mod tests {
                         .to_bytes()
                         .unwrap();
                     alice_central
-                        .context
+                        .transaction
                         .conversation(&id)
                         .await
                         .unwrap()
@@ -1568,7 +1578,7 @@ mod tests {
 
                     // Now let's jump to next epoch
                     alice_central
-                        .context
+                        .transaction
                         .conversation(&id)
                         .await
                         .unwrap()
@@ -1577,7 +1587,7 @@ mod tests {
                         .unwrap();
                     let commit = alice_central.mls_transport.latest_commit().await;
                     bob_central
-                        .context
+                        .transaction
                         .conversation(&id)
                         .await
                         .unwrap()
@@ -1587,7 +1597,7 @@ mod tests {
 
                     // trying to consume outdated messages should fail with a dedicated error
                     let decrypt_err = bob_central
-                        .context
+                        .transaction
                         .conversation(&id)
                         .await
                         .unwrap()
@@ -1598,7 +1608,7 @@ mod tests {
                     assert!(matches!(decrypt_err, Error::StaleProposal));
 
                     let decrypt_err = bob_central
-                        .context
+                        .transaction
                         .conversation(&id)
                         .await
                         .unwrap()

@@ -515,7 +515,7 @@ mod tests {
             Box::pin(async move {
                 let id = conversation_id();
                 alice_central
-                    .context
+                    .transaction
                     .new_conversation(&id, case.credential_type, case.cfg.clone())
                     .await
                     .unwrap();
@@ -531,7 +531,7 @@ mod tests {
                 );
                 assert_eq!(alice_central.get_conversation_unchecked(&id).await.members().len(), 1);
                 let alice_can_send_message = alice_central
-                    .context
+                    .transaction
                     .conversation(&id)
                     .await
                     .unwrap()
@@ -551,14 +551,14 @@ mod tests {
                 let id = conversation_id();
 
                 alice_central
-                    .context
+                    .transaction
                     .new_conversation(&id, case.credential_type, case.cfg.clone())
                     .await
                     .unwrap();
 
                 let bob = bob_central.rand_key_package(&case).await;
                 alice_central
-                    .context
+                    .transaction
                     .conversation(&id)
                     .await
                     .unwrap()
@@ -580,7 +580,7 @@ mod tests {
 
                 let welcome = alice_central.mls_transport.latest_welcome_message().await;
                 bob_central
-                    .context
+                    .transaction
                     .process_welcome_message(welcome.into(), case.custom_cfg())
                     .await
                     .unwrap();
@@ -607,7 +607,7 @@ mod tests {
 
                 let id = conversation_id();
                 alice_central
-                    .context
+                    .transaction
                     .new_conversation(&id, case.credential_type, case.cfg.clone())
                     .await
                     .unwrap();
@@ -659,7 +659,7 @@ mod tests {
                         .unwrap();
 
                     let context = SessionContext {
-                        context: friend_context,
+                        transaction: friend_context,
                         session: central,
                         mls_transport: Arc::<CoreCryptoTransportSuccessProvider>::default(),
                         x509_test_chain: x509_test_chain_arc.clone(),
@@ -675,7 +675,7 @@ mod tests {
                 }
 
                 alice_central
-                    .context
+                    .transaction
                     .conversation(&id)
                     .await
                     .unwrap()
@@ -702,7 +702,7 @@ mod tests {
                 let mut bob_and_friends_groups = Vec::with_capacity(bob_and_friends.len());
                 // TODO: Do things in parallel, this is waaaaay too slow (takes around 5 minutes). Tracking issue: WPB-9624
                 for c in bob_and_friends {
-                    c.context
+                    c.transaction
                         .process_welcome_message(welcome.clone().into(), case.custom_cfg())
                         .await
                         .unwrap();
@@ -811,7 +811,7 @@ mod tests {
                     Box::pin(async move {
                         let id = conversation_id();
                         alice_android_central
-                            .context
+                            .transaction
                             .new_conversation(&id, case.credential_type, case.cfg.clone())
                             .await
                             .unwrap();
@@ -826,7 +826,7 @@ mod tests {
                         );
 
                         let mut android_ids = alice_android_central
-                            .context
+                            .transaction
                             .conversation(&id)
                             .await
                             .unwrap()
@@ -836,7 +836,7 @@ mod tests {
                         android_ids.sort_by(|a, b| a.client_id.cmp(&b.client_id));
                         assert_eq!(android_ids.len(), 2);
                         let mut ios_ids = alice_ios_central
-                            .context
+                            .transaction
                             .conversation(&id)
                             .await
                             .unwrap()
@@ -849,7 +849,7 @@ mod tests {
                         assert_eq!(android_ids, ios_ids);
 
                         let android_identities = alice_android_central
-                            .context
+                            .transaction
                             .conversation(&id)
                             .await
                             .unwrap()
@@ -859,11 +859,17 @@ mod tests {
                         let android_id = android_identities.first().unwrap();
                         assert_eq!(
                             android_id.client_id.as_bytes(),
-                            alice_android_central.context.client_id().await.unwrap().0.as_slice()
+                            alice_android_central
+                                .transaction
+                                .client_id()
+                                .await
+                                .unwrap()
+                                .0
+                                .as_slice()
                         );
 
                         let ios_identities = alice_android_central
-                            .context
+                            .transaction
                             .conversation(&id)
                             .await
                             .unwrap()
@@ -873,11 +879,11 @@ mod tests {
                         let ios_id = ios_identities.first().unwrap();
                         assert_eq!(
                             ios_id.client_id.as_bytes(),
-                            alice_ios_central.context.client_id().await.unwrap().0.as_slice()
+                            alice_ios_central.transaction.client_id().await.unwrap().0.as_slice()
                         );
 
                         let invalid = alice_android_central
-                            .context
+                            .transaction
                             .conversation(&id)
                             .await
                             .unwrap()
@@ -903,7 +909,7 @@ mod tests {
                     Box::pin(async move {
                         let id = conversation_id();
                         alice
-                            .context
+                            .transaction
                             .new_conversation(&id, case.credential_type, case.cfg.clone())
                             .await
                             .unwrap();
@@ -930,11 +936,14 @@ mod tests {
                         ];
                         // Do it a multiple times to avoid WPB-6904 happening again
                         for _ in 0..2 {
-                            check_identities_device_status(&mut alice.context, &id, &client_ids, &name_status).await;
-                            check_identities_device_status(&mut bob.context, &id, &client_ids, &name_status).await;
-                            check_identities_device_status(&mut rupert.context, &id, &client_ids, &name_status).await;
-                            check_identities_device_status(&mut john.context, &id, &client_ids, &name_status).await;
-                            check_identities_device_status(&mut dilbert.context, &id, &client_ids, &name_status).await;
+                            check_identities_device_status(&mut alice.transaction, &id, &client_ids, &name_status)
+                                .await;
+                            check_identities_device_status(&mut bob.transaction, &id, &client_ids, &name_status).await;
+                            check_identities_device_status(&mut rupert.transaction, &id, &client_ids, &name_status)
+                                .await;
+                            check_identities_device_status(&mut john.transaction, &id, &client_ids, &name_status).await;
+                            check_identities_device_status(&mut dilbert.transaction, &id, &client_ids, &name_status)
+                                .await;
                         }
                     })
                 },
@@ -955,7 +964,7 @@ mod tests {
                     Box::pin(async move {
                         let id = conversation_id();
                         alice
-                            .context
+                            .transaction
                             .new_conversation(&id, case.credential_type, case.cfg.clone())
                             .await
                             .unwrap();
@@ -976,9 +985,11 @@ mod tests {
 
                         // Do it a multiple times to avoid WPB-6904 happening again
                         for _ in 0..2 {
-                            check_identities_device_status(&mut alice.context, &id, &client_ids, &name_status).await;
-                            check_identities_device_status(&mut bob.context, &id, &client_ids, &name_status).await;
-                            check_identities_device_status(&mut rupert.context, &id, &client_ids, &name_status).await;
+                            check_identities_device_status(&mut alice.transaction, &id, &client_ids, &name_status)
+                                .await;
+                            check_identities_device_status(&mut bob.transaction, &id, &client_ids, &name_status).await;
+                            check_identities_device_status(&mut rupert.transaction, &id, &client_ids, &name_status)
+                                .await;
                         }
                     })
                 },
@@ -997,7 +1008,7 @@ mod tests {
                     Box::pin(async move {
                         let id = conversation_id();
                         alice_android_central
-                            .context
+                            .transaction
                             .new_conversation(&id, case.credential_type, case.cfg.clone())
                             .await
                             .unwrap();
@@ -1012,7 +1023,7 @@ mod tests {
                         );
 
                         let mut android_ids = alice_android_central
-                            .context
+                            .transaction
                             .conversation(&id)
                             .await
                             .unwrap()
@@ -1022,7 +1033,7 @@ mod tests {
                         android_ids.sort();
 
                         let mut ios_ids = alice_ios_central
-                            .context
+                            .transaction
                             .conversation(&id)
                             .await
                             .unwrap()
@@ -1083,7 +1094,7 @@ mod tests {
                     Box::pin(async move {
                         let id = conversation_id();
                         alice_android_central
-                            .context
+                            .transaction
                             .new_conversation(&id, case.credential_type, case.cfg.clone())
                             .await
                             .unwrap();
@@ -1120,7 +1131,7 @@ mod tests {
                         // Finds both Alice's devices
                         let alice_user_id = alice_android_central.get_user_id().await;
                         let alice_identities = alice_android_central
-                            .context
+                            .transaction
                             .conversation(&id)
                             .await
                             .unwrap()
@@ -1134,7 +1145,7 @@ mod tests {
                         // Finds Bob only device
                         let bob_user_id = bob_android_central.get_user_id().await;
                         let bob_identities = alice_android_central
-                            .context
+                            .transaction
                             .conversation(&id)
                             .await
                             .unwrap()
@@ -1149,12 +1160,12 @@ mod tests {
                         let user_ids = [alice_user_id, bob_user_id, alicem_user_id, bobt_user_id];
                         let expected_sizes = [2, 1, 2, 1];
 
-                        all_identities_check(&alice_android_central.context, &id, &user_ids, expected_sizes).await;
-                        all_identities_check(&alicem_android_central.context, &id, &user_ids, expected_sizes).await;
-                        all_identities_check(&alice_ios_central.context, &id, &user_ids, expected_sizes).await;
-                        all_identities_check(&alicem_ios_central.context, &id, &user_ids, expected_sizes).await;
-                        all_identities_check(&bob_android_central.context, &id, &user_ids, expected_sizes).await;
-                        all_identities_check(&bobt_android_central.context, &id, &user_ids, expected_sizes).await;
+                        all_identities_check(&alice_android_central.transaction, &id, &user_ids, expected_sizes).await;
+                        all_identities_check(&alicem_android_central.transaction, &id, &user_ids, expected_sizes).await;
+                        all_identities_check(&alice_ios_central.transaction, &id, &user_ids, expected_sizes).await;
+                        all_identities_check(&alicem_ios_central.transaction, &id, &user_ids, expected_sizes).await;
+                        all_identities_check(&bob_android_central.transaction, &id, &user_ids, expected_sizes).await;
+                        all_identities_check(&bobt_android_central.transaction, &id, &user_ids, expected_sizes).await;
                     })
                 },
             )
@@ -1187,7 +1198,7 @@ mod tests {
                     Box::pin(async move {
                         let id = conversation_id();
                         alice_android_central
-                            .context
+                            .transaction
                             .new_conversation(&id, case.credential_type, case.cfg.clone())
                             .await
                             .unwrap();
@@ -1211,7 +1222,7 @@ mod tests {
                         // Finds both Alice's devices
                         let alice_user_id = alice_android_central.get_user_id().await;
                         let alice_identities = alice_android_central
-                            .context
+                            .transaction
                             .conversation(&id)
                             .await
                             .unwrap()
@@ -1225,7 +1236,7 @@ mod tests {
                         // Finds Bob only device
                         let bob_user_id = bob_android_central.get_user_id().await;
                         let bob_identities = alice_android_central
-                            .context
+                            .transaction
                             .conversation(&id)
                             .await
                             .unwrap()
@@ -1239,9 +1250,11 @@ mod tests {
                         let user_ids = [alice_user_id, bob_user_id];
                         let expected_sizes = [2, 1];
 
-                        all_identities_check(&mut alice_android_central.context, &id, &user_ids, expected_sizes).await;
-                        all_identities_check(&mut alice_ios_central.context, &id, &user_ids, expected_sizes).await;
-                        all_identities_check(&mut bob_android_central.context, &id, &user_ids, expected_sizes).await;
+                        all_identities_check(&mut alice_android_central.transaction, &id, &user_ids, expected_sizes)
+                            .await;
+                        all_identities_check(&mut alice_ios_central.transaction, &id, &user_ids, expected_sizes).await;
+                        all_identities_check(&mut bob_android_central.transaction, &id, &user_ids, expected_sizes)
+                            .await;
                     })
                 },
             )
@@ -1290,7 +1303,7 @@ mod tests {
                     Box::pin(async move {
                         let id = conversation_id();
                         alices_ios_central
-                            .context
+                            .transaction
                             .new_conversation(&id, case.credential_type, case.cfg.clone())
                             .await
                             .unwrap();
@@ -1352,14 +1365,14 @@ mod tests {
                 Box::pin(async move {
                     let id = conversation_id();
                     alice_central
-                        .context
+                        .transaction
                         .new_conversation(&id, case.credential_type, case.cfg.clone())
                         .await
                         .unwrap();
 
                     let key_length = 128;
                     let result = alice_central
-                        .context
+                        .transaction
                         .conversation(&id)
                         .await
                         .unwrap()
@@ -1379,13 +1392,13 @@ mod tests {
                 Box::pin(async move {
                     let id = conversation_id();
                     alice_central
-                        .context
+                        .transaction
                         .new_conversation(&id, case.credential_type, case.cfg.clone())
                         .await
                         .unwrap();
 
                     let result = alice_central
-                        .context
+                        .transaction
                         .conversation(&id)
                         .await
                         .unwrap()
@@ -1412,14 +1425,14 @@ mod tests {
                 Box::pin(async move {
                     let id = conversation_id();
                     alice_central
-                        .context
+                        .transaction
                         .new_conversation(&id, case.credential_type, case.cfg.clone())
                         .await
                         .unwrap();
 
                     assert_eq!(
                         alice_central
-                            .context
+                            .transaction
                             .conversation(&id)
                             .await
                             .unwrap()
@@ -1432,7 +1445,7 @@ mod tests {
                     alice_central.invite_all(&case, &id, [&bob_central]).await.unwrap();
                     assert_eq!(
                         alice_central
-                            .context
+                            .transaction
                             .conversation(&id)
                             .await
                             .unwrap()
@@ -1463,13 +1476,13 @@ mod tests {
                     cfg.external_senders = vec![external_sender.clone()];
 
                     alice_central
-                        .context
+                        .transaction
                         .new_conversation(&id, case.credential_type, cfg)
                         .await
                         .unwrap();
 
                     let alice_ext_sender = alice_central
-                        .context
+                        .transaction
                         .conversation(&id)
                         .await
                         .unwrap()

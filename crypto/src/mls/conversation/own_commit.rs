@@ -153,7 +153,7 @@ mod tests {
 
                     let id = conversation_id();
                     alice_central
-                        .context
+                        .transaction
                         .new_conversation(&id, case.credential_type, case.cfg.clone())
                         .await
                         .unwrap();
@@ -181,11 +181,11 @@ mod tests {
                     let commit = alice_central.create_unmerged_e2ei_rotate_commit(&id, &cb).await;
                     assert!(alice_central.pending_commit(&id).await.is_some());
 
-                    let epoch = alice_central.context.conversation(&id).await.unwrap().epoch().await;
+                    let epoch = alice_central.transaction.conversation(&id).await.unwrap().epoch().await;
 
                     // since the pending commit is the same as the incoming one, it should succeed
                     let decrypt_self = alice_central
-                        .context
+                        .transaction
                         .conversation(&id)
                         .await
                         .unwrap()
@@ -194,7 +194,7 @@ mod tests {
                     assert!(decrypt_self.is_ok());
                     let decrypt_self = decrypt_self.unwrap();
 
-                    let epoch_after_decrypt = alice_central.context.conversation(&id).await.unwrap().epoch().await;
+                    let epoch_after_decrypt = alice_central.transaction.conversation(&id).await.unwrap().epoch().await;
                     assert_eq!(epoch + 1, epoch_after_decrypt);
 
                     // there is no proposals to renew here since it's our own commit we merge
@@ -220,7 +220,7 @@ mod tests {
                 Box::pin(async move {
                     let id = conversation_id();
                     alice_central
-                        .context
+                        .transaction
                         .new_conversation(&id, case.credential_type, case.cfg.clone())
                         .await
                         .unwrap();
@@ -231,7 +231,7 @@ mod tests {
                     let unmerged_commit = alice_central.create_unmerged_commit(&id).await.commit;
                     assert!(alice_central.pending_commit(&id).await.is_some());
                     alice_central
-                        .context
+                        .transaction
                         .conversation(&id)
                         .await
                         .unwrap()
@@ -245,7 +245,7 @@ mod tests {
                     assert_ne!(unmerged_commit, unmerged_commit2);
 
                     let decrypt = alice_central
-                        .context
+                        .transaction
                         .conversation(&id)
                         .await
                         .unwrap()
@@ -267,7 +267,7 @@ mod tests {
                 Box::pin(async move {
                     let id = conversation_id();
                     alice_central
-                        .context
+                        .transaction
                         .new_conversation(&id, case.credential_type, case.cfg.clone())
                         .await
                         .unwrap();
@@ -280,7 +280,7 @@ mod tests {
 
                     // then delete the pending commit
                     alice_central
-                        .context
+                        .transaction
                         .conversation(&id)
                         .await
                         .unwrap()
@@ -290,7 +290,7 @@ mod tests {
                     assert!(alice_central.pending_commit(&id).await.is_none());
 
                     let decrypt_self = alice_central
-                        .context
+                        .transaction
                         .conversation(&id)
                         .await
                         .unwrap()
@@ -318,7 +318,7 @@ mod tests {
             Box::pin(async move {
                 let conversation_id = conversation_id();
                 alice_central
-                    .context
+                    .transaction
                     .new_conversation(&conversation_id, case.credential_type, case.cfg.clone())
                     .await
                     .unwrap();
@@ -340,7 +340,7 @@ mod tests {
                 commit_serialized[355] = commit_serialized[355].wrapping_add(1);
 
                 let decryption_result = alice_central
-                    .context
+                    .transaction
                     .conversation(&conversation_id)
                     .await
                     .unwrap()
@@ -363,7 +363,7 @@ mod tests {
                 // Positive case: Alice decrypts the commit...
                 assert!(
                     alice_central
-                        .context
+                        .transaction
                         .conversation(&conversation_id)
                         .await
                         .unwrap()

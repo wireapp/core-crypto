@@ -174,14 +174,14 @@ mod tests {
                     let id = conversation_id();
 
                     alice_central
-                        .context
+                        .transaction
                         .new_conversation(&id, case.credential_type, case.cfg.clone())
                         .await
                         .unwrap();
 
                     let bob = bob_central.rand_key_package(&case).await;
                     alice_central
-                        .context
+                        .transaction
                         .conversation(&id)
                         .await
                         .unwrap()
@@ -192,14 +192,14 @@ mod tests {
                     assert_eq!(alice_central.get_conversation_unchecked(&id).await.members().len(), 2);
 
                     bob_central
-                        .context
+                        .transaction
                         .process_welcome_message(bob_welcome.clone().into(), case.custom_cfg())
                         .await
                         .unwrap();
 
                     let charlie = charlie_central.rand_key_package(&case).await;
                     alice_central
-                        .context
+                        .transaction
                         .conversation(&id)
                         .await
                         .unwrap()
@@ -210,7 +210,7 @@ mod tests {
                     assert_eq!(alice_central.get_conversation_unchecked(&id).await.members().len(), 3);
 
                     let _ = bob_central
-                        .context
+                        .transaction
                         .conversation(&id)
                         .await
                         .unwrap()
@@ -219,7 +219,7 @@ mod tests {
                         .unwrap();
 
                     charlie_central
-                        .context
+                        .transaction
                         .process_welcome_message(charlie_welcome_bundle.welcome.unwrap().into(), case.custom_cfg())
                         .await
                         .unwrap();
@@ -234,7 +234,7 @@ mod tests {
                     );
 
                     let proposal_bundle = alice_central
-                        .context
+                        .transaction
                         .new_remove_proposal(&id, alice_central.get_client_id().await)
                         .await
                         .unwrap();
@@ -243,7 +243,7 @@ mod tests {
                     let charlie_hypothetical_position = 1;
 
                     let bob_decrypted_message = bob_central
-                        .context
+                        .transaction
                         .conversation(&id)
                         .await
                         .unwrap()
@@ -257,7 +257,7 @@ mod tests {
                     );
 
                     let charlie_decrypted_message = charlie_central
-                        .context
+                        .transaction
                         .conversation(&id)
                         .await
                         .unwrap()

@@ -29,7 +29,7 @@ mod tests {
                         let start = web_time::Instant::now();
                         let id = conversation_id();
                         alice_central
-                            .context
+                            .transaction
                             .new_conversation(&id, case.credential_type, case.cfg.clone())
                             .await
                             .unwrap();
@@ -45,7 +45,7 @@ mod tests {
                                 .await;
                         }
 
-                        let proposal_creation = alice_central.context.new_add_proposal(&id, invalid_kp).await;
+                        let proposal_creation = alice_central.transaction.new_add_proposal(&id, invalid_kp).await;
                         let error = proposal_creation.unwrap_err();
                         assert!(innermost_source_matches!(
                             error,
@@ -72,7 +72,7 @@ mod tests {
                         }
 
                         let commit_creation = alice_central
-                            .context
+                            .transaction
                             .conversation(&id)
                             .await
                             .unwrap()
@@ -108,7 +108,7 @@ mod tests {
                         let start = web_time::Instant::now();
                         let id = conversation_id();
                         alice_central
-                            .context
+                            .transaction
                             .new_conversation(&id, case.credential_type, case.cfg.clone())
                             .await
                             .unwrap();
@@ -118,7 +118,11 @@ mod tests {
                             .new_keypackage(&case, Lifetime::new(expiration_time))
                             .await;
 
-                        let proposal = alice_central.context.new_add_proposal(&id, invalid_kp).await.unwrap();
+                        let proposal = alice_central
+                            .transaction
+                            .new_add_proposal(&id, invalid_kp)
+                            .await
+                            .unwrap();
                         let proposal = proposal.proposal.to_bytes().unwrap();
 
                         let elapsed = start.elapsed();
@@ -130,7 +134,7 @@ mod tests {
                         }
 
                         let decrypting = bob_central
-                            .context
+                            .transaction
                             .conversation(&id)
                             .await
                             .unwrap()
@@ -167,7 +171,7 @@ mod tests {
                         let start = web_time::Instant::now();
                         let id = conversation_id();
                         alice_central
-                            .context
+                            .transaction
                             .new_conversation(&id, case.credential_type, case.cfg.clone())
                             .await
                             .unwrap();
@@ -179,7 +183,7 @@ mod tests {
                             .await;
 
                         alice_central
-                            .context
+                            .transaction
                             .conversation(&id)
                             .await
                             .unwrap()
@@ -198,7 +202,7 @@ mod tests {
                         }
 
                         let decrypting = bob_central
-                            .context
+                            .transaction
                             .conversation(&id)
                             .await
                             .unwrap()
@@ -230,14 +234,14 @@ mod tests {
                     let start = web_time::Instant::now();
                     let id = conversation_id();
                     alice_central
-                        .context
+                        .transaction
                         .new_conversation(&id, case.credential_type, case.cfg.clone())
                         .await
                         .unwrap();
 
                     let invalid_kp = bob_central.new_keypackage(&case, Lifetime::new(expiration_time)).await;
                     alice_central
-                        .context
+                        .transaction
                         .conversation(&id)
                         .await
                         .unwrap()
@@ -253,7 +257,7 @@ mod tests {
                     }
 
                     let process_welcome = bob_central
-                        .context
+                        .transaction
                         .process_welcome_message(
                             alice_central.mls_transport.latest_welcome_message().await.into(),
                             case.custom_cfg(),

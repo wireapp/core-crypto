@@ -56,7 +56,7 @@ mod tests {
             Box::pin(async move {
                 let id = conversation_id();
                 alice_central
-                    .context
+                    .transaction
                     .new_conversation(&id, case.credential_type, case.cfg.clone())
                     .await
                     .unwrap();
@@ -64,7 +64,7 @@ mod tests {
 
                 let msg = b"Hello bob";
                 let encrypted = alice_central
-                    .context
+                    .transaction
                     .conversation(&id)
                     .await
                     .unwrap()
@@ -73,7 +73,7 @@ mod tests {
                     .unwrap();
                 assert_ne!(&msg[..], &encrypted[..]);
                 let decrypted = bob_central
-                    .context
+                    .transaction
                     .conversation(&id)
                     .await
                     .unwrap()
@@ -96,18 +96,18 @@ mod tests {
             Box::pin(async move {
                 let id = conversation_id();
                 alice_central
-                    .context
+                    .transaction
                     .new_conversation(&id, case.credential_type, case.cfg.clone())
                     .await
                     .unwrap();
                 alice_central.invite_all(&case, &id, [&bob_central]).await.unwrap();
-                let mut alice_conversation = alice_central.context.conversation(&id).await.unwrap();
+                let mut alice_conversation = alice_central.transaction.conversation(&id).await.unwrap();
 
                 let msg = b"Hello bob";
                 let encrypted = alice_conversation.encrypt_message(msg).await.unwrap();
                 assert_ne!(&msg[..], &encrypted[..]);
                 let decrypted = bob_central
-                    .context
+                    .transaction
                     .conversation(&id)
                     .await
                     .unwrap()
@@ -122,7 +122,7 @@ mod tests {
                 let encrypted = alice_conversation.encrypt_message(msg).await.unwrap();
                 assert_ne!(&msg[..], &encrypted[..]);
                 let decrypted = bob_central
-                    .context
+                    .transaction
                     .conversation(&id)
                     .await
                     .unwrap()
