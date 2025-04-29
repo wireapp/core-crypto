@@ -1,7 +1,7 @@
 use openmls::prelude::{Credential, CredentialWithKey, CryptoConfig, KeyPackage, KeyPackageRef, Lifetime};
 use openmls_traits::OpenMlsCryptoProvider;
 use std::collections::HashMap;
-use std::ops::{Deref, DerefMut};
+use std::ops::DerefMut;
 use tls_codec::{Deserialize, Serialize};
 
 use core_crypto_keystore::{
@@ -42,32 +42,30 @@ impl Session {
         cs: MlsCiphersuite,
         cb: &CredentialBundle,
     ) -> Result<KeyPackage> {
-        match self.inner.read().await.deref() {
-            None => Err(Error::MlsNotInitialized),
-            Some(SessionInner {
-                keypackage_lifetime, ..
-            }) => {
-                let keypackage = KeyPackage::builder()
-                    .leaf_node_capabilities(MlsConversationConfiguration::default_leaf_capabilities())
-                    .key_package_lifetime(Lifetime::new(keypackage_lifetime.as_secs()))
-                    .build(
-                        CryptoConfig {
-                            ciphersuite: cs.into(),
-                            version: openmls::versions::ProtocolVersion::default(),
-                        },
-                        backend,
-                        &cb.signature_key,
-                        CredentialWithKey {
-                            credential: cb.credential.clone(),
-                            signature_key: cb.signature_key.public().into(),
-                        },
-                    )
-                    .await
-                    .map_err(KeystoreError::wrap("building keypackage"))?;
+        let guard = self.inner.read().await;
+        let SessionInner {
+            keypackage_lifetime, ..
+        } = guard.as_ref().ok_or(Error::MlsNotInitialized)?;
 
-                Ok(keypackage)
-            }
-        }
+        let keypackage = KeyPackage::builder()
+            .leaf_node_capabilities(MlsConversationConfiguration::default_leaf_capabilities())
+            .key_package_lifetime(Lifetime::new(keypackage_lifetime.as_secs()))
+            .build(
+                CryptoConfig {
+                    ciphersuite: cs.into(),
+                    version: openmls::versions::ProtocolVersion::default(),
+                },
+                backend,
+                &cb.signature_key,
+                CredentialWithKey {
+                    credential: cb.credential.clone(),
+                    signature_key: cb.signature_key.public().into(),
+                },
+            )
+            .await
+            .map_err(KeystoreError::wrap("building keypackage"))?;
+
+        Ok(keypackage)
     }
 
     /// Requests `count` keying material to be present and returns
