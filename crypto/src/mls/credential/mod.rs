@@ -104,26 +104,20 @@ impl PartialOrd for CredentialBundle {
 mod tests {
     use mls_crypto_provider::PkiKeypair;
     use std::collections::HashMap;
-    use std::sync::Arc;
     use wasm_bindgen_test::*;
 
     use super::x509::CertificateBundle;
     use super::*;
     use crate::mls::conversation::Conversation as _;
     use crate::{
-        CoreCrypto, RecursiveError,
+        RecursiveError,
         mls::credential::x509::CertificatePrivateKey,
-        prelude::{
-            ClientIdentifier, ConversationId, E2eiConversationState, INITIAL_KEYING_MATERIAL_COUNT,
-            MlsClientConfiguration, MlsCredentialType, Session,
-        },
+        prelude::{ClientIdentifier, ConversationId, E2eiConversationState, MlsCredentialType},
         test_utils::{
             x509::{CertificateParams, X509TestChain},
             *,
         },
     };
-
-    use core_crypto_keystore::DatabaseKey;
 
     wasm_bindgen_test_configure!(run_in_browser);
 
@@ -380,41 +374,9 @@ mod tests {
 
             // Charlie is a basic client that tries to join (i.e. emulates guest links in Wire)
             let charlie_identifier = ClientIdentifier::Basic("charlie".into());
-            let charlie_path = tmp_db_file();
-
-            let ciphersuites = vec![case.ciphersuite()];
-
-            let charlie_central = Session::try_new(
-                MlsClientConfiguration::try_new(
-                    charlie_path.0,
-                    DatabaseKey::generate(),
-                    None,
-                    ciphersuites.clone(),
-                    None,
-                    Some(INITIAL_KEYING_MATERIAL_COUNT),
-                )
-                .unwrap(),
-            )
-            .await
-            .unwrap();
-            let cc = CoreCrypto::from(charlie_central);
-            let charlie_transaction = cc.new_transaction().await.unwrap();
-            let charlie_central = cc.mls;
-            charlie_transaction
-                .mls_init(
-                    charlie_identifier,
-                    ciphersuites.clone(),
-                    Some(INITIAL_KEYING_MATERIAL_COUNT),
-                )
+            let charlie_context = SessionContext::new_with_identifier(&case, charlie_identifier, None)
                 .await
                 .unwrap();
-
-            let charlie_context = SessionContext {
-                transaction: charlie_transaction,
-                session: charlie_central,
-                mls_transport: Arc::<CoreCryptoTransportSuccessProvider>::default(),
-                x509_test_chain: Arc::new(Some(x509_test_chain)),
-            };
 
             let charlie_kp = charlie_context
                 .rand_key_package_of_type(&case, MlsCredentialType::Basic)
@@ -513,116 +475,51 @@ mod tests {
         guest_identifier: ClientIdentifier,
     ) -> Result<(SessionContext, SessionContext, ConversationId)> {
         let id = conversation_id();
-        let ciphersuites = vec![case.ciphersuite()];
 
-        let creator_ct = match creator_identifier {
+        let creator_ct = match &creator_identifier {
             ClientIdentifier::Basic(_) => MlsCredentialType::Basic,
             ClientIdentifier::X509(_) => MlsCredentialType::X509,
         };
-        let guest_ct = match guest_identifier {
+        let guest_ct = match &guest_identifier {
             ClientIdentifier::Basic(_) => MlsCredentialType::Basic,
             ClientIdentifier::X509(_) => MlsCredentialType::X509,
         };
 
-        let creator_path = tmp_db_file();
-
-        let creator_cfg = MlsClientConfiguration::try_new(
-            creator_path.0,
-            DatabaseKey::generate(),
-            None,
-            ciphersuites.clone(),
-            None,
-            Some(INITIAL_KEYING_MATERIAL_COUNT),
+        let creator = SessionContext::new_with_identifier(
+            case,
+            creator_identifier,
+            x509_test_chain.map(|chain| X509SessionParameters {
+                chain,
+                certificate_source: Default::default(),
+            }),
         )
-        .map_err(RecursiveError::mls("making creator config"))?;
+        .await
+        .map_err(RecursiveError::root("new session context"))?;
 
-        let creator_central = Session::try_new(creator_cfg)
-            .await
-            .map_err(RecursiveError::mls("creating mls central"))?;
-        let creator_transport = Arc::<CoreCryptoTransportSuccessProvider>::default();
-        creator_central.provide_transport(creator_transport.clone()).await;
-        let cc = CoreCrypto::from(creator_central);
-        let creator_transaction = cc
-            .new_transaction()
-            .await
-            .map_err(RecursiveError::transaction("creating new transaction"))?;
-        let creator_central = cc.mls;
-
-        if let Some(x509_test_chain) = &x509_test_chain {
-            x509_test_chain.register_with_central(&creator_transaction).await;
-        }
-        let creator_session_context = SessionContext {
-            transaction: creator_transaction.clone(),
-            session: creator_central,
-            mls_transport: creator_transport.clone(),
-            x509_test_chain: Arc::new(x509_test_chain.cloned()),
-        };
-
-        creator_transaction
-            .mls_init(
-                creator_identifier,
-                ciphersuites.clone(),
-                Some(INITIAL_KEYING_MATERIAL_COUNT),
-            )
-            .await
-            .map_err(RecursiveError::transaction("initializing mls"))?;
-
-        let guest_path = tmp_db_file();
-        let guest_cfg = MlsClientConfiguration::try_new(
-            guest_path.0,
-            DatabaseKey::generate(),
-            None,
-            ciphersuites.clone(),
-            None,
-            Some(INITIAL_KEYING_MATERIAL_COUNT),
+        let guest = SessionContext::new_with_identifier(
+            case,
+            guest_identifier,
+            x509_test_chain.map(|chain| X509SessionParameters {
+                chain,
+                certificate_source: Default::default(),
+            }),
         )
-        .map_err(RecursiveError::mls("creating mls config"))?;
+        .await
+        .map_err(RecursiveError::root("new session context"))?;
 
-        let guest_central = Session::try_new(guest_cfg)
-            .await
-            .map_err(RecursiveError::mls("creating mls central"))?;
-        let guest_transport = Arc::<CoreCryptoTransportSuccessProvider>::default();
-        guest_central.provide_transport(guest_transport.clone()).await;
-        let cc = CoreCrypto::from(guest_central);
-        let guest_transaction = cc
-            .new_transaction()
-            .await
-            .map_err(RecursiveError::transaction("creating new transaction"))?;
-        let guest_central = cc.mls;
-        if let Some(x509_test_chain) = &x509_test_chain {
-            x509_test_chain.register_with_central(&guest_transaction).await;
-        }
-        guest_transaction
-            .mls_init(
-                guest_identifier,
-                ciphersuites.clone(),
-                Some(INITIAL_KEYING_MATERIAL_COUNT),
-            )
-            .await
-            .map_err(RecursiveError::transaction("initializing mls guest transaction"))?;
-
-        creator_transaction
+        creator
+            .transaction
             .new_conversation(&id, creator_ct, case.cfg.clone())
             .await
             .map_err(RecursiveError::transaction("creating new transaction"))?;
 
-        let guest_session_context = SessionContext {
-            transaction: guest_transaction.clone(),
-            session: guest_central,
-            mls_transport: guest_transport.clone(),
-            x509_test_chain: Arc::new(x509_test_chain.cloned()),
-        };
-
-        let guest = guest_session_context.rand_key_package_of_type(case, guest_ct).await;
-        creator_session_context
-            .invite_all_members(case, &id, [(&guest_session_context, guest)])
+        let guest_kp = guest.rand_key_package_of_type(case, guest_ct).await;
+        creator
+            .invite_all_members(case, &id, [(&guest, guest_kp)])
             .await
             .map_err(RecursiveError::test())?;
 
-        creator_session_context
-            .try_talk_to(&id, &guest_session_context)
-            .await
-            .map_err(RecursiveError::test())?;
-        Ok((creator_session_context, guest_session_context, id))
+        creator.try_talk_to(&id, &guest).await.map_err(RecursiveError::test())?;
+        Ok((creator, guest, id))
     }
 }

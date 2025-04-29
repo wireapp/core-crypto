@@ -497,13 +497,7 @@ pub mod test_utils {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{
-        CoreCrypto,
-        prelude::{ClientIdentifier, INITIAL_KEYING_MATERIAL_COUNT, MlsClientConfiguration},
-        test_utils::*,
-    };
-    use core_crypto_keystore::DatabaseKey;
-    use std::sync::Arc;
+    use crate::test_utils::*;
     use wasm_bindgen_test::*;
 
     wasm_bindgen_test_configure!(run_in_browser);
@@ -611,63 +605,7 @@ mod tests {
                     .new_conversation(&id, case.credential_type, case.cfg.clone())
                     .await
                     .unwrap();
-
-                let mut bob_and_friends: Vec<SessionContext> = Vec::with_capacity(GROUP_SAMPLE_SIZE);
-                for _ in 0..GROUP_SAMPLE_SIZE {
-                    let uuid = uuid::Uuid::new_v4();
-                    let name = uuid.hyphenated().to_string();
-                    let path = tmp_db_file();
-                    let config = MlsClientConfiguration::try_new(
-                        path.0,
-                        DatabaseKey::generate(),
-                        None,
-                        vec![case.ciphersuite()],
-                        None,
-                        Some(INITIAL_KEYING_MATERIAL_COUNT),
-                    )
-                    .unwrap();
-                    let client = Session::try_new(config).await.unwrap();
-                    let cc = CoreCrypto::from(client);
-                    let friend_context = cc.new_transaction().await.unwrap();
-                    let central = cc.mls;
-
-                    x509_test_chain.register_with_central(&friend_context).await;
-
-                    let client_id: crate::prelude::ClientId = name.as_str().into();
-                    let identity = match case.credential_type {
-                        MlsCredentialType::Basic => ClientIdentifier::Basic(client_id),
-                        MlsCredentialType::X509 => {
-                            let x509_test_chain = alice_central
-                                .x509_test_chain
-                                .as_ref()
-                                .as_ref()
-                                .expect("No x509 test chain");
-                            let cert = crate::prelude::CertificateBundle::rand(
-                                &client_id,
-                                x509_test_chain.find_local_intermediate_ca(),
-                            );
-                            ClientIdentifier::X509(HashMap::from([(case.cfg.ciphersuite.signature_algorithm(), cert)]))
-                        }
-                    };
-                    friend_context
-                        .mls_init(
-                            identity,
-                            vec![case.cfg.ciphersuite],
-                            Some(INITIAL_KEYING_MATERIAL_COUNT),
-                        )
-                        .await
-                        .unwrap();
-
-                    let context = SessionContext {
-                        transaction: friend_context,
-                        session: central,
-                        mls_transport: Arc::<CoreCryptoTransportSuccessProvider>::default(),
-                        x509_test_chain: x509_test_chain_arc.clone(),
-                    };
-                    bob_and_friends.push(context);
-                }
-
-                let number_of_friends = bob_and_friends.len();
+                let bob_and_friends = case.sessions_x509::<GROUP_SAMPLE_SIZE>(Some(x509_test_chain)).await;
 
                 let mut bob_and_friends_kps = vec![];
                 for c in &bob_and_friends {
@@ -696,7 +634,7 @@ mod tests {
                 );
                 assert_eq!(
                     alice_central.get_conversation_unchecked(&id).await.members().len(),
-                    1 + number_of_friends
+                    1 + GROUP_SAMPLE_SIZE
                 );
 
                 let mut bob_and_friends_groups = Vec::with_capacity(bob_and_friends.len());
@@ -1290,11 +1228,7 @@ mod tests {
                     [bobt_android, "bob_zeta", "Bob Tables"],
                 ],
                 ("wire.com", "zeta.com"),
-                move |[
-                    mut alices_android_central,
-                    mut alices_ios_central,
-                    mut bob_android_central,
-                ],
+                move |[mut alices_android_central, alices_ios_central, mut bob_android_central],
                       [
                     mut alicem_android_central,
                     mut alicem_ios_central,
@@ -1337,15 +1271,12 @@ mod tests {
 
                         // cross server communication
                         bobt_android_central
-                            .try_talk_to(&id, &mut alices_ios_central)
+                            .try_talk_to(&id, &alices_ios_central)
                             .await
                             .unwrap();
 
                         // same server communication
-                        bob_android_central
-                            .try_talk_to(&id, &mut alices_ios_central)
-                            .await
-                            .unwrap();
+                        bob_android_central.try_talk_to(&id, &alices_ios_central).await.unwrap();
                     })
                 },
             )
