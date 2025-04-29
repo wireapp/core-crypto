@@ -2,6 +2,7 @@ plugins {
     kotlin("jvm")
     id("java-library")
     id("com.vanniktech.maven.publish")
+    id(libs.plugins.detekt.get().pluginId) version libs.versions.detekt
 }
 
 java {
@@ -24,4 +25,8 @@ project.afterEvaluate {
             enabled = false
         }
     }
+}
+
+detekt {
+    config.setFrom(files("detekt.yml"))
 }
