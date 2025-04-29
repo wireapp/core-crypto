@@ -31,6 +31,7 @@ pub mod e2e_identity;
 #[cfg(feature = "proteus")]
 pub mod proteus;
 
+mod ephemeral;
 mod group_store;
 mod obfuscate;
 pub mod transaction_context;
@@ -61,6 +62,7 @@ pub mod prelude {
             identity::{WireIdentity, X509Identity},
             types::{E2eiAcmeChallenge, E2eiAcmeDirectory, E2eiNewAcmeAuthz, E2eiNewAcmeOrder},
         },
+        ephemeral::HistorySecret,
         error::{CryptoboxMigrationError, Error, KeystoreError, LeafError, MlsError, ProteusError, RecursiveError},
         mls::{
             ciphersuite::MlsCiphersuite,
