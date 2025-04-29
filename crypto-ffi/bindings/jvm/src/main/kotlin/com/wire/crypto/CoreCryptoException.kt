@@ -1,21 +1,26 @@
 package com.wire.crypto
 
+/** The type representing a Proteus error */
 sealed class ProteusException : Exception() {
-    class SessionNotFound() : ProteusException() {
+    /** SessionNotFound */
+    class SessionNotFound : ProteusException() {
         override val message
             get() = ""
     }
 
-    class DuplicateMessage() : ProteusException() {
+    /** DuplicateMessage */
+    class DuplicateMessage : ProteusException() {
         override val message
             get() = ""
     }
 
-    class RemoteIdentityChanged() : ProteusException() {
+    /** RemoteIdentityChanged */
+    class RemoteIdentityChanged : ProteusException() {
         override val message
             get() = ""
     }
 
+    /** @property errorCode */
     class Other(val errorCode: UShort) : ProteusException() {
         override val message
             get() = "error_code=${ errorCode }"
@@ -35,7 +40,11 @@ sealed class ProteusException : Exception() {
     }
 }
 
+/** The type representing an MLS error */
 sealed class MlsException : Exception() {
+    /** ConversationAlreadyExists
+     * @property conversationId
+     */
     class ConversationAlreadyExists(
         val conversationId: kotlin.ByteArray
     ) : MlsException() {
@@ -43,56 +52,73 @@ sealed class MlsException : Exception() {
             get() = "conversationId=$conversationId"
     }
 
-    class DuplicateMessage() : MlsException() {
+    /** DuplicateMessage */
+    class DuplicateMessage : MlsException() {
         override val message
             get() = ""
     }
 
-    class BufferedFutureMessage() : MlsException() {
+    /** BufferedFutureMessage */
+    class BufferedFutureMessage : MlsException() {
         override val message
             get() = ""
     }
 
-    class WrongEpoch() : MlsException() {
+    /** WrongEpoch */
+    class WrongEpoch : MlsException() {
         override val message
             get() = ""
     }
 
-    class BufferedCommit() : MlsException() {
+    /** BufferedCommit */
+    class BufferedCommit : MlsException() {
         override val message
             get() = ""
     }
 
-    class MessageEpochTooOld() : MlsException() {
+    /** MessageEpochTooOld */
+    class MessageEpochTooOld : MlsException() {
         override val message
             get() = ""
     }
 
-    class SelfCommitIgnored() : MlsException() {
+    /** SelfCommitIgnored */
+    class SelfCommitIgnored : MlsException() {
         override val message
             get() = ""
     }
 
-    class UnmergedPendingGroup() : MlsException() {
+    /** UnmergedPendingGroup */
+    class UnmergedPendingGroup : MlsException() {
         override val message
             get() = ""
     }
 
-    class StaleProposal() : MlsException() {
+    /** StaleProposal */
+    class StaleProposal : MlsException() {
         override val message
             get() = ""
     }
 
-    class StaleCommit() : MlsException() {
+    /** StaleCommit */
+    class StaleCommit : MlsException() {
         override val message
             get() = ""
     }
 
-    class OrphanWelcome() : MlsException() {
+    /**
+     * This happens when the DS cannot flag KeyPackages as claimed or not. In
+     * this scenario, a client requests their old KeyPackages to be deleted but
+     * one has already been claimed by another client to create a Welcome. In
+     * that case the only solution is that the client receiving such a Welcome
+     * tries to join the group with an External Commit instead
+     */
+    class OrphanWelcome : MlsException() {
         override val message
             get() = ""
     }
 
+    /** Message rejected by the delivery service */
     class MessageRejected(
         private val reason: kotlin.String
     ) : MlsException() {
@@ -100,30 +126,35 @@ sealed class MlsException : Exception() {
             get() = "reason=$reason"
     }
 
+    /** @property message */
     class Other(override val message: String) : MlsException()
 }
 
+/** The type representing a CoreCrypto error. */
 sealed class CoreCryptoException : kotlin.Exception() {
+    /** @property exception */
     class Mls(val exception: MlsException) : CoreCryptoException() {
         override val message
             get() = "exception=${ exception }"
     }
 
+    /** @property exception */
     class Proteus(val exception: ProteusException) : CoreCryptoException() {
         override val message
             get() = "exception=${ exception }"
     }
 
+    /** @property message */
     class E2eiException(override val message: String) : CoreCryptoException()
 
-    class ClientException(
-        override val message: String
-    ) : CoreCryptoException()
+    /** @property message */
+    class ClientException(override val message: String) : CoreCryptoException()
 
+    /** @property message */
     class Other(override val message: String) : CoreCryptoException()
 }
 
-fun com.wire.crypto.uniffi.CoreCryptoException.lift() =
+private fun com.wire.crypto.uniffi.CoreCryptoException.lift() =
     when (this) {
         is com.wire.crypto.uniffi.CoreCryptoException.Mls -> CoreCryptoException.Mls(this.v1.lift())
         is com.wire.crypto.uniffi.CoreCryptoException.Proteus -> CoreCryptoException.Proteus(this.v1.lift())
@@ -132,7 +163,7 @@ fun com.wire.crypto.uniffi.CoreCryptoException.lift() =
         is com.wire.crypto.uniffi.CoreCryptoException.Other -> CoreCryptoException.Other(this.v1)
     }
 
-fun com.wire.crypto.uniffi.MlsException.lift() =
+private fun com.wire.crypto.uniffi.MlsException.lift() =
     when (this) {
         is com.wire.crypto.uniffi.MlsException.BufferedFutureMessage -> MlsException.BufferedFutureMessage()
         is com.wire.crypto.uniffi.MlsException.ConversationAlreadyExists -> MlsException.ConversationAlreadyExists(this.v1)
@@ -149,7 +180,7 @@ fun com.wire.crypto.uniffi.MlsException.lift() =
         is com.wire.crypto.uniffi.MlsException.Other -> MlsException.Other(this.v1)
     }
 
-fun com.wire.crypto.uniffi.ProteusException.lift() =
+private fun com.wire.crypto.uniffi.ProteusException.lift() =
     when (this) {
         is com.wire.crypto.uniffi.ProteusException.DuplicateMessage -> ProteusException.DuplicateMessage()
         is com.wire.crypto.uniffi.ProteusException.RemoteIdentityChanged -> ProteusException.RemoteIdentityChanged()

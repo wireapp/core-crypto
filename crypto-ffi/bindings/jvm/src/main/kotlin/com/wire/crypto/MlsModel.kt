@@ -1,145 +1,173 @@
 package com.wire.crypto
 
+/** Ciphersuites */
 @JvmInline
 value class Ciphersuites(private val value: Set<Ciphersuite>) {
     companion object {
+        /** The default set of ciphersuites. */
         val DEFAULT = Ciphersuites(setOf(Ciphersuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519))
     }
 
-    fun lower() = value.map { it.lower() }
+    internal fun lower() = value.map { it.lower() }
 }
 
+/** Ciphersuite */
 @Suppress("ktlint:standard:enum-entry-name-case")
 enum class Ciphersuite {
-    // DH KEM x25519 | AES-GCM 128 | SHA2-256 | Ed25519
+    /** DH KEM x25519 | AES-GCM 128 | SHA2-256 | Ed2551 */
     MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519,
 
-    // DH KEM P256 | AES-GCM 128 | SHA2-256 | EcDSA P256
+    /** DH KEM P256 | AES-GCM 128 | SHA2-256 | EcDSA P25 */
     MLS_128_DHKEMP256_AES128GCM_SHA256_P256,
 
-    // DH KEM x25519 | Chacha20Poly1305 | SHA2-256 | Ed25519
+    /** DH KEM x25519 | Chacha20Poly1305 | SHA2-256 | Ed2551 */
     MLS_128_DHKEMX25519_CHACHA20POLY1305_SHA256_Ed25519,
 
-    // DH KEM x448 | AES-GCM 256 | SHA2-512 | Ed448
+    /** DH KEM x448 | AES-GCM 256 | SHA2-512 | Ed44 */
     MLS_256_DHKEMX448_AES256GCM_SHA512_Ed448,
 
-    // DH KEM P521 | AES-GCM 256 | SHA2-512 | EcDSA P521
+    /** DH KEM P521 | AES-GCM 256 | SHA2-512 | EcDSA P521 */
     MLS_256_DHKEMP521_AES256GCM_SHA512_P521,
 
-    // DH KEM x448 | Chacha20Poly1305 | SHA2-512 | Ed448
+    /** DH KEM x448 | Chacha20Poly1305 | SHA2-512 | Ed448 */
     MLS_256_DHKEMX448_CHACHA20POLY1305_SHA512_Ed448,
 
-    // DH KEM P384 | AES-GCM 256 | SHA2-384 | EcDSA P384
+    /** DH KEM P384 | AES-GCM 256 | SHA2-384 | EcDSA P384 */
     MLS_256_DHKEMP384_AES256GCM_SHA384_P384;
 
     companion object {
+        /** The default ciphersuite. */
         val DEFAULT = MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519
     }
 
-    fun lower() = (ordinal + 1).toUShort()
+    internal fun lower() = (ordinal + 1).toUShort()
 }
 
+/** Credential type */
 enum class CredentialType {
+    /** An application-defined credential. */
     Basic,
+
+    /** A credential based on X509 certificates. */
     X509;
 
     companion object {
+        /** The default credential type. */
         val DEFAULT = Basic
     }
 
-    fun lower() =
+    internal fun lower() =
         when (this) {
             Basic -> com.wire.crypto.uniffi.CredentialType.BASIC
             X509 -> com.wire.crypto.uniffi.CredentialType.X509
         }
 }
 
-fun com.wire.crypto.uniffi.CredentialType.lift() =
+internal fun com.wire.crypto.uniffi.CredentialType.lift() =
     when (this) {
         com.wire.crypto.uniffi.CredentialType.BASIC -> CredentialType.Basic
         com.wire.crypto.uniffi.CredentialType.X509 -> CredentialType.X509
     }
 
+/** MLS group ID */
 @JvmInline
 value class MLSGroupId(override val value: ByteArray) : Uniffi {
     override fun toString() = value.toHex()
 }
 
+/** Construct a group ID */
 fun ByteArray.toGroupId() = MLSGroupId(this)
 
+/** Construct a group ID */
 fun String.toGroupId() = MLSGroupId(toByteArray())
 
+/** Client ID */
 @JvmInline
 value class ClientId(override val value: String) : FfiType<String, com.wire.crypto.uniffi.ClientId> {
     override fun lower() = value.toByteArray()
 }
 
 @OptIn(ExperimentalUnsignedTypes::class)
-fun com.wire.crypto.uniffi.ClientId.toClientId() = ClientId(String(toUByteArray().asByteArray()))
+internal fun com.wire.crypto.uniffi.ClientId.toClientId() = ClientId(String(toUByteArray().asByteArray()))
 
+/** Construct a client ID */
 fun String.toClientId() = ClientId(this)
 
+/** External sender key */
 @JvmInline
 value class ExternalSenderKey(override val value: ByteArray) : Uniffi {
     override fun toString() = value.toHex()
 }
 
+/** Construct an external sender ID */
 fun ByteArray.toExternalSenderKey() = ExternalSenderKey(this)
 
+/** Welcome message */
 @JvmInline
 value class Welcome(override val value: ByteArray) : Uniffi {
     override fun toString() = value.toHex()
 }
 
-fun ByteArray.toWelcome() = Welcome(this)
+private fun ByteArray.toWelcome() = Welcome(this)
 
+/** MLS message */
 @JvmInline
 value class MlsMessage(override val value: ByteArray) : Uniffi {
     override fun toString() = value.toHex()
 }
 
+/** Construct an MLS message */
 fun ByteArray.toMlsMessage() = MlsMessage(this)
 
+/** AVS secret */
 @JvmInline
 value class AvsSecret(override val value: ByteArray) : Uniffi {
     override fun toString() = value.toHex()
 }
 
+/** Construct an AVS secret */
 fun ByteArray.toAvsSecret() = AvsSecret(this)
 
+/** Plaintext message */
 @JvmInline
 value class PlaintextMessage(override val value: ByteArray) : Uniffi {
     override fun toString() = value.toHex()
 }
 
+/** Construct a plaintext message */
 fun String.toPlaintextMessage() = PlaintextMessage(toByteArray())
 
+/** Signature public key */
 @JvmInline
 value class SignaturePublicKey(override val value: ByteArray) : Uniffi {
     override fun toString() = value.toHex()
 }
 
-fun ByteArray.toSignaturePublicKey() = SignaturePublicKey(this)
+internal fun ByteArray.toSignaturePublicKey() = SignaturePublicKey(this)
 
+/** Key package */
 @JvmInline
 value class MLSKeyPackage(override val value: ByteArray) : Uniffi {
     override fun toString() = value.toHex()
 }
 
-fun ByteArray.toMLSKeyPackage() = MLSKeyPackage(this)
+internal fun ByteArray.toMLSKeyPackage() = MLSKeyPackage(this)
 
+/** Key package reference */
 @JvmInline
 value class MLSKeyPackageRef(override val value: ByteArray) : Uniffi {
     override fun toString() = value.toHex()
 }
 
+/** Proposal reference */
 @JvmInline
 value class ProposalRef(override val value: ByteArray) : Uniffi {
     override fun toString() = value.toHex()
 }
 
-fun ByteArray.toProposalRef() = ProposalRef(this)
+private fun ByteArray.toProposalRef() = ProposalRef(this)
 
+/** ExternallyGeneratedHandle */
 @JvmInline
 value class ExternallyGeneratedHandle(override val value: List<ByteArray>) :
     FfiType<List<ByteArray>, List<ByteArray>> {
@@ -148,8 +176,9 @@ value class ExternallyGeneratedHandle(override val value: List<ByteArray>) :
     override fun toString() = value.joinToString("") { it.toString() }
 }
 
-fun List<ByteArray>.toExternallyGeneratedHandle() = ExternallyGeneratedHandle(map { it })
+internal fun List<ByteArray>.toExternallyGeneratedHandle() = ExternallyGeneratedHandle(map { it })
 
+/** CRL distribution points */
 @JvmInline
 value class CrlDistributionPoints(override val value: Set<java.net.URI>) :
     FfiType<Set<java.net.URI>, List<String>> {
@@ -158,38 +187,35 @@ value class CrlDistributionPoints(override val value: Set<java.net.URI>) :
     override fun toString() = value.joinToString(", ") { it.toString() }
 }
 
-fun List<String>.toCrlDistributionPoint() =
+internal fun List<String>.toCrlDistributionPoint() =
     CrlDistributionPoints(asSequence().map { java.net.URI(it) }.toSet())
 
+/** Group info */
 @JvmInline
 value class GroupInfo(override val value: ByteArray) : Uniffi {
     override fun toString() = value.toHex()
 }
 
-fun ByteArray.toGroupInfo() = GroupInfo(this)
+private fun ByteArray.toGroupInfo() = GroupInfo(this)
 
+/** The type of group info encryption. */
 enum class MlsGroupInfoEncryptionType {
-    /**
-     * Unencrypted `GroupInfo`
-     */
+    /** Unencrypted [GroupInfo] */
     PLAINTEXT,
 
-    /**
-     * `GroupInfo` encrypted in a JWE
-     */
+    /** GroupInfo encrypted in a JWE */
     JWE_ENCRYPTED
 }
 
-fun com.wire.crypto.uniffi.MlsGroupInfoEncryptionType.lift() =
+private fun com.wire.crypto.uniffi.MlsGroupInfoEncryptionType.lift() =
     when (this) {
         com.wire.crypto.uniffi.MlsGroupInfoEncryptionType.PLAINTEXT -> MlsGroupInfoEncryptionType.PLAINTEXT
         com.wire.crypto.uniffi.MlsGroupInfoEncryptionType.JWE_ENCRYPTED -> MlsGroupInfoEncryptionType.JWE_ENCRYPTED
     }
 
+/** The ratchet tree type. */
 enum class MlsRatchetTreeType {
-    /**
-     * Plain old and complete `GroupInfo`
-     */
+    /** Plain old and complete `GroupInfo` */
     FULL,
 
     /**
@@ -198,25 +224,32 @@ enum class MlsRatchetTreeType {
      */
     DELTA,
 
+    /** TODO: document this properly */
     BY_REF
 }
 
-fun com.wire.crypto.uniffi.MlsRatchetTreeType.lift() =
+private fun com.wire.crypto.uniffi.MlsRatchetTreeType.lift() =
     when (this) {
         com.wire.crypto.uniffi.MlsRatchetTreeType.FULL -> com.wire.crypto.MlsRatchetTreeType.FULL
         com.wire.crypto.uniffi.MlsRatchetTreeType.DELTA -> com.wire.crypto.MlsRatchetTreeType.DELTA
         com.wire.crypto.uniffi.MlsRatchetTreeType.BY_REF -> com.wire.crypto.MlsRatchetTreeType.BY_REF
     }
 
+/**
+ * @property encryptionType see [GroupInfoEncryptionType]
+ * @property ratchetTreeType see [MlsRatchetTreeType]
+ * @property payload see [GroupInfo]
+ */
 data class GroupInfoBundle(
     val encryptionType: MlsGroupInfoEncryptionType,
     val ratchetTreeType: MlsRatchetTreeType,
     val payload: GroupInfo,
 )
 
-fun com.wire.crypto.uniffi.GroupInfoBundle.lift() =
+private fun com.wire.crypto.uniffi.GroupInfoBundle.lift() =
     GroupInfoBundle(encryptionType.lift(), ratchetTreeType.lift(), payload.toGroupInfo())
 
+/** Data shape for a MLS generic commit + optional bundle (aka stapled commit & welcome) */
 data class CommitBundle(
     /** TLS serialized commit wrapped in a MLS message */
     val commit: MlsMessage,
@@ -228,7 +261,7 @@ data class CommitBundle(
     val crlNewDistributionPoints: CrlDistributionPoints?,
 )
 
-fun com.wire.crypto.uniffi.CommitBundle.lift() =
+internal fun com.wire.crypto.uniffi.CommitBundle.lift() =
     CommitBundle(commit.toMlsMessage(), welcome?.toWelcome(), groupInfo.lift(), null)
 
 /** Returned when a Proposal is created. Helps roll backing a local proposal */
@@ -244,7 +277,7 @@ data class ProposalBundle(
     val crlNewDistributionPoints: CrlDistributionPoints?,
 )
 
-fun com.wire.crypto.uniffi.ProposalBundle.lift() =
+private fun com.wire.crypto.uniffi.ProposalBundle.lift() =
     ProposalBundle(
         proposal.toMlsMessage(),
         proposalRef.toProposalRef(),
@@ -277,7 +310,7 @@ data class WelcomeBundle(
     }
 }
 
-fun com.wire.crypto.uniffi.WelcomeBundle.lift() =
+internal fun com.wire.crypto.uniffi.WelcomeBundle.lift() =
     WelcomeBundle(id.toGroupId(), crlNewDistributionPoints?.toCrlDistributionPoint())
 
 /**
@@ -357,7 +390,7 @@ data class DecryptedMessage(
     }
 }
 
-fun com.wire.crypto.uniffi.DecryptedMessage.lift() =
+internal fun com.wire.crypto.uniffi.DecryptedMessage.lift() =
     DecryptedMessage(
         message,
         proposals.asSequence().map { it.lift() }.toSet(),
@@ -425,7 +458,7 @@ data class BufferedDecryptedMessage(
     }
 }
 
-fun com.wire.crypto.uniffi.BufferedDecryptedMessage.lift() =
+private fun com.wire.crypto.uniffi.BufferedDecryptedMessage.lift() =
     BufferedDecryptedMessage(
         message,
         proposals.asSequence().map { it.lift() }.toSet(),
@@ -451,7 +484,7 @@ data class WireIdentity(
     val x509Identity: X509Identity?,
 )
 
-fun com.wire.crypto.uniffi.WireIdentity.lift() =
+internal fun com.wire.crypto.uniffi.WireIdentity.lift() =
     WireIdentity(clientId, status.lift(), thumbprint, credentialType.lift(), x509Identity?.lift())
 
 /**
@@ -475,7 +508,7 @@ data class X509Identity(
     val notAfter: java.time.Instant,
 )
 
-fun com.wire.crypto.uniffi.X509Identity.lift() =
+private fun com.wire.crypto.uniffi.X509Identity.lift() =
     X509Identity(
         handle,
         displayName,
@@ -501,26 +534,28 @@ enum class DeviceStatus {
     Revoked,
 }
 
-fun com.wire.crypto.uniffi.DeviceStatus.lift(): DeviceStatus =
+private fun com.wire.crypto.uniffi.DeviceStatus.lift(): DeviceStatus =
     when (this) {
         com.wire.crypto.uniffi.DeviceStatus.VALID -> DeviceStatus.Valid
         com.wire.crypto.uniffi.DeviceStatus.EXPIRED -> DeviceStatus.Expired
         com.wire.crypto.uniffi.DeviceStatus.REVOKED -> DeviceStatus.Revoked
     }
 
+/**
+ * Indicates the state of a Conversation regarding end-to-end identity.
+ * Note: this does not check pending state (pending commit, pending proposals) so it does not
+ * consider members about to be added/removed
+ */
 enum class E2eiConversationState {
-    /**
-     * All clients have a valid E2EI certificate
-     */
+    /** All clients have a valid E2EI certificate */
     Verified,
 
-    /**
-     * Some clients are either still Basic or their certificate is expired
-     */
+    /** Some clients are either still Basic or their certificate is expired */
     NotVerified,
 
     /**
-     * All clients are still Basic. If all client have expired certificates, [E2eiConversationState::NotVerified] is returned.
+     * All clients are still Basic. If all client have expired certificates,
+     * [E2eiConversationState::NotVerified] is returned.
      */
     NotEnabled
 }
@@ -534,13 +569,17 @@ internal fun com.wire.crypto.uniffi.E2eiConversationState.lift() =
 
 /**
  * Configuration of MLS group
+ * @property keyRotationSpan Duration in seconds after which we will automatically force a self-update commit.
+ *                           Note: This isn't currently implemented.
+ * @property wirePolicy Defines if handshake messages are encrypted or not.
+ *                      Note: encrypted handshake messages are not supported by wire-server.
  */
 data class CustomConfiguration(
     var keyRotationSpan: java.time.Duration?,
     var wirePolicy: MlsWirePolicy?
 )
 
-fun CustomConfiguration.lower() =
+internal fun CustomConfiguration.lower() =
     com.wire.crypto.uniffi.CustomConfiguration(
         keyRotationSpan = keyRotationSpan?.getSeconds().takeIf { it in 0..UInt.MAX_VALUE.toLong() }?.toUInt(),
         wirePolicy = wirePolicy?.lower()
@@ -561,12 +600,13 @@ enum class MlsWirePolicy {
     CIPHERTEXT
 }
 
-fun MlsWirePolicy.lower() =
+private fun MlsWirePolicy.lower() =
     when (this) {
         MlsWirePolicy.PLAINTEXT -> com.wire.crypto.uniffi.WirePolicy.PLAINTEXT
         MlsWirePolicy.CIPHERTEXT -> com.wire.crypto.uniffi.WirePolicy.CIPHERTEXT
     }
 
+/** Returned by [MlsTransport] callbacks. */
 sealed class MlsTransportResponse {
     /**
      * The message was accepted by the distribution service
@@ -580,15 +620,12 @@ sealed class MlsTransportResponse {
 
     /**
      * The message was rejected by the delivery service and there's no recovery.
+     * @property reason
      */
-    data class Abort(
-        val `reason`: kotlin.String
-    ) : MlsTransportResponse() {
-        companion object
-    }
+    data class Abort(val reason: kotlin.String) : MlsTransportResponse()
 }
 
-fun MlsTransportResponse.lower() =
+internal fun MlsTransportResponse.lower() =
     when (this) {
         MlsTransportResponse.Success -> com.wire.crypto.uniffi.MlsTransportResponse.Success
         MlsTransportResponse.Retry -> com.wire.crypto.uniffi.MlsTransportResponse.Retry

@@ -5,6 +5,7 @@ import kotlin.time.Duration
 import kotlin.time.DurationUnit
 import kotlin.time.toDuration
 
+/** The CoreCrypto context used within a transaction */
 @Suppress("TooManyFunctions")
 class CoreCryptoContext(private val cc: com.wire.crypto.uniffi.CoreCryptoContext) {
     internal fun lower() = cc
@@ -82,6 +83,7 @@ class CoreCryptoContext(private val cc: com.wire.crypto.uniffi.CoreCryptoContext
      * validation
      *
      * @param ciphersuite of the signature key to get
+     * @param credentialType the credential type
      * @return the client's public signature key
      */
     suspend fun getPublicKey(
@@ -633,18 +635,42 @@ class CoreCryptoContext(private val cc: com.wire.crypto.uniffi.CoreCryptoContext
 
     private fun toPreKey(id: UShort, data: ByteArray): PreKey = PreKey(id, data)
 
+    /**
+     * Proteus session local fingerprint
+     *
+     * @return Hex-encoded public key string
+     */
     suspend fun proteusGetLocalFingerprint(): ByteArray {
         return wrapException { cc.proteusFingerprint().toByteArray() }
     }
 
+    /**
+     * Proteus session remote fingerprint
+     *
+     * @param sessionId - ID of the Proteus session
+     * @return Hex-encoded public key string
+     */
     suspend fun proteusGetRemoteFingerprint(sessionId: SessionId): ByteArray {
         return wrapException { cc.proteusFingerprintRemote(sessionId).toByteArray() }
     }
 
+    /**
+     * Proteus public key fingerprint
+     * It's basically the public key encoded as an hex string
+     *
+     * @return Hex-encoded public key string
+     */
     suspend fun proteusGetPrekeyFingerprint(prekey: ByteArray): ByteArray {
         return wrapException { cc.proteusFingerprintPrekeybundle(prekey).toByteArray() }
     }
 
+    /**
+     * Creates a number of prekeys starting from the `from` index
+     *
+     * @param from - starting index
+     * @param count - number of prekeys to generate
+     * @return: A CBOR-serialized version of the PreKeyBundle corresponding to the newly generated and stored PreKey
+     */
     suspend fun proteusNewPreKeys(from: Int, count: Int): ArrayList<PreKey> {
         return wrapException {
             from.until(from + count).map {
@@ -653,24 +679,54 @@ class CoreCryptoContext(private val cc: com.wire.crypto.uniffi.CoreCryptoContext
         }
     }
 
+    /**
+     * Create a new last resort prekey
+     *
+     * @return A CBOR-serialize version of the PreKeyBundle associated with the last resort PreKey (holding the last resort prekey id)
+     */
     suspend fun proteusNewLastPreKey(): PreKey {
         return wrapException {
             toPreKey(cc.proteusLastResortPrekeyId(), cc.proteusLastResortPrekey())
         }
     }
 
+    /**
+     * Checks if a session exists
+     *
+     * @param sessionId - ID of the Proteus session
+     * @return whether the session exists or not
+     */
     suspend fun proteusDoesSessionExist(sessionId: SessionId): Boolean {
         return wrapException { cc.proteusSessionExists(sessionId) }
     }
 
+    /**
+     * Create a session using a prekey
+     *
+     * @param preKeyCrypto - CBOR-encoded Proteus prekey of the other client
+     * @param sessionId - ID of the Proteus session
+     */
     suspend fun proteusCreateSession(preKeyCrypto: PreKey, sessionId: SessionId) {
         wrapException { cc.proteusSessionFromPrekey(sessionId, preKeyCrypto.data) }
     }
 
+    /**
+     * Deletes a session
+     * Note: this also deletes the persisted data within the keystore
+     *
+     * @param sessionId - ID of the Proteus session
+     */
     suspend fun proteusDeleteSession(sessionId: SessionId) {
         wrapException { cc.proteusSessionDelete(sessionId) }
     }
 
+    /**
+     * Decrypt an incoming message for an existing session
+     *
+     * @param message - CBOR encoded, encrypted proteus message
+     * @param sessionId - ID of the Proteus session
+     * @return The decrypted payload contained within the message
+     */
     suspend fun proteusDecrypt(message: ByteArray, sessionId: SessionId): ByteArray {
         val sessionExists = proteusDoesSessionExist(sessionId)
 
@@ -687,10 +743,25 @@ class CoreCryptoContext(private val cc: com.wire.crypto.uniffi.CoreCryptoContext
         }
     }
 
+    /**
+     * Encrypt a message for a given session
+     *
+     * @param message - payload to encrypt
+     * @param sessionId - ID of the Proteus session
+     * @returns The CBOR-serialized encrypted message
+     */
     suspend fun proteusEncrypt(message: ByteArray, sessionId: SessionId): ByteArray {
         return wrapException { cc.proteusEncrypt(sessionId, message) }
     }
 
+    /**
+     * Batch encryption for proteus messages
+     * This is used to minimize FFI roundtrips when used in the context of a multi-client session (i.e. conversation)
+     *
+     * @param sessionIds - List of Proteus session IDs to encrypt the message for
+     * @param message - payload to encrypt
+     * @return A map indexed by each session ID and the corresponding CBOR-serialized encrypted message for this session
+     */
     suspend fun proteusEncryptBatched(
         sessionIds: List<SessionId>,
         message: ByteArray,
@@ -703,6 +774,13 @@ class CoreCryptoContext(private val cc: com.wire.crypto.uniffi.CoreCryptoContext
             .toMap()
     }
 
+    /** Create a session and encrypt a message.
+     *
+     * @param message the message
+     * @param preKey the prekey
+     * @param sessionId the session ID to be used
+     * @return The CBOR-serialized encrypted message
+     */
     suspend fun proteusEncryptWithPreKey(
         message: ByteArray,
         preKey: PreKey,

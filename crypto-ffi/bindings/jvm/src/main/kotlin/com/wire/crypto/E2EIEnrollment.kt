@@ -2,13 +2,19 @@ package com.wire.crypto
 
 typealias JsonRawData = ByteArray
 
+/**
+ * E2eiDumpedPkiEnv
+ * @property rootCa root CA
+ * @property intermediates intermediates
+ * @property crls CRLs
+ */
 data class E2eiDumpedPkiEnv(
     var rootCa: String,
     var intermediates: List<String>,
     var crls: List<String>
 )
 
-fun com.wire.crypto.uniffi.E2eiDumpedPkiEnv.lift() =
+internal fun com.wire.crypto.uniffi.E2eiDumpedPkiEnv.lift() =
     E2eiDumpedPkiEnv(
         rootCa = rootCa,
         intermediates = intermediates,
@@ -41,70 +47,87 @@ data class CRLRegistration(
     }
 }
 
-fun com.wire.crypto.uniffi.CrlRegistration.lift() = CRLRegistration(dirty, expiration?.toLong())
+internal fun com.wire.crypto.uniffi.CrlRegistration.lift() = CRLRegistration(dirty, expiration?.toLong())
 
+/** AcmeDirectory */
 data class AcmeDirectory(private val delegate: com.wire.crypto.uniffi.AcmeDirectory) {
+    /** newNonce */
     val newNonce: String
         get() = delegate.newNonce
 
+    /** newOrder */
     val newOrder: String
         get() = delegate.newOrder
 
+    /** newAccount */
     val newAccount: String
         get() = delegate.newAccount
 
+    /** revokeCert */
     val revokeCert: String
         get() = delegate.revokeCert
 
-    fun lower() = delegate
+    private fun lower() = delegate
 }
 
-fun com.wire.crypto.uniffi.AcmeDirectory.toAcmeDirectory() = AcmeDirectory(this)
+private fun com.wire.crypto.uniffi.AcmeDirectory.toAcmeDirectory() = AcmeDirectory(this)
 
+/** NewAcmeOrder */
 @OptIn(ExperimentalUnsignedTypes::class)
 data class NewAcmeOrder(private val delegate: com.wire.crypto.uniffi.NewAcmeOrder) {
+    /** authorizations */
     val authorizations: List<String>
         get() = delegate.authorizations
 
+    /** raw */
     val raw: JsonRawData
         get() = delegate.delegate.toUByteArray().asByteArray()
 
-    fun lower() = delegate
+    private fun lower() = delegate
 }
 
-fun com.wire.crypto.uniffi.NewAcmeOrder.toNewAcmeOrder() = NewAcmeOrder(this)
+private fun com.wire.crypto.uniffi.NewAcmeOrder.toNewAcmeOrder() = NewAcmeOrder(this)
 
+/** AcmeChallenge */
 @OptIn(ExperimentalUnsignedTypes::class)
 data class AcmeChallenge(private val delegate: com.wire.crypto.uniffi.AcmeChallenge) {
+    /** url */
     val url: String
         get() = delegate.url
 
+    /** target */
     val target: String
         get() = delegate.target
 
+    /** raw */
     val raw: JsonRawData
         get() = delegate.delegate.toUByteArray().asByteArray()
 
-    fun lower() = delegate
+    private fun lower() = delegate
 }
 
-fun com.wire.crypto.uniffi.AcmeChallenge.toAcmeChallenge() = AcmeChallenge(this)
+private fun com.wire.crypto.uniffi.AcmeChallenge.toAcmeChallenge() = AcmeChallenge(this)
 
+/** NewAcmeAuthz */
 data class NewAcmeAuthz(private val delegate: com.wire.crypto.uniffi.NewAcmeAuthz) {
+    /** identifier */
     val identifier: String
         get() = delegate.identifier
 
+    /** keyauth */
     val keyauth: String?
         get() = delegate.keyauth
 
+    /** challenge */
     val challenge: AcmeChallenge
         get() = delegate.challenge.toAcmeChallenge()
 
-    fun lower() = delegate
+    private fun lower() = delegate
 }
 
-fun com.wire.crypto.uniffi.NewAcmeAuthz.toNewAcmeAuthz() = NewAcmeAuthz(this)
+private fun com.wire.crypto.uniffi.NewAcmeAuthz.toNewAcmeAuthz() = NewAcmeAuthz(this)
 
+/** Represents an E2EI enrollment */
 @Suppress("TooManyFunctions")
 class E2EIEnrollment(private val delegate: com.wire.crypto.uniffi.E2eiEnrollment) {
     internal fun lower() = delegate

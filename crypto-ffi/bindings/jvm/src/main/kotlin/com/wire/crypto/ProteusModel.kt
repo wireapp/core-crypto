@@ -2,6 +2,12 @@ package com.wire.crypto
 
 typealias SessionId = String
 
+/**
+ * Prekey
+ *
+ * @property id the prekey ID
+ * @property data the prekey data
+ */
 data class PreKey(
     val id: UShort,
     val data: ByteArray

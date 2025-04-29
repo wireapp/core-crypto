@@ -1,5 +1,5 @@
 package com.wire.crypto
 
-fun String.toByteArray() = encodeToByteArray()
+internal fun String.toByteArray() = encodeToByteArray()
 
-fun ByteArray.toHex(): String = joinToString(separator = "") { b -> "%02x".format(b) }
+internal fun ByteArray.toHex(): String = joinToString(separator = "") { b -> "%02x".format(b) }

@@ -1,3 +1,5 @@
+@file:Suppress("TooGenericExceptionCaught")
+
 package com.wire.crypto
 
 import kotlinx.coroutines.CoroutineScope
@@ -5,9 +7,17 @@ import kotlinx.coroutines.launch
 
 typealias EnrollmentHandle = ByteArray
 
+/** Represents a CoreCrypto database key */
 @JvmInline
 value class DatabaseKey(internal val bytes: ByteArray)
 
+/**
+ * Updates the key of the CoreCrypto database.
+ * To be used only once, when moving from CoreCrypto <= 5.x to CoreCrypto 6.x.
+ * @param name path to the database file
+ * @param oldKey the old key
+ * @param newKey the new key
+ */
 suspend fun migrateDatabaseKeyTypeToBytes(name: String, oldKey: String, newKey: DatabaseKey) {
     return com.wire.crypto.uniffi.migrateDbKeyTypeToBytes(name, oldKey, newKey.bytes)
 }
@@ -32,18 +42,29 @@ public interface EpochObserver {
      * it is required by `uniffi` in order to handle panics. This function should suppress
      * and ignore internal errors instead of propagating them, to the maximum extent possible.
      */
-    suspend fun epochChanged(`conversationId`: kotlin.ByteArray, `epoch`: kotlin.ULong)
+    suspend fun epochChanged(conversationId: kotlin.ByteArray, epoch: kotlin.ULong)
 }
 
 /**
- * Defines the log level for a CoreCrypto
+ * Defines the log level for CoreCrypto
  */
 enum class CoreCryptoLogLevel {
+    /** OFF */
     OFF,
+
+    /** TRACE */
     TRACE,
+
+    /** DEBUG */
     DEBUG,
+
+    /** INFO */
     INFO,
+
+    /** WARN */
     WARN,
+
+    /** ERROR */
     ERROR
 }
 
@@ -65,11 +86,12 @@ internal fun com.wire.crypto.uniffi.CoreCryptoLogLevel.lift() = when (this) {
     com.wire.crypto.uniffi.CoreCryptoLogLevel.ERROR -> CoreCryptoLogLevel.ERROR
 }
 
+/** The logger interface */
 interface CoreCryptoLogger {
     /**
      *  Core Crypto will call this method whenever it needs to log a message.
      */
-    fun log(level: CoreCryptoLogLevel, message: String, `context`: String?)
+    fun log(level: CoreCryptoLogLevel, message: String, context: String?)
 }
 
 /**
@@ -94,10 +116,12 @@ fun setMaxLogLevel(level: CoreCryptoLogLevel) {
     com.wire.crypto.uniffi.setMaxLogLevel(level.lower())
 }
 
+/** The type representing a CoreCrypto client */
 class CoreCrypto(private val cc: com.wire.crypto.uniffi.CoreCrypto) {
     companion object {
         internal const val DEFAULT_NB_KEY_PACKAGE: UInt = 100U
 
+        /** Opens an existing core crypto client or creates a new one if one doesn't exist at the `keystore` path */
         suspend operator fun invoke(
             keystore: String,
             databaseKey: DatabaseKey
@@ -110,10 +134,12 @@ class CoreCrypto(private val cc: com.wire.crypto.uniffi.CoreCrypto) {
     internal fun lower() = cc
 
     /**
-     * Starts a transaction in Core Crypto. If the callback succeeds, it will be committed, otherwise, every operation
-     * performed with the context will be discarded.
+     * Starts a transaction in Core Crypto. If the callback succeeds, it will be committed,
+     * otherwise, every operation performed with the context will be discarded.
      *
-     * @param block the function to be executed within the transaction context. A [CoreCryptoContext] will be given as parameter to this function
+     * @param R the type returned by the transaction block
+     * @param block the function to be executed within the transaction context.
+     *              A [CoreCryptoContext] will be given as parameter to this function.
      *
      * @return the return of the function passed as parameter
      */
@@ -146,6 +172,10 @@ class CoreCrypto(private val cc: com.wire.crypto.uniffi.CoreCrypto) {
         return result as R
     }
 
+    /** Provide an implementation of the MlsTransport interface.
+     * See [MlsTransport].
+     * @param transport the transport to be used
+     */
     suspend fun provideTransport(transport: MlsTransport) {
         cc.provideTransport(object : com.wire.crypto.uniffi.MlsTransport {
             override suspend fun sendCommitBundle(
