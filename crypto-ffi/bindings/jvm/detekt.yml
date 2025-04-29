@@ -1,0 +1,27 @@
+build:
+  maxIssues: 0
+
+config:
+  validation: true
+  warningsAsErrors: true
+
+output-reports:
+  active: false
+
+comments:
+  active: true
+  KDocReferencesNonPublicProperty:
+    active: true
+    excludes: ['**/test/**']
+  OutdatedDocumentation:
+    active: true
+  UndocumentedPublicClass:
+    active: true
+    excludes: ['**/test/**']
+    ignoreDefaultCompanionObject: true
+  UndocumentedPublicFunction:
+    active: true
+    excludes: ['**/test/**']
+  UndocumentedPublicProperty:
+    active: true
+    excludes: ['**/test/**']
