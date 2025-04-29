@@ -1,5 +1,11 @@
 # Changelog
 
+## v5.3.0- 2025-04-29
+
+### Bug Fixes
+
+- re-throw inner error which cancelled the transaction (Swift) (0c282b2)
+
 ## v5.2.0 - 2025-04-15
 
 ### Bug Fixes
