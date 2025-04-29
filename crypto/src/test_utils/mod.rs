@@ -3,8 +3,8 @@
 #![allow(missing_docs)]
 
 use crate::{
-    CoreCrypto, MlsTransport, MlsTransportResponse,
-    prelude::{ClientId, ConversationId, MlsClientConfiguration, Session},
+    CoreCrypto, MlsTransport, MlsTransportResponse, RecursiveError,
+    prelude::{CertificateBundle, ClientId, ConversationId, MlsClientConfiguration, Session},
     test_utils::x509::{CertificateParams, X509TestChain, X509TestChainActorArg, X509TestChainArgs},
 };
 use core_crypto_keystore::DatabaseKey;
@@ -17,7 +17,6 @@ pub use rstest_reuse::{self, *};
 use std::collections::HashMap;
 use std::ops::Deref;
 use std::sync::Arc;
-
 pub mod context;
 mod epoch_observer;
 mod error;
@@ -94,9 +93,149 @@ pub struct SessionContext {
     pub session: Session,
     pub mls_transport: Arc<dyn MlsTransportTestExt>,
     pub x509_test_chain: std::sync::Arc<Option<X509TestChain>>,
+    // We need to store the `TempDir` struct for the duration of the test session,
+    // because its drop implementation takes care of the directory deletion.
+    #[cfg(not(target_family = "wasm"))]
+    _db_file: (String, Arc<tempfile::TempDir>),
+    #[cfg(target_family = "wasm")]
+    _db_file: (String, ()),
+}
+
+#[derive(Default, Clone, Copy)]
+pub enum TestCertificateSource {
+    /// Can be used in all x509 tests that don't use cross-signed certificate chains
+    #[default]
+    Generated,
+    /// Must be used in contexts where using cross-signed certificate chains
+    TestChainActor(usize),
+}
+
+pub struct X509SessionParameters<'a> {
+    pub chain: &'a X509TestChain,
+    pub certificate_source: TestCertificateSource,
 }
 
 impl SessionContext {
+    /// Use this to instantiate a session with the credential type determined by the [TestContext].
+    pub async fn new(context: &TestContext, x509_parameters: Option<X509SessionParameters<'_>>) -> Self {
+        Self::new_inner(context, None, x509_parameters).await.unwrap()
+    }
+
+    /// Use this if you want to instantiate a session with a credential different from
+    /// the default one of the test context
+    pub async fn new_with_identifier(
+        context: &TestContext,
+        id: ClientIdentifier,
+        x509_parameters: Option<X509SessionParameters<'_>>,
+    ) -> crate::Result<Self> {
+        Self::new_inner(context, Some(id), x509_parameters).await
+    }
+
+    async fn new_inner(
+        context: &TestContext,
+        identifier: Option<ClientIdentifier>,
+        x509_parameters: Option<X509SessionParameters<'_>>,
+    ) -> crate::Result<Self> {
+        // We need to store the `TempDir` struct for the duration of the test session,
+        // because its drop implementation takes care of the directory deletion.
+        let (db_dir_string, db_dir) = tmp_db_file();
+        let transport = context.transport.clone();
+        let configuration = MlsClientConfiguration::try_new(
+            db_dir_string.clone(),
+            DatabaseKey::generate(),
+            None,
+            vec![context.cfg.ciphersuite],
+            None,
+            Some(INITIAL_KEYING_MATERIAL_COUNT),
+        )
+        .unwrap();
+        let session = Session::try_new(configuration).await.unwrap();
+        let cc = CoreCrypto::from(session);
+        let transaction = cc.new_transaction().await.unwrap();
+        let session = cc.mls;
+        // Setup the X509 PKI environment
+        if let Some(chain) = x509_parameters.as_ref().map(|parameters| parameters.chain) {
+            chain.register_with_central(&transaction).await;
+        }
+
+        // If no identifier is provided, take it from the test chain or generate one
+        let identifier = identifier.unwrap_or_else(|| {
+            let client_id: ClientId = WireQualifiedClientId::generate().into();
+            match context.credential_type {
+                MlsCredentialType::Basic => ClientIdentifier::Basic(client_id),
+                MlsCredentialType::X509 => {
+                    let signature_scheme = context.signature_scheme();
+                    let cert_source = &x509_parameters
+                        .as_ref()
+                        .map(|parameters| parameters.certificate_source)
+                        .unwrap_or_default();
+                    let default_chain = x509_parameters
+                        .is_none()
+                        .then(|| X509TestChain::init_for_random_clients(signature_scheme, 1));
+                    let chain = x509_parameters
+                        .as_ref()
+                        .map(|parameters| parameters.chain)
+                        .unwrap_or_else(|| default_chain.as_ref().unwrap());
+                    Self::x509_client_id(&client_id, signature_scheme, cert_source, chain)
+                }
+            }
+        });
+
+        transaction
+            .mls_init(
+                identifier,
+                vec![context.cfg.ciphersuite],
+                Some(INITIAL_KEYING_MATERIAL_COUNT),
+            )
+            .await
+            .map_err(RecursiveError::transaction("mls init"))?;
+        session.provide_transport(transport.clone()).await;
+
+        let result = Self {
+            transaction,
+            session,
+            mls_transport: transport,
+            x509_test_chain: Arc::new(x509_parameters.map(|x509_parameters| x509_parameters.chain.clone())),
+
+            #[cfg(not(target_family = "wasm"))]
+            _db_file: (db_dir_string, Arc::new(db_dir)),
+            #[cfg(target_family = "wasm")]
+            _db_file: (db_dir_string, db_dir),
+        };
+        Ok(result)
+    }
+
+    fn x509_client_id(
+        client_id: &ClientId,
+        signature_scheme: SignatureScheme,
+        cert_source: &TestCertificateSource,
+        chain: &X509TestChain,
+    ) -> ClientIdentifier {
+        // Take bundle from chain or generate a new one
+        let bundle = match cert_source {
+            TestCertificateSource::Generated => {
+                crate::prelude::CertificateBundle::rand(client_id, chain.find_local_intermediate_ca())
+            }
+            TestCertificateSource::TestChainActor(i) => {
+                use x509_cert::der::Encode as _;
+                let actor = chain
+                                .actors
+                                .get(*i)
+                                .expect("if using test chain actors, you must have enough actors in the list. Did you mean to generate a certificate?");
+                let actor_cert = &actor.certificate;
+                let cert_der = actor_cert.certificate.to_der().unwrap();
+                CertificateBundle {
+                    certificate_chain: vec![cert_der],
+                    private_key: crate::mls::credential::x509::CertificatePrivateKey {
+                        signature_scheme,
+                        value: actor_cert.pki_keypair.signing_key_bytes(),
+                    },
+                }
+            }
+        };
+        ClientIdentifier::X509(HashMap::from([(signature_scheme, bundle)]))
+    }
+
     pub fn x509_chain_unchecked(&self) -> &X509TestChain {
         self.x509_test_chain
             .as_ref()
@@ -240,7 +379,7 @@ pub async fn run_cross_signed_tests_with_client_ids<const N: usize, const F: usi
     + 'static,
 ) {
     assert!(case.is_x509(), "This is only supported for x509 test cases");
-    run_cross_tests(move |paths1: [String; N], paths2: [String; F]| {
+    run_cross_tests(move |_: [String; N], _: [String; F]| {
         Box::pin(async move {
             let params1 = CertificateParams {
                 org: domain1.into(),
@@ -258,116 +397,18 @@ pub async fn run_cross_signed_tests_with_client_ids<const N: usize, const F: usi
             let (chain1, chain2) =
                 init_cross_signed_x509_test_chains(&case, client_ids, other_client_ids, (params1, params2), &[]);
 
-            let transport1 = Arc::<CoreCryptoTransportSuccessProvider>::default();
-            let transport2 = Arc::<CoreCryptoTransportSuccessProvider>::default();
-            let centrals1 = create_centrals(&case, paths1, Some(&chain1), transport1.clone()).await;
-            let centrals2 = create_centrals(&case, paths2, Some(&chain2), transport2.clone()).await;
-            let mut contexts1 = Vec::new();
-            for central in centrals1 {
-                let cc = CoreCrypto::from(central);
-                let context = cc.new_transaction().await.unwrap();
-                let central = cc.mls;
-                contexts1.push(SessionContext {
-                    transaction: context,
-                    session: central,
-                    mls_transport: transport1.clone(),
-                    x509_test_chain: Arc::new(None),
-                });
-            }
-
-            let mut contexts2 = Vec::new();
-            for central in centrals2 {
-                let cc = CoreCrypto::from(central);
-                let context = cc.new_transaction().await.unwrap();
-                let central = cc.mls;
-                contexts2.push(SessionContext {
-                    transaction: context,
-                    session: central,
-                    mls_transport: transport2.clone(),
-                    x509_test_chain: Arc::new(None),
-                });
-            }
-
-            test(
-                contexts1.clone().try_into().unwrap(),
-                contexts2.clone().try_into().unwrap(),
-            )
-            .await;
-            for c in contexts1 {
+            let sessions1 = case.sessions_x509_cross_signed(Some(&chain1)).await;
+            let sessions2 = case.sessions_x509_cross_signed(Some(&chain2)).await;
+            test(sessions1.clone(), sessions2.clone()).await;
+            for c in sessions1 {
                 c.transaction.finish().await.unwrap();
             }
-            for c in contexts2 {
+            for c in sessions2 {
                 c.transaction.finish().await.unwrap();
             }
         })
     })
     .await;
-}
-
-async fn create_centrals<const N: usize>(
-    case: &TestContext,
-    paths: [String; N],
-    chain: Option<&X509TestChain>,
-    transport: Arc<dyn MlsTransport>,
-) -> [Session; N] {
-    let transport = &transport.clone();
-    let stream = paths.into_iter().enumerate().map(|(i, p)| {
-        async move {
-            let configuration = MlsClientConfiguration::try_new(
-                p,
-                DatabaseKey::generate(),
-                None,
-                vec![case.cfg.ciphersuite],
-                None,
-                Some(INITIAL_KEYING_MATERIAL_COUNT),
-            )
-            .unwrap();
-            let client = Session::try_new(configuration).await.unwrap();
-            let cc = CoreCrypto::from(client);
-            let context = cc.new_transaction().await.unwrap();
-            let central = cc.mls;
-
-            // Setup the X509 PKI environment
-            if let Some(chain) = chain {
-                chain.register_with_central(&context).await;
-            }
-
-            let identity = match case.credential_type {
-                MlsCredentialType::Basic => {
-                    let client_id: ClientId = WireQualifiedClientId::generate().into();
-                    ClientIdentifier::Basic(client_id)
-                }
-                MlsCredentialType::X509 => {
-                    use x509_cert::der::Encode as _;
-                    let sc = case.cfg.ciphersuite.signature_algorithm();
-                    let actor_cert = &chain.unwrap().actors[i];
-                    let cert_der = actor_cert.certificate.certificate.to_der().unwrap();
-
-                    let bundle = crate::prelude::CertificateBundle {
-                        certificate_chain: vec![cert_der],
-                        private_key: crate::mls::credential::x509::CertificatePrivateKey {
-                            signature_scheme: sc,
-                            value: actor_cert.certificate.pki_keypair.signing_key_bytes(),
-                        },
-                    };
-
-                    ClientIdentifier::X509(HashMap::from([(sc, bundle)]))
-                }
-            };
-            context
-                .mls_init(
-                    identity,
-                    vec![case.cfg.ciphersuite],
-                    Some(INITIAL_KEYING_MATERIAL_COUNT),
-                )
-                .await
-                .unwrap();
-            context.finish().await.unwrap();
-            central.provide_transport(transport.clone()).await;
-            central
-        }
-    });
-    futures_util::future::join_all(stream).await.try_into().unwrap()
 }
 
 pub async fn run_test_with_deterministic_client_ids_and_revocation<const N: usize, const F: usize>(
@@ -381,7 +422,7 @@ pub async fn run_test_with_deterministic_client_ids_and_revocation<const N: usiz
     ) -> std::pin::Pin<Box<dyn std::future::Future<Output = ()> + 'static>>
     + 'static,
 ) {
-    run_cross_tests(move |paths1: [String; N], paths2: [String; F]| {
+    run_cross_tests(move |_: [String; N], _: [String; F]| {
         Box::pin(async move {
             let (chain1, chain2) = match (case.is_x509(), cross_signed_client_ids.is_empty()) {
                 (true, true) => (
@@ -416,39 +457,9 @@ pub async fn run_test_with_deterministic_client_ids_and_revocation<const N: usiz
                 }
                 _ => (None, None),
             };
-
-            let transport = Arc::<CoreCryptoTransportSuccessProvider>::default();
-            let centrals = create_centrals(&case, paths1, chain1.as_ref(), transport.clone()).await;
-            let mut centrals1 = Vec::new();
-            for (index, client) in centrals.into_iter().enumerate() {
-                let cc = CoreCrypto::from(client);
-                let context = SessionContext {
-                    transaction: cc.new_transaction().await.unwrap(),
-                    session: cc.mls,
-                    mls_transport: transport.clone(),
-                    x509_test_chain: Arc::new(chain1.clone()),
-                };
-                centrals1.insert(index, context);
-            }
-            let transport = Arc::<CoreCryptoTransportSuccessProvider>::default();
-            let centrals = create_centrals(&case, paths2, chain2.as_ref(), transport.clone()).await;
-            let mut centrals2 = Vec::new();
-            for (index, client) in centrals.into_iter().enumerate() {
-                let cc = CoreCrypto::from(client);
-                let context = SessionContext {
-                    transaction: cc.new_transaction().await.unwrap(),
-                    session: cc.mls,
-                    mls_transport: transport.clone(),
-                    x509_test_chain: Arc::new(chain2.clone()),
-                };
-                centrals2.insert(index, context);
-            }
-
-            test(
-                centrals1.clone().try_into().unwrap(),
-                centrals2.clone().try_into().unwrap(),
-            )
-            .await;
+            let centrals1 = case.sessions_x509_cross_signed(chain1.as_ref()).await;
+            let centrals2 = case.sessions_x509_cross_signed(chain2.as_ref()).await;
+            test(centrals1.clone(), centrals2.clone()).await;
 
             for c in centrals1 {
                 c.transaction.finish().await.unwrap();
@@ -485,11 +496,16 @@ pub async fn run_test_wo_clients(
             client.provide_transport(transport.clone()).await;
             let cc = CoreCrypto::from(client);
             let context = cc.new_transaction().await.unwrap();
+            let (db_dir_string, db_dir) = tmp_db_file();
             test(SessionContext {
                 transaction: context.clone(),
                 session: cc.mls,
                 mls_transport: transport.clone(),
                 x509_test_chain: None.into(),
+                #[cfg(not(target_family = "wasm"))]
+                _db_file: (db_dir_string, Arc::new(db_dir)),
+                #[cfg(target_family = "wasm")]
+                _db_file: (db_dir_string, db_dir),
             })
             .await;
             context.finish().await.unwrap();
@@ -711,7 +727,7 @@ impl MlsTransport for CoreCryptoTransportRetrySuccessProvider {
             };
             for commit in commits.iter() {
                 receiver
-                    .context
+                    .transaction
                     .conversation(conversation_id)
                     .await
                     .expect("conversation guard")

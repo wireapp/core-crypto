@@ -1,3 +1,5 @@
+use std::sync::Arc;
+
 pub use crate::prelude::{
     MlsCiphersuite, MlsConversationConfiguration, MlsCredentialType, MlsCustomConfiguration, MlsWirePolicy,
 };
@@ -5,6 +7,11 @@ use crate::test_utils::SessionContext;
 pub use openmls_traits::types::SignatureScheme;
 pub use rstest::*;
 pub use rstest_reuse::{self, *};
+
+use super::{
+    CoreCryptoTransportSuccessProvider, MlsTransportTestExt, TestCertificateSource, X509SessionParameters,
+    x509::X509TestChain,
+};
 
 #[template]
 #[rstest(
@@ -57,26 +64,24 @@ pub use rstest_reuse::{self, *};
         crate::prelude::MlsCredentialType::X509,
         openmls::prelude::Ciphersuite::MLS_256_DHKEMP384_AES256GCM_SHA384_P384
     )),
-    case::pure_ciphertext(TestContext {
-        credential_type: crate::prelude::MlsCredentialType::Basic,
-        cfg: $crate::prelude::MlsConversationConfiguration {
-            custom: $crate::prelude::MlsCustomConfiguration {
-                wire_policy: $crate::prelude::MlsWirePolicy::Ciphertext,
-                ..Default::default()
-            },
-            ..Default::default()
-        },
-        contexts: vec![],
-    }),
+    case::pure_ciphertext(TestContext::default_cipher()),
 )]
 #[allow(non_snake_case)]
 pub fn all_cred_cipher(case: TestContext) {}
+
+/// Needed to specify the context a x509 certificate chain is initialized from.
+enum TestChainKind {
+    /// A certificate chain that is cross-signed by another
+    CrossSigned,
+    /// A certificate chain that exists on its own (default case).
+    Single,
+}
 
 #[derive(Debug, Clone)]
 pub struct TestContext {
     pub credential_type: MlsCredentialType,
     pub cfg: MlsConversationConfiguration,
-    pub contexts: Vec<SessionContext>,
+    pub transport: Arc<dyn MlsTransportTestExt>,
 }
 
 impl TestContext {
@@ -107,8 +112,14 @@ impl TestContext {
         Self {
             credential_type: MlsCredentialType::X509,
             cfg: MlsConversationConfiguration::default(),
-            contexts: vec![],
+            transport: Arc::<CoreCryptoTransportSuccessProvider>::default(),
         }
+    }
+
+    pub fn default_cipher() -> Self {
+        let mut default = Self::default();
+        default.cfg.custom.wire_policy = MlsWirePolicy::Ciphertext;
+        default
     }
 
     pub fn is_x509(&self) -> bool {
@@ -122,6 +133,49 @@ impl TestContext {
     pub fn is_pure_ciphertext(&self) -> bool {
         matches!(self.cfg.custom.wire_policy, MlsWirePolicy::Ciphertext)
     }
+
+    pub async fn sessions<const N: usize>(&self) -> [SessionContext; N] {
+        self.sessions_x509(None).await
+    }
+
+    pub async fn sessions_x509<const N: usize>(&self, test_chain: Option<&X509TestChain>) -> [SessionContext; N] {
+        self.sessions_x509_cross_signed_inner(test_chain, TestChainKind::Single)
+            .await
+    }
+
+    /// Use this to create sessions with a test chain that has cross-signed another
+    pub async fn sessions_x509_cross_signed<const N: usize>(
+        &self,
+        test_chain: Option<&X509TestChain>,
+    ) -> [SessionContext; N] {
+        self.sessions_x509_cross_signed_inner(test_chain, TestChainKind::CrossSigned)
+            .await
+    }
+
+    async fn sessions_x509_cross_signed_inner<const N: usize>(
+        &self,
+        test_chain: Option<&X509TestChain>,
+        test_chain_kind: TestChainKind,
+    ) -> [SessionContext; N] {
+        let mut result = Vec::with_capacity(N);
+        for i in 0..N {
+            let certificate_source = match test_chain_kind {
+                TestChainKind::CrossSigned => TestCertificateSource::TestChainActor(i),
+                TestChainKind::Single => TestCertificateSource::Generated,
+            };
+            result.push(
+                SessionContext::new(
+                    self,
+                    test_chain.map(|chain| X509SessionParameters {
+                        chain,
+                        certificate_source,
+                    }),
+                )
+                .await,
+            );
+        }
+        result.try_into().expect("Vec length should match N")
+    }
 }
 
 impl Default for TestContext {
@@ -129,7 +183,7 @@ impl Default for TestContext {
         Self {
             credential_type: MlsCredentialType::Basic,
             cfg: MlsConversationConfiguration::default(),
-            contexts: vec![],
+            transport: Arc::<CoreCryptoTransportSuccessProvider>::default(),
         }
     }
 }
