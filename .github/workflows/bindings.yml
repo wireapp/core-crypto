@@ -119,6 +119,10 @@ jobs:
         with:
           name: jvm-linux-bindings-${{ github.run_id }}
           path: crypto-ffi/bindings
+      - name: run detekt
+        run: |
+          cd crypto-ffi/bindings
+          ./gradlew jvm:detekt
       - name: build and test jvm package
         run: |
           cd crypto-ffi/bindings
