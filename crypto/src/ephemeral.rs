@@ -26,9 +26,9 @@ use mls_crypto_provider::{DatabaseKey, MlsCryptoProvider};
 use openmls::prelude::{Credential, KeyPackage, SignatureScheme};
 
 use crate::{
-    CoreCrypto, MlsError, RecursiveError, Result,
+    CoreCrypto, Error, MlsError, RecursiveError, Result,
     mls::{HasSessionAndCrypto as _, conversation::Conversation as _},
-    prelude::{ClientId, ClientIdentifier, ConversationId},
+    prelude::{ClientId, ClientIdentifier, ConversationId, MlsClientConfiguration, Session},
 };
 
 /// We always instantiate history clients with this prefix in their client id, so
@@ -93,5 +93,56 @@ impl CoreCrypto {
             credential: credential_bundle.credential,
             key_package,
         })
+    }
+
+    /// Instantiate a history client.
+    ///
+    /// This client exposes the full interface of `CoreCrypto`, but it should only be used to decrypt messages.
+    /// Other use is a logic error.
+    pub async fn history_client(history_secret: HistorySecret) -> Result<Self> {
+        if !history_secret
+            .client_id
+            .starts_with(HISTORY_CLIENT_ID_PREFIX.as_bytes())
+        {
+            return Err(Error::InvalidHistorySecret("client id has invalid format"));
+        }
+
+        let ciphersuites = vec![history_secret.key_package.ciphersuite().into()];
+
+        let configuration = MlsClientConfiguration {
+            // we know what ciphersuite we want, at least
+            ciphersuites: ciphersuites.clone(),
+            // we have the client id from the history secret, but we don't want to use it here because
+            // that kicks off the `init`, and we want to inject our secret keys into the keystore before then
+            client_id: None,
+            // not used in in-memory client
+            store_path: String::new(),
+            // important so our keys aren't memory-snooped, but its actual value is irrelevant
+            database_key: DatabaseKey::generate(),
+            // irrelevant for this case
+            external_entropy: None,
+            // don't generate any keypackages; we do not want to ever add this client to a different group
+            nb_init_key_packages: Some(0),
+        };
+
+        // Construct the MLS session, but don't initialize it. The implementation when `client_id` is `None` just
+        // does construction, which is what we need. Before we initialize the session, we want to add some data to
+        // the keystore, and we get that from the session itself.
+        let session = Session::try_new_in_memory(configuration)
+            .await
+            .map_err(RecursiveError::mls("creating ephemeral session"))?;
+
+        todo!("inject keys into keystore here");
+
+        session
+            .init(
+                ClientIdentifier::Basic(history_secret.client_id),
+                &ciphersuites,
+                &session.crypto_provider,
+                0,
+            )
+            .await
+            .map_err(RecursiveError::mls_client("initializing ephemeral session"))?;
+        Ok(session.into())
     }
 }

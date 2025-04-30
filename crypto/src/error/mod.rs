@@ -38,6 +38,9 @@ pub enum Error {
     /// A key store operation failed
     #[error(transparent)]
     Keystore(#[from] KeystoreError),
+    /// Invalid history secret
+    #[error("Invalid history secret: {0}")]
+    InvalidHistorySecret(&'static str),
     /// An external MLS operation failed
     #[error(transparent)]
     Mls(#[from] MlsError),
