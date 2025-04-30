@@ -31,6 +31,10 @@ use crate::{
     prelude::{ClientId, ClientIdentifier, ConversationId},
 };
 
+/// We always instantiate history clients with this prefix in their client id, so
+/// we can use prefix testing to determine with some accuracy whether or not something is a history client.
+const HISTORY_CLIENT_ID_PREFIX: &str = "history-client";
+
 /// A `HistorySecret` encodes sufficient client state that it can be used to instantiate an
 /// ephemeral client.
 #[derive(serde::Serialize, serde::Deserialize)]
@@ -49,7 +53,7 @@ impl CoreCrypto {
     pub async fn generate_history_secret(&self, conversation_id: &ConversationId) -> Result<HistorySecret> {
         // generate a new completely arbitrary client id
         let client_id = uuid::Uuid::new_v4();
-        let client_id = format!("history-client-{client_id}");
+        let client_id = format!("{HISTORY_CLIENT_ID_PREFIX}-{client_id}");
         let client_id = ClientId::from(client_id.into_bytes());
 
         // generate a transient in-memory provider with which to generate the rest of the credentials
