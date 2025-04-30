@@ -1,59 +1,23 @@
 $dokka.format:html-v1
 $dokka.linkExtension:html
 $dokka.location:com.wire.crypto////PointingToDeclaration/android/com.wire.crypto/index.html
-$dokka.location:com.wire.crypto//lift/[Error type: Unresolved type for com.wire.crypto.uniffi.BufferedDecryptedMessage]#/PointingToDeclaration/android/com.wire.crypto/lift.html
-$dokka.location:com.wire.crypto//lift/[Error type: Unresolved type for com.wire.crypto.uniffi.CommitBundle]#/PointingToDeclaration/android/com.wire.crypto/lift.html
-$dokka.location:com.wire.crypto//lift/[Error type: Unresolved type for com.wire.crypto.uniffi.CoreCryptoException]#/PointingToDeclaration/android/com.wire.crypto/lift.html
-$dokka.location:com.wire.crypto//lift/[Error type: Unresolved type for com.wire.crypto.uniffi.CredentialType]#/PointingToDeclaration/android/com.wire.crypto/lift.html
-$dokka.location:com.wire.crypto//lift/[Error type: Unresolved type for com.wire.crypto.uniffi.CrlRegistration]#/PointingToDeclaration/android/com.wire.crypto/lift.html
-$dokka.location:com.wire.crypto//lift/[Error type: Unresolved type for com.wire.crypto.uniffi.DecryptedMessage]#/PointingToDeclaration/android/com.wire.crypto/lift.html
-$dokka.location:com.wire.crypto//lift/[Error type: Unresolved type for com.wire.crypto.uniffi.DeviceStatus]#/PointingToDeclaration/android/com.wire.crypto/lift.html
-$dokka.location:com.wire.crypto//lift/[Error type: Unresolved type for com.wire.crypto.uniffi.E2eiDumpedPkiEnv]#/PointingToDeclaration/android/com.wire.crypto/lift.html
-$dokka.location:com.wire.crypto//lift/[Error type: Unresolved type for com.wire.crypto.uniffi.GroupInfoBundle]#/PointingToDeclaration/android/com.wire.crypto/lift.html
-$dokka.location:com.wire.crypto//lift/[Error type: Unresolved type for com.wire.crypto.uniffi.MlsException]#/PointingToDeclaration/android/com.wire.crypto/lift.html
-$dokka.location:com.wire.crypto//lift/[Error type: Unresolved type for com.wire.crypto.uniffi.MlsGroupInfoEncryptionType]#/PointingToDeclaration/android/com.wire.crypto/lift.html
-$dokka.location:com.wire.crypto//lift/[Error type: Unresolved type for com.wire.crypto.uniffi.MlsRatchetTreeType]#/PointingToDeclaration/android/com.wire.crypto/lift.html
-$dokka.location:com.wire.crypto//lift/[Error type: Unresolved type for com.wire.crypto.uniffi.ProposalBundle]#/PointingToDeclaration/android/com.wire.crypto/lift.html
-$dokka.location:com.wire.crypto//lift/[Error type: Unresolved type for com.wire.crypto.uniffi.ProteusException]#/PointingToDeclaration/android/com.wire.crypto/lift.html
-$dokka.location:com.wire.crypto//lift/[Error type: Unresolved type for com.wire.crypto.uniffi.WelcomeBundle]#/PointingToDeclaration/android/com.wire.crypto/lift.html
-$dokka.location:com.wire.crypto//lift/[Error type: Unresolved type for com.wire.crypto.uniffi.WireIdentity]#/PointingToDeclaration/android/com.wire.crypto/lift.html
-$dokka.location:com.wire.crypto//lift/[Error type: Unresolved type for com.wire.crypto.uniffi.X509Identity]#/PointingToDeclaration/android/com.wire.crypto/lift.html
-$dokka.location:com.wire.crypto//lower/com.wire.crypto.CustomConfiguration#/PointingToDeclaration/android/com.wire.crypto/lower.html
-$dokka.location:com.wire.crypto//lower/com.wire.crypto.MlsTransportResponse#/PointingToDeclaration/android/com.wire.crypto/lower.html
-$dokka.location:com.wire.crypto//lower/com.wire.crypto.MlsWirePolicy#/PointingToDeclaration/android/com.wire.crypto/lower.html
 $dokka.location:com.wire.crypto//migrateDatabaseKeyTypeToBytes/#kotlin.String#kotlin.String#com.wire.crypto.DatabaseKey/PointingToDeclaration/android/com.wire.crypto/migrate-database-key-type-to-bytes.html
 $dokka.location:com.wire.crypto//setLogger/#com.wire.crypto.CoreCryptoLogger/PointingToDeclaration/android/com.wire.crypto/set-logger.html
 $dokka.location:com.wire.crypto//setMaxLogLevel/#com.wire.crypto.CoreCryptoLogLevel/PointingToDeclaration/android/com.wire.crypto/set-max-log-level.html
-$dokka.location:com.wire.crypto//toAcmeChallenge/[Error type: Unresolved type for com.wire.crypto.uniffi.AcmeChallenge]#/PointingToDeclaration/android/com.wire.crypto/to-acme-challenge.html
-$dokka.location:com.wire.crypto//toAcmeDirectory/[Error type: Unresolved type for com.wire.crypto.uniffi.AcmeDirectory]#/PointingToDeclaration/android/com.wire.crypto/to-acme-directory.html
 $dokka.location:com.wire.crypto//toAvsSecret/kotlin.ByteArray#/PointingToDeclaration/android/com.wire.crypto/to-avs-secret.html
-$dokka.location:com.wire.crypto//toByteArray/kotlin.String#/PointingToDeclaration/android/com.wire.crypto/to-byte-array.html
-$dokka.location:com.wire.crypto//toClientId/[Error type: Unresolved type for com.wire.crypto.uniffi.ClientId]#/PointingToDeclaration/android/com.wire.crypto/to-client-id.html
 $dokka.location:com.wire.crypto//toClientId/kotlin.String#/PointingToDeclaration/android/com.wire.crypto/to-client-id.html
-$dokka.location:com.wire.crypto//toCrlDistributionPoint/kotlin.collections.List[kotlin.String]#/PointingToDeclaration/android/com.wire.crypto/to-crl-distribution-point.html
 $dokka.location:com.wire.crypto//toExternalSenderKey/kotlin.ByteArray#/PointingToDeclaration/android/com.wire.crypto/to-external-sender-key.html
-$dokka.location:com.wire.crypto//toExternallyGeneratedHandle/kotlin.collections.List[kotlin.ByteArray]#/PointingToDeclaration/android/com.wire.crypto/to-externally-generated-handle.html
 $dokka.location:com.wire.crypto//toGroupId/kotlin.ByteArray#/PointingToDeclaration/android/com.wire.crypto/to-group-id.html
 $dokka.location:com.wire.crypto//toGroupId/kotlin.String#/PointingToDeclaration/android/com.wire.crypto/to-group-id.html
-$dokka.location:com.wire.crypto//toGroupInfo/kotlin.ByteArray#/PointingToDeclaration/android/com.wire.crypto/to-group-info.html
-$dokka.location:com.wire.crypto//toHex/kotlin.ByteArray#/PointingToDeclaration/android/com.wire.crypto/to-hex.html
-$dokka.location:com.wire.crypto//toMLSKeyPackage/kotlin.ByteArray#/PointingToDeclaration/android/com.wire.crypto/to-m-l-s-key-package.html
 $dokka.location:com.wire.crypto//toMlsMessage/kotlin.ByteArray#/PointingToDeclaration/android/com.wire.crypto/to-mls-message.html
-$dokka.location:com.wire.crypto//toNewAcmeAuthz/[Error type: Unresolved type for com.wire.crypto.uniffi.NewAcmeAuthz]#/PointingToDeclaration/android/com.wire.crypto/to-new-acme-authz.html
-$dokka.location:com.wire.crypto//toNewAcmeOrder/[Error type: Unresolved type for com.wire.crypto.uniffi.NewAcmeOrder]#/PointingToDeclaration/android/com.wire.crypto/to-new-acme-order.html
 $dokka.location:com.wire.crypto//toPlaintextMessage/kotlin.String#/PointingToDeclaration/android/com.wire.crypto/to-plaintext-message.html
-$dokka.location:com.wire.crypto//toProposalRef/kotlin.ByteArray#/PointingToDeclaration/android/com.wire.crypto/to-proposal-ref.html
-$dokka.location:com.wire.crypto//toSignaturePublicKey/kotlin.ByteArray#/PointingToDeclaration/android/com.wire.crypto/to-signature-public-key.html
-$dokka.location:com.wire.crypto//toWelcome/kotlin.ByteArray#/PointingToDeclaration/android/com.wire.crypto/to-welcome.html
 $dokka.location:com.wire.crypto/AcmeChallenge///PointingToDeclaration/android/com.wire.crypto/-acme-challenge/index.html
 $dokka.location:com.wire.crypto/AcmeChallenge/AcmeChallenge/#[Error type: Unresolved type for com.wire.crypto.uniffi.AcmeChallenge]/PointingToDeclaration/android/com.wire.crypto/-acme-challenge/-acme-challenge.html
-$dokka.location:com.wire.crypto/AcmeChallenge/lower/#/PointingToDeclaration/android/com.wire.crypto/-acme-challenge/lower.html
 $dokka.location:com.wire.crypto/AcmeChallenge/raw/#/PointingToDeclaration/android/com.wire.crypto/-acme-challenge/raw.html
 $dokka.location:com.wire.crypto/AcmeChallenge/target/#/PointingToDeclaration/android/com.wire.crypto/-acme-challenge/target.html
 $dokka.location:com.wire.crypto/AcmeChallenge/url/#/PointingToDeclaration/android/com.wire.crypto/-acme-challenge/url.html
 $dokka.location:com.wire.crypto/AcmeDirectory///PointingToDeclaration/android/com.wire.crypto/-acme-directory/index.html
 $dokka.location:com.wire.crypto/AcmeDirectory/AcmeDirectory/#[Error type: Unresolved type for com.wire.crypto.uniffi.AcmeDirectory]/PointingToDeclaration/android/com.wire.crypto/-acme-directory/-acme-directory.html
-$dokka.location:com.wire.crypto/AcmeDirectory/lower/#/PointingToDeclaration/android/com.wire.crypto/-acme-directory/lower.html
 $dokka.location:com.wire.crypto/AcmeDirectory/newAccount/#/PointingToDeclaration/android/com.wire.crypto/-acme-directory/new-account.html
 $dokka.location:com.wire.crypto/AcmeDirectory/newNonce/#/PointingToDeclaration/android/com.wire.crypto/-acme-directory/new-nonce.html
 $dokka.location:com.wire.crypto/AcmeDirectory/newOrder/#/PointingToDeclaration/android/com.wire.crypto/-acme-directory/new-order.html
@@ -91,14 +55,12 @@ $dokka.location:com.wire.crypto/Ciphersuite.MLS_256_DHKEMX448_AES256GCM_SHA512_E
 $dokka.location:com.wire.crypto/Ciphersuite.MLS_256_DHKEMX448_CHACHA20POLY1305_SHA512_Ed448///PointingToDeclaration/{"org.jetbrains.dokka.links.EnumEntryDRIExtra":{"key":"org.jetbrains.dokka.links.EnumEntryDRIExtra"}}android/com.wire.crypto/-ciphersuite/-m-l-s_256_-d-h-k-e-m-x448_-c-h-a-c-h-a20-p-o-l-y1305_-s-h-a512_-ed448/index.html
 $dokka.location:com.wire.crypto/Ciphersuite///PointingToDeclaration/android/com.wire.crypto/-ciphersuite/index.html
 $dokka.location:com.wire.crypto/Ciphersuite/entries/#/PointingToDeclaration/android/com.wire.crypto/-ciphersuite/entries.html
-$dokka.location:com.wire.crypto/Ciphersuite/lower/#/PointingToDeclaration/android/com.wire.crypto/-ciphersuite/lower.html
 $dokka.location:com.wire.crypto/Ciphersuite/valueOf/#kotlin.String/PointingToDeclaration/android/com.wire.crypto/-ciphersuite/value-of.html
 $dokka.location:com.wire.crypto/Ciphersuite/values/#/PointingToDeclaration/android/com.wire.crypto/-ciphersuite/values.html
 $dokka.location:com.wire.crypto/Ciphersuites.Companion///PointingToDeclaration/android/com.wire.crypto/-ciphersuites/-companion/index.html
 $dokka.location:com.wire.crypto/Ciphersuites.Companion/DEFAULT/#/PointingToDeclaration/android/com.wire.crypto/-ciphersuites/-companion/-d-e-f-a-u-l-t.html
 $dokka.location:com.wire.crypto/Ciphersuites///PointingToDeclaration/android/com.wire.crypto/-ciphersuites/index.html
 $dokka.location:com.wire.crypto/Ciphersuites/Ciphersuites/#kotlin.collections.Set[com.wire.crypto.Ciphersuite]/PointingToDeclaration/android/com.wire.crypto/-ciphersuites/-ciphersuites.html
-$dokka.location:com.wire.crypto/Ciphersuites/lower/#/PointingToDeclaration/android/com.wire.crypto/-ciphersuites/lower.html
 $dokka.location:com.wire.crypto/ClientId///PointingToDeclaration/android/com.wire.crypto/-client-id/index.html
 $dokka.location:com.wire.crypto/ClientId/ClientId/#kotlin.String/PointingToDeclaration/android/com.wire.crypto/-client-id/-client-id.html
 $dokka.location:com.wire.crypto/ClientId/lower/#/PointingToDeclaration/android/com.wire.crypto/-client-id/lower.html
@@ -213,7 +175,6 @@ $dokka.location:com.wire.crypto/CredentialType.Companion/DEFAULT/#/PointingToDec
 $dokka.location:com.wire.crypto/CredentialType.X509///PointingToDeclaration/{"org.jetbrains.dokka.links.EnumEntryDRIExtra":{"key":"org.jetbrains.dokka.links.EnumEntryDRIExtra"}}android/com.wire.crypto/-credential-type/-x509/index.html
 $dokka.location:com.wire.crypto/CredentialType///PointingToDeclaration/android/com.wire.crypto/-credential-type/index.html
 $dokka.location:com.wire.crypto/CredentialType/entries/#/PointingToDeclaration/android/com.wire.crypto/-credential-type/entries.html
-$dokka.location:com.wire.crypto/CredentialType/lower/#/PointingToDeclaration/android/com.wire.crypto/-credential-type/lower.html
 $dokka.location:com.wire.crypto/CredentialType/valueOf/#kotlin.String/PointingToDeclaration/android/com.wire.crypto/-credential-type/value-of.html
 $dokka.location:com.wire.crypto/CredentialType/values/#/PointingToDeclaration/android/com.wire.crypto/-credential-type/values.html
 $dokka.location:com.wire.crypto/CrlDistributionPoints///PointingToDeclaration/android/com.wire.crypto/-crl-distribution-points/index.html
@@ -291,9 +252,6 @@ $dokka.location:com.wire.crypto/ExternallyGeneratedHandle/ExternallyGeneratedHan
 $dokka.location:com.wire.crypto/ExternallyGeneratedHandle/lower/#/PointingToDeclaration/android/com.wire.crypto/-externally-generated-handle/lower.html
 $dokka.location:com.wire.crypto/ExternallyGeneratedHandle/toString/#/PointingToDeclaration/android/com.wire.crypto/-externally-generated-handle/to-string.html
 $dokka.location:com.wire.crypto/ExternallyGeneratedHandle/value/#/PointingToDeclaration/android/com.wire.crypto/-externally-generated-handle/value.html
-$dokka.location:com.wire.crypto/FfiType///PointingToDeclaration/android/com.wire.crypto/-ffi-type/index.html
-$dokka.location:com.wire.crypto/FfiType/lower/#/PointingToDeclaration/android/com.wire.crypto/-ffi-type/lower.html
-$dokka.location:com.wire.crypto/FfiType/value/#/PointingToDeclaration/android/com.wire.crypto/-ffi-type/value.html
 $dokka.location:com.wire.crypto/GroupInfo///PointingToDeclaration/android/com.wire.crypto/-group-info/index.html
 $dokka.location:com.wire.crypto/GroupInfo/GroupInfo/#kotlin.ByteArray/PointingToDeclaration/android/com.wire.crypto/-group-info/-group-info.html
 $dokka.location:com.wire.crypto/GroupInfo/toString/#/PointingToDeclaration/android/com.wire.crypto/-group-info/to-string.html
@@ -377,7 +335,6 @@ $dokka.location:com.wire.crypto/MlsRatchetTreeType/values/#/PointingToDeclaratio
 $dokka.location:com.wire.crypto/MlsTransport///PointingToDeclaration/android/com.wire.crypto/-mls-transport/index.html
 $dokka.location:com.wire.crypto/MlsTransport/sendCommitBundle/#com.wire.crypto.CommitBundle/PointingToDeclaration/android/com.wire.crypto/-mls-transport/send-commit-bundle.html
 $dokka.location:com.wire.crypto/MlsTransport/sendMessage/#kotlin.ByteArray/PointingToDeclaration/android/com.wire.crypto/-mls-transport/send-message.html
-$dokka.location:com.wire.crypto/MlsTransportResponse.Abort.Companion///PointingToDeclaration/android/com.wire.crypto/-mls-transport-response/-abort/-companion/index.html
 $dokka.location:com.wire.crypto/MlsTransportResponse.Abort///PointingToDeclaration/android/com.wire.crypto/-mls-transport-response/-abort/index.html
 $dokka.location:com.wire.crypto/MlsTransportResponse.Abort/Abort/#kotlin.String/PointingToDeclaration/android/com.wire.crypto/-mls-transport-response/-abort/-abort.html
 $dokka.location:com.wire.crypto/MlsTransportResponse.Abort/reason/#/PointingToDeclaration/android/com.wire.crypto/-mls-transport-response/-abort/reason.html
@@ -395,11 +352,9 @@ $dokka.location:com.wire.crypto/NewAcmeAuthz/NewAcmeAuthz/#[Error type: Unresolv
 $dokka.location:com.wire.crypto/NewAcmeAuthz/challenge/#/PointingToDeclaration/android/com.wire.crypto/-new-acme-authz/challenge.html
 $dokka.location:com.wire.crypto/NewAcmeAuthz/identifier/#/PointingToDeclaration/android/com.wire.crypto/-new-acme-authz/identifier.html
 $dokka.location:com.wire.crypto/NewAcmeAuthz/keyauth/#/PointingToDeclaration/android/com.wire.crypto/-new-acme-authz/keyauth.html
-$dokka.location:com.wire.crypto/NewAcmeAuthz/lower/#/PointingToDeclaration/android/com.wire.crypto/-new-acme-authz/lower.html
 $dokka.location:com.wire.crypto/NewAcmeOrder///PointingToDeclaration/android/com.wire.crypto/-new-acme-order/index.html
 $dokka.location:com.wire.crypto/NewAcmeOrder/NewAcmeOrder/#[Error type: Unresolved type for com.wire.crypto.uniffi.NewAcmeOrder]/PointingToDeclaration/android/com.wire.crypto/-new-acme-order/-new-acme-order.html
 $dokka.location:com.wire.crypto/NewAcmeOrder/authorizations/#/PointingToDeclaration/android/com.wire.crypto/-new-acme-order/authorizations.html
-$dokka.location:com.wire.crypto/NewAcmeOrder/lower/#/PointingToDeclaration/android/com.wire.crypto/-new-acme-order/lower.html
 $dokka.location:com.wire.crypto/NewAcmeOrder/raw/#/PointingToDeclaration/android/com.wire.crypto/-new-acme-order/raw.html
 $dokka.location:com.wire.crypto/PlaintextMessage///PointingToDeclaration/android/com.wire.crypto/-plaintext-message/index.html
 $dokka.location:com.wire.crypto/PlaintextMessage/PlaintextMessage/#kotlin.ByteArray/PointingToDeclaration/android/com.wire.crypto/-plaintext-message/-plaintext-message.html
@@ -441,8 +396,6 @@ $dokka.location:com.wire.crypto/SignaturePublicKey///PointingToDeclaration/andr
 $dokka.location:com.wire.crypto/SignaturePublicKey/SignaturePublicKey/#kotlin.ByteArray/PointingToDeclaration/android/com.wire.crypto/-signature-public-key/-signature-public-key.html
 $dokka.location:com.wire.crypto/SignaturePublicKey/toString/#/PointingToDeclaration/android/com.wire.crypto/-signature-public-key/to-string.html
 $dokka.location:com.wire.crypto/SignaturePublicKey/value/#/PointingToDeclaration/android/com.wire.crypto/-signature-public-key/value.html
-$dokka.location:com.wire.crypto/Uniffi///PointingToDeclaration/android/com.wire.crypto/-uniffi/index.html
-$dokka.location:com.wire.crypto/Uniffi/lower/#/PointingToDeclaration/android/com.wire.crypto/-uniffi/lower.html
 $dokka.location:com.wire.crypto/Welcome///PointingToDeclaration/android/com.wire.crypto/-welcome/index.html
 $dokka.location:com.wire.crypto/Welcome/Welcome/#kotlin.ByteArray/PointingToDeclaration/android/com.wire.crypto/-welcome/-welcome.html
 $dokka.location:com.wire.crypto/Welcome/toString/#/PointingToDeclaration/android/com.wire.crypto/-welcome/to-string.html
