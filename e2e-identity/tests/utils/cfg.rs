@@ -66,7 +66,6 @@ impl std::fmt::Debug for E2eTest {
 pub enum OidcProvider {
     Dex,
     Keycloak,
-    Google,
 }
 
 impl E2eTest {
@@ -86,7 +85,6 @@ impl E2eTest {
         let idp_host = match oidc_provider {
             OidcProvider::Dex => "dex",
             OidcProvider::Keycloak => "keycloak",
-            OidcProvider::Google => "",
         };
         let hosts = [idp_host, Self::STEPCA_HOST, Self::LDAP_HOST, Self::WIRE_HOST];
         let [idp_host, ca_host, ldap_host, domain] = if is_demo {
@@ -117,7 +115,6 @@ impl E2eTest {
                     format!("{idp_base}:{idp_host_port}/realms/{realm}",),
                 )
             }
-            OidcProvider::Google => ("https://accounts.google.com".to_string(), "TODO".to_string()),
         };
 
         let (client_kp, sign_key, backend_kp, acme_kp, acme_jwk) = match alg {
@@ -252,13 +249,8 @@ impl E2eTest {
         }
 
         // wire-server
-        let (wire_server_host, wire_server_port, redirect) = match self.oidc_provider {
-            OidcProvider::Dex | OidcProvider::Keycloak => {
-                (self.domain.clone(), portpicker::pick_unused_port().unwrap(), "callback")
-            }
-            // need to use a fixed port for Google in order to have a constant redirect_uri
-            OidcProvider::Google => ("localhost".to_string(), 9090, "callback-google"),
-        };
+        let (wire_server_host, wire_server_port, redirect) =
+            (self.domain.clone(), portpicker::pick_unused_port().unwrap(), "callback");
         let wire_server = WireServer::run_on_port(wire_server_port).await;
 
         let wire_server_uri = format!("http://{wire_server_host}:{wire_server_port}");
@@ -283,7 +275,6 @@ impl E2eTest {
                 dns_mappings.insert(self.keycloak_cfg.host.clone(), keycloak_server.socket);
                 self.keycloak_server = Some(keycloak_server);
             }
-            OidcProvider::Google => {}
         }
 
         // start ACME server
@@ -329,7 +320,6 @@ impl E2eTest {
         let authz_server_uri = match self.oidc_provider {
             OidcProvider::Dex => self.dex_authorization_server_uri(),
             OidcProvider::Keycloak => self.keycloak_server.as_ref().unwrap().http_uri.clone(),
-            OidcProvider::Google => "https://accounts.google.com".to_string(),
         };
         let uri = match self.oidc_provider {
             OidcProvider::Dex => format!("{authz_server_uri}/dex/.well-known/openid-configuration"),
@@ -339,7 +329,6 @@ impl E2eTest {
                     KeycloakImage::REALM
                 )
             }
-            OidcProvider::Google => "https://accounts.google.com/.well-known/openid-configuration".to_string(),
         };
         let response = self.client.get(&uri).send().await.unwrap();
         let status = response.status();

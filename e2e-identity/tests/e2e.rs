@@ -15,7 +15,6 @@ use utils::{
     docker::{stepca::CaCfg, wiremock::WiremockImage},
     id_token::resign_id_token,
     rand_base64_str, rand_client_id,
-    wire_server::OauthCfg,
 };
 
 #[path = "utils/mod.rs"]
@@ -36,41 +35,6 @@ async fn demo_with_dex_should_succeed() {
     let demo = E2eTest::new_internal(true, JwsAlgorithm::Ed25519, OidcProvider::Dex);
     let test = demo.start().await;
     test.nominal_enrollment().await.unwrap();
-}
-
-/// Tests the nominal case and prints the pretty output with the mermaid chart in this crate README.
-#[ignore] // interactive test. Uncomment to try it.
-#[cfg(not(ci))]
-#[tokio::test]
-async fn google_demo_should_succeed() {
-    let default = E2eTest::new_demo();
-    let issuer = "https://accounts.google.com".to_string();
-    let client_secret = std::env::var("GOOGLE_E2EI_DEMO_CLIENT_SECRET")
-        .expect("You have to set the client secret in the 'GOOGLE_E2EI_DEMO_CLIENT_SECRET' env variable");
-    let audience = "338888153072-ktbh66pv3mr0ua0dn64sphgimeo0p7ss.apps.googleusercontent.com".to_string();
-    let domain = "wire.com";
-    let new_sub =
-        ClientId::try_from_raw_parts(default.sub.user_id.as_ref(), default.sub.device_id, domain.as_bytes()).unwrap();
-    let test = E2eTest {
-        domain: domain.to_string(),
-        sub: new_sub,
-        display_name: "Beltram Maldant".to_string(),
-        handle: "beltram_wire".to_string(),
-        oauth_cfg: OauthCfg {
-            client_secret,
-            client_id: audience.clone(),
-            ..default.oauth_cfg
-        },
-        ca_cfg: CaCfg {
-            issuer,
-            audience,
-            ..default.ca_cfg
-        },
-        oidc_provider: OidcProvider::Google,
-        ..default
-    };
-    let test = test.start().await;
-    assert!(test.nominal_enrollment().await.is_ok());
 }
 
 /// Tests using the custom SPI Provider to be able to use the refreshToken to get a new idToken with the current ACME challenges

@@ -13,10 +13,7 @@ use openidconnect::{
 };
 use reqwest::StatusCode;
 use serde_json::{Value, json};
-use std::{
-    collections::{HashMap, hash_map::RandomState},
-    sync::{Mutex, mpsc},
-};
+use std::collections::{HashMap, hash_map::RandomState};
 use url::Url;
 use x509_cert::Certificate;
 use x509_cert::der::asn1::Ia5String;
@@ -43,11 +40,6 @@ use crate::utils::{
     rand_base64_str,
     wire_server::oidc::{scrap_grant, scrap_login},
 };
-
-// These tests require tester interaction to handle Google OIDC login, and the way we're
-// accommodating that under the hood is with these channels.
-pub(crate) static GOOGLE_SND: Mutex<Option<mpsc::Sender<String>>> = Mutex::new(None);
-static GOOGLE_RECV: Mutex<Option<mpsc::Receiver<String>>> = Mutex::new(None);
 
 fn keypair_to_pubkey(alg: JwsAlgorithm, keypair: &Pem) -> Pem {
     match alg {
@@ -534,7 +526,6 @@ impl E2eTest {
         match self.oidc_provider {
             OidcProvider::Dex => self.fetch_id_token_from_dex(oidc_chall, keyauth).await,
             OidcProvider::Keycloak => self.fetch_id_token_from_keycloak(oidc_chall, keyauth).await,
-            OidcProvider::Google => self.fetch_id_token_from_google().await,
         }
     }
 
@@ -791,55 +782,6 @@ impl E2eTest {
         Ok(id_token)
     }
 
-    pub async fn fetch_id_token_from_google(&mut self) -> TestResult<String> {
-        let (tx, rx) = mpsc::channel();
-        *GOOGLE_SND.lock().unwrap() = Some(tx);
-        *GOOGLE_RECV.lock().unwrap() = Some(rx);
-
-        // hack to pass args to wire-server
-        ctx_store("domain", &self.domain);
-        self.oauth_cfg.cxt_store();
-
-        let issuer_url = self.oauth_cfg.issuer_uri.trim_end_matches('/').to_string();
-        let issuer_url = IssuerUrl::new(issuer_url).unwrap();
-        let provider_metadata = CoreProviderMetadata::discover_async(issuer_url, move |r| {
-            custom_oauth_client("discovery", ctx_get_http_client(), r)
-        })
-        .await
-        .unwrap();
-
-        let client_id = openidconnect::ClientId::new(self.oauth_cfg.client_id.clone());
-        let client_secret = ClientSecret::new(self.oauth_cfg.client_secret.clone());
-        let redirect_url = RedirectUrl::new(self.oauth_cfg.redirect_uri.clone()).unwrap();
-        let client = CoreClient::from_provider_metadata(provider_metadata, client_id, Some(client_secret))
-            .set_redirect_uri(redirect_url);
-
-        let (pkce_challenge, pkce_verifier) = PkceCodeChallenge::new_random_sha256();
-        ctx_store("pkce-verifier", pkce_verifier.secret());
-        ctx_store("pkce-challenge", pkce_challenge.as_str());
-
-        let (authz_url, ..) = client
-            .authorize_url(
-                CoreAuthenticationFlow::AuthorizationCode,
-                CsrfToken::new_random,
-                Nonce::new_random,
-            )
-            // see https://developers.google.com/identity/protocols/oauth2/scopes
-            .add_scope(Scope::new("email".to_string()))
-            .add_scope(Scope::new("profile".to_string()))
-            .add_scope(Scope::new("openid".to_string()))
-            .set_pkce_challenge(pkce_challenge)
-            .url();
-        webbrowser::open(authz_url.as_str()).unwrap();
-
-        let id_token = {
-            let rx = GOOGLE_RECV.lock().unwrap();
-            let rx = rx.as_ref().unwrap();
-            rx.recv().unwrap()
-        };
-        Ok(id_token)
-    }
-
     pub async fn fetch_id_token_from_refresh_token(
         &mut self,
         oidc_chall: &AcmeChallenge,
@@ -851,7 +793,7 @@ impl E2eTest {
                 self.fetch_id_token_from_refresh_token_from_keycloak(oidc_chall, keyauth, refresh_token)
                     .await
             }
-            OidcProvider::Dex | OidcProvider::Google => unimplemented!(),
+            OidcProvider::Dex => unimplemented!(),
         }
     }
 

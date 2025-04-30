@@ -1,9 +1,9 @@
-use crate::utils::{ctx::*, fmk::GOOGLE_SND, wire_server::OauthCfg};
+use crate::utils::{ctx::*, wire_server::OauthCfg};
 use http_body_util::Full;
 use hyper::body::{Bytes, Incoming};
 use hyper::{Request, Response, StatusCode};
 use openidconnect::{
-    ClientSecret, CsrfToken, IssuerUrl, Nonce, PkceCodeChallenge, PkceCodeVerifier, RedirectUrl, Scope, TokenResponse,
+    ClientSecret, CsrfToken, IssuerUrl, Nonce, PkceCodeChallenge, RedirectUrl, Scope,
     core::{CoreAuthenticationFlow, CoreClient, CoreProviderMetadata},
 };
 use scraper::Html;
@@ -89,68 +89,6 @@ pub async fn handle_callback(req: Request<Incoming>) -> http::Result<Response<Fu
     let resp = Response::builder()
         .status(StatusCode::OK)
         .body(authorization_code.into())
-        .unwrap();
-    Ok(resp)
-}
-
-pub async fn handle_callback_google(mut req: Request<Incoming>) -> http::Result<Response<Full<Bytes>>> {
-    let req_uri = req.uri().clone();
-    let domain = ctx_get("domain").unwrap();
-    let req_path = req.uri().path().trim_start_matches('/');
-    *req.uri_mut() = format!("http://{domain}/{req_path}").parse().unwrap();
-    ctx_store_http_request("callback", &req);
-
-    let issuer_uri = ctx_get("issuer-uri").unwrap();
-    let client_id = ctx_get("client-id").unwrap();
-    let client_secret = ctx_get("client-secret").unwrap();
-    let redirect_uri = ctx_get("redirect-uri").unwrap();
-    let pkce_verifier = ctx_get("pkce-verifier").unwrap();
-
-    let provider_metadata = CoreProviderMetadata::discover_async(IssuerUrl::new(issuer_uri).unwrap(), move |r| {
-        custom_oauth_client("discovery", ctx_get_http_client(), r)
-    })
-    .await
-    .unwrap();
-    let client = CoreClient::from_provider_metadata(
-        provider_metadata,
-        openidconnect::ClientId::new(client_id),
-        Some(ClientSecret::new(client_secret)),
-    )
-    .set_redirect_uri(RedirectUrl::new(redirect_uri).unwrap());
-
-    let req_uri: url::Url = format!("http://localhost{}", req_uri).parse().unwrap();
-    let authorization_code = req_uri
-        .query_pairs()
-        .find_map(|(k, v)| match k.as_ref() {
-            "code" => Some(v.to_string()),
-            _ => None,
-        })
-        .unwrap();
-
-    let pkce_verifier = PkceCodeVerifier::new(pkce_verifier);
-    let id_token = client
-        .exchange_code(openidconnect::AuthorizationCode::new(authorization_code.to_string()))
-        .set_pkce_verifier(pkce_verifier)
-        .request_async(move |r| custom_oauth_client("exchange-code", ctx_get_http_client(), r))
-        .await
-        .unwrap();
-    let id_token = id_token.id_token().unwrap().to_string();
-
-    // for google oidc test
-    if let Some(tx) = GOOGLE_SND.lock().unwrap().as_ref() {
-        tx.send(id_token.clone()).unwrap();
-        let id_token_url = format!("https://jwt.io/#id_token={id_token}");
-        let resp = Response::builder()
-            .status(StatusCode::TEMPORARY_REDIRECT)
-            .header("location", id_token_url)
-            .body(Default::default())?;
-        return Ok(resp);
-    }
-
-    ctx_store("id-token", &id_token);
-    let resp = Response::builder()
-        .status(StatusCode::OK)
-        .body(id_token.into())
         .unwrap();
     Ok(resp)
 }
