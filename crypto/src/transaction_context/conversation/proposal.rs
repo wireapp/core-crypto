@@ -125,39 +125,35 @@ mod tests {
         #[apply(all_cred_cipher)]
         #[wasm_bindgen_test]
         pub async fn should_update_hpke_key(case: TestContext) {
-            run_test_with_central(case.clone(), move |[central]| {
-                Box::pin(async move {
-                    let id = conversation_id();
-                    central
-                        .transaction
-                        .new_conversation(&id, case.credential_type, case.cfg.clone())
-                        .await
-                        .unwrap();
-                    let before = central
-                        .get_conversation_unchecked(&id)
-                        .await
-                        .encryption_keys()
-                        .find_or_first(|_| true)
-                        .unwrap();
-                    central.transaction.new_update_proposal(&id).await.unwrap();
-                    central
-                        .transaction
-                        .conversation(&id)
-                        .await
-                        .unwrap()
-                        .commit_pending_proposals()
-                        .await
-                        .unwrap();
-                    let after = central
-                        .get_conversation_unchecked(&id)
-                        .await
-                        .encryption_keys()
-                        .find_or_first(|_| true)
-                        .unwrap();
-                    assert_ne!(before, after)
-                })
-            })
-            .await
+            let [session] = case.sessions().await;
+            let id = conversation_id();
+            session
+                .transaction
+                .new_conversation(&id, case.credential_type, case.cfg.clone())
+                .await
+                .unwrap();
+            let before = session
+                .get_conversation_unchecked(&id)
+                .await
+                .encryption_keys()
+                .find_or_first(|_| true)
+                .unwrap();
+            session.transaction.new_update_proposal(&id).await.unwrap();
+            session
+                .transaction
+                .conversation(&id)
+                .await
+                .unwrap()
+                .commit_pending_proposals()
+                .await
+                .unwrap();
+            let after = session
+                .get_conversation_unchecked(&id)
+                .await
+                .encryption_keys()
+                .find_or_first(|_| true)
+                .unwrap();
+            assert_ne!(before, after)
         }
     }
 

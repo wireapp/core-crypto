@@ -152,19 +152,15 @@ mod tests {
         #[apply(all_cred_cipher)]
         #[wasm_bindgen_test]
         async fn can_get_newly_created_conversation_epoch(case: TestContext) {
-            run_test_with_central(case.clone(), move |[central]| {
-                Box::pin(async move {
-                    let id = conversation_id();
-                    central
-                        .transaction
-                        .new_conversation(&id, case.credential_type, case.cfg.clone())
-                        .await
-                        .unwrap();
-                    let epoch = central.transaction.conversation(&id).await.unwrap().epoch().await;
-                    assert_eq!(epoch, 0);
-                })
-            })
-            .await;
+            let [session] = case.sessions().await;
+            let id = conversation_id();
+            session
+                .transaction
+                .new_conversation(&id, case.credential_type, case.cfg.clone())
+                .await
+                .unwrap();
+            let epoch = session.transaction.conversation(&id).await.unwrap().epoch().await;
+            assert_eq!(epoch, 0);
         }
 
         #[apply(all_cred_cipher)]
@@ -190,18 +186,13 @@ mod tests {
         #[wasm_bindgen_test]
         async fn conversation_not_found(case: TestContext) {
             use crate::LeafError;
-
-            run_test_with_central(case.clone(), move |[central]| {
-                Box::pin(async move {
-                    let id = conversation_id();
-                    let err = central.transaction.conversation(&id).await.unwrap_err();
-                    assert!(matches!(
-                        err,
-                        TransactionError::Leaf(LeafError::ConversationNotFound(i)) if i == id
-                    ));
-                })
-            })
-            .await;
+            let [session] = case.sessions().await;
+            let id = conversation_id();
+            let err = session.transaction.conversation(&id).await.unwrap_err();
+            assert!(matches!(
+                err,
+                TransactionError::Leaf(LeafError::ConversationNotFound(i)) if i == id
+            ));
         }
     }
 

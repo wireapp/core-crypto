@@ -306,13 +306,6 @@ fn init_x509_test_chain(
     })
 }
 
-pub async fn run_test_with_central(
-    case: TestContext,
-    test: impl FnOnce([SessionContext; 1]) -> std::pin::Pin<Box<dyn std::future::Future<Output = ()> + 'static>> + 'static,
-) {
-    run_test_with_client_ids(case.clone(), ["alice"], test).await
-}
-
 pub async fn run_test_with_client_ids<const N: usize>(
     case: TestContext,
     client_ids: [&'static str; N],

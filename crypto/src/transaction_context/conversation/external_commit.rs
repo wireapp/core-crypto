@@ -367,22 +367,18 @@ mod tests {
     #[apply(all_cred_cipher)]
     #[wasm_bindgen_test]
     async fn should_fail_when_no_pending_external_commit(case: TestContext) {
-        run_test_with_central(case.clone(), move |[central]| {
-            Box::pin(async move {
-                let non_existent_id = conversation_id();
-                // try to get a non-existent pending group
-                let err = central
-                    .transaction
-                    .pending_conversation(&non_existent_id)
-                    .await
-                    .unwrap_err();
+        let [session] = case.sessions().await;
+        let non_existent_id = conversation_id();
+        // try to get a non-existent pending group
+        let err = session
+            .transaction
+            .pending_conversation(&non_existent_id)
+            .await
+            .unwrap_err();
 
-                assert!(matches!(
-                   err, Error::Leaf(LeafError::ConversationNotFound(id)) if non_existent_id == id
-                ));
-            })
-        })
-        .await
+        assert!(matches!(
+           err, Error::Leaf(LeafError::ConversationNotFound(id)) if non_existent_id == id
+        ));
     }
 
     #[apply(all_cred_cipher)]
