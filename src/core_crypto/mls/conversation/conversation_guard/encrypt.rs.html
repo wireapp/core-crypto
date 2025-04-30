@@ -56,7 +56,7 @@
 <a href=#56 id=56 data-nosnippet>56</a>            Box::pin(<span class="kw">async move </span>{
 <a href=#57 id=57 data-nosnippet>57</a>                <span class="kw">let </span>id = conversation_id();
 <a href=#58 id=58 data-nosnippet>58</a>                alice_central
-<a href=#59 id=59 data-nosnippet>59</a>                    .context
+<a href=#59 id=59 data-nosnippet>59</a>                    .transaction
 <a href=#60 id=60 data-nosnippet>60</a>                    .new_conversation(<span class="kw-2">&amp;</span>id, case.credential_type, case.cfg.clone())
 <a href=#61 id=61 data-nosnippet>61</a>                    .<span class="kw">await
 <a href=#62 id=62 data-nosnippet>62</a>                    </span>.unwrap();
@@ -64,7 +64,7 @@
 <a href=#64 id=64 data-nosnippet>64</a>
 <a href=#65 id=65 data-nosnippet>65</a>                <span class="kw">let </span>msg = <span class="string">b"Hello bob"</span>;
 <a href=#66 id=66 data-nosnippet>66</a>                <span class="kw">let </span>encrypted = alice_central
-<a href=#67 id=67 data-nosnippet>67</a>                    .context
+<a href=#67 id=67 data-nosnippet>67</a>                    .transaction
 <a href=#68 id=68 data-nosnippet>68</a>                    .conversation(<span class="kw-2">&amp;</span>id)
 <a href=#69 id=69 data-nosnippet>69</a>                    .<span class="kw">await
 <a href=#70 id=70 data-nosnippet>70</a>                    </span>.unwrap()
@@ -73,7 +73,7 @@
 <a href=#73 id=73 data-nosnippet>73</a>                    </span>.unwrap();
 <a href=#74 id=74 data-nosnippet>74</a>                <span class="macro">assert_ne!</span>(<span class="kw-2">&amp;</span>msg[..], <span class="kw-2">&amp;</span>encrypted[..]);
 <a href=#75 id=75 data-nosnippet>75</a>                <span class="kw">let </span>decrypted = bob_central
-<a href=#76 id=76 data-nosnippet>76</a>                    .context
+<a href=#76 id=76 data-nosnippet>76</a>                    .transaction
 <a href=#77 id=77 data-nosnippet>77</a>                    .conversation(<span class="kw-2">&amp;</span>id)
 <a href=#78 id=78 data-nosnippet>78</a>                    .<span class="kw">await
 <a href=#79 id=79 data-nosnippet>79</a>                    </span>.unwrap()
@@ -96,18 +96,18 @@
 <a href=#96 id=96 data-nosnippet>96</a>            Box::pin(<span class="kw">async move </span>{
 <a href=#97 id=97 data-nosnippet>97</a>                <span class="kw">let </span>id = conversation_id();
 <a href=#98 id=98 data-nosnippet>98</a>                alice_central
-<a href=#99 id=99 data-nosnippet>99</a>                    .context
+<a href=#99 id=99 data-nosnippet>99</a>                    .transaction
 <a href=#100 id=100 data-nosnippet>100</a>                    .new_conversation(<span class="kw-2">&amp;</span>id, case.credential_type, case.cfg.clone())
 <a href=#101 id=101 data-nosnippet>101</a>                    .<span class="kw">await
 <a href=#102 id=102 data-nosnippet>102</a>                    </span>.unwrap();
 <a href=#103 id=103 data-nosnippet>103</a>                alice_central.invite_all(<span class="kw-2">&amp;</span>case, <span class="kw-2">&amp;</span>id, [<span class="kw-2">&amp;</span>bob_central]).<span class="kw">await</span>.unwrap();
-<a href=#104 id=104 data-nosnippet>104</a>                <span class="kw">let </span><span class="kw-2">mut </span>alice_conversation = alice_central.context.conversation(<span class="kw-2">&amp;</span>id).<span class="kw">await</span>.unwrap();
+<a href=#104 id=104 data-nosnippet>104</a>                <span class="kw">let </span><span class="kw-2">mut </span>alice_conversation = alice_central.transaction.conversation(<span class="kw-2">&amp;</span>id).<span class="kw">await</span>.unwrap();
 <a href=#105 id=105 data-nosnippet>105</a>
 <a href=#106 id=106 data-nosnippet>106</a>                <span class="kw">let </span>msg = <span class="string">b"Hello bob"</span>;
 <a href=#107 id=107 data-nosnippet>107</a>                <span class="kw">let </span>encrypted = alice_conversation.encrypt_message(msg).<span class="kw">await</span>.unwrap();
 <a href=#108 id=108 data-nosnippet>108</a>                <span class="macro">assert_ne!</span>(<span class="kw-2">&amp;</span>msg[..], <span class="kw-2">&amp;</span>encrypted[..]);
 <a href=#109 id=109 data-nosnippet>109</a>                <span class="kw">let </span>decrypted = bob_central
-<a href=#110 id=110 data-nosnippet>110</a>                    .context
+<a href=#110 id=110 data-nosnippet>110</a>                    .transaction
 <a href=#111 id=111 data-nosnippet>111</a>                    .conversation(<span class="kw-2">&amp;</span>id)
 <a href=#112 id=112 data-nosnippet>112</a>                    .<span class="kw">await
 <a href=#113 id=113 data-nosnippet>113</a>                    </span>.unwrap()
@@ -122,7 +122,7 @@
 <a href=#122 id=122 data-nosnippet>122</a>                <span class="kw">let </span>encrypted = alice_conversation.encrypt_message(msg).<span class="kw">await</span>.unwrap();
 <a href=#123 id=123 data-nosnippet>123</a>                <span class="macro">assert_ne!</span>(<span class="kw-2">&amp;</span>msg[..], <span class="kw-2">&amp;</span>encrypted[..]);
 <a href=#124 id=124 data-nosnippet>124</a>                <span class="kw">let </span>decrypted = bob_central
-<a href=#125 id=125 data-nosnippet>125</a>                    .context
+<a href=#125 id=125 data-nosnippet>125</a>                    .transaction
 <a href=#126 id=126 data-nosnippet>126</a>                    .conversation(<span class="kw-2">&amp;</span>id)
 <a href=#127 id=127 data-nosnippet>127</a>                    .<span class="kw">await
 <a href=#128 id=128 data-nosnippet>128</a>                    </span>.unwrap()

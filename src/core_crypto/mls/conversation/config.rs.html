@@ -208,11 +208,11 @@
 <a href=#208 id=208 data-nosnippet>208</a>        run_test_with_client_ids(case.clone(), [<span class="string">"alice"</span>], <span class="kw">move </span>|[cc]| {
 <a href=#209 id=209 data-nosnippet>209</a>            Box::pin(<span class="kw">async move </span>{
 <a href=#210 id=210 data-nosnippet>210</a>                <span class="kw">let </span>id = conversation_id();
-<a href=#211 id=211 data-nosnippet>211</a>                cc.context
+<a href=#211 id=211 data-nosnippet>211</a>                cc.transaction
 <a href=#212 id=212 data-nosnippet>212</a>                    .new_conversation(<span class="kw-2">&amp;</span>id, case.credential_type, case.cfg.clone())
 <a href=#213 id=213 data-nosnippet>213</a>                    .<span class="kw">await
 <a href=#214 id=214 data-nosnippet>214</a>                    </span>.unwrap();
-<a href=#215 id=215 data-nosnippet>215</a>                <span class="kw">let </span>conv = cc.context.conversation(<span class="kw-2">&amp;</span>id).<span class="kw">await</span>.unwrap();
+<a href=#215 id=215 data-nosnippet>215</a>                <span class="kw">let </span>conv = cc.transaction.conversation(<span class="kw-2">&amp;</span>id).<span class="kw">await</span>.unwrap();
 <a href=#216 id=216 data-nosnippet>216</a>                <span class="kw">let </span>group = conv.conversation().<span class="kw">await</span>;
 <a href=#217 id=217 data-nosnippet>217</a>
 <a href=#218 id=218 data-nosnippet>218</a>                <span class="kw">let </span>capabilities = group.group.group_context_extensions().required_capabilities().unwrap();
@@ -235,11 +235,11 @@
 <a href=#235 id=235 data-nosnippet>235</a>        run_test_with_client_ids(case.clone(), [<span class="string">"alice"</span>], <span class="kw">move </span>|[cc]| {
 <a href=#236 id=236 data-nosnippet>236</a>            Box::pin(<span class="kw">async move </span>{
 <a href=#237 id=237 data-nosnippet>237</a>                <span class="kw">let </span>id = conversation_id();
-<a href=#238 id=238 data-nosnippet>238</a>                cc.context
+<a href=#238 id=238 data-nosnippet>238</a>                cc.transaction
 <a href=#239 id=239 data-nosnippet>239</a>                    .new_conversation(<span class="kw-2">&amp;</span>id, case.credential_type, case.cfg.clone())
 <a href=#240 id=240 data-nosnippet>240</a>                    .<span class="kw">await
 <a href=#241 id=241 data-nosnippet>241</a>                    </span>.unwrap();
-<a href=#242 id=242 data-nosnippet>242</a>                <span class="kw">let </span>conv = cc.context.conversation(<span class="kw-2">&amp;</span>id).<span class="kw">await</span>.unwrap();
+<a href=#242 id=242 data-nosnippet>242</a>                <span class="kw">let </span>conv = cc.transaction.conversation(<span class="kw-2">&amp;</span>id).<span class="kw">await</span>.unwrap();
 <a href=#243 id=243 data-nosnippet>243</a>                <span class="kw">let </span>group = conv.conversation().<span class="kw">await</span>;
 <a href=#244 id=244 data-nosnippet>244</a>
 <a href=#245 id=245 data-nosnippet>245</a>                <span class="comment">// verifying https://www.rfc-editor.org/rfc/rfc9420.html#section-7.2
@@ -280,7 +280,7 @@
 <a href=#280 id=280 data-nosnippet>280</a>        run_test_with_client_ids(case.clone(), [<span class="string">"alice"</span>], <span class="kw">move </span>|[cc]| {
 <a href=#281 id=281 data-nosnippet>281</a>            Box::pin(<span class="kw">async move </span>{
 <a href=#282 id=282 data-nosnippet>282</a>                <span class="kw">let </span>(_sk, pk) = cc
-<a href=#283 id=283 data-nosnippet>283</a>                    .context
+<a href=#283 id=283 data-nosnippet>283</a>                    .transaction
 <a href=#284 id=284 data-nosnippet>284</a>                    .mls_provider()
 <a href=#285 id=285 data-nosnippet>285</a>                    .<span class="kw">await
 <a href=#286 id=286 data-nosnippet>286</a>                    </span>.unwrap()
@@ -289,7 +289,7 @@
 <a href=#289 id=289 data-nosnippet>289</a>                    .unwrap();
 <a href=#290 id=290 data-nosnippet>290</a>
 <a href=#291 id=291 data-nosnippet>291</a>                <span class="macro">assert!</span>(
-<a href=#292 id=292 data-nosnippet>292</a>                    cc.context
+<a href=#292 id=292 data-nosnippet>292</a>                    cc.transaction
 <a href=#293 id=293 data-nosnippet>293</a>                        .set_raw_external_senders(<span class="kw-2">&amp;mut </span>case.cfg.clone(), <span class="macro">vec!</span>[pk])
 <a href=#294 id=294 data-nosnippet>294</a>                        .<span class="kw">await
 <a href=#295 id=295 data-nosnippet>295</a>                        </span>.is_ok()
@@ -315,7 +315,7 @@
 <a href=#315 id=315 data-nosnippet>315</a>                };
 <a href=#316 id=316 data-nosnippet>316</a>
 <a href=#317 id=317 data-nosnippet>317</a>                <span class="kw">let </span>jwk = wire_e2e_identity::prelude::generate_jwk(alg);
-<a href=#318 id=318 data-nosnippet>318</a>                cc.context
+<a href=#318 id=318 data-nosnippet>318</a>                cc.transaction
 <a href=#319 id=319 data-nosnippet>319</a>                    .set_raw_external_senders(<span class="kw-2">&amp;mut </span>case.cfg.clone(), <span class="macro">vec!</span>[jwk])
 <a href=#320 id=320 data-nosnippet>320</a>                    .<span class="kw">await
 <a href=#321 id=321 data-nosnippet>321</a>                    </span>.unwrap();

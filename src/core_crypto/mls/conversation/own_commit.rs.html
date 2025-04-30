@@ -153,7 +153,7 @@
 <a href=#153 id=153 data-nosnippet>153</a>
 <a href=#154 id=154 data-nosnippet>154</a>                    <span class="kw">let </span>id = conversation_id();
 <a href=#155 id=155 data-nosnippet>155</a>                    alice_central
-<a href=#156 id=156 data-nosnippet>156</a>                        .context
+<a href=#156 id=156 data-nosnippet>156</a>                        .transaction
 <a href=#157 id=157 data-nosnippet>157</a>                        .new_conversation(<span class="kw-2">&amp;</span>id, case.credential_type, case.cfg.clone())
 <a href=#158 id=158 data-nosnippet>158</a>                        .<span class="kw">await
 <a href=#159 id=159 data-nosnippet>159</a>                        </span>.unwrap();
@@ -181,11 +181,11 @@
 <a href=#181 id=181 data-nosnippet>181</a>                    </span><span class="kw">let </span>commit = alice_central.create_unmerged_e2ei_rotate_commit(<span class="kw-2">&amp;</span>id, <span class="kw-2">&amp;</span>cb).<span class="kw">await</span>;
 <a href=#182 id=182 data-nosnippet>182</a>                    <span class="macro">assert!</span>(alice_central.pending_commit(<span class="kw-2">&amp;</span>id).<span class="kw">await</span>.is_some());
 <a href=#183 id=183 data-nosnippet>183</a>
-<a href=#184 id=184 data-nosnippet>184</a>                    <span class="kw">let </span>epoch = alice_central.context.conversation(<span class="kw-2">&amp;</span>id).<span class="kw">await</span>.unwrap().epoch().<span class="kw">await</span>;
+<a href=#184 id=184 data-nosnippet>184</a>                    <span class="kw">let </span>epoch = alice_central.transaction.conversation(<span class="kw-2">&amp;</span>id).<span class="kw">await</span>.unwrap().epoch().<span class="kw">await</span>;
 <a href=#185 id=185 data-nosnippet>185</a>
 <a href=#186 id=186 data-nosnippet>186</a>                    <span class="comment">// since the pending commit is the same as the incoming one, it should succeed
 <a href=#187 id=187 data-nosnippet>187</a>                    </span><span class="kw">let </span>decrypt_self = alice_central
-<a href=#188 id=188 data-nosnippet>188</a>                        .context
+<a href=#188 id=188 data-nosnippet>188</a>                        .transaction
 <a href=#189 id=189 data-nosnippet>189</a>                        .conversation(<span class="kw-2">&amp;</span>id)
 <a href=#190 id=190 data-nosnippet>190</a>                        .<span class="kw">await
 <a href=#191 id=191 data-nosnippet>191</a>                        </span>.unwrap()
@@ -194,7 +194,7 @@
 <a href=#194 id=194 data-nosnippet>194</a>                    <span class="macro">assert!</span>(decrypt_self.is_ok());
 <a href=#195 id=195 data-nosnippet>195</a>                    <span class="kw">let </span>decrypt_self = decrypt_self.unwrap();
 <a href=#196 id=196 data-nosnippet>196</a>
-<a href=#197 id=197 data-nosnippet>197</a>                    <span class="kw">let </span>epoch_after_decrypt = alice_central.context.conversation(<span class="kw-2">&amp;</span>id).<span class="kw">await</span>.unwrap().epoch().<span class="kw">await</span>;
+<a href=#197 id=197 data-nosnippet>197</a>                    <span class="kw">let </span>epoch_after_decrypt = alice_central.transaction.conversation(<span class="kw-2">&amp;</span>id).<span class="kw">await</span>.unwrap().epoch().<span class="kw">await</span>;
 <a href=#198 id=198 data-nosnippet>198</a>                    <span class="macro">assert_eq!</span>(epoch + <span class="number">1</span>, epoch_after_decrypt);
 <a href=#199 id=199 data-nosnippet>199</a>
 <a href=#200 id=200 data-nosnippet>200</a>                    <span class="comment">// there is no proposals to renew here since it's our own commit we merge
@@ -220,7 +220,7 @@
 <a href=#220 id=220 data-nosnippet>220</a>                Box::pin(<span class="kw">async move </span>{
 <a href=#221 id=221 data-nosnippet>221</a>                    <span class="kw">let </span>id = conversation_id();
 <a href=#222 id=222 data-nosnippet>222</a>                    alice_central
-<a href=#223 id=223 data-nosnippet>223</a>                        .context
+<a href=#223 id=223 data-nosnippet>223</a>                        .transaction
 <a href=#224 id=224 data-nosnippet>224</a>                        .new_conversation(<span class="kw-2">&amp;</span>id, case.credential_type, case.cfg.clone())
 <a href=#225 id=225 data-nosnippet>225</a>                        .<span class="kw">await
 <a href=#226 id=226 data-nosnippet>226</a>                        </span>.unwrap();
@@ -231,7 +231,7 @@
 <a href=#231 id=231 data-nosnippet>231</a>                    </span><span class="kw">let </span>unmerged_commit = alice_central.create_unmerged_commit(<span class="kw-2">&amp;</span>id).<span class="kw">await</span>.commit;
 <a href=#232 id=232 data-nosnippet>232</a>                    <span class="macro">assert!</span>(alice_central.pending_commit(<span class="kw-2">&amp;</span>id).<span class="kw">await</span>.is_some());
 <a href=#233 id=233 data-nosnippet>233</a>                    alice_central
-<a href=#234 id=234 data-nosnippet>234</a>                        .context
+<a href=#234 id=234 data-nosnippet>234</a>                        .transaction
 <a href=#235 id=235 data-nosnippet>235</a>                        .conversation(<span class="kw-2">&amp;</span>id)
 <a href=#236 id=236 data-nosnippet>236</a>                        .<span class="kw">await
 <a href=#237 id=237 data-nosnippet>237</a>                        </span>.unwrap()
@@ -245,7 +245,7 @@
 <a href=#245 id=245 data-nosnippet>245</a>                    <span class="macro">assert_ne!</span>(unmerged_commit, unmerged_commit2);
 <a href=#246 id=246 data-nosnippet>246</a>
 <a href=#247 id=247 data-nosnippet>247</a>                    <span class="kw">let </span>decrypt = alice_central
-<a href=#248 id=248 data-nosnippet>248</a>                        .context
+<a href=#248 id=248 data-nosnippet>248</a>                        .transaction
 <a href=#249 id=249 data-nosnippet>249</a>                        .conversation(<span class="kw-2">&amp;</span>id)
 <a href=#250 id=250 data-nosnippet>250</a>                        .<span class="kw">await
 <a href=#251 id=251 data-nosnippet>251</a>                        </span>.unwrap()
@@ -267,7 +267,7 @@
 <a href=#267 id=267 data-nosnippet>267</a>                Box::pin(<span class="kw">async move </span>{
 <a href=#268 id=268 data-nosnippet>268</a>                    <span class="kw">let </span>id = conversation_id();
 <a href=#269 id=269 data-nosnippet>269</a>                    alice_central
-<a href=#270 id=270 data-nosnippet>270</a>                        .context
+<a href=#270 id=270 data-nosnippet>270</a>                        .transaction
 <a href=#271 id=271 data-nosnippet>271</a>                        .new_conversation(<span class="kw-2">&amp;</span>id, case.credential_type, case.cfg.clone())
 <a href=#272 id=272 data-nosnippet>272</a>                        .<span class="kw">await
 <a href=#273 id=273 data-nosnippet>273</a>                        </span>.unwrap();
@@ -280,7 +280,7 @@
 <a href=#280 id=280 data-nosnippet>280</a>
 <a href=#281 id=281 data-nosnippet>281</a>                    <span class="comment">// then delete the pending commit
 <a href=#282 id=282 data-nosnippet>282</a>                    </span>alice_central
-<a href=#283 id=283 data-nosnippet>283</a>                        .context
+<a href=#283 id=283 data-nosnippet>283</a>                        .transaction
 <a href=#284 id=284 data-nosnippet>284</a>                        .conversation(<span class="kw-2">&amp;</span>id)
 <a href=#285 id=285 data-nosnippet>285</a>                        .<span class="kw">await
 <a href=#286 id=286 data-nosnippet>286</a>                        </span>.unwrap()
@@ -290,7 +290,7 @@
 <a href=#290 id=290 data-nosnippet>290</a>                    <span class="macro">assert!</span>(alice_central.pending_commit(<span class="kw-2">&amp;</span>id).<span class="kw">await</span>.is_none());
 <a href=#291 id=291 data-nosnippet>291</a>
 <a href=#292 id=292 data-nosnippet>292</a>                    <span class="kw">let </span>decrypt_self = alice_central
-<a href=#293 id=293 data-nosnippet>293</a>                        .context
+<a href=#293 id=293 data-nosnippet>293</a>                        .transaction
 <a href=#294 id=294 data-nosnippet>294</a>                        .conversation(<span class="kw-2">&amp;</span>id)
 <a href=#295 id=295 data-nosnippet>295</a>                        .<span class="kw">await
 <a href=#296 id=296 data-nosnippet>296</a>                        </span>.unwrap()
@@ -318,7 +318,7 @@
 <a href=#318 id=318 data-nosnippet>318</a>            Box::pin(<span class="kw">async move </span>{
 <a href=#319 id=319 data-nosnippet>319</a>                <span class="kw">let </span>conversation_id = conversation_id();
 <a href=#320 id=320 data-nosnippet>320</a>                alice_central
-<a href=#321 id=321 data-nosnippet>321</a>                    .context
+<a href=#321 id=321 data-nosnippet>321</a>                    .transaction
 <a href=#322 id=322 data-nosnippet>322</a>                    .new_conversation(<span class="kw-2">&amp;</span>conversation_id, case.credential_type, case.cfg.clone())
 <a href=#323 id=323 data-nosnippet>323</a>                    .<span class="kw">await
 <a href=#324 id=324 data-nosnippet>324</a>                    </span>.unwrap();
@@ -340,7 +340,7 @@
 <a href=#340 id=340 data-nosnippet>340</a>                </span>commit_serialized[<span class="number">355</span>] = commit_serialized[<span class="number">355</span>].wrapping_add(<span class="number">1</span>);
 <a href=#341 id=341 data-nosnippet>341</a>
 <a href=#342 id=342 data-nosnippet>342</a>                <span class="kw">let </span>decryption_result = alice_central
-<a href=#343 id=343 data-nosnippet>343</a>                    .context
+<a href=#343 id=343 data-nosnippet>343</a>                    .transaction
 <a href=#344 id=344 data-nosnippet>344</a>                    .conversation(<span class="kw-2">&amp;</span>conversation_id)
 <a href=#345 id=345 data-nosnippet>345</a>                    .<span class="kw">await
 <a href=#346 id=346 data-nosnippet>346</a>                    </span>.unwrap()
@@ -363,7 +363,7 @@
 <a href=#363 id=363 data-nosnippet>363</a>                <span class="comment">// Positive case: Alice decrypts the commit...
 <a href=#364 id=364 data-nosnippet>364</a>                </span><span class="macro">assert!</span>(
 <a href=#365 id=365 data-nosnippet>365</a>                    alice_central
-<a href=#366 id=366 data-nosnippet>366</a>                        .context
+<a href=#366 id=366 data-nosnippet>366</a>                        .transaction
 <a href=#367 id=367 data-nosnippet>367</a>                        .conversation(<span class="kw-2">&amp;</span>conversation_id)
 <a href=#368 id=368 data-nosnippet>368</a>                        .<span class="kw">await
 <a href=#369 id=369 data-nosnippet>369</a>                        </span>.unwrap()

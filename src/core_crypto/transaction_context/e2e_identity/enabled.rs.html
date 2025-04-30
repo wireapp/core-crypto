@@ -33,7 +33,7 @@
 <a href=#33 id=33 data-nosnippet>33</a>    </span><span class="kw">async fn </span>should_be_false_when_basic_and_true_when_x509(case: TestContext) {
 <a href=#34 id=34 data-nosnippet>34</a>        run_test_with_client_ids(case.clone(), [<span class="string">"alice"</span>], <span class="kw">move </span>|[cc]| {
 <a href=#35 id=35 data-nosnippet>35</a>            Box::pin(<span class="kw">async move </span>{
-<a href=#36 id=36 data-nosnippet>36</a>                <span class="kw">let </span>e2ei_is_enabled = cc.context.e2ei_is_enabled(case.signature_scheme()).<span class="kw">await</span>.unwrap();
+<a href=#36 id=36 data-nosnippet>36</a>                <span class="kw">let </span>e2ei_is_enabled = cc.transaction.e2ei_is_enabled(case.signature_scheme()).<span class="kw">await</span>.unwrap();
 <a href=#37 id=37 data-nosnippet>37</a>                <span class="kw">match </span>case.credential_type {
 <a href=#38 id=38 data-nosnippet>38</a>                    MlsCredentialType::Basic =&gt; <span class="macro">assert!</span>(!e2ei_is_enabled),
 <a href=#39 id=39 data-nosnippet>39</a>                    MlsCredentialType::X509 =&gt; <span class="macro">assert!</span>(e2ei_is_enabled),
@@ -49,7 +49,7 @@
 <a href=#49 id=49 data-nosnippet>49</a>        run_test_wo_clients(case.clone(), <span class="kw">move </span>|cc| {
 <a href=#50 id=50 data-nosnippet>50</a>            Box::pin(<span class="kw">async move </span>{
 <a href=#51 id=51 data-nosnippet>51</a>                <span class="macro">assert!</span>(<span class="macro">matches!</span>(
-<a href=#52 id=52 data-nosnippet>52</a>                    cc.context.e2ei_is_enabled(case.signature_scheme()).<span class="kw">await</span>.unwrap_err(),
+<a href=#52 id=52 data-nosnippet>52</a>                    cc.transaction.e2ei_is_enabled(case.signature_scheme()).<span class="kw">await</span>.unwrap_err(),
 <a href=#53 id=53 data-nosnippet>53</a>                    Error::Recursive(RecursiveError::MlsClient {  source, .. })
 <a href=#54 id=54 data-nosnippet>54</a>                    <span class="kw">if </span><span class="macro">matches!</span>(<span class="kw-2">*</span>source, mls::session::Error::MlsNotInitialized)
 <a href=#55 id=55 data-nosnippet>55</a>                ));
@@ -69,7 +69,7 @@
 <a href=#69 id=69 data-nosnippet>69</a>                    <span class="kw">_ </span>=&gt; SignatureScheme::ED25519,
 <a href=#70 id=70 data-nosnippet>70</a>                };
 <a href=#71 id=71 data-nosnippet>71</a>                <span class="macro">assert!</span>(<span class="macro">matches!</span>(
-<a href=#72 id=72 data-nosnippet>72</a>                    cc.context.e2ei_is_enabled(other_sc).<span class="kw">await</span>.unwrap_err(),
+<a href=#72 id=72 data-nosnippet>72</a>                    cc.transaction.e2ei_is_enabled(other_sc).<span class="kw">await</span>.unwrap_err(),
 <a href=#73 id=73 data-nosnippet>73</a>                    Error::Recursive(RecursiveError::MlsClient {  source, .. })
 <a href=#74 id=74 data-nosnippet>74</a>                    <span class="kw">if </span><span class="macro">matches!</span>(<span class="kw-2">*</span>source, mls::session::Error::CredentialNotFound(<span class="kw">_</span>))
 <a href=#75 id=75 data-nosnippet>75</a>                ));

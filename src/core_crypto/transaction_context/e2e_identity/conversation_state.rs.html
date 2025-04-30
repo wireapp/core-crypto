@@ -115,7 +115,7 @@
 <a href=#115 id=115 data-nosnippet>115</a>                <span class="comment">// That way the conversation creator (Alice) will have the same credential type as Bob
 <a href=#116 id=116 data-nosnippet>116</a>                </span><span class="kw">let </span>creator_ct = case.credential_type;
 <a href=#117 id=117 data-nosnippet>117</a>                alice_central
-<a href=#118 id=118 data-nosnippet>118</a>                    .context
+<a href=#118 id=118 data-nosnippet>118</a>                    .transaction
 <a href=#119 id=119 data-nosnippet>119</a>                    .new_conversation(<span class="kw-2">&amp;</span>id, creator_ct, case.cfg.clone())
 <a href=#120 id=120 data-nosnippet>120</a>                    .<span class="kw">await
 <a href=#121 id=121 data-nosnippet>121</a>                    </span>.unwrap();
@@ -124,7 +124,7 @@
 <a href=#124 id=124 data-nosnippet>124</a>                <span class="kw">match </span>case.credential_type {
 <a href=#125 id=125 data-nosnippet>125</a>                    MlsCredentialType::Basic =&gt; {
 <a href=#126 id=126 data-nosnippet>126</a>                        <span class="kw">let </span>alice_state = alice_central
-<a href=#127 id=127 data-nosnippet>127</a>                            .context
+<a href=#127 id=127 data-nosnippet>127</a>                            .transaction
 <a href=#128 id=128 data-nosnippet>128</a>                            .conversation(<span class="kw-2">&amp;</span>id)
 <a href=#129 id=129 data-nosnippet>129</a>                            .<span class="kw">await
 <a href=#130 id=130 data-nosnippet>130</a>                            </span>.unwrap()
@@ -132,7 +132,7 @@
 <a href=#132 id=132 data-nosnippet>132</a>                            .<span class="kw">await
 <a href=#133 id=133 data-nosnippet>133</a>                            </span>.unwrap();
 <a href=#134 id=134 data-nosnippet>134</a>                        <span class="kw">let </span>bob_state = bob_central
-<a href=#135 id=135 data-nosnippet>135</a>                            .context
+<a href=#135 id=135 data-nosnippet>135</a>                            .transaction
 <a href=#136 id=136 data-nosnippet>136</a>                            .conversation(<span class="kw-2">&amp;</span>id)
 <a href=#137 id=137 data-nosnippet>137</a>                            .<span class="kw">await
 <a href=#138 id=138 data-nosnippet>138</a>                            </span>.unwrap()
@@ -144,7 +144,7 @@
 <a href=#144 id=144 data-nosnippet>144</a>
 <a href=#145 id=145 data-nosnippet>145</a>                        <span class="kw">let </span>gi = alice_central.get_group_info(<span class="kw-2">&amp;</span>id).<span class="kw">await</span>;
 <a href=#146 id=146 data-nosnippet>146</a>                        <span class="kw">let </span>state = alice_central
-<a href=#147 id=147 data-nosnippet>147</a>                            .context
+<a href=#147 id=147 data-nosnippet>147</a>                            .transaction
 <a href=#148 id=148 data-nosnippet>148</a>                            .get_credential_in_use(gi, MlsCredentialType::X509)
 <a href=#149 id=149 data-nosnippet>149</a>                            .<span class="kw">await
 <a href=#150 id=150 data-nosnippet>150</a>                            </span>.unwrap();
@@ -152,7 +152,7 @@
 <a href=#152 id=152 data-nosnippet>152</a>                    }
 <a href=#153 id=153 data-nosnippet>153</a>                    MlsCredentialType::X509 =&gt; {
 <a href=#154 id=154 data-nosnippet>154</a>                        <span class="kw">let </span>alice_state = alice_central
-<a href=#155 id=155 data-nosnippet>155</a>                            .context
+<a href=#155 id=155 data-nosnippet>155</a>                            .transaction
 <a href=#156 id=156 data-nosnippet>156</a>                            .conversation(<span class="kw-2">&amp;</span>id)
 <a href=#157 id=157 data-nosnippet>157</a>                            .<span class="kw">await
 <a href=#158 id=158 data-nosnippet>158</a>                            </span>.unwrap()
@@ -160,7 +160,7 @@
 <a href=#160 id=160 data-nosnippet>160</a>                            .<span class="kw">await
 <a href=#161 id=161 data-nosnippet>161</a>                            </span>.unwrap();
 <a href=#162 id=162 data-nosnippet>162</a>                        <span class="kw">let </span>bob_state = bob_central
-<a href=#163 id=163 data-nosnippet>163</a>                            .context
+<a href=#163 id=163 data-nosnippet>163</a>                            .transaction
 <a href=#164 id=164 data-nosnippet>164</a>                            .conversation(<span class="kw-2">&amp;</span>id)
 <a href=#165 id=165 data-nosnippet>165</a>                            .<span class="kw">await
 <a href=#166 id=166 data-nosnippet>166</a>                            </span>.unwrap()
@@ -172,7 +172,7 @@
 <a href=#172 id=172 data-nosnippet>172</a>
 <a href=#173 id=173 data-nosnippet>173</a>                        <span class="kw">let </span>gi = alice_central.get_group_info(<span class="kw-2">&amp;</span>id).<span class="kw">await</span>;
 <a href=#174 id=174 data-nosnippet>174</a>                        <span class="kw">let </span>state = alice_central
-<a href=#175 id=175 data-nosnippet>175</a>                            .context
+<a href=#175 id=175 data-nosnippet>175</a>                            .transaction
 <a href=#176 id=176 data-nosnippet>176</a>                            .get_credential_in_use(gi, MlsCredentialType::X509)
 <a href=#177 id=177 data-nosnippet>177</a>                            .<span class="kw">await
 <a href=#178 id=178 data-nosnippet>178</a>                            </span>.unwrap();
@@ -202,8 +202,8 @@
 <a href=#202 id=202 data-nosnippet>202</a>                    <span class="kw">let </span>x509_test_chain = x509_test_chain_arc.as_ref().as_ref().unwrap();
 <a href=#203 id=203 data-nosnippet>203</a>
 <a href=#204 id=204 data-nosnippet>204</a>                    <span class="comment">// That way the conversation creator (Alice) will have a different credential type than Bob
-<a href=#205 id=205 data-nosnippet>205</a>                    </span><span class="kw">let </span>alice_client = alice_central.context.session().<span class="kw">await</span>.unwrap();
-<a href=#206 id=206 data-nosnippet>206</a>                    <span class="kw">let </span>alice_provider = alice_central.context.mls_provider().<span class="kw">await</span>.unwrap();
+<a href=#205 id=205 data-nosnippet>205</a>                    </span><span class="kw">let </span>alice_client = alice_central.transaction.session().<span class="kw">await</span>.unwrap();
+<a href=#206 id=206 data-nosnippet>206</a>                    <span class="kw">let </span>alice_provider = alice_central.transaction.mls_provider().<span class="kw">await</span>.unwrap();
 <a href=#207 id=207 data-nosnippet>207</a>                    <span class="kw">let </span>creator_ct = <span class="kw">match </span>case.credential_type {
 <a href=#208 id=208 data-nosnippet>208</a>                        MlsCredentialType::Basic =&gt; {
 <a href=#209 id=209 data-nosnippet>209</a>                            <span class="kw">let </span>intermediate_ca = x509_test_chain.find_local_intermediate_ca();
@@ -229,7 +229,7 @@
 <a href=#229 id=229 data-nosnippet>229</a>                    };
 <a href=#230 id=230 data-nosnippet>230</a>
 <a href=#231 id=231 data-nosnippet>231</a>                    alice_central
-<a href=#232 id=232 data-nosnippet>232</a>                        .context
+<a href=#232 id=232 data-nosnippet>232</a>                        .transaction
 <a href=#233 id=233 data-nosnippet>233</a>                        .new_conversation(<span class="kw-2">&amp;</span>id, creator_ct, case.cfg.clone())
 <a href=#234 id=234 data-nosnippet>234</a>                        .<span class="kw">await
 <a href=#235 id=235 data-nosnippet>235</a>                        </span>.unwrap();
@@ -237,7 +237,7 @@
 <a href=#237 id=237 data-nosnippet>237</a>
 <a href=#238 id=238 data-nosnippet>238</a>                    <span class="comment">// since in that case both have a different credential type the conversation is always not verified
 <a href=#239 id=239 data-nosnippet>239</a>                    </span><span class="kw">let </span>alice_state = alice_central
-<a href=#240 id=240 data-nosnippet>240</a>                        .context
+<a href=#240 id=240 data-nosnippet>240</a>                        .transaction
 <a href=#241 id=241 data-nosnippet>241</a>                        .conversation(<span class="kw-2">&amp;</span>id)
 <a href=#242 id=242 data-nosnippet>242</a>                        .<span class="kw">await
 <a href=#243 id=243 data-nosnippet>243</a>                        </span>.unwrap()
@@ -245,7 +245,7 @@
 <a href=#245 id=245 data-nosnippet>245</a>                        .<span class="kw">await
 <a href=#246 id=246 data-nosnippet>246</a>                        </span>.unwrap();
 <a href=#247 id=247 data-nosnippet>247</a>                    <span class="kw">let </span>bob_state = bob_central
-<a href=#248 id=248 data-nosnippet>248</a>                        .context
+<a href=#248 id=248 data-nosnippet>248</a>                        .transaction
 <a href=#249 id=249 data-nosnippet>249</a>                        .conversation(<span class="kw-2">&amp;</span>id)
 <a href=#250 id=250 data-nosnippet>250</a>                        .<span class="kw">await
 <a href=#251 id=251 data-nosnippet>251</a>                        </span>.unwrap()
@@ -257,7 +257,7 @@
 <a href=#257 id=257 data-nosnippet>257</a>
 <a href=#258 id=258 data-nosnippet>258</a>                    <span class="kw">let </span>gi = alice_central.get_group_info(<span class="kw-2">&amp;</span>id).<span class="kw">await</span>;
 <a href=#259 id=259 data-nosnippet>259</a>                    <span class="kw">let </span>state = alice_central
-<a href=#260 id=260 data-nosnippet>260</a>                        .context
+<a href=#260 id=260 data-nosnippet>260</a>                        .transaction
 <a href=#261 id=261 data-nosnippet>261</a>                        .get_credential_in_use(gi, MlsCredentialType::X509)
 <a href=#262 id=262 data-nosnippet>262</a>                        .<span class="kw">await
 <a href=#263 id=263 data-nosnippet>263</a>                        </span>.unwrap();
@@ -279,7 +279,7 @@
 <a href=#279 id=279 data-nosnippet>279</a>                <span class="kw">let </span>id = conversation_id();
 <a href=#280 id=280 data-nosnippet>280</a>
 <a href=#281 id=281 data-nosnippet>281</a>                alice_central
-<a href=#282 id=282 data-nosnippet>282</a>                    .context
+<a href=#282 id=282 data-nosnippet>282</a>                    .transaction
 <a href=#283 id=283 data-nosnippet>283</a>                    .new_conversation(<span class="kw-2">&amp;</span>id, case.credential_type, case.cfg.clone())
 <a href=#284 id=284 data-nosnippet>284</a>                    .<span class="kw">await
 <a href=#285 id=285 data-nosnippet>285</a>                    </span>.unwrap();
@@ -297,7 +297,7 @@
 <a href=#297 id=297 data-nosnippet>297</a>                <span class="kw">let </span>cert = CertificateBundle::new_with_default_values(intermediate_ca, <span class="prelude-val">Some</span>(expiration_time));
 <a href=#298 id=298 data-nosnippet>298</a>                <span class="kw">let </span>cb = Session::new_x509_credential_bundle(cert.clone()).unwrap();
 <a href=#299 id=299 data-nosnippet>299</a>                alice_central
-<a href=#300 id=300 data-nosnippet>300</a>                    .context
+<a href=#300 id=300 data-nosnippet>300</a>                    .transaction
 <a href=#301 id=301 data-nosnippet>301</a>                    .conversation(<span class="kw-2">&amp;</span>id)
 <a href=#302 id=302 data-nosnippet>302</a>                    .<span class="kw">await
 <a href=#303 id=303 data-nosnippet>303</a>                    </span>.unwrap()
@@ -306,7 +306,7 @@
 <a href=#306 id=306 data-nosnippet>306</a>                    </span>.unwrap();
 <a href=#307 id=307 data-nosnippet>307</a>                <span class="kw">let </span>commit = alice_central.mls_transport.latest_commit().<span class="kw">await</span>;
 <a href=#308 id=308 data-nosnippet>308</a>                bob_central
-<a href=#309 id=309 data-nosnippet>309</a>                    .context
+<a href=#309 id=309 data-nosnippet>309</a>                    .transaction
 <a href=#310 id=310 data-nosnippet>310</a>                    .conversation(<span class="kw-2">&amp;</span>id)
 <a href=#311 id=311 data-nosnippet>311</a>                    .<span class="kw">await
 <a href=#312 id=312 data-nosnippet>312</a>                    </span>.unwrap()
@@ -314,8 +314,8 @@
 <a href=#314 id=314 data-nosnippet>314</a>                    .<span class="kw">await
 <a href=#315 id=315 data-nosnippet>315</a>                    </span>.unwrap();
 <a href=#316 id=316 data-nosnippet>316</a>
-<a href=#317 id=317 data-nosnippet>317</a>                <span class="kw">let </span>alice_client = alice_central.context.session().<span class="kw">await</span>.unwrap();
-<a href=#318 id=318 data-nosnippet>318</a>                <span class="kw">let </span>alice_provider = alice_central.context.mls_provider().<span class="kw">await</span>.unwrap();
+<a href=#317 id=317 data-nosnippet>317</a>                <span class="kw">let </span>alice_client = alice_central.transaction.session().<span class="kw">await</span>.unwrap();
+<a href=#318 id=318 data-nosnippet>318</a>                <span class="kw">let </span>alice_provider = alice_central.transaction.mls_provider().<span class="kw">await</span>.unwrap();
 <a href=#319 id=319 data-nosnippet>319</a>                <span class="comment">// Needed because 'e2ei_rotate' does not do it directly and it's required for 'get_group_info'
 <a href=#320 id=320 data-nosnippet>320</a>                </span>alice_client
 <a href=#321 id=321 data-nosnippet>321</a>                    .save_new_x509_credential_bundle(<span class="kw-2">&amp;</span>alice_provider.keystore(), case.signature_scheme(), cert)
@@ -332,7 +332,7 @@
 <a href=#332 id=332 data-nosnippet>332</a>                }
 <a href=#333 id=333 data-nosnippet>333</a>
 <a href=#334 id=334 data-nosnippet>334</a>                <span class="kw">let </span>alice_state = alice_central
-<a href=#335 id=335 data-nosnippet>335</a>                    .context
+<a href=#335 id=335 data-nosnippet>335</a>                    .transaction
 <a href=#336 id=336 data-nosnippet>336</a>                    .conversation(<span class="kw-2">&amp;</span>id)
 <a href=#337 id=337 data-nosnippet>337</a>                    .<span class="kw">await
 <a href=#338 id=338 data-nosnippet>338</a>                    </span>.unwrap()
@@ -340,7 +340,7 @@
 <a href=#340 id=340 data-nosnippet>340</a>                    .<span class="kw">await
 <a href=#341 id=341 data-nosnippet>341</a>                    </span>.unwrap();
 <a href=#342 id=342 data-nosnippet>342</a>                <span class="kw">let </span>bob_state = bob_central
-<a href=#343 id=343 data-nosnippet>343</a>                    .context
+<a href=#343 id=343 data-nosnippet>343</a>                    .transaction
 <a href=#344 id=344 data-nosnippet>344</a>                    .conversation(<span class="kw-2">&amp;</span>id)
 <a href=#345 id=345 data-nosnippet>345</a>                    .<span class="kw">await
 <a href=#346 id=346 data-nosnippet>346</a>                    </span>.unwrap()
@@ -351,7 +351,7 @@
 <a href=#351 id=351 data-nosnippet>351</a>                <span class="macro">assert_eq!</span>(bob_state, E2eiConversationState::NotVerified);
 <a href=#352 id=352 data-nosnippet>352</a>
 <a href=#353 id=353 data-nosnippet>353</a>                <span class="kw">let </span>state = alice_central
-<a href=#354 id=354 data-nosnippet>354</a>                    .context
+<a href=#354 id=354 data-nosnippet>354</a>                    .transaction
 <a href=#355 id=355 data-nosnippet>355</a>                    .get_credential_in_use(gi, MlsCredentialType::X509)
 <a href=#356 id=356 data-nosnippet>356</a>                    .<span class="kw">await
 <a href=#357 id=357 data-nosnippet>357</a>                    </span>.unwrap();
@@ -370,7 +370,7 @@
 <a href=#370 id=370 data-nosnippet>370</a>                    <span class="kw">let </span>id = conversation_id();
 <a href=#371 id=371 data-nosnippet>371</a>
 <a href=#372 id=372 data-nosnippet>372</a>                    alice_central
-<a href=#373 id=373 data-nosnippet>373</a>                        .context
+<a href=#373 id=373 data-nosnippet>373</a>                        .transaction
 <a href=#374 id=374 data-nosnippet>374</a>                        .new_conversation(<span class="kw-2">&amp;</span>id, case.credential_type, case.cfg.clone())
 <a href=#375 id=375 data-nosnippet>375</a>                        .<span class="kw">await
 <a href=#376 id=376 data-nosnippet>376</a>                        </span>.unwrap();
@@ -392,7 +392,7 @@
 <a href=#392 id=392 data-nosnippet>392</a>                        CertificateBundle::from_certificate_and_issuer(<span class="kw-2">&amp;</span>alice_cert.certificate, alice_intermediate_ca);
 <a href=#393 id=393 data-nosnippet>393</a>                    <span class="kw">let </span>cb = Session::new_x509_credential_bundle(cert_bundle.clone()).unwrap();
 <a href=#394 id=394 data-nosnippet>394</a>                    alice_central
-<a href=#395 id=395 data-nosnippet>395</a>                        .context
+<a href=#395 id=395 data-nosnippet>395</a>                        .transaction
 <a href=#396 id=396 data-nosnippet>396</a>                        .conversation(<span class="kw-2">&amp;</span>id)
 <a href=#397 id=397 data-nosnippet>397</a>                        .<span class="kw">await
 <a href=#398 id=398 data-nosnippet>398</a>                        </span>.unwrap()
@@ -401,7 +401,7 @@
 <a href=#401 id=401 data-nosnippet>401</a>                        </span>.unwrap();
 <a href=#402 id=402 data-nosnippet>402</a>
 <a href=#403 id=403 data-nosnippet>403</a>                    <span class="kw">let </span>alice_client = alice_central.session().<span class="kw">await</span>;
-<a href=#404 id=404 data-nosnippet>404</a>                    <span class="kw">let </span>alice_provider = alice_central.context.mls_provider().<span class="kw">await</span>.unwrap();
+<a href=#404 id=404 data-nosnippet>404</a>                    <span class="kw">let </span>alice_provider = alice_central.transaction.mls_provider().<span class="kw">await</span>.unwrap();
 <a href=#405 id=405 data-nosnippet>405</a>
 <a href=#406 id=406 data-nosnippet>406</a>                    <span class="comment">// Needed because 'e2ei_rotate' does not do it directly and it's required for 'get_group_info'
 <a href=#407 id=407 data-nosnippet>407</a>                    </span>alice_client
@@ -420,7 +420,7 @@
 <a href=#420 id=420 data-nosnippet>420</a>                    }
 <a href=#421 id=421 data-nosnippet>421</a>
 <a href=#422 id=422 data-nosnippet>422</a>                    <span class="kw">let </span>alice_state = alice_central
-<a href=#423 id=423 data-nosnippet>423</a>                        .context
+<a href=#423 id=423 data-nosnippet>423</a>                        .transaction
 <a href=#424 id=424 data-nosnippet>424</a>                        .conversation(<span class="kw-2">&amp;</span>id)
 <a href=#425 id=425 data-nosnippet>425</a>                        .<span class="kw">await
 <a href=#426 id=426 data-nosnippet>426</a>                        </span>.unwrap()
@@ -433,7 +433,7 @@
 <a href=#433 id=433 data-nosnippet>433</a>                    </span><span class="kw">let </span>gi = alice_central.get_group_info(<span class="kw-2">&amp;</span>id).<span class="kw">await</span>;
 <a href=#434 id=434 data-nosnippet>434</a>
 <a href=#435 id=435 data-nosnippet>435</a>                    <span class="kw">let </span>state = alice_central
-<a href=#436 id=436 data-nosnippet>436</a>                        .context
+<a href=#436 id=436 data-nosnippet>436</a>                        .transaction
 <a href=#437 id=437 data-nosnippet>437</a>                        .get_credential_in_use(gi, MlsCredentialType::X509)
 <a href=#438 id=438 data-nosnippet>438</a>                        .<span class="kw">await
 <a href=#439 id=439 data-nosnippet>439</a>                        </span>.unwrap();

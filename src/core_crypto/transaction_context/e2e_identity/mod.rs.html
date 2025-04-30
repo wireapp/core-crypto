@@ -180,18 +180,18 @@
 <a href=#180 id=180 data-nosnippet>180</a>                .<span class="kw">await
 <a href=#181 id=181 data-nosnippet>181</a>                </span>.unwrap();
 <a href=#182 id=182 data-nosnippet>182</a>
-<a href=#183 id=183 data-nosnippet>183</a>                cc.context
+<a href=#183 id=183 data-nosnippet>183</a>                cc.transaction
 <a href=#184 id=184 data-nosnippet>184</a>                    .e2ei_mls_init_only(<span class="kw-2">&amp;mut </span>enrollment, cert, <span class="prelude-val">Some</span>(INITIAL_KEYING_MATERIAL_COUNT))
 <a href=#185 id=185 data-nosnippet>185</a>                    .<span class="kw">await
 <a href=#186 id=186 data-nosnippet>186</a>                    </span>.unwrap();
 <a href=#187 id=187 data-nosnippet>187</a>
 <a href=#188 id=188 data-nosnippet>188</a>                <span class="comment">// verify the created client can create a conversation
 <a href=#189 id=189 data-nosnippet>189</a>                </span><span class="kw">let </span>id = conversation_id();
-<a href=#190 id=190 data-nosnippet>190</a>                cc.context
+<a href=#190 id=190 data-nosnippet>190</a>                cc.transaction
 <a href=#191 id=191 data-nosnippet>191</a>                    .new_conversation(<span class="kw-2">&amp;</span>id, MlsCredentialType::X509, case.cfg.clone())
 <a href=#192 id=192 data-nosnippet>192</a>                    .<span class="kw">await
 <a href=#193 id=193 data-nosnippet>193</a>                    </span>.unwrap();
-<a href=#194 id=194 data-nosnippet>194</a>                cc.context
+<a href=#194 id=194 data-nosnippet>194</a>                cc.transaction
 <a href=#195 id=195 data-nosnippet>195</a>                    .conversation(<span class="kw-2">&amp;</span>id)
 <a href=#196 id=196 data-nosnippet>196</a>                    .<span class="kw">await
 <a href=#197 id=197 data-nosnippet>197</a>                    </span>.unwrap()
@@ -199,7 +199,7 @@
 <a href=#199 id=199 data-nosnippet>199</a>                    .<span class="kw">await
 <a href=#200 id=200 data-nosnippet>200</a>                    </span>.unwrap();
 <a href=#201 id=201 data-nosnippet>201</a>                <span class="macro">assert_eq!</span>(
-<a href=#202 id=202 data-nosnippet>202</a>                    cc.context
+<a href=#202 id=202 data-nosnippet>202</a>                    cc.transaction
 <a href=#203 id=203 data-nosnippet>203</a>                        .conversation(<span class="kw-2">&amp;</span>id)
 <a href=#204 id=204 data-nosnippet>204</a>                        .<span class="kw">await
 <a href=#205 id=205 data-nosnippet>205</a>                        </span>.unwrap()
@@ -208,7 +208,7 @@
 <a href=#208 id=208 data-nosnippet>208</a>                        </span>.unwrap(),
 <a href=#209 id=209 data-nosnippet>209</a>                    E2eiConversationState::Verified
 <a href=#210 id=210 data-nosnippet>210</a>                );
-<a href=#211 id=211 data-nosnippet>211</a>                <span class="macro">assert!</span>(cc.context.e2ei_is_enabled(case.signature_scheme()).<span class="kw">await</span>.unwrap());
+<a href=#211 id=211 data-nosnippet>211</a>                <span class="macro">assert!</span>(cc.transaction.e2ei_is_enabled(case.signature_scheme()).<span class="kw">await</span>.unwrap());
 <a href=#212 id=212 data-nosnippet>212</a>            })
 <a href=#213 id=213 data-nosnippet>213</a>        })
 <a href=#214 id=214 data-nosnippet>214</a>        .<span class="kw">await

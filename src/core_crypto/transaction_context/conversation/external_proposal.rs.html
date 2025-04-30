@@ -103,7 +103,7 @@
 <a href=#103 id=103 data-nosnippet>103</a>                    Box::pin(<span class="kw">async move </span>{
 <a href=#104 id=104 data-nosnippet>104</a>                        <span class="kw">let </span>id = conversation_id();
 <a href=#105 id=105 data-nosnippet>105</a>                        owner_central
-<a href=#106 id=106 data-nosnippet>106</a>                            .context
+<a href=#106 id=106 data-nosnippet>106</a>                            .transaction
 <a href=#107 id=107 data-nosnippet>107</a>                            .new_conversation(<span class="kw-2">&amp;</span>id, case.credential_type, case.cfg.clone())
 <a href=#108 id=108 data-nosnippet>108</a>                            .<span class="kw">await
 <a href=#109 id=109 data-nosnippet>109</a>                            </span>.unwrap();
@@ -111,14 +111,14 @@
 <a href=#111 id=111 data-nosnippet>111</a>
 <a href=#112 id=112 data-nosnippet>112</a>                        <span class="comment">// Craft an external proposal from guest
 <a href=#113 id=113 data-nosnippet>113</a>                        </span><span class="kw">let </span>external_add = guest_central
-<a href=#114 id=114 data-nosnippet>114</a>                            .context
+<a href=#114 id=114 data-nosnippet>114</a>                            .transaction
 <a href=#115 id=115 data-nosnippet>115</a>                            .new_external_add_proposal(id.clone(), epoch, case.ciphersuite(), case.credential_type)
 <a href=#116 id=116 data-nosnippet>116</a>                            .<span class="kw">await
 <a href=#117 id=117 data-nosnippet>117</a>                            </span>.unwrap();
 <a href=#118 id=118 data-nosnippet>118</a>
 <a href=#119 id=119 data-nosnippet>119</a>                        <span class="comment">// Owner receives external proposal message from server
 <a href=#120 id=120 data-nosnippet>120</a>                        </span><span class="kw">let </span>decrypted = owner_central
-<a href=#121 id=121 data-nosnippet>121</a>                            .context
+<a href=#121 id=121 data-nosnippet>121</a>                            .transaction
 <a href=#122 id=122 data-nosnippet>122</a>                            .conversation(<span class="kw-2">&amp;</span>id)
 <a href=#123 id=123 data-nosnippet>123</a>                            .<span class="kw">await
 <a href=#124 id=124 data-nosnippet>124</a>                            </span>.unwrap()
@@ -133,7 +133,7 @@
 <a href=#133 id=133 data-nosnippet>133</a>
 <a href=#134 id=134 data-nosnippet>134</a>                        <span class="comment">// simulate commit message reception from server
 <a href=#135 id=135 data-nosnippet>135</a>                        </span>owner_central
-<a href=#136 id=136 data-nosnippet>136</a>                            .context
+<a href=#136 id=136 data-nosnippet>136</a>                            .transaction
 <a href=#137 id=137 data-nosnippet>137</a>                            .conversation(<span class="kw-2">&amp;</span>id)
 <a href=#138 id=138 data-nosnippet>138</a>                            .<span class="kw">await
 <a href=#139 id=139 data-nosnippet>139</a>                            </span>.unwrap()
@@ -145,7 +145,7 @@
 <a href=#145 id=145 data-nosnippet>145</a>
 <a href=#146 id=146 data-nosnippet>146</a>                        <span class="kw">let </span>welcome = guest_central.mls_transport.latest_welcome_message().<span class="kw">await</span>;
 <a href=#147 id=147 data-nosnippet>147</a>                        guest_central
-<a href=#148 id=148 data-nosnippet>148</a>                            .context
+<a href=#148 id=148 data-nosnippet>148</a>                            .transaction
 <a href=#149 id=149 data-nosnippet>149</a>                            .process_welcome_message(welcome.into(), case.custom_cfg())
 <a href=#150 id=150 data-nosnippet>150</a>                            .<span class="kw">await
 <a href=#151 id=151 data-nosnippet>151</a>                            </span>.unwrap();
@@ -171,8 +171,8 @@
 <a href=#171 id=171 data-nosnippet>171</a>        </span><span class="kw">async fn </span>ds_should_remove_guest_from_conversation(case: TestContext) {
 <a href=#172 id=172 data-nosnippet>172</a>            run_test_with_client_ids(case.clone(), [<span class="string">"owner"</span>, <span class="string">"guest"</span>, <span class="string">"ds"</span>], <span class="kw">move </span>|[owner, guest, ds]| {
 <a href=#173 id=173 data-nosnippet>173</a>                Box::pin(<span class="kw">async move </span>{
-<a href=#174 id=174 data-nosnippet>174</a>                    <span class="kw">let </span>owner_central = <span class="kw-2">&amp;</span>owner.context;
-<a href=#175 id=175 data-nosnippet>175</a>                    <span class="kw">let </span>guest_central = <span class="kw-2">&amp;</span>guest.context;
+<a href=#174 id=174 data-nosnippet>174</a>                    <span class="kw">let </span>owner_central = <span class="kw-2">&amp;</span>owner.transaction;
+<a href=#175 id=175 data-nosnippet>175</a>                    <span class="kw">let </span>guest_central = <span class="kw-2">&amp;</span>guest.transaction;
 <a href=#176 id=176 data-nosnippet>176</a>                    <span class="kw">let </span>id = conversation_id();
 <a href=#177 id=177 data-nosnippet>177</a>
 <a href=#178 id=178 data-nosnippet>178</a>                    <span class="kw">let </span>ds_signature_key = ds.client_signature_key(<span class="kw-2">&amp;</span>case).<span class="kw">await</span>.as_slice().to_vec();
@@ -258,12 +258,12 @@
 <a href=#258 id=258 data-nosnippet>258</a>                        </span><span class="kw">let </span>ds_signature_key = ds.client_signature_key(<span class="kw-2">&amp;</span>case).<span class="kw">await</span>.as_slice().to_vec();
 <a href=#259 id=259 data-nosnippet>259</a>                        <span class="kw">let </span><span class="kw-2">mut </span>cfg = case.cfg.clone();
 <a href=#260 id=260 data-nosnippet>260</a>                        owner
-<a href=#261 id=261 data-nosnippet>261</a>                            .context
+<a href=#261 id=261 data-nosnippet>261</a>                            .transaction
 <a href=#262 id=262 data-nosnippet>262</a>                            .set_raw_external_senders(<span class="kw-2">&amp;mut </span>cfg, <span class="macro">vec!</span>[ds_signature_key])
 <a href=#263 id=263 data-nosnippet>263</a>                            .<span class="kw">await
 <a href=#264 id=264 data-nosnippet>264</a>                            </span>.unwrap();
 <a href=#265 id=265 data-nosnippet>265</a>                        owner
-<a href=#266 id=266 data-nosnippet>266</a>                            .context
+<a href=#266 id=266 data-nosnippet>266</a>                            .transaction
 <a href=#267 id=267 data-nosnippet>267</a>                            .new_conversation(<span class="kw-2">&amp;</span>id, case.credential_type, cfg)
 <a href=#268 id=268 data-nosnippet>268</a>                            .<span class="kw">await
 <a href=#269 id=269 data-nosnippet>269</a>                            </span>.unwrap();
@@ -284,7 +284,7 @@
 <a href=#284 id=284 data-nosnippet>284</a>                                .unwrap();
 <a href=#285 id=285 data-nosnippet>285</a>
 <a href=#286 id=286 data-nosnippet>286</a>                        <span class="kw">let </span>owner_decrypt = owner
-<a href=#287 id=287 data-nosnippet>287</a>                            .context
+<a href=#287 id=287 data-nosnippet>287</a>                            .transaction
 <a href=#288 id=288 data-nosnippet>288</a>                            .conversation(<span class="kw-2">&amp;</span>id)
 <a href=#289 id=289 data-nosnippet>289</a>                            .<span class="kw">await
 <a href=#290 id=290 data-nosnippet>290</a>                            </span>.unwrap()
@@ -302,7 +302,7 @@
 <a href=#302 id=302 data-nosnippet>302</a>                        ));
 <a href=#303 id=303 data-nosnippet>303</a>
 <a href=#304 id=304 data-nosnippet>304</a>                        <span class="kw">let </span>guest_decrypt = owner
-<a href=#305 id=305 data-nosnippet>305</a>                            .context
+<a href=#305 id=305 data-nosnippet>305</a>                            .transaction
 <a href=#306 id=306 data-nosnippet>306</a>                            .conversation(<span class="kw-2">&amp;</span>id)
 <a href=#307 id=307 data-nosnippet>307</a>                            .<span class="kw">await
 <a href=#308 id=308 data-nosnippet>308</a>                            </span>.unwrap()
@@ -338,12 +338,12 @@
 <a href=#338 id=338 data-nosnippet>338</a>                    </span><span class="kw">let </span>key = ds.client_signature_key(<span class="kw-2">&amp;</span>case).<span class="kw">await</span>.as_slice().to_vec();
 <a href=#339 id=339 data-nosnippet>339</a>                    <span class="kw">let </span><span class="kw-2">mut </span>cfg = case.cfg.clone();
 <a href=#340 id=340 data-nosnippet>340</a>                    owner
-<a href=#341 id=341 data-nosnippet>341</a>                        .context
+<a href=#341 id=341 data-nosnippet>341</a>                        .transaction
 <a href=#342 id=342 data-nosnippet>342</a>                        .set_raw_external_senders(<span class="kw-2">&amp;mut </span>cfg, <span class="macro">vec!</span>[key.as_slice().to_vec()])
 <a href=#343 id=343 data-nosnippet>343</a>                        .<span class="kw">await
 <a href=#344 id=344 data-nosnippet>344</a>                        </span>.unwrap();
 <a href=#345 id=345 data-nosnippet>345</a>                    owner
-<a href=#346 id=346 data-nosnippet>346</a>                        .context
+<a href=#346 id=346 data-nosnippet>346</a>                        .transaction
 <a href=#347 id=347 data-nosnippet>347</a>                        .new_conversation(<span class="kw-2">&amp;</span>id, case.credential_type, cfg)
 <a href=#348 id=348 data-nosnippet>348</a>                        .<span class="kw">await
 <a href=#349 id=349 data-nosnippet>349</a>                        </span>.unwrap();
@@ -365,7 +365,7 @@
 <a href=#365 id=365 data-nosnippet>365</a>                            .unwrap();
 <a href=#366 id=366 data-nosnippet>366</a>
 <a href=#367 id=367 data-nosnippet>367</a>                    <span class="kw">let </span>owner_decrypt = owner
-<a href=#368 id=368 data-nosnippet>368</a>                        .context
+<a href=#368 id=368 data-nosnippet>368</a>                        .transaction
 <a href=#369 id=369 data-nosnippet>369</a>                        .conversation(<span class="kw-2">&amp;</span>id)
 <a href=#370 id=370 data-nosnippet>370</a>                        .<span class="kw">await
 <a href=#371 id=371 data-nosnippet>371</a>                        </span>.unwrap()
@@ -380,7 +380,7 @@
 <a href=#380 id=380 data-nosnippet>380</a>                    ));
 <a href=#381 id=381 data-nosnippet>381</a>
 <a href=#382 id=382 data-nosnippet>382</a>                    <span class="kw">let </span>guest_decrypt = owner
-<a href=#383 id=383 data-nosnippet>383</a>                        .context
+<a href=#383 id=383 data-nosnippet>383</a>                        .transaction
 <a href=#384 id=384 data-nosnippet>384</a>                        .conversation(<span class="kw-2">&amp;</span>id)
 <a href=#385 id=385 data-nosnippet>385</a>                        .<span class="kw">await
 <a href=#386 id=386 data-nosnippet>386</a>                        </span>.unwrap()
@@ -406,9 +406,9 @@
 <a href=#406 id=406 data-nosnippet>406</a>                [<span class="string">"alice"</span>, <span class="string">"bob"</span>, <span class="string">"charlie"</span>, <span class="string">"ds"</span>],
 <a href=#407 id=407 data-nosnippet>407</a>                <span class="kw">move </span>|[alice, bob, charlie, ds]| {
 <a href=#408 id=408 data-nosnippet>408</a>                    Box::pin(<span class="kw">async move </span>{
-<a href=#409 id=409 data-nosnippet>409</a>                        <span class="kw">let </span>alice_central = <span class="kw-2">&amp;</span>alice.context;
-<a href=#410 id=410 data-nosnippet>410</a>                        <span class="kw">let </span>bob_central = <span class="kw-2">&amp;</span>bob.context;
-<a href=#411 id=411 data-nosnippet>411</a>                        <span class="kw">let </span>charlie_central = <span class="kw-2">&amp;</span>charlie.context;
+<a href=#409 id=409 data-nosnippet>409</a>                        <span class="kw">let </span>alice_central = <span class="kw-2">&amp;</span>alice.transaction;
+<a href=#410 id=410 data-nosnippet>410</a>                        <span class="kw">let </span>bob_central = <span class="kw-2">&amp;</span>bob.transaction;
+<a href=#411 id=411 data-nosnippet>411</a>                        <span class="kw">let </span>charlie_central = <span class="kw-2">&amp;</span>charlie.transaction;
 <a href=#412 id=412 data-nosnippet>412</a>                        <span class="kw">let </span>id = conversation_id();
 <a href=#413 id=413 data-nosnippet>413</a>
 <a href=#414 id=414 data-nosnippet>414</a>                        <span class="kw">let </span>ds_signature_key = ds.client_signature_key(<span class="kw-2">&amp;</span>case).<span class="kw">await</span>.as_slice().to_vec();
@@ -532,9 +532,9 @@
 <a href=#532 id=532 data-nosnippet>532</a>                [<span class="string">"alice"</span>, <span class="string">"bob"</span>, <span class="string">"charlie"</span>, <span class="string">"ds"</span>],
 <a href=#533 id=533 data-nosnippet>533</a>                <span class="kw">move </span>|[alice, bob, charlie, ds]| {
 <a href=#534 id=534 data-nosnippet>534</a>                    Box::pin(<span class="kw">async move </span>{
-<a href=#535 id=535 data-nosnippet>535</a>                        <span class="kw">let </span>alice_central = <span class="kw-2">&amp;</span>alice.context;
-<a href=#536 id=536 data-nosnippet>536</a>                        <span class="kw">let </span>bob_central = <span class="kw-2">&amp;</span>bob.context;
-<a href=#537 id=537 data-nosnippet>537</a>                        <span class="kw">let </span>charlie_central = <span class="kw-2">&amp;</span>charlie.context;
+<a href=#535 id=535 data-nosnippet>535</a>                        <span class="kw">let </span>alice_central = <span class="kw-2">&amp;</span>alice.transaction;
+<a href=#536 id=536 data-nosnippet>536</a>                        <span class="kw">let </span>bob_central = <span class="kw-2">&amp;</span>bob.transaction;
+<a href=#537 id=537 data-nosnippet>537</a>                        <span class="kw">let </span>charlie_central = <span class="kw-2">&amp;</span>charlie.transaction;
 <a href=#538 id=538 data-nosnippet>538</a>                        <span class="kw">let </span>id = conversation_id();
 <a href=#539 id=539 data-nosnippet>539</a>
 <a href=#540 id=540 data-nosnippet>540</a>                        <span class="kw">let </span>ds_signature_key = ds.client_signature_key(<span class="kw-2">&amp;</span>case).<span class="kw">await</span>.as_slice().to_vec();

@@ -80,7 +80,7 @@
 <a href=#80 id=80 data-nosnippet>80</a>            Box::pin(<span class="kw">async move </span>{
 <a href=#81 id=81 data-nosnippet>81</a>                <span class="kw">let </span>id = conversation_id();
 <a href=#82 id=82 data-nosnippet>82</a>                session_context
-<a href=#83 id=83 data-nosnippet>83</a>                    .context
+<a href=#83 id=83 data-nosnippet>83</a>                    .transaction
 <a href=#84 id=84 data-nosnippet>84</a>                    .new_conversation(<span class="kw-2">&amp;</span>id, case.credential_type, case.cfg.clone())
 <a href=#85 id=85 data-nosnippet>85</a>                    .<span class="kw">await
 <a href=#86 id=86 data-nosnippet>86</a>                    </span>.unwrap();
@@ -95,7 +95,7 @@
 <a href=#95 id=95 data-nosnippet>95</a>
 <a href=#96 id=96 data-nosnippet>96</a>                <span class="comment">// trigger an epoch
 <a href=#97 id=97 data-nosnippet>97</a>                </span>session_context
-<a href=#98 id=98 data-nosnippet>98</a>                    .context
+<a href=#98 id=98 data-nosnippet>98</a>                    .transaction
 <a href=#99 id=99 data-nosnippet>99</a>                    .conversation(<span class="kw-2">&amp;</span>id)
 <a href=#100 id=100 data-nosnippet>100</a>                    .<span class="kw">await
 <a href=#101 id=101 data-nosnippet>101</a>                    </span>.unwrap()
@@ -126,7 +126,7 @@
 <a href=#126 id=126 data-nosnippet>126</a>            Box::pin(<span class="kw">async move </span>{
 <a href=#127 id=127 data-nosnippet>127</a>                <span class="kw">let </span>id = conversation_id();
 <a href=#128 id=128 data-nosnippet>128</a>                alice
-<a href=#129 id=129 data-nosnippet>129</a>                    .context
+<a href=#129 id=129 data-nosnippet>129</a>                    .transaction
 <a href=#130 id=130 data-nosnippet>130</a>                    .new_conversation(<span class="kw-2">&amp;</span>id, case.credential_type, case.cfg.clone())
 <a href=#131 id=131 data-nosnippet>131</a>                    .<span class="kw">await
 <a href=#132 id=132 data-nosnippet>132</a>                    </span>.unwrap();
@@ -143,7 +143,7 @@
 <a href=#143 id=143 data-nosnippet>143</a>
 <a href=#144 id=144 data-nosnippet>144</a>                <span class="comment">// alice triggers an epoch
 <a href=#145 id=145 data-nosnippet>145</a>                </span>alice
-<a href=#146 id=146 data-nosnippet>146</a>                    .context
+<a href=#146 id=146 data-nosnippet>146</a>                    .transaction
 <a href=#147 id=147 data-nosnippet>147</a>                    .conversation(<span class="kw-2">&amp;</span>id)
 <a href=#148 id=148 data-nosnippet>148</a>                    .<span class="kw">await
 <a href=#149 id=149 data-nosnippet>149</a>                    </span>.unwrap()
@@ -153,7 +153,7 @@
 <a href=#153 id=153 data-nosnippet>153</a>
 <a href=#154 id=154 data-nosnippet>154</a>                <span class="comment">// communicate that to bob
 <a href=#155 id=155 data-nosnippet>155</a>                </span><span class="kw">let </span>commit = alice.mls_transport.latest_commit().<span class="kw">await</span>;
-<a href=#156 id=156 data-nosnippet>156</a>                bob.context
+<a href=#156 id=156 data-nosnippet>156</a>                bob.transaction
 <a href=#157 id=157 data-nosnippet>157</a>                    .conversation(<span class="kw-2">&amp;</span>id)
 <a href=#158 id=158 data-nosnippet>158</a>                    .<span class="kw">await
 <a href=#159 id=159 data-nosnippet>159</a>                    </span>.unwrap()

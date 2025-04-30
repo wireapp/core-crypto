@@ -179,7 +179,7 @@
 <a href=#179 id=179 data-nosnippet>179</a>                    }
 <a href=#180 id=180 data-nosnippet>180</a>                    <span class="kw">let </span>to_search = to_search.unwrap();
 <a href=#181 id=181 data-nosnippet>181</a>                    <span class="kw">let </span>pk = SignaturePublicKey::from(to_search.signature_key.public());
-<a href=#182 id=182 data-nosnippet>182</a>                    <span class="kw">let </span>client = central.context.session().<span class="kw">await</span>.unwrap();
+<a href=#182 id=182 data-nosnippet>182</a>                    <span class="kw">let </span>client = central.transaction.session().<span class="kw">await</span>.unwrap();
 <a href=#183 id=183 data-nosnippet>183</a>                    <span class="kw">let </span>found = client
 <a href=#184 id=184 data-nosnippet>184</a>                        .find_credential_bundle_by_public_key(case.signature_scheme(), case.credential_type, <span class="kw-2">&amp;</span>pk)
 <a href=#185 id=185 data-nosnippet>185</a>                        .<span class="kw">await
@@ -218,10 +218,10 @@
 <a href=#218 id=218 data-nosnippet>218</a>                Box::pin(<span class="kw">async move </span>{
 <a href=#219 id=219 data-nosnippet>219</a>                    <span class="kw">let </span>cert = central.get_intermediate_ca().cloned();
 <a href=#220 id=220 data-nosnippet>220</a>                    <span class="kw">let </span>cb = central.new_credential_bundle(<span class="kw-2">&amp;</span>case, cert.as_ref()).<span class="kw">await</span>;
-<a href=#221 id=221 data-nosnippet>221</a>                    <span class="kw">let </span>client = central.context.session().<span class="kw">await</span>.unwrap();
+<a href=#221 id=221 data-nosnippet>221</a>                    <span class="kw">let </span>client = central.transaction.session().<span class="kw">await</span>.unwrap();
 <a href=#222 id=222 data-nosnippet>222</a>                    <span class="kw">let </span>push = client
 <a href=#223 id=223 data-nosnippet>223</a>                        .save_identity(
-<a href=#224 id=224 data-nosnippet>224</a>                            <span class="kw-2">&amp;</span>central.context.keystore().<span class="kw">await</span>.unwrap(),
+<a href=#224 id=224 data-nosnippet>224</a>                            <span class="kw-2">&amp;</span>central.transaction.keystore().<span class="kw">await</span>.unwrap(),
 <a href=#225 id=225 data-nosnippet>225</a>                            <span class="prelude-val">None</span>,
 <a href=#226 id=226 data-nosnippet>226</a>                            case.signature_scheme(),
 <a href=#227 id=227 data-nosnippet>227</a>                            cb,
