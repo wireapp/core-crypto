@@ -5,7 +5,7 @@ use super::error::Error;
 /// A unique identifier for clients. A client is an identifier for each App a user is using, such as desktop,
 /// mobile, etc. Users can have multiple clients.
 /// More information [here](https://messaginglayersecurity.rocks/mls-architecture/draft-ietf-mls-architecture.html#name-group-members-and-clients)
-#[derive(Debug, Clone, PartialEq, Eq, Hash, derive_more::Deref)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, derive_more::Deref, serde::Serialize, serde::Deserialize)]
 pub struct ClientId(pub(crate) Vec<u8>);
 
 impl From<&[u8]> for ClientId {

@@ -39,7 +39,7 @@ const HISTORY_CLIENT_ID_PREFIX: &str = "history-client";
 /// ephemeral client.
 #[derive(serde::Serialize, serde::Deserialize)]
 pub struct HistorySecret {
-    client_id: Vec<u8>,
+    client_id: ClientId,
     credential: Credential,
     key_package: KeyPackage,
 }
@@ -89,7 +89,7 @@ impl CoreCrypto {
             .map_err(RecursiveError::mls_client("generating key package"))?;
 
         Ok(HistorySecret {
-            client_id: client_id.0,
+            client_id,
             credential: credential_bundle.credential,
             key_package,
         })
