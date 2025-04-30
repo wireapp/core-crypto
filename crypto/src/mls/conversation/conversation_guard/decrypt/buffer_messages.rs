@@ -154,7 +154,7 @@ mod tests {
         run_test_with_client_ids(
             case.clone(),
             ["alice", "bob", "charlie", "debbie"],
-            move |[alice_central, bob_central, charlie_central, debbie_central]| {
+            move |[alice_central, mut bob_central, charlie_central, debbie_central]| {
                 Box::pin(async move {
                     let id = conversation_id();
                     alice_central
@@ -164,8 +164,11 @@ mod tests {
                         .unwrap();
                     alice_central.invite_all(&case, &id, [&bob_central]).await.unwrap();
 
+                    bob_central.commit_transaction().await;
                     // Bob creates a commit but won't merge it immediately (e.g, because his app crashes before he receives the success response from the ds)
                     let unmerged_commit = bob_central.create_unmerged_commit(&id).await;
+                    // pretend a crash, bob doesn't persist his changes
+                    bob_central.pretend_crash().await;
 
                     // Alice decrypts the commit...
                     alice_central
