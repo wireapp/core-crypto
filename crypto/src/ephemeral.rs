@@ -26,9 +26,9 @@ use mls_crypto_provider::{DatabaseKey, MlsCryptoProvider};
 use openmls::prelude::{Credential, KeyPackage, SignatureScheme};
 
 use crate::{
-    CoreCrypto, Error, MlsError, RecursiveError, Result,
-    mls::{HasSessionAndCrypto as _, conversation::Conversation as _},
-    prelude::{ClientId, ClientIdentifier, ConversationId, MlsClientConfiguration, Session},
+    CoreCrypto, Error, KeystoreError, MlsError, RecursiveError, Result,
+    mls::conversation::Conversation,
+    prelude::{ClientId, ClientIdentifier, MlsClientConfiguration, Session},
 };
 
 /// We always instantiate history clients with this prefix in their client id, so
@@ -39,62 +39,67 @@ const HISTORY_CLIENT_ID_PREFIX: &str = "history-client";
 /// ephemeral client.
 #[derive(serde::Serialize, serde::Deserialize)]
 pub struct HistorySecret {
-    client_id: ClientId,
-    credential: Credential,
-    key_package: KeyPackage,
+    pub(crate) client_id: ClientId,
+    pub(crate) credential: Credential,
+    pub(crate) key_package: KeyPackage,
+}
+
+/// Generate a new [`HistorySecret`].
+///
+/// This is useful when it's this client's turn to generate a new history client.
+///
+/// The generated secret is cryptographically unrelated to the current CoreCrypto client.
+///
+/// Note that this is a crate-private function; the public interface for this feature is [`Conversation::generate_history_secret`].
+/// This implementation lives here instead of there for organizational reasons.
+pub(crate) async fn generate_history_secret<'a, Conv>(conversation: &'a Conv) -> Result<HistorySecret>
+where
+    Conv: Conversation<'a> + Sync + ?Sized,
+{
+    // generate a new completely arbitrary client id
+    let client_id = uuid::Uuid::new_v4();
+    let client_id = format!("{HISTORY_CLIENT_ID_PREFIX}-{client_id}");
+    let client_id = ClientId::from(client_id.into_bytes());
+
+    // generate a transient in-memory provider with which to generate the rest of the credentials
+    let provider = MlsCryptoProvider::try_new_in_memory(&DatabaseKey::generate())
+        .await
+        .map_err(MlsError::wrap("generating transient mls provider"))?;
+
+    // we only care about the one ciphersuite in use for this conversation
+    let ciphersuite = conversation.ciphersuite().await;
+
+    // we can get a credential bundle from a provider and ciphersuite
+    let identifier = ClientIdentifier::Basic(client_id);
+    let mut signature_schemes = HashSet::with_capacity(1);
+    signature_schemes.insert(SignatureScheme::from(ciphersuite.0));
+    let bundles = identifier
+        .generate_credential_bundles(&provider, signature_schemes)
+        .map_err(RecursiveError::mls_client("generating credential bundles"))?;
+    let [(_signature_scheme, client_id, credential_bundle)] = bundles
+        .try_into()
+        .expect("given exactly 1 signature scheme we must get exactly 1 credential bundle");
+
+    // given all the other info so far, we can generate a key package
+    // it's ok to use the current session because the only data inherited here is the keypackage lifetime,
+    // which is not cryptographically relevant
+    let session = conversation
+        .session()
+        .await
+        .map_err(RecursiveError::mls_conversation("getting session"))?;
+    let key_package = session
+        .generate_one_keypackage_from_credential_bundle(&provider, ciphersuite, &credential_bundle)
+        .await
+        .map_err(RecursiveError::mls_client("generating key package"))?;
+
+    Ok(HistorySecret {
+        client_id,
+        credential: credential_bundle.credential,
+        key_package,
+    })
 }
 
 impl CoreCrypto {
-    /// Generate a new [`HistorySecret`].
-    ///
-    /// This is useful when it's this client's turn to generate a new history client.
-    ///
-    /// The generated secret is cryptographically unrelated to the current CoreCrypto client.
-    pub async fn generate_history_secret(&self, conversation_id: &ConversationId) -> Result<HistorySecret> {
-        // generate a new completely arbitrary client id
-        let client_id = uuid::Uuid::new_v4();
-        let client_id = format!("{HISTORY_CLIENT_ID_PREFIX}-{client_id}");
-        let client_id = ClientId::from(client_id.into_bytes());
-
-        // generate a transient in-memory provider with which to generate the rest of the credentials
-        let provider = MlsCryptoProvider::try_new_in_memory(&DatabaseKey::generate())
-            .await
-            .map_err(MlsError::wrap("generating transient mls provider"))?;
-
-        // we only care about the one ciphersuite in use for this conversation
-        let conversation = self
-            .get_raw_conversation(conversation_id)
-            .await
-            .map_err(RecursiveError::mls_client("getting raw conversation"))?;
-        let ciphersuite = conversation.ciphersuite().await;
-
-        // we can get a credential bundle from a provider and ciphersuite
-        let identifier = ClientIdentifier::Basic(client_id);
-        let mut signature_schemes = HashSet::with_capacity(1);
-        signature_schemes.insert(SignatureScheme::from(ciphersuite.0));
-        let bundles = identifier
-            .generate_credential_bundles(&provider, signature_schemes)
-            .map_err(RecursiveError::mls_client("generating credential bundles"))?;
-        let [(_signature_scheme, client_id, credential_bundle)] = bundles
-            .try_into()
-            .expect("given exactly 1 signature scheme we must get exactly 1 credential bundle");
-
-        // given all the other info so far, we can generate a key package
-        // it's ok to use the current session because the only data inherited here is the keypackage lifetime,
-        // which is not cryptographically relevant
-        let session = self.session().await.map_err(RecursiveError::mls("getting session"))?;
-        let key_package = session
-            .generate_one_keypackage_from_credential_bundle(&provider, ciphersuite, &credential_bundle)
-            .await
-            .map_err(RecursiveError::mls_client("generating key package"))?;
-
-        Ok(HistorySecret {
-            client_id,
-            credential: credential_bundle.credential,
-            key_package,
-        })
-    }
-
     /// Instantiate a history client.
     ///
     /// This client exposes the full interface of `CoreCrypto`, but it should only be used to decrypt messages.

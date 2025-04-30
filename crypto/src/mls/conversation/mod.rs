@@ -28,7 +28,7 @@ use std::{collections::HashSet, ops::Deref};
 use crate::{
     KeystoreError, LeafError, MlsError, RecursiveError,
     mls::Session,
-    prelude::{ClientId, E2eiConversationState, MlsCiphersuite, MlsCredentialType, WireIdentity},
+    prelude::{ClientId, E2eiConversationState, HistorySecret, MlsCiphersuite, MlsCredentialType, WireIdentity},
 };
 
 pub(crate) mod commit;
@@ -235,6 +235,18 @@ pub trait Conversation<'a>: ConversationWithMls<'a> {
                 Ok((uid, identity))
             })
             .process_results(|iter| iter.into_group_map())
+    }
+
+    /// Generate a new [`HistorySecret`].
+    ///
+    /// This is useful when it's this client's turn to generate a new history client.
+    ///
+    /// The generated secret is cryptographically unrelated to the current CoreCrypto client.
+    async fn generate_history_secret(&'a self) -> Result<HistorySecret> {
+        crate::ephemeral::generate_history_secret(self)
+            .await
+            .map_err(RecursiveError::root("generating history secret"))
+            .map_err(Into::into)
     }
 }
 
