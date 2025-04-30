@@ -1,4 +1,5 @@
 use super::Result;
+use crate::CoreCrypto;
 use crate::group_store::GroupStore;
 use crate::mls::conversation::pending_conversation::PendingConversation;
 use crate::mls::conversation::{Conversation as _, ConversationWithMls as _};
@@ -284,6 +285,21 @@ impl SessionContext {
             self.try_talk_to(id, other).await?;
         }
         Ok(())
+    }
+
+    pub async fn commit_transaction(&mut self) {
+        self.transaction.finish().await.unwrap();
+        // start new transaction
+        let cc = CoreCrypto::from(self.session.clone());
+        self.transaction = cc.new_transaction().await.unwrap();
+    }
+
+    /// Pretends a crash by aborting the running transaction and starting a new, fresh one.
+    pub async fn pretend_crash(&mut self) {
+        self.transaction.abort().await.unwrap();
+        // start new transaction
+        let cc = CoreCrypto::from(self.session.clone());
+        self.transaction = cc.new_transaction().await.unwrap();
     }
 
     pub async fn get_group_info(&self, id: &ConversationId) -> VerifiableGroupInfo {
