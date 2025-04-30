@@ -145,6 +145,25 @@ mod tests {
 
     #[apply(all_cred_cipher)]
     #[wasm_bindgen_test]
+    async fn can_operate_with_pending_commit_wpb_17356(case: TestContext) {
+        let [alice] = case.sessions().await;
+        let id = conversation_id();
+        alice
+            .transaction
+            .new_conversation(&id, case.credential_type, case.cfg.clone())
+            .await
+            .unwrap();
+        // create a pending commit
+        let _unmerged_commit = alice.create_unmerged_commit(&id).await;
+        let mut conversation = alice.transaction.conversation(&id).await.unwrap();
+        // This should work, even though there is a pending commit!
+        assert!(conversation.conversation().await.group.pending_commit().is_some());
+        conversation.update_key_material().await.unwrap();
+        assert!(conversation.conversation().await.group.pending_commit().is_none());
+    }
+
+    #[apply(all_cred_cipher)]
+    #[wasm_bindgen_test]
     async fn should_buffer_and_reapply_messages_after_commit_merged_for_sender(case: TestContext) {
         if case.is_pure_ciphertext() {
             // The use case tested here requires inspecting your own commit.
