@@ -11,7 +11,7 @@ pub(crate) mod x509;
 
 pub(crate) use error::{Error, Result};
 
-#[derive(Debug)]
+#[derive(Debug, serde::Serialize, serde::Deserialize)]
 pub struct CredentialBundle {
     pub(crate) credential: Credential,
     pub(crate) signature_key: SignatureKeyPair,

@@ -40,74 +40,8 @@ const HISTORY_CLIENT_ID_PREFIX: &str = "history-client";
 #[derive(serde::Serialize, serde::Deserialize)]
 pub struct HistorySecret {
     pub(crate) client_id: ClientId,
-    #[serde(with = "credential_bundle_serialization_shim")]
     pub(crate) credential_bundle: CredentialBundle,
     pub(crate) key_package: KeyPackageSecretEncapsulation,
-}
-
-mod credential_bundle_serialization_shim {
-    //! For Reasons, OpenMLS never implemented serialization on a credential bundle.
-    //!
-    //! Presumably they did not expect to need to publish and restore private keys in the use case we want.
-    //! This shim module lets Serde know
-
-    use openmls::prelude::Credential;
-    use openmls_basic_credential::SignatureKeyPair;
-    use {serde::Deserialize as _, serde::Serialize as _};
-
-    use crate::mls::credential::CredentialBundle;
-
-    /// This struct is structurally identical to a `CredentialBundle`, but can be serialized.
-    #[derive(serde::Serialize)]
-    struct CredentialBundleSerializeShim<'a> {
-        credential: &'a Credential,
-        signature_key: &'a SignatureKeyPair,
-        created_at: u64,
-    }
-
-    impl<'a> From<&'a CredentialBundle> for CredentialBundleSerializeShim<'a> {
-        fn from(bundle: &'a CredentialBundle) -> Self {
-            Self {
-                credential: &bundle.credential,
-                signature_key: &bundle.signature_key,
-                created_at: bundle.created_at,
-            }
-        }
-    }
-
-    pub(super) fn serialize<S>(credential_bundle: &CredentialBundle, serializer: S) -> Result<S::Ok, S::Error>
-    where
-        S: serde::Serializer,
-    {
-        let shim = CredentialBundleSerializeShim::from(credential_bundle);
-        shim.serialize(serializer)
-    }
-
-    /// This struct is structurally identical to a `CredentialBundle`, but can be deserialized.
-    #[derive(serde::Deserialize)]
-    struct CredentialBundleDeserializeShim {
-        credential: Credential,
-        signature_key: SignatureKeyPair,
-        created_at: u64,
-    }
-
-    impl From<CredentialBundleDeserializeShim> for CredentialBundle {
-        fn from(shim: CredentialBundleDeserializeShim) -> Self {
-            Self {
-                credential: shim.credential,
-                signature_key: shim.signature_key,
-                created_at: shim.created_at,
-            }
-        }
-    }
-
-    pub(super) fn deserialize<'de, D>(deserializer: D) -> Result<CredentialBundle, D::Error>
-    where
-        D: serde::Deserializer<'de>,
-    {
-        let shim = CredentialBundleDeserializeShim::deserialize(deserializer)?;
-        Ok(shim.into())
-    }
 }
 
 /// Generate a new [`HistorySecret`].
