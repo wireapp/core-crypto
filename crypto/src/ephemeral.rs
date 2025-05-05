@@ -23,7 +23,7 @@
 use std::collections::HashSet;
 
 use mls_crypto_provider::{DatabaseKey, MlsCryptoProvider};
-use openmls::prelude::{KeyPackage, SignatureScheme};
+use openmls::prelude::{KeyPackageSecretEncapsulation, SignatureScheme};
 
 use crate::{
     CoreCrypto, Error, MlsError, RecursiveError, Result,
@@ -42,7 +42,7 @@ pub struct HistorySecret {
     pub(crate) client_id: ClientId,
     #[serde(with = "credential_bundle_serialization_shim")]
     pub(crate) credential_bundle: CredentialBundle,
-    pub(crate) key_package: KeyPackage,
+    pub(crate) key_package: KeyPackageSecretEncapsulation,
 }
 
 mod credential_bundle_serialization_shim {
@@ -157,6 +157,9 @@ where
         .generate_one_keypackage_from_credential_bundle(&provider, ciphersuite, &credential_bundle)
         .await
         .map_err(RecursiveError::mls_client("generating key package"))?;
+    let key_package = KeyPackageSecretEncapsulation::load(&provider, key_package)
+        .await
+        .map_err(MlsError::wrap("encapsulating key package"))?;
 
     Ok(HistorySecret {
         client_id,
@@ -197,23 +200,18 @@ impl CoreCrypto {
         };
 
         // Construct the MLS session, but don't initialize it. The implementation when `client_id` is `None` just
-        // does construction, which is what we need. Before we initialize the session, we want to add some data to
-        // the keystore, and we get that from the session itself.
+        // does construction, which is what we need.
         let session = Session::try_new_in_memory(configuration)
             .await
             .map_err(RecursiveError::mls("creating ephemeral session"))?;
 
-        todo!("inject keys into keystore here");
-
         session
-            .init(
-                ClientIdentifier::Basic(history_secret.client_id),
-                &ciphersuites,
-                &session.crypto_provider,
-                0,
-            )
+            .restore_from_history_secret(history_secret)
             .await
-            .map_err(RecursiveError::mls_client("initializing ephemeral session"))?;
+            .map_err(RecursiveError::mls_client(
+                "restoring ephemeral session from history secret",
+            ))?;
+
         Ok(session.into())
     }
 }

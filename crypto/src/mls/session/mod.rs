@@ -16,7 +16,7 @@ use crate::{
         credential::{CredentialBundle, ext::CredentialExt},
     },
     prelude::{
-        CertificateBundle, ClientId, ConversationId, INITIAL_KEYING_MATERIAL_COUNT, MlsCiphersuite,
+        CertificateBundle, ClientId, ConversationId, HistorySecret, INITIAL_KEYING_MATERIAL_COUNT, MlsCiphersuite,
         MlsClientConfiguration, MlsCredentialType, identifier::ClientIdentifier,
         key_package::KEYPACKAGE_DEFAULT_LIFETIME,
     },
@@ -36,7 +36,7 @@ use openmls::prelude::{Credential, CredentialType};
 use openmls_basic_credential::SignatureKeyPair;
 use openmls_traits::{OpenMlsCryptoProvider, crypto::OpenMlsCrypto, types::SignatureScheme};
 use openmls_x509_credential::CertificateKeyPair;
-use std::ops::{Deref, DerefMut};
+use std::ops::Deref;
 use std::sync::Arc;
 use std::{collections::HashSet, fmt};
 use tls_codec::{Deserialize, Serialize};
@@ -219,7 +219,7 @@ impl Session {
 
         let credentials = credentials
             .into_iter()
-            .filter(|mls_credential| &mls_credential.id[..] == id.as_slice())
+            .filter(|mls_credential| mls_credential.id.as_slice() == id.as_slice())
             .map(|mls_credential| -> Result<_> {
                 let credential = Credential::tls_deserialize(&mut mls_credential.credential.as_slice())
                     .map_err(Error::tls_deserialize("mls credential"))?;
@@ -227,22 +227,21 @@ impl Session {
             })
             .collect::<Result<Vec<_>>>()?;
 
-        if !credentials.is_empty() {
+        if credentials.is_empty() {
+            debug!(count = nb_key_package, ciphersuites:? = ciphersuites; "Generating client");
+            self.generate(identifier, backend, ciphersuites, nb_key_package).await?;
+        } else {
             let signature_schemes = ciphersuites
                 .iter()
                 .map(|cs| cs.signature_algorithm())
                 .collect::<HashSet<_>>();
-            match self.load(backend, id.as_ref(), credentials, signature_schemes).await {
-                Ok(client) => client,
-                Err(Error::ClientSignatureNotFound) => {
-                    debug!(count = nb_key_package, ciphersuites:? = ciphersuites; "Client signature not found. Generating client");
-                    self.generate(identifier, backend, ciphersuites, nb_key_package).await?
-                }
-                Err(e) => return Err(e),
+            let load_result = self.load(backend, id.as_ref(), credentials, signature_schemes).await;
+            if let Err(Error::ClientSignatureNotFound) = load_result {
+                debug!(count = nb_key_package, ciphersuites:? = ciphersuites; "Client signature not found. Generating client");
+                self.generate(identifier, backend, ciphersuites, nb_key_package).await?;
+            } else {
+                load_result?;
             }
-        } else {
-            debug!(count = nb_key_package, ciphersuites:? = ciphersuites; "Generating client");
-            self.generate(identifier, backend, ciphersuites, nb_key_package).await?
         };
 
         Ok(())
@@ -558,20 +557,17 @@ impl Session {
             self.save_identity(&backend.keystore(), Some(&id), sc, cb).await?;
         }
 
-        let identities = match self.inner.read().await.deref() {
-            None => return Err(Error::MlsNotInitialized),
-            // Cloning is fine because identities is an arc internally.
-            // We can't keep the lock for longer because requesting the key packages below will also
-            // acquire it.
-            Some(SessionInner { identities, .. }) => identities.clone(),
-        };
+        let guard = self.inner.read().await;
+        let SessionInner { identities, .. } = guard.as_ref().ok_or(Error::MlsNotInitialized)?;
 
         if nb_key_package != 0 {
-            for cs in ciphersuites {
-                let sc = cs.signature_algorithm();
-                let identity = identities.iter().filter(|(id_sc, _)| id_sc == &sc);
-                for (_, cb) in identity {
-                    self.request_key_packages(nb_key_package, *cs, cb.credential.credential_type().into(), backend)
+            for ciphersuite in ciphersuites.iter().copied() {
+                let ciphersuite_signature_scheme = ciphersuite.signature_algorithm();
+                for credential_bundle in identities.iter().filter_map(|(signature_scheme, credential_bundle)| {
+                    (signature_scheme == ciphersuite_signature_scheme).then_some(credential_bundle)
+                }) {
+                    let credential_type = credential_bundle.credential.credential_type().into();
+                    self.request_key_packages(nb_key_package, ciphersuite, credential_type, backend)
                         .await?;
                 }
             }
@@ -594,28 +590,31 @@ impl Session {
         // ensures we load credentials in chronological order
         credentials.sort_by_key(|(_, timestamp)| *timestamp);
 
-        let store_skps = backend
+        let stored_signature_keypairs = backend
             .key_store()
             .find_all::<MlsSignatureKeyPair>(EntityFindParams::default())
             .await
             .map_err(KeystoreError::wrap("finding all mls signature keypairs"))?;
 
-        for sc in signature_schemes {
-            let kp = store_skps.iter().find(|skp| skp.signature_scheme == (sc as u16));
+        for signature_scheme in signature_schemes {
+            let signature_keypair = stored_signature_keypairs
+                .iter()
+                .find(|skp| skp.signature_scheme == (signature_scheme as u16));
 
-            let signature_key = if let Some(kp) = kp {
+            let signature_key = if let Some(kp) = signature_keypair {
                 SignatureKeyPair::tls_deserialize(&mut kp.keypair.as_slice())
                     .map_err(Error::tls_deserialize("signature keypair"))?
             } else {
-                let (sk, pk) = backend
+                let (private_key, public_key) = backend
                     .crypto()
-                    .signature_key_gen(sc)
+                    .signature_key_gen(signature_scheme)
                     .map_err(MlsError::wrap("generating signature key"))?;
-                let keypair = SignatureKeyPair::from_raw(sc, sk, pk.clone());
+                let keypair = SignatureKeyPair::from_raw(signature_scheme, private_key, public_key.clone());
                 let raw_keypair = keypair
                     .tls_serialize_detached()
                     .map_err(Error::tls_serialize("raw keypair"))?;
-                let store_keypair = MlsSignatureKeyPair::new(sc, pk, raw_keypair, id.as_slice().into());
+                let store_keypair =
+                    MlsSignatureKeyPair::new(signature_scheme, public_key, raw_keypair, id.as_slice().into());
                 backend
                     .key_store()
                     .save(store_keypair.clone())
@@ -647,7 +646,7 @@ impl Session {
                     signature_key: signature_key.clone(),
                     created_at: *created_at,
                 };
-                identities.push_credential_bundle(sc, cb).await?;
+                identities.push_credential_bundle(signature_scheme, cb).await?;
             }
         }
         self.replace_inner(SessionInner {
@@ -657,6 +656,40 @@ impl Session {
             epoch_observer: None,
         })
         .await;
+        Ok(())
+    }
+
+    /// Restore from an external [`HistorySecret`].
+    pub(crate) async fn restore_from_history_secret(&self, history_secret: HistorySecret) -> Result<()> {
+        self.ensure_unready().await?;
+
+        // store the client id (with some other stuff)
+        self.replace_inner(SessionInner {
+            id: history_secret.client_id.clone(),
+            identities: Identities::new(1),
+            keypackage_lifetime: KEYPACKAGE_DEFAULT_LIFETIME,
+            epoch_observer: None,
+        })
+        .await;
+
+        // store the key package
+        let key_package = history_secret
+            .key_package
+            .store(&self.crypto_provider)
+            .await
+            .map_err(MlsError::wrap("storing key package encapsulation"))?;
+
+        let keystore = self.crypto_provider.key_store();
+
+        // store the credential bundle (with some other stuff)
+        self.save_identity(
+            keystore,
+            Some(&history_secret.client_id),
+            key_package.ciphersuite().signature_algorithm(),
+            history_secret.credential_bundle,
+        )
+        .await?;
+
         Ok(())
     }
 
@@ -683,54 +716,55 @@ impl Session {
         &self,
         keystore: &Connection,
         id: Option<&ClientId>,
-        sc: SignatureScheme,
-        mut cb: CredentialBundle,
+        signature_scheme: SignatureScheme,
+        mut credential_bundle: CredentialBundle,
     ) -> Result<CredentialBundle> {
-        match self.inner.write().await.deref_mut() {
-            None => Err(Error::MlsNotInitialized),
-            Some(SessionInner {
-                id: existing_id,
-                identities,
-                ..
-            }) => {
-                let id = id.unwrap_or(existing_id);
+        let mut guard = self.inner.write().await;
+        let SessionInner {
+            id: existing_id,
+            identities,
+            ..
+        } = guard.as_mut().ok_or(Error::MlsNotInitialized)?;
 
-                let credential = cb
-                    .credential
-                    .tls_serialize_detached()
-                    .map_err(Error::tls_serialize("credential bundle"))?;
-                let credential = MlsCredential {
-                    id: id.clone().into(),
-                    credential,
-                    created_at: 0,
-                };
+        let id = id.unwrap_or(existing_id);
 
-                let credential = keystore
-                    .save(credential)
-                    .await
-                    .map_err(KeystoreError::wrap("saving credential"))?;
+        let credential = credential_bundle
+            .credential
+            .tls_serialize_detached()
+            .map_err(Error::tls_serialize("credential bundle"))?;
+        let credential = MlsCredential {
+            id: id.clone().into(),
+            credential,
+            created_at: 0,
+        };
 
-                let sign_kp = MlsSignatureKeyPair::new(
-                    sc,
-                    cb.signature_key.to_public_vec(),
-                    cb.signature_key
-                        .tls_serialize_detached()
-                        .map_err(Error::tls_serialize("signature keypair"))?,
-                    id.clone().into(),
-                );
-                keystore.save(sign_kp).await.map_err(|e| match e {
-                    CryptoKeystoreError::AlreadyExists => Error::CredentialBundleConflict,
-                    _ => KeystoreError::wrap("saving mls signature key pair")(e).into(),
-                })?;
+        let credential = keystore
+            .save(credential)
+            .await
+            .map_err(KeystoreError::wrap("saving credential"))?;
 
-                // set the creation date of the signature keypair which is the same for the CredentialBundle
-                cb.created_at = credential.created_at;
+        let sign_kp = MlsSignatureKeyPair::new(
+            signature_scheme,
+            credential_bundle.signature_key.to_public_vec(),
+            credential_bundle
+                .signature_key
+                .tls_serialize_detached()
+                .map_err(Error::tls_serialize("signature keypair"))?,
+            id.clone().into(),
+        );
+        keystore.save(sign_kp).await.map_err(|e| match e {
+            CryptoKeystoreError::AlreadyExists => Error::CredentialBundleConflict,
+            _ => KeystoreError::wrap("saving mls signature key pair")(e).into(),
+        })?;
 
-                identities.push_credential_bundle(sc, cb.clone()).await?;
+        // set the creation date of the signature keypair which is the same for the CredentialBundle
+        credential_bundle.created_at = credential.created_at;
 
-                Ok(cb)
-            }
-        }
+        identities
+            .push_credential_bundle(signature_scheme, credential_bundle.clone())
+            .await?;
+
+        Ok(credential_bundle)
     }
 
     /// Retrieves the client's client id. This is free-form and not inspected.
