@@ -22,13 +22,13 @@
 
 use std::collections::HashSet;
 
-use mls_crypto_provider::{DatabaseKey, MlsCryptoProvider};
+use mls_crypto_provider::DatabaseKey;
 use openmls::prelude::{KeyPackageSecretEncapsulation, SignatureScheme};
 
 use crate::{
     CoreCrypto, Error, MlsError, RecursiveError, Result,
-    mls::{conversation::Conversation, credential::CredentialBundle},
-    prelude::{ClientId, ClientIdentifier, MlsClientConfiguration, Session},
+    mls::credential::CredentialBundle,
+    prelude::{ClientId, ClientIdentifier, MlsCiphersuite, MlsClientConfiguration, MlsCredentialType, Session},
 };
 
 /// We always instantiate history clients with this prefix in their client id, so
@@ -44,56 +44,84 @@ pub struct HistorySecret {
     pub(crate) key_package: KeyPackageSecretEncapsulation,
 }
 
+/// Create a new [`CoreCrypto`] with an **uninitialized** mls session.
+///
+/// You must initialize the session yourself before using this!
+async fn in_memory_cc_with_ciphersuite(ciphersuite: impl Into<MlsCiphersuite>) -> Result<CoreCrypto> {
+    let ciphersuites = vec![ciphersuite.into()];
+
+    let configuration = MlsClientConfiguration {
+        // we know what ciphersuite we want, at least
+        ciphersuites: ciphersuites.clone(),
+        // we have the client id from the history secret, but we don't want to use it here because
+        // that kicks off the `init`, and we want to inject our secret keys into the keystore before then
+        client_id: None,
+        // not used in in-memory client
+        store_path: String::new(),
+        // important so our keys aren't memory-snooped, but its actual value is irrelevant
+        database_key: DatabaseKey::generate(),
+        // irrelevant for this case
+        external_entropy: None,
+        // don't generate any keypackages; we do not want to ever add this client to a different group
+        nb_init_key_packages: Some(0),
+    };
+
+    // Construct the MLS session, but don't initialize it. The implementation when `client_id` is `None` just
+    // does construction, which is what we need.
+    let session = Session::try_new_in_memory(configuration)
+        .await
+        .map_err(RecursiveError::mls("creating ephemeral session"))?;
+
+    Ok(session.into())
+}
+
 /// Generate a new [`HistorySecret`].
 ///
 /// This is useful when it's this client's turn to generate a new history client.
 ///
 /// The generated secret is cryptographically unrelated to the current CoreCrypto client.
 ///
-/// Note that this is a crate-private function; the public interface for this feature is [`Conversation::generate_history_secret`].
+/// Note that this is a crate-private function; the public interface for this feature is
+/// [`Conversation::generate_history_secret`][core_crypto::mls::conversation::Conversation::generate_history_secret].
 /// This implementation lives here instead of there for organizational reasons.
-pub(crate) async fn generate_history_secret<'a, Conv>(conversation: &'a Conv) -> Result<HistorySecret>
-where
-    Conv: Conversation<'a> + Sync + ?Sized,
-{
+pub(crate) async fn generate_history_secret(ciphersuite: MlsCiphersuite) -> Result<HistorySecret> {
     // generate a new completely arbitrary client id
     let client_id = uuid::Uuid::new_v4();
     let client_id = format!("{HISTORY_CLIENT_ID_PREFIX}-{client_id}");
     let client_id = ClientId::from(client_id.into_bytes());
+    let identifier = ClientIdentifier::Basic(client_id);
 
-    // generate a transient in-memory provider with which to generate the rest of the credentials
-    let provider = MlsCryptoProvider::try_new_in_memory(&DatabaseKey::generate())
+    let cc = in_memory_cc_with_ciphersuite(ciphersuite).await?;
+    let tx = cc
+        .new_transaction()
         .await
-        .map_err(MlsError::wrap("generating transient mls provider"))?;
-
-    // we only care about the one ciphersuite in use for this conversation
-    let ciphersuite = conversation.ciphersuite().await;
+        .map_err(RecursiveError::transaction("creating new transaction"))?;
+    cc.init(identifier.clone(), &[ciphersuite], &cc.crypto_provider, 0)
+        .await
+        .map_err(RecursiveError::mls_client("initializing ephemeral cc"))?;
 
     // we can get a credential bundle from a provider and ciphersuite
-    let identifier = ClientIdentifier::Basic(client_id);
     let mut signature_schemes = HashSet::with_capacity(1);
     signature_schemes.insert(SignatureScheme::from(ciphersuite.0));
     let bundles = identifier
-        .generate_credential_bundles(&provider, signature_schemes)
+        .generate_credential_bundles(&cc.crypto_provider, signature_schemes)
         .map_err(RecursiveError::mls_client("generating credential bundles"))?;
     let [(_signature_scheme, client_id, credential_bundle)] = bundles
         .try_into()
         .expect("given exactly 1 signature scheme we must get exactly 1 credential bundle");
 
-    // given all the other info so far, we can generate a key package
-    // it's ok to use the current session because the only data inherited here is the keypackage lifetime,
-    // which is not cryptographically relevant
-    let session = conversation
-        .session()
+    // we can generate a key package from the ephemeral cc and ciphersutite
+    let [key_package] = tx
+        .get_or_create_client_keypackages(ciphersuite, MlsCredentialType::Basic, 1)
         .await
-        .map_err(RecursiveError::mls_conversation("getting session"))?;
-    let key_package = session
-        .generate_one_keypackage_from_credential_bundle(&provider, ciphersuite, &credential_bundle)
-        .await
-        .map_err(RecursiveError::mls_client("generating key package"))?;
-    let key_package = KeyPackageSecretEncapsulation::load(&provider, key_package)
+        .map_err(RecursiveError::transaction("generating keypackages"))?
+        .try_into()
+        .expect("generating 1 keypackage returns 1 keypackage");
+    let key_package = KeyPackageSecretEncapsulation::load(&cc.crypto_provider, key_package)
         .await
         .map_err(MlsError::wrap("encapsulating key package"))?;
+
+    // we don't need to finish the transaction here--the point of the ephemeral CC was that no mutations would be saved there
 
     Ok(HistorySecret {
         client_id,
@@ -115,29 +143,11 @@ impl CoreCrypto {
             return Err(Error::InvalidHistorySecret("client id has invalid format"));
         }
 
-        let ciphersuites = vec![history_secret.key_package.ciphersuite().into()];
-
-        let configuration = MlsClientConfiguration {
-            // we know what ciphersuite we want, at least
-            ciphersuites: ciphersuites.clone(),
-            // we have the client id from the history secret, but we don't want to use it here because
-            // that kicks off the `init`, and we want to inject our secret keys into the keystore before then
-            client_id: None,
-            // not used in in-memory client
-            store_path: String::new(),
-            // important so our keys aren't memory-snooped, but its actual value is irrelevant
-            database_key: DatabaseKey::generate(),
-            // irrelevant for this case
-            external_entropy: None,
-            // don't generate any keypackages; we do not want to ever add this client to a different group
-            nb_init_key_packages: Some(0),
-        };
-
-        // Construct the MLS session, but don't initialize it. The implementation when `client_id` is `None` just
-        // does construction, which is what we need.
-        let session = Session::try_new_in_memory(configuration)
+        let session = in_memory_cc_with_ciphersuite(history_secret.key_package.ciphersuite()).await?;
+        let tx = session
+            .new_transaction()
             .await
-            .map_err(RecursiveError::mls("creating ephemeral session"))?;
+            .map_err(RecursiveError::transaction("creating new transaction"))?;
 
         session
             .restore_from_history_secret(history_secret)
@@ -146,6 +156,72 @@ impl CoreCrypto {
                 "restoring ephemeral session from history secret",
             ))?;
 
-        Ok(session.into())
+        tx.finish()
+            .await
+            .map_err(RecursiveError::transaction("finishing transaction"))?;
+
+        Ok(session)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use rstest::rstest;
+    use rstest_reuse::apply;
+    use wasm_bindgen_test::wasm_bindgen_test;
+
+    use crate::test_utils::{SessionContext, TestContext, all_cred_cipher, conversation_id};
+
+    use super::*;
+
+    /// Create a history secret, and restore it into a CoreCrypto instance
+    #[apply(all_cred_cipher)]
+    #[wasm_bindgen_test]
+    async fn can_create_ephemeral_client(case: TestContext) {
+        if case.credential_type != MlsCredentialType::Basic {
+            // history client will only ever have basic credentials, so not much point in testing
+            // how it interacts with an x509-only conversation
+            return;
+        }
+
+        use crate::mls::conversation::Conversation as _;
+
+        let [alice] = case.sessions().await;
+        let id = conversation_id();
+        alice
+            .transaction
+            .new_conversation(&id, case.credential_type, case.cfg.clone())
+            .await
+            .unwrap();
+
+        let conversation = alice.session.get_raw_conversation(&id).await.unwrap();
+        let history_secret = conversation.generate_history_secret().await.unwrap();
+
+        // the history secret has to survive encoding and decoding into some arbitrary serde format,
+        // so round-trip it
+        // note: we're not testing the serialization format
+        let encoded = rmp_serde::to_vec(&history_secret).unwrap();
+        let history_secret = rmp_serde::from_slice::<HistorySecret>(&encoded).unwrap();
+
+        let ephemeral_client = CoreCrypto::history_client(history_secret).await.unwrap();
+
+        // so how can we test that this has actually worked, given that we have not yet implemented the
+        // bit where we can actually enable history for a conversation, adding a history client? Well,
+        // with the caveat that
+        // WE SHOULD NOT DO THIS OUTSIDE A TESTING CONTEXT
+        // , we may as well try to
+        // roundtrip a conversation with Alice; that should at least prove that the ephemeral client
+        // has the basic minimal set of data in its keystore set properly.
+        let ephemeral_identifier = ClientIdentifier::Basic(ephemeral_client.mls.id().await.unwrap());
+        let ephemeral_session_context = SessionContext::new_with_identifier(&case, ephemeral_identifier, None)
+            .await
+            .unwrap();
+
+        alice
+            .invite_all(&case, &id, [&ephemeral_session_context])
+            .await
+            .unwrap();
+
+        assert!(ephemeral_session_context.try_talk_to(&id, &alice).await.is_ok());
     }
 }
