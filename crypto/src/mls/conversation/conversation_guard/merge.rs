@@ -17,7 +17,7 @@ use super::{ConversationGuard, Result};
 use crate::{
     MlsError,
     mls::conversation::{ConversationWithMls as _, Error},
-    prelude::MlsProposalRef,
+    prelude::{MlsProposalRef, Obfuscated},
 };
 
 impl ConversationGuard {
@@ -69,6 +69,7 @@ impl ConversationGuard {
         if conversation.group.pending_commit().is_some() {
             conversation.group.clear_pending_commit();
             conversation.persist_group_when_changed(&keystore, true).await?;
+            log::info!(group_id = Obfuscated::from(conversation.id()); "Cleared pending commit.");
             Ok(())
         } else {
             Err(Error::PendingCommitNotFound)

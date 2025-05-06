@@ -5,50 +5,17 @@
 //! | 0 pend. Proposal       | ✅              | ❌              |
 //! | 1+ pend. Proposal      | ✅              | ❌              |
 
-use openmls::prelude::{LeafNode, MlsMessageOut};
+use openmls::prelude::MlsMessageOut;
 
 use mls_crypto_provider::MlsCryptoProvider;
 
 use super::{Error, Result};
 use crate::{
-    LeafError,
-    mls::{MlsConversation, credential::CredentialBundle},
+    mls::MlsConversation,
     prelude::{MlsError, MlsGroupInfoBundle, Session},
 };
 
 impl MlsConversation {
-    /// see [Client::update_keying_material]
-    #[cfg_attr(test, crate::durable)]
-    pub(crate) async fn update_keying_material(
-        &mut self,
-        client: &Session,
-        backend: &MlsCryptoProvider,
-        cb: Option<&CredentialBundle>,
-        leaf_node: Option<LeafNode>,
-    ) -> Result<MlsCommitBundle> {
-        let cb = match cb {
-            None => &self.find_most_recent_credential_bundle(client).await?,
-            Some(cb) => cb,
-        };
-        let (commit, welcome, group_info) = self
-            .group
-            .explicit_self_update(backend, &cb.signature_key, leaf_node)
-            .await
-            .map_err(MlsError::wrap("group self update"))?;
-
-        // We should always have ratchet tree extension turned on hence GroupInfo should always be present
-        let group_info = group_info.ok_or(LeafError::MissingGroupInfo)?;
-        let group_info = MlsGroupInfoBundle::try_new_full_plaintext(group_info)?;
-
-        self.persist_group_when_changed(&backend.keystore(), false).await?;
-
-        Ok(MlsCommitBundle {
-            welcome,
-            commit,
-            group_info,
-        })
-    }
-
     /// see [Client::commit_pending_proposals]
     #[cfg_attr(test, crate::durable)]
     pub(crate) async fn commit_pending_proposals(
@@ -437,7 +404,7 @@ mod tests {
                     // But has been removed from the conversation
                     assert!(matches!(
                     bob_central.transaction.conversation(&id).await.unwrap_err(),
-                    TransactionError::Leaf(LeafError::ConversationNotFound(ref i))
+                    TransactionError::Leaf(crate::LeafError::ConversationNotFound(ref i))
                         if i == &id
                     ));
                     assert!(alice_central.try_talk_to(&id, &bob_central).await.is_err());

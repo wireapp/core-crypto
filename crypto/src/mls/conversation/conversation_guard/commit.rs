@@ -1,10 +1,10 @@
 //! The methods in this module all produce or handle commits.
 
-use openmls::prelude::KeyPackageIn;
+use openmls::prelude::{KeyPackageIn, LeafNode};
 
 use crate::mls::conversation::{ConversationWithMls as _, Error};
 use crate::mls::credential::CredentialBundle;
-use crate::prelude::MlsCredentialType;
+use crate::prelude::{MlsCredentialType, MlsGroupInfoBundle};
 use crate::{
     LeafError, MlsError, MlsTransportResponse, RecursiveError,
     e2e_identity::NewCrlDistributionPoints,
@@ -196,13 +196,7 @@ impl ConversationGuard {
     ///
     /// see [MlsCentral::update_keying_material]
     pub async fn update_key_material(&mut self) -> Result<()> {
-        let client = self.session().await?;
-        let backend = self.crypto_provider().await?;
-        let mut conversation = self.inner.write().await;
-        let commit = conversation
-            .update_keying_material(&client, &backend, None, None)
-            .await?;
-        drop(conversation);
+        let commit = self.update_key_material_inner(None, None).await?;
         self.send_and_merge_commit(commit).await
     }
 
@@ -213,8 +207,7 @@ impl ConversationGuard {
     /// [crate::transaction_context::TransactionContext::save_x509_credential].
     pub async fn e2ei_rotate(&mut self, cb: Option<&CredentialBundle>) -> Result<()> {
         let client = &self.session().await?;
-        let backend = &self.crypto_provider().await?;
-        let mut conversation = self.inner.write().await;
+        let conversation = self.conversation().await;
 
         let cb = match cb {
             Some(cb) => cb,
@@ -234,13 +227,45 @@ impl ConversationGuard {
             .clone();
         leaf_node.set_credential_with_key(cb.to_mls_credential_with_key());
 
-        let commit = conversation
-            .update_keying_material(client, backend, Some(cb), Some(leaf_node))
-            .await?;
         // we don't need the conversation anymore, but we do need to mutably borrow `self` again
         drop(conversation);
 
+        let commit = self.update_key_material_inner(Some(cb), Some(leaf_node)).await?;
+
         self.send_and_merge_commit(commit).await
+    }
+
+    pub(crate) async fn update_key_material_inner(
+        &mut self,
+        cb: Option<&CredentialBundle>,
+        leaf_node: Option<LeafNode>,
+    ) -> Result<MlsCommitBundle> {
+        let session = &self.session().await?;
+        let backend = &self.crypto_provider().await?;
+        let mut conversation = self.conversation_mut().await;
+        let cb = match cb {
+            None => &conversation.find_most_recent_credential_bundle(session).await?,
+            Some(cb) => cb,
+        };
+        let (commit, welcome, group_info) = conversation
+            .group
+            .explicit_self_update(backend, &cb.signature_key, leaf_node)
+            .await
+            .map_err(MlsError::wrap("group self update"))?;
+
+        // We should always have ratchet tree extension turned on hence GroupInfo should always be present
+        let group_info = group_info.ok_or(LeafError::MissingGroupInfo)?;
+        let group_info = MlsGroupInfoBundle::try_new_full_plaintext(group_info)?;
+
+        conversation
+            .persist_group_when_changed(&backend.keystore(), false)
+            .await?;
+
+        Ok(MlsCommitBundle {
+            welcome,
+            commit,
+            group_info,
+        })
     }
 
     /// Commits all pending proposals of the group

@@ -195,7 +195,7 @@ impl SessionContext {
 
         let kps = others.iter().map(|(_, kp)| kp).cloned().collect::<Vec<_>>();
         self.transaction
-            .conversation(&id)
+            .conversation(id)
             .await
             .map_err(RecursiveError::transaction("getting conversation by id"))?
             .add_members(kps)
@@ -578,19 +578,17 @@ impl SessionContext {
     /// Creates a commit but don't merge it immediately (e.g, because the app crashes before he receives the success response from the ds via MlsTransport api)
     pub(crate) async fn create_unmerged_commit(&self, id: &ConversationId) -> MlsCommitBundle {
         self.transaction
-            .conversation(&id)
+            .conversation(id)
             .await
             .unwrap()
-            .conversation_mut()
-            .await
-            .update_keying_material(&self.session().await, &self.session.crypto_provider, None, None)
+            .update_key_material_inner(None, None)
             .await
             .unwrap()
     }
 
     pub(crate) async fn commit_pending_proposals_unmerged(&self, id: &ConversationId) -> MlsCommitBundle {
         self.transaction
-            .conversation(&id)
+            .conversation(id)
             .await
             .unwrap()
             .conversation_mut()
@@ -621,14 +619,13 @@ impl SessionContext {
         id: &ConversationId,
         cb: &CredentialBundle,
     ) -> MlsCommitBundle {
-        let client = self.session().await;
-        let backend = self.transaction.mls_provider().await.unwrap();
         let mut conversation_guard = self.transaction.conversation(id).await.unwrap();
-        let mut conversation = conversation_guard.conversation_mut().await;
+        let conversation = conversation_guard.conversation().await;
         let mut leaf_node = conversation.group.own_leaf().unwrap().clone();
+        drop(conversation);
         leaf_node.set_credential_with_key(cb.to_mls_credential_with_key());
-        conversation
-            .update_keying_material(&client, &backend, Some(cb), Some(leaf_node))
+        conversation_guard
+            .update_key_material_inner(Some(cb), Some(leaf_node))
             .await
             .unwrap()
     }
