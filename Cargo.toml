@@ -9,7 +9,6 @@ members = [
     "interop",
     "decode",
 ]
-exclude = ["extras/webdriver-installation"]
 resolver = "2"
 
 [workspace.lints.clippy]
