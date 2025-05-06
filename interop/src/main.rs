@@ -44,8 +44,6 @@ fn run_test() -> Result<()> {
         femme::start();
     }
 
-    let force_webdriver_install = std::env::var("FORCE_WEBDRIVER_INSTALL").is_ok();
-
     // Check if we have a correct pwd
     let current_dir = std::env::current_dir()?;
     if current_dir.ends_with("interop") {
@@ -62,8 +60,6 @@ fn run_test() -> Result<()> {
         .unwrap();
 
     runtime.block_on(async {
-        build::web::webdriver::setup_webdriver(force_webdriver_install).await?;
-
         build::web::wasm::build_wasm(tempdir.path().to_path_buf()).await?;
 
         let spinner = util::RunningProcess::new("Starting HTTP server...", false);

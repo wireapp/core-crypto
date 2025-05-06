@@ -1,33 +1,9 @@
 use crate::util::RunningProcess;
 use color_eyre::eyre::Result;
 
-pub(crate) async fn setup_webdriver(force: bool) -> Result<()> {
-    let mut spinner = RunningProcess::new("Setting up WebDriver & co...", false);
-
-    let wd_dir = dirs::home_dir().unwrap().join(".webdrivers");
-    let chrome = webdriver_installation::WebdriverKind::Chrome;
-
-    if force {
-        spinner.update("FORCE_WEBDRIVER_INSTALL is set. Forcefully removing webdrivers...");
-        std::fs::remove_dir(&wd_dir)?;
-    }
-
-    if !wd_dir.join(chrome.as_exe_name()).exists() {
-        spinner.update("Chrome WebDriver isn't installed. Installing...");
-        chrome.install_webdriver(&wd_dir, force).await?;
-    }
-
-    spinner.update("Chrome WebDriver installed");
-
-    spinner.success("WebDriver setup [OK]");
-
-    Ok(())
-}
-
 pub(crate) async fn start_webdriver_chrome(addr: &std::net::SocketAddr) -> Result<tokio::process::Child> {
-    let wd_dir = dirs::home_dir().unwrap().join(".webdrivers");
-
-    Ok(tokio::process::Command::new(wd_dir.join("chromedriver"))
+    let chromedriver_path = std::env::var("CHROMEDRIVER_PATH").expect("CHROMEDRIVER_PATH must be set");
+    Ok(tokio::process::Command::new(chromedriver_path)
         .arg(format!("--port={}", addr.port()))
         .stdout(std::process::Stdio::null())
         .stderr(std::process::Stdio::null())
