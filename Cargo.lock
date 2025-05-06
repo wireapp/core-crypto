@@ -2677,7 +2677,6 @@ dependencies = [
  "hkdf 0.12.4",
  "hmac",
  "hpke",
- "mls-crypto-provider",
  "openmls",
  "openmls_traits",
  "p256",

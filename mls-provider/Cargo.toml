@@ -14,10 +14,6 @@ crate-type = ["lib", "cdylib"]
 [lints]
 workspace = true
 
-[features]
-default = []
-raw-rand-access = [] # TESTING ONLY
-
 [dependencies]
 openmls_traits.workspace = true
 async-trait.workspace = true
@@ -61,4 +57,3 @@ rstest_reuse = "0.7"
 async-std = { workspace = true, features = ["attributes"] }
 cfg-if.workspace = true
 hex-literal = "1.0"
-mls-crypto-provider = { workspace = true, features = ["raw-rand-access"] }
