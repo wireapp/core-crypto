@@ -163,7 +163,7 @@ jobs:
         with:
           target: "wasm32-unknown-unknown,aarch64-apple-ios,aarch64-apple-ios-sim"
           rustflags: ''
-          cache-key-prefix: e2e-interop-test 
+          cache-key-prefix: e2e-interop-test
       - uses: davidB/rust-cargo-make@v1
       - name: setup Xcode
         uses: maxim-lobanov/setup-xcode@v1
@@ -180,6 +180,10 @@ jobs:
         run: |
           bun x @puppeteer/browsers install chrome-headless-shell@latest --path $PWD
           echo "CHROME_PATH=$(echo $PWD/chrome-headless-shell/*/*/chrome-headless-shell)" >> $GITHUB_ENV
+      - name: Install chromedriver
+        run: |
+          bun x @puppeteer/browsers install chromedriver@latest --path $PWD
+          echo "CHROMEDRIVER_PATH=$(echo $PWD/chromedriver/*/*/chromedriver)" >> $GITHUB_ENV
       - uses: actions/setup-node@v4
         with:
           node-version: 18
