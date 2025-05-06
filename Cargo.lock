@@ -859,6 +859,7 @@ dependencies = [
  "log",
  "log-reload",
  "proteus-wasm",
+ "rmp-serde",
  "serde",
  "serde-wasm-bindgen",
  "serde_json",

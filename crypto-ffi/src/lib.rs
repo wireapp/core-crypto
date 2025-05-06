@@ -15,6 +15,7 @@ mod crl;
 mod database_key;
 mod decrypted_message;
 mod e2ei;
+mod ephemeral;
 mod error;
 mod identity;
 mod metadata;
@@ -51,6 +52,9 @@ pub use e2ei::{
     E2eiConversationState, acme_challenge::AcmeChallenge, acme_directory::AcmeDirectory, enrollment::E2eiEnrollment,
     new_acme_authz::NewAcmeAuthz, new_acme_order::NewAcmeOrder,
 };
+pub use ephemeral::HistorySecret;
+#[cfg(not(target_family = "wasm"))]
+pub use ephemeral::core_crypto_history_client;
 #[cfg(feature = "proteus")]
 pub use error::proteus::ProteusError;
 pub use error::{CoreCryptoError, CoreCryptoResult, mls::MlsError};
