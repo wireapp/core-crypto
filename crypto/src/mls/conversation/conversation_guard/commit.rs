@@ -101,6 +101,7 @@ impl ConversationGuard {
 
     /// Adds new members to the group/conversation
     pub async fn add_members(&mut self, key_packages: Vec<KeyPackageIn>) -> Result<NewCrlDistributionPoints> {
+        self.ensure_no_pending_commit().await?;
         let backend = self.crypto_provider().await?;
         let credential = self.credential_bundle().await?;
         let signer = credential.signature_key();
@@ -150,6 +151,7 @@ impl ConversationGuard {
     /// * `id` - group/conversation id
     /// * `clients` - list of client ids to be removed from the group
     pub async fn remove_members(&mut self, clients: &[ClientId]) -> Result<()> {
+        self.ensure_no_pending_commit().await?;
         let backend = self.crypto_provider().await?;
         let credential = self.credential_bundle().await?;
         let signer = credential.signature_key();
@@ -240,6 +242,7 @@ impl ConversationGuard {
         cb: Option<&CredentialBundle>,
         leaf_node: Option<LeafNode>,
     ) -> Result<MlsCommitBundle> {
+        self.ensure_no_pending_commit().await?;
         let session = &self.session().await?;
         let backend = &self.crypto_provider().await?;
         let mut conversation = self.conversation_mut().await;
@@ -270,6 +273,7 @@ impl ConversationGuard {
 
     /// Commits all pending proposals of the group
     pub async fn commit_pending_proposals(&mut self) -> Result<()> {
+        self.ensure_no_pending_commit().await?;
         let client = self.session().await?;
         let backend = self.crypto_provider().await?;
         let mut conversation = self.inner.write().await;

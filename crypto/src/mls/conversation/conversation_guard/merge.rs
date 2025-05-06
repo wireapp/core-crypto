@@ -58,11 +58,9 @@ impl ConversationGuard {
     /// **DO NOT** use when Delivery Service responds 409, pending state will be renewed
     /// in [ConversationGuard::decrypt_message]
     ///
-    /// # Arguments
-    /// * `conversation_id` - the group/conversation id
     ///
     /// # Errors
-    /// When the conversation is not found or there is no pending commit
+    /// When there is no pending commit
     pub(crate) async fn clear_pending_commit(&mut self) -> Result<()> {
         let keystore = self.crypto_provider().await?.keystore();
         let mut conversation = self.conversation_mut().await;
@@ -73,6 +71,15 @@ impl ConversationGuard {
             Ok(())
         } else {
             Err(Error::PendingCommitNotFound)
+        }
+    }
+
+    /// Clear a pending commit if it exists. Unlike [Self::clear_pending_commit],
+    /// don't throw an error if there is none.
+    pub(crate) async fn ensure_no_pending_commit(&mut self) -> Result<()> {
+        match self.clear_pending_commit().await {
+            Err(Error::PendingCommitNotFound) => Ok(()),
+            result => result,
         }
     }
 }
