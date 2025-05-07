@@ -1,5 +1,11 @@
 # Changelog
 
+## v6.0.1 - 2025-05-07
+
+### Bug Fixes
+
+- swift publishing CI action (d1030e1)
+
 ## v6.0.0 - 2025-05-07
 
 ### Highlights
