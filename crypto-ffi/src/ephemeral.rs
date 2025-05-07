@@ -33,6 +33,7 @@ impl CoreCrypto {
 /// This client exposes the full interface of `CoreCrypto`, but it should only be used to decrypt messages.
 /// Other use is a logic error.
 #[cfg(not(target_family = "wasm"))]
+#[uniffi::export]
 pub async fn core_crypto_history_client(history_secret: HistorySecret) -> CoreCryptoResult<CoreCrypto> {
     history_client_inner(history_secret).await
 }

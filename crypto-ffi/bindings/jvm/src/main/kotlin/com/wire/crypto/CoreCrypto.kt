@@ -129,6 +129,17 @@ class CoreCrypto(private val cc: com.wire.crypto.uniffi.CoreCrypto) {
             val cc = com.wire.crypto.uniffi.coreCryptoDeferredInit(keystore, databaseKey.bytes, null)
             return CoreCrypto(cc)
         }
+
+        /**
+         * Instantiate a history client.
+         *
+         * This client exposes the full interface of `CoreCrypto`, but it should only be used to decrypt messages.
+         * Other use is a logic error.
+         */
+        suspend fun historyClient(historySecret: kotlin.ByteArray): CoreCrypto {
+            val cc = com.wire.crypto.uniffi.coreCryptoHistoryClient(historySecret)
+            return CoreCrypto(cc)
+        }
     }
 
     internal fun lower() = cc
