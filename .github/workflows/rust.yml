@@ -28,7 +28,8 @@ jobs:
           - name: fmt
             trailer: --all -- --check
           - name: clippy --locked
-            trailer: -- -D warnings
+          - name: clippy --locked
+            trailer: --tests
           - name: check --locked
             trailer: --tests
         target: ["", "--target wasm32-unknown-unknown"]
@@ -41,7 +42,6 @@ jobs:
       - uses: ./.github/actions/setup-and-cache-rust
         with:
           components: rustfmt, clippy
-          rustflags: ''
           target: wasm32-unknown-unknown
       - run: cargo ${{ matrix.tool.name }} ${{ matrix.target }} ${{ matrix.tool.trailer }}
 
@@ -50,8 +50,6 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: ./.github/actions/setup-and-cache-rust
-        with:
-          rustflags: ''
       - uses: taiki-e/install-action@nextest
       - name: "test corecrypto"
         run: cargo nextest run --verbose --locked
@@ -68,8 +66,6 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: ./.github/actions/setup-and-cache-rust
-        with:
-          rustflags: ''
       - uses: taiki-e/install-action@nextest
       - name: "test corecrypto's proteus implementation"
         run: cargo nextest run --locked --verbose --features proteus,cryptobox-migrate,proteus-keystore proteus
@@ -102,7 +98,6 @@ jobs:
       - uses: ./.github/actions/setup-and-cache-rust
         with:
           target: wasm32-unknown-unknown
-          rustflags: ''
       - uses: wireapp/setup-chrome@master
         id: setup-chrome
         with:
@@ -119,8 +114,6 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: ./.github/actions/setup-and-cache-rust
-        with:
-          rustflags: ''
       - uses: taiki-e/install-action@cargo-hack
       - name: cargo/hack (verify features compile in isolation)
         run: cargo hack check --each-feature --no-dev-deps
