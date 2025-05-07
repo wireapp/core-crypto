@@ -67,9 +67,14 @@ public protocol CoreCryptoProtocol {
 
 /// CoreCrypto client which manages one cryptographic client for proteus and MLS.
 ///
-public class CoreCrypto: CoreCryptoProtocol {
+public final class CoreCrypto: CoreCryptoProtocol {
 
     let coreCrypto: WireCoreCryptoUniffi.CoreCrypto
+
+    /// Initialize CoreCrypto with a Ffi instance
+    private init(_ coreCrypto: WireCoreCryptoUniffi.CoreCrypto) {
+        self.coreCrypto = coreCrypto
+    }
 
     ///
     /// Initialise CoreCrypto with an encrypted key store.
@@ -77,13 +82,24 @@ public class CoreCrypto: CoreCryptoProtocol {
     /// - Parameter keystorePath: path to the encrypted key store
     /// - Parameter key: secret key to unlock the encrypted key store
     ///
-    public init(keystorePath: String, key: DatabaseKey) async throws {
-        self.coreCrypto =
+    public convenience init(keystorePath: String, key: DatabaseKey) async throws {
+        let cc =
             try await WireCoreCryptoUniffi.coreCryptoDeferredInit(
                 path: keystorePath,
                 key: key,
                 entropySeed: nil
             )
+        self.init(cc)
+    }
+
+    /// Instantiate a history client.
+    ///
+    /// This client exposes the full interface of `CoreCrypto`, but it should only be used to decrypt messages.
+    /// Other use is a logic error.
+    public static func historyClient(_ historySecret: Data) async throws -> CoreCrypto {
+        let cc =
+            try await WireCoreCryptoUniffi.coreCryptoHistoryClient(historySecret: historySecret)
+        return self.init(cc)
     }
 
     public func transaction<Result>(
