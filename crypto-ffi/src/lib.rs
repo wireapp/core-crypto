@@ -22,8 +22,8 @@ mod metadata;
 mod proteus;
 
 pub use bundles::{
-    commit::CommitBundle, group_info::GroupInfoBundle, proposal::ProposalBundle,
-    proteus_auto_prekey::ProteusAutoPrekeyBundle, welcome::WelcomeBundle,
+    commit::CommitBundle, group_info::GroupInfoBundle, proteus_auto_prekey::ProteusAutoPrekeyBundle,
+    welcome::WelcomeBundle,
 };
 pub use ciphersuite::{Ciphersuite, Ciphersuites};
 pub use client_id::{ClientId, FfiClientId};
