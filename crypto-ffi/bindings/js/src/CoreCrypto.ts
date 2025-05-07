@@ -51,7 +51,6 @@ export type {
     MlsTransportResponse,
     ConversationId,
     ClientId,
-    ProposalBundle,
     MlsTransport,
     GroupInfoBundle,
     BufferedDecryptedMessage,

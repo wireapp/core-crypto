@@ -10,7 +10,6 @@ import {
     MlsTransport as MlsTransportFfi,
     MlsTransportResponse as MlsTransportResponseFfi,
     MlsTransportResponseVariant,
-    ProposalBundle as ProposalBundleFfi,
     WelcomeBundle,
     WireIdentity,
     WirePolicy,
@@ -106,13 +105,6 @@ export interface DecryptedMessage {
      */
     message?: Uint8Array;
     /**
-     * Only when decrypted message is a commit, CoreCrypto will renew local proposal which could not make it in the commit.
-     * This will contain either:
-     *   * local pending proposal not in the accepted commit
-     *   * If there is a pending commit, its proposals which are not in the accepted commit
-     */
-    proposals: ProposalBundle[];
-    /**
      * It is set to false if ingesting this MLS message has resulted in the client being removed from the group (i.e. a Remove commit)
      */
     isActive: boolean;
@@ -167,10 +159,6 @@ export interface BufferedDecryptedMessage {
      */
     message?: Uint8Array;
     /**
-     * see {@link DecryptedMessage.proposals}
-     */
-    proposals: ProposalBundle[];
-    /**
      * see {@link DecryptedMessage.isActive}
      */
     isActive: boolean;
@@ -201,9 +189,6 @@ export function bufferedDecryptedMessageFromFfi(
 ): BufferedDecryptedMessage {
     return {
         message: m.message,
-        proposals: m.proposals.map((proposal) =>
-            proposalBundleFromFfi(proposal)
-        ),
         isActive: m.isActive,
         commitDelay: m.commitDelay
             ? safeBigintToNumber(m.commitDelay)
@@ -212,38 +197,6 @@ export function bufferedDecryptedMessageFromFfi(
         hasEpochChanged: m.hasEpochChanged,
         identity: m.identity,
         crlNewDistributionPoints: m.crlNewDistributionPoints.as_strings(),
-    };
-}
-
-/**
- * Returned by all methods creating proposals. Contains a proposal message and an identifier to roll back the proposal
- */
-export interface ProposalBundle {
-    /**
-     * TLS-serialized MLS proposal that needs to be fanned out to other (existing) members of the conversation
-     *
-     * @readonly
-     */
-    proposal: Uint8Array;
-    /**
-     * Unique identifier of a proposal.
-     *
-     * @readonly
-     */
-    proposalRef: ProposalRef;
-    /**
-     *  New CRL Distribution of members of this group
-     *
-     * @readonly
-     */
-    crlNewDistributionPoints?: string[];
-}
-
-export function proposalBundleFromFfi(p: ProposalBundleFfi): ProposalBundle {
-    return {
-        proposal: p.proposal,
-        proposalRef: p.proposal_ref,
-        crlNewDistributionPoints: p.crl_new_distribution_points,
     };
 }
 
