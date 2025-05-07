@@ -1,6 +1,74 @@
 # Changelog
 
-## v5.3.0- 2025-04-29
+## v6.0.0 - 2025-05-07
+
+### Highlights
+
+- Changed the core crypto database key format, to enable validation of the same and ensure consistency between platforms
+- Added a function for each platform to migrate from the old to the new key type
+- Several more bug fixes, including prevention of the _pending commit_ error
+
+### Breaking changes
+
+- Changed the core crypto database key format
+
+  Affected platforms: Web, Android, iOS
+
+  Migration: before instantiating this version of core crypto for the first time, call `migrateDatabaseKeyTypeToBytes()`
+  with the appropiate arguments (old key and your new key) _exactly once_.
+  Then, instantiate core crypto with the new key.
+
+  Note: Make sure the new key is not based on a string, and provide full 256 bits of entropy.
+
+  Note: Instantiating this version of core crypto will fail before you call the migration function.
+
+### Bug Fixes
+
+- clear pending commit before creating a new one [WPB-17356] (a937c9d)
+- re-throw inner error which cancelled the transaction (840bc10)
+- add registerEpochObserver to CoreCryptoProtocol (6e4ffc7)
+- create an interface for `ConversationConfiguration` (f18d3e8)
+- handle pending conversation when getting conversation (931b4d4)
+- fix ffi incompatibilities in high-level swift wrapper (1576bd8)
+- fix ffi incompatibilities in high-level kotlin wrapper (09bf52f)
+- ensure that we don't change the interface of WireIdentity (35d348d)
+- duck types are not trait objects (4d91669)
+- fix ffi incompatibilities in high-level ts wrapper (f892f42)
+- broken swift bindings by publishing uniffi framework separately (bed051d)
+- don't refer to the internal uniffi EpochObserver type in the public API (b959576)
+- re-expose proteus_reload_session which removed by mistake (08f3e34)
+- [**breaking**] add a swift function to migrate the database key (390e5c8)
+- crypto-ffi: add a Kotlin migration function for database key type change (842aeb4)
+- keystore: add a key type migration function for non-Wasm platforms (0442812)
+- crypto-ffi: add a JS migration function for database key type change (ff1c7b9)
+- keystore: add a key type migration function for Wasm (2b323b3)
+- [**breaking**] crypto-ffi: update Kotlin wrapper to use the DatabaseKey type (4192311)
+- [**breaking**] crypto-ffi: update JS wrapper to use the DatabaseKey type (a655618)
+- [**breaking**] crypto-ffi: use DatabaseKey instead of string for the database key (2dff46a)
+- [**breaking**] mls-provider: use DatabaseKey instead of string for the database key (7538805)
+- [**breaking**] crypto: use DatabaseKey instead of string for the database key (05782fa)
+- [**breaking**] keystore: introduce a DatabaseKey newtype and move away from strings (6307183)
+- swift publishing failing due to not running on latest macos runner (385f031)
+
+### Documentation
+
+- update `Readme.md` (562d59f)
+- update CHANGELOG with v3.1.1 info (415c290)
+- fix doc warnings in js bindings (5c0ef34)
+
+### Testing
+
+- add test reproducing pending commit bug [WPB-17356] (9b84901)
+- Kotlin: extend epoch observer test (0039d6f)
+- port tests of static functions to bun (5519022)
+- port web test utils to bun test utils (dbdc6f2)
+- add bun test infrastructure (59d9f69)
+- crypto-ffi: add a Swift test for migrating the db key type (c507512)
+- crypto-ffi: add a Kotlin test for migrating the db key type (821f016)
+- crypto-ffi: add a JS test for migrating the db key type (9fcd942)
+- fix constant interop http server test port (f7bbf6f)
+
+## v5.3.0 - 2025-04-29
 
 ### Bug Fixes
 
