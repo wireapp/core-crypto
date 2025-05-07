@@ -115,6 +115,15 @@ pub struct X509SessionParameters<'a> {
     pub certificate_source: TestCertificateSource,
 }
 
+impl<'a> From<&'a X509TestChain> for X509SessionParameters<'a> {
+    fn from(chain: &'a X509TestChain) -> Self {
+        Self {
+            chain,
+            certificate_source: Default::default(),
+        }
+    }
+}
+
 impl SessionContext {
     /// Use this to instantiate a session with the credential type determined by the [TestContext].
     pub async fn new(context: &TestContext, x509_parameters: Option<X509SessionParameters<'_>>) -> Self {

@@ -224,4 +224,50 @@ mod tests {
 
         assert!(ephemeral_session_context.try_talk_to(&id, &alice).await.is_ok());
     }
+
+    #[apply(all_cred_cipher)]
+    #[wasm_bindgen_test]
+    async fn ephemeral_client_can_receive_messages_from_x509(case: TestContext) {
+        if case.credential_type != MlsCredentialType::X509 {
+            // the only point of this test is to ensure the history client can receive messages from X509
+            return;
+        }
+
+        use crate::{mls::conversation::Conversation as _, test_utils::x509::X509TestChain};
+
+        // set up alice with x509
+        let mut x509_test_chain = X509TestChain::init_empty(case.signature_scheme());
+        let (alice_identifier, _) = x509_test_chain.issue_simple_certificate_bundle("alice", None);
+        let alice = SessionContext::new_with_identifier(&case, alice_identifier, Some((&x509_test_chain).into()))
+            .await
+            .unwrap();
+
+        let id = conversation_id();
+        alice
+            .transaction
+            .new_conversation(&id, case.credential_type, case.cfg.clone())
+            .await
+            .unwrap();
+
+        // set up a history client for this conversation
+        let conversation = alice.session.get_raw_conversation(&id).await.unwrap();
+        let history_secret = conversation.generate_history_secret().await.unwrap();
+        let ephemeral_client = CoreCrypto::history_client(history_secret).await.unwrap();
+
+        let ephemeral_identifier = ClientIdentifier::Basic(ephemeral_client.mls.id().await.unwrap());
+        let ephemeral_session_context = SessionContext::new_with_identifier(&case, ephemeral_identifier, None)
+            .await
+            .unwrap();
+
+        // can the history client decrypt messages from alice? let's find out
+        let eph_kp = ephemeral_session_context
+            .rand_key_package_of_type(&case, MlsCredentialType::Basic)
+            .await;
+        alice
+            .invite_all_members(&case, &id, [(&ephemeral_session_context, eph_kp)])
+            .await
+            .unwrap();
+
+        assert!(alice.try_talk_to(&id, &ephemeral_session_context).await.is_ok());
+    }
 }
