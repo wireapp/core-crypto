@@ -11,10 +11,6 @@ fn main() -> anyhow::Result<()> {
     #[cfg(target_os = "android")]
     println!("cargo:rustc-cfg=android");
 
-    if let Ok(profile) = std::env::var("PROFILE") {
-        println!("cargo:rustc-cfg=build=\"{profile}\"");
-    }
-
     // collect a bunch of build/git information and emit it into the build environment,
     // from whence we can extract it and make it public
     let build = BuildBuilder::default().build_timestamp(true).build()?;
