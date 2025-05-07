@@ -28,7 +28,6 @@ jobs:
           - name: fmt
             trailer: --all -- --check
           - name: clippy --locked
-            trailer: -- -D warnings
           - name: check --locked
             trailer: --tests
         target: ["", "--target wasm32-unknown-unknown"]
@@ -41,7 +40,6 @@ jobs:
       - uses: ./.github/actions/setup-and-cache-rust
         with:
           components: rustfmt, clippy
-          rustflags: ''
           target: wasm32-unknown-unknown
       - run: cargo ${{ matrix.tool.name }} ${{ matrix.target }} ${{ matrix.tool.trailer }}
 
@@ -50,8 +48,6 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: ./.github/actions/setup-and-cache-rust
-        with:
-          rustflags: ''
       - uses: taiki-e/install-action@nextest
       - name: "test corecrypto"
         run: cargo nextest run --verbose --locked
@@ -68,8 +64,6 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: ./.github/actions/setup-and-cache-rust
-        with:
-          rustflags: ''
       - uses: taiki-e/install-action@nextest
       - name: "test corecrypto's proteus implementation"
         run: cargo nextest run --locked --verbose --features proteus,cryptobox-migrate,proteus-keystore proteus
@@ -102,7 +96,6 @@ jobs:
       - uses: ./.github/actions/setup-and-cache-rust
         with:
           target: wasm32-unknown-unknown
-          rustflags: ''
       - uses: wireapp/setup-chrome@master
         id: setup-chrome
         with:
@@ -119,6 +112,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: ./.github/actions/setup-and-cache-rust
+        # Per default, we're using "-D warnings" for rustflags. However, it's a lot of (unnecessary) effort to fix all "unused import"
+        # issue for every possible feature set, that's why we don't want to fail on warnings here. For this, we're passing
+        # an empty set of rustflags.
         with:
           rustflags: ''
       - uses: taiki-e/install-action@cargo-hack
