@@ -264,26 +264,6 @@ data class CommitBundle(
 internal fun com.wire.crypto.uniffi.CommitBundle.lift() =
     CommitBundle(commit.toMlsMessage(), welcome?.toWelcome(), groupInfo.lift(), null)
 
-/** Returned when a Proposal is created. Helps roll backing a local proposal */
-data class ProposalBundle(
-    /** The proposal message to send to the DS */
-    val proposal: MlsMessage,
-    /**
-     * A unique identifier of the proposal to rollback it later if required with
-     * [MlsClient.clearPendingProposal]
-     */
-    val proposalRef: ProposalRef,
-    /** New CRL distribution points that appeared by the introduction of a new credential */
-    val crlNewDistributionPoints: CrlDistributionPoints?,
-)
-
-private fun com.wire.crypto.uniffi.ProposalBundle.lift() =
-    ProposalBundle(
-        proposal.toMlsMessage(),
-        proposalRef.toProposalRef(),
-        crlNewDistributionPoints?.toCrlDistributionPoint(),
-    )
-
 /** Contains everything client needs to know after decrypting an (encrypted) Welcome message */
 data class WelcomeBundle(
     /** MLS Group Id */
@@ -320,13 +300,6 @@ internal fun com.wire.crypto.uniffi.WelcomeBundle.lift() =
 data class DecryptedMessage(
     /** Decrypted text message */
     val message: ByteArray?,
-    /**
-     * Only when decrypted message is a commit, CoreCrypto will renew local proposal which could not
-     * make it in the commit. This will contain either:
-     * - local pending proposal not in the accepted commit
-     * - If there is a pending commit, its proposals which are not in the accepted commit
-     */
-    val proposals: Set<ProposalBundle>,
     /**
      * Is the conversation still active after receiving this commit aka has the user been removed
      * from the group
@@ -366,7 +339,6 @@ data class DecryptedMessage(
         } else if (other.message != null) {
             return false
         }
-        if (proposals != other.proposals) return false
         if (isActive != other.isActive) return false
         if (commitDelay != other.commitDelay) return false
         if (senderClientId != other.senderClientId) return false
@@ -379,7 +351,6 @@ data class DecryptedMessage(
 
     override fun hashCode(): Int {
         var result = message?.contentHashCode() ?: 0
-        result = 31 * result + proposals.hashCode()
         result = 31 * result + isActive.hashCode()
         result = 31 * result + (commitDelay?.hashCode() ?: 0)
         result = 31 * result + (senderClientId?.hashCode() ?: 0)
@@ -393,7 +364,6 @@ data class DecryptedMessage(
 internal fun com.wire.crypto.uniffi.DecryptedMessage.lift() =
     DecryptedMessage(
         message,
-        proposals.asSequence().map { it.lift() }.toSet(),
         isActive,
         commitDelay?.toLong(),
         senderClientId?.toClientId(),
@@ -407,8 +377,6 @@ internal fun com.wire.crypto.uniffi.DecryptedMessage.lift() =
 data class BufferedDecryptedMessage(
     /** @see DecryptedMessage.message */
     val message: ByteArray?,
-    /** @see DecryptedMessage.proposals */
-    val proposals: Set<ProposalBundle>,
     /** @see DecryptedMessage.isActive */
     val isActive: Boolean,
     /** @see DecryptedMessage.commitDelay */
@@ -434,7 +402,6 @@ data class BufferedDecryptedMessage(
         } else if (other.message != null) {
             return false
         }
-        if (proposals != other.proposals) return false
         if (isActive != other.isActive) return false
         if (commitDelay != other.commitDelay) return false
         if (senderClientId != other.senderClientId) return false
@@ -447,7 +414,6 @@ data class BufferedDecryptedMessage(
 
     override fun hashCode(): Int {
         var result = message?.contentHashCode() ?: 0
-        result = 31 * result + proposals.hashCode()
         result = 31 * result + isActive.hashCode()
         result = 31 * result + (commitDelay?.hashCode() ?: 0)
         result = 31 * result + (senderClientId?.hashCode() ?: 0)
@@ -461,7 +427,6 @@ data class BufferedDecryptedMessage(
 private fun com.wire.crypto.uniffi.BufferedDecryptedMessage.lift() =
     BufferedDecryptedMessage(
         message,
-        proposals.asSequence().map { it.lift() }.toSet(),
         isActive,
         commitDelay?.toLong(),
         senderClientId?.toClientId(),
