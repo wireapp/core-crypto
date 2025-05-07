@@ -34,6 +34,7 @@ jobs:
         with:
           rustflags: ''
           target: "aarch64-apple-ios,aarch64-apple-ios-sim"
+          cache-key-prefix: publish-swift
       - name: setup cargo-make
         uses: davidB/rust-cargo-make@v1
       - name: build xcframework
