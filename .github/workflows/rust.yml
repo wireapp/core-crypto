@@ -28,6 +28,8 @@ jobs:
           - name: fmt
             trailer: --all -- --check
           - name: clippy --locked
+          - name: clippy --locked
+            trailer: --tests
           - name: check --locked
             trailer: --tests
         target: ["", "--target wasm32-unknown-unknown"]
