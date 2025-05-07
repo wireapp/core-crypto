@@ -782,7 +782,7 @@ dependencies = [
 
 [[package]]
 name = "core-crypto"
-version = "5.0.0"
+version = "6.0.0"
 dependencies = [
  "anyhow",
  "async-fs",
@@ -843,7 +843,7 @@ dependencies = [
 
 [[package]]
 name = "core-crypto-ffi"
-version = "5.0.0"
+version = "6.0.0"
 dependencies = [
  "async-channel 2.3.1",
  "async-lock",
@@ -876,7 +876,7 @@ dependencies = [
 
 [[package]]
 name = "core-crypto-keystore"
-version = "5.0.0"
+version = "6.0.0"
 dependencies = [
  "aes-gcm",
  "async-fs",
@@ -931,7 +931,7 @@ dependencies = [
 
 [[package]]
 name = "core-crypto-macros"
-version = "5.0.0"
+version = "6.0.0"
 dependencies = [
  "heck",
  "proc-macro2",
@@ -2291,7 +2291,7 @@ dependencies = [
 
 [[package]]
 name = "interop"
-version = "5.0.0"
+version = "6.0.0"
 dependencies = [
  "async-fs",
  "async-trait",
@@ -2463,7 +2463,7 @@ dependencies = [
 
 [[package]]
 name = "keystore-dump"
-version = "5.0.0"
+version = "6.0.0"
 dependencies = [
  "chrono",
  "clap",
@@ -2660,7 +2660,7 @@ dependencies = [
 
 [[package]]
 name = "mls-crypto-provider"
-version = "5.0.0"
+version = "6.0.0"
 dependencies = [
  "aes-gcm",
  "async-lock",
