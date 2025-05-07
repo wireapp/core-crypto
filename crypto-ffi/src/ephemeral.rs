@@ -1,3 +1,6 @@
+#[cfg(target_family = "wasm")]
+use wasm_bindgen::prelude::*;
+
 use crate::{CoreCrypto, CoreCryptoError, CoreCryptoResult};
 use core_crypto::prelude::{CoreCrypto as CoreCryptoFfi, HistorySecret as HistorySecretFfi};
 
@@ -14,6 +17,7 @@ async fn history_client_inner(history_secret: HistorySecret) -> CoreCryptoResult
 }
 
 #[cfg(target_family = "wasm")]
+#[wasm_bindgen]
 impl CoreCrypto {
     /// Instantiate a history client.
     ///

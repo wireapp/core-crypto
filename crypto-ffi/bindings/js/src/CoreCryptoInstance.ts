@@ -286,6 +286,19 @@ export class CoreCrypto {
     }
 
     /**
+     * Instantiate a history client.
+     *
+     * This client exposes the full interface of `CoreCrypto`, but it should only be used to decrypt messages.
+     * Other use is a logic error.
+     */
+    static async historyClient(historySecret: Uint8Array): Promise<CoreCrypto> {
+        const cc = await CoreCryptoError.asyncMapErr(
+            CoreCryptoFfi.history_client(historySecret)
+        );
+        return new this(cc);
+    }
+
+    /**
      * Starts a new transaction in Core Crypto. If the callback succeeds, it will be committed,
      * otherwise, every operation performed with the context will be discarded.
      *
