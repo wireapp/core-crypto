@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"fn":["setup_browser","setup_webdriver","start_webdriver_chrome"]};
+window.SIDEBAR_ITEMS = {"fn":["setup_browser","start_webdriver_chrome"]};
