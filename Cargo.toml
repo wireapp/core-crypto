@@ -34,7 +34,7 @@ const_format = "0.2"
 core-crypto = { path = "crypto" }
 core-crypto-keystore = { path = "keystore" }
 core-crypto-macros = { path = "crypto-macros" }
-derive_more = { version = "0.99", features = [
+derive_more = { version = "2.0", features = [
     "from",
     "into",
     "deref",
