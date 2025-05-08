@@ -48,22 +48,20 @@ impl TransactionContext {
             .create_external_join_commit(group_info, custom_cfg, credential_type)
             .await?;
 
-        match pending_conversation.send_commit(commit_bundle).await {
-            Ok(()) => {
-                pending_conversation
-                    .merge()
-                    .await
-                    .map_err(RecursiveError::mls_conversation("merging from external commit"))?;
-            }
-            Err(e @ mls::conversation::Error::MessageRejected { .. }) => {
-                pending_conversation
-                    .clear()
-                    .await
-                    .map_err(RecursiveError::mls_conversation("clearing external commit"))?;
-                return Err(RecursiveError::mls_conversation("sending commit")(e).into());
-            }
-            Err(e) => return Err(RecursiveError::mls_conversation("sending commit")(e).into()),
-        };
+        let commit_result = pending_conversation.send_commit(commit_bundle).await;
+        if let Err(err @ mls::conversation::Error::MessageRejected { .. }) = commit_result {
+            pending_conversation
+                .clear()
+                .await
+                .map_err(RecursiveError::mls_conversation("clearing external commit"))?;
+            return Err(RecursiveError::mls_conversation("sending commit")(err).into());
+        }
+        commit_result.map_err(RecursiveError::mls_conversation("sending commit"))?;
+
+        pending_conversation
+            .merge()
+            .await
+            .map_err(RecursiveError::mls_conversation("merging from external commit"))?;
 
         Ok(welcome_bundle)
     }
@@ -153,7 +151,6 @@ impl TransactionContext {
 
 #[cfg(test)]
 mod tests {
-    use openmls::prelude::*;
     use wasm_bindgen_test::*;
 
     use core_crypto_keystore::{CryptoKeystoreError, CryptoKeystoreMls, MissingKeyErrorKind};
@@ -586,58 +583,60 @@ mod tests {
     #[apply(all_cred_cipher)]
     #[wasm_bindgen_test]
     async fn should_fail_when_invalid_group_info(case: TestContext) {
-        run_test_with_client_ids(
-            case.clone(),
-            ["alice", "bob", "guest"],
-            move |[alice_central, bob_central, guest_central]| {
-                Box::pin(async move {
-                    let expiration_time = 14;
-                    let start = web_time::Instant::now();
-                    let id = conversation_id();
-                    alice_central
-                        .transaction
-                        .new_conversation(&id, case.credential_type, case.cfg.clone())
-                        .await
-                        .unwrap();
+        let [alice, bob, guest] = case.sessions().await;
 
-                    let invalid_kp = bob_central.new_keypackage(&case, Lifetime::new(expiration_time)).await;
-                    alice_central
-                        .transaction
-                        .conversation(&id)
-                        .await
-                        .unwrap()
-                        .add_members(vec![invalid_kp.into()])
-                        .await
-                        .unwrap();
+        let id = conversation_id();
+        alice
+            .transaction
+            .new_conversation(&id, case.credential_type, case.cfg.clone())
+            .await
+            .unwrap();
 
-                    let elapsed = start.elapsed();
-                    // Give time to the certificate to expire
-                    let expiration_time = core::time::Duration::from_secs(expiration_time);
-                    if expiration_time > elapsed {
-                        async_std::task::sleep(expiration_time - elapsed + core::time::Duration::from_secs(1)).await;
-                    }
+        let key_package = bob.get_one_key_package(&case).await;
 
-                    let group_info = alice_central.get_group_info(&id).await;
+        alice
+            .transaction
+            .conversation(&id)
+            .await
+            .unwrap()
+            .add_members(vec![key_package.into()])
+            .await
+            .unwrap();
 
-                    let join_ext_commit = guest_central
-                        .transaction
-                        .join_by_external_commit(group_info, case.custom_cfg(), case.credential_type)
-                        .await;
+        // we need an invalid GroupInfo; let's manufacture one.
+        let group_info = {
+            let mut conversation = alice.transaction.conversation(&id).await.unwrap();
+            let mut conversation = conversation.conversation_mut().await;
+            let group = &mut conversation.group;
+            let ct = group.credential().unwrap().credential_type();
+            let cs = group.ciphersuite();
+            let client = alice.session().await;
+            let cb = client
+                .find_most_recent_credential_bundle(cs.into(), ct.into())
+                .await
+                .unwrap();
 
-                    // TODO: currently succeeds as we don't anymore validate KeyPackage lifetime upon reception: find another way to craft an invalid KeyPackage. Tracking issue: WPB-9596
-                    join_ext_commit.unwrap();
-                    /*assert!(matches!(
-                        join_ext_commit.unwrap_err(),
-                        CryptoError::MlsError(MlsError::MlsExternalCommitError(ExternalCommitError::PublicGroupError(
-                            CreationFromExternalError::TreeSyncError(TreeSyncFromNodesError::LeafNodeValidationError(
-                                LeafNodeValidationError::Lifetime(LifetimeError::NotCurrent),
-                            )),
-                        )))
-                    ));*/
-                })
-            },
-        )
-        .await
+            let gi = group
+                .export_group_info(
+                    &alice.transaction.mls_provider().await.unwrap(),
+                    &cb.signature_key,
+                    // joining by external commit assumes we include a ratchet tree, but this `false`
+                    // says to leave it out
+                    false,
+                )
+                .unwrap();
+            gi.group_info().unwrap()
+        };
+
+        let join_ext_commit = guest
+            .transaction
+            .join_by_external_commit(group_info, case.custom_cfg(), case.credential_type)
+            .await;
+
+        assert!(innermost_source_matches!(
+            join_ext_commit.unwrap_err(),
+            crate::MlsErrorKind::MlsExternalCommitError(openmls::prelude::ExternalCommitError::MissingRatchetTree),
+        ));
     }
 
     #[apply(all_cred_cipher)]
