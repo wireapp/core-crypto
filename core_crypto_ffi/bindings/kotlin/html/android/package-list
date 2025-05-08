@@ -72,6 +72,7 @@ $dokka.location:com.wire.crypto/CommitBundle/crlNewDistributionPoints/#/Pointing
 $dokka.location:com.wire.crypto/CommitBundle/groupInfoBundle/#/PointingToDeclaration/android/com.wire.crypto/-commit-bundle/group-info-bundle.html
 $dokka.location:com.wire.crypto/CommitBundle/welcome/#/PointingToDeclaration/android/com.wire.crypto/-commit-bundle/welcome.html
 $dokka.location:com.wire.crypto/CoreCrypto.Companion///PointingToDeclaration/android/com.wire.crypto/-core-crypto/-companion/index.html
+$dokka.location:com.wire.crypto/CoreCrypto.Companion/historyClient/#kotlin.ByteArray/PointingToDeclaration/android/com.wire.crypto/-core-crypto/-companion/history-client.html
 $dokka.location:com.wire.crypto/CoreCrypto.Companion/invoke/#kotlin.String#com.wire.crypto.DatabaseKey/PointingToDeclaration/android/com.wire.crypto/-core-crypto/-companion/invoke.html
 $dokka.location:com.wire.crypto/CoreCrypto///PointingToDeclaration/android/com.wire.crypto/-core-crypto/index.html
 $dokka.location:com.wire.crypto/CoreCrypto/CoreCrypto/#[Error type: Unresolved type for com.wire.crypto.uniffi.CoreCrypto]/PointingToDeclaration/android/com.wire.crypto/-core-crypto/-core-crypto.html
