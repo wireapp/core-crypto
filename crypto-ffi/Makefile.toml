@@ -43,6 +43,15 @@ args = [
     "--treatWarningsAsErrors",
 ]
 
+[tasks.docs-swift]
+dependencies = ["ios"]
+condition = { platforms = ["mac"] }
+script = '''
+mkdir -p ../target/swift/doc
+cd bindings/Swift/WireCoreCrypto
+jazzy --modules WireCoreCrypto,WireCoreCryptoUniffi --build-tool-arguments -project,WireCoreCrypto.xcodeproj,-scheme,WireCoreCrypto -o ../../../../target/swift/doc
+'''
+
 ##################################### WASM ####################################
 
 [tasks.wasm-build]
