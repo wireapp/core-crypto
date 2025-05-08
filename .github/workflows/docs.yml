@@ -123,6 +123,31 @@ jobs:
         overwrite: true
         include-hidden-files: true
 
+  swiftdoc:
+    name: swift
+    runs-on: macos-latest
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ env.GIT_TAG || '' }}
+      - uses: swift-actions/setup-swift@v2.3.0
+        with:
+          swift-version: "6.0"
+      - name: setup cargo-make
+        uses: davidB/rust-cargo-make@v1
+      - name: swift docs
+        run: |
+          mkdir -p target/doc/core_crypto_ffi/bindings/swift
+          cd crypto-ffi
+          cargo make docs-swift-catalog
+      - uses: actions/upload-artifact@v4.5.0
+        with:
+          name: swiftdoc
+          path: target/doc
+          retention-days: 1
+          overwrite: true
+          include-hidden-files: true
 
   deploy:
     name: deploy
@@ -132,6 +157,7 @@ jobs:
       - rustdoc
       - tsdoc
       - ktdoc
+      - swiftdoc
 
     steps:
     - name: checkout repository
