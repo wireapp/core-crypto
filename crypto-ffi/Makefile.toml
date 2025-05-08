@@ -43,6 +43,19 @@ args = [
     "--treatWarningsAsErrors",
 ]
 
+[tasks.docs-swift]
+dependencies = ["ios"]
+condition = { platforms = ["mac"] }
+script = '''
+mkdir -p ../target/swift/doc
+cd bindings/Swift/WireCoreCrypto
+xcodebuild docbuild -project WireCoreCrypto.xcodeproj -scheme WireCoreCrypto -derivedDataPath ./DerivedData
+xcrun docc process-archive \
+    transform-for-static-hosting ./DerivedData/Build/Products/Debug-iphoneos/WireCoreCrypto.doccarchive \
+    --output-path ../../../../target/swift/doc \
+    --hosting-base-path core-crypto/main/swift
+'''
+
 ##################################### WASM ####################################
 
 [tasks.wasm-build]
