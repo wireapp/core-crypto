@@ -2,9 +2,12 @@ use std::sync::Arc;
 
 use openmls::prelude::MlsMessageOut;
 
-use crate::prelude::ConversationId;
+use crate::{
+    mls::conversation::ConversationGuard,
+    prelude::{ClientId, ConversationId},
+};
 
-use super::{MlsTransportTestExt, SessionContext, TestContext, conversation_id};
+use super::{MlsTransportTestExt, SessionContext, TestContext};
 
 pub struct TestConversation<'a> {
     pub(crate) case: &'a TestContext,
@@ -15,7 +18,7 @@ pub struct TestConversation<'a> {
 
 impl<'a> TestConversation<'a> {
     pub async fn new(case: &'a TestContext, creator: &'a SessionContext) -> Self {
-        let id = conversation_id();
+        let id = super::conversation_id();
         creator
             .transaction
             .new_conversation(&id, case.credential_type, case.cfg.clone())
@@ -62,6 +65,59 @@ impl<'a> TestConversation<'a> {
     /// Convenience function to get the mls transport of the creator.
     pub fn transport(&self) -> Arc<dyn MlsTransportTestExt> {
         self.creator.mls_transport.clone()
+    }
+
+    /// Convenience function to get the conversation guard of this conversation.
+    ///
+    /// The guard belongs to the creator of the conversation.
+    pub async fn guard(&self) -> ConversationGuard {
+        self.creator.transaction.conversation(&self.id).await.unwrap()
+    }
+
+    /// Remove this member from this conversation.
+    ///
+    /// Applies the removal to all members of the conversation.
+    ///
+    /// Panics if you try to remove the conversation creator; use a different abstraction if you are testing that case.
+    /// Panics if you try to remove someone who is not a current member.
+    pub async fn remove(&mut self, member_id: &ClientId) -> &'a SessionContext {
+        // can't use `Iterator::position` because getting the id is async
+        let mut joiner_idx = None;
+        for (idx, joiner) in self.joiners.iter().enumerate() {
+            let joiner_id = joiner.session.id().await.unwrap();
+            if joiner_id == *member_id {
+                joiner_idx = Some(idx);
+                break;
+            }
+        }
+
+        // if we didn't find it, return early instead of trying to apply that removal to the conversation
+        let removed = joiner_idx
+            .map(|idx| self.joiners.swap_remove(idx))
+            .expect("could find the member to remove among the joiners of this conversation");
+
+        // removing the member here removes it from the creator and also produces a commit
+        self.guard()
+            .await
+            .remove_members(&[member_id.to_owned()])
+            .await
+            .unwrap();
+        let commit = self.transport().latest_commit().await.to_bytes().unwrap();
+
+        // we already removed the member from the joined members of our conversation, so chain it in
+        for joiner in std::iter::once(removed).chain(self.joiners.iter().copied()) {
+            joiner
+                .transaction
+                .conversation(&self.id)
+                .await
+                .unwrap()
+                .decrypt_message(&commit)
+                .await
+                .unwrap();
+        }
+
+        // gone from everyone's mls state and the conversation joiners, so we're done
+        removed
     }
 }
 
