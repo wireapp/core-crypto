@@ -5,7 +5,7 @@ use core_crypto::prelude::{MlsBufferedConversationDecryptMessage, MlsConversatio
 #[cfg(target_family = "wasm")]
 use wasm_bindgen::prelude::*;
 
-use crate::{ClientId, CoreCryptoError, CoreCryptoResult, NewCrlDistributionPoints, ProposalBundle, WireIdentity};
+use crate::{ClientId, CoreCryptoError, CoreCryptoResult, NewCrlDistributionPoints, WireIdentity};
 
 /// See [core_crypto::prelude::decrypt::MlsConversationDecryptMessage]
 #[derive(Debug)]
@@ -18,8 +18,6 @@ use crate::{ClientId, CoreCryptoError, CoreCryptoResult, NewCrlDistributionPoint
 pub struct DecryptedMessage {
     #[cfg_attr(target_family = "wasm", wasm_bindgen(readonly))]
     pub message: Option<Vec<u8>>,
-    #[cfg_attr(target_family = "wasm", wasm_bindgen(readonly))]
-    pub proposals: Vec<ProposalBundle>,
     /// It is set to false if ingesting this MLS message has resulted in the client being removed from the group (i.e. a Remove commit)
     #[cfg_attr(target_family = "wasm", wasm_bindgen(readonly, js_name = isActive))]
     pub is_active: bool,
@@ -47,12 +45,6 @@ impl TryFrom<MlsConversationDecryptMessage> for DecryptedMessage {
     type Error = CoreCryptoError;
 
     fn try_from(from: MlsConversationDecryptMessage) -> Result<Self, Self::Error> {
-        let proposals = from
-            .proposals
-            .into_iter()
-            .map(ProposalBundle::try_from)
-            .collect::<CoreCryptoResult<Vec<_>>>()?;
-
         let buffered_messages = from
             .buffered_messages
             .map(|bm| {
@@ -65,7 +57,6 @@ impl TryFrom<MlsConversationDecryptMessage> for DecryptedMessage {
         #[expect(deprecated)]
         Ok(Self {
             message: from.app_msg,
-            proposals,
             is_active: from.is_active,
             commit_delay: from.delay,
             sender_client_id: from.sender_client_id.map(ClientId),
@@ -88,8 +79,6 @@ impl TryFrom<MlsConversationDecryptMessage> for DecryptedMessage {
 pub struct BufferedDecryptedMessage {
     #[cfg_attr(target_family = "wasm", wasm_bindgen(readonly))]
     pub message: Option<Vec<u8>>,
-    #[cfg_attr(target_family = "wasm", wasm_bindgen(readonly))]
-    pub proposals: Vec<ProposalBundle>,
     /// It is set to false if ingesting this MLS message has resulted in the client being removed from the group (i.e. a Remove commit)
     #[cfg_attr(target_family = "wasm", wasm_bindgen(readonly, js_name = isActive))]
     pub is_active: bool,
@@ -115,16 +104,9 @@ impl TryFrom<MlsBufferedConversationDecryptMessage> for BufferedDecryptedMessage
     type Error = CoreCryptoError;
 
     fn try_from(from: MlsBufferedConversationDecryptMessage) -> Result<Self, Self::Error> {
-        let proposals = from
-            .proposals
-            .into_iter()
-            .map(ProposalBundle::try_from)
-            .collect::<CoreCryptoResult<Vec<_>>>()?;
-
         #[expect(deprecated)]
         Ok(Self {
             message: from.app_msg,
-            proposals,
             is_active: from.is_active,
             commit_delay: from.delay,
             sender_client_id: from.sender_client_id.map(ClientId),
