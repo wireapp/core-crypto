@@ -479,93 +479,89 @@ mod tests {
     async fn should_not_reapply_buffered_messages_when_external_commit_contains_remove(case: TestContext) {
         use crate::mls;
 
-        run_test_with_client_ids(
-            case.clone(),
-            ["alice", "bob"],
-            move |[alice_central, mut bob_central]| {
-                Box::pin(async move {
-                    let id = conversation_id();
-                    alice_central
-                        .transaction
-                        .new_conversation(&id, case.credential_type, case.cfg.clone())
-                        .await
-                        .unwrap();
-                    alice_central.invite_all(&case, &id, [&bob_central]).await.unwrap();
+        run_test_with_client_ids(case.clone(), ["alice", "bob"], move |[alice_central, bob_central]| {
+            Box::pin(async move {
+                let id = conversation_id();
+                alice_central
+                    .transaction
+                    .new_conversation(&id, case.credential_type, case.cfg.clone())
+                    .await
+                    .unwrap();
+                alice_central.invite_all(&case, &id, [&bob_central]).await.unwrap();
 
-                    // Alice will never see this commit
-                    bob_central
-                        .transaction
-                        .conversation(&id)
-                        .await
-                        .unwrap()
-                        .update_key_material()
-                        .await
-                        .unwrap();
+                // Alice will never see this commit
+                bob_central
+                    .transaction
+                    .conversation(&id)
+                    .await
+                    .unwrap()
+                    .update_key_material()
+                    .await
+                    .unwrap();
 
-                    let msg1 = bob_central
-                        .transaction
-                        .conversation(&id)
-                        .await
-                        .unwrap()
-                        .encrypt_message("A")
-                        .await
-                        .unwrap();
-                    let msg2 = bob_central
-                        .transaction
-                        .conversation(&id)
-                        .await
-                        .unwrap()
-                        .encrypt_message("B")
-                        .await
-                        .unwrap();
+                let msg1 = bob_central
+                    .transaction
+                    .conversation(&id)
+                    .await
+                    .unwrap()
+                    .encrypt_message("A")
+                    .await
+                    .unwrap();
+                let msg2 = bob_central
+                    .transaction
+                    .conversation(&id)
+                    .await
+                    .unwrap()
+                    .encrypt_message("B")
+                    .await
+                    .unwrap();
 
-                    // Since Alice missed Bob's commit she should buffer this message
-                    let decrypt = alice_central
-                        .transaction
-                        .conversation(&id)
-                        .await
-                        .unwrap()
-                        .decrypt_message(msg1)
-                        .await;
-                    assert!(matches!(
-                        decrypt.unwrap_err(),
-                        mls::conversation::Error::BufferedFutureMessage { .. }
-                    ));
-                    let decrypt = alice_central
-                        .transaction
-                        .conversation(&id)
-                        .await
-                        .unwrap()
-                        .decrypt_message(msg2)
-                        .await;
-                    assert!(matches!(
-                        decrypt.unwrap_err(),
-                        mls::conversation::Error::BufferedFutureMessage { .. }
-                    ));
-                    assert_eq!(alice_central.transaction.count_entities().await.pending_messages, 2);
+                // Since Alice missed Bob's commit she should buffer this message
+                let decrypt = alice_central
+                    .transaction
+                    .conversation(&id)
+                    .await
+                    .unwrap()
+                    .decrypt_message(msg1)
+                    .await;
+                assert!(matches!(
+                    decrypt.unwrap_err(),
+                    mls::conversation::Error::BufferedFutureMessage { .. }
+                ));
+                let decrypt = alice_central
+                    .transaction
+                    .conversation(&id)
+                    .await
+                    .unwrap()
+                    .decrypt_message(msg2)
+                    .await;
+                assert!(matches!(
+                    decrypt.unwrap_err(),
+                    mls::conversation::Error::BufferedFutureMessage { .. }
+                ));
+                assert_eq!(alice_central.transaction.count_entities().await.pending_messages, 2);
 
-                    let gi = bob_central.get_group_info(&id).await;
-                    alice_central
-                        .transaction
-                        .join_by_external_commit(gi, case.custom_cfg(), case.credential_type)
-                        .await
-                        .unwrap();
+                let gi = bob_central.get_group_info(&id).await;
+                alice_central
+                    .transaction
+                    .join_by_external_commit(gi, case.custom_cfg(), case.credential_type)
+                    .await
+                    .unwrap();
 
-                    let ext_commit = alice_central.mls_transport.latest_commit_bundle().await;
+                let ext_commit = alice_central.mls_transport.latest_commit_bundle().await;
 
-                    bob_central
-                        .transaction
-                        .conversation(&id)
-                        .await
-                        .unwrap()
-                        .decrypt_message(ext_commit.commit.to_bytes().unwrap())
-                        .await
-                        .unwrap();
-                    // Alice should have deleted all her buffered messages
-                    assert_eq!(alice_central.transaction.count_entities().await.pending_messages, 0);
-                })
-            },
-        )
+                bob_central
+                    .transaction
+                    .conversation(&id)
+                    .await
+                    .unwrap()
+                    .decrypt_message(ext_commit.commit.to_bytes().unwrap())
+                    .await
+                    .unwrap();
+                // Alice should have deleted all her buffered messages
+                assert_eq!(alice_central.transaction.count_entities().await.pending_messages, 0);
+            })
+        })
         .await
     }
 }

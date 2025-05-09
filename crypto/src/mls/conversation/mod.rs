@@ -1240,12 +1240,8 @@ mod tests {
                     [bobt_android, "bob_zeta", "Bob Tables"],
                 ],
                 ("wire.com", "zeta.com"),
-                move |[mut alices_android_central, alices_ios_central, mut bob_android_central],
-                      [
-                    mut alicem_android_central,
-                    mut alicem_ios_central,
-                    mut bobt_android_central,
-                ]| {
+                move |[alices_android_central, alices_ios_central, bob_android_central],
+                      [alicem_android_central, alicem_ios_central, bobt_android_central]| {
                     Box::pin(async move {
                         let id = conversation_id();
                         alices_ios_central
