@@ -199,7 +199,7 @@ impl EmulatedClient for CoreCryptoIosClient {
         EmulatedClientProtocol::MLS | EmulatedClientProtocol::PROTEUS
     }
 
-    async fn wipe(mut self) -> Result<()> {
+    async fn wipe(&mut self) -> Result<()> {
         Ok(())
     }
 }
