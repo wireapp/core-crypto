@@ -3,12 +3,9 @@
 use core_crypto::DatabaseKey;
 
 #[cfg(not(target_family = "wasm"))]
-use crate::clients::{EmulatedClient, EmulatedProteusClient};
-#[cfg(not(target_family = "wasm"))]
 use crate::util::{MlsTransportSuccessProvider, MlsTransportTestExt};
 use color_eyre::eyre::{Result, eyre};
 use core_crypto::prelude::CiphersuiteName;
-use std::rc::Rc;
 use std::sync::Arc;
 use tls_codec::Serialize;
 
@@ -29,6 +26,56 @@ const CIPHERSUITE_IN_USE: CiphersuiteName = CiphersuiteName::MLS_128_DHKEMX25519
 // TODO: Add support for iOS emulator when on macOS. Tracking issue: WPB-9646
 fn main() -> Result<()> {
     run_test()
+}
+
+#[cfg(not(target_family = "wasm"))]
+async fn create_mls_clients<'a>(
+    chrome_driver_addr: &'a std::net::SocketAddr,
+    web_server: &'a std::net::SocketAddr,
+) -> Vec<Box<dyn clients::EmulatedMlsClient>> {
+    vec![
+        #[cfg(target_os = "ios")]
+        Box::new(clients::corecrypto::ios::CoreCryptoIosClient::new().await.unwrap()),
+        Box::new(
+            clients::corecrypto::native::CoreCryptoNativeClient::new()
+                .await
+                .unwrap(),
+        ),
+        Box::new(clients::corecrypto::ffi::CoreCryptoFfiClient::new().await.unwrap()),
+        Box::new(
+            clients::corecrypto::web::CoreCryptoWebClient::new(chrome_driver_addr, web_server)
+                .await
+                .unwrap(),
+        ),
+    ]
+}
+
+#[cfg(all(not(target_family = "wasm"), feature = "proteus"))]
+async fn create_proteus_clients<'a>(
+    chrome_driver_addr: &'a std::net::SocketAddr,
+    web_server: &'a std::net::SocketAddr,
+) -> Vec<Box<dyn clients::EmulatedProteusClient>> {
+    vec![
+        #[cfg(target_os = "ios")]
+        Box::new(clients::corecrypto::ios::CoreCryptoIosClient::new().await.unwrap()),
+        Box::new(
+            clients::corecrypto::native::CoreCryptoNativeClient::new()
+                .await
+                .unwrap(),
+        ),
+        Box::new(clients::corecrypto::ffi::CoreCryptoFfiClient::new().await.unwrap()),
+        Box::new(
+            clients::corecrypto::web::CoreCryptoWebClient::new(chrome_driver_addr, web_server)
+                .await
+                .unwrap(),
+        ),
+        Box::new(clients::cryptobox::native::CryptoboxNativeClient::new()),
+        Box::new(
+            clients::cryptobox::web::CryptoboxWebClient::new(chrome_driver_addr, web_server)
+                .await
+                .unwrap(),
+        ),
+    ]
 }
 
 // need to be handled like this because https://github.com/rust-lang/cargo/issues/5220, otherwise
@@ -107,18 +154,7 @@ async fn run_mls_test(chrome_driver_addr: &std::net::SocketAddr, web_server: &st
 
     let spinner = util::RunningProcess::new("[MLS] Step 0: Initializing clients & env...", true);
 
-    let ios_client = Rc::new(clients::corecrypto::ios::CoreCryptoIosClient::new().await?);
-    let native_client = Rc::new(clients::corecrypto::native::CoreCryptoNativeClient::new().await?);
-    let ffi_client = Rc::new(clients::corecrypto::ffi::CoreCryptoFfiClient::new().await?);
-    let web_client = Rc::new(clients::corecrypto::web::CoreCryptoWebClient::new(chrome_driver_addr, web_server).await?);
-
-    let mut clients: Vec<Rc<dyn clients::EmulatedMlsClient>> = vec![
-        native_client.clone(),
-        ffi_client.clone(),
-        web_client.clone(),
-        ios_client.clone(),
-    ];
-
+    let mut clients = create_mls_clients(chrome_driver_addr, web_server).await;
     let ciphersuites = vec![CIPHERSUITE_IN_USE.into()];
     let configuration = MlsClientConfiguration::try_new(
         "whatever".into(),
@@ -151,7 +187,7 @@ async fn run_mls_test(chrome_driver_addr: &std::net::SocketAddr, web_server: &st
 
     use tls_codec::Deserialize as _;
     let mut key_packages = vec![];
-    for c in clients.iter_mut() {
+    for c in clients.iter() {
         let kp = c.get_keypackage().await?;
         let kp = KeyPackageIn::tls_deserialize(&mut kp.as_slice())?;
         key_packages.push(kp);
@@ -249,31 +285,14 @@ async fn run_mls_test(chrome_driver_addr: &std::net::SocketAddr, web_server: &st
         ));
     }
 
-    clients.clear();
-
     spinner.success(format!(
         "[MLS] Step 3: Roundtripping {ROUNDTRIP_MSG_AMOUNT} messages... [OK]"
     ));
 
     let spinner = util::RunningProcess::new("[MLS] Step 4: Deleting clients...", true);
-
-    Rc::into_inner(ios_client)
-        .expect("Only one strong reference to the interop client")
-        .wipe()
-        .await?;
-    Rc::into_inner(native_client)
-        .expect("Only one strong reference to the interop client")
-        .wipe()
-        .await?;
-    Rc::into_inner(ffi_client)
-        .expect("Only one strong reference to the interop client")
-        .wipe()
-        .await?;
-    Rc::into_inner(web_client)
-        .expect("Only one strong reference to the interop client")
-        .wipe()
-        .await?;
-
+    for client in &mut clients {
+        client.wipe().await?;
+    }
     spinner.success("[MLS] Step 4: Deleting clients [OK]");
 
     Ok(())
@@ -285,36 +304,11 @@ async fn run_proteus_test(chrome_driver_addr: &std::net::SocketAddr, web_server:
 
     let spinner = util::RunningProcess::new("[Proteus] Step 0: Initializing clients & env...", true);
 
-    let mut ios_client = clients::corecrypto::ios::CoreCryptoIosClient::new().await?;
-    let mut native_client = clients::corecrypto::native::CoreCryptoNativeClient::new().await?;
-    let mut ffi_client = clients::corecrypto::ffi::CoreCryptoFfiClient::new().await?;
-    let mut web_client = clients::corecrypto::web::CoreCryptoWebClient::new(chrome_driver_addr, web_server).await?;
-    let mut cryptobox_native_client = clients::cryptobox::native::CryptoboxNativeClient::new();
-    let mut cryptobox_web_client =
-        clients::cryptobox::web::CryptoboxWebClient::new(chrome_driver_addr, web_server).await?;
+    let mut clients = create_proteus_clients(chrome_driver_addr, web_server).await;
 
-    ios_client.init().await?;
-    native_client.init().await?;
-    ffi_client.init().await?;
-    web_client.init().await?;
-    cryptobox_native_client.init().await?;
-    cryptobox_web_client.init().await?;
-
-    let ios_client = Rc::new(ios_client);
-    let native_client = Rc::new(native_client);
-    let ffi_client = Rc::new(ffi_client);
-    let web_client = Rc::new(web_client);
-    let cryptobox_native_client = Rc::new(cryptobox_native_client);
-    let cryptobox_web_client = Rc::new(cryptobox_web_client);
-
-    let mut clients: Vec<Rc<dyn clients::EmulatedProteusClient>> = vec![
-        ios_client.clone(),
-        native_client.clone(),
-        ffi_client.clone(),
-        web_client.clone(),
-        cryptobox_native_client.clone(),
-        cryptobox_web_client.clone(),
-    ];
+    for client in &mut clients {
+        client.init().await?;
+    }
 
     let configuration = MlsClientConfiguration::try_new(
         "whatever".into(),
@@ -433,32 +427,9 @@ async fn run_proteus_test(chrome_driver_addr: &std::net::SocketAddr, web_server:
     ));
 
     let spinner = util::RunningProcess::new("[Proteus] Step 4: Deleting clients...", true);
-
-    Rc::into_inner(ios_client)
-        .expect("Only one strong reference to the interop client")
-        .wipe()
-        .await?;
-    Rc::into_inner(native_client)
-        .expect("Only one strong reference to the interop client")
-        .wipe()
-        .await?;
-    Rc::into_inner(ffi_client)
-        .expect("Only one strong reference to the interop client")
-        .wipe()
-        .await?;
-    Rc::into_inner(web_client)
-        .expect("Only one strong reference to the interop client")
-        .wipe()
-        .await?;
-    Rc::into_inner(cryptobox_native_client)
-        .expect("Only one strong reference to the interop client")
-        .wipe()
-        .await?;
-    Rc::into_inner(cryptobox_web_client)
-        .expect("Only one strong reference to the interop client")
-        .wipe()
-        .await?;
-
+    for client in &mut clients {
+        client.wipe().await?;
+    }
     spinner.success("[Proteus] Step 4: Deleting clients [OK]");
 
     Ok(())
