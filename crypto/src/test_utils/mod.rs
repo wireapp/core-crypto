@@ -2,21 +2,6 @@
 // and historically have not been.
 #![allow(missing_docs)]
 
-use crate::{
-    CoreCrypto, MlsTransport, MlsTransportResponse, RecursiveError,
-    prelude::{CertificateBundle, ClientId, ConversationId, MlsClientConfiguration, Session},
-    test_utils::x509::{CertificateParams, X509TestChain, X509TestChainActorArg, X509TestChainArgs},
-};
-use core_crypto_keystore::DatabaseKey;
-
-use async_lock::RwLock;
-use openmls::framing::MlsMessageOut;
-pub use openmls_traits::types::SignatureScheme;
-pub use rstest::*;
-pub use rstest_reuse::{self, *};
-use std::collections::HashMap;
-use std::ops::Deref;
-use std::sync::Arc;
 pub mod context;
 mod epoch_observer;
 mod error;
@@ -27,15 +12,29 @@ pub mod x509;
 #[cfg(feature = "proteus")]
 pub mod proteus_utils;
 
-use crate::e2e_identity::id::{QualifiedE2eiClientId, WireQualifiedClientId};
+pub(crate) use self::epoch_observer::TestEpochObserver;
+use self::error::Result;
+pub use self::{error::Error as TestError, message::*, test_context::*};
 pub use crate::prelude::{ClientIdentifier, INITIAL_KEYING_MATERIAL_COUNT, MlsCredentialType};
-use crate::prelude::{MlsCommitBundle, MlsGroupInfoBundle};
-use crate::transaction_context::TransactionContext;
-pub(crate) use epoch_observer::TestEpochObserver;
-pub use error::Error as TestError;
-use error::Result;
-pub use message::*;
-pub use test_context::{TestContext, *};
+use crate::{
+    CoreCrypto, MlsTransport, MlsTransportResponse, RecursiveError,
+    e2e_identity::id::{QualifiedE2eiClientId, WireQualifiedClientId},
+    prelude::{
+        CertificateBundle, ClientId, ConversationId, MlsClientConfiguration, MlsCommitBundle, MlsGroupInfoBundle,
+        Session,
+    },
+    test_utils::x509::{CertificateParams, X509TestChain, X509TestChainActorArg, X509TestChainArgs},
+    transaction_context::TransactionContext,
+};
+use core_crypto_keystore::DatabaseKey;
+
+use async_lock::RwLock;
+use openmls::framing::MlsMessageOut;
+pub use openmls_traits::types::SignatureScheme;
+
+use std::collections::HashMap;
+use std::ops::Deref;
+use std::sync::Arc;
 
 pub const GROUP_SAMPLE_SIZE: usize = 9;
 
