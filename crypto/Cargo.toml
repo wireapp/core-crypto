@@ -68,7 +68,7 @@ base64.workspace = true
 log.workspace = true
 proteus-wasm = { workspace = true, features = ["hazmat"], optional = true }
 proteus-traits = { workspace = true, optional = true }
-sha2 = "0.10.8"
+sha2 = "0.10.9"
 core-crypto-keystore.workspace = true
 
 [target.'cfg(not(target_family = "wasm"))'.dependencies]
