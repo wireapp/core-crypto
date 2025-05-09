@@ -2303,6 +2303,7 @@ dependencies = [
  "core-crypto-ffi",
  "cryptobox",
  "dirs",
+ "env_logger",
  "fantoccini",
  "femme",
  "hex",
