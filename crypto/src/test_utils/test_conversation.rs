@@ -9,8 +9,10 @@ use crate::{
 
 use super::{MlsTransportTestExt, SessionContext, TestContext};
 
+#[derive(derive_more::AsRef)]
 pub struct TestConversation<'a> {
     pub(crate) case: &'a TestContext,
+    #[as_ref]
     pub(crate) id: ConversationId,
     pub(crate) creator: &'a SessionContext,
     pub(crate) joiners: Vec<&'a SessionContext>,
@@ -178,11 +180,5 @@ impl<'a> TestConversation<'a> {
             joiner,
             join_commit,
         }
-    }
-}
-
-impl AsRef<ConversationId> for TestConversation<'_> {
-    fn as_ref(&self) -> &ConversationId {
-        &self.id
     }
 }

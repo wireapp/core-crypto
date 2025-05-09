@@ -39,6 +39,7 @@ derive_more = { version = "2.0", features = [
     "into",
     "constructor",
     "display",
+    "as_ref",
     "deref",
     "deref_mut",
 ] }
