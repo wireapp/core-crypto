@@ -39,7 +39,7 @@ impl EmulatedClient for CryptoboxNativeClient {
         EmulatedClientProtocol::PROTEUS
     }
 
-    async fn wipe(mut self) -> Result<()> {
+    async fn wipe(&mut self) -> Result<()> {
         let _ = self.cbox.take();
         if let Some(tempdir) = self.tempdir.take() {
             tempdir.close()?;

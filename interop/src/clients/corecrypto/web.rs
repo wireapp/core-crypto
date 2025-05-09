@@ -84,7 +84,7 @@ impl EmulatedClient for CoreCryptoWebClient {
         EmulatedClientProtocol::MLS | EmulatedClientProtocol::PROTEUS
     }
 
-    async fn wipe(mut self) -> Result<()> {
+    async fn wipe(&mut self) -> Result<()> {
         let client_id = uuid::Uuid::from_slice(self.client_id.as_slice())?;
         let client_id_str = client_id.as_hyphenated().to_string();
         let database_name = format!("db-{client_id_str}");

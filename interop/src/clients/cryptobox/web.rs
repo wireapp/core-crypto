@@ -42,7 +42,7 @@ impl EmulatedClient for CryptoboxWebClient {
         EmulatedClientProtocol::PROTEUS
     }
 
-    async fn wipe(mut self) -> Result<()> {
+    async fn wipe(&mut self) -> Result<()> {
         let _ = self
             .browser
             .execute_async(
