@@ -43,6 +43,19 @@ args = [
     "--treatWarningsAsErrors",
 ]
 
+[tasks.docs-swift-catalog]
+condition = { platforms = ["mac"] }
+command = "swift"
+args = [
+    "run", "docc",
+    "convert", "./bindings/swift/WireCoreCrypto/WireCoreCrypto/WireCoreCrypto.docc",
+    "--output-dir", "../target/doc/core_crypto_ffi/bindings/swift",
+    # "--hosting-base-path", "core-crypto/core_crypto_ffi/bindings/swift",
+    # "--fallback-bundle-identifier", "CoreCrypto",
+    # "--fallback-display-name", "CoreCrypto",
+    # "--enable-inherited-docs",
+]
+
 ##################################### WASM ####################################
 
 [tasks.wasm-build]
