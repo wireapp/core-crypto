@@ -1,8 +1,10 @@
+use std::sync::Arc;
+
 use openmls::prelude::MlsMessageOut;
 
 use crate::prelude::ConversationId;
 
-use super::{SessionContext, TestContext, conversation_id};
+use super::{MlsTransportTestExt, SessionContext, TestContext, conversation_id};
 
 pub struct TestConversation<'a> {
     pub(crate) case: &'a TestContext,
@@ -55,6 +57,11 @@ impl<'a> TestConversation<'a> {
     /// The creator is always the first member returned.
     pub fn members(&self) -> impl Iterator<Item = &SessionContext> {
         std::iter::once(self.creator).chain(self.joiners.iter().copied())
+    }
+
+    /// Convenience function to get the mls transport of the creator.
+    pub fn transport(&self) -> Arc<dyn MlsTransportTestExt> {
+        self.creator.mls_transport.clone()
     }
 }
 
