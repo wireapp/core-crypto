@@ -87,9 +87,7 @@ fn run_test() -> Result<()> {
     use tokio::net::{TcpListener, TcpStream};
 
     color_eyre::install()?;
-    if std::env::var("RUST_LOG").is_ok() || std::env::var("CI").is_ok() {
-        femme::start();
-    }
+    env_logger::init();
 
     // Check if we have a correct pwd
     let current_dir = std::env::current_dir()?;
