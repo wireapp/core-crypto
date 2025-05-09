@@ -72,8 +72,7 @@ impl EmulatedClient for CoreCryptoFfiClient {
         EmulatedClientProtocol::MLS | EmulatedClientProtocol::PROTEUS
     }
 
-    async fn wipe(mut self) -> Result<()> {
-        drop(self.cc);
+    async fn wipe(&mut self) -> Result<()> {
         Ok(())
     }
 }
