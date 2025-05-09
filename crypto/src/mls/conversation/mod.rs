@@ -1259,11 +1259,11 @@ mod tests {
                                 &case,
                                 &id,
                                 [
-                                    &mut alices_android_central,
-                                    &mut bob_android_central,
-                                    &mut alicem_android_central,
-                                    &mut alicem_ios_central,
-                                    &mut bobt_android_central,
+                                    &alices_android_central,
+                                    &bob_android_central,
+                                    &alicem_android_central,
+                                    &alicem_ios_central,
+                                    &bobt_android_central,
                                 ],
                             )
                             .await

@@ -170,40 +170,45 @@ impl SessionContext {
     }
 
     /// Streamlines the ceremony of adding a client and process its welcome message
-    pub async fn invite_all<const N: usize>(
+    pub async fn invite_all(
         &self,
         case: &TestContext,
         id: &ConversationId,
-        others: [&Self; N],
+        others: impl IntoIterator<Item = &Self>,
     ) -> Result<()> {
-        let mut kps = vec![];
+        let others = others.into_iter();
+        let (lower_bound, _) = others.size_hint();
+
+        let mut kps = Vec::with_capacity(lower_bound);
         for cc in others {
             let kp = cc.rand_key_package(case).await;
             kps.push((cc, kp));
         }
-        self.invite_all_members::<N>(case, id, kps.try_into().unwrap()).await
+        self.invite_all_members(case, id, kps).await
     }
 
     /// Streamlines the ceremony of adding a client and process its welcome message
-    pub async fn invite_all_members<const N: usize>(
+    pub async fn invite_all_members(
         &self,
         case: &TestContext,
         id: &ConversationId,
-        others: [(&Self, KeyPackageIn); N],
+        others: impl IntoIterator<Item = (&Self, KeyPackageIn)>,
     ) -> Result<()> {
+        let (others, key_packages) = others.into_iter().unzip::<_, _, Vec<_>, Vec<_>>();
+        let n_joiners = others.len();
+
         let size_before = self.get_conversation_unchecked(id).await.members().len();
 
-        let kps = others.iter().map(|(_, kp)| kp).cloned().collect::<Vec<_>>();
         self.transaction
             .conversation(id)
             .await
             .map_err(RecursiveError::transaction("getting conversation by id"))?
-            .add_members(kps)
+            .add_members(key_packages)
             .await
             .map_err(RecursiveError::mls_conversation("adding members"))?;
         let welcome = self.mls_transport.latest_commit_bundle().await.welcome.unwrap();
 
-        for (other, ..) in &others {
+        for other in &others {
             other
                 .transaction
                 .process_welcome_message(welcome.clone().into(), case.custom_cfg())
@@ -213,13 +218,13 @@ impl SessionContext {
 
         assert_eq!(
             self.get_conversation_unchecked(id).await.members().len(),
-            size_before + N
+            size_before + n_joiners
         );
 
-        for (other, ..) in &others {
+        for other in &others {
             assert_eq!(
                 other.get_conversation_unchecked(id).await.members().len(),
-                size_before + N
+                size_before + n_joiners
             );
             self.try_talk_to(id, other).await?;
         }

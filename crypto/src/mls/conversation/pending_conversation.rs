@@ -490,7 +490,7 @@ mod tests {
                         .new_conversation(&id, case.credential_type, case.cfg.clone())
                         .await
                         .unwrap();
-                    alice_central.invite_all(&case, &id, [&mut bob_central]).await.unwrap();
+                    alice_central.invite_all(&case, &id, [&bob_central]).await.unwrap();
 
                     // Alice will never see this commit
                     bob_central
