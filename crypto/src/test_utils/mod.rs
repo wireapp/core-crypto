@@ -7,6 +7,7 @@ mod epoch_observer;
 mod error;
 pub mod message;
 pub mod test_context;
+mod test_conversation;
 pub mod x509;
 // Cannot name it `proteus` because then it conflicts with proteus the crate :(
 #[cfg(feature = "proteus")]
@@ -14,7 +15,7 @@ pub mod proteus_utils;
 
 pub(crate) use self::epoch_observer::TestEpochObserver;
 use self::error::Result;
-pub use self::{error::Error as TestError, message::*, test_context::*};
+pub use self::{error::Error as TestError, message::*, test_context::*, test_conversation::TestConversation};
 pub use crate::prelude::{ClientIdentifier, INITIAL_KEYING_MATERIAL_COUNT, MlsCredentialType};
 use crate::{
     CoreCrypto, MlsTransport, MlsTransportResponse, RecursiveError,

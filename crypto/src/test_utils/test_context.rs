@@ -9,8 +9,8 @@ pub use rstest::*;
 pub use rstest_reuse::{self, *};
 
 use super::{
-    CoreCryptoTransportSuccessProvider, MlsTransportTestExt, TestCertificateSource, X509SessionParameters,
-    x509::X509TestChain,
+    CoreCryptoTransportSuccessProvider, MlsTransportTestExt, TestCertificateSource, TestConversation,
+    X509SessionParameters, x509::X509TestChain,
 };
 
 #[template]
@@ -175,6 +175,25 @@ impl TestContext {
             );
         }
         result.try_into().expect("Vec length should match N")
+    }
+
+    /// Create a test conversation.
+    ///
+    /// The first member is required, and is the conversation's creator.
+    pub async fn create_conversation<'a>(
+        &'a self,
+        members: impl IntoIterator<Item = &'a SessionContext>,
+    ) -> TestConversation<'a> {
+        let mut members = members.into_iter();
+        let creator = members
+            .next()
+            .expect("each conversation needs at least 1 member, the creator");
+
+        let mut conversation = TestConversation::new(self, creator).await;
+
+        conversation.invite(members).await;
+
+        conversation
     }
 }
 
