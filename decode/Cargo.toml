@@ -8,7 +8,7 @@ license = "GPL-3.0-only"
 workspace = true
 
 [dependencies]
-clap = { version = "4.5.37", features = ["derive"] }
+clap = { version = "4.5.38", features = ["derive"] }
 proteus-wasm = { workspace = true, features = ["serde"] }
 base64 = { workspace = true }
 openmls = { workspace = true }
