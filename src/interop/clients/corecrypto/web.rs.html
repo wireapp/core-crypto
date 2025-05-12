@@ -84,7 +84,7 @@
 <a href=#84 id=84 data-nosnippet>84</a>        EmulatedClientProtocol::MLS | EmulatedClientProtocol::PROTEUS
 <a href=#85 id=85 data-nosnippet>85</a>    }
 <a href=#86 id=86 data-nosnippet>86</a>
-<a href=#87 id=87 data-nosnippet>87</a>    <span class="kw">async fn </span>wipe(<span class="kw-2">mut </span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
+<a href=#87 id=87 data-nosnippet>87</a>    <span class="kw">async fn </span>wipe(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
 <a href=#88 id=88 data-nosnippet>88</a>        <span class="kw">let </span>client_id = uuid::Uuid::from_slice(<span class="self">self</span>.client_id.as_slice())<span class="question-mark">?</span>;
 <a href=#89 id=89 data-nosnippet>89</a>        <span class="kw">let </span>client_id_str = client_id.as_hyphenated().to_string();
 <a href=#90 id=90 data-nosnippet>90</a>        <span class="kw">let </span>database_name = <span class="macro">format!</span>(<span class="string">"db-{client_id_str}"</span>);
