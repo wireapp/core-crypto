@@ -10,7 +10,7 @@ pub use rstest_reuse::{self, *};
 
 use super::{
     CoreCryptoTransportSuccessProvider, MlsTransportTestExt, TestCertificateSource, TestConversation,
-    X509SessionParameters, x509::X509TestChain,
+    X509SessionParameters, tmp_db_file, x509::X509TestChain,
 };
 
 #[template]
@@ -82,6 +82,10 @@ pub struct TestContext {
     pub credential_type: MlsCredentialType,
     pub cfg: MlsConversationConfiguration,
     pub transport: Arc<dyn MlsTransportTestExt>,
+    #[cfg(not(target_family = "wasm"))]
+    db_file: Option<(String, Arc<tempfile::TempDir>)>,
+    #[cfg(target_family = "wasm")]
+    db_file: Option<(String, Arc<()>)>,
 }
 
 impl TestContext {
@@ -113,6 +117,7 @@ impl TestContext {
             credential_type: MlsCredentialType::X509,
             cfg: MlsConversationConfiguration::default(),
             transport: Arc::<CoreCryptoTransportSuccessProvider>::default(),
+            db_file: None,
         }
     }
 
@@ -132,6 +137,14 @@ impl TestContext {
 
     pub fn is_pure_ciphertext(&self) -> bool {
         matches!(self.cfg.custom.wire_policy, MlsWirePolicy::Ciphertext)
+    }
+
+    /// Create a new temporary directory a db can be opened at. Will be deleted on drop of [TestContext].
+    /// Use this only if you're not instantiating a [SessionContext] in your test.
+    pub async fn tmp_dir(&mut self) -> String {
+        let (db_dir_string, db_dir) = tmp_db_file();
+        self.db_file = Some((db_dir_string.clone(), Arc::new(db_dir)));
+        db_dir_string
     }
 
     pub async fn sessions<const N: usize>(&self) -> [SessionContext; N] {
@@ -203,6 +216,7 @@ impl Default for TestContext {
             credential_type: MlsCredentialType::Basic,
             cfg: MlsConversationConfiguration::default(),
             transport: Arc::<CoreCryptoTransportSuccessProvider>::default(),
+            db_file: None,
         }
     }
 }
