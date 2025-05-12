@@ -27,7 +27,7 @@ $dokka.location:com.wire.crypto/AvsSecret/AvsSecret/#kotlin.ByteArray/PointingTo
 $dokka.location:com.wire.crypto/AvsSecret/toString/#/PointingToDeclaration/android/com.wire.crypto/-avs-secret/to-string.html
 $dokka.location:com.wire.crypto/AvsSecret/value/#/PointingToDeclaration/android/com.wire.crypto/-avs-secret/value.html
 $dokka.location:com.wire.crypto/BufferedDecryptedMessage///PointingToDeclaration/android/com.wire.crypto/-buffered-decrypted-message/index.html
-$dokka.location:com.wire.crypto/BufferedDecryptedMessage/BufferedDecryptedMessage/#kotlin.ByteArray?#kotlin.collections.Set[com.wire.crypto.ProposalBundle]#kotlin.Boolean#kotlin.Long?#com.wire.crypto.ClientId?#kotlin.Boolean#com.wire.crypto.WireIdentity#com.wire.crypto.CrlDistributionPoints?/PointingToDeclaration/android/com.wire.crypto/-buffered-decrypted-message/-buffered-decrypted-message.html
+$dokka.location:com.wire.crypto/BufferedDecryptedMessage/BufferedDecryptedMessage/#kotlin.ByteArray?#kotlin.Boolean#kotlin.Long?#com.wire.crypto.ClientId?#kotlin.Boolean#com.wire.crypto.WireIdentity#com.wire.crypto.CrlDistributionPoints?/PointingToDeclaration/android/com.wire.crypto/-buffered-decrypted-message/-buffered-decrypted-message.html
 $dokka.location:com.wire.crypto/BufferedDecryptedMessage/commitDelay/#/PointingToDeclaration/android/com.wire.crypto/-buffered-decrypted-message/commit-delay.html
 $dokka.location:com.wire.crypto/BufferedDecryptedMessage/crlNewDistributionPoints/#/PointingToDeclaration/android/com.wire.crypto/-buffered-decrypted-message/crl-new-distribution-points.html
 $dokka.location:com.wire.crypto/BufferedDecryptedMessage/equals/#kotlin.Any?/PointingToDeclaration/android/com.wire.crypto/-buffered-decrypted-message/equals.html
@@ -36,7 +36,6 @@ $dokka.location:com.wire.crypto/BufferedDecryptedMessage/hashCode/#/PointingToDe
 $dokka.location:com.wire.crypto/BufferedDecryptedMessage/identity/#/PointingToDeclaration/android/com.wire.crypto/-buffered-decrypted-message/identity.html
 $dokka.location:com.wire.crypto/BufferedDecryptedMessage/isActive/#/PointingToDeclaration/android/com.wire.crypto/-buffered-decrypted-message/is-active.html
 $dokka.location:com.wire.crypto/BufferedDecryptedMessage/message/#/PointingToDeclaration/android/com.wire.crypto/-buffered-decrypted-message/message.html
-$dokka.location:com.wire.crypto/BufferedDecryptedMessage/proposals/#/PointingToDeclaration/android/com.wire.crypto/-buffered-decrypted-message/proposals.html
 $dokka.location:com.wire.crypto/BufferedDecryptedMessage/senderClientId/#/PointingToDeclaration/android/com.wire.crypto/-buffered-decrypted-message/sender-client-id.html
 $dokka.location:com.wire.crypto/CRLRegistration///PointingToDeclaration/android/com.wire.crypto/-c-r-l-registration/index.html
 $dokka.location:com.wire.crypto/CRLRegistration/CRLRegistration/#kotlin.Boolean#kotlin.Long?/PointingToDeclaration/android/com.wire.crypto/-c-r-l-registration/-c-r-l-registration.html
@@ -190,7 +189,7 @@ $dokka.location:com.wire.crypto/CustomConfiguration/wirePolicy/#/PointingToDecla
 $dokka.location:com.wire.crypto/DatabaseKey///PointingToDeclaration/android/com.wire.crypto/-database-key/index.html
 $dokka.location:com.wire.crypto/DatabaseKey/DatabaseKey/#kotlin.ByteArray/PointingToDeclaration/android/com.wire.crypto/-database-key/-database-key.html
 $dokka.location:com.wire.crypto/DecryptedMessage///PointingToDeclaration/android/com.wire.crypto/-decrypted-message/index.html
-$dokka.location:com.wire.crypto/DecryptedMessage/DecryptedMessage/#kotlin.ByteArray?#kotlin.collections.Set[com.wire.crypto.ProposalBundle]#kotlin.Boolean#kotlin.Long?#com.wire.crypto.ClientId?#kotlin.Boolean#com.wire.crypto.WireIdentity#kotlin.collections.List[com.wire.crypto.BufferedDecryptedMessage]?#com.wire.crypto.CrlDistributionPoints?/PointingToDeclaration/android/com.wire.crypto/-decrypted-message/-decrypted-message.html
+$dokka.location:com.wire.crypto/DecryptedMessage/DecryptedMessage/#kotlin.ByteArray?#kotlin.Boolean#kotlin.Long?#com.wire.crypto.ClientId?#kotlin.Boolean#com.wire.crypto.WireIdentity#kotlin.collections.List[com.wire.crypto.BufferedDecryptedMessage]?#com.wire.crypto.CrlDistributionPoints?/PointingToDeclaration/android/com.wire.crypto/-decrypted-message/-decrypted-message.html
 $dokka.location:com.wire.crypto/DecryptedMessage/bufferedMessages/#/PointingToDeclaration/android/com.wire.crypto/-decrypted-message/buffered-messages.html
 $dokka.location:com.wire.crypto/DecryptedMessage/commitDelay/#/PointingToDeclaration/android/com.wire.crypto/-decrypted-message/commit-delay.html
 $dokka.location:com.wire.crypto/DecryptedMessage/crlNewDistributionPoints/#/PointingToDeclaration/android/com.wire.crypto/-decrypted-message/crl-new-distribution-points.html
@@ -200,7 +199,6 @@ $dokka.location:com.wire.crypto/DecryptedMessage/hashCode/#/PointingToDeclaratio
 $dokka.location:com.wire.crypto/DecryptedMessage/identity/#/PointingToDeclaration/android/com.wire.crypto/-decrypted-message/identity.html
 $dokka.location:com.wire.crypto/DecryptedMessage/isActive/#/PointingToDeclaration/android/com.wire.crypto/-decrypted-message/is-active.html
 $dokka.location:com.wire.crypto/DecryptedMessage/message/#/PointingToDeclaration/android/com.wire.crypto/-decrypted-message/message.html
-$dokka.location:com.wire.crypto/DecryptedMessage/proposals/#/PointingToDeclaration/android/com.wire.crypto/-decrypted-message/proposals.html
 $dokka.location:com.wire.crypto/DecryptedMessage/senderClientId/#/PointingToDeclaration/android/com.wire.crypto/-decrypted-message/sender-client-id.html
 $dokka.location:com.wire.crypto/DeviceStatus.Expired///PointingToDeclaration/{"org.jetbrains.dokka.links.EnumEntryDRIExtra":{"key":"org.jetbrains.dokka.links.EnumEntryDRIExtra"}}android/com.wire.crypto/-device-status/-expired/index.html
 $dokka.location:com.wire.crypto/DeviceStatus.Revoked///PointingToDeclaration/{"org.jetbrains.dokka.links.EnumEntryDRIExtra":{"key":"org.jetbrains.dokka.links.EnumEntryDRIExtra"}}android/com.wire.crypto/-device-status/-revoked/index.html
@@ -367,11 +365,6 @@ $dokka.location:com.wire.crypto/PreKey/data/#/PointingToDeclaration/android/com
 $dokka.location:com.wire.crypto/PreKey/equals/#kotlin.Any?/PointingToDeclaration/android/com.wire.crypto/-pre-key/equals.html
 $dokka.location:com.wire.crypto/PreKey/hashCode/#/PointingToDeclaration/android/com.wire.crypto/-pre-key/hash-code.html
 $dokka.location:com.wire.crypto/PreKey/id/#/PointingToDeclaration/android/com.wire.crypto/-pre-key/id.html
-$dokka.location:com.wire.crypto/ProposalBundle///PointingToDeclaration/android/com.wire.crypto/-proposal-bundle/index.html
-$dokka.location:com.wire.crypto/ProposalBundle/ProposalBundle/#com.wire.crypto.MlsMessage#com.wire.crypto.ProposalRef#com.wire.crypto.CrlDistributionPoints?/PointingToDeclaration/android/com.wire.crypto/-proposal-bundle/-proposal-bundle.html
-$dokka.location:com.wire.crypto/ProposalBundle/crlNewDistributionPoints/#/PointingToDeclaration/android/com.wire.crypto/-proposal-bundle/crl-new-distribution-points.html
-$dokka.location:com.wire.crypto/ProposalBundle/proposal/#/PointingToDeclaration/android/com.wire.crypto/-proposal-bundle/proposal.html
-$dokka.location:com.wire.crypto/ProposalBundle/proposalRef/#/PointingToDeclaration/android/com.wire.crypto/-proposal-bundle/proposal-ref.html
 $dokka.location:com.wire.crypto/ProposalRef///PointingToDeclaration/android/com.wire.crypto/-proposal-ref/index.html
 $dokka.location:com.wire.crypto/ProposalRef/ProposalRef/#kotlin.ByteArray/PointingToDeclaration/android/com.wire.crypto/-proposal-ref/-proposal-ref.html
 $dokka.location:com.wire.crypto/ProposalRef/toString/#/PointingToDeclaration/android/com.wire.crypto/-proposal-ref/to-string.html
