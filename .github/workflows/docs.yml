@@ -28,6 +28,8 @@ jobs:
   rustdoc:
     name: rust
     runs-on: ubuntu-latest
+    env:
+      RUSTDOCFLAGS: "-D warnings"
 
     steps:
     - name: checkout repository
