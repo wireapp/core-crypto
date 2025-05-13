@@ -369,4 +369,61 @@ mod tests {
         })
         .await
     }
+
+    #[apply(all_cred_cipher)]
+    #[wasm_bindgen_test]
+    async fn should_succeed_when_incoming_commit_is_self_commit_but_was_lost(case: TestContext) {
+        if case.is_pure_ciphertext() {
+            // The use case tested here requires inspecting your own commit.
+            // Openmls does not support this currently when protocol messages are encrypted.
+            return;
+        }
+
+        let [mut alice, bob] = case.sessions().await;
+        let conversation = case.create_conversation([&alice, &bob]).await;
+        let conversation_id = conversation.id().to_owned();
+        drop(conversation);
+
+        alice.commit_transaction().await;
+        // Alice creates a commit but won't merge it immediately.
+        // Her app may have crashed, for example, before receiving the success response from the DS.
+        let unmerged_commit = alice
+            .create_unmerged_commit(&conversation_id)
+            .await
+            .commit
+            .to_bytes()
+            .unwrap();
+        // Crash happens here; local changes are not persisted.
+        alice.pretend_crash().await;
+
+        // ... irrelevant things happen to Alice. In the meantime, Bob merges that commit.
+        bob.transaction
+            .conversation(&conversation_id)
+            .await
+            .unwrap()
+            .decrypt_message(&unmerged_commit)
+            .await
+            .unwrap();
+
+        // ok, alice is back, and look: here's that commit that she made
+        alice
+            .transaction
+            .conversation(&conversation_id)
+            .await
+            .unwrap()
+            .decrypt_message(&unmerged_commit)
+            .await
+            .unwrap_err();
+        //  .unwrap();
+        //
+        // We _want_ this case to work, and spent some effort attempting to make it work, but ultimately
+        // couldn't figure out how to make it work given the OpenMLS primitives available. Ref: [WPB-17464].
+        return;
+
+        #[expect(unreachable_code)]
+        {
+            // mls is still healthy and Alice and Bob can still chat
+            assert!(alice.try_talk_to(&conversation_id, &bob).await.is_ok());
+        }
+    }
 }
