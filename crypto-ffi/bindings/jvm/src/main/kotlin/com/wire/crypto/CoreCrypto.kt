@@ -1,7 +1,9 @@
 package com.wire.crypto
 
-import kotlinx.coroutines.launch
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.NonCancellable
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 typealias EnrollmentHandle = ByteArray
 
@@ -107,19 +109,24 @@ class CoreCrypto(private val cc: com.wire.crypto.uniffi.CoreCrypto) {
     internal fun lower() = cc
 
     /**
-     * Starts a transaction in Core Crypto. If the callback succeeds, it will be committed, otherwise, every operation
-     * performed with the context will be discarded.
+     * Starts a [NonCancellable] transaction in Core Crypto. If the callback succeeds, it will be committed,
+     * otherwise, every operation performed with the context will be discarded.
      *
-     * @param block the function to be executed within the transaction context. A [CoreCryptoContext] will be given as parameter to this function
+     * Check [Uniffi's documentation](https://mozilla.github.io/uniffi-rs/latest/futures.html#cancelling-async-code)
+     * about async code, that mentions that it does not support cancellation. So we go around it by not cancelling
+     * it either.
+     * @param R the type returned by the transaction block
+     * @param block the function to be executed within the transaction context.
+     *              A [CoreCryptoContext] will be given as parameter to this function.
      *
      * @return the return of the function passed as parameter
      */
     @Suppress("unchecked_cast")
-    suspend fun <R> transaction(block: suspend (context: CoreCryptoContext) -> R): R {
+    suspend fun <R> transaction(block: suspend (context: CoreCryptoContext) -> R): R = withContext(NonCancellable) {
         var result: R? = null
         var error: Throwable? = null
         try {
-            this.cc.transaction(object : com.wire.crypto.uniffi.CoreCryptoCommand {
+            this@CoreCrypto.cc.transaction(object : com.wire.crypto.uniffi.CoreCryptoCommand {
                 override suspend fun execute(context: com.wire.crypto.uniffi.CoreCryptoContext) {
                     try {
                         result = block(CoreCryptoContext(context))
@@ -140,7 +147,7 @@ class CoreCrypto(private val cc: com.wire.crypto.uniffi.CoreCrypto) {
         }
 
         // Since we know that the transaction will either succeed or throw it's safe to do an unchecked cast here
-        return result as R
+        return@withContext result as R
     }
 
     suspend fun provideTransport(transport: MlsTransport) {

@@ -88,7 +88,10 @@ class MLSTest {
         val actualException =
             assertFailsWith<RuntimeException> { cc.transaction<Unit> { throw expectedException } }
 
-        assertEquals(expectedException, actualException)
+        // Because internally ForkJoinTask#getThrowableException doesn't necessarily throw exactly the same exception,
+        // when it is thrown in another thread (due to the NonCancellable context), we need to compare messages, etc.
+        // see: https://hg.openjdk.org/jdk8u/jdk8u/jdk/file/6be37bafb11a/src/share/classes/java/util/concurrent/ForkJoinTask.java#l547
+        assertEquals(expectedException.message, actualException.message)
     }
 
     @Test
@@ -96,7 +99,7 @@ class MLSTest {
         val cc = initCc()
         cc.transaction { ctx -> ctx.mlsInit(aliceId.toClientId()) }
 
-        val expectedException = RuntimeException("Expected Exception")
+        val expectedException = IllegalStateException("Expected Exception")
 
         val actualException =
             assertFailsWith<RuntimeException> {
@@ -106,7 +109,10 @@ class MLSTest {
                 }
             }
 
-        assertEquals(expectedException, actualException)
+        // Because internally ForkJoinTask#getThrowableException doesn't necessarily throw exactly the same exception,
+        // when it is thrown in another thread (due to the NonCancellable context), we need to compare messages, etc.
+        // see: https://hg.openjdk.org/jdk8u/jdk8u/jdk/file/6be37bafb11a/src/share/classes/java/util/concurrent/ForkJoinTask.java#l547
+        assertEquals(expectedException.message, actualException.message)
 
         // This would fail with a "Conversation already exists" exception, if the above
         // transaction hadn't been rolled back.
