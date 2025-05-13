@@ -174,73 +174,68 @@ mod tests {
         #[apply(all_cred_cipher)]
         #[wasm_bindgen_test]
         async fn can_propose_adding_members_to_conversation(case: TestContext) {
-            run_test_with_client_ids(
-                case.clone(),
-                ["alice", "bob", "charlie"],
-                move |[mut alice_central, bob_central, mut charlie_central]| {
-                    Box::pin(async move {
-                        let id = conversation_id();
-                        alice_central
-                            .transaction
-                            .new_conversation(&id, case.credential_type, case.cfg.clone())
-                            .await
-                            .unwrap();
-                        alice_central.invite_all(&case, &id, [&bob_central]).await.unwrap();
-                        let charlie_kp = charlie_central.get_one_key_package(&case).await;
+            let [mut alice_central, bob_central, mut charlie_central] = case.sessions().await;
+            Box::pin(async move {
+                let id = conversation_id();
+                alice_central
+                    .transaction
+                    .new_conversation(&id, case.credential_type, case.cfg.clone())
+                    .await
+                    .unwrap();
+                alice_central.invite_all(&case, &id, [&bob_central]).await.unwrap();
+                let charlie_kp = charlie_central.get_one_key_package(&case).await;
 
-                        assert!(alice_central.pending_proposals(&id).await.is_empty());
-                        let proposal = alice_central
-                            .transaction
-                            .new_add_proposal(&id, charlie_kp)
-                            .await
-                            .unwrap()
-                            .proposal;
-                        assert_eq!(alice_central.pending_proposals(&id).await.len(), 1);
-                        bob_central
-                            .transaction
-                            .conversation(&id)
-                            .await
-                            .unwrap()
-                            .decrypt_message(proposal.to_bytes().unwrap())
-                            .await
-                            .unwrap();
-                        bob_central
-                            .transaction
-                            .conversation(&id)
-                            .await
-                            .unwrap()
-                            .commit_pending_proposals()
-                            .await
-                            .unwrap();
-                        let commit = bob_central.mls_transport.latest_commit().await;
-                        let welcome = bob_central.mls_transport.latest_welcome_message().await;
-                        assert_eq!(bob_central.get_conversation_unchecked(&id).await.members().len(), 3);
+                assert!(alice_central.pending_proposals(&id).await.is_empty());
+                let proposal = alice_central
+                    .transaction
+                    .new_add_proposal(&id, charlie_kp)
+                    .await
+                    .unwrap()
+                    .proposal;
+                assert_eq!(alice_central.pending_proposals(&id).await.len(), 1);
+                bob_central
+                    .transaction
+                    .conversation(&id)
+                    .await
+                    .unwrap()
+                    .decrypt_message(proposal.to_bytes().unwrap())
+                    .await
+                    .unwrap();
+                bob_central
+                    .transaction
+                    .conversation(&id)
+                    .await
+                    .unwrap()
+                    .commit_pending_proposals()
+                    .await
+                    .unwrap();
+                let commit = bob_central.mls_transport.latest_commit().await;
+                let welcome = bob_central.mls_transport.latest_welcome_message().await;
+                assert_eq!(bob_central.get_conversation_unchecked(&id).await.members().len(), 3);
 
-                        // if 'new_proposal' wasn't durable this would fail because proposal would
-                        // not be referenced in commit
-                        alice_central
-                            .transaction
-                            .conversation(&id)
-                            .await
-                            .unwrap()
-                            .decrypt_message(commit.to_bytes().unwrap())
-                            .await
-                            .unwrap();
-                        assert_eq!(alice_central.get_conversation_unchecked(&id).await.members().len(), 3);
+                // if 'new_proposal' wasn't durable this would fail because proposal would
+                // not be referenced in commit
+                alice_central
+                    .transaction
+                    .conversation(&id)
+                    .await
+                    .unwrap()
+                    .decrypt_message(commit.to_bytes().unwrap())
+                    .await
+                    .unwrap();
+                assert_eq!(alice_central.get_conversation_unchecked(&id).await.members().len(), 3);
 
-                        charlie_central
-                            .try_join_from_welcome(
-                                &id,
-                                welcome.into(),
-                                case.custom_cfg(),
-                                vec![&alice_central, &bob_central],
-                            )
-                            .await
-                            .unwrap();
-                        assert_eq!(charlie_central.get_conversation_unchecked(&id).await.members().len(), 3);
-                    })
-                },
-            )
+                charlie_central
+                    .try_join_from_welcome(
+                        &id,
+                        welcome.into(),
+                        case.custom_cfg(),
+                        vec![&alice_central, &bob_central],
+                    )
+                    .await
+                    .unwrap();
+                assert_eq!(charlie_central.get_conversation_unchecked(&id).await.members().len(), 3);
+            })
             .await
         }
     }
@@ -251,63 +246,58 @@ mod tests {
         #[apply(all_cred_cipher)]
         #[wasm_bindgen_test]
         async fn can_propose_removing_members_from_conversation(case: TestContext) {
-            run_test_with_client_ids(
-                case.clone(),
-                ["alice", "bob", "charlie"],
-                move |[mut alice_central, bob_central, charlie_central]| {
-                    Box::pin(async move {
-                        let id = conversation_id();
-                        alice_central
-                            .transaction
-                            .new_conversation(&id, case.credential_type, case.cfg.clone())
-                            .await
-                            .unwrap();
-                        alice_central
-                            .invite_all(&case, &id, [&bob_central, &charlie_central])
-                            .await
-                            .unwrap();
+            let [mut alice_central, bob_central, charlie_central] = case.sessions().await;
+            Box::pin(async move {
+                let id = conversation_id();
+                alice_central
+                    .transaction
+                    .new_conversation(&id, case.credential_type, case.cfg.clone())
+                    .await
+                    .unwrap();
+                alice_central
+                    .invite_all(&case, &id, [&bob_central, &charlie_central])
+                    .await
+                    .unwrap();
 
-                        assert!(alice_central.pending_proposals(&id).await.is_empty());
-                        let proposal = alice_central
-                            .transaction
-                            .new_remove_proposal(&id, charlie_central.get_client_id().await)
-                            .await
-                            .unwrap()
-                            .proposal;
-                        assert_eq!(alice_central.pending_proposals(&id).await.len(), 1);
-                        bob_central
-                            .transaction
-                            .conversation(&id)
-                            .await
-                            .unwrap()
-                            .decrypt_message(proposal.to_bytes().unwrap())
-                            .await
-                            .unwrap();
-                        bob_central
-                            .transaction
-                            .conversation(&id)
-                            .await
-                            .unwrap()
-                            .commit_pending_proposals()
-                            .await
-                            .unwrap();
-                        let commit = bob_central.mls_transport.latest_commit().await;
-                        assert_eq!(bob_central.get_conversation_unchecked(&id).await.members().len(), 2);
+                assert!(alice_central.pending_proposals(&id).await.is_empty());
+                let proposal = alice_central
+                    .transaction
+                    .new_remove_proposal(&id, charlie_central.get_client_id().await)
+                    .await
+                    .unwrap()
+                    .proposal;
+                assert_eq!(alice_central.pending_proposals(&id).await.len(), 1);
+                bob_central
+                    .transaction
+                    .conversation(&id)
+                    .await
+                    .unwrap()
+                    .decrypt_message(proposal.to_bytes().unwrap())
+                    .await
+                    .unwrap();
+                bob_central
+                    .transaction
+                    .conversation(&id)
+                    .await
+                    .unwrap()
+                    .commit_pending_proposals()
+                    .await
+                    .unwrap();
+                let commit = bob_central.mls_transport.latest_commit().await;
+                assert_eq!(bob_central.get_conversation_unchecked(&id).await.members().len(), 2);
 
-                        // if 'new_proposal' wasn't durable this would fail because proposal would
-                        // not be referenced in commit
-                        alice_central
-                            .transaction
-                            .conversation(&id)
-                            .await
-                            .unwrap()
-                            .decrypt_message(commit.to_bytes().unwrap())
-                            .await
-                            .unwrap();
-                        assert_eq!(alice_central.get_conversation_unchecked(&id).await.members().len(), 2);
-                    })
-                },
-            )
+                // if 'new_proposal' wasn't durable this would fail because proposal would
+                // not be referenced in commit
+                alice_central
+                    .transaction
+                    .conversation(&id)
+                    .await
+                    .unwrap()
+                    .decrypt_message(commit.to_bytes().unwrap())
+                    .await
+                    .unwrap();
+                assert_eq!(alice_central.get_conversation_unchecked(&id).await.members().len(), 2);
+            })
             .await
         }
     }
@@ -318,91 +308,90 @@ mod tests {
         #[apply(all_cred_cipher)]
         #[wasm_bindgen_test]
         async fn can_propose_updating(case: TestContext) {
-            run_test_with_client_ids(case.clone(), ["alice", "bob"], move |[alice_central, bob_central]| {
-                Box::pin(async move {
-                    let id = conversation_id();
-                    alice_central
-                        .transaction
-                        .new_conversation(&id, case.credential_type, case.cfg.clone())
-                        .await
-                        .unwrap();
-                    alice_central.invite_all(&case, &id, [&bob_central]).await.unwrap();
+            let [alice_central, bob_central] = case.sessions().await;
+            Box::pin(async move {
+                let id = conversation_id();
+                alice_central
+                    .transaction
+                    .new_conversation(&id, case.credential_type, case.cfg.clone())
+                    .await
+                    .unwrap();
+                alice_central.invite_all(&case, &id, [&bob_central]).await.unwrap();
 
-                    let bob_keys = bob_central
+                let bob_keys = bob_central
+                    .get_conversation_unchecked(&id)
+                    .await
+                    .signature_keys()
+                    .collect::<Vec<SignaturePublicKey>>();
+                let alice_keys = alice_central
+                    .get_conversation_unchecked(&id)
+                    .await
+                    .signature_keys()
+                    .collect::<Vec<SignaturePublicKey>>();
+                assert!(alice_keys.iter().all(|a_key| bob_keys.contains(a_key)));
+                let alice_key = alice_central
+                    .encryption_key_of(&id, alice_central.get_client_id().await)
+                    .await;
+
+                let proposal = alice_central
+                    .transaction
+                    .new_update_proposal(&id)
+                    .await
+                    .unwrap()
+                    .proposal;
+                bob_central
+                    .transaction
+                    .conversation(&id)
+                    .await
+                    .unwrap()
+                    .decrypt_message(proposal.to_bytes().unwrap())
+                    .await
+                    .unwrap();
+                bob_central
+                    .transaction
+                    .conversation(&id)
+                    .await
+                    .unwrap()
+                    .commit_pending_proposals()
+                    .await
+                    .unwrap();
+                let commit = bob_central.mls_transport.latest_commit().await;
+
+                assert!(
+                    !bob_central
                         .get_conversation_unchecked(&id)
                         .await
-                        .signature_keys()
-                        .collect::<Vec<SignaturePublicKey>>();
-                    let alice_keys = alice_central
+                        .encryption_keys()
+                        .contains(&alice_key)
+                );
+
+                assert!(
+                    alice_central
                         .get_conversation_unchecked(&id)
                         .await
-                        .signature_keys()
-                        .collect::<Vec<SignaturePublicKey>>();
-                    assert!(alice_keys.iter().all(|a_key| bob_keys.contains(a_key)));
-                    let alice_key = alice_central
-                        .encryption_key_of(&id, alice_central.get_client_id().await)
-                        .await;
+                        .encryption_keys()
+                        .contains(&alice_key)
+                );
+                // if 'new_proposal' wasn't durable this would fail because proposal would
+                // not be referenced in commit
+                alice_central
+                    .transaction
+                    .conversation(&id)
+                    .await
+                    .unwrap()
+                    .decrypt_message(commit.to_bytes().unwrap())
+                    .await
+                    .unwrap();
+                assert!(
+                    !alice_central
+                        .get_conversation_unchecked(&id)
+                        .await
+                        .encryption_keys()
+                        .contains(&alice_key)
+                );
 
-                    let proposal = alice_central
-                        .transaction
-                        .new_update_proposal(&id)
-                        .await
-                        .unwrap()
-                        .proposal;
-                    bob_central
-                        .transaction
-                        .conversation(&id)
-                        .await
-                        .unwrap()
-                        .decrypt_message(proposal.to_bytes().unwrap())
-                        .await
-                        .unwrap();
-                    bob_central
-                        .transaction
-                        .conversation(&id)
-                        .await
-                        .unwrap()
-                        .commit_pending_proposals()
-                        .await
-                        .unwrap();
-                    let commit = bob_central.mls_transport.latest_commit().await;
-
-                    assert!(
-                        !bob_central
-                            .get_conversation_unchecked(&id)
-                            .await
-                            .encryption_keys()
-                            .contains(&alice_key)
-                    );
-
-                    assert!(
-                        alice_central
-                            .get_conversation_unchecked(&id)
-                            .await
-                            .encryption_keys()
-                            .contains(&alice_key)
-                    );
-                    // if 'new_proposal' wasn't durable this would fail because proposal would
-                    // not be referenced in commit
-                    alice_central
-                        .transaction
-                        .conversation(&id)
-                        .await
-                        .unwrap()
-                        .decrypt_message(commit.to_bytes().unwrap())
-                        .await
-                        .unwrap();
-                    assert!(
-                        !alice_central
-                            .get_conversation_unchecked(&id)
-                            .await
-                            .encryption_keys()
-                            .contains(&alice_key)
-                    );
-
-                    // ensuring both can encrypt messages
-                    assert!(alice_central.try_talk_to(&id, &bob_central).await.is_ok());
-                })
+                // ensuring both can encrypt messages
+                assert!(alice_central.try_talk_to(&id, &bob_central).await.is_ok());
             })
             .await;
         }
@@ -414,51 +403,50 @@ mod tests {
         #[apply(all_cred_cipher)]
         #[wasm_bindgen_test]
         async fn should_prevent_out_of_order_proposals(case: TestContext) {
-            run_test_with_client_ids(case.clone(), ["alice", "bob"], move |[alice_central, bob_central]| {
-                Box::pin(async move {
-                    let id = conversation_id();
-                    alice_central
-                        .transaction
-                        .new_conversation(&id, case.credential_type, case.cfg.clone())
-                        .await
-                        .unwrap();
-                    alice_central.invite_all(&case, &id, [&bob_central]).await.unwrap();
+            let [alice_central, bob_central] = case.sessions().await;
+            Box::pin(async move {
+                let id = conversation_id();
+                alice_central
+                    .transaction
+                    .new_conversation(&id, case.credential_type, case.cfg.clone())
+                    .await
+                    .unwrap();
+                alice_central.invite_all(&case, &id, [&bob_central]).await.unwrap();
 
-                    let proposal = alice_central
-                        .transaction
-                        .new_update_proposal(&id)
-                        .await
-                        .unwrap()
-                        .proposal;
+                let proposal = alice_central
+                    .transaction
+                    .new_update_proposal(&id)
+                    .await
+                    .unwrap()
+                    .proposal;
 
-                    bob_central
-                        .transaction
-                        .conversation(&id)
-                        .await
-                        .unwrap()
-                        .decrypt_message(&proposal.to_bytes().unwrap())
-                        .await
-                        .unwrap();
-                    bob_central
-                        .transaction
-                        .conversation(&id)
-                        .await
-                        .unwrap()
-                        .commit_pending_proposals()
-                        .await
-                        .unwrap();
-                    // epoch++
+                bob_central
+                    .transaction
+                    .conversation(&id)
+                    .await
+                    .unwrap()
+                    .decrypt_message(&proposal.to_bytes().unwrap())
+                    .await
+                    .unwrap();
+                bob_central
+                    .transaction
+                    .conversation(&id)
+                    .await
+                    .unwrap()
+                    .commit_pending_proposals()
+                    .await
+                    .unwrap();
+                // epoch++
 
-                    // fails when we try to decrypt a proposal for past epoch
-                    let past_proposal = bob_central
-                        .transaction
-                        .conversation(&id)
-                        .await
-                        .unwrap()
-                        .decrypt_message(&proposal.to_bytes().unwrap())
-                        .await;
-                    assert!(matches!(past_proposal.unwrap_err(), Error::StaleProposal));
-                })
+                // fails when we try to decrypt a proposal for past epoch
+                let past_proposal = bob_central
+                    .transaction
+                    .conversation(&id)
+                    .await
+                    .unwrap()
+                    .decrypt_message(&proposal.to_bytes().unwrap())
+                    .await;
+                assert!(matches!(past_proposal.unwrap_err(), Error::StaleProposal));
             })
             .await;
         }

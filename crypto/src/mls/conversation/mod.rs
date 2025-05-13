@@ -518,34 +518,33 @@ mod tests {
     #[apply(all_cred_cipher)]
     #[wasm_bindgen_test]
     pub async fn create_self_conversation_should_succeed(case: TestContext) {
-        run_test_with_client_ids(case.clone(), ["alice"], move |[alice_central]| {
-            Box::pin(async move {
-                let id = conversation_id();
+        let [alice_central] = case.sessions().await;
+        Box::pin(async move {
+            let id = conversation_id();
+            alice_central
+                .transaction
+                .new_conversation(&id, case.credential_type, case.cfg.clone())
+                .await
+                .unwrap();
+            assert_eq!(alice_central.get_conversation_unchecked(&id).await.id, id);
+            assert_eq!(
                 alice_central
-                    .transaction
-                    .new_conversation(&id, case.credential_type, case.cfg.clone())
+                    .get_conversation_unchecked(&id)
                     .await
-                    .unwrap();
-                assert_eq!(alice_central.get_conversation_unchecked(&id).await.id, id);
-                assert_eq!(
-                    alice_central
-                        .get_conversation_unchecked(&id)
-                        .await
-                        .group
-                        .group_id()
-                        .as_slice(),
-                    id
-                );
-                assert_eq!(alice_central.get_conversation_unchecked(&id).await.members().len(), 1);
-                let alice_can_send_message = alice_central
-                    .transaction
-                    .conversation(&id)
-                    .await
-                    .unwrap()
-                    .encrypt_message(b"me")
-                    .await;
-                assert!(alice_can_send_message.is_ok());
-            })
+                    .group
+                    .group_id()
+                    .as_slice(),
+                id
+            );
+            assert_eq!(alice_central.get_conversation_unchecked(&id).await.members().len(), 1);
+            let alice_can_send_message = alice_central
+                .transaction
+                .conversation(&id)
+                .await
+                .unwrap()
+                .encrypt_message(b"me")
+                .await;
+            assert!(alice_can_send_message.is_ok());
         })
         .await;
     }
@@ -553,51 +552,50 @@ mod tests {
     #[apply(all_cred_cipher)]
     #[wasm_bindgen_test]
     pub async fn create_1_1_conversation_should_succeed(case: TestContext) {
-        run_test_with_client_ids(case.clone(), ["alice", "bob"], move |[alice_central, bob_central]| {
-            Box::pin(async move {
-                let id = conversation_id();
+        let [alice_central, bob_central] = case.sessions().await;
+        Box::pin(async move {
+            let id = conversation_id();
 
+            alice_central
+                .transaction
+                .new_conversation(&id, case.credential_type, case.cfg.clone())
+                .await
+                .unwrap();
+
+            let bob = bob_central.rand_key_package(&case).await;
+            alice_central
+                .transaction
+                .conversation(&id)
+                .await
+                .unwrap()
+                .add_members(vec![bob])
+                .await
+                .unwrap();
+
+            assert_eq!(alice_central.get_conversation_unchecked(&id).await.id, id);
+            assert_eq!(
                 alice_central
-                    .transaction
-                    .new_conversation(&id, case.credential_type, case.cfg.clone())
+                    .get_conversation_unchecked(&id)
                     .await
-                    .unwrap();
+                    .group
+                    .group_id()
+                    .as_slice(),
+                id
+            );
+            assert_eq!(alice_central.get_conversation_unchecked(&id).await.members().len(), 2);
 
-                let bob = bob_central.rand_key_package(&case).await;
-                alice_central
-                    .transaction
-                    .conversation(&id)
-                    .await
-                    .unwrap()
-                    .add_members(vec![bob])
-                    .await
-                    .unwrap();
+            let welcome = alice_central.mls_transport.latest_welcome_message().await;
+            bob_central
+                .transaction
+                .process_welcome_message(welcome.into(), case.custom_cfg())
+                .await
+                .unwrap();
 
-                assert_eq!(alice_central.get_conversation_unchecked(&id).await.id, id);
-                assert_eq!(
-                    alice_central
-                        .get_conversation_unchecked(&id)
-                        .await
-                        .group
-                        .group_id()
-                        .as_slice(),
-                    id
-                );
-                assert_eq!(alice_central.get_conversation_unchecked(&id).await.members().len(), 2);
-
-                let welcome = alice_central.mls_transport.latest_welcome_message().await;
-                bob_central
-                    .transaction
-                    .process_welcome_message(welcome.into(), case.custom_cfg())
-                    .await
-                    .unwrap();
-
-                assert_eq!(
-                    bob_central.get_conversation_unchecked(&id).await.id(),
-                    alice_central.get_conversation_unchecked(&id).await.id()
-                );
-                assert!(alice_central.try_talk_to(&id, &bob_central).await.is_ok());
-            })
+            assert_eq!(
+                bob_central.get_conversation_unchecked(&id).await.id(),
+                alice_central.get_conversation_unchecked(&id).await.id()
+            );
+            assert!(alice_central.try_talk_to(&id, &bob_central).await.is_ok());
         })
         .await;
     }
@@ -605,63 +603,59 @@ mod tests {
     #[apply(all_cred_cipher)]
     #[wasm_bindgen_test]
     pub async fn create_many_people_conversation(case: TestContext) {
-        use crate::e2e_identity::enrollment::test_utils::failsafe_ctx;
+        const SIZE_PLUS_1: usize = GROUP_SAMPLE_SIZE + 1;
+        let alice_and_friends = case.sessions::<SIZE_PLUS_1>().await;
+        Box::pin(async move {
+            let alice_central = &alice_and_friends[0];
+            let id = conversation_id();
+            alice_central
+                .transaction
+                .new_conversation(&id, case.credential_type, case.cfg.clone())
+                .await
+                .unwrap();
+            let bob_and_friends = &alice_and_friends[1..];
 
-        run_test_with_client_ids(case.clone(), ["alice"], move |[mut alice_central]| {
-            Box::pin(async move {
-                let x509_test_chain_arc = failsafe_ctx(&mut [&mut alice_central], case.signature_scheme()).await;
-                let x509_test_chain = x509_test_chain_arc.as_ref().as_ref().unwrap();
+            let mut bob_and_friends_kps = vec![];
+            for c in bob_and_friends {
+                bob_and_friends_kps.push(c.rand_key_package(&case).await);
+            }
 
-                let id = conversation_id();
+            alice_central
+                .transaction
+                .conversation(&id)
+                .await
+                .unwrap()
+                .add_members(bob_and_friends_kps)
+                .await
+                .unwrap();
+            let welcome = alice_central.mls_transport.latest_welcome_message().await;
+
+            assert_eq!(alice_central.get_conversation_unchecked(&id).await.id, id);
+            assert_eq!(
                 alice_central
-                    .transaction
-                    .new_conversation(&id, case.credential_type, case.cfg.clone())
+                    .get_conversation_unchecked(&id)
+                    .await
+                    .group
+                    .group_id()
+                    .as_slice(),
+                id
+            );
+            assert_eq!(
+                alice_central.get_conversation_unchecked(&id).await.members().len(),
+                1 + GROUP_SAMPLE_SIZE
+            );
+
+            let mut bob_and_friends_groups = Vec::with_capacity(bob_and_friends.len());
+            for c in bob_and_friends {
+                c.transaction
+                    .process_welcome_message(welcome.clone().into(), case.custom_cfg())
                     .await
                     .unwrap();
-                let bob_and_friends = case.sessions_x509::<GROUP_SAMPLE_SIZE>().await;
+                assert!(c.try_talk_to(&id, alice_central).await.is_ok());
+                bob_and_friends_groups.push(c);
+            }
 
-                let mut bob_and_friends_kps = vec![];
-                for c in &bob_and_friends {
-                    bob_and_friends_kps.push(c.rand_key_package(&case).await);
-                }
-
-                alice_central
-                    .transaction
-                    .conversation(&id)
-                    .await
-                    .unwrap()
-                    .add_members(bob_and_friends_kps)
-                    .await
-                    .unwrap();
-                let welcome = alice_central.mls_transport.latest_welcome_message().await;
-
-                assert_eq!(alice_central.get_conversation_unchecked(&id).await.id, id);
-                assert_eq!(
-                    alice_central
-                        .get_conversation_unchecked(&id)
-                        .await
-                        .group
-                        .group_id()
-                        .as_slice(),
-                    id
-                );
-                assert_eq!(
-                    alice_central.get_conversation_unchecked(&id).await.members().len(),
-                    1 + GROUP_SAMPLE_SIZE
-                );
-
-                let mut bob_and_friends_groups = Vec::with_capacity(bob_and_friends.len());
-                for c in bob_and_friends {
-                    c.transaction
-                        .process_welcome_message(welcome.clone().into(), case.custom_cfg())
-                        .await
-                        .unwrap();
-                    assert!(c.try_talk_to(&id, &alice_central).await.is_ok());
-                    bob_and_friends_groups.push(c);
-                }
-
-                assert_eq!(bob_and_friends_groups.len(), GROUP_SAMPLE_SIZE);
-            })
+            assert_eq!(bob_and_friends_groups.len(), GROUP_SAMPLE_SIZE);
         })
         .await;
     }
@@ -754,95 +748,91 @@ mod tests {
         #[wasm_bindgen_test]
         async fn should_read_device_identities() {
             let case = TestContext::default_x509();
-            run_test_with_client_ids(
-                case.clone(),
-                ["alice_android", "alice_ios"],
-                move |[alice_android_central, alice_ios_central]| {
-                    Box::pin(async move {
-                        let id = conversation_id();
-                        alice_android_central
-                            .transaction
-                            .new_conversation(&id, case.credential_type, case.cfg.clone())
-                            .await
-                            .unwrap();
-                        alice_android_central
-                            .invite_all(&case, &id, [&alice_ios_central])
-                            .await
-                            .unwrap();
 
-                        let (android_id, ios_id) = (
-                            alice_android_central.get_client_id().await,
-                            alice_ios_central.get_client_id().await,
-                        );
+            let [alice_android_central, alice_ios_central] = case.sessions().await;
+            Box::pin(async move {
+                let id = conversation_id();
+                alice_android_central
+                    .transaction
+                    .new_conversation(&id, case.credential_type, case.cfg.clone())
+                    .await
+                    .unwrap();
+                alice_android_central
+                    .invite_all(&case, &id, [&alice_ios_central])
+                    .await
+                    .unwrap();
 
-                        let mut android_ids = alice_android_central
-                            .transaction
-                            .conversation(&id)
-                            .await
-                            .unwrap()
-                            .get_device_identities(&[android_id.clone(), ios_id.clone()])
-                            .await
-                            .unwrap();
-                        android_ids.sort_by(|a, b| a.client_id.cmp(&b.client_id));
-                        assert_eq!(android_ids.len(), 2);
-                        let mut ios_ids = alice_ios_central
-                            .transaction
-                            .conversation(&id)
-                            .await
-                            .unwrap()
-                            .get_device_identities(&[android_id.clone(), ios_id.clone()])
-                            .await
-                            .unwrap();
-                        ios_ids.sort_by(|a, b| a.client_id.cmp(&b.client_id));
-                        assert_eq!(ios_ids.len(), 2);
+                let (android_id, ios_id) = (
+                    alice_android_central.get_client_id().await,
+                    alice_ios_central.get_client_id().await,
+                );
 
-                        assert_eq!(android_ids, ios_ids);
+                let mut android_ids = alice_android_central
+                    .transaction
+                    .conversation(&id)
+                    .await
+                    .unwrap()
+                    .get_device_identities(&[android_id.clone(), ios_id.clone()])
+                    .await
+                    .unwrap();
+                android_ids.sort_by(|a, b| a.client_id.cmp(&b.client_id));
+                assert_eq!(android_ids.len(), 2);
+                let mut ios_ids = alice_ios_central
+                    .transaction
+                    .conversation(&id)
+                    .await
+                    .unwrap()
+                    .get_device_identities(&[android_id.clone(), ios_id.clone()])
+                    .await
+                    .unwrap();
+                ios_ids.sort_by(|a, b| a.client_id.cmp(&b.client_id));
+                assert_eq!(ios_ids.len(), 2);
 
-                        let android_identities = alice_android_central
-                            .transaction
-                            .conversation(&id)
-                            .await
-                            .unwrap()
-                            .get_device_identities(&[android_id])
-                            .await
-                            .unwrap();
-                        let android_id = android_identities.first().unwrap();
-                        assert_eq!(
-                            android_id.client_id.as_bytes(),
-                            alice_android_central
-                                .transaction
-                                .client_id()
-                                .await
-                                .unwrap()
-                                .0
-                                .as_slice()
-                        );
+                assert_eq!(android_ids, ios_ids);
 
-                        let ios_identities = alice_android_central
-                            .transaction
-                            .conversation(&id)
-                            .await
-                            .unwrap()
-                            .get_device_identities(&[ios_id])
-                            .await
-                            .unwrap();
-                        let ios_id = ios_identities.first().unwrap();
-                        assert_eq!(
-                            ios_id.client_id.as_bytes(),
-                            alice_ios_central.transaction.client_id().await.unwrap().0.as_slice()
-                        );
+                let android_identities = alice_android_central
+                    .transaction
+                    .conversation(&id)
+                    .await
+                    .unwrap()
+                    .get_device_identities(&[android_id])
+                    .await
+                    .unwrap();
+                let android_id = android_identities.first().unwrap();
+                assert_eq!(
+                    android_id.client_id.as_bytes(),
+                    alice_android_central
+                        .transaction
+                        .client_id()
+                        .await
+                        .unwrap()
+                        .0
+                        .as_slice()
+                );
 
-                        let invalid = alice_android_central
-                            .transaction
-                            .conversation(&id)
-                            .await
-                            .unwrap()
-                            .get_device_identities(&[])
-                            .await;
-                        assert!(matches!(invalid.unwrap_err(), Error::CallerError(_)));
-                    })
-                },
-            )
+                let ios_identities = alice_android_central
+                    .transaction
+                    .conversation(&id)
+                    .await
+                    .unwrap()
+                    .get_device_identities(&[ios_id])
+                    .await
+                    .unwrap();
+                let ios_id = ios_identities.first().unwrap();
+                assert_eq!(
+                    ios_id.client_id.as_bytes(),
+                    alice_ios_central.transaction.client_id().await.unwrap().0.as_slice()
+                );
+
+                let invalid = alice_android_central
+                    .transaction
+                    .conversation(&id)
+                    .await
+                    .unwrap()
+                    .get_device_identities(&[])
+                    .await;
+                assert!(matches!(invalid.unwrap_err(), Error::CallerError(_)));
+            })
             .await
         }
 
@@ -951,60 +941,56 @@ mod tests {
         #[wasm_bindgen_test]
         async fn should_not_fail_when_basic() {
             let case = TestContext::default();
-            run_test_with_client_ids(
-                case.clone(),
-                ["alice_android", "alice_ios"],
-                move |[alice_android_central, alice_ios_central]| {
-                    Box::pin(async move {
-                        let id = conversation_id();
-                        alice_android_central
-                            .transaction
-                            .new_conversation(&id, case.credential_type, case.cfg.clone())
-                            .await
-                            .unwrap();
-                        alice_android_central
-                            .invite_all(&case, &id, [&alice_ios_central])
-                            .await
-                            .unwrap();
 
-                        let (android_id, ios_id) = (
-                            alice_android_central.get_client_id().await,
-                            alice_ios_central.get_client_id().await,
-                        );
+            let [alice_android_central, alice_ios_central] = case.sessions().await;
+            Box::pin(async move {
+                let id = conversation_id();
+                alice_android_central
+                    .transaction
+                    .new_conversation(&id, case.credential_type, case.cfg.clone())
+                    .await
+                    .unwrap();
+                alice_android_central
+                    .invite_all(&case, &id, [&alice_ios_central])
+                    .await
+                    .unwrap();
 
-                        let mut android_ids = alice_android_central
-                            .transaction
-                            .conversation(&id)
-                            .await
-                            .unwrap()
-                            .get_device_identities(&[android_id.clone(), ios_id.clone()])
-                            .await
-                            .unwrap();
-                        android_ids.sort();
+                let (android_id, ios_id) = (
+                    alice_android_central.get_client_id().await,
+                    alice_ios_central.get_client_id().await,
+                );
 
-                        let mut ios_ids = alice_ios_central
-                            .transaction
-                            .conversation(&id)
-                            .await
-                            .unwrap()
-                            .get_device_identities(&[android_id, ios_id])
-                            .await
-                            .unwrap();
-                        ios_ids.sort();
+                let mut android_ids = alice_android_central
+                    .transaction
+                    .conversation(&id)
+                    .await
+                    .unwrap()
+                    .get_device_identities(&[android_id.clone(), ios_id.clone()])
+                    .await
+                    .unwrap();
+                android_ids.sort();
 
-                        assert_eq!(ios_ids.len(), 2);
-                        assert_eq!(ios_ids, android_ids);
+                let mut ios_ids = alice_ios_central
+                    .transaction
+                    .conversation(&id)
+                    .await
+                    .unwrap()
+                    .get_device_identities(&[android_id, ios_id])
+                    .await
+                    .unwrap();
+                ios_ids.sort();
 
-                        assert!(ios_ids.iter().all(|i| {
-                            matches!(i.credential_type, MlsCredentialType::Basic)
-                                && matches!(i.status, DeviceStatus::Valid)
-                                && i.x509_identity.is_none()
-                                && !i.thumbprint.is_empty()
-                                && !i.client_id.is_empty()
-                        }));
-                    })
-                },
-            )
+                assert_eq!(ios_ids.len(), 2);
+                assert_eq!(ios_ids, android_ids);
+
+                assert!(ios_ids.iter().all(|i| {
+                    matches!(i.credential_type, MlsCredentialType::Basic)
+                        && matches!(i.status, DeviceStatus::Valid)
+                        && i.x509_identity.is_none()
+                        && !i.thumbprint.is_empty()
+                        && !i.client_id.is_empty()
+                }));
+            })
             .await
         }
 
@@ -1300,26 +1286,25 @@ mod tests {
         #[apply(all_cred_cipher)]
         #[wasm_bindgen_test]
         pub async fn can_export_secret_key(case: TestContext) {
-            run_test_with_client_ids(case.clone(), ["alice"], move |[alice_central]| {
-                Box::pin(async move {
-                    let id = conversation_id();
-                    alice_central
-                        .transaction
-                        .new_conversation(&id, case.credential_type, case.cfg.clone())
-                        .await
-                        .unwrap();
+            let [alice_central] = case.sessions().await;
+            Box::pin(async move {
+                let id = conversation_id();
+                alice_central
+                    .transaction
+                    .new_conversation(&id, case.credential_type, case.cfg.clone())
+                    .await
+                    .unwrap();
 
-                    let key_length = 128;
-                    let result = alice_central
-                        .transaction
-                        .conversation(&id)
-                        .await
-                        .unwrap()
-                        .export_secret_key(key_length)
-                        .await;
-                    assert!(result.is_ok());
-                    assert_eq!(result.unwrap().len(), key_length);
-                })
+                let key_length = 128;
+                let result = alice_central
+                    .transaction
+                    .conversation(&id)
+                    .await
+                    .unwrap()
+                    .export_secret_key(key_length)
+                    .await;
+                assert!(result.is_ok());
+                assert_eq!(result.unwrap().len(), key_length);
             })
             .await
         }
@@ -1327,28 +1312,27 @@ mod tests {
         #[apply(all_cred_cipher)]
         #[wasm_bindgen_test]
         pub async fn cannot_export_secret_key_invalid_length(case: TestContext) {
-            run_test_with_client_ids(case.clone(), ["alice"], move |[alice_central]| {
-                Box::pin(async move {
-                    let id = conversation_id();
-                    alice_central
-                        .transaction
-                        .new_conversation(&id, case.credential_type, case.cfg.clone())
-                        .await
-                        .unwrap();
+            let [alice_central] = case.sessions().await;
+            Box::pin(async move {
+                let id = conversation_id();
+                alice_central
+                    .transaction
+                    .new_conversation(&id, case.credential_type, case.cfg.clone())
+                    .await
+                    .unwrap();
 
-                    let result = alice_central
-                        .transaction
-                        .conversation(&id)
-                        .await
-                        .unwrap()
-                        .export_secret_key(usize::MAX)
-                        .await;
-                    let error = result.unwrap_err();
-                    assert!(innermost_source_matches!(
-                        error,
-                        MlsErrorKind::MlsExportSecretError(ExportSecretError::KeyLengthTooLong)
-                    ));
-                })
+                let result = alice_central
+                    .transaction
+                    .conversation(&id)
+                    .await
+                    .unwrap()
+                    .export_secret_key(usize::MAX)
+                    .await;
+                let error = result.unwrap_err();
+                assert!(innermost_source_matches!(
+                    error,
+                    MlsErrorKind::MlsExportSecretError(ExportSecretError::KeyLengthTooLong)
+                ));
             })
             .await
         }
@@ -1360,40 +1344,39 @@ mod tests {
         #[apply(all_cred_cipher)]
         #[wasm_bindgen_test]
         pub async fn can_get_client_ids(case: TestContext) {
-            run_test_with_client_ids(case.clone(), ["alice", "bob"], move |[alice_central, bob_central]| {
-                Box::pin(async move {
-                    let id = conversation_id();
+            let [alice_central, bob_central] = case.sessions().await;
+            Box::pin(async move {
+                let id = conversation_id();
+                alice_central
+                    .transaction
+                    .new_conversation(&id, case.credential_type, case.cfg.clone())
+                    .await
+                    .unwrap();
+
+                assert_eq!(
                     alice_central
                         .transaction
-                        .new_conversation(&id, case.credential_type, case.cfg.clone())
+                        .conversation(&id)
                         .await
-                        .unwrap();
+                        .unwrap()
+                        .get_client_ids()
+                        .await
+                        .len(),
+                    1
+                );
 
-                    assert_eq!(
-                        alice_central
-                            .transaction
-                            .conversation(&id)
-                            .await
-                            .unwrap()
-                            .get_client_ids()
-                            .await
-                            .len(),
-                        1
-                    );
-
-                    alice_central.invite_all(&case, &id, [&bob_central]).await.unwrap();
-                    assert_eq!(
-                        alice_central
-                            .transaction
-                            .conversation(&id)
-                            .await
-                            .unwrap()
-                            .get_client_ids()
-                            .await
-                            .len(),
-                        2
-                    );
-                })
+                alice_central.invite_all(&case, &id, [&bob_central]).await.unwrap();
+                assert_eq!(
+                    alice_central
+                        .transaction
+                        .conversation(&id)
+                        .await
+                        .unwrap()
+                        .get_client_ids()
+                        .await
+                        .len(),
+                    2
+                );
             })
             .await
         }
@@ -1405,32 +1388,31 @@ mod tests {
         #[apply(all_cred_cipher)]
         #[wasm_bindgen_test]
         pub async fn should_fetch_ext_sender(case: TestContext) {
-            run_test_with_client_ids(case.clone(), ["alice"], move |[alice_central]| {
-                Box::pin(async move {
-                    let id = conversation_id();
+            let [alice_central] = case.sessions().await;
+            Box::pin(async move {
+                let id = conversation_id();
 
-                    // by default in test no external sender is set. Let's add one
-                    let mut cfg = case.cfg.clone();
-                    let external_sender = alice_central.rand_external_sender(&case).await;
-                    cfg.external_senders = vec![external_sender.clone()];
+                // by default in test no external sender is set. Let's add one
+                let mut cfg = case.cfg.clone();
+                let external_sender = alice_central.rand_external_sender(&case).await;
+                cfg.external_senders = vec![external_sender.clone()];
 
-                    alice_central
-                        .transaction
-                        .new_conversation(&id, case.credential_type, cfg)
-                        .await
-                        .unwrap();
+                alice_central
+                    .transaction
+                    .new_conversation(&id, case.credential_type, cfg)
+                    .await
+                    .unwrap();
 
-                    let alice_ext_sender = alice_central
-                        .transaction
-                        .conversation(&id)
-                        .await
-                        .unwrap()
-                        .get_external_sender()
-                        .await
-                        .unwrap();
-                    assert!(!alice_ext_sender.is_empty());
-                    assert_eq!(alice_ext_sender, external_sender.signature_key().as_slice().to_vec());
-                })
+                let alice_ext_sender = alice_central
+                    .transaction
+                    .conversation(&id)
+                    .await
+                    .unwrap()
+                    .get_external_sender()
+                    .await
+                    .unwrap();
+                assert!(!alice_ext_sender.is_empty());
+                assert_eq!(alice_ext_sender, external_sender.signature_key().as_slice().to_vec());
             })
             .await
         }

@@ -391,59 +391,61 @@ mod tests {
         if !case.is_basic() {
             return;
         }
-        run_test_with_client_ids(case.clone(), ["alice"], move |[mut session_context]| {
-            Box::pin(async move {
-                let signature_scheme = case.signature_scheme();
-                let cipher_suite = case.ciphersuite();
 
-                // Generate 5 Basic key packages first
-                let _basic_key_packages = session_context
-                    .transaction
-                    .get_or_create_client_keypackages(cipher_suite, MlsCredentialType::Basic, 5)
-                    .await
-                    .unwrap();
+        let [mut session_context] = case.sessions().await;
+        Box::pin(async move {
+            let signature_scheme = case.signature_scheme();
+            let cipher_suite = case.ciphersuite();
 
-                // Set up E2E identity
-                let test_chain = x509::X509TestChain::init_for_random_clients(signature_scheme, 1);
-
-                let (mut enrollment, cert_chain) = e2ei_enrollment(
-                    &mut session_context,
-                    &case,
-                    &test_chain,
-                    None,
-                    false,
-                    init_activation_or_rotation,
-                    noop_restore,
-                )
+            // Generate 5 Basic key packages first
+            let _basic_key_packages = session_context
+                .transaction
+                .get_or_create_client_keypackages(cipher_suite, MlsCredentialType::Basic, 5)
                 .await
                 .unwrap();
 
-                let _rotate_bundle = session_context
+            // Set up E2E identity
+            let test_chain = x509::X509TestChain::init_for_random_clients(signature_scheme, 1);
+
+            let (mut enrollment, cert_chain) = e2ei_enrollment(
+                &mut session_context,
+                &case,
+                &test_chain,
+                None,
+                false,
+                init_activation_or_rotation,
+                noop_restore,
+            )
+            .await
+            .unwrap();
+
+            let _rotate_bundle = session_context
+                .transaction
+                .save_x509_credential(&mut enrollment, cert_chain)
+                .await
+                .unwrap();
+
+            // E2E identity has been set up correctly
+            assert!(
+                session_context
                     .transaction
-                    .save_x509_credential(&mut enrollment, cert_chain)
+                    .e2ei_is_enabled(signature_scheme)
                     .await
-                    .unwrap();
+                    .unwrap()
+            );
 
-                // E2E identity has been set up correctly
-                assert!(
-                    session_context
-                        .transaction
-                        .e2ei_is_enabled(signature_scheme)
-                        .await
-                        .unwrap()
-                );
+            // Request X509 key packages
+            let x509_key_packages = session_context
+                .transaction
+                .get_or_create_client_keypackages(cipher_suite, MlsCredentialType::X509, 5)
+                .await
+                .unwrap();
 
-                // Request X509 key packages
-                let x509_key_packages = session_context
-                    .transaction
-                    .get_or_create_client_keypackages(cipher_suite, MlsCredentialType::X509, 5)
-                    .await
-                    .unwrap();
-
-                // Verify that the key packages are X509
-                assert!(x509_key_packages.iter().all(|kp| MlsCredentialType::X509
-                    == MlsCredentialType::from(kp.leaf_node().credential().credential_type())));
-            })
+            // Verify that the key packages are X509
+            assert!(
+                x509_key_packages.iter().all(|kp| MlsCredentialType::X509
+                    == MlsCredentialType::from(kp.leaf_node().credential().credential_type()))
+            );
         })
         .await
     }
@@ -451,81 +453,80 @@ mod tests {
     #[apply(all_cred_cipher)]
     #[wasm_bindgen_test]
     async fn generates_correct_number_of_kpbs(case: TestContext) {
-        run_test_with_client_ids(case.clone(), ["alice"], move |[cc]| {
-            Box::pin(async move {
-                const N: usize = 2;
-                const COUNT: usize = 109;
+        let [cc] = case.sessions().await;
+        Box::pin(async move {
+            const N: usize = 2;
+            const COUNT: usize = 109;
 
-                let init = cc.transaction.count_entities().await;
-                assert_eq!(init.key_package, INITIAL_KEYING_MATERIAL_COUNT);
-                assert_eq!(init.encryption_keypair, INITIAL_KEYING_MATERIAL_COUNT);
-                assert_eq!(init.hpke_private_key, INITIAL_KEYING_MATERIAL_COUNT);
-                assert_eq!(init.credential, 1);
-                assert_eq!(init.signature_keypair, 1);
+            let init = cc.transaction.count_entities().await;
+            assert_eq!(init.key_package, INITIAL_KEYING_MATERIAL_COUNT);
+            assert_eq!(init.encryption_keypair, INITIAL_KEYING_MATERIAL_COUNT);
+            assert_eq!(init.hpke_private_key, INITIAL_KEYING_MATERIAL_COUNT);
+            assert_eq!(init.credential, 1);
+            assert_eq!(init.signature_keypair, 1);
 
-                // since 'delete_keypackages' will evict all Credentials unlinked to a KeyPackage, each iteration
-                // generates 1 extra KeyPackage in order for this Credential no to be evicted and next iteration sto succeed.
-                let transactional_provider = cc.transaction.mls_provider().await.unwrap();
-                let crypto_provider = transactional_provider.crypto();
-                let mut pinned_kp = None;
+            // since 'delete_keypackages' will evict all Credentials unlinked to a KeyPackage, each iteration
+            // generates 1 extra KeyPackage in order for this Credential no to be evicted and next iteration sto succeed.
+            let transactional_provider = cc.transaction.mls_provider().await.unwrap();
+            let crypto_provider = transactional_provider.crypto();
+            let mut pinned_kp = None;
 
-                let mut prev_kps: Option<Vec<KeyPackage>> = None;
-                for _ in 0..N {
-                    let mut kps = cc
-                        .transaction
-                        .get_or_create_client_keypackages(case.ciphersuite(), case.credential_type, COUNT + 1)
-                        .await
-                        .unwrap();
+            let mut prev_kps: Option<Vec<KeyPackage>> = None;
+            for _ in 0..N {
+                let mut kps = cc
+                    .transaction
+                    .get_or_create_client_keypackages(case.ciphersuite(), case.credential_type, COUNT + 1)
+                    .await
+                    .unwrap();
 
-                    // this will always be the same, first KeyPackage
-                    pinned_kp = Some(kps.pop().unwrap());
+                // this will always be the same, first KeyPackage
+                pinned_kp = Some(kps.pop().unwrap());
 
-                    assert_eq!(kps.len(), COUNT);
-                    let after_creation = cc.transaction.count_entities().await;
-                    assert_eq!(after_creation.key_package, COUNT + 1);
-                    assert_eq!(after_creation.encryption_keypair, COUNT + 1);
-                    assert_eq!(after_creation.hpke_private_key, COUNT + 1);
-                    assert_eq!(after_creation.credential, 1);
+                assert_eq!(kps.len(), COUNT);
+                let after_creation = cc.transaction.count_entities().await;
+                assert_eq!(after_creation.key_package, COUNT + 1);
+                assert_eq!(after_creation.encryption_keypair, COUNT + 1);
+                assert_eq!(after_creation.hpke_private_key, COUNT + 1);
+                assert_eq!(after_creation.credential, 1);
 
-                    let kpbs_refs = kps
-                        .iter()
-                        .map(|kp| kp.hash_ref(crypto_provider).unwrap())
+                let kpbs_refs = kps
+                    .iter()
+                    .map(|kp| kp.hash_ref(crypto_provider).unwrap())
+                    .collect::<Vec<KeyPackageRef>>();
+
+                if let Some(pkpbs) = prev_kps.replace(kps) {
+                    let pkpbs_refs = pkpbs
+                        .into_iter()
+                        .map(|kpb| kpb.hash_ref(crypto_provider).unwrap())
                         .collect::<Vec<KeyPackageRef>>();
 
-                    if let Some(pkpbs) = prev_kps.replace(kps) {
-                        let pkpbs_refs = pkpbs
-                            .into_iter()
-                            .map(|kpb| kpb.hash_ref(crypto_provider).unwrap())
-                            .collect::<Vec<KeyPackageRef>>();
-
-                        let has_duplicates = kpbs_refs.iter().any(|href| pkpbs_refs.contains(href));
-                        // Make sure we have no previous keypackages found (that were pruned) in our new batch of KPs
-                        assert!(!has_duplicates);
-                    }
-                    cc.transaction.delete_keypackages(&kpbs_refs).await.unwrap();
+                    let has_duplicates = kpbs_refs.iter().any(|href| pkpbs_refs.contains(href));
+                    // Make sure we have no previous keypackages found (that were pruned) in our new batch of KPs
+                    assert!(!has_duplicates);
                 }
+                cc.transaction.delete_keypackages(&kpbs_refs).await.unwrap();
+            }
 
-                let count = cc
-                    .transaction
-                    .client_valid_key_packages_count(case.ciphersuite(), case.credential_type)
-                    .await
-                    .unwrap();
-                assert_eq!(count, 1);
+            let count = cc
+                .transaction
+                .client_valid_key_packages_count(case.ciphersuite(), case.credential_type)
+                .await
+                .unwrap();
+            assert_eq!(count, 1);
 
-                let pinned_kpr = pinned_kp.unwrap().hash_ref(crypto_provider).unwrap();
-                cc.transaction.delete_keypackages(&[pinned_kpr]).await.unwrap();
-                let count = cc
-                    .transaction
-                    .client_valid_key_packages_count(case.ciphersuite(), case.credential_type)
-                    .await
-                    .unwrap();
-                assert_eq!(count, 0);
-                let after_delete = cc.transaction.count_entities().await;
-                assert_eq!(after_delete.key_package, 0);
-                assert_eq!(after_delete.encryption_keypair, 0);
-                assert_eq!(after_delete.hpke_private_key, 0);
-                assert_eq!(after_delete.credential, 0);
-            })
+            let pinned_kpr = pinned_kp.unwrap().hash_ref(crypto_provider).unwrap();
+            cc.transaction.delete_keypackages(&[pinned_kpr]).await.unwrap();
+            let count = cc
+                .transaction
+                .client_valid_key_packages_count(case.ciphersuite(), case.credential_type)
+                .await
+                .unwrap();
+            assert_eq!(count, 0);
+            let after_delete = cc.transaction.count_entities().await;
+            assert_eq!(after_delete.key_package, 0);
+            assert_eq!(after_delete.encryption_keypair, 0);
+            assert_eq!(after_delete.hpke_private_key, 0);
+            assert_eq!(after_delete.credential, 0);
         })
         .await
     }
@@ -619,43 +620,42 @@ mod tests {
     #[apply(all_cred_cipher)]
     #[wasm_bindgen_test]
     async fn new_keypackage_has_correct_extensions(case: TestContext) {
-        run_test_with_client_ids(case.clone(), ["alice"], move |[cc]| {
-            Box::pin(async move {
-                let kps = cc
-                    .transaction
-                    .get_or_create_client_keypackages(case.ciphersuite(), case.credential_type, 1)
-                    .await
-                    .unwrap();
-                let kp = kps.first().unwrap();
+        let [cc] = case.sessions().await;
+        Box::pin(async move {
+            let kps = cc
+                .transaction
+                .get_or_create_client_keypackages(case.ciphersuite(), case.credential_type, 1)
+                .await
+                .unwrap();
+            let kp = kps.first().unwrap();
 
-                // make sure it's valid
-                let _ = KeyPackageIn::from(kp.clone())
-                    .standalone_validate(
-                        &cc.transaction.mls_provider().await.unwrap(),
-                        ProtocolVersion::Mls10,
-                        true,
-                    )
-                    .await
-                    .unwrap();
+            // make sure it's valid
+            let _ = KeyPackageIn::from(kp.clone())
+                .standalone_validate(
+                    &cc.transaction.mls_provider().await.unwrap(),
+                    ProtocolVersion::Mls10,
+                    true,
+                )
+                .await
+                .unwrap();
 
-                // see https://www.rfc-editor.org/rfc/rfc9420.html#section-10-10
-                assert!(kp.extensions().is_empty());
+            // see https://www.rfc-editor.org/rfc/rfc9420.html#section-10-10
+            assert!(kp.extensions().is_empty());
 
-                assert_eq!(kp.leaf_node().capabilities().versions(), &[ProtocolVersion::Mls10]);
-                assert_eq!(
-                    kp.leaf_node().capabilities().ciphersuites().to_vec(),
-                    MlsConversationConfiguration::DEFAULT_SUPPORTED_CIPHERSUITES
-                        .iter()
-                        .map(|c| VerifiableCiphersuite::from(*c))
-                        .collect::<Vec<_>>()
-                );
-                assert!(kp.leaf_node().capabilities().proposals().is_empty());
-                assert!(kp.leaf_node().capabilities().extensions().is_empty());
-                assert_eq!(
-                    kp.leaf_node().capabilities().credentials(),
-                    MlsConversationConfiguration::DEFAULT_SUPPORTED_CREDENTIALS
-                );
-            })
+            assert_eq!(kp.leaf_node().capabilities().versions(), &[ProtocolVersion::Mls10]);
+            assert_eq!(
+                kp.leaf_node().capabilities().ciphersuites().to_vec(),
+                MlsConversationConfiguration::DEFAULT_SUPPORTED_CIPHERSUITES
+                    .iter()
+                    .map(|c| VerifiableCiphersuite::from(*c))
+                    .collect::<Vec<_>>()
+            );
+            assert!(kp.leaf_node().capabilities().proposals().is_empty());
+            assert!(kp.leaf_node().capabilities().extensions().is_empty());
+            assert_eq!(
+                kp.leaf_node().capabilities().credentials(),
+                MlsConversationConfiguration::DEFAULT_SUPPORTED_CREDENTIALS
+            );
         })
         .await
     }

@@ -170,162 +170,158 @@ mod tests {
             // Openmls does not support this currently when protocol messages are encrypted.
             return;
         }
-        run_test_with_client_ids(
-            case.clone(),
-            ["alice", "bob", "charlie", "debbie"],
-            move |[alice_central, bob_central, charlie_central, debbie_central]| {
-                Box::pin(async move {
-                    let id = conversation_id();
-                    alice_central
-                        .transaction
-                        .new_conversation(&id, case.credential_type, case.cfg.clone())
-                        .await
-                        .unwrap();
-                    alice_central.invite_all(&case, &id, [&bob_central]).await.unwrap();
 
-                    // Bob creates a commit but won't merge it immediately (e.g, because his app crashes before he receives the success response from the ds)
-                    let unmerged_commit = bob_central.create_unmerged_commit(&id).await;
+        let [alice_central, bob_central, charlie_central, debbie_central] = case.sessions().await;
+        Box::pin(async move {
+            let id = conversation_id();
+            alice_central
+                .transaction
+                .new_conversation(&id, case.credential_type, case.cfg.clone())
+                .await
+                .unwrap();
+            alice_central.invite_all(&case, &id, [&bob_central]).await.unwrap();
 
-                    // Alice decrypts the commit...
-                    alice_central
-                        .transaction
-                        .conversation(&id)
-                        .await
-                        .unwrap()
-                        .decrypt_message(unmerged_commit.commit.to_bytes().unwrap())
-                        .await
-                        .unwrap();
+            // Bob creates a commit but won't merge it immediately (e.g, because his app crashes before he receives the success response from the ds)
+            let unmerged_commit = bob_central.create_unmerged_commit(&id).await;
 
-                    // Meanwhile Debbie joins the party by creating an external proposal
-                    let epoch = alice_central.transaction.conversation(&id).await.unwrap().epoch().await;
-                    let external_proposal = debbie_central
-                        .transaction
-                        .new_external_add_proposal(id.clone(), epoch.into(), case.ciphersuite(), case.credential_type)
-                        .await
-                        .unwrap();
+            // Alice decrypts the commit...
+            alice_central
+                .transaction
+                .conversation(&id)
+                .await
+                .unwrap()
+                .decrypt_message(unmerged_commit.commit.to_bytes().unwrap())
+                .await
+                .unwrap();
 
-                    // ...then Alice generates new messages for this epoch
-                    let app_msg = alice_central
-                        .transaction
-                        .conversation(&id)
-                        .await
-                        .unwrap()
-                        .encrypt_message(b"Hello Bob !")
-                        .await
-                        .unwrap();
-                    let proposal = alice_central
-                        .transaction
-                        .new_update_proposal(&id)
-                        .await
-                        .unwrap()
-                        .proposal;
-                    alice_central
-                        .transaction
-                        .conversation(&id)
-                        .await
-                        .unwrap()
-                        .decrypt_message(external_proposal.to_bytes().unwrap())
-                        .await
-                        .unwrap();
-                    let charlie = charlie_central.rand_key_package(&case).await;
-                    alice_central
-                        .transaction
-                        .conversation(&id)
-                        .await
-                        .unwrap()
-                        .add_members(vec![charlie])
-                        .await
-                        .unwrap();
-                    let commit = alice_central.mls_transport.latest_commit_bundle().await;
-                    charlie_central
-                        .transaction
-                        .process_welcome_message(commit.welcome.clone().unwrap().into(), case.custom_cfg())
-                        .await
-                        .unwrap();
-                    debbie_central
-                        .transaction
-                        .process_welcome_message(commit.welcome.clone().unwrap().into(), case.custom_cfg())
-                        .await
-                        .unwrap();
+            // Meanwhile Debbie joins the party by creating an external proposal
+            let epoch = alice_central.transaction.conversation(&id).await.unwrap().epoch().await;
+            let external_proposal = debbie_central
+                .transaction
+                .new_external_add_proposal(id.clone(), epoch.into(), case.ciphersuite(), case.credential_type)
+                .await
+                .unwrap();
 
-                    // And now Bob will have to decrypt those messages while he hasn't yet merged its commit
-                    // To add more fun, he will buffer the messages in exactly the wrong order (to make
-                    // sure he reapplies them in the right order afterwards)
-                    let messages = [commit.commit, external_proposal, proposal]
-                        .into_iter()
-                        .map(|m| m.to_bytes().unwrap())
-                        .chain(std::iter::once(app_msg));
-                    for m in messages {
-                        let decrypt = bob_central
-                            .transaction
-                            .conversation(&id)
-                            .await
-                            .unwrap()
-                            .decrypt_message(m)
-                            .await;
-                        assert!(matches!(decrypt.unwrap_err(), Error::BufferedFutureMessage { .. }));
-                    }
+            // ...then Alice generates new messages for this epoch
+            let app_msg = alice_central
+                .transaction
+                .conversation(&id)
+                .await
+                .unwrap()
+                .encrypt_message(b"Hello Bob !")
+                .await
+                .unwrap();
+            let proposal = alice_central
+                .transaction
+                .new_update_proposal(&id)
+                .await
+                .unwrap()
+                .proposal;
+            alice_central
+                .transaction
+                .conversation(&id)
+                .await
+                .unwrap()
+                .decrypt_message(external_proposal.to_bytes().unwrap())
+                .await
+                .unwrap();
+            let charlie = charlie_central.rand_key_package(&case).await;
+            alice_central
+                .transaction
+                .conversation(&id)
+                .await
+                .unwrap()
+                .add_members(vec![charlie])
+                .await
+                .unwrap();
+            let commit = alice_central.mls_transport.latest_commit_bundle().await;
+            charlie_central
+                .transaction
+                .process_welcome_message(commit.welcome.clone().unwrap().into(), case.custom_cfg())
+                .await
+                .unwrap();
+            debbie_central
+                .transaction
+                .process_welcome_message(commit.welcome.clone().unwrap().into(), case.custom_cfg())
+                .await
+                .unwrap();
 
-                    // Bob should have buffered the messages
-                    assert_eq!(bob_central.transaction.count_entities().await.pending_messages, 4);
+            // And now Bob will have to decrypt those messages while he hasn't yet merged its commit
+            // To add more fun, he will buffer the messages in exactly the wrong order (to make
+            // sure he reapplies them in the right order afterwards)
+            let messages = [commit.commit, external_proposal, proposal]
+                .into_iter()
+                .map(|m| m.to_bytes().unwrap())
+                .chain(std::iter::once(app_msg));
+            for m in messages {
+                let decrypt = bob_central
+                    .transaction
+                    .conversation(&id)
+                    .await
+                    .unwrap()
+                    .decrypt_message(m)
+                    .await;
+                assert!(matches!(decrypt.unwrap_err(), Error::BufferedFutureMessage { .. }));
+            }
 
-                    let observer = TestEpochObserver::new();
-                    bob_central
-                        .session()
-                        .await
-                        .register_epoch_observer(observer.clone())
-                        .await
-                        .unwrap();
+            // Bob should have buffered the messages
+            assert_eq!(bob_central.transaction.count_entities().await.pending_messages, 4);
 
-                    // Finally, Bob receives the green light from the DS and he can merge the external commit
-                    let MlsConversationDecryptMessage {
-                        buffered_messages: Some(restored_messages),
-                        ..
-                    } = bob_central
-                        .transaction
-                        .conversation(&id)
-                        .await
-                        .unwrap()
-                        .decrypt_message(unmerged_commit.commit.to_bytes().unwrap())
-                        .await
-                        .unwrap()
-                    else {
-                        panic!("Alice's messages should have been restored at this point");
-                    };
+            let observer = TestEpochObserver::new();
+            bob_central
+                .session()
+                .await
+                .register_epoch_observer(observer.clone())
+                .await
+                .unwrap();
 
-                    for (idx, msg) in restored_messages.iter().enumerate() {
-                        if idx == 0 {
-                            // this is the application message
-                            assert_eq!(msg.app_msg.as_deref(), Some("Hello Bob !".as_bytes()));
-                        } else {
-                            assert!(msg.app_msg.is_none());
-                        }
-                    }
-                    let observed_epochs = observer
-                        .observed_epochs()
-                        .await
-                        .into_iter()
-                        .map(|(_conversation_id, epoch)| epoch)
-                        .collect::<Vec<_>>();
-                    dbg!(&observed_epochs);
-                    assert_eq!(
-                        observed_epochs.len(),
-                        2,
-                        "there was 1 buffered commit changing the epoch plus the outer commit changing the epoch"
-                    );
+            // Finally, Bob receives the green light from the DS and he can merge the external commit
+            let MlsConversationDecryptMessage {
+                buffered_messages: Some(restored_messages),
+                ..
+            } = bob_central
+                .transaction
+                .conversation(&id)
+                .await
+                .unwrap()
+                .decrypt_message(unmerged_commit.commit.to_bytes().unwrap())
+                .await
+                .unwrap()
+            else {
+                panic!("Alice's messages should have been restored at this point");
+            };
 
-                    // because external commit got merged
-                    assert!(bob_central.try_talk_to(&id, &alice_central).await.is_ok());
-                    // because Alice's commit got merged
-                    assert!(bob_central.try_talk_to(&id, &charlie_central).await.is_ok());
-                    // because Debbie's external proposal got merged through the commit
-                    assert!(bob_central.try_talk_to(&id, &debbie_central).await.is_ok());
+            for (idx, msg) in restored_messages.iter().enumerate() {
+                if idx == 0 {
+                    // this is the application message
+                    assert_eq!(msg.app_msg.as_deref(), Some("Hello Bob !".as_bytes()));
+                } else {
+                    assert!(msg.app_msg.is_none());
+                }
+            }
+            let observed_epochs = observer
+                .observed_epochs()
+                .await
+                .into_iter()
+                .map(|(_conversation_id, epoch)| epoch)
+                .collect::<Vec<_>>();
+            dbg!(&observed_epochs);
+            assert_eq!(
+                observed_epochs.len(),
+                2,
+                "there was 1 buffered commit changing the epoch plus the outer commit changing the epoch"
+            );
 
-                    // After merging we should erase all those pending messages
-                    assert_eq!(bob_central.transaction.count_entities().await.pending_messages, 0);
-                })
-            },
-        )
+            // because external commit got merged
+            assert!(bob_central.try_talk_to(&id, &alice_central).await.is_ok());
+            // because Alice's commit got merged
+            assert!(bob_central.try_talk_to(&id, &charlie_central).await.is_ok());
+            // because Debbie's external proposal got merged through the commit
+            assert!(bob_central.try_talk_to(&id, &debbie_central).await.is_ok());
+
+            // After merging we should erase all those pending messages
+            assert_eq!(bob_central.transaction.count_entities().await.pending_messages, 0);
+        })
         .await
     }
 
@@ -337,160 +333,156 @@ mod tests {
             // Openmls does not support this currently when protocol messages are encrypted.
             return;
         }
-        run_test_with_client_ids(
-            case.clone(),
-            ["alice", "bob", "charlie", "debbie"],
-            move |[alice_central, bob_central, charlie_central, debbie_central]| {
-                Box::pin(async move {
-                    let id = conversation_id();
-                    alice_central
-                        .transaction
-                        .new_conversation(&id, case.credential_type, case.cfg.clone())
-                        .await
-                        .unwrap();
 
-                    // Bob joins the group with an external commit...
-                    let gi = alice_central.get_group_info(&id).await;
-                    bob_central
-                        .transaction
-                        .join_by_external_commit(gi, case.custom_cfg(), case.credential_type)
-                        .await
-                        .unwrap();
+        let [alice_central, bob_central, charlie_central, debbie_central] = case.sessions().await;
+        Box::pin(async move {
+            let id = conversation_id();
+            alice_central
+                .transaction
+                .new_conversation(&id, case.credential_type, case.cfg.clone())
+                .await
+                .unwrap();
 
-                    let ext_commit = bob_central.mls_transport.latest_commit_bundle().await;
+            // Bob joins the group with an external commit...
+            let gi = alice_central.get_group_info(&id).await;
+            bob_central
+                .transaction
+                .join_by_external_commit(gi, case.custom_cfg(), case.credential_type)
+                .await
+                .unwrap();
 
-                    // And before others had the chance to get the commit, Bob will create & send messages in the next epoch
-                    // which Alice will have to buffer until she receives the commit.
-                    // This simulates what the DS does with unordered messages
-                    let epoch = bob_central.transaction.conversation(&id).await.unwrap().epoch().await;
-                    let external_proposal = charlie_central
-                        .transaction
-                        .new_external_add_proposal(id.clone(), epoch.into(), case.ciphersuite(), case.credential_type)
-                        .await
-                        .unwrap();
-                    let app_msg = bob_central
-                        .transaction
-                        .conversation(&id)
-                        .await
-                        .unwrap()
-                        .encrypt_message(b"Hello Alice !")
-                        .await
-                        .unwrap();
-                    let proposal = bob_central.transaction.new_update_proposal(&id).await.unwrap().proposal;
-                    bob_central
-                        .transaction
-                        .conversation(&id)
-                        .await
-                        .unwrap()
-                        .decrypt_message(external_proposal.to_bytes().unwrap())
-                        .await
-                        .unwrap();
-                    let debbie = debbie_central.rand_key_package(&case).await;
-                    bob_central
-                        .transaction
-                        .conversation(&id)
-                        .await
-                        .unwrap()
-                        .add_members(vec![debbie])
-                        .await
-                        .unwrap();
-                    let commit = bob_central.mls_transport.latest_commit_bundle().await;
-                    charlie_central
-                        .transaction
-                        .process_welcome_message(commit.welcome.clone().unwrap().into(), case.custom_cfg())
-                        .await
-                        .unwrap();
-                    debbie_central
-                        .transaction
-                        .process_welcome_message(commit.welcome.clone().unwrap().into(), case.custom_cfg())
-                        .await
-                        .unwrap();
+            let ext_commit = bob_central.mls_transport.latest_commit_bundle().await;
 
-                    // And now Alice will have to decrypt those messages while he hasn't yet merged the commit
-                    // To add more fun, he will buffer the messages in exactly the wrong order (to make
-                    // sure he reapplies them in the right order afterwards)
-                    let messages = vec![commit.commit, external_proposal, proposal]
-                        .into_iter()
-                        .map(|m| m.to_bytes().unwrap());
-                    for m in messages {
-                        let decrypt = alice_central
-                            .transaction
-                            .conversation(&id)
-                            .await
-                            .unwrap()
-                            .decrypt_message(m)
-                            .await;
-                        assert!(matches!(decrypt.unwrap_err(), Error::BufferedFutureMessage { .. }));
-                    }
-                    let decrypt = alice_central
-                        .transaction
-                        .conversation(&id)
-                        .await
-                        .unwrap()
-                        .decrypt_message(app_msg)
-                        .await;
-                    assert!(matches!(decrypt.unwrap_err(), Error::BufferedFutureMessage { .. }));
+            // And before others had the chance to get the commit, Bob will create & send messages in the next epoch
+            // which Alice will have to buffer until she receives the commit.
+            // This simulates what the DS does with unordered messages
+            let epoch = bob_central.transaction.conversation(&id).await.unwrap().epoch().await;
+            let external_proposal = charlie_central
+                .transaction
+                .new_external_add_proposal(id.clone(), epoch.into(), case.ciphersuite(), case.credential_type)
+                .await
+                .unwrap();
+            let app_msg = bob_central
+                .transaction
+                .conversation(&id)
+                .await
+                .unwrap()
+                .encrypt_message(b"Hello Alice !")
+                .await
+                .unwrap();
+            let proposal = bob_central.transaction.new_update_proposal(&id).await.unwrap().proposal;
+            bob_central
+                .transaction
+                .conversation(&id)
+                .await
+                .unwrap()
+                .decrypt_message(external_proposal.to_bytes().unwrap())
+                .await
+                .unwrap();
+            let debbie = debbie_central.rand_key_package(&case).await;
+            bob_central
+                .transaction
+                .conversation(&id)
+                .await
+                .unwrap()
+                .add_members(vec![debbie])
+                .await
+                .unwrap();
+            let commit = bob_central.mls_transport.latest_commit_bundle().await;
+            charlie_central
+                .transaction
+                .process_welcome_message(commit.welcome.clone().unwrap().into(), case.custom_cfg())
+                .await
+                .unwrap();
+            debbie_central
+                .transaction
+                .process_welcome_message(commit.welcome.clone().unwrap().into(), case.custom_cfg())
+                .await
+                .unwrap();
 
-                    // Alice should have buffered the messages
-                    assert_eq!(alice_central.transaction.count_entities().await.pending_messages, 4);
+            // And now Alice will have to decrypt those messages while he hasn't yet merged the commit
+            // To add more fun, he will buffer the messages in exactly the wrong order (to make
+            // sure he reapplies them in the right order afterwards)
+            let messages = vec![commit.commit, external_proposal, proposal]
+                .into_iter()
+                .map(|m| m.to_bytes().unwrap());
+            for m in messages {
+                let decrypt = alice_central
+                    .transaction
+                    .conversation(&id)
+                    .await
+                    .unwrap()
+                    .decrypt_message(m)
+                    .await;
+                assert!(matches!(decrypt.unwrap_err(), Error::BufferedFutureMessage { .. }));
+            }
+            let decrypt = alice_central
+                .transaction
+                .conversation(&id)
+                .await
+                .unwrap()
+                .decrypt_message(app_msg)
+                .await;
+            assert!(matches!(decrypt.unwrap_err(), Error::BufferedFutureMessage { .. }));
 
-                    let observer = TestEpochObserver::new();
-                    alice_central
-                        .session()
-                        .await
-                        .register_epoch_observer(observer.clone())
-                        .await
-                        .unwrap();
+            // Alice should have buffered the messages
+            assert_eq!(alice_central.transaction.count_entities().await.pending_messages, 4);
 
-                    // Finally, Alice receives the original commit for this epoch
-                    let original_commit = ext_commit.commit.to_bytes().unwrap();
-                    let MlsConversationDecryptMessage {
-                        buffered_messages: Some(restored_messages),
-                        ..
-                    } = alice_central
-                        .transaction
-                        .conversation(&id)
-                        .await
-                        .unwrap()
-                        .decrypt_message(original_commit)
-                        .await
-                        .unwrap()
-                    else {
-                        panic!("Bob's messages should have been restored at this point");
-                    };
-                    for (idx, msg) in restored_messages.into_iter().enumerate() {
-                        if idx == 0 {
-                            assert_eq!(msg.app_msg.as_deref(), Some(b"Hello Alice !" as _));
-                        } else {
-                            assert!(msg.app_msg.is_none());
-                        }
-                    }
+            let observer = TestEpochObserver::new();
+            alice_central
+                .session()
+                .await
+                .register_epoch_observer(observer.clone())
+                .await
+                .unwrap();
 
-                    let observed_epochs = observer
-                        .observed_epochs()
-                        .await
-                        .into_iter()
-                        .map(|(_conversation_id, epoch)| epoch)
-                        .collect::<Vec<_>>();
-                    dbg!(&observed_epochs);
-                    assert_eq!(
-                        observed_epochs.len(),
-                        2,
-                        "there was 1 buffered commit changing the epoch plus the outer commit changing the epoch"
-                    );
+            // Finally, Alice receives the original commit for this epoch
+            let original_commit = ext_commit.commit.to_bytes().unwrap();
+            let MlsConversationDecryptMessage {
+                buffered_messages: Some(restored_messages),
+                ..
+            } = alice_central
+                .transaction
+                .conversation(&id)
+                .await
+                .unwrap()
+                .decrypt_message(original_commit)
+                .await
+                .unwrap()
+            else {
+                panic!("Bob's messages should have been restored at this point");
+            };
+            for (idx, msg) in restored_messages.into_iter().enumerate() {
+                if idx == 0 {
+                    assert_eq!(msg.app_msg.as_deref(), Some(b"Hello Alice !" as _));
+                } else {
+                    assert!(msg.app_msg.is_none());
+                }
+            }
 
-                    // because external commit got merged
-                    assert!(alice_central.try_talk_to(&id, &bob_central).await.is_ok());
-                    // because Alice's commit got merged
-                    assert!(alice_central.try_talk_to(&id, &charlie_central).await.is_ok());
-                    // because Debbie's external proposal got merged through the commit
-                    assert!(alice_central.try_talk_to(&id, &debbie_central).await.is_ok());
+            let observed_epochs = observer
+                .observed_epochs()
+                .await
+                .into_iter()
+                .map(|(_conversation_id, epoch)| epoch)
+                .collect::<Vec<_>>();
+            dbg!(&observed_epochs);
+            assert_eq!(
+                observed_epochs.len(),
+                2,
+                "there was 1 buffered commit changing the epoch plus the outer commit changing the epoch"
+            );
 
-                    // After merging we should erase all those pending messages
-                    assert_eq!(alice_central.transaction.count_entities().await.pending_messages, 0);
-                })
-            },
-        )
+            // because external commit got merged
+            assert!(alice_central.try_talk_to(&id, &bob_central).await.is_ok());
+            // because Alice's commit got merged
+            assert!(alice_central.try_talk_to(&id, &charlie_central).await.is_ok());
+            // because Debbie's external proposal got merged through the commit
+            assert!(alice_central.try_talk_to(&id, &debbie_central).await.is_ok());
+
+            // After merging we should erase all those pending messages
+            assert_eq!(alice_central.transaction.count_entities().await.pending_messages, 0);
+        })
         .await
     }
 
@@ -511,237 +503,227 @@ mod tests {
             // Openmls does not support this currently when protocol messages are encrypted.
             return;
         }
-        run_test_with_client_ids(
-            case.clone(),
-            ["external_0", "new_member", "member_27", "observer", "114", "115"],
-            move |[external_0, new_member, member_27, observer, member_114, member_115]| {
-                Box::pin(async move {
-                    // scenario start: everyone except "new_member" is in the conversation
-                    let conv_id = conversation_id();
 
-                    // set up external_0 as the backend / delivery service
-                    let signature_key = external_0.client_signature_key(&case).await.as_slice().to_vec();
-                    let mut config = case.cfg.clone();
-                    observer
-                        .transaction
-                        .set_raw_external_senders(&mut config, vec![signature_key])
-                        .await
-                        .unwrap();
+        let [external_0, new_member, member_27, observer, member_114, member_115] = case.sessions().await;
+        Box::pin(async move {
+            // scenario start: everyone except "new_member" is in the conversation
+            let conv_id = conversation_id();
 
-                    // create and initialize the conversation
-                    observer
-                        .transaction
-                        .new_conversation(&conv_id, case.credential_type, config)
-                        .await
-                        .unwrap();
+            // set up external_0 as the backend / delivery service
+            let signature_key = external_0.client_signature_key(&case).await.as_slice().to_vec();
+            let mut config = case.cfg.clone();
+            observer
+                .transaction
+                .set_raw_external_senders(&mut config, vec![signature_key])
+                .await
+                .unwrap();
 
-                    // everyone else except new_member joins (also except observer, who created it)
-                    observer
-                        .invite_all(&case, &conv_id, [&member_114, &member_115, &member_27])
-                        .await
-                        .unwrap();
+            // create and initialize the conversation
+            observer
+                .transaction
+                .new_conversation(&conv_id, case.credential_type, config)
+                .await
+                .unwrap();
 
-                    // Everyone should agree on the overall state here, to wit: the group consists of everyone
-                    // except "new_member", and "external_0", and no messages have been sent.
-                    // At this point only the observer is going to receive messages, because that shouldn't impact group state.
+            // everyone else except new_member joins (also except observer, who created it)
+            observer
+                .invite_all(&case, &conv_id, [&member_114, &member_115, &member_27])
+                .await
+                .unwrap();
 
-                    // external 0 sends a proposal to remove 114
-                    let leaf_of_114 = observer.index_of(&conv_id, member_114.get_client_id().await).await;
-                    let sender_index = SenderExtensionIndex::new(0);
-                    let sc = case.signature_scheme();
-                    let ct = case.credential_type;
-                    let cb = external_0.find_most_recent_credential_bundle(sc, ct).await.unwrap();
-                    let group_id = GroupId::from_slice(&conv_id[..]);
-                    let epoch = observer.get_conversation_unchecked(&conv_id).await.group.epoch();
-                    let proposal_remove_114_1 = ExternalProposal::new_remove(
-                        leaf_of_114,
-                        group_id.clone(),
-                        epoch,
-                        &cb.signature_key,
-                        sender_index,
-                    )
+            // Everyone should agree on the overall state here, to wit: the group consists of everyone
+            // except "new_member", and "external_0", and no messages have been sent.
+            // At this point only the observer is going to receive messages, because that shouldn't impact group state.
+
+            // external 0 sends a proposal to remove 114
+            let leaf_of_114 = observer.index_of(&conv_id, member_114.get_client_id().await).await;
+            let sender_index = SenderExtensionIndex::new(0);
+            let sc = case.signature_scheme();
+            let ct = case.credential_type;
+            let cb = external_0.find_most_recent_credential_bundle(sc, ct).await.unwrap();
+            let group_id = GroupId::from_slice(&conv_id[..]);
+            let epoch = observer.get_conversation_unchecked(&conv_id).await.group.epoch();
+            let proposal_remove_114_1 =
+                ExternalProposal::new_remove(leaf_of_114, group_id.clone(), epoch, &cb.signature_key, sender_index)
                     .unwrap();
 
-                    // now bump the epoch in external_0: the new member has joined
-                    let (new_member_join_commit, mut pending_conversation) = new_member
-                        .create_unmerged_external_commit(
-                            observer.get_group_info(&conv_id).await,
-                            case.custom_cfg(),
-                            case.credential_type,
-                        )
-                        .await;
+            // now bump the epoch in external_0: the new member has joined
+            let (new_member_join_commit, mut pending_conversation) = new_member
+                .create_unmerged_external_commit(
+                    observer.get_group_info(&conv_id).await,
+                    case.custom_cfg(),
+                    case.credential_type,
+                )
+                .await;
 
-                    let new_member_join_commit = new_member_join_commit.commit;
+            let new_member_join_commit = new_member_join_commit.commit;
 
-                    pending_conversation.merge().await.unwrap();
+            pending_conversation.merge().await.unwrap();
 
-                    // also create the same proposal with the epoch increased by 1
-                    let leaf_of_114 = new_member.index_of(&conv_id, member_114.get_client_id().await).await;
-                    let proposal_remove_114_2 = ExternalProposal::new_remove(
-                        leaf_of_114,
-                        group_id.clone(),
-                        (epoch.as_u64() + 1).into(),
-                        &cb.signature_key,
-                        sender_index,
-                    )
-                    .unwrap();
+            // also create the same proposal with the epoch increased by 1
+            let leaf_of_114 = new_member.index_of(&conv_id, member_114.get_client_id().await).await;
+            let proposal_remove_114_2 = ExternalProposal::new_remove(
+                leaf_of_114,
+                group_id.clone(),
+                (epoch.as_u64() + 1).into(),
+                &cb.signature_key,
+                sender_index,
+            )
+            .unwrap();
 
-                    // now our observer receives these messages out of order
-                    println!("observer executing first proposal");
-                    observer
-                        .transaction
-                        .conversation(&conv_id)
-                        .await
-                        .unwrap()
-                        .decrypt_message(&proposal_remove_114_1.to_bytes().unwrap())
-                        .await
-                        .unwrap();
-                    println!("observer executing second proposal");
-                    let result = observer
-                        .transaction
-                        .conversation(&conv_id)
-                        .await
-                        .unwrap()
-                        .decrypt_message(&proposal_remove_114_2.to_bytes().unwrap())
-                        .await;
-                    assert!(matches!(
-                        result.unwrap_err(),
-                        Error::BufferedFutureMessage { message_epoch: 2 }
-                    ));
-                    println!("executing commit adding new user");
-                    observer
-                        .transaction
-                        .conversation(&conv_id)
-                        .await
-                        .unwrap()
-                        .decrypt_message(&new_member_join_commit.to_bytes().unwrap())
-                        .await
-                        .unwrap();
+            // now our observer receives these messages out of order
+            println!("observer executing first proposal");
+            observer
+                .transaction
+                .conversation(&conv_id)
+                .await
+                .unwrap()
+                .decrypt_message(&proposal_remove_114_1.to_bytes().unwrap())
+                .await
+                .unwrap();
+            println!("observer executing second proposal");
+            let result = observer
+                .transaction
+                .conversation(&conv_id)
+                .await
+                .unwrap()
+                .decrypt_message(&proposal_remove_114_2.to_bytes().unwrap())
+                .await;
+            assert!(matches!(
+                result.unwrap_err(),
+                Error::BufferedFutureMessage { message_epoch: 2 }
+            ));
+            println!("executing commit adding new user");
+            observer
+                .transaction
+                .conversation(&conv_id)
+                .await
+                .unwrap()
+                .decrypt_message(&new_member_join_commit.to_bytes().unwrap())
+                .await
+                .unwrap();
 
-                    // now the new member receives the messages in order
-                    println!("new_member executing first proposal");
-                    assert!(matches!(
-                        new_member
-                            .transaction
-                            .conversation(&conv_id)
-                            .await
-                            .unwrap()
-                            .decrypt_message(&proposal_remove_114_1.to_bytes().unwrap())
-                            .await
-                            .unwrap_err(),
-                        mls::conversation::Error::StaleProposal,
-                    ));
-                    println!("new_member executing second proposal");
-                    new_member
-                        .transaction
-                        .conversation(&conv_id)
-                        .await
-                        .unwrap()
-                        .decrypt_message(&proposal_remove_114_2.to_bytes().unwrap())
-                        .await
-                        .unwrap();
+            // now the new member receives the messages in order
+            println!("new_member executing first proposal");
+            assert!(matches!(
+                new_member
+                    .transaction
+                    .conversation(&conv_id)
+                    .await
+                    .unwrap()
+                    .decrypt_message(&proposal_remove_114_1.to_bytes().unwrap())
+                    .await
+                    .unwrap_err(),
+                mls::conversation::Error::StaleProposal,
+            ));
+            println!("new_member executing second proposal");
+            new_member
+                .transaction
+                .conversation(&conv_id)
+                .await
+                .unwrap()
+                .decrypt_message(&proposal_remove_114_2.to_bytes().unwrap())
+                .await
+                .unwrap();
 
-                    // now let's switch to the perspective of member 27
-                    // they have observed exactly one of the "remove 114" proposals,
-                    // plus a "remove 115" proposal. We can assume that they observe the 2nd
-                    // "remove 114" proposal because they advanced the epoch correctly when
-                    // the new member was added.
-                    let leaf_of_115 = observer.index_of(&conv_id, member_115.get_client_id().await).await;
-                    let epoch = observer.get_conversation_unchecked(&conv_id).await.group.epoch();
-                    let proposal_remove_115 =
-                        ExternalProposal::new_remove(leaf_of_115, group_id, epoch, &cb.signature_key, sender_index)
-                            .unwrap();
+            // now let's switch to the perspective of member 27
+            // they have observed exactly one of the "remove 114" proposals,
+            // plus a "remove 115" proposal. We can assume that they observe the 2nd
+            // "remove 114" proposal because they advanced the epoch correctly when
+            // the new member was added.
+            let leaf_of_115 = observer.index_of(&conv_id, member_115.get_client_id().await).await;
+            let epoch = observer.get_conversation_unchecked(&conv_id).await.group.epoch();
+            let proposal_remove_115 =
+                ExternalProposal::new_remove(leaf_of_115, group_id, epoch, &cb.signature_key, sender_index).unwrap();
 
-                    member_27
-                        .transaction
-                        .conversation(&conv_id)
-                        .await
-                        .unwrap()
-                        .decrypt_message(&proposal_remove_114_1.to_bytes().unwrap())
-                        .await
-                        .unwrap();
-                    let result = member_27
-                        .transaction
-                        .conversation(&conv_id)
-                        .await
-                        .unwrap()
-                        .decrypt_message(&proposal_remove_114_2.to_bytes().unwrap())
-                        .await;
-                    assert!(matches!(
-                        result.unwrap_err(),
-                        Error::BufferedFutureMessage { message_epoch: 2 }
-                    ));
-                    member_27
-                        .transaction
-                        .conversation(&conv_id)
-                        .await
-                        .unwrap()
-                        .decrypt_message(&new_member_join_commit.to_bytes().unwrap())
-                        .await
-                        .unwrap();
-                    member_27
-                        .transaction
-                        .conversation(&conv_id)
-                        .await
-                        .unwrap()
-                        .decrypt_message(&proposal_remove_115.to_bytes().unwrap())
-                        .await
-                        .unwrap();
+            member_27
+                .transaction
+                .conversation(&conv_id)
+                .await
+                .unwrap()
+                .decrypt_message(&proposal_remove_114_1.to_bytes().unwrap())
+                .await
+                .unwrap();
+            let result = member_27
+                .transaction
+                .conversation(&conv_id)
+                .await
+                .unwrap()
+                .decrypt_message(&proposal_remove_114_2.to_bytes().unwrap())
+                .await;
+            assert!(matches!(
+                result.unwrap_err(),
+                Error::BufferedFutureMessage { message_epoch: 2 }
+            ));
+            member_27
+                .transaction
+                .conversation(&conv_id)
+                .await
+                .unwrap()
+                .decrypt_message(&new_member_join_commit.to_bytes().unwrap())
+                .await
+                .unwrap();
+            member_27
+                .transaction
+                .conversation(&conv_id)
+                .await
+                .unwrap()
+                .decrypt_message(&proposal_remove_115.to_bytes().unwrap())
+                .await
+                .unwrap();
 
-                    member_27
-                        .transaction
-                        .conversation(&conv_id)
-                        .await
-                        .unwrap()
-                        .commit_pending_proposals()
-                        .await
-                        .unwrap();
-                    let remove_two_members_commit = member_27.mls_transport.latest_commit().await;
+            member_27
+                .transaction
+                .conversation(&conv_id)
+                .await
+                .unwrap()
+                .commit_pending_proposals()
+                .await
+                .unwrap();
+            let remove_two_members_commit = member_27.mls_transport.latest_commit().await;
 
-                    // In this case, note that observer receives the proposal before the commit.
-                    // This is the straightforward ordering and easy to deal with.
-                    observer
-                        .transaction
-                        .conversation(&conv_id)
-                        .await
-                        .unwrap()
-                        .decrypt_message(&proposal_remove_115.to_bytes().unwrap())
-                        .await
-                        .unwrap();
-                    observer
-                        .transaction
-                        .conversation(&conv_id)
-                        .await
-                        .unwrap()
-                        .decrypt_message(&remove_two_members_commit.to_bytes().unwrap())
-                        .await
-                        .unwrap();
+            // In this case, note that observer receives the proposal before the commit.
+            // This is the straightforward ordering and easy to deal with.
+            observer
+                .transaction
+                .conversation(&conv_id)
+                .await
+                .unwrap()
+                .decrypt_message(&proposal_remove_115.to_bytes().unwrap())
+                .await
+                .unwrap();
+            observer
+                .transaction
+                .conversation(&conv_id)
+                .await
+                .unwrap()
+                .decrypt_message(&remove_two_members_commit.to_bytes().unwrap())
+                .await
+                .unwrap();
 
-                    // In this case, new_member receives the commit before the proposal. This means that
-                    // the commit has to be buffered until the proposal it references is received.
-                    let result = new_member
-                        .transaction
-                        .conversation(&conv_id)
-                        .await
-                        .unwrap()
-                        .decrypt_message(&remove_two_members_commit.to_bytes().unwrap())
-                        .await;
-                    assert!(matches!(result.unwrap_err(), Error::BufferedCommit));
-                    new_member
-                        .transaction
-                        .conversation(&conv_id)
-                        .await
-                        .unwrap()
-                        .decrypt_message(&proposal_remove_115.to_bytes().unwrap())
-                        .await
-                        .unwrap();
+            // In this case, new_member receives the commit before the proposal. This means that
+            // the commit has to be buffered until the proposal it references is received.
+            let result = new_member
+                .transaction
+                .conversation(&conv_id)
+                .await
+                .unwrap()
+                .decrypt_message(&remove_two_members_commit.to_bytes().unwrap())
+                .await;
+            assert!(matches!(result.unwrap_err(), Error::BufferedCommit));
+            new_member
+                .transaction
+                .conversation(&conv_id)
+                .await
+                .unwrap()
+                .decrypt_message(&proposal_remove_115.to_bytes().unwrap())
+                .await
+                .unwrap();
 
-                    observer.try_talk_to(&conv_id, &new_member).await.unwrap();
-                    observer.try_talk_to(&conv_id, &member_27).await.unwrap();
-                    new_member.try_talk_to(&conv_id, &member_27).await.unwrap();
-                })
-            },
-        )
+            observer.try_talk_to(&conv_id, &new_member).await.unwrap();
+            observer.try_talk_to(&conv_id, &member_27).await.unwrap();
+            new_member.try_talk_to(&conv_id, &member_27).await.unwrap();
+        })
         .await
     }
 }

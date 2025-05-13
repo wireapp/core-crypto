@@ -31,14 +31,13 @@ mod tests {
     #[apply(all_cred_cipher)]
     #[wasm_bindgen_test]
     async fn should_be_false_when_basic_and_true_when_x509(case: TestContext) {
-        run_test_with_client_ids(case.clone(), ["alice"], move |[cc]| {
-            Box::pin(async move {
-                let e2ei_is_enabled = cc.transaction.e2ei_is_enabled(case.signature_scheme()).await.unwrap();
-                match case.credential_type {
-                    MlsCredentialType::Basic => assert!(!e2ei_is_enabled),
-                    MlsCredentialType::X509 => assert!(e2ei_is_enabled),
-                };
-            })
+        let [cc] = case.sessions().await;
+        Box::pin(async move {
+            let e2ei_is_enabled = cc.transaction.e2ei_is_enabled(case.signature_scheme()).await.unwrap();
+            match case.credential_type {
+                MlsCredentialType::Basic => assert!(!e2ei_is_enabled),
+                MlsCredentialType::X509 => assert!(e2ei_is_enabled),
+            };
         })
         .await
     }
@@ -61,19 +60,18 @@ mod tests {
     #[apply(all_cred_cipher)]
     #[wasm_bindgen_test]
     async fn should_fail_when_no_credential_for_given_signature_scheme(case: TestContext) {
-        run_test_with_client_ids(case.clone(), ["alice"], move |[cc]| {
-            Box::pin(async move {
-                // just return something different from the signature scheme the MlsCentral was initialized with
-                let other_sc = match case.signature_scheme() {
-                    SignatureScheme::ED25519 => SignatureScheme::ECDSA_SECP256R1_SHA256,
-                    _ => SignatureScheme::ED25519,
-                };
-                assert!(matches!(
-                    cc.transaction.e2ei_is_enabled(other_sc).await.unwrap_err(),
-                    Error::Recursive(RecursiveError::MlsClient {  source, .. })
-                    if matches!(*source, mls::session::Error::CredentialNotFound(_))
-                ));
-            })
+        let [cc] = case.sessions().await;
+        Box::pin(async move {
+            // just return something different from the signature scheme the MlsCentral was initialized with
+            let other_sc = match case.signature_scheme() {
+                SignatureScheme::ED25519 => SignatureScheme::ECDSA_SECP256R1_SHA256,
+                _ => SignatureScheme::ED25519,
+            };
+            assert!(matches!(
+                cc.transaction.e2ei_is_enabled(other_sc).await.unwrap_err(),
+                Error::Recursive(RecursiveError::MlsClient {  source, .. })
+                if matches!(*source, mls::session::Error::CredentialNotFound(_))
+            ));
         })
         .await
     }

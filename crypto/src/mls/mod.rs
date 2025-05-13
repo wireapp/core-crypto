@@ -167,18 +167,17 @@ mod tests {
         #[apply(all_cred_cipher)]
         #[wasm_bindgen_test]
         async fn can_get_conversation_epoch(case: TestContext) {
-            run_test_with_client_ids(case.clone(), ["alice", "bob"], move |[alice_central, bob_central]| {
-                Box::pin(async move {
-                    let id = conversation_id();
-                    alice_central
-                        .transaction
-                        .new_conversation(&id, case.credential_type, case.cfg.clone())
-                        .await
-                        .unwrap();
-                    alice_central.invite_all(&case, &id, [&bob_central]).await.unwrap();
-                    let epoch = alice_central.transaction.conversation(&id).await.unwrap().epoch().await;
-                    assert_eq!(epoch, 1);
-                })
+            let [alice_central, bob_central] = case.sessions().await;
+            Box::pin(async move {
+                let id = conversation_id();
+                alice_central
+                    .transaction
+                    .new_conversation(&id, case.credential_type, case.cfg.clone())
+                    .await
+                    .unwrap();
+                alice_central.invite_all(&case, &id, [&bob_central]).await.unwrap();
+                let epoch = alice_central.transaction.conversation(&id).await.unwrap().epoch().await;
+                assert_eq!(epoch, 1);
             })
             .await;
         }
@@ -271,8 +270,8 @@ mod tests {
     async fn create_conversation_should_fail_when_already_exists(case: TestContext) {
         use crate::LeafError;
 
-        run_test_with_client_ids(case.clone(), ["alice"], move |[alice_central]| {
-            Box::pin(async move {
+        let [alice_central] = case.sessions().await;
+        Box::pin(async move {
                 let id = conversation_id();
 
                 let create = alice_central
@@ -288,7 +287,6 @@ mod tests {
                     .await;
                 assert!(matches!(repeat_create.unwrap_err(), TransactionError::Leaf(LeafError::ConversationAlreadyExists(i)) if i == id));
             })
-        })
         .await;
     }
 

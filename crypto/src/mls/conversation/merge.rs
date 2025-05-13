@@ -61,26 +61,25 @@ mod tests {
         #[apply(all_cred_cipher)]
         #[wasm_bindgen_test]
         async fn should_apply_pending_commit(case: TestContext) {
-            run_test_with_client_ids(case.clone(), ["alice", "bob"], move |[alice_central, bob_central]| {
-                Box::pin(async move {
-                    let id = conversation_id();
-                    alice_central
-                        .transaction
-                        .new_conversation(&id, case.credential_type, case.cfg.clone())
-                        .await
-                        .unwrap();
-                    alice_central.invite_all(&case, &id, [&bob_central]).await.unwrap();
-                    assert_eq!(alice_central.get_conversation_unchecked(&id).await.members().len(), 2);
-                    alice_central
-                        .transaction
-                        .conversation(&id)
-                        .await
-                        .unwrap()
-                        .remove_members(&[bob_central.get_client_id().await])
-                        .await
-                        .unwrap();
-                    assert_eq!(alice_central.get_conversation_unchecked(&id).await.members().len(), 1);
-                })
+            let [alice_central, bob_central] = case.sessions().await;
+            Box::pin(async move {
+                let id = conversation_id();
+                alice_central
+                    .transaction
+                    .new_conversation(&id, case.credential_type, case.cfg.clone())
+                    .await
+                    .unwrap();
+                alice_central.invite_all(&case, &id, [&bob_central]).await.unwrap();
+                assert_eq!(alice_central.get_conversation_unchecked(&id).await.members().len(), 2);
+                alice_central
+                    .transaction
+                    .conversation(&id)
+                    .await
+                    .unwrap()
+                    .remove_members(&[bob_central.get_client_id().await])
+                    .await
+                    .unwrap();
+                assert_eq!(alice_central.get_conversation_unchecked(&id).await.members().len(), 1);
             })
             .await
         }
@@ -88,30 +87,29 @@ mod tests {
         #[apply(all_cred_cipher)]
         #[wasm_bindgen_test]
         async fn should_clear_pending_commit_and_proposals(case: TestContext) {
-            run_test_with_client_ids(case.clone(), ["alice"], move |[mut alice_central]| {
-                Box::pin(async move {
-                    let id = conversation_id();
-                    alice_central
-                        .transaction
-                        .new_conversation(&id, case.credential_type, case.cfg.clone())
-                        .await
-                        .unwrap();
-                    alice_central.transaction.new_update_proposal(&id).await.unwrap();
-                    alice_central.create_unmerged_commit(&id).await;
-                    assert!(!alice_central.pending_proposals(&id).await.is_empty());
-                    assert!(alice_central.pending_commit(&id).await.is_some());
-                    alice_central
-                        .get_conversation_unchecked(&id)
-                        .await
-                        .commit_accepted(
-                            &alice_central.transaction.session().await.unwrap(),
-                            &alice_central.session.crypto_provider,
-                        )
-                        .await
-                        .unwrap();
-                    assert!(alice_central.pending_commit(&id).await.is_none());
-                    assert!(alice_central.pending_proposals(&id).await.is_empty());
-                })
+            let [mut alice_central] = case.sessions().await;
+            Box::pin(async move {
+                let id = conversation_id();
+                alice_central
+                    .transaction
+                    .new_conversation(&id, case.credential_type, case.cfg.clone())
+                    .await
+                    .unwrap();
+                alice_central.transaction.new_update_proposal(&id).await.unwrap();
+                alice_central.create_unmerged_commit(&id).await;
+                assert!(!alice_central.pending_proposals(&id).await.is_empty());
+                assert!(alice_central.pending_commit(&id).await.is_some());
+                alice_central
+                    .get_conversation_unchecked(&id)
+                    .await
+                    .commit_accepted(
+                        &alice_central.transaction.session().await.unwrap(),
+                        &alice_central.session.crypto_provider,
+                    )
+                    .await
+                    .unwrap();
+                assert!(alice_central.pending_commit(&id).await.is_none());
+                assert!(alice_central.pending_proposals(&id).await.is_empty());
             })
             .await
         }
@@ -119,36 +117,35 @@ mod tests {
         #[apply(all_cred_cipher)]
         #[wasm_bindgen_test]
         async fn should_clean_associated_key_material(case: TestContext) {
-            run_test_with_client_ids(case.clone(), ["alice"], move |[alice_central]| {
-                Box::pin(async move {
-                    let id = conversation_id();
-                    alice_central
-                        .transaction
-                        .new_conversation(&id, case.credential_type, case.cfg.clone())
-                        .await
-                        .unwrap();
+            let [alice_central] = case.sessions().await;
+            Box::pin(async move {
+                let id = conversation_id();
+                alice_central
+                    .transaction
+                    .new_conversation(&id, case.credential_type, case.cfg.clone())
+                    .await
+                    .unwrap();
 
-                    let initial_count = alice_central.transaction.count_entities().await;
+                let initial_count = alice_central.transaction.count_entities().await;
 
-                    alice_central.transaction.new_update_proposal(&id).await.unwrap();
-                    let post_proposal_count = alice_central.transaction.count_entities().await;
-                    assert_eq!(
-                        post_proposal_count.encryption_keypair,
-                        initial_count.encryption_keypair + 1
-                    );
+                alice_central.transaction.new_update_proposal(&id).await.unwrap();
+                let post_proposal_count = alice_central.transaction.count_entities().await;
+                assert_eq!(
+                    post_proposal_count.encryption_keypair,
+                    initial_count.encryption_keypair + 1
+                );
 
-                    alice_central
-                        .transaction
-                        .conversation(&id)
-                        .await
-                        .unwrap()
-                        .commit_pending_proposals()
-                        .await
-                        .unwrap();
+                alice_central
+                    .transaction
+                    .conversation(&id)
+                    .await
+                    .unwrap()
+                    .commit_pending_proposals()
+                    .await
+                    .unwrap();
 
-                    let final_count = alice_central.transaction.count_entities().await;
-                    assert_eq!(initial_count, final_count);
-                })
+                let final_count = alice_central.transaction.count_entities().await;
+                assert_eq!(initial_count, final_count);
             })
             .await
         }

@@ -110,44 +110,43 @@ mod tests {
     #[apply(all_cred_cipher)]
     #[wasm_bindgen_test]
     async fn joining_from_welcome_should_prune_local_key_material(case: TestContext) {
-        run_test_with_client_ids(case.clone(), ["alice", "bob"], move |[alice_central, bob_central]| {
-            Box::pin(async move {
-                let id = conversation_id();
-                // has to be before the original key_package count because it creates one
-                let bob = bob_central.rand_key_package(&case).await;
-                // Keep track of the whatever amount was initially generated
-                let prev_count = bob_central.transaction.count_entities().await;
+        let [alice_central, bob_central] = case.sessions().await;
+        Box::pin(async move {
+            let id = conversation_id();
+            // has to be before the original key_package count because it creates one
+            let bob = bob_central.rand_key_package(&case).await;
+            // Keep track of the whatever amount was initially generated
+            let prev_count = bob_central.transaction.count_entities().await;
 
-                // Create a conversation from alice, where she invites bob
-                alice_central
-                    .transaction
-                    .new_conversation(&id, case.credential_type, case.cfg.clone())
-                    .await
-                    .unwrap();
+            // Create a conversation from alice, where she invites bob
+            alice_central
+                .transaction
+                .new_conversation(&id, case.credential_type, case.cfg.clone())
+                .await
+                .unwrap();
 
-                alice_central
-                    .transaction
-                    .conversation(&id)
-                    .await
-                    .unwrap()
-                    .add_members(vec![bob])
-                    .await
-                    .unwrap();
+            alice_central
+                .transaction
+                .conversation(&id)
+                .await
+                .unwrap()
+                .add_members(vec![bob])
+                .await
+                .unwrap();
 
-                let welcome = alice_central.mls_transport.latest_welcome_message().await;
-                // Bob accepts the welcome message, and as such, it should prune the used keypackage from the store
-                bob_central
-                    .transaction
-                    .process_welcome_message(welcome.into(), case.custom_cfg())
-                    .await
-                    .unwrap();
+            let welcome = alice_central.mls_transport.latest_welcome_message().await;
+            // Bob accepts the welcome message, and as such, it should prune the used keypackage from the store
+            bob_central
+                .transaction
+                .process_welcome_message(welcome.into(), case.custom_cfg())
+                .await
+                .unwrap();
 
-                // Ensure we're left with 1 less keypackage bundle in the store, because it was consumed with the OpenMLS Welcome message
-                let next_count = bob_central.transaction.count_entities().await;
-                assert_eq!(next_count.key_package, prev_count.key_package - 1);
-                assert_eq!(next_count.hpke_private_key, prev_count.hpke_private_key - 1);
-                assert_eq!(next_count.encryption_keypair, prev_count.encryption_keypair - 1);
-            })
+            // Ensure we're left with 1 less keypackage bundle in the store, because it was consumed with the OpenMLS Welcome message
+            let next_count = bob_central.transaction.count_entities().await;
+            assert_eq!(next_count.key_package, prev_count.key_package - 1);
+            assert_eq!(next_count.hpke_private_key, prev_count.hpke_private_key - 1);
+            assert_eq!(next_count.encryption_keypair, prev_count.encryption_keypair - 1);
         })
         .await;
     }
@@ -157,8 +156,8 @@ mod tests {
     async fn process_welcome_should_fail_when_already_exists(case: TestContext) {
         use crate::LeafError;
 
-        run_test_with_client_ids(case.clone(), ["alice", "bob"], move |[alice_central, bob_central]| {
-            Box::pin(async move {
+        let [alice_central, bob_central] = case.sessions().await;
+        Box::pin(async move {
                 let id = conversation_id();
                 alice_central
                     .transaction
@@ -194,7 +193,6 @@ mod tests {
                     )
                 );
             })
-        })
         .await;
     }
 }

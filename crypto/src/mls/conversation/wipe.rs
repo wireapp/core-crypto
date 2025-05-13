@@ -33,31 +33,30 @@ mod tests {
     #[apply(all_cred_cipher)]
     #[wasm_bindgen_test]
     async fn should_cascade_deletion(case: TestContext) {
-        run_test_with_client_ids(case.clone(), ["alice"], move |[cc]| {
-            Box::pin(async move {
-                let id = conversation_id();
-                cc.transaction
-                    .new_conversation(&id, case.credential_type, case.cfg.clone())
-                    .await
-                    .unwrap();
-                assert!(cc.get_conversation_unchecked(&id).await.group.is_active());
-                let initial_count = cc.transaction.count_entities().await;
+        let [cc] = case.sessions().await;
+        Box::pin(async move {
+            let id = conversation_id();
+            cc.transaction
+                .new_conversation(&id, case.credential_type, case.cfg.clone())
+                .await
+                .unwrap();
+            assert!(cc.get_conversation_unchecked(&id).await.group.is_active());
+            let initial_count = cc.transaction.count_entities().await;
 
-                cc.transaction.new_update_proposal(&id).await.unwrap();
-                let post_proposal_count = cc.transaction.count_entities().await;
-                assert_eq!(
-                    post_proposal_count.encryption_keypair,
-                    initial_count.encryption_keypair + 1
-                );
+            cc.transaction.new_update_proposal(&id).await.unwrap();
+            let post_proposal_count = cc.transaction.count_entities().await;
+            assert_eq!(
+                post_proposal_count.encryption_keypair,
+                initial_count.encryption_keypair + 1
+            );
 
-                cc.transaction.conversation(&id).await.unwrap().wipe().await.unwrap();
+            cc.transaction.conversation(&id).await.unwrap().wipe().await.unwrap();
 
-                let final_count = cc.transaction.count_entities().await;
-                assert!(!cc.transaction.conversation_exists(&id).await.unwrap());
-                assert_eq!(final_count.group, 0);
-                assert_eq!(final_count.encryption_keypair, final_count.key_package);
-                assert_eq!(final_count.epoch_encryption_keypair, 0);
-            })
+            let final_count = cc.transaction.count_entities().await;
+            assert!(!cc.transaction.conversation_exists(&id).await.unwrap());
+            assert_eq!(final_count.group, 0);
+            assert_eq!(final_count.encryption_keypair, final_count.key_package);
+            assert_eq!(final_count.epoch_encryption_keypair, 0);
         })
         .await
     }

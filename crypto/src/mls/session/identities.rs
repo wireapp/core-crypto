@@ -140,23 +140,22 @@ mod tests {
         #[apply(all_cred_cipher)]
         #[wasm_bindgen_test]
         async fn should_find_most_recent(case: TestContext) {
-            run_test_with_client_ids(case.clone(), ["alice"], move |[mut central]| {
-                Box::pin(async move {
-                    let cert = central.get_intermediate_ca().cloned();
-                    let old = central.new_credential_bundle(&case, cert.as_ref()).await;
+            let [mut central] = case.sessions().await;
+            Box::pin(async move {
+                let cert = central.get_intermediate_ca().cloned();
+                let old = central.new_credential_bundle(&case, cert.as_ref()).await;
 
-                    // wait to make sure we're not in the same second
-                    async_std::task::sleep(core::time::Duration::from_secs(1)).await;
+                // wait to make sure we're not in the same second
+                async_std::task::sleep(core::time::Duration::from_secs(1)).await;
 
-                    let new = central.new_credential_bundle(&case, cert.as_ref()).await;
-                    assert_ne!(old, new);
+                let new = central.new_credential_bundle(&case, cert.as_ref()).await;
+                assert_ne!(old, new);
 
-                    let found = central
-                        .find_most_recent_credential_bundle(case.signature_scheme(), case.credential_type)
-                        .await
-                        .unwrap();
-                    assert_eq!(found.as_ref(), &new);
-                })
+                let found = central
+                    .find_most_recent_credential_bundle(case.signature_scheme(), case.credential_type)
+                    .await
+                    .unwrap();
+                assert_eq!(found.as_ref(), &new);
             })
             .await
         }
@@ -164,28 +163,27 @@ mod tests {
         #[apply(all_cred_cipher)]
         #[wasm_bindgen_test]
         async fn should_find_by_public_key(case: TestContext) {
-            run_test_with_client_ids(case.clone(), ["alice"], move |[mut central]| {
-                Box::pin(async move {
-                    const N: usize = 50;
+            let [mut central] = case.sessions().await;
+            Box::pin(async move {
+                const N: usize = 50;
 
-                    let r = rand::thread_rng().gen_range(0..N);
-                    let mut to_search = None;
-                    for i in 0..N {
-                        let cert = central.get_intermediate_ca().cloned();
-                        let cb = central.new_credential_bundle(&case, cert.as_ref()).await;
-                        if i == r {
-                            to_search = Some(cb.clone());
-                        }
+                let r = rand::thread_rng().gen_range(0..N);
+                let mut to_search = None;
+                for i in 0..N {
+                    let cert = central.get_intermediate_ca().cloned();
+                    let cb = central.new_credential_bundle(&case, cert.as_ref()).await;
+                    if i == r {
+                        to_search = Some(cb.clone());
                     }
-                    let to_search = to_search.unwrap();
-                    let pk = SignaturePublicKey::from(to_search.signature_key.public());
-                    let client = central.transaction.session().await.unwrap();
-                    let found = client
-                        .find_credential_bundle_by_public_key(case.signature_scheme(), case.credential_type, &pk)
-                        .await
-                        .unwrap();
-                    assert_eq!(&to_search, found.as_ref());
-                })
+                }
+                let to_search = to_search.unwrap();
+                let pk = SignaturePublicKey::from(to_search.signature_key.public());
+                let client = central.transaction.session().await.unwrap();
+                let found = client
+                    .find_credential_bundle_by_public_key(case.signature_scheme(), case.credential_type, &pk)
+                    .await
+                    .unwrap();
+                assert_eq!(&to_search, found.as_ref());
             })
             .await
         }
@@ -197,16 +195,15 @@ mod tests {
         #[apply(all_cred_cipher)]
         #[wasm_bindgen_test]
         async fn should_add_credential(case: TestContext) {
-            run_test_with_client_ids(case.clone(), ["alice"], move |[mut central]| {
-                Box::pin(async move {
-                    let client = central.session().await;
-                    let prev_count = client.identities_count().await.unwrap();
-                    let cert = central.get_intermediate_ca().cloned();
-                    // this calls 'push_credential_bundle' under the hood
-                    central.new_credential_bundle(&case, cert.as_ref()).await;
-                    let next_count = client.identities_count().await.unwrap();
-                    assert_eq!(next_count, prev_count + 1);
-                })
+            let [mut central] = case.sessions().await;
+            Box::pin(async move {
+                let client = central.session().await;
+                let prev_count = client.identities_count().await.unwrap();
+                let cert = central.get_intermediate_ca().cloned();
+                // this calls 'push_credential_bundle' under the hood
+                central.new_credential_bundle(&case, cert.as_ref()).await;
+                let next_count = client.identities_count().await.unwrap();
+                assert_eq!(next_count, prev_count + 1);
             })
             .await
         }
@@ -214,24 +211,23 @@ mod tests {
         #[apply(all_cred_cipher)]
         #[wasm_bindgen_test]
         async fn pushing_duplicates_should_fail(case: TestContext) {
-            run_test_with_client_ids(case.clone(), ["alice"], move |[mut central]| {
-                Box::pin(async move {
-                    let cert = central.get_intermediate_ca().cloned();
-                    let cb = central.new_credential_bundle(&case, cert.as_ref()).await;
-                    let client = central.transaction.session().await.unwrap();
-                    let push = client
-                        .save_identity(
-                            &central.transaction.keystore().await.unwrap(),
-                            None,
-                            case.signature_scheme(),
-                            cb,
-                        )
-                        .await;
-                    assert!(matches!(
-                        push.unwrap_err(),
-                        mls::session::Error::CredentialBundleConflict
-                    ));
-                })
+            let [mut central] = case.sessions().await;
+            Box::pin(async move {
+                let cert = central.get_intermediate_ca().cloned();
+                let cb = central.new_credential_bundle(&case, cert.as_ref()).await;
+                let client = central.transaction.session().await.unwrap();
+                let push = client
+                    .save_identity(
+                        &central.transaction.keystore().await.unwrap(),
+                        None,
+                        case.signature_scheme(),
+                        cb,
+                    )
+                    .await;
+                assert!(matches!(
+                    push.unwrap_err(),
+                    mls::session::Error::CredentialBundleConflict
+                ));
             })
             .await
         }

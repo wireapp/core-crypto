@@ -205,26 +205,26 @@ mod tests {
     #[wasm_bindgen_test]
     pub async fn group_should_have_required_capabilities() {
         let case = TestContext::default();
-        run_test_with_client_ids(case.clone(), ["alice"], move |[cc]| {
-            Box::pin(async move {
-                let id = conversation_id();
-                cc.transaction
-                    .new_conversation(&id, case.credential_type, case.cfg.clone())
-                    .await
-                    .unwrap();
-                let conv = cc.transaction.conversation(&id).await.unwrap();
-                let group = conv.conversation().await;
 
-                let capabilities = group.group.group_context_extensions().required_capabilities().unwrap();
+        let [cc] = case.sessions().await;
+        Box::pin(async move {
+            let id = conversation_id();
+            cc.transaction
+                .new_conversation(&id, case.credential_type, case.cfg.clone())
+                .await
+                .unwrap();
+            let conv = cc.transaction.conversation(&id).await.unwrap();
+            let group = conv.conversation().await;
 
-                // see https://www.rfc-editor.org/rfc/rfc9420.html#section-11.1
-                assert!(capabilities.extension_types().is_empty());
-                assert!(capabilities.proposal_types().is_empty());
-                assert_eq!(
-                    capabilities.credential_types(),
-                    MlsConversationConfiguration::DEFAULT_SUPPORTED_CREDENTIALS
-                );
-            })
+            let capabilities = group.group.group_context_extensions().required_capabilities().unwrap();
+
+            // see https://www.rfc-editor.org/rfc/rfc9420.html#section-11.1
+            assert!(capabilities.extension_types().is_empty());
+            assert!(capabilities.proposal_types().is_empty());
+            assert_eq!(
+                capabilities.credential_types(),
+                MlsConversationConfiguration::DEFAULT_SUPPORTED_CREDENTIALS
+            );
         })
         .await
     }
@@ -232,44 +232,43 @@ mod tests {
     #[apply(all_cred_cipher)]
     #[wasm_bindgen_test]
     pub async fn creator_leaf_node_should_have_default_capabilities(case: TestContext) {
-        run_test_with_client_ids(case.clone(), ["alice"], move |[cc]| {
-            Box::pin(async move {
-                let id = conversation_id();
-                cc.transaction
-                    .new_conversation(&id, case.credential_type, case.cfg.clone())
-                    .await
-                    .unwrap();
-                let conv = cc.transaction.conversation(&id).await.unwrap();
-                let group = conv.conversation().await;
+        let [cc] = case.sessions().await;
+        Box::pin(async move {
+            let id = conversation_id();
+            cc.transaction
+                .new_conversation(&id, case.credential_type, case.cfg.clone())
+                .await
+                .unwrap();
+            let conv = cc.transaction.conversation(&id).await.unwrap();
+            let group = conv.conversation().await;
 
-                // verifying https://www.rfc-editor.org/rfc/rfc9420.html#section-7.2
-                let creator_capabilities = group.group.own_leaf().unwrap().capabilities();
+            // verifying https://www.rfc-editor.org/rfc/rfc9420.html#section-7.2
+            let creator_capabilities = group.group.own_leaf().unwrap().capabilities();
 
-                // https://www.rfc-editor.org/rfc/rfc9420.html#section-7.2-5.1.1
-                // ProtocolVersion must be the default one
-                assert_eq!(creator_capabilities.versions(), &[ProtocolVersion::Mls10]);
+            // https://www.rfc-editor.org/rfc/rfc9420.html#section-7.2-5.1.1
+            // ProtocolVersion must be the default one
+            assert_eq!(creator_capabilities.versions(), &[ProtocolVersion::Mls10]);
 
-                // To prevent downgrade attacks, Ciphersuite MUST ONLY contain the current one
-                assert_eq!(
-                    creator_capabilities.ciphersuites().to_vec(),
-                    MlsConversationConfiguration::DEFAULT_SUPPORTED_CIPHERSUITES
-                        .iter()
-                        .map(|c| VerifiableCiphersuite::from(*c))
-                        .collect::<Vec<_>>()
-                );
+            // To prevent downgrade attacks, Ciphersuite MUST ONLY contain the current one
+            assert_eq!(
+                creator_capabilities.ciphersuites().to_vec(),
+                MlsConversationConfiguration::DEFAULT_SUPPORTED_CIPHERSUITES
+                    .iter()
+                    .map(|c| VerifiableCiphersuite::from(*c))
+                    .collect::<Vec<_>>()
+            );
 
-                // Proposals MUST be empty since we support all the default ones
-                assert!(creator_capabilities.proposals().is_empty());
+            // Proposals MUST be empty since we support all the default ones
+            assert!(creator_capabilities.proposals().is_empty());
 
-                // Extensions MUST only contain non-default extension (i.e. empty for now)
-                assert!(creator_capabilities.extensions().is_empty(),);
+            // Extensions MUST only contain non-default extension (i.e. empty for now)
+            assert!(creator_capabilities.extensions().is_empty(),);
 
-                // To prevent downgrade attacks, Credentials should just contain the current
-                assert_eq!(
-                    creator_capabilities.credentials(),
-                    MlsConversationConfiguration::DEFAULT_SUPPORTED_CREDENTIALS
-                );
-            })
+            // To prevent downgrade attacks, Credentials should just contain the current
+            assert_eq!(
+                creator_capabilities.credentials(),
+                MlsConversationConfiguration::DEFAULT_SUPPORTED_CREDENTIALS
+            );
         })
         .await
     }
@@ -277,24 +276,23 @@ mod tests {
     #[apply(all_cred_cipher)]
     #[wasm_bindgen_test]
     pub async fn should_support_raw_external_sender(case: TestContext) {
-        run_test_with_client_ids(case.clone(), ["alice"], move |[cc]| {
-            Box::pin(async move {
-                let (_sk, pk) = cc
-                    .transaction
-                    .mls_provider()
-                    .await
-                    .unwrap()
-                    .crypto()
-                    .signature_key_gen(case.signature_scheme())
-                    .unwrap();
+        let [cc] = case.sessions().await;
+        Box::pin(async move {
+            let (_sk, pk) = cc
+                .transaction
+                .mls_provider()
+                .await
+                .unwrap()
+                .crypto()
+                .signature_key_gen(case.signature_scheme())
+                .unwrap();
 
-                assert!(
-                    cc.transaction
-                        .set_raw_external_senders(&mut case.cfg.clone(), vec![pk])
-                        .await
-                        .is_ok()
-                );
-            })
+            assert!(
+                cc.transaction
+                    .set_raw_external_senders(&mut case.cfg.clone(), vec![pk])
+                    .await
+                    .is_ok()
+            );
         })
         .await
     }
@@ -302,24 +300,23 @@ mod tests {
     #[apply(all_cred_cipher)]
     #[wasm_bindgen_test]
     pub async fn should_support_jwk_external_sender(case: TestContext) {
-        run_test_with_client_ids(case.clone(), ["alice"], move |[cc]| {
-            Box::pin(async move {
-                let sc = case.signature_scheme();
+        let [cc] = case.sessions().await;
+        Box::pin(async move {
+            let sc = case.signature_scheme();
 
-                let alg = match sc {
-                    SignatureScheme::ED25519 => JwsAlgorithm::Ed25519,
-                    SignatureScheme::ECDSA_SECP256R1_SHA256 => JwsAlgorithm::P256,
-                    SignatureScheme::ECDSA_SECP384R1_SHA384 => JwsAlgorithm::P384,
-                    SignatureScheme::ECDSA_SECP521R1_SHA512 => JwsAlgorithm::P521,
-                    SignatureScheme::ED448 => unreachable!(),
-                };
+            let alg = match sc {
+                SignatureScheme::ED25519 => JwsAlgorithm::Ed25519,
+                SignatureScheme::ECDSA_SECP256R1_SHA256 => JwsAlgorithm::P256,
+                SignatureScheme::ECDSA_SECP384R1_SHA384 => JwsAlgorithm::P384,
+                SignatureScheme::ECDSA_SECP521R1_SHA512 => JwsAlgorithm::P521,
+                SignatureScheme::ED448 => unreachable!(),
+            };
 
-                let jwk = wire_e2e_identity::prelude::generate_jwk(alg);
-                cc.transaction
-                    .set_raw_external_senders(&mut case.cfg.clone(), vec![jwk])
-                    .await
-                    .unwrap();
-            })
+            let jwk = wire_e2e_identity::prelude::generate_jwk(alg);
+            cc.transaction
+                .set_raw_external_senders(&mut case.cfg.clone(), vec![jwk])
+                .await
+                .unwrap();
         })
         .await;
     }

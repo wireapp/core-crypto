@@ -485,27 +485,13 @@ mod tests {
             ClientIdentifier::X509(_) => MlsCredentialType::X509,
         };
 
-        let creator = SessionContext::new_with_identifier(
-            case,
-            creator_identifier,
-            x509_test_chain.map(|chain| X509SessionParameters {
-                chain,
-                certificate_source: Default::default(),
-            }),
-        )
-        .await
-        .map_err(RecursiveError::root("new session context"))?;
+        let creator = SessionContext::new_with_identifier(case, creator_identifier, x509_test_chain)
+            .await
+            .map_err(RecursiveError::root("new session context"))?;
 
-        let guest = SessionContext::new_with_identifier(
-            case,
-            guest_identifier,
-            x509_test_chain.map(|chain| X509SessionParameters {
-                chain,
-                certificate_source: Default::default(),
-            }),
-        )
-        .await
-        .map_err(RecursiveError::root("new session context"))?;
+        let guest = SessionContext::new_with_identifier(case, guest_identifier, x509_test_chain)
+            .await
+            .map_err(RecursiveError::root("new session context"))?;
 
         creator
             .transaction

@@ -273,24 +273,24 @@ mod tests {
         if !case.is_x509() {
             return;
         }
-        run_test_with_client_ids(case.clone(), ["alice"], move |[alice_central]| {
-            Box::pin(async move {
-                let alice_test_chain = alice_central.x509_test_chain.as_ref().as_ref().unwrap();
-                let alice_ta = alice_test_chain
-                    .trust_anchor
-                    .certificate
-                    .to_pem(LineEnding::CRLF)
-                    .unwrap();
 
-                assert!(matches!(
-                    alice_central
-                        .transaction
-                        .e2ei_register_acme_ca(alice_ta)
-                        .await
-                        .unwrap_err(),
-                    Error::TrustAnchorAlreadyRegistered
-                ));
-            })
+        let [alice_central] = case.sessions().await;
+        Box::pin(async move {
+            let alice_test_chain = alice_central.x509_test_chain.as_ref().as_ref().unwrap();
+            let alice_ta = alice_test_chain
+                .trust_anchor
+                .certificate
+                .to_pem(LineEnding::CRLF)
+                .unwrap();
+
+            assert!(matches!(
+                alice_central
+                    .transaction
+                    .e2ei_register_acme_ca(alice_ta)
+                    .await
+                    .unwrap_err(),
+                Error::TrustAnchorAlreadyRegistered
+            ));
         })
         .await;
     }
@@ -301,22 +301,22 @@ mod tests {
         if case.is_x509() {
             return;
         }
-        run_test_with_client_ids(case.clone(), ["alice"], move |[alice_ctx]| {
-            Box::pin(async move {
-                let SessionContext {
-                    transaction,
-                    x509_test_chain,
-                    ..
-                } = alice_ctx;
 
-                assert!(x509_test_chain.is_none());
-                assert!(!transaction.e2ei_is_pki_env_setup().await.unwrap());
+        let [alice_ctx] = case.sessions().await;
+        Box::pin(async move {
+            let SessionContext {
+                transaction,
+                x509_test_chain,
+                ..
+            } = alice_ctx;
 
-                // mls_central.restore_from_disk().await.unwrap();
+            assert!(x509_test_chain.is_none());
+            assert!(!transaction.e2ei_is_pki_env_setup().await.unwrap());
 
-                assert!(x509_test_chain.is_none());
-                // assert!(!mls_central.mls_backend.is_pki_env_setup().await);
-            })
+            // mls_central.restore_from_disk().await.unwrap();
+
+            assert!(x509_test_chain.is_none());
+            // assert!(!mls_central.mls_backend.is_pki_env_setup().await);
         })
         .await;
     }
