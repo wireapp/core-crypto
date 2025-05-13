@@ -33,7 +33,7 @@ jobs:
     - uses: ./.github/actions/setup-and-cache-rust
       with:
         rustflags: '-D warnings -W unreachable-pub'
-    - run: cargo doc --all --no-deps
+    - run: cargo doc --all --no-deps --locked
 
     - uses: actions/upload-artifact@v4.5.0
       with:
