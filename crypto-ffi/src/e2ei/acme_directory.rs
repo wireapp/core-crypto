@@ -3,7 +3,7 @@ use wasm_bindgen::prelude::*;
 
 /// Holds URLs of all the standard ACME endpoint supported on an ACME server.
 ///
-/// - See https://www.rfc-editor.org/rfc/rfc8555.html#section-7.1.1
+/// - See <https://www.rfc-editor.org/rfc/rfc8555.html#section-7.1.1>
 /// - See [core_crypto::e2e_identity::types::E2eiAcmeDirectory]
 #[derive(Debug)]
 #[cfg_attr(

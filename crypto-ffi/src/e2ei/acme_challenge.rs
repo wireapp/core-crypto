@@ -3,7 +3,7 @@ use wasm_bindgen::prelude::*;
 
 /// For creating a challenge.
 ///
-/// - See https://www.rfc-editor.org/rfc/rfc8555.html#section-7.5.1
+/// - See <https://www.rfc-editor.org/rfc/rfc8555.html#section-7.5.1>
 /// - See [core_crypto::e2e_identity::types::E2eiAcmeChallenge]
 #[derive(Debug, Clone)]
 #[cfg_attr(

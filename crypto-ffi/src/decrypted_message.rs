@@ -7,7 +7,7 @@ use wasm_bindgen::prelude::*;
 
 use crate::{ClientId, CoreCryptoError, CoreCryptoResult, NewCrlDistributionPoints, WireIdentity};
 
-/// See [core_crypto::prelude::decrypt::MlsConversationDecryptMessage]
+/// See [core_crypto::prelude::MlsConversationDecryptMessage]
 #[derive(Debug)]
 #[cfg_attr(
     target_family = "wasm",

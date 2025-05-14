@@ -49,12 +49,12 @@ impl CoreCrypto {
         Ok(dumped_pki_env.map(Into::into))
     }
 
-    /// See [core_crypto::mls::MlsCentral::e2ei_is_pki_env_setup]
+    /// See [core_crypto::prelude::Session::e2ei_is_pki_env_setup]
     pub async fn e2ei_is_pki_env_setup(&self) -> bool {
         self.inner.e2ei_is_pki_env_setup().await
     }
 
-    /// See [core_crypto::mls::MlsCentral::e2ei_is_enabled]
+    /// See [core_crypto::prelude::Session::e2ei_is_enabled]
     pub async fn e2ei_is_enabled(&self, ciphersuite: Ciphersuite) -> CoreCryptoResult<bool> {
         let signature_scheme =
             core_crypto::prelude::MlsCiphersuite::from(core_crypto::prelude::CiphersuiteName::from(ciphersuite))

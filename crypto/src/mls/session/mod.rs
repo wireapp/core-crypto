@@ -95,7 +95,7 @@ impl fmt::Debug for SessionInner {
 }
 
 impl Session {
-    /// Tries to initialize the [Client].
+    /// Creates a new [Session].
     /// Takes a store path (i.e. Disk location of the embedded database, should be consistent between messaging sessions)
     /// And a root identity key (i.e. enclaved encryption key for this device)
     ///
@@ -123,7 +123,7 @@ impl Session {
         Self::new_with_backend(mls_backend, configuration).await
     }
 
-    /// Same as the [Client::try_new] but instead, it uses an in memory KeyStore.
+    /// Same as the [Self::try_new] but instead, it uses an in memory KeyStore.
     /// Although required, the `store_path` parameter from the `MlsClientConfiguration` won't be used here.
     pub async fn try_new_in_memory(configuration: MlsClientConfiguration) -> crate::mls::Result<Self> {
         let mls_backend = MlsCryptoProvider::try_new_with_configuration(MlsCryptoProviderConfiguration {
@@ -274,8 +274,9 @@ impl Session {
 
     /// Get an immutable view of an `MlsConversation`.
     ///
-    /// Because it operates on the raw conversation type, this may be faster than [crate::mls::TransactionContext::conversation].
-    /// for transient and immutable purposes. For long-lived or mutable purposes, prefer the other method.
+    /// Because it operates on the raw conversation type, this may be faster than
+    /// [crate::transaction_context::TransactionContext::conversation]. for transient and immutable
+    /// purposes. For long-lived or mutable purposes, prefer the other method.
     pub async fn get_raw_conversation(&self, id: &ConversationId) -> Result<ImmutableConversation> {
         let raw_conversation = GroupStore::fetch_from_keystore(id, &self.crypto_provider.keystore(), None)
             .await
@@ -388,16 +389,16 @@ impl Session {
             .map_err(Into::into)
     }
 
-    /// Initializes a raw MLS keypair without an associated client ID
-    /// Returns a random ClientId to bind later in [Client::init_with_external_client_id]
-    ///
-    /// # Arguments
-    /// * `ciphersuites` - all ciphersuites this client is supposed to support
-    /// * `backend` - the KeyStore and crypto provider to read identities from
-    ///
-    /// # Errors
-    /// KeyStore and OpenMls errors can happen
-    pub async fn generate_raw_keypairs(
+    // Initializes a raw MLS keypair without an associated client ID
+    // Returns a random ClientId to bind later in [Session::init_with_external_client_id]
+    //
+    // # Arguments
+    // * `ciphersuites` - all ciphersuites this client is supposed to support
+    // * `backend` - the KeyStore and crypto provider to read identities from
+    //
+    // # Errors
+    // KeyStore and OpenMls errors can happen
+    pub(crate) async fn generate_raw_keypairs(
         &self,
         ciphersuites: &[MlsCiphersuite],
         backend: &MlsCryptoProvider,
@@ -442,16 +443,16 @@ impl Session {
         Ok(tmp_client_ids)
     }
 
-    /// Finalizes initialization using a 2-step process of uploading first a public key and then associating a new Client ID to that keypair
-    ///
-    /// # Arguments
-    /// * `client_id` - The client ID you have fetched from the MLS Authentication Service
-    /// * `tmp_ids` - The temporary random client ids generated in the previous step [Client::generate_raw_keypairs]
-    /// * `ciphersuites` - To initialize the Client with
-    /// * `backend` - the KeyStore and crypto provider to read identities from
-    ///
-    /// **WARNING**: You have absolutely NO reason to call this if you didn't call [Client::generate_raw_keypairs] first. You have been warned!
-    pub async fn init_with_external_client_id(
+    // Finalizes initialization using a 2-step process of uploading first a public key and then associating a new Client ID to that keypair
+    //
+    // # Arguments
+    // * `client_id` - The client ID you have fetched from the MLS Authentication Service
+    // * `tmp_ids` - The temporary random client ids generated in the previous step [Session::generate_raw_keypairs]
+    // * `ciphersuites` - To initialize the Client with
+    // * `backend` - the KeyStore and crypto provider to read identities from
+    //
+    // **WARNING**: You have absolutely NO reason to call this if you didn't call [Session::generate_raw_keypairs] first. You have been warned!
+    pub(crate) async fn init_with_external_client_id(
         &self,
         client_id: ClientId,
         tmp_ids: Vec<ClientId>,

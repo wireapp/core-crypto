@@ -113,7 +113,9 @@ impl GroupStoreEntity for ProteusConversationSession {
 impl CoreCrypto {
     /// Proteus session accessor
     ///
-    /// Warning: The Proteus client **MUST** be initialized with [TransactionContext::proteus_init] first or an error will be returned
+    /// Warning: The Proteus client **MUST** be initialized with
+    /// [crate::transaction_context::TransactionContext::proteus_init] first or an error will be
+    /// returned
     pub async fn proteus_session(
         &self,
         session_id: &str,
@@ -126,7 +128,9 @@ impl CoreCrypto {
 
     /// Proteus session exists
     ///
-    /// Warning: The Proteus client **MUST** be initialized with [TransactionContext::proteus_init] first or an error will be returned
+    /// Warning: The Proteus client **MUST** be initialized with
+    /// [crate::transaction_context::TransactionContext::proteus_init] first or an error will be
+    /// returned
     pub async fn proteus_session_exists(&self, session_id: &str) -> Result<bool> {
         let mut mutex = self.proteus.lock().await;
         let proteus = mutex.as_mut().ok_or(Error::ProteusNotInitialized)?;
@@ -141,7 +145,9 @@ impl CoreCrypto {
 
     /// Returns the proteus identity's public key fingerprint
     ///
-    /// Warning: The Proteus client **MUST** be initialized with [TransactionContext::proteus_init] first or an error will be returned
+    /// Warning: The Proteus client **MUST** be initialized with
+    /// [crate::transaction_context::TransactionContext::proteus_init] first or an error will be
+    /// returned
     pub async fn proteus_fingerprint(&self) -> Result<String> {
         let mutex = self.proteus.lock().await;
         let proteus = mutex.as_ref().ok_or(Error::ProteusNotInitialized)?;
@@ -150,7 +156,9 @@ impl CoreCrypto {
 
     /// Returns the proteus identity's public key fingerprint
     ///
-    /// Warning: The Proteus client **MUST** be initialized with [TransactionContext::proteus_init] first or an error will be returned
+    /// Warning: The Proteus client **MUST** be initialized with
+    /// [crate::transaction_context::TransactionContext::proteus_init] first or an error will be
+    /// returned
     pub async fn proteus_fingerprint_local(&self, session_id: &str) -> Result<String> {
         let mut mutex = self.proteus.lock().await;
         let proteus = mutex.as_mut().ok_or(Error::ProteusNotInitialized)?;
@@ -160,7 +168,9 @@ impl CoreCrypto {
 
     /// Returns the proteus identity's public key fingerprint
     ///
-    /// Warning: The Proteus client **MUST** be initialized with [TransactionContext::proteus_init] first or an error will be returned
+    /// Warning: The Proteus client **MUST** be initialized with
+    /// [crate::transaction_context::TransactionContext::proteus_init] first or an error will be
+    /// returned
     pub async fn proteus_fingerprint_remote(&self, session_id: &str) -> Result<String> {
         let mut mutex = self.proteus.lock().await;
         let proteus = mutex.as_mut().ok_or(Error::ProteusNotInitialized)?;
@@ -169,10 +179,10 @@ impl CoreCrypto {
     }
 }
 
-/// Proteus counterpart of [crate::mls::Client]
+/// Proteus counterpart of [crate::mls::session::Session]
 ///
 /// The big difference is that [ProteusCentral] doesn't *own* its own keystore but must borrow it from the outside.
-/// Whether it's exclusively for this struct's purposes or it's shared with our main struct, [crate::mls::Client]
+/// Whether it's exclusively for this struct's purposes or it's shared with our main struct, [crate::mls::session::Session]
 #[derive(Debug)]
 pub struct ProteusCentral {
     proteus_identity: Arc<IdentityKeyPair>,

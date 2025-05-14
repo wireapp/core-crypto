@@ -25,7 +25,7 @@ pub(crate) type UserIdentities = JsValue;
 #[cfg_attr(not(target_family = "wasm"), uniffi::export)]
 #[cfg_attr(target_family = "wasm", wasm_bindgen)]
 impl CoreCrypto {
-    /// See [core_crypto::mls::conversation::ConversationGuard::get_device_identities]
+    /// See [core_crypto::mls::conversation::Conversation::get_device_identities]
     #[cfg_attr(target_family = "wasm", wasm_bindgen(unchecked_return_type = "WireIdentity[]"))]
     pub async fn get_device_identities(
         &self,
@@ -50,7 +50,7 @@ impl CoreCrypto {
         Ok(device_identities)
     }
 
-    /// See [core_crypto::mls::conversation::ConversationGuard::get_user_identities]
+    /// See [core_crypto::mls::conversation::Conversation::get_user_identities]
     #[cfg_attr(
         target_family = "wasm",
         wasm_bindgen(unchecked_return_type = "Map<string, WireIdentity[]>")
@@ -76,7 +76,7 @@ impl CoreCrypto {
         Ok(identities)
     }
 
-    /// See [core_crypto::mls::MlsCentral::get_credential_in_use]
+    /// See [core_crypto::prelude::Session::get_credential_in_use]
     pub async fn get_credential_in_use(
         &self,
         group_info: Vec<u8>,

@@ -31,17 +31,17 @@ impl Deref for CoreCryptoContext {
 #[cfg_attr(target_family = "wasm", wasm_bindgen)]
 #[cfg_attr(not(target_family = "wasm"), uniffi::export)]
 impl CoreCryptoContext {
-    /// See [core_crypto::context::CentralContext::set_data].
+    /// See [core_crypto::transaction_context::TransactionContext::set_data]
     pub async fn set_data(&self, data: Vec<u8>) -> CoreCryptoResult<()> {
         self.inner.set_data(data).await.map_err(Into::into)
     }
 
-    /// See [core_crypto::context::CentralContext::get_data].
+    /// See [core_crypto::transaction_context::TransactionContext::get_data]
     pub async fn get_data(&self) -> CoreCryptoResult<Option<Vec<u8>>> {
         self.inner.get_data().await.map_err(Into::into)
     }
 
-    /// see [core_crypto::mls::context::CentralContext::random_bytes]
+    /// See [core_crypto::prelude::Session::random_bytes].
     pub async fn random_bytes(&self, len: u32) -> CoreCryptoResult<Vec<u8>> {
         self.inner.random_bytes(len as _).await.map_err(Into::into)
     }

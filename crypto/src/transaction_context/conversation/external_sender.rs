@@ -4,7 +4,8 @@ use super::{Result, TransactionContext};
 use crate::{RecursiveError, prelude::MlsConversationConfiguration};
 
 impl TransactionContext {
-    /// Parses supplied key from Delivery Service in order to build back an [ExternalSender]
+    /// Parses external senders' keys provided by the delivery service
+    /// and updates the conversation's configuration with them.
     pub async fn set_raw_external_senders(
         &self,
         cfg: &mut MlsConversationConfiguration,

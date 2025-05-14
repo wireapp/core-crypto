@@ -21,10 +21,9 @@ impl TransactionContext {
     /// On success this function will return the group id and a message to be fanned out to other
     /// clients.
     ///
-    /// If the Delivery Service accepts the external commit, you have to
-    /// [PendingConversation::merge] in order to get back
-    /// a functional MLS group. On the opposite, if it rejects it, you can either
-    /// retry by just calling again [TransactionContext::join_by_external_commit].
+    /// If the Delivery Service accepts the external commit, you have to ensure the commit is
+    /// merged in order to get back a functional MLS group. If it rejects it, you can retry by
+    /// calling [Self::join_by_external_commit] again.
     ///
     /// # Arguments
     /// * `group_info` - a GroupInfo wrapped in a MLS message. it can be obtained by deserializing a TLS serialized `GroupInfo` object

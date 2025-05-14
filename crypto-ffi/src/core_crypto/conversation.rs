@@ -34,7 +34,7 @@ macro_rules! conversation_id_vec {
 #[cfg_attr(not(target_family = "wasm"), uniffi::export)]
 #[cfg_attr(target_family = "wasm", wasm_bindgen)]
 impl CoreCrypto {
-    /// See [core_crypto::mls::conversation::ImmutableConversation::epoch]
+    /// See [core_crypto::mls::conversation::Conversation::epoch]
     pub async fn conversation_epoch(&self, conversation_id: &ConversationId) -> CoreCryptoResult<u64> {
         let conversation_id = conversation_id_vec!(conversation_id);
         let conversation = self
@@ -45,7 +45,7 @@ impl CoreCrypto {
         Ok(conversation.epoch().await)
     }
 
-    /// See [core_crypto::mls::conversation::ImmutableConversation::ciphersuite]
+    /// See [core_crypto::mls::conversation::Conversation::ciphersuite]
     pub async fn conversation_ciphersuite(&self, conversation_id: &ConversationId) -> CoreCryptoResult<Ciphersuite> {
         let conversation_id = conversation_id_vec!(conversation_id);
         let cs = self
@@ -58,7 +58,7 @@ impl CoreCrypto {
         Ok(Ciphersuite::from(core_crypto::prelude::CiphersuiteName::from(cs)))
     }
 
-    /// See [core_crypto::mls::MlsCentral::conversation_exists]
+    /// See [core_crypto::prelude::Session::conversation_exists]
     pub async fn conversation_exists(&self, conversation_id: &ConversationId) -> CoreCryptoResult<bool> {
         let conversation_id = conversation_id_vec!(conversation_id);
         self.inner
@@ -68,7 +68,7 @@ impl CoreCrypto {
             .map_err(Into::into)
     }
 
-    /// See [core_crypto::mls::conversation::ImmutableConversation::get_client_ids]
+    /// See [core_crypto::mls::conversation::Conversation::get_client_ids]
     pub async fn get_client_ids(&self, conversation_id: &ConversationId) -> CoreCryptoResult<Vec<ClientId>> {
         let conversation_id = conversation_id_vec!(conversation_id);
         let conversation = self
@@ -79,7 +79,7 @@ impl CoreCrypto {
         Ok(conversation.get_client_ids().await.into_iter().map(ClientId).collect())
     }
 
-    /// See [core_crypto::mls::conversation::ImmutableConversation::get_external_sender]
+    /// See [core_crypto::mls::conversation::Conversation::get_external_sender]
     pub async fn get_external_sender(&self, conversation_id: &ConversationId) -> CoreCryptoResult<Vec<u8>> {
         let conversation_id = conversation_id_vec!(conversation_id);
         let conversation = self
@@ -90,7 +90,7 @@ impl CoreCrypto {
         conversation.get_external_sender().await.map_err(Into::into)
     }
 
-    /// See [core_crypto::mls::conversation::ImmutableConversation::export_secret_key]
+    /// See [core_crypto::mls::conversation::Conversation::export_secret_key]
     pub async fn export_secret_key(
         &self,
         conversation_id: &ConversationId,

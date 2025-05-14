@@ -1,65 +1,44 @@
+#![allow(missing_docs)]
+
 /// These errors wrap each of the module-specific errors in CoreCrypto.
 ///
 /// The goal here is to reduce the need to redeclare each of these error
 /// types as an individual variant of a module-specific error type.
 #[derive(Debug)]
 pub enum RecursiveError {
-    /// Wrap a [crate::Error] for recursion.
     Root {
-        /// What was happening in the caller
         context: &'static str,
-        /// What happened
         source: Box<crate::Error>,
     },
-    /// Wrap a [crate::transaction_context::Error] for recursion.
     TransactionContext {
-        /// What was happening in the caller
         context: &'static str,
-        /// What happened
         source: Box<crate::transaction_context::Error>,
     },
-    /// Wrap a [crate::e2e_identity::Error] for recursion.
     E2e {
-        /// What was happening in the caller
         context: &'static str,
-        /// What happened
         source: Box<crate::e2e_identity::Error>,
     },
-    /// Wrap a [crate::mls::Error] for recursion.
     Mls {
-        /// What was happening in the caller
         context: &'static str,
-        /// What happened
         source: Box<crate::mls::Error>,
     },
-    /// Wrap a [crate::mls::client::Error] for recursion.
     MlsClient {
-        /// What was happening in the caller
         context: &'static str,
-        /// What happened
         source: Box<crate::mls::session::Error>,
     },
-    /// Wrap a [crate::mls::conversation::Error] for recursion.
     MlsConversation {
-        /// What was happening in the caller
         context: &'static str,
-        /// What happened
         source: Box<crate::mls::conversation::Error>,
     },
-    /// Wrap a [crate::mls::credential::Error] for recursion.
     MlsCredential {
-        /// What was happening in the caller
         context: &'static str,
-        /// What happened
         source: Box<crate::mls::credential::Error>,
     },
-    /// Wrap a [crate::test_utils::TestError] for recursion.
     #[cfg(test)]
     Test(Box<crate::test_utils::TestError>),
 }
 
 impl RecursiveError {
-    /// Convert a [crate::Error] into a [RecursiveError], with context
     pub fn root<E: Into<crate::Error>>(context: &'static str) -> impl FnOnce(E) -> Self {
         move |into_source| Self::Root {
             context,
@@ -67,7 +46,6 @@ impl RecursiveError {
         }
     }
 
-    /// Convert a [crate::transaction_context::Error] into a [RecursiveError], with context
     pub fn transaction<E: Into<crate::transaction_context::Error>>(context: &'static str) -> impl FnOnce(E) -> Self {
         move |into_source| Self::TransactionContext {
             context,
@@ -75,7 +53,6 @@ impl RecursiveError {
         }
     }
 
-    /// Convert a [crate::e2e_identity::Error] into a [RecursiveError], with context
     pub fn e2e_identity<E: Into<crate::e2e_identity::Error>>(context: &'static str) -> impl FnOnce(E) -> Self {
         move |into_source| Self::E2e {
             context,
@@ -83,7 +60,6 @@ impl RecursiveError {
         }
     }
 
-    /// Convert a [crate::mls::Error] into a [RecursiveError], with context
     pub fn mls<E: Into<crate::mls::Error>>(context: &'static str) -> impl FnOnce(E) -> Self {
         move |into_source| Self::Mls {
             context,
@@ -91,7 +67,6 @@ impl RecursiveError {
         }
     }
 
-    /// Convert a [crate::mls::client::Error] into a [RecursiveError], with context
     pub fn mls_client<E: Into<crate::mls::session::Error>>(context: &'static str) -> impl FnOnce(E) -> Self {
         move |into_source| Self::MlsClient {
             context,
@@ -99,7 +74,6 @@ impl RecursiveError {
         }
     }
 
-    /// Convert a [crate::mls::conversation::Error] into a [RecursiveError], with context
     pub fn mls_conversation<E: Into<crate::mls::conversation::Error>>(context: &'static str) -> impl FnOnce(E) -> Self {
         move |into_source| Self::MlsConversation {
             context,
@@ -107,7 +81,6 @@ impl RecursiveError {
         }
     }
 
-    /// Convert a [crate::mls::credential::Error] into a [RecursiveError], with context
     pub fn mls_credential<E: Into<crate::mls::credential::Error>>(context: &'static str) -> impl FnOnce(E) -> Self {
         move |into_source| Self::MlsCredential {
             context,

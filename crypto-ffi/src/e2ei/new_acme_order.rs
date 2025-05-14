@@ -3,7 +3,7 @@ use wasm_bindgen::prelude::*;
 
 /// Result of an order creation.
 ///
-/// - See https://www.rfc-editor.org/rfc/rfc8555.html#section-7.4
+/// - See <https://www.rfc-editor.org/rfc/rfc8555.html#section-7.4>
 /// - See [core_crypto::e2e_identity::types::E2eiNewAcmeOrder]
 #[derive(Debug)]
 #[cfg_attr(

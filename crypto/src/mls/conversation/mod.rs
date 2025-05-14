@@ -237,7 +237,7 @@ pub trait Conversation<'a>: ConversationWithMls<'a> {
             .process_results(|iter| iter.into_group_map())
     }
 
-    /// Generate a new [`HistorySecret`].
+    /// Generate a new [`crate::prelude::HistorySecret`].
     ///
     /// This is useful when it's this client's turn to generate a new history client.
     ///

@@ -129,7 +129,7 @@ impl TransactionContext {
     ///
     /// # Expected actions to perform after this function (in this order)
     /// 1. Rotate credentials for each conversation in [crate::mls::conversation::ConversationGuard::e2ei_rotate]
-    /// 2. Generate new key packages with [Client::generate_new_keypackages]
+    /// 2. Generate new key packages with [crate::mls::session::Session::request_key_packages]
     /// 3. Use these to replace the stale ones the in the backend
     /// 4. Delete the stale ones locally using [Self::delete_stale_key_packages]
     ///     * This is the last step because you might still need the old key packages to avoid

@@ -192,11 +192,6 @@ impl ConversationGuard {
     }
 
     /// Self updates the KeyPackage and automatically commits. Pending proposals will be commited.
-    ///
-    /// # Arguments
-    /// * `conversation_id` - the group/conversation id
-    ///
-    /// see [MlsCentral::update_keying_material]
     pub async fn update_key_material(&mut self) -> Result<()> {
         let commit = self.update_key_material_inner(None, None).await?;
         self.send_and_merge_commit(commit).await

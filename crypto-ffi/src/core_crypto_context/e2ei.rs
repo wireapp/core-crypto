@@ -162,7 +162,7 @@ impl CoreCryptoContext {
 
     /// See [core_crypto::transaction_context::TransactionContext::e2ei_enrollment_stash]
     ///
-    /// Note that this can only succeed id the enrollment is unique and there are no other hard refs to it.
+    /// Note that this can only succeed if the enrollment is unique and there are no other hard refs to it.
     pub async fn e2ei_enrollment_stash(&self, enrollment: EnrollmentParameter) -> CoreCryptoResult<Vec<u8>> {
         #[cfg(not(target_family = "wasm"))]
         let enrollment = Arc::into_inner(enrollment).ok_or_else(|| {
@@ -189,7 +189,7 @@ impl CoreCryptoContext {
             .map_err(Into::into)
     }
 
-    /// See [core_crypto::mls::conversation::conversation_guard::ConversationGuard::e2ei_conversation_state]
+    /// See [core_crypto::mls::conversation::Conversation::e2ei_conversation_state]
     pub async fn e2ei_conversation_state(
         &self,
         conversation_id: &ConversationId,
@@ -203,7 +203,7 @@ impl CoreCryptoContext {
             .map_err(Into::into)
     }
 
-    /// See [core_crypto::mls::Client::e2ei_is_enabled]
+    /// See [core_crypto::prelude::Session::e2ei_is_enabled]
     pub async fn e2ei_is_enabled(&self, ciphersuite: Ciphersuite) -> CoreCryptoResult<bool> {
         let sc = core_crypto::prelude::MlsCiphersuite::from(core_crypto::prelude::CiphersuiteName::from(ciphersuite))
             .signature_algorithm();
@@ -214,7 +214,7 @@ impl CoreCryptoContext {
             .map_err(Into::into)
     }
 
-    /// See [core_crypto::mls::Client::get_device_identities]
+    /// See [core_crypto::mls::conversation::Conversation::get_device_identities]
     pub async fn get_device_identities(
         &self,
         conversation_id: &ConversationId,
@@ -227,7 +227,7 @@ impl CoreCryptoContext {
         Ok(wire_ids.into_iter().map(Into::into).collect())
     }
 
-    /// See [core_crypto::mls::Client::get_user_identities]
+    /// See [core_crypto::mls::conversation::Conversation::get_user_identities]
     #[cfg_attr(
         target_family = "wasm",
         wasm_bindgen(unchecked_return_type = "Map<string, WireIdentity[]>")
@@ -249,7 +249,7 @@ impl CoreCryptoContext {
         Ok(user_ids)
     }
 
-    /// See [core_crypto::mls::Client::get_credential_in_use]
+    /// See [core_crypto::prelude::Session::get_credential_in_use]
     pub async fn get_credential_in_use(
         &self,
         group_info: Vec<u8>,
@@ -268,6 +268,7 @@ impl CoreCryptoContext {
             .map_err(Into::into)
     }
 
+    /// See [core_crypto::prelude::Session::e2ei_dump_pki_env]
     pub async fn e2ei_dump_pki_env(&self) -> CoreCryptoResult<Option<E2eiDumpedPkiEnv>> {
         self.inner
             .e2ei_dump_pki_env()
@@ -277,7 +278,7 @@ impl CoreCryptoContext {
             .map_err(Into::into)
     }
 
-    /// See [core_crypto::mls::MlsCentral::e2ei_is_pki_env_setup]
+    /// See [core_crypto::prelude::Session::e2ei_is_pki_env_setup]
     pub async fn e2ei_is_pki_env_setup(&self) -> CoreCryptoResult<bool> {
         self.inner
             .e2ei_is_pki_env_setup()

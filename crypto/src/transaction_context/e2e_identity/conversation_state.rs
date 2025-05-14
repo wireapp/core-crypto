@@ -26,7 +26,7 @@ pub enum E2eiConversationState {
 }
 
 impl TransactionContext {
-    /// See [Client::e2ei_verify_group_state].
+    /// See [crate::mls::session::Session::e2ei_verify_group_state].
     pub async fn e2ei_verify_group_state(&self, group_info: VerifiableGroupInfo) -> Result<E2eiConversationState> {
         let mls_provider = self
             .mls_provider()
@@ -59,7 +59,7 @@ impl TransactionContext {
         Ok(Session::compute_conversation_state(cs, credentials, MlsCredentialType::X509, auth_service.as_ref()).await)
     }
 
-    /// See [Client::get_credential_in_use].
+    /// See [crate::mls::session::Session::get_credential_in_use].
     pub async fn get_credential_in_use(
         &self,
         group_info: VerifiableGroupInfo,

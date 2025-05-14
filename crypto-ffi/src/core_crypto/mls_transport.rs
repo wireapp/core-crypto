@@ -296,7 +296,7 @@ fn callback_shim(callbacks: Callbacks) -> Arc<dyn core_crypto::MlsTransport> {
 #[cfg_attr(target_family = "wasm", wasm_bindgen)]
 #[cfg_attr(not(target_family = "wasm"), uniffi::export)]
 impl CoreCrypto {
-    /// See [core_crypto::mls::MlsCentral::provide_transport]
+    /// See [core_crypto::prelude::Session::provide_transport]
     pub async fn provide_transport(&self, callbacks: Callbacks) -> CoreCryptoResult<()> {
         self.inner.provide_transport(callback_shim(callbacks)).await;
         Ok(())

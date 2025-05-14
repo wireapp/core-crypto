@@ -5,7 +5,7 @@ use crate::AcmeChallenge;
 
 /// Result of an authorization creation.
 ///
-/// - See https://www.rfc-editor.org/rfc/rfc8555.html#section-7.5
+/// - See <https://www.rfc-editor.org/rfc/rfc8555.html#section-7.5>
 /// - See [core_crypto::e2e_identity::types::E2eiNewAcmeAuthz]
 #[derive(Debug)]
 #[cfg_attr(

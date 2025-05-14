@@ -20,7 +20,7 @@ impl CoreCryptoContext {
         })
     }
 
-    /// See [core_crypto::context::CentralContext::proteus_session_from_prekey]
+    /// See [core_crypto::transaction_context::TransactionContext::proteus_session_from_prekey]
     pub async fn proteus_session_from_prekey(&self, session_id: String, prekey: Vec<u8>) -> CoreCryptoResult<()> {
         proteus_impl!({
             self.inner.proteus_session_from_prekey(&session_id, &prekey).await?;
@@ -28,7 +28,7 @@ impl CoreCryptoContext {
         })
     }
 
-    /// See [core_crypto::context::CentralContext::proteus_session_from_message]
+    /// See [core_crypto::transaction_context::TransactionContext::proteus_session_from_message]
     pub async fn proteus_session_from_message(
         &self,
         session_id: String,
@@ -40,23 +40,24 @@ impl CoreCryptoContext {
         })
     }
 
-    /// See [core_crypto::context::CentralContext::proteus_session_save]
-    /// **Note**: This isn't usually needed as persisting sessions happens automatically when decrypting/encrypting messages and initializing Sessions
+    /// See [core_crypto::transaction_context::TransactionContext::proteus_session_save]
+    ///
+    /// **Note**: This isn't usually needed as persisting sessions happens automatically when
+    /// decrypting/encrypting messages and initializing Sessions
     pub async fn proteus_session_save(&self, session_id: String) -> CoreCryptoResult<()> {
         proteus_impl!({ self.inner.proteus_session_save(&session_id).await.map_err(Into::into) })
     }
 
-    /// See [core_crypto::context::CentralContext::proteus_session_delete]
+    /// See [core_crypto::transaction_context::TransactionContext::proteus_session_delete]
     pub async fn proteus_session_delete(&self, session_id: String) -> CoreCryptoResult<()> {
         proteus_impl!({ self.inner.proteus_session_delete(&session_id).await.map_err(Into::into) })
     }
 
-    /// See [core_crypto::context::CentralContext::proteus_session_exists]
+    /// See [core_crypto::transaction_context::TransactionContext::proteus_session_exists]
     pub async fn proteus_session_exists(&self, session_id: String) -> CoreCryptoResult<bool> {
         proteus_impl!({ self.inner.proteus_session_exists(&session_id).await.map_err(Into::into) })
     }
-
-    /// See [core_crypto::context::CentralContext::proteus_decrypt]
+    /// See [core_crypto::transaction_context::TransactionContext::proteus_decrypt]
     pub async fn proteus_decrypt(&self, session_id: String, ciphertext: Vec<u8>) -> CoreCryptoResult<Vec<u8>> {
         proteus_impl!({
             self.inner
@@ -66,7 +67,7 @@ impl CoreCryptoContext {
         })
     }
 
-    /// See [core_crypto::context::CentralContext::proteus_encrypt]
+    /// See [core_crypto::transaction_context::TransactionContext::proteus_encrypt]
     pub async fn proteus_encrypt(&self, session_id: String, plaintext: Vec<u8>) -> CoreCryptoResult<Vec<u8>> {
         proteus_impl!({
             self.inner
@@ -76,7 +77,7 @@ impl CoreCryptoContext {
         })
     }
 
-    /// See [core_crypto::context::CentralContext::proteus_encrypt_batched]
+    /// See [core_crypto::transaction_context::TransactionContext::proteus_encrypt_batched]
     #[cfg_attr(
         target_family = "wasm",
         wasm_bindgen(unchecked_return_type = "Map<string, Uint8Array>")
@@ -96,12 +97,12 @@ impl CoreCryptoContext {
         })
     }
 
-    /// See [core_crypto::context::CentralContext::proteus_new_prekey]
+    /// See [core_crypto::transaction_context::TransactionContext::proteus_new_prekey]
     pub async fn proteus_new_prekey(&self, prekey_id: u16) -> CoreCryptoResult<Vec<u8>> {
         proteus_impl!({ self.inner.proteus_new_prekey(prekey_id).await.map_err(Into::into) })
     }
 
-    /// See [core_crypto::context::CentralContext::proteus_new_prekey_auto]
+    /// See [core_crypto::transaction_context::TransactionContext::proteus_new_prekey_auto]
     pub async fn proteus_new_prekey_auto(&self) -> CoreCryptoResult<ProteusAutoPrekeyBundle> {
         proteus_impl!({
             let (id, pkb) = self.inner.proteus_new_prekey_auto().await?;
@@ -109,17 +110,17 @@ impl CoreCryptoContext {
         })
     }
 
-    /// See [core_crypto::context::CentralContext::proteus_last_resort_prekey]
+    /// See [core_crypto::transaction_context::TransactionContext::proteus_last_resort_prekey]
     pub async fn proteus_last_resort_prekey(&self) -> CoreCryptoResult<Vec<u8>> {
         proteus_impl!({ self.inner.proteus_last_resort_prekey().await.map_err(Into::into) })
     }
 
-    /// See [core_crypto::context::CentralContext::proteus_fingerprint]
+    /// See [core_crypto::transaction_context::TransactionContext::proteus_fingerprint]
     pub async fn proteus_fingerprint(&self) -> CoreCryptoResult<String> {
         proteus_impl!({ self.inner.proteus_fingerprint().await.map_err(Into::into) })
     }
 
-    /// See [core_crypto::context::CentralContext::proteus_fingerprint_local]
+    /// See [core_crypto::transaction_context::TransactionContext::proteus_fingerprint_local]
     pub async fn proteus_fingerprint_local(&self, session_id: String) -> CoreCryptoResult<String> {
         proteus_impl!({
             self.inner
@@ -129,7 +130,7 @@ impl CoreCryptoContext {
         })
     }
 
-    /// See [core_crypto::context::CentralContext::proteus_fingerprint_remote]
+    /// See [core_crypto::transaction_context::TransactionContext::proteus_fingerprint_remote]
     pub async fn proteus_fingerprint_remote(&self, session_id: String) -> CoreCryptoResult<String> {
         proteus_impl!({
             self.inner
@@ -139,12 +140,12 @@ impl CoreCryptoContext {
         })
     }
 
-    /// See [core_crypto::context::CentralContext::proteus_cryptobox_migrate]
+    /// See [core_crypto::transaction_context::TransactionContext::proteus_cryptobox_migrate]
     pub async fn proteus_cryptobox_migrate(&self, path: String) -> CoreCryptoResult<()> {
         proteus_impl!({ self.inner.proteus_cryptobox_migrate(&path).await.map_err(Into::into) })
     }
 
-    /// See [core_crypto::context::CentralContext::proteus_reload_sessions]
+    /// See [core_crypto::transaction_context::TransactionContext::proteus_reload_sessions]
     pub async fn proteus_reload_sessions(&self) -> CoreCryptoResult<()> {
         proteus_impl!({ self.inner.proteus_reload_sessions().await.map_err(Into::into) })
     }

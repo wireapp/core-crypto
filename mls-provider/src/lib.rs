@@ -159,7 +159,7 @@ impl MlsCryptoProvider {
     /// - Multiple strong references currently exist to the keystore
     ///
     /// As with all such checks, this is vulnerable to TOCTOU issues, but as the current implementation
-    /// of the [`close`] function consumes `self`, this is the only way to check in advance whether
+    /// of the [`MlsCryptoProvider::close`] function consumes `self`, this is the only way to check in advance whether
     /// this will in principle work.
     pub async fn can_close(&self) -> bool {
         self.key_store.can_close().await

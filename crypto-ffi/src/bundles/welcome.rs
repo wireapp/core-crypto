@@ -2,7 +2,7 @@ use core_crypto::prelude::ConversationId;
 #[cfg(target_family = "wasm")]
 use wasm_bindgen::prelude::*;
 
-/// see [core_crypto::prelude::MlsConversationCreationMessage]
+/// see [core_crypto::prelude::WelcomeBundle]
 #[derive(Debug)]
 #[cfg_attr(
     target_family = "wasm",

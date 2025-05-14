@@ -6,7 +6,7 @@ use crate::{Ciphersuite, CoreCrypto, CoreCryptoResult, CredentialType};
 #[cfg_attr(not(target_family = "wasm"), uniffi::export)]
 #[cfg_attr(target_family = "wasm", wasm_bindgen)]
 impl CoreCrypto {
-    /// See [core_crypto::mls::MlsCentral::client_public_key]
+    /// See [core_crypto::transaction_context::TransactionContext::client_public_key]
     pub async fn client_public_key(
         &self,
         ciphersuite: Ciphersuite,

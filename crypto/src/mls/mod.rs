@@ -22,7 +22,7 @@ pub(crate) mod config {
 
     use super::*;
 
-    /// Configuration parameters for [Client].
+    /// Configuration parameters for [Session].
     #[derive(Debug, Clone)]
     #[non_exhaustive]
     pub struct MlsClientConfiguration {
@@ -30,13 +30,14 @@ pub(crate) mod config {
         pub store_path: String,
         /// Database key to be used to instantiate the [MlsCryptoProvider]
         pub database_key: DatabaseKey,
-        /// Identifier for the client to be used by [MlsCentral]
+        /// Identifier for the client to be used by [Session]
         pub client_id: Option<ClientId>,
         /// Entropy pool seed for the internal PRNG
         pub external_entropy: Option<EntropySeed>,
         /// All supported ciphersuites
         pub ciphersuites: Vec<ciphersuite::MlsCiphersuite>,
-        /// Number of [openmls::prelude::KeyPackage] to create when creating a MLS client. Default to [INITIAL_KEYING_MATERIAL_COUNT]
+        /// Number of [openmls::prelude::KeyPackage] to create when creating a MLS client.
+        /// Defaults to [crate::prelude::INITIAL_KEYING_MATERIAL_COUNT].
         pub nb_init_key_packages: Option<usize>,
     }
 
@@ -46,7 +47,7 @@ pub(crate) mod config {
         /// # Arguments
         /// * `store_path` - location where the SQLite/IndexedDB database will be stored
         /// * `database_key` - key to be used to instantiate the [MlsCryptoProvider]
-        /// * `client_id` - identifier for the client to be used by [MlsCentral]
+        /// * `client_id` - identifier for the client to be used by [Session]
         /// * `ciphersuites` - Ciphersuites supported by this device
         /// * `entropy` - External source of entropy for platforms where default source insufficient
         ///

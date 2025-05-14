@@ -49,7 +49,7 @@ pub struct CoreCrypto {
 ///
 /// This is necessary because in uniffi async constructors are not supported.
 ///
-/// See [core_crypto::mls::Client::try_new]
+/// See [Session::try_new]
 #[cfg(not(target_family = "wasm"))]
 #[uniffi::export]
 pub async fn core_crypto_new(
@@ -74,7 +74,7 @@ pub async fn core_crypto_new(
 /// Free function to construct a new `CoreCrypto` instance.
 ///
 /// Similar to [`core_crypto_new`] but defers MLS initialization. It can be initialized later
-/// with [CoreCryptoContext::mls_init].
+/// with [core_crypto::transaction_context::TransactionContext::mls_init].
 #[cfg(not(target_family = "wasm"))]
 #[uniffi::export]
 pub async fn core_crypto_deferred_init(
@@ -149,7 +149,7 @@ impl CoreCrypto {
         Self::from_config(configuration).await
     }
 
-    /// see [core_crypto::mls::Client::close]
+    /// See [Session::close]
     // Note that this is implemented only for Wasm; Uniffi already generates a `close` method which suffices.
     pub async fn close(self) -> CoreCryptoResult<()> {
         self.inner.take().close().await.map_err(Into::into)
@@ -159,7 +159,7 @@ impl CoreCrypto {
 #[cfg_attr(target_family = "wasm", wasm_bindgen)]
 #[cfg_attr(not(target_family = "wasm"), uniffi::export)]
 impl CoreCrypto {
-    /// see [core_crypto::mls::MlsCentral::can_close]
+    /// See [Session::can_close]
     pub async fn can_close(&self) -> bool {
         self.inner.can_close().await
     }

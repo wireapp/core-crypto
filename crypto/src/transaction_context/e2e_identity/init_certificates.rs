@@ -17,8 +17,7 @@ use wire_e2e_identity::prelude::x509::{
 use x509_cert::der::Decode;
 
 impl TransactionContext {
-    /// See [Client::e2ei_is_pki_env_setup].
-    /// Unlike [Client::e2ei_is_pki_env_setup], this function returns a result.
+    /// See [crate::mls::session::Session::e2ei_is_pki_env_setup].
     pub async fn e2ei_is_pki_env_setup(&self) -> Result<bool> {
         Ok(self
             .mls_provider()
@@ -29,7 +28,7 @@ impl TransactionContext {
             .await)
     }
 
-    /// See [Client::e2ei_dump_pki_env].
+    /// See [crate::mls::session::Session::e2ei_dump_pki_env].
     pub async fn e2ei_dump_pki_env(&self) -> Result<Option<E2eiDumpedPkiEnv>> {
         if !self.e2ei_is_pki_env_setup().await? {
             return Ok(None);

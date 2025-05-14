@@ -1,5 +1,5 @@
 //! This module contains the primitives to enable transactional support on a higher level within the
-//! [Client]. All mutating operations need to be done through a [TransactionContext].
+//! [Session]. All mutating operations need to be done through a [TransactionContext].
 
 #[cfg(feature = "proteus")]
 use crate::proteus::ProteusCentral;
@@ -277,7 +277,7 @@ impl TransactionContext {
             .map_err(Into::into)
     }
 
-    /// see [Client::client_public_key]
+    /// Returns the client's public key.
     pub async fn client_public_key(
         &self,
         ciphersuite: MlsCiphersuite,
@@ -292,7 +292,7 @@ impl TransactionContext {
         Ok(cb.signature_key.to_public_vec())
     }
 
-    /// see [Client::id]
+    /// see [Session::id]
     pub async fn client_id(&self) -> Result<ClientId> {
         self.session()
             .await?
