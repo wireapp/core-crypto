@@ -19,7 +19,12 @@ impl WireQualifiedClientId {
     }
 
     pub fn generate() -> Self {
-        let user_id = uuid::Uuid::new_v4().to_string();
+        let user_id = uuid::Uuid::new_v4();
+        Self::generate_from_user_id(&user_id)
+    }
+
+    pub fn generate_from_user_id(user_id: &uuid::Uuid) -> Self {
+        let user_id = user_id.to_string();
         let device_id = rand::random::<u64>();
         let client_id = format!("{user_id}:{device_id:x}@{DOMAIN}");
         Self(client_id.into_bytes().into())
