@@ -12,8 +12,10 @@ use wasm_bindgen::prelude::*;
 #[cfg_attr(not(target_family = "wasm"), derive(uniffi::Record))]
 pub struct WelcomeBundle {
     /// Identifier of the joined conversation
+    #[cfg_attr(target_family = "wasm", wasm_bindgen(readonly))]
     pub id: ConversationId,
     /// New CRL Distribution of members of this group
+    #[cfg_attr(target_family = "wasm", wasm_bindgen(readonly, js_name = crlNewDistributionPoints))]
     pub crl_new_distribution_points: Option<Vec<String>>,
 }
 
