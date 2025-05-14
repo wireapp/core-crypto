@@ -3,7 +3,7 @@
 <a href=#3 id=3 data-nosnippet>3</a>//!
 <a href=#4 id=4 data-nosnippet>4</a>//! The goal is provide a easier and less verbose API to create, manage and interact with MLS
 <a href=#5 id=5 data-nosnippet>5</a>//! groups.
-<a href=#6 id=6 data-nosnippet>6</a></span><span class="attr">#![doc = <span class="macro">include_str!</span>(<span class="string">"../../README.md"</span>)]
+<a href=#6 id=6 data-nosnippet>6</a></span><span class="attr">#![doc = <span class="macro">include_str!</span>(<span class="macro">env!</span>(<span class="string">"STRIPPED_README_PATH"</span>))]
 <a href=#7 id=7 data-nosnippet>7</a>#![cfg_attr(not(test), deny(missing_docs))]
 <a href=#8 id=8 data-nosnippet>8</a>#![allow(clippy::single_component_path_imports)]
 <a href=#9 id=9 data-nosnippet>9</a>
@@ -113,9 +113,9 @@
 <a href=#113 id=113 data-nosnippet>113</a>    </span><span class="kw">async fn </span>send_message(<span class="kw-2">&amp;</span><span class="self">self</span>, mls_message: Vec&lt;u8&gt;) -&gt; <span class="prelude-ty">Result</span>&lt;MlsTransportResponse&gt;;
 <a href=#114 id=114 data-nosnippet>114</a>}
 <a href=#115 id=115 data-nosnippet>115</a>
-<a href=#116 id=116 data-nosnippet>116</a><span class="doccomment">/// Wrapper superstruct for both [mls::Client] and [proteus::ProteusCentral]
+<a href=#116 id=116 data-nosnippet>116</a><span class="doccomment">/// Wrapper superstruct for both [mls::session::Session] and [proteus::ProteusCentral]
 <a href=#117 id=117 data-nosnippet>117</a>///
-<a href=#118 id=118 data-nosnippet>118</a>/// As [std::ops::Deref] is implemented, this struct is automatically dereferred to [mls::Client] apart from `proteus_*` calls
+<a href=#118 id=118 data-nosnippet>118</a>/// As [std::ops::Deref] is implemented, this struct is automatically dereferred to [mls::session::Session] apart from `proteus_*` calls
 <a href=#119 id=119 data-nosnippet>119</a>///
 <a href=#120 id=120 data-nosnippet>120</a>/// This is cheap to clone as all internal members have `Arc` wrappers or are `Copy`.
 <a href=#121 id=121 data-nosnippet>121</a></span><span class="attr">#[derive(Debug, Clone)]

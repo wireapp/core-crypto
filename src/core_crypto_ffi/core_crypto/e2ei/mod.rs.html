@@ -49,12 +49,12 @@
 <a href=#49 id=49 data-nosnippet>49</a>        <span class="prelude-val">Ok</span>(dumped_pki_env.map(Into::into))
 <a href=#50 id=50 data-nosnippet>50</a>    }
 <a href=#51 id=51 data-nosnippet>51</a>
-<a href=#52 id=52 data-nosnippet>52</a>    <span class="doccomment">/// See [core_crypto::mls::MlsCentral::e2ei_is_pki_env_setup]
+<a href=#52 id=52 data-nosnippet>52</a>    <span class="doccomment">/// See [core_crypto::prelude::Session::e2ei_is_pki_env_setup]
 <a href=#53 id=53 data-nosnippet>53</a>    </span><span class="kw">pub async fn </span>e2ei_is_pki_env_setup(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; bool {
 <a href=#54 id=54 data-nosnippet>54</a>        <span class="self">self</span>.inner.e2ei_is_pki_env_setup().<span class="kw">await
 <a href=#55 id=55 data-nosnippet>55</a>    </span>}
 <a href=#56 id=56 data-nosnippet>56</a>
-<a href=#57 id=57 data-nosnippet>57</a>    <span class="doccomment">/// See [core_crypto::mls::MlsCentral::e2ei_is_enabled]
+<a href=#57 id=57 data-nosnippet>57</a>    <span class="doccomment">/// See [core_crypto::prelude::Session::e2ei_is_enabled]
 <a href=#58 id=58 data-nosnippet>58</a>    </span><span class="kw">pub async fn </span>e2ei_is_enabled(<span class="kw-2">&amp;</span><span class="self">self</span>, ciphersuite: Ciphersuite) -&gt; CoreCryptoResult&lt;bool&gt; {
 <a href=#59 id=59 data-nosnippet>59</a>        <span class="kw">let </span>signature_scheme =
 <a href=#60 id=60 data-nosnippet>60</a>            core_crypto::prelude::MlsCiphersuite::from(core_crypto::prelude::CiphersuiteName::from(ciphersuite))

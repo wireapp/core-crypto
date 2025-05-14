@@ -129,7 +129,7 @@
 <a href=#129 id=129 data-nosnippet>129</a>    ///
 <a href=#130 id=130 data-nosnippet>130</a>    /// # Expected actions to perform after this function (in this order)
 <a href=#131 id=131 data-nosnippet>131</a>    /// 1. Rotate credentials for each conversation in [crate::mls::conversation::ConversationGuard::e2ei_rotate]
-<a href=#132 id=132 data-nosnippet>132</a>    /// 2. Generate new key packages with [Client::generate_new_keypackages]
+<a href=#132 id=132 data-nosnippet>132</a>    /// 2. Generate new key packages with [crate::mls::session::Session::request_key_packages]
 <a href=#133 id=133 data-nosnippet>133</a>    /// 3. Use these to replace the stale ones the in the backend
 <a href=#134 id=134 data-nosnippet>134</a>    /// 4. Delete the stale ones locally using [Self::delete_stale_key_packages]
 <a href=#135 id=135 data-nosnippet>135</a>    ///     * This is the last step because you might still need the old key packages to avoid

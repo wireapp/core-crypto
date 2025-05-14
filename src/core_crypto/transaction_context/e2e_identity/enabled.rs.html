@@ -5,7 +5,7 @@
 <a href=#5 id=5 data-nosnippet>5</a><span class="kw">use </span>openmls_traits::types::SignatureScheme;
 <a href=#6 id=6 data-nosnippet>6</a>
 <a href=#7 id=7 data-nosnippet>7</a><span class="kw">impl </span>TransactionContext {
-<a href=#8 id=8 data-nosnippet>8</a>    <span class="doccomment">/// See [Client::e2ei_is_enabled]
+<a href=#8 id=8 data-nosnippet>8</a>    <span class="doccomment">/// See [crate::mls::session::Session::e2ei_is_enabled]
 <a href=#9 id=9 data-nosnippet>9</a>    </span><span class="kw">pub async fn </span>e2ei_is_enabled(<span class="kw-2">&amp;</span><span class="self">self</span>, signature_scheme: SignatureScheme) -&gt; <span class="prelude-ty">Result</span>&lt;bool&gt; {
 <a href=#10 id=10 data-nosnippet>10</a>        <span class="kw">let </span>client = <span class="self">self
 <a href=#11 id=11 data-nosnippet>11</a>            </span>.session()

@@ -8,13 +8,13 @@
 <a href=#8 id=8 data-nosnippet>8</a><span class="attr">#[cfg_attr(not(target_family = <span class="string">"wasm"</span>), uniffi::export)]
 <a href=#9 id=9 data-nosnippet>9</a>#[cfg_attr(target_family = <span class="string">"wasm"</span>, wasm_bindgen)]
 <a href=#10 id=10 data-nosnippet>10</a></span><span class="kw">impl </span>CoreCrypto {
-<a href=#11 id=11 data-nosnippet>11</a>    <span class="doccomment">/// See [core_crypto::mls::MlsCentral::random_bytes]
+<a href=#11 id=11 data-nosnippet>11</a>    <span class="doccomment">/// See [core_crypto::prelude::Session::random_bytes]
 <a href=#12 id=12 data-nosnippet>12</a>    </span><span class="kw">pub async fn </span>random_bytes(<span class="kw-2">&amp;</span><span class="self">self</span>, len: u32) -&gt; CoreCryptoResult&lt;Vec&lt;u8&gt;&gt; {
 <a href=#13 id=13 data-nosnippet>13</a>        <span class="kw">let </span>len = len.try_into().map_err(CoreCryptoError::generic())<span class="question-mark">?</span>;
 <a href=#14 id=14 data-nosnippet>14</a>        <span class="self">self</span>.inner.random_bytes(len).map_err(Into::into)
 <a href=#15 id=15 data-nosnippet>15</a>    }
 <a href=#16 id=16 data-nosnippet>16</a>
-<a href=#17 id=17 data-nosnippet>17</a>    <span class="doccomment">/// see [core_crypto::prelude::MlsCryptoProvider::reseed]
+<a href=#17 id=17 data-nosnippet>17</a>    <span class="doccomment">/// see [core_crypto::prelude::Session::reseed]
 <a href=#18 id=18 data-nosnippet>18</a>    </span><span class="kw">pub async fn </span>reseed_rng(<span class="kw-2">&amp;</span><span class="self">self</span>, seed: EntropySeed) -&gt; CoreCryptoResult&lt;()&gt; {
 <a href=#19 id=19 data-nosnippet>19</a>        <span class="kw">let </span>seed = core_crypto::prelude::EntropySeed::try_from_slice(<span class="kw-2">&amp;</span>seed).map_err(CoreCryptoError::generic())<span class="question-mark">?</span>;
 <a href=#20 id=20 data-nosnippet>20</a>        <span class="self">self</span>.inner.reseed(<span class="prelude-val">Some</span>(seed)).<span class="kw">await</span><span class="question-mark">?</span>;

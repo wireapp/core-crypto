@@ -29,7 +29,7 @@ keystore to pass to openmls as the <code>OpenMlsCryptoProvider</code></p>
 <li>Multiple strong references currently exist to the keystore</li>
 </ul>
 <p>As with all such checks, this is vulnerable to TOCTOU issues, but as the current implementation
-of the [<code>close</code>] function consumes <code>self</code>, this is the only way to check in advance whether
+of the <a href="struct.MlsCryptoProvider.html#method.close" title="method core_crypto::prelude::MlsCryptoProvider::close"><code>MlsCryptoProvider::close</code></a> function consumes <code>self</code>, this is the only way to check in advance whether
 this will in principle work.</p>
 </div></details><details class="toggle method-toggle" open><summary><section id="method.close" class="method"><a class="src rightside" href="../../src/mls_crypto_provider/lib.rs.html#171">Source</a><h4 class="code-header">pub async fn <a href="#method.close" class="fn">close</a>(self) -&gt; <a class="enum" href="https://doc.rust-lang.org/1.86.0/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;<a class="primitive" href="https://doc.rust-lang.org/1.86.0/std/primitive.unit.html">()</a>, <a class="enum" href="../../mls_crypto_provider/error/enum.MlsProviderError.html" title="enum mls_crypto_provider::error::MlsProviderError">MlsProviderError</a>&gt;</h4></section></summary><div class="docblock"><p>Closes this provider, which in turns tears down the backing store</p>
 <p>Note: This does <strong>not</strong> destroy the data on-disk in case of persistent backing store</p>

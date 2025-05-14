@@ -296,7 +296,7 @@
 <a href=#296 id=296 data-nosnippet>296</a><span class="attr">#[cfg_attr(target_family = <span class="string">"wasm"</span>, wasm_bindgen)]
 <a href=#297 id=297 data-nosnippet>297</a>#[cfg_attr(not(target_family = <span class="string">"wasm"</span>), uniffi::export)]
 <a href=#298 id=298 data-nosnippet>298</a></span><span class="kw">impl </span>CoreCrypto {
-<a href=#299 id=299 data-nosnippet>299</a>    <span class="doccomment">/// See [core_crypto::mls::MlsCentral::provide_transport]
+<a href=#299 id=299 data-nosnippet>299</a>    <span class="doccomment">/// See [core_crypto::prelude::Session::provide_transport]
 <a href=#300 id=300 data-nosnippet>300</a>    </span><span class="kw">pub async fn </span>provide_transport(<span class="kw-2">&amp;</span><span class="self">self</span>, callbacks: Callbacks) -&gt; CoreCryptoResult&lt;()&gt; {
 <a href=#301 id=301 data-nosnippet>301</a>        <span class="self">self</span>.inner.provide_transport(callback_shim(callbacks)).<span class="kw">await</span>;
 <a href=#302 id=302 data-nosnippet>302</a>        <span class="prelude-val">Ok</span>(())

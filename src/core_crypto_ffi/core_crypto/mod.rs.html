@@ -49,7 +49,7 @@
 <a href=#49 id=49 data-nosnippet>49</a>///
 <a href=#50 id=50 data-nosnippet>50</a>/// This is necessary because in uniffi async constructors are not supported.
 <a href=#51 id=51 data-nosnippet>51</a>///
-<a href=#52 id=52 data-nosnippet>52</a>/// See [core_crypto::mls::Client::try_new]
+<a href=#52 id=52 data-nosnippet>52</a>/// See [Session::try_new]
 <a href=#53 id=53 data-nosnippet>53</a></span><span class="attr">#[cfg(not(target_family = <span class="string">"wasm"</span>))]
 <a href=#54 id=54 data-nosnippet>54</a>#[uniffi::export]
 <a href=#55 id=55 data-nosnippet>55</a></span><span class="kw">pub async fn </span>core_crypto_new(
@@ -74,7 +74,7 @@
 <a href=#74 id=74 data-nosnippet>74</a><span class="doccomment">/// Free function to construct a new `CoreCrypto` instance.
 <a href=#75 id=75 data-nosnippet>75</a>///
 <a href=#76 id=76 data-nosnippet>76</a>/// Similar to [`core_crypto_new`] but defers MLS initialization. It can be initialized later
-<a href=#77 id=77 data-nosnippet>77</a>/// with [CoreCryptoContext::mls_init].
+<a href=#77 id=77 data-nosnippet>77</a>/// with [core_crypto::transaction_context::TransactionContext::mls_init].
 <a href=#78 id=78 data-nosnippet>78</a></span><span class="attr">#[cfg(not(target_family = <span class="string">"wasm"</span>))]
 <a href=#79 id=79 data-nosnippet>79</a>#[uniffi::export]
 <a href=#80 id=80 data-nosnippet>80</a></span><span class="kw">pub async fn </span>core_crypto_deferred_init(
@@ -149,7 +149,7 @@
 <a href=#149 id=149 data-nosnippet>149</a>        <span class="self">Self</span>::from_config(configuration).<span class="kw">await
 <a href=#150 id=150 data-nosnippet>150</a>    </span>}
 <a href=#151 id=151 data-nosnippet>151</a>
-<a href=#152 id=152 data-nosnippet>152</a>    <span class="doccomment">/// see [core_crypto::mls::Client::close]
+<a href=#152 id=152 data-nosnippet>152</a>    <span class="doccomment">/// See [Session::close]
 <a href=#153 id=153 data-nosnippet>153</a>    </span><span class="comment">// Note that this is implemented only for Wasm; Uniffi already generates a `close` method which suffices.
 <a href=#154 id=154 data-nosnippet>154</a>    </span><span class="kw">pub async fn </span>close(<span class="self">self</span>) -&gt; CoreCryptoResult&lt;()&gt; {
 <a href=#155 id=155 data-nosnippet>155</a>        <span class="self">self</span>.inner.take().close().<span class="kw">await</span>.map_err(Into::into)
@@ -159,7 +159,7 @@
 <a href=#159 id=159 data-nosnippet>159</a><span class="attr">#[cfg_attr(target_family = <span class="string">"wasm"</span>, wasm_bindgen)]
 <a href=#160 id=160 data-nosnippet>160</a>#[cfg_attr(not(target_family = <span class="string">"wasm"</span>), uniffi::export)]
 <a href=#161 id=161 data-nosnippet>161</a></span><span class="kw">impl </span>CoreCrypto {
-<a href=#162 id=162 data-nosnippet>162</a>    <span class="doccomment">/// see [core_crypto::mls::MlsCentral::can_close]
+<a href=#162 id=162 data-nosnippet>162</a>    <span class="doccomment">/// See [Session::can_close]
 <a href=#163 id=163 data-nosnippet>163</a>    </span><span class="kw">pub async fn </span>can_close(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; bool {
 <a href=#164 id=164 data-nosnippet>164</a>        <span class="self">self</span>.inner.can_close().<span class="kw">await
 <a href=#165 id=165 data-nosnippet>165</a>    </span>}

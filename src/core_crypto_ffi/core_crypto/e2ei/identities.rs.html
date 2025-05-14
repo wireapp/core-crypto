@@ -25,7 +25,7 @@
 <a href=#25 id=25 data-nosnippet>25</a><span class="attr">#[cfg_attr(not(target_family = <span class="string">"wasm"</span>), uniffi::export)]
 <a href=#26 id=26 data-nosnippet>26</a>#[cfg_attr(target_family = <span class="string">"wasm"</span>, wasm_bindgen)]
 <a href=#27 id=27 data-nosnippet>27</a></span><span class="kw">impl </span>CoreCrypto {
-<a href=#28 id=28 data-nosnippet>28</a>    <span class="doccomment">/// See [core_crypto::mls::conversation::ConversationGuard::get_device_identities]
+<a href=#28 id=28 data-nosnippet>28</a>    <span class="doccomment">/// See [core_crypto::mls::conversation::Conversation::get_device_identities]
 <a href=#29 id=29 data-nosnippet>29</a>    </span><span class="attr">#[cfg_attr(target_family = <span class="string">"wasm"</span>, wasm_bindgen(unchecked_return_type = <span class="string">"WireIdentity[]"</span>))]
 <a href=#30 id=30 data-nosnippet>30</a>    </span><span class="kw">pub async fn </span>get_device_identities(
 <a href=#31 id=31 data-nosnippet>31</a>        <span class="kw-2">&amp;</span><span class="self">self</span>,
@@ -50,7 +50,7 @@
 <a href=#50 id=50 data-nosnippet>50</a>        <span class="prelude-val">Ok</span>(device_identities)
 <a href=#51 id=51 data-nosnippet>51</a>    }
 <a href=#52 id=52 data-nosnippet>52</a>
-<a href=#53 id=53 data-nosnippet>53</a>    <span class="doccomment">/// See [core_crypto::mls::conversation::ConversationGuard::get_user_identities]
+<a href=#53 id=53 data-nosnippet>53</a>    <span class="doccomment">/// See [core_crypto::mls::conversation::Conversation::get_user_identities]
 <a href=#54 id=54 data-nosnippet>54</a>    </span><span class="attr">#[cfg_attr(
 <a href=#55 id=55 data-nosnippet>55</a>        target_family = <span class="string">"wasm"</span>,
 <a href=#56 id=56 data-nosnippet>56</a>        wasm_bindgen(unchecked_return_type = <span class="string">"Map&lt;string, WireIdentity[]&gt;"</span>)
@@ -76,7 +76,7 @@
 <a href=#76 id=76 data-nosnippet>76</a>        <span class="prelude-val">Ok</span>(identities)
 <a href=#77 id=77 data-nosnippet>77</a>    }
 <a href=#78 id=78 data-nosnippet>78</a>
-<a href=#79 id=79 data-nosnippet>79</a>    <span class="doccomment">/// See [core_crypto::mls::MlsCentral::get_credential_in_use]
+<a href=#79 id=79 data-nosnippet>79</a>    <span class="doccomment">/// See [core_crypto::prelude::Session::get_credential_in_use]
 <a href=#80 id=80 data-nosnippet>80</a>    </span><span class="kw">pub async fn </span>get_credential_in_use(
 <a href=#81 id=81 data-nosnippet>81</a>        <span class="kw-2">&amp;</span><span class="self">self</span>,
 <a href=#82 id=82 data-nosnippet>82</a>        group_info: Vec&lt;u8&gt;,
