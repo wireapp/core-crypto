@@ -11,6 +11,11 @@ fn main() -> anyhow::Result<()> {
     #[cfg(target_os = "android")]
     println!("cargo:rustc-cfg=android");
 
+    // We need to set STRIPPED_README_PATH to something valid, in order to satisfy compile-time
+    // checks. Documentation produced by rustdoc will, however, actually use a modified README
+    // file, and the rustdoc-wrapper.sh script will set this variable accordingly.
+    println!("cargo:rustc-env=STRIPPED_README_PATH=../README.md");
+
     // collect a bunch of build/git information and emit it into the build environment,
     // from whence we can extract it and make it public
     let build = BuildBuilder::default().build_timestamp(true).build()?;
