@@ -353,78 +353,81 @@ mod tests {
     #[apply(all_cred_cipher)]
     #[wasm_bindgen_test]
     async fn should_be_not_verified_when_all_expired(case: TestContext) {
-        if case.is_x509() {
-            let [alice_central] = case.sessions().await;
-            Box::pin(async move {
-                let id = conversation_id();
-
-                alice_central
-                    .transaction
-                    .new_conversation(&id, case.credential_type, case.cfg.clone())
-                    .await
-                    .unwrap();
-
-                let expiration_time = core::time::Duration::from_secs(14);
-                let start = web_time::Instant::now();
-                let alice_test_chain = alice_central.x509_test_chain.as_ref().as_ref().unwrap();
-
-                let alice_intermediate_ca = alice_test_chain.find_local_intermediate_ca();
-                let mut alice_cert = alice_test_chain
-                    .actors
-                    .iter()
-                    .find(|actor| actor.name == "alice")
-                    .unwrap()
-                    .clone();
-                alice_intermediate_ca.update_end_identity(&mut alice_cert.certificate, Some(expiration_time));
-
-                let cert_bundle =
-                    CertificateBundle::from_certificate_and_issuer(&alice_cert.certificate, alice_intermediate_ca);
-                let cb = Session::new_x509_credential_bundle(cert_bundle.clone()).unwrap();
-                alice_central
-                    .transaction
-                    .conversation(&id)
-                    .await
-                    .unwrap()
-                    .e2ei_rotate(Some(&cb))
-                    .await
-                    .unwrap();
-
-                let alice_client = alice_central.session().await;
-                let alice_provider = alice_central.transaction.mls_provider().await.unwrap();
-
-                // Needed because 'e2ei_rotate' does not do it directly and it's required for 'get_group_info'
-                alice_client
-                    .save_new_x509_credential_bundle(&alice_provider.keystore(), case.signature_scheme(), cert_bundle)
-                    .await
-                    .unwrap();
-
-                let elapsed = start.elapsed();
-                // Give time to the certificate to expire
-                if expiration_time > elapsed {
-                    async_std::task::sleep(expiration_time - elapsed + core::time::Duration::from_secs(1)).await;
-                }
-
-                let alice_state = alice_central
-                    .transaction
-                    .conversation(&id)
-                    .await
-                    .unwrap()
-                    .e2ei_conversation_state()
-                    .await
-                    .unwrap();
-                assert_eq!(alice_state, E2eiConversationState::NotVerified);
-
-                // Need to fetch it before it becomes invalid & expires
-                let gi = alice_central.get_group_info(&id).await;
-
-                let state = alice_central
-                    .transaction
-                    .get_credential_in_use(gi, MlsCredentialType::X509)
-                    .await
-                    .unwrap();
-                assert_eq!(state, E2eiConversationState::NotVerified);
-            })
-            .await
+        if !case.is_x509() {
+            return;
         }
+        let alice_user_id = uuid::Uuid::new_v4();
+        let [client_id] = case.client_ids_for_user(&alice_user_id);
+        let [alice_central] = case.sessions_x509_with_client_ids([client_id]).await;
+        Box::pin(async move {
+            let id = conversation_id();
+
+            alice_central
+                .transaction
+                .new_conversation(&id, case.credential_type, case.cfg.clone())
+                .await
+                .unwrap();
+
+            let expiration_time = core::time::Duration::from_secs(14);
+            let start = web_time::Instant::now();
+            let alice_test_chain = alice_central.x509_test_chain.as_ref().as_ref().unwrap();
+
+            let alice_intermediate_ca = alice_test_chain.find_local_intermediate_ca();
+            let mut alice_cert = alice_test_chain
+                .actors
+                .iter()
+                .find(|actor| actor.name == alice_user_id.to_string())
+                .unwrap()
+                .clone();
+            alice_intermediate_ca.update_end_identity(&mut alice_cert.certificate, Some(expiration_time));
+
+            let cert_bundle =
+                CertificateBundle::from_certificate_and_issuer(&alice_cert.certificate, alice_intermediate_ca);
+            let cb = Session::new_x509_credential_bundle(cert_bundle.clone()).unwrap();
+            alice_central
+                .transaction
+                .conversation(&id)
+                .await
+                .unwrap()
+                .e2ei_rotate(Some(&cb))
+                .await
+                .unwrap();
+
+            let alice_client = alice_central.session().await;
+            let alice_provider = alice_central.transaction.mls_provider().await.unwrap();
+
+            // Needed because 'e2ei_rotate' does not do it directly and it's required for 'get_group_info'
+            alice_client
+                .save_new_x509_credential_bundle(&alice_provider.keystore(), case.signature_scheme(), cert_bundle)
+                .await
+                .unwrap();
+
+            let elapsed = start.elapsed();
+            // Give time to the certificate to expire
+            if expiration_time > elapsed {
+                async_std::task::sleep(expiration_time - elapsed + core::time::Duration::from_secs(1)).await;
+            }
+
+            let alice_state = alice_central
+                .transaction
+                .conversation(&id)
+                .await
+                .unwrap()
+                .e2ei_conversation_state()
+                .await
+                .unwrap();
+            assert_eq!(alice_state, E2eiConversationState::NotVerified);
+
+            // Need to fetch it before it becomes invalid & expires
+            let gi = alice_central.get_group_info(&id).await;
+
+            let state = alice_central
+                .transaction
+                .get_credential_in_use(gi, MlsCredentialType::X509)
+                .await
+                .unwrap();
+            assert_eq!(state, E2eiConversationState::NotVerified);
+        })
+        .await
     }
 }

@@ -168,13 +168,7 @@ mod tests {
                 // Alice creates a new Credential, updating her handle/display_name
                 let (new_handle, new_display_name) = ("new_alice_wire", "New Alice Smith");
                 let cb = alice_central
-                    .save_new_credential(
-                        &case,
-                        new_handle,
-                        new_display_name,
-                        x509_test_chain.find_certificate_for_actor("alice").unwrap(),
-                        intermediate_ca,
-                    )
+                    .save_new_credential(&case, new_handle, new_display_name, intermediate_ca)
                     .await;
 
                 // create a commit. This will also store it in the store
@@ -335,7 +329,7 @@ mod tests {
             // Tamper with the commit; this is the signature region, however,
             // the membership tag covers the signature, so this will result in an
             // invalid membership tag error emitted by openmls.
-            commit_serialized[355] = commit_serialized[355].wrapping_add(1);
+            commit_serialized[300] = commit_serialized[300].wrapping_add(1);
 
             let decryption_result = alice_central
                 .transaction

@@ -805,18 +805,12 @@ mod tests {
                     let x509_test_chain = alice_central.x509_test_chain.as_ref().as_ref().unwrap();
 
                     let intermediate_ca = x509_test_chain.find_local_intermediate_ca();
-                    let alice_og_cert = &x509_test_chain
-                        .actors
-                        .iter()
-                        .find(|actor| actor.name == "alice")
-                        .unwrap()
-                        .certificate;
 
                     // Alice creates a new Credential, updating her handle/display_name
                     let alice_cid = alice_central.get_client_id().await;
                     let (new_handle, new_display_name) = ("new_alice_wire", "New Alice Smith");
                     let cb = alice_central
-                        .save_new_credential(&case, new_handle, new_display_name, alice_og_cert, intermediate_ca)
+                        .save_new_credential(&case, new_handle, new_display_name, intermediate_ca)
                         .await;
 
                     // Verify old identity is still there in the MLS group
@@ -908,13 +902,7 @@ mod tests {
                 // Alice creates a new Credential, updating her handle/display_name
                 let (new_handle, new_display_name) = ("new_alice_wire", "New Alice Smith");
                 let cb = alice_central
-                    .save_new_credential(
-                        &case,
-                        new_handle,
-                        new_display_name,
-                        x509_test_chain.find_certificate_for_actor("alice").unwrap(),
-                        intermediate_ca,
-                    )
+                    .save_new_credential(&case, new_handle, new_display_name, intermediate_ca)
                     .await;
 
                 // Alice issues an Update commit to replace her current identity
@@ -1008,18 +996,12 @@ mod tests {
 
                     let x509_test_chain = alice_central.x509_test_chain.as_ref().as_ref().unwrap();
                     let intermediate_ca = x509_test_chain.find_local_intermediate_ca();
-                    let alice_og_cert = &x509_test_chain
-                        .actors
-                        .iter()
-                        .find(|actor| actor.name == "alice")
-                        .unwrap()
-                        .certificate;
 
                     // Alice creates a new Credential, updating her handle/display_name
                     let alice_cid = alice_central.get_client_id().await;
                     let (new_handle, new_display_name) = ("new_alice_wire", "New Alice Smith");
                     alice_central
-                        .save_new_credential(&case, new_handle, new_display_name, alice_og_cert, intermediate_ca)
+                        .save_new_credential(&case, new_handle, new_display_name, intermediate_ca)
                         .await;
 
                     // Verify old identity is a basic identity in the MLS group
