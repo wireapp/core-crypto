@@ -61,3 +61,19 @@ impl std::str::FromStr for ClientId {
         ))
     }
 }
+
+#[cfg(test)]
+impl ClientId {
+    pub(crate) fn to_user_id(&self) -> String {
+        let self_bytes: &[u8] = &self.0;
+        crate::e2e_identity::id::WireQualifiedClientId::try_from(self_bytes)
+            .unwrap()
+            .get_user_id()
+    }
+
+    pub(crate) fn to_string_triple(&self) -> [String; 3] {
+        let qualified_id = crate::e2e_identity::id::QualifiedE2eiClientId::from(self.clone());
+        let id_string: String = qualified_id.try_into().unwrap();
+        [id_string, "".into(), self.to_user_id()]
+    }
+}
