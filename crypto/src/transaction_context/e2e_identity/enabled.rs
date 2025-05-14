@@ -45,14 +45,13 @@ mod tests {
     #[apply(all_cred_cipher)]
     #[wasm_bindgen_test]
     async fn should_fail_when_no_client(case: TestContext) {
-        run_test_wo_clients(case.clone(), move |cc| {
-            Box::pin(async move {
-                assert!(matches!(
-                    cc.transaction.e2ei_is_enabled(case.signature_scheme()).await.unwrap_err(),
-                    Error::Recursive(RecursiveError::MlsClient {  source, .. })
-                    if matches!(*source, mls::session::Error::MlsNotInitialized)
-                ));
-            })
+        let cc = SessionContext::new_uninitialized(&case).await;
+        Box::pin(async move {
+            assert!(matches!(
+                cc.transaction.e2ei_is_enabled(case.signature_scheme()).await.unwrap_err(),
+                Error::Recursive(RecursiveError::MlsClient {  source, .. })
+                if matches!(*source, mls::session::Error::MlsNotInitialized)
+            ));
         })
         .await
     }

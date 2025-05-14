@@ -163,6 +163,35 @@ impl SessionContext {
         Ok(result)
     }
 
+    pub(crate) async fn new_uninitialized(context: &TestContext) -> Self {
+        let (db_dir_string, db_dir) = tmp_db_file();
+        let ciphersuites = vec![context.cfg.ciphersuite];
+        let configuration = MlsClientConfiguration::try_new(
+            db_dir_string.clone(),
+            DatabaseKey::generate(),
+            None,
+            ciphersuites,
+            None,
+            Some(INITIAL_KEYING_MATERIAL_COUNT),
+        )
+        .unwrap();
+        let client = Session::try_new(configuration).await.unwrap();
+        let transport = Arc::<CoreCryptoTransportSuccessProvider>::default();
+        client.provide_transport(transport.clone()).await;
+        let cc = CoreCrypto::from(client);
+        let context = cc.new_transaction().await.unwrap();
+        Self {
+            transaction: context.clone(),
+            session: cc.mls,
+            mls_transport: transport.clone(),
+            x509_test_chain: None.into(),
+            #[cfg(not(target_family = "wasm"))]
+            _db_file: (db_dir_string, Arc::new(db_dir)),
+            #[cfg(target_family = "wasm")]
+            _db_file: (db_dir_string, db_dir),
+        }
+    }
+
     fn x509_client_id(
         client_id: &ClientId,
         signature_scheme: SignatureScheme,
@@ -262,46 +291,6 @@ fn init_x509_test_chain(
         local_actors,
         dump_pem_certs: false,
     })
-}
-
-pub async fn run_test_wo_clients(
-    mut case: TestContext,
-    test: impl FnOnce(SessionContext) -> std::pin::Pin<Box<dyn std::future::Future<Output = ()> + 'static>> + 'static,
-) {
-    Box::pin(async move {
-        let p = case.tmp_dir().await;
-        // let x509_test_chain = X509TestChain::init_empty(case.signature_scheme());
-
-        let ciphersuites = vec![case.cfg.ciphersuite];
-        let configuration = MlsClientConfiguration::try_new(
-            p.to_string(),
-            DatabaseKey::generate(),
-            None,
-            ciphersuites,
-            None,
-            Some(INITIAL_KEYING_MATERIAL_COUNT),
-        )
-        .unwrap();
-        let client = Session::try_new(configuration).await.unwrap();
-        let transport = Arc::<CoreCryptoTransportSuccessProvider>::default();
-        client.provide_transport(transport.clone()).await;
-        let cc = CoreCrypto::from(client);
-        let context = cc.new_transaction().await.unwrap();
-        let (db_dir_string, db_dir) = tmp_db_file();
-        test(SessionContext {
-            transaction: context.clone(),
-            session: cc.mls,
-            mls_transport: transport.clone(),
-            x509_test_chain: None.into(),
-            #[cfg(not(target_family = "wasm"))]
-            _db_file: (db_dir_string, Arc::new(db_dir)),
-            #[cfg(target_family = "wasm")]
-            _db_file: (db_dir_string, db_dir),
-        })
-        .await;
-        context.finish().await.unwrap();
-    })
-    .await
 }
 
 #[cfg(not(target_family = "wasm"))]
