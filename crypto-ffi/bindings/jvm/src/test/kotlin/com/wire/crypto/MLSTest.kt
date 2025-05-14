@@ -300,6 +300,48 @@ class MLSTest {
     }
 
     @Test
+    fun givenTransactionRunsSuccessfully_thenShouldBeAbleToFinishOtherTransactions() = runTest {
+        val coreCrypto = initCc()
+        val someWork = Job()
+        val firstTransactionJob = launch {
+            coreCrypto.transaction {
+                someWork.complete()
+            }
+        }
+        firstTransactionJob.join()
+
+        var didRun = false
+        val secondTransactionJob = launch {
+            coreCrypto.transaction {
+                didRun = true
+            }
+        }
+        secondTransactionJob.join()
+        assertTrue { didRun }
+    }
+
+    @Test
+    fun givenTransactionIsCancelled_thenShouldBeAbleToFinishOtherTransactions() = runTest {
+        val coreCrypto = initCc()
+
+        val firstTransactionJob = launch {
+            coreCrypto.transaction {
+                this@launch.cancel()
+            }
+        }
+        firstTransactionJob.join()
+
+        var didRun = false
+        val secondTransactionJob = launch {
+            coreCrypto.transaction {
+                didRun = true
+            }
+        }
+        secondTransactionJob.join()
+        assertTrue { didRun }
+    }
+
+    @Test
     fun deriveAvsSecret_should_generate_a_secret_with_the_right_length() = runTest {
         val (alice) = newClients(ALICE_ID)
         alice.transaction { it.createConversation(id) }
