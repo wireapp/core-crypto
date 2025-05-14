@@ -42,3 +42,6 @@ linker = "x86_64-linux-android24-clang"
 rustflags = [
     "-C", "link-args=-latomic"
 ]
+
+[build]
+rustdoc = ".cargo/rustdoc-wrapper.sh"
