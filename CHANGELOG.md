@@ -74,7 +74,20 @@
 - crypto-ffi: add a JS test for migrating the db key type (9fcd942)
 - fix constant interop http server test port (f7bbf6f)
 
-## v5.3.0 - 2025-04-29
+## v5.4.0 - 2025-05-14
+
+### Highlights
+
+Kotlin bindings only: transactions are now [`NonCancellable`](https://kotlinlang.org/api/kotlinx.coroutines/kotlinx-coroutines-core/kotlinx.coroutines/-non-cancellable/),
+as [required by Uniffi](https://mozilla.github.io/uniffi-rs/latest/futures.html#cancelling-async-code). This prevents a category of bug where Kotlin thinks a transaction
+has been cancelled, while Rust thinks it is still running.
+
+### Bug Fixes
+
+- prevent cancellations during transactions (a28338fe)
+- prevent cancellations during transactions (2fb8d979)
+
+## v5.3.0- 2025-04-29
 
 ### Bug Fixes
 
@@ -100,7 +113,7 @@
 
 ### Highlights
 
-New Swift bindings which are more ergonomic and allows for better testing by exposing the transaction 
+New Swift bindings which are more ergonomic and allows for better testing by exposing the transaction
 context as a protocol.
 
 New API for observing epoch changes through a callback API: `registerEpochObserver`. After adopting
