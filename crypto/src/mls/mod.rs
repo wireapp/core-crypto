@@ -203,22 +203,21 @@ mod tests {
 
         #[apply(all_cred_cipher)]
         #[wasm_bindgen_test]
-        async fn can_create_from_valid_configuration(case: TestContext) {
-            run_tests(move |[tmp_dir_argument]| {
-                Box::pin(async move {
-                    let configuration = MlsClientConfiguration::try_new(
-                        tmp_dir_argument,
-                        DatabaseKey::generate(),
-                        Some("alice".into()),
-                        vec![case.ciphersuite()],
-                        None,
-                        Some(INITIAL_KEYING_MATERIAL_COUNT),
-                    )
-                    .unwrap();
+        async fn can_create_from_valid_configuration(mut case: TestContext) {
+            let tmp_dir = case.tmp_dir().await;
+            Box::pin(async move {
+                let configuration = MlsClientConfiguration::try_new(
+                    tmp_dir,
+                    DatabaseKey::generate(),
+                    Some("alice".into()),
+                    vec![case.ciphersuite()],
+                    None,
+                    Some(INITIAL_KEYING_MATERIAL_COUNT),
+                )
+                .unwrap();
 
-                    let new_client_result = Session::try_new(configuration).await;
-                    assert!(new_client_result.is_ok())
-                })
+                let new_client_result = Session::try_new(configuration).await;
+                assert!(new_client_result.is_ok())
             })
             .await
         }
@@ -244,22 +243,22 @@ mod tests {
         #[cfg_attr(not(target_family = "wasm"), async_std::test)]
         #[wasm_bindgen_test]
         async fn client_id_should_not_be_empty() {
-            run_tests(|[tmp_dir_argument]| {
-                Box::pin(async move {
-                    let ciphersuites = vec![MlsCiphersuite::default()];
-                    let configuration = MlsClientConfiguration::try_new(
-                        tmp_dir_argument,
-                        DatabaseKey::generate(),
-                        Some("".into()),
-                        ciphersuites,
-                        None,
-                        Some(INITIAL_KEYING_MATERIAL_COUNT),
-                    );
-                    assert!(matches!(
-                        configuration.unwrap_err(),
-                        mls::Error::MalformedIdentifier("client_id")
-                    ));
-                })
+            let mut case = TestContext::default();
+            let tmp_dir = case.tmp_dir().await;
+            Box::pin(async move {
+                let ciphersuites = vec![MlsCiphersuite::default()];
+                let configuration = MlsClientConfiguration::try_new(
+                    tmp_dir,
+                    DatabaseKey::generate(),
+                    Some("".into()),
+                    ciphersuites,
+                    None,
+                    Some(INITIAL_KEYING_MATERIAL_COUNT),
+                );
+                assert!(matches!(
+                    configuration.unwrap_err(),
+                    mls::Error::MalformedIdentifier("client_id")
+                ));
             })
             .await
         }
@@ -292,76 +291,74 @@ mod tests {
 
     #[apply(all_cred_cipher)]
     #[wasm_bindgen_test]
-    async fn can_fetch_client_public_key(case: TestContext) {
-        run_tests(move |[tmp_dir_argument]| {
-            Box::pin(async move {
-                let configuration = MlsClientConfiguration::try_new(
-                    tmp_dir_argument,
-                    DatabaseKey::generate(),
-                    Some("potato".into()),
-                    vec![case.ciphersuite()],
-                    None,
-                    Some(INITIAL_KEYING_MATERIAL_COUNT),
-                )
-                .unwrap();
+    async fn can_fetch_client_public_key(mut case: TestContext) {
+        let tmp_dir = case.tmp_dir().await;
+        Box::pin(async move {
+            let configuration = MlsClientConfiguration::try_new(
+                tmp_dir,
+                DatabaseKey::generate(),
+                Some("potato".into()),
+                vec![case.ciphersuite()],
+                None,
+                Some(INITIAL_KEYING_MATERIAL_COUNT),
+            )
+            .unwrap();
 
-                let result = Session::try_new(configuration.clone()).await;
-                println!("{:?}", result);
-                assert!(result.is_ok());
-            })
+            let result = Session::try_new(configuration.clone()).await;
+            println!("{:?}", result);
+            assert!(result.is_ok());
         })
         .await
     }
 
     #[apply(all_cred_cipher)]
     #[wasm_bindgen_test]
-    async fn can_2_phase_init_central(case: TestContext) {
-        run_tests(move |[tmp_dir_argument]| {
-            Box::pin(async move {
-                let x509_test_chain = X509TestChain::init_empty(case.signature_scheme());
-                let configuration = MlsClientConfiguration::try_new(
-                    tmp_dir_argument,
-                    DatabaseKey::generate(),
-                    None,
+    async fn can_2_phase_init_central(mut case: TestContext) {
+        let tmp_dir = case.tmp_dir().await;
+        Box::pin(async move {
+            let x509_test_chain = X509TestChain::init_empty(case.signature_scheme());
+            let configuration = MlsClientConfiguration::try_new(
+                tmp_dir,
+                DatabaseKey::generate(),
+                None,
+                vec![case.ciphersuite()],
+                None,
+                Some(INITIAL_KEYING_MATERIAL_COUNT),
+            )
+            .unwrap();
+            // phase 1: init without initialized mls_client
+            let client = Session::try_new(configuration).await.unwrap();
+            let cc = CoreCrypto::from(client);
+            let context = cc.new_transaction().await.unwrap();
+            x509_test_chain.register_with_central(&context).await;
+
+            assert!(!context.session().await.unwrap().is_ready().await);
+            // phase 2: init mls_client
+            let client_id = "alice";
+            let identifier = match case.credential_type {
+                MlsCredentialType::Basic => ClientIdentifier::Basic(client_id.into()),
+                MlsCredentialType::X509 => {
+                    CertificateBundle::rand_identifier(client_id, &[x509_test_chain.find_local_intermediate_ca()])
+                }
+            };
+            context
+                .mls_init(
+                    identifier,
                     vec![case.ciphersuite()],
-                    None,
                     Some(INITIAL_KEYING_MATERIAL_COUNT),
                 )
+                .await
                 .unwrap();
-                // phase 1: init without initialized mls_client
-                let client = Session::try_new(configuration).await.unwrap();
-                let cc = CoreCrypto::from(client);
-                let context = cc.new_transaction().await.unwrap();
-                x509_test_chain.register_with_central(&context).await;
-
-                assert!(!context.session().await.unwrap().is_ready().await);
-                // phase 2: init mls_client
-                let client_id = "alice";
-                let identifier = match case.credential_type {
-                    MlsCredentialType::Basic => ClientIdentifier::Basic(client_id.into()),
-                    MlsCredentialType::X509 => {
-                        CertificateBundle::rand_identifier(client_id, &[x509_test_chain.find_local_intermediate_ca()])
-                    }
-                };
+            assert!(context.session().await.unwrap().is_ready().await);
+            // expect mls_client to work
+            assert_eq!(
                 context
-                    .mls_init(
-                        identifier,
-                        vec![case.ciphersuite()],
-                        Some(INITIAL_KEYING_MATERIAL_COUNT),
-                    )
+                    .get_or_create_client_keypackages(case.ciphersuite(), case.credential_type, 2)
                     .await
-                    .unwrap();
-                assert!(context.session().await.unwrap().is_ready().await);
-                // expect mls_client to work
-                assert_eq!(
-                    context
-                        .get_or_create_client_keypackages(case.ciphersuite(), case.credential_type, 2)
-                        .await
-                        .unwrap()
-                        .len(),
-                    2
-                );
-            })
+                    .unwrap()
+                    .len(),
+                2
+            );
         })
         .await
     }

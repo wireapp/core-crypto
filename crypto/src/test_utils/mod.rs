@@ -416,61 +416,43 @@ pub async fn run_test_with_deterministic_client_ids_and_revocation<const N: usiz
 }
 
 pub async fn run_test_wo_clients(
-    case: TestContext,
+    mut case: TestContext,
     test: impl FnOnce(SessionContext) -> std::pin::Pin<Box<dyn std::future::Future<Output = ()> + 'static>> + 'static,
 ) {
-    run_tests(move |paths: [String; 1]| {
-        Box::pin(async move {
-            let p = paths.first().unwrap();
-            // let x509_test_chain = X509TestChain::init_empty(case.signature_scheme());
+    Box::pin(async move {
+        let p = case.tmp_dir().await;
+        // let x509_test_chain = X509TestChain::init_empty(case.signature_scheme());
 
-            let ciphersuites = vec![case.cfg.ciphersuite];
-            let configuration = MlsClientConfiguration::try_new(
-                p.to_string(),
-                DatabaseKey::generate(),
-                None,
-                ciphersuites,
-                None,
-                Some(INITIAL_KEYING_MATERIAL_COUNT),
-            )
-            .unwrap();
-            let client = Session::try_new(configuration).await.unwrap();
-            let transport = Arc::<CoreCryptoTransportSuccessProvider>::default();
-            client.provide_transport(transport.clone()).await;
-            let cc = CoreCrypto::from(client);
-            let context = cc.new_transaction().await.unwrap();
-            let (db_dir_string, db_dir) = tmp_db_file();
-            test(SessionContext {
-                transaction: context.clone(),
-                session: cc.mls,
-                mls_transport: transport.clone(),
-                x509_test_chain: None.into(),
-                #[cfg(not(target_family = "wasm"))]
-                _db_file: (db_dir_string, Arc::new(db_dir)),
-                #[cfg(target_family = "wasm")]
-                _db_file: (db_dir_string, db_dir),
-            })
-            .await;
-            context.finish().await.unwrap();
+        let ciphersuites = vec![case.cfg.ciphersuite];
+        let configuration = MlsClientConfiguration::try_new(
+            p.to_string(),
+            DatabaseKey::generate(),
+            None,
+            ciphersuites,
+            None,
+            Some(INITIAL_KEYING_MATERIAL_COUNT),
+        )
+        .unwrap();
+        let client = Session::try_new(configuration).await.unwrap();
+        let transport = Arc::<CoreCryptoTransportSuccessProvider>::default();
+        client.provide_transport(transport.clone()).await;
+        let cc = CoreCrypto::from(client);
+        let context = cc.new_transaction().await.unwrap();
+        let (db_dir_string, db_dir) = tmp_db_file();
+        test(SessionContext {
+            transaction: context.clone(),
+            session: cc.mls,
+            mls_transport: transport.clone(),
+            x509_test_chain: None.into(),
+            #[cfg(not(target_family = "wasm"))]
+            _db_file: (db_dir_string, Arc::new(db_dir)),
+            #[cfg(target_family = "wasm")]
+            _db_file: (db_dir_string, db_dir),
         })
+        .await;
+        context.finish().await.unwrap();
     })
     .await
-}
-
-pub async fn run_tests<const N: usize>(
-    test: impl FnOnce([String; N]) -> std::pin::Pin<Box<dyn std::future::Future<Output = ()> + 'static>> + 'static,
-) {
-    let _ = env_logger::try_init();
-    let paths: [(String, _); N] = (0..N).map(|_| tmp_db_file()).collect::<Vec<_>>().try_into().unwrap();
-    // We need to store TempDir because they impl Drop which would delete the file before test begins
-    let cloned_paths = paths
-        .iter()
-        .map(|(path, _)| path.clone())
-        .collect::<Vec<_>>()
-        .try_into()
-        .unwrap();
-    test(cloned_paths).await;
-    drop(paths);
 }
 
 pub async fn run_cross_tests<const N: usize, const F: usize>(
