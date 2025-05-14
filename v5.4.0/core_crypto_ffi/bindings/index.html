@@ -1,0 +1,61 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="CoreCrypto FFI Details"><title>core_crypto_ffi::bindings - Rust</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../static.files/rustdoc-6c3ea77c.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="core_crypto_ffi" data-themes="" data-resource-suffix="" data-rustdoc-version="1.86.0 (05f9846f8 2025-03-31)" data-channel="1.86.0" data-search-js="search-581efc7a.js" data-settings-js="settings-6dad6058.js" ><script src="../../static.files/storage-3a5871a4.js"></script><script defer src="../sidebar-items.js"></script><script defer src="../../static.files/main-4d63596a.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-893ab5e7.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-6580c154.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-044be391.svg"></head><body class="rustdoc mod"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle" title="show sidebar"></button></nav><nav class="sidebar"><div class="sidebar-crate"><h2><a href="../../core_crypto_ffi/index.html">core_<wbr>crypto_<wbr>ffi</a><span class="version">5.4.0</span></h2></div><div class="sidebar-elems"><section id="rustdoc-toc"><h2 class="location"><a href="#">Module bindings</a></h2><h3><a href="#">Sections</a></h3><ul class="block top-toc"><li><a href="#corecrypto-ffi-details" title="CoreCrypto FFI Details">CoreCrypto FFI Details</a><ul><li><a href="#bindings" title="Bindings">Bindings</a></li><li><a href="#naming-conventions-table" title="Naming conventions table">Naming conventions table</a></li><li><a href="#types-equivalence-table" title="Types equivalence table">Types equivalence table</a></li><li><a href="#adding-new-apis" title="Adding new APIs">Adding new APIs</a></li></ul></li></ul><h3><a href="#modules">Module Items</a></h3><ul class="block"><li><a href="#modules" title="Modules">Modules</a></li></ul></section><div id="rustdoc-modnav"><h2 class="in-crate"><a href="../index.html">In crate core_<wbr>crypto_<wbr>ffi</a></h2></div></div></nav><div class="sidebar-resizer"></div><main><div class="width-limiter"><rustdoc-search></rustdoc-search><section id="main-content" class="content"><div class="main-heading"><div class="rustdoc-breadcrumbs"><a href="../index.html">core_crypto_ffi</a></div><h1>Module <span>bindings</span><button id="copy-path" title="Copy item path to clipboard">Copy item path</button></h1><rustdoc-toolbar></rustdoc-toolbar><span class="sub-heading"><a class="src" href="../../src/core_crypto_ffi/bindings/mod.rs.html#20-24">Source</a> </span></div><details class="toggle top-doc" open><summary class="hideme"><span>Expand description</span></summary><div class="docblock"><h2 id="corecrypto-ffi-details"><a class="doc-anchor" href="#corecrypto-ffi-details">§</a>CoreCrypto FFI Details</h2><h3 id="bindings"><a class="doc-anchor" href="#bindings">§</a>Bindings</h3>
+<ul>
+<li>WASM / TypeScript bindings are self-documented in [crypto-ffi/bindings/js/CoreCrypto.ts].
+<ul>
+<li>Please refer to your IDE of choice’s inlay hints or simply check out the <code>TypeDoc</code>-generated documentation on <a href="typescript/index.html" title="mod core_crypto_ffi::bindings::typescript">typescript</a></li>
+<li>Naming convention wise, <code>snake_case</code> gets translated to the TS idiomatic <code>camelCase</code> for methods and <code>PascalCase</code> for classes/interfaces</li>
+</ul>
+</li>
+<li>UniFFI-generated bindings (Swift, Kotlin) share the same characteristics in terms of naming convention translation.
+<ul>
+<li>The general convention is that the idiomatic Rust <code>snake_case</code> gets translated to the language’s idiomatic convention. Fortunately, for both Swift and Kotlin, the convention is <code>camelCase</code> for methods and <code>PascalCase</code> for classes/interfaces.</li>
+</ul>
+</li>
+</ul>
+<h3 id="naming-conventions-table"><a class="doc-anchor" href="#naming-conventions-table">§</a>Naming conventions table</h3><div><table><thead><tr><th>Item</th><th>Rust</th><th>Swift</th><th>Kotlin</th><th>TypeScript</th></tr></thead><tbody>
+<tr><td>Methods/Functions</td><td><code>snake_case</code></td><td><code>camelCase</code></td><td><code>camelCase</code></td><td><code>camelCase</code></td></tr>
+<tr><td>Variables/Arguments</td><td><code>snake_case</code></td><td><code>camelCase</code></td><td><code>camelCase</code></td><td><code>camelCase</code></td></tr>
+<tr><td>Classes/Interfaces</td><td><code>PascalCase</code></td><td><code>PascalCase</code></td><td><code>PascalCase</code></td><td><code>PascalCase</code></td></tr>
+</tbody></table>
+</div><h3 id="types-equivalence-table"><a class="doc-anchor" href="#types-equivalence-table">§</a>Types equivalence table</h3><div><table><thead><tr><th>Rust</th><th>Swift</th><th>Kotlin</th><th>TypeScript</th></tr></thead><tbody>
+<tr><td><code>bool</code></td><td><code>Bool</code></td><td><code>Boolean</code></td><td><code>boolean</code></td></tr>
+<tr><td><code>u8</code></td><td><code>UInt8</code></td><td><code>UByte</code></td><td><code>number</code></td></tr>
+<tr><td><code>u16</code></td><td><code>UInt16</code></td><td><code>UShort</code></td><td><code>number</code></td></tr>
+<tr><td><code>u32</code></td><td><code>UInt32</code></td><td><code>UInt</code></td><td><code>number</code></td></tr>
+<tr><td><code>u64</code></td><td><code>UInt64</code></td><td><code>ULong</code></td><td><code>number</code></td></tr>
+<tr><td><code>i8</code></td><td><code>Int8</code></td><td><code>Byte</code></td><td><code>number</code></td></tr>
+<tr><td><code>i16</code></td><td><code>Int16</code></td><td><code>Short</code></td><td><code>number</code></td></tr>
+<tr><td><code>i32</code></td><td><code>Int32</code></td><td><code>Int</code></td><td><code>number</code></td></tr>
+<tr><td><code>i64</code></td><td><code>Int64</code></td><td><code>Long</code></td><td><code>number</code></td></tr>
+<tr><td><code>f32</code></td><td><code>Float</code></td><td><code>Float</code></td><td><code>number</code></td></tr>
+<tr><td><code>f64</code></td><td><code>Double</code></td><td><code>Double</code></td><td><code>number</code></td></tr>
+<tr><td><code>String</code> / <code>&amp;str</code></td><td><code>String</code></td><td><code>String</code></td><td><code>string</code></td></tr>
+<tr><td><code>std::time::SystemTime</code></td><td><code>Date</code></td><td><code>java.time.Instant</code></td><td><code>Date</code></td></tr>
+<tr><td><code>std::time::Duration</code></td><td><code>TimeInterval</code></td><td><code>java.time.Duration</code></td><td><code>number</code> (in milliseconds)</td></tr>
+<tr><td><code>Option&lt;T&gt;</code></td><td><code>Optional&lt;T&gt;</code></td><td><code>Optional&lt;T&gt;</code></td><td><code>T?</code></td></tr>
+<tr><td><code>Vec&lt;T&gt;</code></td><td><code>Array&lt;T&gt;</code></td><td><code>List&lt;T&gt;</code></td><td><code>Array&lt;T&gt;</code></td></tr>
+<tr><td><code>HashMap&lt;String, T&gt;</code></td><td><code>Dictionary&lt;String, T&gt;</code></td><td><code>Map&lt;String, T&gt;</code></td><td><code>Record&lt;string, T&gt;</code></td></tr>
+<tr><td><code>()</code></td><td><code>nil</code></td><td><code>null</code></td><td><code>null</code></td></tr>
+<tr><td><code>Result&lt;T, E&gt;</code></td><td><code>func placeholder() throws E -&gt; T</code></td><td><code>T placeholder() throws E</code></td><td><code>function placeholder(): T // @throws E</code></td></tr>
+</tbody></table>
+</div><h3 id="adding-new-apis"><a class="doc-anchor" href="#adding-new-apis">§</a>Adding new APIs</h3>
+<ol>
+<li>Make your changes wherever applicable.</li>
+<li>Make sure your new API is available on <code>MlsCentral</code>, while respecting encapsulation
+<ul>
+<li>For example, adding <code>MlsConversation::hello()</code> would mean exposing a new <code>MlsCentral::conversation_hello(conversation_id: ConversationId)</code></li>
+</ul>
+</li>
+<li>Expose your new API on both <code>crypto-ffi/src/[generic|wasm].rs</code>.</li>
+<li>Add the new APIs respecting the appropriate calling conventions defined above to
+<ul>
+<li>Kotlin/Android: <code>crypto-ffi/bindings/jvm/src/main/kotlin/com/wire/crypto/client/[CoreCryptoCentral|E2eiClient|MLSClient].kt</code></li>
+<li>TypeScript/Web: <code>crypto-ffi/bindings/js/CoreCrypto.ts</code>
+(Swift/iOS are automatically generated)</li>
+</ul>
+</li>
+<li>Add documentation for the new API in the bindings.</li>
+<li>Add a test for the bindings. This is easily done by extending the existing test suite in <code>crypto-ffi/bindings/js/test/CoreCrypto.test.ts</code>.
+For example, see <a href="https://github.com/wireapp/core-crypto/commit/5e9ecf7328b33730f31dfc25aeb168e090a7b1e5">this commit</a>.</li>
+</ol>
+</div></details><h2 id="modules" class="section-header">Modules<a href="#modules" class="anchor">§</a></h2><dl class="item-table"><dt><a class="mod" href="kotlin/index.html" title="mod core_crypto_ffi::bindings::kotlin">kotlin</a></dt><dt><a class="mod" href="swift/index.html" title="mod core_crypto_ffi::bindings::swift">swift</a></dt><dt><a class="mod" href="typescript/index.html" title="mod core_crypto_ffi::bindings::typescript">typescript</a></dt></dl></section></div></main></body></html>
