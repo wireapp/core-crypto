@@ -979,57 +979,56 @@
 <a href=#979 id=979 data-nosnippet>979</a>
 <a href=#980 id=980 data-nosnippet>980</a>    <span class="attr">#[apply(all_cred_cipher)]
 <a href=#981 id=981 data-nosnippet>981</a>    #[wasm_bindgen_test]
-<a href=#982 id=982 data-nosnippet>982</a>    </span><span class="kw">async fn </span>can_externally_generate_client(case: TestContext) {
+<a href=#982 id=982 data-nosnippet>982</a>    </span><span class="kw">async fn </span>can_externally_generate_client(<span class="kw-2">mut </span>case: TestContext) {
 <a href=#983 id=983 data-nosnippet>983</a>        <span class="kw">let </span>[alice] = case.sessions().<span class="kw">await</span>;
 <a href=#984 id=984 data-nosnippet>984</a>        <span class="kw">if </span>!case.is_basic() {
 <a href=#985 id=985 data-nosnippet>985</a>            <span class="kw">return</span>;
 <a href=#986 id=986 data-nosnippet>986</a>        }
-<a href=#987 id=987 data-nosnippet>987</a>        run_tests(<span class="kw">move </span>|[tmp_dir_argument]| {
-<a href=#988 id=988 data-nosnippet>988</a>            Box::pin(<span class="kw">async move </span>{
-<a href=#989 id=989 data-nosnippet>989</a>                <span class="kw">let </span>key = DatabaseKey::generate();
-<a href=#990 id=990 data-nosnippet>990</a>                <span class="kw">let </span>backend = MlsCryptoProvider::try_new(tmp_dir_argument, <span class="kw-2">&amp;</span>key).<span class="kw">await</span>.unwrap();
-<a href=#991 id=991 data-nosnippet>991</a>                backend.new_transaction().<span class="kw">await</span>.unwrap();
-<a href=#992 id=992 data-nosnippet>992</a>                <span class="comment">// phase 1: generate standalone keypair
-<a href=#993 id=993 data-nosnippet>993</a>                </span><span class="kw">let </span>client_id: ClientId = <span class="string">b"whatever:my:client:is@world.com"</span>.to_vec().into();
-<a href=#994 id=994 data-nosnippet>994</a>                <span class="kw">let </span>alice = alice.session().<span class="kw">await</span>;
-<a href=#995 id=995 data-nosnippet>995</a>                alice.reset().<span class="kw">await</span>;
-<a href=#996 id=996 data-nosnippet>996</a>                <span class="comment">// TODO: test with multi-ciphersuite. Tracking issue: WPB-9601
-<a href=#997 id=997 data-nosnippet>997</a>                </span><span class="kw">let </span>handles = alice
-<a href=#998 id=998 data-nosnippet>998</a>                    .generate_raw_keypairs(<span class="kw-2">&amp;</span>[case.ciphersuite()], <span class="kw-2">&amp;</span>backend)
-<a href=#999 id=999 data-nosnippet>999</a>                    .<span class="kw">await
-<a href=#1000 id=1000 data-nosnippet>1000</a>                    </span>.unwrap();
+<a href=#987 id=987 data-nosnippet>987</a>        <span class="kw">let </span>tmp_dir = case.tmp_dir().<span class="kw">await</span>;
+<a href=#988 id=988 data-nosnippet>988</a>        Box::pin(<span class="kw">async move </span>{
+<a href=#989 id=989 data-nosnippet>989</a>            <span class="kw">let </span>key = DatabaseKey::generate();
+<a href=#990 id=990 data-nosnippet>990</a>            <span class="kw">let </span>backend = MlsCryptoProvider::try_new(tmp_dir, <span class="kw-2">&amp;</span>key).<span class="kw">await</span>.unwrap();
+<a href=#991 id=991 data-nosnippet>991</a>            backend.new_transaction().<span class="kw">await</span>.unwrap();
+<a href=#992 id=992 data-nosnippet>992</a>            <span class="comment">// phase 1: generate standalone keypair
+<a href=#993 id=993 data-nosnippet>993</a>            </span><span class="kw">let </span>client_id: ClientId = <span class="string">b"whatever:my:client:is@world.com"</span>.to_vec().into();
+<a href=#994 id=994 data-nosnippet>994</a>            <span class="kw">let </span>alice = alice.session().<span class="kw">await</span>;
+<a href=#995 id=995 data-nosnippet>995</a>            alice.reset().<span class="kw">await</span>;
+<a href=#996 id=996 data-nosnippet>996</a>            <span class="comment">// TODO: test with multi-ciphersuite. Tracking issue: WPB-9601
+<a href=#997 id=997 data-nosnippet>997</a>            </span><span class="kw">let </span>handles = alice
+<a href=#998 id=998 data-nosnippet>998</a>                .generate_raw_keypairs(<span class="kw-2">&amp;</span>[case.ciphersuite()], <span class="kw-2">&amp;</span>backend)
+<a href=#999 id=999 data-nosnippet>999</a>                .<span class="kw">await
+<a href=#1000 id=1000 data-nosnippet>1000</a>                </span>.unwrap();
 <a href=#1001 id=1001 data-nosnippet>1001</a>
-<a href=#1002 id=1002 data-nosnippet>1002</a>                <span class="kw">let </span><span class="kw-2">mut </span>identities = backend
-<a href=#1003 id=1003 data-nosnippet>1003</a>                    .keystore()
-<a href=#1004 id=1004 data-nosnippet>1004</a>                    .find_all::&lt;MlsSignatureKeyPair&gt;(EntityFindParams::default())
-<a href=#1005 id=1005 data-nosnippet>1005</a>                    .<span class="kw">await
-<a href=#1006 id=1006 data-nosnippet>1006</a>                    </span>.unwrap();
+<a href=#1002 id=1002 data-nosnippet>1002</a>            <span class="kw">let </span><span class="kw-2">mut </span>identities = backend
+<a href=#1003 id=1003 data-nosnippet>1003</a>                .keystore()
+<a href=#1004 id=1004 data-nosnippet>1004</a>                .find_all::&lt;MlsSignatureKeyPair&gt;(EntityFindParams::default())
+<a href=#1005 id=1005 data-nosnippet>1005</a>                .<span class="kw">await
+<a href=#1006 id=1006 data-nosnippet>1006</a>                </span>.unwrap();
 <a href=#1007 id=1007 data-nosnippet>1007</a>
-<a href=#1008 id=1008 data-nosnippet>1008</a>                <span class="macro">assert_eq!</span>(identities.len(), <span class="number">1</span>);
+<a href=#1008 id=1008 data-nosnippet>1008</a>            <span class="macro">assert_eq!</span>(identities.len(), <span class="number">1</span>);
 <a href=#1009 id=1009 data-nosnippet>1009</a>
-<a href=#1010 id=1010 data-nosnippet>1010</a>                <span class="kw">let </span>prov_identity = identities.pop().unwrap();
+<a href=#1010 id=1010 data-nosnippet>1010</a>            <span class="kw">let </span>prov_identity = identities.pop().unwrap();
 <a href=#1011 id=1011 data-nosnippet>1011</a>
-<a href=#1012 id=1012 data-nosnippet>1012</a>                <span class="comment">// Make sure we are actually returning the clientId
-<a href=#1013 id=1013 data-nosnippet>1013</a>                // TODO: test with multi-ciphersuite. Tracking issue: WPB-9601
-<a href=#1014 id=1014 data-nosnippet>1014</a>                </span><span class="kw">let </span>prov_client_id: ClientId = prov_identity.credential_id.as_slice().into();
-<a href=#1015 id=1015 data-nosnippet>1015</a>                <span class="macro">assert_eq!</span>(<span class="kw-2">&amp;</span>prov_client_id, handles.first().unwrap());
+<a href=#1012 id=1012 data-nosnippet>1012</a>            <span class="comment">// Make sure we are actually returning the clientId
+<a href=#1013 id=1013 data-nosnippet>1013</a>            // TODO: test with multi-ciphersuite. Tracking issue: WPB-9601
+<a href=#1014 id=1014 data-nosnippet>1014</a>            </span><span class="kw">let </span>prov_client_id: ClientId = prov_identity.credential_id.as_slice().into();
+<a href=#1015 id=1015 data-nosnippet>1015</a>            <span class="macro">assert_eq!</span>(<span class="kw-2">&amp;</span>prov_client_id, handles.first().unwrap());
 <a href=#1016 id=1016 data-nosnippet>1016</a>
-<a href=#1017 id=1017 data-nosnippet>1017</a>                <span class="comment">// phase 2: pretend we have a new client ID from the backend, and try to init the client this way
-<a href=#1018 id=1018 data-nosnippet>1018</a>                </span>alice
-<a href=#1019 id=1019 data-nosnippet>1019</a>                    .init_with_external_client_id(client_id.clone(), handles.clone(), <span class="kw-2">&amp;</span>[case.ciphersuite()], <span class="kw-2">&amp;</span>backend)
-<a href=#1020 id=1020 data-nosnippet>1020</a>                    .<span class="kw">await
-<a href=#1021 id=1021 data-nosnippet>1021</a>                    </span>.unwrap();
+<a href=#1017 id=1017 data-nosnippet>1017</a>            <span class="comment">// phase 2: pretend we have a new client ID from the backend, and try to init the client this way
+<a href=#1018 id=1018 data-nosnippet>1018</a>            </span>alice
+<a href=#1019 id=1019 data-nosnippet>1019</a>                .init_with_external_client_id(client_id.clone(), handles.clone(), <span class="kw-2">&amp;</span>[case.ciphersuite()], <span class="kw-2">&amp;</span>backend)
+<a href=#1020 id=1020 data-nosnippet>1020</a>                .<span class="kw">await
+<a href=#1021 id=1021 data-nosnippet>1021</a>                </span>.unwrap();
 <a href=#1022 id=1022 data-nosnippet>1022</a>
-<a href=#1023 id=1023 data-nosnippet>1023</a>                <span class="comment">// Make sure both client id and PK are intact
-<a href=#1024 id=1024 data-nosnippet>1024</a>                </span><span class="macro">assert_eq!</span>(alice.id().<span class="kw">await</span>.unwrap(), client_id);
-<a href=#1025 id=1025 data-nosnippet>1025</a>                <span class="kw">let </span>cb = alice
-<a href=#1026 id=1026 data-nosnippet>1026</a>                    .find_most_recent_credential_bundle(case.signature_scheme(), case.credential_type)
-<a href=#1027 id=1027 data-nosnippet>1027</a>                    .<span class="kw">await
-<a href=#1028 id=1028 data-nosnippet>1028</a>                    </span>.unwrap();
-<a href=#1029 id=1029 data-nosnippet>1029</a>                <span class="kw">let </span>client_id: ClientId = cb.credential().identity().into();
-<a href=#1030 id=1030 data-nosnippet>1030</a>                <span class="macro">assert_eq!</span>(<span class="kw-2">&amp;</span>client_id, handles.first().unwrap());
-<a href=#1031 id=1031 data-nosnippet>1031</a>            })
-<a href=#1032 id=1032 data-nosnippet>1032</a>        })
-<a href=#1033 id=1033 data-nosnippet>1033</a>        .<span class="kw">await
-<a href=#1034 id=1034 data-nosnippet>1034</a>    </span>}
-<a href=#1035 id=1035 data-nosnippet>1035</a>}</code></pre></div></section></main></body></html>
+<a href=#1023 id=1023 data-nosnippet>1023</a>            <span class="comment">// Make sure both client id and PK are intact
+<a href=#1024 id=1024 data-nosnippet>1024</a>            </span><span class="macro">assert_eq!</span>(alice.id().<span class="kw">await</span>.unwrap(), client_id);
+<a href=#1025 id=1025 data-nosnippet>1025</a>            <span class="kw">let </span>cb = alice
+<a href=#1026 id=1026 data-nosnippet>1026</a>                .find_most_recent_credential_bundle(case.signature_scheme(), case.credential_type)
+<a href=#1027 id=1027 data-nosnippet>1027</a>                .<span class="kw">await
+<a href=#1028 id=1028 data-nosnippet>1028</a>                </span>.unwrap();
+<a href=#1029 id=1029 data-nosnippet>1029</a>            <span class="kw">let </span>client_id: ClientId = cb.credential().identity().into();
+<a href=#1030 id=1030 data-nosnippet>1030</a>            <span class="macro">assert_eq!</span>(<span class="kw-2">&amp;</span>client_id, handles.first().unwrap());
+<a href=#1031 id=1031 data-nosnippet>1031</a>        })
+<a href=#1032 id=1032 data-nosnippet>1032</a>        .<span class="kw">await
+<a href=#1033 id=1033 data-nosnippet>1033</a>    </span>}
+<a href=#1034 id=1034 data-nosnippet>1034</a>}</code></pre></div></section></main></body></html>

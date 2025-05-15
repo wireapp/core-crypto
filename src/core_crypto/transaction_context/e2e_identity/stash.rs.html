@@ -61,82 +61,80 @@
 <a href=#61 id=61 data-nosnippet>61</a>    <span class="attr">#[apply(all_cred_cipher)]
 <a href=#62 id=62 data-nosnippet>62</a>    #[wasm_bindgen_test]
 <a href=#63 id=63 data-nosnippet>63</a>    </span><span class="kw">async fn </span>stash_and_pop_should_not_abort_enrollment(case: TestContext) {
-<a href=#64 id=64 data-nosnippet>64</a>        run_test_wo_clients(case.clone(), <span class="kw">move </span>|<span class="kw-2">mut </span>cc| {
-<a href=#65 id=65 data-nosnippet>65</a>            Box::pin(<span class="kw">async move </span>{
-<a href=#66 id=66 data-nosnippet>66</a>                <span class="kw">let </span>x509_test_chain = X509TestChain::init_empty(case.signature_scheme());
+<a href=#64 id=64 data-nosnippet>64</a>        <span class="kw">let </span><span class="kw-2">mut </span>cc = SessionContext::new_uninitialized(<span class="kw-2">&amp;</span>case).<span class="kw">await</span>;
+<a href=#65 id=65 data-nosnippet>65</a>        Box::pin(<span class="kw">async move </span>{
+<a href=#66 id=66 data-nosnippet>66</a>            <span class="kw">let </span>x509_test_chain = X509TestChain::init_empty(case.signature_scheme());
 <a href=#67 id=67 data-nosnippet>67</a>
-<a href=#68 id=68 data-nosnippet>68</a>                <span class="kw">let </span>is_renewal = <span class="bool-val">false</span>;
-<a href=#69 id=69 data-nosnippet>69</a>                <span class="kw">let </span>(<span class="kw-2">mut </span>enrollment, cert) = e2ei_enrollment(
-<a href=#70 id=70 data-nosnippet>70</a>                    <span class="kw-2">&amp;mut </span>cc,
-<a href=#71 id=71 data-nosnippet>71</a>                    <span class="kw-2">&amp;</span>case,
-<a href=#72 id=72 data-nosnippet>72</a>                    <span class="kw-2">&amp;</span>x509_test_chain,
-<a href=#73 id=73 data-nosnippet>73</a>                    <span class="prelude-val">Some</span>(E2EI_CLIENT_ID_URI),
-<a href=#74 id=74 data-nosnippet>74</a>                    is_renewal,
-<a href=#75 id=75 data-nosnippet>75</a>                    init_enrollment,
-<a href=#76 id=76 data-nosnippet>76</a>                    |e, cc| {
-<a href=#77 id=77 data-nosnippet>77</a>                        Box::pin(<span class="kw">async move </span>{
-<a href=#78 id=78 data-nosnippet>78</a>                            <span class="kw">let </span>handle = cc.e2ei_enrollment_stash(e).<span class="kw">await</span>.unwrap();
-<a href=#79 id=79 data-nosnippet>79</a>                            cc.e2ei_enrollment_stash_pop(handle).<span class="kw">await</span>.unwrap()
-<a href=#80 id=80 data-nosnippet>80</a>                        })
-<a href=#81 id=81 data-nosnippet>81</a>                    },
-<a href=#82 id=82 data-nosnippet>82</a>                )
-<a href=#83 id=83 data-nosnippet>83</a>                .<span class="kw">await
-<a href=#84 id=84 data-nosnippet>84</a>                </span>.unwrap();
+<a href=#68 id=68 data-nosnippet>68</a>            <span class="kw">let </span>is_renewal = <span class="bool-val">false</span>;
+<a href=#69 id=69 data-nosnippet>69</a>            <span class="kw">let </span>(<span class="kw-2">mut </span>enrollment, cert) = e2ei_enrollment(
+<a href=#70 id=70 data-nosnippet>70</a>                <span class="kw-2">&amp;mut </span>cc,
+<a href=#71 id=71 data-nosnippet>71</a>                <span class="kw-2">&amp;</span>case,
+<a href=#72 id=72 data-nosnippet>72</a>                <span class="kw-2">&amp;</span>x509_test_chain,
+<a href=#73 id=73 data-nosnippet>73</a>                <span class="prelude-val">Some</span>(E2EI_CLIENT_ID_URI),
+<a href=#74 id=74 data-nosnippet>74</a>                is_renewal,
+<a href=#75 id=75 data-nosnippet>75</a>                init_enrollment,
+<a href=#76 id=76 data-nosnippet>76</a>                |e, cc| {
+<a href=#77 id=77 data-nosnippet>77</a>                    Box::pin(<span class="kw">async move </span>{
+<a href=#78 id=78 data-nosnippet>78</a>                        <span class="kw">let </span>handle = cc.e2ei_enrollment_stash(e).<span class="kw">await</span>.unwrap();
+<a href=#79 id=79 data-nosnippet>79</a>                        cc.e2ei_enrollment_stash_pop(handle).<span class="kw">await</span>.unwrap()
+<a href=#80 id=80 data-nosnippet>80</a>                    })
+<a href=#81 id=81 data-nosnippet>81</a>                },
+<a href=#82 id=82 data-nosnippet>82</a>            )
+<a href=#83 id=83 data-nosnippet>83</a>            .<span class="kw">await
+<a href=#84 id=84 data-nosnippet>84</a>            </span>.unwrap();
 <a href=#85 id=85 data-nosnippet>85</a>
-<a href=#86 id=86 data-nosnippet>86</a>                <span class="macro">assert!</span>(
-<a href=#87 id=87 data-nosnippet>87</a>                    cc.transaction
-<a href=#88 id=88 data-nosnippet>88</a>                        .e2ei_mls_init_only(<span class="kw-2">&amp;mut </span>enrollment, cert, <span class="prelude-val">Some</span>(INITIAL_KEYING_MATERIAL_COUNT))
-<a href=#89 id=89 data-nosnippet>89</a>                        .<span class="kw">await
-<a href=#90 id=90 data-nosnippet>90</a>                        </span>.is_ok()
-<a href=#91 id=91 data-nosnippet>91</a>                );
-<a href=#92 id=92 data-nosnippet>92</a>            })
-<a href=#93 id=93 data-nosnippet>93</a>        })
-<a href=#94 id=94 data-nosnippet>94</a>        .<span class="kw">await
-<a href=#95 id=95 data-nosnippet>95</a>    </span>}
-<a href=#96 id=96 data-nosnippet>96</a>
-<a href=#97 id=97 data-nosnippet>97</a>    <span class="comment">// this ensures the nominal test does its job
-<a href=#98 id=98 data-nosnippet>98</a>    </span><span class="attr">#[apply(all_cred_cipher)]
-<a href=#99 id=99 data-nosnippet>99</a>    #[wasm_bindgen_test]
-<a href=#100 id=100 data-nosnippet>100</a>    </span><span class="kw">async fn </span>should_fail_when_restoring_invalid(case: TestContext) {
-<a href=#101 id=101 data-nosnippet>101</a>        run_test_wo_clients(case.clone(), <span class="kw">move </span>|<span class="kw-2">mut </span>cc| {
-<a href=#102 id=102 data-nosnippet>102</a>            Box::pin(<span class="kw">async move </span>{
-<a href=#103 id=103 data-nosnippet>103</a>                <span class="kw">let </span>x509_test_chain = X509TestChain::init_empty(case.signature_scheme());
-<a href=#104 id=104 data-nosnippet>104</a>
-<a href=#105 id=105 data-nosnippet>105</a>                <span class="kw">let </span>is_renewal = <span class="bool-val">false</span>;
-<a href=#106 id=106 data-nosnippet>106</a>                <span class="kw">let </span>result = e2ei_enrollment(
-<a href=#107 id=107 data-nosnippet>107</a>                    <span class="kw-2">&amp;mut </span>cc,
-<a href=#108 id=108 data-nosnippet>108</a>                    <span class="kw-2">&amp;</span>case,
-<a href=#109 id=109 data-nosnippet>109</a>                    <span class="kw-2">&amp;</span>x509_test_chain,
-<a href=#110 id=110 data-nosnippet>110</a>                    <span class="prelude-val">Some</span>(E2EI_CLIENT_ID_URI),
-<a href=#111 id=111 data-nosnippet>111</a>                    is_renewal,
-<a href=#112 id=112 data-nosnippet>112</a>                    init_enrollment,
-<a href=#113 id=113 data-nosnippet>113</a>                    <span class="kw">move </span>|e, _cc| {
-<a href=#114 id=114 data-nosnippet>114</a>                        Box::pin(<span class="kw">async move </span>{
-<a href=#115 id=115 data-nosnippet>115</a>                            <span class="comment">// this restore recreates a partial enrollment
-<a href=#116 id=116 data-nosnippet>116</a>                            </span><span class="kw">let </span>key = DatabaseKey::generate();
-<a href=#117 id=117 data-nosnippet>117</a>                            <span class="kw">let </span>backend = MlsCryptoProvider::try_new_in_memory(<span class="kw-2">&amp;</span>key).<span class="kw">await</span>.unwrap();
-<a href=#118 id=118 data-nosnippet>118</a>                            backend.new_transaction().<span class="kw">await</span>.unwrap();
-<a href=#119 id=119 data-nosnippet>119</a>                            <span class="kw">let </span>client_id = e.client_id().parse::&lt;WireQualifiedClientId&gt;().unwrap();
-<a href=#120 id=120 data-nosnippet>120</a>                            E2eiEnrollment::try_new(
-<a href=#121 id=121 data-nosnippet>121</a>                                client_id.into(),
-<a href=#122 id=122 data-nosnippet>122</a>                                e.display_name().to_string(),
-<a href=#123 id=123 data-nosnippet>123</a>                                e.handle().to_string(),
-<a href=#124 id=124 data-nosnippet>124</a>                                e.team().map(ToString::to_string),
-<a href=#125 id=125 data-nosnippet>125</a>                                <span class="number">1</span>,
-<a href=#126 id=126 data-nosnippet>126</a>                                <span class="kw-2">&amp;</span>backend,
-<a href=#127 id=127 data-nosnippet>127</a>                                e.ciphersuite().clone(),
-<a href=#128 id=128 data-nosnippet>128</a>                                <span class="prelude-val">None</span>,
-<a href=#129 id=129 data-nosnippet>129</a>                                <span class="attr">#[cfg(not(target_family = <span class="string">"wasm"</span>))]
-<a href=#130 id=130 data-nosnippet>130</a>                                </span><span class="prelude-val">None</span>,
-<a href=#131 id=131 data-nosnippet>131</a>                            )
-<a href=#132 id=132 data-nosnippet>132</a>                            .unwrap()
-<a href=#133 id=133 data-nosnippet>133</a>                        })
-<a href=#134 id=134 data-nosnippet>134</a>                    },
-<a href=#135 id=135 data-nosnippet>135</a>                )
-<a href=#136 id=136 data-nosnippet>136</a>                .<span class="kw">await</span>;
-<a href=#137 id=137 data-nosnippet>137</a>                <span class="macro">assert!</span>(result.is_err());
-<a href=#138 id=138 data-nosnippet>138</a>            })
-<a href=#139 id=139 data-nosnippet>139</a>        })
-<a href=#140 id=140 data-nosnippet>140</a>        .<span class="kw">await
-<a href=#141 id=141 data-nosnippet>141</a>    </span>}
-<a href=#142 id=142 data-nosnippet>142</a>}</code></pre></div></section></main></body></html>
+<a href=#86 id=86 data-nosnippet>86</a>            <span class="macro">assert!</span>(
+<a href=#87 id=87 data-nosnippet>87</a>                cc.transaction
+<a href=#88 id=88 data-nosnippet>88</a>                    .e2ei_mls_init_only(<span class="kw-2">&amp;mut </span>enrollment, cert, <span class="prelude-val">Some</span>(INITIAL_KEYING_MATERIAL_COUNT))
+<a href=#89 id=89 data-nosnippet>89</a>                    .<span class="kw">await
+<a href=#90 id=90 data-nosnippet>90</a>                    </span>.is_ok()
+<a href=#91 id=91 data-nosnippet>91</a>            );
+<a href=#92 id=92 data-nosnippet>92</a>        })
+<a href=#93 id=93 data-nosnippet>93</a>        .<span class="kw">await
+<a href=#94 id=94 data-nosnippet>94</a>    </span>}
+<a href=#95 id=95 data-nosnippet>95</a>
+<a href=#96 id=96 data-nosnippet>96</a>    <span class="comment">// this ensures the nominal test does its job
+<a href=#97 id=97 data-nosnippet>97</a>    </span><span class="attr">#[apply(all_cred_cipher)]
+<a href=#98 id=98 data-nosnippet>98</a>    #[wasm_bindgen_test]
+<a href=#99 id=99 data-nosnippet>99</a>    </span><span class="kw">async fn </span>should_fail_when_restoring_invalid(case: TestContext) {
+<a href=#100 id=100 data-nosnippet>100</a>        <span class="kw">let </span><span class="kw-2">mut </span>cc = SessionContext::new_uninitialized(<span class="kw-2">&amp;</span>case).<span class="kw">await</span>;
+<a href=#101 id=101 data-nosnippet>101</a>        Box::pin(<span class="kw">async move </span>{
+<a href=#102 id=102 data-nosnippet>102</a>            <span class="kw">let </span>x509_test_chain = X509TestChain::init_empty(case.signature_scheme());
+<a href=#103 id=103 data-nosnippet>103</a>
+<a href=#104 id=104 data-nosnippet>104</a>            <span class="kw">let </span>is_renewal = <span class="bool-val">false</span>;
+<a href=#105 id=105 data-nosnippet>105</a>            <span class="kw">let </span>result = e2ei_enrollment(
+<a href=#106 id=106 data-nosnippet>106</a>                <span class="kw-2">&amp;mut </span>cc,
+<a href=#107 id=107 data-nosnippet>107</a>                <span class="kw-2">&amp;</span>case,
+<a href=#108 id=108 data-nosnippet>108</a>                <span class="kw-2">&amp;</span>x509_test_chain,
+<a href=#109 id=109 data-nosnippet>109</a>                <span class="prelude-val">Some</span>(E2EI_CLIENT_ID_URI),
+<a href=#110 id=110 data-nosnippet>110</a>                is_renewal,
+<a href=#111 id=111 data-nosnippet>111</a>                init_enrollment,
+<a href=#112 id=112 data-nosnippet>112</a>                <span class="kw">move </span>|e, _cc| {
+<a href=#113 id=113 data-nosnippet>113</a>                    Box::pin(<span class="kw">async move </span>{
+<a href=#114 id=114 data-nosnippet>114</a>                        <span class="comment">// this restore recreates a partial enrollment
+<a href=#115 id=115 data-nosnippet>115</a>                        </span><span class="kw">let </span>key = DatabaseKey::generate();
+<a href=#116 id=116 data-nosnippet>116</a>                        <span class="kw">let </span>backend = MlsCryptoProvider::try_new_in_memory(<span class="kw-2">&amp;</span>key).<span class="kw">await</span>.unwrap();
+<a href=#117 id=117 data-nosnippet>117</a>                        backend.new_transaction().<span class="kw">await</span>.unwrap();
+<a href=#118 id=118 data-nosnippet>118</a>                        <span class="kw">let </span>client_id = e.client_id().parse::&lt;WireQualifiedClientId&gt;().unwrap();
+<a href=#119 id=119 data-nosnippet>119</a>                        E2eiEnrollment::try_new(
+<a href=#120 id=120 data-nosnippet>120</a>                            client_id.into(),
+<a href=#121 id=121 data-nosnippet>121</a>                            e.display_name().to_string(),
+<a href=#122 id=122 data-nosnippet>122</a>                            e.handle().to_string(),
+<a href=#123 id=123 data-nosnippet>123</a>                            e.team().map(ToString::to_string),
+<a href=#124 id=124 data-nosnippet>124</a>                            <span class="number">1</span>,
+<a href=#125 id=125 data-nosnippet>125</a>                            <span class="kw-2">&amp;</span>backend,
+<a href=#126 id=126 data-nosnippet>126</a>                            <span class="kw-2">*</span>e.ciphersuite(),
+<a href=#127 id=127 data-nosnippet>127</a>                            <span class="prelude-val">None</span>,
+<a href=#128 id=128 data-nosnippet>128</a>                            <span class="attr">#[cfg(not(target_family = <span class="string">"wasm"</span>))]
+<a href=#129 id=129 data-nosnippet>129</a>                            </span><span class="prelude-val">None</span>,
+<a href=#130 id=130 data-nosnippet>130</a>                        )
+<a href=#131 id=131 data-nosnippet>131</a>                        .unwrap()
+<a href=#132 id=132 data-nosnippet>132</a>                    })
+<a href=#133 id=133 data-nosnippet>133</a>                },
+<a href=#134 id=134 data-nosnippet>134</a>            )
+<a href=#135 id=135 data-nosnippet>135</a>            .<span class="kw">await</span>;
+<a href=#136 id=136 data-nosnippet>136</a>            <span class="macro">assert!</span>(result.is_err());
+<a href=#137 id=137 data-nosnippet>137</a>        })
+<a href=#138 id=138 data-nosnippet>138</a>        .<span class="kw">await
+<a href=#139 id=139 data-nosnippet>139</a>    </span>}
+<a href=#140 id=140 data-nosnippet>140</a>}</code></pre></div></section></main></body></html>

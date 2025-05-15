@@ -17,8 +17,8 @@
 <a href=#17 id=17 data-nosnippet>17</a>    <span class="attr">#[apply(all_cred_cipher)]
 <a href=#18 id=18 data-nosnippet>18</a>    #[wasm_bindgen_test]
 <a href=#19 id=19 data-nosnippet>19</a>    </span><span class="kw">pub async fn </span>orphan_welcome_should_generate_external_commit(case: TestContext) {
-<a href=#20 id=20 data-nosnippet>20</a>        run_test_with_client_ids(case.clone(), [<span class="string">"alice"</span>, <span class="string">"bob"</span>], <span class="kw">move </span>|[alice_central, bob_central]| {
-<a href=#21 id=21 data-nosnippet>21</a>            Box::pin(<span class="kw">async move </span>{
+<a href=#20 id=20 data-nosnippet>20</a>        <span class="kw">let </span>[alice_central, bob_central] = case.sessions().<span class="kw">await</span>;
+<a href=#21 id=21 data-nosnippet>21</a>        Box::pin(<span class="kw">async move </span>{
 <a href=#22 id=22 data-nosnippet>22</a>                <span class="kw">let </span>id = conversation_id();
 <a href=#23 id=23 data-nosnippet>23</a>
 <a href=#24 id=24 data-nosnippet>24</a>                alice_central
@@ -58,7 +58,6 @@
 <a href=#58 id=58 data-nosnippet>58</a>                    <span class="kw">crate</span>::transaction_context::Error::Recursive(<span class="kw">crate</span>::RecursiveError::MlsConversation { source, .. }) <span class="kw">if </span><span class="macro">matches!</span>(<span class="kw-2">*</span>source, Error::OrphanWelcome)
 <a href=#59 id=59 data-nosnippet>59</a>                ));
 <a href=#60 id=60 data-nosnippet>60</a>            })
-<a href=#61 id=61 data-nosnippet>61</a>        })
-<a href=#62 id=62 data-nosnippet>62</a>        .<span class="kw">await</span>;
-<a href=#63 id=63 data-nosnippet>63</a>    }
-<a href=#64 id=64 data-nosnippet>64</a>}</code></pre></div></section></main></body></html>
+<a href=#61 id=61 data-nosnippet>61</a>        .<span class="kw">await</span>;
+<a href=#62 id=62 data-nosnippet>62</a>    }
+<a href=#63 id=63 data-nosnippet>63</a>}</code></pre></div></section></main></body></html>
