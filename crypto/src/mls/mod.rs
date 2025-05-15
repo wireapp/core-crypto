@@ -154,29 +154,18 @@ mod tests {
         #[wasm_bindgen_test]
         async fn can_get_newly_created_conversation_epoch(case: TestContext) {
             let [session] = case.sessions().await;
-            let id = conversation_id();
-            session
-                .transaction
-                .new_conversation(&id, case.credential_type, case.cfg.clone())
-                .await
-                .unwrap();
-            let epoch = session.transaction.conversation(&id).await.unwrap().epoch().await;
+            let conversation = case.create_conversation([&session]).await;
+            let epoch = conversation.guard().await.epoch().await;
             assert_eq!(epoch, 0);
         }
 
         #[apply(all_cred_cipher)]
         #[wasm_bindgen_test]
         async fn can_get_conversation_epoch(case: TestContext) {
-            let [alice_central, bob_central] = case.sessions().await;
+            let [alice, bob] = case.sessions().await;
             Box::pin(async move {
-                let id = conversation_id();
-                alice_central
-                    .transaction
-                    .new_conversation(&id, case.credential_type, case.cfg.clone())
-                    .await
-                    .unwrap();
-                alice_central.invite_all(&case, &id, [&bob_central]).await.unwrap();
-                let epoch = alice_central.transaction.conversation(&id).await.unwrap().epoch().await;
+                let conversation = case.create_conversation([&alice, &bob]).await;
+                let epoch = conversation.guard().await.epoch().await;
                 assert_eq!(epoch, 1);
             })
             .await;

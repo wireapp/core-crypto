@@ -100,91 +100,35 @@ mod tests {
         #[apply(all_cred_cipher)]
         #[wasm_bindgen_test]
         async fn retry_should_work(case: TestContext) {
-            let [alice_central, bob_central, charlie_central] = case.sessions().await;
+            use crate::mls::conversation::Conversation as _;
+
+            let [alice, bob, charlie] = case.sessions().await;
             Box::pin(async move {
                 // Create conversation
-                let id = conversation_id();
-                alice_central
-                    .transaction
-                    .new_conversation(&id, case.credential_type, case.cfg.clone())
-                    .await
-                    .unwrap();
-                // Add bob
-                alice_central.invite_all(&case, &id, [&bob_central]).await.unwrap();
+                let conversation = case.create_conversation([&alice, &bob]).await;
 
                 // Bob produces a commit that Alice will receive only after she tried sending a commit
-                bob_central
-                    .transaction
-                    .conversation(&id)
-                    .await
-                    .unwrap()
-                    .update_key_material()
-                    .await
-                    .unwrap();
-                let bob_epoch = bob_central.get_conversation_unchecked(&id).await.group.epoch().as_u64();
+                let commit = conversation.update_guarded_with(&bob).await;
+                let bob_epoch = commit.conversation().guard_of(&bob).await.epoch().await;
                 assert_eq!(2, bob_epoch);
-                let alice_epoch = alice_central
-                    .get_conversation_unchecked(&id)
-                    .await
-                    .group
-                    .epoch()
-                    .as_u64();
+                let alice_epoch = commit.conversation().guard_of(&alice).await.epoch().await;
                 assert_eq!(1, alice_epoch);
-                let intermediate_commit = bob_central.mls_transport.latest_commit().await;
-
+                let intermediate_commit = commit.message();
                 // Next time a commit is sent, process the intermediate commit and return retry, success the second time
                 let retry_provider = Arc::new(
                     CoreCryptoTransportRetrySuccessProvider::default().with_intermediate_commits(
-                        alice_central.clone(),
+                        alice.clone(),
                         &[intermediate_commit],
-                        &id,
+                        commit.conversation().id(),
                     ),
                 );
 
-                alice_central
-                    .transaction
-                    .set_transport_callbacks(Some(retry_provider.clone()))
-                    .await
-                    .unwrap();
+                alice.replace_transport(retry_provider.clone()).await;
 
                 // Send two commits and process them on bobs side
-                alice_central
-                    .transaction
-                    .conversation(&id)
-                    .await
-                    .unwrap()
-                    .update_key_material()
-                    .await
-                    .unwrap();
-                let commit = retry_provider.latest_commit().await;
-                bob_central
-                    .transaction
-                    .conversation(&id)
-                    .await
-                    .unwrap()
-                    .decrypt_message(&commit.to_bytes().unwrap())
-                    .await
-                    .unwrap();
-
                 // For this second commit, the retry provider will first return retry and
                 // then success, but now without an intermediate commit
-                alice_central
-                    .transaction
-                    .conversation(&id)
-                    .await
-                    .unwrap()
-                    .add_members(vec![charlie_central.rand_key_package(&case).await])
-                    .await
-                    .unwrap();
-                let commit = retry_provider.latest_commit().await;
-                bob_central
-                    .transaction
-                    .conversation(&id)
-                    .await
-                    .unwrap()
-                    .decrypt_message(&commit.to_bytes().unwrap())
-                    .await
-                    .unwrap();
+                let id = commit.finish().advance_epoch().await.invite([&charlie]).await.id;
 
                 // Retry should have been returned twice
                 assert_eq!(retry_provider.retry_count().await, 2);
@@ -192,7 +136,7 @@ mod tests {
                 assert_eq!(retry_provider.success_count().await, 2);
 
                 // Group is still in valid state
-                assert!(alice_central.try_talk_to(&id, &bob_central).await.is_ok());
+                assert!(alice.try_talk_to(&id, &bob).await.is_ok());
             })
             .await;
         }
@@ -356,47 +300,23 @@ mod tests {
         #[apply(all_cred_cipher)]
         #[wasm_bindgen_test]
         async fn alice_can_remove_bob_from_conversation(case: TestContext) {
-            let [alice_central, bob_central] = case.sessions().await;
+            let [alice, bob] = case.sessions().await;
             Box::pin(async move {
-                let id = conversation_id();
+                let conversation = case.create_conversation([&alice, &bob]).await;
+                let id = conversation.remove(&bob).await.id;
 
-                alice_central
-                    .transaction
-                    .new_conversation(&id, case.credential_type, case.cfg.clone())
-                    .await
-                    .unwrap();
-                alice_central.invite_all(&case, &id, [&bob_central]).await.unwrap();
-
-                alice_central
-                    .transaction
-                    .conversation(&id)
-                    .await
-                    .unwrap()
-                    .remove_members(&[bob_central.get_client_id().await])
-                    .await
-                    .unwrap();
-                let MlsCommitBundle { commit, welcome, .. } =
-                    alice_central.mls_transport().await.latest_commit_bundle().await;
+                let MlsCommitBundle { welcome, .. } = alice.mls_transport().await.latest_commit_bundle().await;
                 assert!(welcome.is_none());
 
-                assert_eq!(alice_central.get_conversation_unchecked(&id).await.members().len(), 1);
-
-                bob_central
-                    .transaction
-                    .conversation(&id)
-                    .await
-                    .unwrap()
-                    .decrypt_message(commit.to_bytes().unwrap())
-                    .await
-                    .unwrap();
+                assert_eq!(alice.get_conversation_unchecked(&id).await.members().len(), 1);
 
                 // But has been removed from the conversation
                 assert!(matches!(
-                bob_central.transaction.conversation(&id).await.unwrap_err(),
+                bob.transaction.conversation(&id).await.unwrap_err(),
                 TransactionError::Leaf(crate::LeafError::ConversationNotFound(ref i))
                     if i == &id
                 ));
-                assert!(alice_central.try_talk_to(&id, &bob_central).await.is_err());
+                assert!(alice.try_talk_to(&id, &bob).await.is_err());
             })
             .await;
         }

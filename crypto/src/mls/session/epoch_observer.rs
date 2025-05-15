@@ -69,19 +69,14 @@ mod tests {
     use rstest_reuse::apply;
     use wasm_bindgen_test::*;
 
-    use crate::test_utils::{TestContext, TestEpochObserver, all_cred_cipher, conversation_id};
+    use crate::test_utils::{TestContext, TestEpochObserver, all_cred_cipher};
 
     #[apply(all_cred_cipher)]
     #[wasm_bindgen_test]
     pub async fn observe_local_epoch_change(case: TestContext) {
         let [session_context] = case.sessions().await;
         Box::pin(async move {
-            let id = conversation_id();
-            session_context
-                .transaction
-                .new_conversation(&id, case.credential_type, case.cfg.clone())
-                .await
-                .unwrap();
+            let test_conv = case.create_conversation([&session_context]).await;
 
             let observer = TestEpochObserver::new();
             session_context
@@ -92,14 +87,7 @@ mod tests {
                 .unwrap();
 
             // trigger an epoch
-            session_context
-                .transaction
-                .conversation(&id)
-                .await
-                .unwrap()
-                .update_key_material()
-                .await
-                .unwrap();
+            let id = test_conv.advance_epoch().await.id;
 
             // ensure we have observed the epoch change
             let observed_epochs = observer.observed_epochs().await;
@@ -121,14 +109,7 @@ mod tests {
     pub async fn observe_remote_epoch_change(case: TestContext) {
         let [alice, bob] = case.sessions().await;
         Box::pin(async move {
-            let id = conversation_id();
-            alice
-                .transaction
-                .new_conversation(&id, case.credential_type, case.cfg.clone())
-                .await
-                .unwrap();
-
-            alice.invite_all(&case, &id, [&bob]).await.unwrap();
+            let test_conv = case.create_conversation([&alice, &bob]).await;
 
             //  bob has the observer
             let observer = TestEpochObserver::new();
@@ -139,24 +120,7 @@ mod tests {
                 .unwrap();
 
             // alice triggers an epoch
-            alice
-                .transaction
-                .conversation(&id)
-                .await
-                .unwrap()
-                .update_key_material()
-                .await
-                .unwrap();
-
-            // communicate that to bob
-            let commit = alice.mls_transport.latest_commit().await;
-            bob.transaction
-                .conversation(&id)
-                .await
-                .unwrap()
-                .decrypt_message(commit.to_bytes().unwrap())
-                .await
-                .unwrap();
+            let id = test_conv.advance_epoch().await.id;
 
             // ensure we have observed the epoch change
             let observed_epochs = observer.observed_epochs().await;
