@@ -123,27 +123,27 @@ impl<'a> TestConversation<'a> {
     }
 }
 
-/// This struct encapsulates the result of a join by external commit.
+/// This struct encapsulates the result of an operation that creates a commit.
 ///
 /// To notify all existing members of the conversation, call [`Self::notify_existing_members`].
 /// Otherwise, use the struct members to do things manually.
-pub struct ExternalJoinGuard<'a> {
-    conversation_id: &'a ConversationId,
-    pub(crate) previous_conversation_members: Vec<&'a SessionContext>,
+pub struct CommitGuard<'a> {
+    conversation: &'a TestConversation<'a>,
+    pub(crate) members_to_notify: Vec<&'a SessionContext>,
     // this is dead code for now, but we expect to use it in the relatively near future
     // once we start using this in tests. At that point, remove the annotation.
     #[expect(dead_code)]
-    pub(crate) joiner: &'a SessionContext,
-    pub(crate) join_commit: MlsMessageOut,
+    pub(crate) committer: &'a SessionContext,
+    pub(crate) commit: MlsMessageOut,
 }
 
-impl ExternalJoinGuard<'_> {
-    pub async fn notify_existing_members(self) {
-        let message_bytes = self.join_commit.to_bytes().unwrap();
-        for member in self.previous_conversation_members {
+impl CommitGuard<'_> {
+    pub async fn notify_members(self) {
+        let message_bytes = self.commit.to_bytes().unwrap();
+        for member in self.members_to_notify {
             member
                 .transaction
-                .conversation(self.conversation_id)
+                .conversation(&self.conversation.id)
                 .await
                 .unwrap()
                 .decrypt_message(&message_bytes)
@@ -159,7 +159,7 @@ impl<'a> TestConversation<'a> {
     /// This does _not_ distribute the external commit to the existing members. To do that,
     /// use the [`notify_existing_members` method][ExternalJoinGuard::notify_existing_members] of
     /// the returned item.
-    pub async fn external_join(&'a mut self, joiner: &'a SessionContext) -> ExternalJoinGuard<'a> {
+    pub async fn external_join(&'a mut self, joiner: &'a SessionContext) -> CommitGuard<'a> {
         let group_info = self.creator.get_group_info(&self.id).await;
         joiner
             .transaction
@@ -174,11 +174,11 @@ impl<'a> TestConversation<'a> {
 
         self.joiners.push(joiner);
 
-        ExternalJoinGuard {
-            conversation_id: &self.id,
-            previous_conversation_members,
-            joiner,
-            join_commit,
+        CommitGuard {
+            conversation: self,
+            members_to_notify: previous_conversation_members,
+            committer: joiner,
+            commit: join_commit,
         }
     }
 }
