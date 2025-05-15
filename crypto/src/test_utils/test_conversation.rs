@@ -39,22 +39,38 @@ impl<'a> TestConversation<'a> {
         &self.id
     }
 
-    /// Invite all sessions into this conversation.
-    pub async fn invite(&mut self, sessions: impl IntoIterator<Item = &'a SessionContext>) {
+    /// Invite all sessions into this conversation and notify all members, old and new.
+    pub async fn invite_and_notify(&'a mut self, sessions: impl IntoIterator<Item = &'a SessionContext>) {
+        let commit_guard = self.invite(sessions).await;
+        commit_guard.notify_members().await;
+    }
+
+    pub async fn invite(&'a mut self, sessions: impl IntoIterator<Item = &'a SessionContext>) -> CommitGuard<'a> {
         let idx_of_first_new_member = self.joiners.len();
         let sessions = sessions.into_iter();
         let (lower_bound, _) = sessions.size_hint();
         self.joiners.reserve(lower_bound);
         self.joiners.extend(sessions);
+        let new_members = &self.joiners[idx_of_first_new_member..];
+        let new_members_iter = new_members.iter();
+        let (lower_bound, _) = new_members_iter.size_hint();
 
-        self.creator
-            .invite_all(
-                self.case,
-                &self.id,
-                self.joiners[idx_of_first_new_member..].iter().copied(),
-            )
-            .await
-            .expect("all invitations succeeded");
+        let mut key_packages = Vec::with_capacity(lower_bound);
+        for cc in new_members_iter {
+            let kp = cc.rand_key_package(self.case).await;
+            key_packages.push(kp);
+        }
+        self.guard().await.add_members(key_packages).await.unwrap();
+        let welcome = self.transport().latest_commit_bundle().await.welcome.unwrap();
+        let commit = self.transport().latest_commit_bundle().await.commit;
+        let existing_members = self.joiners[..idx_of_first_new_member].to_vec();
+        CommitGuard {
+            conversation: self,
+            members_to_notify: existing_members,
+            committer: self.creator,
+            commit,
+            invited_members: Some((new_members.to_vec(), welcome)),
+        }
     }
 
     /// All members of this conversation.
@@ -135,6 +151,8 @@ pub struct CommitGuard<'a> {
     #[expect(dead_code)]
     pub(crate) committer: &'a SessionContext,
     pub(crate) commit: MlsMessageOut,
+    /// In case someone was invited to this group, there will be a welcome message.
+    pub(crate) invited_members: Option<(Vec<&'a SessionContext>, MlsMessageOut)>,
 }
 
 impl CommitGuard<'_> {
@@ -149,6 +167,15 @@ impl CommitGuard<'_> {
                 .decrypt_message(&message_bytes)
                 .await
                 .unwrap();
+        }
+
+        if let Some((invited_members, welcome_message)) = self.invited_members {
+            for new_member in invited_members {
+                new_member
+                    .transaction
+                    .process_welcome_message(welcome_message.clone().into(), self.conversation.case.custom_cfg())
+                    .await;
+            }
         }
     }
 }
@@ -179,6 +206,7 @@ impl<'a> TestConversation<'a> {
             members_to_notify: previous_conversation_members,
             committer: joiner,
             commit: join_commit,
+            invited_members: None,
         }
     }
 }
