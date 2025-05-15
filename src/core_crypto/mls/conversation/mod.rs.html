@@ -721,14 +721,14 @@
 <a href=#721 id=721 data-nosnippet>721</a>                .<span class="kw">await
 <a href=#722 id=722 data-nosnippet>722</a>                </span>.unwrap();
 <a href=#723 id=723 data-nosnippet>723</a>
-<a href=#724 id=724 data-nosnippet>724</a>            <span class="kw">for </span>j <span class="kw">in </span><span class="number">0</span>..N {
+<a href=#724 id=724 data-nosnippet>724</a>            <span class="kw">for </span>(user_name, status) <span class="kw">in </span>name_status.iter() {
 <a href=#725 id=725 data-nosnippet>725</a>                <span class="kw">let </span>client_identity = identities.remove(
 <a href=#726 id=726 data-nosnippet>726</a>                    identities
 <a href=#727 id=727 data-nosnippet>727</a>                        .iter()
-<a href=#728 id=728 data-nosnippet>728</a>                        .position(|i| i.x509_identity.as_ref().unwrap().display_name == name_status[j].<span class="number">0</span>.to_string())
+<a href=#728 id=728 data-nosnippet>728</a>                        .position(|i| i.x509_identity.as_ref().unwrap().display_name == user_name.to_string())
 <a href=#729 id=729 data-nosnippet>729</a>                        .unwrap(),
 <a href=#730 id=730 data-nosnippet>730</a>                );
-<a href=#731 id=731 data-nosnippet>731</a>                <span class="macro">assert_eq!</span>(client_identity.status, name_status[j].<span class="number">1</span>);
+<a href=#731 id=731 data-nosnippet>731</a>                <span class="macro">assert_eq!</span>(client_identity.status, <span class="kw-2">*</span>status);
 <a href=#732 id=732 data-nosnippet>732</a>            }
 <a href=#733 id=733 data-nosnippet>733</a>            <span class="macro">assert!</span>(identities.is_empty());
 <a href=#734 id=734 data-nosnippet>734</a>
