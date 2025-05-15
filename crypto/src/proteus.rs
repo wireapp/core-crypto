@@ -1349,11 +1349,7 @@ mod tests {
         assert_eq!(proteus_central.fingerprint(), alice_fingerprint);
 
         // Session integrity check
-        let alice_new_session_lock = proteus_central
-            .session(&session_id, &mut keystore)
-            .await
-            .unwrap()
-            .unwrap();
+        let alice_new_session_lock = proteus_central.session(&session_id, &keystore).await.unwrap().unwrap();
         let alice_new_session = alice_new_session_lock.read().await;
         assert_eq!(
             alice_new_session.session.local_identity().fingerprint(),
@@ -1396,7 +1392,7 @@ mod tests {
             .unwrap();
         assert_eq!(&decrypted, &message[..]);
 
-        proteus_central.session_save(&mut keystore, &session_id).await.unwrap();
+        proteus_central.session_save(&keystore, &session_id).await.unwrap();
         keystore.commit_transaction().await.unwrap();
         keystore.wipe().await.unwrap();
     }
@@ -1533,7 +1529,7 @@ mod tests {
 
                 // Session integrity check
                 let alice_new_session_lock = proteus_central
-                    .session(&session_id, &mut keystore)
+                    .session(&session_id, &keystore)
                     .await
                     .unwrap()
                     .unwrap();

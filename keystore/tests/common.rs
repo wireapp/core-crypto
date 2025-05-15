@@ -8,7 +8,7 @@ use core_crypto_keystore::connection::{DatabaseConnection, KeystoreDatabaseConne
 pub(crate) use rstest::*;
 pub(crate) use rstest_reuse::{self, *};
 
-pub(crate) static TEST_ENCRYPTION_KEY: LazyLock<DatabaseKey> = LazyLock::new(|| DatabaseKey::generate());
+pub(crate) static TEST_ENCRYPTION_KEY: LazyLock<DatabaseKey> = LazyLock::new(DatabaseKey::generate);
 
 #[fixture]
 pub fn store_name() -> String {

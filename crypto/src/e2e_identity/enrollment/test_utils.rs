@@ -1,8 +1,8 @@
 #[cfg(not(target_family = "wasm"))]
-use crate::e2e_identity::refresh_token::RefreshToken;
+use crate::{KeystoreError, e2e_identity::Error, e2e_identity::refresh_token::RefreshToken};
 use crate::{
-    KeystoreError, RecursiveError,
-    e2e_identity::{E2eiEnrollment, Error, Result, id::QualifiedE2eiClientId},
+    RecursiveError,
+    e2e_identity::{E2eiEnrollment, Result, id::QualifiedE2eiClientId},
     prelude::{CertificateBundle, MlsCredentialType},
     test_utils::{SessionContext, TestContext, context::TEAM, x509::X509TestChain},
     transaction_context::TransactionContext,
@@ -10,6 +10,7 @@ use crate::{
 use itertools::Itertools as _;
 use mls_crypto_provider::PkiKeypair;
 use openmls::prelude::SignatureScheme;
+#[cfg(not(target_family = "wasm"))]
 use openmls_traits::OpenMlsCryptoProvider as _;
 use serde_json::json;
 

@@ -238,7 +238,7 @@ mod tests {
         // set up alice with x509
         let mut x509_test_chain = X509TestChain::init_empty(case.signature_scheme());
         let (alice_identifier, _) = x509_test_chain.issue_simple_certificate_bundle("alice", None);
-        let alice = SessionContext::new_with_identifier(&case, alice_identifier, Some((&x509_test_chain).into()))
+        let alice = SessionContext::new_with_identifier(&case, alice_identifier, Some(&x509_test_chain))
             .await
             .unwrap();
 

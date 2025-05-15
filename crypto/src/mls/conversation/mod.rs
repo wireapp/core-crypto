@@ -721,14 +721,14 @@ mod tests {
                 .await
                 .unwrap();
 
-            for j in 0..N {
+            for (user_name, status) in name_status.iter() {
                 let client_identity = identities.remove(
                     identities
                         .iter()
-                        .position(|i| i.x509_identity.as_ref().unwrap().display_name == name_status[j].0.to_string())
+                        .position(|i| i.x509_identity.as_ref().unwrap().display_name == user_name.to_string())
                         .unwrap(),
                 );
-                assert_eq!(client_identity.status, name_status[j].1);
+                assert_eq!(client_identity.status, *status);
             }
             assert!(identities.is_empty());
 
