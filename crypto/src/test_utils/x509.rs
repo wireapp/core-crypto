@@ -387,12 +387,6 @@ impl X509TestChain {
             .expect("Cannot find Local (owned) Intermediate CA. Something isn't right in the setup of X509TestChain")
     }
 
-    pub fn find_certificate_for_actor(&self, actor_name: &str) -> Option<&X509Certificate> {
-        self.actors
-            .iter()
-            .find_map(|actor| (actor.name == actor_name).then_some(&actor.certificate))
-    }
-
     pub fn issue_simple_certificate_bundle(
         &mut self,
         name: &str,

@@ -514,17 +514,10 @@ impl SessionContext {
         case: &TestContext,
         handle: &str,
         display_name: &str,
-        existing_cert: &X509Certificate,
         signer: &X509Certificate,
     ) -> CredentialBundle {
         let cid = QualifiedE2eiClientId::try_from(self.get_client_id().await.as_slice()).unwrap();
-        let new_cert = CertificateBundle::new(
-            handle,
-            display_name,
-            Some(&cid),
-            Some(existing_cert.pki_keypair.clone()),
-            signer,
-        );
+        let new_cert = CertificateBundle::new(handle, display_name, Some(&cid), None, signer);
         let client = self.session().await;
         client
             .save_new_x509_credential_bundle(

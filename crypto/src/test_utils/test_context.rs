@@ -3,14 +3,19 @@ use std::sync::Arc;
 pub use crate::prelude::{
     MlsCiphersuite, MlsConversationConfiguration, MlsCredentialType, MlsCustomConfiguration, MlsWirePolicy,
 };
-use crate::test_utils::SessionContext;
+use crate::{
+    e2e_identity::id::{QualifiedE2eiClientId, WireQualifiedClientId},
+    prelude::ClientId,
+    test_utils::SessionContext,
+};
 pub use openmls_traits::types::SignatureScheme;
 pub use rstest::*;
 pub use rstest_reuse::{self, *};
 
 use super::{
-    CoreCryptoTransportSuccessProvider, MlsTransportTestExt, TestCertificateSource, TestConversation,
-    X509SessionParameters, tmp_db_file, x509::X509TestChain,
+    ClientIdentifier, CoreCryptoTransportSuccessProvider, MlsTransportTestExt, TestCertificateSource, TestConversation,
+    init_x509_test_chain, tmp_db_file,
+    x509::{CertificateParams, X509TestChain},
 };
 
 #[template]
@@ -68,14 +73,6 @@ use super::{
 )]
 #[allow(non_snake_case)]
 pub fn all_cred_cipher(case: TestContext) {}
-
-/// Needed to specify the context a x509 certificate chain is initialized from.
-enum TestChainKind {
-    /// A certificate chain that is cross-signed by another
-    CrossSigned,
-    /// A certificate chain that exists on its own (default case).
-    Single,
-}
 
 #[derive(Debug, Clone)]
 pub struct TestContext {
@@ -147,47 +144,175 @@ impl TestContext {
         db_dir_string
     }
 
-    pub async fn sessions<const N: usize>(&self) -> [SessionContext; N] {
-        self.sessions_x509(None).await
+    pub fn client_ids<const N: usize>(&self) -> [ClientId; N] {
+        self.client_ids_inner(QualifiedE2eiClientId::generate, WireQualifiedClientId::generate)
     }
 
-    pub async fn sessions_x509<const N: usize>(&self, test_chain: Option<&X509TestChain>) -> [SessionContext; N] {
-        self.sessions_x509_cross_signed_inner(test_chain, TestChainKind::Single)
-            .await
+    pub fn client_ids_for_user<const N: usize>(&self, user: &uuid::Uuid) -> [ClientId; N] {
+        self.client_ids_inner(
+            move || QualifiedE2eiClientId::generate_from_user_id(user),
+            move || WireQualifiedClientId::generate_from_user_id(user),
+        )
+    }
+
+    fn client_ids_inner<const N: usize>(
+        &self,
+        x509_id_factory: impl Fn() -> QualifiedE2eiClientId,
+        basic_id_factory: impl Fn() -> WireQualifiedClientId,
+    ) -> [ClientId; N] {
+        let generator: &dyn Fn() -> ClientId = if self.is_x509() {
+            &|| x509_id_factory().into()
+        } else {
+            &|| basic_id_factory().into()
+        };
+        std::array::from_fn(|_idx| generator())
+    }
+
+    async fn test_chain(
+        &self,
+        client_ids: &[ClientId],
+        revoked_display_names: &[String],
+        cert_params: Option<CertificateParams>,
+    ) -> X509TestChain {
+        let string_triples = client_ids.iter().map(|id| id.to_string_triple()).collect::<Vec<_>>();
+        let str_triples = string_triples
+            .iter()
+            .map(|triple| std::array::from_fn(|i| triple[i].as_str()))
+            .collect::<Vec<_>>();
+        let revoked_display_names = revoked_display_names
+            .iter()
+            .map(|name| name.as_str())
+            .collect::<Vec<&str>>();
+        init_x509_test_chain(
+            self,
+            &str_triples,
+            &revoked_display_names,
+            cert_params.unwrap_or_default(),
+        )
+    }
+
+    async fn x509_identifiers<const N: usize>(
+        &self,
+        client_ids: [ClientId; N],
+        chain: &X509TestChain,
+    ) -> [ClientIdentifier; N] {
+        let mut x509_identifiers = Vec::with_capacity(N);
+        let signature_scheme = self.signature_scheme();
+        for (i, client_id) in client_ids.iter().enumerate() {
+            x509_identifiers.push(SessionContext::x509_client_id(
+                client_id,
+                signature_scheme,
+                &TestCertificateSource::TestChainActor(i),
+                chain,
+            ))
+        }
+        x509_identifiers.try_into().expect("Vector should be of length N.")
+    }
+
+    pub async fn sessions<const N: usize>(&self) -> [SessionContext; N] {
+        if self.is_basic() {
+            return self.sessions_basic().await;
+        }
+        self.sessions_x509().await
+    }
+
+    pub async fn sessions_x509_with_client_ids<const N: usize>(
+        &self,
+        client_ids: [ClientId; N],
+    ) -> [SessionContext; N] {
+        let test_chain = self.test_chain(&client_ids, &[], None).await;
+        self.sessions_x509_inner(client_ids, &test_chain).await
+    }
+
+    pub async fn sessions_x509_with_client_ids_and_revocation<const N: usize>(
+        &self,
+        client_ids: [ClientId; N],
+        revoked_display_names: &[String],
+    ) -> [SessionContext; N] {
+        let test_chain = self.test_chain(&client_ids, revoked_display_names, None).await;
+        self.sessions_x509_inner(client_ids, &test_chain).await
+    }
+
+    pub async fn sessions_basic<const N: usize>(&self) -> [SessionContext; N] {
+        let client_ids = self.client_ids::<N>();
+        self.sessions_basic_inner(client_ids).await
+    }
+
+    async fn sessions_basic_inner<const N: usize>(&self, client_ids: [ClientId; N]) -> [SessionContext; N] {
+        let mut sessions = Vec::with_capacity(N);
+        for client_id in client_ids {
+            sessions.push(
+                SessionContext::new_with_identifier(self, ClientIdentifier::Basic(client_id), None)
+                    .await
+                    .unwrap(),
+            );
+        }
+        sessions.try_into().expect("Vector should be of length N.")
+    }
+
+    pub async fn sessions_x509<const N: usize>(&self) -> [SessionContext; N] {
+        let client_ids = self.client_ids::<N>();
+        let test_chain = self.test_chain(&client_ids, &[], None).await;
+        self.sessions_x509_inner(client_ids, &test_chain).await
+    }
+
+    async fn sessions_x509_inner<const N: usize>(
+        &self,
+        client_ids: [ClientId; N],
+        chain: &X509TestChain,
+    ) -> [SessionContext; N] {
+        let identifiers = self.x509_identifiers(client_ids, chain).await;
+        let mut sessions = Vec::with_capacity(N);
+        for client_id in identifiers {
+            sessions.push(
+                SessionContext::new_with_identifier(self, client_id, Some(chain))
+                    .await
+                    .unwrap(),
+            );
+        }
+        sessions.try_into().expect("Vector should be of length N.")
     }
 
     /// Use this to create sessions with a test chain that has cross-signed another
-    pub async fn sessions_x509_cross_signed<const N: usize>(
+    pub async fn sessions_x509_cross_signed<const N: usize, const M: usize>(
         &self,
-        test_chain: Option<&X509TestChain>,
-    ) -> [SessionContext; N] {
-        self.sessions_x509_cross_signed_inner(test_chain, TestChainKind::CrossSigned)
+    ) -> ([SessionContext; N], [SessionContext; M]) {
+        let client_ids1 = self.client_ids();
+        let client_ids2 = self.client_ids();
+        self.sessions_x509_cross_signed_with_client_ids(client_ids1, client_ids2)
             .await
     }
 
-    async fn sessions_x509_cross_signed_inner<const N: usize>(
+    pub async fn sessions_x509_cross_signed_with_client_ids<const N: usize, const M: usize>(
         &self,
-        test_chain: Option<&X509TestChain>,
-        test_chain_kind: TestChainKind,
-    ) -> [SessionContext; N] {
-        let mut result = Vec::with_capacity(N);
-        for i in 0..N {
-            let certificate_source = match test_chain_kind {
-                TestChainKind::CrossSigned => TestCertificateSource::TestChainActor(i),
-                TestChainKind::Single => TestCertificateSource::Generated,
+        client_ids1: [ClientId; N],
+        client_ids2: [ClientId; M],
+    ) -> ([SessionContext; N], [SessionContext; M]) {
+        self.sessions_x509_cross_signed_with_client_ids_and_revocation(client_ids1, client_ids2, &[])
+            .await
+    }
+
+    pub async fn sessions_x509_cross_signed_with_client_ids_and_revocation<const N: usize, const M: usize>(
+        &self,
+        client_ids1: [ClientId; N],
+        client_ids2: [ClientId; M],
+        revoked_display_names: &[String],
+    ) -> ([SessionContext; N], [SessionContext; M]) {
+        let mut chain1 = self.test_chain(&client_ids1, revoked_display_names, None).await;
+        let sessions2 = if M == 0 {
+            core::array::from_fn(|_| unreachable!())
+        } else {
+            let params = CertificateParams {
+                org: "federated-with-wire.com".into(),
+                domain: Some("federated-with-wire.com".into()),
+                ..CertificateParams::default()
             };
-            result.push(
-                SessionContext::new(
-                    self,
-                    test_chain.map(|chain| X509SessionParameters {
-                        chain,
-                        certificate_source,
-                    }),
-                )
-                .await,
-            );
-        }
-        result.try_into().expect("Vec length should match N")
+            let mut chain2 = self.test_chain(&client_ids2, revoked_display_names, Some(params)).await;
+            chain1.cross_sign(&mut chain2);
+            self.sessions_x509_inner(client_ids2, &chain2).await
+        };
+        let sessions1 = self.sessions_x509_inner(client_ids1, &chain1).await;
+        (sessions1, sessions2)
     }
 
     /// Create a test conversation.

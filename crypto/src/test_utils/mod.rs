@@ -19,7 +19,7 @@ pub use self::{error::Error as TestError, message::*, test_context::*, test_conv
 pub use crate::prelude::{ClientIdentifier, INITIAL_KEYING_MATERIAL_COUNT, MlsCredentialType};
 use crate::{
     CoreCrypto, MlsTransport, MlsTransportResponse, RecursiveError,
-    e2e_identity::id::{QualifiedE2eiClientId, WireQualifiedClientId},
+    e2e_identity::id::QualifiedE2eiClientId,
     prelude::{
         CertificateBundle, ClientId, ConversationId, MlsClientConfiguration, MlsCommitBundle, MlsGroupInfoBundle,
         Session,
@@ -110,40 +110,13 @@ pub enum TestCertificateSource {
     TestChainActor(usize),
 }
 
-pub struct X509SessionParameters<'a> {
-    pub chain: &'a X509TestChain,
-    pub certificate_source: TestCertificateSource,
-}
-
-impl<'a> From<&'a X509TestChain> for X509SessionParameters<'a> {
-    fn from(chain: &'a X509TestChain) -> Self {
-        Self {
-            chain,
-            certificate_source: Default::default(),
-        }
-    }
-}
-
 impl SessionContext {
-    /// Use this to instantiate a session with the credential type determined by the [TestContext].
-    pub async fn new(context: &TestContext, x509_parameters: Option<X509SessionParameters<'_>>) -> Self {
-        Self::new_inner(context, None, x509_parameters).await.unwrap()
-    }
-
     /// Use this if you want to instantiate a session with a credential different from
     /// the default one of the test context
     pub async fn new_with_identifier(
         context: &TestContext,
-        id: ClientIdentifier,
-        x509_parameters: Option<X509SessionParameters<'_>>,
-    ) -> crate::Result<Self> {
-        Self::new_inner(context, Some(id), x509_parameters).await
-    }
-
-    async fn new_inner(
-        context: &TestContext,
-        identifier: Option<ClientIdentifier>,
-        x509_parameters: Option<X509SessionParameters<'_>>,
+        identifier: ClientIdentifier,
+        chain: Option<&X509TestChain>,
     ) -> crate::Result<Self> {
         // We need to store the `TempDir` struct for the duration of the test session,
         // because its drop implementation takes care of the directory deletion.
@@ -163,32 +136,9 @@ impl SessionContext {
         let transaction = cc.new_transaction().await.unwrap();
         let session = cc.mls;
         // Setup the X509 PKI environment
-        if let Some(chain) = x509_parameters.as_ref().map(|parameters| parameters.chain) {
+        if let Some(chain) = chain.as_ref() {
             chain.register_with_central(&transaction).await;
         }
-
-        // If no identifier is provided, take it from the test chain or generate one
-        let identifier = identifier.unwrap_or_else(|| {
-            let client_id: ClientId = WireQualifiedClientId::generate().into();
-            match context.credential_type {
-                MlsCredentialType::Basic => ClientIdentifier::Basic(client_id),
-                MlsCredentialType::X509 => {
-                    let signature_scheme = context.signature_scheme();
-                    let cert_source = &x509_parameters
-                        .as_ref()
-                        .map(|parameters| parameters.certificate_source)
-                        .unwrap_or_default();
-                    let default_chain = x509_parameters
-                        .is_none()
-                        .then(|| X509TestChain::init_for_random_clients(signature_scheme, 1));
-                    let chain = x509_parameters
-                        .as_ref()
-                        .map(|parameters| parameters.chain)
-                        .unwrap_or_else(|| default_chain.as_ref().unwrap());
-                    Self::x509_client_id(&client_id, signature_scheme, cert_source, chain)
-                }
-            }
-        });
 
         transaction
             .mls_init(
@@ -204,8 +154,7 @@ impl SessionContext {
             transaction,
             session,
             mls_transport: transport,
-            x509_test_chain: Arc::new(x509_parameters.map(|x509_parameters| x509_parameters.chain.clone())),
-
+            x509_test_chain: Arc::new(chain.cloned()),
             #[cfg(not(target_family = "wasm"))]
             _db_file: (db_dir_string, Arc::new(db_dir)),
             #[cfg(target_family = "wasm")]

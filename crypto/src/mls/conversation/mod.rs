@@ -618,7 +618,7 @@ mod tests {
                     .new_conversation(&id, case.credential_type, case.cfg.clone())
                     .await
                     .unwrap();
-                let bob_and_friends = case.sessions_x509::<GROUP_SAMPLE_SIZE>(Some(x509_test_chain)).await;
+                let bob_and_friends = case.sessions_x509::<GROUP_SAMPLE_SIZE>().await;
 
                 let mut bob_and_friends_kps = vec![];
                 for c in &bob_and_friends {
