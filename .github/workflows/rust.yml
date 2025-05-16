@@ -24,26 +24,19 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        tool:
-          - name: fmt
-            trailer: --all -- --check
-          - name: clippy --locked
-          - name: clippy --locked
-            trailer: --tests
-          - name: check --locked
-            trailer: --tests
-        target: ["", "--target wasm32-unknown-unknown"]
-        exclude:
-          - {tool: {name: fmt},
-             target: "--target wasm32-unknown-unknown"}
-
+        command:
+          - cargo fmt --all -- --check
+          - cargo check --locked --all-targets
+          - cargo check --locked --target wasm32-unknown-unknown
+          - cargo clippy --locked --all-targets
+          - cargo clippy --locked --target wasm32-unknown-unknown
     steps:
       - uses: actions/checkout@v4
       - uses: ./.github/actions/setup-and-cache-rust
         with:
           components: rustfmt, clippy
           target: wasm32-unknown-unknown
-      - run: cargo ${{ matrix.tool.name }} ${{ matrix.target }} ${{ matrix.tool.trailer }}
+      - run: ${{ matrix.command }}
 
   test:
     runs-on: ubuntu-latest
