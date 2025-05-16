@@ -11,14 +11,6 @@ publish = false
 name = "core_crypto_keystore"
 crate-type = ["lib", "cdylib"]
 
-[[bench]]
-name = "read"
-harness = false
-
-[[bench]]
-name = "write"
-harness = false
-
 [lints]
 workspace = true
 
