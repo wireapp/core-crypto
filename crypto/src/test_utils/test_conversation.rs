@@ -39,22 +39,38 @@ impl<'a> TestConversation<'a> {
         &self.id
     }
 
-    /// Invite all sessions into this conversation.
-    pub async fn invite(&mut self, sessions: impl IntoIterator<Item = &'a SessionContext>) {
+    /// Invite all sessions into this conversation and notify all members, old and new.
+    pub async fn invite_and_notify(&'a mut self, sessions: impl IntoIterator<Item = &'a SessionContext>) {
+        let commit_guard = self.invite(sessions).await;
+        commit_guard.notify_members().await;
+    }
+
+    pub async fn invite(&'a mut self, sessions: impl IntoIterator<Item = &'a SessionContext>) -> CommitGuard<'a> {
         let idx_of_first_new_member = self.joiners.len();
         let sessions = sessions.into_iter();
         let (lower_bound, _) = sessions.size_hint();
         self.joiners.reserve(lower_bound);
         self.joiners.extend(sessions);
+        let new_members = &self.joiners[idx_of_first_new_member..];
+        let new_members_iter = new_members.iter();
+        let (lower_bound, _) = new_members_iter.size_hint();
 
-        self.creator
-            .invite_all(
-                self.case,
-                &self.id,
-                self.joiners[idx_of_first_new_member..].iter().copied(),
-            )
-            .await
-            .expect("all invitations succeeded");
+        let mut key_packages = Vec::with_capacity(lower_bound);
+        for cc in new_members_iter {
+            let kp = cc.rand_key_package(self.case).await;
+            key_packages.push(kp);
+        }
+        self.guard().await.add_members(key_packages).await.unwrap();
+        let welcome = self.transport().latest_commit_bundle().await.welcome.unwrap();
+        let commit = self.transport().latest_commit_bundle().await.commit;
+        let existing_members = self.joiners[..idx_of_first_new_member].to_vec();
+        CommitGuard {
+            conversation: self,
+            members_to_notify: existing_members,
+            committer: self.creator,
+            commit,
+            invited_members: Some((new_members.to_vec(), welcome)),
+        }
     }
 
     /// All members of this conversation.
@@ -123,32 +139,43 @@ impl<'a> TestConversation<'a> {
     }
 }
 
-/// This struct encapsulates the result of a join by external commit.
+/// This struct encapsulates the result of an operation that creates a commit.
 ///
 /// To notify all existing members of the conversation, call [`Self::notify_existing_members`].
 /// Otherwise, use the struct members to do things manually.
-pub struct ExternalJoinGuard<'a> {
-    conversation_id: &'a ConversationId,
-    pub(crate) previous_conversation_members: Vec<&'a SessionContext>,
+pub struct CommitGuard<'a> {
+    conversation: &'a TestConversation<'a>,
+    pub(crate) members_to_notify: Vec<&'a SessionContext>,
     // this is dead code for now, but we expect to use it in the relatively near future
     // once we start using this in tests. At that point, remove the annotation.
     #[expect(dead_code)]
-    pub(crate) joiner: &'a SessionContext,
-    pub(crate) join_commit: MlsMessageOut,
+    pub(crate) committer: &'a SessionContext,
+    pub(crate) commit: MlsMessageOut,
+    /// In case someone was invited to this group, there will be a welcome message.
+    pub(crate) invited_members: Option<(Vec<&'a SessionContext>, MlsMessageOut)>,
 }
 
-impl ExternalJoinGuard<'_> {
-    pub async fn notify_existing_members(self) {
-        let message_bytes = self.join_commit.to_bytes().unwrap();
-        for member in self.previous_conversation_members {
+impl CommitGuard<'_> {
+    pub async fn notify_members(self) {
+        let message_bytes = self.commit.to_bytes().unwrap();
+        for member in self.members_to_notify {
             member
                 .transaction
-                .conversation(self.conversation_id)
+                .conversation(&self.conversation.id)
                 .await
                 .unwrap()
                 .decrypt_message(&message_bytes)
                 .await
                 .unwrap();
+        }
+
+        if let Some((invited_members, welcome_message)) = self.invited_members {
+            for new_member in invited_members {
+                new_member
+                    .transaction
+                    .process_welcome_message(welcome_message.clone().into(), self.conversation.case.custom_cfg())
+                    .await;
+            }
         }
     }
 }
@@ -159,7 +186,7 @@ impl<'a> TestConversation<'a> {
     /// This does _not_ distribute the external commit to the existing members. To do that,
     /// use the [`notify_existing_members` method][ExternalJoinGuard::notify_existing_members] of
     /// the returned item.
-    pub async fn external_join(&'a mut self, joiner: &'a SessionContext) -> ExternalJoinGuard<'a> {
+    pub async fn external_join(&'a mut self, joiner: &'a SessionContext) -> CommitGuard<'a> {
         let group_info = self.creator.get_group_info(&self.id).await;
         joiner
             .transaction
@@ -174,11 +201,12 @@ impl<'a> TestConversation<'a> {
 
         self.joiners.push(joiner);
 
-        ExternalJoinGuard {
-            conversation_id: &self.id,
-            previous_conversation_members,
-            joiner,
-            join_commit,
+        CommitGuard {
+            conversation: self,
+            members_to_notify: previous_conversation_members,
+            committer: joiner,
+            commit: join_commit,
+            invited_members: None,
         }
     }
 }

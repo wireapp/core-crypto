@@ -318,20 +318,8 @@ impl TestContext {
     /// Create a test conversation.
     ///
     /// The first member is required, and is the conversation's creator.
-    pub async fn create_conversation<'a>(
-        &'a self,
-        members: impl IntoIterator<Item = &'a SessionContext>,
-    ) -> TestConversation<'a> {
-        let mut members = members.into_iter();
-        let creator = members
-            .next()
-            .expect("each conversation needs at least 1 member, the creator");
-
-        let mut conversation = TestConversation::new(self, creator).await;
-
-        conversation.invite(members).await;
-
-        conversation
+    pub async fn create_conversation<'a>(&'a self, creator: &'a SessionContext) -> TestConversation<'a> {
+        TestConversation::new(self, creator).await
     }
 }
 

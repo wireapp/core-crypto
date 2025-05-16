@@ -121,15 +121,9 @@ mod tests {
     pub async fn observe_remote_epoch_change(case: TestContext) {
         let [alice, bob] = case.sessions().await;
         Box::pin(async move {
-            let id = conversation_id();
-            alice
-                .transaction
-                .new_conversation(&id, case.credential_type, case.cfg.clone())
-                .await
-                .unwrap();
-
-            alice.invite_all(&case, &id, [&bob]).await.unwrap();
-
+            let mut test_conv = case.create_conversation(&alice).await;
+            let id = test_conv.id().clone();
+            test_conv.invite_and_notify(vec![&bob]).await;
             //  bob has the observer
             let observer = TestEpochObserver::new();
             bob.session()
