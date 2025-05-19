@@ -63,6 +63,21 @@ impl<'a> TestConversation<'a> {
         }
     }
 
+    /// Advance the epoch (by updating the creator's key material) and notify all members.
+    pub async fn advance_epoch(self) -> TestConversation<'a> {
+        self.update_guarded().await.notify_members().await
+    }
+
+    pub async fn update_guarded(self) -> CommitGuard<'a> {
+        self.guard().await.update_key_material().await.unwrap();
+        let commit = self.transport().latest_commit_bundle().await.commit;
+        CommitGuard {
+            conversation: self,
+            committed_operation: CommittedOperation::Update(0),
+            commit,
+        }
+    }
+
     pub fn creator(&self) -> &SessionContext {
         self.members[0]
     }
@@ -165,24 +180,25 @@ enum CommittedOperation<'a> {
     /// All existing members will be notified, the new joiner will be added to the
     /// member list of the conversation.
     ExternalJoin(&'a SessionContext),
+    /// The member with the provided index won't be notified
+    Update(usize),
 }
 
 impl<'a> CommitGuard<'a> {
     fn members_to_notify(&self) -> Box<dyn Iterator<Item = &'a SessionContext> + '_> {
-        if let CommittedOperation::Add(AddGuard {
-            committer_index: skipped_index,
-            ..
-        }) = self.committed_operation
-        {
-            Box::new(
+        match self.committed_operation {
+            CommittedOperation::Add(AddGuard {
+                committer_index: skipped_index,
+                ..
+            })
+            | CommittedOperation::Update(skipped_index) => Box::new(
                 self.conversation
                     .members
                     .iter()
                     .enumerate()
                     .filter_map(move |(idx, member)| (idx != skipped_index).then_some(*member)),
-            )
-        } else {
-            Box::new(self.conversation.members.iter().copied())
+            ),
+            CommittedOperation::ExternalJoin(_) => Box::new(self.conversation.members.iter().copied()),
         }
     }
 
@@ -202,6 +218,7 @@ impl<'a> CommitGuard<'a> {
         // In case of an external join or an add operation, update the member list
         // of the test conversation.
         match self.committed_operation {
+            CommittedOperation::Update(_) => {}
             CommittedOperation::ExternalJoin(joiner) => {
                 self.conversation.members.push(joiner);
             }
