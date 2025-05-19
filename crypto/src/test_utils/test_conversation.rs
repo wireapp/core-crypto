@@ -78,6 +78,17 @@ impl<'a> TestConversation<'a> {
         }
     }
 
+    pub async fn update_guarded_with(self, committer: &'a SessionContext) -> CommitGuard<'a> {
+        self.guard_of(committer).await.update_key_material().await.unwrap();
+        let commit = committer.mls_transport.latest_commit_bundle().await.commit;
+        let committer_index = self.member_index(committer).await;
+        CommitGuard {
+            conversation: self,
+            committed_operation: CommittedOperation::Update(committer_index),
+            commit,
+        }
+    }
+
     pub fn creator(&self) -> &SessionContext {
         self.members[0]
     }
@@ -98,7 +109,29 @@ impl<'a> TestConversation<'a> {
     ///
     /// The guard belongs to the creator of the conversation.
     pub async fn guard(&self) -> ConversationGuard {
-        self.creator().transaction.conversation(&self.id).await.unwrap()
+        self.guard_of(self.creator()).await
+    }
+
+    /// Get the conversation guard of this conversation, from the point of view of the
+    /// member.
+    pub async fn guard_of(&self, member: &'a SessionContext) -> ConversationGuard {
+        member.transaction.conversation(&self.id).await.unwrap()
+    }
+
+    async fn member_index(&self, member: &SessionContext) -> usize {
+        let member_id = member.session.id().await.unwrap();
+
+        // can't use `Iterator::position` because getting the id is async
+        let mut member_idx = None;
+        for (idx, member) in self.members.iter().enumerate() {
+            let joiner_id = member.session.id().await.unwrap();
+            if joiner_id == member_id {
+                member_idx = Some(idx);
+                break;
+            }
+        }
+
+        member_idx.expect("could find the member to remove among the joiners of this conversation")
     }
 
     /// Remove this member from this conversation.
@@ -185,6 +218,20 @@ enum CommittedOperation<'a> {
 }
 
 impl<'a> CommitGuard<'a> {
+    pub fn conversation(&self) -> &'a TestConversation {
+        &self.conversation
+    }
+
+    // Call this once you're finished with manual processing and need mutable access
+    // to the [TestConversation] again.
+    pub fn finish(self) -> TestConversation<'a> {
+        self.conversation
+    }
+
+    pub fn message(&self) -> MlsMessageOut {
+        self.commit.clone()
+    }
+
     fn members_to_notify(&self) -> Box<dyn Iterator<Item = &'a SessionContext> + '_> {
         match self.committed_operation {
             CommittedOperation::Add(AddGuard {
