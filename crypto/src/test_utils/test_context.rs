@@ -327,11 +327,15 @@ impl TestContext {
             .next()
             .expect("each conversation needs at least 1 member, the creator");
 
-        let mut conversation = TestConversation::new(self, creator).await;
+        let conversation = TestConversation::new(self, creator).await;
 
-        conversation.invite(members).await;
+        // if members are empty, return early here
+        let mut members = members.peekable();
+        if members.peek().is_none() {
+            return conversation;
+        }
 
-        conversation
+        conversation.invite(members).await
     }
 }
 

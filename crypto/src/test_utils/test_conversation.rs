@@ -38,12 +38,13 @@ impl<'a> TestConversation<'a> {
     }
 
     /// Invite all sessions into this conversation and notify all members, old and new.
-    pub async fn invite_and_notify(&'a mut self, sessions: impl IntoIterator<Item = &'a SessionContext>) {
-        let commit_guard = self.invite(sessions).await;
-        commit_guard.notify_members().await;
+    pub async fn invite(self, sessions: impl IntoIterator<Item = &'a SessionContext>) -> TestConversation<'a> {
+        let commit_guard = self.invite_guarded(sessions).await;
+        commit_guard.notify_members().await
     }
 
-    pub async fn invite(&'a mut self, sessions: impl IntoIterator<Item = &'a SessionContext>) -> CommitGuard<'a> {
+    /// Invites all sessions into this conversation. Call [CommitGuard::notify_members] to notify other members.
+    pub async fn invite_guarded(self, sessions: impl IntoIterator<Item = &'a SessionContext>) -> CommitGuard<'a> {
         let new_members = sessions.into_iter().collect::<Vec<_>>();
 
         let key_packages =
@@ -142,7 +143,7 @@ impl<'a> TestConversation<'a> {
 /// To notify all existing members of the conversation, call [`Self::notify_existing_members`].
 /// Otherwise, use the struct members to do things manually.
 pub struct CommitGuard<'a> {
-    conversation: &'a mut TestConversation<'a>,
+    conversation: TestConversation<'a>,
     /// The member at this index won't be included in the list of [Self::members_to_notify]
     committed_operation: CommittedOperation<'a>,
     pub(crate) commit: MlsMessageOut,
@@ -185,7 +186,7 @@ impl<'a> CommitGuard<'a> {
         }
     }
 
-    pub async fn notify_members(self) {
+    pub async fn notify_members(mut self) -> TestConversation<'a> {
         let message_bytes = self.commit.to_bytes().unwrap();
         for member in self.members_to_notify() {
             member
@@ -222,6 +223,7 @@ impl<'a> CommitGuard<'a> {
                 self.conversation.members.extend(invited_members);
             }
         }
+        self.conversation
     }
 }
 
@@ -231,7 +233,7 @@ impl<'a> TestConversation<'a> {
     /// This does _not_ distribute the external commit to the existing members. To do that,
     /// use the [`notify_existing_members` method][CommitGuard::notify_members] of
     /// the returned item.
-    pub async fn external_join(&'a mut self, joiner: &'a SessionContext) -> CommitGuard<'a> {
+    pub async fn external_join(self, joiner: &'a SessionContext) -> CommitGuard<'a> {
         let group_info = self.creator().get_group_info(&self.id).await;
         joiner
             .transaction
