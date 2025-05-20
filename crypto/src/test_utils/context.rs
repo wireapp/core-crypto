@@ -108,7 +108,7 @@ impl SessionContext {
             .into()
     }
 
-    pub async fn pending_proposals(&mut self, id: &ConversationId) -> Vec<QueuedProposal> {
+    pub async fn pending_proposals(&self, id: &ConversationId) -> Vec<QueuedProposal> {
         self.get_conversation_unchecked(id)
             .await
             .group
