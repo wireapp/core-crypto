@@ -138,7 +138,7 @@ pub(crate) struct E2eiInitWrapper<'a> {
 }
 
 pub(crate) async fn e2ei_enrollment<'a>(
-    ctx: &'a mut SessionContext,
+    ctx: &'a SessionContext,
     case: &TestContext,
     x509_test_chain: &X509TestChain,
     client_id: Option<&str>,
