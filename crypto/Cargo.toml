@@ -109,7 +109,7 @@ cryptobox = { git = "https://github.com/wireapp/cryptobox" }
 proteus = { git = "https://github.com/wireapp/proteus", branch = "otak/fix-1.0.3" }
 
 [target.'cfg(not(target_family = "wasm"))'.dev-dependencies.criterion]
-version = "0.5"
+version = "0.6"
 features = ["async_std", "html_reports"]
 
 [package.metadata.wasm-pack.profile.release]
