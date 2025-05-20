@@ -2,10 +2,7 @@ use std::sync::Arc;
 
 use openmls::prelude::MlsMessageOut;
 
-use crate::{
-    mls::conversation::ConversationGuard,
-    prelude::{ClientId, ConversationId},
-};
+use crate::{mls::conversation::ConversationGuard, prelude::ConversationId};
 
 use super::{MlsTransportTestExt, SessionContext, TestContext};
 
@@ -134,55 +131,34 @@ impl<'a> TestConversation<'a> {
         member_idx.expect("could find the member to remove among the joiners of this conversation")
     }
 
+    /// See [Self::remove_guarded].
+    pub async fn remove(self, member: &'a SessionContext) -> TestConversation<'a> {
+        self.remove_guarded(member).await.notify_members().await
+    }
+
     /// Remove this member from this conversation.
     ///
     /// Applies the removal to all members of the conversation.
     ///
     /// Panics if you try to remove the conversation creator; use a different abstraction if you are testing that case.
     /// Panics if you try to remove someone who is not a current member.
-    pub async fn remove(&mut self, member_id: &ClientId) -> &'a SessionContext {
+    pub async fn remove_guarded(self, member: &'a SessionContext) -> CommitGuard<'a> {
+        let member_id = member.session.id().await.unwrap();
         assert_ne!(
-            &self.creator().session.id().await.unwrap(),
             member_id,
+            self.creator().session.id().await.unwrap(),
             "cannot remove the creator via this API because we're acting on the creators behalf."
         );
-        // can't use `Iterator::position` because getting the id is async
-        let mut joiner_idx = None;
-        for (idx, joiner) in self.members.iter().enumerate() {
-            let joiner_id = joiner.session.id().await.unwrap();
-            if joiner_id == *member_id {
-                joiner_idx = Some(idx);
-                break;
-            }
-        }
-
-        // if we didn't find it, return early instead of trying to apply that removal to the conversation
-        let removed = joiner_idx
-            .map(|idx| self.members.swap_remove(idx))
-            .expect("could find the member to remove among the joiners of this conversation");
 
         // removing the member here removes it from the creator and also produces a commit
-        self.guard()
-            .await
-            .remove_members(&[member_id.to_owned()])
-            .await
-            .unwrap();
-        let commit = self.transport().await.latest_commit().await.to_bytes().unwrap();
+        self.guard().await.remove_members(&[member_id]).await.unwrap();
+        let commit = self.transport().await.latest_commit().await;
 
-        // we already removed the member from the joined members of our conversation, so chain it in
-        for joiner in std::iter::once(removed).chain(self.members.iter().copied()) {
-            joiner
-                .transaction
-                .conversation(&self.id)
-                .await
-                .unwrap()
-                .decrypt_message(&commit)
-                .await
-                .unwrap();
+        CommitGuard {
+            conversation: self,
+            committed_operation: CommittedOperation::Remove(0, member),
+            commit,
         }
-
-        // gone from everyone's mls state and the conversation joiners, so we're done
-        removed
     }
 }
 
@@ -215,6 +191,9 @@ enum CommittedOperation<'a> {
     ExternalJoin(&'a SessionContext),
     /// The member with the provided index won't be notified
     Update(usize),
+    /// The member with the provided index won't be notified, the provided [SessionContext]
+    /// will be removed from the members list.
+    Remove(usize, &'a SessionContext),
 }
 
 impl<'a> CommitGuard<'a> {
@@ -238,6 +217,7 @@ impl<'a> CommitGuard<'a> {
                 committer_index: skipped_index,
                 ..
             })
+            | CommittedOperation::Remove(skipped_index, ..)
             | CommittedOperation::Update(skipped_index) => Box::new(
                 self.conversation
                     .members
@@ -262,10 +242,14 @@ impl<'a> CommitGuard<'a> {
                 .unwrap();
         }
 
-        // In case of an external join or an add operation, update the member list
+        // In case of a remove, an external join or an add operation, update the member list
         // of the test conversation.
         match self.committed_operation {
             CommittedOperation::Update(_) => {}
+            CommittedOperation::Remove(_, member) => {
+                let member_idx = self.conversation().member_index(member).await;
+                self.conversation.members.remove(member_idx);
+            }
             CommittedOperation::ExternalJoin(joiner) => {
                 self.conversation.members.push(joiner);
             }
