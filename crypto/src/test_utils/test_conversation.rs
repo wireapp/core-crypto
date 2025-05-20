@@ -1,8 +1,11 @@
-use std::sync::Arc;
+use std::{marker::PhantomData, sync::Arc};
 
 use openmls::prelude::MlsMessageOut;
 
-use crate::{mls::conversation::ConversationGuard, prelude::ConversationId};
+use crate::{
+    mls::{HasSessionAndCrypto as _, conversation::ConversationGuard},
+    prelude::ConversationId,
+};
 
 use super::{MlsTransportTestExt, SessionContext, TestContext};
 
@@ -12,6 +15,7 @@ pub struct TestConversation<'a> {
     #[as_ref]
     pub(crate) id: ConversationId,
     pub(crate) members: Vec<&'a SessionContext>,
+    proposals: Vec<TestOperation<'a>>,
 }
 
 impl<'a> TestConversation<'a> {
@@ -27,6 +31,7 @@ impl<'a> TestConversation<'a> {
             case,
             id,
             members: vec![creator],
+            proposals: vec![],
         }
     }
 
@@ -41,22 +46,72 @@ impl<'a> TestConversation<'a> {
     }
 
     /// Invites all sessions into this conversation. Call [CommitGuard::notify_members] to notify other members.
-    pub async fn invite_guarded(self, sessions: impl IntoIterator<Item = &'a SessionContext>) -> CommitGuard<'a> {
+    pub async fn invite_guarded(
+        self,
+        sessions: impl IntoIterator<Item = &'a SessionContext>,
+    ) -> OperationGuard<'a, Commit> {
         let new_members = sessions.into_iter().collect::<Vec<_>>();
 
         let key_packages =
             futures_util::future::join_all(new_members.iter().map(|cc| cc.rand_key_package(self.case))).await;
         self.guard().await.add_members(key_packages).await.unwrap();
-        let welcome = self.transport().await.latest_commit_bundle().await.welcome.unwrap();
         let commit = self.transport().await.latest_commit_bundle().await.commit;
-        CommitGuard {
+        OperationGuard {
             conversation: self,
-            committed_operation: CommittedOperation::Add(AddGuard {
+            operation: TestOperation::Add(AddGuard {
                 committer_index: 0,
                 new_members,
-                welcome_message: welcome,
             }),
-            commit,
+            message: commit,
+            _message_type: PhantomData,
+        }
+    }
+
+    pub async fn invite_proposal(self, session: &'a SessionContext) -> TestConversation<'a> {
+        self.invite_proposal_guarded(session).await.notify_members().await
+    }
+
+    pub async fn invite_proposal_with(
+        self,
+        proposer: &'a SessionContext,
+        new_member: &'a SessionContext,
+    ) -> TestConversation<'a> {
+        self.invite_proposal_guarded_with(proposer, new_member)
+            .await
+            .notify_members()
+            .await
+    }
+
+    pub async fn invite_proposal_guarded(self, new_member: &'a SessionContext) -> OperationGuard<'a, Proposal> {
+        let creator = self.members[0];
+        self.invite_proposal_guarded_with(creator, new_member).await
+    }
+
+    pub async fn invite_proposal_guarded_with(
+        self,
+        proposer: &'a SessionContext,
+        new_member: &'a SessionContext,
+    ) -> OperationGuard<'a, Proposal> {
+        let key_package = new_member.rand_key_package(self.case).await;
+        let session = &proposer.session;
+        let crypto_provider = proposer.transaction.crypto_provider().await.unwrap();
+        let proposal = self
+            .guard_of(proposer)
+            .await
+            .conversation_mut()
+            .await
+            .propose_add_member(session, &crypto_provider, key_package)
+            .await
+            .unwrap()
+            .proposal;
+        let proposer_index = self.member_index(proposer).await;
+        OperationGuard {
+            conversation: self,
+            operation: TestOperation::Add(AddGuard {
+                new_members: vec![new_member],
+            }),
+            message: proposal,
+            _message_type: PhantomData,
         }
     }
 
@@ -65,24 +120,26 @@ impl<'a> TestConversation<'a> {
         self.update_guarded().await.notify_members().await
     }
 
-    pub async fn update_guarded(self) -> CommitGuard<'a> {
+    pub async fn update_guarded(self) -> OperationGuard<'a, Commit> {
         self.guard().await.update_key_material().await.unwrap();
         let commit = self.transport().await.latest_commit_bundle().await.commit;
-        CommitGuard {
+        OperationGuard {
             conversation: self,
-            committed_operation: CommittedOperation::Update(0),
-            commit,
+            operation: TestOperation::Update(0),
+            message: commit,
+            _message_type: PhantomData,
         }
     }
 
-    pub async fn update_guarded_with(self, committer: &'a SessionContext) -> CommitGuard<'a> {
+    pub async fn update_guarded_with(self, committer: &'a SessionContext) -> OperationGuard<'a, Commit> {
         self.guard_of(committer).await.update_key_material().await.unwrap();
         let commit = committer.mls_transport().await.latest_commit_bundle().await.commit;
         let committer_index = self.member_index(committer).await;
-        CommitGuard {
+        OperationGuard {
             conversation: self,
-            committed_operation: CommittedOperation::Update(committer_index),
-            commit,
+            operation: TestOperation::Update(committer_index),
+            message: commit,
+            _message_type: PhantomData,
         }
     }
 
@@ -131,6 +188,10 @@ impl<'a> TestConversation<'a> {
         member_idx.expect("could find the member to remove among the joiners of this conversation")
     }
 
+    fn member_at_index(&self, idx: usize) -> &SessionContext {
+        self.members.get(idx).expect("member list smaller than expected")
+    }
+
     /// See [Self::remove_guarded].
     pub async fn remove(self, member: &'a SessionContext) -> TestConversation<'a> {
         self.remove_guarded(member).await.notify_members().await
@@ -142,7 +203,7 @@ impl<'a> TestConversation<'a> {
     ///
     /// Panics if you try to remove the conversation creator; use a different abstraction if you are testing that case.
     /// Panics if you try to remove someone who is not a current member.
-    pub async fn remove_guarded(self, member: &'a SessionContext) -> CommitGuard<'a> {
+    pub async fn remove_guarded(self, member: &'a SessionContext) -> OperationGuard<'a, Commit> {
         let member_id = member.session.id().await.unwrap();
         assert_ne!(
             member_id,
@@ -154,35 +215,38 @@ impl<'a> TestConversation<'a> {
         self.guard().await.remove_members(&[member_id]).await.unwrap();
         let commit = self.transport().await.latest_commit().await;
 
-        CommitGuard {
+        OperationGuard {
             conversation: self,
-            committed_operation: CommittedOperation::Remove(0, member),
-            commit,
+            operation: TestOperation::Remove(0, member),
+            message: commit,
+            _message_type: PhantomData,
         }
     }
 }
+
+pub struct Commit;
+pub struct Proposal;
 
 /// This struct encapsulates the result of an operation that creates a commit.
 ///
 /// To notify all existing members of the conversation, call [`Self::notify_existing_members`].
 /// Otherwise, use the struct members to do things manually.
-pub struct CommitGuard<'a> {
+pub struct OperationGuard<'a, MessageType> {
     conversation: TestConversation<'a>,
     /// The member at this index won't be included in the list of [Self::members_to_notify]
-    committed_operation: CommittedOperation<'a>,
-    pub(crate) commit: MlsMessageOut,
+    operation: TestOperation<'a>,
+    pub(crate) message: MlsMessageOut,
+    _message_type: PhantomData<MessageType>,
 }
 
 struct AddGuard<'a> {
     committer_index: usize,
     new_members: Vec<&'a SessionContext>,
-    welcome_message: MlsMessageOut,
 }
 
 /// Keeps state about the comitted operation that will be used when the
 /// corresponding [CommitGuard] is used to (notify members)[CommitGuard::notify_members].
-#[expect(clippy::large_enum_variant)]
-enum CommittedOperation<'a> {
+enum TestOperation<'a> {
     /// The member with the provided index won't be notified, new members will be
     /// added to the member list of the test conversation
     Add(AddGuard<'a>),
@@ -196,7 +260,7 @@ enum CommittedOperation<'a> {
     Remove(usize, &'a SessionContext),
 }
 
-impl<'a> CommitGuard<'a> {
+impl<'a, T> OperationGuard<'a, T> {
     pub fn conversation(&self) -> &'a TestConversation {
         &self.conversation
     }
@@ -208,29 +272,31 @@ impl<'a> CommitGuard<'a> {
     }
 
     pub fn message(&self) -> MlsMessageOut {
-        self.commit.clone()
+        self.message.clone()
     }
 
     fn members_to_notify(&self) -> Box<dyn Iterator<Item = &'a SessionContext> + '_> {
-        match self.committed_operation {
-            CommittedOperation::Add(AddGuard {
+        match self.operation {
+            TestOperation::Add(AddGuard {
                 committer_index: skipped_index,
                 ..
             })
-            | CommittedOperation::Remove(skipped_index, ..)
-            | CommittedOperation::Update(skipped_index) => Box::new(
+            | TestOperation::Remove(skipped_index, ..)
+            | TestOperation::Update(skipped_index) => Box::new(
                 self.conversation
                     .members
                     .iter()
                     .enumerate()
                     .filter_map(move |(idx, member)| (idx != skipped_index).then_some(*member)),
             ),
-            CommittedOperation::ExternalJoin(_) => Box::new(self.conversation.members.iter().copied()),
+            TestOperation::ExternalJoin(_) => Box::new(self.conversation.members.iter().copied()),
         }
     }
+}
 
+impl<'a> OperationGuard<'a, Commit> {
     pub async fn notify_members(mut self) -> TestConversation<'a> {
-        let message_bytes = self.commit.to_bytes().unwrap();
+        let message_bytes = self.message.to_bytes().unwrap();
         for member in self.members_to_notify() {
             member
                 .transaction
@@ -242,35 +308,77 @@ impl<'a> CommitGuard<'a> {
                 .unwrap();
         }
 
+        // Do the following for each proposal that is still pending and the latest commit:
         // In case of a remove, an external join or an add operation, update the member list
         // of the test conversation.
-        match self.committed_operation {
-            CommittedOperation::Update(_) => {}
-            CommittedOperation::Remove(_, member) => {
-                let member_idx = self.conversation().member_index(member).await;
-                self.conversation.members.remove(member_idx);
-            }
-            CommittedOperation::ExternalJoin(joiner) => {
-                self.conversation.members.push(joiner);
-            }
-            CommittedOperation::Add(AddGuard {
-                new_members: invited_members,
-                welcome_message,
-                ..
-            }) => {
-                // Process welcome message on receiver side
-                for new_member in invited_members.iter() {
-                    new_member
-                        .transaction
-                        .process_welcome_message(welcome_message.clone().into(), self.conversation.case.custom_cfg())
-                        .await
-                        .unwrap();
+        for operation in self
+            .conversation
+            .proposals
+            .iter()
+            .chain(std::iter::once(&self.operation))
+        {
+            match operation {
+                TestOperation::Update(_) => {}
+                TestOperation::Remove(_, member) => {
+                    let member_idx = self.conversation().member_index(member).await;
+                    self.conversation.members.remove(member_idx);
                 }
-                // Then update the member list
-                self.conversation.members.reserve(invited_members.len());
-                self.conversation.members.extend(invited_members);
+                TestOperation::ExternalJoin(joiner) => {
+                    self.conversation.members.push(joiner);
+                }
+                TestOperation::Add(AddGuard {
+                    new_members: invited_members,
+                    committer_index,
+                }) => {
+                    let welcome_message = self
+                        .conversation()
+                        .member_at_index(*committer_index)
+                        .mls_transport()
+                        .await
+                        .latest_commit_bundle()
+                        .await
+                        .welcome
+                        .expect("we're processing an add operation, so there must be a welcome message");
+                    // Process welcome message on receiver side
+                    for new_member in invited_members.iter() {
+                        new_member
+                            .transaction
+                            .process_welcome_message(
+                                welcome_message.clone().into(),
+                                self.conversation.case.custom_cfg(),
+                            )
+                            .await
+                            .unwrap();
+                    }
+                    // Then update the member list
+                    self.conversation.members.reserve(invited_members.len());
+                    self.conversation.members.extend(invited_members);
+                }
             }
         }
+        self.conversation.proposals.clear();
+        self.conversation
+    }
+}
+
+impl<'a> OperationGuard<'a, Proposal> {
+    /// Notify all members about the proposal.
+    pub async fn notify_members(mut self) -> TestConversation<'a> {
+        let message_bytes = self.message.to_bytes().unwrap();
+        for member in self.members_to_notify() {
+            member
+                .transaction
+                .conversation(&self.conversation.id)
+                .await
+                .unwrap()
+                .decrypt_message(&message_bytes)
+                .await
+                .unwrap();
+        }
+
+        // Remember the proposal for later so we can update member lists accordingly.
+        self.conversation.proposals.push(self.operation);
+
         self.conversation
     }
 }
@@ -281,7 +389,7 @@ impl<'a> TestConversation<'a> {
     /// This does _not_ distribute the external commit to the existing members. To do that,
     /// use the [`notify_existing_members` method][CommitGuard::notify_members] of
     /// the returned item.
-    pub async fn external_join(self, joiner: &'a SessionContext) -> CommitGuard<'a> {
+    pub async fn external_join(self, joiner: &'a SessionContext) -> OperationGuard<'a, Commit> {
         let group_info = self.creator().get_group_info(&self.id).await;
         joiner
             .transaction
@@ -290,10 +398,11 @@ impl<'a> TestConversation<'a> {
             .unwrap();
         let join_commit = joiner.mls_transport().await.latest_commit().await;
 
-        CommitGuard {
+        OperationGuard {
             conversation: self,
-            committed_operation: CommittedOperation::ExternalJoin(joiner),
-            commit: join_commit,
+            operation: TestOperation::ExternalJoin(joiner),
+            message: join_commit,
+            _message_type: PhantomData,
         }
     }
 }
