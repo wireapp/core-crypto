@@ -11,6 +11,7 @@ import {
     type MlsTransportResponse,
     setLogger,
     setMaxLogLevel,
+    initWasmModule,
 } from "../../src/CoreCrypto";
 import { CONV_ID as WEB_CONV_ID } from "../wdio/utils";
 
@@ -57,6 +58,7 @@ class TestDeliveryService implements DeliveryService {
 export const DELIVERY_SERVICE = new TestDeliveryService();
 
 export async function setup() {
+    await initWasmModule();
     if (logLevel >= 2) {
         setLogger({
             log: (_level, message: string, context) => {

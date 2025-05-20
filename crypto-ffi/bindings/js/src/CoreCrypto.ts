@@ -79,15 +79,27 @@ export {
 } from "./core-crypto-ffi";
 import initWasm from "./core-crypto-ffi";
 
-if (typeof window !== "undefined") {
-    // browser context
-    await initWasm({});
-} else {
-    // non-browser context, load WASM module from file
-    const fs = await import("fs/promises");
-    const path = new URL("core-crypto-ffi_bg.wasm", import.meta.url);
-    const file = await fs.open(path);
-    const buffer = await file.readFile();
-    const module = new WebAssembly.Module(buffer);
-    await initWasm({ module_or_path: module });
+/**
+ * Initialises the wasm module necessary for running core crypto.
+ *
+ * @param location path where the wasm module is located. If omitted the module is assumed be located at the root of the core crypto module.
+ */
+export async function initWasmModule(location: string | undefined = undefined) {
+    if (typeof window !== "undefined") {
+        if (typeof location === "string") {
+            const path = new URL("core-crypto-ffi_bg.wasm", location);
+            await initWasm({ path });
+        } else {
+            const path = new URL("core-crypto-ffi_bg.wasm", import.meta.url);
+            await initWasm({ path });
+        }
+    } else {
+        // non-browser context, load WASM module from file
+        const fs = await import("fs/promises");
+        const path = new URL("core-crypto-ffi_bg.wasm", import.meta.url);
+        const file = await fs.open(path);
+        const buffer = await file.readFile();
+        const module = new WebAssembly.Module(buffer);
+        await initWasm({ module_or_path: module });
+    }
 }

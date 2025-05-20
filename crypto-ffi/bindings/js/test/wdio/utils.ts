@@ -69,6 +69,7 @@ export async function setup() {
             // but typescript tries to resolve this in the local directory.
             // @ts-expect-error TS2307: Cannot find module ./corecrypto.js or its corresponding type declarations.
             window.ccModule = await import("./corecrypto.js");
+            await window.ccModule.initWasmModule();
 
             if (logLevel >= 2) {
                 window.ccModule.setLogger({

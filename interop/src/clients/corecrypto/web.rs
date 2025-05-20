@@ -32,8 +32,9 @@ impl CoreCryptoWebClient {
             .execute_async(
                 r#"
 const [clientConfig, callback] = arguments;
-const { CoreCrypto, Ciphersuite, CredentialType, DatabaseKey } = await import("./corecrypto.js");
+const { CoreCrypto, Ciphersuite, CredentialType, DatabaseKey, initWasmModule } = await import("./corecrypto.js");
 const key = new Uint8Array(32);
+await initWasmModule();
 window.crypto.getRandomValues(key);
 clientConfig.key = new DatabaseKey(key);
 window.CoreCrypto = CoreCrypto;
