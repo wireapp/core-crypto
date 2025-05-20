@@ -46,7 +46,6 @@ impl MlsConversation {
 #[cfg(test)]
 mod tests {
     use super::super::error::Error;
-    use crate::mls::conversation::Conversation as _;
     use crate::test_utils::*;
     use wasm_bindgen_test::*;
 
@@ -56,126 +55,76 @@ mod tests {
     #[wasm_bindgen_test]
     async fn decrypting_duplicate_member_commit_should_fail(case: TestContext) {
         // cannot work in pure ciphertext since we'd have to decrypt the message first
-        if !case.is_pure_ciphertext() {
-            let [alice_central, bob_central] = case.sessions().await;
-            Box::pin(async move {
-                let id = conversation_id();
-                alice_central
-                    .transaction
-                    .new_conversation(&id, case.credential_type, case.cfg.clone())
-                    .await
-                    .unwrap();
-                alice_central.invite_all(&case, &id, [&bob_central]).await.unwrap();
-
-                // an commit to verify that we can still detect wrong epoch correctly
-                let unknown_commit = alice_central.create_unmerged_commit(&id).await.commit;
-                alice_central
-                    .transaction
-                    .conversation(&id)
-                    .await
-                    .unwrap()
-                    .clear_pending_commit()
-                    .await
-                    .unwrap();
-
-                alice_central
-                    .transaction
-                    .conversation(&id)
-                    .await
-                    .unwrap()
-                    .update_key_material()
-                    .await
-                    .unwrap();
-                let commit = alice_central.mls_transport().await.latest_commit().await;
-
-                // decrypt once ... ok
-                bob_central
-                    .transaction
-                    .conversation(&id)
-                    .await
-                    .unwrap()
-                    .decrypt_message(&commit.to_bytes().unwrap())
-                    .await
-                    .unwrap();
-                // decrypt twice ... not ok
-                let decrypt_duplicate = bob_central
-                    .transaction
-                    .conversation(&id)
-                    .await
-                    .unwrap()
-                    .decrypt_message(&commit.to_bytes().unwrap())
-                    .await;
-                assert!(matches!(decrypt_duplicate.unwrap_err(), Error::DuplicateMessage));
-
-                // Decrypting unknown commit.
-                // It fails with this error since it's not the commit who has created this epoch
-                let decrypt_lost_commit = bob_central
-                    .transaction
-                    .conversation(&id)
-                    .await
-                    .unwrap()
-                    .decrypt_message(&unknown_commit.to_bytes().unwrap())
-                    .await;
-                assert!(matches!(decrypt_lost_commit.unwrap_err(), Error::StaleCommit));
-            })
-            .await
+        if case.is_pure_ciphertext() {
+            return;
         }
+
+        let [alice, bob] = case.sessions().await;
+        Box::pin(async move {
+            let conversation = case.create_conversation([&alice, &bob]).await;
+
+            // an commit to verify that we can still detect wrong epoch correctly
+            let commit_guard = conversation.update_unmerged().await;
+            let unknown_commit = commit_guard.message();
+            let conversation = commit_guard.finish();
+            conversation.guard().await.clear_pending_commit().await.unwrap();
+
+            let commit_guard = conversation.update().await;
+            let commit = commit_guard.message();
+
+            // decrypt once ... ok
+            let conversation = commit_guard.notify_members().await;
+            // decrypt twice ... not ok
+            let decrypt_duplicate = conversation
+                .guard_of(&bob)
+                .await
+                .decrypt_message(&commit.to_bytes().unwrap())
+                .await;
+            assert!(matches!(decrypt_duplicate.unwrap_err(), Error::DuplicateMessage));
+
+            // Decrypting unknown commit.
+            // It fails with this error since it's not the commit who has created this epoch
+            let decrypt_lost_commit = conversation
+                .guard_of(&bob)
+                .await
+                .decrypt_message(&unknown_commit.to_bytes().unwrap())
+                .await;
+            assert!(matches!(decrypt_lost_commit.unwrap_err(), Error::StaleCommit));
+        })
+        .await
     }
 
     #[apply(all_cred_cipher)]
     #[wasm_bindgen_test]
     async fn decrypting_duplicate_external_commit_should_fail(case: TestContext) {
-        let [alice_central, bob_central] = case.sessions().await;
+        let [alice, bob] = case.sessions().await;
         Box::pin(async move {
-            let id = conversation_id();
-            alice_central
-                .transaction
-                .new_conversation(&id, case.credential_type, case.cfg.clone())
-                .await
-                .unwrap();
-
-            let gi = alice_central.get_group_info(&id).await;
+            let conversation = case.create_conversation([&alice]).await;
 
             // an external commit to verify that we can still detect wrong epoch correctly
-            let (unknown_ext_commit, mut pending_conversation) = bob_central
-                .create_unmerged_external_commit(gi.clone(), case.custom_cfg(), case.credential_type)
-                .await;
-            let unknown_ext_commit = unknown_ext_commit.commit;
+            let (commit_guard, mut pending_conversation) = conversation.external_join_unmerged(&bob).await;
+            let unknown_ext_commit = commit_guard.message();
             pending_conversation.clear().await.unwrap();
+            let conversation = commit_guard.finish();
 
-            bob_central
-                .transaction
-                .join_by_external_commit(gi, case.custom_cfg(), case.credential_type)
-                .await
-                .unwrap();
-            let ext_commit = bob_central.mls_transport().await.latest_commit().await;
+            let commit_guard = conversation.external_join(&bob).await;
+            let ext_commit = commit_guard.message();
 
             // decrypt once ... ok
-            alice_central
-                .transaction
-                .conversation(&id)
-                .await
-                .unwrap()
-                .decrypt_message(&ext_commit.to_bytes().unwrap())
-                .await
-                .unwrap();
+            let conversation = commit_guard.notify_members().await;
             // decrypt twice ... not ok
-            let decryption = alice_central
-                .transaction
-                .conversation(&id)
+            let decryption = conversation
+                .guard()
                 .await
-                .unwrap()
                 .decrypt_message(&ext_commit.to_bytes().unwrap())
                 .await;
             assert!(matches!(decryption.unwrap_err(), Error::DuplicateMessage));
 
             // Decrypting unknown external commit.
             // It fails with this error since it's not the external commit who has created this epoch
-            let decryption = alice_central
-                .transaction
-                .conversation(&id)
+            let decryption = conversation
+                .guard()
                 .await
-                .unwrap()
                 .decrypt_message(&unknown_ext_commit.to_bytes().unwrap())
                 .await;
             assert!(matches!(decryption.unwrap_err(), Error::StaleCommit));
@@ -186,59 +135,35 @@ mod tests {
     #[apply(all_cred_cipher)]
     #[wasm_bindgen_test]
     async fn decrypting_duplicate_proposal_should_fail(case: TestContext) {
-        let [alice_central, bob_central] = case.sessions().await;
+        let [alice, bob] = case.sessions().await;
         Box::pin(async move {
-            let id = conversation_id();
-            alice_central
-                .transaction
-                .new_conversation(&id, case.credential_type, case.cfg.clone())
-                .await
-                .unwrap();
-            alice_central.invite_all(&case, &id, [&bob_central]).await.unwrap();
+            let conversation = case.create_conversation([&alice, &bob]).await;
 
-            let proposal = alice_central
-                .transaction
-                .new_update_proposal(&id)
-                .await
-                .unwrap()
-                .proposal;
+            let proposal_guard = conversation.update_proposal().await;
+            let proposal = proposal_guard.message();
 
             // decrypt once ... ok
-            bob_central
-                .transaction
-                .conversation(&id)
-                .await
-                .unwrap()
-                .decrypt_message(&proposal.to_bytes().unwrap())
-                .await
-                .unwrap();
+            let conversation = proposal_guard.notify_members().await;
 
             // decrypt twice ... not ok
-            let decryption = bob_central
-                .transaction
-                .conversation(&id)
+            let decryption = conversation
+                .guard_of(&bob)
                 .await
-                .unwrap()
                 .decrypt_message(&proposal.to_bytes().unwrap())
                 .await;
             assert!(matches!(decryption.unwrap_err(), Error::DuplicateMessage));
 
             // advance Bob's epoch to trigger failure
-            bob_central
-                .transaction
-                .conversation(&id)
+            let conversation = conversation
+                .acting_as(&bob)
                 .await
-                .unwrap()
-                .commit_pending_proposals()
-                .await
-                .unwrap();
+                .commit_pending_proposals_notify()
+                .await;
 
             // Epoch has advanced so we cannot detect duplicates anymore
-            let decryption = bob_central
-                .transaction
-                .conversation(&id)
+            let decryption = conversation
+                .guard_of(&bob)
                 .await
-                .unwrap()
                 .decrypt_message(&proposal.to_bytes().unwrap())
                 .await;
             assert!(matches!(decryption.unwrap_err(), Error::StaleProposal));
@@ -249,60 +174,32 @@ mod tests {
     #[apply(all_cred_cipher)]
     #[wasm_bindgen_test]
     async fn decrypting_duplicate_external_proposal_should_fail(case: TestContext) {
-        let [alice_central, bob_central] = case.sessions().await;
+        let [alice, bob] = case.sessions().await;
         Box::pin(async move {
-            let id = conversation_id();
-            alice_central
-                .transaction
-                .new_conversation(&id, case.credential_type, case.cfg.clone())
-                .await
-                .unwrap();
+            let conversation = case.create_conversation([&alice]).await;
 
-            let epoch = alice_central.transaction.conversation(&id).await.unwrap().epoch().await;
-
-            let ext_proposal = bob_central
-                .transaction
-                .new_external_add_proposal(id.clone(), epoch.into(), case.ciphersuite(), case.credential_type)
-                .await
-                .unwrap();
+            let proposal_guard = conversation.external_join_proposal(&bob).await;
+            let proposal = proposal_guard.message();
 
             // decrypt once ... ok
-            alice_central
-                .transaction
-                .conversation(&id)
-                .await
-                .unwrap()
-                .decrypt_message(&ext_proposal.to_bytes().unwrap())
-                .await
-                .unwrap();
+            let conversation = proposal_guard.notify_members().await;
 
             // decrypt twice ... not ok
-            let decryption = alice_central
-                .transaction
-                .conversation(&id)
+            let decryption = conversation
+                .guard()
                 .await
-                .unwrap()
-                .decrypt_message(&ext_proposal.to_bytes().unwrap())
+                .decrypt_message(&proposal.to_bytes().unwrap())
                 .await;
             assert!(matches!(decryption.unwrap_err(), Error::DuplicateMessage));
 
             // advance alice's epoch
-            alice_central
-                .transaction
-                .conversation(&id)
-                .await
-                .unwrap()
-                .commit_pending_proposals()
-                .await
-                .unwrap();
+            let conversation = conversation.commit_pending_proposals_notify().await;
 
             // Epoch has advanced so we cannot detect duplicates anymore
-            let decryption = alice_central
-                .transaction
-                .conversation(&id)
+            let decryption = conversation
+                .guard()
                 .await
-                .unwrap()
-                .decrypt_message(&ext_proposal.to_bytes().unwrap())
+                .decrypt_message(&proposal.to_bytes().unwrap())
                 .await;
             assert!(matches!(decryption.unwrap_err(), Error::StaleProposal));
         })
@@ -313,43 +210,22 @@ mod tests {
     #[apply(all_cred_cipher)]
     #[wasm_bindgen_test]
     async fn decrypting_duplicate_application_message_should_fail(case: TestContext) {
-        let [alice_central, bob_central] = case.sessions().await;
+        let [alice, bob] = case.sessions().await;
         Box::pin(async move {
-            let id = conversation_id();
-            alice_central
-                .transaction
-                .new_conversation(&id, case.credential_type, case.cfg.clone())
-                .await
-                .unwrap();
-            alice_central.invite_all(&case, &id, [&bob_central]).await.unwrap();
+            let conversation = case.create_conversation([&alice, &bob]).await;
 
             let msg = b"Hello bob";
-            let encrypted = alice_central
-                .transaction
-                .conversation(&id)
-                .await
-                .unwrap()
-                .encrypt_message(msg)
-                .await
-                .unwrap();
+            let encrypted = conversation.guard().await.encrypt_message(msg).await.unwrap();
 
             // decrypt once .. ok
-            bob_central
-                .transaction
-                .conversation(&id)
+            conversation
+                .guard_of(&bob)
                 .await
-                .unwrap()
                 .decrypt_message(&encrypted)
                 .await
                 .unwrap();
             // decrypt twice .. not ok
-            let decryption = bob_central
-                .transaction
-                .conversation(&id)
-                .await
-                .unwrap()
-                .decrypt_message(&encrypted)
-                .await;
+            let decryption = conversation.guard_of(&bob).await.decrypt_message(&encrypted).await;
             assert!(matches!(decryption.unwrap_err(), Error::DuplicateMessage));
         })
         .await

@@ -312,7 +312,6 @@ impl PendingConversation {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::mls::conversation::Conversation as _;
     use crate::prelude::MlsConversationDecryptMessage;
     use crate::test_utils::*;
     use wasm_bindgen_test::*;
@@ -322,90 +321,51 @@ mod tests {
     #[apply(all_cred_cipher)]
     #[wasm_bindgen_test]
     async fn should_buffer_and_reapply_messages_after_external_commit_merged(case: TestContext) {
-        let [alice_central, bob_central, charlie_central, debbie_central] = case.sessions().await;
+        let [alice, bob, charlie, debbie] = case.sessions().await;
         Box::pin(async move {
-            let id = conversation_id();
-            alice_central
-                .transaction
-                .new_conversation(&id, case.credential_type, case.cfg.clone())
-                .await
-                .unwrap();
+            let conversation = case.create_conversation([&alice]).await;
             // Bob tries to join Alice's group with an external commit
-            let gi = alice_central.get_group_info(&id).await;
-            let (external_commit, _) = bob_central
-                .create_unmerged_external_commit(gi, case.custom_cfg(), case.credential_type)
-                .await;
+            let (commit_guard, _pending_conversation) = conversation.external_join_unmerged(&bob).await;
+            let external_commit = commit_guard.message();
 
             // Alice decrypts the external commit...
-            alice_central
-                .transaction
-                .conversation(&id)
+            let conversation = commit_guard
+                .notify_member(&alice)
                 .await
-                .unwrap()
-                .decrypt_message(external_commit.commit.to_bytes().unwrap())
+                .process_member_changes()
                 .await
-                .unwrap();
+                .finish();
 
             // Meanwhile Debbie joins the party by creating an external proposal
-            let epoch = alice_central.transaction.conversation(&id).await.unwrap().epoch().await;
-            let external_proposal = debbie_central
-                .transaction
-                .new_external_add_proposal(id.clone(), epoch.into(), case.ciphersuite(), case.credential_type)
-                .await
-                .unwrap();
+            let proposal_guard = conversation.external_join_proposal(&debbie).await;
+            let external_proposal = proposal_guard.message();
 
             // ...then Alice generates new messages for this epoch
-            let app_msg = alice_central
-                .transaction
-                .conversation(&id)
+            let app_msg = proposal_guard
+                .conversation()
+                .guard()
                 .await
-                .unwrap()
                 .encrypt_message(b"Hello Bob !")
                 .await
                 .unwrap();
-            let proposal = alice_central
-                .transaction
-                .new_update_proposal(&id)
-                .await
-                .unwrap()
-                .proposal;
-            alice_central
-                .transaction
-                .conversation(&id)
-                .await
-                .unwrap()
-                .decrypt_message(external_proposal.to_bytes().unwrap())
-                .await
-                .unwrap();
-            let charlie = charlie_central.rand_key_package(&case).await;
-            alice_central
-                .transaction
-                .conversation(&id)
-                .await
-                .unwrap()
-                .add_members(vec![charlie])
-                .await
-                .unwrap();
-            let commit = alice_central.mls_transport().await.latest_commit_bundle().await;
-            charlie_central
-                .transaction
-                .process_welcome_message(commit.welcome.clone().unwrap().into(), case.custom_cfg())
-                .await
-                .unwrap();
-            debbie_central
-                .transaction
-                .process_welcome_message(commit.welcome.clone().unwrap().into(), case.custom_cfg())
-                .await
-                .unwrap();
+
+            let conversation = proposal_guard.notify_member(&alice).await.finish();
+            let proposal_guard = conversation.update_proposal().await;
+            let proposal = proposal_guard.message();
+            let conversation = proposal_guard.finish();
+
+            let commit_guard = conversation.invite([&charlie]).await;
+            let commit = commit_guard.message();
+            let conversation = commit_guard.process_member_changes().await.finish();
 
             // And now Bob will have to decrypt those messages while he hasn't yet merged its external commit
             // To add more fun, he will buffer the messages in exactly the wrong order (to make
             // sure he reapplies them in the right order afterwards)
-            let messages = vec![commit.commit, external_proposal, proposal]
+            let messages = vec![commit, external_proposal, proposal]
                 .into_iter()
                 .map(|m| m.to_bytes().unwrap());
             let Err(crate::transaction_context::Error::PendingConversation(mut pending_conversation)) =
-                bob_central.transaction.conversation(&id).await
+                bob.transaction.conversation(conversation.id()).await
             else {
                 panic!("Bob should not have the conversation yet")
             };
@@ -417,11 +377,10 @@ mod tests {
             assert!(matches!(decrypt.unwrap_err(), Error::BufferedForPendingConversation));
 
             // Bob should have buffered the messages
-            assert_eq!(bob_central.transaction.count_entities().await.pending_messages, 4);
+            assert_eq!(bob.transaction.count_entities().await.pending_messages, 4);
 
             let observer = TestEpochObserver::new();
-            bob_central
-                .session()
+            bob.session()
                 .await
                 .register_epoch_observer(observer.clone())
                 .await
@@ -432,7 +391,7 @@ mod tests {
                 buffered_messages: Some(restored_messages),
                 ..
             } = pending_conversation
-                .try_process_own_join_commit(external_commit.commit.to_bytes().unwrap())
+                .try_process_own_join_commit(external_commit.to_bytes().unwrap())
                 .await
                 .unwrap()
             else {
@@ -445,7 +404,7 @@ mod tests {
                 1,
                 "we should see exactly 1 epoch change in these 4 messages"
             );
-            assert_eq!(observed_epochs[0].0, id, "conversation id must match");
+            assert_eq!(observed_epochs[0].0, *conversation.id(), "conversation id must match");
 
             for (idx, msg) in restored_messages.iter().enumerate() {
                 if idx == 0 {
@@ -456,105 +415,54 @@ mod tests {
                 }
             }
 
-            // because external commit got merged
-            assert!(bob_central.try_talk_to(&id, &alice_central).await.is_ok());
-            // because Alice's commit got merged
-            assert!(bob_central.try_talk_to(&id, &charlie_central).await.is_ok());
-            // because Debbie's external proposal got merged through the commit
-            assert!(bob_central.try_talk_to(&id, &debbie_central).await.is_ok());
+            assert_eq!(conversation.member_count().await, 4);
+            assert!(
+                conversation
+                    .is_functional_and_contains([&alice, &bob, &charlie, &debbie])
+                    .await
+            );
 
             // After merging we should erase all those pending messages
-            assert_eq!(bob_central.transaction.count_entities().await.pending_messages, 0);
+            assert_eq!(bob.transaction.count_entities().await.pending_messages, 0);
         })
         .await
     }
 
     #[apply(all_cred_cipher)]
     #[wasm_bindgen_test]
-    async fn should_not_reapply_buffered_messages_when_external_commit_contains_remove(case: TestContext) {
+    async fn should_not_reapply_buffered_messages_when_rejoining(case: TestContext) {
         use crate::mls;
 
-        let [alice_central, bob_central] = case.sessions().await;
+        let [alice, bob] = case.sessions().await;
         Box::pin(async move {
-            let id = conversation_id();
-            alice_central
-                .transaction
-                .new_conversation(&id, case.credential_type, case.cfg.clone())
-                .await
-                .unwrap();
-            alice_central.invite_all(&case, &id, [&bob_central]).await.unwrap();
+            let conversation = case.create_conversation([&alice, &bob]).await;
 
             // Alice will never see this commit
-            bob_central
-                .transaction
-                .conversation(&id)
-                .await
-                .unwrap()
-                .update_key_material()
-                .await
-                .unwrap();
+            let conversation = conversation.acting_as(&bob).await;
+            let commit_guard = conversation.update().await;
+            let conversation = commit_guard.conversation();
 
-            let msg1 = bob_central
-                .transaction
-                .conversation(&id)
-                .await
-                .unwrap()
-                .encrypt_message("A")
-                .await
-                .unwrap();
-            let msg2 = bob_central
-                .transaction
-                .conversation(&id)
-                .await
-                .unwrap()
-                .encrypt_message("B")
-                .await
-                .unwrap();
+            let msg1 = conversation.guard().await.encrypt_message("A").await.unwrap();
+            let msg2 = conversation.guard().await.encrypt_message("B").await.unwrap();
 
+            let conversation = commit_guard.finish();
             // Since Alice missed Bob's commit she should buffer this message
-            let decrypt = alice_central
-                .transaction
-                .conversation(&id)
-                .await
-                .unwrap()
-                .decrypt_message(msg1)
-                .await;
+            let decrypt = conversation.guard().await.decrypt_message(msg1).await;
             assert!(matches!(
                 decrypt.unwrap_err(),
                 mls::conversation::Error::BufferedFutureMessage { .. }
             ));
-            let decrypt = alice_central
-                .transaction
-                .conversation(&id)
-                .await
-                .unwrap()
-                .decrypt_message(msg2)
-                .await;
+            let decrypt = conversation.guard().await.decrypt_message(msg2).await;
             assert!(matches!(
                 decrypt.unwrap_err(),
                 mls::conversation::Error::BufferedFutureMessage { .. }
             ));
-            assert_eq!(alice_central.transaction.count_entities().await.pending_messages, 2);
+            assert_eq!(alice.transaction.count_entities().await.pending_messages, 2);
 
-            let gi = bob_central.get_group_info(&id).await;
-            alice_central
-                .transaction
-                .join_by_external_commit(gi, case.custom_cfg(), case.credential_type)
-                .await
-                .unwrap();
-
-            let ext_commit = alice_central.mls_transport().await.latest_commit_bundle().await;
-
-            bob_central
-                .transaction
-                .conversation(&id)
-                .await
-                .unwrap()
-                .decrypt_message(ext_commit.commit.to_bytes().unwrap())
-                .await
-                .unwrap();
+            let conversation = conversation.acting_as(&bob).await.external_join_notify(&alice).await;
             // Alice should have deleted all her buffered messages
-            assert_eq!(alice_central.transaction.count_entities().await.pending_messages, 0);
+            assert_eq!(alice.transaction.count_entities().await.pending_messages, 0);
+            assert!(conversation.is_functional_and_contains([&alice, &bob]).await);
         })
         .await
     }

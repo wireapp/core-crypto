@@ -555,7 +555,7 @@ impl SessionContext {
     ) -> Result<RotateAllResult<'a>> {
         let mut commits = Vec::with_capacity(all_conversations.len());
         for conv in all_conversations {
-            let commit_guard = conv.acting_as(self).await.e2ei_rotate_guarded(None).await;
+            let commit_guard = conv.acting_as(self).await.e2ei_rotate(None).await;
             commits.push(commit_guard);
         }
         let new_key_packages = self

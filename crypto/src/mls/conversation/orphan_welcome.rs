@@ -17,39 +17,29 @@ mod tests {
     #[apply(all_cred_cipher)]
     #[wasm_bindgen_test]
     pub async fn orphan_welcome_should_generate_external_commit(case: TestContext) {
-        let [alice_central, bob_central] = case.sessions().await;
+        let [alice, bob] = case.sessions().await;
         Box::pin(async move {
-                let id = conversation_id();
+            let conversation = case.create_conversation([&alice]).await;
 
-                alice_central
-                    .transaction
-                    .new_conversation(&id, case.credential_type, case.cfg.clone())
-                    .await
-                    .unwrap();
-
-                let bob = bob_central.rand_key_package(&case).await;
-                let bob_kp_ref = KeyPackage::from(bob.clone())
-                    .hash_ref(bob_central.transaction.mls_provider().await.unwrap().crypto())
+                let bob_kp = bob.rand_key_package(&case).await;
+                let bob_kp_ref = KeyPackage::from(bob_kp.clone())
+                    .hash_ref(bob.transaction.mls_provider().await.unwrap().crypto())
                     .unwrap();
 
                 // Alice invites Bob with a KeyPackage...
-                alice_central
-                    .transaction
-                    .conversation(&id)
-                    .await
-                    .unwrap()
-                    .add_members(vec![bob])
+                conversation.guard().await
+                    .add_members(vec![bob_kp])
                     .await
                     .unwrap();
 
                 // ...Bob deletes locally (with the associated private key) before processing the Welcome
-                bob_central.transaction.delete_keypackages(&[bob_kp_ref]).await.unwrap();
+                bob.transaction.delete_keypackages(&[bob_kp_ref]).await.unwrap();
 
-                let welcome = alice_central.mls_transport().await.latest_welcome_message().await;
+                let welcome = alice.mls_transport().await.latest_welcome_message().await;
 
                 // in that case a dedicated error is thrown for clients to identify this case
                 // and rejoin with an external commit
-                let process_welcome = bob_central
+                let process_welcome = bob
                     .transaction
                     .process_welcome_message(welcome.into(), case.custom_cfg())
                     .await;

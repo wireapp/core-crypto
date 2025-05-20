@@ -405,7 +405,7 @@ impl TestContext {
         }
 
         conversation
-            .invite_with_credential_type(member_credential_type, members)
+            .invite_with_credential_type_notify(member_credential_type, members)
             .await
     }
 }

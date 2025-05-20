@@ -274,9 +274,9 @@ mod tests {
             return;
         }
 
-        let [alice_central] = case.sessions().await;
+        let [alice] = case.sessions().await;
         Box::pin(async move {
-            let alice_test_chain = alice_central.x509_test_chain.as_ref().as_ref().unwrap();
+            let alice_test_chain = alice.x509_chain_unchecked();
             let alice_ta = alice_test_chain
                 .trust_anchor
                 .certificate
@@ -284,11 +284,7 @@ mod tests {
                 .unwrap();
 
             assert!(matches!(
-                alice_central
-                    .transaction
-                    .e2ei_register_acme_ca(alice_ta)
-                    .await
-                    .unwrap_err(),
+                alice.transaction.e2ei_register_acme_ca(alice_ta).await.unwrap_err(),
                 Error::TrustAnchorAlreadyRegistered
             ));
         })
@@ -302,20 +298,17 @@ mod tests {
             return;
         }
 
-        let [alice_ctx] = case.sessions().await;
-        Box::pin(async move {
-            let SessionContext {
-                transaction,
-                x509_test_chain,
-                ..
-            } = alice_ctx;
+        let [alice_id] = case.basic_client_ids();
+        let alice_id = ClientIdentifier::Basic(alice_id);
+        let alice = SessionContext::new_with_identifier(&case, alice_id, None)
+            .await
+            .unwrap();
 
-            assert!(x509_test_chain.is_none());
-            assert!(!transaction.e2ei_is_pki_env_setup().await.unwrap());
+        Box::pin(async move {
+            assert!(!alice.transaction.e2ei_is_pki_env_setup().await.unwrap());
 
             // mls_central.restore_from_disk().await.unwrap();
 
-            assert!(x509_test_chain.is_none());
             // assert!(!mls_central.mls_backend.is_pki_env_setup().await);
         })
         .await;

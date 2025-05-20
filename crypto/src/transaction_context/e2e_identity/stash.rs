@@ -61,13 +61,13 @@ mod tests {
     #[apply(all_cred_cipher)]
     #[wasm_bindgen_test]
     async fn stash_and_pop_should_not_abort_enrollment(case: TestContext) {
-        let mut cc = SessionContext::new_uninitialized(&case).await;
+        let cc = SessionContext::new_uninitialized(&case).await;
         Box::pin(async move {
             let x509_test_chain = X509TestChain::init_empty(case.signature_scheme());
 
             let is_renewal = false;
             let (mut enrollment, cert) = e2ei_enrollment(
-                &mut cc,
+                &cc,
                 &case,
                 &x509_test_chain,
                 Some(E2EI_CLIENT_ID_URI),
@@ -97,13 +97,13 @@ mod tests {
     #[apply(all_cred_cipher)]
     #[wasm_bindgen_test]
     async fn should_fail_when_restoring_invalid(case: TestContext) {
-        let mut cc = SessionContext::new_uninitialized(&case).await;
+        let cc = SessionContext::new_uninitialized(&case).await;
         Box::pin(async move {
             let x509_test_chain = X509TestChain::init_empty(case.signature_scheme());
 
             let is_renewal = false;
             let result = e2ei_enrollment(
-                &mut cc,
+                &cc,
                 &case,
                 &x509_test_chain,
                 Some(E2EI_CLIENT_ID_URI),

@@ -162,14 +162,14 @@ mod tests {
     async fn e2e_identity_should_work(case: TestContext) {
         use e2ei_utils::E2EI_CLIENT_ID_URI;
 
-        let mut cc = SessionContext::new_uninitialized(&case).await;
+        let session = SessionContext::new_uninitialized(&case).await;
         Box::pin(async move {
             let x509_test_chain = X509TestChain::init_empty(case.signature_scheme());
 
             let is_renewal = false;
 
             let (mut enrollment, cert) = e2ei_utils::e2ei_enrollment(
-                &mut cc,
+                &session,
                 &case,
                 &x509_test_chain,
                 Some(E2EI_CLIENT_ID_URI),
@@ -180,35 +180,33 @@ mod tests {
             .await
             .unwrap();
 
-            cc.transaction
+            session
+                .transaction
                 .e2ei_mls_init_only(&mut enrollment, cert, Some(INITIAL_KEYING_MATERIAL_COUNT))
                 .await
                 .unwrap();
 
             // verify the created client can create a conversation
-            let id = conversation_id();
-            cc.transaction
-                .new_conversation(&id, MlsCredentialType::X509, case.cfg.clone())
+            let conversation = case
+                .create_conversation_with_credential_type(MlsCredentialType::X509, [&session])
+                .await;
+            conversation
+                .guard()
                 .await
-                .unwrap();
-            cc.transaction
-                .conversation(&id)
-                .await
-                .unwrap()
                 .encrypt_message("Hello e2e identity !")
                 .await
                 .unwrap();
             assert_eq!(
-                cc.transaction
-                    .conversation(&id)
-                    .await
-                    .unwrap()
-                    .e2ei_conversation_state()
-                    .await
-                    .unwrap(),
+                conversation.guard().await.e2ei_conversation_state().await.unwrap(),
                 E2eiConversationState::Verified
             );
-            assert!(cc.transaction.e2ei_is_enabled(case.signature_scheme()).await.unwrap());
+            assert!(
+                session
+                    .transaction
+                    .e2ei_is_enabled(case.signature_scheme())
+                    .await
+                    .unwrap()
+            );
         })
         .await
     }

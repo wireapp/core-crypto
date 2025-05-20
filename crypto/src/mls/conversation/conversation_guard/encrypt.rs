@@ -52,31 +52,16 @@ mod tests {
     #[apply(all_cred_cipher)]
     #[wasm_bindgen_test]
     async fn can_encrypt_app_message(case: TestContext) {
-        let [alice_central, bob_central] = case.sessions().await;
+        let [alice, bob] = case.sessions().await;
         Box::pin(async move {
-            let id = conversation_id();
-            alice_central
-                .transaction
-                .new_conversation(&id, case.credential_type, case.cfg.clone())
-                .await
-                .unwrap();
-            alice_central.invite_all(&case, &id, [&bob_central]).await.unwrap();
+            let conversation = case.create_conversation([&alice, &bob]).await;
 
             let msg = b"Hello bob";
-            let encrypted = alice_central
-                .transaction
-                .conversation(&id)
-                .await
-                .unwrap()
-                .encrypt_message(msg)
-                .await
-                .unwrap();
+            let encrypted = conversation.guard().await.encrypt_message(msg).await.unwrap();
             assert_ne!(&msg[..], &encrypted[..]);
-            let decrypted = bob_central
-                .transaction
-                .conversation(&id)
+            let decrypted = conversation
+                .guard_of(&bob)
                 .await
-                .unwrap()
                 .decrypt_message(encrypted)
                 .await
                 .unwrap()
@@ -91,25 +76,16 @@ mod tests {
     #[apply(all_cred_cipher)]
     #[wasm_bindgen_test]
     async fn can_encrypt_consecutive_messages(case: TestContext) {
-        let [alice_central, bob_central] = case.sessions().await;
+        let [alice, bob] = case.sessions().await;
         Box::pin(async move {
-            let id = conversation_id();
-            alice_central
-                .transaction
-                .new_conversation(&id, case.credential_type, case.cfg.clone())
-                .await
-                .unwrap();
-            alice_central.invite_all(&case, &id, [&bob_central]).await.unwrap();
-            let mut alice_conversation = alice_central.transaction.conversation(&id).await.unwrap();
+            let conversation = case.create_conversation([&alice, &bob]).await;
 
             let msg = b"Hello bob";
-            let encrypted = alice_conversation.encrypt_message(msg).await.unwrap();
+            let encrypted = conversation.guard().await.encrypt_message(msg).await.unwrap();
             assert_ne!(&msg[..], &encrypted[..]);
-            let decrypted = bob_central
-                .transaction
-                .conversation(&id)
+            let decrypted = conversation
+                .guard_of(&bob)
                 .await
-                .unwrap()
                 .decrypt_message(encrypted)
                 .await
                 .unwrap()
@@ -118,13 +94,11 @@ mod tests {
             assert_eq!(&decrypted[..], &msg[..]);
 
             let msg = b"Hello bob again";
-            let encrypted = alice_conversation.encrypt_message(msg).await.unwrap();
+            let encrypted = conversation.guard().await.encrypt_message(msg).await.unwrap();
             assert_ne!(&msg[..], &encrypted[..]);
-            let decrypted = bob_central
-                .transaction
-                .conversation(&id)
+            let decrypted = conversation
+                .guard_of(&bob)
                 .await
-                .unwrap()
                 .decrypt_message(encrypted)
                 .await
                 .unwrap()

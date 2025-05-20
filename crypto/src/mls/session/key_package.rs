@@ -392,7 +392,7 @@ mod tests {
             return;
         }
 
-        let [mut session_context] = case.sessions().await;
+        let [session_context] = case.sessions_basic_with_pki_env().await;
         Box::pin(async move {
             let signature_scheme = case.signature_scheme();
             let cipher_suite = case.ciphersuite();
@@ -405,12 +405,12 @@ mod tests {
                 .unwrap();
 
             // Set up E2E identity
-            let test_chain = x509::X509TestChain::init_for_random_clients(signature_scheme, 1);
+            let test_chain = session_context.x509_chain_unchecked();
 
             let (mut enrollment, cert_chain) = e2ei_enrollment(
-                &mut session_context,
+                &session_context,
                 &case,
-                &test_chain,
+                test_chain,
                 None,
                 false,
                 init_activation_or_rotation,

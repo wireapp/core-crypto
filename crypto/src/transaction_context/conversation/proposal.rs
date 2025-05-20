@@ -84,34 +84,17 @@ mod tests {
         #[apply(all_cred_cipher)]
         #[wasm_bindgen_test]
         pub async fn should_add_member(case: TestContext) {
-            let [alice_central, bob_central] = case.sessions().await;
+            let [alice, bob] = case.sessions().await;
             Box::pin(async move {
-                let id = conversation_id();
-                alice_central
-                    .transaction
-                    .new_conversation(&id, case.credential_type, case.cfg.clone())
+                let conversation = case
+                    .create_conversation([&alice])
                     .await
-                    .unwrap();
-                let bob_kp = bob_central.get_one_key_package(&case).await;
-                alice_central.transaction.new_add_proposal(&id, bob_kp).await.unwrap();
-                alice_central
-                    .transaction
-                    .conversation(&id)
+                    .invite_proposal_notify(&bob)
                     .await
-                    .unwrap()
-                    .commit_pending_proposals()
-                    .await
-                    .unwrap();
-                let welcome = alice_central.mls_transport().await.latest_welcome_message().await;
-                assert_eq!(alice_central.get_conversation_unchecked(&id).await.members().len(), 2);
-                let new_id = bob_central
-                    .transaction
-                    .process_welcome_message(welcome.into(), case.custom_cfg())
-                    .await
-                    .unwrap()
-                    .id;
-                assert_eq!(id, new_id);
-                assert!(bob_central.try_talk_to(&id, &alice_central).await.is_ok());
+                    .commit_pending_proposals_notify()
+                    .await;
+                assert_eq!(conversation.member_count().await, 2);
+                assert!(conversation.is_functional_and_contains([&alice, &bob]).await);
             })
             .await
         }
@@ -124,30 +107,24 @@ mod tests {
         #[apply(all_cred_cipher)]
         #[wasm_bindgen_test]
         pub async fn should_update_hpke_key(case: TestContext) {
+            use crate::mls::conversation::ConversationWithMls as _;
+
             let [session] = case.sessions().await;
-            let id = conversation_id();
-            session
-                .transaction
-                .new_conversation(&id, case.credential_type, case.cfg.clone())
-                .await
-                .unwrap();
-            let before = session
-                .get_conversation_unchecked(&id)
+            let conversation = case.create_conversation([&session]).await;
+            let conversation_guard = conversation.guard().await;
+            let before = conversation_guard
+                .conversation()
                 .await
                 .encryption_keys()
                 .find_or_first(|_| true)
                 .unwrap();
-            session.transaction.new_update_proposal(&id).await.unwrap();
-            session
-                .transaction
-                .conversation(&id)
+            conversation
+                .update_proposal_notify()
                 .await
-                .unwrap()
-                .commit_pending_proposals()
-                .await
-                .unwrap();
-            let after = session
-                .get_conversation_unchecked(&id)
+                .commit_pending_proposals_notify()
+                .await;
+            let after = conversation_guard
+                .conversation()
                 .await
                 .encryption_keys()
                 .find_or_first(|_| true)
@@ -162,52 +139,22 @@ mod tests {
         #[apply(all_cred_cipher)]
         #[wasm_bindgen_test]
         pub async fn should_remove_member(case: TestContext) {
-            let [alice_central, bob_central] = case.sessions().await;
+            let [alice, bob] = case.sessions().await;
             Box::pin(async move {
-                let id = conversation_id();
-                alice_central
-                    .transaction
-                    .new_conversation(&id, case.credential_type, case.cfg.clone())
-                    .await
-                    .unwrap();
-                alice_central.invite_all(&case, &id, [&bob_central]).await.unwrap();
-                assert_eq!(alice_central.get_conversation_unchecked(&id).await.members().len(), 2);
-                assert_eq!(bob_central.get_conversation_unchecked(&id).await.members().len(), 2);
+                let conversation = case.create_conversation([&alice, &bob]).await;
+                let id = conversation.id().clone();
+                assert_eq!(conversation.member_count().await, 2);
 
-                let remove_proposal = alice_central
-                    .transaction
-                    .new_remove_proposal(&id, bob_central.get_client_id().await)
+                let conversation = conversation
+                    .remove_proposal_notify(&bob)
                     .await
-                    .unwrap();
-                bob_central
-                    .transaction
-                    .conversation(&id)
-                    .await
-                    .unwrap()
-                    .decrypt_message(remove_proposal.proposal.to_bytes().unwrap())
-                    .await
-                    .unwrap();
-                alice_central
-                    .transaction
-                    .conversation(&id)
-                    .await
-                    .unwrap()
-                    .commit_pending_proposals()
-                    .await
-                    .unwrap();
-                assert_eq!(alice_central.get_conversation_unchecked(&id).await.members().len(), 1);
+                    .commit_pending_proposals_notify()
+                    .await;
 
-                let commit = alice_central.mls_transport().await.latest_commit().await;
-                bob_central
-                    .transaction
-                    .conversation(&id)
-                    .await
-                    .unwrap()
-                    .decrypt_message(commit.to_bytes().unwrap())
-                    .await
-                    .unwrap();
+                assert_eq!(conversation.member_count().await, 1);
+
                 assert!(matches!(
-                    bob_central.transaction.conversation(&id).await.unwrap_err(),
+                    bob.transaction.conversation(&id).await.unwrap_err(),
                     Error::Leaf(LeafError::ConversationNotFound(conv_id)) if conv_id == id
                 ));
             })
@@ -217,19 +164,12 @@ mod tests {
         #[apply(all_cred_cipher)]
         #[wasm_bindgen_test]
         pub async fn should_fail_when_unknown_client(case: TestContext) {
-            let [alice_central] = case.sessions().await;
+            let [alice] = case.sessions().await;
             Box::pin(async move {
-                let id = conversation_id();
-                alice_central
-                    .transaction
-                    .new_conversation(&id, case.credential_type, case.cfg.clone())
-                    .await
-                    .unwrap();
+                let conversation = case.create_conversation([&alice]).await;
+                let id = conversation.id().clone();
 
-                let remove_proposal = alice_central
-                    .transaction
-                    .new_remove_proposal(&id, b"unknown"[..].into())
-                    .await;
+                let remove_proposal = alice.transaction.new_remove_proposal(&id, b"unknown"[..].into()).await;
                 assert!(matches!(
                     remove_proposal.unwrap_err(),
                     Error::ClientNotFound(client_id) if client_id == b"unknown"[..].into()

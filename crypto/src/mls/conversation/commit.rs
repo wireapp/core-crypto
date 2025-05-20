@@ -108,7 +108,7 @@ mod tests {
                 let conversation = case.create_conversation([&alice, &bob]).await;
 
                 // Bob produces a commit that Alice will receive only after she tried sending a commit
-                let commit = conversation.update_guarded_with(&bob).await;
+                let commit = conversation.acting_as(&bob).await.update().await;
                 let bob_epoch = commit.conversation().guard_of(&bob).await.epoch().await;
                 assert_eq!(2, bob_epoch);
                 let alice_epoch = commit.conversation().guard_of(&alice).await.epoch().await;
@@ -128,7 +128,7 @@ mod tests {
                 // Send two commits and process them on bobs side
                 // For this second commit, the retry provider will first return retry and
                 // then success, but now without an intermediate commit
-                let id = commit.finish().advance_epoch().await.invite([&charlie]).await.id;
+                let conversation = commit.finish().advance_epoch().await.invite_notify([&charlie]).await;
 
                 // Retry should have been returned twice
                 assert_eq!(retry_provider.retry_count().await, 2);
@@ -136,7 +136,7 @@ mod tests {
                 assert_eq!(retry_provider.success_count().await, 2);
 
                 // Group is still in valid state
-                assert!(alice.try_talk_to(&id, &bob).await.is_ok());
+                assert!(conversation.is_functional_and_contains([&alice, &bob]).await);
             })
             .await;
         }
@@ -149,72 +149,45 @@ mod tests {
         #[apply(all_cred_cipher)]
         #[wasm_bindgen_test]
         async fn can_add_members_to_conversation(case: TestContext) {
-            let [alice_central, bob_central] = case.sessions().await;
+            let [alice, bob] = case.sessions().await;
             Box::pin(async move {
-                let id = conversation_id();
-
-                alice_central
-                    .transaction
-                    .new_conversation(&id, case.credential_type, case.cfg.clone())
-                    .await
-                    .unwrap();
-                let bob = bob_central.rand_key_package(&case).await;
+                let conversation = case.create_conversation([&alice]).await;
+                let id = conversation.id.clone();
+                let bob_keypackage = bob.rand_key_package(&case).await;
                 // First, abort commit transport
-                alice_central
-                    .transaction
-                    .set_transport_callbacks(Some(Arc::<CoreCryptoTransportAbortProvider>::default()))
-                    .await
-                    .unwrap();
-                alice_central
+                alice
+                    .replace_transport(Arc::<CoreCryptoTransportAbortProvider>::default())
+                    .await;
+                alice
                     .transaction
                     .conversation(&id)
                     .await
                     .unwrap()
-                    .add_members(vec![bob.clone()])
+                    .add_members(vec![bob_keypackage.clone()])
                     .await
                     .unwrap_err();
 
                 // commit is not applied
-                assert_eq!(alice_central.get_conversation_unchecked(&id).await.members().len(), 1);
+                assert_eq!(alice.get_conversation_unchecked(&id).await.members().len(), 1);
 
-                let success_provider = Arc::<CoreCryptoTransportSuccessProvider>::default();
-                alice_central
-                    .transaction
-                    .set_transport_callbacks(Some(success_provider.clone()))
-                    .await
-                    .unwrap();
-                alice_central
-                    .transaction
-                    .conversation(&id)
-                    .await
-                    .unwrap()
-                    .add_members(vec![bob])
-                    .await
-                    .unwrap();
+                alice
+                    .replace_transport(Arc::<CoreCryptoTransportSuccessProvider>::default())
+                    .await;
 
-                assert_eq!(alice_central.get_conversation_unchecked(&id).await.id, id);
+                let conversation = conversation.invite_notify([&bob]).await;
+
+                assert_eq!(alice.get_conversation_unchecked(&id).await.id, id);
                 assert_eq!(
-                    alice_central
-                        .get_conversation_unchecked(&id)
-                        .await
-                        .group
-                        .group_id()
-                        .as_slice(),
+                    alice.get_conversation_unchecked(&id).await.group.group_id().as_slice(),
                     id
                 );
-                assert_eq!(alice_central.get_conversation_unchecked(&id).await.members().len(), 2);
-                let commit = success_provider.latest_commit_bundle().await;
-                bob_central
-                    .transaction
-                    .process_welcome_message(commit.welcome.unwrap().into(), case.custom_cfg())
-                    .await
-                    .unwrap();
+                assert_eq!(alice.get_conversation_unchecked(&id).await.members().len(), 2);
                 assert_eq!(
-                    alice_central.get_conversation_unchecked(&id).await.id(),
-                    bob_central.get_conversation_unchecked(&id).await.id()
+                    alice.get_conversation_unchecked(&id).await.id(),
+                    bob.get_conversation_unchecked(&id).await.id()
                 );
-                assert_eq!(bob_central.get_conversation_unchecked(&id).await.members().len(), 2);
-                assert!(alice_central.try_talk_to(&id, &bob_central).await.is_ok());
+                assert_eq!(bob.get_conversation_unchecked(&id).await.members().len(), 2);
+                assert!(conversation.is_functional_and_contains([&alice, &bob]).await);
             })
             .await
         }
@@ -222,39 +195,10 @@ mod tests {
         #[apply(all_cred_cipher)]
         #[wasm_bindgen_test]
         async fn should_return_valid_welcome(case: TestContext) {
-            let [alice_central, bob_central] = case.sessions().await;
+            let [alice, bob] = case.sessions().await;
             Box::pin(async move {
-                let id = conversation_id();
-                alice_central
-                    .transaction
-                    .new_conversation(&id, case.credential_type, case.cfg.clone())
-                    .await
-                    .unwrap();
-
-                let bob = bob_central.rand_key_package(&case).await;
-                alice_central
-                    .transaction
-                    .conversation(&id)
-                    .await
-                    .unwrap()
-                    .add_members(vec![bob])
-                    .await
-                    .unwrap();
-
-                let welcome = alice_central
-                    .mls_transport()
-                    .await
-                    .latest_commit_bundle()
-                    .await
-                    .welcome
-                    .unwrap();
-
-                bob_central
-                    .transaction
-                    .process_welcome_message(welcome.into(), case.custom_cfg())
-                    .await
-                    .unwrap();
-                assert!(alice_central.try_talk_to(&id, &bob_central).await.is_ok());
+                let conversation = case.create_conversation([&alice, &bob]).await;
+                assert!(conversation.is_functional_and_contains([&alice, &bob]).await);
             })
             .await
         }
@@ -262,33 +206,15 @@ mod tests {
         #[apply(all_cred_cipher)]
         #[wasm_bindgen_test]
         async fn should_return_valid_group_info(case: TestContext) {
-            let [alice_central, bob_central, mut guest_central] = case.sessions().await;
+            let [alice, bob, guest] = case.sessions().await;
             Box::pin(async move {
-                let id = conversation_id();
-                alice_central
-                    .transaction
-                    .new_conversation(&id, case.credential_type, case.cfg.clone())
-                    .await
-                    .unwrap();
-
-                let bob = bob_central.rand_key_package(&case).await;
-                alice_central
-                    .transaction
-                    .conversation(&id)
-                    .await
-                    .unwrap()
-                    .add_members(vec![bob])
-                    .await
-                    .unwrap();
-                let commit_bundle = alice_central.mls_transport().await.latest_commit_bundle().await;
+                let conversation = case.create_conversation([&alice, &bob]).await;
+                let commit_bundle = alice.mls_transport().await.latest_commit_bundle().await;
                 let group_info = commit_bundle.group_info.get_group_info();
-
-                assert!(
-                    guest_central
-                        .try_join_from_group_info(&case, &id, group_info, vec![&alice_central])
-                        .await
-                        .is_ok()
-                );
+                let conversation = conversation
+                    .external_join_via_group_info_notify(&guest, group_info)
+                    .await;
+                assert!(conversation.is_functional_and_contains([&alice, &bob, &guest]).await);
             })
             .await
         }
@@ -302,13 +228,13 @@ mod tests {
         async fn alice_can_remove_bob_from_conversation(case: TestContext) {
             let [alice, bob] = case.sessions().await;
             Box::pin(async move {
-                let conversation = case.create_conversation([&alice, &bob]).await;
-                let id = conversation.remove(&bob).await.id;
+                let conversation = case.create_conversation([&alice, &bob]).await.remove_notify(&bob).await;
+                let id = conversation.id().clone();
 
                 let MlsCommitBundle { welcome, .. } = alice.mls_transport().await.latest_commit_bundle().await;
                 assert!(welcome.is_none());
 
-                assert_eq!(alice.get_conversation_unchecked(&id).await.members().len(), 1);
+                assert_eq!(conversation.member_count().await, 1);
 
                 // But has been removed from the conversation
                 assert!(matches!(
@@ -316,7 +242,7 @@ mod tests {
                 TransactionError::Leaf(crate::LeafError::ConversationNotFound(ref i))
                     if i == &id
                 ));
-                assert!(alice.try_talk_to(&id, &bob).await.is_err());
+                assert!(!conversation.can_talk(&alice, &bob).await);
             })
             .await;
         }
@@ -324,50 +250,19 @@ mod tests {
         #[apply(all_cred_cipher)]
         #[wasm_bindgen_test]
         async fn should_return_valid_welcome(case: TestContext) {
-            let [alice_central, bob_central, mut guest_central] = case.sessions().await;
+            let [alice, bob, guest] = case.sessions().await;
             Box::pin(async move {
-                let id = conversation_id();
+                let conversation = case
+                    .create_conversation([&alice, &bob])
+                    .await
+                    .invite_proposal_notify(&guest)
+                    .await
+                    .remove_notify(&bob)
+                    .await;
 
-                alice_central
-                    .transaction
-                    .new_conversation(&id, case.credential_type, case.cfg.clone())
-                    .await
-                    .unwrap();
-                alice_central.invite_all(&case, &id, [&bob_central]).await.unwrap();
-
-                let proposal = alice_central
-                    .transaction
-                    .new_add_proposal(&id, guest_central.get_one_key_package(&case).await)
-                    .await
-                    .unwrap();
-                bob_central
-                    .transaction
-                    .conversation(&id)
-                    .await
-                    .unwrap()
-                    .decrypt_message(proposal.proposal.to_bytes().unwrap())
-                    .await
-                    .unwrap();
-
-                alice_central
-                    .transaction
-                    .conversation(&id)
-                    .await
-                    .unwrap()
-                    .remove_members(&[bob_central.get_client_id().await])
-                    .await
-                    .unwrap();
-
-                let welcome = alice_central.mls_transport().await.latest_welcome_message().await;
-
-                assert!(
-                    guest_central
-                        .try_join_from_welcome(&id, welcome.into(), case.custom_cfg(), vec![&alice_central])
-                        .await
-                        .is_ok()
-                );
+                assert!(conversation.is_functional_and_contains([&alice, &guest]).await);
                 // because Bob has been removed from the group
-                assert!(guest_central.try_talk_to(&id, &bob_central).await.is_err());
+                assert!(!conversation.can_talk(&alice, &bob).await);
             })
             .await;
         }
@@ -375,38 +270,18 @@ mod tests {
         #[apply(all_cred_cipher)]
         #[wasm_bindgen_test]
         async fn should_return_valid_group_info(case: TestContext) {
-            let [alice_central, bob_central, mut guest_central] = case.sessions().await;
+            let [alice, bob, guest] = case.sessions().await;
             Box::pin(async move {
-                let id = conversation_id();
-
-                alice_central
-                    .transaction
-                    .new_conversation(&id, case.credential_type, case.cfg.clone())
-                    .await
-                    .unwrap();
-                alice_central.invite_all(&case, &id, [&bob_central]).await.unwrap();
-
-                alice_central
-                    .transaction
-                    .conversation(&id)
-                    .await
-                    .unwrap()
-                    .remove_members(&[bob_central.get_client_id().await])
-                    .await
-                    .unwrap();
-
-                let commit_bundle = alice_central.mls_transport().await.latest_commit_bundle().await;
-
+                let conversation = case.create_conversation([&alice, &bob]).await.remove_notify(&bob).await;
+                let commit_bundle = alice.mls_transport().await.latest_commit_bundle().await;
                 let group_info = commit_bundle.group_info.get_group_info();
+                let conversation = conversation
+                    .external_join_via_group_info_notify(&guest, group_info)
+                    .await;
 
-                assert!(
-                    guest_central
-                        .try_join_from_group_info(&case, &id, group_info, vec![&alice_central])
-                        .await
-                        .is_ok()
-                );
+                assert!(conversation.is_functional_and_contains([&alice, &guest]).await);
                 // because Bob has been removed from the group
-                assert!(guest_central.try_talk_to(&id, &bob_central).await.is_err());
+                assert!(!conversation.can_talk(&alice, &bob).await);
             })
             .await;
         }
@@ -418,73 +293,48 @@ mod tests {
         #[apply(all_cred_cipher)]
         #[wasm_bindgen_test]
         async fn should_succeed(case: TestContext) {
-            let [alice_central, bob_central] = case.sessions().await;
+            let [alice, bob] = case.sessions().await;
             Box::pin(async move {
-                let id = conversation_id();
-                alice_central
-                    .transaction
-                    .new_conversation(&id, case.credential_type, case.cfg.clone())
-                    .await
-                    .unwrap();
-                alice_central.invite_all(&case, &id, [&bob_central]).await.unwrap();
+                let conversation = case.create_conversation([&alice, &bob]).await;
+                let id = conversation.id().clone();
 
-                let init_count = alice_central.transaction.count_entities().await;
+                let init_count = alice.transaction.count_entities().await;
 
-                let bob_keys = bob_central
+                let bob_keys = bob
                     .get_conversation_unchecked(&id)
                     .await
                     .encryption_keys()
                     .collect::<Vec<Vec<u8>>>();
-                let alice_keys = alice_central
+                let alice_keys = alice
                     .get_conversation_unchecked(&id)
                     .await
                     .encryption_keys()
                     .collect::<Vec<Vec<u8>>>();
                 assert!(alice_keys.iter().all(|a_key| bob_keys.contains(a_key)));
 
-                let alice_key = alice_central
-                    .encryption_key_of(&id, alice_central.get_client_id().await)
-                    .await;
+                let alice_key = alice.encryption_key_of(&id, alice.get_client_id().await).await;
 
                 // proposing the key update for alice
-                alice_central
-                    .transaction
-                    .conversation(&id)
-                    .await
-                    .unwrap()
-                    .update_key_material()
-                    .await
-                    .unwrap();
-                let MlsCommitBundle { commit, welcome, .. } =
-                    alice_central.mls_transport().await.latest_commit_bundle().await;
+                let conversation = conversation.update_notify().await;
+                let MlsCommitBundle { welcome, .. } = alice.mls_transport().await.latest_commit_bundle().await;
                 assert!(welcome.is_none());
 
                 assert!(
-                    !alice_central
+                    !alice
                         .get_conversation_unchecked(&id)
                         .await
                         .encryption_keys()
                         .contains(&alice_key)
                 );
 
-                let alice_new_keys = alice_central
+                let alice_new_keys = alice
                     .get_conversation_unchecked(&id)
                     .await
                     .encryption_keys()
                     .collect::<Vec<_>>();
                 assert!(!alice_new_keys.contains(&alice_key));
 
-                // receiving the commit on bob's side (updating key from alice)
-                bob_central
-                    .transaction
-                    .conversation(&id)
-                    .await
-                    .unwrap()
-                    .decrypt_message(&commit.to_bytes().unwrap())
-                    .await
-                    .unwrap();
-
-                let bob_new_keys = bob_central
+                let bob_new_keys = bob
                     .get_conversation_unchecked(&id)
                     .await
                     .encryption_keys()
@@ -492,11 +342,11 @@ mod tests {
                 assert!(alice_new_keys.iter().all(|a_key| bob_new_keys.contains(a_key)));
 
                 // ensuring both can encrypt messages
-                assert!(alice_central.try_talk_to(&id, &bob_central).await.is_ok());
+                assert!(conversation.is_functional_and_contains([&alice, &bob]).await);
 
                 // make sure inline update commit + merge does not leak anything
                 // that's obvious since no new encryption keypair is created in this case
-                let final_count = alice_central.transaction.count_entities().await;
+                let final_count = alice.transaction.count_entities().await;
                 assert_eq!(init_count, final_count);
             })
             .await;
@@ -505,22 +355,17 @@ mod tests {
         #[apply(all_cred_cipher)]
         #[wasm_bindgen_test]
         async fn should_create_welcome_for_pending_add_proposals(case: TestContext) {
-            let [alice_central, bob_central, charlie_central] = case.sessions().await;
+            let [alice, bob, charlie] = case.sessions().await;
             Box::pin(async move {
-                let id = conversation_id();
-                alice_central
-                    .transaction
-                    .new_conversation(&id, case.credential_type, case.cfg.clone())
-                    .await
-                    .unwrap();
-                alice_central.invite_all(&case, &id, [&bob_central]).await.unwrap();
+                let conversation = case.create_conversation([&alice, &bob]).await;
+                let id = conversation.id().clone();
 
-                let bob_keys = bob_central
+                let bob_keys = bob
                     .get_conversation_unchecked(&id)
                     .await
                     .signature_keys()
                     .collect::<Vec<SignaturePublicKey>>();
-                let alice_keys = alice_central
+                let alice_keys = alice
                     .get_conversation_unchecked(&id)
                     .await
                     .signature_keys()
@@ -529,87 +374,44 @@ mod tests {
                 // checking that the members on both sides are the same
                 assert!(alice_keys.iter().all(|a_key| bob_keys.contains(a_key)));
 
-                let alice_key = alice_central
-                    .encryption_key_of(&id, alice_central.get_client_id().await)
-                    .await;
+                let alice_key = alice.encryption_key_of(&id, alice.get_client_id().await).await;
 
                 // proposing adding charlie
-                let charlie_kp = charlie_central.get_one_key_package(&case).await;
-                let add_charlie_proposal = alice_central
-                    .transaction
-                    .new_add_proposal(&id, charlie_kp)
-                    .await
-                    .unwrap();
-
-                // receiving the proposal on Bob's side
-                bob_central
-                    .transaction
-                    .conversation(&id)
-                    .await
-                    .unwrap()
-                    .decrypt_message(add_charlie_proposal.proposal.to_bytes().unwrap())
-                    .await
-                    .unwrap();
+                let conversation = conversation.invite_proposal_notify(&charlie).await;
 
                 assert!(
-                    alice_central
+                    alice
                         .get_conversation_unchecked(&id)
                         .await
                         .encryption_keys()
                         .contains(&alice_key)
                 );
+
+                // The add proposal hasn't been committed yet
+                assert_eq!(conversation.member_count().await, 2);
 
                 // performing an update on Alice's key. this should generate a welcome for Charlie
-                alice_central
-                    .transaction
-                    .conversation(&id)
-                    .await
-                    .unwrap()
-                    .update_key_material()
-                    .await
-                    .unwrap();
-                let MlsCommitBundle { commit, welcome, .. } =
-                    alice_central.mls_transport().await.latest_commit_bundle().await;
+                let conversation = conversation.update_notify().await;
+                let MlsCommitBundle { welcome, .. } = alice.mls_transport().await.latest_commit_bundle().await;
                 assert!(welcome.is_some());
                 assert!(
-                    !alice_central
+                    !alice
                         .get_conversation_unchecked(&id)
                         .await
                         .encryption_keys()
                         .contains(&alice_key)
                 );
 
-                // create the group on charlie's side
-                charlie_central
-                    .transaction
-                    .process_welcome_message(welcome.unwrap().into(), case.custom_cfg())
-                    .await
-                    .unwrap();
+                assert_eq!(conversation.member_count().await, 3);
 
-                assert_eq!(alice_central.get_conversation_unchecked(&id).await.members().len(), 3);
-                assert_eq!(charlie_central.get_conversation_unchecked(&id).await.members().len(), 3);
-                // bob still didn't receive the message with the updated key and charlie's addition
-                assert_eq!(bob_central.get_conversation_unchecked(&id).await.members().len(), 2);
-
-                let alice_new_keys = alice_central
+                let alice_new_keys = alice
                     .get_conversation_unchecked(&id)
                     .await
                     .encryption_keys()
                     .collect::<Vec<Vec<u8>>>();
                 assert!(!alice_new_keys.contains(&alice_key));
 
-                // receiving the key update and the charlie's addition to the group
-                bob_central
-                    .transaction
-                    .conversation(&id)
-                    .await
-                    .unwrap()
-                    .decrypt_message(&commit.to_bytes().unwrap())
-                    .await
-                    .unwrap();
-                assert_eq!(bob_central.get_conversation_unchecked(&id).await.members().len(), 3);
-
-                let bob_new_keys = bob_central
+                let bob_new_keys = bob
                     .get_conversation_unchecked(&id)
                     .await
                     .encryption_keys()
@@ -617,9 +419,7 @@ mod tests {
                 assert!(alice_new_keys.iter().all(|a_key| bob_new_keys.contains(a_key)));
 
                 // ensure all parties can encrypt messages
-                assert!(alice_central.try_talk_to(&id, &bob_central).await.is_ok());
-                assert!(bob_central.try_talk_to(&id, &charlie_central).await.is_ok());
-                assert!(charlie_central.try_talk_to(&id, &alice_central).await.is_ok());
+                assert!(conversation.is_functional_and_contains([&alice, &bob, &charlie]).await);
             })
             .await;
         }
@@ -627,62 +427,17 @@ mod tests {
         #[apply(all_cred_cipher)]
         #[wasm_bindgen_test]
         async fn should_return_valid_welcome(case: TestContext) {
-            let [alice_central, bob_central, mut guest_central] = case.sessions().await;
+            let [alice, bob, guest] = case.sessions().await;
             Box::pin(async move {
-                let id = conversation_id();
-                alice_central
-                    .transaction
-                    .new_conversation(&id, case.credential_type, case.cfg.clone())
+                let conversation = case
+                    .create_conversation([&alice, &bob])
                     .await
-                    .unwrap();
-                alice_central.invite_all(&case, &id, [&bob_central]).await.unwrap();
+                    .invite_proposal_notify(&guest)
+                    .await
+                    .update_notify()
+                    .await;
 
-                let proposal = alice_central
-                    .transaction
-                    .new_add_proposal(&id, guest_central.get_one_key_package(&case).await)
-                    .await
-                    .unwrap()
-                    .proposal;
-                bob_central
-                    .transaction
-                    .conversation(&id)
-                    .await
-                    .unwrap()
-                    .decrypt_message(proposal.to_bytes().unwrap())
-                    .await
-                    .unwrap();
-
-                alice_central
-                    .transaction
-                    .conversation(&id)
-                    .await
-                    .unwrap()
-                    .update_key_material()
-                    .await
-                    .unwrap();
-                let MlsCommitBundle { commit, welcome, .. } =
-                    alice_central.mls_transport().await.latest_commit_bundle().await;
-
-                bob_central
-                    .transaction
-                    .conversation(&id)
-                    .await
-                    .unwrap()
-                    .decrypt_message(commit.to_bytes().unwrap())
-                    .await
-                    .unwrap();
-
-                assert!(
-                    guest_central
-                        .try_join_from_welcome(
-                            &id,
-                            welcome.unwrap().into(),
-                            case.custom_cfg(),
-                            vec![&alice_central, &bob_central]
-                        )
-                        .await
-                        .is_ok()
-                );
+                assert!(conversation.is_functional_and_contains([&alice, &bob, &guest]).await);
             })
             .await;
         }
@@ -690,33 +445,17 @@ mod tests {
         #[apply(all_cred_cipher)]
         #[wasm_bindgen_test]
         async fn should_return_valid_group_info(case: TestContext) {
-            let [alice_central, bob_central, mut guest_central] = case.sessions().await;
+            let [alice, bob, guest] = case.sessions().await;
             Box::pin(async move {
-                let id = conversation_id();
-                alice_central
-                    .transaction
-                    .new_conversation(&id, case.credential_type, case.cfg.clone())
-                    .await
-                    .unwrap();
-                alice_central.invite_all(&case, &id, [&bob_central]).await.unwrap();
+                let conversation = case.create_conversation([&alice, &bob]).await.update_notify().await;
 
-                alice_central
-                    .transaction
-                    .conversation(&id)
-                    .await
-                    .unwrap()
-                    .update_key_material()
-                    .await
-                    .unwrap();
-                let group_info = alice_central.mls_transport().await.latest_group_info().await;
+                let group_info = alice.mls_transport().await.latest_group_info().await;
                 let group_info = group_info.get_group_info();
 
-                assert!(
-                    guest_central
-                        .try_join_from_group_info(&case, &id, group_info, vec![&alice_central])
-                        .await
-                        .is_ok()
-                );
+                let conversation = conversation
+                    .external_join_via_group_info_notify(&guest, group_info)
+                    .await;
+                assert!(conversation.is_functional_and_contains([&alice, &bob, &guest]).await);
             })
             .await;
         }
@@ -728,38 +467,24 @@ mod tests {
         #[apply(all_cred_cipher)]
         #[wasm_bindgen_test]
         async fn should_create_a_commit_out_of_self_pending_proposals(case: TestContext) {
-            let [mut alice_central, bob_central] = case.sessions().await;
+            let [alice, bob] = case.sessions().await;
             Box::pin(async move {
-                let id = conversation_id();
-                alice_central
-                    .transaction
-                    .new_conversation(&id, case.credential_type, case.cfg.clone())
+                let conversation = case
+                    .create_conversation([&alice])
                     .await
-                    .unwrap();
-                alice_central
-                    .transaction
-                    .new_add_proposal(&id, bob_central.get_one_key_package(&case).await)
+                    .advance_epoch()
                     .await
-                    .unwrap();
-                assert!(!alice_central.pending_proposals(&id).await.is_empty());
-                assert_eq!(alice_central.get_conversation_unchecked(&id).await.members().len(), 1);
-                alice_central
-                    .transaction
-                    .conversation(&id)
-                    .await
-                    .unwrap()
-                    .commit_pending_proposals()
-                    .await
-                    .unwrap();
-                assert_eq!(alice_central.get_conversation_unchecked(&id).await.members().len(), 2);
+                    .invite_proposal_notify(&bob)
+                    .await;
+                let id = conversation.id.clone();
 
-                let welcome = alice_central.mls_transport().await.latest_commit_bundle().await.welcome;
-                bob_central
-                    .transaction
-                    .process_welcome_message(welcome.unwrap().into(), case.custom_cfg())
-                    .await
-                    .unwrap();
-                assert!(alice_central.try_talk_to(&id, &bob_central).await.is_ok());
+                assert!(!alice.pending_proposals(&id).await.is_empty());
+                assert_eq!(conversation.member_count().await, 1);
+
+                let conversation = conversation.commit_pending_proposals_notify().await;
+                assert_eq!(conversation.member_count().await, 2);
+
+                assert!(conversation.is_functional_and_contains([&alice, &bob]).await);
             })
             .await;
         }
@@ -767,52 +492,25 @@ mod tests {
         #[apply(all_cred_cipher)]
         #[wasm_bindgen_test]
         async fn should_create_a_commit_out_of_pending_proposals_by_ref(case: TestContext) {
-            let [alice_central, mut bob_central, charlie_central] = case.sessions().await;
+            let [alice, bob, charlie] = case.sessions().await;
             Box::pin(async move {
-                let id = conversation_id();
-                alice_central
-                    .transaction
-                    .new_conversation(&id, case.credential_type, case.cfg.clone())
+                // Bob invites charlie
+                let conversation = case
+                    .create_conversation([&alice, &bob])
                     .await
-                    .unwrap();
-                alice_central.invite_all(&case, &id, [&bob_central]).await.unwrap();
-                let proposal = bob_central
-                    .transaction
-                    .new_add_proposal(&id, charlie_central.get_one_key_package(&case).await)
+                    .acting_as(&bob)
                     .await
-                    .unwrap();
-                assert!(!bob_central.pending_proposals(&id).await.is_empty());
-                assert_eq!(bob_central.get_conversation_unchecked(&id).await.members().len(), 2);
-                alice_central
-                    .transaction
-                    .conversation(&id)
-                    .await
-                    .unwrap()
-                    .decrypt_message(proposal.proposal.to_bytes().unwrap())
-                    .await
-                    .unwrap();
+                    .invite_proposal_notify(&charlie)
+                    .await;
 
-                alice_central
-                    .transaction
-                    .conversation(&id)
-                    .await
-                    .unwrap()
-                    .commit_pending_proposals()
-                    .await
-                    .unwrap();
-                let commit = alice_central.mls_transport().await.latest_commit_bundle().await.commit;
-                assert_eq!(alice_central.get_conversation_unchecked(&id).await.members().len(), 3);
+                assert!(!bob.pending_proposals(conversation.id()).await.is_empty());
+                assert_eq!(conversation.member_count().await, 2);
 
-                bob_central
-                    .transaction
-                    .conversation(&id)
-                    .await
-                    .unwrap()
-                    .decrypt_message(commit.to_bytes().unwrap())
-                    .await
-                    .unwrap();
-                assert_eq!(bob_central.get_conversation_unchecked(&id).await.members().len(), 3);
-                assert!(alice_central.try_talk_to(&id, &bob_central).await.is_ok());
+                // Alice commits the proposal
+                let conversation = conversation.commit_pending_proposals_notify().await;
+                assert_eq!(conversation.member_count().await, 3);
+
+                assert!(conversation.is_functional_and_contains([&alice, &bob, &charlie]).await);
             })
             .await;
         }
@@ -820,36 +518,17 @@ mod tests {
         #[apply(all_cred_cipher)]
         #[wasm_bindgen_test]
         async fn should_return_valid_welcome(case: TestContext) {
-            let [alice_central, bob_central] = case.sessions().await;
+            let [alice, bob] = case.sessions().await;
             Box::pin(async move {
-                let id = conversation_id();
-                alice_central
-                    .transaction
-                    .new_conversation(&id, case.credential_type, case.cfg.clone())
+                let conversation = case
+                    .create_conversation([&alice])
                     .await
-                    .unwrap();
-                alice_central
-                    .transaction
-                    .new_add_proposal(&id, bob_central.get_one_key_package(&case).await)
+                    .invite_proposal_notify(&bob)
                     .await
-                    .unwrap();
-                alice_central
-                    .transaction
-                    .conversation(&id)
-                    .await
-                    .unwrap()
-                    .commit_pending_proposals()
-                    .await
-                    .unwrap();
+                    .commit_pending_proposals_notify()
+                    .await;
 
-                let welcome = alice_central.mls_transport().await.latest_commit_bundle().await.welcome;
-
-                bob_central
-                    .transaction
-                    .process_welcome_message(welcome.unwrap().into(), case.custom_cfg())
-                    .await
-                    .unwrap();
-                assert!(alice_central.try_talk_to(&id, &bob_central).await.is_ok());
+                assert!(conversation.is_functional_and_contains([&alice, &bob]).await);
             })
             .await;
         }
@@ -857,36 +536,22 @@ mod tests {
         #[apply(all_cred_cipher)]
         #[wasm_bindgen_test]
         async fn should_return_valid_group_info(case: TestContext) {
-            let [alice_central, bob_central, mut guest_central] = case.sessions().await;
+            let [alice, bob, guest] = case.sessions().await;
             Box::pin(async move {
-                let id = conversation_id();
-                alice_central
-                    .transaction
-                    .new_conversation(&id, case.credential_type, case.cfg.clone())
+                let conversation = case
+                    .create_conversation([&alice])
                     .await
-                    .unwrap();
-                alice_central
-                    .transaction
-                    .new_add_proposal(&id, bob_central.get_one_key_package(&case).await)
+                    .invite_proposal_notify(&bob)
                     .await
-                    .unwrap();
-                alice_central
-                    .transaction
-                    .conversation(&id)
-                    .await
-                    .unwrap()
-                    .commit_pending_proposals()
-                    .await
-                    .unwrap();
-                let commit_bundle = alice_central.mls_transport().await.latest_commit_bundle().await;
+                    .commit_pending_proposals_notify()
+                    .await;
+                let commit_bundle = alice.mls_transport().await.latest_commit_bundle().await;
                 let group_info = commit_bundle.group_info.get_group_info();
+                let conversation = conversation
+                    .external_join_via_group_info_notify(&guest, group_info)
+                    .await;
 
-                assert!(
-                    guest_central
-                        .try_join_from_group_info(&case, &id, group_info, vec![&alice_central])
-                        .await
-                        .is_ok()
-                );
+                assert!(conversation.is_functional_and_contains([&alice, &bob, &guest]).await);
             })
             .await;
         }
@@ -898,39 +563,21 @@ mod tests {
         #[apply(all_cred_cipher)]
         #[wasm_bindgen_test]
         async fn should_prevent_out_of_order_commits(case: TestContext) {
-            let [alice_central, bob_central] = case.sessions().await;
+            let [alice, bob] = case.sessions().await;
             Box::pin(async move {
-                let id = conversation_id();
-                alice_central
-                    .transaction
-                    .new_conversation(&id, case.credential_type, case.cfg.clone())
-                    .await
-                    .unwrap();
-                alice_central.invite_all(&case, &id, [&bob_central]).await.unwrap();
+                let conversation = case.create_conversation([&alice, &bob]).await;
+                let id = conversation.id().clone();
 
-                alice_central
-                    .transaction
-                    .conversation(&id)
-                    .await
-                    .unwrap()
-                    .update_key_material()
-                    .await
-                    .unwrap();
-                let commit1 = alice_central.mls_transport().await.latest_commit().await;
+                let commit_guard = conversation.update().await;
+                let commit1 = commit_guard.message();
                 let commit1 = commit1.to_bytes().unwrap();
-                alice_central
-                    .transaction
-                    .conversation(&id)
-                    .await
-                    .unwrap()
-                    .update_key_material()
-                    .await
-                    .unwrap();
-                let commit2 = alice_central.mls_transport().await.latest_commit().await;
+
+                let commit_guard = commit_guard.finish().update().await;
+                let commit2 = commit_guard.message();
                 let commit2 = commit2.to_bytes().unwrap();
 
                 // fails when a commit is skipped
-                let out_of_order = bob_central
+                let out_of_order = bob
                     .transaction
                     .conversation(&id)
                     .await
@@ -941,8 +588,7 @@ mod tests {
 
                 // works in the right order though
                 // NB: here 'commit2' has been buffered so it is also applied when we decrypt commit1
-                bob_central
-                    .transaction
+                bob.transaction
                     .conversation(&id)
                     .await
                     .unwrap()
@@ -951,7 +597,7 @@ mod tests {
                     .unwrap();
 
                 // and then fails again when trying to decrypt a commit with an epoch in the past
-                let past_commit = bob_central
+                let past_commit = bob
                     .transaction
                     .conversation(&id)
                     .await
@@ -970,82 +616,35 @@ mod tests {
                 return;
             }
 
-            let [alice_central, bob_central] = case.sessions().await;
+            let [alice, bob] = case.sessions().await;
             Box::pin(async move {
-                let id = conversation_id();
-                alice_central
-                    .transaction
-                    .new_conversation(&id, case.credential_type, case.cfg.clone())
-                    .await
-                    .unwrap();
-                alice_central.invite_all(&case, &id, [&bob_central]).await.unwrap();
+                let conversation = case.create_conversation([&alice, &bob]).await;
 
-                let proposal1 = alice_central
-                    .transaction
-                    .new_update_proposal(&id)
-                    .await
-                    .unwrap()
-                    .proposal;
-                let proposal2 = proposal1.clone();
-                alice_central
-                    .get_conversation_unchecked(&id)
-                    .await
-                    .group
-                    .clear_pending_proposals();
-
-                alice_central
-                    .transaction
-                    .conversation(&id)
-                    .await
-                    .unwrap()
-                    .update_key_material()
-                    .await
-                    .unwrap();
-                let commit1 = alice_central.mls_transport().await.latest_commit().await;
-                let commit2 = commit1.clone();
+                let proposal_guard = conversation.update_proposal().await;
+                let proposal_replay = proposal_guard.message();
 
                 // replayed encrypted proposal should fail
-                bob_central
-                    .transaction
-                    .conversation(&id)
-                    .await
-                    .unwrap()
-                    .decrypt_message(proposal1.to_bytes().unwrap())
-                    .await
-                    .unwrap();
+                let conversation = proposal_guard.notify_members().await;
                 assert!(matches!(
-                    bob_central
-                        .transaction
-                        .conversation(&id)
+                    conversation
+                        .guard_of(&bob)
                         .await
-                        .unwrap()
-                        .decrypt_message(proposal2.to_bytes().unwrap())
+                        .decrypt_message(proposal_replay.to_bytes().unwrap())
                         .await
                         .unwrap_err(),
                     Error::DuplicateMessage
                 ));
-                bob_central
-                    .get_conversation_unchecked(&id)
-                    .await
-                    .group
-                    .clear_pending_proposals();
+
+                let commit_guard = conversation.update().await;
+                let commit_replay = commit_guard.message();
 
                 // replayed encrypted commit should fail
-                bob_central
-                    .transaction
-                    .conversation(&id)
-                    .await
-                    .unwrap()
-                    .decrypt_message(commit1.to_bytes().unwrap())
-                    .await
-                    .unwrap();
+                let conversation = commit_guard.notify_members().await;
                 assert!(matches!(
-                    bob_central
-                        .transaction
-                        .conversation(&id)
+                    conversation
+                        .guard_of(&bob)
                         .await
-                        .unwrap()
-                        .decrypt_message(commit2.to_bytes().unwrap())
+                        .decrypt_message(commit_replay.to_bytes().unwrap())
                         .await
                         .unwrap_err(),
                     Error::StaleCommit

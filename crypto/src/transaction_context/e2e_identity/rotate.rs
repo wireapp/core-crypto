@@ -263,34 +263,22 @@ mod tests {
         #[apply(all_cred_cipher)]
         #[wasm_bindgen_test]
         async fn enrollment_should_rotate_all(case: TestContext) {
-            let [mut alice_central, mut bob_central, mut charlie_central] = case.sessions().await;
+            let [alice, bob, charlie] = case.sessions_with_pki_env().await;
             Box::pin(async move {
                 const N: usize = 50;
                 const NB_KEY_PACKAGE: usize = 50;
 
-                let mut ids = vec![];
+                let mut conversations = vec![];
 
-                let x509_test_chain_arc = e2ei_utils::failsafe_ctx(
-                    &mut [&mut alice_central, &mut bob_central, &mut charlie_central],
-                    case.signature_scheme(),
-                )
-                .await;
-
-                let x509_test_chain = x509_test_chain_arc.as_ref().as_ref().unwrap();
+                let x509_test_chain = bob.x509_chain_unchecked();
 
                 for _ in 0..N {
-                    let id = conversation_id();
-                    alice_central
-                        .transaction
-                        .new_conversation(&id, case.credential_type, case.cfg.clone())
-                        .await
-                        .unwrap();
-                    alice_central.invite_all(&case, &id, [&bob_central]).await.unwrap();
-                    ids.push(id)
+                    let conversation = case.create_conversation([&alice, &bob]).await;
+                    conversations.push(conversation)
                 }
 
                 // Count the key material before the rotation to compare it later
-                let before_rotate = alice_central.transaction.count_entities().await;
+                let before_rotate = alice.transaction.count_entities().await;
                 assert_eq!(before_rotate.key_package, INITIAL_KEYING_MATERIAL_COUNT);
 
                 assert_eq!(before_rotate.hpke_private_key, INITIAL_KEYING_MATERIAL_COUNT);
@@ -299,7 +287,7 @@ mod tests {
                 assert_eq!(before_rotate.encryption_keypair, INITIAL_KEYING_MATERIAL_COUNT);
 
                 assert_eq!(before_rotate.credential, 1);
-                let old_credential = alice_central
+                let old_credential = alice
                     .find_most_recent_credential_bundle(case.signature_scheme(), case.credential_type)
                     .await
                     .unwrap()
@@ -308,7 +296,7 @@ mod tests {
                 let is_renewal = case.credential_type == MlsCredentialType::X509;
 
                 let (mut enrollment, cert) = e2ei_utils::e2ei_enrollment(
-                    &mut alice_central,
+                    &alice,
                     &case,
                     x509_test_chain,
                     None,
@@ -319,19 +307,20 @@ mod tests {
                 .await
                 .unwrap();
 
-                alice_central
+                alice
                     .transaction
                     .save_x509_credential(&mut enrollment, cert)
                     .await
                     .unwrap();
 
-                let cb = alice_central
+                let cb = alice
                     .find_most_recent_credential_bundle(case.signature_scheme(), MlsCredentialType::X509)
                     .await
                     .unwrap();
 
-                let result = alice_central
+                let result = alice
                     .create_key_packages_and_update_credential_in_all_conversations(
+                        conversations,
                         &cb,
                         *enrollment.ciphersuite(),
                         NB_KEY_PACKAGE,
@@ -339,26 +328,21 @@ mod tests {
                     .await
                     .unwrap();
 
-                let after_rotate = alice_central.transaction.count_entities().await;
+                let after_rotate = alice.transaction.count_entities().await;
                 // verify we have indeed created the right amount of new X509 KeyPackages
                 assert_eq!(after_rotate.key_package - before_rotate.key_package, NB_KEY_PACKAGE);
 
                 // and a new Credential has been persisted in the keystore
                 assert_eq!(after_rotate.credential - before_rotate.credential, 1);
 
-                for (id, commit) in result.conversation_ids_and_commits.into_iter() {
-                    let decrypted = bob_central
-                        .transaction
-                        .conversation(&id)
-                        .await
-                        .unwrap()
-                        .decrypt_message(commit.commit.to_bytes().unwrap())
-                        .await
-                        .unwrap();
-                    alice_central.verify_sender_identity(&case, &decrypted).await;
+                for commit in result.commits {
+                    let (commit, decrypted) = commit.notify_member_fallible(&bob).await;
+                    let id = commit.conversation().id();
 
-                    alice_central
-                        .verify_local_credential_rotated(&id, e2ei_utils::NEW_HANDLE, e2ei_utils::NEW_DISPLAY_NAME)
+                    alice.verify_sender_identity(&case, &decrypted.unwrap()).await;
+
+                    alice
+                        .verify_local_credential_rotated(id, e2ei_utils::NEW_HANDLE, e2ei_utils::NEW_DISPLAY_NAME)
                         .await;
                 }
 
@@ -384,7 +368,7 @@ mod tests {
 
                 // But first let's verify the previous credential material is present
                 assert!(
-                    alice_central
+                    alice
                         .find_credential_bundle(
                             case.signature_scheme(),
                             case.credential_type,
@@ -395,7 +379,7 @@ mod tests {
                 );
 
                 // we also have generated the right amount of private encryption keys
-                let before_delete = alice_central.transaction.count_entities().await;
+                let before_delete = alice.transaction.count_entities().await;
                 assert_eq!(
                     before_delete.hpke_private_key - before_rotate.hpke_private_key,
                     NB_KEY_PACKAGE
@@ -406,7 +390,7 @@ mod tests {
 
                 // and the signature keypair is still present
                 assert!(
-                    alice_central
+                    alice
                         .find_signature_keypair_from_keystore(old_credential.signature_key.public())
                         .await
                         .is_some()
@@ -414,19 +398,19 @@ mod tests {
 
                 // Checks are done, now let's delete ALL the deprecated KeyPackages.
                 // This should have the consequence to purge the previous credential material as well.
-                alice_central
+                alice
                     .transaction
                     .delete_stale_key_packages(case.ciphersuite())
                     .await
                     .unwrap();
 
                 // Alice should just have the number of X509 KeyPackages she requested
-                let nb_x509_kp = alice_central
+                let nb_x509_kp = alice
                     .count_key_package(case.ciphersuite(), Some(MlsCredentialType::X509))
                     .await;
                 assert_eq!(nb_x509_kp, NB_KEY_PACKAGE);
                 // in both cases, Alice should not anymore have any Basic KeyPackage
-                let nb_basic_kp = alice_central
+                let nb_basic_kp = alice
                     .count_key_package(case.ciphersuite(), Some(MlsCredentialType::Basic))
                     .await;
                 assert_eq!(nb_basic_kp, 0);
@@ -434,14 +418,9 @@ mod tests {
                 // and since all of Alice's unclaimed KeyPackages have been purged, so should be her old Credential
 
                 // Also the old Credential has been removed from the keystore
-                let after_delete = alice_central.transaction.count_entities().await;
+                let after_delete = alice.transaction.count_entities().await;
                 assert_eq!(after_delete.credential, 1);
-                assert!(
-                    alice_central
-                        .find_credential_from_keystore(&old_credential)
-                        .await
-                        .is_none()
-                );
+                assert!(alice.find_credential_from_keystore(&old_credential).await.is_none());
 
                 // and all her Private HPKE keys...
                 assert_eq!(after_delete.hpke_private_key, NB_KEY_PACKAGE);
@@ -453,20 +432,12 @@ mod tests {
                 );
 
                 // Now charlie tries to add Alice to a conversation with her new KeyPackages
-                let id = conversation_id();
-                charlie_central
-                    .transaction
-                    .new_conversation(&id, case.credential_type, case.cfg.clone())
+                let conversation = case
+                    .create_conversation([&charlie])
                     .await
-                    .unwrap();
-                // required because now Alice does not anymore have a Basic credential
-                let alice = alice_central
-                    .rand_key_package_of_type(&case, MlsCredentialType::X509)
+                    .invite_with_credential_type_notify(MlsCredentialType::X509, [&alice])
                     .await;
-                charlie_central
-                    .invite_all_members(&case, &id, [(&alice_central, alice)])
-                    .await
-                    .unwrap();
+                assert!(conversation.is_functional_and_contains([&alice, &charlie]).await);
             })
             .await
         }
@@ -474,21 +445,13 @@ mod tests {
         #[apply(all_cred_cipher)]
         #[wasm_bindgen_test]
         async fn should_restore_credentials_in_order(case: TestContext) {
-            let [mut alice_central] = case.sessions().await;
+            let [alice] = case.sessions_with_pki_env().await;
             Box::pin(async move {
-                let x509_test_chain_arc =
-                    e2ei_utils::failsafe_ctx(&mut [&mut alice_central], case.signature_scheme()).await;
+                let x509_test_chain = alice.x509_chain_unchecked();
 
-                let x509_test_chain = x509_test_chain_arc.as_ref().as_ref().unwrap();
+                case.create_conversation([&alice]).await;
 
-                let id = conversation_id();
-                alice_central
-                    .transaction
-                    .new_conversation(&id, case.credential_type, case.cfg.clone())
-                    .await
-                    .unwrap();
-
-                let old_cb = alice_central
+                let old_cb = alice
                     .find_most_recent_credential_bundle(case.signature_scheme(), case.credential_type)
                     .await
                     .unwrap()
@@ -501,7 +464,7 @@ mod tests {
                 let is_renewal = case.credential_type == MlsCredentialType::X509;
 
                 let (mut enrollment, cert) = e2ei_utils::e2ei_enrollment(
-                    &mut alice_central,
+                    &alice,
                     &case,
                     x509_test_chain,
                     None,
@@ -512,14 +475,14 @@ mod tests {
                 .await
                 .unwrap();
 
-                alice_central
+                alice
                     .transaction
                     .save_x509_credential(&mut enrollment, cert)
                     .await
                     .unwrap();
 
                 // So alice has a new Credential as expected
-                let cb = alice_central
+                let cb = alice
                     .find_most_recent_credential_bundle(case.signature_scheme(), MlsCredentialType::X509)
                     .await
                     .unwrap();
@@ -538,19 +501,19 @@ mod tests {
 
                 // but keeps her old one since it's referenced from some KeyPackages
                 let old_spk = SignaturePublicKey::from(old_cb.signature_key.public());
-                let old_cb_found = alice_central
+                let old_cb_found = alice
                     .find_credential_bundle(case.signature_scheme(), case.credential_type, &old_spk)
                     .await
                     .unwrap();
                 assert_eq!(old_cb, old_cb_found);
                 let (cid, all_credentials, scs, old_nb_identities) = {
-                    let alice_client = alice_central.session().await;
+                    let alice_client = alice.session().await;
                     let old_nb_identities = alice_client.identities_count().await.unwrap();
 
                     // Let's simulate an app crash, client gets deleted and restored from keystore
                     let cid = alice_client.id().await.unwrap();
                     let scs = HashSet::from([case.signature_scheme()]);
-                    let all_credentials = alice_central
+                    let all_credentials = alice
                         .transaction
                         .keystore()
                         .await
@@ -568,11 +531,11 @@ mod tests {
                     assert_eq!(all_credentials.len(), 2);
                     (cid, all_credentials, scs, old_nb_identities)
                 };
-                let backend = &alice_central.transaction.mls_provider().await.unwrap();
+                let backend = &alice.transaction.mls_provider().await.unwrap();
                 backend.keystore().commit_transaction().await.unwrap();
                 backend.keystore().new_transaction().await.unwrap();
 
-                let new_client = alice_central.session.clone();
+                let new_client = alice.session.clone();
                 new_client.reset().await;
 
                 new_client.load(backend, &cid, all_credentials, scs).await.unwrap();
@@ -604,22 +567,12 @@ mod tests {
         #[apply(all_cred_cipher)]
         #[wasm_bindgen_test]
         async fn rotate_should_roundtrip(case: TestContext) {
-            let [mut alice_central, mut bob_central] = case.sessions().await;
+            let [alice, bob] = case.sessions_with_pki_env().await;
             Box::pin(async move {
-                let x509_test_chain_arc =
-                    e2ei_utils::failsafe_ctx(&mut [&mut alice_central, &mut bob_central], case.signature_scheme())
-                        .await;
+                let x509_test_chain = alice.x509_chain_unchecked();
 
-                let x509_test_chain = x509_test_chain_arc.as_ref().as_ref().unwrap();
-
-                let id = conversation_id();
-                alice_central
-                    .transaction
-                    .new_conversation(&id, case.credential_type, case.cfg.clone())
-                    .await
-                    .unwrap();
-
-                alice_central.invite_all(&case, &id, [&bob_central]).await.unwrap();
+                let conversation = case.create_conversation([&alice, &bob]).await;
+                let id = conversation.id().clone();
                 // Alice's turn
                 const ALICE_NEW_HANDLE: &str = "new_alice_wire";
                 const ALICE_NEW_DISPLAY_NAME: &str = "New Alice Smith";
@@ -658,7 +611,7 @@ mod tests {
                 let is_renewal = case.credential_type == MlsCredentialType::X509;
 
                 let (mut enrollment, cert) = e2ei_utils::e2ei_enrollment(
-                    &mut alice_central,
+                    &alice,
                     &case,
                     x509_test_chain,
                     None,
@@ -669,33 +622,14 @@ mod tests {
                 .await
                 .unwrap();
 
-                alice_central
+                alice
                     .transaction
                     .save_x509_credential(&mut enrollment, cert)
                     .await
                     .unwrap();
-                alice_central
-                    .transaction
-                    .conversation(&id)
-                    .await
-                    .unwrap()
-                    .e2ei_rotate(None)
-                    .await
-                    .unwrap();
+                let conversation = conversation.e2ei_rotate_notify_and_verify_sender(None).await;
 
-                let commit = alice_central.mls_transport().await.latest_commit().await;
-
-                let decrypted = bob_central
-                    .transaction
-                    .conversation(&id)
-                    .await
-                    .unwrap()
-                    .decrypt_message(commit.to_bytes().unwrap())
-                    .await
-                    .unwrap();
-                alice_central.verify_sender_identity(&case, &decrypted).await;
-
-                alice_central
+                alice
                     .verify_local_credential_rotated(&id, ALICE_NEW_HANDLE, ALICE_NEW_DISPLAY_NAME)
                     .await;
 
@@ -736,7 +670,7 @@ mod tests {
                 let is_renewal = case.credential_type == MlsCredentialType::X509;
 
                 let (mut enrollment, cert) = e2ei_utils::e2ei_enrollment(
-                    &mut bob_central,
+                    &bob,
                     &case,
                     x509_test_chain,
                     None,
@@ -747,35 +681,18 @@ mod tests {
                 .await
                 .unwrap();
 
-                bob_central
-                    .transaction
+                bob.transaction
                     .save_x509_credential(&mut enrollment, cert)
                     .await
                     .unwrap();
 
-                bob_central
-                    .transaction
-                    .conversation(&id)
+                conversation
+                    .acting_as(&bob)
                     .await
-                    .unwrap()
-                    .e2ei_rotate(None)
-                    .await
-                    .unwrap();
+                    .e2ei_rotate_notify_and_verify_sender(None)
+                    .await;
 
-                let commit = bob_central.mls_transport().await.latest_commit().await;
-
-                let decrypted = alice_central
-                    .transaction
-                    .conversation(&id)
-                    .await
-                    .unwrap()
-                    .decrypt_message(commit.to_bytes().unwrap())
-                    .await
-                    .unwrap();
-                bob_central.verify_sender_identity(&case, &decrypted).await;
-
-                bob_central
-                    .verify_local_credential_rotated(&id, BOB_NEW_HANDLE, BOB_NEW_DISPLAY_NAME)
+                bob.verify_local_credential_rotated(&id, BOB_NEW_HANDLE, BOB_NEW_DISPLAY_NAME)
                     .await;
             })
             .await
@@ -790,31 +707,25 @@ mod tests {
         #[wasm_bindgen_test]
         pub async fn should_rotate_one_conversations_credential(case: TestContext) {
             if case.is_x509() {
-                let [alice_central, bob_central] = case.sessions().await;
+                let [alice, bob] = case.sessions().await;
                 Box::pin(async move {
-                    let id = conversation_id();
-                    alice_central
-                        .transaction
-                        .new_conversation(&id, case.credential_type, case.cfg.clone())
-                        .await
-                        .unwrap();
+                    let conversation = case.create_conversation([&alice, &bob]).await;
+                    let id = conversation.id().clone();
 
-                    alice_central.invite_all(&case, &id, [&bob_central]).await.unwrap();
-
-                    let init_count = alice_central.transaction.count_entities().await;
-                    let x509_test_chain = alice_central.x509_test_chain.as_ref().as_ref().unwrap();
+                    let init_count = alice.transaction.count_entities().await;
+                    let x509_test_chain = alice.x509_chain_unchecked();
 
                     let intermediate_ca = x509_test_chain.find_local_intermediate_ca();
 
                     // Alice creates a new Credential, updating her handle/display_name
-                    let alice_cid = alice_central.get_client_id().await;
+                    let alice_cid = alice.get_client_id().await;
                     let (new_handle, new_display_name) = ("new_alice_wire", "New Alice Smith");
-                    let cb = alice_central
+                    let cb = alice
                         .save_new_credential(&case, new_handle, new_display_name, intermediate_ca)
                         .await;
 
                     // Verify old identity is still there in the MLS group
-                    let alice_old_identities = alice_central
+                    let alice_old_identities = alice
                         .transaction
                         .conversation(&id)
                         .await
@@ -833,34 +744,14 @@ mod tests {
                     );
 
                     // Alice issues an Update commit to replace her current identity
-                    alice_central
-                        .transaction
-                        .conversation(&id)
-                        .await
-                        .unwrap()
-                        .e2ei_rotate(Some(&cb))
-                        .await
-                        .unwrap();
-                    let commit = alice_central.mls_transport().await.latest_commit().await;
-
-                    // Bob decrypts the commit...
-                    let decrypted = bob_central
-                        .transaction
-                        .conversation(&id)
-                        .await
-                        .unwrap()
-                        .decrypt_message(commit.to_bytes().unwrap())
-                        .await
-                        .unwrap();
-                    // ...and verifies that now Alice is represented with her new identity
-                    alice_central.verify_sender_identity(&case, &decrypted).await;
+                    let _conversation = conversation.e2ei_rotate_notify_and_verify_sender(Some(&cb)).await;
 
                     // Finally, Alice merges her commit and verifies her new identity gets applied
-                    alice_central
+                    alice
                         .verify_local_credential_rotated(&id, new_handle, new_display_name)
                         .await;
 
-                    let final_count = alice_central.transaction.count_entities().await;
+                    let final_count = alice.transaction.count_entities().await;
                     assert_eq!(init_count.encryption_keypair, final_count.encryption_keypair);
                     assert_eq!(
                         init_count.epoch_encryption_keypair,
@@ -879,20 +770,14 @@ mod tests {
                 return;
             }
 
-            let [alice_central, bob_central] = case.sessions().await;
+            let [alice, bob] = case.sessions().await;
             Box::pin(async move {
-                let id = conversation_id();
-                alice_central
-                    .transaction
-                    .new_conversation(&id, case.credential_type, case.cfg.clone())
-                    .await
-                    .unwrap();
+                let conversation = case.create_conversation([&alice, &bob]).await;
+                let id = conversation.id().clone();
 
-                alice_central.invite_all(&case, &id, [&bob_central]).await.unwrap();
+                let init_count = alice.transaction.count_entities().await;
 
-                let init_count = alice_central.transaction.count_entities().await;
-
-                let x509_test_chain = alice_central.x509_test_chain.as_ref().as_ref().unwrap();
+                let x509_test_chain = alice.x509_chain_unchecked();
 
                 let intermediate_ca = x509_test_chain.find_local_intermediate_ca();
 
@@ -901,74 +786,43 @@ mod tests {
 
                 // Alice creates a new Credential, updating her handle/display_name
                 let (new_handle, new_display_name) = ("new_alice_wire", "New Alice Smith");
-                let cb = alice_central
+                let cb = alice
                     .save_new_credential(&case, new_handle, new_display_name, intermediate_ca)
                     .await;
 
                 // Alice issues an Update commit to replace her current identity
-                let _rotate_commit = alice_central.create_unmerged_e2ei_rotate_commit(&id, &cb).await;
+                let conversation = conversation.e2ei_rotate_unmerged(&cb).await.finish();
 
                 // Meanwhile, Bob creates a simple commit
-                bob_central
-                    .transaction
-                    .conversation(&id)
-                    .await
-                    .unwrap()
-                    .update_key_material()
-                    .await
-                    .unwrap();
                 // accepted by the backend
-                let bob_commit = bob_central.mls_transport().await.latest_commit().await;
-
                 // Alice decrypts the commit...
-                let decrypted = alice_central
-                    .transaction
-                    .conversation(&id)
+                let (commit, decrypted) = conversation
+                    .acting_as(&bob)
                     .await
-                    .unwrap()
-                    .decrypt_message(bob_commit.to_bytes().unwrap())
+                    .update()
                     .await
-                    .unwrap();
+                    .notify_member_fallible(&alice)
+                    .await;
+
+                let decrypted = decrypted.unwrap();
 
                 // Alice's previous rotate commit should have been renewed so that she can re-commit it
                 assert_eq!(decrypted.proposals.len(), 1);
-                let renewed_proposal = decrypted.proposals.first().unwrap();
-                bob_central
-                    .transaction
-                    .conversation(&id)
-                    .await
-                    .unwrap()
-                    .decrypt_message(renewed_proposal.proposal.to_bytes().unwrap())
-                    .await
-                    .unwrap();
 
-                alice_central
-                    .transaction
-                    .conversation(&id)
-                    .await
-                    .unwrap()
+                // Bob verifies that now Alice is represented with her new identity
+                commit
+                    .finish()
                     .commit_pending_proposals()
                     .await
-                    .unwrap();
+                    .notify_members_and_verify_sender()
+                    .await;
 
                 // Finally, Alice merges her commit and verifies her new identity gets applied
-                alice_central
+                alice
                     .verify_local_credential_rotated(&id, new_handle, new_display_name)
                     .await;
 
-                let rotate_commit = alice_central.mls_transport().await.latest_commit().await;
-                // Bob verifies that now Alice is represented with her new identity
-                let decrypted = bob_central
-                    .transaction
-                    .conversation(&id)
-                    .await
-                    .unwrap()
-                    .decrypt_message(rotate_commit.to_bytes().unwrap())
-                    .await
-                    .unwrap();
-                alice_central.verify_sender_identity(&case, &decrypted).await;
-
-                let final_count = alice_central.transaction.count_entities().await;
+                let final_count = alice.transaction.count_entities().await;
                 assert_eq!(init_count.encryption_keypair, final_count.encryption_keypair);
                 // TODO: there is no efficient way to clean a credential when alice merges her pending commit. Tracking issue: WPB-9594
                 // One option would be to fetch all conversations and see if Alice is never represented with the said Credential
@@ -982,71 +836,51 @@ mod tests {
         #[apply(all_cred_cipher)]
         #[wasm_bindgen_test]
         pub async fn rotate_should_replace_existing_basic_credentials(case: TestContext) {
-            if case.is_x509() {
-                let [alice_central, bob_central] = case.sessions().await;
-                Box::pin(async move {
-                    let id = conversation_id();
-                    alice_central
-                        .transaction
-                        .new_conversation(&id, MlsCredentialType::Basic, case.cfg.clone())
-                        .await
-                        .unwrap();
-
-                    alice_central.invite_all(&case, &id, [&bob_central]).await.unwrap();
-
-                    let x509_test_chain = alice_central.x509_test_chain.as_ref().as_ref().unwrap();
-                    let intermediate_ca = x509_test_chain.find_local_intermediate_ca();
-
-                    // Alice creates a new Credential, updating her handle/display_name
-                    let alice_cid = alice_central.get_client_id().await;
-                    let (new_handle, new_display_name) = ("new_alice_wire", "New Alice Smith");
-                    alice_central
-                        .save_new_credential(&case, new_handle, new_display_name, intermediate_ca)
-                        .await;
-
-                    // Verify old identity is a basic identity in the MLS group
-                    let alice_old_identities = alice_central
-                        .transaction
-                        .conversation(&id)
-                        .await
-                        .unwrap()
-                        .get_device_identities(&[alice_cid])
-                        .await
-                        .unwrap();
-                    let alice_old_identity = alice_old_identities.first().unwrap();
-                    assert_eq!(alice_old_identity.credential_type, MlsCredentialType::Basic);
-                    assert_eq!(alice_old_identity.x509_identity, None);
-
-                    // Alice issues an Update commit to replace her current identity
-                    alice_central
-                        .transaction
-                        .conversation(&id)
-                        .await
-                        .unwrap()
-                        .e2ei_rotate(None)
-                        .await
-                        .unwrap();
-                    let commit = alice_central.mls_transport().await.latest_commit().await;
-
-                    // Bob decrypts the commit...
-                    let decrypted = bob_central
-                        .transaction
-                        .conversation(&id)
-                        .await
-                        .unwrap()
-                        .decrypt_message(commit.to_bytes().unwrap())
-                        .await
-                        .unwrap();
-                    // ...and verifies that now Alice is represented with her new identity
-                    alice_central.verify_sender_identity(&case, &decrypted).await;
-
-                    // Finally, Alice merges her commit and verifies her new identity gets applied
-                    alice_central
-                        .verify_local_credential_rotated(&id, new_handle, new_display_name)
-                        .await;
-                })
-                .await
+            if !case.is_x509() {
+                return;
             }
+
+            let [alice, bob] = case.sessions_basic_with_pki_env().await;
+            Box::pin(async move {
+                let conversation = case
+                    .create_conversation_with_credential_type(MlsCredentialType::Basic, [&alice, &bob])
+                    .await;
+                let id = conversation.id().clone();
+
+                let x509_test_chain = alice.x509_chain_unchecked();
+                let intermediate_ca = x509_test_chain.find_local_intermediate_ca();
+
+                // Alice creates a new Credential, updating her handle/display_name
+                let alice_cid = alice.get_client_id().await;
+                let (new_handle, new_display_name) = ("new_alice_wire", "New Alice Smith");
+                alice
+                    .save_new_credential(&case, new_handle, new_display_name, intermediate_ca)
+                    .await;
+
+                // Verify old identity is a basic identity in the MLS group
+                let alice_old_identities = alice
+                    .transaction
+                    .conversation(&id)
+                    .await
+                    .unwrap()
+                    .get_device_identities(&[alice_cid])
+                    .await
+                    .unwrap();
+                let alice_old_identity = alice_old_identities.first().unwrap();
+                assert_eq!(alice_old_identity.credential_type, MlsCredentialType::Basic);
+                assert_eq!(alice_old_identity.x509_identity, None);
+
+                // Alice issues an Update commit to replace her current identity
+                // Bob decrypts the commit...
+                // ...and verifies that now Alice is represented with her new identity
+                let _conversation = conversation.e2ei_rotate_notify_and_verify_sender(None).await;
+
+                // Finally, Alice merges her commit and verifies her new identity gets applied
+                alice
+                    .verify_local_credential_rotated(&id, new_handle, new_display_name)
+                    .await;
+            })
+            .await
         }
     }
 }
