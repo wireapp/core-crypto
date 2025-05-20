@@ -147,15 +147,10 @@ mod tests {
     #[wasm_bindgen_test]
     async fn can_operate_with_pending_commit_wpb_17356(case: TestContext) {
         let [alice] = case.sessions().await;
-        let id = conversation_id();
-        alice
-            .transaction
-            .new_conversation(&id, case.credential_type, case.cfg.clone())
-            .await
-            .unwrap();
+        let conversation = case.create_conversation([&alice]).await;
         // create a pending commit
-        let _unmerged_commit = alice.create_unmerged_commit(&id).await;
-        let mut conversation = alice.transaction.conversation(&id).await.unwrap();
+        let conversation = conversation.unmerged_commit().await.finish();
+        let mut conversation = conversation.guard().await;
         // This should work, even though there is a pending commit!
         assert!(conversation.conversation().await.group.pending_commit().is_some());
         conversation.update_key_material().await.unwrap();
@@ -171,105 +166,61 @@ mod tests {
             return;
         }
 
-        let [alice_central, bob_central, charlie_central, debbie_central] = case.sessions().await;
+        let [alice, bob, charlie, debbie] = case.sessions().await;
         Box::pin(async move {
-            let id = conversation_id();
-            alice_central
-                .transaction
-                .new_conversation(&id, case.credential_type, case.cfg.clone())
-                .await
-                .unwrap();
-            alice_central.invite_all(&case, &id, [&bob_central]).await.unwrap();
+            let conversation = case.create_conversation([&alice, &bob]).await;
 
             // Bob creates a commit but won't merge it immediately (e.g, because his app crashes before he receives the success response from the ds)
-            let unmerged_commit = bob_central.create_unmerged_commit(&id).await;
+            let unmerged_commit_guard = conversation.acting_as(&bob).await.unmerged_commit().await;
+            let unmerged_commit = unmerged_commit_guard.message();
 
             // Alice decrypts the commit...
-            alice_central
-                .transaction
-                .conversation(&id)
+            let conversation = unmerged_commit_guard.notify_member(&alice).await.finish();
+
+            // ...then Alice generates new messages for this epoch
+            let app_msg = conversation
+                .guard()
                 .await
-                .unwrap()
-                .decrypt_message(unmerged_commit.commit.to_bytes().unwrap())
+                .encrypt_message(b"Hello Bob !")
                 .await
                 .unwrap();
 
             // Meanwhile Debbie joins the party by creating an external proposal
-            let epoch = alice_central.transaction.conversation(&id).await.unwrap().epoch().await;
-            let external_proposal = debbie_central
-                .transaction
-                .new_external_add_proposal(id.clone(), epoch.into(), case.ciphersuite(), case.credential_type)
+            let proposal_guard = conversation
+                .external_join_proposal_guarded(&debbie)
                 .await
-                .unwrap();
+                .notify_member(&alice)
+                .await;
+            let external_proposal = proposal_guard.message();
+            let conversation = proposal_guard.propagate_state().await;
 
-            // ...then Alice generates new messages for this epoch
-            let app_msg = alice_central
-                .transaction
-                .conversation(&id)
-                .await
-                .unwrap()
-                .encrypt_message(b"Hello Bob !")
-                .await
-                .unwrap();
-            let proposal = alice_central
-                .transaction
-                .new_update_proposal(&id)
-                .await
-                .unwrap()
-                .proposal;
-            alice_central
-                .transaction
-                .conversation(&id)
-                .await
-                .unwrap()
-                .decrypt_message(external_proposal.to_bytes().unwrap())
-                .await
-                .unwrap();
-            let charlie = charlie_central.rand_key_package(&case).await;
-            alice_central
-                .transaction
-                .conversation(&id)
-                .await
-                .unwrap()
-                .add_members(vec![charlie])
-                .await
-                .unwrap();
-            let commit = alice_central.mls_transport().await.latest_commit_bundle().await;
-            charlie_central
-                .transaction
-                .process_welcome_message(commit.welcome.clone().unwrap().into(), case.custom_cfg())
-                .await
-                .unwrap();
-            debbie_central
-                .transaction
-                .process_welcome_message(commit.welcome.clone().unwrap().into(), case.custom_cfg())
-                .await
-                .unwrap();
+            let proposal_guard = conversation.update_proposal_guarded().await;
+            let proposal = proposal_guard.message();
+            let conversation = proposal_guard.finish();
+
+            // This commit will contain the invitations of charlie and debbie
+            let commit_guard = conversation.invite_guarded([&charlie]).await;
+            let commit = commit_guard.message();
+            // This will make charlie and debbie prcoess welcome messages
+            let conversation = commit_guard.propagate_state().await;
 
             // And now Bob will have to decrypt those messages while he hasn't yet merged its commit
             // To add more fun, he will buffer the messages in exactly the wrong order (to make
             // sure he reapplies them in the right order afterwards)
-            let messages = [commit.commit, external_proposal, proposal]
+            let messages = [commit, external_proposal, proposal]
                 .into_iter()
                 .map(|m| m.to_bytes().unwrap())
                 .chain(std::iter::once(app_msg));
             for m in messages {
-                let decrypt = bob_central
-                    .transaction
-                    .conversation(&id)
-                    .await
-                    .unwrap()
-                    .decrypt_message(m)
-                    .await;
+                let decrypt = conversation.guard_of(&bob).await.decrypt_message(m).await;
                 assert!(matches!(decrypt.unwrap_err(), Error::BufferedFutureMessage { .. }));
             }
 
             // Bob should have buffered the messages
-            assert_eq!(bob_central.transaction.count_entities().await.pending_messages, 4);
+            assert_eq!(bob.transaction.count_entities().await.pending_messages, 4);
 
             let observer = TestEpochObserver::new();
-            bob_central
-                .session()
+            bob.session()
                 .await
                 .register_epoch_observer(observer.clone())
                 .await
@@ -279,12 +230,10 @@ mod tests {
             let MlsConversationDecryptMessage {
                 buffered_messages: Some(restored_messages),
                 ..
-            } = bob_central
-                .transaction
-                .conversation(&id)
+            } = conversation
+                .guard_of(&bob)
                 .await
-                .unwrap()
-                .decrypt_message(unmerged_commit.commit.to_bytes().unwrap())
+                .decrypt_message(unmerged_commit.to_bytes().unwrap())
                 .await
                 .unwrap()
             else {
@@ -312,15 +261,11 @@ mod tests {
                 "there was 1 buffered commit changing the epoch plus the outer commit changing the epoch"
             );
 
-            // because external commit got merged
-            assert!(bob_central.try_talk_to(&id, &alice_central).await.is_ok());
-            // because Alice's commit got merged
-            assert!(bob_central.try_talk_to(&id, &charlie_central).await.is_ok());
-            // because Debbie's external proposal got merged through the commit
-            assert!(bob_central.try_talk_to(&id, &debbie_central).await.is_ok());
+            assert_eq!(conversation.member_count().await, 4);
+            assert!(conversation.is_functional_with([&alice, &bob, &charlie, &debbie]).await);
 
             // After merging we should erase all those pending messages
-            assert_eq!(bob_central.transaction.count_entities().await.pending_messages, 0);
+            assert_eq!(bob.transaction.count_entities().await.pending_messages, 0);
         })
         .await
     }
