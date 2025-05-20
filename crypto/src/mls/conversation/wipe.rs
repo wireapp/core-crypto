@@ -24,7 +24,7 @@ impl MlsConversation {
 
 #[cfg(test)]
 mod tests {
-    use crate::test_utils::*;
+    use crate::{mls::conversation::ConversationWithMls as _, test_utils::*};
     use wasm_bindgen_test::*;
 
     wasm_bindgen_test_configure!(run_in_browser);
@@ -33,27 +33,23 @@ mod tests {
     #[apply(all_cred_cipher)]
     #[wasm_bindgen_test]
     async fn should_cascade_deletion(case: TestContext) {
-        let [cc] = case.sessions().await;
+        let [alice] = case.sessions().await;
         Box::pin(async move {
-            let id = conversation_id();
-            cc.transaction
-                .new_conversation(&id, case.credential_type, case.cfg.clone())
-                .await
-                .unwrap();
-            assert!(cc.get_conversation_unchecked(&id).await.group.is_active());
-            let initial_count = cc.transaction.count_entities().await;
+            let conversation = case.create_conversation([&alice]).await;
+            assert!(conversation.guard().await.conversation().await.group.is_active());
+            let initial_count = alice.transaction.count_entities().await;
 
-            cc.transaction.new_update_proposal(&id).await.unwrap();
-            let post_proposal_count = cc.transaction.count_entities().await;
+            let conversation = conversation.update_proposal().await;
+            let post_proposal_count = alice.transaction.count_entities().await;
             assert_eq!(
                 post_proposal_count.encryption_keypair,
                 initial_count.encryption_keypair + 1
             );
 
-            cc.transaction.conversation(&id).await.unwrap().wipe().await.unwrap();
+            conversation.guard().await.wipe().await.unwrap();
 
-            let final_count = cc.transaction.count_entities().await;
-            assert!(!cc.transaction.conversation_exists(&id).await.unwrap());
+            let final_count = alice.transaction.count_entities().await;
+            assert!(!alice.transaction.conversation_exists(conversation.id()).await.unwrap());
             assert_eq!(final_count.group, 0);
             assert_eq!(final_count.encryption_keypair, final_count.key_package);
             assert_eq!(final_count.epoch_encryption_keypair, 0);

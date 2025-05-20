@@ -206,15 +206,11 @@ mod tests {
     pub async fn group_should_have_required_capabilities() {
         let case = TestContext::default();
 
-        let [cc] = case.sessions().await;
+        let [session] = case.sessions().await;
         Box::pin(async move {
-            let id = conversation_id();
-            cc.transaction
-                .new_conversation(&id, case.credential_type, case.cfg.clone())
-                .await
-                .unwrap();
-            let conv = cc.transaction.conversation(&id).await.unwrap();
-            let group = conv.conversation().await;
+            let conversation = case.create_conversation([&session]).await;
+            let guard = conversation.guard().await;
+            let group = guard.conversation().await;
 
             let capabilities = group.group.group_context_extensions().required_capabilities().unwrap();
 
@@ -232,15 +228,11 @@ mod tests {
     #[apply(all_cred_cipher)]
     #[wasm_bindgen_test]
     pub async fn creator_leaf_node_should_have_default_capabilities(case: TestContext) {
-        let [cc] = case.sessions().await;
+        let [session] = case.sessions().await;
         Box::pin(async move {
-            let id = conversation_id();
-            cc.transaction
-                .new_conversation(&id, case.credential_type, case.cfg.clone())
-                .await
-                .unwrap();
-            let conv = cc.transaction.conversation(&id).await.unwrap();
-            let group = conv.conversation().await;
+            let conversation = case.create_conversation([&session]).await;
+            let guard = conversation.guard().await;
+            let group = guard.conversation().await;
 
             // verifying https://www.rfc-editor.org/rfc/rfc9420.html#section-7.2
             let creator_capabilities = group.group.own_leaf().unwrap().capabilities();

@@ -101,85 +101,48 @@ mod tests {
         #[apply(all_cred_cipher)]
         #[wasm_bindgen_test]
         pub async fn should_remove_proposal(case: TestContext) {
-            let [mut alice_central, bob_central, charlie_central] = case.sessions().await;
+            let [alice, bob, charlie] = case.sessions().await;
             Box::pin(async move {
-                let id = conversation_id();
-                alice_central
-                    .transaction
-                    .new_conversation(&id, case.credential_type, case.cfg.clone())
-                    .await
-                    .unwrap();
-                alice_central.invite_all(&case, &id, [&bob_central]).await.unwrap();
-                assert!(alice_central.pending_proposals(&id).await.is_empty());
+                let conversation = case.create_conversation([&alice, &bob]).await;
+                let id = conversation.id().clone();
+                assert!(alice.pending_proposals(&id).await.is_empty());
 
-                let charlie_kp = charlie_central.get_one_key_package(&case).await;
-                let add_ref = alice_central
-                    .transaction
-                    .new_add_proposal(&id, charlie_kp)
-                    .await
-                    .unwrap()
-                    .proposal_ref;
+                let conversation = conversation.invite_proposal(&charlie).await;
+                let add_ref = conversation.latest_proposal_ref().await;
 
-                let remove_ref = alice_central
-                    .transaction
-                    .new_remove_proposal(&id, bob_central.get_client_id().await)
-                    .await
-                    .unwrap()
-                    .proposal_ref;
+                let conversation = conversation.remove_proposal(&bob).await;
+                let remove_ref = conversation.latest_proposal_ref().await;
 
-                let update_ref = alice_central
-                    .transaction
-                    .new_update_proposal(&id)
-                    .await
-                    .unwrap()
-                    .proposal_ref;
+                let conversation = conversation.update_proposal().await;
+                let update_ref = conversation.latest_proposal_ref().await;
 
-                assert_eq!(alice_central.pending_proposals(&id).await.len(), 3);
-                alice_central
-                    .transaction
-                    .conversation(&id)
-                    .await
-                    .unwrap()
-                    .clear_pending_proposal(add_ref)
-                    .await
-                    .unwrap();
-                assert_eq!(alice_central.pending_proposals(&id).await.len(), 2);
+                let mut conversation = conversation.guard().await;
+
+                assert_eq!(alice.pending_proposals(&id).await.len(), 3);
+                conversation.clear_pending_proposal(add_ref).await.unwrap();
+                assert_eq!(alice.pending_proposals(&id).await.len(), 2);
                 assert!(
-                    !alice_central
+                    !alice
                         .pending_proposals(&id)
                         .await
                         .into_iter()
                         .any(|p| matches!(p.proposal(), Proposal::Add(_)))
                 );
 
-                alice_central
-                    .transaction
-                    .conversation(&id)
-                    .await
-                    .unwrap()
-                    .clear_pending_proposal(remove_ref)
-                    .await
-                    .unwrap();
-                assert_eq!(alice_central.pending_proposals(&id).await.len(), 1);
+                conversation.clear_pending_proposal(remove_ref).await.unwrap();
+                assert_eq!(alice.pending_proposals(&id).await.len(), 1);
                 assert!(
-                    !alice_central
+                    !alice
                         .pending_proposals(&id)
                         .await
                         .into_iter()
                         .any(|p| matches!(p.proposal(), Proposal::Remove(_)))
                 );
 
-                alice_central
-                    .transaction
-                    .conversation(&id)
-                    .await
-                    .unwrap()
-                    .clear_pending_proposal(update_ref)
-                    .await
-                    .unwrap();
-                assert!(alice_central.pending_proposals(&id).await.is_empty());
+                conversation.clear_pending_proposal(update_ref).await.unwrap();
+                assert!(alice.pending_proposals(&id).await.is_empty());
                 assert!(
-                    !alice_central
+                    !alice
                         .pending_proposals(&id)
                         .await
                         .into_iter()
@@ -192,23 +155,13 @@ mod tests {
         #[apply(all_cred_cipher)]
         #[wasm_bindgen_test]
         pub async fn should_fail_when_proposal_ref_not_found(case: TestContext) {
-            let [mut alice_central] = case.sessions().await;
+            let [alice] = case.sessions().await;
             Box::pin(async move {
-                let id = conversation_id();
-                alice_central
-                    .transaction
-                    .new_conversation(&id, case.credential_type, case.cfg.clone())
-                    .await
-                    .unwrap();
-                assert!(alice_central.pending_proposals(&id).await.is_empty());
+                let conversation = case.create_conversation([&alice]).await;
+                let id = conversation.id().clone();
+                assert!(alice.pending_proposals(&id).await.is_empty());
                 let any_ref = MlsProposalRef::from(vec![0; case.ciphersuite().hash_length()]);
-                let clear = alice_central
-                    .transaction
-                    .conversation(&id)
-                    .await
-                    .unwrap()
-                    .clear_pending_proposal(any_ref.clone())
-                    .await;
+                let clear = conversation.guard().await.clear_pending_proposal(any_ref.clone()).await;
                 assert!(matches!(clear.unwrap_err(), Error::PendingProposalNotFound(prop_ref) if prop_ref == any_ref))
             })
             .await
@@ -217,33 +170,30 @@ mod tests {
         #[apply(all_cred_cipher)]
         #[wasm_bindgen_test]
         pub async fn should_clean_associated_key_material(case: TestContext) {
-            let [mut cc] = case.sessions().await;
+            let [session] = case.sessions().await;
             Box::pin(async move {
-                let id = conversation_id();
-                cc.transaction
-                    .new_conversation(&id, case.credential_type, case.cfg.clone())
+                let conversation = case.create_conversation([&session]).await;
+                let id = conversation.id().clone();
+                assert!(session.pending_proposals(&id).await.is_empty());
+
+                let init = session.transaction.count_entities().await;
+
+                let conversation = conversation.update_proposal().await;
+                let proposal_ref = conversation.latest_proposal_ref().await;
+                assert_eq!(session.pending_proposals(&id).await.len(), 1);
+
+                conversation
+                    .guard()
                     .await
-                    .unwrap();
-                assert!(cc.pending_proposals(&id).await.is_empty());
-
-                let init = cc.transaction.count_entities().await;
-
-                let proposal_ref = cc.transaction.new_update_proposal(&id).await.unwrap().proposal_ref;
-                assert_eq!(cc.pending_proposals(&id).await.len(), 1);
-
-                cc.transaction
-                    .conversation(&id)
-                    .await
-                    .unwrap()
                     .clear_pending_proposal(proposal_ref)
                     .await
                     .unwrap();
-                assert!(cc.pending_proposals(&id).await.is_empty());
+                assert!(session.pending_proposals(&id).await.is_empty());
 
                 // This whole flow should be idempotent.
                 // Here we verify that we are indeed deleting the `EncryptionKeyPair` created
                 // for the Update proposal
-                let after_clear_proposal = cc.transaction.count_entities().await;
+                let after_clear_proposal = session.transaction.count_entities().await;
                 assert_eq!(init, after_clear_proposal);
             })
             .await
@@ -256,27 +206,16 @@ mod tests {
         #[apply(all_cred_cipher)]
         #[wasm_bindgen_test]
         pub async fn should_remove_commit(case: TestContext) {
-            let [alice_central] = case.sessions().await;
+            let [alice] = case.sessions().await;
             Box::pin(async move {
-                let id = conversation_id();
-                alice_central
-                    .transaction
-                    .new_conversation(&id, case.credential_type, case.cfg.clone())
-                    .await
-                    .unwrap();
-                assert!(alice_central.pending_commit(&id).await.is_none());
+                let conversation = case.create_conversation([&alice]).await;
+                let id = conversation.id().clone();
+                assert!(alice.pending_commit(&id).await.is_none());
 
-                alice_central.create_unmerged_commit(&id).await;
-                assert!(alice_central.pending_commit(&id).await.is_some());
-                alice_central
-                    .transaction
-                    .conversation(&id)
-                    .await
-                    .unwrap()
-                    .clear_pending_commit()
-                    .await
-                    .unwrap();
-                assert!(alice_central.pending_commit(&id).await.is_none());
+                alice.create_unmerged_commit(&id).await;
+                assert!(alice.pending_commit(&id).await.is_some());
+                conversation.guard().await.clear_pending_commit().await.unwrap();
+                assert!(alice.pending_commit(&id).await.is_none());
             })
             .await
         }
@@ -284,22 +223,12 @@ mod tests {
         #[apply(all_cred_cipher)]
         #[wasm_bindgen_test]
         pub async fn should_fail_when_pending_commit_absent(case: TestContext) {
-            let [alice_central] = case.sessions().await;
+            let [alice] = case.sessions().await;
             Box::pin(async move {
-                let id = conversation_id();
-                alice_central
-                    .transaction
-                    .new_conversation(&id, case.credential_type, case.cfg.clone())
-                    .await
-                    .unwrap();
-                assert!(alice_central.pending_commit(&id).await.is_none());
-                let clear = alice_central
-                    .transaction
-                    .conversation(&id)
-                    .await
-                    .unwrap()
-                    .clear_pending_commit()
-                    .await;
+                let conversation = case.create_conversation([&alice]).await;
+                let id = conversation.id().clone();
+                assert!(alice.pending_commit(&id).await.is_none());
+                let clear = conversation.guard().await.clear_pending_commit().await;
                 assert!(matches!(clear.unwrap_err(), Error::PendingCommitNotFound))
             })
             .await
@@ -308,33 +237,24 @@ mod tests {
         #[apply(all_cred_cipher)]
         #[wasm_bindgen_test]
         pub async fn should_clean_associated_key_material(case: TestContext) {
-            let [cc] = case.sessions().await;
+            let [session] = case.sessions().await;
             Box::pin(async move {
-                let id = conversation_id();
-                cc.transaction
-                    .new_conversation(&id, case.credential_type, case.cfg.clone())
-                    .await
-                    .unwrap();
-                assert!(cc.pending_commit(&id).await.is_none());
+                let conversation = case.create_conversation([&session]).await;
+                let id = conversation.id().clone();
+                assert!(session.pending_commit(&id).await.is_none());
 
-                let init = cc.transaction.count_entities().await;
+                let init = session.transaction.count_entities().await;
 
-                cc.create_unmerged_commit(&id).await;
-                assert!(cc.pending_commit(&id).await.is_some());
+                session.create_unmerged_commit(&id).await;
+                assert!(session.pending_commit(&id).await.is_some());
 
-                cc.transaction
-                    .conversation(&id)
-                    .await
-                    .unwrap()
-                    .clear_pending_commit()
-                    .await
-                    .unwrap();
-                assert!(cc.pending_commit(&id).await.is_none());
+                conversation.guard().await.clear_pending_commit().await.unwrap();
+                assert!(session.pending_commit(&id).await.is_none());
 
                 // This whole flow should be idempotent.
                 // Here we verify that we are indeed deleting the `EncryptionKeyPair` created
                 // for the Update commit
-                let after_clear_commit = cc.transaction.count_entities().await;
+                let after_clear_commit = session.transaction.count_entities().await;
                 assert_eq!(init, after_clear_commit);
             })
             .await

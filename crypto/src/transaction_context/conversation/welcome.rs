@@ -110,40 +110,19 @@ mod tests {
     #[apply(all_cred_cipher)]
     #[wasm_bindgen_test]
     async fn joining_from_welcome_should_prune_local_key_material(case: TestContext) {
-        let [alice_central, bob_central] = case.sessions().await;
+        let [alice, bob] = case.sessions().await;
         Box::pin(async move {
-            let id = conversation_id();
             // has to be before the original key_package count because it creates one
-            let bob = bob_central.rand_key_package(&case).await;
-            // Keep track of the whatever amount was initially generated
-            let prev_count = bob_central.transaction.count_entities().await;
-
             // Create a conversation from alice, where she invites bob
-            alice_central
-                .transaction
-                .new_conversation(&id, case.credential_type, case.cfg.clone())
-                .await
-                .unwrap();
+            let commit_guard = case.create_conversation([&alice]).await.invite_guarded([&bob]).await;
 
-            alice_central
-                .transaction
-                .conversation(&id)
-                .await
-                .unwrap()
-                .add_members(vec![bob])
-                .await
-                .unwrap();
-
-            let welcome = alice_central.mls_transport().await.latest_welcome_message().await;
+            // Keep track of the whatever amount was initially generated
+            let prev_count = bob.transaction.count_entities().await;
             // Bob accepts the welcome message, and as such, it should prune the used keypackage from the store
-            bob_central
-                .transaction
-                .process_welcome_message(welcome.into(), case.custom_cfg())
-                .await
-                .unwrap();
+            commit_guard.notify_members().await;
 
             // Ensure we're left with 1 less keypackage bundle in the store, because it was consumed with the OpenMLS Welcome message
-            let next_count = bob_central.transaction.count_entities().await;
+            let next_count = bob.transaction.count_entities().await;
             assert_eq!(next_count.key_package, prev_count.key_package - 1);
             assert_eq!(next_count.hpke_private_key, prev_count.hpke_private_key - 1);
             assert_eq!(next_count.encryption_keypair, prev_count.encryption_keypair - 1);
@@ -156,32 +135,20 @@ mod tests {
     async fn process_welcome_should_fail_when_already_exists(case: TestContext) {
         use crate::LeafError;
 
-        let [alice_central, bob_central] = case.sessions().await;
+        let [alice, bob] = case.sessions().await;
         Box::pin(async move {
-                let id = conversation_id();
-                alice_central
+            let commit = case.create_conversation([&alice]).await.invite_guarded([&bob]).await;
+            let conversation = commit.conversation();
+            let id = conversation.id().clone();
+                // Meanwhile Bob creates a conversation with the exact same id as the one he's trying to join
+                bob
                     .transaction
                     .new_conversation(&id, case.credential_type, case.cfg.clone())
-                    .await
-                    .unwrap();
-                let bob = bob_central.rand_key_package(&case).await;
-                alice_central
-                    .transaction
-                    .conversation(&id)
-                    .await
-                    .unwrap()
-                    .add_members(vec![bob])
                     .await
                     .unwrap();
 
-                let welcome = alice_central.mls_transport().await.latest_welcome_message().await;
-                // Meanwhile Bob creates a conversation with the exact same id as the one he's trying to join
-                bob_central
-                    .transaction
-                    .new_conversation(&id, case.credential_type, case.cfg.clone())
-                    .await
-                    .unwrap();
-                let join_welcome = bob_central
+                let welcome = conversation.transport().await.latest_welcome_message().await;
+                let join_welcome = bob
                     .transaction
                     .process_welcome_message(welcome.into(), case.custom_cfg())
                     .await;

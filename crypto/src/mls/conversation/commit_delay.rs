@@ -91,7 +91,6 @@ impl MlsConversation {
 mod tests {
     use super::*;
     use crate::test_utils::*;
-    use tls_codec::Serialize as _;
     use wasm_bindgen_test::*;
 
     wasm_bindgen_test_configure!(run_in_browser);
@@ -166,101 +165,24 @@ mod tests {
     #[apply(all_cred_cipher)]
     #[wasm_bindgen_test]
     async fn calculate_delay_creator_removed(case: TestContext) {
-        let [alice_central, bob_central, charlie_central] = case.sessions().await;
+        let [alice, bob, charlie] = case.sessions().await;
         Box::pin(async move {
-            let id = conversation_id();
+            let conversation = case.create_conversation([&alice, &bob, &charlie]).await;
+            assert_eq!(conversation.member_count().await, 3);
 
-            alice_central
-                .transaction
-                .new_conversation(&id, case.credential_type, case.cfg.clone())
-                .await
-                .unwrap();
+            let proposal_guard = conversation.remove_proposal_guarded(&alice).await;
+            let (proposal_guard, result) = proposal_guard.notify_member_failible(&bob).await;
+            let bob_decrypted_message = result.unwrap();
+            let (_, result) = proposal_guard.notify_member_failible(&charlie).await;
+            let charlie_decrypted_message = result.unwrap();
 
-            let bob = bob_central.rand_key_package(&case).await;
-            alice_central
-                .transaction
-                .conversation(&id)
-                .await
-                .unwrap()
-                .add_members(vec![bob])
-                .await
-                .unwrap();
-            let bob_welcome = alice_central.mls_transport().await.latest_welcome_message().await;
-            assert_eq!(alice_central.get_conversation_unchecked(&id).await.members().len(), 2);
-
-            bob_central
-                .transaction
-                .process_welcome_message(bob_welcome.clone().into(), case.custom_cfg())
-                .await
-                .unwrap();
-
-            let charlie = charlie_central.rand_key_package(&case).await;
-            alice_central
-                .transaction
-                .conversation(&id)
-                .await
-                .unwrap()
-                .add_members(vec![charlie])
-                .await
-                .unwrap();
-            let charlie_welcome_bundle = alice_central.mls_transport().await.latest_commit_bundle().await;
-            assert_eq!(alice_central.get_conversation_unchecked(&id).await.members().len(), 3);
-
-            let _ = bob_central
-                .transaction
-                .conversation(&id)
-                .await
-                .unwrap()
-                .decrypt_message(&charlie_welcome_bundle.commit.tls_serialize_detached().unwrap())
-                .await
-                .unwrap();
-
-            charlie_central
-                .transaction
-                .process_welcome_message(charlie_welcome_bundle.welcome.unwrap().into(), case.custom_cfg())
-                .await
-                .unwrap();
-
-            assert_eq!(
-                bob_central.get_conversation_unchecked(&id).await.id(),
-                alice_central.get_conversation_unchecked(&id).await.id()
-            );
-            assert_eq!(
-                charlie_central.get_conversation_unchecked(&id).await.id(),
-                alice_central.get_conversation_unchecked(&id).await.id()
-            );
-
-            let proposal_bundle = alice_central
-                .transaction
-                .new_remove_proposal(&id, alice_central.get_client_id().await)
-                .await
-                .unwrap();
-
-            let bob_hypothetical_position = 0;
-            let charlie_hypothetical_position = 1;
-
-            let bob_decrypted_message = bob_central
-                .transaction
-                .conversation(&id)
-                .await
-                .unwrap()
-                .decrypt_message(&proposal_bundle.proposal.tls_serialize_detached().unwrap())
-                .await
-                .unwrap();
+            let bob_hypothetical_position = 1;
+            let charlie_hypothetical_position = 0;
 
             assert_eq!(
                 bob_decrypted_message.delay,
                 Some(DELAY_POS_LINEAR_INCR * bob_hypothetical_position)
             );
-
-            let charlie_decrypted_message = charlie_central
-                .transaction
-                .conversation(&id)
-                .await
-                .unwrap()
-                .decrypt_message(&proposal_bundle.proposal.tls_serialize_detached().unwrap())
-                .await
-                .unwrap();
 
             assert_eq!(
                 charlie_decrypted_message.delay,
