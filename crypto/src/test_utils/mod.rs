@@ -91,7 +91,7 @@ pub(crate) use innermost_source_matches;
 pub struct SessionContext {
     pub transaction: TransactionContext,
     pub session: Session,
-    pub mls_transport: Arc<dyn MlsTransportTestExt>,
+    mls_transport: Arc<RwLock<Arc<dyn MlsTransportTestExt + 'static>>>,
     pub x509_test_chain: std::sync::Arc<Option<X509TestChain>>,
     // We need to store the `TempDir` struct for the duration of the test session,
     // because its drop implementation takes care of the directory deletion.
@@ -153,7 +153,7 @@ impl SessionContext {
         let result = Self {
             transaction,
             session,
-            mls_transport: transport,
+            mls_transport: Arc::new(RwLock::new(transport)),
             x509_test_chain: Arc::new(chain.cloned()),
             #[cfg(not(target_family = "wasm"))]
             _db_file: (db_dir_string, Arc::new(db_dir)),
@@ -183,7 +183,7 @@ impl SessionContext {
         Self {
             transaction: context.clone(),
             session: cc.mls,
-            mls_transport: transport.clone(),
+            mls_transport: Arc::new(RwLock::new(transport.clone())),
             x509_test_chain: None.into(),
             #[cfg(not(target_family = "wasm"))]
             _db_file: (db_dir_string, Arc::new(db_dir)),
@@ -240,6 +240,20 @@ impl SessionContext {
 
     pub async fn get_client_id(&self) -> ClientId {
         self.session.id().await.unwrap()
+    }
+
+    pub async fn replace_transport(&self, new_transport: Arc<dyn MlsTransportTestExt>) {
+        self.transaction
+            .set_transport_callbacks(Some(new_transport.clone()))
+            .await
+            .unwrap();
+
+        let mut transport_guard = self.mls_transport.write().await;
+        *transport_guard = new_transport;
+    }
+
+    pub async fn mls_transport(&self) -> Arc<dyn MlsTransportTestExt> {
+        self.mls_transport.read().await.clone()
     }
 }
 
