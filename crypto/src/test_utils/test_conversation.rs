@@ -50,8 +50,8 @@ impl<'a> TestConversation<'a> {
         let key_packages =
             futures_util::future::join_all(new_members.iter().map(|cc| cc.rand_key_package(self.case))).await;
         self.guard().await.add_members(key_packages).await.unwrap();
-        let welcome = self.transport().latest_commit_bundle().await.welcome.unwrap();
-        let commit = self.transport().latest_commit_bundle().await.commit;
+        let welcome = self.transport().await.latest_commit_bundle().await.welcome.unwrap();
+        let commit = self.transport().await.latest_commit_bundle().await.commit;
         CommitGuard {
             conversation: self,
             committed_operation: CommittedOperation::Add(AddGuard {
@@ -70,7 +70,7 @@ impl<'a> TestConversation<'a> {
 
     pub async fn update_guarded(self) -> CommitGuard<'a> {
         self.guard().await.update_key_material().await.unwrap();
-        let commit = self.transport().latest_commit_bundle().await.commit;
+        let commit = self.transport().await.latest_commit_bundle().await.commit;
         CommitGuard {
             conversation: self,
             committed_operation: CommittedOperation::Update(0),
@@ -80,7 +80,7 @@ impl<'a> TestConversation<'a> {
 
     pub async fn update_guarded_with(self, committer: &'a SessionContext) -> CommitGuard<'a> {
         self.guard_of(committer).await.update_key_material().await.unwrap();
-        let commit = committer.mls_transport.latest_commit_bundle().await.commit;
+        let commit = committer.mls_transport().await.latest_commit_bundle().await.commit;
         let committer_index = self.member_index(committer).await;
         CommitGuard {
             conversation: self,
@@ -101,8 +101,8 @@ impl<'a> TestConversation<'a> {
     }
 
     /// Convenience function to get the mls transport of the creator.
-    pub fn transport(&self) -> Arc<dyn MlsTransportTestExt> {
-        self.creator().mls_transport.clone()
+    pub async fn transport(&self) -> Arc<dyn MlsTransportTestExt> {
+        self.creator().mls_transport().await
     }
 
     /// Convenience function to get the conversation guard of this conversation.
@@ -167,7 +167,7 @@ impl<'a> TestConversation<'a> {
             .remove_members(&[member_id.to_owned()])
             .await
             .unwrap();
-        let commit = self.transport().latest_commit().await.to_bytes().unwrap();
+        let commit = self.transport().await.latest_commit().await.to_bytes().unwrap();
 
         // we already removed the member from the joined members of our conversation, so chain it in
         for joiner in std::iter::once(removed).chain(self.members.iter().copied()) {
@@ -304,7 +304,7 @@ impl<'a> TestConversation<'a> {
             .join_by_external_commit(group_info, self.case.custom_cfg(), self.case.credential_type)
             .await
             .unwrap();
-        let join_commit = joiner.mls_transport.latest_commit().await;
+        let join_commit = joiner.mls_transport().await.latest_commit().await;
 
         CommitGuard {
             conversation: self,

@@ -294,7 +294,7 @@ mod tests {
                 .e2ei_rotate(Some(&cb))
                 .await
                 .unwrap();
-            let commit = alice_central.mls_transport.latest_commit().await;
+            let commit = alice_central.mls_transport().await.latest_commit().await;
             bob_central
                 .transaction
                 .conversation(&id)

@@ -174,7 +174,7 @@ mod tests {
                     .add_members(vec![invalid_kp.into()])
                     .await
                     .unwrap();
-                let commit = alice_central.mls_transport.latest_commit().await;
+                let commit = alice_central.mls_transport().await.latest_commit().await;
                 let commit = commit.to_bytes().unwrap();
 
                 let elapsed = start.elapsed();
@@ -240,7 +240,12 @@ mod tests {
                 let process_welcome = bob_central
                     .transaction
                     .process_welcome_message(
-                        alice_central.mls_transport.latest_welcome_message().await.into(),
+                        alice_central
+                            .mls_transport()
+                            .await
+                            .latest_welcome_message()
+                            .await
+                            .into(),
                         case.custom_cfg(),
                     )
                     .await;

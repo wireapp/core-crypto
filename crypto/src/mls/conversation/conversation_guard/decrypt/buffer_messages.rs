@@ -234,7 +234,7 @@ mod tests {
                 .add_members(vec![charlie])
                 .await
                 .unwrap();
-            let commit = alice_central.mls_transport.latest_commit_bundle().await;
+            let commit = alice_central.mls_transport().await.latest_commit_bundle().await;
             charlie_central
                 .transaction
                 .process_welcome_message(commit.welcome.clone().unwrap().into(), case.custom_cfg())
@@ -351,7 +351,7 @@ mod tests {
                 .await
                 .unwrap();
 
-            let ext_commit = bob_central.mls_transport.latest_commit_bundle().await;
+            let ext_commit = bob_central.mls_transport().await.latest_commit_bundle().await;
 
             // And before others had the chance to get the commit, Bob will create & send messages in the next epoch
             // which Alice will have to buffer until she receives the commit.
@@ -388,7 +388,7 @@ mod tests {
                 .add_members(vec![debbie])
                 .await
                 .unwrap();
-            let commit = bob_central.mls_transport.latest_commit_bundle().await;
+            let commit = bob_central.mls_transport().await.latest_commit_bundle().await;
             charlie_central
                 .transaction
                 .process_welcome_message(commit.welcome.clone().unwrap().into(), case.custom_cfg())
@@ -680,7 +680,7 @@ mod tests {
                 .commit_pending_proposals()
                 .await
                 .unwrap();
-            let remove_two_members_commit = member_27.mls_transport.latest_commit().await;
+            let remove_two_members_commit = member_27.mls_transport().await.latest_commit().await;
 
             // In this case, note that observer receives the proposal before the commit.
             // This is the straightforward ordering and easy to deal with.

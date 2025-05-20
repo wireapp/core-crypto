@@ -140,7 +140,7 @@ mod tests {
                 // guest joined the group
                 assert_eq!(owner_central.get_conversation_unchecked(&id).await.members().len(), 2);
 
-                let welcome = guest_central.mls_transport.latest_welcome_message().await;
+                let welcome = guest_central.mls_transport().await.latest_welcome_message().await;
                 guest_central
                     .transaction
                     .process_welcome_message(welcome.into(), case.custom_cfg())
@@ -218,7 +218,7 @@ mod tests {
                     .commit_pending_proposals()
                     .await
                     .unwrap();
-                let commit = owner.mls_transport.latest_commit().await;
+                let commit = owner.mls_transport().await.latest_commit().await;
 
                 assert_eq!(owner.get_conversation_unchecked(&id).await.members().len(), 1);
 
@@ -418,8 +418,8 @@ mod tests {
                     .add_members(vec![charlie_kp])
                     .await
                     .unwrap();
-                let welcome = alice.mls_transport.latest_welcome_message().await;
-                let commit = alice.mls_transport.latest_commit().await;
+                let welcome = alice.mls_transport().await.latest_welcome_message().await;
+                let commit = alice.mls_transport().await.latest_commit().await;
                 bob_central
                     .conversation(&id)
                     .await
@@ -479,7 +479,7 @@ mod tests {
                     .commit_pending_proposals()
                     .await
                     .unwrap();
-                let commit = charlie.mls_transport.latest_commit().await;
+                let commit = charlie.mls_transport().await.latest_commit().await;
                 assert_eq!(charlie.get_conversation_unchecked(&id).await.members().len(), 2);
 
                 alice_central
@@ -535,7 +535,7 @@ mod tests {
                     .join_by_external_commit(public_group_state, case.custom_cfg(), case.credential_type)
                     .await
                     .unwrap();
-                let commit = charlie.mls_transport.latest_commit().await;
+                let commit = charlie.mls_transport().await.latest_commit().await;
 
                 // Purposely have a configuration without `external_senders`
                 alice_central
@@ -602,7 +602,7 @@ mod tests {
                     .unwrap();
                 assert_eq!(charlie.get_conversation_unchecked(&id).await.members().len(), 2);
 
-                let commit = charlie.mls_transport.latest_commit().await;
+                let commit = charlie.mls_transport().await.latest_commit().await;
                 alice_central
                     .conversation(&id)
                     .await

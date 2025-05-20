@@ -683,7 +683,7 @@ mod tests {
                     .await
                     .unwrap();
 
-                let commit = alice_central.mls_transport.latest_commit().await;
+                let commit = alice_central.mls_transport().await.latest_commit().await;
 
                 let decrypted = bob_central
                     .transaction
@@ -762,7 +762,7 @@ mod tests {
                     .await
                     .unwrap();
 
-                let commit = bob_central.mls_transport.latest_commit().await;
+                let commit = bob_central.mls_transport().await.latest_commit().await;
 
                 let decrypted = alice_central
                     .transaction
@@ -841,7 +841,7 @@ mod tests {
                         .e2ei_rotate(Some(&cb))
                         .await
                         .unwrap();
-                    let commit = alice_central.mls_transport.latest_commit().await;
+                    let commit = alice_central.mls_transport().await.latest_commit().await;
 
                     // Bob decrypts the commit...
                     let decrypted = bob_central
@@ -918,7 +918,7 @@ mod tests {
                     .await
                     .unwrap();
                 // accepted by the backend
-                let bob_commit = bob_central.mls_transport.latest_commit().await;
+                let bob_commit = bob_central.mls_transport().await.latest_commit().await;
 
                 // Alice decrypts the commit...
                 let decrypted = alice_central
@@ -956,7 +956,7 @@ mod tests {
                     .verify_local_credential_rotated(&id, new_handle, new_display_name)
                     .await;
 
-                let rotate_commit = alice_central.mls_transport.latest_commit().await;
+                let rotate_commit = alice_central.mls_transport().await.latest_commit().await;
                 // Bob verifies that now Alice is represented with her new identity
                 let decrypted = bob_central
                     .transaction
@@ -1026,7 +1026,7 @@ mod tests {
                         .e2ei_rotate(None)
                         .await
                         .unwrap();
-                    let commit = alice_central.mls_transport.latest_commit().await;
+                    let commit = alice_central.mls_transport().await.latest_commit().await;
 
                     // Bob decrypts the commit...
                     let decrypted = bob_central

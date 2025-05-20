@@ -584,7 +584,7 @@ mod tests {
             );
             assert_eq!(alice_central.get_conversation_unchecked(&id).await.members().len(), 2);
 
-            let welcome = alice_central.mls_transport.latest_welcome_message().await;
+            let welcome = alice_central.mls_transport().await.latest_welcome_message().await;
             bob_central
                 .transaction
                 .process_welcome_message(welcome.into(), case.custom_cfg())
@@ -628,7 +628,7 @@ mod tests {
                 .add_members(bob_and_friends_kps)
                 .await
                 .unwrap();
-            let welcome = alice_central.mls_transport.latest_welcome_message().await;
+            let welcome = alice_central.mls_transport().await.latest_welcome_message().await;
 
             assert_eq!(alice_central.get_conversation_unchecked(&id).await.id, id);
             assert_eq!(

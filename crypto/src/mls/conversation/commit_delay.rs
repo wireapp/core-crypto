@@ -185,7 +185,7 @@ mod tests {
                 .add_members(vec![bob])
                 .await
                 .unwrap();
-            let bob_welcome = alice_central.mls_transport.latest_welcome_message().await;
+            let bob_welcome = alice_central.mls_transport().await.latest_welcome_message().await;
             assert_eq!(alice_central.get_conversation_unchecked(&id).await.members().len(), 2);
 
             bob_central
@@ -203,7 +203,7 @@ mod tests {
                 .add_members(vec![charlie])
                 .await
                 .unwrap();
-            let charlie_welcome_bundle = alice_central.mls_transport.latest_commit_bundle().await;
+            let charlie_welcome_bundle = alice_central.mls_transport().await.latest_commit_bundle().await;
             assert_eq!(alice_central.get_conversation_unchecked(&id).await.members().len(), 3);
 
             let _ = bob_central

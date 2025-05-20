@@ -386,7 +386,7 @@ mod tests {
                 .add_members(vec![charlie])
                 .await
                 .unwrap();
-            let commit = alice_central.mls_transport.latest_commit_bundle().await;
+            let commit = alice_central.mls_transport().await.latest_commit_bundle().await;
             charlie_central
                 .transaction
                 .process_welcome_message(commit.welcome.clone().unwrap().into(), case.custom_cfg())
@@ -543,7 +543,7 @@ mod tests {
                 .await
                 .unwrap();
 
-            let ext_commit = alice_central.mls_transport.latest_commit_bundle().await;
+            let ext_commit = alice_central.mls_transport().await.latest_commit_bundle().await;
 
             bob_central
                 .transaction

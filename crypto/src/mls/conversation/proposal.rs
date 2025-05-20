@@ -209,8 +209,8 @@ mod tests {
                     .commit_pending_proposals()
                     .await
                     .unwrap();
-                let commit = bob_central.mls_transport.latest_commit().await;
-                let welcome = bob_central.mls_transport.latest_welcome_message().await;
+                let commit = bob_central.mls_transport().await.latest_commit().await;
+                let welcome = bob_central.mls_transport().await.latest_welcome_message().await;
                 assert_eq!(bob_central.get_conversation_unchecked(&id).await.members().len(), 3);
 
                 // if 'new_proposal' wasn't durable this would fail because proposal would
@@ -283,7 +283,7 @@ mod tests {
                     .commit_pending_proposals()
                     .await
                     .unwrap();
-                let commit = bob_central.mls_transport.latest_commit().await;
+                let commit = bob_central.mls_transport().await.latest_commit().await;
                 assert_eq!(bob_central.get_conversation_unchecked(&id).await.members().len(), 2);
 
                 // if 'new_proposal' wasn't durable this would fail because proposal would
@@ -355,7 +355,7 @@ mod tests {
                     .commit_pending_proposals()
                     .await
                     .unwrap();
-                let commit = bob_central.mls_transport.latest_commit().await;
+                let commit = bob_central.mls_transport().await.latest_commit().await;
 
                 assert!(
                     !bob_central

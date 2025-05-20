@@ -45,7 +45,7 @@ mod tests {
                 // ...Bob deletes locally (with the associated private key) before processing the Welcome
                 bob_central.transaction.delete_keypackages(&[bob_kp_ref]).await.unwrap();
 
-                let welcome = alice_central.mls_transport.latest_welcome_message().await;
+                let welcome = alice_central.mls_transport().await.latest_welcome_message().await;
 
                 // in that case a dedicated error is thrown for clients to identify this case
                 // and rejoin with an external commit

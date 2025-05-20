@@ -134,7 +134,7 @@ mod tests {
                 .await
                 .unwrap();
 
-            let welcome = alice_central.mls_transport.latest_welcome_message().await;
+            let welcome = alice_central.mls_transport().await.latest_welcome_message().await;
             // Bob accepts the welcome message, and as such, it should prune the used keypackage from the store
             bob_central
                 .transaction
@@ -174,7 +174,7 @@ mod tests {
                     .await
                     .unwrap();
 
-                let welcome = alice_central.mls_transport.latest_welcome_message().await;
+                let welcome = alice_central.mls_transport().await.latest_welcome_message().await;
                 // Meanwhile Bob creates a conversation with the exact same id as the one he's trying to join
                 bob_central
                     .transaction

@@ -206,7 +206,7 @@ impl SessionContext {
             .add_members(key_packages)
             .await
             .map_err(RecursiveError::mls_conversation("adding members"))?;
-        let welcome = self.mls_transport.latest_commit_bundle().await.welcome.unwrap();
+        let welcome = self.mls_transport().await.latest_commit_bundle().await.welcome.unwrap();
 
         for other in &others {
             other
@@ -249,7 +249,7 @@ impl SessionContext {
             .await
             .map_err(RecursiveError::transaction("joining by external commit"))?;
 
-        let commit = self.mls_transport.latest_commit().await;
+        let commit = self.mls_transport().await.latest_commit().await;
 
         assert_eq!(conversation_id.as_slice(), id.as_slice());
         for other in others {
@@ -558,7 +558,7 @@ impl SessionContext {
                 .e2ei_rotate(None)
                 .await
                 .map_err(RecursiveError::mls_conversation("e2ei rotating"))?;
-            let commit = self.mls_transport.latest_commit_bundle().await;
+            let commit = self.mls_transport().await.latest_commit_bundle().await;
             conversation_ids_and_commits.push((id, commit));
         }
         let new_key_packages = self

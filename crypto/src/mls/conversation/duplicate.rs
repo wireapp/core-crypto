@@ -86,7 +86,7 @@ mod tests {
                     .update_key_material()
                     .await
                     .unwrap();
-                let commit = alice_central.mls_transport.latest_commit().await;
+                let commit = alice_central.mls_transport().await.latest_commit().await;
 
                 // decrypt once ... ok
                 bob_central
@@ -148,7 +148,7 @@ mod tests {
                 .join_by_external_commit(gi, case.custom_cfg(), case.credential_type)
                 .await
                 .unwrap();
-            let ext_commit = bob_central.mls_transport.latest_commit().await;
+            let ext_commit = bob_central.mls_transport().await.latest_commit().await;
 
             // decrypt once ... ok
             alice_central

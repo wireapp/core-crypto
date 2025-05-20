@@ -200,7 +200,7 @@ mod tests {
                     .update_key_material()
                     .await
                     .unwrap();
-                let commit = bob_central.mls_transport.latest_commit().await;
+                let commit = bob_central.mls_transport().await.latest_commit().await;
 
                 let proposals = alice_central
                     .transaction
@@ -224,7 +224,7 @@ mod tests {
                     .update_key_material()
                     .await
                     .unwrap();
-                let commit = bob_central.mls_transport.latest_commit().await;
+                let commit = bob_central.mls_transport().await.latest_commit().await;
                 let proposals = alice_central
                     .transaction
                     .conversation(&id)
@@ -282,7 +282,7 @@ mod tests {
                     .update_key_material()
                     .await
                     .unwrap();
-                let commit = bob_central.mls_transport.latest_commit().await;
+                let commit = bob_central.mls_transport().await.latest_commit().await;
 
                 // Bob's commit has Alice's proposal
                 let proposals = alice_central
@@ -320,7 +320,7 @@ mod tests {
                     .update_key_material()
                     .await
                     .unwrap();
-                let commit = bob_central.mls_transport.latest_commit().await;
+                let commit = bob_central.mls_transport().await.latest_commit().await;
                 let proposals = alice_central
                     .transaction
                     .conversation(&id)
@@ -374,7 +374,7 @@ mod tests {
                     .update_key_material()
                     .await
                     .unwrap();
-                let commit = charlie_central.mls_transport.latest_commit().await;
+                let commit = charlie_central.mls_transport().await.latest_commit().await;
                 let proposals = alice_central
                     .transaction
                     .conversation(&id)
@@ -426,7 +426,7 @@ mod tests {
                     .add_members(vec![charlie])
                     .await
                     .unwrap();
-                let commit = bob_central.mls_transport.latest_commit().await;
+                let commit = bob_central.mls_transport().await.latest_commit().await;
                 let proposals = alice_central
                     .transaction
                     .conversation(&id)
@@ -478,7 +478,7 @@ mod tests {
                     .add_members(vec![charlie])
                     .await
                     .unwrap();
-                let commit = bob_central.mls_transport.latest_commit().await;
+                let commit = bob_central.mls_transport().await.latest_commit().await;
                 let proposals = alice_central
                     .transaction
                     .conversation(&id)
@@ -538,7 +538,7 @@ mod tests {
                     .update_key_material()
                     .await
                     .unwrap();
-                let commit = charlie_central.mls_transport.latest_commit().await;
+                let commit = charlie_central.mls_transport().await.latest_commit().await;
                 let proposals = alice_central
                     .transaction
                     .conversation(&id)
@@ -587,7 +587,7 @@ mod tests {
                     .update_key_material()
                     .await
                     .unwrap();
-                let commit = bob_central.mls_transport.latest_commit().await;
+                let commit = bob_central.mls_transport().await.latest_commit().await;
                 let proposals = alice_central
                     .transaction
                     .conversation(&id)
@@ -612,7 +612,7 @@ mod tests {
                     .update_key_material()
                     .await
                     .unwrap();
-                let commit = bob_central.mls_transport.latest_commit().await;
+                let commit = bob_central.mls_transport().await.latest_commit().await;
                 let proposals = alice_central
                     .transaction
                     .conversation(&id)
@@ -656,7 +656,7 @@ mod tests {
                     .update_key_material()
                     .await
                     .unwrap();
-                let commit = bob_central.mls_transport.latest_commit().await;
+                let commit = bob_central.mls_transport().await.latest_commit().await;
                 let proposals = alice_central
                     .transaction
                     .conversation(&id)
@@ -709,7 +709,7 @@ mod tests {
                     .remove_members(&[charlie_central.get_client_id().await])
                     .await
                     .unwrap();
-                let commit = bob_central.mls_transport.latest_commit().await;
+                let commit = bob_central.mls_transport().await.latest_commit().await;
                 let proposals = alice_central
                     .transaction
                     .conversation(&id)
@@ -767,7 +767,7 @@ mod tests {
                     .update_key_material()
                     .await
                     .unwrap();
-                let commit = charlie_central.mls_transport.latest_commit().await;
+                let commit = charlie_central.mls_transport().await.latest_commit().await;
                 let proposals = alice_central
                     .transaction
                     .conversation(&id)
@@ -818,7 +818,7 @@ mod tests {
                     .remove_members(&[debbie_central.get_client_id().await])
                     .await
                     .unwrap();
-                let commit = bob_central.mls_transport.latest_commit().await;
+                let commit = bob_central.mls_transport().await.latest_commit().await;
                 let proposals = alice_central
                     .transaction
                     .conversation(&id)
@@ -869,7 +869,7 @@ mod tests {
                     .remove_members(&[debbie_central.get_client_id().await])
                     .await
                     .unwrap();
-                let commit = bob_central.mls_transport.latest_commit().await;
+                let commit = bob_central.mls_transport().await.latest_commit().await;
                 let proposals = alice_central
                     .transaction
                     .conversation(&id)
@@ -919,7 +919,7 @@ mod tests {
                     .remove_members(&[debbie_central.get_client_id().await])
                     .await
                     .unwrap();
-                let commit = bob_central.mls_transport.latest_commit().await;
+                let commit = bob_central.mls_transport().await.latest_commit().await;
                 let proposals = alice_central
                     .transaction
                     .conversation(&id)

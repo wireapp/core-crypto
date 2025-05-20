@@ -102,7 +102,7 @@ mod tests {
                     .commit_pending_proposals()
                     .await
                     .unwrap();
-                let welcome = alice_central.mls_transport.latest_welcome_message().await;
+                let welcome = alice_central.mls_transport().await.latest_welcome_message().await;
                 assert_eq!(alice_central.get_conversation_unchecked(&id).await.members().len(), 2);
                 let new_id = bob_central
                     .transaction
@@ -197,7 +197,7 @@ mod tests {
                     .unwrap();
                 assert_eq!(alice_central.get_conversation_unchecked(&id).await.members().len(), 1);
 
-                let commit = alice_central.mls_transport.latest_commit().await;
+                let commit = alice_central.mls_transport().await.latest_commit().await;
                 bob_central
                     .transaction
                     .conversation(&id)

@@ -267,7 +267,7 @@ mod tests {
             assert!(bob_central.transaction.conversation(&id).await.is_ok());
             assert_eq!(bob_central.get_conversation_unchecked(&id).await.members().len(), 2);
 
-            let external_commit = bob_central.mls_transport.latest_commit().await;
+            let external_commit = bob_central.mls_transport().await.latest_commit().await;
             // Alice decrypts the external commit and adds Bob
             assert_eq!(alice_central.get_conversation_unchecked(&id).await.members().len(), 1);
             alice_central
@@ -307,7 +307,7 @@ mod tests {
                 .await
                 .unwrap();
 
-            let external_commit = bob_central.mls_transport.latest_commit().await;
+            let external_commit = bob_central.mls_transport().await.latest_commit().await;
 
             // Alice creates a new commit before receiving the external join
             alice_central
@@ -395,7 +395,7 @@ mod tests {
                 .await
                 .unwrap();
 
-            let bob_external_commit = bob_central.mls_transport.latest_commit().await;
+            let bob_external_commit = bob_central.mls_transport().await.latest_commit().await;
             assert!(bob_central.transaction.conversation(&id).await.is_ok());
             assert_eq!(bob_central.get_conversation_unchecked(&id).await.members().len(), 2);
 
@@ -412,7 +412,7 @@ mod tests {
             assert!(alice_central.try_talk_to(&id, &bob_central).await.is_ok());
 
             // Now charlie wants to join with the [GroupInfo] from Bob's external commit
-            let group_info = bob_central.mls_transport.latest_group_info().await;
+            let group_info = bob_central.mls_transport().await.latest_group_info().await;
             let bob_gi = group_info.get_group_info();
             charlie_central
                 .transaction
@@ -420,7 +420,7 @@ mod tests {
                 .await
                 .unwrap();
 
-            let charlie_external_commit = charlie_central.mls_transport.latest_commit().await;
+            let charlie_external_commit = charlie_central.mls_transport().await.latest_commit().await;
 
             // Both Alice & Bob decrypt the commit
             alice_central
@@ -550,7 +550,7 @@ mod tests {
                     .await
                     .unwrap();
 
-                let welcome = alice_central.mls_transport.latest_welcome_message().await;
+                let welcome = alice_central.mls_transport().await.latest_welcome_message().await;
                 // erroneous call
                 let conflict_welcome = bob_central
                     .transaction

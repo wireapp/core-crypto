@@ -298,7 +298,8 @@ mod tests {
                     .unwrap();
 
                 let welcome = alice_central
-                    .mls_transport
+                    .mls_transport()
+                    .await
                     .latest_commit_bundle()
                     .await
                     .welcome
@@ -335,7 +336,7 @@ mod tests {
                     .add_members(vec![bob])
                     .await
                     .unwrap();
-                let commit_bundle = alice_central.mls_transport.latest_commit_bundle().await;
+                let commit_bundle = alice_central.mls_transport().await.latest_commit_bundle().await;
                 let group_info = commit_bundle.group_info.get_group_info();
 
                 assert!(
@@ -374,7 +375,8 @@ mod tests {
                     .remove_members(&[bob_central.get_client_id().await])
                     .await
                     .unwrap();
-                let MlsCommitBundle { commit, welcome, .. } = alice_central.mls_transport.latest_commit_bundle().await;
+                let MlsCommitBundle { commit, welcome, .. } =
+                    alice_central.mls_transport().await.latest_commit_bundle().await;
                 assert!(welcome.is_none());
 
                 assert_eq!(alice_central.get_conversation_unchecked(&id).await.members().len(), 1);
@@ -436,7 +438,7 @@ mod tests {
                     .await
                     .unwrap();
 
-                let welcome = alice_central.mls_transport.latest_welcome_message().await;
+                let welcome = alice_central.mls_transport().await.latest_welcome_message().await;
 
                 assert!(
                     guest_central
@@ -473,7 +475,7 @@ mod tests {
                     .await
                     .unwrap();
 
-                let commit_bundle = alice_central.mls_transport.latest_commit_bundle().await;
+                let commit_bundle = alice_central.mls_transport().await.latest_commit_bundle().await;
 
                 let group_info = commit_bundle.group_info.get_group_info();
 
@@ -533,7 +535,8 @@ mod tests {
                     .update_key_material()
                     .await
                     .unwrap();
-                let MlsCommitBundle { commit, welcome, .. } = alice_central.mls_transport.latest_commit_bundle().await;
+                let MlsCommitBundle { commit, welcome, .. } =
+                    alice_central.mls_transport().await.latest_commit_bundle().await;
                 assert!(welcome.is_none());
 
                 assert!(
@@ -645,7 +648,8 @@ mod tests {
                     .update_key_material()
                     .await
                     .unwrap();
-                let MlsCommitBundle { commit, welcome, .. } = alice_central.mls_transport.latest_commit_bundle().await;
+                let MlsCommitBundle { commit, welcome, .. } =
+                    alice_central.mls_transport().await.latest_commit_bundle().await;
                 assert!(welcome.is_some());
                 assert!(
                     !alice_central
@@ -736,7 +740,8 @@ mod tests {
                     .update_key_material()
                     .await
                     .unwrap();
-                let MlsCommitBundle { commit, welcome, .. } = alice_central.mls_transport.latest_commit_bundle().await;
+                let MlsCommitBundle { commit, welcome, .. } =
+                    alice_central.mls_transport().await.latest_commit_bundle().await;
 
                 bob_central
                     .transaction
@@ -783,7 +788,7 @@ mod tests {
                     .update_key_material()
                     .await
                     .unwrap();
-                let group_info = alice_central.mls_transport.latest_group_info().await;
+                let group_info = alice_central.mls_transport().await.latest_group_info().await;
                 let group_info = group_info.get_group_info();
 
                 assert!(
@@ -828,7 +833,7 @@ mod tests {
                     .unwrap();
                 assert_eq!(alice_central.get_conversation_unchecked(&id).await.members().len(), 2);
 
-                let welcome = alice_central.mls_transport.latest_commit_bundle().await.welcome;
+                let welcome = alice_central.mls_transport().await.latest_commit_bundle().await.welcome;
                 bob_central
                     .transaction
                     .process_welcome_message(welcome.unwrap().into(), case.custom_cfg())
@@ -875,7 +880,7 @@ mod tests {
                     .commit_pending_proposals()
                     .await
                     .unwrap();
-                let commit = alice_central.mls_transport.latest_commit_bundle().await.commit;
+                let commit = alice_central.mls_transport().await.latest_commit_bundle().await.commit;
                 assert_eq!(alice_central.get_conversation_unchecked(&id).await.members().len(), 3);
 
                 bob_central
@@ -917,7 +922,7 @@ mod tests {
                     .await
                     .unwrap();
 
-                let welcome = alice_central.mls_transport.latest_commit_bundle().await.welcome;
+                let welcome = alice_central.mls_transport().await.latest_commit_bundle().await.welcome;
 
                 bob_central
                     .transaction
@@ -953,7 +958,7 @@ mod tests {
                     .commit_pending_proposals()
                     .await
                     .unwrap();
-                let commit_bundle = alice_central.mls_transport.latest_commit_bundle().await;
+                let commit_bundle = alice_central.mls_transport().await.latest_commit_bundle().await;
                 let group_info = commit_bundle.group_info.get_group_info();
 
                 assert!(
@@ -991,7 +996,7 @@ mod tests {
                     .update_key_material()
                     .await
                     .unwrap();
-                let commit1 = alice_central.mls_transport.latest_commit().await;
+                let commit1 = alice_central.mls_transport().await.latest_commit().await;
                 let commit1 = commit1.to_bytes().unwrap();
                 alice_central
                     .transaction
@@ -1001,7 +1006,7 @@ mod tests {
                     .update_key_material()
                     .await
                     .unwrap();
-                let commit2 = alice_central.mls_transport.latest_commit().await;
+                let commit2 = alice_central.mls_transport().await.latest_commit().await;
                 let commit2 = commit2.to_bytes().unwrap();
 
                 // fails when a commit is skipped
@@ -1076,7 +1081,7 @@ mod tests {
                     .update_key_material()
                     .await
                     .unwrap();
-                let commit1 = alice_central.mls_transport.latest_commit().await;
+                let commit1 = alice_central.mls_transport().await.latest_commit().await;
                 let commit2 = commit1.clone();
 
                 // replayed encrypted proposal should fail
