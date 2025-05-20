@@ -322,12 +322,57 @@ impl TestContext {
         &'a self,
         members: impl IntoIterator<Item = &'a SessionContext>,
     ) -> TestConversation<'a> {
+        self.create_conversation_with_credential_type(self.credential_type, members)
+            .await
+    }
+
+    /// Create a test conversation.
+    ///
+    /// The first member is required, and is the conversation's creator.
+    pub async fn create_conversation_with_external_sender<'a>(
+        &'a mut self,
+        external_sender: &SessionContext,
+        members: impl IntoIterator<Item = &'a SessionContext>,
+    ) -> TestConversation<'a> {
+        let mut members = members.into_iter().peekable();
+        let creator = members.peek().unwrap();
+        let signature_key = external_sender.client_signature_key(self).await.as_slice().to_vec();
+        creator
+            .transaction
+            .set_raw_external_senders(&mut self.cfg, vec![signature_key])
+            .await
+            .unwrap();
+        self.create_conversation_with_credential_type(self.credential_type, members)
+            .await
+    }
+
+    /// Create a test conversation with the specified credential type.
+    ///
+    /// The first member is required, and is the conversation's creator.
+    pub async fn create_conversation_with_credential_type<'a>(
+        &'a self,
+        credential_type: MlsCredentialType,
+        members: impl IntoIterator<Item = &'a SessionContext>,
+    ) -> TestConversation<'a> {
+        self.create_heterogeneous_conversation(credential_type, credential_type, members)
+            .await
+    }
+
+    /// Create a test conversation with a credential type, invite sessions with another.
+    ///
+    /// The first member is required, and is the conversation's creator.
+    pub async fn create_heterogeneous_conversation<'a>(
+        &'a self,
+        creator_credential_type: MlsCredentialType,
+        member_credential_type: MlsCredentialType,
+        members: impl IntoIterator<Item = &'a SessionContext>,
+    ) -> TestConversation<'a> {
         let mut members = members.into_iter();
         let creator = members
             .next()
             .expect("each conversation needs at least 1 member, the creator");
 
-        let conversation = TestConversation::new(self, creator).await;
+        let conversation = TestConversation::new_with_credential_type(self, creator, creator_credential_type).await;
 
         // if members are empty, return early here
         let mut members = members.peekable();
@@ -335,7 +380,9 @@ impl TestContext {
             return conversation;
         }
 
-        conversation.invite(members).await
+        conversation
+            .invite_with_credential_type(member_credential_type, members)
+            .await
     }
 }
 
