@@ -1,7 +1,9 @@
+use std::hint::black_box;
+
 use crate::utils::{proteus_bench::*, *};
 use core_crypto::prelude::{CertificateBundle, MlsCiphersuite};
 use criterion::{
-    BatchSize, BenchmarkId, Criterion, async_executor::AsyncStdExecutor as FuturesExecutor, black_box, criterion_group,
+    BatchSize, BenchmarkId, Criterion, async_executor::AsyncStdExecutor as FuturesExecutor, criterion_group,
     criterion_main,
 };
 

@@ -1,8 +1,9 @@
 /// Benchmarks related to commit creation.
 /// We're measuring the impact of different parameters on the runtime.
+use std::hint::black_box;
+
 use criterion::{
-    BatchSize, Criterion, async_executor::AsyncStdExecutor as FuturesExecutor, black_box, criterion_group,
-    criterion_main,
+    BatchSize, Criterion, async_executor::AsyncStdExecutor as FuturesExecutor, criterion_group, criterion_main,
 };
 
 use crate::utils::*;
