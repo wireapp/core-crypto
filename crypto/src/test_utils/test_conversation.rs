@@ -39,6 +39,23 @@ impl<'a> TestConversation<'a> {
         &self.id
     }
 
+    /// Count the members. Also, assert that the count is the same from the point of view of every member.
+    pub async fn member_count(&self) -> usize {
+        let member_count = self.members.len();
+
+        let member_counts_match = futures_util::future::join_all(
+            self.members()
+                .map(|member| member.get_conversation_unchecked(self.id())),
+        )
+        .await
+        .iter()
+        .map(|conv| conv.members().len())
+        .all(|count| count == member_count);
+
+        assert!(member_counts_match);
+        member_count
+    }
+
     /// Invite all sessions into this conversation and notify all members, old and new.
     pub async fn invite(self, sessions: impl IntoIterator<Item = &'a SessionContext>) -> TestConversation<'a> {
         let commit_guard = self.invite_guarded(sessions).await;
