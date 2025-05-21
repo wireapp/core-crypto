@@ -55,6 +55,45 @@ impl<'a> TestConversation<'a> {
         member_count
     }
 
+    pub async fn are_members(&self, members_to_check: impl IntoIterator<Item = &'a SessionContext>) -> bool {
+        let member_ids = futures_util::future::join_all(self.members().map(|member| member.get_client_id())).await;
+        for member in members_to_check.into_iter() {
+            let id = member.get_client_id().await;
+            if !member_ids.contains(&id) {
+                return false;
+            }
+        }
+        true
+    }
+
+    pub async fn is_member(&self, member: &SessionContext) -> bool {
+        self.are_members([member]).await
+    }
+
+    /// Check if the provided members are in the conversation and all members can talk to one another.
+    pub async fn is_functional_with(&self, members_to_check: impl IntoIterator<Item = &'a SessionContext>) -> bool {
+        self.are_members(members_to_check).await && self.is_functional().await
+    }
+
+    /// Check if all members can talk to one another.
+    pub async fn is_functional(&self) -> bool {
+        let result_futures = self.members().enumerate().flat_map(|(idx, member)| {
+            self.members()
+                .enumerate()
+                .filter(move |(other_idx, _)| idx != *other_idx)
+                .map(move |(_, other_member)| self.can_talk(member, other_member))
+        });
+
+        futures_util::future::join_all(result_futures)
+            .await
+            .iter()
+            .all(|members_can_talk| *members_can_talk)
+    }
+
+    pub async fn can_talk(&self, member: &SessionContext, other_member: &SessionContext) -> bool {
+        member.try_talk_to(self.id(), other_member).await.is_ok()
+    }
+
     /// Invite all sessions into this conversation and notify all members, old and new.
     pub async fn invite(self, sessions: impl IntoIterator<Item = &'a SessionContext>) -> TestConversation<'a> {
         let commit_guard = self.invite_guarded(sessions).await;
