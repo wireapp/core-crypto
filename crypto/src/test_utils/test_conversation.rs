@@ -1,6 +1,6 @@
 use std::{marker::PhantomData, sync::Arc};
 
-use openmls::prelude::MlsMessageOut;
+use openmls::prelude::{MlsMessageOut, group_info::VerifiableGroupInfo};
 
 use crate::{
     mls::{HasSessionAndCrypto as _, conversation::ConversationGuard},
@@ -459,13 +459,42 @@ impl<'a> OperationGuard<'a, Proposal> {
 }
 
 impl<'a> TestConversation<'a> {
+    /// See [Self::external_join_guarded]
+    pub async fn external_join(self, joiner: &'a SessionContext) -> TestConversation<'a> {
+        self.external_join_guarded(joiner).await.notify_members().await
+    }
+
+    pub async fn external_join_via_group_info(
+        self,
+        joiner: &'a SessionContext,
+        group_info: VerifiableGroupInfo,
+    ) -> TestConversation<'a> {
+        self.external_join_via_group_info_guarded(joiner, group_info)
+            .await
+            .notify_members()
+            .await
+    }
+
     /// The supplied session joins this conversation by external commit.
     ///
     /// This does _not_ distribute the external commit to the existing members. To do that,
     /// use the [`notify_existing_members` method][CommitGuard::notify_members] of
     /// the returned item.
-    pub async fn external_join(self, joiner: &'a SessionContext) -> OperationGuard<'a, Commit> {
+    pub async fn external_join_guarded(self, joiner: &'a SessionContext) -> OperationGuard<'a, Commit> {
         let group_info = self.creator().get_group_info(&self.id).await;
+        self.external_join_via_group_info_guarded(joiner, group_info).await
+    }
+
+    /// The supplied session joins this conversation by external commit. The group info is taken from the latest
+    ///
+    /// This does _not_ distribute the external commit to the existing members. To do that,
+    /// use the [`notify_existing_members` method][CommitGuard::notify_members] of
+    /// the returned item.
+    pub async fn external_join_via_group_info_guarded(
+        self,
+        joiner: &'a SessionContext,
+        group_info: VerifiableGroupInfo,
+    ) -> OperationGuard<'a, Commit> {
         joiner
             .transaction
             .join_by_external_commit(group_info, self.case.custom_cfg(), self.case.credential_type)
