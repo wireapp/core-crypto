@@ -1,5 +1,40 @@
 # Changelog
 
+## v7.0.0 - 2025-05-21
+
+### Breaking changes
+
+The typescript bindings no longer implicitly load the wasm module when importing the core crypto module. To replace
+this behaviour the `async initWasmModule()` function has been added, which must be called before any other core crypto
+function.
+
+### Features
+
+- remove top level await and expose async init method instead (ce6e566)
+- expose `historyClient` constructor to swift (22d98de)
+- expose `historyClient` constructor to kotlin (b16839d)
+- expose `historyClient` constructor to wasm (3c2531a)
+- expose `history_client` constructor publicly (c24fcc3)
+- restore history secrets (5643e87)
+- add `fn history_client(HistorySecret) -> CoreCrypto` (8b7b7d4)
+- add `fn generate_history_secret` (a998dec)
+
+### Bug Fixes
+
+- crypto-ffi: fix naming and attributes of WelcomeBundle fields on Wasm (1b2e88b)
+- prevent cancellations during transactions (Kotlin) (75217d5)
+- prevent cancellations during transactions (Kotlin) (ae621b7)
+
+### Testing
+
+- add `TestConversation::remove` (70c2c26)
+- add `TestConversation::transport` (67a76fd)
+- add `TestConversation::external_join` (b332e79)
+- add `TestConversation` struct (d3401b8)
+- support x509 scenarios in test case sessions (7e2eef9)
+- add case for communication x509 -> history client (b1f9216)
+- add a test that ephemeral clients can be created and used (48b8915)
+
 ## v6.0.1 - 2025-05-07
 
 ### Bug Fixes
