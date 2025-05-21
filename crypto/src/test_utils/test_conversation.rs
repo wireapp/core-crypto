@@ -51,7 +51,6 @@ impl<'a> TestConversation<'a> {
         .iter()
         .map(|conv| conv.members().len())
         .all(|count| count == member_count);
-
         assert!(member_counts_match);
         member_count
     }
@@ -125,6 +124,7 @@ impl<'a> TestConversation<'a> {
         OperationGuard {
             conversation: self,
             operation: TestOperation::Add(AddGuard {
+                committer_index: proposer_index,
                 new_members: vec![new_member],
             }),
             message: proposal,
@@ -134,18 +134,16 @@ impl<'a> TestConversation<'a> {
 
     /// Advance the epoch (by updating the creator's key material) and notify all members.
     pub async fn advance_epoch(self) -> TestConversation<'a> {
+        self.update().await
+    }
+
+    pub async fn update(self) -> TestConversation<'a> {
         self.update_guarded().await.notify_members().await
     }
 
     pub async fn update_guarded(self) -> OperationGuard<'a, Commit> {
-        self.guard().await.update_key_material().await.unwrap();
-        let commit = self.transport().await.latest_commit_bundle().await.commit;
-        OperationGuard {
-            conversation: self,
-            operation: TestOperation::Update(0),
-            message: commit,
-            _message_type: PhantomData,
-        }
+        let creator = self.members[0];
+        self.update_guarded_with(creator).await
     }
 
     pub async fn update_guarded_with(self, committer: &'a SessionContext) -> OperationGuard<'a, Commit> {
@@ -155,6 +153,22 @@ impl<'a> TestConversation<'a> {
         OperationGuard {
             conversation: self,
             operation: TestOperation::Update(committer_index),
+            message: commit,
+            _message_type: PhantomData,
+        }
+    }
+
+    pub async fn commit_pending_proposals(self) -> TestConversation<'a> {
+        self.commit_pending_proposals_guarded().await.notify_members().await
+    }
+
+    pub async fn commit_pending_proposals_guarded(self) -> OperationGuard<'a, Commit> {
+        self.guard().await.commit_pending_proposals().await.unwrap();
+        let commit = self.transport().await.latest_commit().await;
+        OperationGuard {
+            conversation: self,
+            // Comitting pending proposals is equivalent to an update
+            operation: TestOperation::Update(0),
             message: commit,
             _message_type: PhantomData,
         }
