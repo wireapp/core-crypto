@@ -185,7 +185,7 @@
 <a href=#185 id=185 data-nosnippet>185</a>                .add_members(<span class="macro">vec!</span>[bob])
 <a href=#186 id=186 data-nosnippet>186</a>                .<span class="kw">await
 <a href=#187 id=187 data-nosnippet>187</a>                </span>.unwrap();
-<a href=#188 id=188 data-nosnippet>188</a>            <span class="kw">let </span>bob_welcome = alice_central.mls_transport.latest_welcome_message().<span class="kw">await</span>;
+<a href=#188 id=188 data-nosnippet>188</a>            <span class="kw">let </span>bob_welcome = alice_central.mls_transport().<span class="kw">await</span>.latest_welcome_message().<span class="kw">await</span>;
 <a href=#189 id=189 data-nosnippet>189</a>            <span class="macro">assert_eq!</span>(alice_central.get_conversation_unchecked(<span class="kw-2">&amp;</span>id).<span class="kw">await</span>.members().len(), <span class="number">2</span>);
 <a href=#190 id=190 data-nosnippet>190</a>
 <a href=#191 id=191 data-nosnippet>191</a>            bob_central
@@ -203,7 +203,7 @@
 <a href=#203 id=203 data-nosnippet>203</a>                .add_members(<span class="macro">vec!</span>[charlie])
 <a href=#204 id=204 data-nosnippet>204</a>                .<span class="kw">await
 <a href=#205 id=205 data-nosnippet>205</a>                </span>.unwrap();
-<a href=#206 id=206 data-nosnippet>206</a>            <span class="kw">let </span>charlie_welcome_bundle = alice_central.mls_transport.latest_commit_bundle().<span class="kw">await</span>;
+<a href=#206 id=206 data-nosnippet>206</a>            <span class="kw">let </span>charlie_welcome_bundle = alice_central.mls_transport().<span class="kw">await</span>.latest_commit_bundle().<span class="kw">await</span>;
 <a href=#207 id=207 data-nosnippet>207</a>            <span class="macro">assert_eq!</span>(alice_central.get_conversation_unchecked(<span class="kw-2">&amp;</span>id).<span class="kw">await</span>.members().len(), <span class="number">3</span>);
 <a href=#208 id=208 data-nosnippet>208</a>
 <a href=#209 id=209 data-nosnippet>209</a>            <span class="kw">let _ </span>= bob_central

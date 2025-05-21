@@ -584,7 +584,7 @@
 <a href=#584 id=584 data-nosnippet>584</a>            );
 <a href=#585 id=585 data-nosnippet>585</a>            <span class="macro">assert_eq!</span>(alice_central.get_conversation_unchecked(<span class="kw-2">&amp;</span>id).<span class="kw">await</span>.members().len(), <span class="number">2</span>);
 <a href=#586 id=586 data-nosnippet>586</a>
-<a href=#587 id=587 data-nosnippet>587</a>            <span class="kw">let </span>welcome = alice_central.mls_transport.latest_welcome_message().<span class="kw">await</span>;
+<a href=#587 id=587 data-nosnippet>587</a>            <span class="kw">let </span>welcome = alice_central.mls_transport().<span class="kw">await</span>.latest_welcome_message().<span class="kw">await</span>;
 <a href=#588 id=588 data-nosnippet>588</a>            bob_central
 <a href=#589 id=589 data-nosnippet>589</a>                .transaction
 <a href=#590 id=590 data-nosnippet>590</a>                .process_welcome_message(welcome.into(), case.custom_cfg())
@@ -628,7 +628,7 @@
 <a href=#628 id=628 data-nosnippet>628</a>                .add_members(bob_and_friends_kps)
 <a href=#629 id=629 data-nosnippet>629</a>                .<span class="kw">await
 <a href=#630 id=630 data-nosnippet>630</a>                </span>.unwrap();
-<a href=#631 id=631 data-nosnippet>631</a>            <span class="kw">let </span>welcome = alice_central.mls_transport.latest_welcome_message().<span class="kw">await</span>;
+<a href=#631 id=631 data-nosnippet>631</a>            <span class="kw">let </span>welcome = alice_central.mls_transport().<span class="kw">await</span>.latest_welcome_message().<span class="kw">await</span>;
 <a href=#632 id=632 data-nosnippet>632</a>
 <a href=#633 id=633 data-nosnippet>633</a>            <span class="macro">assert_eq!</span>(alice_central.get_conversation_unchecked(<span class="kw-2">&amp;</span>id).<span class="kw">await</span>.id, id);
 <a href=#634 id=634 data-nosnippet>634</a>            <span class="macro">assert_eq!</span>(

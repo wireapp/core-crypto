@@ -683,7 +683,7 @@
 <a href=#683 id=683 data-nosnippet>683</a>                    .<span class="kw">await
 <a href=#684 id=684 data-nosnippet>684</a>                    </span>.unwrap();
 <a href=#685 id=685 data-nosnippet>685</a>
-<a href=#686 id=686 data-nosnippet>686</a>                <span class="kw">let </span>commit = alice_central.mls_transport.latest_commit().<span class="kw">await</span>;
+<a href=#686 id=686 data-nosnippet>686</a>                <span class="kw">let </span>commit = alice_central.mls_transport().<span class="kw">await</span>.latest_commit().<span class="kw">await</span>;
 <a href=#687 id=687 data-nosnippet>687</a>
 <a href=#688 id=688 data-nosnippet>688</a>                <span class="kw">let </span>decrypted = bob_central
 <a href=#689 id=689 data-nosnippet>689</a>                    .transaction
@@ -762,7 +762,7 @@
 <a href=#762 id=762 data-nosnippet>762</a>                    .<span class="kw">await
 <a href=#763 id=763 data-nosnippet>763</a>                    </span>.unwrap();
 <a href=#764 id=764 data-nosnippet>764</a>
-<a href=#765 id=765 data-nosnippet>765</a>                <span class="kw">let </span>commit = bob_central.mls_transport.latest_commit().<span class="kw">await</span>;
+<a href=#765 id=765 data-nosnippet>765</a>                <span class="kw">let </span>commit = bob_central.mls_transport().<span class="kw">await</span>.latest_commit().<span class="kw">await</span>;
 <a href=#766 id=766 data-nosnippet>766</a>
 <a href=#767 id=767 data-nosnippet>767</a>                <span class="kw">let </span>decrypted = alice_central
 <a href=#768 id=768 data-nosnippet>768</a>                    .transaction
@@ -841,7 +841,7 @@
 <a href=#841 id=841 data-nosnippet>841</a>                        .e2ei_rotate(<span class="prelude-val">Some</span>(<span class="kw-2">&amp;</span>cb))
 <a href=#842 id=842 data-nosnippet>842</a>                        .<span class="kw">await
 <a href=#843 id=843 data-nosnippet>843</a>                        </span>.unwrap();
-<a href=#844 id=844 data-nosnippet>844</a>                    <span class="kw">let </span>commit = alice_central.mls_transport.latest_commit().<span class="kw">await</span>;
+<a href=#844 id=844 data-nosnippet>844</a>                    <span class="kw">let </span>commit = alice_central.mls_transport().<span class="kw">await</span>.latest_commit().<span class="kw">await</span>;
 <a href=#845 id=845 data-nosnippet>845</a>
 <a href=#846 id=846 data-nosnippet>846</a>                    <span class="comment">// Bob decrypts the commit...
 <a href=#847 id=847 data-nosnippet>847</a>                    </span><span class="kw">let </span>decrypted = bob_central
@@ -918,7 +918,7 @@
 <a href=#918 id=918 data-nosnippet>918</a>                    .<span class="kw">await
 <a href=#919 id=919 data-nosnippet>919</a>                    </span>.unwrap();
 <a href=#920 id=920 data-nosnippet>920</a>                <span class="comment">// accepted by the backend
-<a href=#921 id=921 data-nosnippet>921</a>                </span><span class="kw">let </span>bob_commit = bob_central.mls_transport.latest_commit().<span class="kw">await</span>;
+<a href=#921 id=921 data-nosnippet>921</a>                </span><span class="kw">let </span>bob_commit = bob_central.mls_transport().<span class="kw">await</span>.latest_commit().<span class="kw">await</span>;
 <a href=#922 id=922 data-nosnippet>922</a>
 <a href=#923 id=923 data-nosnippet>923</a>                <span class="comment">// Alice decrypts the commit...
 <a href=#924 id=924 data-nosnippet>924</a>                </span><span class="kw">let </span>decrypted = alice_central
@@ -956,7 +956,7 @@
 <a href=#956 id=956 data-nosnippet>956</a>                    .verify_local_credential_rotated(<span class="kw-2">&amp;</span>id, new_handle, new_display_name)
 <a href=#957 id=957 data-nosnippet>957</a>                    .<span class="kw">await</span>;
 <a href=#958 id=958 data-nosnippet>958</a>
-<a href=#959 id=959 data-nosnippet>959</a>                <span class="kw">let </span>rotate_commit = alice_central.mls_transport.latest_commit().<span class="kw">await</span>;
+<a href=#959 id=959 data-nosnippet>959</a>                <span class="kw">let </span>rotate_commit = alice_central.mls_transport().<span class="kw">await</span>.latest_commit().<span class="kw">await</span>;
 <a href=#960 id=960 data-nosnippet>960</a>                <span class="comment">// Bob verifies that now Alice is represented with her new identity
 <a href=#961 id=961 data-nosnippet>961</a>                </span><span class="kw">let </span>decrypted = bob_central
 <a href=#962 id=962 data-nosnippet>962</a>                    .transaction
@@ -1026,7 +1026,7 @@
 <a href=#1026 id=1026 data-nosnippet>1026</a>                        .e2ei_rotate(<span class="prelude-val">None</span>)
 <a href=#1027 id=1027 data-nosnippet>1027</a>                        .<span class="kw">await
 <a href=#1028 id=1028 data-nosnippet>1028</a>                        </span>.unwrap();
-<a href=#1029 id=1029 data-nosnippet>1029</a>                    <span class="kw">let </span>commit = alice_central.mls_transport.latest_commit().<span class="kw">await</span>;
+<a href=#1029 id=1029 data-nosnippet>1029</a>                    <span class="kw">let </span>commit = alice_central.mls_transport().<span class="kw">await</span>.latest_commit().<span class="kw">await</span>;
 <a href=#1030 id=1030 data-nosnippet>1030</a>
 <a href=#1031 id=1031 data-nosnippet>1031</a>                    <span class="comment">// Bob decrypts the commit...
 <a href=#1032 id=1032 data-nosnippet>1032</a>                    </span><span class="kw">let </span>decrypted = bob_central

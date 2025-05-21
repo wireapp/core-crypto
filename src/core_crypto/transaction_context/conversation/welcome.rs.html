@@ -134,7 +134,7 @@
 <a href=#134 id=134 data-nosnippet>134</a>                .<span class="kw">await
 <a href=#135 id=135 data-nosnippet>135</a>                </span>.unwrap();
 <a href=#136 id=136 data-nosnippet>136</a>
-<a href=#137 id=137 data-nosnippet>137</a>            <span class="kw">let </span>welcome = alice_central.mls_transport.latest_welcome_message().<span class="kw">await</span>;
+<a href=#137 id=137 data-nosnippet>137</a>            <span class="kw">let </span>welcome = alice_central.mls_transport().<span class="kw">await</span>.latest_welcome_message().<span class="kw">await</span>;
 <a href=#138 id=138 data-nosnippet>138</a>            <span class="comment">// Bob accepts the welcome message, and as such, it should prune the used keypackage from the store
 <a href=#139 id=139 data-nosnippet>139</a>            </span>bob_central
 <a href=#140 id=140 data-nosnippet>140</a>                .transaction
@@ -174,7 +174,7 @@
 <a href=#174 id=174 data-nosnippet>174</a>                    .<span class="kw">await
 <a href=#175 id=175 data-nosnippet>175</a>                    </span>.unwrap();
 <a href=#176 id=176 data-nosnippet>176</a>
-<a href=#177 id=177 data-nosnippet>177</a>                <span class="kw">let </span>welcome = alice_central.mls_transport.latest_welcome_message().<span class="kw">await</span>;
+<a href=#177 id=177 data-nosnippet>177</a>                <span class="kw">let </span>welcome = alice_central.mls_transport().<span class="kw">await</span>.latest_welcome_message().<span class="kw">await</span>;
 <a href=#178 id=178 data-nosnippet>178</a>                <span class="comment">// Meanwhile Bob creates a conversation with the exact same id as the one he's trying to join
 <a href=#179 id=179 data-nosnippet>179</a>                </span>bob_central
 <a href=#180 id=180 data-nosnippet>180</a>                    .transaction

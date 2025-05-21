@@ -294,7 +294,7 @@
 <a href=#294 id=294 data-nosnippet>294</a>                .e2ei_rotate(<span class="prelude-val">Some</span>(<span class="kw-2">&amp;</span>cb))
 <a href=#295 id=295 data-nosnippet>295</a>                .<span class="kw">await
 <a href=#296 id=296 data-nosnippet>296</a>                </span>.unwrap();
-<a href=#297 id=297 data-nosnippet>297</a>            <span class="kw">let </span>commit = alice_central.mls_transport.latest_commit().<span class="kw">await</span>;
+<a href=#297 id=297 data-nosnippet>297</a>            <span class="kw">let </span>commit = alice_central.mls_transport().<span class="kw">await</span>.latest_commit().<span class="kw">await</span>;
 <a href=#298 id=298 data-nosnippet>298</a>            bob_central
 <a href=#299 id=299 data-nosnippet>299</a>                .transaction
 <a href=#300 id=300 data-nosnippet>300</a>                .conversation(<span class="kw-2">&amp;</span>id)

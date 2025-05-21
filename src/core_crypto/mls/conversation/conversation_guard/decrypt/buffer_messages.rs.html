@@ -234,7 +234,7 @@
 <a href=#234 id=234 data-nosnippet>234</a>                .add_members(<span class="macro">vec!</span>[charlie])
 <a href=#235 id=235 data-nosnippet>235</a>                .<span class="kw">await
 <a href=#236 id=236 data-nosnippet>236</a>                </span>.unwrap();
-<a href=#237 id=237 data-nosnippet>237</a>            <span class="kw">let </span>commit = alice_central.mls_transport.latest_commit_bundle().<span class="kw">await</span>;
+<a href=#237 id=237 data-nosnippet>237</a>            <span class="kw">let </span>commit = alice_central.mls_transport().<span class="kw">await</span>.latest_commit_bundle().<span class="kw">await</span>;
 <a href=#238 id=238 data-nosnippet>238</a>            charlie_central
 <a href=#239 id=239 data-nosnippet>239</a>                .transaction
 <a href=#240 id=240 data-nosnippet>240</a>                .process_welcome_message(commit.welcome.clone().unwrap().into(), case.custom_cfg())
@@ -351,7 +351,7 @@
 <a href=#351 id=351 data-nosnippet>351</a>                .<span class="kw">await
 <a href=#352 id=352 data-nosnippet>352</a>                </span>.unwrap();
 <a href=#353 id=353 data-nosnippet>353</a>
-<a href=#354 id=354 data-nosnippet>354</a>            <span class="kw">let </span>ext_commit = bob_central.mls_transport.latest_commit_bundle().<span class="kw">await</span>;
+<a href=#354 id=354 data-nosnippet>354</a>            <span class="kw">let </span>ext_commit = bob_central.mls_transport().<span class="kw">await</span>.latest_commit_bundle().<span class="kw">await</span>;
 <a href=#355 id=355 data-nosnippet>355</a>
 <a href=#356 id=356 data-nosnippet>356</a>            <span class="comment">// And before others had the chance to get the commit, Bob will create &amp; send messages in the next epoch
 <a href=#357 id=357 data-nosnippet>357</a>            // which Alice will have to buffer until she receives the commit.
@@ -388,7 +388,7 @@
 <a href=#388 id=388 data-nosnippet>388</a>                .add_members(<span class="macro">vec!</span>[debbie])
 <a href=#389 id=389 data-nosnippet>389</a>                .<span class="kw">await
 <a href=#390 id=390 data-nosnippet>390</a>                </span>.unwrap();
-<a href=#391 id=391 data-nosnippet>391</a>            <span class="kw">let </span>commit = bob_central.mls_transport.latest_commit_bundle().<span class="kw">await</span>;
+<a href=#391 id=391 data-nosnippet>391</a>            <span class="kw">let </span>commit = bob_central.mls_transport().<span class="kw">await</span>.latest_commit_bundle().<span class="kw">await</span>;
 <a href=#392 id=392 data-nosnippet>392</a>            charlie_central
 <a href=#393 id=393 data-nosnippet>393</a>                .transaction
 <a href=#394 id=394 data-nosnippet>394</a>                .process_welcome_message(commit.welcome.clone().unwrap().into(), case.custom_cfg())
@@ -680,7 +680,7 @@
 <a href=#680 id=680 data-nosnippet>680</a>                .commit_pending_proposals()
 <a href=#681 id=681 data-nosnippet>681</a>                .<span class="kw">await
 <a href=#682 id=682 data-nosnippet>682</a>                </span>.unwrap();
-<a href=#683 id=683 data-nosnippet>683</a>            <span class="kw">let </span>remove_two_members_commit = member_27.mls_transport.latest_commit().<span class="kw">await</span>;
+<a href=#683 id=683 data-nosnippet>683</a>            <span class="kw">let </span>remove_two_members_commit = member_27.mls_transport().<span class="kw">await</span>.latest_commit().<span class="kw">await</span>;
 <a href=#684 id=684 data-nosnippet>684</a>
 <a href=#685 id=685 data-nosnippet>685</a>            <span class="comment">// In this case, note that observer receives the proposal before the commit.
 <a href=#686 id=686 data-nosnippet>686</a>            // This is the straightforward ordering and easy to deal with.

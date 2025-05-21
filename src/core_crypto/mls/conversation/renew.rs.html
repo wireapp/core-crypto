@@ -200,7 +200,7 @@
 <a href=#200 id=200 data-nosnippet>200</a>                    .update_key_material()
 <a href=#201 id=201 data-nosnippet>201</a>                    .<span class="kw">await
 <a href=#202 id=202 data-nosnippet>202</a>                    </span>.unwrap();
-<a href=#203 id=203 data-nosnippet>203</a>                <span class="kw">let </span>commit = bob_central.mls_transport.latest_commit().<span class="kw">await</span>;
+<a href=#203 id=203 data-nosnippet>203</a>                <span class="kw">let </span>commit = bob_central.mls_transport().<span class="kw">await</span>.latest_commit().<span class="kw">await</span>;
 <a href=#204 id=204 data-nosnippet>204</a>
 <a href=#205 id=205 data-nosnippet>205</a>                <span class="kw">let </span>proposals = alice_central
 <a href=#206 id=206 data-nosnippet>206</a>                    .transaction
@@ -224,7 +224,7 @@
 <a href=#224 id=224 data-nosnippet>224</a>                    .update_key_material()
 <a href=#225 id=225 data-nosnippet>225</a>                    .<span class="kw">await
 <a href=#226 id=226 data-nosnippet>226</a>                    </span>.unwrap();
-<a href=#227 id=227 data-nosnippet>227</a>                <span class="kw">let </span>commit = bob_central.mls_transport.latest_commit().<span class="kw">await</span>;
+<a href=#227 id=227 data-nosnippet>227</a>                <span class="kw">let </span>commit = bob_central.mls_transport().<span class="kw">await</span>.latest_commit().<span class="kw">await</span>;
 <a href=#228 id=228 data-nosnippet>228</a>                <span class="kw">let </span>proposals = alice_central
 <a href=#229 id=229 data-nosnippet>229</a>                    .transaction
 <a href=#230 id=230 data-nosnippet>230</a>                    .conversation(<span class="kw-2">&amp;</span>id)
@@ -282,7 +282,7 @@
 <a href=#282 id=282 data-nosnippet>282</a>                    .update_key_material()
 <a href=#283 id=283 data-nosnippet>283</a>                    .<span class="kw">await
 <a href=#284 id=284 data-nosnippet>284</a>                    </span>.unwrap();
-<a href=#285 id=285 data-nosnippet>285</a>                <span class="kw">let </span>commit = bob_central.mls_transport.latest_commit().<span class="kw">await</span>;
+<a href=#285 id=285 data-nosnippet>285</a>                <span class="kw">let </span>commit = bob_central.mls_transport().<span class="kw">await</span>.latest_commit().<span class="kw">await</span>;
 <a href=#286 id=286 data-nosnippet>286</a>
 <a href=#287 id=287 data-nosnippet>287</a>                <span class="comment">// Bob's commit has Alice's proposal
 <a href=#288 id=288 data-nosnippet>288</a>                </span><span class="kw">let </span>proposals = alice_central
@@ -320,7 +320,7 @@
 <a href=#320 id=320 data-nosnippet>320</a>                    .update_key_material()
 <a href=#321 id=321 data-nosnippet>321</a>                    .<span class="kw">await
 <a href=#322 id=322 data-nosnippet>322</a>                    </span>.unwrap();
-<a href=#323 id=323 data-nosnippet>323</a>                <span class="kw">let </span>commit = bob_central.mls_transport.latest_commit().<span class="kw">await</span>;
+<a href=#323 id=323 data-nosnippet>323</a>                <span class="kw">let </span>commit = bob_central.mls_transport().<span class="kw">await</span>.latest_commit().<span class="kw">await</span>;
 <a href=#324 id=324 data-nosnippet>324</a>                <span class="kw">let </span>proposals = alice_central
 <a href=#325 id=325 data-nosnippet>325</a>                    .transaction
 <a href=#326 id=326 data-nosnippet>326</a>                    .conversation(<span class="kw-2">&amp;</span>id)
@@ -374,7 +374,7 @@
 <a href=#374 id=374 data-nosnippet>374</a>                    .update_key_material()
 <a href=#375 id=375 data-nosnippet>375</a>                    .<span class="kw">await
 <a href=#376 id=376 data-nosnippet>376</a>                    </span>.unwrap();
-<a href=#377 id=377 data-nosnippet>377</a>                <span class="kw">let </span>commit = charlie_central.mls_transport.latest_commit().<span class="kw">await</span>;
+<a href=#377 id=377 data-nosnippet>377</a>                <span class="kw">let </span>commit = charlie_central.mls_transport().<span class="kw">await</span>.latest_commit().<span class="kw">await</span>;
 <a href=#378 id=378 data-nosnippet>378</a>                <span class="kw">let </span>proposals = alice_central
 <a href=#379 id=379 data-nosnippet>379</a>                    .transaction
 <a href=#380 id=380 data-nosnippet>380</a>                    .conversation(<span class="kw-2">&amp;</span>id)
@@ -426,7 +426,7 @@
 <a href=#426 id=426 data-nosnippet>426</a>                    .add_members(<span class="macro">vec!</span>[charlie])
 <a href=#427 id=427 data-nosnippet>427</a>                    .<span class="kw">await
 <a href=#428 id=428 data-nosnippet>428</a>                    </span>.unwrap();
-<a href=#429 id=429 data-nosnippet>429</a>                <span class="kw">let </span>commit = bob_central.mls_transport.latest_commit().<span class="kw">await</span>;
+<a href=#429 id=429 data-nosnippet>429</a>                <span class="kw">let </span>commit = bob_central.mls_transport().<span class="kw">await</span>.latest_commit().<span class="kw">await</span>;
 <a href=#430 id=430 data-nosnippet>430</a>                <span class="kw">let </span>proposals = alice_central
 <a href=#431 id=431 data-nosnippet>431</a>                    .transaction
 <a href=#432 id=432 data-nosnippet>432</a>                    .conversation(<span class="kw-2">&amp;</span>id)
@@ -478,7 +478,7 @@
 <a href=#478 id=478 data-nosnippet>478</a>                    .add_members(<span class="macro">vec!</span>[charlie])
 <a href=#479 id=479 data-nosnippet>479</a>                    .<span class="kw">await
 <a href=#480 id=480 data-nosnippet>480</a>                    </span>.unwrap();
-<a href=#481 id=481 data-nosnippet>481</a>                <span class="kw">let </span>commit = bob_central.mls_transport.latest_commit().<span class="kw">await</span>;
+<a href=#481 id=481 data-nosnippet>481</a>                <span class="kw">let </span>commit = bob_central.mls_transport().<span class="kw">await</span>.latest_commit().<span class="kw">await</span>;
 <a href=#482 id=482 data-nosnippet>482</a>                <span class="kw">let </span>proposals = alice_central
 <a href=#483 id=483 data-nosnippet>483</a>                    .transaction
 <a href=#484 id=484 data-nosnippet>484</a>                    .conversation(<span class="kw-2">&amp;</span>id)
@@ -538,7 +538,7 @@
 <a href=#538 id=538 data-nosnippet>538</a>                    .update_key_material()
 <a href=#539 id=539 data-nosnippet>539</a>                    .<span class="kw">await
 <a href=#540 id=540 data-nosnippet>540</a>                    </span>.unwrap();
-<a href=#541 id=541 data-nosnippet>541</a>                <span class="kw">let </span>commit = charlie_central.mls_transport.latest_commit().<span class="kw">await</span>;
+<a href=#541 id=541 data-nosnippet>541</a>                <span class="kw">let </span>commit = charlie_central.mls_transport().<span class="kw">await</span>.latest_commit().<span class="kw">await</span>;
 <a href=#542 id=542 data-nosnippet>542</a>                <span class="kw">let </span>proposals = alice_central
 <a href=#543 id=543 data-nosnippet>543</a>                    .transaction
 <a href=#544 id=544 data-nosnippet>544</a>                    .conversation(<span class="kw-2">&amp;</span>id)
@@ -587,7 +587,7 @@
 <a href=#587 id=587 data-nosnippet>587</a>                    .update_key_material()
 <a href=#588 id=588 data-nosnippet>588</a>                    .<span class="kw">await
 <a href=#589 id=589 data-nosnippet>589</a>                    </span>.unwrap();
-<a href=#590 id=590 data-nosnippet>590</a>                <span class="kw">let </span>commit = bob_central.mls_transport.latest_commit().<span class="kw">await</span>;
+<a href=#590 id=590 data-nosnippet>590</a>                <span class="kw">let </span>commit = bob_central.mls_transport().<span class="kw">await</span>.latest_commit().<span class="kw">await</span>;
 <a href=#591 id=591 data-nosnippet>591</a>                <span class="kw">let </span>proposals = alice_central
 <a href=#592 id=592 data-nosnippet>592</a>                    .transaction
 <a href=#593 id=593 data-nosnippet>593</a>                    .conversation(<span class="kw-2">&amp;</span>id)
@@ -612,7 +612,7 @@
 <a href=#612 id=612 data-nosnippet>612</a>                    .update_key_material()
 <a href=#613 id=613 data-nosnippet>613</a>                    .<span class="kw">await
 <a href=#614 id=614 data-nosnippet>614</a>                    </span>.unwrap();
-<a href=#615 id=615 data-nosnippet>615</a>                <span class="kw">let </span>commit = bob_central.mls_transport.latest_commit().<span class="kw">await</span>;
+<a href=#615 id=615 data-nosnippet>615</a>                <span class="kw">let </span>commit = bob_central.mls_transport().<span class="kw">await</span>.latest_commit().<span class="kw">await</span>;
 <a href=#616 id=616 data-nosnippet>616</a>                <span class="kw">let </span>proposals = alice_central
 <a href=#617 id=617 data-nosnippet>617</a>                    .transaction
 <a href=#618 id=618 data-nosnippet>618</a>                    .conversation(<span class="kw-2">&amp;</span>id)
@@ -656,7 +656,7 @@
 <a href=#656 id=656 data-nosnippet>656</a>                    .update_key_material()
 <a href=#657 id=657 data-nosnippet>657</a>                    .<span class="kw">await
 <a href=#658 id=658 data-nosnippet>658</a>                    </span>.unwrap();
-<a href=#659 id=659 data-nosnippet>659</a>                <span class="kw">let </span>commit = bob_central.mls_transport.latest_commit().<span class="kw">await</span>;
+<a href=#659 id=659 data-nosnippet>659</a>                <span class="kw">let </span>commit = bob_central.mls_transport().<span class="kw">await</span>.latest_commit().<span class="kw">await</span>;
 <a href=#660 id=660 data-nosnippet>660</a>                <span class="kw">let </span>proposals = alice_central
 <a href=#661 id=661 data-nosnippet>661</a>                    .transaction
 <a href=#662 id=662 data-nosnippet>662</a>                    .conversation(<span class="kw-2">&amp;</span>id)
@@ -709,7 +709,7 @@
 <a href=#709 id=709 data-nosnippet>709</a>                    .remove_members(<span class="kw-2">&amp;</span>[charlie_central.get_client_id().<span class="kw">await</span>])
 <a href=#710 id=710 data-nosnippet>710</a>                    .<span class="kw">await
 <a href=#711 id=711 data-nosnippet>711</a>                    </span>.unwrap();
-<a href=#712 id=712 data-nosnippet>712</a>                <span class="kw">let </span>commit = bob_central.mls_transport.latest_commit().<span class="kw">await</span>;
+<a href=#712 id=712 data-nosnippet>712</a>                <span class="kw">let </span>commit = bob_central.mls_transport().<span class="kw">await</span>.latest_commit().<span class="kw">await</span>;
 <a href=#713 id=713 data-nosnippet>713</a>                <span class="kw">let </span>proposals = alice_central
 <a href=#714 id=714 data-nosnippet>714</a>                    .transaction
 <a href=#715 id=715 data-nosnippet>715</a>                    .conversation(<span class="kw-2">&amp;</span>id)
@@ -767,7 +767,7 @@
 <a href=#767 id=767 data-nosnippet>767</a>                    .update_key_material()
 <a href=#768 id=768 data-nosnippet>768</a>                    .<span class="kw">await
 <a href=#769 id=769 data-nosnippet>769</a>                    </span>.unwrap();
-<a href=#770 id=770 data-nosnippet>770</a>                <span class="kw">let </span>commit = charlie_central.mls_transport.latest_commit().<span class="kw">await</span>;
+<a href=#770 id=770 data-nosnippet>770</a>                <span class="kw">let </span>commit = charlie_central.mls_transport().<span class="kw">await</span>.latest_commit().<span class="kw">await</span>;
 <a href=#771 id=771 data-nosnippet>771</a>                <span class="kw">let </span>proposals = alice_central
 <a href=#772 id=772 data-nosnippet>772</a>                    .transaction
 <a href=#773 id=773 data-nosnippet>773</a>                    .conversation(<span class="kw-2">&amp;</span>id)
@@ -818,7 +818,7 @@
 <a href=#818 id=818 data-nosnippet>818</a>                    .remove_members(<span class="kw-2">&amp;</span>[debbie_central.get_client_id().<span class="kw">await</span>])
 <a href=#819 id=819 data-nosnippet>819</a>                    .<span class="kw">await
 <a href=#820 id=820 data-nosnippet>820</a>                    </span>.unwrap();
-<a href=#821 id=821 data-nosnippet>821</a>                <span class="kw">let </span>commit = bob_central.mls_transport.latest_commit().<span class="kw">await</span>;
+<a href=#821 id=821 data-nosnippet>821</a>                <span class="kw">let </span>commit = bob_central.mls_transport().<span class="kw">await</span>.latest_commit().<span class="kw">await</span>;
 <a href=#822 id=822 data-nosnippet>822</a>                <span class="kw">let </span>proposals = alice_central
 <a href=#823 id=823 data-nosnippet>823</a>                    .transaction
 <a href=#824 id=824 data-nosnippet>824</a>                    .conversation(<span class="kw-2">&amp;</span>id)
@@ -869,7 +869,7 @@
 <a href=#869 id=869 data-nosnippet>869</a>                    .remove_members(<span class="kw-2">&amp;</span>[debbie_central.get_client_id().<span class="kw">await</span>])
 <a href=#870 id=870 data-nosnippet>870</a>                    .<span class="kw">await
 <a href=#871 id=871 data-nosnippet>871</a>                    </span>.unwrap();
-<a href=#872 id=872 data-nosnippet>872</a>                <span class="kw">let </span>commit = bob_central.mls_transport.latest_commit().<span class="kw">await</span>;
+<a href=#872 id=872 data-nosnippet>872</a>                <span class="kw">let </span>commit = bob_central.mls_transport().<span class="kw">await</span>.latest_commit().<span class="kw">await</span>;
 <a href=#873 id=873 data-nosnippet>873</a>                <span class="kw">let </span>proposals = alice_central
 <a href=#874 id=874 data-nosnippet>874</a>                    .transaction
 <a href=#875 id=875 data-nosnippet>875</a>                    .conversation(<span class="kw-2">&amp;</span>id)
@@ -919,7 +919,7 @@
 <a href=#919 id=919 data-nosnippet>919</a>                    .remove_members(<span class="kw-2">&amp;</span>[debbie_central.get_client_id().<span class="kw">await</span>])
 <a href=#920 id=920 data-nosnippet>920</a>                    .<span class="kw">await
 <a href=#921 id=921 data-nosnippet>921</a>                    </span>.unwrap();
-<a href=#922 id=922 data-nosnippet>922</a>                <span class="kw">let </span>commit = bob_central.mls_transport.latest_commit().<span class="kw">await</span>;
+<a href=#922 id=922 data-nosnippet>922</a>                <span class="kw">let </span>commit = bob_central.mls_transport().<span class="kw">await</span>.latest_commit().<span class="kw">await</span>;
 <a href=#923 id=923 data-nosnippet>923</a>                <span class="kw">let </span>proposals = alice_central
 <a href=#924 id=924 data-nosnippet>924</a>                    .transaction
 <a href=#925 id=925 data-nosnippet>925</a>                    .conversation(<span class="kw-2">&amp;</span>id)

@@ -86,7 +86,7 @@
 <a href=#86 id=86 data-nosnippet>86</a>                    .update_key_material()
 <a href=#87 id=87 data-nosnippet>87</a>                    .<span class="kw">await
 <a href=#88 id=88 data-nosnippet>88</a>                    </span>.unwrap();
-<a href=#89 id=89 data-nosnippet>89</a>                <span class="kw">let </span>commit = alice_central.mls_transport.latest_commit().<span class="kw">await</span>;
+<a href=#89 id=89 data-nosnippet>89</a>                <span class="kw">let </span>commit = alice_central.mls_transport().<span class="kw">await</span>.latest_commit().<span class="kw">await</span>;
 <a href=#90 id=90 data-nosnippet>90</a>
 <a href=#91 id=91 data-nosnippet>91</a>                <span class="comment">// decrypt once ... ok
 <a href=#92 id=92 data-nosnippet>92</a>                </span>bob_central
@@ -148,7 +148,7 @@
 <a href=#148 id=148 data-nosnippet>148</a>                .join_by_external_commit(gi, case.custom_cfg(), case.credential_type)
 <a href=#149 id=149 data-nosnippet>149</a>                .<span class="kw">await
 <a href=#150 id=150 data-nosnippet>150</a>                </span>.unwrap();
-<a href=#151 id=151 data-nosnippet>151</a>            <span class="kw">let </span>ext_commit = bob_central.mls_transport.latest_commit().<span class="kw">await</span>;
+<a href=#151 id=151 data-nosnippet>151</a>            <span class="kw">let </span>ext_commit = bob_central.mls_transport().<span class="kw">await</span>.latest_commit().<span class="kw">await</span>;
 <a href=#152 id=152 data-nosnippet>152</a>
 <a href=#153 id=153 data-nosnippet>153</a>            <span class="comment">// decrypt once ... ok
 <a href=#154 id=154 data-nosnippet>154</a>            </span>alice_central

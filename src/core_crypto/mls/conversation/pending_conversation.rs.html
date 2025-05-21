@@ -386,7 +386,7 @@
 <a href=#386 id=386 data-nosnippet>386</a>                .add_members(<span class="macro">vec!</span>[charlie])
 <a href=#387 id=387 data-nosnippet>387</a>                .<span class="kw">await
 <a href=#388 id=388 data-nosnippet>388</a>                </span>.unwrap();
-<a href=#389 id=389 data-nosnippet>389</a>            <span class="kw">let </span>commit = alice_central.mls_transport.latest_commit_bundle().<span class="kw">await</span>;
+<a href=#389 id=389 data-nosnippet>389</a>            <span class="kw">let </span>commit = alice_central.mls_transport().<span class="kw">await</span>.latest_commit_bundle().<span class="kw">await</span>;
 <a href=#390 id=390 data-nosnippet>390</a>            charlie_central
 <a href=#391 id=391 data-nosnippet>391</a>                .transaction
 <a href=#392 id=392 data-nosnippet>392</a>                .process_welcome_message(commit.welcome.clone().unwrap().into(), case.custom_cfg())
@@ -543,7 +543,7 @@
 <a href=#543 id=543 data-nosnippet>543</a>                .<span class="kw">await
 <a href=#544 id=544 data-nosnippet>544</a>                </span>.unwrap();
 <a href=#545 id=545 data-nosnippet>545</a>
-<a href=#546 id=546 data-nosnippet>546</a>            <span class="kw">let </span>ext_commit = alice_central.mls_transport.latest_commit_bundle().<span class="kw">await</span>;
+<a href=#546 id=546 data-nosnippet>546</a>            <span class="kw">let </span>ext_commit = alice_central.mls_transport().<span class="kw">await</span>.latest_commit_bundle().<span class="kw">await</span>;
 <a href=#547 id=547 data-nosnippet>547</a>
 <a href=#548 id=548 data-nosnippet>548</a>            bob_central
 <a href=#549 id=549 data-nosnippet>549</a>                .transaction

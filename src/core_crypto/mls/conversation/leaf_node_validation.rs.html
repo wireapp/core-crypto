@@ -174,7 +174,7 @@
 <a href=#174 id=174 data-nosnippet>174</a>                    .add_members(<span class="macro">vec!</span>[invalid_kp.into()])
 <a href=#175 id=175 data-nosnippet>175</a>                    .<span class="kw">await
 <a href=#176 id=176 data-nosnippet>176</a>                    </span>.unwrap();
-<a href=#177 id=177 data-nosnippet>177</a>                <span class="kw">let </span>commit = alice_central.mls_transport.latest_commit().<span class="kw">await</span>;
+<a href=#177 id=177 data-nosnippet>177</a>                <span class="kw">let </span>commit = alice_central.mls_transport().<span class="kw">await</span>.latest_commit().<span class="kw">await</span>;
 <a href=#178 id=178 data-nosnippet>178</a>                <span class="kw">let </span>commit = commit.to_bytes().unwrap();
 <a href=#179 id=179 data-nosnippet>179</a>
 <a href=#180 id=180 data-nosnippet>180</a>                <span class="kw">let </span>elapsed = start.elapsed();
@@ -240,25 +240,30 @@
 <a href=#240 id=240 data-nosnippet>240</a>                <span class="kw">let </span>process_welcome = bob_central
 <a href=#241 id=241 data-nosnippet>241</a>                    .transaction
 <a href=#242 id=242 data-nosnippet>242</a>                    .process_welcome_message(
-<a href=#243 id=243 data-nosnippet>243</a>                        alice_central.mls_transport.latest_welcome_message().<span class="kw">await</span>.into(),
-<a href=#244 id=244 data-nosnippet>244</a>                        case.custom_cfg(),
-<a href=#245 id=245 data-nosnippet>245</a>                    )
-<a href=#246 id=246 data-nosnippet>246</a>                    .<span class="kw">await</span>;
-<a href=#247 id=247 data-nosnippet>247</a>
-<a href=#248 id=248 data-nosnippet>248</a>                <span class="comment">// TODO: currently succeeds as we don't anymore validate KeyPackage lifetime upon reception: find another way to craft an invalid KeyPackage. Tracking issue number: WPB-9623
-<a href=#249 id=249 data-nosnippet>249</a>                </span>process_welcome.unwrap();
-<a href=#250 id=250 data-nosnippet>250</a>                <span class="comment">/*assert!(matches!(
-<a href=#251 id=251 data-nosnippet>251</a>                    process_welcome.unwrap_err(),
-<a href=#252 id=252 data-nosnippet>252</a>                    CryptoError::MlsError(MlsError::MlsWelcomeError(WelcomeError::PublicGroupError(
-<a href=#253 id=253 data-nosnippet>253</a>                        CreationFromExternalError::TreeSyncError(
-<a href=#254 id=254 data-nosnippet>254</a>                            TreeSyncFromNodesError::LeafNodeValidationError(LeafNodeValidationError::Lifetime(
-<a href=#255 id=255 data-nosnippet>255</a>                                _
-<a href=#256 id=256 data-nosnippet>256</a>                            ))
-<a href=#257 id=257 data-nosnippet>257</a>                        )
-<a href=#258 id=258 data-nosnippet>258</a>                    )))
-<a href=#259 id=259 data-nosnippet>259</a>                ));*/
-<a href=#260 id=260 data-nosnippet>260</a>            </span>})
-<a href=#261 id=261 data-nosnippet>261</a>            .<span class="kw">await
-<a href=#262 id=262 data-nosnippet>262</a>        </span>}
-<a href=#263 id=263 data-nosnippet>263</a>    }
-<a href=#264 id=264 data-nosnippet>264</a>}</code></pre></div></section></main></body></html>
+<a href=#243 id=243 data-nosnippet>243</a>                        alice_central
+<a href=#244 id=244 data-nosnippet>244</a>                            .mls_transport()
+<a href=#245 id=245 data-nosnippet>245</a>                            .<span class="kw">await
+<a href=#246 id=246 data-nosnippet>246</a>                            </span>.latest_welcome_message()
+<a href=#247 id=247 data-nosnippet>247</a>                            .<span class="kw">await
+<a href=#248 id=248 data-nosnippet>248</a>                            </span>.into(),
+<a href=#249 id=249 data-nosnippet>249</a>                        case.custom_cfg(),
+<a href=#250 id=250 data-nosnippet>250</a>                    )
+<a href=#251 id=251 data-nosnippet>251</a>                    .<span class="kw">await</span>;
+<a href=#252 id=252 data-nosnippet>252</a>
+<a href=#253 id=253 data-nosnippet>253</a>                <span class="comment">// TODO: currently succeeds as we don't anymore validate KeyPackage lifetime upon reception: find another way to craft an invalid KeyPackage. Tracking issue number: WPB-9623
+<a href=#254 id=254 data-nosnippet>254</a>                </span>process_welcome.unwrap();
+<a href=#255 id=255 data-nosnippet>255</a>                <span class="comment">/*assert!(matches!(
+<a href=#256 id=256 data-nosnippet>256</a>                    process_welcome.unwrap_err(),
+<a href=#257 id=257 data-nosnippet>257</a>                    CryptoError::MlsError(MlsError::MlsWelcomeError(WelcomeError::PublicGroupError(
+<a href=#258 id=258 data-nosnippet>258</a>                        CreationFromExternalError::TreeSyncError(
+<a href=#259 id=259 data-nosnippet>259</a>                            TreeSyncFromNodesError::LeafNodeValidationError(LeafNodeValidationError::Lifetime(
+<a href=#260 id=260 data-nosnippet>260</a>                                _
+<a href=#261 id=261 data-nosnippet>261</a>                            ))
+<a href=#262 id=262 data-nosnippet>262</a>                        )
+<a href=#263 id=263 data-nosnippet>263</a>                    )))
+<a href=#264 id=264 data-nosnippet>264</a>                ));*/
+<a href=#265 id=265 data-nosnippet>265</a>            </span>})
+<a href=#266 id=266 data-nosnippet>266</a>            .<span class="kw">await
+<a href=#267 id=267 data-nosnippet>267</a>        </span>}
+<a href=#268 id=268 data-nosnippet>268</a>    }
+<a href=#269 id=269 data-nosnippet>269</a>}</code></pre></div></section></main></body></html>
