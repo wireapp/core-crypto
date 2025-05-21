@@ -202,6 +202,31 @@ impl<'a> TestConversation<'a> {
         }
     }
 
+    pub async fn update_proposal(self) -> TestConversation<'a> {
+        self.update_proposal_guarded().await.notify_members().await
+    }
+
+    pub async fn update_proposal_guarded(self) -> OperationGuard<'a, Proposal> {
+        let creator = self.members[0];
+        self.update_proposal_guarded_with(creator).await
+    }
+
+    pub async fn update_proposal_guarded_with(self, proposer: &'a SessionContext) -> OperationGuard<'a, Proposal> {
+        let proposal = proposer
+            .transaction
+            .new_update_proposal(self.id())
+            .await
+            .unwrap()
+            .proposal;
+        let proposer_index = self.member_index(proposer).await;
+        OperationGuard {
+            conversation: self,
+            operation: TestOperation::Update(proposer_index),
+            message: proposal,
+            _message_type: PhantomData,
+        }
+    }
+
     pub async fn commit_pending_proposals(self) -> TestConversation<'a> {
         self.commit_pending_proposals_guarded().await.notify_members().await
     }
