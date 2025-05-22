@@ -29,12 +29,10 @@ impl<'a> TestConversation<'a> {
         let actor_index = self.actor_index();
         OperationGuard {
             conversation: self,
-            operation: TestOperation::Add(AddGuard {
-                committer_index: actor_index,
-                new_members,
-            }),
+            operation: TestOperation::Add(AddGuard { new_members }),
             message: commit,
             _message_type: PhantomData,
+            already_notified: [actor_index].into(),
         }
     }
 
@@ -53,9 +51,10 @@ impl<'a> TestConversation<'a> {
         let committer_index = self.actor_index();
         OperationGuard {
             conversation: self,
-            operation: TestOperation::Update(committer_index),
+            operation: TestOperation::Update,
             message: commit,
             _message_type: PhantomData,
+            already_notified: [committer_index].into(),
         }
     }
 
@@ -70,9 +69,10 @@ impl<'a> TestConversation<'a> {
         OperationGuard {
             conversation: self,
             // Comitting pending proposals is equivalent to an update
-            operation: TestOperation::Update(actor_index),
+            operation: TestOperation::Update,
             message: commit,
             _message_type: PhantomData,
+            already_notified: [actor_index].into(),
         }
     }
 
@@ -102,9 +102,10 @@ impl<'a> TestConversation<'a> {
 
         OperationGuard {
             conversation: self,
-            operation: TestOperation::Remove(actor_index, member),
+            operation: TestOperation::Remove(member),
             message: commit,
             _message_type: PhantomData,
+            already_notified: [actor_index].into(),
         }
     }
     /// See [Self::external_join_guarded]
@@ -155,6 +156,7 @@ impl<'a> TestConversation<'a> {
             operation: TestOperation::ExternalJoin(joiner),
             message: join_commit,
             _message_type: PhantomData,
+            already_notified: [].into(),
         }
     }
 }

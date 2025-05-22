@@ -1,6 +1,9 @@
+use crate::prelude::MlsConversationDecryptMessage;
+
 use super::super::SessionContext;
 use super::TestConversation;
 use openmls::prelude::MlsMessageOut;
+use std::collections::HashSet;
 use std::marker::PhantomData;
 
 pub struct Commit;
@@ -13,31 +16,28 @@ pub struct Proposal;
 /// Otherwise, use the struct members to do things manually.
 pub struct OperationGuard<'a, MessageType> {
     pub(crate) conversation: TestConversation<'a>,
-    /// The member at this index won't be included in the list of [Self::members_to_notify]
+    /// The members at these indices won't be included in the list of [Self::members_to_notify]
+    pub(crate) already_notified: HashSet<usize>,
     pub(crate) operation: TestOperation<'a>,
     pub(crate) message: MlsMessageOut,
     pub(crate) _message_type: PhantomData<MessageType>,
 }
 
 pub(crate) struct AddGuard<'a> {
-    pub(crate) committer_index: usize,
     pub(crate) new_members: Vec<&'a SessionContext>,
 }
 
 /// Keeps state about the comitted operation that will be used when the
 /// corresponding [CommitGuard] is used to (notify members)[CommitGuard::notify_members].
 pub(crate) enum TestOperation<'a> {
-    /// The member with the provided index won't be notified, new members will be
-    /// added to the member list of the test conversation
+    /// New members will added to the member list of the test conversation
     Add(AddGuard<'a>),
     /// All existing members will be notified, the new joiner will be added to the
     /// member list of the conversation.
     ExternalJoin(&'a SessionContext),
-    /// The member with the provided index won't be notified
-    Update(usize),
-    /// The member with the provided index won't be notified, the provided [SessionContext]
-    /// will be removed from the members list.
-    Remove(usize, &'a SessionContext),
+    Update,
+    /// The provided [SessionContext] will be removed from the members list.
+    Remove(&'a SessionContext),
 }
 
 impl<'a, T> OperationGuard<'a, T> {
@@ -47,6 +47,9 @@ impl<'a, T> OperationGuard<'a, T> {
 
     // Call this once you're finished with manual processing and need mutable access
     // to the [TestConversation] again.
+    //
+    // Note: unlike [Self::notify_members] this does not propagate any state to the
+    // [TestConversation]. If you want that behavior, call that method instead.
     pub fn finish(mut self) -> TestConversation<'a> {
         self.conversation.actor_index = None;
         self.conversation
@@ -56,37 +59,52 @@ impl<'a, T> OperationGuard<'a, T> {
         self.message.clone()
     }
 
-    pub(crate) fn members_to_notify(&self) -> Box<dyn Iterator<Item = &'a SessionContext> + '_> {
-        match self.operation {
-            TestOperation::Add(AddGuard {
-                committer_index: skipped_index,
-                ..
-            })
-            | TestOperation::Remove(skipped_index, ..)
-            | TestOperation::Update(skipped_index) => Box::new(
-                self.conversation
-                    .members
-                    .iter()
-                    .enumerate()
-                    .filter_map(move |(idx, member)| (idx != skipped_index).then_some(*member)),
-            ),
-            TestOperation::ExternalJoin(_) => Box::new(self.conversation.members.iter().copied()),
+    pub async fn notify_member(mut self, member: &SessionContext) -> Self {
+        let member_index = self.conversation().member_index(member).await;
+        if self.already_notified.contains(&member_index) {
+            return self;
         }
+        self.notify_member_inner(member).await.unwrap();
+        self.already_notified.insert(member_index);
+        self
+    }
+
+    pub async fn notify_member_failible(
+        mut self,
+        member: &SessionContext,
+    ) -> (Self, crate::mls::conversation::Result<MlsConversationDecryptMessage>) {
+        let member_index = self.conversation().member_index(member).await;
+        if self.already_notified.contains(&member_index) {
+            println!("Member was already notified!");
+            return (self, Err(crate::mls::conversation::Error::DuplicateMessage));
+        }
+        let result = self.notify_member_inner(member).await;
+        self.already_notified.insert(member_index);
+        (self, result)
+    }
+
+    async fn notify_member_inner(
+        &self,
+        member: &SessionContext,
+    ) -> crate::mls::conversation::Result<MlsConversationDecryptMessage> {
+        let message_bytes = self.message.to_bytes().unwrap();
+        member
+            .transaction
+            .conversation(&self.conversation.id)
+            .await
+            .unwrap()
+            .decrypt_message(&message_bytes)
+            .await
     }
 }
 
 impl<'a> OperationGuard<'a, Commit> {
+    /// Notify all members except the committer and those already notified by
+    /// [Self::notify_member].
     pub async fn notify_members(mut self) -> TestConversation<'a> {
-        let message_bytes = self.message.to_bytes().unwrap();
-        for member in self.members_to_notify() {
-            member
-                .transaction
-                .conversation(&self.conversation.id)
-                .await
-                .unwrap()
-                .decrypt_message(&message_bytes)
-                .await
-                .unwrap();
+        let members = self.conversation.members.clone();
+        for member in members.iter() {
+            self = self.notify_member(member).await;
         }
 
         // Do the following for each proposal that is still pending and the latest commit:
@@ -99,8 +117,8 @@ impl<'a> OperationGuard<'a, Commit> {
             .chain(std::iter::once(&self.operation))
         {
             match operation {
-                TestOperation::Update(_) => {}
-                TestOperation::Remove(_, member) => {
+                TestOperation::Update => {}
+                TestOperation::Remove(member) => {
                     let member_idx = self.conversation().member_index(member).await;
                     self.conversation.members.remove(member_idx);
                 }
@@ -109,11 +127,10 @@ impl<'a> OperationGuard<'a, Commit> {
                 }
                 TestOperation::Add(AddGuard {
                     new_members: invited_members,
-                    committer_index,
                 }) => {
                     let welcome_message = self
                         .conversation()
-                        .member_at_index(*committer_index)
+                        .actor()
                         .mls_transport()
                         .await
                         .latest_commit_bundle()
@@ -144,18 +161,12 @@ impl<'a> OperationGuard<'a, Commit> {
 }
 
 impl<'a> OperationGuard<'a, Proposal> {
-    /// Notify all members about the proposal.
+    /// Notify all members except the proposer and those already notified by
+    /// [Self::notify_member].
     pub async fn notify_members(mut self) -> TestConversation<'a> {
-        let message_bytes = self.message.to_bytes().unwrap();
-        for member in self.members_to_notify() {
-            member
-                .transaction
-                .conversation(&self.conversation.id)
-                .await
-                .unwrap()
-                .decrypt_message(&message_bytes)
-                .await
-                .unwrap();
+        let members = self.conversation.members.clone();
+        for member in members.iter() {
+            self = self.notify_member(member).await;
         }
 
         // Remember the proposal for later so we can update member lists accordingly.
