@@ -22,11 +22,11 @@ impl<'a> TestConversation<'a> {
         OperationGuard {
             conversation: self,
             operation: TestOperation::Add(AddGuard {
-                committer_index: proposer_index,
                 new_members: vec![new_member],
             }),
             message: proposal,
             _message_type: PhantomData,
+            already_notified: [proposer_index].into(),
         }
     }
 
@@ -45,7 +45,8 @@ impl<'a> TestConversation<'a> {
         let proposer_index = self.actor_index();
         OperationGuard {
             conversation: self,
-            operation: TestOperation::Update(proposer_index),
+            already_notified: [proposer_index].into(),
+            operation: TestOperation::Update,
             message: proposal,
             _message_type: PhantomData,
         }
@@ -67,9 +68,10 @@ impl<'a> TestConversation<'a> {
         let proposer_index = self.actor_index();
         OperationGuard {
             conversation: self,
-            operation: TestOperation::Remove(proposer_index, member),
+            operation: TestOperation::Remove(member),
             message: proposal,
             _message_type: PhantomData,
+            already_notified: [proposer_index].into(),
         }
     }
 }
