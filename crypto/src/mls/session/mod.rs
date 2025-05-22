@@ -443,93 +443,6 @@ impl Session {
         Ok(tmp_client_ids)
     }
 
-    // Finalizes initialization using a 2-step process of uploading first a public key and then associating a new Client ID to that keypair
-    //
-    // # Arguments
-    // * `client_id` - The client ID you have fetched from the MLS Authentication Service
-    // * `tmp_ids` - The temporary random client ids generated in the previous step [Session::generate_raw_keypairs]
-    // * `ciphersuites` - To initialize the Client with
-    // * `backend` - the KeyStore and crypto provider to read identities from
-    //
-    // **WARNING**: You have absolutely NO reason to call this if you didn't call [Session::generate_raw_keypairs] first. You have been warned!
-    pub(crate) async fn init_with_external_client_id(
-        &self,
-        client_id: ClientId,
-        tmp_ids: Vec<ClientId>,
-        ciphersuites: &[MlsCiphersuite],
-        backend: &MlsCryptoProvider,
-    ) -> Result<()> {
-        self.ensure_unready().await?;
-        // Find all the keypairs, get the ones that exist (or bail), then insert new ones + delete the provisional ones
-        let stored_skp = backend
-            .key_store()
-            .find_all::<MlsSignatureKeyPair>(EntityFindParams::default())
-            .await
-            .map_err(KeystoreError::wrap("finding all mls signature keypairs"))?;
-
-        match stored_skp.len().cmp(&tmp_ids.len()) {
-            std::cmp::Ordering::Less => return Err(Error::NoProvisionalIdentityFound),
-            std::cmp::Ordering::Greater => return Err(Error::TooManyIdentitiesPresent),
-            _ => {}
-        }
-
-        // we verify that the supplied temporary ids are all present in the keypairs we have in store
-        let all_tmp_ids_exist = stored_skp
-            .iter()
-            .all(|kp| tmp_ids.contains(&kp.credential_id.as_slice().into()));
-        if !all_tmp_ids_exist {
-            return Err(Error::NoProvisionalIdentityFound);
-        }
-
-        let identities = stored_skp.iter().zip(ciphersuites);
-
-        self.replace_inner(SessionInner {
-            id: client_id.clone(),
-            identities: Identities::new(stored_skp.len()),
-            keypackage_lifetime: KEYPACKAGE_DEFAULT_LIFETIME,
-            epoch_observer: None,
-        })
-        .await;
-
-        let id = &client_id;
-
-        for (tmp_kp, &cs) in identities {
-            let scheme = tmp_kp
-                .signature_scheme
-                .try_into()
-                .map_err(|_| Error::InvalidSignatureScheme)?;
-            let new_keypair =
-                MlsSignatureKeyPair::new(scheme, tmp_kp.pk.clone(), tmp_kp.keypair.clone(), id.clone().into());
-
-            let new_credential = MlsCredential {
-                id: id.clone().into(),
-                credential: tmp_kp.credential_id.clone(),
-                created_at: 0,
-            };
-
-            // Delete the old identity optimistically
-            backend
-                .key_store()
-                .remove::<MlsSignatureKeyPair, &[u8]>(&new_keypair.pk)
-                .await
-                .map_err(KeystoreError::wrap("removing mls signature keypair"))?;
-
-            let signature_key = SignatureKeyPair::tls_deserialize(&mut new_keypair.keypair.as_slice())
-                .map_err(Error::tls_deserialize("signature key"))?;
-            let cb = CredentialBundle {
-                credential: Credential::new_basic(new_credential.credential.clone()),
-                signature_key,
-                created_at: 0, // this is fine setting a default value here, this will be set in `save_identity` to the current timestamp
-            };
-
-            // And now we save the new one
-            self.save_identity(&backend.keystore(), Some(id), cs.signature_algorithm(), cb)
-                .await?;
-        }
-
-        Ok(())
-    }
-
     /// Generates a brand new client from scratch
     pub(crate) async fn generate(
         &self,
@@ -841,7 +754,6 @@ impl Session {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::prelude::ClientId;
     use crate::test_utils::*;
     use crate::transaction_context::test_utils::EntitiesCount;
     use core_crypto_keystore::connection::{DatabaseKey, FetchFromDatabase};
@@ -975,60 +887,5 @@ mod tests {
             )
             .await
             .unwrap();
-    }
-
-    #[apply(all_cred_cipher)]
-    #[wasm_bindgen_test]
-    async fn can_externally_generate_client(mut case: TestContext) {
-        let [alice] = case.sessions().await;
-        if !case.is_basic() {
-            return;
-        }
-        let tmp_dir = case.tmp_dir().await;
-        Box::pin(async move {
-            let key = DatabaseKey::generate();
-            let backend = MlsCryptoProvider::try_new(tmp_dir, &key).await.unwrap();
-            backend.new_transaction().await.unwrap();
-            // phase 1: generate standalone keypair
-            let client_id: ClientId = b"whatever:my:client:is@world.com".to_vec().into();
-            let alice = alice.session().await;
-            alice.reset().await;
-            // TODO: test with multi-ciphersuite. Tracking issue: WPB-9601
-            let handles = alice
-                .generate_raw_keypairs(&[case.ciphersuite()], &backend)
-                .await
-                .unwrap();
-
-            let mut identities = backend
-                .keystore()
-                .find_all::<MlsSignatureKeyPair>(EntityFindParams::default())
-                .await
-                .unwrap();
-
-            assert_eq!(identities.len(), 1);
-
-            let prov_identity = identities.pop().unwrap();
-
-            // Make sure we are actually returning the clientId
-            // TODO: test with multi-ciphersuite. Tracking issue: WPB-9601
-            let prov_client_id: ClientId = prov_identity.credential_id.as_slice().into();
-            assert_eq!(&prov_client_id, handles.first().unwrap());
-
-            // phase 2: pretend we have a new client ID from the backend, and try to init the client this way
-            alice
-                .init_with_external_client_id(client_id.clone(), handles.clone(), &[case.ciphersuite()], &backend)
-                .await
-                .unwrap();
-
-            // Make sure both client id and PK are intact
-            assert_eq!(alice.id().await.unwrap(), client_id);
-            let cb = alice
-                .find_most_recent_credential_bundle(case.signature_scheme(), case.credential_type)
-                .await
-                .unwrap();
-            let client_id: ClientId = cb.credential().identity().into();
-            assert_eq!(&client_id, handles.first().unwrap());
-        })
-        .await
     }
 }

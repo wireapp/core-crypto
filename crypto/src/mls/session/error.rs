@@ -29,20 +29,6 @@ pub enum Error {
     UnexpectedlyReady,
     #[error("The keystore already contains a stored identity. Cannot create a new one!")]
     IdentityAlreadyPresent,
-    #[error(
-        r#"The externally-generated client ID initialization cannot continue - there's no provisional keypair in-store!
-
-        Have you called `CoreCrypto::generate_raw_keypair` ?"#
-    )]
-    NoProvisionalIdentityFound,
-    /// This error occurs when during the MLS external client generation, we end up with more than one client identity in store.
-    ///
-    /// This is usually not possible, unless there's some kind of concurrency issue
-    /// on the consumer (creating an ext-gen client AND a normal one at the same time for instance)
-    #[error(
-        "Somehow CoreCrypto holds more than one MLS identity. Something might've gone very wrong with this client!"
-    )]
-    TooManyIdentitiesPresent,
     #[error("The supplied credential does not match the id or signature schemes provided")]
     WrongCredential,
     #[error("An EpochObserver has already been registered; reregistration is not possible")]
