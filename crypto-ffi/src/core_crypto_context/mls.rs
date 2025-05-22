@@ -44,15 +44,6 @@ impl CoreCryptoContext {
         Ok(())
     }
 
-    /// See [core_crypto::transaction_context::TransactionContext::mls_generate_keypairs]
-    pub async fn mls_generate_keypairs(&self, ciphersuites: Ciphersuites) -> CoreCryptoResult<Vec<ClientId>> {
-        Ok(self
-            .inner
-            .mls_generate_keypairs((&ciphersuites).into())
-            .await
-            .map(|cids| cids.into_iter().map(ClientId).collect())?)
-    }
-
     /// See [core_crypto::transaction_context::TransactionContext::client_public_key]
     pub async fn client_public_key(
         &self,
