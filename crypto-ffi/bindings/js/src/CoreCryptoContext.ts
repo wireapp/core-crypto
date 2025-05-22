@@ -111,30 +111,6 @@ export class CoreCryptoContext {
     }
 
     /**
-     * Updates the current temporary Client ID with the newly provided one. This is the second step in the externally-generated clients process
-     *
-     * Important: This is designed to be called after {@link CoreCryptoContext.mlsGenerateKeypair}
-     *
-     * @param clientId - The newly-allocated client ID by the MLS Authentication Service
-     * @param signaturePublicKeys - The public key you were given at the first step; This is for authentication purposes
-     * @param ciphersuites - All the ciphersuites supported by this MLS client
-     */
-    async mlsInitWithClientId(
-        clientId: ClientId,
-        signaturePublicKeys: Uint8Array[],
-        ciphersuites: Ciphersuite[]
-    ): Promise<void> {
-        const id = new ClientIdFfi(clientId);
-        const pks = signaturePublicKeys.map((pk) => new ClientIdFfi(pk));
-        const cs = new CiphersuitesFfi(
-            Uint16Array.from(ciphersuites.map((cs) => cs.valueOf()))
-        );
-        return await CoreCryptoError.asyncMapErr(
-            this.#ctx.mls_init_with_client_id(id, pks, cs)
-        );
-    }
-
-    /**
      * Checks if the Client is member of a given conversation and if the MLS Group is loaded up
      *
      * @returns Whether the given conversation ID exists

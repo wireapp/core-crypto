@@ -88,22 +88,6 @@ final class WireCoreCryptoTests: XCTestCase {
         try FileManager.default.removeItem(at: tmpdir)
     }
 
-    func testExternallyGeneratedClientIdShouldInitTheMLSClient() async throws {
-        let ciphersuite: Ciphersuite = 2
-        let alice = try await createCoreCrypto()
-        let aliceId = "alice1".data(using: .utf8)!
-        let handle = try await alice.transaction {
-            try await $0.mlsGenerateKeypairs(ciphersuites: [ciphersuite])
-        }
-        try await alice.transaction {
-            try await $0.mlsInitWithClientId(
-                clientId: aliceId,
-                tmpClientIds: handle,
-                ciphersuites: [ciphersuite]
-            )
-        }
-    }
-
     func testInteractionWithInvalidContextThrowsError() async throws {
         let ciphersuite: Ciphersuite = 2
         let aliceId = "alice1".data(using: .utf8)!

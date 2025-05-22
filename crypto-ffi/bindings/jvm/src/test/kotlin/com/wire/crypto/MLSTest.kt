@@ -42,13 +42,6 @@ class MLSTest {
     }
 
     @Test
-    fun externally_generated_ClientId_should_init_the_MLS_client() = runTest {
-        val alice = initCc()
-        val handle = alice.transaction { it.mlsGenerateKeypairs() }
-        alice.transaction { it.mlsInitWithClientId(ALICE_ID.toClientId(), handle) }
-    }
-
-    @Test
     fun interaction_with_invalid_context_throws_error() = runTest {
         val cc = initCc()
         var context: CoreCryptoContext? = null

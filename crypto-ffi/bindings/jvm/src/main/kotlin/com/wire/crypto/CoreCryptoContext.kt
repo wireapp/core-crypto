@@ -60,25 +60,6 @@ class CoreCryptoContext(private val cc: com.wire.crypto.uniffi.CoreCryptoContext
     }
 
     /**
-     * Updates the current temporary Client ID with the newly provided one. This is the second step
-     * in the externally-generated clients process.
-     *
-     * **Important:** This is designed to be called after [mlsGenerateKeypairs]
-     *
-     * @param clientId - The newly allocated Client ID from the MLS Authentication Service
-     * @param tmpClientIds - The random clientId you obtained in [mlsGenerateKeypairs], for
-     *   authentication purposes
-     * @param ciphersuites - All the ciphersuites supported by this MLS client
-     */
-    suspend fun mlsInitWithClientId(
-        clientId: ClientId,
-        tmpClientIds: ExternallyGeneratedHandle,
-        ciphersuites: Ciphersuites = Ciphersuites.DEFAULT,
-    ) {
-        wrapException { cc.mlsInitWithClientId(clientId.lower(), tmpClientIds.lower(), ciphersuites.lower()) }
-    }
-
-    /**
      * Get the client's public signature key. To upload to the DS for further backend side
      * validation
      *
