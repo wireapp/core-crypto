@@ -194,6 +194,28 @@ impl<'a> TestConversation<'a> {
         }
     }
 
+    pub async fn remove_proposal(self, member: &'a SessionContext) -> TestConversation<'a> {
+        self.remove_proposal_guarded(member).await.notify_members().await
+    }
+
+    pub async fn remove_proposal_guarded(self, member: &'a SessionContext) -> OperationGuard<'a, Proposal> {
+        let proposer = self.actor();
+        let member_id = member.session.id().await.unwrap();
+        let proposal = proposer
+            .transaction
+            .new_remove_proposal(self.id(), member_id)
+            .await
+            .unwrap()
+            .proposal;
+        let proposer_index = self.actor_index();
+        OperationGuard {
+            conversation: self,
+            operation: TestOperation::Remove(proposer_index, member),
+            message: proposal,
+            _message_type: PhantomData,
+        }
+    }
+
     pub async fn commit_pending_proposals(self) -> TestConversation<'a> {
         self.commit_pending_proposals_guarded().await.notify_members().await
     }
