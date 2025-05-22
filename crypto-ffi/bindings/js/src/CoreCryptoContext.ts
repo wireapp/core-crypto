@@ -92,25 +92,6 @@ export class CoreCryptoContext {
     }
 
     /**
-     * Generates a MLS KeyPair/CredentialBundle with a temporary, random client ID.
-     * This method is designed to be used in conjunction with {@link CoreCryptoContext.mlsInitWithClientId} and represents the first step in this process
-     *
-     * @param ciphersuites - All the ciphersuites supported by this MLS client
-     * @returns This returns the TLS-serialized identity key (i.e. the signature keypair's public key)
-     */
-    async mlsGenerateKeypair(
-        ciphersuites: Ciphersuite[]
-    ): Promise<Uint8Array[]> {
-        const cs = new CiphersuitesFfi(
-            Uint16Array.from(ciphersuites.map((cs) => cs.valueOf()))
-        );
-        const kps = await CoreCryptoError.asyncMapErr(
-            this.#ctx.mls_generate_keypairs(cs)
-        );
-        return kps.map((kp) => kp.as_bytes());
-    }
-
-    /**
      * Checks if the Client is member of a given conversation and if the MLS Group is loaded up
      *
      * @returns Whether the given conversation ID exists

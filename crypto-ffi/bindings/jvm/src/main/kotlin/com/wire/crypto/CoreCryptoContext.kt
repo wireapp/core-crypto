@@ -46,20 +46,6 @@ class CoreCryptoContext(private val cc: com.wire.crypto.uniffi.CoreCryptoContext
     }
 
     /**
-     * Generates a MLS KeyPair/CredentialBundle with a temporary, random client ID. This method is
-     * designed to be used in conjunction with [mlsInitWithClientId] and represents the first step
-     * in this process
-     *
-     * @param ciphersuites - All the ciphersuites supported by this MLS client
-     * @return a list of random ClientId to use in [mlsInitWithClientId]
-     */
-    suspend fun mlsGenerateKeypairs(
-        ciphersuites: Ciphersuites = Ciphersuites.DEFAULT
-    ): ExternallyGeneratedHandle {
-        return wrapException { cc.mlsGenerateKeypairs(ciphersuites.lower()).toExternallyGeneratedHandle() }
-    }
-
-    /**
      * Get the client's public signature key. To upload to the DS for further backend side
      * validation
      *
