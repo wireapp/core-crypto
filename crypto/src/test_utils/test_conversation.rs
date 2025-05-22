@@ -2,10 +2,7 @@ use std::{marker::PhantomData, sync::Arc};
 
 use openmls::prelude::{MlsMessageOut, group_info::VerifiableGroupInfo};
 
-use crate::{
-    mls::{HasSessionAndCrypto as _, conversation::ConversationGuard},
-    prelude::ConversationId,
-};
+use crate::{mls::conversation::ConversationGuard, prelude::ConversationId};
 
 use super::{MlsTransportTestExt, SessionContext, TestContext};
 
@@ -16,6 +13,7 @@ pub struct TestConversation<'a> {
     pub(crate) id: ConversationId,
     pub(crate) members: Vec<&'a SessionContext>,
     proposals: Vec<TestOperation<'a>>,
+    actor_index: Option<usize>,
 }
 
 impl<'a> TestConversation<'a> {
@@ -32,6 +30,7 @@ impl<'a> TestConversation<'a> {
             id,
             members: vec![creator],
             proposals: vec![],
+            actor_index: None,
         }
     }
 
@@ -116,10 +115,11 @@ impl<'a> TestConversation<'a> {
             futures_util::future::join_all(new_members.iter().map(|cc| cc.rand_key_package(self.case))).await;
         self.guard().await.add_members(key_packages).await.unwrap();
         let commit = self.transport().await.latest_commit_bundle().await.commit;
+        let actor_index = self.actor_index();
         OperationGuard {
             conversation: self,
             operation: TestOperation::Add(AddGuard {
-                committer_index: 0,
+                committer_index: actor_index,
                 new_members,
             }),
             message: commit,
@@ -131,36 +131,12 @@ impl<'a> TestConversation<'a> {
         self.invite_proposal_guarded(session).await.notify_members().await
     }
 
-    pub async fn invite_proposal_with(
-        self,
-        proposer: &'a SessionContext,
-        new_member: &'a SessionContext,
-    ) -> TestConversation<'a> {
-        self.invite_proposal_guarded_with(proposer, new_member)
-            .await
-            .notify_members()
-            .await
-    }
-
     pub async fn invite_proposal_guarded(self, new_member: &'a SessionContext) -> OperationGuard<'a, Proposal> {
-        let creator = self.members[0];
-        self.invite_proposal_guarded_with(creator, new_member).await
-    }
-
-    pub async fn invite_proposal_guarded_with(
-        self,
-        proposer: &'a SessionContext,
-        new_member: &'a SessionContext,
-    ) -> OperationGuard<'a, Proposal> {
+        let proposer = self.actor();
         let key_package = new_member.rand_key_package(self.case).await;
-        let session = &proposer.session;
-        let crypto_provider = proposer.transaction.crypto_provider().await.unwrap();
-        let proposal = self
-            .guard_of(proposer)
-            .await
-            .conversation_mut()
-            .await
-            .propose_add_member(session, &crypto_provider, key_package)
+        let proposal = proposer
+            .transaction
+            .new_add_proposal(self.id(), key_package.into())
             .await
             .unwrap()
             .proposal;
@@ -186,14 +162,9 @@ impl<'a> TestConversation<'a> {
     }
 
     pub async fn update_guarded(self) -> OperationGuard<'a, Commit> {
-        let creator = self.members[0];
-        self.update_guarded_with(creator).await
-    }
-
-    pub async fn update_guarded_with(self, committer: &'a SessionContext) -> OperationGuard<'a, Commit> {
-        self.guard_of(committer).await.update_key_material().await.unwrap();
-        let commit = committer.mls_transport().await.latest_commit_bundle().await.commit;
-        let committer_index = self.member_index(committer).await;
+        self.guard().await.update_key_material().await.unwrap();
+        let commit = self.transport().await.latest_commit_bundle().await.commit;
+        let committer_index = self.actor_index();
         OperationGuard {
             conversation: self,
             operation: TestOperation::Update(committer_index),
@@ -207,18 +178,14 @@ impl<'a> TestConversation<'a> {
     }
 
     pub async fn update_proposal_guarded(self) -> OperationGuard<'a, Proposal> {
-        let creator = self.members[0];
-        self.update_proposal_guarded_with(creator).await
-    }
-
-    pub async fn update_proposal_guarded_with(self, proposer: &'a SessionContext) -> OperationGuard<'a, Proposal> {
+        let proposer = self.actor();
         let proposal = proposer
             .transaction
             .new_update_proposal(self.id())
             .await
             .unwrap()
             .proposal;
-        let proposer_index = self.member_index(proposer).await;
+        let proposer_index = self.actor_index();
         OperationGuard {
             conversation: self,
             operation: TestOperation::Update(proposer_index),
@@ -234,17 +201,31 @@ impl<'a> TestConversation<'a> {
     pub async fn commit_pending_proposals_guarded(self) -> OperationGuard<'a, Commit> {
         self.guard().await.commit_pending_proposals().await.unwrap();
         let commit = self.transport().await.latest_commit().await;
+        let actor_index = self.actor_index();
         OperationGuard {
             conversation: self,
             // Comitting pending proposals is equivalent to an update
-            operation: TestOperation::Update(0),
+            operation: TestOperation::Update(actor_index),
             message: commit,
             _message_type: PhantomData,
         }
     }
 
-    pub fn creator(&self) -> &SessionContext {
-        self.members[0]
+    pub fn actor(&self) -> &SessionContext {
+        self.members[self.actor_index()]
+    }
+
+    fn actor_index(&self) -> usize {
+        self.actor_index.unwrap_or_default()
+    }
+
+    /// Execute the next operation on bahalf of the provided member.
+    /// This will reset to the conversation creator once the operation is distributed via
+    /// [OperationGuard::notify_members] or finished via [OperationGuard::finish].
+    pub async fn acting_as(mut self, actor: &SessionContext) -> Self {
+        let actor_index = self.member_index(actor).await;
+        self.actor_index = Some(actor_index);
+        self
     }
 
     /// All members of this conversation.
@@ -256,14 +237,14 @@ impl<'a> TestConversation<'a> {
 
     /// Convenience function to get the mls transport of the creator.
     pub async fn transport(&self) -> Arc<dyn MlsTransportTestExt> {
-        self.creator().mls_transport().await
+        self.actor().mls_transport().await
     }
 
     /// Convenience function to get the conversation guard of this conversation.
     ///
     /// The guard belongs to the creator of the conversation.
     pub async fn guard(&self) -> ConversationGuard {
-        self.guard_of(self.creator()).await
+        self.guard_of(self.actor()).await
     }
 
     /// Get the conversation guard of this conversation, from the point of view of the
@@ -301,23 +282,24 @@ impl<'a> TestConversation<'a> {
     ///
     /// Applies the removal to all members of the conversation.
     ///
-    /// Panics if you try to remove the conversation creator; use a different abstraction if you are testing that case.
+    /// Panics if you try to remove the current actor (by default, the conversation creator);
     /// Panics if you try to remove someone who is not a current member.
     pub async fn remove_guarded(self, member: &'a SessionContext) -> OperationGuard<'a, Commit> {
         let member_id = member.session.id().await.unwrap();
         assert_ne!(
             member_id,
-            self.creator().session.id().await.unwrap(),
-            "cannot remove the creator via this API because we're acting on the creators behalf."
+            self.actor().session.id().await.unwrap(),
+            "cannot remove the actor because we're acting on the actor's behalf."
         );
 
         // removing the member here removes it from the creator and also produces a commit
         self.guard().await.remove_members(&[member_id]).await.unwrap();
         let commit = self.transport().await.latest_commit().await;
+        let actor_index = self.actor_index();
 
         OperationGuard {
             conversation: self,
-            operation: TestOperation::Remove(0, member),
+            operation: TestOperation::Remove(actor_index, member),
             message: commit,
             _message_type: PhantomData,
         }
@@ -367,7 +349,8 @@ impl<'a, T> OperationGuard<'a, T> {
 
     // Call this once you're finished with manual processing and need mutable access
     // to the [TestConversation] again.
-    pub fn finish(self) -> TestConversation<'a> {
+    pub fn finish(mut self) -> TestConversation<'a> {
+        self.conversation.actor_index = None;
         self.conversation
     }
 
@@ -456,6 +439,7 @@ impl<'a> OperationGuard<'a, Commit> {
                 }
             }
         }
+        self.conversation.actor_index = None;
         self.conversation.proposals.clear();
         self.conversation
     }
@@ -478,6 +462,7 @@ impl<'a> OperationGuard<'a, Proposal> {
 
         // Remember the proposal for later so we can update member lists accordingly.
         self.conversation.proposals.push(self.operation);
+        self.conversation.actor_index = None;
 
         self.conversation
     }
@@ -506,7 +491,7 @@ impl<'a> TestConversation<'a> {
     /// use the [`notify_existing_members` method][CommitGuard::notify_members] of
     /// the returned item.
     pub async fn external_join_guarded(self, joiner: &'a SessionContext) -> OperationGuard<'a, Commit> {
-        let group_info = self.creator().get_group_info(&self.id).await;
+        let group_info = self.actor().get_group_info(&self.id).await;
         self.external_join_via_group_info_guarded(joiner, group_info).await
     }
 
